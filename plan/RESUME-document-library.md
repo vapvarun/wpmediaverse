@@ -59,17 +59,36 @@ rows, 6 rendered).
 - Dedup: Pro connector layouts → `AbstractConnectorFeedLayout`; six album creators → the trait.
 - Manifest deltas written for all of it (targeted, hand-written — **never** generator output).
 
-## Next, in order
+## Next, in order — DOCUMENT FUNCTIONALITY FIRST (owner, 2026-08-09)
 
-1. **#5 finish** — Leaderboard (move; it is a generic shape) and Stories (**boundary question**, see
-   the task). Full approach is written in the task description.
-2. **#3 MediaController feed — DECIDED: Option A, full move.** Needs its own session: 231-line
-   builder, 3 orderby modes, and `mvs_feed_query_args` has handed third parties raw SQL since 1.1.0,
-   so the filter contract must move intact. Verification is a matrix, not one comparison.
-3. **#6** closes P1.2 → unblocks **#7** (CI ban) → **#8** (mutation test).
-4. **#9 — release blocker, and unblocked NOW.** Everything verified so far is *regression*-level.
-   The journey is the only thing proving the guarantee holds going forward.
-5. **#10**, then **P2.2 / P2.3** (schema), then Phase 3 engine, then Phase 9 UI.
+The remaining Phase-1 work is architectural placement, not leak prevention. All 47 ROUTE sites
+already carry positive type predicates, and a real document row was browser-verified to reach no
+media surface. The guarantee holds; it is simply not machine-enforced yet. So build the feature.
+
+1. **#9 — the journey.** Kept ahead of the queue despite the reprioritisation: it is the regression
+   net every later phase is checked against, and its value only falls the more that gets built on
+   top of it unproven. Release blocker. Unblocked now.
+2. **#11 P2.2 — Free Migrator v27.** legacy quarantine, `folder_id`, `KEY doc_listing`,
+   `KEY type_file`. Run against a COPY OF A REAL SITE DB, not a fresh install. Idempotent.
+3. **#12 P2.3 — Pro Migrator v11.** `mvs_pro_folders` + 5 grant columns. **`token_hash` DEFAULT
+   NULL** or the UNIQUE add fails on every site that has ever sold media access.
+4. **Phase 3 — the engine.** DocumentTypes (no default branch), FolderService (depth 12, batched
+   subtree writes), PermissionService (2 queries/page), document ingest, delivery, storage resolver,
+   Site Health. Then P3.9, the scale fixture, which gates P4/P8/P9.
+5. **Phase 9 — the UI**, against the display contract in the artifact. #13–#17.
+6. **#18 QA checklist** — only once #13–#17 are complete. Blocked in the graph so it cannot start early.
+
+**Deferred, not dropped** (finish after the feature works): #3 feed move (Option A, decided),
+#5 leaderboard, #6, #7 CI ban, #8 mutation test, #10 aggregates.
+
+**Stories are RESOLVED, not open** (owner, 2026-08-09): *"story is never about document."* A story is
+a media feature by definition, so Stories is not a document surface and never will be. Its query
+stays in Pro as a documented ALLOW — relocating it is architectural tidying with no leak risk, and
+moving it into Free's repository would only teach Free what a story is.
+
+The guard in `StoryService::create()` stays and matters: it is what ENFORCES "never a document"
+rather than assuming it. `POST /media/{id}/story` previously accepted any media id with no type
+check anywhere in the flow, so the rule was true only by luck.
 
 ## Things that bit, so they don't bite again
 
@@ -92,8 +111,6 @@ rows, 6 rendered).
 
 ## Open with the owner
 
-- **Stories (#5)** — generic `meta_conditions` arg on `query()`, or leave Stories in Pro as a
-  documented ALLOW? Free must not learn what a story is.
 - **rtMedia repair pass** (Basecamp 10184326656) — sites already migrated via the admin UI have
   public albums that should be private, and nothing distinguishes that from a genuinely public
   source album. Owners cannot detect it themselves.
