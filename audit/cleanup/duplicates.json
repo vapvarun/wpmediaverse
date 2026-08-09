@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T08:21:45Z",
+    "generated_at": "2026-08-09T08:55:02Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -580,12 +580,12 @@
             "sites": [
                 {
                     "file": "includes/Challenges/ChallengeService.php",
-                    "lines": "775-775",
+                    "lines": "778-778",
                     "method": "list_challenges"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "923-923",
+                    "lines": "926-926",
                     "method": "list_tournaments"
                 }
             ]
@@ -688,12 +688,12 @@
             "sites": [
                 {
                     "file": "includes/Challenges/ChallengeService.php",
-                    "lines": "851-851",
+                    "lines": "854-854",
                     "method": "prime_entry_counts"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "999-999",
+                    "lines": "1002-1002",
                     "method": "prime_participant_counts"
                 }
             ]
@@ -837,17 +837,17 @@
             "sites": [
                 {
                     "file": "includes/Challenges/ChallengeService.php",
-                    "lines": "766-766",
+                    "lines": "769-769",
                     "method": "xp_for_participation"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "749-749",
+                    "lines": "752-752",
                     "method": "xp_for_round_win"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "764-764",
+                    "lines": "767-767",
                     "method": "xp_for_tournament_win"
                 }
             ]

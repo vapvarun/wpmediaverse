@@ -13,7 +13,8 @@ The **display contract** is the UX artifact: <https://claude.ai/code/artifact/70
 | Branch | **`2.4.0`** on BOTH repos, pushed |
 | Last released | 2.3.2. **2.3.3 does not exist** — it was renamed to 2.4.0 because Phase 2 changes schema and Production Rule 4 forbids that in a patch |
 | Version constants | still `2.3.2` — they bump at release, not now |
-| Free tests | **326 green** (321 + 5 from P1.5's `MediaFeedDocumentRefusalTest`) |
+| Free tests | **332 green** (321 + 5 from P1.5, + 6 from P2.2's `MigratorLegacyDocumentTest`) |
+| Free Migrator | **v27** (was 26). `mvs_db_version` on the reference install is 27 |
 | Pro tests | **215: 40 errors / 43 failures — PRE-EXISTING**, verified by stashing everything and re-running against HEAD. Basecamp 10184313297. Do not mistake this for something you broke |
 | local-CI | green on both |
 
@@ -29,9 +30,15 @@ composer ci:no-journeys     # the gate; run before every commit
 - Site: **http://mediaverse.local** — auto-login with `?autologin=1`, never fill the login form.
 - WP-CLI: use the **`mcp-local-wp` `wp_cli` tool**, not a bare `wp` (a bare `wp` hits the wrong DB).
   For anything with quotes, write a PHP file and use `eval-file` — inline `eval` quoting will fight you.
-- **Seeded fixture on the site:** one row `QA Seed Document (delete me)`, now **`media_id=158`** —
-  **always read option `mvs_qa_seed_doc_id`, never hard-code the id.** It is the ONLY document on the
-  site, so it is what makes every exclusion check non-vacuous.
+- **Seeded fixtures on the site — TWO now, and the pair is the point.** Always read the options,
+  never hard-code an id:
+  - `mvs_qa_legacy_doc_id` (**158**) — the pre-1.2.3 catch-all row, quarantined to `legacy_document`
+    by v27. **MUST stay visible** in every media surface; if it disappears, the upgrade is deleting
+    content from members' libraries.
+  - `mvs_qa_seed_doc_id` (**159**) — a real `document`, created after v27. **MUST stay hidden** from
+    every media surface.
+  Verified landing on opposite sides of the REST feed, Explore and the collection. One fixture alone
+  can only prove half of this; the pair is what makes a wrong-side filter visible instead of silent.
   **The original (157) and 18 other QA media rows were deleted on 2026-08-09 at 08:12 UTC**, cause
   not established — full evidence in the journey's "Fixture incident" section. Re-seeded through
   `MediaRepository`. If the option ever points at a missing row, **re-seed before running anything**:
@@ -105,8 +112,14 @@ media surface. The guarantee holds; it is simply not machine-enforced yet. So bu
    tails left before it closes, neither blocking: **run it Free-only** (today's walk was combo), and
    **seed one competition entry** so the Pro compete steps stop being vacuous. Keeping it first paid
    for itself — it found the `/media` leak on its first run.
-2. **#11 P2.2 — Free Migrator v27.** legacy quarantine, `folder_id`, `KEY doc_listing`,
-   `KEY type_file`. Run against a COPY OF A REAL SITE DB, not a fresh install. Idempotent.
+2. **#11 P2.2 — Free Migrator v27.** 🟡 **Applied and verified** on the reference install (populated,
+   not fresh; table backed up first): 1 row quarantined, `folder_id` + both indexes present with the
+   right column order, `diagnose_cpt_ids` clean, All Media self-check passed at desktop and 390px.
+   6 unit tests. **Outstanding: the run against a copy of a REAL CUSTOMER DB** — that is what the
+   plan asked for and it needs a dump nobody has handed over yet.
+   The quarantine is guarded by option `mvs_legacy_documents_quarantined`, not only the version gate:
+   after P3.4 a second pass would re-type every real document and **silently empty every drive on the
+   site**. Proven by force-invoking the migration twice against a live document row.
 3. **#12 P2.3 — Pro Migrator v11.** `mvs_pro_folders` + 5 grant columns. **`token_hash` DEFAULT
    NULL** or the UNIQUE add fails on every site that has ever sold media access.
 4. **Phase 3 — the engine.** DocumentTypes (no default branch), FolderService (depth 12, batched

@@ -38,7 +38,7 @@ Never fill a login form by hand.
 |---|---|---|
 | **Prerequisites** | PRE-1, PRE-2 | ✅ both done |
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
-| **2 — Schema** | P2.1 – P2.3 | 🟡 P2.1 ✅, P2.2–P2.3 ⬜ |
+| **2 — Schema** | P2.1 – P2.3 | 🟡 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ⬜ |
 | **3 — Pro engine** | P3.1 – P3.9 | ⬜ |
 | **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
@@ -233,17 +233,40 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 - **Carried forward:** `RtMedia\Importer` maps unknown rtMedia types to `'document'` by elimination —
   the same catch-all shape, one plugin over. **Fold into P3.1.**
 
-### P2.2 — Free Migrator v27 ⬜
+### P2.2 — Free Migrator v27 🟡 APPLIED + VERIFIED; real-customer-DB pass outstanding
 
-- **Files** — `~ includes/Core/Migrator.php`
-- **Do** — Legacy quarantine (`media_type='document'` → `'legacy_document'`), `folder_id`,
-  `KEY doc_listing`, `KEY type_file` (design §2). **Not** `search_text` — that is P8, on its own table.
-- **Test** — `unit:` quarantine is idempotent and re-running is a no-op. `live:` against a copy of a
-  real site database, not a fresh install.
-- **Self-check** — **wp-admin → All Media before and after**, desktop and 390px. A pre-1.2.3 PDF must
-  still be listed and still open at its permalink. `MediaTypes::MEDIA_LIBRARY` promises exactly
-  that, and this migration is the one thing that could break the promise.
-- **Done** — v27 applied; `wp mvs diagnose_cpt_ids` still clean.
+- **Files** — `~ includes/Core/Migrator.php`, `+ tests/unit/MigratorLegacyDocumentTest.php`
+- **Done** — `CURRENT_VERSION` 26 → 27. Quarantine (`document` → `legacy_document`) runs **first**,
+  then `folder_id`, `KEY doc_listing (media_type, folder_id, status, created_at)`,
+  `KEY type_file (media_type, file_type)`. No `search_text` — that is P8.1's side table, deliberately
+  off the hottest table in the product.
+- **The quarantine is guarded by an option, not just the version gate.** `mvs_legacy_documents_quarantined`
+  records `{rows, at}` and short-circuits a second pass. The version gate already runs each migration
+  once, but the failure mode if that ever slips is not cosmetic: **after P3.4, `media_type='document'`
+  means a real member document, so a second quarantine pass would re-type every one of them and
+  silently empty every drive on the site.** The test asserts that property directly, and it was also
+  proven live by force-invoking `migrate_to_27()` a second time against a real document row.
+- **Index-guard duplication collapsed** — v25 and v27 both needed the same `SHOW INDEX` guard, so it
+  is now one `add_index_if_missing()` rather than a second copy of a guarded ALTER.
+- **Test** — `unit:` 6 cases (332 green, was 326): retypes catch-all only, real media untouched,
+  quarantined rows stay in `MEDIA_LIBRARY` and out of `DOCUMENTS`, second run never touches a real
+  document, the run records itself, schema added idempotently with `doc_listing`'s column order
+  asserted left-to-right.
+- **`live:` run — done, on a populated DB, but NOT a customer database.** Applied to
+  mediaverse.local (76-row index with real albums, collections, competitions and taxonomy rows —
+  not a fresh install). Table backed up first. Verified after: 1 row quarantined, `folder_id` present
+  defaulting to 0, both indexes present with the correct column order, `wp mvs diagnose_cpt_ids`
+  reports **"No collisions on this site."**
+  ⚠️ **Still outstanding: a run against a copy of a real customer database**, which is what the plan
+  asked for and what would exercise volume, odd legacy rows and hosts without online DDL.
+- **Self-check — passed, desktop and 390px.** wp-admin → All Media lists the quarantined PDF
+  (58 items) and not the real document; the PDF still opens at its permalink (HTTP 200); no
+  horizontal scroll at 390px.
+- **The fixture is now the realistic post-upgrade shape** — `mvs_qa_legacy_doc_id` (quarantined, must
+  stay visible) *and* `mvs_qa_seed_doc_id` (a document created after the migration, must stay
+  hidden). Verified they land on **opposite sides** of the REST feed, Explore and the collection.
+  That pairing is the only configuration where a surface filtering on the wrong side of the
+  legacy/document line becomes visible instead of silent.
 
 ### P2.3 — Pro Migrator v11 ⬜
 

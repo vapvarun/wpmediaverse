@@ -51,6 +51,18 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
 - **Adversarial collection** — the fixture's collection 15 ("Public Gallery") has the single rule
   `privacy = public`, and the seed document *is* public. It therefore matches the collection's rule
   on every column except type, which is exactly the discriminator under test. No setup needed.
+- **The legacy counterpart — assert BOTH, always.** Since Migrator v27 the site also carries a
+  `legacy_document` row (option `mvs_qa_legacy_doc_id`): a pre-1.2.3 catch-all row that **must stay
+  visible** in every surface below, while the real document must stay out.
+
+  | Fixture | `media_type` | Every media surface |
+  |---|---|---|
+  | `mvs_qa_legacy_doc_id` | `legacy_document` | **PRESENT** — hiding it deletes content from members' libraries on upgrade |
+  | `mvs_qa_seed_doc_id` | `document` | **ABSENT** |
+
+  Assert the pair, never just the absence. A surface that filters on the wrong side of that line —
+  `MEDIA` where it meant `MEDIA_LIBRARY` — passes an absence-only check perfectly while quietly
+  dropping legacy rows every existing member can see today.
 - Run every rendered assertion at **1280x800 and 390x844**.
 
 ## Steps

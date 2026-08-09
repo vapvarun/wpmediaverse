@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 26;
+	const CURRENT_VERSION = 27;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -1717,5 +1717,142 @@ class Migrator {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Option recording that the legacy-document quarantine has run.
+	 *
+	 * The quarantine is the one step in v27 that is NOT naturally idempotent:
+	 * re-running it after the document library ships would re-type real member
+	 * documents as legacy. The version gate already runs each migration once, but
+	 * this makes the property hold no matter how the method is invoked, which is
+	 * what the test asserts.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const LEGACY_QUARANTINE_OPTION = 'mvs_legacy_documents_quarantined';
+
+	/**
+	 * Migration v27 — quarantine the catch-all rows, then open the document schema.
+	 *
+	 * ORDER MATTERS AND IS NOT COSMETIC. The quarantine runs FIRST, before anything
+	 * can create a real document row. Until 1.2.3 `UploadService::get_media_type()`
+	 * returned 'document' for anything that was not image/video/audio — an inverse
+	 * allowlist — so on a site that ran with PDFs enabled, `media_type='document'`
+	 * means "we could not classify this", not "a member uploaded a document". The
+	 * document library is about to give that exact string a real meaning, and the
+	 * two populations must be separated before they can ever mix.
+	 *
+	 * WHY THEY STAY VISIBLE. `legacy_document` is in `MediaTypes::MEDIA_LIBRARY`, so
+	 * these rows keep appearing everywhere they appear today. That is deliberate:
+	 * members can see them in their libraries right now, and dropping them from
+	 * listings would delete content from a member's library on upgrade — a visible
+	 * regression on precisely the sites this protects, and the kind of
+	 * default-behaviour change Production Rule 3 forbids. They are NOT in
+	 * `DOCUMENTS`: they never passed `DocumentTypes::resolve()`, have no folder and
+	 * no extraction, so the document library must not claim them. Adopting them is a
+	 * deliberate, owner-initiated migration, never an upgrade side effect.
+	 *
+	 * The remaining three steps are additive DDL — a column and two indexes, each
+	 * guarded so a partial prior run resumes cleanly. `search_text` is deliberately
+	 * NOT here: it lives on the `mvs_document_search` side table (P8.1), because a
+	 * longtext + FULLTEXT on `mvs_media_index` would put that cost on the hottest
+	 * table in the product for every media write on the site.
+	 *
+	 * Build plan: plan/document-library-build.md P2.2. Design: plan/document-library.md §2.
+	 *
+	 * @since 2.4.0
+	 * @return void
+	 */
+	private function migrate_to_27(): void {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		// 1. Quarantine, once and once only. See LEGACY_QUARANTINE_OPTION.
+		if ( ! get_option( self::LEGACY_QUARANTINE_OPTION ) ) {
+			$quarantined = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+				$wpdb->prepare(
+					"UPDATE {$index} SET media_type = %s WHERE media_type = %s",
+					\WPMediaVerse\Core\MediaTypes::LEGACY_DOCUMENT,
+					'document'
+				)
+			);
+
+			update_option(
+				self::LEGACY_QUARANTINE_OPTION,
+				array(
+					'rows' => $quarantined,
+					'at'   => current_time( 'mysql', true ),
+				),
+				false
+			);
+
+			if ( $quarantined > 0 && class_exists( '\\WPMediaVerse\\Services\\LoggerService' ) ) {
+				\WPMediaVerse\Services\LoggerService::error(
+					'migration',
+					'v27 quarantined pre-1.2.3 catch-all rows as legacy_document',
+					array( 'rows' => $quarantined )
+				);
+			}
+		}
+
+		// 2. folder_id — documents only, 0 means "at the drive root". Separate from
+		// album_id on purpose (design §2): an item is in an album OR a folder, the
+		// two id spaces are unrelated, and overloading one column would make every
+		// drive query depend on knowing which meaning was stored.
+		if ( ! $this->column_exists( $index, 'folder_id' ) ) {
+			$prev_show = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$index} ADD COLUMN folder_id bigint(20) unsigned NOT NULL DEFAULT 0" );
+			$wpdb->show_errors( $prev_show );
+		}
+
+		// 3. KEY doc_listing IS the drive query verbatim, left-to-right —
+		// WHERE media_type=? AND folder_id=? AND status=? ORDER BY created_at.
+		// Without it the drive degrades to a scan of the whole media table at
+		// exactly the sites with the most documents.
+		$this->add_index_if_missing( $index, 'doc_listing', 'doc_listing (media_type, folder_id, status, created_at)' );
+
+		// 4. KEY type_file backs "every PDF in this drive" without a scan.
+		$this->add_index_if_missing( $index, 'type_file', 'type_file (media_type, file_type)' );
+	}
+
+	/**
+	 * Add an index unless a key of that name already exists.
+	 *
+	 * Extracted rather than inlined twice: v25 and v27 both needed this SHOW INDEX
+	 * guard, and a second copy of a guarded ALTER is how one of them ends up
+	 * unguarded later.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $table      Full table name (with prefix).
+	 * @param string $key_name   Index name to test for.
+	 * @param string $definition Index definition, e.g. "name (col_a, col_b)".
+	 * @return bool True when the index exists after this call.
+	 */
+	private function add_index_if_missing( string $table, string $key_name, string $definition ): bool {
+		global $wpdb;
+
+		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $key_name )
+		);
+
+		if ( $exists ) {
+			return true;
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$table} ADD KEY {$definition}" );
+		$wpdb->show_errors( $prev_show );
+
+		$after = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $key_name )
+		);
+
+		return (bool) $after;
 	}
 }
