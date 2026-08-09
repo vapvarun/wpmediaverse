@@ -46,7 +46,7 @@ class MediaTag {
 			// No metabox on the album editor. Every mvs_tag write in this plugin passes a
 			// media-index ID, but core's default metabox on the album screen wrote
 			// ALBUM post IDs into the same wp_term_relationships.object_id space — a
-			// contamination path no plugin code accounted for. Closed in 2.3.3.
+			// contamination path no plugin code accounted for. Closed in 2.4.0.
 			'meta_box_cb'           => false,
 		);
 

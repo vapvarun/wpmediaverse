@@ -12,7 +12,7 @@
  * lands separately — see plan/2026-08-08-cpt-id-collision-fix-plan.md.
  *
  * @package WPMediaVerse
- * @since   2.3.3
+ * @since   2.4.0
  */
 
 namespace WPMediaVerse\Services;
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Read-only analyser for album/collection IDs colliding with media IDs.
  *
- * @since 2.3.3
+ * @since 2.4.0
  */
 class CptIdCollisionService {
 
@@ -45,7 +45,7 @@ class CptIdCollisionService {
 	 *
 	 * Performs no writes of any kind.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array{
 	 *     totals: array<string,int>,
@@ -85,7 +85,7 @@ class CptIdCollisionService {
 	 * there. The busier the site, the further ahead media IDs are, and the higher
 	 * the odds — this defect gets worse with success, not better.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<string,mixed>
 	 */
@@ -154,7 +154,7 @@ class CptIdCollisionService {
 	/**
 	 * Headline counts.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<string,int>
 	 */
@@ -206,7 +206,7 @@ class CptIdCollisionService {
 	 * written over the media row. The media data is real and must never be
 	 * deleted; the repair preserves them and reports them for a human.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -223,7 +223,7 @@ class CptIdCollisionService {
 	/**
 	 * Index rows that belong only to a CPT — safe to migrate and remove.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -241,7 +241,7 @@ class CptIdCollisionService {
 	 * Detected by the index slug matching the CPT's post_name. The original
 	 * media slug is not recoverable from the database.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -259,7 +259,7 @@ class CptIdCollisionService {
 	 * Album keys such as album_type / group_id / *_album_id are not index columns, so
 	 * MediaRepository::set() falls them through to the media meta store.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -295,7 +295,7 @@ class CptIdCollisionService {
 	 * purge_index_record( $post_id ) unconditionally. Where that ID is a real
 	 * media row, deleting the CPT deletes the media item's index record.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -310,7 +310,7 @@ class CptIdCollisionService {
 	/**
 	 * Per-taxonomy split of wp_term_relationships object_id space.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -349,7 +349,7 @@ class CptIdCollisionService {
 	 * the album/collection posts sharing its IDs, then narrow" — so the join, the
 	 * post-type placeholders and the ARRAY_A shaping live here once.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param string $select      Column list for the SELECT.
 	 * @param string $extra_where Additional AND-conditions, or ''.
@@ -379,7 +379,7 @@ class CptIdCollisionService {
 	/**
 	 * Placeholder list for the CPT type IN() clause.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @return string
 	 */

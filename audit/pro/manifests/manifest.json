@@ -2139,8 +2139,8 @@
 		},
 		"delta_2026_08_09": {
 			"method": "Targeted manual delta, agent-enumeration-only. NOT generator output.",
-			"scope": "P1.2 query discipline, Pro side. Paired with Free 2.3.3 (730cf5a1, 6131c884, 2b73ae5e); Pro commits 7b96031, 9ea080a.",
-			"version_note": "plugin.version in this file still reads 2.2.1 and is STALE - the shipped constant is MVS_PRO_VERSION 2.3.2 (last released). 2.3.3 is in development; constants bump at release. Not corrected inline here because the rest of this file's inventory was enumerated at 2.2.1 and correcting the version alone would imply the inventory was re-verified at 2.3.2, which it was not. Due at the next full refresh.",
+			"scope": "P1.2 query discipline, Pro side. Paired with Free 2.4.0 (730cf5a1, 6131c884, 2b73ae5e); Pro commits 7b96031, 9ea080a.",
+			"version_note": "plugin.version in this file still reads 2.2.1 and is STALE - the shipped constant is MVS_PRO_VERSION 2.3.2 (last released). 2.4.0 is in development; constants bump at release. Not corrected inline here because the rest of this file's inventory was enumerated at 2.2.1 and correcting the version alone would imply the inventory was re-verified at 2.3.2, which it was not. Due at the next full refresh.",
 			"rest_changed": [
 				"POST /mvs-pro/v1/media/{id}/story - now returns 400 mvs_story_invalid_type when the target is not something the stories viewer can render. Previously accepted ANY media id with no type check anywhere in the flow, so a document would have become a story in a full-bleed image viewer."
 			],
@@ -2160,10 +2160,10 @@
 				"templates/partials/dashboard-challenges-panel.php - unused $index_table."
 			],
 			"bugs_fixed_from_prior_delta": [
-				"Integrations\\AlbumMarkerLookupTrait::find_existing_album() called $this->find_existing_by_dedup(), which exists on AbstractBatchImporter but NOT on AbstractMigrationAdmin, the trait's other host. Fatal on the legacy-marker branch that every pre-2.3.3 site takes. Now resolves the Free repository directly. Shipped in 9680c9e (the 2.3.3 importer fix), caught by PHPStan."
+				"Integrations\\AlbumMarkerLookupTrait::find_existing_album() called $this->find_existing_by_dedup(), which exists on AbstractBatchImporter but NOT on AbstractMigrationAdmin, the trait's other host. Fatal on the legacy-marker branch that every pre-2.4.0 site takes. Now resolves the Free repository directly. Shipped in 9680c9e (the 2.4.0 importer fix), caught by PHPStan."
 			],
 			"free_dependency_added": [
-				"\\WPMediaVerse\\Core\\MediaTypes (Free 2.3.3) - reached fully-qualified, not imported, matching the SettingsHelper / MVS_CSS precedent. Pro Coding Rule 3 forbids `use WPMediaVerse\\...\\<ConcreteClass>` imports; a fully-qualified static call to a stateless vocabulary class is the sanctioned form and passes bin/coding-rules-check.sh."
+				"\\WPMediaVerse\\Core\\MediaTypes (Free 2.4.0) - reached fully-qualified, not imported, matching the SettingsHelper / MVS_CSS precedent. Pro Coding Rule 3 forbids `use WPMediaVerse\\...\\<ConcreteClass>` imports; a fully-qualified static call to a stateless vocabulary class is the sanctioned form and passes bin/coding-rules-check.sh."
 			],
 			"tests_added": [
 				"tests/unit/LeaderboardTypeScopeTest.php (5)",

@@ -24,7 +24,7 @@ class AlbumService {
 	 * album post, not of any media item, and it lives here — never in
 	 * mvs_media_index, whose `privacy` column means a media item's own visibility.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string
 	 */
 	public const PRIVACY_META = '_mvs_privacy';
@@ -32,7 +32,7 @@ class AlbumService {
 	/**
 	 * Post-meta key holding an album's type (default | playlist).
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string
 	 */
 	public const TYPE_META = '_mvs_album_type';
@@ -41,7 +41,7 @@ class AlbumService {
 	 * Read an album's privacy.
 	 *
 	 * Post meta is authoritative. The mvs_media_index fallback exists only for
-	 * installs upgrading from before 2.3.3 whose Migrator v26 pass has not run yet
+	 * installs upgrading from before 2.4.0 whose Migrator v26 pass has not run yet
 	 * (or failed): without it every album would read as the default and a private
 	 * album would be exposed. It is a safety net for one migration window, not a
 	 * supported storage location.
@@ -51,7 +51,7 @@ class AlbumService {
 	 * photo's privacy. That is the defect being fixed, and Migrator v26 records
 	 * every such album for review.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param int $album_id Album post ID.
 	 * @return string Privacy slug; 'public' when nothing is stored.
@@ -63,7 +63,7 @@ class AlbumService {
 			return $privacy;
 		}
 
-		// @deprecated 2.3.3 Legacy read. Remove in 3.0.0 once every install has run v26.
+		// @deprecated 2.4.0 Legacy read. Remove in 3.0.0 once every install has run v26.
 		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
 			->get( $album_id, 'privacy' );
@@ -74,7 +74,7 @@ class AlbumService {
 	/**
 	 * Store an album's privacy.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param int    $album_id Album post ID.
 	 * @param string $privacy  Privacy slug.
@@ -87,7 +87,7 @@ class AlbumService {
 	/**
 	 * Read an album's type.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param int $album_id Album post ID.
 	 * @return string 'default' when nothing is stored.
@@ -99,7 +99,7 @@ class AlbumService {
 			return $type;
 		}
 
-		// @deprecated 2.3.3 Legacy read. Remove in 3.0.0.
+		// @deprecated 2.4.0 Legacy read. Remove in 3.0.0.
 		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
 			->get( $album_id, 'album_type' );
@@ -110,7 +110,7 @@ class AlbumService {
 	/**
 	 * Store an album's type.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param int    $album_id Album post ID.
 	 * @param string $type     Album type slug.
@@ -172,7 +172,7 @@ class AlbumService {
 		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
 		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
 
-		// Album attributes live in post meta. Before 2.3.3 they were written through
+		// Album attributes live in post meta. Before 2.4.0 they were written through
 		// MediaRepository at media_id = <album post ID>, which put an album ID into the
 		// media ID sequence: on any site where uploads have outrun post IDs — most of
 		// them — the write landed on a real photo and overwrote its slug and privacy.
@@ -188,7 +188,7 @@ class AlbumService {
 			update_post_meta( $album_id, '_mvs_group_id', $group_id );
 		}
 
-		// Album categories removed in 2.3.3. They were write-only: every browsing,
+		// Album categories removed in 2.4.0. They were write-only: every browsing,
 		// filtering and archive surface resolves mvs_category by joining
 		// wp_term_relationships.object_id to mvs_media_index.media_id, so a category
 		// assigned to an album matched nothing anywhere. Worse, the album's post ID and

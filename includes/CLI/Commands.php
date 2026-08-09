@@ -2044,7 +2044,7 @@ class Commands {
 	 *     wp mvs diagnose_cpt_ids
 	 *     wp mvs diagnose_cpt_ids --format=json
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param array $args       Positional args (unused).
 	 * @param array $assoc_args Associative args.
@@ -2180,7 +2180,7 @@ class Commands {
 	/**
 	 * Print one titled section of the collision report.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param string $title  Section heading.
 	 * @param array  $rows   Result rows.

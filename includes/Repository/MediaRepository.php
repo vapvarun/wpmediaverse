@@ -673,7 +673,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Per-request memo for is_cpt_id() so the guard costs at most one lookup per ID.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var array<int,bool>
 	 */
 	private static $cpt_id_memo = array();
@@ -686,7 +686,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * that media POINT AT via the album_id column; their own attributes (privacy,
 	 * type, import markers) belong in post meta.
 	 *
-	 * Before 2.3.3 albums stored privacy by calling set()/set_many() with their post
+	 * Before 2.4.0 albums stored privacy by calling set()/set_many() with their post
 	 * ID. media_id is AUTO_INCREMENT for media, so on any site where uploads have
 	 * outrun post IDs — most of them, since members upload far more than a site
 	 * publishes — that write landed on a real photo and overwrote its slug and
@@ -698,7 +698,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param int    $media_id Candidate row key.
 	 * @param string $context  Calling method, for the notice.
@@ -721,7 +721,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		_doing_it_wrong(
 			esc_html( $context ),
 			'mvs_media_index is keyed on media IDs. Album and collection attributes belong in post meta — see AlbumService::set_privacy().',
-			'2.3.3'
+			'2.4.0'
 		);
 
 		return true;
@@ -1587,7 +1587,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		//
 		// That flag was `m.media_type != ''`, an exclusion written to drop the
 		// privacy-only stub rows album creation used to insert. It is superseded
-		// twice over: those stubs no longer exist (2.3.3 stopped albums writing to
+		// twice over: those stubs no longer exist (2.4.0 stopped albums writing to
 		// the index and Migrator v26 removed the rows), and an exclusion passes
 		// every type added later — including documents — straight through.
 		//

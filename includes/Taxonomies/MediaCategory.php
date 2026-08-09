@@ -47,7 +47,7 @@ class MediaCategory {
 			// term assigned to an album post matched nothing anywhere. Core's default
 			// metabox wrote exactly those inert album-space rows — and because an album
 			// post ID can equal a real media_id, they were readable back as a photo's
-			// categories. Removed in 2.3.3 along with the plugin's own album-category
+			// categories. Removed in 2.4.0 along with the plugin's own album-category
 			// write paths.
 			'meta_box_cb'           => false,
 		);

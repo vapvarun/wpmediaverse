@@ -73,7 +73,7 @@ class Album {
 		global $wpdb;
 		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'album_id' => $post_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
-		// NO index purge here — removed in 2.3.3, and it must not come back.
+		// NO index purge here — removed in 2.4.0, and it must not come back.
 		//
 		// An album is a wp_posts row that media POINT AT via mvs_media_index.album_id.
 		// It is a reference target, never a row in the media table: media_id belongs to
@@ -91,7 +91,7 @@ class Album {
 		//
 		// With albums no longer writing to mvs_media_index (AlbumService,
 		// AlbumController, Pro importers) and MediaRepository refusing wp_posts IDs,
-		// there is nothing left to purge. Legacy rows from before 2.3.3 are cleared
+		// there is nothing left to purge. Legacy rows from before 2.4.0 are cleared
 		// once by Migrator v26, not on every delete.
 		//
 		// Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.

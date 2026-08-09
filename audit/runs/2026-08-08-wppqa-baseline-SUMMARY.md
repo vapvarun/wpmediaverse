@@ -1,6 +1,6 @@
 # wppqa baseline — 2026-08-08
 
-Plugin: WPMediaVerse 2.3.2 (branch 2.3.3) · Maturity **COMPLETE (73/100)** · Code Quality **C (60/100)**
+Plugin: WPMediaVerse 2.3.2 (branch 2.4.0) · Maturity **COMPLETE (73/100)** · Code Quality **C (60/100)**
 Run: `mcp__wp-plugin-qa__wppqa_audit_plugin` (no `site_url`, so API/DB/browser/visual checks did not run).
 
 Re-establishes the baseline deleted in `dc3e80df`, which had been failing local-CI

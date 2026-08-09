@@ -177,7 +177,7 @@ class CacheService {
 	/**
 	 * Get user stats with caching.
 	 *
-	 * @deprecated 2.3.3 Use MediaRepository::get_user_stats() instead. This copy
+	 * @deprecated 2.4.0 Use MediaRepository::get_user_stats() instead. This copy
 	 *             carried its own SQL that had already drifted from the
 	 *             repository's — it applied no status filter, so it could report
 	 *             a different number for the same member. Kept as a caching
@@ -200,7 +200,7 @@ class CacheService {
 	/**
 	 * Get moderation counts with caching.
 	 *
-	 * @deprecated 2.3.3 Use MediaRepository::get_moderation_counts() instead.
+	 * @deprecated 2.4.0 Use MediaRepository::get_moderation_counts() instead.
 	 *             Duplicate of the repository query; kept as a caching delegate
 	 *             because it is public API on a container-registered service
 	 *             (Production Rule 1). Scheduled for removal in 4.0.

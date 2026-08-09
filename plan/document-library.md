@@ -11,7 +11,7 @@
 > `git log`. If you are reviewing this feature, read only this file.
 
 **Hard dependency:** the album/collection ID-collision fix
-(`plan/2026-08-08-cpt-id-collision-fix-plan.md`, on the 2.3.3 branch) **must ship first or alongside.** This
+(`plan/2026-08-08-cpt-id-collision-fix-plan.md`, on the 2.4.0 branch) **must ship first or alongside.** This
 design puts documents into `mvs_media_index`, and that fix is what makes the ID space safe to share.
 
 ### Team review, 2026-08-08 — adopted

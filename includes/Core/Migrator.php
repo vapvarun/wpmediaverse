@@ -1576,7 +1576,7 @@ class Migrator {
 	 * album or collection ID must never appear in media_id. Albums are wp_posts rows
 	 * that media point at; their own attributes belong in post meta.
 	 *
-	 * Before 2.3.3 albums wrote privacy/album_type/import-markers through
+	 * Before 2.4.0 albums wrote privacy/album_type/import-markers through
 	 * MediaRepository keyed on their post ID. media_id is AUTO_INCREMENT for media,
 	 * so on any site where uploads have outrun post IDs that write landed on a real
 	 * photo and overwrote its slug and privacy.
@@ -1591,7 +1591,7 @@ class Migrator {
 	 *
 	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @return void
 	 */
 	private function migrate_to_26(): void {

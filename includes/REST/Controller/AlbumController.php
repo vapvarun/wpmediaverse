@@ -297,7 +297,7 @@ class AlbumController extends WP_REST_Controller {
 		// private / friends / group / custom are owner-only in the list, matching how
 		// media explore treats them.
 		//
-		// Before 2.3.3 this joined mvs_media_index on wp_posts.ID, because album
+		// Before 2.4.0 this joined mvs_media_index on wp_posts.ID, because album
 		// privacy was stored there at media_id = <album post ID>. That is the defect
 		// this release removes: the album ID collided with a real media_id, so the
 		// clause could filter an album by an unrelated PHOTO's privacy. Migrator v26
@@ -555,7 +555,7 @@ class AlbumController extends WP_REST_Controller {
 
 		$this->albums->delete_all_items( $album_id );
 
-		// No taxonomy cleanup here. Albums no longer carry categories (2.3.3), and this
+		// No taxonomy cleanup here. Albums no longer carry categories (2.4.0), and this
 		// call was itself a data-loss vector: an album's post ID can equal a real
 		// media_id, and wp_delete_object_term_relationships() keys on that shared
 		// object_id space — so deleting an album wiped the colliding photo's categories.

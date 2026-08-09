@@ -69,7 +69,7 @@ class Collection {
 			return;
 		}
 
-		// NO index purge here — deliberately removed 2.3.3, and it must not come back.
+		// NO index purge here — deliberately removed 2.4.0, and it must not come back.
 		//
 		// The original comment claimed "collections also carry an mvs_media_index row
 		// (privacy storage)". They do not: CollectionService and CollectionController

@@ -1,11 +1,11 @@
 # Fix plan: album / collection IDs collide with media IDs
 
 **Date:** 2026-08-08
-**Target version:** 2.3.3
+**Target version:** 2.4.0
 **Owner:** Varun
 **Reviewer:** _unassigned — this plan exists to be reviewed before any code is written_
 **Status:** **IMPLEMENTED in the working tree — NOT released, NOT browser-tested.** Free + Pro,
-target 2.3.3 paired. See "Implementation status" immediately below before reading the plan body:
+target 2.4.0 paired. See "Implementation status" immediately below before reading the plan body:
 several open questions in the later sections were closed during implementation and are marked there.
 
 Basecamp cards:
@@ -41,7 +41,7 @@ decision is noted inline. Read this table first.
 
 | Question in the plan | Decision |
 |---|---|
-| §6/§7 interim 2.3.3 patch? | **No.** Owner: no dead code. The guard it would carry was temporary by construction. Single 2.3.3 release |
+| §6/§7 interim 2.4.0 patch? | **No.** Owner: no dead code. The guard it would carry was temporary by construction. Single 2.4.0 release |
 | §3.4 album categories | **Removed.** Write-only; nothing read them back except the album page |
 | §3 `mvs_tag` in scope? | **Yes** — core's own metabox and `/wp/v2/mvs-albums` were live album-space write paths |
 | §4.6.1 album privacy cascade | **Withdrawn as a bug.** Album privacy governs album visibility only; non-cascading is coherent. Remains a UX question |
@@ -57,7 +57,7 @@ decision is noted inline. Read this table first.
 
 ### Two defects found in my own implementation, and fixed
 
-1. Moving Pro's import markers to post meta left `find_existing_album()` reading `mvs_media_meta` — the exact read/write split whose docblock records it caused **duplicate albums on every re-run**. Fixed with a legacy fallback so a post-upgrade re-run still finds pre-2.3.3 albums.
+1. Moving Pro's import markers to post meta left `find_existing_album()` reading `mvs_media_meta` — the exact read/write split whose docblock records it caused **duplicate albums on every re-run**. Fixed with a legacy fallback so a post-upgrade re-run still finds pre-2.4.0 albums.
 2. The migration deleted `group_id`, which is **not** album-only — `PrivacyService::check_group()` reads it off media rows. On a colliding ID that would have destroyed the photo's group assignment. Now neither copied nor deleted there.
 
 ### Gates
@@ -493,14 +493,14 @@ The repository is the choke point that made this possible, so the guard belongs 
 if ( get_post_type( $media_id ) ) {
     _doing_it_wrong( __METHOD__,
         'mvs_media_index is keyed on media IDs. Album and collection attributes belong in post meta.',
-        '2.3.3' );
+        '2.4.0' );
     return;   // refuse, do not corrupt
 }
 ```
 
 **Reviewer question:** `get_post_type()` on every write is one extra query on the upload hot path.
 Alternatives: gate it behind `WP_DEBUG`, or check only when the caller passes a suspicious ID.
-Recommendation: run it unconditionally in 2.3.3, measure, and downgrade to a debug-only assertion in
+Recommendation: run it unconditionally in 2.4.0, measure, and downgrade to a debug-only assertion in
 2.5.0 if it shows up in profiling. Correctness first, then optimise with evidence.
 
 ### 4.3 Delete stops purging
@@ -667,7 +667,7 @@ Runs once, idempotent, ordered:
 
 Production Rule 4: schema changes require a Migrator bump and a minor release minimum. This carries
 a Migrator bump, a behaviour change on album privacy storage, and a new `_doing_it_wrong()` on a
-public repository method. Content is minor-shaped; the branch is 2.3.3 (single active development branch) and the release number is decided at tag time.
+public repository method. Content is minor-shaped; the branch is 2.4.0 (single active development branch) and the release number is decided at tag time.
 
 An interim patch was considered and **rejected** — see §7. The guard it would have carried was
 temporary by construction, and shipping code to 100+ sites with a known expiry date is worse than
@@ -677,12 +677,12 @@ the window it would have closed.
 
 ## 7. Staging — one release, no interim patch
 
-**Owner decision, 2026-08-08: no dead code.** The earlier plan proposed a 2.3.3 patch carrying a
+**Owner decision, 2026-08-08: no dead code.** The earlier plan proposed a 2.4.0 patch carrying a
 *guarded* purge in `Album::on_before_delete()`. That guard existed only to tolerate legacy rows and
-would have been deleted again in 2.3.3 — ~15 lines shipped to 100+ sites with a known expiry date.
+would have been deleted again in 2.4.0 — ~15 lines shipped to 100+ sites with a known expiry date.
 Dropped.
 
-Everything ships together on the 2.3.3 development branch, Free and Pro paired:
+Everything ships together on the 2.4.0 development branch, Free and Pro paired:
 
 | Piece | Detail |
 |---|---|
@@ -708,7 +708,7 @@ The three harms are not equally reversible:
 | Album create overwrites a photo's slug + privacy | Row survives, values are wrong |
 | Media added to a colliding album gets the wrong privacy | Correctable once the cause is fixed |
 
-Shipping nothing before 2.3.3 means the **irreversible** one stays live for the whole development
+Shipping nothing before 2.4.0 means the **irreversible** one stays live for the whole development
 window. That is the accepted trade. Two things reduce it:
 
 1. **`diagnose_cpt_ids` can be circulated ahead of the release** — it is read-only and touches
@@ -765,7 +765,7 @@ window. That is the accepted trade. Two things reduce it:
    `/wp/v2/mvs-albums`). Not optional.
 3b. **What are album categories for** (§3.4) — remove (a, recommended), make them work (b), or
    unify (c)? Check support history for customers relying on them.
-4. ~~Stage A as a 2.3.3 patch~~ **RESOLVED — no.** Owner: no dead code. Single 2.3.3 release (§7).
+4. ~~Stage A as a 2.4.0 patch~~ **RESOLVED — no.** Owner: no dead code. Single 2.4.0 release (§7).
 5. **Guard cost** (§4.2) — unconditional or debug-only?
 6. ~~Album privacy cascade~~ **WITHDRAWN as a bug** (§4.6.1) — album privacy governs album
    visibility only, so non-cascading is coherent. Remains open as a **UX** question: offer a bulk

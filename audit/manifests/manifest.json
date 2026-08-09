@@ -5628,8 +5628,8 @@
 		"delta_2026_08_08": "Targeted manual delta (agent-enumeration-only per CLAUDE.md; NOT generator output). 2.4.0-dev album/collection ID-collision fix: Migrator CURRENT_VERSION 25 -> 26. New post meta keys on mvs_album: _mvs_privacy, _mvs_album_type, _mvs_mpp_gallery_id, _mvs_rtmedia_album_id, _mvs_bb_album_id (album attributes moved out of mvs_media_index / mvs_media_meta). New option: mvs_cpt_id_collisions (IDs preserved by v26 for review). REMOVED: album categories (mvs_category writes on mvs_album), and the \"categories\" field from album REST responses — BREAKING for clients. mvs_category / mvs_tag now register with meta_box_cb => false. MediaRepository::set()/set_many() refuse wp_posts IDs. Full refresh due at release.",
 		"delta_2026_08_09": {
 			"method": "Targeted manual delta, agent-enumeration-only per CLAUDE.md. NOT generator output.",
-			"scope": "P1.2 query discipline for the document library (plan/document-library-build.md), paired with Pro 2.3.3.",
-			"corrects_prior_entry": "delta_2026_08_08 is labelled '2.4.0-dev'. There is one development branch and it is 2.3.3; 2.3.2 is the last released version. The work in that entry is 2.3.3, not 2.4.0.",
+			"scope": "P1.2 query discipline for the document library (plan/document-library-build.md), paired with Pro 2.4.0.",
+			"corrects_prior_entry": "delta_2026_08_08 is labelled '2.4.0-dev'. There is one development branch and it is 2.4.0; 2.3.2 is the last released version. The work in that entry is 2.4.0, not 2.4.0.",
 			"classes_added": [
 				"WPMediaVerse\\Core\\MediaTypes - the canonical media_type vocabulary. Constants MEDIA, DOCUMENTS, ALL, MEDIA_LIBRARY, LEGACY_DOCUMENT; static in_clause(array $types, string $column='media_type'): array{0:string,1:string[]} and is_known(string): bool. Every media surface builds its type predicate here. in_clause() is ALWAYS a positive IN(...) list and returns '1 = 0' for an empty set, so a mistake narrows to nothing rather than widening to everything."
 			],
@@ -5637,12 +5637,12 @@
 				"MediaRepository::query() / ::query_count() / ::query_by_author() accept a new 'media_types' arg (string[]), default MediaTypes::MEDIA_LIBRARY. This is the single seam every listing shares; the document surfaces will pass MediaTypes::DOCUMENTS."
 			],
 			"deprecated": [
-				"CacheService::get_user_stats() - @deprecated 2.3.3, delegates to MediaRepository::get_user_stats(), removal 4.0. Held duplicate SQL that had DRIFTED (no status filter where the repository has one), so the two could report different numbers for the same member.",
-				"CacheService::get_moderation_counts() - @deprecated 2.3.3, delegates to MediaRepository::get_moderation_counts(), removal 4.0. Duplicate SQL, no callers."
+				"CacheService::get_user_stats() - @deprecated 2.4.0, delegates to MediaRepository::get_user_stats(), removal 4.0. Held duplicate SQL that had DRIFTED (no status filter where the repository has one), so the two could report different numbers for the same member.",
+				"CacheService::get_moderation_counts() - @deprecated 2.4.0, delegates to MediaRepository::get_moderation_counts(), removal 4.0. Duplicate SQL, no callers."
 			],
 			"deprecation_note": "Both are public methods on the container-registered 'cache' service, so Production Rule 1 forbids deleting them in the release that deprecates them. Kept as caching delegates: the duplicate SQL is gone, the symbol is not.",
 			"args_now_redundant": [
-				"MediaRepository::query() arg 'exclude_empty_media_type' - still accepted and still does what its name says (Production Rule 2), but a positive type list already excludes the empty string. Its original purpose is also gone: the album stub rows it was written for stopped being written in 2.3.3 and were removed by Migrator v26."
+				"MediaRepository::query() arg 'exclude_empty_media_type' - still accepted and still does what its name says (Production Rule 2), but a positive type list already excludes the empty string. Its original purpose is also gone: the album stub rows it was written for stopped being written in 2.4.0 and were removed by Migrator v26."
 			],
 			"behavior_changes": [
 				"Documents (media_type='document') are excluded from every MEDIA surface: the /media feed, albums, smart collections, profile counts and thumbnail samples, member stats, interest covers, who-to-follow ranking, the admin All Media list and its status tabs, the Stats page cards and CSV export, and every listing routed through MediaRepository::query().",
@@ -5677,7 +5677,7 @@
 			],
 			"counts_delta": {
 				"migrator_version": "25 -> 26",
-				"plugin_version_in_summary": "2.3.1 -> 2.3.2 (2.3.2 released; 2.3.3 in development, constants bump at release)"
+				"plugin_version_in_summary": "2.3.1 -> 2.3.2 (2.3.2 released; 2.4.0 in development, constants bump at release)"
 			}
 		}
 	},

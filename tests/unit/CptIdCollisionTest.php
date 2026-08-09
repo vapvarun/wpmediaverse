@@ -18,7 +18,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * @since 2.3.3
+ * @since 2.4.0
  */
 class CptIdCollisionTest extends WP_UnitTestCase {
 

@@ -8,7 +8,7 @@
  * carrying its own list.
  *
  * @package WPMediaVerse
- * @since   2.3.3
+ * @since   2.4.0
  */
 
 namespace WPMediaVerse\Core;
@@ -18,14 +18,14 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Canonical media_type groups.
  *
- * @since 2.3.3
+ * @since 2.4.0
  */
 final class MediaTypes {
 
 	/**
 	 * Types that belong to the media library.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string[]
 	 */
 	public const MEDIA = array( 'image', 'video', 'audio' );
@@ -33,7 +33,7 @@ final class MediaTypes {
 	/**
 	 * Types that belong to the document library.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string[]
 	 */
 	public const DOCUMENTS = array( 'document' );
@@ -46,7 +46,7 @@ final class MediaTypes {
 	 * an untyped row is a data defect, not content, and a surface that shows it is
 	 * showing a bug to a member.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string[]
 	 */
 	public const ALL = array( 'image', 'video', 'audio', 'document' );
@@ -60,7 +60,7 @@ final class MediaTypes {
 	 * deliberately uploaded. They stay readable at their permalink and appear in no
 	 * library listing.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string
 	 */
 	public const LEGACY_DOCUMENT = 'legacy_document';
@@ -88,7 +88,7 @@ final class MediaTypes {
 	 * no folder and no scan, so the document library must not claim them. Adopting
 	 * them is a deliberate, owner-initiated migration, never an upgrade side effect.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 * @var string[]
 	 */
 	public const MEDIA_LIBRARY = array( 'image', 'video', 'audio', 'legacy_document' );
@@ -106,7 +106,7 @@ final class MediaTypes {
 	 * an inclusion answers "what is this surface for", which is the question that
 	 * stays correct when a new type is added.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param string[] $types  One of the group constants, or an explicit subset.
 	 * @param string   $column Qualified column name, e.g. 'm.media_type'.
@@ -133,7 +133,7 @@ final class MediaTypes {
 	/**
 	 * Whether a stored value is a type this plugin recognises.
 	 *
-	 * @since 2.3.3
+	 * @since 2.4.0
 	 *
 	 * @param string $type Stored media_type value.
 	 * @return bool

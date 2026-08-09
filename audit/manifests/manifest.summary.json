@@ -396,5 +396,5 @@
 		"new_class": "Social/SuggestionService (cached candidate pool, big-site-safe)",
 		"spec": "docs/plans/app/MEDIAVERSE-ACTIVATION-SPEC.md"
 	},
-	"counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.3.3 in development). migrator_version 25->26. New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). See generated.delta_2026_08_09 in manifest.json."
+	"counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.4.0 in development). migrator_version 25->26. New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). See generated.delta_2026_08_09 in manifest.json."
 }

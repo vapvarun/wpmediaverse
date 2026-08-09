@@ -92,7 +92,7 @@ class PrivacyService {
 		}
 
 		// Album privacy is a property of the album post, not of any media row.
-		// Before 2.3.3 this read mvs_media_index at media_id = <album post ID>, which
+		// Before 2.4.0 this read mvs_media_index at media_id = <album post ID>, which
 		// on a colliding ID returned an unrelated PHOTO's privacy and clamped this
 		// item against it. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
@@ -135,7 +135,7 @@ class PrivacyService {
 		// Resolve the item's author, and with it which KIND of thing this ID is.
 		//
 		// Albums and collections are CPTs; media lives in mvs_media_index. Since
-		// 2.3.3 those are two clean ID spaces — a CPT never writes an index row — so
+		// 2.4.0 those are two clean ID spaces — a CPT never writes an index row — so
 		// the post type is authoritative and cheap to trust.
 		//
 		// This replaces the media_type sniff added by 3cfff321 for Basecamp
