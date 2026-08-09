@@ -126,3 +126,170 @@ every panel and endpoint still checks its own capability.
 `wp_cli` not bare `wp`; Playwright MCP tools, never Playwright scripts; never
 seed fixtures with `$wpdb->insert()` at a chosen `media_id`; verify every UI
 change at 390px; never write artifacts to `$HOME`.
+
+---
+
+# Document UX spec
+
+The design settled on during this session. Recorded here because it lived in
+artifacts and screenshots, and those do not survive a new session.
+
+Two rules shaped all of it, both from Varun, both non-obvious enough to restate:
+
+> **Actions belong to the object.** Keep single-document and folder actions on
+> the row itself rather than compacting everything into one toolbar. Member
+> usability is the first priority — a member should not have to select a thing
+> and then travel somewhere else to act on it.
+
+> **Show what exists, not what is possible.** Filter chips are built from the
+> types actually present (`document_type_counts()`), never the full vocabulary.
+> Eleven chips of which nine return zero is worse than three that all work.
+
+---
+
+## Two screens, and only two
+
+### 1. Global — `/explore-document/`
+
+All **public** documents on the site. The equivalent of Explore for media, and
+it deliberately mirrors it: same search field, same chip row, same grid rhythm,
+so a member who has used Explore already knows this page.
+
+- `.mvs-explore-search` — full-text search across extracted content
+- `.mvs-tag-cloud` — type chips **built from what is present**
+- No drive tabs. This screen is not about whose document it is.
+
+Built. Templates: `templates/documents.php`.
+
+### 2. Mine — the member's drive
+
+Inside My Media, not a separate destination. Two sections on **one** screen —
+*My Documents* and *Documents shared with me* — because, in Varun's words,
+"so people do not have to go anywhere."
+
+Upload lives on this screen too. The original bounce was that the documents tab
+showed a list but sent you elsewhere to add to it; a list you cannot add to is
+half a feature.
+
+Built: drive, folders, upload-in-place, per-row actions.
+Not built: the *shared with me* section as a distinct band, trash.
+
+---
+
+## URLs — pretty, not fragments
+
+`?drive=my-drive&folder=69#documents` was the thing to kill. Fragments were
+called out specifically: **"# link will not work as it will always confuse."**
+A fragment cannot be resolved server-side, cannot be paginated, and cannot be
+linked to reliably.
+
+Rewrites in `Core\TemplateLoader`:
+
+```
+^<slug>/documents/page/([0-9]+)/?$
+^<slug>/documents/(.+?)/page/([0-9]+)/?$
+^<slug>/documents/(.+?)/?$
+^<slug>/documents/?$
+^<slug>/(media|albums|favorites|collections|challenges|battles|tournaments)/?$
+```
+
+Query vars: `mvs_doc_view`, `mvs_doc_path`, `mvs_doc_page`, `mvs_section`.
+
+Folder paths are **slug paths**, resolved through `FolderService::find_by_path()`
+against the materialised path (`/12/48/`). Slugs are unique **per parent**, not
+per drive — two folders may both hold a `contracts` child.
+
+`DriveActions::redirect()` strips `drive`, `folder` and `doc_page` on the way
+back so a write never re-introduces the legacy query string into a pretty URL.
+
+Built.
+
+---
+
+## Navigation — a vertical rail
+
+Eight sections across the top was too many; the rail gives room to group and
+reads better as the list grows. Rendered from `DashboardSections::grouped()`.
+
+- Group headings are **earned**: a heading appears over two or more items, so
+  "Compete" above a single item called "Compete" cannot happen.
+- **Compete is one item** pointing at `/compete/`, not three hash tabs.
+- Counts are pills at the far end, tabular figures, inverted when active.
+- Below 860px the headings are hidden and the rail becomes a scroller.
+
+Built. Still open: moving the profile block (avatar, name, View/Edit Profile)
+into the rail to reclaim the vertical space it currently costs — deferred
+because it carries an inline edit form.
+
+---
+
+## The drive itself
+
+**Row anatomy**, left to right: type badge (`DIR`, `MD`, `PDF`…), name, items
+or size, modified, owner, actions.
+
+- A folder row shows **item count**; a document row shows **size**. Same column,
+  different question, because "1 item" and "41 B" answer what each thing is.
+- Owner reads **You** for your own, not your display name.
+- The action control is per row. Panels must not be clipped — the drive uses
+  rounded first/last rows instead of `overflow: hidden` on the container, which
+  was what cut the first panel off.
+
+**Actions** (all through `DriveActions`, one handler, one nonce, one ownership
+proof): rename, move, privacy, trash, restore — for **both** documents and
+folders. Plain POST with post/redirect/get, matching the server-rendered page
+they live on; a refresh never repeats a write.
+
+Outcomes come back through `mvs_done` and render as a notice.
+`WP_Error` codes keep **their** message — "a folder called Contracts is already
+here" is actionable; "something went wrong" is not.
+
+**Guards worth not re-deriving:**
+
+- `can_edit`, never `can_view` — a document shared to *read* must not be
+  renamable, movable out of the owner's folder, or binnable.
+- A media id must never be writable through the document drive; it would be a
+  second, unguarded way to edit a photo.
+- Moving *into* someone else's folder is refused — it files a document where
+  its owner cannot reach it.
+- Folder privacy **cascades** to contents. A folder that says private while its
+  contents stay public is the bug that cascade prevents.
+- Trash **withdraws from delivery** — `can_read()` refuses non-publish, so a
+  trashed document stops being served even on a live share link.
+
+Built.
+
+---
+
+## Still to design and build
+
+- **Trash view + restore.** Start here. See the top of this document.
+- **Shared with me** as its own band on the drive screen.
+- **Share to a person or role** — link sharing works; targeted sharing does not.
+- **Folder header** — the current folder's name, path breadcrumb and its own
+  actions, at the top of a folder view.
+- **Multi-select + bulk move.** This is the one place a compacted toolbar is
+  right, because the action genuinely applies to a set. It does not replace the
+  per-row actions; it sits alongside them.
+- **Drive search box** — global search exists, in-drive search does not.
+- **Location column**, so a search result says where it lives.
+- **Global sort** across the drive.
+- **Download from the row**, without opening the document first.
+- **Admin**: folder management and privacy editing. Entry-point rule 18 wants
+  all three surfaces — frontend, backend, API — and admin is the thin one.
+
+---
+
+## Things already fixed, so they are not re-found
+
+- Uploads ignored the target folder: the client sent `folder_id`, the endpoint
+  read `folder`. Found only by uploading into a folder and looking.
+- Chips showed all eleven possible types, nine returning zero.
+- The single-document page rendered nothing — no viewer was wired.
+- Share links were completely dead until `permission_from_link()` existed.
+- `get_permalink()` was called on an index id rather than a post id.
+- Quota was accounted but not enforced on the document ingest path.
+- Markdown containing HTML was refused, then stored as `text/plain`.
+- The document type dispatch trusted the claimed MIME; it now dispatches on
+  extension, because `wp_check_filetype_and_ext()` returns an extension-derived
+  MIME for non-images and an archive marker check was unreachable behind it.
