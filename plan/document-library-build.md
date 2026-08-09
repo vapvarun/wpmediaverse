@@ -40,7 +40,7 @@ Never fill a login form by hand.
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
 | **3 — Pro engine** | P3.1 – P3.9 | ✅ **COMPLETE** — P3.1–P3.9 all done, every Self-check run |
-| **4 — REST + app contract** | P4.1 – P4.5 | 🟡 P4.1 ✅ P4.2 ✅ P4.3 ✅ P4.5 ✅ — all proven live with an Application Password. **P4.4 `/app/config` + ETags ⬜** is the only one left |
+| **4 — REST + app contract** | P4.1 – P4.5 | ✅ **COMPLETE** — every task proven live, and the phase gate (Application Password alone) holds across all of them |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
 | **6 — Admin** | P6.1 – P6.3 | ⬜ |
 | **7 — Parity verification** | P7.1 – P7.5 | ⬜ builds nothing, proves things |
@@ -481,7 +481,7 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 | **P4.1 ✅** | Folder CRUD routes on `mvs-pro/v1` (design §9) | ✅ **DONE — the phase gate is proven, not asserted.** A real Application Password over HTTP completed the whole cycle with no cookie and no nonce: 201 create, 200 read, 200 rename, nested create, 200 delete, honest `X-WP-Total` from a dedicated `COUNT(*)`. Anonymous 401, another member's drive 403, duplicate name 409. The breadcrumb blocker is asserted on the **JSON**, since the API is where it leaks first. Pro's prefix opts into private-community mode as `/mvs-pro/v1/` — slash-delimited, because the gate uses `strpos()` and a bare prefix would never match while looking covered |
 | **P4.2 ✅** | Document list/get/update/delete, honest `X-WP-Total` / `X-WP-TotalPages` | ✅ **DONE.** Verified live across three pages: **3 + 3 + 1 rows rendered, header saying 7 on every page.** The total reports what the VIEWER can see, not what the table holds — a raw `COUNT(*)` would promise rows a shared folder then withholds. Permissions for a whole page resolve in **two queries** via `prefetch()`; the repository deliberately returns rows without ACLs so the check can be batched |
 | **P4.3 ✅** | Share/grant routes; grant authority per **D1** | ✅ **DONE, verified live.** A member holding **EDIT** reads the document (200) and is refused both a grant and a link mint (**403** each); the owner does both. An editor cannot even LIST the shares — that list names other members. The raw link token is returned **once** and only its SHA-256 stored, so neither the listing nor anyone reading the database can re-expose it. **D4** holds: link sharing is refused while private-community mode is armed |
-| **P4.4** | `/app/config` additions + ETags | Re-request with `If-None-Match` → **304** in the network panel |
+| **P4.4 ✅** | `/app/config` additions + ETags | ✅ **DONE, verified over HTTP: a matching `If-None-Match` returns 304 with ZERO bytes**, a stale one the full 1755. The tag derives from the RESPONSE, so it changes exactly when the payload does. **Two bugs found while building it** — `/app/config` was gated by private-community mode (an app couldn't read the one route that says how to sign in), and the gate's exempt list matched by bare `strpos()`, so every exemption was silently wider than the route it named |
 | **P4.5 ✅** | `/me/shared` — documents shared *with* the viewer | ✅ **DONE.** Two members, each seeing only their own grants; a revoked grant drops out. Lists **direct document grants only** — a folder grant surfaces as the FOLDER, navigable in its owner's tree, because flattening its contents here would show the same document twice with no way to tell why |
 
 **Phase gate** — **every action drivable with an Application Password alone** (design §16). Prove it
@@ -664,3 +664,33 @@ and 3** — flat, as design §5 claims. Cleanup restored the install precisely.
   already returns the number it must show, asserted equal to what the cascade moves.
 - **Tier 2–4 viewers** (P5) are the other half of `/preview`: it serves PDF inline and refuses
   everything else, so text/Markdown/CSV rendering must be server-side HTML, never the file.
+
+
+---
+
+## Phase 4 close-out — 2026-08-09
+
+**All five tasks done, every Self-check run against live HTTP rather than asserted in a suite.**
+
+The phase gate — *every action drivable with an Application Password alone* — holds across folders,
+documents, sharing and config. Verified with real credentials, no cookie and no nonce: full folder
+CRUD, document pagination, a share attempt by a non-owner, and a 304.
+
+### What the Self-checks caught
+
+| Self-check | What it found |
+|---|---|
+| **P4.4 ETag** | `/app/config` was **gated by private-community mode** — an app got 401 from the one route that tells it how to sign in. Chicken-and-egg: needed the config to authenticate, needed to authenticate to read the config |
+| **The test for that fix** | The gate's exempt list matched with a bare `strpos()`, so `/mvs/v1/app/config` also exempted `/mvs/v1/app/configuration`. **Every exemption was wider than the route it named** — a privacy gate growing a hole nobody added |
+| **P4.2 pagination** | Confirmed the header total must be what the viewer can see, not a raw `COUNT(*)`; the latter promises rows a shared folder then withholds |
+| **Duplication gate** | The second identical controller constructor, extracted to `AbstractDocumentController` **before** P4.3 made it a third |
+
+### Carried into Phase 5
+
+- **`/preview` serves PDF inline and refuses everything else**, so tiers 2-4 must render server-side
+  HTML or a card. `AppConfig::preview_tiers()` already publishes which type gets which treatment, and
+  a test pins that every type appears in **exactly one** tier.
+- **Restore routes** are still owed: `DELETE` trashes rather than destroys precisely so they remain
+  possible, and P4.x's `/restore` pair has not been built.
+- `/documents/bulk`, `/documents/search` and `POST /documents` (upload) from design §9 are also not
+  built — the upload path exists as `DocumentIngestService` but has no REST route yet.
