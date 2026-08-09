@@ -13,10 +13,10 @@ The **display contract** is the UX artifact: <https://claude.ai/code/artifact/70
 | Branch | **`2.4.0`** on BOTH repos, pushed |
 | Last released | 2.3.2. **2.3.3 does not exist** — it was renamed to 2.4.0 because Phase 2 changes schema and Production Rule 4 forbids that in a patch |
 | Version constants | still `2.3.2` — they bump at release, not now |
-| Free tests | **347 green** (321 + 5 P1.5, + 6 P2.2, + 15 P3.1) |
+| Free tests | **348 green** (321 + 5 P1.5, + 6 P2.2, + 15 P3.1) |
 | Pro Documents | `Documents\{FolderService, PermissionService, StorageResolver, HealthCheck}` |
 | Free Migrator | **v27** (was 26). `mvs_db_version` on the reference install is 27 |
-| Pro tests | **298: 40 errors / 43 failures — the SAME PRE-EXISTING set** (was 215/40/43; +6 P2.3, +23 P3.2, +22 P3.3, +21 P3.6/7, +11 P3.8 — all passing). Basecamp 10184313297. Do not mistake this for something you broke |
+| Pro tests | **328: 40 errors / 43 failures — the SAME PRE-EXISTING set** (was 215/40/43; +6 P2.3, +23 P3.2, +22 P3.3, +21 P3.6/7, +11 P3.8, +16 P3.4, +14 P3.5 — all passing). Basecamp 10184313297. Do not mistake this for something you broke |
 | Pro Migrator | **v11** (was 10). `mvs_pro_db_version` on the reference install is 11 |
 | local-CI | green on both |
 
@@ -132,28 +132,16 @@ media surface. The guarantee holds; it is simply not machine-enforced yet. So bu
    Buyer check PASS (buyer + owner can view, stranger cannot) after **two malformed attempts**:
    a grant with no `mvs_access_rules` row is inert by design, and `rule_type` `'purchase'` does not
    exist (`role|capability|membership|code`). Both looked like "the migration broke paid access".
-4. **Phase 3 — the engine.** 🟡 **P3.1 and P3.2 done.**
-   - **P3.1 `Core\DocumentTypes` — in FREE, not Pro.** Free's `UploadService` is the ingest path and
-     Free must never depend on Pro, so the vocabulary sits beside `MediaTypes`. The build plan was
-     ambiguous about which plugin; that is the resolution. No default branch; zip-marker check runs
-     both directions; rtMedia's catch-all folded in (what `resolve()` declines becomes
-     `legacy_document`, so imports stay whole without inventing documents). 15 tests.
-   - **P3.2 `Documents\FolderService`** (Pro). Virtual root, id-based materialized paths, depth 12,
-     async subtree rewrite above 5,000 rows. Move-into-descendant, cross-drive nesting and
-     whole-subtree depth are all refused with tests — those are the ones that corrupt a tree
-     silently rather than throwing. 23 tests.
-   - **P3.3 PermissionService** ✅ — ladder in 2 queries/page (asserted over 25 docs), D1 enforced,
-     and the **breadcrumb blocker folded in here** rather than P9.2, so it cannot leak through
-     Phase 4's API.
-   - **P3.6 + P3.7 storage privacy** ✅ **release blockers.** The browser self-check FAILED first:
-     a stored document returned **200 with its contents** on nginx while the guard check said
-     protected. The check now probes the server over HTTP; Site Health goes critical and prints the
-     nginx rule. Verified 200/critical → apply rule → **403/good**.
-   - **P3.8 T2 cascade** ✅ **release blocker.** Tightening cascades, loosening does not, folder
-     flips first so the window fails closed. Verified live on a real folder + 3 documents.
-   - **Next: P3.4 ingest, P3.5 delivery, P3.9 scale fixture** (which gates P4/P8/P9). Sequencing
-     decision (owner, this session): **blockers first, then fill in** — all three Phase 3 blockers
-     are now done.
+4. **Phase 3 — the engine.** ✅ **COMPLETE — all nine tasks, every Self-check run.**
+   Full close-out at the end of `plan/document-library-build.md`. The short version: the
+   Self-checks earned their keep, catching five defects of which **three were silent** — a
+   document served at HTTP 200 on nginx while the guard check reported protected; `folder_id`
+   missing from `MediaRepository::$index_columns` so every document's folder would have gone to
+   meta and `KEY doc_listing` matched nothing; and `DocumentTypes` accepting a text file named
+   `photo.jpg` as a document.
+   Scale measured, not asserted: `EXPLAIN` uses `doc_listing`, prefetch flat at **2 queries**
+   across pages 1–3. **P3.9 exists, so P4/P8/P9 are unblocked.**
+
 5. **Phase 9 — the UI**, against the display contract in the artifact. #13–#17.
 6. **#18 QA checklist** — only once #13–#17 are complete. Blocked in the graph so it cannot start early.
 
