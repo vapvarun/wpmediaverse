@@ -414,6 +414,42 @@ deferred, each for a reason:
 Steps 1–5 and 7 are additive and safe. **Step 6 changes behaviour** — it moves
 documents off media's size limit — and is where the verification below bites.
 
+### BUILT 2026-08-10 — what changed against this plan
+
+All seven steps landed. Three departures, each because the browser said so:
+
+- **Step 7 does not add `mvs_media_max_size` / `mvs_media_allowed_types`.** Media
+  already exposes both as filters, under its own option-shaped names
+  (`mvs_max_upload_size`, `mvs_allowed_file_types`). Adding second names for them
+  would be the duplicate-that-fights this plan spends §5 forbidding — two filters,
+  one setting, and whichever a developer found first wins. Only the genuinely
+  missing one was added: `mvs_default_privacy`, through the new
+  `SettingsHelper::get_default_privacy()`, so all three of media's upload settings
+  now have a code-level override and documents have their own four. Symmetry of
+  SHAPE, not of spelling.
+- **"Off" reached two more surfaces than this plan enumerated.** With the toggle
+  unticked the dashboard tab and the admin screen went away as designed — and the
+  public **Explore Documents** page carried on listing documents, every row
+  linking to a **single document page** that also still rendered, complete with a
+  Download button pointing at a delivery route the switch had taken down. Both now
+  answer the switch: the listing goes quiet (owners are told why, visitors get
+  nothing), and a document permalink 404s. Covered by
+  `tests/unit/DocumentSurfacesTest.php`.
+- **The capability had to become a META capability to be worth granting.** The
+  Documents admin screen was gated on `manage_options`, so `manage_mvs_documents`
+  appeared in the role matrix and ticking it changed nothing — the delegation the
+  cap exists for was impossible, exactly as §8 predicted ("the one most likely to
+  be missed, because `manage_options` currently masks it"). The screen now asks
+  for `DocumentListPage::CAP`, mapped in `Core\Plugin::map_document_screen_cap()`
+  to "holds the document cap, or is an administrator". Verified in the browser
+  with a purpose-built role that has no `manage_options`.
+
+Also worth recording because it is invisible from any screen: an unchecked
+checkbox POSTs nothing, so `options.php` stores `null` → `''` under
+`sanitize_text_field`, and `''` is not `'0'`. With an on-by-default reader that
+makes unticking the box do nothing at all. `DocumentSettings::sanitize_enabled()`
+exists for that one reason.
+
 ### Sequencing against D5
 
 Defaulting `_anon_links` off reduces the exposure but **does not satisfy D5**.

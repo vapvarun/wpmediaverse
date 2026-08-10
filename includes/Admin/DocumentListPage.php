@@ -54,12 +54,32 @@ class DocumentListPage {
 	private const PER_PAGE = 20;
 
 	/**
+	 * Who may open this screen.
+	 *
+	 * A META capability, mapped in `Core\Plugin`, not a primitive one. It
+	 * resolves to `manage_mvs_documents` for anyone holding it and falls back to
+	 * `manage_options` for everyone else — so it ADMITS a role the owner
+	 * delegated document administration to, without ever locking out an
+	 * administrator whose site never ran the grant.
+	 *
+	 * The whole point of the named capability is that document administration
+	 * can be handed to a role that must NOT have `manage_options`. Gating this
+	 * screen on `manage_options` made the capability decorative: it appeared in
+	 * the role matrix, ticking it changed nothing, and the delegation it exists
+	 * for was impossible.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	public const CAP = 'mvs_manage_documents_screen';
+
+	/**
 	 * Render the screen.
 	 *
 	 * @since 2.4.0
 	 */
 	public static function render(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( self::CAP ) ) {
 			wp_die( esc_html__( 'You do not have permission to view this page.', 'wpmediaverse' ) );
 		}
 
@@ -323,7 +343,7 @@ class DocumentListPage {
 		// inline `manage_options` checks genuinely narrow individual actions.
 		// Here they would be provably dead code — PHPStan says so — and a dead
 		// check reads like protection while protecting nothing.
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( self::CAP ) ) {
 			return;
 		}
 

@@ -844,6 +844,23 @@ class Shortcodes {
 	 * @return string
 	 */
 	public function render_documents( $atts ): string {
+		// Documents switched off means OFF, on this page too.
+		//
+		// Found in the browser rather than in review: with the master toggle
+		// unticked the dashboard tab and the admin screen both went away, and
+		// this page carried on listing documents — every row linking to a single
+		// page that no longer renders anything, because the viewer is one of the
+		// surfaces the switch takes down. A member would have met a list of dead
+		// links on the one document page still standing.
+		//
+		// Editors get told why the page went blank; visitors get nothing rather
+		// than an explanation of a setting that is none of their business.
+		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
+			return current_user_can( 'manage_options' )
+				? '<p class="mvs-documents__notice">' . esc_html__( 'Documents are switched off in WPMediaVerse settings, so this page has nothing to list.', 'wpmediaverse' ) . '</p>'
+				: '';
+		}
+
 		$atts = shortcode_atts(
 			array(
 				'per_page' => 20,

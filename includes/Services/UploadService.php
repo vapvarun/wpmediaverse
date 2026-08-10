@@ -313,7 +313,7 @@ class UploadService {
 		// BEFORE store() because the destination driver depends on it: private
 		// and other restricted media must never leave the local server.
 		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
-		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
+		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		$requested_privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : '';
 
 		// 'dm' is conversation-scoped media (DM attachments) — a system-level

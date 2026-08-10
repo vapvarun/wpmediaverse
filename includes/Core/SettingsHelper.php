@@ -248,4 +248,38 @@ class SettingsHelper {
 		/** This filter is documented in includes/Services/UploadService.php */
 		return (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
 	}
+
+	/**
+	 * The privacy a newly uploaded media item lands on.
+	 *
+	 * The third of media's three upload settings to gain a code-level override.
+	 * Size and allowed types already had one — `mvs_max_upload_size` and
+	 * `mvs_allowed_file_types` — and privacy was the odd one out, read straight
+	 * from the option at two call sites with no way for a site to change it
+	 * without a settings write.
+	 *
+	 * Introduced alongside the document library's `mvs_document_default_privacy`
+	 * so the two features are uniform. They stay SEPARATE on purpose: a photo is
+	 * posted and a document is private until shared, so one control answering for
+	 * both is how an owner publishes files they thought were private.
+	 *
+	 * Purely additive — the option still decides where a site has set one, so no
+	 * shipped install changes behaviour.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string Privacy slug.
+	 */
+	public static function get_default_privacy(): string {
+		$privacy = (string) get_option( 'mvs_default_privacy', 'public' );
+
+		/**
+		 * The privacy a new upload is created with.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $privacy Privacy slug from the site's settings.
+		 */
+		return (string) apply_filters( 'mvs_default_privacy', $privacy );
+	}
 }

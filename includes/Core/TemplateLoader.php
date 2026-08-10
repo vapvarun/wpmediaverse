@@ -472,6 +472,25 @@ class TemplateLoader {
 			return;
 		}
 
+		// A document, on a site with documents switched off, is not a page.
+		//
+		// Found in the browser: with the master toggle unticked the drive tab and
+		// the admin screen went away, and this page carried on rendering a
+		// document card with a Download button — pointing at a delivery route
+		// that is one of the surfaces the switch takes down, so the button 404'd
+		// while the page around it looked fine. Answering 404 for the whole page
+		// is the honest version of what the owner asked for, and it is the same
+		// answer a Free-only site has always given.
+		//
+		// The row is untouched. Switching documents back on brings the page back.
+		if (
+			in_array( (string) ( $media['media_type'] ?? '' ), array( 'document', 'legacy_document' ), true )
+			&& ! \WPMediaVerse\Core\Plugin::documents_enabled()
+		) {
+			self::render_branded_404( 'media', $slug );
+			return;
+		}
+
 		/**
 		 * Let a host redirect single-media URLs somewhere else instead of rendering
 		 * the standalone page. BuddyNext uses this to send /media/{slug}/ to the

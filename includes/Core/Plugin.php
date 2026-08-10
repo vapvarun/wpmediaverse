@@ -195,6 +195,10 @@ class Plugin {
 		// Custom admin menu (replaces CPT-based menu).
 		add_action( 'admin_menu', array( self::class, 'register_admin_menu' ), 5 );
 
+		// "Administrator, OR a role the owner delegated documents to" — one
+		// capability, two ways to hold it. See map_document_screen_cap().
+		add_filter( 'map_meta_cap', array( self::class, 'map_document_screen_cap' ), 10, 3 );
+
 		$blocks = new BlockRegistrar();
 		$blocks->init();
 
@@ -1013,7 +1017,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'Documents', 'wpmediaverse' ),
 			__( 'Documents', 'wpmediaverse' ),
-			'manage_options',
+			\WPMediaVerse\Admin\DocumentListPage::CAP,
 			\WPMediaVerse\Admin\DocumentListPage::SLUG,
 			array( \WPMediaVerse\Admin\DocumentListPage::class, 'render' )
 		) : '';
@@ -1801,6 +1805,37 @@ class Plugin {
 		}
 
 		return $filtered;
+	}
+
+	/**
+	 * Resolve the Documents-screen meta capability.
+	 *
+	 * WordPress's `add_submenu_page()` takes ONE capability, and the answer here
+	 * is genuinely "either of two": an administrator, or a role the owner
+	 * delegated document administration to. Expressing that as a meta cap is the
+	 * WordPress-shaped way — the alternative, hardcoding `manage_mvs_documents`
+	 * on the menu, would take the screen away from any administrator on a site
+	 * where the grant had not run.
+	 *
+	 * Free defines this even though Pro owns the primitive. `user_can()` on a
+	 * capability nobody has granted is simply false, so on a Free-only site the
+	 * mapping resolves to `manage_options` and nothing changes.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $caps    Primitive capabilities required.
+	 * @param string   $cap     Capability being checked.
+	 * @param int      $user_id User being checked.
+	 * @return string[]
+	 */
+	public static function map_document_screen_cap( $caps, $cap, $user_id ): array {
+		if ( \WPMediaVerse\Admin\DocumentListPage::CAP !== $cap ) {
+			return (array) $caps;
+		}
+
+		return user_can( (int) $user_id, 'manage_mvs_documents' )
+			? array( 'manage_mvs_documents' )
+			: array( 'manage_options' );
 	}
 
 	/**
