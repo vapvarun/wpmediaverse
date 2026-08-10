@@ -153,9 +153,9 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 					<tbody>
 						<?php
 						foreach ( $mvs_items as $mvs_row ) :
-							$mvs_id       = (int) $mvs_row['media_id'];
-							$mvs_type     = \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $mvs_row['file_type'] );
-							$mvs_trashed  = 'trash' === (string) $mvs_row['status'];
+							$mvs_id        = (int) $mvs_row['media_id'];
+							$mvs_type      = \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $mvs_row['file_type'] );
+							$mvs_trashed   = 'trash' === (string) $mvs_row['status'];
 							$mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_id );
 							?>
 							<tr>
@@ -172,33 +172,120 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 									<input id="mvs-doc-<?php echo esc_attr( (string) $mvs_id ); ?>" type="checkbox" name="document[]" value="<?php echo esc_attr( (string) $mvs_id ); ?>" />
 								</th>
 								<td class="column-title column-primary" data-colname="<?php esc_attr_e( 'Title', 'wpmediaverse' ); ?>">
+									<?php
+									// The title opens the EDIT screen, the way it
+									// does in All Posts. It used to leave for the
+									// front end, which is the one thing an admin
+									// does not expect a title to do.
+									$mvs_edit_url = add_query_arg(
+										array(
+											'page'     => \WPMediaVerse\Admin\DocumentListPage::SLUG,
+											'view'     => 'single',
+											'media_id' => $mvs_id,
+										),
+										admin_url( 'admin.php' )
+									);
+									?>
 									<strong>
-										<?php if ( $mvs_permalink ) : ?>
-											<a href="<?php echo esc_url( $mvs_permalink ); ?>"><?php echo esc_html( (string) $mvs_row['title'] ); ?></a>
-										<?php else : ?>
-											<?php echo esc_html( (string) $mvs_row['title'] ); ?>
-										<?php endif; ?>
+										<a href="<?php echo esc_url( $mvs_edit_url ); ?>"><?php echo esc_html( (string) $mvs_row['title'] ); ?></a>
 									</strong>
 									<?php if ( $mvs_trashed ) : ?>
 										<span class="mvs-documents-admin__badge"><?php esc_html_e( 'Trashed', 'wpmediaverse' ); ?></span>
 									<?php endif; ?>
 									<div class="row-actions">
+										<span class="edit">
+											<a href="<?php echo esc_url( $mvs_edit_url ); ?>"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a> |
+										</span>
+										<?php
+										// Not offered for a trashed document:
+										// delivery refuses a non-publish row, so
+										// the link would 404 for its own owner.
+										?>
+										<?php if ( $mvs_permalink ) : ?>
+											<span class="view">
+												<a href="<?php echo esc_url( $mvs_permalink ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View on site', 'wpmediaverse' ); ?></a> |
+											</span>
+										<?php endif; ?>
+										<?php
+										/**
+										 * Filters extra row actions on the documents list.
+										 *
+										 * Pro adds what only Pro can serve, such as a
+										 * download, without Free depending on Pro.
+										 *
+										 * @since 2.4.0
+										 *
+										 * @param string $html     Markup, already escaped.
+										 * @param int    $media_id Document id.
+										 * @param bool   $trashed  Whether it is in the trash.
+										 */
+										// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+										echo apply_filters( 'mvs_document_row_actions', '', $mvs_id, $mvs_trashed );
+										?>
 										<?php if ( $mvs_trashed ) : ?>
 											<span class="restore">
-												<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'page' => \WPMediaVerse\Admin\DocumentListPage::SLUG, 'action' => 'restore', 'media_id' => $mvs_id ), admin_url( 'admin.php' ) ), 'mvs_restore_document_' . $mvs_id ) ); ?>">
+												<a href="
+												<?php
+												echo esc_url(
+													wp_nonce_url(
+														add_query_arg(
+															array(
+																'page' => \WPMediaVerse\Admin\DocumentListPage::SLUG,
+																'action' => 'restore',
+																'media_id' => $mvs_id,
+															),
+															admin_url( 'admin.php' )
+														),
+														'mvs_restore_document_' . $mvs_id
+													)
+												);
+												?>
+															">
 													<?php esc_html_e( 'Restore', 'wpmediaverse' ); ?>
 												</a> |
 											</span>
 										<?php else : ?>
 											<span class="trash">
-												<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'page' => \WPMediaVerse\Admin\DocumentListPage::SLUG, 'action' => 'trash', 'media_id' => $mvs_id ), admin_url( 'admin.php' ) ), 'mvs_trash_document_' . $mvs_id ) ); ?>">
+												<a href="
+												<?php
+												echo esc_url(
+													wp_nonce_url(
+														add_query_arg(
+															array(
+																'page' => \WPMediaVerse\Admin\DocumentListPage::SLUG,
+																'action' => 'trash',
+																'media_id' => $mvs_id,
+															),
+															admin_url( 'admin.php' )
+														),
+														'mvs_trash_document_' . $mvs_id
+													)
+												);
+												?>
+															">
 													<?php esc_html_e( 'Trash', 'wpmediaverse' ); ?>
 												</a> |
 											</span>
 										<?php endif; ?>
 										<span class="delete">
 											<a data-mvs-confirm="<?php esc_attr_e( 'Delete this document permanently? This cannot be undone.', 'wpmediaverse' ); ?>"
-												href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'page' => \WPMediaVerse\Admin\DocumentListPage::SLUG, 'action' => 'delete', 'media_id' => $mvs_id ), admin_url( 'admin.php' ) ), 'mvs_delete_document_' . $mvs_id ) ); ?>">
+												href="
+												<?php
+												echo esc_url(
+													wp_nonce_url(
+														add_query_arg(
+															array(
+																'page' => \WPMediaVerse\Admin\DocumentListPage::SLUG,
+																'action' => 'delete',
+																'media_id' => $mvs_id,
+															),
+															admin_url( 'admin.php' )
+														),
+														'mvs_delete_document_' . $mvs_id
+													)
+												);
+												?>
+														">
 												<?php esc_html_e( 'Delete permanently', 'wpmediaverse' ); ?>
 											</a>
 										</span>

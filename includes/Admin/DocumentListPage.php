@@ -63,6 +63,15 @@ class DocumentListPage {
 			wp_die( esc_html__( 'You do not have permission to view this page.', 'wpmediaverse' ) );
 		}
 
+		// A sub-view on the same page rather than a submenu of its own —
+		// `MediaListPage` already establishes the pattern, and a new submenu
+		// would be one more slug for the admin IA work to reconcile.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view switch.
+		if ( isset( $_GET['view'] ) && 'single' === sanitize_key( wp_unslash( $_GET['view'] ) ) ) {
+			self::render_single();
+			return;
+		}
+
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only filters on a GET screen.
 		$mvs_page     = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
 		$mvs_doc_type = isset( $_GET['doc_type'] ) ? sanitize_key( wp_unslash( $_GET['doc_type'] ) ) : '';
@@ -111,6 +120,132 @@ class DocumentListPage {
 		$mvs_notice  = self::consume_notice();
 
 		require MVS_PLUGIN_DIR . 'templates/admin/documents.php';
+	}
+
+	/**
+	 * Render one document: what it is, and what can be corrected about it.
+	 *
+	 * The list screen offered Trash and Delete permanently and nothing else —
+	 * every action on it destroyed something, and an owner could not so much as
+	 * see what a document WAS without leaving wp-admin for the front end.
+	 *
+	 * A sub-view rather than a submenu, following `MediaListPage`.
+	 *
+	 * @since 2.4.0
+	 */
+	private static function render_single(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view.
+		$mvs_id = isset( $_GET['media_id'] ) ? (int) $_GET['media_id'] : 0;
+
+		// The SAME guard the destructive actions use. Without it this screen is
+		// a second, unguarded way to edit a photo — it writes the title, slug
+		// and privacy of whatever id it is handed.
+		if ( $mvs_id <= 0 || ! self::is_document( $mvs_id ) ) {
+			wp_die(
+				esc_html__( 'That document could not be found.', 'wpmediaverse' ),
+				'',
+				array( 'back_link' => true )
+			);
+		}
+
+		$mvs_repo = Plugin::container()->get( 'media_repository' );
+		$mvs_row  = $mvs_repo->get_all( $mvs_id );
+
+		if ( ! $mvs_row ) {
+			wp_die(
+				esc_html__( 'That document could not be found.', 'wpmediaverse' ),
+				'',
+				array( 'back_link' => true )
+			);
+		}
+
+		$mvs_author    = (int) ( $mvs_row['post_author'] ?? 0 );
+		$mvs_user      = $mvs_author ? get_userdata( $mvs_author ) : null;
+		$mvs_trashed   = 'publish' !== (string) ( $mvs_row['status'] ?? 'publish' );
+		$mvs_permalink = $mvs_trashed ? '' : (string) $mvs_repo->get_permalink( $mvs_id );
+		$mvs_notice    = self::consume_notice();
+
+		$mvs_tags = wp_get_object_terms( $mvs_id, 'mvs_tag', array( 'fields' => 'names' ) );
+		$mvs_tags = is_wp_error( $mvs_tags ) ? array() : $mvs_tags;
+
+		/**
+		 * Filters extra panels on the single-document admin screen.
+		 *
+		 * Pro answers with the things only Pro can serve — a preview, a download
+		 * link, where the document sits on its owner's drive. Free must not
+		 * learn how a document is streamed to build this screen.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $html     Markup, already escaped.
+		 * @param int    $media_id Document id.
+		 * @param array  $row      The index row.
+		 */
+		$mvs_extra = (string) apply_filters( 'mvs_document_admin_panels', '', $mvs_id, $mvs_row );
+
+		require MVS_PLUGIN_DIR . 'templates/admin/document-single.php';
+	}
+
+	/**
+	 * Save an edit from the single-document screen.
+	 *
+	 * Writes through the SAME three calls the REST update path uses —
+	 * `set_many()`, `generate_unique_slug()` and `wp_set_object_terms()` — so
+	 * there is one implementation of what editing a document means, and this
+	 * screen cannot drift from what the API does.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $media_id Document id.
+	 */
+	private static function handle_single_save( int $media_id ): void {
+		check_admin_referer( 'mvs_save_document_' . $media_id );
+
+		if ( ! self::is_document( $media_id ) ) {
+			return;
+		}
+
+		$repo = Plugin::container()->get( 'media_repository' );
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verified above.
+		$title       = isset( $_POST['mvs_title'] ) ? sanitize_text_field( wp_unslash( $_POST['mvs_title'] ) ) : '';
+		$slug        = isset( $_POST['mvs_slug'] ) ? sanitize_title( wp_unslash( $_POST['mvs_slug'] ) ) : '';
+		$description = isset( $_POST['mvs_description'] ) ? wp_kses_post( wp_unslash( $_POST['mvs_description'] ) ) : '';
+		$privacy     = isset( $_POST['mvs_privacy'] ) ? sanitize_key( wp_unslash( $_POST['mvs_privacy'] ) ) : '';
+		$tags_raw    = isset( $_POST['mvs_tags'] ) ? sanitize_text_field( wp_unslash( $_POST['mvs_tags'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		// An empty title is REFUSED, not stored. A document with no name is
+		// unfindable in every listing at once, and the REST path already
+		// answers 400 for the same submission.
+		if ( '' === trim( $title ) ) {
+			self::redirect_with_notice( 1, 'empty_title', $media_id );
+			return;
+		}
+
+		$update = array(
+			'title'       => $title,
+			'description' => $description,
+		);
+
+		// THE SLUG IS NEVER REGENERATED FROM THE TITLE. A member correcting a
+		// typo would otherwise silently break every link anybody holds to the
+		// document. It changes only when a new one is typed, and then it is
+		// made unique against every other row.
+		if ( '' !== $slug && $slug !== (string) $repo->get( $media_id, 'slug' ) ) {
+			$update['slug'] = $repo->generate_unique_slug( $slug, $media_id );
+		}
+
+		if ( in_array( $privacy, array( 'public', 'members', 'private' ), true ) ) {
+			$update['privacy'] = $privacy;
+		}
+
+		$repo->set_many( $media_id, $update );
+
+		$tags = array_values( array_filter( array_map( 'trim', explode( ',', $tags_raw ) ) ) );
+		wp_set_object_terms( $media_id, $tags, 'mvs_tag' );
+
+		self::redirect_with_notice( 1, 'saved', $media_id );
 	}
 
 	/**
@@ -195,6 +330,13 @@ class DocumentListPage {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- each branch verifies its own nonce below.
 		if ( isset( $_POST['do_bulk'] ) ) {
 			self::handle_bulk();
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside.
+		if ( isset( $_POST['mvs_save_document'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside.
+			self::handle_single_save( isset( $_POST['media_id'] ) ? (int) $_POST['media_id'] : 0 );
 			return;
 		}
 
@@ -295,17 +437,22 @@ class DocumentListPage {
 	 * @param int    $count   How many rows the action applied to.
 	 * @param string $outcome trashed|restored|deleted.
 	 */
-	private static function redirect_with_notice( int $count, string $outcome ): void {
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'        => self::SLUG,
-					'mvs_done'    => $count,
-					'mvs_outcome' => $outcome,
-				),
-				admin_url( 'admin.php' )
-			)
+	private static function redirect_with_notice( int $count, string $outcome, int $media_id = 0 ): void {
+		$args = array(
+			'page'        => self::SLUG,
+			'mvs_done'    => $count,
+			'mvs_outcome' => $outcome,
 		);
+
+		// Editing returns to the document being edited, not to the list. A save
+		// that bounces you back to page one of a filtered list has thrown away
+		// where you were, and the next edit starts by finding the row again.
+		if ( $media_id > 0 ) {
+			$args['view']     = 'single';
+			$args['media_id'] = $media_id;
+		}
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -338,8 +485,33 @@ class DocumentListPage {
 			case 'deleted':
 				/* translators: %s: number of documents. */
 				return sprintf( _n( '%s document deleted.', '%s documents deleted.', $count, 'wpmediaverse' ), number_format_i18n( $count ) );
+
+			case 'saved':
+				return __( 'Document updated.', 'wpmediaverse' );
+
+			case 'empty_title':
+				// A refusal, not a success. It says which field and why, because
+				// "could not save" leaves the member hunting for the reason.
+				return __( 'A document needs a title, so nothing was saved.', 'wpmediaverse' );
 		}
 
 		return '';
+	}
+
+	/**
+	 * The CSS class the last outcome should wear.
+	 *
+	 * A refusal that renders in the green success box tells the member the
+	 * opposite of what happened, which is worse than no notice at all.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string
+	 */
+	public static function notice_class(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only.
+		$outcome = isset( $_GET['mvs_outcome'] ) ? sanitize_key( wp_unslash( $_GET['mvs_outcome'] ) ) : '';
+
+		return 'empty_title' === $outcome ? 'notice-error' : 'notice-success';
 	}
 }
