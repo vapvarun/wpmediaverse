@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-10T05:34:14Z",
+    "generated_at": "2026-08-10T16:35:57Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -18,7 +18,7 @@
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
         "free_files_scanned": 197,
-        "pro_files_scanned": 197
+        "pro_files_scanned": 204
     },
     "cross_plugin_duplicates": [
         {
@@ -297,7 +297,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/FavoriteController.php",
-                    "lines": "263-263",
+                    "lines": "285-285",
                     "method": "FavoriteController::auth_check"
                 },
                 {
@@ -365,7 +365,7 @@
         },
         {
             "hash": "bd44162e59b66412fb4b95b9467229baefb15e4f",
-            "instances": 4,
+            "instances": 3,
             "token_count": 32,
             "sites": [
                 {
@@ -385,12 +385,6 @@
                     "file": "includes/Privacy/PrivacyUIService.php",
                     "lines": "74-74",
                     "method": "PrivacyUIService::init"
-                },
-                {
-                    "plugin": "pro",
-                    "file": "includes/Documents/AdminDocumentPanels.php",
-                    "lines": "64-64",
-                    "method": "AdminDocumentPanels::register"
                 }
             ]
         },
@@ -604,12 +598,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "679-679",
+                    "lines": "691-691",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "704-704",
+                    "lines": "716-716",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -943,7 +937,7 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "666-666",
+                    "lines": "678-678",
                     "method": "create_item_permissions_check"
                 },
                 {

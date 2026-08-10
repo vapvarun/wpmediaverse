@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 2.4.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-08-10 05:31:48+00:00\n"
+"POT-Creation-Date: 2026-08-10 06:55:12+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -396,7 +396,7 @@ msgstr ""
 #: includes/Admin/OverviewPage.php:396 includes/Admin/StatsPage.php:438
 #: includes/Admin/TagManagementPage.php:687
 #: includes/Services/GDPRService.php:176 src/blocks/media-stats/render.php:147
-#: templates/admin/document-single.php:53 templates/admin/documents.php:145
+#: templates/admin/document-single.php:65 templates/admin/documents.php:145
 #: templates/admin/documents.php:174 templates/album.php:168
 #: templates/media-single.php:638 templates/partials/dashboard-content.php:737
 #: templates/partials/dashboard-content.php:838
@@ -1091,7 +1091,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:943
 #: dist/wpmediaverse/templates/partials/follows-modal.php:29
 #: includes/Admin/CollectionMetaBox.php:233
-#: templates/admin/document-single.php:89
+#: templates/admin/document-single.php:101
 #: templates/partials/dashboard-content.php:131
 #: templates/partials/dashboard-content.php:500
 #: templates/partials/dashboard-content.php:858
@@ -1550,7 +1550,7 @@ msgstr ""
 #: includes/Admin/ModerationQueue.php:360
 #: includes/Admin/TagManagementPage.php:688
 #: includes/Services/GDPRService.php:184 includes/Services/GDPRService.php:247
-#: templates/admin/document-single.php:116 templates/admin/documents.php:146
+#: templates/admin/document-single.php:153 templates/admin/documents.php:146
 #: templates/admin/documents.php:297
 #: templates/partials/dashboard-content.php:747
 #: templates/partials/usage-history.php:50
@@ -1893,13 +1893,13 @@ msgid "File size"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:1489
-#: includes/Admin/MediaListPage.php:1517 templates/admin/document-single.php:85
+#: includes/Admin/MediaListPage.php:1517 templates/admin/document-single.php:97
 msgid "Who can see it"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:1491
 #: includes/Admin/MediaListPage.php:1519
-#: templates/admin/document-single.php:124 templates/admin/documents.php:150
+#: templates/admin/document-single.php:161 templates/admin/documents.php:150
 #: templates/admin/documents.php:301
 msgid "Uploaded"
 msgstr ""
@@ -2041,7 +2041,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:1615
 #: includes/Admin/MediaListPage.php:1643
-#: templates/admin/document-single.php:120 templates/admin/documents.php:147
+#: templates/admin/document-single.php:157 templates/admin/documents.php:147
 #: templates/admin/documents.php:298
 msgid "Size"
 msgstr ""
@@ -4288,7 +4288,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:870
 #: includes/Admin/TagManagementPage.php:123 includes/Core/Plugin.php:1029
 #: includes/Core/Plugin.php:1030 includes/Taxonomies/MediaTag.php:35
-#: templates/admin/document-single.php:77 templates/media-single.php:668
+#: templates/admin/document-single.php:89 templates/media-single.php:668
 #: templates/partials/dashboard-content.php:873
 msgid "Tags"
 msgstr ""
@@ -4366,7 +4366,7 @@ msgstr ""
 #: includes/Admin/TagManagementPage.php:251
 #: includes/Admin/TagManagementPage.php:660
 #: includes/Admin/TagManagementPage.php:754
-#: templates/admin/document-single.php:61
+#: templates/admin/document-single.php:73
 msgid "Slug"
 msgstr ""
 
@@ -6752,7 +6752,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:844
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:935
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:276
-#: includes/Services/GDPRService.php:180 templates/admin/document-single.php:71
+#: includes/Services/GDPRService.php:180 templates/admin/document-single.php:83
 #: templates/album.php:173 templates/media-single.php:643
 #: templates/partials/dashboard-content.php:742
 #: templates/partials/dashboard-content.php:847
@@ -7622,8 +7622,8 @@ msgid "Be the first to share something with the community!"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:91
-#: templates/admin/document-single.php:113
-#: templates/admin/document-single.php:117 templates/admin/documents.php:297
+#: templates/admin/document-single.php:150
+#: templates/admin/document-single.php:154 templates/admin/documents.php:297
 #: templates/admin/documents.php:299 templates/documents.php:206
 #: templates/media-single.php:100
 msgid "Unknown"
@@ -8434,7 +8434,7 @@ msgid ""
 msgstr ""
 
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:330
-#: templates/admin/document-single.php:100
+#: templates/admin/document-single.php:115
 #: templates/partials/shared-ui-frame.php:330
 msgid "Save changes"
 msgstr ""
@@ -10043,43 +10043,47 @@ msgid ""
 "owner, until it is restored."
 msgstr ""
 
-#: templates/admin/document-single.php:57
+#: templates/admin/document-single.php:59
+msgid "Document details"
+msgstr ""
+
+#: templates/admin/document-single.php:69
 msgid "What the member and everyone they share it with sees."
 msgstr ""
 
-#: templates/admin/document-single.php:66
+#: templates/admin/document-single.php:78
 msgid ""
 "The address of the document. Changing it breaks links anybody already "
 "holds, so it is left alone unless you change it here."
 msgstr ""
 
-#: templates/admin/document-single.php:81
+#: templates/admin/document-single.php:93
 msgid "Separated by commas. Clearing the field removes every tag."
 msgstr ""
 
-#: templates/admin/document-single.php:88
+#: templates/admin/document-single.php:100
 msgid "Only the owner"
 msgstr ""
 
-#: templates/admin/document-single.php:90
+#: templates/admin/document-single.php:102
 msgid "Anyone"
 msgstr ""
 
-#: templates/admin/document-single.php:92
+#: templates/admin/document-single.php:104
 msgid ""
 "People the owner shared it with directly keep their access whatever this "
 "says."
 msgstr ""
 
-#: templates/admin/document-single.php:107
+#: templates/admin/document-single.php:144
 msgid "This document"
 msgstr ""
 
-#: templates/admin/document-single.php:112
+#: templates/admin/document-single.php:149
 msgid "Owner"
 msgstr ""
 
-#: templates/admin/document-single.php:133 templates/admin/documents.php:206
+#: templates/admin/document-single.php:170 templates/admin/documents.php:206
 msgid "View on site"
 msgstr ""
 

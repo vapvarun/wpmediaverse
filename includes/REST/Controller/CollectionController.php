@@ -143,17 +143,27 @@ class CollectionController extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 		$page     = $page ? (int) $page : 1;
 
-		$query = new \WP_Query(
-			array(
-				'post_type'      => 'mvs_collection',
-				'post_status'    => 'publish',
-				'author'         => get_current_user_id(),
-				'posts_per_page' => $per_page,
-				'paged'          => $page,
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-			)
+		// Allowlisted before it reaches WP_Query — see AlbumController.
+		$orderby = (string) $request->get_param( 'orderby' );
+		$orderby = in_array( $orderby, array( 'date', 'title' ), true ) ? $orderby : 'date';
+		$order   = 'asc' === strtolower( (string) $request->get_param( 'order' ) ) ? 'ASC' : 'DESC';
+		$search  = (string) $request->get_param( 's' );
+
+		$query_args = array(
+			'post_type'      => 'mvs_collection',
+			'post_status'    => 'publish',
+			'author'         => get_current_user_id(),
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+			'orderby'        => $orderby,
+			'order'          => $order,
 		);
+
+		if ( '' !== $search ) {
+			$query_args['s'] = $search;
+		}
+
+		$query = new \WP_Query( $query_args );
 
 		$items = array();
 		foreach ( $query->posts as $post ) {
@@ -571,6 +581,22 @@ class CollectionController extends WP_REST_Controller {
 				'default'           => 1,
 				'minimum'           => 1,
 				'sanitize_callback' => 'absint',
+			),
+			// Same toolbar vocabulary as media, albums and favourites.
+			's'        => array(
+				'type'              => 'string',
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'orderby'  => array(
+				'type'    => 'string',
+				'default' => 'date',
+				'enum'    => array( 'date', 'title' ),
+			),
+			'order'    => array(
+				'type'    => 'string',
+				'default' => 'desc',
+				'enum'    => array( 'asc', 'desc' ),
 			),
 		);
 	}

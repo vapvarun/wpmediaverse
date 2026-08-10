@@ -1373,6 +1373,206 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Render the toolbar that sits above a panel's list or grid.
+	 *
+	 * ONE shape for every list surface: search, count, filters, sort, direction.
+	 * Before this there was exactly one toolbar in the whole dashboard — the
+	 * document drive's — and it was a private method on a Pro class. Media,
+	 * Albums, Favourites and Collections had no search, no sort, no filter and
+	 * no count at all, so "the same product" meant five different answers to
+	 * "how do I find one of these".
+	 *
+	 * BOTH RENDERING MODELS ARE SERVED, deliberately, because the dashboard runs
+	 * two: the document drive is a server-rendered GET form (works with
+	 * JavaScript off, every view a shareable URL), and the other four panels are
+	 * client-side Interactivity. This helper emits the markup; the caller says
+	 * how it is driven. `form` wraps it in a GET form for the server-rendered
+	 * side; `attrs` on any control carries the Interactivity bindings for the
+	 * client side. Both write the SAME query keys — `s`, `orderby`, `order` —
+	 * so a URL from one panel reads the same as a URL from another.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type string $id       Id prefix for label/control association. Required.
+	 *     @type bool   $form     Wrap in a GET form (server-rendered panels).
+	 *     @type array  $hidden   [ name => value ] hidden fields carried on submit.
+	 *     @type array  $search   [ name, value, label, placeholder, attrs ].
+	 *     @type string $count    Pre-formatted, already-pluralised count line.
+	 *     @type array  $filters  List of [ name, label, value, options, attrs ].
+	 *     @type array  $sort     [ name, label, value, options, attrs ].
+	 *     @type array  $order    [ name, label, value, options, attrs ].
+	 *     @type string $submit   Submit label. Omit for client-driven panels,
+	 *                            which apply on change and need no button.
+	 *     @type string $class    Extra wrapper class(es).
+	 * }
+	 * @return string Escaped HTML.
+	 */
+	public function render_panel_toolbar( array $args = array() ): string {
+		$id     = isset( $args['id'] ) ? (string) $args['id'] : 'mvs-panel';
+		$form   = ! empty( $args['form'] );
+		$extra  = isset( $args['class'] ) ? ' ' . (string) $args['class'] : '';
+		$submit = isset( $args['submit'] ) ? (string) $args['submit'] : '';
+
+		$html = $form
+			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search">'
+			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search">';
+
+		if ( $form && ! empty( $args['hidden'] ) && is_array( $args['hidden'] ) ) {
+			foreach ( $args['hidden'] as $name => $value ) {
+				// Carrying the view across is what stops a filter from teleporting
+				// the member out of the folder or the trash they were looking at.
+				$html .= sprintf(
+					'<input type="hidden" name="%1$s" value="%2$s" />',
+					esc_attr( (string) $name ),
+					esc_attr( (string) $value )
+				);
+			}
+		}
+
+		if ( ! empty( $args['search'] ) && is_array( $args['search'] ) ) {
+			$html .= $this->toolbar_search( $id, $args['search'] );
+		}
+
+		if ( ! empty( $args['count'] ) ) {
+			// aria-live: a client-driven panel rewrites this after a search, and
+			// "3 albums" changing silently is the result a screen reader misses.
+			$html .= '<span class="mvs-panel-toolbar__count" aria-live="polite">' . esc_html( (string) $args['count'] ) . '</span>';
+		}
+
+		$selects = array();
+
+		if ( ! empty( $args['filters'] ) && is_array( $args['filters'] ) ) {
+			foreach ( $args['filters'] as $filter ) {
+				$selects[] = $filter;
+			}
+		}
+
+		foreach ( array( 'sort', 'order' ) as $key ) {
+			if ( ! empty( $args[ $key ] ) && is_array( $args[ $key ] ) ) {
+				$selects[] = $args[ $key ];
+			}
+		}
+
+		foreach ( $selects as $select ) {
+			$html .= $this->toolbar_select( $id, $select );
+		}
+
+		if ( '' !== $submit ) {
+			$html .= '<button type="submit" class="mvs-btn mvs-btn--secondary mvs-panel-toolbar__apply">' . esc_html( $submit ) . '</button>';
+		}
+
+		$html .= $form ? '</form>' : '</div>';
+
+		return $html;
+	}
+
+	/**
+	 * The toolbar's search field.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $id     Id prefix.
+	 * @param array  $search Field config.
+	 * @return string
+	 */
+	private function toolbar_search( string $id, array $search ): string {
+		$name        = isset( $search['name'] ) ? (string) $search['name'] : 's';
+		$value       = isset( $search['value'] ) ? (string) $search['value'] : '';
+		$label       = isset( $search['label'] ) ? (string) $search['label'] : __( 'Search', 'wpmediaverse' );
+		$placeholder = isset( $search['placeholder'] ) ? (string) $search['placeholder'] : $label;
+		$field_id    = $id . '-search';
+
+		return sprintf(
+			'<label class="screen-reader-text" for="%1$s">%2$s</label>'
+			. '<input id="%1$s" class="mvs-panel-toolbar__search" type="search" name="%3$s" value="%4$s" placeholder="%5$s"%6$s />',
+			esc_attr( $field_id ),
+			esc_html( $label ),
+			esc_attr( $name ),
+			esc_attr( $value ),
+			esc_attr( $placeholder ),
+			$this->toolbar_attrs( $search )
+		);
+	}
+
+	/**
+	 * One labelled select in the toolbar.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $id     Id prefix.
+	 * @param array  $select Select config.
+	 * @return string
+	 */
+	private function toolbar_select( string $id, array $select ): string {
+		$name    = isset( $select['name'] ) ? (string) $select['name'] : '';
+		$label   = isset( $select['label'] ) ? (string) $select['label'] : '';
+		$value   = isset( $select['value'] ) ? (string) $select['value'] : '';
+		$options = ( isset( $select['options'] ) && is_array( $select['options'] ) ) ? $select['options'] : array();
+
+		if ( '' === $name || ! $options ) {
+			return '';
+		}
+
+		$field_id = $id . '-' . sanitize_key( $name );
+
+		$html = sprintf(
+			'<label class="screen-reader-text" for="%1$s">%2$s</label><select id="%1$s" class="mvs-panel-toolbar__select" name="%3$s"%4$s>',
+			esc_attr( $field_id ),
+			esc_html( $label ),
+			esc_attr( $name ),
+			$this->toolbar_attrs( $select )
+		);
+
+		foreach ( $options as $option_value => $option_label ) {
+			$html .= sprintf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( (string) $option_value ),
+				selected( $value, (string) $option_value, false ),
+				esc_html( (string) $option_label )
+			);
+		}
+
+		return $html . '</select>';
+	}
+
+	/**
+	 * Extra attributes for a toolbar control.
+	 *
+	 * This is the seam that lets one markup helper serve both engines: the
+	 * client-side panels pass their `data-wp-on--*` bindings through here and
+	 * the server-rendered drive passes nothing.
+	 *
+	 * Attribute NAMES are restricted to `data-*` and `aria-*`. A caller cannot
+	 * reach in and set `onclick`, and cannot overwrite `name`, `value` or `id`
+	 * and quietly repoint the control at a different parameter.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $config Control config, possibly carrying `attrs`.
+	 * @return string Leading-space-prefixed attribute string, or ''.
+	 */
+	private function toolbar_attrs( array $config ): string {
+		if ( empty( $config['attrs'] ) || ! is_array( $config['attrs'] ) ) {
+			return '';
+		}
+
+		$out = '';
+
+		foreach ( $config['attrs'] as $attr => $value ) {
+			$attr = (string) $attr;
+
+			if ( ! preg_match( '/^(data|aria)-[a-z0-9_-]+$/i', $attr ) ) {
+				continue;
+			}
+
+			$out .= sprintf( ' %s="%s"', esc_attr( $attr ), esc_attr( (string) $value ) );
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Render an admin-screen empty-state panel (Coding Rule #11).
 	 *
 	 * Companion to render_block_empty_state() for wp-admin list tables and

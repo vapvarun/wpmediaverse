@@ -116,6 +116,27 @@ $mvs_privacy  = (string) ( $mvs_row['privacy'] ?? 'private' );
 						</button>
 					</p>
 				</form>
+
+				<?php
+				/**
+				 * Panels for the MAIN column of the document screen.
+				 *
+				 * The side column is the wrong home for anything a person reads.
+				 * The document preview started there and a spreadsheet came out
+				 * roughly one character per line — the panel is about 280px, and
+				 * no amount of scrolling makes a grid readable at that width.
+				 *
+				 * So there are two slots: this one for content, and
+				 * `mvs_document_admin_panels` for the facts about the file.
+				 *
+				 * @since 2.4.0
+				 *
+				 * @param string $html     Markup to append. Must be escaped.
+				 * @param int    $media_id Document id.
+				 * @param array  $row      The document's index row.
+				 */
+				echo apply_filters( 'mvs_document_admin_main_panels', '', $mvs_id, $mvs_row ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Filtered markup; every core implementation escapes on the way in.
+				?>
 			</div>
 
 			<div id="postbox-container-1" class="postbox-container">

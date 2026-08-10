@@ -123,6 +123,25 @@ class FavoriteController extends WP_REST_Controller {
 						'minimum'           => 1,
 						'sanitize_callback' => 'absint',
 					),
+					's'             => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'orderby'       => array(
+						'type'    => 'string',
+						'default' => 'favorited',
+						// `favorited` is when the member saved it; `date` is when
+						// the media itself was created. They are different
+						// questions and a member sorting their favourites means
+						// the first one, so it stays the default.
+						'enum'    => array( 'favorited', 'title', 'date' ),
+					),
+					'order'         => array(
+						'type'    => 'string',
+						'default' => 'desc',
+						'enum'    => array( 'asc', 'desc' ),
+					),
 				),
 			)
 		);
@@ -207,7 +226,10 @@ class FavoriteController extends WP_REST_Controller {
 			get_current_user_id(),
 			$collection_id ? (int) $collection_id : null,
 			$per_page,
-			$page
+			$page,
+			(string) $request->get_param( 's' ),
+			(string) $request->get_param( 'orderby' ),
+			(string) $request->get_param( 'order' )
 		);
 
 		// Collect the page's media IDs (skip orphaned favorites) and keep each

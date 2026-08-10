@@ -263,14 +263,26 @@ class AlbumController extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 		$page     = $page ? (int) $page : 1;
 
+		// Allowlisted, never passed through: `orderby` reaches SQL through
+		// WP_Query and an arbitrary string there is an injection surface.
+		$orderby = (string) $request->get_param( 'orderby' );
+		$orderby = in_array( $orderby, array( 'date', 'title' ), true ) ? $orderby : 'date';
+		$order   = 'asc' === strtolower( (string) $request->get_param( 'order' ) ) ? 'ASC' : 'DESC';
+
 		$args = array(
 			'post_type'      => 'mvs_album',
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $page,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
+			'orderby'        => $orderby,
+			'order'          => $order,
 		);
+
+		$search = (string) $request->get_param( 's' );
+
+		if ( '' !== $search ) {
+			$args['s'] = $search;
+		}
 
 		$author = $request->get_param( 'author' );
 		if ( $author ) {
@@ -796,6 +808,25 @@ class AlbumController extends WP_REST_Controller {
 				'type'              => 'string',
 				'enum'              => array( 'default', 'playlist' ),
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			// The dashboard toolbar's vocabulary, identical across every panel:
+			// `s`, `orderby`, `order`. Named `s` rather than core's `search` so
+			// one client helper can drive media, albums, collections and
+			// favourites without a per-panel translation table.
+			's'          => array(
+				'type'              => 'string',
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'orderby'    => array(
+				'type'    => 'string',
+				'default' => 'date',
+				'enum'    => array( 'date', 'title' ),
+			),
+			'order'      => array(
+				'type'    => 'string',
+				'default' => 'desc',
+				'enum'    => array( 'asc', 'desc' ),
 			),
 		);
 	}

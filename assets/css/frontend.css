@@ -2120,6 +2120,118 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* ==========================================================================
+   Panel toolbar — the one shape above every list or grid.
+   Emitted by TemplateHelpers::render_panel_toolbar(). Used by the four
+   dashboard panels (client-driven) and the document drive (GET form), so the
+   two rendering engines look like one product.
+   ========================================================================== */
+
+.mvs-panel-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    margin-bottom: var(--mvs-space-4);
+}
+
+.mvs-panel-toolbar__search {
+    /* Takes the slack so the selects keep their natural width; the floor stops
+       it collapsing to nothing once several filters are present. */
+    flex: 1 1 12rem;
+    min-width: 0;
+    min-height: var(--mvs-touch-min);
+    padding: 0 var(--mvs-space-3);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    /* !important fights BuddyX's bx-tokens-applied.css, whose form rule is
+       `input:not([type="submit"]):not([type="button"]):not([type="checkbox"])
+       :not([type="radio"]):not([type="range"])` — specificity (0,5,1), which no
+       sane class selector beats. Without this the search box stayed white on a
+       dark dashboard while the select beside it went dark, because the theme's
+       grouped selector only carries that weight on its `input` branch.
+       Colour only: layout above is left to lose normally. */
+    background: var(--mvs-surface) !important;
+    color: var(--mvs-text) !important;
+    font-size: var(--mvs-font-md);
+}
+
+.mvs-panel-toolbar__select {
+    min-height: var(--mvs-touch-min);
+    padding: 0 var(--mvs-space-3);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-surface);
+    color: var(--mvs-text);
+    font-size: var(--mvs-font-sm);
+}
+
+.mvs-panel-toolbar__count {
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mvs-panel-toolbar__search:focus-visible,
+.mvs-panel-toolbar__select:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+
+    .mvs-panel-toolbar__search {
+        /* The search owns the first row on a phone; the selects wrap beneath it
+           rather than each being squeezed to a few characters wide. */
+        flex-basis: 100%;
+    }
+
+    .mvs-panel-toolbar__select {
+        flex: 1 1 auto;
+    }
+
+}
+
+/* Dashboard panel loading state.
+   Every panel's `loading` flag was already being SET by the store and read by
+   nothing, so a slow first request rendered an entirely blank panel: the grid
+   was empty and the empty state was deliberately suppressed. This is the other
+   half of that pair, and it is the same markup in all four panels so they say
+   "loading" the same way. */
+.mvs-dashboard-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--mvs-space-2);
+    padding: var(--mvs-space-5) var(--mvs-space-3);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+}
+
+.mvs-dashboard-loading__spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--mvs-border);
+    /* One side inherits the accent so the ring reads as spinning. */
+    border-top-color: var(--mvs-primary);
+    border-radius: 50%;
+    animation: mvs-dashboard-spin 0.7s linear infinite;
+}
+
+@keyframes mvs-dashboard-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .mvs-dashboard-loading__spinner {
+        /* The label still says "Loading…", so removing the spin costs nothing. */
+        animation: none;
+    }
+
+}
+
+/* ==========================================================================
    15. Modal
    ========================================================================== */
 

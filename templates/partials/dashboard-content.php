@@ -22,6 +22,69 @@ do_action( 'mvs_dashboard_before_content' );
 // Grid column count from the display setting, clamped to supported range.
 $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
 
+/*
+ * Panel toolbar setup.
+ *
+ * The toolbar is rendered from the SAME helper the document drive uses, so the
+ * five list surfaces stop being five different answers to "how do I find one of
+ * these". Each panel's initial values come from the URL, which is what makes a
+ * filtered view shareable: the server paints the toolbar in the state the link
+ * asked for, and the client store reads the same keys on init.
+ */
+$mvs_tpl = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+
+// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view state, no write.
+$mvs_toolbar_s       = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'] ) ) : '';
+$mvs_toolbar_orderby = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+$mvs_toolbar_order   = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'asc' : 'desc';
+// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+$mvs_order_options = array(
+	'desc' => __( 'Newest first', 'wpmediaverse' ),
+	'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+);
+
+// Resolved here rather than reusing the copy made further down for the rail:
+// the toolbars are rendered before that point, and capturing a variable that
+// does not exist yet is a null comparison that silently matches nothing.
+$mvs_toolbar_active = \WPMediaVerse\Core\DashboardSections::resolve(
+	get_query_var( 'mvs_doc_view' )
+		? 'documents'
+		: (string) get_query_var( 'mvs_section', '' )
+);
+
+// Only the panel named in the URL adopts the query's toolbar state. Applying it
+// to all four would mean opening Albums with a search you typed in Media.
+$mvs_toolbar_state = static function ( string $slug, string $default_sort ) use ( $mvs_toolbar_active, $mvs_toolbar_s, $mvs_toolbar_orderby, $mvs_toolbar_order ) {
+	$mine = ( $slug === $mvs_toolbar_active );
+
+	return array(
+		's'       => $mine ? $mvs_toolbar_s : '',
+		'orderby' => ( $mine && '' !== $mvs_toolbar_orderby ) ? $mvs_toolbar_orderby : $default_sort,
+		'order'   => $mine ? $mvs_toolbar_order : 'desc',
+	);
+};
+
+$mvs_sort_options_media = array(
+	'date'     => __( 'Date', 'wpmediaverse' ),
+	'trending' => __( 'Trending', 'wpmediaverse' ),
+	'popular'  => __( 'Popular', 'wpmediaverse' ),
+);
+
+$mvs_sort_options_albums      = array(
+	'date'  => __( 'Date', 'wpmediaverse' ),
+	'title' => __( 'Name', 'wpmediaverse' ),
+);
+$mvs_sort_options_collections = $mvs_sort_options_albums;
+
+$mvs_sort_options_favorites = array(
+	// "When you saved it" is a different question from "when it was made", and
+	// for a favourites list the first one is what a member means.
+	'favorited' => __( 'Recently added', 'wpmediaverse' ),
+	'title'     => __( 'Name', 'wpmediaverse' ),
+	'date'      => __( 'Date created', 'wpmediaverse' ),
+);
+
 // Profile data for the header.
 $mvs_current_user = wp_get_current_user();
 $mvs_avatar_url   = get_avatar_url( $mvs_current_user->ID, array( 'size' => 96 ) );
@@ -528,6 +591,45 @@ wp_interactivity_state(
 		</div>
 
 		<!-- Media Grid -->
+		<?php
+		// The SAME toolbar the document drive renders, from the same helper.
+		// Client-driven here, so it applies on change and needs no Apply button.
+		$mvs_tb_media = $mvs_toolbar_state( 'media', 'date' );
+		echo $mvs_tpl->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-media',
+				'search' => array(
+					'name'  => 'q',
+					'label' => __( 'Search your media', 'wpmediaverse' ),
+					'value' => $mvs_tb_media['s'],
+					'attrs' => array(
+						'data-panel'        => 'media',
+						'data-wp-on--input' => 'actions.toolbarSearch',
+					),
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $mvs_tb_media['orderby'],
+					'options' => $mvs_sort_options_media,
+					'attrs'   => array(
+						'data-panel'         => 'media',
+						'data-wp-on--change' => 'actions.toolbarSort',
+					),
+				),
+				'order'  => array(
+					'name'    => 'order',
+					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'value'   => $mvs_tb_media['order'],
+					'options' => $mvs_order_options,
+					'attrs'   => array(
+						'data-panel'         => 'media',
+						'data-wp-on--change' => 'actions.toolbarOrder',
+					),
+				),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
+		?>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.media.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
@@ -564,10 +666,24 @@ wp_interactivity_state(
 				</div>
 			</template>
 		</div>
-		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showMediaEmpty">
-			<span class="mvs-empty-state-icon">&#x2B06;&#xFE0F;</span>
-			<h3><?php esc_html_e( 'No media yet', 'wpmediaverse' ); ?></h3>
-			<p><?php esc_html_e( 'Drag & drop files above or click to upload your first media.', 'wpmediaverse' ); ?></p>
+		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
+			data-wp-bind--hidden="!state.showMediaLoading">
+			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
+			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
+		</div>
+		<div data-wp-bind--hidden="!state.showMediaEmpty">
+			<?php
+			// The canonical empty state (Coding Rule 11). Six surfaces used to
+			// hand-roll this markup while the helper sat on the Free/Pro
+			// interface with no dashboard caller.
+			echo $mvs_tpl->render_block_empty_state(
+				array(
+					'icon'    => 'image',
+					'title'   => __( 'No media yet', 'wpmediaverse' ),
+					'message' => __( 'Upload your first photo, video or audio file to get started.', 'wpmediaverse' ),
+				)
+			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
+			?>
 		</div>
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreMedia">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
@@ -581,6 +697,45 @@ wp_interactivity_state(
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
 		</div>
+		<?php
+		// The SAME toolbar the document drive renders, from the same helper.
+		// Client-driven here, so it applies on change and needs no Apply button.
+		$mvs_tb_albums = $mvs_toolbar_state( 'albums', 'date' );
+		echo $mvs_tpl->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-albums',
+				'search' => array(
+					'name'  => 'q',
+					'label' => __( 'Search your albums', 'wpmediaverse' ),
+					'value' => $mvs_tb_albums['s'],
+					'attrs' => array(
+						'data-panel'        => 'albums',
+						'data-wp-on--input' => 'actions.toolbarSearch',
+					),
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $mvs_tb_albums['orderby'],
+					'options' => $mvs_sort_options_albums,
+					'attrs'   => array(
+						'data-panel'         => 'albums',
+						'data-wp-on--change' => 'actions.toolbarSort',
+					),
+				),
+				'order'  => array(
+					'name'    => 'order',
+					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'value'   => $mvs_tb_albums['order'],
+					'options' => $mvs_order_options,
+					'attrs'   => array(
+						'data-panel'         => 'albums',
+						'data-wp-on--change' => 'actions.toolbarOrder',
+					),
+				),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
+		?>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.albums.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-album-id="context.item.id">
@@ -604,15 +759,72 @@ wp_interactivity_state(
 				</div>
 			</template>
 		</div>
-		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showAlbumsEmpty">
-			<span class="mvs-empty-state-icon">&#128193;</span>
-			<h3><?php esc_html_e( 'No albums yet', 'wpmediaverse' ); ?></h3>
-			<p><?php esc_html_e( 'Create your first album to organize your media into collections.', 'wpmediaverse' ); ?></p>
+		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
+			data-wp-bind--hidden="!state.showAlbumsLoading">
+			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
+			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
+		</div>
+		<div data-wp-bind--hidden="!state.showAlbumsEmpty">
+			<?php
+			// The canonical empty state (Coding Rule 11). Six surfaces used to
+			// hand-roll this markup while the helper sat on the Free/Pro
+			// interface with no dashboard caller.
+			echo $mvs_tpl->render_block_empty_state(
+				array(
+					'icon'    => 'folder',
+					'title'   => __( 'No albums yet', 'wpmediaverse' ),
+					'message' => __( 'Create your first album to organize your media into collections.', 'wpmediaverse' ),
+				)
+			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
+			?>
+		</div>
+		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreAlbums">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.loadMoreAlbums"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
 		</div>
 	</div>
 
 	<!-- My Favorites Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isFavoritesTab">
+		<?php
+		// The SAME toolbar the document drive renders, from the same helper.
+		// Client-driven here, so it applies on change and needs no Apply button.
+		$mvs_tb_favorites = $mvs_toolbar_state( 'favorites', 'favorited' );
+		echo $mvs_tpl->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-favorites',
+				'search' => array(
+					'name'  => 'q',
+					'label' => __( 'Search your favourites', 'wpmediaverse' ),
+					'value' => $mvs_tb_favorites['s'],
+					'attrs' => array(
+						'data-panel'        => 'favorites',
+						'data-wp-on--input' => 'actions.toolbarSearch',
+					),
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $mvs_tb_favorites['orderby'],
+					'options' => $mvs_sort_options_favorites,
+					'attrs'   => array(
+						'data-panel'         => 'favorites',
+						'data-wp-on--change' => 'actions.toolbarSort',
+					),
+				),
+				'order'  => array(
+					'name'    => 'order',
+					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'value'   => $mvs_tb_favorites['order'],
+					'options' => $mvs_order_options,
+					'attrs'   => array(
+						'data-panel'         => 'favorites',
+						'data-wp-on--change' => 'actions.toolbarOrder',
+					),
+				),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
+		?>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.favorites.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
@@ -641,18 +853,24 @@ wp_interactivity_state(
 				</div>
 			</template>
 		</div>
-		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showFavoritesEmpty">
-			<span class="mvs-empty-state-icon">&#x2764;&#xFE0F;</span>
-			<h3><?php esc_html_e( 'No favorites yet', 'wpmediaverse' ); ?></h3>
-			<p><?php esc_html_e( 'Browse the explore page and save media you like!', 'wpmediaverse' ); ?></p>
+		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
+			data-wp-bind--hidden="!state.showFavoritesLoading">
+			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
+			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
+		</div>
+		<div data-wp-bind--hidden="!state.showFavoritesEmpty">
 			<?php
-			$mvs_explore_page = (int) get_option( 'mvs_page_explore', 0 );
-			if ( $mvs_explore_page ) :
-				?>
-				<a href="<?php echo esc_url( get_permalink( $mvs_explore_page ) ); ?>" class="mvs-btn mvs-btn--secondary mvs-btn--small">
-					<?php esc_html_e( 'Explore Media', 'wpmediaverse' ); ?>
-				</a>
-			<?php endif; ?>
+			// The canonical empty state (Coding Rule 11). Six surfaces used to
+			// hand-roll this markup while the helper sat on the Free/Pro
+			// interface with no dashboard caller.
+			echo $mvs_tpl->render_block_empty_state(
+				array(
+					'icon'    => 'heart',
+					'title'   => __( 'No favourites yet', 'wpmediaverse' ),
+					'message' => __( 'Media you favourite appears here so you can find it again.', 'wpmediaverse' ),
+				)
+			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
+			?>
 		</div>
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreFavorites">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
@@ -666,6 +884,45 @@ wp_interactivity_state(
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
 		</div>
+		<?php
+		// The SAME toolbar the document drive renders, from the same helper.
+		// Client-driven here, so it applies on change and needs no Apply button.
+		$mvs_tb_collections = $mvs_toolbar_state( 'collections', 'date' );
+		echo $mvs_tpl->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-collections',
+				'search' => array(
+					'name'  => 'q',
+					'label' => __( 'Search your collections', 'wpmediaverse' ),
+					'value' => $mvs_tb_collections['s'],
+					'attrs' => array(
+						'data-panel'        => 'collections',
+						'data-wp-on--input' => 'actions.toolbarSearch',
+					),
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $mvs_tb_collections['orderby'],
+					'options' => $mvs_sort_options_collections,
+					'attrs'   => array(
+						'data-panel'         => 'collections',
+						'data-wp-on--change' => 'actions.toolbarSort',
+					),
+				),
+				'order'  => array(
+					'name'    => 'order',
+					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'value'   => $mvs_tb_collections['order'],
+					'options' => $mvs_order_options,
+					'attrs'   => array(
+						'data-panel'         => 'collections',
+						'data-wp-on--change' => 'actions.toolbarOrder',
+					),
+				),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
+		?>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.collections.items">
 				<div class="mvs-dashboard-card mvs-collection-card" data-wp-bind--data-collection-id="context.item.id">
@@ -701,10 +958,28 @@ wp_interactivity_state(
 				</div>
 			</template>
 		</div>
-		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showCollectionsEmpty">
-			<span class="mvs-empty-state-icon">&#128218;</span>
-			<h3><?php esc_html_e( 'No collections yet', 'wpmediaverse' ); ?></h3>
-			<p><?php esc_html_e( 'Create a smart collection to auto-organize your media!', 'wpmediaverse' ); ?></p>
+		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
+			data-wp-bind--hidden="!state.showCollectionsLoading">
+			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
+			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
+		</div>
+		<div data-wp-bind--hidden="!state.showCollectionsEmpty">
+			<?php
+			// The canonical empty state (Coding Rule 11). Six surfaces used to
+			// hand-roll this markup while the helper sat on the Free/Pro
+			// interface with no dashboard caller.
+			echo $mvs_tpl->render_block_empty_state(
+				array(
+					'icon'    => 'library',
+					'title'   => __( 'No collections yet', 'wpmediaverse' ),
+					'message' => __( 'Create a smart collection to auto-organize your media!', 'wpmediaverse' ),
+				)
+			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
+			?>
+		</div>
+		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreCollections">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.loadMoreCollections"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
 		</div>
 	</div>
 

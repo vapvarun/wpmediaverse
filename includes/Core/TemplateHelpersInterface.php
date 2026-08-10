@@ -149,4 +149,19 @@ interface TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_admin_empty_state( array $args = array() ): string;
+
+	/**
+	 * Return the toolbar that sits above a panel's list or grid.
+	 *
+	 * On the interface so Pro's document drive renders the SAME toolbar as
+	 * Free's dashboard panels rather than its own private one — which is how
+	 * five list surfaces ended up with five different answers to "how do I find
+	 * one of these".
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args { id, form, hidden[], search[], count, filters[], sort[], order[], submit, class }
+	 * @return string Escaped HTML.
+	 */
+	public function render_panel_toolbar( array $args = array() ): string;
 }

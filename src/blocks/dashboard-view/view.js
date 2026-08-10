@@ -9,6 +9,56 @@
 import { store, getContext } from '@wordpress/interactivity';
 
 /**
+ * Which loader owns each panel, and what its default sort is.
+ *
+ * The four panels answer the same toolbar with the same query keys — `s`,
+ * `orderby`, `order` — so one set of actions drives all of them instead of four
+ * near-identical copies. The defaults differ because the questions differ:
+ * favourites sort by when YOU saved them, everything else by when it was made.
+ */
+const PANELS = {
+	media: { loader: 'loadMedia', orderby: 'date' },
+	albums: { loader: 'loadAlbums', orderby: 'date' },
+	favorites: { loader: 'loadFavorites', orderby: 'favorited' },
+	collections: { loader: 'loadCollections', orderby: 'date' },
+};
+
+/**
+ * Debounce timer for the search field.
+ *
+ * Module-scoped rather than on `state`: it is a timer id, not something any
+ * binding should be able to read or render.
+ */
+let toolbarTimer = null;
+
+/**
+ * Build the toolbar's slice of a panel's query string.
+ *
+ * Only non-default keys are emitted, so an untouched panel requests exactly
+ * what it always did and the URL of an untouched panel stays clean.
+ *
+ * @param {Object} panelState One of state.media / albums / favorites / collections.
+ * @param {string} slug       Panel slug.
+ * @return {string} Query fragment, leading `&`, or ''.
+ */
+function toolbarQuery( panelState, slug ) {
+	const parts = [];
+	const search = ( panelState.s || '' ).trim();
+
+	if ( search ) {
+		parts.push( 's=' + encodeURIComponent( search ) );
+	}
+	if ( panelState.orderby && panelState.orderby !== PANELS[ slug ].orderby ) {
+		parts.push( 'orderby=' + encodeURIComponent( panelState.orderby ) );
+	}
+	if ( panelState.order && panelState.order !== 'desc' ) {
+		parts.push( 'order=' + encodeURIComponent( panelState.order ) );
+	}
+
+	return parts.length ? '&' + parts.join( '&' ) : '';
+}
+
+/**
  * Grab a poster frame from a video File and append it as `thumbnail`.
  *
  * See the twin in src/blocks/media-upload/view.js for the full rationale: a
@@ -101,6 +151,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// My Media
 		media: {
 			items: [],
+			s: '',
+			orderby: 'date',
+			order: 'desc',
 			page: 1,
 			totalPages: 1,
 			loading: false,
@@ -135,6 +188,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Albums
 		albums: {
 			items: [],
+			s: '',
+			orderby: 'date',
+			order: 'desc',
+			page: 1,
+			totalPages: 1,
 			loading: false,
 		},
 		// Album modal
@@ -160,6 +218,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Favorites
 		favorites: {
 			items: [],
+			s: '',
+			orderby: 'favorited',
+			order: 'desc',
 			page: 1,
 			totalPages: 1,
 			loading: false,
@@ -167,6 +228,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Collections
 		collections: {
 			items: [],
+			s: '',
+			orderby: 'date',
+			order: 'desc',
+			page: 1,
+			totalPages: 1,
 			loading: false,
 		},
 		// Pro gamification tabs (data populated by lazy-load actions).
@@ -220,11 +286,29 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isConnectorsTab() { return ( state.activeTab || 'media' ) === 'connectors'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
+		get hasMoreAlbums() { return state.albums.page < state.albums.totalPages; },
+		get hasMoreCollections() { return state.collections.page < state.collections.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading; },
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
 		get showCollectionsEmpty() { return state.collections.items.length === 0 && ! state.collections.loading; },
+
+		/*
+		 * The other half of the empty-state pair.
+		 *
+		 * Each `loading` flag above SUPPRESSES the empty state, and until now
+		 * nothing replaced it: on a slow request a member saw an entirely blank
+		 * panel — no rows, no spinner, no "nothing here yet". These bind the flag
+		 * that was already being set and never read.
+		 *
+		 * Only on the FIRST load. Paging in more must not blank the grid the
+		 * member is already reading.
+		 */
+		get showMediaLoading() { return state.media.loading && state.media.items.length === 0; },
+		get showAlbumsLoading() { return state.albums.loading && state.albums.items.length === 0; },
+		get showFavoritesLoading() { return state.favorites.loading && state.favorites.items.length === 0; },
+		get showCollectionsLoading() { return state.collections.loading && state.collections.items.length === 0; },
 		get showChallengesEmpty() { return state.challenges.items.length === 0 && ! state.challenges.loading; },
 		get showBattlesEmpty() { return state.battles.items.length === 0 && ! state.battles.loading; },
 		get showTournamentsEmpty() { return state.tournaments.items.length === 0 && ! state.tournaments.loading; },
@@ -689,7 +773,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.media.page = page;
 
 			try {
-				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page );
+				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page + toolbarQuery( state.media, 'media' ) );
 				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
 				state.media.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				const data = res.data;
@@ -978,17 +1062,110 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Albums
 		   ===================================================================== */
-		async loadAlbums( ctxOrEvent ) {
+		async loadAlbums( ctxOrEvent, page = 1 ) {
 			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			state.albums.loading = true;
+			state.albums.page = page;
 			try {
-				const res = await apiFetch( ctx, 'albums?author=' + ctx.userId );
+				// per_page + page are REQUIRED, not optional tidiness. Without them
+				// the endpoint applies its own default of 20 and this panel showed
+				// a member's first 20 albums with no way to reach the rest — no
+				// Load More, no pagination, no indication anything was missing.
+				const res = await apiFetch( ctx, 'albums?author=' + ctx.userId + '&per_page=20&page=' + page + toolbarQuery( state.albums, 'albums' ) );
+				state.albums.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				const data = res.data;
-				state.albums.items = data;
+
+				if ( page === 1 ) {
+					state.albums.items = data;
+				} else {
+					state.albums.items = [ ...state.albums.items, ...data ];
+				}
 			} catch {
 				// Ignore.
 			}
 			state.albums.loading = false;
+		},
+
+		loadMoreAlbums() {
+			const ctx = getContext();
+			actions.loadAlbums( ctx, state.albums.page + 1 );
+		},
+
+		/* =====================================================================
+		   Panel toolbar — search, sort, direction.
+
+		   One set of actions for all four panels. The control says which panel
+		   it belongs to via `data-panel`, so adding a fifth panel needs no new
+		   action, only a row in PANELS.
+		   ===================================================================== */
+
+		toolbarSearch( event ) {
+			const ctx = getContext();
+			const slug = event.target.dataset.panel;
+			if ( ! PANELS[ slug ] ) return;
+
+			state[ slug ].s = event.target.value;
+
+			// Debounced: a member typing "holiday" should cost one request, not
+			// seven, and the last keystroke is the one that matters.
+			window.clearTimeout( toolbarTimer );
+			toolbarTimer = window.setTimeout( () => {
+				actions.applyToolbar( ctx, slug );
+			}, 350 );
+		},
+
+		toolbarSort( event ) {
+			const slug = event.target.dataset.panel;
+			if ( ! PANELS[ slug ] ) return;
+			state[ slug ].orderby = event.target.value;
+			actions.applyToolbar( getContext(), slug );
+		},
+
+		toolbarOrder( event ) {
+			const slug = event.target.dataset.panel;
+			if ( ! PANELS[ slug ] ) return;
+			state[ slug ].order = event.target.value;
+			actions.applyToolbar( getContext(), slug );
+		},
+
+		/**
+		 * Re-run a panel's loader from page 1 and write the view into the URL.
+		 *
+		 * The URL is written for the same reason the drive's GET form writes
+		 * one: a filtered view a member cannot send to anybody, or return to
+		 * with the back button, is a view that only half exists.
+		 *
+		 * @param {Object} ctx  Interactivity context.
+		 * @param {string} slug Panel slug.
+		 */
+		applyToolbar( ctx, slug ) {
+			const panelState = state[ slug ];
+			const url = new URL( window.location.href );
+
+			// Only non-defaults are written, so a cleared search leaves a clean
+			// URL rather than `?s=&orderby=date&order=desc`.
+			const set = ( key, value, fallback ) => {
+				if ( value && value !== fallback ) {
+					url.searchParams.set( key, value );
+				} else {
+					url.searchParams.delete( key );
+				}
+			};
+
+			// The URL speaks `q` / `sort` / `order` — the document drive's
+			// vocabulary, so the two engines produce identical links. `s` is a
+			// RESERVED WordPress query var: `?s=Alpha` turns the request into a
+			// site search and the section 404s, which is exactly what happened
+			// the first time this wrote `s`.
+			set( 'q', ( panelState.s || '' ).trim(), '' );
+			set( 'sort', panelState.orderby, PANELS[ slug ].orderby );
+			set( 'order', panelState.order, 'desc' );
+
+			// replaceState, not pushState: typing in a search box must not bury
+			// the previous page under one history entry per keystroke.
+			window.history.replaceState( {}, '', url.toString() );
+
+			actions[ PANELS[ slug ].loader ]( ctx, 1 );
 		},
 
 		/* =====================================================================
@@ -1195,7 +1372,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.favorites.page = page;
 
 			try {
-				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page );
+				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page + toolbarQuery( state.favorites, 'favorites' ) );
 				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
 				state.favorites.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				const data = res.data;
@@ -1231,11 +1408,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Collections
 		   ===================================================================== */
-		async loadCollections( ctxOrEvent ) {
+		async loadCollections( ctxOrEvent, page = 1 ) {
 			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			state.collections.loading = true;
+			state.collections.page = page;
 			try {
-				const res = await apiFetch( ctx, 'collections' );
+				// See loadAlbums: without per_page + page this stopped at the
+				// endpoint's default of 20 and the rest were unreachable.
+				const res = await apiFetch( ctx, 'collections?per_page=20&page=' + page + toolbarQuery( state.collections, 'collections' ) );
+				state.collections.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				const data = res.data;
 				// Enrich with match counts for smart collections.
 				for ( const item of data ) {
@@ -1252,11 +1433,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 						item.matchCount = item.favorites ? item.favorites.length : 0;
 					}
 				}
-				state.collections.items = data;
+				if ( page === 1 ) {
+					state.collections.items = data;
+				} else {
+					state.collections.items = [ ...state.collections.items, ...data ];
+				}
 			} catch {
 				// Ignore.
 			}
 			state.collections.loading = false;
+		},
+
+		loadMoreCollections() {
+			const ctx = getContext();
+			actions.loadCollections( ctx, state.collections.page + 1 );
 		},
 
 		/* =====================================================================
@@ -1617,6 +1807,28 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( hashTab && validTabs.includes( hashTab ) ) {
 				state.activeTab = hashTab;
 			}
+			// Adopt any toolbar state carried in the URL BEFORE the first load,
+			// or a shared link like `?s=holiday&order=asc` would fetch the
+			// unfiltered page and then render a toolbar claiming otherwise.
+			const params = new URLSearchParams( window.location.search );
+			const active = PANELS[ state.activeTab ] ? state.activeTab : null;
+
+			if ( active ) {
+				const search = params.get( 'q' );
+				const orderby = params.get( 'sort' );
+				const order = params.get( 'order' );
+
+				if ( null !== search ) {
+					state[ active ].s = search;
+				}
+				if ( orderby ) {
+					state[ active ].orderby = orderby;
+				}
+				if ( 'asc' === order || 'desc' === order ) {
+					state[ active ].order = order;
+				}
+			}
+
 			// Load the active tab's data.
 			if ( state.activeTab === 'albums' ) {
 				actions.loadAlbums( ctx );

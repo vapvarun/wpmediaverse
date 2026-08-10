@@ -2,7 +2,7 @@ parameters:
 	ignoreErrors:
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
+			count: 2
 			path: includes/Admin/DocumentListPage.php
 
 		-
