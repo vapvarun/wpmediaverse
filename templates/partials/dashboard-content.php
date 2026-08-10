@@ -290,6 +290,23 @@ wp_interactivity_state(
 			? 'documents'
 			: (string) get_query_var( 'mvs_section', '' )
 	);
+
+	// Is there anything to put in the documents panel?
+	//
+	// `$mvs_dash_drive` was READ below and never assigned — anywhere. An
+	// undefined variable is null, `'' !== null` is true, so the gate always
+	// opened and emitted a PHP warning on every dashboard load while doing it.
+	//
+	// The other half of the contract was already built: the drive filter answers
+	// a `probe` request with a marker instead of the whole drive, precisely so
+	// this question can be asked without rendering the answer twice. Nothing
+	// asked it, so that branch was unreachable too. This asks.
+	$mvs_dash_drive = (string) apply_filters(
+		'mvs_documents_drive_html',
+		'',
+		'my-drive',
+		array( 'probe' => true )
+	);
 	?>
 	<?php
 	// The rail and the panels share a grid; everything else on the page — the
