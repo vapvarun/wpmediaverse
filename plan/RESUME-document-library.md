@@ -3,58 +3,86 @@
 **Read this first. It is the handover for the next session.**
 
 Free `wpmediaverse` + Pro `wpmediaverse-pro`, both on branch `2.4.0`.
-Both **clean and pushed** as of 2026-08-10: Free `1bae15b5`, Pro `eafa7a3`.
+Both **clean and pushed** as of 2026-08-11.
 Versions bumped to **2.4.0** in both, `MVS_PRO_MIN_FREE` raised to `2.4.0`,
-changelogs written, `.pot` files regenerated, manifests updated.
+changelogs written, `.pot` files regenerated, manifests carry targeted deltas
+(a full refresh is still owed — see below).
 
 ---
 
-## START HERE (2026-08-10 handover)
+## START HERE (2026-08-11 handover)
 
-**The build is finished. Nothing is half-written.** Every task in
-`plan/document-library-remaining.md` is either built or explicitly withdrawn,
-and the two plan files plus this one are current.
+**The build is finished and the release battery has now run, with ONE gate
+still outstanding.** Both plugins are clean and pushed on branch `2.4.0`.
 
-**The single most important thing to know:** the release battery has never run
-against any of this, and **the unit suite cannot run on this machine at all** —
-the WP test library is absent, so the whole suite dies on
-`AccessRulesServiceTest` before reaching anything. Fix that first if the next
-session is heading for QA, because until then "tests pass" cannot be said about
-any of this work.
+### What has been proven
 
-**Pick up in this order:**
+| Gate | State |
+|---|---|
+| Free local CI | green |
+| Pro local CI | green |
+| Free functional cert | **69 pass, 0 fail, 0 hole** |
+| Pro functional cert | **51 pass, 0 fail, 0 hole** (documents toggle now governed) |
+| Boot smoke, working tree | green, solo and paired |
+| Boot smoke, extracted zips | green — build-release step 7 is unblocked |
+| Combo build end to end | runs to completion; both zips produced |
+| Unit suite | RUNS. The handover claiming it could not was wrong — MySQL was simply unreachable at the time |
 
-1. **Make the unit suite runnable** (WP test library). Blocks QA entirely.
-2. **QA pass** — the plans below are written; nothing in them needs designing.
-3. **Uniform panel anatomy** — asked for twice, not started. Media and
-   Favourites are grids with their own toolbars; Albums and Collections have
-   neither search nor sort. Documents now matches the intended shape and is the
-   reference to copy. This is the largest thing a member would notice.
-4. **Theme-defence sweep** — partial. Done: the rail, the drive toolbar, the
-   bulk bar. Not done: `.mvs-btn` / `.mvs-btn-primary` outside `#buddypress`,
-   the document toolbar, the admin documents screen. **Grep `!important` in the
-   surface before adding declarations** — the rail was losing to the plugin's
-   own armour, not to the theme, and that changed the whole method.
+### The one gate still outstanding
 
-**Two Basecamp cards are live:**
+**The combo BROWSER smoke has not run against 2.4.0.** The build was completed
+with `--skip-browser-smoke`, which the script itself labels "Not for customer
+releases". `qa/.last-smoke-pass.json` is still the **2.3.2** run from
+2026-08-07, and the gate compares that version against the release version — so
+a real `bin/build-release.sh` will refuse to package until the smoke is re-run
+in combo mode against HEAD. That is the next thing to do, and it is the last
+thing between this branch and a shippable release.
 
-- Admin IA (Bugs column) — commented 2026-08-10: **every finding on it is
-  already built**; only the browser verification remains. Someone working from
-  the card text alone would rebuild working code.
-- Document preview coverage (Suggestion List, created 2026-08-10) — **7 of 11
-  file types have no preview**, front end or admin. Only pdf, text, markdown
-  and csv render.
+### Also owed, and honestly not done
 
-**Standing constraints that bit this session:**
+- **Full 2.4.0 manifest refresh.** Both manifests carry targeted deltas for what
+  recent sessions added (the seven document filters, `mvs_managed_caps`,
+  `mvs_default_privacy`, the documents toggle, `manage_mvs_documents`) but their
+  `generated.branch` still reads 2.3.0 / 2.2.0. The document library landed
+  across many sessions; reconciling all of it is its own piece of work.
+- **39 Pro unit failures** in the gamification suites — cross-test pollution,
+  they pass individually and fail in-suite. Pre-existing, unrelated to
+  documents, and no CI gate runs phpunit in either plugin.
+
+### What changed since the last handover
+
+- **Documents settings shipped**: one master toggle (`mvs_pro_documents_enabled`,
+  ABSENT READS AS ON) plus four filters — size, allowed types, default privacy,
+  anonymous links. The size collision with media is gone; documents follow the
+  server's limit, so they may legitimately be larger than photos.
+- **The four P0 security gaps are closed**: D5 rate limiting, the D4 pinning
+  test, honest cloud-storage reporting, the `mvs_document_scan_file` seam and
+  metadata stripping on ingest.
+- **Two surfaces were found ignoring the off switch** — the public Explore
+  Documents listing and the single document page — and a third
+  (`manage_mvs_documents`) was decorative because the admin screen was gated on
+  `manage_options`. All three fixed and covered by tests.
+- **The missing-page-on-upgrade bug is fixed.** `register_activation_hook` never
+  fires on an update, so the Documents page did not exist on any upgrading site.
+  `Activator::maybe_upgrade()` now runs that half on `init`, once per version.
+- **Presentation audit** of the admin list, trash, shared view and the four
+  dashboard panels: real labels instead of `ODF_PRESENTATION`, sane row heights,
+  counts that describe the list rather than one kind of row in it, and a
+  toolbar that stands down on a genuinely empty view but never on a filtered one.
+
+**Standing constraints that bit these sessions:**
 
 - `mcp-local-wp` `wp_cli`, never bare `wp`.
 - Verify as `journey-member`, **never as admin** — admin passes guards a member
-  does not. The auto-login mu-plugin now switches users rather than bailing.
-- Every UI change checked at 390px **and in dark mode** in the same pass.
-- Edit a registration site **before** deleting the class it points at. Deleting
-  first fataled the site twice today.
-- `readme.txt` version bumps are a targeted edit to the stable tag — a blanket
-  search-and-replace rewrites the historic changelog headings.
+  does not.
+- Every UI change checked at 390px **and in dark mode** in the same pass. Note
+  the trap: desktop Chrome at 390px is NOT what a phone renders for WP list
+  tables — core adds `body.mobile` on real iOS/Android, and without it row
+  actions look broken when they are fine.
+- Edit a registration site **before** deleting the class it points at.
+- `readme.txt` version bumps are a targeted edit to the stable tag.
+- Do not `git stash` a tree carrying build artifacts — `grunt dist` regenerates
+  `.pot` and `installed.php` and blocks the pop.
 
 **Companion artifact** (visual UX spec, screens and layouts):
 <https://claude.ai/code/artifact/3620f81c-eaea-4d17-9f0e-56e178ec56e2>
@@ -72,7 +100,10 @@ match rather than the other way round.
 ## Where it stands
 
 Documents are **Pro-only** and gated behind `mvs_documents_enabled`
-(Free's default is `false`; Pro flips it with `__return_true`).
+(Free's default is `false`). Pro no longer answers it with `__return_true`: as
+of the settings work it answers with the real option
+`mvs_pro_documents_enabled`, which defaults to on and reads ABSENT AS ON, so a
+site that already has documents keeps them when it upgrades into the setting.
 
 **Verified working, as a real member — not as admin.** Admin passes guards a
 member does not, so the walk ran as a subscriber with `upload_mvs_media`:
