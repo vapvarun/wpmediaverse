@@ -1,8 +1,38 @@
 # Plan: Admin IA reorganization (site-owner clarity)
 
-**Date:** 2026-08-09  
+**Date:** 2026-08-09 · **Re-audited against the code 2026-08-10**  
 **Type:** UX / information architecture (Free + Pro)  
-**Status:** **PLAN ONLY — do not treat working-tree edits as shipped.** A prior agent session may have left partial WIP in Free/Pro admin files; **revert or finish deliberately before merge.**  
+
+> ## STATUS: BUILT. This is now a verification plan, not a build plan.
+>
+> Phase 0 of this document warned that "a prior agent session may have left
+> partial WIP — revert or finish deliberately". **It was finished, not left
+> half-done.** Re-auditing every finding against the working tree on
+> 2026-08-10 found all of them already implemented and committed on branch
+> `2.4.0`:
+>
+> | Finding | State | Evidence in code |
+> |---|---|---|
+> | P0 · Stories toggle never renders | **Done** | `mvs_pro_stories` is in `GamificationSettings` `section_ids` |
+> | P0 · Duplicate Tags menus | **Done** | `MediaTag` sets `show_in_menu => false`, keeps `show_ui` |
+> | P1 · Submenu order incomplete | **Done** | Both order lists carry Documents, Tags, Stories, Integrations, Import |
+> | P1 · Naming drift | **Done** | Labels read **Moderation** and **Import** |
+> | P1 · AI and Moderation share a save | **Done** | Moderation has its own `option_group` and page slug |
+> | P1 · Settings groups by owner job | **Done** | General · Media · Safety · Access & Integrations, legacy keys aliased |
+> | P1 · "Gamification" in owner chrome | **Done** | `GamificationSettings` sets the group label to **Competitions**; no owner-facing "Gamification" string remains |
+> | P1 · Deep links inconsistent | **Done** | No `#section-` or `?section=` left in either plugin |
+>
+> **Do not re-implement any of it.** What is left is the part this plan always
+> said it could not do from a diff: **look at the screens**. The acceptance
+> criteria and the manual test plan below are unchanged and unrun.
+>
+> One thing changed on 2026-08-10 that this plan should know about: an admin
+> **Document Folders** submenu was briefly added and then removed. It was the
+> only slug missing from both `reorder_submenu` lists, so it appended after
+> Settings — a live instance of M-2. Document editing now lives as a sub-view of
+> the existing Documents screen (`?view=single`) precisely so the ordered slug
+> list below does not grow.
+
 **Owner:** _unassigned — team pickup via Basecamp Bugs card_  
 **Reviewer:** QA sign-off required before Ready for Testing  
 
@@ -126,11 +156,16 @@ Competitions                   (group label MUST match top-level)
 
 ## Implementation phases
 
-### Phase 0 — Working tree hygiene (do first)
+### Phase 0 — Working tree hygiene — ANSWERED 2026-08-10
 
-1. Diff Free + Pro against last known good / release branch.
-2. If partial IA WIP exists from 2026-08-09 agent session: either **revert entirely** then implement this plan, or **finish against acceptance criteria** (no half-renames).
-3. Note decision on the Basecamp card.
+The question was whether the 2026-08-09 session left half-renames. It did not:
+every finding above is implemented, and the commits carry comments naming the
+bug each one closed. Nothing to revert, nothing to finish.
+
+**What this means for the Basecamp card:** its P0 and most of its P1 list are
+stale. Anyone picking it up from the card text alone would rebuild working
+code. The card should be moved from Bugs to whatever column means "verify in a
+browser", with a comment pointing at this section.
 
 ### Phase 1 — P0 fixes (same PR ok if small)
 
@@ -220,10 +255,26 @@ Automated: extend Settings contract tests if option_group split is added (no dup
 
 ---
 
-## Suggested PR split
+## Suggested PR split — SUPERSEDED
 
-1. **PR A** — Phase 0–1 (P0 + hygiene)  
-2. **PR B** — Phase 2 menu order + labels  
-3. **PR C** — Phase 3–4 Settings IA + deep links + docs  
+The A/B/C split assumed three tranches of work. They are all already on branch
+`2.4.0`, mixed in with the document-library commits, so there is nothing left to
+split. What remains is one QA pass against the table above.
 
-Ship Free + Pro paired if Pro reorder / GamificationSettings / deep links change.
+---
+
+## What this plan did NOT cover, and probably should
+
+Found while re-auditing on 2026-08-10. None are regressions; all are the same
+class of problem the plan was written about, and none are urgent.
+
+| # | Finding | Why it belongs here |
+|---|---|---|
+| N-1 | The Documents list is the only WPMediaVerse screen with no way to open one of its rows for editing until 2026-08-10. Fixed as `?view=single`; the same question should be asked of Albums, Collections and Stories. | The plan fixed navigation *between* screens and never asked whether a screen lets you act on what it lists. |
+| N-2 | Row actions across the admin are hover-only by WordPress convention, so a screen whose only actions are destructive reads as having none. Documents showed exactly Trash and Delete permanently. | Consistent with core, and still a discoverability problem worth a deliberate decision rather than an inherited one. |
+| N-3 | `dashicons` are used where the design system asks for Lucide — `TemplateHelpers`, `Plugin`, `cpt-archive.php`, `album.php`. Flagged advisory by the UX audit generated 2026-08-10. | Owner-facing chrome consistency, which is this plan's subject. |
+| N-4 | Documents have no `mvs_documents_enabled` **setting**; Pro forces the filter true. Every other Pro feature has an owner toggle (Pro coding rule 1). | An owner cannot turn documents off, and the Settings → Competitions group is where they would look. |
+
+Take these as a follow-up card rather than folding them into this one — the
+subject is the same, but the acceptance criteria above are already written and
+should not be moved while they are waiting to be verified.
