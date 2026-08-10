@@ -115,6 +115,17 @@ async function appendVideoPoster( formData, file ) {
 	}
 }
 
+// The toolbar's item count. Reuses `itemsCount`, the string the album and
+// collection cards already print, rather than minting a second one that would
+// need translating separately and could drift from it. The template is passed
+// in rather than read from the store here: `store()` inside a getter re-enters
+// the store on every read, and the callers already hold `state`.
+function countLabel( total, plural, one ) {
+	const n = Number( total ) || 0;
+	const template = 1 === n ? ( one || '%d item' ) : ( plural || '%d items' );
+	return template.replace( '%d', n );
+}
+
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here.
 // PHP (dashboard-content.php) seeds translated strings into interactivity state;
 // read them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
@@ -156,6 +167,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			order: 'desc',
 			page: 1,
 			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Upload
@@ -193,6 +205,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			order: 'desc',
 			page: 1,
 			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Album modal
@@ -223,6 +236,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			order: 'desc',
 			page: 1,
 			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Collections
@@ -233,6 +247,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			order: 'desc',
 			page: 1,
 			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Pro gamification tabs (data populated by lazy-load actions).
@@ -284,6 +299,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isTournamentsTab() { return ( state.activeTab || 'media' ) === 'tournaments'; },
 		// Pro connectors tab.
 		get isConnectorsTab() { return ( state.activeTab || 'media' ) === 'connectors'; },
+		// How many rows the panel holds, in the same words the album and
+		// collection cards already use ("%d items"), so the toolbar and the
+		// cards below it cannot describe the same library differently.
+		get mediaCountLabel() { return countLabel( state.media.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+		get albumsCountLabel() { return countLabel( state.albums.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+		get favoritesCountLabel() { return countLabel( state.favorites.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+		get collectionsCountLabel() { return countLabel( state.collections.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
 		get hasMoreAlbums() { return state.albums.page < state.albums.totalPages; },
@@ -435,10 +458,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return getContext().item?.privacy || 'public';
 		},
 		get albumItemCount() {
-			return ( state.i18n?.itemsCount || '%d items' ).replace( '%d', getContext().item?.media_count || 0 );
+			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );
 		},
 		get collectionItemCount() {
-			return ( state.i18n?.itemsCount || '%d items' ).replace( '%d', getContext().item?.matchCount || 0 );
+			return countLabel( getContext().item?.matchCount, state.i18n?.itemsCount, state.i18n?.itemCount );
 		},
 		get rulePillText() {
 			const rule = getContext().rule;
@@ -776,6 +799,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page + toolbarQuery( state.media, 'media' ) );
 				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
 				state.media.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				// X-WP-Total is the count the toolbar shows. Reading items.length
+				// instead would report the loaded PAGE, so a 60-item library would
+				// say "20 items" until somebody pressed Load more.
+				state.media.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
@@ -1073,6 +1100,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				// Load More, no pagination, no indication anything was missing.
 				const res = await apiFetch( ctx, 'albums?author=' + ctx.userId + '&per_page=20&page=' + page + toolbarQuery( state.albums, 'albums' ) );
 				state.albums.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				state.albums.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
@@ -1375,6 +1403,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page + toolbarQuery( state.favorites, 'favorites' ) );
 				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
 				state.favorites.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				state.favorites.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
@@ -1417,6 +1446,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				// endpoint's default of 20 and the rest were unreachable.
 				const res = await apiFetch( ctx, 'collections?per_page=20&page=' + page + toolbarQuery( state.collections, 'collections' ) );
 				state.collections.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				state.collections.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 				// Enrich with match counts for smart collections.
 				for ( const item of data ) {

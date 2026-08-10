@@ -77,7 +77,7 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 				<option value=""><?php esc_html_e( 'All types', 'wpmediaverse' ); ?></option>
 				<?php foreach ( $mvs_types as $mvs_type ) : ?>
 					<option value="<?php echo esc_attr( $mvs_type ); ?>" <?php selected( $mvs_doc_type, $mvs_type ); ?>>
-						<?php echo esc_html( strtoupper( $mvs_type ) ); ?>
+						<?php echo esc_html( \WPMediaVerse\Core\DocumentTypes::label( $mvs_type ) ); ?>
 					</option>
 				<?php endforeach; ?>
 			</select>
@@ -294,7 +294,17 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 										<span class="screen-reader-text"><?php esc_html_e( 'Show more details', 'wpmediaverse' ); ?></span>
 									</button>
 								</td>
-								<td class="column-doctype" data-colname="<?php esc_attr_e( 'Type', 'wpmediaverse' ); ?>"><?php echo esc_html( $mvs_type ? strtoupper( $mvs_type ) : __( 'Unknown', 'wpmediaverse' ) ); ?></td>
+								<td class="column-doctype" data-colname="<?php esc_attr_e( 'Type', 'wpmediaverse' ); ?>">
+									<?php
+									// `label()`, not `strtoupper()` on the key. The keys are
+									// snake_case identifiers, so the raw form printed
+									// "ODF_PRESENTATION" in a column a site owner reads —
+									// a database value wearing a label. The helper exists
+									// for exactly this and the drive already uses it; this
+									// screen was the one place still bypassing it.
+									echo esc_html( $mvs_type ? \WPMediaVerse\Core\DocumentTypes::label( $mvs_type ) : __( 'Unknown', 'wpmediaverse' ) );
+									?>
+								</td>
 								<td class="column-filesize" data-colname="<?php esc_attr_e( 'Size', 'wpmediaverse' ); ?>"><?php echo esc_html( $mvs_row['file_size'] ? size_format( (int) $mvs_row['file_size'] ) : '—' ); ?></td>
 								<td class="column-author" data-colname="<?php esc_attr_e( 'Author', 'wpmediaverse' ); ?>"><?php echo esc_html( $mvs_authors[ (int) $mvs_row['post_author'] ] ?? __( 'Unknown', 'wpmediaverse' ) ); ?></td>
 								<td class="column-privacy" data-colname="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>"><?php echo esc_html( ucfirst( (string) $mvs_row['privacy'] ) ); ?></td>

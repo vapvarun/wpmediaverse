@@ -200,6 +200,14 @@ wp_interactivity_state(
 			'untitled'                => __( '(Untitled)', 'wpmediaverse' ),
 			/* translators: %d: number of items. */
 			'itemsCount'              => __( '%d items', 'wpmediaverse' ),
+			// The singular, seeded separately because this panel's JS is a
+			// script MODULE and cannot reach `wp.i18n._n()`. Every count here
+			// read "1 items" until the toolbar started printing them where a
+			// member actually looks. A one-vs-many split is what this seam
+			// allows; locales with more than two plural forms are still served
+			// approximately, and fixing that properly means moving the count
+			// server-side, not adding a third string here.
+			'itemCount'               => __( '%d item', 'wpmediaverse' ),
 			// Upload flow.
 			/* translators: 1: rejected file names, 2: supported extensions. */
 			'fileTypeNotAllowed'      => __( 'File type not allowed: %1$s. Supported: %2$s', 'wpmediaverse' ),
@@ -598,6 +606,14 @@ wp_interactivity_state(
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-media',
+				// Bound, not baked. The drive's toolbar prints how many rows
+				// the view holds and these four printed nothing, so the shape
+				// they were told to copy read differently on every panel. The
+				// text is a placeholder the Interactivity binding replaces on
+				// first render and after every search.
+				'count'  => array(
+					'attrs' => array( 'data-wp-text' => 'state.mediaCountLabel' ),
+				),
 				'search' => array(
 					'name'  => 'q',
 					'label' => __( 'Search your media', 'wpmediaverse' ),
@@ -704,6 +720,14 @@ wp_interactivity_state(
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-albums',
+				// Bound, not baked. The drive's toolbar prints how many rows
+				// the view holds and these four printed nothing, so the shape
+				// they were told to copy read differently on every panel. The
+				// text is a placeholder the Interactivity binding replaces on
+				// first render and after every search.
+				'count'  => array(
+					'attrs' => array( 'data-wp-text' => 'state.albumsCountLabel' ),
+				),
 				'search' => array(
 					'name'  => 'q',
 					'label' => __( 'Search your albums', 'wpmediaverse' ),
@@ -793,6 +817,14 @@ wp_interactivity_state(
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-favorites',
+				// Bound, not baked. The drive's toolbar prints how many rows
+				// the view holds and these four printed nothing, so the shape
+				// they were told to copy read differently on every panel. The
+				// text is a placeholder the Interactivity binding replaces on
+				// first render and after every search.
+				'count'  => array(
+					'attrs' => array( 'data-wp-text' => 'state.favoritesCountLabel' ),
+				),
 				'search' => array(
 					'name'  => 'q',
 					'label' => __( 'Search your favourites', 'wpmediaverse' ),
@@ -891,6 +923,14 @@ wp_interactivity_state(
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-collections',
+				// Bound, not baked. The drive's toolbar prints how many rows
+				// the view holds and these four printed nothing, so the shape
+				// they were told to copy read differently on every panel. The
+				// text is a placeholder the Interactivity binding replaces on
+				// first render and after every search.
+				'count'  => array(
+					'attrs' => array( 'data-wp-text' => 'state.collectionsCountLabel' ),
+				),
 				'search' => array(
 					'name'  => 'q',
 					'label' => __( 'Search your collections', 'wpmediaverse' ),

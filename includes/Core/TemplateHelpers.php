@@ -1435,9 +1435,19 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		if ( ! empty( $args['count'] ) ) {
+			// A string for a server-rendered panel; an array for a client-driven
+			// one, which needs somewhere to hang `data-wp-text` so the number
+			// follows the search rather than freezing at whatever the page was
+			// built with. The comment below always claimed the panels rewrote
+			// this — there was no way for them to.
+			$count = is_array( $args['count'] ) ? $args['count'] : array( 'text' => $args['count'] );
+
 			// aria-live: a client-driven panel rewrites this after a search, and
 			// "3 albums" changing silently is the result a screen reader misses.
-			$html .= '<span class="mvs-panel-toolbar__count" aria-live="polite">' . esc_html( (string) $args['count'] ) . '</span>';
+			$html .= '<span class="mvs-panel-toolbar__count" aria-live="polite"'
+				. $this->toolbar_attrs( $count ) . '>'
+				. esc_html( (string) ( $count['text'] ?? '' ) )
+				. '</span>';
 		}
 
 		$selects = array();

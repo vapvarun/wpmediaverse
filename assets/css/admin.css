@@ -2218,6 +2218,51 @@ a.mvs-stat-card:focus {
     vertical-align: middle;
 }
 
+/* Column widths, because `table-layout: fixed` with none declared splits the
+   width EQUALLY — six columns, an equal sixth each. Measured at 1813px: the
+   Title column got 279px while its row-actions ("Edit | View on site |
+   Download | Trash | Delete") need 350px on one line, so they wrapped to two.
+   Those actions are positioned off-screen until hover but still occupy their
+   height, so every row was 79px instead of 58px, and the extra 21px read as an
+   unexplained gap under each filename. Meanwhile Size and Privacy — never
+   wider than "29 KB" and "Private" — held 279px each.
+
+   The narrow columns are sized to their longest real content; Title takes what
+   is left, which is what a filename column wants anyway. */
+.mvs-documents-admin__table .column-doctype {
+    width: 12%;
+}
+
+.mvs-documents-admin__table .column-filesize {
+    width: 8%;
+}
+
+.mvs-documents-admin__table .column-author {
+    width: 14%;
+}
+
+.mvs-documents-admin__table .column-privacy {
+    width: 10%;
+}
+
+.mvs-documents-admin__table .column-uploaded {
+    width: 14%;
+}
+
+@media screen and (max-width: 782px) {
+
+    /* Core stacks list tables into cards below 782px and prints the column
+       name from `data-colname` beside each value. Percentage widths fight that
+       — a 8%-wide cell in a stacked card is a column of single characters. */
+    .mvs-documents-admin__table .column-doctype,
+    .mvs-documents-admin__table .column-filesize,
+    .mvs-documents-admin__table .column-author,
+    .mvs-documents-admin__table .column-privacy,
+    .mvs-documents-admin__table .column-uploaded {
+        width: auto;
+    }
+}
+
 @media screen and (max-width: 640px) {
 
     .mvs-documents-admin__filters {
