@@ -1,2740 +1,2762 @@
 {
-  "hooks_fired": [
-    {
-      "name": "mvs_access_granted",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $grant_id",
-        "int $media_id",
-        "int $user_id",
-        "string $source"
-      ],
-      "where": "includes/Services/AccessRulesService.php:451",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_revoked",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/Services/AccessRulesService.php:487",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_created",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $rule_id",
-        "int $media_id",
-        "string $rule_type",
-        "mixed $rule_value"
-      ],
-      "where": "includes/Services/AccessRulesService.php:106",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_deleted",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $rule_id",
-        "int $media_id",
-        "string $rule_type"
-      ],
-      "where": "includes/Services/AccessRulesService.php:185",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_types_ui",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $rule_types"
-      ],
-      "where": "includes/Services/AccessRulesService.php:280",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_account_deletion_cancelled",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Services/AccountDeletionService.php:216",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_account_deletion_executing",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Services/AccountDeletionService.php:244",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_account_deletion_grace_days",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Services/AccountDeletionService.php:95",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_account_deletion_password_required",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/Services/AccountDeletionService.php:300",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_account_deletion_requested",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/Services/AccountDeletionService.php:177",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_max_media",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $max"
-      ],
-      "where": "includes/Integrations/BuddyPress/ActivityFormIntegration.php:163",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_max_tags",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $max"
-      ],
-      "where": "includes/Integrations/BuddyPress/ActivityFormIntegration.php:395",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_media_ids",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "array $ids",
-        "int $activity_id",
-        "object $activity"
-      ],
-      "where": "includes/Integrations/BuddyPress/ActivityMediaLinkage.php:220",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_types",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $types"
-      ],
-      "where": "includes/Social/ActivityService.php:59",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_content",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/cpt-archive.php:225",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_explore_grid",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/explore.php:528",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_template_render",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "string $template_name",
-        "array $args"
-      ],
-      "where": "includes/Core/TemplateLoader.php:750",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_thumbnail_generation",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "array $generated",
-        "string $file_path"
-      ],
-      "where": "includes/Services/UploadService.php:1246",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_cost_per_call",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Services/AIService.php:462",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_moderation_result",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $result",
-        "int $media_id"
-      ],
-      "where": "includes/Services/AIService.php:292",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_providers",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "mixed $service"
-      ],
-      "where": "includes/Core/Plugin.php:506",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:217",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_ai_result",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $output",
-        "int $media_id"
-      ],
-      "where": "includes/Services/AIService.php:402",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_cover_set",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $album_id",
-        "int $media_id"
-      ],
-      "where": "includes/Services/AlbumService.php:371",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_deleted",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "int $post_id"
-      ],
-      "where": "includes/PostTypes/Album.php:83",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_inherit_privacy",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool $inherit",
-        "int $album_id",
-        "int[] $media_ids"
-      ],
-      "where": "includes/Services/AlbumService.php (add_items)",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_items_added",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $album_id",
-        "int $actor_id",
-        "array $media_ids",
-        "array $added"
-      ],
-      "where": "includes/Services/AlbumService.php:255",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_response",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $data",
-        "int $album_id"
-      ],
-      "where": "includes/REST/Controller/AlbumController.php:642",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_allowed_file_types",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $types"
-      ],
-      "where": "includes/Services/UploadService.php:760",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_config",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $config"
-      ],
-      "where": "includes/REST/Controller/ConfigController.php:189",
-      "consumed_by": [],
-      "note": "Extension point Pro fills with the `documents` block, so a client never hardcodes the format list, size ceiling or preview tiers. P4.4."
-    },
-    {
-      "name": "mvs_app_config_branding",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/REST/Controller/ConfigController.php:135",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_config_features",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/REST/Controller/ConfigController.php:88",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_config_layout",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $layout"
-      ],
-      "where": "includes/REST/Controller/ConfigController.php:134",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_config_legal",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/REST/Controller/ConfigController.php:225",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_connect_bridge",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $info"
-      ],
-      "where": "includes/Auth/AppConnect.php:132",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_connect_schemes",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Auth/AppConnect.php:88",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_credential_issued",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $user_id",
-        "string $app_id",
-        "string $app_name"
-      ],
-      "where": "includes/Auth/AppCredentials.php:186",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_interests_cache_ttl",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $ttl"
-      ],
-      "where": "includes/REST/Controller/InterestsController.php:132",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_page_ids",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Core/TemplateLoader.php:838",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_password_login_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $on"
-      ],
-      "where": "includes/Auth/AppCredentials.php:89",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_scheme",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $scheme"
-      ],
-      "where": "includes/Auth/AppAuthorizeAccess.php:97",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_app_template",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/Core/TemplateLoader.php:914",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_apply_exif_orientation",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool $apply",
-        "string $file_path",
-        "string $mime"
-      ],
-      "where": "includes/Services/UploadService.php (apply_exif_orientation)",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_allowed_types",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $allowed_types",
-        "int $user_id"
-      ],
-      "where": "includes/Services/ProfileService.php:219",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_deleted",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "int $user_id"
-      ],
-      "where": "includes/Services/ProfileService.php:320",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_max_size",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $max_size",
-        "int $user_id"
-      ],
-      "where": "includes/Services/ProfileService.php:231",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_uploaded",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $user_id",
-        "int $attachment_id"
-      ],
-      "where": "includes/Services/ProfileService.php:290",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avif_quality",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $quality",
-        "array $context"
-      ],
-      "where": "includes/Services/ImageOptimizationService.php:337",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_content",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/cpt-archive.php:20",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_explore_grid",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/explore.php:303",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_media_insert",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Services/UploadService.php:421",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_template_render",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "string $template_name",
-        "array $args"
-      ],
-      "where": "includes/Core/TemplateLoader.php:738",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_thumbnail_generation",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "string $file_path",
-        "array $sizes"
-      ],
-      "where": "includes/Services/UploadService.php:1050",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_upload_form",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Shortcodes/Shortcodes.php:126",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_body_classes",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $classes"
-      ],
-      "where": "includes/Core/TemplateLoader.php:601",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_broadcast_thumbnail_ttl",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "int $ttl",
-        "int $media_id",
-        "string $size"
-      ],
-      "where": "includes/Repository/MediaRepository.php:413",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_buddynext_active",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $active"
-      ],
-      "where": "includes/Core/Plugin.php:1105",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_can_repair_thumb",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "bool $can",
-        "int $media_id",
-        "string $file_type",
-        "string $file_path"
-      ],
-      "where": "includes/Admin/MediaListPage.php:1315",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_can_send_message",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool $can",
-        "int $sender_id",
-        "int $recipient_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:59",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_cloud_thumbnail_url",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $url",
-        "string $size_name",
-        "int $media_id"
-      ],
-      "where": "includes/Services/UploadService.php:1142",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_cloudops_allow_non_public_to_cloud",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "bool $allow",
-        "int $media_id",
-        "string $privacy",
-        "string $to"
-      ],
-      "where": "includes/Services/CloudOps.php:81",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_collection_deleted",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "int $post_id"
-      ],
-      "where": "includes/PostTypes/Collection.php:79",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:251",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_collection_media_ids",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "array $media_ids",
-        "int $collection_id",
-        "int $per_page"
-      ],
-      "where": "includes/Shortcodes/Shortcodes.php:581",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_collection_response",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $data",
-        "int $post_id"
-      ],
-      "where": "includes/REST/Controller/CollectionController.php:445",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_collections_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "templates/media-single.php:444",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_comment_created",
-      "type": "action",
-      "args_count": 5,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id",
-        "int $comment_id",
-        "string $content",
-        "string $source"
-      ],
-      "where": "includes/Social/CommentService.php:159",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_comment_duplicate_window",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "int $seconds",
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/Social/CommentService.php (find_recent_duplicate)",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_comment_edit_window",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Social/CommentService.php:386",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_community_gated_page",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $is_gated_page"
-      ],
-      "where": "includes/REST/CommunityPrivacyGate.php:146",
-      "consumed_by": [
-        "wpmediaverse-pro (adds compete/battles/challenges/tournaments pages)"
-      ],
-      "added": "2.3.2"
-    },
-    {
-      "name": "mvs_community_login_url",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $login_url = wp_login_url($current)",
-        "string $current"
-      ],
-      "where": "includes/REST/CommunityPrivacyGate.php:92",
-      "consumed_by": [
-        "buddynext (points it at PageRouter::auth_url())"
-      ],
-      "added": "2.3.2"
-    },
-    {
-      "name": "mvs_conversation_created",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $conv_id",
-        "int $user_a",
-        "array $participants"
-      ],
-      "where": "includes/Messaging/MessagingService.php:414",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_conversation_read",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $conversation_id",
-        "int $user_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1738",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dashboard_after_content",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/partials/dashboard-content.php:935",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dashboard_before_content",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/partials/dashboard-content.php:20",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dashboard_panels",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/partials/dashboard-content.php:622",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dashboard_tab_registry",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $tabs"
-      ],
-      "where": "templates/partials/dashboard-content.php:481",
-      "consumed_by": [
-        "Core\\Plugin::register_documents_tab"
-      ]
-    },
-    {
-      "name": "mvs_dashboard_tabs",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "templates/partials/dashboard-content.php:365",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dashboard_widgets",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Admin/OverviewPage.php:491",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dead_bp_link_patterns",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Core/Plugin.php:1708",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_default_thumbnail_style",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $style"
-      ],
-      "where": "includes/Core/SettingsHelper.php:188",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_default_video_poster_url",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $default"
-      ],
-      "where": "includes/Core/TemplateHelpers.php:535",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_access_level",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "mixed $access",
-        "int $sender_id",
-        "int $recipient_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:105",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_allowed_file_types",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Messaging/MessagingController.php:911",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_convo_rate_limit",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $limit"
-      ],
-      "where": "includes/Messaging/MessagingService.php:227",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_denial_message",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $message",
-        "string $reason"
-      ],
-      "where": "includes/Messaging/MessagingService.php:194",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_denial_reason",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $reason",
-        "int $sender_id",
-        "int $recipient_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:74",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_max_upload_size",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $size"
-      ],
-      "where": "includes/Messaging/MessagingController.php:862",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_message_rate_limit",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $limit"
-      ],
-      "where": "includes/Messaging/MessagingService.php:208",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_unarchive_on_activity",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool $unarchive",
-        "int $conversation_id",
-        "int $sender_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php (send_message)",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_document_can_grant",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "bool $can",
-        "string $drive_type",
-        "int $drive_id",
-        "int $user_id"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:can_grant()",
-      "consumed_by": [],
-      "note": "D1 seam for non-personal drives. DEFAULTS FALSE so an unanswered filter denies rather than opening sharing to every member of a space."
-    },
-    {
-      "name": "mvs_document_folder_created",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $folder_id",
-        "array $args"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:create()",
-      "consumed_by": [],
-      "note": "Fires after a document folder is created."
-    },
-    {
-      "name": "mvs_document_folder_privacy_cascaded",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $folder_id",
-        "string $privacy",
-        "int $cascaded"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:set_privacy()",
-      "consumed_by": [],
-      "note": "T2. Fires after a tightening has swept the subtree. Loosening never cascades, so it does not fire."
-    },
-    {
-      "name": "mvs_document_folder_trashed",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "int $folder_id"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:trash()",
-      "consumed_by": [],
-      "note": "Fires after a folder and its subtree are trashed."
-    },
-    {
-      "name": "mvs_document_max_depth",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $depth"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:max_depth()",
-      "consumed_by": [],
-      "note": "Folder nesting cap, default 12. Raising past 16 pushes `path` beyond KEY subtree's 150-byte prefix, so deep trees silently stop using the index."
-    },
-    {
-      "name": "mvs_document_owns_drive",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "bool $owns",
-        "string $drive_type",
-        "int $drive_id",
-        "int $user_id"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:owns_drive()",
-      "consumed_by": [],
-      "note": "Space-drive ownership seam, resolved once per drive per request. Defaults false."
-    },
-    {
-      "name": "mvs_document_uploaded",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "string $doc_type",
-        "int $folder_id"
-      ],
-      "where": "wpmediaverse-pro/includes/Documents/DocumentIngestService.php:handle()",
-      "consumed_by": [],
-      "note": "Fires after a document is ingested. Quota rides the existing mvs_media_uploaded instead, which is why D2 needs no fourth counter."
-    },
-    {
-      "name": "mvs_document_viewer_html",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $html",
-        "int $media_id",
-        "string $mime"
-      ],
-      "where": "templates/media-single.php:334",
-      "consumed_by": [
-        "wpmediaverse-pro: includes/Documents/DocumentViewer.php::render"
-      ]
-    },
-    {
-      "name": "mvs_explore_query_args",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $query_args",
-        "mixed $profile"
-      ],
-      "where": "templates/explore.php:268",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_favorite_added",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/Social/FavoriteService.php:68",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_favorite_toggled",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id",
-        "string $action"
-      ],
-      "where": "includes/REST/Controller/FavoriteController.php:183",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_media_ids",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $int_ids",
-        "WP_REST_Request $request"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:591",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_query_args",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/REST/Controller/MediaController.php:538",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_sort_options",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $options"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:1844",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ffmpeg_binary",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $binary"
-      ],
-      "where": "includes/Services/PosterService.php:120",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_filename_strategy",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $strategy",
-        "int $user_id"
-      ],
-      "where": "includes/Services/FilenameStrategy.php:128",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_filename_strategy_upgrade_default",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $default"
-      ],
-      "where": "includes/Services/FilenameStrategy.php:102",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_frontend_presence_keep_handles",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $handles"
-      ],
-      "where": "includes/Core/Plugin.php:2011",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_grid_thumb_size_key",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $key",
-        "mixed $configured"
-      ],
-      "where": "includes/Core/SettingsHelper.php:156",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_group_conversation_created",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $conv_id",
-        "int $creator_id",
-        "array $all_ids",
-        "array $opts"
-      ],
-      "where": "includes/Messaging/MessagingService.php:798",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_hide_submenu_slugs",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $slugs"
-      ],
-      "where": "includes/Admin/Settings/SettingsPage.php:73",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_hold_uploads_for_moderation",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $hold",
-        "int $user_id"
-      ],
-      "where": "includes/Services/UploadService.php:395",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_loaded",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "Container $container"
-      ],
-      "where": "includes/Core/Plugin.php:354",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_locate_template",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $template",
-        "string $template_name",
-        "string $template_path"
-      ],
-      "where": "includes/Core/TemplateLoader.php:700",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_login_url",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/Core/TemplateHelpers.php:580",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_max_upload_size",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $max_size",
-        "int $user_id"
-      ],
-      "where": "includes/Services/UploadService.php:123",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_alt_text",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $alt",
-        "int $media_id"
-      ],
-      "where": "includes/Core/TemplateHelpers.php:329",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_deleted",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $author_id"
-      ],
-      "where": "includes/Repository/MediaRepository.php:2305",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Quota/QuotaService.php:41",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:243",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:261",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_media_feed_allows_documents",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $allowed"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:334",
-      "consumed_by": [],
-      "note": "Production Rule 3 escape hatch for P1.5. GET /media?media_type=document (and /me/media, which delegates to the same handler) returned document rows until 2.4.0 and the parameter has advertised 'document' in its enum since the first release. The route now answers 400 mvs_document_route; this filter restores the old behaviour for at least two majors. Default false."
-    },
-    {
-      "name": "mvs_media_files_orphaned",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "array $orphaned_files"
-      ],
-      "where": "includes/Repository/MediaRepository.php:2250",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_flagged",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "array $result"
-      ],
-      "where": "includes/Services/AIService.php:334",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_group_assigned",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $group_id"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:803",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_library_types",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string[] $types"
-      ],
-      "where": "includes/Core/MediaTypes.php:library_types()",
-      "consumed_by": [],
-      "note": "Production Rule 3 escape hatch for narrowing MEDIA_LIBRARY to media only (owner, 2026-08-09: documents never render in a media grid). Restoring legacy_document re-accepts the broken tile."
-    },
-    {
-      "name": "mvs_media_metadata",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "array $metadata",
-        "string $file_path",
-        "int $media_id"
-      ],
-      "where": "includes/Services/UploadService.php:989",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_privacy_changed",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "string $value",
-        "string $old_privacy"
-      ],
-      "where": "includes/Repository/MediaRepository.php:690",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_privacy_clamped_by_album",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $media_id",
-        "string $from",
-        "string $to",
-        "int $album_id"
-      ],
-      "where": "includes/Services/AlbumService.php (add_items)",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_replaced",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $media_id",
-        "array $file_data",
-        "int $user_id",
-        "string $media_type"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:1171",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_response",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $data",
-        "int $media_id"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:1785",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Captions/TranscriptionService.php:74",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_media_shared",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id",
-        "string $platform"
-      ],
-      "where": "includes/Social/ShareService.php:48",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_single_actions",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "int $author_id",
-        "bool $is_owner"
-      ],
-      "where": "templates/media-single.php:479",
-      "consumed_by": [
-        "wpmediaverse-pro (Frontend\\BoostAffordance \u2014 boost store/modal + owner button on the canonical single-media page, all layouts)"
-      ],
-      "added": "2.1.0"
-    },
-    {
-      "name": "mvs_media_type_for_mime",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $type",
-        "string $mime"
-      ],
-      "where": "includes/Services/UploadService.php:866",
-      "consumed_by": [],
-      "note": "Production Rule 3 escape hatch for P2.1. get_media_type() used to return 'document' for any unrecognised MIME; it now returns ''. A filter value outside MediaTypes::ALL is ignored, so an unknown string cannot defeat the positive type predicates downstream. Added to the manifest 2026-08-09 -- it shipped in the P2.1 commit without a manifest delta."
-    },
-    {
-      "name": "mvs_media_uploaded",
-      "type": "action",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Services/UploadService.php:584",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_member_erase_map",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Privacy/MemberDataMap.php:148",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_member_purged",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Privacy/MemberPurger.php:113",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_member_retain_map",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Privacy/MemberDataMap.php:221",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_member_suspension_changed",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/Admin/MemberModeration.php:163",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_mentions_created",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $media_id",
-        "array $mentioned_ids",
-        "string $context",
-        "int $comment_id"
-      ],
-      "where": "includes/Social/MentionService.php:58",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_content_check",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "bool $ok",
-        "string $content",
-        "int $sender_id",
-        "int $conversation_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1169",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_deleted",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $message_id",
-        "int $user_id",
-        "bool $for_everyone"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1557",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_max_length",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $length"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1136",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_reaction_added",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $message_id",
-        "int $user_id",
-        "string $emoji"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1853",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_request_accepted",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $conversation_id",
-        "int $user_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1051",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_sent",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $message_id",
-        "int $conversation_id",
-        "int $sender_id",
-        "array $recipient_ids"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1297",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Messaging/NotificationListener.php:33",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_message_types",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Messaging/MessagingService.php:1409",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_messaging_poll_intervals",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Messaging/RestPollingTransport.php:48",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_messaging_transport",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Core/Plugin.php:1851",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_moderation_changed",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $media_id",
-        "string $status",
-        "string $old_status",
-        "int $user_id"
-      ],
-      "where": "includes/Services/ModerationService.php:92",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_moderation_tabs",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $tabs"
-      ],
-      "where": "includes/Admin/ModerationQueue.php:199",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_no_sidebar_templates",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Core/TemplateLoader.php:943",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_created",
-      "type": "action",
-      "args_count": 7,
-      "args_signature": [
-        "int $notification_id",
-        "int $user_id",
-        "string $type",
-        "int $actor_id",
-        "int $media_id",
-        "string $message",
-        "string $link"
-      ],
-      "where": "includes/Social/NotificationService.php:172",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_data",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Social/NotificationService.php:128",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_message",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "mixed $message",
-        "string $type",
-        "string $actor_name",
-        "string $media_title"
-      ],
-      "where": "includes/Social/NotificationService.php:502",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_types",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $types"
-      ],
-      "where": "includes/Social/NotificationService.php:97",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_object_media_set",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "string $object_type",
-        "int $object_id",
-        "array $media_ids"
-      ],
-      "where": "includes/Media/ObjectMediaLinkage.php:97",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_openai_api_key",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $key"
-      ],
-      "where": "includes/Core/SettingsHelper.php:221",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_optimize_image",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $file_path",
-        "array $context"
-      ],
-      "where": "includes/Services/ImageOptimizationService.php:113",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_optimize_jpeg_quality",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $quality",
-        "array $context"
-      ],
-      "where": "includes/Services/ImageOptimizationService.php:644",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_parent_route",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $parent",
-        "string $context",
-        "array $args"
-      ],
-      "where": "includes/Core/TemplateHelpers.php:1102",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_participant_added",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $conversation_id",
-        "int $user_id",
-        "string $role"
-      ],
-      "where": "includes/Messaging/MessagingService.php:905",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_participant_removed",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $conversation_id",
-        "int $user_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:946",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_privacy_can_view",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "mixed $can",
-        "int $media_id",
-        "int $user_id",
-        "string $privacy"
-      ],
-      "where": "includes/Services/PrivacyService.php:91",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_document_extraction_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "wpmediaverse-pro: includes/Documents/ExtractionService.php::is_enabled",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_data",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $profile",
-        "int $user_id"
-      ],
-      "where": "includes/Services/ProfileService.php:119",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_privacy_levels",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "array $levels",
-        "int $author_id",
-        "int $viewer_id"
-      ],
-      "where": "includes/Repository/MediaRepository.php:1543",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_update_fields",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $fields",
-        "int $user_id"
-      ],
-      "where": "includes/Services/ProfileService.php:140",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_updated",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $user_id",
-        "array $fields"
-      ],
-      "where": "includes/Services/ProfileService.php:193",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_public_cloud_file_url",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $file_url",
-        "int $media_id",
-        "string $rel_path"
-      ],
-      "where": "includes/Services/SignedUrlService.php:920",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_public_cloud_thumbnail_url",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $thumb_url",
-        "int $media_id",
-        "string $size"
-      ],
-      "where": "includes/Services/SignedUrlService.php:840",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_public_local_file_url",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $url",
-        "int $media_id",
-        "string $rel_path"
-      ],
-      "where": "includes/Services/SignedUrlService.php:913",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_public_local_thumbnail_url",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "string $url",
-        "int $media_id",
-        "string $size",
-        "string $rel_path"
-      ],
-      "where": "includes/Services/SignedUrlService.php:833",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_public_media_max_age",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $max_age",
-        "string $privacy"
-      ],
-      "where": "includes/Services/SignedUrlService.php:737",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_added",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id",
-        "string $reaction_type"
-      ],
-      "where": "includes/Social/ReactionService.php:100",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_removed",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/Social/ReactionService.php:139",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_toggled",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id",
-        "string $reaction_type",
-        "string $action"
-      ],
-      "where": "includes/REST/Controller/ReactionController.php:191",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_registration_url",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/Core/TemplateHelpers.php:617",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_repair_media_thumb",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Admin/MediaListPage.php:1059",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_report_submitted",
-      "type": "action",
-      "args_count": 5,
-      "args_signature": [
-        "int $report_id",
-        "int $reporter_id",
-        "string $target_type",
-        "int $target_id",
-        "string $reason"
-      ],
-      "where": "includes/Social/ReportService.php:121",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reports_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "includes/Social/ReportService.php:55",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reserved_media_paths",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Core/TemplateLoader.php:184",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_can_access",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $allowed = is_user_logged_in()",
-        "\\WP_REST_Request $request"
-      ],
-      "where": "includes/REST/CommunityPrivacyGate.php:102",
-      "consumed_by": [
-        "buddynext (buddynext_private_community_can_access seam)"
-      ],
-      "added": "2.2.0"
-    },
-    {
-      "name": "mvs_rest_gate_denied",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [],
-      "where": "includes/REST/RestGate.php:569",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_gate_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/REST/RestGate.php:333",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_gate_exempt_route_prefixes",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string[] $exempt = array('/mvs/v1/serve')",
-        "\\WP_REST_Request $request"
-      ],
-      "where": "includes/REST/CommunityPrivacyGate.php:224",
-      "consumed_by": [
-        "wpmediaverse-pro (exempts /mvs-pro/v1/credits/webhook, HMAC-authenticated)"
-      ],
-      "added": "2.3.2"
-    },
-    {
-      "name": "mvs_rest_gate_map",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/REST/RestGate.php:301",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_gate_resolve_targets",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [],
-      "where": "includes/REST/RestGate.php:505",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_gate_unresolved",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [],
-      "where": "includes/REST/RestGate.php:378",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_gated_route_prefixes",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string[] $prefixes = array('/mvs/v1/')",
-        "\\WP_REST_Request $request"
-      ],
-      "where": "includes/REST/CommunityPrivacyGate.php:87",
-      "consumed_by": [
-        "wpmediaverse-pro (appends /mvs-pro/v1/ at boot)"
-      ],
-      "added": "2.2.0"
-    },
-    {
-      "name": "mvs_rest_pagination_max",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $max"
-      ],
-      "where": "includes/REST/Pagination.php:55",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_require_auth",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $require = false",
-        "\\WP_REST_Request $request"
-      ],
-      "where": "includes/REST/CommunityPrivacyGate.php:70",
-      "consumed_by": [
-        "buddynext (arms it when buddynext_private_community is on)"
-      ],
-      "added": "2.2.0"
-    },
-    {
-      "name": "mvs_rest_timestamp_keys",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Core/Dates.php:97",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_seo_title_separator",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [],
-      "where": "includes/Core/TemplateLoader.php:481",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_serve_expired_public_urls",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $serve",
-        "int $media_id"
-      ],
-      "where": "includes/Services/SignedUrlService.php:332",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_serve_public_cloud_direct",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $serve",
-        "int $media_id"
-      ],
-      "where": "includes/Services/SignedUrlService.php:955",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_before_save",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "string $option_page"
-      ],
-      "where": "includes/Admin/Settings/SettingsPage.php:118",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_group_labels",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $group_labels"
-      ],
-      "where": "includes/Admin/Settings/SettingsPage.php:355",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_render_{renderer}",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "array $section"
-      ],
-      "where": "includes/Admin/Settings/SettingsPage.php:495",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_sections",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $sections"
-      ],
-      "where": "includes/Admin/Settings/SettingsPage.php:320",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_sidebar_after",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Admin/Settings/SettingsPage.php:463",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_share_recorded",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:1390",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_should_ai_analyze",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $should",
-        "int $media_id"
-      ],
-      "where": "includes/Services/AIService.php:365",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_should_render_chat_panel",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $render",
-        "mixed $visibility"
-      ],
-      "where": "includes/Core/Plugin.php:2226",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_should_send_notification",
-      "type": "filter",
-      "args_count": 5,
-      "args_signature": [
-        "bool $send",
-        "int $user_id",
-        "string $type",
-        "int $actor_id",
-        "int $media_id"
-      ],
-      "where": "includes/Social/NotificationService.php:116",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_show_online_status",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool $show",
-        "int $current_user_id",
-        "int $user_id"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1938",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_single_media_redirect",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $redirect",
-        "int $media_id",
-        "string $slug"
-      ],
-      "where": "includes/Core/TemplateLoader.php:309",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_stable_public_urls",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $stable",
-        "int $media_id"
-      ],
-      "where": "includes/Services/SignedUrlService.php:700",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_stats_tabs",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $tabs"
-      ],
-      "where": "includes/Admin/StatsPage.php:181",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "mixed $driver",
-        "string $name"
-      ],
-      "where": "includes/Services/StorageService.php:39",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:211",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_storage_repair_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "includes/Services/StorageRepairService.php:116",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_strip_dead_bp_links",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "includes/Core/Plugin.php:323",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_suggestions_cache_ttl",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $ttl"
-      ],
-      "where": "includes/Social/SuggestionService.php:146",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_suppress_bp_comment_notification",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [],
-      "where": "includes/Integrations/BuddyPress/NotificationIntegration.php:96",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_suppress_frontend_ui",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $suppressed"
-      ],
-      "where": "includes/Core/Plugin.php:1985",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_tag_term_count",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $count",
-        "int $term_taxonomy_id"
-      ],
-      "where": "includes/Taxonomies/MediaTag.php:87",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_tags_merged",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $source_id",
-        "int $target_id",
-        "array $posts"
-      ],
-      "where": "includes/REST/Controller/TagController.php:307",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_template_variables",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "array $args",
-        "string $template_name"
-      ],
-      "where": "includes/Core/TemplateLoader.php:724",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_theme_json",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $plugin_data"
-      ],
-      "where": "includes/Core/Plugin.php:1626",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_thumbnail_size_resolved",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "mixed $size"
-      ],
-      "where": "includes/Core/SettingsHelper.php:114",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_thumbnail_sizes",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $sizes"
-      ],
-      "where": "includes/Services/UploadService.php:1288",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_upload_args",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Services/UploadService.php:229",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_upload_directory",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "string $dir",
-        "int $user_id",
-        "string $media_type"
-      ],
-      "where": "includes/Services/UploadService.php:246",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_avatar_url",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [],
-      "where": "includes/Services/ProfileService.php:464",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_badge_html",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $html",
-        "int $author_id"
-      ],
-      "where": "includes/REST/Controller/MediaController.php:1720",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_blocked",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $blocker_id",
-        "int $blocked_id"
-      ],
-      "where": "includes/Social/ReportService.php:252",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_data_purged",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "int $user_id"
-      ],
-      "where": "includes/Services/UserDeletionService.php:190",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_display_name",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $name",
-        "int $user_id"
-      ],
-      "where": "includes/Core/TemplateHelpers.php:246",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_followed",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $follower_id",
-        "int $following_id"
-      ],
-      "where": "includes/Social/FollowService.php:76",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_is_suspended",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [],
-      "where": "includes/REST/RestGuards.php:147",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_profile_url",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "string $url",
-        "int $user_id"
-      ],
-      "where": "includes/Core/TemplateHelpers.php:223",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_unfollowed",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $follower_id",
-        "int $following_id"
-      ],
-      "where": "includes/Social/FollowService.php:115",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_viewer_thumbnail_ttl",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "int $ttl",
-        "int $media_id",
-        "int $viewer_id",
-        "string $size"
-      ],
-      "where": "includes/Repository/MediaRepository.php:470",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_viewer_url_ttl",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [],
-      "where": "includes/Repository/MediaRepository.php:541",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_voice_message_sent",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $message_id",
-        "int $conversation_id",
-        "int $duration"
-      ],
-      "where": "includes/Messaging/MessagingService.php:1304",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_watermark_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "includes/Services/WatermarkService.php:106",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_watermark_stamp_file",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [],
-      "where": "includes/Services/WatermarkService.php:132",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_webhook_sslverify",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $sslverify",
-        "string $url"
-      ],
-      "where": "includes/Integrations/WebhookService.php:200",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_webp_quality",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "int $quality",
-        "array $context"
-      ],
-      "where": "includes/Services/ImageOptimizationService.php:221",
-      "consumed_by": []
-    },
-    {
-      "name": "wpmediaverse_client_nav_deny_paths",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $paths"
-      ],
-      "where": "templates/partials/router-region-open.php:17",
-      "consumed_by": []
-    },
-    {
-      "name": "wpmediaverse_client_nav_enabled",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool $enabled"
-      ],
-      "where": "templates/partials/router-region-open.php:16",
-      "consumed_by": []
-    },
-    {
-      "name": "wpmediaverse_companions",
-      "type": "filter",
-      "args_signature": [],
-      "args_count": 0,
-      "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
-      "consumed_by": []
-    }
-  ],
-  "generated": {
-    "at": "2026-07-24T00:00:00Z",
-    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "2.2.0",
-    "schema_version": "v2.2",
-    "scan_scope": "distignore",
-    "scan_path": ".",
-    "php_file_count": 174,
-    "refresh_2026_05_07_pm": {
-      "scope": "targeted (cloud-storage tooling + cloud thumbnails + i18n sweep + privacy gate)",
-      "added": {
-        "services_added": [
-          "WPMediaVerse\\Services\\CloudOps"
-        ],
-        "interface_changes": [
-          "StorageDriverInterface::download(string $path, string $local_dest): bool \u2014 new contract method"
-        ],
-        "cli_subcommands_added": [
-          "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
-          "wp mvs cloud-thumbs-backfill",
-          "wp mvs cleanup-local [--keep-thumbs]"
-        ],
-        "settings_added": [
-          "mvs_cloud_direct_public_urls (boolean, default false)"
-        ],
-        "filters_added": [
-          "mvs_cloud_thumbnail_url($url, $size, $media_id) \u2014 delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
-          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) \u2014 opt-in for private-bucket setups"
-        ],
-        "options_added": [
-          "mvs_cloud_ops_status \u2014 last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
-        ],
-        "i18n_strings_wrapped": 98,
-        "pot_entries": "1 \u2192 1,179",
-        "wp_localize_script_handles": [
-          "mvsConfirmI18n",
-          "mvsCardBuildersI18n"
-        ],
-        "view_script_strings_via_runtime_shim": 50,
-        "locale_broken_matchers_fixed": [
-          "bp-activity-media.js favorite-button click delegation (was textContent.indexOf Share)",
-          "bp-activity-media.js share-button click delegation (was textContent.indexOf Share/Copied)"
-        ]
-      },
-      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration, Phase 4.7 scaffold (already in place)."
-    },
-    "args_signature_extraction": {
-      "at": "2026-04-30",
-      "tool": "wp-plugin-onboard SKILL.md Phase 2.5.2 extractor",
-      "populated": 14,
-      "phantom": 8,
-      "total": 22
-    },
-    "refresh_2026_05_03": {
-      "scope": "targeted (REST + blocks + shortcodes + settings + 1 hook + bulk admin)",
-      "added": {
-        "rest_endpoints": [
-          "POST /media/{id}/download",
-          "POST /media/{id}/share"
-        ],
-        "rest_endpoints_updated": [
-          "PUT /media/{id} (added allow_download param)"
-        ],
-        "blocks_added": [
-          "mvs/member-photos",
-          "mvs/pdf-viewer"
-        ],
-        "blocks_unregistered": [
-          "wpmediaverse/story-viewer (source kept; not registered in BlockRegistrar::BLOCKS for 1.2.0)"
-        ],
-        "shortcodes_added": [
-          "mvs_explore_feed",
-          "mvs_lock_overlay",
-          "mvs_member_photos",
-          "mvs_pdf_viewer"
-        ],
-        "shortcodes_updated": [
-          "mvs_gallery (added user_id + order attrs)"
-        ],
-        "settings_added": [
-          "mvs_chat_panel_visibility",
-          "mvs_allow_downloads"
-        ],
-        "hooks_fired_added": [
-          "mvs_should_render_chat_panel"
-        ],
-        "media_meta_keys_added": [
-          "allow_download (string '1'/'0', default '1' when absent)"
-        ],
-        "admin_pages_extended": [
-          "Admin/MediaListPage.php::handle_bulk_action_apply (multi-select Trash/Restore/Delete on the existing All Media page)"
-        ]
-      },
-      "out_of_scope": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3 outputs) NOT regenerated. audit/derived/ cache untouched. Journeys untouched."
-    },
-    "refreshed_at": "2026-05-17T03:30:00Z",
-    "refresh_2026_05_17": {
-      "scope": "targeted: 1.2.2 image optimization pipeline (services + settings + CLI + filters + video poster ffmpeg fallback + audio waveform + explore feed chronology)",
-      "services_added": [
-        "image_optimization"
-      ],
-      "settings_added": [
-        "mvs_optimize_originals",
-        "mvs_generate_webp"
-      ],
-      "cli_added": [
-        "wp mvs optimize",
-        "wp mvs optimize-bulk"
-      ],
-      "filters_added": [
-        "mvs_optimize_image - single extension point for external compressors",
-        "mvs_optimize_jpeg_quality - default 92 for lossless re-encode",
-        "mvs_webp_quality - default 82 for WebP sibling",
-        "mvs_ffmpeg_binary - default ffmpeg, override for Docker"
-      ],
-      "meta_keys_added": [
-        "original_webp",
-        "thumb_large_webp",
-        "thumb_medium_webp",
-        "thumb_thumb_webp",
-        "_mvs_optimized_at",
-        "_mvs_optimize_failed",
-        "_mvs_bytes_before",
-        "_mvs_bytes_after"
-      ],
-      "files_added": [
-        "includes/Services/ImageOptimizationService.php",
-        "tests/unit/ImageOptimizationServiceTest.php",
-        "docs/architecture/specs/2026-05-17-image-optimization-pipeline.md",
-        "docs/development/COMPRESSION_INTEGRATIONS.md"
-      ],
-      "templates_changed": [
-        "templates/explore.php - albums removed from feed (static containers misrepresented freshness); media-only strict created_at DESC",
-        "templates/media-single.php - uses picture_or_img() so single-media view serves WebP via picture+source when sibling exists"
-      ],
-      "template_helpers_added": [
-        "picture_or_img() - emits picture when WebP sibling exists and JPEG URL is not /serve-gated",
-        "get_webp_variant_url() - central choke point; size mapping + original_webp fallback",
-        "render_audio_waveform_svg() - deterministic 48-bar waveform from media_id for audio cards without album art"
-      ],
-      "upload_service_changes": [
-        "process_upload: optimize runs on temp file BEFORE driver->store so cloud drivers receive optimized bytes",
-        "process_upload: ensure-local-copy fallback before extract_and_store_metadata for cloud-driver installs",
-        "generate_thumbnails: per-variant optimize + emit_webp_sibling; cloud upload of variant WebPs",
-        "extract_and_store_metadata audio case: embedded album art feeds through generate_thumbnails",
-        "generate_video_poster_thumbnails: Path B added - ffmpeg fallback when no embedded cover atom (proc_open with arg array, no shell injection)"
-      ],
-      "admin_changes": [
-        "MediaListPage Optimization column with badges: -X.X% / WebP ready / No lossless gain / Not optimized / Could not optimize",
-        "MediaListPage row actions: Details (?view=details mini-page), Optimize (admin-php nonced trigger)",
-        "MediaListPage::render_detail - read-only mini-page with site-owner-friendly metadata"
-      ],
-      "not_re_enumerated": "REST/AJAX/post_types/taxonomies/tables/capabilities/shortcodes/blocks/cron unchanged",
-      "deferred_to_1_3_0": [
-        "AVIF variant generation",
-        "/serve content negotiation reading Accept header",
-        "Lightbox WebP serving (needs Interactivity state + REST schema + JS build)",
-        "Screen Options column toggles",
-        "Admin bulk-optimize progress UI"
-      ]
-    },
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only \u2014 inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired \u2014 manifest category counts unchanged. Full re-scan deferred to next structural change.",
-    "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
-      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
-      "namespace": "mvs/v1",
-      "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
-    },
-    "refresh_2026_07_07_v200": {
-      "scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",
-      "new_symbols": [
-        "filter mvs_apply_watermark_preview",
-        "Plugin::resolve_privacy_ceiling()",
-        "Plugin::chat_panel_enabled()",
-        "TemplateHelpers::resolve_watermark_preview() (+interface)"
-      ],
-      "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
-    },
-    "refresh_2026_08_01": "2.3.0 baseline: +4 Auth-module hooks (see manifest.json .generated.refresh_2026_08_01_v230_baseline)"
-  }
+	"hooks_fired": [
+		{
+			"name": "mvs_access_granted",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $grant_id",
+				"int $media_id",
+				"int $user_id",
+				"string $source"
+			],
+			"where": "includes/Services/AccessRulesService.php:451",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_access_revoked",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id"
+			],
+			"where": "includes/Services/AccessRulesService.php:487",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_access_rule_created",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $rule_id",
+				"int $media_id",
+				"string $rule_type",
+				"mixed $rule_value"
+			],
+			"where": "includes/Services/AccessRulesService.php:106",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_access_rule_deleted",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $rule_id",
+				"int $media_id",
+				"string $rule_type"
+			],
+			"where": "includes/Services/AccessRulesService.php:185",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_access_rule_types_ui",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $rule_types"
+			],
+			"where": "includes/Services/AccessRulesService.php:280",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_account_deletion_cancelled",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Services/AccountDeletionService.php:216",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_account_deletion_executing",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Services/AccountDeletionService.php:244",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_account_deletion_grace_days",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Services/AccountDeletionService.php:95",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_account_deletion_password_required",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/Services/AccountDeletionService.php:300",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_account_deletion_requested",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/Services/AccountDeletionService.php:177",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_activity_max_media",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $max"
+			],
+			"where": "includes/Integrations/BuddyPress/ActivityFormIntegration.php:163",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_activity_max_tags",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $max"
+			],
+			"where": "includes/Integrations/BuddyPress/ActivityFormIntegration.php:395",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_activity_media_ids",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"array $ids",
+				"int $activity_id",
+				"object $activity"
+			],
+			"where": "includes/Integrations/BuddyPress/ActivityMediaLinkage.php:220",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_activity_types",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $types"
+			],
+			"where": "includes/Social/ActivityService.php:59",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_after_content",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/cpt-archive.php:225",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_after_explore_grid",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/explore.php:528",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_after_template_render",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"string $template_name",
+				"array $args"
+			],
+			"where": "includes/Core/TemplateLoader.php:750",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_after_thumbnail_generation",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"array $generated",
+				"string $file_path"
+			],
+			"where": "includes/Services/UploadService.php:1246",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_ai_cost_per_call",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Services/AIService.php:462",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_ai_moderation_result",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $result",
+				"int $media_id"
+			],
+			"where": "includes/Services/AIService.php:292",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_ai_providers",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"mixed $service"
+			],
+			"where": "includes/Core/Plugin.php:506",
+			"consumed_by": [
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Core/Plugin.php:217",
+					"kind": "add_action_listener"
+				}
+			]
+		},
+		{
+			"name": "mvs_ai_result",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $output",
+				"int $media_id"
+			],
+			"where": "includes/Services/AIService.php:402",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_album_cover_set",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $album_id",
+				"int $media_id"
+			],
+			"where": "includes/Services/AlbumService.php:371",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_album_deleted",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"int $post_id"
+			],
+			"where": "includes/PostTypes/Album.php:83",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_album_inherit_privacy",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"bool $inherit",
+				"int $album_id",
+				"int[] $media_ids"
+			],
+			"where": "includes/Services/AlbumService.php (add_items)",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_album_items_added",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $album_id",
+				"int $actor_id",
+				"array $media_ids",
+				"array $added"
+			],
+			"where": "includes/Services/AlbumService.php:255",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_album_response",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $data",
+				"int $album_id"
+			],
+			"where": "includes/REST/Controller/AlbumController.php:642",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_allowed_file_types",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $types"
+			],
+			"where": "includes/Services/UploadService.php:760",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_config",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $config"
+			],
+			"where": "includes/REST/Controller/ConfigController.php:189",
+			"consumed_by": [],
+			"note": "Extension point Pro fills with the `documents` block, so a client never hardcodes the format list, size ceiling or preview tiers. P4.4."
+		},
+		{
+			"name": "mvs_app_config_branding",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/REST/Controller/ConfigController.php:135",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_config_features",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/REST/Controller/ConfigController.php:88",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_config_layout",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $layout"
+			],
+			"where": "includes/REST/Controller/ConfigController.php:134",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_config_legal",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/REST/Controller/ConfigController.php:225",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_connect_bridge",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $info"
+			],
+			"where": "includes/Auth/AppConnect.php:132",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_connect_schemes",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Auth/AppConnect.php:88",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_credential_issued",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $user_id",
+				"string $app_id",
+				"string $app_name"
+			],
+			"where": "includes/Auth/AppCredentials.php:186",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_interests_cache_ttl",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $ttl"
+			],
+			"where": "includes/REST/Controller/InterestsController.php:132",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_page_ids",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Core/TemplateLoader.php:838",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_password_login_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $on"
+			],
+			"where": "includes/Auth/AppCredentials.php:89",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_scheme",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $scheme"
+			],
+			"where": "includes/Auth/AppAuthorizeAccess.php:97",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_app_template",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/Core/TemplateLoader.php:914",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_apply_exif_orientation",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"bool $apply",
+				"string $file_path",
+				"string $mime"
+			],
+			"where": "includes/Services/UploadService.php (apply_exif_orientation)",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_avatar_allowed_types",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $allowed_types",
+				"int $user_id"
+			],
+			"where": "includes/Services/ProfileService.php:219",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_avatar_deleted",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"int $user_id"
+			],
+			"where": "includes/Services/ProfileService.php:320",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_avatar_max_size",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $max_size",
+				"int $user_id"
+			],
+			"where": "includes/Services/ProfileService.php:231",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_avatar_uploaded",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $user_id",
+				"int $attachment_id"
+			],
+			"where": "includes/Services/ProfileService.php:290",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_avif_quality",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $quality",
+				"array $context"
+			],
+			"where": "includes/Services/ImageOptimizationService.php:337",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_before_content",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/cpt-archive.php:20",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_before_explore_grid",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/explore.php:303",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_before_media_insert",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "includes/Services/UploadService.php:421",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_before_template_render",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"string $template_name",
+				"array $args"
+			],
+			"where": "includes/Core/TemplateLoader.php:738",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_before_thumbnail_generation",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"string $file_path",
+				"array $sizes"
+			],
+			"where": "includes/Services/UploadService.php:1050",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_before_upload_form",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "includes/Shortcodes/Shortcodes.php:126",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_body_classes",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $classes"
+			],
+			"where": "includes/Core/TemplateLoader.php:601",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_broadcast_thumbnail_ttl",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"int $ttl",
+				"int $media_id",
+				"string $size"
+			],
+			"where": "includes/Repository/MediaRepository.php:413",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_buddynext_active",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $active"
+			],
+			"where": "includes/Core/Plugin.php:1105",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_can_repair_thumb",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"bool $can",
+				"int $media_id",
+				"string $file_type",
+				"string $file_path"
+			],
+			"where": "includes/Admin/MediaListPage.php:1315",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_can_send_message",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"bool $can",
+				"int $sender_id",
+				"int $recipient_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:59",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_cloud_thumbnail_url",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $url",
+				"string $size_name",
+				"int $media_id"
+			],
+			"where": "includes/Services/UploadService.php:1142",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_cloudops_allow_non_public_to_cloud",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"bool $allow",
+				"int $media_id",
+				"string $privacy",
+				"string $to"
+			],
+			"where": "includes/Services/CloudOps.php:81",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_collection_deleted",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"int $post_id"
+			],
+			"where": "includes/PostTypes/Collection.php:79",
+			"consumed_by": [
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Core/Plugin.php:251",
+					"kind": "add_action_listener"
+				}
+			]
+		},
+		{
+			"name": "mvs_collection_media_ids",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"array $media_ids",
+				"int $collection_id",
+				"int $per_page"
+			],
+			"where": "includes/Shortcodes/Shortcodes.php:581",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_collection_response",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $data",
+				"int $post_id"
+			],
+			"where": "includes/REST/Controller/CollectionController.php:445",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_collections_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "templates/media-single.php:444",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_comment_created",
+			"type": "action",
+			"args_count": 5,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id",
+				"int $comment_id",
+				"string $content",
+				"string $source"
+			],
+			"where": "includes/Social/CommentService.php:159",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_comment_duplicate_window",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"int $seconds",
+				"int $media_id",
+				"int $user_id"
+			],
+			"where": "includes/Social/CommentService.php (find_recent_duplicate)",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_comment_edit_window",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Social/CommentService.php:386",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_community_gated_page",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $is_gated_page"
+			],
+			"where": "includes/REST/CommunityPrivacyGate.php:146",
+			"consumed_by": [
+				"wpmediaverse-pro (adds compete/battles/challenges/tournaments pages)"
+			],
+			"added": "2.3.2"
+		},
+		{
+			"name": "mvs_community_login_url",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $login_url = wp_login_url($current)",
+				"string $current"
+			],
+			"where": "includes/REST/CommunityPrivacyGate.php:92",
+			"consumed_by": [
+				"buddynext (points it at PageRouter::auth_url())"
+			],
+			"added": "2.3.2"
+		},
+		{
+			"name": "mvs_conversation_created",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $conv_id",
+				"int $user_a",
+				"array $participants"
+			],
+			"where": "includes/Messaging/MessagingService.php:414",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_conversation_read",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $conversation_id",
+				"int $user_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:1738",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dashboard_after_content",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/partials/dashboard-content.php:935",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dashboard_before_content",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/partials/dashboard-content.php:20",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dashboard_panels",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/partials/dashboard-content.php:622",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dashboard_tab_registry",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $tabs"
+			],
+			"where": "templates/partials/dashboard-content.php:481",
+			"consumed_by": [
+				"Core\\Plugin::register_documents_tab"
+			]
+		},
+		{
+			"name": "mvs_dashboard_tabs",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "templates/partials/dashboard-content.php:365",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dashboard_widgets",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "includes/Admin/OverviewPage.php:491",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dead_bp_link_patterns",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Core/Plugin.php:1708",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_default_thumbnail_style",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $style"
+			],
+			"where": "includes/Core/SettingsHelper.php:188",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_default_video_poster_url",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $default"
+			],
+			"where": "includes/Core/TemplateHelpers.php:535",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_access_level",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"mixed $access",
+				"int $sender_id",
+				"int $recipient_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:105",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_allowed_file_types",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Messaging/MessagingController.php:911",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_convo_rate_limit",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $limit"
+			],
+			"where": "includes/Messaging/MessagingService.php:227",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_denial_message",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $message",
+				"string $reason"
+			],
+			"where": "includes/Messaging/MessagingService.php:194",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_denial_reason",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $reason",
+				"int $sender_id",
+				"int $recipient_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:74",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_max_upload_size",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $size"
+			],
+			"where": "includes/Messaging/MessagingController.php:862",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_message_rate_limit",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $limit"
+			],
+			"where": "includes/Messaging/MessagingService.php:208",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_dm_unarchive_on_activity",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"bool $unarchive",
+				"int $conversation_id",
+				"int $sender_id"
+			],
+			"where": "includes/Messaging/MessagingService.php (send_message)",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_document_admin_panels",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $html",
+				"int $media_id",
+				"array $row"
+			],
+			"where": "includes/Admin/DocumentListPage.php"
+		},
+		{
+			"name": "mvs_document_can_grant",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"bool $can",
+				"string $drive_type",
+				"int $drive_id",
+				"int $user_id"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/PermissionService.php:can_grant()",
+			"consumed_by": [],
+			"note": "D1 seam for non-personal drives. DEFAULTS FALSE so an unanswered filter denies rather than opening sharing to every member of a space."
+		},
+		{
+			"name": "mvs_document_folder_created",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $folder_id",
+				"array $args"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/FolderService.php:create()",
+			"consumed_by": [],
+			"note": "Fires after a document folder is created."
+		},
+		{
+			"name": "mvs_document_folder_privacy_cascaded",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $folder_id",
+				"string $privacy",
+				"int $cascaded"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/FolderService.php:set_privacy()",
+			"consumed_by": [],
+			"note": "T2. Fires after a tightening has swept the subtree. Loosening never cascades, so it does not fire."
+		},
+		{
+			"name": "mvs_document_folder_trashed",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"int $folder_id"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/FolderService.php:trash()",
+			"consumed_by": [],
+			"note": "Fires after a folder and its subtree are trashed."
+		},
+		{
+			"name": "mvs_document_max_depth",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $depth"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/FolderService.php:max_depth()",
+			"consumed_by": [],
+			"note": "Folder nesting cap, default 12. Raising past 16 pushes `path` beyond KEY subtree's 150-byte prefix, so deep trees silently stop using the index."
+		},
+		{
+			"name": "mvs_document_owns_drive",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"bool $owns",
+				"string $drive_type",
+				"int $drive_id",
+				"int $user_id"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/PermissionService.php:owns_drive()",
+			"consumed_by": [],
+			"note": "Space-drive ownership seam, resolved once per drive per request. Defaults false."
+		},
+		{
+			"name": "mvs_document_row_actions",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $html",
+				"int $media_id",
+				"bool $trashed"
+			],
+			"where": "templates/admin/documents.php"
+		},
+		{
+			"name": "mvs_document_uploaded",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"string $doc_type",
+				"int $folder_id"
+			],
+			"where": "wpmediaverse-pro/includes/Documents/DocumentIngestService.php:handle()",
+			"consumed_by": [],
+			"note": "Fires after a document is ingested. Quota rides the existing mvs_media_uploaded instead, which is why D2 needs no fourth counter."
+		},
+		{
+			"name": "mvs_document_viewer_html",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $html",
+				"int $media_id",
+				"string $mime"
+			],
+			"where": "templates/media-single.php:334",
+			"consumed_by": [
+				"wpmediaverse-pro: includes/Documents/DocumentViewer.php::render"
+			]
+		},
+		{
+			"name": "mvs_explore_query_args",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $query_args",
+				"mixed $profile"
+			],
+			"where": "templates/explore.php:268",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_favorite_added",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id"
+			],
+			"where": "includes/Social/FavoriteService.php:68",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_favorite_toggled",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id",
+				"string $action"
+			],
+			"where": "includes/REST/Controller/FavoriteController.php:183",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_feed_media_ids",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $int_ids",
+				"WP_REST_Request $request"
+			],
+			"where": "includes/REST/Controller/MediaController.php:591",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_feed_query_args",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/REST/Controller/MediaController.php:538",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_feed_sort_options",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $options"
+			],
+			"where": "includes/REST/Controller/MediaController.php:1844",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_ffmpeg_binary",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $binary"
+			],
+			"where": "includes/Services/PosterService.php:120",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_filename_strategy",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $strategy",
+				"int $user_id"
+			],
+			"where": "includes/Services/FilenameStrategy.php:128",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_filename_strategy_upgrade_default",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $default"
+			],
+			"where": "includes/Services/FilenameStrategy.php:102",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_frontend_presence_keep_handles",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $handles"
+			],
+			"where": "includes/Core/Plugin.php:2011",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_grid_thumb_size_key",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $key",
+				"mixed $configured"
+			],
+			"where": "includes/Core/SettingsHelper.php:156",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_group_conversation_created",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $conv_id",
+				"int $creator_id",
+				"array $all_ids",
+				"array $opts"
+			],
+			"where": "includes/Messaging/MessagingService.php:798",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_hide_submenu_slugs",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $slugs"
+			],
+			"where": "includes/Admin/Settings/SettingsPage.php:73",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_hold_uploads_for_moderation",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $hold",
+				"int $user_id"
+			],
+			"where": "includes/Services/UploadService.php:395",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_loaded",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"Container $container"
+			],
+			"where": "includes/Core/Plugin.php:354",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_locate_template",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $template",
+				"string $template_name",
+				"string $template_path"
+			],
+			"where": "includes/Core/TemplateLoader.php:700",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_login_url",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/Core/TemplateHelpers.php:580",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_max_upload_size",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $max_size",
+				"int $user_id"
+			],
+			"where": "includes/Services/UploadService.php:123",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_alt_text",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $alt",
+				"int $media_id"
+			],
+			"where": "includes/Core/TemplateHelpers.php:329",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_deleted",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"int $author_id"
+			],
+			"where": "includes/Repository/MediaRepository.php:2305",
+			"consumed_by": [
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Quota/QuotaService.php:41",
+					"kind": "add_action_listener"
+				},
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Core/Plugin.php:243",
+					"kind": "add_action_listener"
+				},
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Core/Plugin.php:261",
+					"kind": "add_action_listener"
+				}
+			]
+		},
+		{
+			"name": "mvs_media_feed_allows_documents",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $allowed"
+			],
+			"where": "includes/REST/Controller/MediaController.php:334",
+			"consumed_by": [],
+			"note": "Production Rule 3 escape hatch for P1.5. GET /media?media_type=document (and /me/media, which delegates to the same handler) returned document rows until 2.4.0 and the parameter has advertised 'document' in its enum since the first release. The route now answers 400 mvs_document_route; this filter restores the old behaviour for at least two majors. Default false."
+		},
+		{
+			"name": "mvs_media_files_orphaned",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"array $orphaned_files"
+			],
+			"where": "includes/Repository/MediaRepository.php:2250",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_flagged",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"array $result"
+			],
+			"where": "includes/Services/AIService.php:334",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_group_assigned",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"int $group_id"
+			],
+			"where": "includes/REST/Controller/MediaController.php:803",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_library_types",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string[] $types"
+			],
+			"where": "includes/Core/MediaTypes.php:library_types()",
+			"consumed_by": [],
+			"note": "Production Rule 3 escape hatch for narrowing MEDIA_LIBRARY to media only (owner, 2026-08-09: documents never render in a media grid). Restoring legacy_document re-accepts the broken tile."
+		},
+		{
+			"name": "mvs_media_metadata",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"array $metadata",
+				"string $file_path",
+				"int $media_id"
+			],
+			"where": "includes/Services/UploadService.php:989",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_privacy_changed",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"string $value",
+				"string $old_privacy"
+			],
+			"where": "includes/Repository/MediaRepository.php:690",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_privacy_clamped_by_album",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $media_id",
+				"string $from",
+				"string $to",
+				"int $album_id"
+			],
+			"where": "includes/Services/AlbumService.php (add_items)",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_replaced",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $media_id",
+				"array $file_data",
+				"int $user_id",
+				"string $media_type"
+			],
+			"where": "includes/REST/Controller/MediaController.php:1171",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_response",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $data",
+				"int $media_id"
+			],
+			"where": "includes/REST/Controller/MediaController.php:1785",
+			"consumed_by": [
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Captions/TranscriptionService.php:74",
+					"kind": "add_filter_listener"
+				}
+			]
+		},
+		{
+			"name": "mvs_media_shared",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id",
+				"string $platform"
+			],
+			"where": "includes/Social/ShareService.php:48",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_media_single_actions",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"int $author_id",
+				"bool $is_owner"
+			],
+			"where": "templates/media-single.php:479",
+			"consumed_by": [
+				"wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
+			],
+			"added": "2.1.0"
+		},
+		{
+			"name": "mvs_media_type_for_mime",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $type",
+				"string $mime"
+			],
+			"where": "includes/Services/UploadService.php:866",
+			"consumed_by": [],
+			"note": "Production Rule 3 escape hatch for P2.1. get_media_type() used to return 'document' for any unrecognised MIME; it now returns ''. A filter value outside MediaTypes::ALL is ignored, so an unknown string cannot defeat the positive type predicates downstream. Added to the manifest 2026-08-09 -- it shipped in the P2.1 commit without a manifest delta."
+		},
+		{
+			"name": "mvs_media_uploaded",
+			"type": "action",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Services/UploadService.php:584",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_member_erase_map",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Privacy/MemberDataMap.php:148",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_member_purged",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Privacy/MemberPurger.php:113",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_member_retain_map",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Privacy/MemberDataMap.php:221",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_member_suspension_changed",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/Admin/MemberModeration.php:163",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_mentions_created",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $media_id",
+				"array $mentioned_ids",
+				"string $context",
+				"int $comment_id"
+			],
+			"where": "includes/Social/MentionService.php:58",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_message_content_check",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"bool $ok",
+				"string $content",
+				"int $sender_id",
+				"int $conversation_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:1169",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_message_deleted",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $message_id",
+				"int $user_id",
+				"bool $for_everyone"
+			],
+			"where": "includes/Messaging/MessagingService.php:1557",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_message_max_length",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $length"
+			],
+			"where": "includes/Messaging/MessagingService.php:1136",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_message_reaction_added",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $message_id",
+				"int $user_id",
+				"string $emoji"
+			],
+			"where": "includes/Messaging/MessagingService.php:1853",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_message_request_accepted",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $conversation_id",
+				"int $user_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:1051",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_message_sent",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $message_id",
+				"int $conversation_id",
+				"int $sender_id",
+				"array $recipient_ids"
+			],
+			"where": "includes/Messaging/MessagingService.php:1297",
+			"consumed_by": [
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Messaging/NotificationListener.php:33",
+					"kind": "add_action_listener"
+				}
+			]
+		},
+		{
+			"name": "mvs_message_types",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Messaging/MessagingService.php:1409",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_messaging_poll_intervals",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Messaging/RestPollingTransport.php:48",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_messaging_transport",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Core/Plugin.php:1851",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_moderation_changed",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $media_id",
+				"string $status",
+				"string $old_status",
+				"int $user_id"
+			],
+			"where": "includes/Services/ModerationService.php:92",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_moderation_tabs",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $tabs"
+			],
+			"where": "includes/Admin/ModerationQueue.php:199",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_no_sidebar_templates",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Core/TemplateLoader.php:943",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_notification_created",
+			"type": "action",
+			"args_count": 7,
+			"args_signature": [
+				"int $notification_id",
+				"int $user_id",
+				"string $type",
+				"int $actor_id",
+				"int $media_id",
+				"string $message",
+				"string $link"
+			],
+			"where": "includes/Social/NotificationService.php:172",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_notification_data",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Social/NotificationService.php:128",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_notification_message",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"mixed $message",
+				"string $type",
+				"string $actor_name",
+				"string $media_title"
+			],
+			"where": "includes/Social/NotificationService.php:502",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_notification_types",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $types"
+			],
+			"where": "includes/Social/NotificationService.php:97",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_object_media_set",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"string $object_type",
+				"int $object_id",
+				"array $media_ids"
+			],
+			"where": "includes/Media/ObjectMediaLinkage.php:97",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_openai_api_key",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"string $key"
+			],
+			"where": "includes/Core/SettingsHelper.php:221",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_optimize_image",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $file_path",
+				"array $context"
+			],
+			"where": "includes/Services/ImageOptimizationService.php:113",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_optimize_jpeg_quality",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $quality",
+				"array $context"
+			],
+			"where": "includes/Services/ImageOptimizationService.php:644",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_parent_route",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $parent",
+				"string $context",
+				"array $args"
+			],
+			"where": "includes/Core/TemplateHelpers.php:1102",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_participant_added",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $conversation_id",
+				"int $user_id",
+				"string $role"
+			],
+			"where": "includes/Messaging/MessagingService.php:905",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_participant_removed",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $conversation_id",
+				"int $user_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:946",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_privacy_can_view",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"mixed $can",
+				"int $media_id",
+				"int $user_id",
+				"string $privacy"
+			],
+			"where": "includes/Services/PrivacyService.php:91",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_pro_document_extraction_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "wpmediaverse-pro: includes/Documents/ExtractionService.php::is_enabled",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_profile_data",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $profile",
+				"int $user_id"
+			],
+			"where": "includes/Services/ProfileService.php:119",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_profile_privacy_levels",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"array $levels",
+				"int $author_id",
+				"int $viewer_id"
+			],
+			"where": "includes/Repository/MediaRepository.php:1543",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_profile_update_fields",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $fields",
+				"int $user_id"
+			],
+			"where": "includes/Services/ProfileService.php:140",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_profile_updated",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $user_id",
+				"array $fields"
+			],
+			"where": "includes/Services/ProfileService.php:193",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_public_cloud_file_url",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $file_url",
+				"int $media_id",
+				"string $rel_path"
+			],
+			"where": "includes/Services/SignedUrlService.php:920",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_public_cloud_thumbnail_url",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $thumb_url",
+				"int $media_id",
+				"string $size"
+			],
+			"where": "includes/Services/SignedUrlService.php:840",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_public_local_file_url",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $url",
+				"int $media_id",
+				"string $rel_path"
+			],
+			"where": "includes/Services/SignedUrlService.php:913",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_public_local_thumbnail_url",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"string $url",
+				"int $media_id",
+				"string $size",
+				"string $rel_path"
+			],
+			"where": "includes/Services/SignedUrlService.php:833",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_public_media_max_age",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $max_age",
+				"string $privacy"
+			],
+			"where": "includes/Services/SignedUrlService.php:737",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_reaction_added",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id",
+				"string $reaction_type"
+			],
+			"where": "includes/Social/ReactionService.php:100",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_reaction_removed",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id"
+			],
+			"where": "includes/Social/ReactionService.php:139",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_reaction_toggled",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id",
+				"string $reaction_type",
+				"string $action"
+			],
+			"where": "includes/REST/Controller/ReactionController.php:191",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_registration_url",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/Core/TemplateHelpers.php:617",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_repair_media_thumb",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Admin/MediaListPage.php:1059",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_report_submitted",
+			"type": "action",
+			"args_count": 5,
+			"args_signature": [
+				"int $report_id",
+				"int $reporter_id",
+				"string $target_type",
+				"int $target_id",
+				"string $reason"
+			],
+			"where": "includes/Social/ReportService.php:121",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_reports_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "includes/Social/ReportService.php:55",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_reserved_media_paths",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Core/TemplateLoader.php:184",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_can_access",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $allowed = is_user_logged_in()",
+				"\\WP_REST_Request $request"
+			],
+			"where": "includes/REST/CommunityPrivacyGate.php:102",
+			"consumed_by": [
+				"buddynext (buddynext_private_community_can_access seam)"
+			],
+			"added": "2.2.0"
+		},
+		{
+			"name": "mvs_rest_gate_denied",
+			"type": "action",
+			"args_count": 4,
+			"args_signature": [],
+			"where": "includes/REST/RestGate.php:569",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_gate_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/REST/RestGate.php:333",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_gate_exempt_route_prefixes",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string[] $exempt = array('/mvs/v1/serve')",
+				"\\WP_REST_Request $request"
+			],
+			"where": "includes/REST/CommunityPrivacyGate.php:224",
+			"consumed_by": [
+				"wpmediaverse-pro (exempts /mvs-pro/v1/credits/webhook, HMAC-authenticated)"
+			],
+			"added": "2.3.2"
+		},
+		{
+			"name": "mvs_rest_gate_map",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/REST/RestGate.php:301",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_gate_resolve_targets",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [],
+			"where": "includes/REST/RestGate.php:505",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_gate_unresolved",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [],
+			"where": "includes/REST/RestGate.php:378",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_gated_route_prefixes",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string[] $prefixes = array('/mvs/v1/')",
+				"\\WP_REST_Request $request"
+			],
+			"where": "includes/REST/CommunityPrivacyGate.php:87",
+			"consumed_by": [
+				"wpmediaverse-pro (appends /mvs-pro/v1/ at boot)"
+			],
+			"added": "2.2.0"
+		},
+		{
+			"name": "mvs_rest_pagination_max",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $max"
+			],
+			"where": "includes/REST/Pagination.php:55",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_rest_require_auth",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $require = false",
+				"\\WP_REST_Request $request"
+			],
+			"where": "includes/REST/CommunityPrivacyGate.php:70",
+			"consumed_by": [
+				"buddynext (arms it when buddynext_private_community is on)"
+			],
+			"added": "2.2.0"
+		},
+		{
+			"name": "mvs_rest_timestamp_keys",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Core/Dates.php:97",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_seo_title_separator",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [],
+			"where": "includes/Core/TemplateLoader.php:481",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_serve_expired_public_urls",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $serve",
+				"int $media_id"
+			],
+			"where": "includes/Services/SignedUrlService.php:332",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_serve_public_cloud_direct",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $serve",
+				"int $media_id"
+			],
+			"where": "includes/Services/SignedUrlService.php:955",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_settings_before_save",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"string $option_page"
+			],
+			"where": "includes/Admin/Settings/SettingsPage.php:118",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_settings_group_labels",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $group_labels"
+			],
+			"where": "includes/Admin/Settings/SettingsPage.php:355",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_settings_render_{renderer}",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"array $section"
+			],
+			"where": "includes/Admin/Settings/SettingsPage.php:495",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_settings_sections",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $sections"
+			],
+			"where": "includes/Admin/Settings/SettingsPage.php:320",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_settings_sidebar_after",
+			"type": "action",
+			"args_count": 0,
+			"args_signature": [],
+			"where": "includes/Admin/Settings/SettingsPage.php:463",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_share_recorded",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $media_id",
+				"int $user_id"
+			],
+			"where": "includes/REST/Controller/MediaController.php:1390",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_should_ai_analyze",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $should",
+				"int $media_id"
+			],
+			"where": "includes/Services/AIService.php:365",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_should_render_chat_panel",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $render",
+				"mixed $visibility"
+			],
+			"where": "includes/Core/Plugin.php:2226",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_should_send_notification",
+			"type": "filter",
+			"args_count": 5,
+			"args_signature": [
+				"bool $send",
+				"int $user_id",
+				"string $type",
+				"int $actor_id",
+				"int $media_id"
+			],
+			"where": "includes/Social/NotificationService.php:116",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_show_online_status",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"bool $show",
+				"int $current_user_id",
+				"int $user_id"
+			],
+			"where": "includes/Messaging/MessagingService.php:1938",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_single_media_redirect",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $redirect",
+				"int $media_id",
+				"string $slug"
+			],
+			"where": "includes/Core/TemplateLoader.php:309",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_stable_public_urls",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $stable",
+				"int $media_id"
+			],
+			"where": "includes/Services/SignedUrlService.php:700",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_stats_tabs",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $tabs"
+			],
+			"where": "includes/Admin/StatsPage.php:181",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_storage_driver",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"mixed $driver",
+				"string $name"
+			],
+			"where": "includes/Services/StorageService.php:39",
+			"consumed_by": [
+				{
+					"plugin": "wpmediaverse-pro",
+					"where": "includes/Core/Plugin.php:211",
+					"kind": "add_filter_listener"
+				}
+			]
+		},
+		{
+			"name": "mvs_storage_repair_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "includes/Services/StorageRepairService.php:116",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_strip_dead_bp_links",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "includes/Core/Plugin.php:323",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_suggestions_cache_ttl",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"int $ttl"
+			],
+			"where": "includes/Social/SuggestionService.php:146",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_suppress_bp_comment_notification",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [],
+			"where": "includes/Integrations/BuddyPress/NotificationIntegration.php:96",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_suppress_frontend_ui",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $suppressed"
+			],
+			"where": "includes/Core/Plugin.php:1985",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_tag_term_count",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $count",
+				"int $term_taxonomy_id"
+			],
+			"where": "includes/Taxonomies/MediaTag.php:87",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_tags_merged",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $source_id",
+				"int $target_id",
+				"array $posts"
+			],
+			"where": "includes/REST/Controller/TagController.php:307",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_template_variables",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"array $args",
+				"string $template_name"
+			],
+			"where": "includes/Core/TemplateLoader.php:724",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_theme_json",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $plugin_data"
+			],
+			"where": "includes/Core/Plugin.php:1626",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_thumbnail_size_resolved",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"mixed $size"
+			],
+			"where": "includes/Core/SettingsHelper.php:114",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_thumbnail_sizes",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $sizes"
+			],
+			"where": "includes/Services/UploadService.php:1288",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_upload_args",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Services/UploadService.php:229",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_upload_directory",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [
+				"string $dir",
+				"int $user_id",
+				"string $media_type"
+			],
+			"where": "includes/Services/UploadService.php:246",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_avatar_url",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [],
+			"where": "includes/Services/ProfileService.php:464",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_badge_html",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $html",
+				"int $author_id"
+			],
+			"where": "includes/REST/Controller/MediaController.php:1720",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_blocked",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $blocker_id",
+				"int $blocked_id"
+			],
+			"where": "includes/Social/ReportService.php:252",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_data_purged",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [
+				"int $user_id"
+			],
+			"where": "includes/Services/UserDeletionService.php:190",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_display_name",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $name",
+				"int $user_id"
+			],
+			"where": "includes/Core/TemplateHelpers.php:246",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_followed",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $follower_id",
+				"int $following_id"
+			],
+			"where": "includes/Social/FollowService.php:76",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_is_suspended",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [],
+			"where": "includes/REST/RestGuards.php:147",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_profile_url",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"string $url",
+				"int $user_id"
+			],
+			"where": "includes/Core/TemplateHelpers.php:223",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_user_unfollowed",
+			"type": "action",
+			"args_count": 2,
+			"args_signature": [
+				"int $follower_id",
+				"int $following_id"
+			],
+			"where": "includes/Social/FollowService.php:115",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_viewer_thumbnail_ttl",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [
+				"int $ttl",
+				"int $media_id",
+				"int $viewer_id",
+				"string $size"
+			],
+			"where": "includes/Repository/MediaRepository.php:470",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_viewer_url_ttl",
+			"type": "filter",
+			"args_count": 3,
+			"args_signature": [],
+			"where": "includes/Repository/MediaRepository.php:541",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_voice_message_sent",
+			"type": "action",
+			"args_count": 3,
+			"args_signature": [
+				"int $message_id",
+				"int $conversation_id",
+				"int $duration"
+			],
+			"where": "includes/Messaging/MessagingService.php:1304",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_watermark_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "includes/Services/WatermarkService.php:106",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_watermark_stamp_file",
+			"type": "filter",
+			"args_count": 4,
+			"args_signature": [],
+			"where": "includes/Services/WatermarkService.php:132",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_webhook_sslverify",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"bool $sslverify",
+				"string $url"
+			],
+			"where": "includes/Integrations/WebhookService.php:200",
+			"consumed_by": []
+		},
+		{
+			"name": "mvs_webp_quality",
+			"type": "filter",
+			"args_count": 2,
+			"args_signature": [
+				"int $quality",
+				"array $context"
+			],
+			"where": "includes/Services/ImageOptimizationService.php:221",
+			"consumed_by": []
+		},
+		{
+			"name": "wpmediaverse_client_nav_deny_paths",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"array $paths"
+			],
+			"where": "templates/partials/router-region-open.php:17",
+			"consumed_by": []
+		},
+		{
+			"name": "wpmediaverse_client_nav_enabled",
+			"type": "filter",
+			"args_count": 1,
+			"args_signature": [
+				"bool $enabled"
+			],
+			"where": "templates/partials/router-region-open.php:16",
+			"consumed_by": []
+		},
+		{
+			"name": "wpmediaverse_companions",
+			"type": "filter",
+			"args_signature": [],
+			"args_count": 0,
+			"where": "includes/Integrations/Companions/CompanionRegistry.php:46",
+			"consumed_by": []
+		}
+	],
+	"generated": {
+		"at": "2026-07-24T00:00:00Z",
+		"from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
+		"branch": "2.2.0",
+		"schema_version": "v2.2",
+		"scan_scope": "distignore",
+		"scan_path": ".",
+		"php_file_count": 174,
+		"refresh_2026_05_07_pm": {
+			"scope": "targeted (cloud-storage tooling + cloud thumbnails + i18n sweep + privacy gate)",
+			"added": {
+				"services_added": [
+					"WPMediaVerse\\Services\\CloudOps"
+				],
+				"interface_changes": [
+					"StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
+				],
+				"cli_subcommands_added": [
+					"wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
+					"wp mvs cloud-thumbs-backfill",
+					"wp mvs cleanup-local [--keep-thumbs]"
+				],
+				"settings_added": [
+					"mvs_cloud_direct_public_urls (boolean, default false)"
+				],
+				"filters_added": [
+					"mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+					"mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
+				],
+				"options_added": [
+					"mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+				],
+				"i18n_strings_wrapped": 98,
+				"pot_entries": "1 → 1,179",
+				"wp_localize_script_handles": [
+					"mvsConfirmI18n",
+					"mvsCardBuildersI18n"
+				],
+				"view_script_strings_via_runtime_shim": 50,
+				"locale_broken_matchers_fixed": [
+					"bp-activity-media.js favorite-button click delegation (was textContent.indexOf Share)",
+					"bp-activity-media.js share-button click delegation (was textContent.indexOf Share/Copied)"
+				]
+			},
+			"out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration, Phase 4.7 scaffold (already in place)."
+		},
+		"args_signature_extraction": {
+			"at": "2026-04-30",
+			"tool": "wp-plugin-onboard SKILL.md Phase 2.5.2 extractor",
+			"populated": 14,
+			"phantom": 8,
+			"total": 22
+		},
+		"refresh_2026_05_03": {
+			"scope": "targeted (REST + blocks + shortcodes + settings + 1 hook + bulk admin)",
+			"added": {
+				"rest_endpoints": [
+					"POST /media/{id}/download",
+					"POST /media/{id}/share"
+				],
+				"rest_endpoints_updated": [
+					"PUT /media/{id} (added allow_download param)"
+				],
+				"blocks_added": [
+					"mvs/member-photos",
+					"mvs/pdf-viewer"
+				],
+				"blocks_unregistered": [
+					"wpmediaverse/story-viewer (source kept; not registered in BlockRegistrar::BLOCKS for 1.2.0)"
+				],
+				"shortcodes_added": [
+					"mvs_explore_feed",
+					"mvs_lock_overlay",
+					"mvs_member_photos",
+					"mvs_pdf_viewer"
+				],
+				"shortcodes_updated": [
+					"mvs_gallery (added user_id + order attrs)"
+				],
+				"settings_added": [
+					"mvs_chat_panel_visibility",
+					"mvs_allow_downloads"
+				],
+				"hooks_fired_added": [
+					"mvs_should_render_chat_panel"
+				],
+				"media_meta_keys_added": [
+					"allow_download (string '1'/'0', default '1' when absent)"
+				],
+				"admin_pages_extended": [
+					"Admin/MediaListPage.php::handle_bulk_action_apply (multi-select Trash/Restore/Delete on the existing All Media page)"
+				]
+			},
+			"out_of_scope": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3 outputs) NOT regenerated. audit/derived/ cache untouched. Journeys untouched."
+		},
+		"refreshed_at": "2026-05-17T03:30:00Z",
+		"refresh_2026_05_17": {
+			"scope": "targeted: 1.2.2 image optimization pipeline (services + settings + CLI + filters + video poster ffmpeg fallback + audio waveform + explore feed chronology)",
+			"services_added": [
+				"image_optimization"
+			],
+			"settings_added": [
+				"mvs_optimize_originals",
+				"mvs_generate_webp"
+			],
+			"cli_added": [
+				"wp mvs optimize",
+				"wp mvs optimize-bulk"
+			],
+			"filters_added": [
+				"mvs_optimize_image - single extension point for external compressors",
+				"mvs_optimize_jpeg_quality - default 92 for lossless re-encode",
+				"mvs_webp_quality - default 82 for WebP sibling",
+				"mvs_ffmpeg_binary - default ffmpeg, override for Docker"
+			],
+			"meta_keys_added": [
+				"original_webp",
+				"thumb_large_webp",
+				"thumb_medium_webp",
+				"thumb_thumb_webp",
+				"_mvs_optimized_at",
+				"_mvs_optimize_failed",
+				"_mvs_bytes_before",
+				"_mvs_bytes_after"
+			],
+			"files_added": [
+				"includes/Services/ImageOptimizationService.php",
+				"tests/unit/ImageOptimizationServiceTest.php",
+				"docs/architecture/specs/2026-05-17-image-optimization-pipeline.md",
+				"docs/development/COMPRESSION_INTEGRATIONS.md"
+			],
+			"templates_changed": [
+				"templates/explore.php - albums removed from feed (static containers misrepresented freshness); media-only strict created_at DESC",
+				"templates/media-single.php - uses picture_or_img() so single-media view serves WebP via picture+source when sibling exists"
+			],
+			"template_helpers_added": [
+				"picture_or_img() - emits picture when WebP sibling exists and JPEG URL is not /serve-gated",
+				"get_webp_variant_url() - central choke point; size mapping + original_webp fallback",
+				"render_audio_waveform_svg() - deterministic 48-bar waveform from media_id for audio cards without album art"
+			],
+			"upload_service_changes": [
+				"process_upload: optimize runs on temp file BEFORE driver->store so cloud drivers receive optimized bytes",
+				"process_upload: ensure-local-copy fallback before extract_and_store_metadata for cloud-driver installs",
+				"generate_thumbnails: per-variant optimize + emit_webp_sibling; cloud upload of variant WebPs",
+				"extract_and_store_metadata audio case: embedded album art feeds through generate_thumbnails",
+				"generate_video_poster_thumbnails: Path B added - ffmpeg fallback when no embedded cover atom (proc_open with arg array, no shell injection)"
+			],
+			"admin_changes": [
+				"MediaListPage Optimization column with badges: -X.X% / WebP ready / No lossless gain / Not optimized / Could not optimize",
+				"MediaListPage row actions: Details (?view=details mini-page), Optimize (admin-php nonced trigger)",
+				"MediaListPage::render_detail - read-only mini-page with site-owner-friendly metadata"
+			],
+			"not_re_enumerated": "REST/AJAX/post_types/taxonomies/tables/capabilities/shortcodes/blocks/cron unchanged",
+			"deferred_to_1_3_0": [
+				"AVIF variant generation",
+				"/serve content negotiation reading Accept header",
+				"Lightbox WebP serving (needs Interactivity state + REST schema + JS build)",
+				"Screen Options column toggles",
+				"Admin bulk-optimize progress UI"
+			]
+		},
+		"refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
+		"refresh_2026_07_07": {
+			"scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+			"method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+			"namespace": "mvs/v1",
+			"consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
+			"not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+		},
+		"refresh_2026_07_07_v200": {
+			"scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",
+			"new_symbols": [
+				"filter mvs_apply_watermark_preview",
+				"Plugin::resolve_privacy_ceiling()",
+				"Plugin::chat_panel_enabled()",
+				"TemplateHelpers::resolve_watermark_preview() (+interface)"
+			],
+			"not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
+		},
+		"refresh_2026_08_01": "2.3.0 baseline: +4 Auth-module hooks (see manifest.json .generated.refresh_2026_08_01_v230_baseline)"
+	}
 }
