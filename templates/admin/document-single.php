@@ -41,11 +41,23 @@ $mvs_privacy  = (string) ( $mvs_row['privacy'] ?? 'private' );
 		</div>
 	<?php endif; ?>
 
-	<div class="mvs-doc-edit">
+	<?php
+	// WordPress's own edit-screen structure — #poststuff, a two-column
+	// metabox-holder, postboxes. Not a custom layout: an owner already knows
+	// how a WordPress edit screen works, and a bespoke one makes them learn a
+	// second thing that behaves slightly differently for no gain.
+	?>
+	<div id="poststuff">
+		<div id="post-body" class="metabox-holder columns-2">
 
-		<form method="post" class="mvs-doc-edit__form">
-			<?php wp_nonce_field( 'mvs_save_document_' . $mvs_id ); ?>
-			<input type="hidden" name="media_id" value="<?php echo esc_attr( (string) $mvs_id ); ?>" />
+			<div id="post-body-content">
+				<form method="post">
+					<?php wp_nonce_field( 'mvs_save_document_' . $mvs_id ); ?>
+					<input type="hidden" name="media_id" value="<?php echo esc_attr( (string) $mvs_id ); ?>" />
+
+					<div class="postbox">
+						<h2 class="hndle"><span><?php esc_html_e( 'Document details', 'wpmediaverse' ); ?></span></h2>
+						<div class="inside">
 
 			<table class="form-table" role="presentation">
 				<tbody>
@@ -95,14 +107,18 @@ $mvs_privacy  = (string) ( $mvs_row['privacy'] ?? 'private' );
 				</tbody>
 			</table>
 
-			<p class="submit">
-				<button type="submit" name="mvs_save_document" value="1" class="button button-primary">
-					<?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?>
-				</button>
-			</p>
-		</form>
+						</div>
+					</div>
 
-		<div class="mvs-doc-edit__aside">
+					<p class="submit">
+						<button type="submit" name="mvs_save_document" value="1" class="button button-primary">
+							<?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?>
+						</button>
+					</p>
+				</form>
+			</div>
+
+			<div id="postbox-container-1" class="postbox-container">
 			<div class="postbox">
 				<h2 class="hndle"><span><?php esc_html_e( 'This document', 'wpmediaverse' ); ?></span></h2>
 				<div class="inside">
@@ -144,6 +160,8 @@ $mvs_privacy  = (string) ( $mvs_row['privacy'] ?? 'private' );
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo $mvs_extra;
 			?>
+			</div>
+
 		</div>
 	</div>
 </div>
