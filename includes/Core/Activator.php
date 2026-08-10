@@ -17,6 +17,19 @@ use WPMediaVerse\Capabilities\MediaCapabilities;
 class Activator {
 
 	/**
+	 * The version this site last ran the upgrade routine for.
+	 *
+	 * Deliberately NOT `mvs_rewrite_version`, which exists for the same shape of
+	 * question but a different answer: rewrites are flushed on every version
+	 * change including ones that touch nothing, and reusing it would make the
+	 * two decisions impossible to change independently.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const VERSION_OPTION = 'mvs_installed_version';
+
+	/**
 	 * Run activation routines.
 	 */
 	public static function activate(): void {
@@ -44,8 +57,61 @@ class Activator {
 		// Flush rewrite rules on next load.
 		set_transient( 'mvs_flush_rewrite', true );
 
+		// Stamp the version so `maybe_upgrade()` does not repeat everything above
+		// on the very next page load of a fresh install.
+		if ( defined( 'MVS_VERSION' ) ) {
+			update_option( self::VERSION_OPTION, MVS_VERSION, false );
+		}
+
 		// Signal that we should redirect to the overview on next admin load.
 		set_transient( 'mvs_activation_redirect', true, 30 );
+	}
+
+	/**
+	 * Do the activation work an UPGRADE also needs.
+	 *
+	 * `register_activation_hook` does not fire when a plugin is updated — only
+	 * when it is switched on. Everything in `activate()` that creates something
+	 * a new release depends on therefore never happens on the sites that matter
+	 * most: the ones already running the product.
+	 *
+	 * 2.4.0 is where that stopped being theoretical. The release adds a
+	 * Documents page, and on every upgrading site it simply was not there: the
+	 * dashboard's Documents tab, the drive and every single-document back link
+	 * point at a page WordPress had never been asked to create. A fresh install
+	 * was fine, which is exactly why it survived testing.
+	 *
+	 * Runs at most once per version, and the second branch covers the case a
+	 * version check alone misses: Free was already current when Pro was switched
+	 * on later, so nothing changed version and the page documents need still did
+	 * not exist. Both conditions are option reads — the query inside
+	 * `documents_page_needed()` is only reached once those pass.
+	 *
+	 * @since 2.4.0
+	 * @return void
+	 */
+	public static function maybe_upgrade(): void {
+		if ( ! defined( 'MVS_VERSION' ) ) {
+			return;
+		}
+
+		$stored  = (string) get_option( self::VERSION_OPTION, '' );
+		$changed = MVS_VERSION !== $stored;
+
+		// Pro switched on after Free was already up to date.
+		$missing_documents_page = Plugin::documents_enabled()
+			&& ! (int) get_option( 'mvs_page_explore_documents', 0 );
+
+		if ( ! $changed && ! $missing_documents_page ) {
+			return;
+		}
+
+		self::create_pages();
+		TemplateLoader::sync_app_page_templates();
+
+		if ( $changed ) {
+			update_option( self::VERSION_OPTION, MVS_VERSION, false );
+		}
 	}
 
 	/**

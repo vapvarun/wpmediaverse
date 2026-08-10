@@ -378,6 +378,14 @@ class Plugin {
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
 
+		// The half of activation that an UPDATE also needs. `init` at 99 because
+		// it has to run after Pro has declared itself — the documents page only
+		// exists where something can show a document, and Pro answers that on
+		// `mvs_loaded`, which is earlier. Ahead of the rewrite flush on the same
+		// hook, so a page created here is covered by the flush rather than
+		// waiting for the next version to be reachable.
+		add_action( 'init', array( Activator::class, 'maybe_upgrade' ), 98 );
+
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();
 
