@@ -3,7 +3,58 @@
 **Read this first. It is the handover for the next session.**
 
 Free `wpmediaverse` + Pro `wpmediaverse-pro`, both on branch `2.4.0`.
-Last commits: Free `45b55160`, Pro `c9e66bc`, plus the rail CSS on top.
+Both **clean and pushed** as of 2026-08-10: Free `1bae15b5`, Pro `eafa7a3`.
+Versions bumped to **2.4.0** in both, `MVS_PRO_MIN_FREE` raised to `2.4.0`,
+changelogs written, `.pot` files regenerated, manifests updated.
+
+---
+
+## START HERE (2026-08-10 handover)
+
+**The build is finished. Nothing is half-written.** Every task in
+`plan/document-library-remaining.md` is either built or explicitly withdrawn,
+and the two plan files plus this one are current.
+
+**The single most important thing to know:** the release battery has never run
+against any of this, and **the unit suite cannot run on this machine at all** —
+the WP test library is absent, so the whole suite dies on
+`AccessRulesServiceTest` before reaching anything. Fix that first if the next
+session is heading for QA, because until then "tests pass" cannot be said about
+any of this work.
+
+**Pick up in this order:**
+
+1. **Make the unit suite runnable** (WP test library). Blocks QA entirely.
+2. **QA pass** — the plans below are written; nothing in them needs designing.
+3. **Uniform panel anatomy** — asked for twice, not started. Media and
+   Favourites are grids with their own toolbars; Albums and Collections have
+   neither search nor sort. Documents now matches the intended shape and is the
+   reference to copy. This is the largest thing a member would notice.
+4. **Theme-defence sweep** — partial. Done: the rail, the drive toolbar, the
+   bulk bar. Not done: `.mvs-btn` / `.mvs-btn-primary` outside `#buddypress`,
+   the document toolbar, the admin documents screen. **Grep `!important` in the
+   surface before adding declarations** — the rail was losing to the plugin's
+   own armour, not to the theme, and that changed the whole method.
+
+**Two Basecamp cards are live:**
+
+- Admin IA (Bugs column) — commented 2026-08-10: **every finding on it is
+  already built**; only the browser verification remains. Someone working from
+  the card text alone would rebuild working code.
+- Document preview coverage (Suggestion List, created 2026-08-10) — **7 of 11
+  file types have no preview**, front end or admin. Only pdf, text, markdown
+  and csv render.
+
+**Standing constraints that bit this session:**
+
+- `mcp-local-wp` `wp_cli`, never bare `wp`.
+- Verify as `journey-member`, **never as admin** — admin passes guards a member
+  does not. The auto-login mu-plugin now switches users rather than bailing.
+- Every UI change checked at 390px **and in dark mode** in the same pass.
+- Edit a registration site **before** deleting the class it points at. Deleting
+  first fataled the site twice today.
+- `readme.txt` version bumps are a targeted edit to the stable tag — a blanket
+  search-and-replace rewrites the historic changelog headings.
 
 **Companion artifact** (visual UX spec, screens and layouts):
 <https://claude.ai/code/artifact/3620f81c-eaea-4d17-9f0e-56e178ec56e2>
@@ -125,6 +176,30 @@ the drive row actions, the document toolbar, the admin documents screen.
 Media and Favourites are grids with their own toolbars; Albums and Collections
 have no search and no sort. The user asked for every tab to look uniform
 ("best to make each tab design at same time"). Not started.
+
+---
+
+## What shipped on 2026-08-10, in one list
+
+Member-facing (Pro): folders with per-row rename/move/privacy, **trash and
+restore**, **Shared with me** as a band plus a full view, **sharing to a member
+or a role** with revoke, **in-drive search**, **download from the row**,
+**multi-select bulk move**, a **Location** column, a **folder header**, and
+filter/sort that survive navigation.
+
+Member-facing (Free): every dashboard section is a URL, the grouped vertical
+rail with counts, and **Edit profile as a section** — the card above the tabs
+is gone.
+
+Owner-facing: a **single document view and edit** in wp-admin (title, slug,
+description, tags, privacy) with a **per-type preview** and the extracted text,
+plus row actions that are no longer only destructive. An admin **folder list**
+was built and withdrawn — see `document-library-remaining.md` Task 9 for why it
+must not come back.
+
+**Three of these were activation, not construction** — restore, the shared band
+and targeted sharing were each already written, guarded, and unreachable from
+any UI. Expect that pattern again elsewhere in this codebase.
 
 ---
 
