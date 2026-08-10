@@ -380,7 +380,7 @@ deferred, each for a reason:
 | `_link_ttl` | An owner should not be choosing token lifetimes in seconds. Ship a sane fixed expiry with the anonymous-link feature; add the setting only if a customer asks for a different one. |
 | `_cloud_enabled` / `_bucket` | **Document cloud storage does not exist.** `StorageResolver::relative_path()` and `readable_path()` resolve under `wp_upload_dir()` unconditionally; `cloud_enabled()` is read by nothing but the Site Health check, and `validate_bucket()` has no production caller. A setting here would promise a capability that silently does nothing. **Deferred until the storage routing exists** — at which point it is one field, not a redesign. |
 | Per-role quotas | D2 settled this: documents count against the uploader's existing media quota. A second counter is the thing D2 exists to prevent. |
-| Retention / scan toggles | Configuration for machinery that is not built (`mvs_document_scan_file` and `scan_status` do not exist). Build the machinery, then decide if it needs a switch. |
+| Retention / scan toggles | Was "configuration for machinery that is not built". The machinery landed on 2026-08-10 and still does not want a setting: a scanner is connected by hooking `mvs_document_scan_file`, so a site with no scanner has nothing to switch, and a site with one does not want a checkbox that turns it off. Metadata stripping ships on with `mvs_document_strip_metadata` as its escape hatch — a filter, per the plug-and-play rule, because it is set once by the rare site that needs byte-identical originals. |
 
 ---
 
@@ -474,11 +474,20 @@ Per-item, in a browser, as a **member** and as an **owner** — not batched.
 
 ## 9. What this deliberately leaves for later
 
-- The rate limiter (D5) — separate work, but blocking for anonymous links.
-- Cloud storage routing + its two settings (D8).
-- `mvs_document_scan_file` and `scan_status` (§11's "the gap a security reviewer
-  finds first").
-- Metadata stripping on ingest.
+- ~~The rate limiter (D5)~~ — **done** (2026-08-10). 30 redemptions a minute per
+  address on `permission_from_link()`, 20 link mints an hour on `create_link()`,
+  both failing closed. Covered by `tests/unit/AnonymousLinkGuardsTest.php`.
+- Cloud storage routing + its two settings (D8). Site Health now says
+  `cloud_unverified` rather than reporting green on a bucket nobody has checked.
+- ~~`mvs_document_scan_file` and `scan_status`~~ — **done** (2026-08-10).
+  `Documents\DocumentScan` runs the filter before the bytes are rewritten or
+  moved; the outcome (`unscanned` / `clean` / `pending`) is stored as sparse meta
+  and shown in the admin panel once a scanner is hooked. Still no bundled
+  scanner, by design.
+- ~~Metadata stripping on ingest~~ — **done** (2026-08-10).
+  `Documents\MetadataStripper` blanks the property parts of zip-based Office and
+  OpenDocument files, behind `mvs_document_strip_metadata` (default on). PDF and
+  legacy `.doc` are NOT stripped and the class says so.
 
-None of these are settings problems. Listing them here so nobody reads this
-plan's completion as the feature being fully governed.
+The remaining item is not a settings problem. Listing it here so nobody reads
+this plan's completion as the feature being fully governed.
