@@ -268,13 +268,17 @@ split. What remains is one QA pass against the table above.
 Found while re-auditing on 2026-08-10. None are regressions; all are the same
 class of problem the plan was written about, and none are urgent.
 
-| # | Finding | Why it belongs here |
-|---|---|---|
-| N-1 | The Documents list is the only WPMediaVerse screen with no way to open one of its rows for editing until 2026-08-10. Fixed as `?view=single`; the same question should be asked of Albums, Collections and Stories. | The plan fixed navigation *between* screens and never asked whether a screen lets you act on what it lists. |
-| N-2 | Row actions across the admin are hover-only by WordPress convention, so a screen whose only actions are destructive reads as having none. Documents showed exactly Trash and Delete permanently. | Consistent with core, and still a discoverability problem worth a deliberate decision rather than an inherited one. |
-| N-3 | `dashicons` are used where the design system asks for Lucide — `TemplateHelpers`, `Plugin`, `cpt-archive.php`, `album.php`. Flagged advisory by the UX audit generated 2026-08-10. | Owner-facing chrome consistency, which is this plan's subject. |
-| N-4 | Documents have no `mvs_documents_enabled` **setting**; Pro forces the filter true. Every other Pro feature has an owner toggle (Pro coding rule 1). | An owner cannot turn documents off, and the Settings → Competitions group is where they would look. |
+**The bar for this list** (Varun, 2026-08-10): only what is in the plugin's own
+scope AND makes the admin's job clearer. A finding that is merely true does not
+qualify.
 
-Take these as a follow-up card rather than folding them into this one — the
-subject is the same, but the acceptance criteria above are already written and
-should not be moved while they are waiting to be verified.
+| # | Finding | Verdict |
+|---|---|---|
+| N-1 | Until 2026-08-10 no WPMediaVerse list screen let you open a row to edit it. Documents now does (`?view=single`). Albums, Collections and Stories have not been asked the same question. | **In scope.** An owner who learns "click the title to edit" on one screen and finds it dead on the next has been taught something untrue. Check the three, fix what is missing, follow the Documents pattern so no new submenu appears. |
+| N-2 | Row actions are hover-only by WordPress convention, so a screen offering only destructive ones reads as offering none. Documents showed exactly Trash and Delete permanently. | **In scope, already fixed for Documents.** The rule to carry: every list screen offers at least one non-destructive action, so hovering a row never presents destruction as the only option. |
+| N-4 | Documents have no `mvs_documents_enabled` **setting**; Pro forces the filter true, while every other Pro feature has an owner toggle (Pro coding rule 1). | **In scope.** An owner looking to turn documents off goes to Settings, finds nothing, and cannot tell whether the feature is missing or just hidden. |
+| N-3 | `dashicons` where the design system asks for Lucide (`TemplateHelpers`, `Plugin`, `cpt-archive.php`, `album.php`), flagged advisory by the 2026-08-10 UX audit. | **Out of scope for this card.** Real, but it is house style — nobody is confused by an icon set. It belongs to the design sweep, not to admin IA. |
+
+Take N-1, N-2 and N-4 as a follow-up card rather than folding them into this
+one: the subject is the same, but the acceptance criteria above are written and
+waiting to be verified, and they should not move while that is true.
