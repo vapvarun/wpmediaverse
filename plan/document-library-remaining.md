@@ -1,5 +1,17 @@
 # Document library — the nine remaining tasks, in order
 
+> **ALL NINE ARE BUILT AND BROWSER-VERIFIED (2026-08-10).** This file is kept as
+> the record of what was decided and why, because the reasoning is what a future
+> change needs — not the tick-list. What is left is the release battery: the
+> full unit suite, cert, combo smoke and a manifest refresh, none of which have
+> run against this work. Note the suite currently cannot run at all on this
+> machine (the WP test library is absent; the whole suite fails on
+> `AccessRulesServiceTest`), which is itself worth fixing before a release.
+>
+> Three of the nine turned out to be **activation, not construction** — the
+> audit called that correctly. Restore, "Shared with me" and targeted sharing
+> were each fully built, guarded, and unreachable from any UI.
+
 **Read `RESUME-document-library.md` first.** That file is the spec and the
 state; this one is the build order. Both are versioned with the code.
 

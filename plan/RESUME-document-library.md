@@ -125,6 +125,28 @@ have no search and no sort. The user asked for every tab to look uniform
 
 ---
 
+## The document library is feature-complete (2026-08-10)
+
+All nine remaining tasks are built and browser-verified as `journey-member`,
+desktop and 390px, plus a dark-mode pass. See
+`plan/document-library-remaining.md` for what each one decided and why.
+
+**What the browser found that CI never would**, in order — every one of these
+passed every gate: creating a folder always landed on a 404; the Location
+column left folder rows a cell short so every column after it shifted; a
+shared document was listed for the grantee and answered 403 when opened;
+`$mvs_dash_drive` gated the documents panel and was never assigned in any
+revision; the notice map had been guessing error codes, so the two refusals
+members hit most had always read "that change could not be made"; and the
+actions menu opened downward off the end of the list once Share made it tall.
+
+**What is left before this can ship:** the release battery. Full unit suite,
+cert, combo smoke, manifest + docs refresh — none have run. The suite cannot
+currently run here at all (WP test library absent), which is the first thing to
+fix.
+
+---
+
 ## Also open, in rough priority
 
 - **The rail strip does not scroll the active item into view on a direct URL
