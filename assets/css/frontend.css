@@ -807,6 +807,117 @@ body.dark-mode .mvs-skeleton::after {
     line-height: 1.3;
 }
 
+/* ==========================================================================
+   Document identity line — type, size, privacy, location.
+   The drive row already showed all four; this page showed none, so opening a
+   document from the list LOST information. Privacy is the one that matters:
+   without it a member cannot tell a private contract from a public one, on the
+   same screen as a button that can mint a link anyone can open.
+   ========================================================================== */
+
+.mvs-media-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    margin: var(--mvs-space-2) 0 0;
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+    line-height: 1.4;
+}
+
+/* Separator is drawn, not typed, so the parts stay independently omittable —
+   any of type / size / privacy / location can be absent without leaving a
+   stranded bullet behind. */
+.mvs-media-meta__item + .mvs-media-meta__item::before,
+.mvs-media-meta__type + .mvs-media-meta__item::before,
+.mvs-media-meta__privacy + .mvs-media-meta__item::before {
+    content: "·";
+    margin-inline-end: var(--mvs-space-2);
+    opacity: 0.55;
+}
+
+.mvs-media-meta__item {
+    font-variant-numeric: tabular-nums;
+}
+
+/* The type chip is a LABEL, not a status, so it stays neutral.
+   It deliberately does NOT copy the drive's `--mvs-info-bg` + `--mvs-primary`
+   pairing: on this theme `--mvs-primary` is red, so that pair renders red text
+   on a blue wash. A neutral chip also lets the privacy chip beside it be the
+   only coloured thing on the line, which is the one worth noticing. */
+.mvs-media-meta__type {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: var(--mvs-radius-sm);
+    background: var(--mvs-bg-muted);
+    color: var(--mvs-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* Amber wash carries the "restricted" signal; the TEXT is the normal ink so it
+   stays legible. `--mvs-warning` on `--mvs-warning-bg` is the same hue at 15%
+   alpha — amber on amber, which measured at almost no contrast in either
+   theme. */
+.mvs-media-meta__privacy {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--mvs-radius-pill);
+    background: var(--mvs-warning-bg);
+    color: var(--mvs-text);
+    font-size: var(--mvs-font-sm);
+    font-weight: 600;
+}
+
+.mvs-media-meta__privacy i,
+.mvs-media-meta__privacy svg {
+    color: var(--mvs-warning);
+}
+
+.mvs-media-meta__privacy i,
+.mvs-media-meta__privacy svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* The document block lines up with the title above it.
+   `.mvs-media-content` is deliberately flush at 0 so a PHOTO can run edge to
+   edge in its card — that is right for an image and wrong for a page of text,
+   which sat 24px to the left of its own heading. Inset the document wrapper
+   only, rather than padding the shared content area and boxing in every image
+   on the site. */
+.mvs-media-document {
+    padding-inline: var(--mvs-space-4);
+}
+
+@media (max-width: 640px) {
+
+    .mvs-media-document {
+        padding-inline: var(--mvs-space-3);
+    }
+
+}
+
+/* Follow steps back on a document page so Download is the only primary. */
+.mvs-btn.mvs-follow-btn--quiet {
+    background: transparent;
+    border-color: var(--mvs-border);
+    color: var(--mvs-text-secondary);
+    font-weight: 500;
+}
+
+.mvs-btn.mvs-follow-btn--quiet:hover,
+.mvs-btn.mvs-follow-btn--quiet:focus-visible {
+    border-color: var(--mvs-primary);
+    color: var(--mvs-primary);
+}
+
 /* Media Content */
 .mvs-media-content {
     padding: 0;
@@ -1547,16 +1658,6 @@ body.dark-mode .mvs-skeleton::after {
 /* ==========================================================================
    12. Social Interactions Bar (for Step 47d)
    ========================================================================== */
-
-.mvs-social-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 12px 24px;
-    border-top: 1px solid var(--mvs-border-light);
-}
 
 .mvs-reactions {
     display: flex;
@@ -4250,12 +4351,18 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 4px;
 }
 
+/* ONE declaration. There were two, at identical specificity with no media
+   query between them — `12px 24px` earlier in the file and this one later —
+   so the first was dead code and its `justify-content: space-between` never
+   applied to anything. The horizontal value is 24px so the bar's contents line
+   up with the title and body of the card it closes; at 16px it sat 8px to
+   their left on every media page. */
 .mvs-social-bar {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    padding: 10px 16px;
+    padding: 10px var(--mvs-space-4);
     border-top: 1px solid var(--mvs-border-light);
 }
 

@@ -171,7 +171,15 @@ $mvs_archive_url = home_url( '/media/' );
 					);
 					?>
 					data-wp-init="callbacks.initFollow">
-					<button class="mvs-btn mvs-btn--small mvs-follow-btn" type="button"
+					<?php
+					// On a DOCUMENT page Follow steps back to a quiet button.
+					// Follow and Download were both solid primaries at opposite
+					// corners, which made the loudest thing on the page a social
+					// action about the author — not why anyone opened a contract.
+					// Scoped to documents: on a photo, following the person who
+					// posted it is a perfectly reasonable primary action.
+					?>
+					<button class="mvs-btn mvs-btn--small mvs-follow-btn<?php echo $is_document ? ' mvs-follow-btn--quiet' : ''; ?>" type="button"
 						data-wp-class--active="context.isFollowing"
 						data-wp-on--click="actions.toggleFollow"
 						aria-label="
@@ -187,6 +195,79 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php endif; ?>
 			</div>
 			<h1 class="mvs-media-title"><?php echo esc_html( $mvs_title ); ?></h1>
+
+			<?php if ( $is_document ) : ?>
+				<?php
+				/*
+				 * What the document IS, not just what it says.
+				 *
+				 * The drive row already shows type, size, privacy and location;
+				 * this page showed none of them, so opening a document from the
+				 * list LOST information. Every value here comes off the row that
+				 * was already loaded — no extra query.
+				 *
+				 * The one that matters is privacy. Without it a member looking at
+				 * a private contract sees exactly what they would see looking at a
+				 * public one, and the Share button beside it can mint a link
+				 * anyone can open.
+				 */
+				$mvs_doc_type_key = class_exists( '\WPMediaVerse\Core\DocumentTypes' )
+					? \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $mvs_file_type )
+					: null;
+
+				$mvs_doc_size = (int) ( $mvs_media['file_size'] ?? 0 );
+
+				/**
+				 * Where the document sits on its owner's drive.
+				 *
+				 * Folders are a Pro concept, so Free asks and renders nothing when
+				 * nobody answers — a Free-only site must not show an empty slot
+				 * where a folder name would be.
+				 *
+				 * @since 2.4.0
+				 *
+				 * @param string $label    Human-readable location, or ''.
+				 * @param int    $media_id Document id.
+				 */
+				$mvs_doc_location = (string) apply_filters( 'mvs_document_location_label', '', $mvs_media_id );
+				?>
+				<p class="mvs-media-meta mvs-media-meta--document">
+					<?php if ( $mvs_doc_type_key ) : ?>
+						<span class="mvs-media-meta__type"><?php echo esc_html( \WPMediaVerse\Core\DocumentTypes::label( $mvs_doc_type_key ) ); ?></span>
+					<?php endif; ?>
+
+					<?php if ( $mvs_doc_size > 0 ) : ?>
+						<span class="mvs-media-meta__item"><?php echo esc_html( size_format( $mvs_doc_size ) ); ?></span>
+					<?php endif; ?>
+
+					<?php
+					// Absence is the quiet default: a PUBLIC document gets no chip,
+					// so a chip on screen always means "this one is restricted".
+					if ( 'public' !== $mvs_privacy ) :
+						$mvs_privacy_labels = array(
+							'private' => __( 'Private', 'wpmediaverse' ),
+							'members' => __( 'Members only', 'wpmediaverse' ),
+						);
+						?>
+						<span class="mvs-media-meta__privacy">
+							<i data-lucide="lock" aria-hidden="true"></i>
+							<?php echo esc_html( $mvs_privacy_labels[ $mvs_privacy ] ?? ucfirst( (string) $mvs_privacy ) ); ?>
+						</span>
+					<?php endif; ?>
+
+					<?php if ( '' !== $mvs_doc_location ) : ?>
+						<span class="mvs-media-meta__item">
+							<?php
+							printf(
+								/* translators: %s: folder name. */
+								esc_html__( 'in %s', 'wpmediaverse' ),
+								esc_html( $mvs_doc_location )
+							);
+							?>
+						</span>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
 		</header>
 
 		<div class="mvs-media-content">

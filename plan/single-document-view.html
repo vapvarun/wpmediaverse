@@ -1,0 +1,663 @@
+<title>Single document view — design proposal</title>
+<style>
+  /* ============================================================
+     Two voices, kept apart.
+     The MOCKUPS use MediaVerse's real token values so they read as
+     the product. The DOCUMENT's own voice is slate/indigo, so an
+     annotation can never be mistaken for a piece of UI.
+     ============================================================ */
+  :root {
+    --ink:        #1b1d21;
+    --ink-soft:   #4b5162;
+    --ink-faint:  #767d8f;
+    --paper:      #fbfbfc;
+    --card:       #ffffff;
+    --rule:       #e4e5ea;
+    --rule-soft:  #eeeff3;
+    --spec:       #4a5578;   /* the document's accent — never the product's */
+    --spec-wash:  #eef0f6;
+    --bad:        #a3423c;
+    --bad-wash:   #f8ecea;
+    --good:       #3d6b52;
+    --good-wash:  #e9f1ec;
+
+    /* Product tokens — real values from the plugin, used only inside mockups. */
+    --p-primary:  #ef5455;
+    --p-ground:   #f7f7f9;
+    --p-surface:  #ffffff;
+    --p-border:   #e5e5e7;
+    --p-text:     #111111;
+    --p-muted:    #6a6a6a;
+    --p-subtle:   #fafafa;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans:  ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink:       #e8e9ee;
+      --ink-soft:  #b3b8c6;
+      --ink-faint: #878da0;
+      --paper:     #131519;
+      --card:      #191c22;
+      --rule:      #2b2f38;
+      --rule-soft: #23262d;
+      --spec:      #9aa6cc;
+      --spec-wash: #202535;
+      --bad:       #e08a84;
+      --bad-wash:  #2c1e1d;
+      --good:      #8dbfa2;
+      --good-wash: #1b2721;
+
+      --p-ground:  #141416;
+      --p-surface: #1e1e1e;
+      --p-border:  #2e2e2e;
+      --p-text:    #f0f0f0;
+      --p-muted:   #888888;
+      --p-subtle:  #232323;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink:       #e8e9ee;
+    --ink-soft:  #b3b8c6;
+    --ink-faint: #878da0;
+    --paper:     #131519;
+    --card:      #191c22;
+    --rule:      #2b2f38;
+    --rule-soft: #23262d;
+    --spec:      #9aa6cc;
+    --spec-wash: #202535;
+    --bad:       #e08a84;
+    --bad-wash:  #2c1e1d;
+    --good:      #8dbfa2;
+    --good-wash: #1b2721;
+
+    --p-ground:  #141416;
+    --p-surface: #1e1e1e;
+    --p-border:  #2e2e2e;
+    --p-text:    #f0f0f0;
+    --p-muted:   #888888;
+    --p-subtle:  #232323;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: clamp(1.75rem, 5vw, 4.5rem) 1.25rem 6rem;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--measure); margin: 0 auto; }
+  .wide { max-width: 74rem; margin-left: auto; margin-right: auto; }
+
+  /* ---------------------------------------------------- masthead -- */
+  .eyebrow {
+    margin: 0 0 .75rem;
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--spec);
+  }
+  h1 {
+    margin: 0 0 .6rem;
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+  }
+  .standfirst {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+  }
+  .masthead-rule {
+    height: 1px;
+    background: var(--rule);
+    border: 0;
+    margin: 2.5rem 0;
+  }
+
+  h2 {
+    margin: 3.5rem 0 .5rem;
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  h3 {
+    margin: 2.25rem 0 .4rem;
+    font-family: var(--sans);
+    font-size: .95rem;
+    font-weight: 650;
+    letter-spacing: .01em;
+  }
+  p { margin: 0 0 1.05rem; text-wrap: pretty; }
+  strong { font-weight: 650; }
+  code {
+    font-family: var(--mono);
+    font-size: .855em;
+    background: var(--rule-soft);
+    padding: .1em .36em;
+    border-radius: 3px;
+  }
+
+  .lede { color: var(--ink-soft); }
+
+  /* ------------------------------------------------------ mockup -- */
+  .compare {
+    display: grid;
+    gap: 1.5rem;
+    margin: 1.75rem 0 .5rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 60rem) { .compare { grid-template-columns: 1fr 1fr; } }
+
+  .panel {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--card);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .panel__head--bad  { color: var(--bad);  background: var(--bad-wash); }
+  .panel__head--good { color: var(--good); background: var(--good-wash); }
+  .panel__stage {
+    padding: 1.25rem;
+    background: var(--p-ground);
+    flex: 1;
+  }
+
+  /* --- the product surface, rebuilt with its own tokens --- */
+  .mvs {
+    font-family: var(--sans);
+    color: var(--p-text);
+    background: var(--p-surface);
+    border: 1px solid var(--p-border);
+    border-radius: 10px;
+    padding: 1.1rem;
+    font-size: .875rem;
+    line-height: 1.5;
+  }
+  .mvs__back {
+    display: flex; align-items: center; gap: .4rem;
+    margin-bottom: .85rem;
+    color: var(--p-muted); font-size: .8rem;
+  }
+  .mvs__byline { display: flex; align-items: center; gap: .6rem; margin-bottom: .9rem; }
+  .mvs__avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--p-border); flex: 0 0 auto;
+  }
+  .mvs__who { flex: 1; min-width: 0; line-height: 1.3; }
+  .mvs__name { font-weight: 650; font-size: .82rem; }
+  .mvs__date { color: var(--p-muted); font-size: .74rem; }
+
+  .mvs__title {
+    margin: 0 0 .3rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    word-break: break-word;
+  }
+
+  .mvs__preview {
+    border: 1px solid var(--p-border);
+    border-radius: 8px;
+    background: var(--p-subtle);
+    padding: .95rem;
+    margin: .9rem 0 0;
+  }
+  .mvs__preview p { margin: 0 0 .6rem; font-size: .82rem; }
+  .mvs__preview p:last-child { margin-bottom: 0; }
+
+  .mvs__caption {
+    margin: .35rem 0 0;
+    color: var(--p-muted);
+    font-size: .72rem;
+    line-height: 1.45;
+    max-width: 60ch;
+  }
+
+  .mvs__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .9rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 38px; padding: 0 .95rem;
+    border-radius: 7px; font-size: .8rem; font-weight: 650;
+    border: 1px solid var(--p-border);
+    background: var(--p-surface); color: var(--p-text);
+    white-space: nowrap;
+  }
+  .btn--primary { background: var(--p-primary); border-color: var(--p-primary); color: #fff; }
+  .btn--ghost   { background: transparent; color: var(--p-muted); }
+  .btn--sm      { min-height: 30px; padding: 0 .6rem; font-size: .72rem; font-weight: 600; }
+
+  .mvs__social {
+    display: flex; flex-wrap: wrap; gap: .4rem;
+    margin-top: .9rem; padding-top: .8rem;
+    border-top: 1px solid var(--p-border);
+  }
+  .chipx {
+    border: 1px solid var(--p-border); border-radius: 999px;
+    padding: .2rem .55rem; font-size: .72rem; color: var(--p-muted);
+  }
+
+  /* the proposed metadata strip */
+  .mvs__meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .55rem;
+    margin: .1rem 0 0;
+    font-size: .76rem; color: var(--p-muted);
+  }
+  .mvs__meta .sep { opacity: .5; }
+  .typechip {
+    display: inline-flex; align-items: center;
+    padding: .12rem .4rem;
+    border-radius: 4px;
+    background: #e8f0fb; color: #2f5c9e;
+    font-size: .62rem; font-weight: 800; letter-spacing: .06em;
+  }
+  .privchip {
+    display: inline-flex; align-items: center; gap: .28rem;
+    padding: .12rem .45rem;
+    border-radius: 999px;
+    background: #f4ecdf; color: #7a5a1e;
+    font-size: .66rem; font-weight: 700;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .typechip { background: #1c2a3d; color: #8ab4ea; }
+    :root:not([data-theme="light"]) .privchip { background: #322a18; color: #d8b869; }
+  }
+  :root[data-theme="dark"] .typechip { background: #1c2a3d; color: #8ab4ea; }
+  :root[data-theme="dark"] .privchip { background: #322a18; color: #d8b869; }
+
+  /* callout markers pinned to a mockup */
+  .mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.15rem; height: 1.15rem; flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--spec); color: var(--card);
+    font-family: var(--mono); font-size: .66rem; font-weight: 700;
+    vertical-align: middle;
+  }
+  .mark--bad { background: var(--bad); }
+
+  /* ------------------------------------------------------- lists -- */
+  .findings { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; gap: .9rem; }
+  .findings li {
+    display: grid; grid-template-columns: 1.15rem 1fr; gap: .7rem; align-items: start;
+  }
+  .findings .mark { margin-top: .18rem; }
+  .findings p { margin: 0; }
+  .findings .what { font-size: .95rem; }
+  .findings .why { color: var(--ink-soft); font-size: .9rem; margin-top: .15rem; }
+
+  /* ------------------------------------------------------- table -- */
+  .tablewrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--rule); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { padding: .6rem .8rem; text-align: left; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint);
+    background: var(--rule-soft); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td code { background: none; padding: 0; color: var(--spec); }
+  .tick { color: var(--good); font-weight: 700; }
+  .cross { color: var(--bad); font-weight: 700; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ------------------------------------------------------- notes -- */
+  .note {
+    border-left: 3px solid var(--spec);
+    background: var(--spec-wash);
+    padding: .9rem 1.1rem;
+    border-radius: 0 7px 7px 0;
+    margin: 1.5rem 0;
+    font-size: .93rem;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note__label {
+    display: block;
+    font-family: var(--mono); font-size: .66rem;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: var(--spec); margin-bottom: .35rem;
+  }
+
+  .shipped {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-family: var(--mono); font-size: .66rem;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--good); background: var(--good-wash);
+    padding: .18rem .5rem; border-radius: 4px;
+  }
+
+  footer {
+    margin-top: 4rem; padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-faint); font-size: .82rem;
+  }
+  a { color: var(--spec); }
+  a:focus-visible, .btn:focus-visible { outline: 2px solid var(--spec); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">MediaVerse 2.4.0 · Design proposal</p>
+  <h1>The single document view</h1>
+  <p class="standfirst">
+    A member opens their own contract and cannot tell how big it is, whether it is
+    private, or where it lives. Every one of those facts is already in the database.
+    This is what the page should show instead.
+  </p>
+  <hr class="masthead-rule">
+
+  <p class="lede">
+    Three defects were fixed today by looking at the rendered page rather than the
+    DOM — a duplicate <em>Share</em> label, actions stacked 60&nbsp;px apart, and a
+    caveat set as body copy. What is left is not a bug list. It is that the page was
+    built to display a <em>preview</em>, and a document needs to display a
+    <em>document</em>: its identity, its state, and what you may do with it.
+  </p>
+</div>
+
+<div class="wide">
+  <div class="compare">
+
+    <!-- ============ CURRENT ============ -->
+    <section class="panel">
+      <div class="panel__head panel__head--bad">
+        <span>Today</span>
+        <span>as shipped</span>
+      </div>
+      <div class="panel__stage">
+        <div class="mvs">
+          <div class="mvs__back">← Documents</div>
+
+          <div class="mvs__byline">
+            <div class="mvs__avatar"></div>
+            <div class="mvs__who">
+              <div class="mvs__name">journey-member</div>
+              <div class="mvs__date">August 10, 2026</div>
+            </div>
+            <span class="btn btn--primary btn--sm">Follow</span>
+          </div>
+
+          <h4 class="mvs__title">member-upload.docx</h4>
+
+          <div class="mvs__preview">
+            <p>The quarterly report is ready.</p>
+            <p>It covers Nord-Pas-de-Calais and Kent, with a café budget line.</p>
+            <p>Second paragraph follows here.</p>
+          </div>
+          <p class="mvs__caption">
+            This is the text of the document. Layout, images and formatting are not
+            shown – download it to see the original.
+          </p>
+
+          <div class="mvs__actions">
+            <span class="btn">Share access</span>
+            <span class="btn btn--primary">Download</span>
+          </div>
+
+          <div class="mvs__social">
+            <span class="chipx">👍 0</span><span class="chipx">❤️ 0</span>
+            <span class="chipx">😂 0</span><span class="chipx">😮 0</span>
+          </div>
+          <div class="mvs__social" style="border-top:0;padding-top:.2rem">
+            <span class="chipx">♡ Favourite</span><span class="chipx">🔖 Save</span>
+            <span class="chipx">↗ Share</span><span class="chipx">⚑ Report</span>
+            <span class="chipx">5 views</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROPOSED ============ -->
+    <section class="panel">
+      <div class="panel__head panel__head--good">
+        <span>Proposed</span>
+        <span>same data, shown</span>
+      </div>
+      <div class="panel__stage">
+        <div class="mvs">
+          <div class="mvs__back">← Documents</div>
+
+          <div class="mvs__byline">
+            <div class="mvs__avatar"></div>
+            <div class="mvs__who">
+              <div class="mvs__name">journey-member</div>
+              <div class="mvs__date">August 10, 2026</div>
+            </div>
+            <span class="btn btn--ghost btn--sm">Follow</span>
+          </div>
+
+          <h4 class="mvs__title">member-upload.docx</h4>
+          <div class="mvs__meta">
+            <span class="typechip">WORD</span>
+            <span class="num">4 KB</span>
+            <span class="sep">·</span>
+            <span class="privchip">🔒 Private</span>
+            <span class="sep">·</span>
+            <span>in Member&nbsp;Test&nbsp;Folder</span>
+          </div>
+
+          <div class="mvs__preview">
+            <p>The quarterly report is ready.</p>
+            <p>It covers Nord-Pas-de-Calais and Kent, with a café budget line.</p>
+            <p>Second paragraph follows here.</p>
+          </div>
+          <p class="mvs__caption">
+            Text preview — layout, images and formatting are not shown.
+          </p>
+
+          <div class="mvs__actions">
+            <span class="btn btn--primary">Download</span>
+            <span class="btn">Share access</span>
+          </div>
+
+          <div class="mvs__social">
+            <span class="chipx">👍 0</span><span class="chipx">❤️ 0</span>
+            <span class="chipx">😂 0</span><span class="chipx">😮 0</span>
+          </div>
+          <div class="mvs__social" style="border-top:0;padding-top:.2rem">
+            <span class="chipx">♡ Favourite</span><span class="chipx">🔖 Save</span>
+            <span class="chipx">↗ Share</span><span class="chipx">⚑ Report</span>
+            <span class="chipx">5 views</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="wrap">
+
+  <h2>What the page already knows</h2>
+  <p>
+    None of this needs new storage, a new query, or a migration. Every value below was
+    read straight off the document row for the file in the mockup.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Fact</th><th>Value</th><th>Source</th><th>Shown today</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Type</td><td>Word</td><td><code>DocumentTypes::label()</code></td><td class="cross">No</td></tr>
+        <tr><td>Size</td><td class="num">4 KB</td><td><code>file_size</code></td><td class="cross">No</td></tr>
+        <tr><td>Privacy</td><td>private</td><td><code>privacy</code></td><td class="cross">No</td></tr>
+        <tr><td>Location</td><td>Member Test Folder</td><td><code>FolderService::paths_for()</code></td><td class="cross">No</td></tr>
+        <tr><td>Searchable</td><td>indexed</td><td><code>mvs_pro_document_search.status</code></td><td class="cross">No</td></tr>
+        <tr><td>Owner</td><td>journey-member</td><td><code>post_author</code></td><td class="tick">Yes</td></tr>
+        <tr><td>Uploaded</td><td>10 Aug 2026</td><td><code>created_at</code></td><td class="tick">Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="note__label">The one that matters</span>
+    <p>
+      <strong>Privacy is invisible.</strong> A member looking at a private contract sees
+      exactly what they would see looking at a public one. The page offers a
+      <em>Share access</em> button that can mint a link anyone can open — and gives no
+      indication of the document's current state before they press it. That is a
+      confidentiality decision made without the facts.
+    </p>
+  </div>
+
+  <h2>The four changes</h2>
+
+  <ul class="findings">
+    <li>
+      <span class="mark">1</span>
+      <div>
+        <p class="what"><strong>A metadata line under the title.</strong> Type chip, size, privacy, location.</p>
+        <p class="why">
+          The drive row already shows all four; the single page shows none, so moving from
+          the list to the detail view <em>loses</em> information. The type chip reuses the
+          drive's existing vocabulary rather than inventing a second one.
+        </p>
+      </div>
+    </li>
+    <li>
+      <span class="mark">2</span>
+      <div>
+        <p class="what"><strong>Privacy as a chip, not a word in a sentence.</strong></p>
+        <p class="why">
+          State that changes what sharing means should be readable at a glance, in form as
+          well as text. Public documents show no chip — absence is the quiet default, and
+          only the restricted states earn a marker.
+        </p>
+      </div>
+    </li>
+    <li>
+      <span class="mark">3</span>
+      <div>
+        <p class="what"><strong>One primary action.</strong> Download leads; Follow steps back to a ghost button.</p>
+        <p class="why">
+          Today <em>Follow</em> and <em>Download</em> are both solid red at opposite corners,
+          so the loudest thing on a document page is a social action about its author.
+          Following a person is not why anyone opened this page.
+        </p>
+      </div>
+    </li>
+    <li>
+      <span class="mark">4</span>
+      <div>
+        <p class="what"><strong>One inset for every block.</strong></p>
+        <p class="why">
+          Measured on the live page: the document block sits at <span class="num">x&nbsp;=&nbsp;396</span>
+          and the reactions bar at <span class="num">x&nbsp;=&nbsp;412</span>. Sixteen pixels
+          of drift inside a single card is the kind of thing nobody names and everybody feels.
+        </p>
+      </div>
+    </li>
+  </ul>
+
+  <h2>Already fixed today</h2>
+  <p class="lede">
+    Recorded so the proposal is not confused with work that is done. All three came from
+    looking at the rendered page, and all three passed every automated gate beforehand.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Was</th><th>Now</th><th>Why it mattered</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Two buttons labelled <em>Share</em></td>
+          <td><em>Share access</em> vs <em>Share</em></td>
+          <td>One grants access to a private file, the other posts a public link. Two powers, one word, ten pixels apart.</td>
+        </tr>
+        <tr>
+          <td>Actions <span class="num">60 px</span> apart on separate rows</td>
+          <td>One wrapping row</td>
+          <td>Both were direct children of a column flexbox, so each became its own full-width band.</td>
+        </tr>
+        <tr>
+          <td>Caveat at <span class="num">15 px</span>, full width</td>
+          <td>Caption at <span class="num">13 px</span>, hugging its card</td>
+          <td>Against 16 px body text it read as content rather than a footnote.</td>
+        </tr>
+        <tr>
+          <td>Download navigated away</td>
+          <td>Downloads in place</td>
+          <td>No <code>download</code> attribute, so a click committed to the REST URL and left an unstyled shell behind.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Notes for building it</h2>
+
+  <h3>Where the markup goes</h3>
+  <p>
+    The metadata line belongs to <strong>Free</strong>, in
+    <code>templates/media-single.php</code> beside the title — it is composed entirely of
+    values Free already holds. Only <em>location</em> needs Pro, since folders are a Pro
+    concept, so it renders through a filter that Free leaves empty and Pro answers. That
+    keeps a Free-only site from showing a blank slot where a folder name would be.
+  </p>
+
+  <h3>Absence is a state</h3>
+  <p>
+    A document at the drive root shows no location fragment rather than the words
+    “Drive root”; a public document shows no privacy chip. Only conditions worth acting on
+    get a marker, so a page full of chips means something is genuinely unusual.
+  </p>
+
+  <h3>Do not add a second social row</h3>
+  <p>
+    The reactions and Favourite/Save/Share/Report bars come from Free's shared media
+    surface and are correct as they are. The fix there is alignment, not new controls.
+  </p>
+
+  <div class="note">
+    <span class="note__label">Sequencing</span>
+    <p>
+      Worth doing <strong>before</strong> this: the <em>Share access</em> button currently
+      offers only an anonymous public link, while the drive offers sharing with a member or
+      a role. Adding a privacy chip beside a button whose only option is “anyone with the
+      link” would sharpen the contradiction rather than resolve it.
+    </p>
+  </div>
+
+  <footer>
+    Measurements taken on <code>mediaverse.local</code>, 10&nbsp;August&nbsp;2026, as
+    <code>journey-member</code> at 1440&nbsp;px and 390&nbsp;px.
+    Mockups are rebuilt with MediaVerse's own token values, so colour and spacing match the
+    product rather than approximating it.
+  </footer>
+</div>
