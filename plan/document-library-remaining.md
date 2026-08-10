@@ -1,6 +1,12 @@
 # Document library — the nine remaining tasks, in order
 
-> **ALL NINE ARE BUILT AND BROWSER-VERIFIED (2026-08-10).** This file is kept as
+> **STATUS (2026-08-10): eight of nine built, Task 9 withdrawn, Task 10 opened.**
+> Task 9's admin folder list was built and then removed on a product call — see
+> the Task 9 section below for why, and why it must not be re-added. What the
+> owner actually needs is **Task 10**: a single-document view and edit screen in
+> wp-admin, specified at the end of this file and NOT yet built.
+>
+> This file is kept as
 > the record of what was decided and why, because the reasoning is what a future
 > change needs — not the tick-list. What is left is the release battery: the
 > full unit suite, cert, combo smoke and a manifest refresh, none of which have
@@ -355,6 +361,94 @@ Task 3).
 **Done when:** an owner can find and fix a member's folder without touching the
 database, on a 500-folder fixture, and the privacy cascade is observed from the
 admin path exactly as from the frontend.
+
+---
+
+---
+
+## Task 9 — WITHDRAWN (2026-08-10), and why it must not come back
+
+The admin folder list was built, then removed the same day on a product call:
+
+> Folders belong to **members**, and members name them whatever they like. A
+> site-wide list is a page of "Contracts", "Contracts", "Contracts" with nothing
+> to tell them apart. (Varun)
+
+It is a deliberate exception to entry-point rule 18, recorded at the
+registration site in Pro's `Plugin::init()` so an audit reads the absence as a
+decision rather than an oversight. The capability is not lost — the REST folder
+routes still do full CRUD including restore.
+
+It also collided with the queued admin IA plan
+(`plan/2026-08-09-admin-ia-reorganization-plan.md`): that plan replaces both
+`reorder_submenu` lists with one explicit order ending in Settings, and
+`mvs-document-folders` was in neither list, so it appended *after* Settings —
+the exact M-2 "items land unpredictably" symptom the plan exists to fix.
+
+**The owner's real need was never a folder list.** It is Task 10.
+
+---
+
+## Task 10 — The admin can open a document, see what it is, and edit it
+
+**The gap, found by looking at the screen.** `mvs-documents` lists documents
+with search, type and privacy filters and bulk actions. Hover a row and the only
+things offered are **Trash** and **Delete permanently** — every action on the
+screen is destructive. There is no way to see what a document *is* from the
+admin, and no way to correct a title, slug, description or tags.
+
+The Title cell links to the **front-end** page, which inverts the WordPress
+convention every admin already knows: in All Posts the title opens the editor
+and "View" is the row action that leaves for the front end.
+
+**What already exists — reuse, do not re-implement:**
+
+- `DocumentListPage::handle_actions()` already implements trash, restore and
+  delete, each with its own nonce. The template already renders them. Only the
+  *non-destructive half* of the screen is missing.
+- `MediaController::update_item()` is the canonical write and settles every rule
+  this screen needs: `set_many()` for title / slug / description / privacy,
+  `generate_unique_slug( $slug, $media_id )` for slug uniqueness, and
+  `wp_set_object_terms( $media_id, $tags, 'mvs_tag' )` for tags.
+- `MediaListPage` already has the sub-view pattern this should follow
+  (`?view=details` on the same page, no new submenu — which also keeps the admin
+  IA plan's ordered slug list untouched).
+
+**Add:**
+
+1. A single-document view at `?page=mvs-documents&view=single&media_id=N`.
+   - **See it**: the rendered preview or extracted text, type, size, author,
+     uploaded date, current privacy. Pro contributes the delivery-dependent
+     parts through a filter — Free must not learn how a document is streamed.
+   - **Edit it**: title, slug, description, tags, privacy. One form, one nonce,
+     the capability checked beside it.
+2. Row actions become **View | View on site | Download (Pro) | Trash | Delete**,
+   and the Title links to the admin view, not the front end.
+3. A `mvs_document_row_actions` filter so Pro adds Download and preview without
+   Free depending on Pro.
+
+**Guards — the ones that are not obvious:**
+
+- `is_document()` already refuses a media id on the destructive paths. The
+  single view AND the save must both go through it, or the screen becomes a
+  second, unguarded way to edit a photo.
+- **Never regenerate the slug from the title.** The REST path is explicit about
+  this and the reason is URL stability: a member fixing a typo in a title would
+  silently break every link to the document. The slug changes only when it is
+  submitted explicitly.
+- An empty title is refused, not stored. REST answers 400; the form says so
+  inline and keeps the old title.
+- "View on site" is not offered for a trashed document — delivery refuses a
+  non-publish row, so the link would 404. Same rule the drive row already
+  follows.
+- Editing another member's document is an owner action. It stays on
+  `manage_options`, and the member's own drive remains the only place they edit
+  their own.
+
+**Done when:** an admin opens a member's document from the list, can tell what
+it is without leaving wp-admin, changes the title and tags, saves, and the
+member sees the change on their drive — and a media id pasted into the same URL
+is refused.
 
 ---
 
