@@ -188,10 +188,15 @@ fi
 # indistinguishable from a green one to anyone watching CI output — exactly
 # how Pro's suite sat at 83 red without anyone noticing. Free's own full run
 # is not consistently green yet: CptIdCollisionTest.php showed 2 order-
-# dependent failures on one run and 0 on the next two, root cause not yet
-# found (confirmed NOT the same TRUNCATE-vs-static-cache pattern fixed in
-# Pro — no Free test file truncates mvs_media_index). Wiring the stage in
-# anyway, red-and-visible-but-unexplained is strictly better than
+# dependent failures ("Linkage C") on 1 of 8 full-suite runs measured this
+# same day; the other 7 were fully green, and it did not reproduce in any
+# targeted attempt (isolated file, alphabetically-preceding files run
+# together). Confirmed NOT the same TRUNCATE-vs-static-cache pattern fixed
+# in Pro — no Free test file truncates mvs_media_index, so that mechanism
+# cannot apply here. No speculative fix has been applied: guessing at a fix
+# for a ~1-in-8 signal with no reliable repro would itself be dead code —
+# untested against the failure it claims to solve. Wiring the stage in
+# anyway, because red-and-visible-but-unexplained is strictly better than
 # red-and-invisible, which is the exact failure mode this stage exists to
 # end. See plan/2026-08-11-pro-competitions-test-triage-plan.md's closing
 # note for the pointer; the Free flake itself is its own open item, not
