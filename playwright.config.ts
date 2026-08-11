@@ -14,7 +14,7 @@ import { defineConfig, devices } from '@playwright/test';
  * HTML, and conditional render flow for empty-state cover images.
  *
  * Run locally:
- *   npx playwright install chromium     # one-time
+ *   npx playwright install chrome     # one-time (uses installed Google Chrome)
  *   MVS_SITE_URL=http://mediaverse.local npx playwright test
  *
  * CI:
@@ -35,11 +35,19 @@ export default defineConfig({
 		screenshot: 'only-on-failure',
 		video: process.env.CI ? 'retain-on-failure' : 'off',
 		ignoreHTTPSErrors: true,
+		// Local: open real Chrome so you can watch. CI stays headless.
+		headless: process.env.CI ? true : process.env.MVS_HEADED === '0',
+		launchOptions: {
+			slowMo: process.env.CI ? 0 : Number( process.env.MVS_SLOWMO || 150 ),
+		},
 	},
 	projects: [
 		{
-			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] },
+			name: 'chrome',
+			use: {
+				...devices['Desktop Chrome'],
+				channel: 'chrome', // installed Google Chrome, not bundled Chromium
+			},
 		},
 	],
 });

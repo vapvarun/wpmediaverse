@@ -8,6 +8,16 @@ dist/*/
 
 *.log
 .DS_Store
+
+# Playwright e2e probe fixtures — tests/e2e/documents-qa-full-member.spec.ts
+# generates one of these per run (TAG = `FULL${Date.now()}`, written via
+# execFileSync to prove the default-privacy path) and never cleans it up.
+# The other files in tests/e2e/fixtures/ (pw-doc-fixture.*, pw-too-large.*,
+# pw-disallowed.pptx, pw-searchable.txt) are real, static, spec-referenced
+# fixtures and stay tracked — only the timestamped probes are ignored.
+# 5 accumulated and got committed once (2026-08-11) before this rule existed;
+# removed in that same commit.
+tests/e2e/fixtures/pw-priv-FULL*.txt
 .phpunit.result.cache
 .phpunit.cache
 CLAUDE.md
