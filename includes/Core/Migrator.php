@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 27;
+	const CURRENT_VERSION = 28;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -1854,5 +1854,45 @@ class Migrator {
 		);
 
 		return (bool) $after;
+	}
+
+	/**
+	 * Migration v28 — clear hard-refused MIME types out of the stored
+	 * `mvs_allowed_file_types`.
+	 *
+	 * Every install predating 1.2.3 still carries `application/pdf` in that
+	 * option. Card #9962125462 removed PDF from the settings grid and made the
+	 * upload path refuse it, but neither half covered an install whose option
+	 * ALREADY contained it — so the picker went on advertising PDF to members,
+	 * the server went on refusing it, and the owner had no way to stop it: PDF is
+	 * absent from the grid so there is no box to untick, and the sanitizer's
+	 * preserve-custom-types rule (correct in itself) wrote it back on every save.
+	 * The stored value was unreachable by any admin action (Basecamp 10190738445).
+	 *
+	 * Nothing is lost: the media path has refused these types since 1.2.3, so
+	 * removing them from the option removes an entry that only ever produced a
+	 * failed upload. PDFs belong in the document library, which accepts them.
+	 *
+	 * Idempotent — re-running finds nothing to strip. A site that genuinely wants
+	 * one of these back can still add it through the `mvs_allowed_file_types`
+	 * filter, which this does not touch.
+	 *
+	 * @since 2.4.0
+	 */
+	private function migrate_to_28(): void {
+		$stored = get_option( 'mvs_allowed_file_types', null );
+
+		if ( null === $stored || '' === $stored ) {
+			return;
+		}
+
+		$types  = array_filter( array_map( 'trim', explode( ',', (string) $stored ) ) );
+		$closed = array_values( array_diff( $types, \WPMediaVerse\Services\UploadService::hard_refused_mimes() ) );
+
+		if ( count( $closed ) === count( $types ) ) {
+			return;
+		}
+
+		update_option( 'mvs_allowed_file_types', implode( ',', $closed ) );
 	}
 }

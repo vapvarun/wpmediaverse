@@ -892,10 +892,17 @@ class UploadService {
 		// PDF stays its own case: it is explicitly blocked by owner decision
 		// (#9962125462) and keeps its established error code, which clients
 		// already branch on.
-		if ( 'application/pdf' === $mime ) {
+		if ( in_array( $mime, self::hard_refused_mimes(), true ) ) {
 			return new WP_Error(
 				'mvs_document_not_supported',
-				__( 'PDF uploads are not supported.', 'wpmediaverse' ),
+				// Post-2.4.0 the old copy ("PDF uploads are not supported.") was
+				// simply untrue: the site DOES support PDF, through the document
+				// library, where it is the flagship type with a native inline
+				// preview. The member's goal was reasonable and they were one
+				// surface away, so the message points there instead of telling
+				// them to give up. The CODE is deliberately unchanged — clients
+				// branch on it, and changing it is a Production Rule 2 problem.
+				__( 'PDFs are uploaded to your Documents library rather than to media.', 'wpmediaverse' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -909,6 +916,33 @@ class UploadService {
 		}
 
 		return null;
+	}
+
+	/**
+	 * MIME types the MEDIA path refuses no matter what the settings say.
+	 *
+	 * The single authority for "the server will never accept this here", so the
+	 * surfaces that must agree with it can ask instead of restating it:
+	 *
+	 * - the dashboard `accept` attribute (do not offer what we will refuse),
+	 * - `Sanitizers::sanitize_file_types()` (do not preserve it as a custom type),
+	 * - `Migrator` v27 (strip it from installs that stored it before 1.2.3).
+	 *
+	 * That agreement is the actual bug being fixed: this list said no while the
+	 * stored `mvs_allowed_file_types` still offered PDF in the picker, so members
+	 * on every pre-1.2.3 install were shown a type the server then refused — and
+	 * the owner could not stop it, because PDF is absent from the settings grid
+	 * and the sanitizer preserved it on every save (Basecamp 10190738445).
+	 *
+	 * NOT filterable, and deliberately so: a site that wants PDFs has the
+	 * document library, which accepts them properly.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function hard_refused_mimes(): array {
+		return array( 'application/pdf' );
 	}
 
 	/**

@@ -114,6 +114,14 @@ $mvs_dash_ctx['defaultPrivacy']  = get_option( 'mvs_default_privacy', 'public' )
 
 // Allowed file extensions for client-side upload validation.
 $mvs_allowed_mimes = array_map( 'trim', explode( ',', get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ) ) );
+
+// NEVER offer what the server refuses outright. This list was echoed verbatim
+// from the stored option, so every install predating 1.2.3 — where the option
+// still carries `application/pdf` as legacy residue nobody chose — advertised
+// PDF to every member and then refused all of them, with no admin remedy
+// (Basecamp 10190738445). Subtracting here fixes the member-facing half whatever
+// state the option is in, including a site that re-adds PDF through the filter.
+$mvs_allowed_mimes = array_values( array_diff( $mvs_allowed_mimes, \WPMediaVerse\Services\UploadService::hard_refused_mimes() ) );
 $mvs_mime_to_ext   = array(
 	'image/jpeg'      => '.jpg,.jpeg',
 	'image/png'       => '.png',
