@@ -1576,3 +1576,112 @@ written against them on day one and every change after is a coordinated release.
 MediaVerse Space Documents UI (BN owns tabs and views); changing personal-drive v1 behaviour for
 existing BN and app clients; setting `post_author` to a Space id; an admin folder list (withdrawn,
 see §19).
+
+---
+
+## 24. Implementation plan — re-verified against the running code, 2026-08-11
+
+Every pending item below was re-checked against the code on disk on this date, not read off an
+earlier claim, precisely because §20.2 already caught two cases where an older plan carried a stale
+"pending" status on work that had actually shipped. This section is the record of that recheck.
+Read it before starting any of this work — it exists so the next person does not re-derive it.
+
+### 24.1 What re-verification changed
+
+- **§20.2's "~40 Free files"** for the `mvs_media_index` direct-query count is now **50** —
+  `grep -rl mvs_media_index --include='*.php' includes/ templates/ src/ | grep -v
+  Repository/MediaRepository.php | wc -l` on 2026-08-11. Pro's count of 21 still holds exactly.
+  Drift direction matters: the debt grew since the plan doc's number was last taken, it did not
+  shrink — nobody has been working it down.
+- **All six §23.2 gaps (G1-G6) confirmed still open**, each checked against the actual file, not
+  inferred from the design doc:
+  - G1: `grep -n "mvs_media_index\|drive_type\|drive_id" includes/Core/Migrator.php` shows
+    `drive_type`/`drive_id` exist only on `mvs_pro_folders` (added when folders shipped); no such
+    columns were ever added to `mvs_media_index`. A Space-root document still has nothing but
+    `post_author` to say whose library it is in.
+  - G2: `PermissionService::owns_drive()` (`wpmediaverse-pro/includes/Documents/PermissionService.php:1079`)
+    confirmed unchanged — `'user' === $drive_type` path is a straight identity check, everything
+    else falls through to `apply_filters( 'mvs_document_owns_drive', false, ... )`. That filter name
+    is real and live; nothing is wired to answer it yet, so it always resolves `false` for any
+    non-personal drive today. §23's proposed replacement (`none|read|write|own`) does not exist.
+  - G3: `wpmediaverse-pro/includes/REST/DocumentController.php` registers exactly six routes —
+    `/documents`, `/documents/search`, `/documents/{id}`, `/documents/upload`,
+    `/documents/{id}/restore`, `/me/shared`. No `/drives` route, no `drive` query param on any of
+    them. Confirmed by reading the actual `register_rest_route()` calls, not by absence of a grep
+    hit on a guessed path.
+  - G4: the live BuddyNext bridge — `/Users/vapvarun/Local Sites/buddynext/app/public/wp-content/
+    plugins/buddynext/includes/Bridges/WPMediaVerseBridge.php` (1,257 lines, confirmed the active
+    copy by mtime against the `member-blog` site's older copy of the same plugin) — has zero
+    document or drive hooks. The only "document" hit in the file is an unrelated docblock word; the
+    only "drive" hit is `document.addEventListener`, a DOM API name, not a filter. **This file is
+    reachable from this same machine** (a different Local site, but on disk and readable) — it is
+    not blocked on getting access to another repo, only on a decision about whether to touch it
+    before BuddyNext's own team has seen the frozen contract.
+  - G5: no reassignment/departing-member code anywhere in `wpmediaverse-pro/includes/`.
+  - G6: no `'space'` privacy token anywhere in either `PermissionService.php` or
+    `Services/PrivacyService.php` (Free or Pro). `group` remains the only non-`user` token wired.
+- **Item 6, the "~39 pre-existing Pro test failures" claim, could NOT be re-verified this pass.**
+  `phpunit` 9.6.34 and `/tmp/wordpress-tests-lib` are both present, but running it through this
+  shell's PHP picks up a mismatched Xdebug/opcache/imagick build (API-version errors) rather than
+  Local's own PHP binary that `wp_cli` uses. The number in §20.2 should be treated as **unconfirmed,
+  not false** — it needs a run through Local's actual PHP, not a claim to correct blindly.
+
+### 24.2 Plan A — personal-drive debt (Tier 2), independent of everything else
+
+These four can proceed in any order, do not touch Space drives, and do not require BuddyNext. None
+are release blockers for 2.4.0, but none should wait indefinitely either — they are the difference
+between "the structural guarantee in §8 is enforced" and "the structural guarantee in §8 is a
+convention someone has to remember."
+
+1. **CI ban on direct `mvs_media_index` queries (P1.3/P1.4).** Write the grep-based gate (pattern:
+   `bin/coding-rules-check.sh` already has the shape for this kind of rule — add a rule rather than
+   a new script) with `Repository/MediaRepository.php` as the sole allowlisted file, plus a mutation
+   test that proves the rule actually fails on an intentionally-reintroduced direct query. Then, and
+   only after the gate exists and is red, migrate the 50 Free + 21 Pro files through
+   `MediaRepository` incrementally — this is exactly the kind of multi-file mechanical change Coding
+   Rule 15 (debt tax) says to do without growing any Known-Debt file in the process.
+2. **30k-document scale fixture (P3.9).** A seeded-data WP-CLI command (or extend an existing
+   seeding command if one already fixture-generates media) that produces 30,000 real rows via
+   `DocumentIngestService`, not direct inserts (same rule as every other fixture in this doc — see
+   the 2026-08-09 incident in the security journey). Once it exists, re-run the §12 big-site claims
+   against it and correct any that don't hold instead of leaving them "reasoned, not measured."
+3. **Real-customer-DB dry run of Migrator v27.** Needs a sanitized copy of an actual customer DB
+   (or the closest available proxy) — this is an operational task, not a code change, and belongs on
+   whoever owns that access, not something to fabricate a substitute for.
+4. **Isolate the Pro gamification test-pollution failures.** First re-confirm the count with Local's
+   own PHP (see §24.1) rather than trusting "~39" as exact. `BoostServiceTest` and
+   `DeliveryControllerTest` were named as the interacting pair — the actual fix is almost certainly
+   a shared-state cleanup in a `tearDown()` somewhere in the gamification suite, not touching either
+   service under test.
+
+### 24.3 Plan B — Space/site drives (Tier 3), sequenced, PR1 has no blocking dependency
+
+The five-PR sequence from §23.5 stands. What changes here is being explicit about which PRs need a
+decision from outside this repo and which do not:
+
+- **PR1 (contract-only — refusal codes + filter names, no schema, no code)** needs no BuddyNext
+  access to draft — it is a naming exercise against this plan's own §22/§23 vocabulary. It DOES need
+  a decision before it's final: whether the frozen names get reviewed by whoever owns
+  `buddynext`'s bridge before MediaVerse commits to them, since PR1's entire purpose is "BuddyNext
+  can code against this and it won't move." Drafting it is safe; declaring it final without that
+  review defeats the point of freezing it first.
+- **PR2 (`drive_type`/`drive_id` columns + Migrator bump + backfill)** is self-contained inside this
+  plugin pair. Production Rule 4 applies directly: schema change needs a Migrator version bump and
+  is a minor-release item, not a patch. Production Rule 8 (minor releases are additive) is satisfied
+  — this adds columns, defaults every existing personal-drive row to its current implicit binding in
+  the same migration (so root listing becomes one code path, per §23's own recommendation), and
+  removes nothing.
+- **PR3 (`can_write_drive` + `GET /drives` + `?drive=space:N`)** is also self-contained — it is new
+  REST surface and a new permission resolution, not a rename of anything existing, so Production
+  Rule 2 (never rename without an alias) doesn't apply and there's nothing here to break existing
+  BuddyNext callers (they don't call `/drives` yet because it doesn't exist yet).
+- **PR4 (BuddyNext bridge hooks)** is the one that crosses the repo boundary for real — editing
+  `buddynext/includes/Bridges/WPMediaVerseBridge.php` is possible from this same machine, but it is
+  a different plugin with its own release cadence and (presumably) its own owner/reviewer who has
+  not seen this plan. This is the PR to hold for an explicit go-ahead, not PR1-PR3.
+- **PR5 (T1 reassignment + `space` privacy token)** depends on PR2-PR4 existing to reassign *into*,
+  so it is naturally last regardless of any external decision.
+
+**Net: PR1's draft, PR2 and PR3 can start without anyone outside this repo weighing in. PR1's
+sign-off and PR4 are the two places this plan needs an answer from outside this session before
+proceeding.**
