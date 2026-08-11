@@ -1685,11 +1685,33 @@ convention someone has to remember."
    match the numbers above verbatim forever — that's the point of it being a script, not a snapshot).
    Migrate incrementally through `MediaRepository` — this is exactly the kind of multi-file mechanical
    change Coding Rule 15 (debt tax) says to do without growing any Known-Debt file in the process.
-2. **30k-document scale fixture (P3.9).** A seeded-data WP-CLI command (or extend an existing
-   seeding command if one already fixture-generates media) that produces 30,000 real rows via
-   `DocumentIngestService`, not direct inserts (same rule as every other fixture in this doc — see
-   the 2026-08-09 incident in the security journey). Once it exists, re-run the §12 big-site claims
-   against it and correct any that don't hold instead of leaving them "reasoned, not measured."
+2. **30k-document scale fixture (P3.9) — THE TOOL ALREADY EXISTS, only the measured run is pending.**
+   §20.2 listed this as fully pending; that was stale. `wp mvs seed-documents` (Pro,
+   `includes/CLI/SeedDocuments.php`) has existed since this feature shipped: seeds through
+   `DocumentIngestService`, never raw SQL, marks every row with `_mvs_seeded_fixture` so `--cleanup`
+   removes only what it created, and asserts the lazy-root invariant (`--depth=0` produces zero
+   folder rows) as part of its own run. `--members=<n> --docs-per=<n> --depth=<n>` composes to any
+   target count.
+
+   **Verified 2026-08-11, small scale only (30 attempted, 10 succeeded via the CLI command; a
+   manual 15-call reproduction through the same service calls succeeded 15/15).** The 20 refusals
+   were not reproducible outside the live command and are the likely signature of a **race with a
+   concurrently-running process on the same site** — a background QA agent was walking
+   `qa/runbooks/DOCUMENTS-QA.md` Sections 3/4 at the same time, which deliberately toggles
+   `mvs_pro_documents_enabled` and the `use_mvs_documents` capability off and back on as part of its
+   own assertions. **Do not run the 30k-scale seed while any process is exercising the master toggle
+   or role gate on the same site** — both the seed run's success count and the QA walk's
+   before/after document-count assertions would corrupt each other. Diagnostic pollution (16 rows
+   created outside the marker system while investigating) was cleaned up manually; the marked
+   smoke-test batch was removed via `wp mvs seed-documents --cleanup`. Site confirmed back at
+   baseline.
+
+   **Still pending:** the actual 30k run (needs ~30x the members or docs-per used above; estimate the
+   per-document cost from a mid-size dry run first — each iteration does real file I/O + a full
+   `DocumentIngestService::handle()` pass, not a bare insert, so 30,000 will take real wall-clock
+   time and should run via a backgroundable process, not a single foreground CLI call with a hard
+   timeout), and re-running the §12 big-site claims against the result, correcting any that don't
+   hold instead of leaving them "reasoned, not measured."
 3. **Real-customer-DB dry run of Migrator v27.** Needs a sanitized copy of an actual customer DB
    (or the closest available proxy) — this is an operational task, not a code change, and belongs on
    whoever owns that access, not something to fabricate a substitute for.
