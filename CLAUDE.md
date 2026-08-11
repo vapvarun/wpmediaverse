@@ -207,9 +207,9 @@ These rules protect 50+ production customer sites. They are mechanically enforce
 |-----|-------|
 | Framework | PHPUnit 9.6 + yoast/phpunit-polyfills 2.x |
 | Test dir | `tests/unit/` |
-| Test files | 11 (`CapabilitiesTest`, `CLITest`, `CommentServiceTest`, `FavoriteServiceTest`, `FollowServiceTest`, `MediaMetaTest`, `PostTypesTest`, `PrivacyTest`, `ReactionServiceTest`, `RESTApiTest`, `SampleTest`) |
-| Coverage | ~10% — new code must include tests |
-| Run | `./vendor/bin/phpunit` |
+| Test files | 42 as of 2026-08-11 (corrected — this line said 11 and named files, several of which no longer exist; run `ls tests/unit/*.php \| wc -l` rather than trusting a hardcoded count here again) |
+| Coverage | Not precisely measured; grown substantially past the old ~10% estimate given the file-count growth above — re-measure with `phpunit --coverage-text` before quoting a number |
+| Run | `./vendor/bin/phpunit` or `composer test:unit` (also stage 2.4 of local-CI, see below) |
 | Config | `phpunit.xml.dist` |
 
 ---
@@ -341,6 +341,7 @@ What the gate runs (in order, see `bin/local-ci.sh`):
 | 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules (Rules 1-6, plus Rule 7: no direct `mvs_media_index` query outside `MediaRepository`) | ✅ Rule 2's allowlist is populated (0 callsites outside it — the "23 callsites" note here was stale, corrected 2026-08-11). ⚠️ Rule 7 added 2026-08-11: 24 files / 66 call sites known and tracked (`plan/document-library.md` §24.2 item 1), currently `known_gap()` (visible, non-blocking) until the incremental migration clears the list — then it becomes a hard `violation()`. |
 | 2.2 (Pro only) | `bin/architecture-checks.sh` | Free/Pro contract invariants | (Pro only) |
 | 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 |
+| 2.4 Full unit suite | `composer test:unit` | Every PHPUnit test in the plugin | ⚠️ Added 2026-08-11, mirroring the same gap closed on Pro the same day (Basecamp #10184313297). **Not consistently green**: `CptIdCollisionTest.php` showed 2 order-dependent failures on one run, 0 on the next three — confirmed NOT the same root cause as Pro's fix (`MediaRepository::reset_test_cache()`; no Free test file truncates `mvs_media_index`). Wired in anyway per the same principle that motivated Pro's stage: visible-and-unexplained beats invisible. The flake itself is an open item — see `plan/2026-08-11-pro-competitions-test-triage-plan.md`'s closing note. |
 | 3.1 Manifest | `jq` on `audit/manifests/manifest.json` | manifest validity + freshness | ✅ exits 0 |
 | 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end | (skipped in `:no-journeys` mode) |
 
