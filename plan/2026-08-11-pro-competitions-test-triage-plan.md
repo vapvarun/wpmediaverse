@@ -1,8 +1,50 @@
 # Plan: Pro competitions test-suite triage (Boost / Challenge / Battle)
 
-**Date:** 2026-08-11
+**Date:** 2026-08-11 · **RESOLVED same day, all 3 phases complete**
 **Type:** Test-suite health, Pro plugin only
-**Basecamp:** [Pro unit suite is 83 red at HEAD](https://app.basecamp.com/5798509/buckets/46336461/card_tables/cards/10184313297) and its duplicate [[Dev] Pro unit suite is 40% red](https://app.basecamp.com/5798509/buckets/46336461/card_tables/cards/10181028130) — both in Bugs, both describe the same underlying gap.
+**Basecamp:** [Pro unit suite is 83 red at HEAD](https://app.basecamp.com/5798509/buckets/46336461/card_tables/cards/10184313297) and its duplicate [[Dev] Pro unit suite is 40% red](https://app.basecamp.com/5798509/buckets/46336461/card_tables/cards/10181028130) — both moved to Ready for Testing.
+
+> ## OUTCOME: 530 tests, 2458 assertions, 0 errors, 0 failures
+>
+> All three phases below ran to completion. Neither of the two real root causes
+> was a product bug and neither was "just tighten a stale assertion" — both
+> were genuine test-infrastructure defects, found by proving the actual
+> service code correct in isolation first, then reproducing the failure shape
+> deliberately before writing a fix:
+>
+> 1. **`MediaRepository`'s static `$row_cache`/`$meta_fully_loaded` never
+>    cleared between PHPUnit tests**, while `ChallengeServiceTest`,
+>    `BattleServiceTest`, `BoostServiceTest` and `QuotaServiceTest` all
+>    `TRUNCATE TABLE mvs_media_index` in their own `tear_down()`. `TRUNCATE`
+>    resets `AUTO_INCREMENT`, so a later test's fresh insert could legitimately
+>    reuse a `media_id` an earlier test had already used and deleted — and the
+>    cache, keyed by that id, silently served the EARLIER test's data (wrong
+>    author, wrong type) instead of the new row. This alone accounted for
+>    every `ChallengeServiceTest` and `BattleServiceTest` failure and most of
+>    `BoostServiceTest`'s. Fix: new public `MediaRepository::reset_test_cache()`
+>    (`wpmediaverse` commit `defbed37`), called from all four affected test
+>    classes' `tear_down()` (`wpmediaverse-pro` commit `dddb93c`).
+> 2. **One genuinely stale test file.** `BoostServiceTest`'s remaining single
+>    failure after fix #1 was `update_option()`/`delete_option()` calls still
+>    using the pre-1.2.0 unprefixed `mvs_boost_*` option names, while
+>    `BoostService` has read `mvs_pro_boost_*` exclusively since that release's
+>    option-prefix migration. Three of the four calls silently no-opped
+>    without ever surfacing, because the code's own defaults happened to
+>    match what the test intended to set — only the one test asserting a
+>    NON-default value exposed it. Fixed by prefixing all four calls
+>    (`dddb93c`).
+>
+> Phase 3 (wire the suite into `local-CI`, the original card's own request
+> from the start) is also done — `wpmediaverse-pro` commit `0decc97` adds
+> stage 2.4, verified firing and passing in the real pipeline, not just
+> standalone.
+>
+> **What this plan did NOT touch, on purpose:** Free's own suite (`383 tests,
+> 2 failures`, `CptIdCollisionTest.php`) is a different bug, a different area
+> (the 2.3.3 album/collection ID-collision work), and outside this plan's
+> scope — noted for whoever picks it up next, not investigated here. Free's
+> `local-CI` also has no full-suite stage, same gap this plan just closed for
+> Pro — worth its own small follow-up, not bundled into this one.
 
 ## Why this is a plan, not a quick fix
 
@@ -172,12 +214,12 @@ untested change.
 
 ## Acceptance criteria
 
-- [ ] Phase 1 run: `ChallengeServiceTest` + `BattleServiceTest` re-measured with the stub wired in; delta recorded even if zero.
-- [ ] Every remaining `ChallengeServiceTest` failure has a recorded stale-test-or-real-bug verdict with evidence, not a guess.
-- [ ] Every `BattleServiceTest` failure investigated at least once (currently zero).
-- [ ] Full suite count recorded again after Phase 2, compared honestly against today's 39 (both plugins' `CLAUDE.md` files updated, not just this plan file).
-- [ ] `bin/local-ci.sh` (or `wpmediaverse-pro`'s equivalent) runs the Pro PHPUnit suite so this cannot silently rot to 39+ again.
-- [ ] Basecamp cards #10184313297 and #10181028130 updated with the final honest number and merged/closed as duplicates of each other.
+- [x] Phase 1 run: `ChallengeServiceTest` + `BattleServiceTest` re-measured with the stub wired in; delta recorded even if zero. **Delta was zero** — the stub was already globally active via `bootstrap.php`, which itself was the useful negative result that pointed Phase 2 elsewhere.
+- [x] Every remaining `ChallengeServiceTest` failure has a recorded stale-test-or-real-bug verdict with evidence, not a guess. **Verdict: neither — a third category, test-infrastructure state leakage (stale `MediaRepository` cache after `TRUNCATE`), proven via a minimal two-test repro before the fix was written.**
+- [x] Every `BattleServiceTest` failure investigated at least once. **Same root cause as Challenge, same fix, same result: 33/33 green.**
+- [x] Full suite count recorded again after Phase 2, compared honestly against today's 39. **530 tests / 2458 assertions / 0 errors / 0 failures.** Both plugins' `CLAUDE.md` updated (`wpmediaverse-pro` CLAUDE.md local-CI table; this plan file).
+- [x] `bin/local-ci.sh` runs the Pro PHPUnit suite so this cannot silently rot again. **Stage 2.4, `composer test:unit`, verified firing and passing in the real pipeline** (`wpmediaverse-pro` commit `0decc97`).
+- [x] Basecamp cards #10184313297 and #10181028130 updated with the final honest number and moved to Ready for Testing (not merged — Basecamp cards aren't mergeable via the CLI; both carry a comment recommending the team merge/close one as a duplicate of the other).
 
 ## Open threads this plan does not resolve (tracked elsewhere)
 
