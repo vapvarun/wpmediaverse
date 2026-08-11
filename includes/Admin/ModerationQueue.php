@@ -213,7 +213,7 @@ class ModerationQueue {
 				<div class="mvs-page-header__left">
 					<h1 class="mvs-page-header__title">
 						<i data-lucide="shield-check"></i>
-						<?php esc_html_e( 'Media Moderation', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Moderation', 'wpmediaverse' ); ?>
 					</h1>
 					<p class="mvs-page-header__desc"><?php esc_html_e( 'Review and manage flagged, pending, and reported media items.', 'wpmediaverse' ); ?></p>
 				</div>
