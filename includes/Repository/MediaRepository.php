@@ -1573,17 +1573,26 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 		$grantee_sql .= ' )';
 
+		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
+		// legitimately made to a role, and the uploader usually holds that role
+		// too — so sharing to "Subscriber" put your own document into your own
+		// Shared-with-me band (Basecamp 10190505530). The scope is what was
+		// missing, not the grant: `PermissionService::grant()` correctly refuses
+		// a DIRECT grant to the owner (`mvs_grant_redundant`) and must keep
+		// accepting the role grant, which is not redundant for its other holders.
 		$where = "{$grantee_sql}
 		           AND g.revoked_at IS NULL
 		           AND ( g.expires_at IS NULL OR g.expires_at > %s )
 		           AND g.target_type = %s
 		           AND m.media_type = %s
-		           AND m.status = %s";
+		           AND m.status = %s
+		           AND m.post_author <> %d";
 
 		$params[] = current_time( 'mysql', true );
 		$params[] = 'media';
 		$params[] = 'document';
 		$params[] = 'publish';
+		$params[] = $user_id;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$total = (int) $wpdb->get_var(
