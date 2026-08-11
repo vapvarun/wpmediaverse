@@ -364,10 +364,6 @@ class Shortcodes {
 	 */
 	public function render_dashboard( $atts ): string {
 		if ( ! is_user_logged_in() ) {
-			wp_enqueue_style( 'mvs-frontend' );
-			if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
-				wp_enqueue_script( 'mvs-lucide' );
-			}
 			$return_url = get_permalink();
 			$login_url  = \WPMediaVerse\Core\TemplateHelpers::login_url( $return_url );
 			$signup_url = function_exists( 'wc_registration_url' )
@@ -914,6 +910,39 @@ class Shortcodes {
 		if ( ! in_array( $mvs_doc_root, array( 'my-drive', 'shared', 'recent' ), true ) ) {
 			$mvs_doc_root   = '';
 			$mvs_doc_folder = 0;
+		}
+
+		// `?drive=my-drive|shared|recent` is a VIRTUAL ROOT of the member's own
+		// drive - a different concept from the public listing below, and it
+		// needs the same seam the `folder` attribute already uses two branches
+		// up. Before this fix, `$mvs_doc_root` was computed correctly (for the
+		// template's chrome/heading) but never actually used to choose a data
+		// source: every root, including 'shared', silently fell through to
+		// `public_documents()` below - so `?drive=shared` rendered the PUBLIC
+		// listing under a "Shared with me" heading. Confirmed 2026-08-11 combo
+		// QA (F1): a real grant existed and `GET /mvs-pro/v1/me/shared`
+		// returned it correctly, proving the REST controller's query was
+		// always right - only this page template's query was wrong. Route
+		// through the SAME `mvs_documents_drive_html` filter the folder branch
+		// uses, so there is one seam for "this needs Pro's drive", not two
+		// that can drift apart again.
+		if ( '' !== $mvs_doc_root ) {
+			$mvs_doc_root_html = (string) apply_filters(
+				'mvs_documents_drive_html',
+				'',
+				$mvs_doc_root,
+				array(
+					'page' => max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				)
+			);
+
+			if ( '' === $mvs_doc_root_html ) {
+				return current_user_can( 'edit_posts' )
+					? '<p class="mvs-documents__notice">' . esc_html__( 'This drive view needs WPMediaVerse Pro.', 'wpmediaverse' ) . '</p>'
+					: '';
+			}
+
+			return $mvs_doc_root_html;
 		}
 
 		wp_enqueue_style( 'mvs-frontend' );
