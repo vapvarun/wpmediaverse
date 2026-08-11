@@ -253,6 +253,33 @@ final class DocumentTypes {
 			return in_array( $by_ext, self::TEXT_FAMILY, true ) ? $by_ext : null;
 		}
 
+		// 2c. libmagic declined to classify the contents at all.
+		//
+		// `application/octet-stream` is not a positive identification, it is "I
+		// don't know" — and libmagic answers it for any text file whose body is
+		// one long low-entropy run once it passes ~64 KiB (measured: 65,535
+		// bytes text/plain, 65,536 octet-stream). A member's padded log or
+		// repeated-token dump was therefore refused as an unsupported TYPE while
+		// a smaller file with the same extension and the same content uploaded
+		// fine, and the message named the wrong reason (Basecamp 10190462935).
+		//
+		// The strictness above stays exactly where it belongs: when the sniff is
+		// a POSITIVE answer that contradicts the extension, that is a disguised
+		// file and still resolves to null. This branch only covers the case
+		// where there is no answer to contradict.
+		//
+		// The extension alone does not admit it — `looks_textual()` still has to
+		// agree, so a real binary renamed `.txt` is refused as it was before.
+		if ( 'application/octet-stream' === $mime ) {
+			$by_ext = self::BY_EXTENSION[ $extension ] ?? null;
+
+			if ( ! in_array( $by_ext, self::TEXT_FAMILY, true ) ) {
+				return null;
+			}
+
+			return self::looks_textual( $file_path ) ? $by_ext : null;
+		}
+
 		// 3. Unambiguous MIME.
 		$by_mime = self::BY_MIME[ $mime ] ?? null;
 		if ( null === $by_mime ) {
@@ -269,6 +296,47 @@ final class DocumentTypes {
 		}
 
 		return $by_mime;
+	}
+
+	/**
+	 * Whether a file's opening bytes are consistent with text.
+	 *
+	 * The guard on the `application/octet-stream` branch in `resolve()`. Reads a
+	 * single 8 KiB block and rejects it on a NUL byte — the one thing that never
+	 * appears in a UTF-8/ASCII text file and appears almost immediately in every
+	 * real binary (executables, images, archives all carry NULs in their header).
+	 *
+	 * Deliberately a cheap negative test, not a charset validation: the question
+	 * here is only "is this plausibly the text file the extension claims", and
+	 * the sniff has already admitted it cannot tell. A stricter test would start
+	 * refusing legitimate files with odd encodings, which is the bug this whole
+	 * branch exists to fix.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $file_path Path on disk. An unreadable path admits nothing.
+	 * @return bool
+	 */
+	private static function looks_textual( string $file_path ): bool {
+		if ( '' === $file_path || ! is_readable( $file_path ) ) {
+			return false;
+		}
+
+		$handle = fopen( $file_path, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		if ( ! $handle ) {
+			return false;
+		}
+
+		$head = fread( $handle, 8192 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+
+		if ( false === $head || '' === $head ) {
+			// An empty file is a legitimate empty document; there is nothing
+			// binary about it.
+			return true;
+		}
+
+		return ! str_contains( $head, "\0" );
 	}
 
 	/**
