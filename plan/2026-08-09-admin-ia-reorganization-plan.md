@@ -32,6 +32,36 @@
 > Settings — a live instance of M-2. Document editing now lives as a sub-view of
 > the existing Documents screen (`?view=single`) precisely so the ordered slug
 > list below does not grow.
+>
+> ## Independently re-verified 2026-08-11 — 6 of 8 confirmed clean, 1 real gap found and fixed
+>
+> The 2026-08-10 table above was a re-audit, but nobody outside that same pass
+> had checked its work — exactly the shape of confusion this whole plan is
+> about. Re-checked all 8 findings from a cold read of the code (not by
+> re-reading this table), Basecamp card #10184667104 comments carry the
+> per-item evidence:
+>
+> | Finding | Independently re-verified | Method |
+> |---|---|---|
+> | Stories toggle | ✅ Confirmed | `section_ids` includes `mvs_pro_stories` |
+> | Duplicate Tags menu | ✅ Confirmed | Only one `mvs-tags` `add_submenu_page`; zero `edit-tags.php?taxonomy=mvs_tag` hits anywhere |
+> | M-2 submenu order | ✅ Confirmed | Read both order arrays directly — Free's carries every Free slug, Pro's independently carries every Pro-only slug (Stories, Import/Migration) on top |
+> | M-3 naming drift | ⚠️ **One real leftover found and fixed** | Menu label and `page_title` both correctly said "Moderation" — but the Moderation screen's own H1 heading still read "Media Moderation", disagreeing with the menu item that links to it. Fixed 2026-08-11 (`ModerationQueue.php`). The table's "Done" was true for the menu, not the page — a distinction this kind of check has to make explicitly or it re-teaches the same false confidence. |
+> | S-2 AI/Moderation split | ✅ Confirmed | AI settings register under `OPTION_GROUP . '_ai'`, Moderation under `OPTION_GROUP . '_moderation'` — genuinely separate `options.php` submissions, not just separate-looking UI |
+> | M-5 "Gamification" chrome | ✅ Confirmed | Zero owner-facing `'Gamification'` string anywhere in Pro admin/templates |
+> | S-5 deep links | ✅ Confirmed | Zero `#section-` or `?section=` residue in either plugin |
+>
+> **What this does and doesn't prove.** Every checkmark above is a **code**
+> verification — reading the actual registration/string/array, not trusting a
+> claim. It is NOT a browser verification: nobody has clicked through Settings
+> → AI → Save and confirmed Moderation's checkboxes survive, watched the
+> Stories toggle round-trip a real save, or followed a Cloud Ops redirect to
+> confirm it lands mid-page on the right section. The manual test plan below
+> (8 rows) is still genuinely unrun. Six-of-eight code-clean after independent
+> re-checking is a real, good signal — better than most of what this session
+> found when it re-checked other "done" claims elsewhere in the plugin — but
+> it answers "does the code say the right thing", not "does a site owner
+> actually see the right thing".
 
 **Owner:** _unassigned — team pickup via Basecamp Bugs card_  
 **Reviewer:** QA sign-off required before Ready for Testing  
