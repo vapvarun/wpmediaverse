@@ -535,7 +535,20 @@ class MessagingController extends WP_REST_Controller {
 	 * DELETE /conversations/{id}
 	 */
 	public function delete_conversation( WP_REST_Request $request ): WP_REST_Response {
-		$result = $this->service->leave_conversation( (int) $request['id'], get_current_user_id() );
+		$user_id = get_current_user_id();
+		$conv_id = (int) $request['id'];
+
+		// Coding Rule 20 — a refusal is never a success response. Without this,
+		// a NON-PARTICIPANT got 204 from a call that updated zero rows: a silent
+		// no-op wearing a success status, while every neighbouring route on the
+		// same conversation answered 404 (Basecamp 10190938967). Same guard, and
+		// deliberately the same 404 `not_found`, as list_messages() — a refusal
+		// must not confirm that the conversation exists.
+		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
+			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
+		}
+
+		$result = $this->service->leave_conversation( $conv_id, $user_id );
 
 		if ( ! $result ) {
 			return new WP_REST_Response( array( 'error' => 'delete_failed' ), 400 );
@@ -731,9 +744,19 @@ class MessagingController extends WP_REST_Controller {
 	 * POST /conversations/{id}/read
 	 */
 	public function mark_read( WP_REST_Request $request ): WP_REST_Response {
-		$this->service->mark_read( (int) $request['id'], get_current_user_id() );
+		$user_id = get_current_user_id();
+		$conv_id = (int) $request['id'];
+
+		// Coding Rule 20, same as delete_conversation() above: the read-watermark
+		// update matched no participant row and this still answered
+		// `{"success":true}` (Basecamp 10190938967).
+		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
+			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
+		}
+
+		$this->service->mark_read( $conv_id, $user_id );
 		// Invalidate unread cache.
-		delete_transient( 'mvs_dm_unread_' . get_current_user_id() );
+		delete_transient( 'mvs_dm_unread_' . $user_id );
 		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
@@ -741,7 +764,18 @@ class MessagingController extends WP_REST_Controller {
 	 * POST /conversations/{id}/typing
 	 */
 	public function typing( WP_REST_Request $request ): WP_REST_Response {
-		$this->service->set_typing( (int) $request['id'], get_current_user_id() );
+		$user_id = get_current_user_id();
+		$conv_id = (int) $request['id'];
+
+		// Third instance of the same Rule 20 shape, found while fixing the two
+		// on Basecamp 10190938967 and fixed with them: `set_typing()` UPDATEs
+		// the participant row, so for a non-participant it matched nothing and
+		// this still answered `{"success":true}`.
+		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
+			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
+		}
+
+		$this->service->set_typing( $conv_id, $user_id );
 		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
