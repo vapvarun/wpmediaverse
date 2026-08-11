@@ -1286,6 +1286,7 @@ wp_interactivity_state(
 						<template data-wp-each="state.albumModal.pickerItems">
 							<div class="mvs-media-picker-item"
 								data-wp-bind--data-picker-id="context.item.id"
+								data-wp-class--selected="state.isPickerSelected"
 								data-wp-class--mvs-media-picker-cover="state.isPickerCover"
 								data-wp-on--click="actions.togglePickerItem">
 								<img data-wp-bind--hidden="!state.showPickerImage" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />

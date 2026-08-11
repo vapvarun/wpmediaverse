@@ -481,6 +481,18 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			return ctx.item && state.albumModal.coverId === ctx.item.id;
 		},
+		// The picker's selection state had NO renderer: togglePickerItem()
+		// mutated selectedIds and nothing on screen changed, because the CSS
+		// hangs off `.selected` and no getter or binding ever emitted it. Most
+		// visible on Edit Album, where openAlbumModal() pre-populates
+		// selectedIds from the album's current items and then draws none of it —
+		// the member sees an undifferentiated grid and cannot tell what is in
+		// the album, what they just toggled, or what Save will do
+		// (Basecamp 10190678139).
+		get isPickerSelected() {
+			const ctx = getContext();
+			return !! ctx.item && state.albumModal.selectedIds.includes( ctx.item.id );
+		},
 		get isSmartType() {
 			return state.collectionModal.collectionType === 'smart';
 		},

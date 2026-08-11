@@ -2726,10 +2726,25 @@ a.mvs-dashboard-card-title:hover {
     border-color: var(--mvs-primary);
 }
 
-.mvs-media-picker-item img {
+/* The picker reuses the grid's MARKUP classes, but the grid's sizing is scoped
+   to `.mvs-grid-item`, so inside a picker cell a video/audio tile matched no
+   sizing rule at all and rendered ragged next to the images. Sized here for
+   every child the picker can hold, not just `img` (Basecamp 10190678139). */
+.mvs-media-picker-item img,
+.mvs-media-picker-item video,
+.mvs-media-picker-item .mvs-grid-video-preview,
+.mvs-media-picker-item .mvs-grid-item-placeholder {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* `.mvs-grid-item-placeholder--video` pins `aspect-ratio: 16 / 9`, which cannot
+   fill a square cell that clips its overflow. Inside the picker the cell decides
+   the shape. */
+.mvs-media-picker-item .mvs-grid-item-placeholder--video,
+.mvs-media-picker-item .mvs-grid-item-placeholder--audio {
+    aspect-ratio: auto;
 }
 
 .mvs-media-picker-check {
@@ -4170,9 +4185,9 @@ a.mvs-dashboard-card-title:hover {
    30. Album Cover Picker
    ========================================================================== */
 
-.mvs-media-picker-item {
-    position: relative;
-}
+/* `.mvs-media-picker-item` is declared in §19 with its full box, including
+   `position: relative`. The duplicate rule that used to sit here restated only
+   that one property — Coding Rule 12 forbids duplicate class rules. */
 
 .mvs-media-picker-cover-btn {
     position: absolute;
@@ -4190,8 +4205,24 @@ a.mvs-dashboard-card-title:hover {
     z-index: 3;
 }
 
-.mvs-media-picker-item:hover .mvs-media-picker-cover-btn {
+.mvs-media-picker-item:hover .mvs-media-picker-cover-btn,
+.mvs-media-picker-cover-btn:focus-visible {
     opacity: 1;
+}
+
+/* A hover-only reveal is unreachable on touch: there is no hover on a phone or
+   tablet, so "Set Cover" was invisible and effectively untappable — while the
+   hint directly above the picker instructs the member to click it. On a coarse
+   pointer the button is simply always visible (Basecamp 10190678139). */
+@media (hover: none), (pointer: coarse) {
+    .mvs-media-picker-cover-btn {
+        opacity: 1;
+        /* Revealing it is only half the fix — at 28px tall it was still under
+           the 40px touch floor, so it would have been visible and awkward to
+           hit. Padding rather than height so the label stays centred. */
+        min-height: 40px;
+        padding-block: 8px;
+    }
 }
 
 .mvs-media-picker-cover-badge {
