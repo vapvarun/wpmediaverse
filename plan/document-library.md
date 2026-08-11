@@ -1588,11 +1588,23 @@ Read it before starting any of this work — it exists so the next person does n
 
 ### 24.1 What re-verification changed
 
-- **§20.2's "~40 Free files"** for the `mvs_media_index` direct-query count is now **50** —
-  `grep -rl mvs_media_index --include='*.php' includes/ templates/ src/ | grep -v
-  Repository/MediaRepository.php | wc -l` on 2026-08-11. Pro's count of 21 still holds exactly.
-  Drift direction matters: the debt grew since the plan doc's number was last taken, it did not
-  shrink — nobody has been working it down.
+- **§20.2's "~40 Free files" was itself a naive substring count and overstated the real number by
+  roughly 3x. Corrected twice in one afternoon (2026-08-11), worth recording precisely because this
+  is exactly the "what's real" confusion this section exists to stop:**
+  1. A first re-check (`grep -rl mvs_media_index ... | wc -l`) got **50** Free / **21** Pro — still a
+     naive substring count, just a more current one. Any docblock mentioning the table name in prose
+     inflates this number; it is not a violation count.
+  2. Building the actual CI gate (item 1 below) with a precise detector — matching real `$wpdb->`
+     query calls, not bare mentions — cut that to **12 Free files / 0 Pro files**. Zero Pro hits
+     turned out to be wrong too: the detector only matched the table name *inside* a `$wpdb->` call's
+     parens, and missed the equally common `$index = $wpdb->prefix . 'mvs_media_index'; ...
+     {$index}` shape — exactly what `Pro\Leaderboard\LeaderboardService.php` does, with its own
+     `phpcs:ignore` comment showing the direct query was a known, deliberate choice, not an
+     oversight.
+  3. Revising the detector to match the table-name *construction* itself (inline or via a variable),
+     not only calls it appears directly inside, landed on the number now mutation-tested and wired
+     into both plugins' `bin/coding-rules-check.sh` as Rule 7: **Free 24 files / 66 call sites, Pro 4
+     files / 6 call sites.** See item 1 below — this is DONE, not planned, as of 2026-08-11.
 - **All six §23.2 gaps (G1-G6) confirmed still open**, each checked against the actual file, not
   inferred from the design doc:
   - G1: `grep -n "mvs_media_index\|drive_type\|drive_id" includes/Core/Migrator.php` shows
@@ -1633,13 +1645,46 @@ are release blockers for 2.4.0, but none should wait indefinitely either — the
 between "the structural guarantee in §8 is enforced" and "the structural guarantee in §8 is a
 convention someone has to remember."
 
-1. **CI ban on direct `mvs_media_index` queries (P1.3/P1.4).** Write the grep-based gate (pattern:
-   `bin/coding-rules-check.sh` already has the shape for this kind of rule — add a rule rather than
-   a new script) with `Repository/MediaRepository.php` as the sole allowlisted file, plus a mutation
-   test that proves the rule actually fails on an intentionally-reintroduced direct query. Then, and
-   only after the gate exists and is red, migrate the 50 Free + 21 Pro files through
-   `MediaRepository` incrementally — this is exactly the kind of multi-file mechanical change Coding
-   Rule 15 (debt tax) says to do without growing any Known-Debt file in the process.
+1. **CI ban on direct `mvs_media_index` queries (P1.3/P1.4) — DONE 2026-08-11, migration not started.**
+   Both plugins gained Rule 7 in `bin/coding-rules-check.sh`, backed by a shared detector
+   (`bin/lib/detect-media-index-leaks.py`, one copy per plugin so each `bin/` stays self-contained)
+   and a mutation test (`bin/mutation-test-rule7.sh`) that proves three things: a real violation is
+   caught, an allowlisted file is not, and a bare comment mentioning the table name is not a false
+   positive. Allowlist, each entry with a reason, not a bare path: `Repository/MediaRepository.php`,
+   `Repository/MediaRepositoryInterface.php` (docblock-only), `Core/Migrator.php` (schema DDL runs
+   before the repository's assumptions are safe), `Services/AdminAggregatesService.php` (the Rule-3
+   sanctioned aggregate home — routing its own queries through the repository would only relocate the
+   SQL). **Rule 7 is currently `known_gap()`, not `violation()` — it does not fail the script or block
+   a push.** Making it a hard gate today, with 66 Free + 6 Pro call sites still open, would fail every
+   future `git push` on unrelated work through the pre-push hook until all of them were migrated in
+   one sweep — the exact "no incremental patches vs. don't break the build for everyone" tension this
+   plan needs to resolve, not create. **Promote it to `violation()` the moment both lists are empty**,
+   so a 67th or 7th call site can never sneak back in unnoticed.
+
+   Confirmed real violation list (2026-08-11, mutation-tested detector):
+   - **Free — 24 files, 66 call sites:** `Admin/MediaListPage.php`, `Admin/StatsPage.php`,
+     `CLI/Commands.php`, `Core/Activator.php`, `Core/TemplateLoader.php`,
+     `Integrations/BuddyPress/ActivityContentIntegration.php`,
+     `Integrations/BuddyPress/ActivitySyncIntegration.php`,
+     `Integrations/BuddyPress/GroupTabIntegration.php`, `REST/Controller/MediaController.php`,
+     `REST/Controller/TagController.php`, `Services/CloudOps.php`,
+     `Services/CptIdCollisionService.php`, `Services/GDPRService.php`,
+     `Services/ModerationService.php`, `Services/StorageRepairService.php`,
+     `Services/UploadService.php`, `Services/UserDeletionService.php`, `Social/ActivityService.php`,
+     `Social/FavoriteService.php`, `Social/ReactionService.php`, `Taxonomies/MediaTag.php`,
+     `src/blocks/album-viewer/render.php`, `src/blocks/media-grid/render.php`,
+     `src/blocks/media-stats/render.php`.
+   - **Pro — 4 files, 6 call sites:** `Leaderboard/LeaderboardService.php` (2),
+     `Integrations/RtMedia/MigrationAdmin.php` (1), `Stories/StoryService.php` (2),
+     `Documents/SearchService.php` (1). `MediaRepository` already exposes methods that look like a
+     direct fit for several of these (`get_by_slug`, `find_by_meta`, `query_by_author`,
+     `count_by_meta`) — some of this 30-file list may be a call-site bug (repository method exists,
+     nobody used it) rather than a missing-capability gap. Check before adding a new method.
+
+   Run `bash bin/coding-rules-check.sh` in either plugin to see the current live list (it will not
+   match the numbers above verbatim forever — that's the point of it being a script, not a snapshot).
+   Migrate incrementally through `MediaRepository` — this is exactly the kind of multi-file mechanical
+   change Coding Rule 15 (debt tax) says to do without growing any Known-Debt file in the process.
 2. **30k-document scale fixture (P3.9).** A seeded-data WP-CLI command (or extend an existing
    seeding command if one already fixture-generates media) that produces 30,000 real rows via
    `DocumentIngestService`, not direct inserts (same rule as every other fixture in this doc — see

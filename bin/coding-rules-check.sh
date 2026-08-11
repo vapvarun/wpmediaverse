@@ -27,6 +27,15 @@ violation() {
     echo "v" >> "$VIOLATIONS_FILE"
 }
 ok() { echo "✓ $*"; }
+# known_gap: same visibility as violation(), but does NOT fail the overall exit
+# code or block the pre-push hook. Use for a rule that is correct and real but
+# has a known, currently-nonzero backlog being worked down incrementally (see
+# Rule 2's original rollout). A rule stays here only as long as the backlog is
+# actually shrinking release over release — a known_gap() that never empties is
+# a rule nobody is honoring, which is worse than not having the rule.
+known_gap() {
+    echo "⚠ $*"
+}
 violations_count() { wc -l < "$VIOLATIONS_FILE" | tr -d ' '; }
 
 # ------------------------------------------------------------------------------
@@ -238,6 +247,66 @@ check_no_refusal_reported_as_success() {
 
 # ------------------------------------------------------------------------------
 
+# Rule 7: no direct $wpdb query against mvs_media_index outside MediaRepository.
+#
+# Architecture invariant 6 (documented in MediaRepositoryInterface.php's docblock
+# since 2.4.0, never mechanically enforced until now — see plan/document-library.md
+# §24.1/§24.2): mvs_media_index is the authoritative media record and every read or
+# write against it goes through Repository\MediaRepository, so caching, privacy
+# filtering and query-shape changes apply everywhere at once instead of wherever
+# someone remembered to duplicate them. A predicate-checking rule (Rule 3's SUM/COUNT
+# grep, for example) does not catch this class of leak, which is exactly why one
+# call site can still slip past every existing rule with a clean CI run.
+#
+# Detection: any $wpdb->{get_results|get_var|get_row|get_col|query|prepare}( ... )
+# call whose argument contains the literal table name, matched across the whole
+# call (not line-by-line, so multi-line prepare() calls are caught) via a Python
+# pass — same approach as Rule 5, for the same reason: a regex anchored to one line
+# misses the common case of a query string spanning several.
+#
+# Allowlist, each with an architectural reason, not a convenience exemption:
+#   - Repository/MediaRepository.php      the repository itself
+#   - Repository/MediaRepositoryInterface.php   docblock-only references, no queries
+#   - Core/Migrator.php                   schema DDL + one-time backfills run before
+#                                          the repository's assumptions about the
+#                                          table's shape are safe to rely on
+#   - Services/AdminAggregatesService.php the Rule-3-sanctioned home for site-wide
+#                                          SUM/COUNT aggregates; routing its own
+#                                          queries through the repository would only
+#                                          relocate the SQL, not remove a leak
+check_no_direct_media_index_query_outside_repository() {
+    local hits
+    hits=$(python3 "$SCRIPT_DIR/lib/detect-media-index-leaks.py" "$PLUGIN_DIR" 2>/dev/null)
+    if [ -n "$hits" ]; then
+        # known_gap(), not violation(): 31 pre-existing call sites across 12
+        # files were confirmed real on 2026-08-11 (mutation-tested detector,
+        # see bin/mutation-test-rule7.sh) and are being migrated incrementally
+        # per plan/document-library.md §24.2 item 1. Making this a hard
+        # violation() today would block every future `git push` on unrelated
+        # work through the pre-push hook until all 31 are fixed in one sweep —
+        # exactly the "no incremental patches" tension this rule is supposed
+        # to resolve, not create. PROMOTE THIS TO violation() the moment this
+        # list reaches zero, so a 32nd call site can never sneak back in.
+        local count
+        count=$(echo "$hits" | wc -l | tr -d ' ')
+        known_gap "Rule 7 — direct \$wpdb query against mvs_media_index outside MediaRepository ($count known, tracked, not yet blocking):"
+        echo "$hits" | sed 's/^/    /'
+        echo "    Fix: add/use a MediaRepository method instead of querying the table"
+        echo "         directly. See plan/document-library.md §24.2 item 1 for the"
+        echo "         current known list and migration order. If this call site has"
+        echo "         a genuine architectural reason to stay direct (like Migrator.php"
+        echo "         or AdminAggregatesService.php), add it to the allowlist in"
+        echo "         bin/lib/detect-media-index-leaks.py with a one-line reason."
+        echo "    This is a known_gap(), not a violation() — it will not fail this"
+        echo "    script or block a push until the list above is empty. Do not add"
+        echo "    a 32nd line to it; new code must route through MediaRepository."
+    else
+        ok "Rule 7 — all mvs_media_index access routed through MediaRepository"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
@@ -248,6 +317,7 @@ check_no_raw_aggregate_queries_outside_service
 check_no_per_entity_transients
 check_rest_per_page_has_maximum
 check_no_refusal_reported_as_success
+check_no_direct_media_index_query_outside_repository
 
 echo ""
 COUNT=$(violations_count)

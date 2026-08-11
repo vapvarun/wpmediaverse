@@ -338,7 +338,7 @@ What the gate runs (in order, see `bin/local-ci.sh`):
 | 1.5 Duplication gate | `bin/duplication-gate.sh` | new copy-pasted method bodies vs the frozen baseline | ✅ exits 0 |
 | 1.6 Journey coverage | `bin/journey-coverage.sh` | release-critical features missing an executable journey | ✅ exits 0 |
 | 1.7 Template-style | `bin/template-style-check.sh` | inline cosmetic CSS / hardcoded hex in markup (Coding Rule 19) | ✅ exits 0 |
-| 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules (Rule 1: no native cap checks, Rule 2: REST __return_true allowlist) | ⚠️ Rule 2 has 23 callsites awaiting Item-5 triage; allowlist will be populated as part of that work |
+| 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules (Rules 1-6, plus Rule 7: no direct `mvs_media_index` query outside `MediaRepository`) | ✅ Rule 2's allowlist is populated (0 callsites outside it — the "23 callsites" note here was stale, corrected 2026-08-11). ⚠️ Rule 7 added 2026-08-11: 24 files / 66 call sites known and tracked (`plan/document-library.md` §24.2 item 1), currently `known_gap()` (visible, non-blocking) until the incremental migration clears the list — then it becomes a hard `violation()`. |
 | 2.2 (Pro only) | `bin/architecture-checks.sh` | Free/Pro contract invariants | (Pro only) |
 | 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 |
 | 3.1 Manifest | `jq` on `audit/manifests/manifest.json` | manifest validity + freshness | ✅ exits 0 |
