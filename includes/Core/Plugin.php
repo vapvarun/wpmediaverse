@@ -1876,6 +1876,67 @@ class Plugin {
 	}
 
 	/**
+	 * Whether a PARTICULAR member may use the document library.
+	 *
+	 * `documents_enabled()` answers "does this site have documents at all".
+	 * This answers "are they for this person", and every member-facing document
+	 * surface asks it: the drive, folder creation, upload, sharing, the
+	 * dashboard section, the REST routes behind them.
+	 *
+	 * THE ANONYMOUS CASE IS DELIBERATE. With no user there is no role, so there
+	 * is no role question to answer, and this falls back to the site-wide
+	 * switch. Gating logged-out visitors on a capability would break every
+	 * anonymous share link and empty the public Explore Documents listing —
+	 * whether an already-public document can be read is a PRIVACY decision, made
+	 * by `PermissionService::can_view()`, and this must not second-guess it. The
+	 * consequence, stated plainly so nobody reads it as a bug: a member whose
+	 * role has been switched off still sees public documents after logging out,
+	 * exactly as any other visitor does.
+	 *
+	 * THE FILTER IS THE MEMBERSHIP SEAM. A role is the wrong shape for
+	 * "documents are part of the paid tier" — membership levels are per user and
+	 * change without the role changing. BuddyNext hooks `mvs_user_can_use_documents`
+	 * and answers per user; the role remains the default when nothing else
+	 * cares. That is why the filter runs LAST and can widen as well as narrow.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Optional. Defaults to the current user.
+	 * @return bool
+	 */
+	public static function user_can_use_documents( int $user_id = 0 ): bool {
+		if ( ! self::documents_enabled() ) {
+			return false;
+		}
+
+		$user_id = $user_id > 0 ? $user_id : get_current_user_id();
+
+		// No user, no role question — privacy decides from here.
+		$can = $user_id > 0
+			? user_can( $user_id, \WPMediaVerse\Capabilities\MediaCapabilities::USE_DOCUMENTS_CAP )
+			: true;
+
+		/**
+		 * Filter whether a given user may use the document library.
+		 *
+		 * The seam for membership-driven access: answer per user to put
+		 * documents behind a paid tier without touching WordPress roles.
+		 * Returning true widens as readily as returning false narrows, so a
+		 * membership plugin can grant documents to a role that does not have
+		 * the capability.
+		 *
+		 * Only reached when documents are switched on site-wide — the master
+		 * toggle is not overridable here by design.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $can     Whether the user's role allows document use.
+		 * @param int  $user_id User being asked about; 0 for a logged-out visitor.
+		 */
+		return (bool) apply_filters( 'mvs_user_can_use_documents', $can, $user_id );
+	}
+
+	/**
 	 * Register the dashboard's Documents tab.
 	 *
 	 * Only when the documents page actually exists. A tab pointing nowhere is

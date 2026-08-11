@@ -1,9 +1,9 @@
 {
+  "release_version": "2.4.0",
   "mode": "combo",
-  "release_version": "2.3.2",
-  "pro_version": "2.3.2",
-  "ran_at": "2026-08-07T10:27:35Z",
-  "site": "https://buddynext.local",
+  "ran_at": "2026-08-11T04:51:28Z",
+  "free_version": "2.4.0",
+  "pro_version": "2.4.0",
   "sections": {
     "A_fresh_install": {
       "pass": 0,
@@ -16,49 +16,34 @@
       "skipped": 3
     },
     "C_core_flows": {
-      "pass": 10,
+      "pass": 34,
       "fail": 0,
-      "skipped": 27
+      "skipped": 6
     },
     "D_regression_guards": {
-      "pass": 10,
+      "pass": 15,
       "fail": 0,
-      "skipped": 20
+      "skipped": 8
     },
     "E_pro_smoke": {
-      "pass": 5,
+      "pass": 9,
       "fail": 0,
-      "skipped": 22
+      "skipped": 15
     },
     "F_cross_browser": {
-      "pass": 5,
+      "pass": 0,
       "fail": 0,
-      "skipped": 1
+      "skipped": 4
     }
   },
   "failures": [],
-  "debug_log_issues": [
-    {
-      "section": "D_regression_guards",
-      "level": "warning",
-      "origin": "for",
-      "line": "PHP Warning: wp_update_plugins(): An unexpected error occurred... WordPress could not establish a secure connection to WordPress.org.",
-      "file": "wp-includes/functions.php:6170"
-    }
-  ],
+  "debug_log_issues": [],
   "manual_required": [
-    "Firefox Desktop: Upload modal file picker",
-    "Safari iOS 390px: Lightbox swipe + reaction tap",
-    "Safari iOS: navigator.share native sheet on lightbox Share; Firefox Desktop: navigator.clipboard.writeText fallback",
-    "F.rtl: Arabic locale render pass over Explore/single-media/profile/dashboard/lightbox not executed this run",
-    "BP classic composer alignment rows (D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression, C.member.activity-composer-attach) not testable on this install -- see notes.environment"
-  ],
-  "notes": {
-    "environment": "BuddyPress classic templates are NOT active on this BuddyNext install (no #buddypress DOM, no /activity/ #whats-new-form; plugin list has no 'buddypress' entry). BuddyNext runs its own hub/feed system (body class bn-hub-feed) and its own parallel media lightbox (bn-lightbox__*) that visually intercepts clicks on top of WPMediaVerse's own Interactivity-API lightbox (mvs-lightbox-*, present and correctly wired in the DOM -- data-wp-bind--aria-pressed, role=group aria-label=Reactions -- but not what the user actually sees/clicks). All C/D rows keyed to '(BP active)' or classic BuddyPress composer markup were marked skipped/not-applicable rather than pass or fail: untestable in this environment, not proven broken.",
-    "grid_thumbnail_size_finding": "C.member.grid-thumbnail-size / D.grid-thumb-size-default: REST GET /mvs/v1/media returns mvs_size=large in thumbnail_url even though mvs_thumbnail_size resolves to its 'medium' default (option row absent from wp_options -- confirmed via direct mysql query against the live web DB, bypassing the known wp-cli wrong-DB risk). This is NOT a regression: SettingsHelper::get_grid_thumb_size_key() (includes/Core/SettingsHelper.php:144) was deliberately changed in 1.8.0 to always serve the 'large' rung for grid/masonry tiles regardless of the configured medium/full setting, for HiDPI/retina crispness, with an mvs_grid_thumb_size_key filter as the escape hatch (see the method's own docblock). The runbook's C.member.grid-thumbnail-size and D.grid-thumb-size-default rows still describe pre-1.8.0 behavior and need a wording update to match the intentional 1.8.0 change. Not filed as a bug -- code-level review confirms this is working as designed.",
-    "no_video_fixture": "C.member.video-poster-fallback / D.blank-video-poster could not be exercised -- no video-type media exists in the current seeded dataset (checked media_type=video across 4 pages of the REST listing, 0 results).",
-    "scope_caveat": "This pass prioritized: (1) the release-critical private-community gate (section D) -- verified fully end to end, every assertion passed (anon 401 on REST with option ON, anon 302-to-/login/ on /media/, /media/@user/, /media/battles/, anon 401 mvs_community_private on mvs/v1 and mvs-pro/v1, logged-in grid renders every image with no broken icons, signed /serve URL works both with and without cookies per the pre-signed model, toggle restored to 0 and web-confirmed); (2) representative smoke across anonymous surfaces (explore, search-empty, tag-empty, single-media redirect, album), member lightbox/reactions a11y, signed-URL cache headers, and the categories REST OPTIONS/PUT contract; (3) admin page fatal/console checks (Overview, Settings, All Media, Pro Competitions Dashboard) -- all clean; (4) a 390px mobile pass on Explore/My Media/Messages -- no horizontal overflow, clean single-column layout on all three. Deep interactive journeys requiring real writes -- upload, delete, full album/collection lifecycle, DM send/receive, moderation flow, battles/challenges/tournaments full play-through, cron-bounded batch jobs, cloud storage migration, watermarking, AI moderation -- were not executed this run and are recorded as skipped, not pass. No fixtures were created (verified wp-cli fixture cleanup found none pre-existing), so no teardown was required beyond restoring the private-community toggle.",
-    "prior_report_note": "This file previously contained a stale report dated 2026-08-05 against a different site (mediaverse.local) with a different section-count shape (including S_pro_supplements and storage_checks blocks). That report is superseded by this run against buddynext.local per the task's explicit path/URL overrides."
-  },
-  "version_note": "Walk executed on the identical 2.3.2-branch tree while constants still read 2.3.1 (dev-branch headers bump at release). Amended to 2.3.2 at bump time; the only commits after the walk are the version bump, changelog, manifest delta, and the two fixes (af7737c compete rewrites, be0df6e5 message updated_at UTC) which were themselves re-verified: af7737c live deactivate/reactivate cycle, be0df6e5 by the previously-failing unit test now green (288 tests)."
+    "Firefox Desktop and Safari Desktop: full walk (Playwright is Chromium-only)",
+    "Safari iOS 390px: lightbox swipe and native share sheet",
+    "A_fresh_install: clean install walk in a disposable stack",
+    "B_upgrade: 2.3.x to 2.4.0 upgrade walk in a disposable stack. The use_mvs_documents grant-on-upgrade was verified directly by clearing mvs_caps_version and re-running add_caps (every core role plus a fresh custom role received it; an owner revocation survived; a revoke/restore cycle left all documents intact), but that is not a substitute for a full upgrade run",
+    "E_pro_smoke: AI, S3 and Whisper rows require external credentials",
+    "Active-tournament rows: no active tournament in the fixture set (finalized only); not seeded, per the no-self-seeding guardrail"
+  ]
 }

@@ -1315,6 +1315,42 @@
       "default": "'1' - and ABSENT READS AS ON, so a site that already has documents keeps them on upgrade",
       "controls": "Every document SURFACE: the drive, the viewer, the shortcodes, the dashboard section, the admin panels and all mvs-pro/v1 document + folder + permission routes. Storage guards, Site Health and the extraction hooks stay registered - they must survive the switch.",
       "file": "includes/Documents/DocumentSettings.php; gate includes/Core/Plugin.php (init_document_surfaces); register includes/Admin/ProSettings.php (register_documents_settings)"
+    },
+    {
+      "option": "mvs_pro_documents_use_roles",
+      "default": "every role (transport only - the state is the use_mvs_documents capability)",
+      "controls": "Which roles may have a document library. Sanitize callback writes the capability via MediaCapabilities::apply_role_caps(); the option itself is NEVER read to decide access.",
+      "file": "includes/Documents/DocumentSettings.php:USE_ROLES_OPTION; register includes/Admin/ProSettings.php register_documents_settings()"
+    },
+    {
+      "option": "mvs_pro_documents_max_size",
+      "default": "0 (follow the server limit)",
+      "controls": "Document upload ceiling in MB, clamped to wp_max_upload_size(). Read by DocumentIngestService and published to the app in AppConfig - the pair must move together.",
+      "file": "includes/Documents/DocumentSettings.php::max_size()"
+    },
+    {
+      "option": "mvs_pro_documents_allowed_types",
+      "default": "absent = every DocumentTypes::ALL type (an EMPTY array is a distinct, saveable 'accept nothing')",
+      "controls": "Which document types are accepted. Intersected with DocumentTypes::ALL at both write and read, so neither a filter nor a crafted POST can widen it. Also narrows the drive's type filter and the app's allowed_mimes.",
+      "file": "includes/Documents/DocumentSettings.php::allowed_types()"
+    },
+    {
+      "option": "mvs_pro_documents_default_privacy",
+      "default": "private",
+      "controls": "Privacy a new document lands on. Validated against DocumentSettings::PRIVACY_VALUES (private|members|public) on both read and write; falls back to private, because guessing wrong publishes a file somebody expected to be private.",
+      "file": "includes/Documents/DocumentSettings.php::default_privacy()"
+    },
+    {
+      "option": "mvs_pro_documents_anon_links",
+      "default": "0 (off - upgrading must never start handing out links that work without signing in)",
+      "controls": "Whether share links may be minted and redeemed without signing in. Checked on redemption as well as minting, so turning it off closes links already issued.",
+      "file": "includes/Documents/DocumentSettings.php::anon_links()"
+    },
+    {
+      "option": "mvs_pro_documents_extraction",
+      "default": "1 (on - a site with a searchable library must not lose it by updating)",
+      "controls": "Whether uploads are text-extracted for search. Memoised across five guard sites per request; flushed on update_option_.",
+      "file": "includes/Documents/ExtractionService.php::is_enabled()"
     }
   ],
   "subsystems": [
@@ -1448,7 +1484,7 @@
         "LeaderboardRenderer",
         "CompeteHubRenderer"
       ],
-      "purpose": "Frontend layouts (Instagram/Pinterest/Flickr/Dribbble \u2014 each implements LayoutMode::render_feed() since 1.2.0 Phase 3a), gamification template rendering, leaderboard + compete-hub renderers (Phase 3b \u2014 string-returning, consumed by blocks + shortcodes)"
+      "purpose": "Frontend layouts (Instagram/Pinterest/Flickr/Dribbble — each implements LayoutMode::render_feed() since 1.2.0 Phase 3a), gamification template rendering, leaderboard + compete-hub renderers (Phase 3b — string-returning, consumed by blocks + shortcodes)"
     },
     {
       "namespace": "Blocks",
@@ -1458,7 +1494,7 @@
         "StandardAttributes",
         "MVS_CSS"
       ],
-      "purpose": "1.2.0 Phase 3c\u20133e: registers 12 Pro Gutenberg blocks (BlockRegistrar::BLOCKS); registers 12 matching shortcodes (Shortcodes::init); injects the 20 standard layout/spacing/border/shadow/visibility attributes into every Pro block (StandardAttributes::inject via block_type_metadata filter); emits per-instance scoped CSS in wp_footer (MVS_CSS::add / output) keyed off mvs-block-{uniqueId}"
+      "purpose": "1.2.0 Phase 3c–3e: registers 12 Pro Gutenberg blocks (BlockRegistrar::BLOCKS); registers 12 matching shortcodes (Shortcodes::init); injects the 20 standard layout/spacing/border/shadow/visibility attributes into every Pro block (StandardAttributes::inject via block_type_metadata filter); emits per-instance scoped CSS in wp_footer (MVS_CSS::add / output) keyed off mvs-block-{uniqueId}"
     },
     {
       "namespace": "Tournaments",
@@ -2013,27 +2049,27 @@
     "url_signing": "Calls into Free's MediaUrl::for_file / for_thumbnail / resolve and SignedUrlService",
     "cover_image_url_handling": "ChallengeService + TournamentService format methods route stored URLs through MediaUrl::resolve and fall back to most-recent entry's signed thumbnail",
     "transcription_path_resolution": "TranscriptionService:332 uses MediaRepository::get(file_url) only to derive a filesystem path for Whisper to read (CI: storage-internal)",
-    "watermark_filesystem": "Watermarker reads via $file_path absolute path \u2014 never via URL"
+    "watermark_filesystem": "Watermarker reads via $file_path absolute path — never via URL"
   },
   "ci_guards": {
     "script": "bin/ci-local.sh",
     "url_emission_regex": "Same as Free; Pro extends with cover_image_url emission patterns",
-    "storage_internal_marker": "// CI: storage-internal \u2014 see TranscriptionService.php:332",
+    "storage_internal_marker": "// CI: storage-internal — see TranscriptionService.php:332",
     "phpstan_level": 5
   },
   "coding_rules": [
     "Same standards as Free (PHP-ORGANIZATION-RULES.md, NAMING-RULES.md)",
     "Rule 1: never use current_user_can() with a custom-ability slug",
     "Rule 2: REST permission_callback must not use the bare '__return_true' (allowlist enforced in bin/coding-rules-check.sh)",
-    "Rule 3: never import a Free CONCRETE class directly (use container or filter hooks; the only acknowledged exception is MediaRepository \u2014 Phase 1 added MediaRepositoryInterface + TemplateHelpersInterface to retire even that)",
+    "Rule 3: never import a Free CONCRETE class directly (use container or filter hooks; the only acknowledged exception is MediaRepository — Phase 1 added MediaRepositoryInterface + TemplateHelpersInterface to retire even that)",
     "Rule 4: platform-coupled code lives under includes/Integrations/<Platform>/ (never under capability-named subdirs like Storage/, AI/, Connectors/Flickr/)",
     "Rule 5 (added 2026-05-02, Phase 6): every wp_ajax_* registration is on the documented 5-handler allowlist (mvs_pro_test_s3, mvs_pro_test_bunny, mvs_save_connector_prefs, mvs_migration_batch, mvs_migration_reset). Off-list registrations fail the gate; new functionality must use a REST route. Each allowlisted registration must carry an inline `Rule A allowlist:` comment.",
-    "Rule 6 (added 2026-05-03, RC walkthrough): every block render.php that instantiates a WPMediaVersePro\\Frontend\\Layouts\\* class MUST call $layout->enqueue_assets() in the same file. WordPress does NOT auto-enqueue per-layout stylesheets when the block path is taken \u2014 only the LayoutManager site-wide path does. Idempotent (wp_enqueue_* dedupes by handle), so it does not double-enqueue when the LayoutManager site-wide path also runs.",
-    "Feature toggles required \u2014 every new Pro feature gated by get_option('mvs_*_enabled')",
-    "CLI importer base class \u2014 the 3 importers (Integrations/{RtMedia,MediaPress,BuddyBoss}/Importer.php) extend WPMediaVersePro\\Integrations\\AbstractBatchImporter (Phase 5 P2.2). New importers go under includes/Integrations/<Platform>/Importer.php (Rule 4) and extend the base.",
-    "Admin migration card pattern \u2014 each platform-specific MigrationAdmin extends WPMediaVersePro\\Integrations\\AbstractMigrationAdmin (Phase 5 P2.1); the generic Admin/MigrationPage shell hosts one card per registered MigrationAdmin and dispatches AJAX by platform slug",
+    "Rule 6 (added 2026-05-03, RC walkthrough): every block render.php that instantiates a WPMediaVersePro\\Frontend\\Layouts\\* class MUST call $layout->enqueue_assets() in the same file. WordPress does NOT auto-enqueue per-layout stylesheets when the block path is taken — only the LayoutManager site-wide path does. Idempotent (wp_enqueue_* dedupes by handle), so it does not double-enqueue when the LayoutManager site-wide path also runs.",
+    "Feature toggles required — every new Pro feature gated by get_option('mvs_*_enabled')",
+    "CLI importer base class — the 3 importers (Integrations/{RtMedia,MediaPress,BuddyBoss}/Importer.php) extend WPMediaVersePro\\Integrations\\AbstractBatchImporter (Phase 5 P2.2). New importers go under includes/Integrations/<Platform>/Importer.php (Rule 4) and extend the base.",
+    "Admin migration card pattern — each platform-specific MigrationAdmin extends WPMediaVersePro\\Integrations\\AbstractMigrationAdmin (Phase 5 P2.1); the generic Admin/MigrationPage shell hosts one card per registered MigrationAdmin and dispatches AJAX by platform slug",
     "Admin page pattern follows Free (no standalone admin pages outside WPMediaVerse menu)",
-    "Layout interface contract \u2014 every layout in Frontend/Layouts/ implements LayoutMode::render_feed(array $args = []): string (Phase 3a). Returns ONLY the feed body markup \u2014 never get_header()/get_footer() \u2014 so blocks + shortcodes can embed the output anywhere."
+    "Layout interface contract — every layout in Frontend/Layouts/ implements LayoutMode::render_feed(array $args = []): string (Phase 3a). Returns ONLY the feed body markup — never get_header()/get_footer() — so blocks + shortcodes can embed the output anywhere."
   ],
   "qa": {
     "manual": "qa/MANUAL-UX-QA.md (20 Pro journeys)",
@@ -2065,32 +2101,32 @@
           "mvs_pro_cloud_ops_notice (60s, success/error message between admin-post redirect and notice render)"
         ],
         "free_services_consumed_added": [
-          "WPMediaVerse\\Services\\CloudOps \u2014 per-row migrate / cleanup-local helpers shared with Free CLI"
+          "WPMediaVerse\\Services\\CloudOps — per-row migrate / cleanup-local helpers shared with Free CLI"
         ],
         "drivers_changed": [
-          "Integrations\\AmazonS3\\StorageDriver \u2014 encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
-          "Integrations\\AmazonS3\\StorageDriver::download() \u2014 implemented (StorageDriverInterface contract)",
-          "Integrations\\BunnyCDN\\StorageDriver::download() \u2014 implemented (StorageDriverInterface contract)",
-          "Integrations\\BunnyCDN\\StorageDriver::exists() \u2014 switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
+          "Integrations\\AmazonS3\\StorageDriver — encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
+          "Integrations\\AmazonS3\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::exists() — switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
         ],
         "settings_ui_changes": [
           "BunnyCDN: Storage Zone Password / Pull Zone Hostname / Storage Zone Region label rewording",
           "AWS: Bucket Name / Region label rewording",
           "Both: 2-step setup walkthrough in section header; per-field help trimmed to keep form scannable",
-          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain \u2014 fixes secret-wipe on Save Changes)"
+          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain — fixes secret-wipe on Save Changes)"
         ]
       },
-      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today \u2014 code-review only per user direction."
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today — code-review only per user direction."
     },
     "phase_2_rescan_skipped": true,
-    "phase_2_rescan_skip_reason": "Targeted refresh \u2014 only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables \u2014 manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
+    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
-      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs-pro/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Pro: CompetitionVotes::record shared vote guard (new includes/Competitions/CompetitionVotes.php); transcode RUNNING lock; 4 ghost crons cleared on deactivation; bounded StoryService cleanup; connector delta-sync AS continuation (mvs_pro_connector_delta_sync_continue); captions stale-job reaper (mvs_pro_captions_reap_stale + mvs_pro_captions_reaped); feed scope wired to 3 layouts; compete blocks self-enqueue via enqueue_store(); user_login->nicename in layout templates; boost refund.",
@@ -2106,10 +2142,10 @@
       "scope": "Targeted delta for the 2.1.0 + 2.2.0 shipped surface (manifest had been at 2.0.0). Curated manifest kept per the standing generator limitation.",
       "v210_added": {
         "classes_added": [
-          "WPMediaVersePro\\Frontend\\BoostAffordance \u2014 single source for the boosts store/modal + owner button; consumes free action mvs_media_single_actions so boost works on every layout via the canonical single-media page"
+          "WPMediaVersePro\\Frontend\\BoostAffordance — single source for the boosts store/modal + owner button; consumes free action mvs_media_single_actions so boost works on every layout via the canonical single-media page"
         ],
         "methods_added": [
-          "CompeteSummaryController::register_cache_invalidation() \u2014 compete-summary transient invalidated on compete write hooks, 60s TTL backstop"
+          "CompeteSummaryController::register_cache_invalidation() — compete-summary transient invalidated on compete write hooks, 60s TTL backstop"
         ],
         "behavior_changes": [
           "Battle Monitor media batched via free MediaRepository::prefetch()",
@@ -2119,10 +2155,10 @@
       },
       "v220_added": {
         "classes_added": [
-          "WPMediaVersePro\\Support\\CompetitionMedia \u2014 shared competition media formatter (dedup from BattleService + TournamentService)"
+          "WPMediaVersePro\\Support\\CompetitionMedia — shared competition media formatter (dedup from BattleService + TournamentService)"
         ],
         "templates_added": [
-          "templates/layouts/partials/feed-empty-state.php \u2014 shared 3-branch empty state (term-not-found / no-search-results / truly-empty) for flickr/pinterest/dribbble feed bodies"
+          "templates/layouts/partials/feed-empty-state.php — shared 3-branch empty state (term-not-found / no-search-results / truly-empty) for flickr/pinterest/dribbble feed bodies"
         ],
         "behavior_changes": [
           "flickr/pinterest/dribbble feed-body: unknown tag/category slug forces an empty result set instead of silently returning the unfiltered feed",
@@ -2277,17 +2313,17 @@
     "dead_listeners": [],
     "cap_context_mismatches": [],
     "extensibility_gaps": [],
-    "js_only_activation": "see audit/derived/js-only-activation.json (6 entries: 5 acceptable, 1 needs-review on Instagram layout CSS \u2014 0 real bugs)",
+    "js_only_activation": "see audit/derived/js-only-activation.json (6 entries: 5 acceptable, 1 needs-review on Instagram layout CSS — 0 real bugs)",
     "rest_hang_risks": "see audit/derived/rest-hang-risks.json (10 files; 6 low-severity plugin-REST stores + 4 medium-severity connector/admin scripts that hit upstream APIs; 0 hang risks introduced by 1.2.0 blocks)",
     "visual_required_no_enforcement": [],
     "grid_track_overflow_risks": "see audit/derived/grid-1fr-risks.json (0 bare-1fr risks; all 33 grid-template-columns declarations use safe patterns)",
     "hook_signature_drift": [],
     "adapter_undefined_calls": "see audit/derived/undefined-method-calls.json (0 findings; PHPStan level 5 with phpstan-baseline.neon catches drift)",
-    "registry_bypasses": "see audit/derived/registry-bypasses.json (1 finding: 4 wp_mail() direct calls in ChallengeNotificationListener \u2014 low severity, awaiting Free EmailService abstraction)",
-    "suppressed_baseline_inventory": "see audit/derived/suppressed-baseline-errors.json (89 ignore blocks, 141 errors total; ~75 are noise from missing PHPStan stubs \u2014 pro_constant + WP_CLI + WPINC + Action Scheduler; the messaging cleanup dropped the count from 158 to 141)",
+    "registry_bypasses": "see audit/derived/registry-bypasses.json (1 finding: 4 wp_mail() direct calls in ChallengeNotificationListener — low severity, awaiting Free EmailService abstraction)",
+    "suppressed_baseline_inventory": "see audit/derived/suppressed-baseline-errors.json (89 ignore blocks, 141 errors total; ~75 are noise from missing PHPStan stubs — pro_constant + WP_CLI + WPINC + Action Scheduler; the messaging cleanup dropped the count from 158 to 141)",
     "registry_strategy": "see audit/derived/adapter-registry-strategy.json (6 registry-shaped surfaces: storage_driver, ai_provider, connector, quota_membership_adapter, layout_mode, migration_admin_card; 5 use explicit_id_or_option, 1 uses all_active_with_credentials)",
-    "cross_plugin_coupling": "see audit/derived/cross-plugin-coupling.json (50 listeners against Free hooks; -3 vs 2026-05-01 \u2014 messaging cleanup removed mvs_message_sent listener and the entire includes/Messaging/ directory)",
-    "notes": "Phase 2.5.11\u20132.5.14 reclassified 2026-05-03: previous baseline note (\"adapter/registry detectors skipped\") was incorrect. Pro DOES have 6 internal registry-shaped surfaces (storage drivers, AI providers, connectors, quota membership adapters, layout modes, migration-admin cards) \u2014 see adapter-registry-strategy.json. The Pro/Free boundary itself uses ServiceContainer DI (correct prior reading) but Pro's internal extension surfaces are filter-based registries with explicit-id selection. wppqa baseline 2026-05-03 (zero real bugs; both confirm() findings false positives \u2014 modal-first-fallback) supersedes 2026-05-01. See audit/wppqa-baseline-2026-05-03/SUMMARY.md."
+    "cross_plugin_coupling": "see audit/derived/cross-plugin-coupling.json (50 listeners against Free hooks; -3 vs 2026-05-01 — messaging cleanup removed mvs_message_sent listener and the entire includes/Messaging/ directory)",
+    "notes": "Phase 2.5.11–2.5.14 reclassified 2026-05-03: previous baseline note (\"adapter/registry detectors skipped\") was incorrect. Pro DOES have 6 internal registry-shaped surfaces (storage drivers, AI providers, connectors, quota membership adapters, layout modes, migration-admin cards) — see adapter-registry-strategy.json. The Pro/Free boundary itself uses ServiceContainer DI (correct prior reading) but Pro's internal extension surfaces are filter-based registries with explicit-id selection. wppqa baseline 2026-05-03 (zero real bugs; both confirm() findings false positives — modal-first-fallback) supersedes 2026-05-01. See audit/wppqa-baseline-2026-05-03/SUMMARY.md."
   },
   "hooks_fired": [
     {
@@ -2724,7 +2760,7 @@
       ],
       "where": "includes/Documents/DocumentScan.php",
       "consumed_by": [],
-      "note": "The virus-scan seam (design \u00a711). Return WP_Error to refuse an upload; outcome stored as scan_status meta."
+      "note": "The virus-scan seam (design §11). Return WP_Error to refuse an upload; outcome stored as scan_status meta."
     },
     {
       "name": "mvs_document_strip_metadata",
@@ -3592,7 +3628,7 @@
     {
       "cap": "manage_mvs_settings",
       "default_roles": [],
-      "registered_at": "Free plugin (WPMediaVerse) \u2014 not registered in Pro",
+      "registered_at": "Free plugin (WPMediaVerse) — not registered in Pro",
       "enforced_at": [
         "includes/Admin/CompetitionsDashboard.php:104,115,125",
         "includes/Admin/ChallengeManager.php:77,88",
@@ -3614,7 +3650,7 @@
     {
       "cap": "moderate_mvs_media",
       "default_roles": [],
-      "registered_at": "Free plugin \u2014 not registered in Pro",
+      "registered_at": "Free plugin — not registered in Pro",
       "enforced_at": [
         "includes/Admin/ReportManager.php:42,57,75,215,231",
         "includes/Privacy/PrivacyUIService.php:144,219",
@@ -3627,7 +3663,7 @@
     {
       "cap": "edit_mvs_media",
       "default_roles": [],
-      "registered_at": "Free plugin \u2014 not registered in Pro",
+      "registered_at": "Free plugin — not registered in Pro",
       "enforced_at": [
         "includes/Video/VideoController.php:339"
       ],

@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-10T19:48:15Z",
+    "generated_at": "2026-08-11T04:05:40Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -409,7 +409,7 @@
         },
         {
             "hash": "67b232396bd99249dc53d26a3d49986eb288b119",
-            "instances": 20,
+            "instances": 21,
             "token_count": 30,
             "sites": [
                 {
@@ -475,61 +475,67 @@
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "75-75",
+                    "lines": "81-81",
                     "method": "Sanitizers::sanitize_s3_region"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "134-134",
+                    "lines": "140-140",
                     "method": "Sanitizers::sanitize_bunny_region"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "139-139",
+                    "lines": "145-145",
                     "method": "Sanitizers::sanitize_do_region"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "144-144",
+                    "lines": "150-150",
                     "method": "Sanitizers::sanitize_aws_region"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "149-149",
+                    "lines": "155-155",
                     "method": "Sanitizers::sanitize_feed_layout"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "154-154",
+                    "lines": "160-160",
                     "method": "Sanitizers::sanitize_watermark_type"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "159-159",
+                    "lines": "165-165",
                     "method": "Sanitizers::sanitize_watermark_position"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "164-164",
+                    "lines": "170-170",
+                    "method": "Sanitizers::sanitize_documents_default_privacy"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Admin/Sanitizers.php",
+                    "lines": "177-177",
                     "method": "Sanitizers::sanitize_watermark_apply"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "169-169",
+                    "lines": "182-182",
                     "method": "Sanitizers::sanitize_anthropic_model"
                 },
                 {
                     "plugin": "pro",
                     "file": "includes/Admin/Sanitizers.php",
-                    "lines": "204-204",
+                    "lines": "217-217",
                     "method": "Sanitizers::sanitize_autopilot_day"
                 }
             ]

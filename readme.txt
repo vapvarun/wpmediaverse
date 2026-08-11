@@ -117,13 +117,16 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * New      - Every section of My Media has its own address, so Albums, Documents and the rest can be linked, bookmarked and returned to.
 * New      - Editing your profile is a section of My Media rather than a card above it, which gives the library back the space the card used.
 * New      - Site owners can open a document from the Documents screen and correct its title, slug, description, tags and privacy.
+* New      - A Use Documents permission decides which roles get a document library, so a site can offer photos to everyone and documents to staff. Every role has it to begin with, including roles added by other plugins, so nothing changes until you take it away.
 * Improve  - The My Media sections are a grouped vertical rail with counts, which stays readable as the number of sections grows.
 * Improve  - Document rows in the admin now offer Edit and View on site alongside Trash and Delete permanently, so the screen is no longer only destructive.
 * Fix      - The Documents count beside your name counted every document on the site, including trashed ones, instead of the ones you own.
 * Fix      - The Documents panel was gated on a variable that was never set, which opened the gate anyway and logged a PHP warning on every dashboard load.
 * Fix      - Sections declared by an add-on linked to a page that did not exist, because section addresses were built from a fixed list rather than from the sections themselves.
 * Fix      - My Media navigation items rendered as underlined links on some themes because the plugin's own styling overrode the rail it had just been given.
+* Improve  - Settings fields now show the value they will actually use before you save. Unsaved fields rendered blank, and a setting that is on by default rendered as off, so the first Save could switch it off without anyone choosing to.
 * Dev      - New filters mvs_document_row_actions and mvs_document_admin_panels let an add-on contribute row actions and panels to the document admin screens.
+* Dev      - New filter mvs_user_can_use_documents decides per user whether the document library is available, so a membership plugin can put documents behind a paid tier without changing anyone's role.
 * Dev      - drive_documents() accepts a status, count_documents() accepts an author and status, and DashboardSections::slugs() reports the declared section vocabulary.
 * Compat   - Aligned with WPMediaVerse Pro 2.4.0. Install both updates together.
 
