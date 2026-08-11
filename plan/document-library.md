@@ -1715,11 +1715,54 @@ convention someone has to remember."
 3. **Real-customer-DB dry run of Migrator v27.** Needs a sanitized copy of an actual customer DB
    (or the closest available proxy) — this is an operational task, not a code change, and belongs on
    whoever owns that access, not something to fabricate a substitute for.
-4. **Isolate the Pro gamification test-pollution failures.** First re-confirm the count with Local's
-   own PHP (see §24.1) rather than trusting "~39" as exact. `BoostServiceTest` and
-   `DeliveryControllerTest` were named as the interacting pair — the actual fix is almost certainly
-   a shared-state cleanup in a `tearDown()` somewhere in the gamification suite, not touching either
-   service under test.
+4. **Isolate the Pro gamification test failures — DONE 2026-08-11, real root cause found and
+   partially fixed; the "cross-test pollution" diagnosis was wrong.** Re-ran through Local's actual
+   PHP binary (`.../lightning-services/php-8.2.29+0/.../php`, not the system `phpunit` — that one
+   picks up a mismatched Xdebug/opcache build and never got a clean run). The honest count, run
+   2026-08-11: **530 tests, 12 errors, 27 failures = 39 problems** — the "~39" total was actually
+   about right, but the *diagnosis* was not.
+
+   **What was actually wrong:** `BoostServiceTest::test_create_boost_returns_positive_id` alone (no
+   other suite in the process) failed with `mvs_boost_gamification_unavailable` — `Plugin::
+   points_backend_available()` correctly reports false because the separate wb-gamification plugin
+   isn't installed in this test environment, and `BoostService::create()` correctly refuses every
+   boost with a 503 when that's true. That is CORRECT PRODUCTION BEHAVIOUR for a site without
+   wb-gamification, not a bug — the test suite had simply never stubbed the points backend, so every
+   boost-creation test hit the real refusal path instead of the logic it meant to test.
+   `DeliveryControllerTest` run alongside `BoostServiceTest` shows **zero** interaction either
+   direction — same pass/fail either way. **There was no cross-suite pollution to find between these
+   two.** (A different, real pollution DOES show up only in the full 530-test run — see below.)
+
+   **Fix applied:** `tests/PointsBackendStub.php` (new) defines `wb_gam_get_user_points()` and
+   `\WBGam\Engine\PointsEngine::debit()` as an in-memory stub with a configurable balance, installed
+   once from `tests/bootstrap.php`. One real bug surfaced building it and is worth recording:
+   **a bare `function foo() {}` written inside a method body, in a file under `namespace
+   WPMediaVersePro\Tests;`, silently binds to `WPMediaVersePro\Tests\foo` — not the global function
+   the product code actually checks with `function_exists('wb_gam_get_user_points')`.** Confirmed by
+   instrumenting the exact line: the function "declared without error" and `function_exists()` still
+   returned false. Fixed by declaring both the function and the `PointsEngine` class via `eval()`
+   with their own explicit `namespace { ... }` block — the only way one file can declare something in
+   a *different* namespace (here: global) than the one it's written in.
+
+   **Result:** `BoostServiceTest` alone went from 16 problems (3 errors, 13 failures) to 14 (3 errors,
+   11 failures) — real, verified progress, not full resolution. **Two things remain open, found while
+   fixing this one, not yet fixed:**
+   - A separate, apparently pre-existing bug in `BoostService::create()`'s `$wpdb->insert()` — at
+     least `test_create_boost_sets_correct_points` and both `test_format_boost_*` tests show the
+     insert succeeding for the FIRST boost-creation test in the file but a subsequent `get_row()` by
+     the returned id finding nothing, which point at either a genuine insert failure
+     (`$wpdb->insert_id` returning falsy) or a state-leak between tests despite the existing
+     `tear_down()` truncating `mvs_boosts` — not yet root-caused.
+   - **`ChallengeServiceTest` (13 problems) and `BattleServiceTest` (8 problems) were NOT named in
+     the original "~39" diagnosis at all**, but account for 21 of the 39 in the honest full-suite
+     count. Both plausibly hit the same missing-gamification-stub class of failure (challenge voting
+     and battle resolution both award XP through the same wb-gamification integration), but this was
+     not verified individual-test-by-test — flagging rather than claiming a fix that wasn't checked.
+
+   **Next step for whoever picks this up:** confirm the insert/get_row mismatch first (it blocks the
+   simplest test in the file), then check whether `ChallengeServiceTest`/`BattleServiceTest` need the
+   same `PointsBackendStub` wired into their `set_up()`, or a `CompetePointsBridge`-specific stub of
+   their own.
 
 ### 24.3 Plan B — Space/site drives (Tier 3), sequenced, PR1 has no blocking dependency
 
