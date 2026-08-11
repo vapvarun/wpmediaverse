@@ -76,16 +76,45 @@ comment there saying a hidden space "must answer with a REAL 404 status header")
 
 So **PR4 is mostly a mapping exercise, not new authorization logic** — which makes it much smaller
 than the card implies, and makes it worth writing the mapping table into PR1's frozen contract so
-the two sides cannot drift:
+the two sides cannot drift.
 
-| BN space role | `mvs_document_drive_access` |
+**Corrected against a clone of the active branch (BN 1.1.5, `71511f48`) on 2026-08-12.** An earlier
+draft of this table listed `admin` as a space role. It is not one: `ROLE_HIERARCHY` carries four
+levels, but the membership table stores only three.
+
+```
+bn_spaces.type          ENUM('open','private','secret')                  -- visibility axis
+bn_space_members.role   ENUM('owner','moderator','member')               -- NO 'admin'
+bn_space_members.status ENUM('active','pending','invited','banned')
+```
+
+| BN state | `mvs_document_drive_access` |
 |---|---|
-| owner | `own` |
-| admin / moderator | `write` (`own` only if BN says they may manage sharing) |
-| member | `write` or `read` — **BN's call per space**, not MediaVerse's |
-| non-member, visible space | `read` or `none` per space visibility |
-| non-member, secret space | `none`, and the route answers **404** |
-| banned | `none` |
+| role `owner` | `own` |
+| role `moderator` | `write` — `own` only where `can_manage_space()` is the sharing authority |
+| role `member`, status active | `write` or `read` — **BN's call per space**, not MediaVerse's |
+| status `pending` / `invited` | `none` — not a member yet |
+| status `banned` | `none` |
+| non-member, space visible | `read` or `none`, per `can_view_content()` |
+| non-member, space hidden | `none`, and the route answers **404** |
+
+Three BN facts make this cheaper than it looks, and all three are things PR1 should name so PR4 has
+nothing left to decide:
+
+- **`SpaceMemberService::get_role()` already filters `status = 'active'`** and returns null
+  otherwise, so pending / invited / banned collapse to "no role" without the bridge testing status
+  separately.
+- **`SpaceVisibility` is the canonical resolver and already answers all three questions the contract
+  asks** — `can_view_space()` (may they know it exists → the 404 decision), `can_view_roster()`, and
+  `can_view_content()` (may they see what is inside → the drive's read decision). BN's own router
+  comments say the decision "comes from the canonical resolver, so this route and the REST contract
+  agree" — so the bridge must answer from `SpaceVisibility`, not re-derive visibility from
+  `type`. Hidden-ness is registry-driven
+  (`SpaceTypeRegistry::is_hidden_from_non_members()`), not hardcoded to `secret`, so a site with a
+  custom space type still gets the right answer for free.
+- **`SpaceMemberService::prime_viewer_roles( $user_id, $role_by_space )`** exists, so
+  `mvs_document_drives_for_user` can resolve a viewer's roles across many spaces without one query
+  per space.
 
 The `member` row is the one genuine decision left. Everything else falls out of what BN already
 computes.
@@ -124,7 +153,7 @@ Verified 2026-08-12. All ten claims hold.
 | 10192556721 | PR1 freeze codes + filter names | not started; **blocks BN** |
 | 10192556872 | PR2 drive columns (G1) | absent — no `drive_type` / `drive_id` on `mvs_media_index` |
 | 10192557006 | PR3 drive access + `/drives` (G2/G3) | absent — no `/drives` route, no `drive` param |
-| 10192557180 | PR4 BN bridge (G4) | `WPMediaVerseBridge.php` is 1,257 lines, **0** `mvs_document*` hooks |
+| 10192557180 | PR4 BN bridge (G4) | re-checked on **BN 1.1.5**: `WPMediaVerseBridge.php` is 1,283 lines, **0** `mvs_document*` hooks, and nothing under `includes/Bridges/` mentions documents at all |
 | 10192557271 | PR5 T1 + privacy token (G5/G6) | not started |
 | 10192557407 | Rule 7 promotion (P1.2) | **Free 24 files / 66 sites, Pro 4 files / 6 sites** — matches the card exactly |
 | 10192557558 | Scale fixture (P3.9) | not started |
@@ -221,6 +250,10 @@ No schema, no behaviour. Publish, as a document BN can build against:
 - **the BN role → access-level mapping table from §0.2**, so both sides encode the same answer
 - the layering rule: layer 2 must never answer layer 1, or a bridge answering drive filters becomes
   a way to re-grant a member the feature their role switched off
+- **which BN function answers each filter** (§0.2): `SpaceVisibility::can_view_space()` for the
+  exists / 404 decision, `can_view_content()` for read, `SpaceMemberService::get_role()` for the
+  role, `prime_viewer_roles()` for the batched listing. Naming them in the contract is what stops
+  PR4 re-deriving visibility from `bn_spaces.type` and disagreeing with BN's own router.
 
 **Acceptance:** BN can write error handling and tab logic against a document that will not move.
 
