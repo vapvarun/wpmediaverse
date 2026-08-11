@@ -1288,13 +1288,11 @@ used are §23.7. Summary of what does not exist:
 stale statuses in both directions. What each claim was checked against is stated, so the next
 reader does not have to re-derive it.
 
-- **The CI ban on direct `FROM mvs_media_index` outside `MediaRepository`**, with its allowlist and
-  the mutation test that proves the rule before it is trusted (P1.3, P1.4). *Verified pending:*
-  `grep mvs_media_index bin/*.sh` finds only an unrelated comment in
-  `cleanup-boundary-check.sh` and a table name in `launch-readiness.sh` — no rule exists. P1.2 is
-  also unfinished: roughly 40 Free files and 21 Pro files still name the table outside the
-  repository. Until this lands, §8's structural guarantee is a convention, not a gate, and §8 says
-  plainly why a predicate-checking rule would not have caught the leak that motivated it.
+- **P1.2 call-site migration for `mvs_media_index`** — Rule 7 is landed (see DONE list below) but
+  still runs as `known_gap()`, not a hard `violation()`. Remaining open sites (re-verified
+  2026-08-11 in §24.2 item 1): Free 24 files / 66 call sites, Pro 4 files / 6 call sites. Until
+  those clear and Rule 7 is promoted to `violation()`, §8's structural guarantee is visible in CI
+  but non-blocking.
 - **Scale fixture** (P3.9) — a seeded 30k-document drive. Every big-site claim in §12 is reasoned,
   not measured.
 - **Real-customer-DB pass on Migrator v27** (P2.2). Applied and verified on dev data only.
@@ -1305,6 +1303,12 @@ reader does not have to re-derive it.
 
 **Claimed pending by the old build plan, but actually DONE** — recorded so nobody rebuilds them:
 
+- **CI Rule 7 — ban on direct `FROM mvs_media_index` outside `MediaRepository` (P1.3/P1.4).**
+  *Verified done 2026-08-11 (corrected §20.2 same day — an earlier pass of this section claimed
+  the rule did not exist; it does):* both plugins' `bin/coding-rules-check.sh` carry Rule 7, with
+  detector `bin/lib/detect-media-index-leaks.py` and mutation test `bin/mutation-test-rule7.sh`.
+  Currently `known_gap()` (tracked, non-blocking). What remains pending is only the P1.2 migration
+  listed above, then promote to `violation()`. Full allowlist + open call-site lists: §24.2 item 1.
 - **P1.6 `AdminAggregatesService` counts documents separately.** *Verified done:*
   `total_documents()` exists with its own `admin_total_documents` cache key, and its docblock names
   the bug it fixed (a site whose members had uploaded 400 documents saw them added to "Total Media"
