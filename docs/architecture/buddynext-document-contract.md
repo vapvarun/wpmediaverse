@@ -43,7 +43,8 @@ A client cannot behave well if every failure is a 403.
 | Documents not available to this account | 403 | `mvs_documents_unavailable` | **hide the tab.** Do not retry, do not offer sign-in |
 | Site toggle off | route absent | `rest_no_route` | hide |
 | Drive not visible (incl. secret Space) | **404** | `mvs_drive_not_found` | treat as no such drive |
-| Drive visible, read-only | 403 | `mvs_drive_read_only` | show the library, hide upload |
+| Drive visible, contents not readable | 403 | `mvs_drive_forbidden` | offer the way in (join / request), not the library |
+| Drive visible and readable, not writable | 403 | `mvs_drive_read_only` | show the library, hide upload |
 | Document not readable | **404** | `mvs_document_not_found` | treat as missing |
 | Document readable, not editable | 403 | `mvs_document_forbidden` | show it, hide edit |
 | Type refused | 400 | `mvs_document_type_not_allowed` | name the type (`data.doc_type`) |
@@ -128,18 +129,39 @@ bn_space_members.role   ENUM('owner','moderator','member')     -- note: no 'admi
 bn_space_members.status ENUM('active','pending','invited','banned')
 ```
 
-| BN state | `mvs_document_drive_access` |
-|---|---|
-| role `owner` | `own` |
-| role `moderator` | `write` — `own` only where `can_manage_space()` is the sharing authority |
-| role `member`, status active | **`write` or `read` — BN's call per space** |
-| status `pending` / `invited` | `none` |
-| status `banned` | `none` |
-| non-member, space visible | `read` or `none`, per `can_view_content()` |
-| non-member, space hidden | `none`, and the route answers **404** |
+| BN state | `mvs_document_drive_access` | Refusal, if any |
+|---|---|---|
+| role `owner` | `own` | — |
+| role `moderator` | `write` — `own` only where `can_manage_space()` is the sharing authority | — |
+| role `member`, status active | **`write` or `read` — BN's call per space** | — |
+| status `pending` / `invited` | `none` | as non-member below |
+| status `banned` | `none` | as non-member below |
+| non-member, `can_view_content()` true (open space) | `read` | `mvs_drive_read_only` on write |
+| non-member, `can_view_content()` false but space visible (private space) | `none` | **`mvs_drive_forbidden` 403** |
+| non-member, `can_view_space()` false (secret space) | `none` | **`mvs_drive_not_found` 404** |
 
 `SpaceMemberService::get_role()` already filters `status = 'active'` and returns null otherwise, so
 pending / invited / banned collapse to "no role" without the bridge testing status separately.
+
+### Verified against seeded BN data, 2026-08-12
+
+`wp buddynext demo seed` on BN 1.1.5 produced 14 spaces — 11 open, 3 private, 1 secret — and BN's
+own resolver was run over every one of them:
+
+```
+                     can_view_space()          can_view_content()
+                     anon  outsider  insider   anon  outsider  insider
+open    (11 spaces)  ✓     ✓         ✓         ✓     ✓         ✓
+private ( 3 spaces)  ✓     ✓         ✓         ✗     ✗         ✓
+secret  ( 1 space )  ✗     ✗         ✓         ✗     ✗         ✓
+```
+
+**That middle row is why `mvs_drive_forbidden` exists.** A private space is visible — BN shows its
+name and a join button — while its contents are not readable by a non-member. §22's original table
+had only "not visible → 404" and "read-only → 403", and neither fits.
+
+The same run confirms `get_role()` returns `null` for a non-member and the stored role for an active
+one, and that the demo community uses only `owner` and `member` — no `admin`, as the schema says.
 
 **One decision is still open:** what a plain `member` maps to. That is BN's call, per space, and it
 is the only row in this table that is not already determined by code on one side or the other.
