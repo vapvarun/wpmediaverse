@@ -64,6 +64,7 @@ On red runs: write the `runs/{date}-{mode}.md` evidence file but **NOT** the JSO
 ## Quick links
 
 - Smoke runbook: [`runbooks/AGENT_SMOKE_RUNBOOK.md`](runbooks/AGENT_SMOKE_RUNBOOK.md)
+- **Documents QA (hand this to a tester):** [`runbooks/DOCUMENTS-QA.md`](runbooks/DOCUMENTS-QA.md) — the one standalone checklist for the document library, walkable without opening anything else. Its steps cite the release-gate rows they correspond to, so it and the smoke runbook stay aligned. Feature plan: [`../plan/document-library.md`](../plan/document-library.md).
 - Inventory: [`inventory/WHAT-TO-CHECK.md`](inventory/WHAT-TO-CHECK.md)
 - Findings history: [`runs/FINDINGS-HISTORY.md`](runs/FINDINGS-HISTORY.md)
 - Doc-drift audit: [`audits/2026-05-09-doc-drift-audit.md`](audits/2026-05-09-doc-drift-audit.md)

@@ -1760,7 +1760,7 @@ class Migrator {
 	 * longtext + FULLTEXT on `mvs_media_index` would put that cost on the hottest
 	 * table in the product for every media write on the site.
 	 *
-	 * Build plan: plan/document-library-build.md P2.2. Design: plan/document-library.md §2.
+	 * Design: plan/document-library.md §2; what shipped, §19.
 	 *
 	 * @since 2.4.0
 	 * @return void

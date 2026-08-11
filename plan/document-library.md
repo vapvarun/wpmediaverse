@@ -1,18 +1,40 @@
-# Document Library — plan
+# Document Library — the plan
 
-**Status:** PLANNING. No code written.
-**Target:** Free + Pro **2.5.0**, paired (minor — additive, Production Rule 8).
-**Consumer:** BuddyNext. MediaVerse's own UI is the standalone fallback.
-**Visual summary:** `plan/document-library-visual.html` (open in a browser).
+**Status:** personal drives **BUILT AND SHIPPED IN 2.4.0** (not yet released). Space drives not started.
+**Shipped in:** Free + Pro **2.4.0**, paired.
+**Consumer:** BuddyNext, at the REST level only. MediaVerse's own UI is the standalone fallback.
+**QA:** `qa/runbooks/DOCUMENTS-QA.md` — the one checklist to hand a tester.
+**Visual companions:** `plan/document-library-visual.html`, `plan/single-document-view.html`.
 
-> **This is the single source of truth.** It replaces five earlier working documents — the
-> 2026-08-05 spec and plan, the gap audit, the v2 implementation plan, and the Google Drive parity
-> audit. Their conclusions are folded in below; the deliberation that produced them is in
-> `git log`. If you are reviewing this feature, read only this file.
+> **This is the single source of truth for the document library.** It absorbed five working
+> documents in August 2026, and on 2026-08-11 it absorbed six more: the build plan (P1–P11), the
+> remaining-UI task list, the owner-settings design, the session handover, the Space-association
+> gap analysis, and the BuddyNext REST contract. Their content is in §19–§22; the deliberation that
+> produced them is in `git log`. **If you are reviewing or testing this feature, read only this
+> file** — and `qa/runbooks/DOCUMENTS-QA.md` if you are testing it.
+>
+> **Section numbers §1–§18 are load-bearing.** Code comments, journeys and Basecamp cards cite them
+> by number ("design §5", "§14 P8.4", "§7 BN seam"). Do not renumber them. New material goes at the
+> end.
 
-**Hard dependency:** the album/collection ID-collision fix
-(`plan/2026-08-08-cpt-id-collision-fix-plan.md`, on the 2.4.0 branch) **must ship first or alongside.** This
-design puts documents into `mvs_media_index`, and that fix is what makes the ID space safe to share.
+## START HERE — where this actually stands
+
+| | State |
+|---|---|
+| Personal drives (folders, upload, share, trash, search, bulk move) | **Shipped 2.4.0** |
+| Owner settings (7 controls) + per-role gate | **Shipped 2.4.0** — see §21 |
+| Admin Documents screen + single editor | **Shipped 2.4.0** |
+| REST for personal drives, and `/app/config` discovery | **Shipped 2.4.0** — see §22 |
+| **Space / site drives** | **Not started.** §23 is the gap analysis; nothing in it is built |
+| Departing-member reassignment (T1) | Not started. Blocks Space, not personal |
+
+**Release state:** both plugins committed on branch `2.4.0`, local CI green, Free cert 69/0/0, Pro
+cert 57/0/0, combo browser smoke SHIP with fresh-install and upgrade walked in Docker from the
+2.3.2 release ZIPs. The release gate (`qa/.last-smoke-pass.json`) is green. Not tagged, not pushed.
+
+**Hard dependency, satisfied:** the album/collection ID-collision fix
+(`plan/2026-08-08-cpt-id-collision-fix-plan.md`) shipped in 2.3.3 on this branch. This design puts
+documents into `mvs_media_index`, and that fix is what made the ID space safe to share.
 
 ### Team review, 2026-08-08 — adopted
 
@@ -1174,3 +1196,383 @@ Not blocking. MediaVerse holds an opaque drive id and asks; it does not need the
 MediaVerse's only obligation is that the filter contract can express whatever BN decides — which is
 why `mvs_document_drive_access` takes `($drive_type, $drive_id, $user_id)` and returns a permission
 rather than a boolean.
+
+---
+
+# Part II — absorbed 2026-08-11
+
+Everything below folded in six separate documents. §1–§18 above are the design and are unchanged.
+
+---
+
+## 19. What shipped in 2.4.0
+
+Personal document drives, complete. Absorbed from `document-library-build.md` (phases P1–P11) and
+`document-library-remaining.md` (tasks 0–10), both of which carried stale status tables — the work
+below is what is actually in the code, verified by cert and browser walk.
+
+### The engine
+
+| Piece | Where |
+|---|---|
+| `DocumentTypes` — 11 named types, resolved from MIME + extension + content sniff, no catch-all | Free `Core/DocumentTypes.php` |
+| `FolderService` — create, rename, move, trash, restore; `paths_for()` resolves a page of paths in two queries whatever the row count | Pro `Documents/FolderService.php` |
+| `PermissionService` — `can_view/can_edit/can_share/owns_drive/grant/revoke/grants_for/drive_of` | Pro `Documents/PermissionService.php` |
+| `DocumentIngestService` — one ingest path, used by REST and by the CLI seeder | Pro `Documents/DocumentIngestService.php` |
+| `ExtractionService` — text extraction into `mvs_pro_document_search`, a row for EVERY outcome including `unsupported` | Pro `Documents/ExtractionService.php` |
+| Storage guard — `.htaccess` + nginx rule + a canary that ASKS THE SERVER over HTTP | Pro `Documents/` |
+| Free Migrator v27 (`folder_id` on `mvs_media_index`), Pro v11 (`mvs_pro_folders`), Pro v12 (`mvs_pro_document_search`) | both Migrators |
+
+### The member's drive
+
+Folders with upload in place; per-row rename, move, privacy, download, trash and restore; a
+"Shared with me" band plus its full view; targeted sharing to a member or a role with revoke;
+in-drive search across the extracted text; multi-select bulk move; a Location column; a folder
+header carrying the folder's own actions; and filter/sort/view state that survives opening a
+folder, paging and following a breadcrumb.
+
+Three of these were **activation, not construction** — restore, the shared band and targeted
+sharing were each already written, guarded and unreachable from any UI. Expect that pattern
+elsewhere.
+
+### Admin
+
+A Documents list screen with search, type and privacy filters and working sort; row actions
+Edit / View on site / Download / Trash / Delete permanently; and a single view/edit screen at
+`?page=mvs-documents&view=single&media_id=N` writing through the SAME `set_many()` +
+`generate_unique_slug()` + `wp_set_object_terms()` the REST path uses, so the screen cannot drift
+from the API. Its guards: `is_document()` on both the view and the save, an empty title refused
+rather than stored, and **the slug is never regenerated from the title** — a member fixing a typo
+would otherwise break every link they had shared.
+
+**Task 9, an admin folder LIST, was built and then WITHDRAWN (2026-08-10).** Members reuse folder
+names, so a site-wide list is a page of "Contracts", "Contracts", "Contracts". The owner's real
+questions — where does this document live, who can see it — are answered on the member's own drive
+and in the document's row. A deliberate exception to entry-point rule 18, recorded at the
+registration site so an audit does not re-add it. Folder management stays reachable through the
+REST folder routes.
+
+### Release blockers from §15, all closed
+
+D5 rate limiting; the D4 pinning test (the link-redemption route never joins
+`CommunityPrivacyGate`'s exempt set while the gate is armed); honest cloud-storage reporting; the
+`mvs_document_scan_file` seam; metadata stripping on ingest; and the P1.5 containment journey
+(`audit/journeys/security/07-document-never-in-media-surface.md`), which is a release blocker in
+its own right after a quarantined PDF was screenshotted rendering as a broken tile in Explore.
+
+---
+
+## 20. What is PENDING
+
+Read this section before planning any further document work. Ordered by what blocks what.
+
+### 20.1 Space / site drives — ENTIRELY PENDING
+
+**Nothing in §23 is built.** Personal drives are v1 and shipped; Space drives are the whole of
+Phase 11 and have not been started. The gap analysis is §23; the anti-patterns that must not be
+used are §23.7. Summary of what does not exist:
+
+| | State |
+|---|---|
+| Document→drive binding (`drive_type` / `drive_id` on the document) | not built — a Space-root upload would file into the uploader's PERSONAL drive |
+| `can_write_drive` — contribute distinct from own | not built — `owns_drive()` returns `false` by default for `space`/`site`, and a bool cannot express "may contribute" |
+| `GET /drives` | route does not exist |
+| `?drive=space:N` on the documents list | param does not exist — the list is author-scoped only |
+| BuddyNext bridge document hooks | `WPMediaVerseBridge.php` has none |
+| Privacy token `space` | not wired; `group` remains BuddyPress-only |
+| T1 departing-member reassignment | not built. Blocks Space being shippable, not personal |
+
+### 20.2 Pending on the personal drive (not blocking release)
+
+**Re-verified against the code on 2026-08-11**, because the build plan this list came from carried
+stale statuses in both directions. What each claim was checked against is stated, so the next
+reader does not have to re-derive it.
+
+- **The CI ban on direct `FROM mvs_media_index` outside `MediaRepository`**, with its allowlist and
+  the mutation test that proves the rule before it is trusted (P1.3, P1.4). *Verified pending:*
+  `grep mvs_media_index bin/*.sh` finds only an unrelated comment in
+  `cleanup-boundary-check.sh` and a table name in `launch-readiness.sh` — no rule exists. P1.2 is
+  also unfinished: roughly 40 Free files and 21 Pro files still name the table outside the
+  repository. Until this lands, §8's structural guarantee is a convention, not a gate, and §8 says
+  plainly why a predicate-checking rule would not have caught the leak that motivated it.
+- **Scale fixture** (P3.9) — a seeded 30k-document drive. Every big-site claim in §12 is reasoned,
+  not measured.
+- **Real-customer-DB pass on Migrator v27** (P2.2). Applied and verified on dev data only.
+- **~39 pre-existing Pro unit failures** from cross-test pollution in the gamification suites.
+  *Verified not ours:* `BoostServiceTest` run alone reproduces the identical
+  `DeliveryControllerTest` failures, and every affected suite passes in isolation. No CI gate runs
+  phpunit in either plugin.
+
+**Claimed pending by the old build plan, but actually DONE** — recorded so nobody rebuilds them:
+
+- **P1.6 `AdminAggregatesService` counts documents separately.** *Verified done:*
+  `total_documents()` exists with its own `admin_total_documents` cache key, and its docblock names
+  the bug it fixed (a site whose members had uploaded 400 documents saw them added to "Total Media"
+  on a screen where no document was reachable).
+- **Task 10, the admin single-document view.** The remaining-UI plan said "NOT yet built"; it
+  shipped, with guards — see §19.
+
+### 20.2b No dead or duplicated document code
+
+*Verified 2026-08-11:* all 27 classes in `wpmediaverse-pro/includes/Documents/` are referenced from
+at least one other file, and the five with a single reference each resolve to a real call site
+(`AdminDocumentPanels`, `DocumentShortcodes` and `HealthCheck` are constructed in
+`Core/Plugin.php`; `MetadataStripper` is called from `DocumentIngestService`; `SpreadsheetPreview`
+from `OfficePreviewRenderer`). Nothing in the namespace is orphaned.
+
+This is worth re-checking after any document work, because three features in this release —
+restore, the shared band and targeted sharing — turned out to be **already written, guarded, and
+unreachable from any UI**. Code existing is not the same as code being wired, and the failure mode
+here is building a second copy of something that is already there.
+
+### 20.3 Pending in QA
+
+- Firefox and Safari desktop, and Safari iOS at 390px — the tooling is Chromium-only.
+- AI, S3 and Whisper smoke rows — external credentials.
+- An **active tournament** fixture. Only a finalized one exists, so active-tournament rows have
+  never been walked. Not seeded, per the no-self-seeding guardrail.
+
+---
+
+## 21. Owner settings and the role gate — shipped
+
+Absorbed from `document-settings.md`, corrected to what was built. That document said "planned, not
+built" and described one toggle; seven controls shipped.
+
+### The controls
+
+| Control | Absent reads as | Notes |
+|---|---|---|
+| Enable Documents | **ON** | Registration-gated: `Plugin::init()` decides at load whether to call `init_document_surfaces()` |
+| Who can use documents | every role | **A capability, not an option** — see below |
+| Maximum document size | `0` = follow the server | MB, clamped to `wp_max_upload_size()`. Deliberately independent of the media limit |
+| Allowed file types | absent = every type | absent and EMPTY differ: empty is a saveable "accept nothing". Intersected with `DocumentTypes::ALL` at read AND write |
+| New documents start as | `private` | Validated against `PRIVACY_VALUES` |
+| Anonymous share links | **OFF** | Checked on redemption as well as minting, so switching off closes links already issued |
+| Search inside documents | **ON** | Memoised across five guard sites per request |
+
+**Resolution order is the contract: option first, filter LAST.** A site already scripting
+`mvs_document_max_size` and friends keeps winning over the screen — otherwise upgrading into the
+settings silently reconfigures their site.
+
+The original directive ("controls a normal site does not change belong in filters") was read too
+literally and produced a screen with one checkbox on it. The directive is about controls nobody
+touches, not about decisions an owner genuinely makes and would otherwise have to write PHP to
+express. Six were the second kind.
+
+**Still filters, deliberately:** `mvs_document_max_depth` and `mvs_document_strip_metadata`. Both
+have exactly one sensible value, and the non-default of the second is a downgrade nobody should
+reach by clicking.
+
+### `use_mvs_documents`
+
+A capability, because the same permission is grantable from Settings → Permissions and two stores
+for one permission is two screens that will eventually disagree. It answers "may this member have a
+document library at all" — distinct from `upload_mvs_media` (may they upload) and from privacy (may
+they read this file).
+
+- **Granted to every role by default**, including roles BuddyPress and WooCommerce register, via
+  `MediaCapabilities::get_base_member_caps()`. It is introduced on an already-shipped feature; a
+  default-denied capability would empty every existing member's drive on update.
+- Both screens write it through `MediaCapabilities::apply_role_caps()`, which also records the
+  choice so `add_caps()` on a version bump cannot undo a revocation.
+- `mvs_user_can_use_documents( $can, $user_id )` is the per-user seam — the one a membership plugin
+  uses to put documents behind a paid tier without touching WordPress roles. Runs last, so it
+  widens as readily as it narrows.
+- **It never gates a READ.** A logged-out visitor and a capped-out member must both still be able
+  to open an already-public document; that is `PermissionService::can_view()`'s decision. Gating
+  reads would make a public document visible to a visitor and invisible to a member.
+
+### The privacy vocabulary, corrected
+
+`PRIVACY_VALUES` is `private | members | public`. Until 2026-08-11 four places disagreed: the
+constant declared `private|members|unlisted` while `DriveActions` (twice) and the drive's row
+dropdown wrote `private|members|public`. Nothing ever wrote `unlisted`; `public` was written and
+undeclared. `DocumentController` was validating against MEDIA's vocabulary and so accepted levels no
+document ladder can honour. One list now, plus `privacy_labels()` and `is_valid_privacy()`, read by
+every consumer.
+
+---
+
+## 22. The BuddyNext REST contract
+
+Absorbed from `2026-08-11-document-rest-contract.md`. BuddyNext consumes `mvs/v1` and `mvs-pro/v1`
+and nothing else — no shared PHP, no template overrides, no direct table reads. So every rule has to
+be **discoverable** through the API, not merely enforced behind it.
+
+### Four layers, asked in this order
+
+| # | Layer | Question | Decided by | State |
+|---|---|---|---|---|
+| 1 | Feature access | May this account have a library at all? | `use_mvs_documents` → `Plugin::user_can_use_documents()` → `mvs_user_can_use_documents` | **shipped** |
+| 2 | Drive authority | May they read / write / administer THIS drive? | `owns_drive()`; needs a write level (§23 G2) | personal only |
+| 3 | Privacy | May they read THIS document? | `PermissionService::can_view()` + grants | shipped |
+| 4 | Ownership | Whose upload is this, for quota / GDPR? | `post_author`, always a real person | shipped |
+
+The order is load-bearing. Layer 1 runs before any drive is resolved, which is what lets it refuse
+without leaking whether a Space exists. Layer 2 must never answer layer 1 — a bridge answering the
+drive filters must not be able to re-grant a member the feature their role switched off.
+
+**Layer 4 is never a scoping mechanism.** `post_author` is the uploader. It is *currently* also how
+personal root documents are scoped (`folder_id = 0 AND post_author = N`), and that coincidence is
+exactly §23 G1.
+
+### Refusal codes
+
+A client cannot behave well if every failure is a 403. Freeze this before BN builds against it.
+
+| Situation | Status | Code | Client should |
+|---|---|---|---|
+| Not signed in | 401 | `mvs_unauthorized` | send to sign-in |
+| Signed in, documents not available to this account | 403 | `mvs_documents_unavailable` | **hide the tab.** Do not retry, do not offer sign-in |
+| Site toggle off | route absent | `rest_no_route` | hide |
+| Drive not visible (incl. secret Space) | **404** | `mvs_drive_not_found` | treat as no such drive |
+| Drive visible, read-only | 403 | `mvs_drive_read_only` | show library, hide upload |
+| Document not readable | **404** | `mvs_document_not_found` | treat as missing |
+| Document readable, not editable | 403 | `mvs_document_forbidden` | show, hide edit |
+| Type refused | 400 | `mvs_document_type_not_allowed` | name the type |
+| Too large | 400 | `mvs_document_too_large` | check `documents.max_size` first |
+| Link sharing off | 403 | `mvs_link_sharing_disabled` | hide the option |
+
+**403 vs 404 is not cosmetic.** 403 means "exists, not for you"; 404 means "you may not know
+whether it exists". Feature access is 403 because the account's own permission is not a secret from
+the account. A secret Space is 404 because its existence is the secret.
+
+### Filter families — keep them separate
+
+Feature access (Free, shipped): `mvs_documents_enabled`, `mvs_user_can_use_documents`.
+
+Drive authority (Pro + bridge, **to freeze**): `mvs_document_drives_for_user`,
+`mvs_document_drive_access` (returns `none|read|write|own`, **not** a bool),
+`mvs_document_drive_label`. Existing `mvs_document_owns_drive` and `mvs_document_can_grant` become
+derived, kept ≥2 majors per Production Rule 2.
+
+### `/app/config` is the discovery surface
+
+`GET /mvs/v1/app/config` → `documents` reports `enabled` (**per user**), `max_size`,
+`allowed_types`, `allowed_mimes`, `default_privacy`, `anonymous_links`, `preview_tiers`,
+`max_folder_depth`, `search`. **Every value is asked of the resolver that enforces it.** Four were
+hardcoded or read from the wrong source and all four were fixed in 2.4.0 — config that disagrees
+with enforcement produces a client that draws a control and then meets a refusal.
+
+---
+
+## 23. Space / site drives — the gap analysis (NOTHING HERE IS BUILT)
+
+Absorbed from `2026-08-11-document-space-association-plan.md` and Basecamp cards 10189637847
+(Scope) and 10189650164 (Contract). **Personal drives are v1 and shipped. This entire section is
+Phase 11 and has not been started.** Every claim below was re-verified against the code on
+2026-08-11.
+
+BuddyNext will render Space Documents tabs from the REST API. Shipping those tabs before the gaps
+below are closed would mis-file every Space root document into the uploader's personal drive, and
+would conflate "owns the Space" with "may contribute a file".
+
+### 23.1 The model
+
+| Layer | Storage | Meaning |
+|---|---|---|
+| File | `mvs_media_index` | `media_type = document`. `post_author` = **who uploaded**, always a WP user. `folder_id` = container, 0 = drive root |
+| Folder | `mvs_pro_folders` | `drive_type` + `drive_id` = **whose library**. `created_by` = who made the row |
+| Grant | `mvs_access_grants` | who else may view/edit beyond privacy |
+
+**Personal (shipped):** folder is `drive_type = user`, `drive_id = <user_id>`. A file in a folder is
+scoped by the folder. A file at root is `folder_id = 0 AND post_author = <user_id>`.
+
+**Space (not built):** folder would be `drive_type = space`, `drive_id = <bn_space_id>`. A file at
+root needs an **explicit drive key on the document** — the same job `_bn_space_id` does on a
+BuddyNext album. The uploader stays `post_author`, always.
+
+### 23.2 The gaps
+
+**G1 — Space root documents have no Space binding (P0).** Personal root listing is
+`folder_id = 0 AND post_author = %d`. A document uploaded to a Space root today stores only
+`post_author`, so it would appear in the **uploader's personal drive**, not the Space library.
+Needs a document-level drive association. **Recommendation: columns on `mvs_media_index`
+(`drive_type`, `drive_id`) with a Migrator bump, not post meta** — every listing this feature needs
+is drive-scoped, and drive-scoped listing through post meta is a join that degrades exactly as a
+Space library grows. Albums use meta because albums are `wp_posts` and few; documents live in
+`mvs_media_index` and are not. Backfill personal drives in the same migration so root listing has
+ONE code path rather than a personal branch and a Space branch that will drift.
+
+**G2 — the write gate is `owns_drive`, not contribute (P0).** *Verified:*
+`PermissionService::owns_drive()` returns `$drive_id === $user_id` for `user`, and for anything else
+falls through to `mvs_document_owns_drive`, **default false**. A bool cannot express "may
+contribute but does not own". Needs a separate write level — `mvs_document_drive_access` returning
+`none|read|write|own` — used by ingest, move and folder-create, with `owns_drive` / `can_grant`
+kept for admin and sharing.
+
+**G3 — the list API is personal-only (P0).** *Verified:* there is no `/drives` route and no `drive`
+parameter anywhere in `REST/DocumentController.php`. Needs `GET /drives` and
+`?drive=space:N`, with root listing keyed on the drive rather than the author.
+
+**G4 — the BN filter contract is not frozen or implemented (P1).** *Verified:*
+`buddynext/includes/Bridges/WPMediaVerseBridge.php` contains **no document-drive hooks at all**.
+Freeze the names in §22, implement in Pro, wire the bridge. A non-member of a secret Space gets
+**404, not 403**.
+
+**G5 — departing member (T1) (P0 when Space ships).** §15: purge personal documents, **reassign**
+Space documents. Not a v1 blocker; blocks Space being shippable.
+
+**G6 — privacy token `space` (P1).** Confirm `PrivacyService` resolves BN Spaces rather than only
+`groups_is_user_member()`. `group` stays BuddyPress-only.
+
+### 23.3 Anti-patterns — frozen, do not do these
+
+From the contract card, and all five are right:
+
+1. **Never** write a BN `space_id` into media meta `group_id` or album `_mvs_group_id`. Those are
+   BuddyPress, they die with BuddyPress, and an importer would read them as BP groups.
+2. **Never** set `post_author` to a Space id. It breaks GDPR purge, quotas, "my uploads" and every
+   author-scoped query.
+3. Space root documents need an explicit drive key — the album-meta equivalent, not a reused field.
+4. Privacy `group` stays BuddyPress-only; Spaces use `space` plus the BN filters.
+5. MediaVerse never queries `bn_*` tables. The bridge answers filters.
+
+### 23.4 How today's role gate interacts
+
+The 2.4.0 gate is **feature access** (layer 1 in §22) and closes none of G1–G6. It is asked BEFORE
+`owns_drive`, so when G2 replaces that check the first is untouched — the layering §22 asks for,
+arriving one layer early. Three consequences for whoever builds this:
+
+- `mvs_user_can_use_documents` is **not** a drive filter. Freeze it separately, or answering
+  `mvs_document_drive_access` becomes a way to re-grant a member the feature their role switched off.
+- The new refusal is **403 `mvs_documents_unavailable`**; a secret Space must be **404**. Both are
+  right at different layers, and the feature gate fires before any Space is resolved, so it cannot
+  leak a Space's existence. Do not collapse one into the other.
+- A Phase C test for "non-member sees 404" must be run by a member who HAS the capability, or it
+  passes for the wrong reason.
+
+### 23.5 Sequencing
+
+**PR1 is contract-only and must go first** — refusal codes (§22) and filter names, no schema. They
+are the only part BN cannot work around later, because their error handling and tab logic get
+written against them on day one and every change after is a coordinated release.
+
+| PR | Content | Blocks BN? |
+|---|---|---|
+| 1 | Refusal codes + filter names frozen; consumer note published | **yes, first** |
+| 2 | `drive_type`/`drive_id` columns + Migrator + ingest stamp + root listing (G1) | yes |
+| 3 | `can_write_drive` (G2), `GET /drives` + `drive` param (G3) | yes |
+| 4 | BN bridge answers the filters (G4) | — |
+| 5 | T1 reassignment + Space privacy clamp (G5, G6) | before Space is shippable |
+
+### 23.6 Acceptance criteria
+
+- Document responses expose `author` (uploader), `folder`, and `drive` `{type, id}`.
+- Upload into a Space folder: the file's drive is that Space; `post_author` is the uploader.
+- Upload into a Space root: listed under the Space library, **not** the uploader's personal root.
+- A Space member with a contribute role can upload; a non-member cannot; owner/moderator manage
+  sharing per BN rules.
+- `owns_drive` is **not** the sole upload gate for Space.
+- `GET /drives` returns personal drives plus the Spaces BN exposes for that viewer.
+- Secret Space: unauthorized caller gets **404**.
+- Personal-drive behaviour for existing clients is unchanged — regression suite proves it.
+- Creating a Space document leaves `_mvs_group_id` and media `group_id` empty; the drive key holds
+  the space id.
+
+### 23.7 Non-goals
+
+MediaVerse Space Documents UI (BN owns tabs and views); changing personal-drive v1 behaviour for
+existing BN and app clients; setting `post_author` to a Space id; an admin folder list (withdrawn,
+see §19).
