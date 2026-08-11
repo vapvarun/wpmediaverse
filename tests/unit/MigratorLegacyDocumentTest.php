@@ -7,7 +7,7 @@
  * properties that make it safe -- it separates the pre-1.2.3 catch-all rows from
  * real documents, and it cannot run twice.
  *
- * Build plan: plan/document-library-build.md P2.2
+ * Build plan: plan/document-library.md §19 (was P2.2, absorbed 2026-08-11)
  *
  * @package WPMediaVerse
  */

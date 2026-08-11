@@ -7,7 +7,7 @@
  * library that fallback would manufacture documents out of every unrecognised
  * upload, so unknown now resolves to '' and is refused at ingest.
  *
- * Build plan: plan/document-library-build.md P2.1
+ * Build plan: plan/document-library.md §19 (was P2.1, absorbed 2026-08-11)
  *
  * @package WPMediaVerse
  */

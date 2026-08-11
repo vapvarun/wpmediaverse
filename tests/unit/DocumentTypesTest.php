@@ -7,7 +7,7 @@
  * suite that only checked the happy path would pass just as well against a
  * class that ended `return 'pdf';`.
  *
- * Build plan: plan/document-library-build.md P3.1. Design: §3.
+ * Build plan: plan/document-library.md §19 (was P3.1, absorbed 2026-08-11). Design: §3.
  *
  * @package WPMediaVerse
  */

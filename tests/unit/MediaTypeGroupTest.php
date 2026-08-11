@@ -6,7 +6,7 @@
  * surface must therefore say what it is FOR (a positive type group) rather than what
  * it is not. These tests pin that.
  *
- * Build plan: plan/document-library-build.md P1.2
+ * Build plan: plan/document-library.md §19 (was P1.2, absorbed 2026-08-11)
  *
  * @package WPMediaVerse
  */

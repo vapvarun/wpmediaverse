@@ -8,7 +8,7 @@
  * returned document rows from this route, and the same handler backs
  * `/me/media`, so both leaked. This is also the route the mobile app reads.
  *
- * Build plan: plan/document-library-build.md P1.5
+ * Build plan: plan/document-library.md §19 (was P1.5, absorbed 2026-08-11)
  * Journey:    audit/journeys/security/07-document-never-in-media-surface.md
  *
  * @package WPMediaVerse
