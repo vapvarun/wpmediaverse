@@ -110,6 +110,41 @@ class MediaRepository implements MediaRepositoryInterface {
 	private static array $meta_fully_loaded = array();
 
 	/**
+	 * Clear the in-process row/meta caches.
+	 *
+	 * WordPress's normal request lifecycle never needs this — one PHP process
+	 * serves one request, so a stale row is never possible. PHPUnit is
+	 * different: `WP_UnitTestCase` runs every test in a class in ONE process,
+	 * and several test classes `TRUNCATE TABLE mvs_media_index` in their own
+	 * `tear_down()` to reset state between tests. `TRUNCATE` resets
+	 * `AUTO_INCREMENT`, so a later test can legitimately get the SAME
+	 * `media_id` an earlier test used and already deleted — but `$row_cache`
+	 * and `$meta_fully_loaded` are keyed by that id and were never told the
+	 * row is gone, so the later test silently reads the EARLIER test's
+	 * cached data (wrong author, wrong media_type, etc.) instead of its own.
+	 *
+	 * Found 2026-08-11 chasing `ChallengeServiceTest` failures that looked
+	 * like real validation bugs (a valid submission refused as
+	 * `mvs_challenge_invalid_media`) but reproduced as correct in every
+	 * standalone repro — only failing inside the full test class, after an
+	 * earlier test (`test_submit_entry_with_others_media_returns_error`)
+	 * had already populated the cache for a media_id a later test's insert
+	 * went on to reuse. See plan/2026-08-11-pro-competitions-test-triage-plan.md.
+	 *
+	 * Call from a test class's `tear_down()`, after truncating
+	 * `mvs_media_index`, not before — order doesn't matter to the cache
+	 * itself, but calling it after keeps the two "reset everything" steps
+	 * adjacent and easy to read as one unit.
+	 *
+	 * @since 2.4.0
+	 * @return void
+	 */
+	public static function reset_test_cache(): void {
+		self::$row_cache         = array();
+		self::$meta_fully_loaded = array();
+	}
+
+	/**
 	 * Get a single field for a media item.
 	 *
 	 * Checks mvs_media_index first (core fields), then mvs_media_meta (sparse fields).
