@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 2.4.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-08-10 19:50:09+00:00\n"
+"POT-Creation-Date: 2026-08-11 05:05:12+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -102,7 +102,7 @@ msgstr ""
 #: build/blocks/explore-feed/render.php:140
 #: includes/Admin/CollectionMetaBox.php:222
 #: includes/Admin/Settings/FieldRenderer.php:102 includes/Core/Plugin.php:1192
-#: includes/Core/Plugin.php:2212 includes/Messaging/MessagingService.php:2024
+#: includes/Core/Plugin.php:2273 includes/Messaging/MessagingService.php:2024
 #: src/blocks/explore-feed/render.php:140
 #: templates/partials/dashboard-content.php:190
 #: templates/partials/usage-history.php:30
@@ -111,7 +111,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:141
 #: includes/Admin/CollectionMetaBox.php:223
-#: includes/Admin/Settings/FieldRenderer.php:106 includes/Core/Plugin.php:2213
+#: includes/Admin/Settings/FieldRenderer.php:106 includes/Core/Plugin.php:2274
 #: includes/Messaging/MessagingService.php:2025
 #: src/blocks/explore-feed/render.php:141
 #: templates/partials/dashboard-content.php:191
@@ -1694,7 +1694,7 @@ msgstr ""
 
 #: includes/Admin/OverviewPage.php:199 includes/Admin/StatsPage.php:405
 #: includes/Core/Plugin.php:1026 includes/Core/Plugin.php:1027
-#: includes/Core/Plugin.php:1907 includes/Core/TemplateHelpers.php:1228
+#: includes/Core/Plugin.php:1968 includes/Core/TemplateHelpers.php:1228
 #: templates/admin/documents.php:58
 msgid "Documents"
 msgstr ""
@@ -2228,18 +2228,18 @@ msgstr ""
 msgid "Save Permissions"
 msgstr ""
 
-#: includes/Admin/Settings/PermissionsManager.php:260
+#: includes/Admin/Settings/PermissionsManager.php:231
 msgid "Permissions saved."
 msgstr ""
 
-#: includes/Admin/Settings/PermissionsManager.php:273
+#: includes/Admin/Settings/PermissionsManager.php:244
 #: includes/Admin/TagManagementPage.php:461
 #: includes/Admin/TagManagementPage.php:503
 #: includes/Admin/TagManagementPage.php:561
 msgid "Security check failed."
 msgstr ""
 
-#: includes/Admin/Settings/PermissionsManager.php:277
+#: includes/Admin/Settings/PermissionsManager.php:248
 msgid "You do not have permission to change these settings."
 msgstr ""
 
@@ -3155,7 +3155,7 @@ msgstr ""
 msgid "Track views, downloads, reactions, and AI usage across your media library."
 msgstr ""
 
-#: includes/Admin/StatsPage.php:372 includes/Core/Plugin.php:2218
+#: includes/Admin/StatsPage.php:372 includes/Core/Plugin.php:2279
 msgid "Today"
 msgstr ""
 
@@ -3676,77 +3676,77 @@ msgstr ""
 msgid "Could not set cover"
 msgstr ""
 
-#: includes/Core/Plugin.php:2198
+#: includes/Core/Plugin.php:2259
 msgid "Request failed"
 msgstr ""
 
-#: includes/Core/Plugin.php:2199
+#: includes/Core/Plugin.php:2260
 msgid "Could not open conversation."
 msgstr ""
 
-#: includes/Core/Plugin.php:2200
+#: includes/Core/Plugin.php:2261
 msgid "Could not share media."
 msgstr ""
 
-#: includes/Core/Plugin.php:2201
+#: includes/Core/Plugin.php:2262
 msgid "Upload failed"
 msgstr ""
 
-#: includes/Core/Plugin.php:2203
+#: includes/Core/Plugin.php:2264
 #. translators: %s: file name
 msgid "Uploading %s…"
 msgstr ""
 
-#: includes/Core/Plugin.php:2204
+#: includes/Core/Plugin.php:2265
 msgid "Only image, video, and audio files can be shared in messages."
 msgstr ""
 
-#: includes/Core/Plugin.php:2205
+#: includes/Core/Plugin.php:2266
 msgid "Microphone access denied"
 msgstr ""
 
-#: includes/Core/Plugin.php:2206
+#: includes/Core/Plugin.php:2267
 msgid "You reacted — tap to remove"
 msgstr ""
 
-#: includes/Core/Plugin.php:2207
+#: includes/Core/Plugin.php:2268
 msgid "Reacted"
 msgstr ""
 
-#: includes/Core/Plugin.php:2210 includes/Messaging/MessagingService.php:2022
+#: includes/Core/Plugin.php:2271 includes/Messaging/MessagingService.php:2022
 msgid "Voice message"
 msgstr ""
 
-#: includes/Core/Plugin.php:2211 includes/Messaging/MessagingService.php:2023
+#: includes/Core/Plugin.php:2272 includes/Messaging/MessagingService.php:2023
 msgid "Photo"
 msgstr ""
 
-#: includes/Core/Plugin.php:2214 includes/Messaging/MessagingService.php:2026
+#: includes/Core/Plugin.php:2275 includes/Messaging/MessagingService.php:2026
 #: templates/media-single.php:440 templates/media-single.php:443
 msgid "File"
 msgstr ""
 
-#: includes/Core/Plugin.php:2215 includes/Messaging/MessagingService.php:2027
+#: includes/Core/Plugin.php:2276 includes/Messaging/MessagingService.php:2027
 msgid "Shared a media"
 msgstr ""
 
-#: includes/Core/Plugin.php:2216 includes/Messaging/MessagingService.php:2041
+#: includes/Core/Plugin.php:2277 includes/Messaging/MessagingService.php:2041
 msgid "Attachment"
 msgstr ""
 
-#: includes/Core/Plugin.php:2219
+#: includes/Core/Plugin.php:2280
 msgid "Yesterday"
 msgstr ""
 
-#: includes/Core/Plugin.php:2221
+#: includes/Core/Plugin.php:2282
 msgid "Mute notifications"
 msgstr ""
 
-#: includes/Core/Plugin.php:2222
+#: includes/Core/Plugin.php:2283
 msgid "Unmute notifications"
 msgstr ""
 
-#: includes/Core/Plugin.php:2223
+#: includes/Core/Plugin.php:2284
 msgid "Voice messages need a secure (https) connection."
 msgstr ""
 

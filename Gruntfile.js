@@ -346,7 +346,12 @@ module.exports = function( grunt ) {
 	grunt.registerTask( 'build', [ 'blocks', 'cssmin', 'uglify', 'makepot' ] );
 
 	// Dist: full build + strip dev deps + package zip + restore dev deps
-	grunt.registerTask( 'dist', [ 'build', 'composer-prod', 'clean:dist', 'copy:dist', 'compress:dist', 'composer-restore', 'dist-summary' ] );
+	// `clean:dist` runs FIRST, before `build`. It used to sit after, which meant
+	// `makepot` (inside `build`) scanned the PREVIOUS run's `dist/wpmediaverse/`
+	// staging copy as if it were source: every string picked up a duplicate
+	// `#: dist/...` reference, ~2,600 of them, growing with each rebuild. The
+	// first build on a clean tree looked fine, so it only showed up on a rebuild.
+	grunt.registerTask( 'dist', [ 'clean:dist', 'build', 'composer-prod', 'copy:dist', 'compress:dist', 'composer-restore', 'dist-summary' ] );
 
 	// Release: CI check + dist (for production releases)
 	grunt.registerTask( 'release', [ 'ci-check', 'dist' ] );

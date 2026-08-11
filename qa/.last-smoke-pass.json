@@ -6,14 +6,14 @@
   "pro_version": "2.4.0",
   "sections": {
     "A_fresh_install": {
-      "pass": 0,
+      "pass": 5,
       "fail": 0,
-      "skipped": 5
+      "skipped": 0
     },
     "B_upgrade": {
-      "pass": 0,
+      "pass": 3,
       "fail": 0,
-      "skipped": 3
+      "skipped": 0
     },
     "C_core_flows": {
       "pass": 34,
@@ -41,8 +41,6 @@
   "manual_required": [
     "Firefox Desktop and Safari Desktop: full walk (Playwright is Chromium-only)",
     "Safari iOS 390px: lightbox swipe and native share sheet",
-    "A_fresh_install: clean install walk in a disposable stack",
-    "B_upgrade: 2.3.x to 2.4.0 upgrade walk in a disposable stack. The use_mvs_documents grant-on-upgrade was verified directly by clearing mvs_caps_version and re-running add_caps (every core role plus a fresh custom role received it; an owner revocation survived; a revoke/restore cycle left all documents intact), but that is not a substitute for a full upgrade run",
     "E_pro_smoke: AI, S3 and Whisper rows require external credentials",
     "Active-tournament rows: no active tournament in the fixture set (finalized only); not seeded, per the no-self-seeding guardrail"
   ]
