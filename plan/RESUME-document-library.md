@@ -13,7 +13,31 @@ changelogs written, `.pot` files regenerated, manifests carry targeted deltas
 ## START HERE (2026-08-11 handover)
 
 **The build is finished and the release battery has now run, with ONE gate
-still outstanding.** Both plugins are clean and pushed on branch `2.4.0`.
+still outstanding.** Both plugins are clean and pushed on branch `2.4.0`:
+Free `f60f0a1c`, Pro `6a594c8`. Working trees have no uncommitted tracked
+files; the only untracked items are the freshly built `dist/*-2.4.0.zip`.
+
+### First five minutes of a new session
+
+```bash
+cd ~/Local\ Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse
+git log --oneline -1 && git status --short          # expect f60f0a1c, clean
+cd ../wpmediaverse-pro && git log --oneline -1      # expect 6a594c8
+
+# Prove the state rather than trusting this file:
+composer ci:no-journeys                              # both plugins, expect green
+```
+
+Then, through the `mcp-local-wp` `wp_cli` tool (never bare `wp`):
+
+```
+mvs cert          # expect 69 pass / 0 fail / 0 hole
+mvs-pro cert      # expect 51 pass / 0 fail / 0 hole
+```
+
+Sites: `mediaverse.local` (primary) and `buddynext.local` — **both run this
+plugin pair**. Auto-login: `?autologin=1` for admin, `?autologin=journey-member`
+for the subscriber to verify member flows with.
 
 ### What has been proven
 
