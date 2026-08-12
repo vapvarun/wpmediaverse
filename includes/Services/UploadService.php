@@ -1797,12 +1797,9 @@ class UploadService {
 	private function find_by_hash( string $hash ): ?int {
 		global $wpdb;
 
-		$media_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$hash
-			)
-		);
+		$media_id = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->find_by_hash( (string) $hash );
 
 		return $media_id ? (int) $media_id : null;
 	}

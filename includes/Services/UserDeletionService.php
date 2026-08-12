@@ -48,12 +48,12 @@ class UserDeletionService {
 		// Phase 1 — cascade-delete every media item owned by the user. Each
 		// call reuses \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade(), which tears down
 		// access rules/grants, reactions, favorites, stats, etc.
-		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d",
-				$user_id
-			)
-		);
+		// UNFILTERED on purpose — deleting an account must reach everything the
+		// person authored, whatever its privacy or status. See
+		// MediaRepository::author_media_ids().
+		$media_ids = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->author_media_ids( $user_id );
 		foreach ( $media_ids as $media_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
 		}

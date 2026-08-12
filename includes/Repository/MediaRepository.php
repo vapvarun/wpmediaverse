@@ -2830,6 +2830,113 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
 	 */
 	/**
+	 * Find a media id by its stored file hash.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $hash sha256 of the stored file.
+	 * @return int|null
+	 */
+	public function find_by_hash( string $hash ): ?int {
+		global $wpdb;
+
+		if ( '' === $hash ) {
+			return null;
+		}
+
+		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1",
+				$hash
+			)
+		);
+
+		return $id ? (int) $id : null;
+	}
+
+	/**
+	 * EVERY media row a member authored — no privacy filter, no status filter.
+	 *
+	 * FOR COMPLIANCE PATHS ONLY: the GDPR exporter, the GDPR eraser and account
+	 * deletion. Those must see everything the person authored, and
+	 * `query_by_author()` deliberately applies a viewer-aware privacy mode — using
+	 * it here would silently under-export and under-delete, which is precisely
+	 * the failure a data-subject request cannot have. The unfiltered scope is the
+	 * whole point of this method, and the reason it is named for the caller's
+	 * question rather than reusing the listing one.
+	 *
+	 * Ordered by `media_id` so a paginated caller sees a stable sequence while it
+	 * deletes rows underneath itself.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Author.
+	 * @param int $limit   0 for no limit.
+	 * @param int $offset  Offset.
+	 * @return int[] Media ids.
+	 */
+	public function author_media_ids( int $user_id, int $limit = 0, int $offset = 0 ): array {
+		global $wpdb;
+
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		$sql    = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d ORDER BY media_id ASC";
+		$params = array( $user_id );
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$params[] = $limit;
+			$params[] = max( 0, $offset );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = $wpdb->get_col( $wpdb->prepare( $sql, ...$params ) );
+
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
+	 * The exportable columns of every media row a member authored.
+	 *
+	 * Same unfiltered scope and the same reasoning as `author_media_ids()` — see
+	 * that docblock. Returns the columns a data export carries, not whole rows:
+	 * an export should be a deliberate list of what is disclosed rather than
+	 * whatever happens to be in the table.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Author.
+	 * @param int $limit   Page size.
+	 * @param int $offset  Offset.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function author_media_export_rows( int $user_id, int $limit, int $offset = 0 ): array {
+		global $wpdb;
+
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id, title, description, media_type, privacy, file_url, created_at
+				   FROM {$wpdb->prefix}mvs_media_index
+				  WHERE post_author = %d
+				  ORDER BY media_id ASC
+				  LIMIT %d OFFSET %d",
+				$user_id,
+				max( 1, $limit ),
+				max( 0, $offset )
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * The media-index table name, for callers that JOIN to it from their own.
 	 *
 	 * NARROW ON PURPOSE, and not a way around Rule 7. It is for the case where
