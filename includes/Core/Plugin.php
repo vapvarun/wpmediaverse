@@ -196,9 +196,10 @@ class Plugin {
 			}
 		);
 
-		// Build service container.
-		self::$container = new ServiceContainer();
-		self::register_services();
+		// Build the service container — or adopt the one an earlier caller on
+		// this request already built (activation does exactly that). Rebuilding
+		// would strand every service the earlier caller had resolved.
+		self::container();
 
 		// Register post types, taxonomies, and blocks.
 		add_action( 'init', array( self::class, 'register_types' ) );
@@ -1984,11 +1985,36 @@ class Plugin {
 	}
 
 	/**
-	 * Get the service container.
+	 * Get the service container, building it if nothing has yet.
+	 *
+	 * ACTIVATION IS THE CASE THIS EXISTS FOR. `register_activation_hook` fires
+	 * synchronously, in the same request as the click, and BEFORE this plugin's
+	 * `plugins_loaded` callback — an inactive plugin never registered one, so
+	 * `init()` has not run and the container was still null. The signature
+	 * promises a `ServiceContainer`, so returning it threw a TypeError and
+	 * WordPress reported the whole thing as "Plugin could not be activated
+	 * because it triggered a fatal error", naming no line. On a fresh install
+	 * without Pro that happened every time: activation was fully blocked, not
+	 * just documents (Basecamp #10194150741).
+	 *
+	 * Eight call sites across `Activator`, `Migrator` and `TemplateLoader` are on
+	 * that path, so guarding the one that happened to be first would only have
+	 * moved the fatal a few lines down.
+	 *
+	 * Building here is free and cannot run ahead of WordPress: `register_services()`
+	 * only stores closures, and nothing inside one runs until `get()` asks for it.
+	 * `init()` calls this too, so there is still exactly one container per request.
+	 *
+	 * @since 2.4.0 Builds on demand instead of returning null.
 	 *
 	 * @return ServiceContainer
 	 */
 	public static function container(): ServiceContainer {
+		if ( ! self::$container instanceof ServiceContainer ) {
+			self::$container = new ServiceContainer();
+			self::register_services();
+		}
+
 		return self::$container;
 	}
 
