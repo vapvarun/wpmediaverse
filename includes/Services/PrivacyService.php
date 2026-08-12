@@ -46,6 +46,11 @@ class PrivacyService {
 			case 'friends':
 				return 40;
 			case 'group':
+			case 'space':
+				// The same restriction as a BuddyPress group, because it is the
+				// same shape of restriction: readable by a defined membership.
+				// `group` stays BuddyPress-only and `space` is BuddyNext's — a
+				// space id must never be written into `group_id` (plan §23.3).
 				return 60;
 			case 'private':
 				return 80;
@@ -196,7 +201,7 @@ class PrivacyService {
 		// fail ("We couldn't find that media"). Consulted only for restrictive
 		// levels (public/members/loggedin already resolve below) and only when
 		// the messaging engine is loaded. Owner/admin were granted earlier.
-		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'custom' ), true ) ) {
+		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'space', 'custom' ), true ) ) {
 			$container = \WPMediaVerse\Core\Plugin::container();
 			if ( $container->has( 'messaging' ) ) {
 				$messaging = $container->get( 'messaging' );
@@ -219,6 +224,9 @@ class PrivacyService {
 
 			case 'group':
 				return $this->check_group( $media_id, $user_id );
+
+			case 'space':
+				return $this->check_space( $media_id, $user_id );
 
 			case 'private':
 				// Owner/admin already handled above.
@@ -282,6 +290,46 @@ class PrivacyService {
 		}
 
 		return groups_is_user_member( $user_id, $group_id );
+	}
+
+	/**
+	 * Check membership of the space this media lives on.
+	 *
+	 * NOT a second authority. It asks the frozen drive filter — the same one
+	 * `GET /drives` and every document gate ask — so a space's library and its
+	 * privacy cannot answer differently for the same viewer. MediaVerse still
+	 * never queries `bn_*`; the bridge answers.
+	 *
+	 * The drive columns are the source, never `group_id`: those are BuddyPress's,
+	 * they die with BuddyPress, and an importer would read a space id there as a
+	 * BP group (plan §23.3 anti-pattern 1).
+	 *
+	 * Falls back to private when nothing answers, which is what an unbridged site
+	 * should do with a privacy level it cannot evaluate.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $media_id Media id.
+	 * @param int $user_id  Requesting user.
+	 * @return bool
+	 */
+	private function check_space( int $media_id, int $user_id ): bool {
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$drive_type = (string) $repo->get( $media_id, 'drive_type' );
+		$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
+
+		if ( 'user' === $drive_type || $drive_id <= 0 ) {
+			// Not on a team drive at all — nothing to be a member of.
+			return false;
+		}
+
+		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $drive_type, $drive_id, $user_id );
+
+		return 'none' !== $level;
 	}
 
 	/**

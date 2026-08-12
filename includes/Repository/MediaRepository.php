@@ -3184,6 +3184,46 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Every row a member authored that lives on somebody ELSE'S drive.
+	 *
+	 * The rows a departing member must NOT take with them (§15 T1). A document
+	 * uploaded into a Space belongs to that Space; the member is its author, not
+	 * its owner, and deleting the account has been taking the team's files with
+	 * it because the erasure cascade reads `post_author` alone.
+	 *
+	 * `drive_id > 0` is the test, not `drive_type <> 'user'`: the sentinel for
+	 * "personal drive" is `drive_id = 0` (see Migrator v29), so a row the
+	 * backfill has not reached is treated as personal and purged, which is the
+	 * safe direction — erasure stays complete and nothing is silently retained
+	 * because a migration was mid-flight.
+	 *
+	 * Deliberately unfiltered, for the same reason as `author_media_ids()`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Author.
+	 * @return array<int, array<string, mixed>> Rows of media_id, drive_type, drive_id.
+	 */
+	public function author_team_drive_media( int $user_id ): array {
+		$rows = $this->author_scoped_rows(
+			array( 'media_id', 'drive_type', 'drive_id' ),
+			$user_id,
+			'AND drive_id > 0'
+		);
+
+		return array_map(
+			static function ( $row ) {
+				return array(
+					'media_id'   => (int) $row['media_id'],
+					'drive_type' => (string) $row['drive_type'],
+					'drive_id'   => (int) $row['drive_id'],
+				);
+			},
+			(array) $rows
+		);
+	}
+
+	/**
 	 * The exportable columns of every media row a member authored.
 	 *
 	 * Same unfiltered scope and the same reasoning as `author_media_ids()` — see
@@ -3199,27 +3239,79 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function author_media_export_rows( int $user_id, int $limit, int $offset = 0 ): array {
+		return $this->author_scoped_rows(
+			array( 'media_id', 'title', 'description', 'media_type', 'privacy', 'file_url', 'created_at' ),
+			$user_id,
+			'',
+			max( 1, $limit ),
+			$offset
+		);
+	}
+
+	/**
+	 * Rows a member authored, unfiltered, in a stable order.
+	 *
+	 * The shared body of the erasure and export reads. They ask for different
+	 * columns and different extra conditions but must never differ in SCOPE —
+	 * both exist precisely because the listing methods apply privacy and status
+	 * filters that a data-subject request must not inherit, and two hand-written
+	 * copies of that scope are two chances to quietly reintroduce one.
+	 *
+	 * `$columns` and `$where_extra` are code-supplied constants at every call
+	 * site, never request data; `$user_id`, `$limit` and `$offset` are bound.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $columns     Columns to select.
+	 * @param int      $user_id     Author.
+	 * @param string   $where_extra Extra SQL appended to the WHERE, or ''.
+	 * @param int      $limit       0 for no limit.
+	 * @param int      $offset      Offset.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function author_scoped_rows( array $columns, int $user_id, string $where_extra = '', int $limit = 0, int $offset = 0 ): array {
 		global $wpdb;
 
 		if ( $user_id <= 0 ) {
 			return array();
 		}
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->prepare(
-				"SELECT media_id, title, description, media_type, privacy, file_url, created_at
-				   FROM {$wpdb->prefix}mvs_media_index
-				  WHERE post_author = %d
-				  ORDER BY media_id ASC
-				  LIMIT %d OFFSET %d",
-				$user_id,
-				max( 1, $limit ),
-				max( 0, $offset )
-			),
-			ARRAY_A
-		);
+		// Guarded even though every caller is internal: a column list reaching
+		// SQL unchecked is the kind of thing a later caller turns into a hole.
+		$columns = array_values( array_intersect( $columns, self::selectable_columns() ) );
+
+		if ( empty( $columns ) ) {
+			return array();
+		}
+
+		$sql = 'SELECT ' . implode( ', ', $columns )
+			. " FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d "
+			. ( '' !== $where_extra ? $where_extra . ' ' : '' )
+			. 'ORDER BY media_id ASC';
+
+		$params = array( $user_id );
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$params[] = $limit;
+			$params[] = max( 0, $offset );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ), ARRAY_A );
 
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Columns `author_scoped_rows()` will select.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	private static function selectable_columns(): array {
+		return array_merge( array( 'media_id' ), self::$index_columns );
 	}
 
 	/**

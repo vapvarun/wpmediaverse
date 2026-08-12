@@ -28,6 +28,144 @@ class UserDeletionService {
 	}
 
 	/**
+	 * Hand a departing member's team-drive documents to a successor.
+	 *
+	 * MediaVerse cannot answer "who should own this now" — it does not know what
+	 * a Space is, and by design it never queries `bn_*` (plan §23.3). So it asks,
+	 * and whatever integration owns the drive answers. The fallback is a site
+	 * administrator rather than deletion: a file whose successor nobody claims is
+	 * still the team's file, and losing it is the exact harm T1 exists to stop.
+	 *
+	 * A successor who is themselves being deleted, or who no longer exists, is
+	 * refused — otherwise the reassignment quietly re-creates the orphan it was
+	 * meant to prevent.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id The departing member.
+	 * @return int[] Media ids that were reassigned and must NOT be cascaded.
+	 */
+	private function reassign_team_drive_media( int $user_id ): array {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$rows = $repo->author_team_drive_media( $user_id );
+
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$reassigned = array();
+
+		foreach ( $rows as $row ) {
+			/**
+			 * Who inherits a document when its author's account is deleted.
+			 *
+			 * Answered by whatever owns the drive — for a BuddyNext Space that is
+			 * the Space owner. Return 0 to decline, which falls through to a site
+			 * administrator rather than to deletion.
+			 *
+			 * @since 2.4.0
+			 *
+			 * @param int    $successor_id Default 0 — nobody claimed it yet.
+			 * @param string $drive_type   Drive type, e.g. 'space'.
+			 * @param int    $drive_id     Drive id.
+			 * @param int    $user_id      The departing member.
+			 */
+			$successor = (int) apply_filters(
+				'mvs_document_drive_successor',
+				0,
+				$row['drive_type'],
+				$row['drive_id'],
+				$user_id
+			);
+
+			if ( $successor === $user_id || ( $successor > 0 && ! get_userdata( $successor ) ) ) {
+				$successor = 0;
+			}
+
+			if ( $successor <= 0 ) {
+				$successor = $this->fallback_successor( $user_id );
+			}
+
+			if ( $successor <= 0 ) {
+				// No administrator to hand it to — a site in a state this service
+				// cannot repair. Left for the cascade, and said out loud rather
+				// than dropped silently.
+				\WPMediaVerse\Services\LoggerService::error(
+					'user-deletion',
+					sprintf(
+						'Document %d on %s:%d has no successor; falling through to deletion with its author.',
+						$row['media_id'],
+						$row['drive_type'],
+						$row['drive_id']
+					),
+					array(
+						'media_id'   => $row['media_id'],
+						'drive_type' => $row['drive_type'],
+						'drive_id'   => $row['drive_id'],
+					)
+				);
+				continue;
+			}
+
+			$repo->set( (int) $row['media_id'], 'post_author', $successor );
+
+			$reassigned[] = (int) $row['media_id'];
+
+			/**
+			 * Fires after a team-drive document changes hands on account deletion.
+			 *
+			 * @since 2.4.0
+			 *
+			 * @param int    $media_id   The document.
+			 * @param int    $successor  Its new author.
+			 * @param int    $user_id    The departing member.
+			 * @param string $drive_type Drive type.
+			 * @param int    $drive_id   Drive id.
+			 */
+			do_action( 'mvs_document_reassigned', (int) $row['media_id'], $successor, $user_id, $row['drive_type'], (int) $row['drive_id'] );
+		}
+
+		return $reassigned;
+	}
+
+	/**
+	 * A site administrator to inherit documents nobody else claimed.
+	 *
+	 * Lowest id first, so the answer is stable across runs rather than depending
+	 * on how WordPress happened to order the query.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $exclude The departing member.
+	 * @return int
+	 */
+	private function fallback_successor( int $exclude ): int {
+		static $cached = null;
+
+		if ( null === $cached ) {
+			$admins = get_users(
+				array(
+					'role'    => 'administrator',
+					'fields'  => 'ID',
+					'orderby' => 'ID',
+					'order'   => 'ASC',
+					'number'  => 5,
+				)
+			);
+
+			$cached = array_map( 'intval', (array) $admins );
+		}
+
+		foreach ( $cached as $admin_id ) {
+			if ( $admin_id !== $exclude ) {
+				return $admin_id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
 	 * Clean up all MVS data owned by a deleted user.
 	 *
 	 * Runs in two phases:
@@ -54,6 +192,25 @@ class UserDeletionService {
 		$media_ids = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
 			->author_media_ids( $user_id );
+
+		// Phase 1a — HAND BACK what was never personally theirs, before anything
+		// is deleted (§15 T1).
+		//
+		// A document uploaded into a Space belongs to that Space. The departing
+		// member is its author, not its owner, and the cascade below reads
+		// `post_author` alone — so leaving a team took the team's files with you.
+		// Silent, permanent, and triggered by an ordinary event: someone leaves.
+		//
+		// Reassignment rather than retention-in-place, because the row must stop
+		// naming a person who has been erased. The successor is asked for, never
+		// derived: MediaVerse does not know what a Space is, let alone who owns
+		// one. Anything not reassigned falls through to the cascade unchanged.
+		$reassigned = $this->reassign_team_drive_media( $user_id );
+
+		if ( ! empty( $reassigned ) ) {
+			$media_ids = array_values( array_diff( $media_ids, $reassigned ) );
+		}
+
 		foreach ( $media_ids as $media_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
 		}
