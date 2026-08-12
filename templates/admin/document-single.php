@@ -97,9 +97,16 @@ $mvs_privacy  = (string) ( $mvs_row['privacy'] ?? 'private' );
 						<th scope="row"><label for="mvs-privacy"><?php esc_html_e( 'Who can see it', 'wpmediaverse' ); ?></label></th>
 						<td>
 							<select id="mvs-privacy" name="mvs_privacy">
-								<option value="private" <?php selected( $mvs_privacy, 'private' ); ?>><?php esc_html_e( 'Only the owner', 'wpmediaverse' ); ?></option>
-								<option value="members" <?php selected( $mvs_privacy, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-								<option value="public" <?php selected( $mvs_privacy, 'public' ); ?>><?php esc_html_e( 'Anyone', 'wpmediaverse' ); ?></option>
+								<?php
+								// From the one source, in the OWNER voice — this screen edits
+								// somebody else's document, and the description below already
+								// speaks about "the owner" in the third person.
+								foreach ( \WPMediaVerse\Core\Plugin::document_privacy_labels( 'owner' ) as $mvs_privacy_value => $mvs_privacy_label ) :
+									?>
+									<option value="<?php echo esc_attr( $mvs_privacy_value ); ?>" <?php selected( $mvs_privacy, $mvs_privacy_value ); ?>>
+										<?php echo esc_html( $mvs_privacy_label ); ?>
+									</option>
+								<?php endforeach; ?>
 							</select>
 							<p class="description"><?php esc_html_e( 'People the owner shared it with directly keep their access whatever this says.', 'wpmediaverse' ); ?></p>
 						</td>

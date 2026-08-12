@@ -1888,6 +1888,69 @@ class Plugin {
 	}
 
 	/**
+	 * The labels for the three document privacy levels.
+	 *
+	 * One source, because the admin editor and the member's drive were writing
+	 * their own copies of the same three options and had already drifted: the
+	 * admin screen hardcoded its own wording while every other surface read
+	 * `DocumentSettings::privacy_labels()` (Basecamp #10194230388). Free cannot
+	 * call that directly — Pro may not be installed — so it asks and Pro answers,
+	 * the same seam `documents_enabled()` uses.
+	 *
+	 * `$context` exists because the same VALUE is not the same SENTENCE depending
+	 * on who is reading it. A member setting their own document says "Only me". An
+	 * administrator editing somebody else's document is not "me", and offering
+	 * that wording on a screen whose next line already says "People the owner
+	 * shared it with…" would have the screen contradict itself in two adjacent
+	 * sentences. Values are identical in every context; only the wording moves.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $context 'self' (the owner is reading) or 'owner' (somebody
+	 *                        else is editing this member's document).
+	 * @return array<string, string> Privacy value => label.
+	 */
+	public static function document_privacy_labels( string $context = 'self' ): array {
+		$labels = 'owner' === $context
+			? array(
+				'private' => __( 'Only the owner', 'wpmediaverse' ),
+				'members' => __( 'Members', 'wpmediaverse' ),
+				'public'  => __( 'Anyone', 'wpmediaverse' ),
+			)
+			: array(
+				'private' => __( 'Only me', 'wpmediaverse' ),
+				'members' => __( 'Members', 'wpmediaverse' ),
+				'public'  => __( 'Anyone', 'wpmediaverse' ),
+			);
+
+		/**
+		 * Filter the document privacy labels.
+		 *
+		 * Pro answers this with its canonical vocabulary so the drive, the
+		 * settings default and the admin editor cannot offer three different
+		 * names for one setting.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array<string, string> $labels  Privacy value => label.
+		 * @param string                $context 'self' or 'owner'.
+		 */
+		$labels = (array) apply_filters( 'mvs_document_privacy_labels', $labels, $context );
+
+		// The VALUES are a contract — a host may reword a label, never add a
+		// fourth level or drop one. `unlisted` reaching a dropdown is the exact
+		// thing the runbook's must-never table forbids.
+		return array_intersect_key(
+			$labels,
+			array(
+				'private' => '',
+				'members' => '',
+				'public'  => '',
+			)
+		);
+	}
+
+	/**
 	 * Whether a PARTICULAR member may use the document library.
 	 *
 	 * `documents_enabled()` answers "does this site have documents at all".
