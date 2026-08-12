@@ -4032,11 +4032,6 @@ a.mvs-dashboard-card-title:hover {
     gap: 16px;
 }
 
-.mvs-dashboard-heading {
-    font-size: 1.4em;
-    font-weight: 700;
-}
-
 .mvs-notification-bell {
     position: relative;
     cursor: pointer;

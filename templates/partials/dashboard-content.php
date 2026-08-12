@@ -317,8 +317,19 @@ wp_interactivity_state(
 	// non-BP sites where there is no other notification chrome.
 	$mvs_show_dashboard_bell = ! function_exists( 'buddypress' );
 	?>
+	<?php
+	// THE PAGE ALREADY SAYS "My Media" — it is the h1 in the page band, 32px,
+	// 190px above where this sat and repeated it at 15px. A second copy tells a
+	// reader nothing they did not just read, and a screen reader has to hear it
+	// twice. It was never a heading either: a bare <span>, so it labelled
+	// nothing and carried no outline position.
+	//
+	// The row survives only for the notification bell. With no bell there is
+	// nothing in it, so it is not rendered — an empty flex row still occupies
+	// its gap.
+	?>
+	<?php if ( $mvs_show_dashboard_bell ) : ?>
 	<div class="mvs-dashboard-header">
-		<span class="mvs-dashboard-heading"><?php esc_html_e( 'My Media', 'wpmediaverse' ); ?></span>
 		<?php if ( $mvs_show_dashboard_bell ) : ?>
 		<div class="mvs-notification-bell" data-wp-on--click="actions.toggleNotifications"
 			role="button" tabindex="0" aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
@@ -351,6 +362,7 @@ wp_interactivity_state(
 		</div>
 		<?php endif; ?>
 	</div>
+	<?php endif; ?>
 
 	<?php
 	/**
