@@ -2829,6 +2829,33 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int    $viewer_id Current viewer (0 = anonymous).
 	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
 	 */
+	/**
+	 * The media-index table name, for callers that JOIN to it from their own.
+	 *
+	 * NARROW ON PURPOSE, and not a way around Rule 7. It is for the case where
+	 * the DRIVING table belongs to somebody else — favourites, activity,
+	 * term_relationships — and the index is only the joined side. Pulling those
+	 * queries in here would move favourites, activity and taxonomy logic into
+	 * the media repository and make it the thing Rule 7 exists to prevent: one
+	 * class that knows everything.
+	 *
+	 * The same reasoning already produced `explore_privacy_clause()`, which hands
+	 * a SQL fragment to exactly these callers rather than swallowing their query.
+	 *
+	 * NOT for: reading, writing or counting media. Those have methods, and a
+	 * caller reaching for this to run `SELECT … FROM index WHERE media_id = …`
+	 * is working around the rule rather than within it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string Prefixed table name.
+	 */
+	public function index_table(): string {
+		global $wpdb;
+
+		return $wpdb->prefix . 'mvs_media_index';
+	}
+
 	public function explore_privacy_clause( string $alias, int $viewer_id ): array {
 		// Alias is caller-supplied code, never user input; still constrain it.
 		// Empty alias → bare column names (callers that query a single table

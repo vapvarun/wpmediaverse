@@ -296,13 +296,12 @@ class ReactionService {
 			array( '%d' )
 		);
 
-		// Keep the denormalized reaction_count in mvs_media_index in sync.
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_media_index',
-			array( 'reaction_count' => $total ),
-			array( 'media_id' => $media_id ),
-			array( '%d' ),
-			array( '%d' )
-		);
+		// Keep the denormalized reaction_count in mvs_media_index in sync, through
+		// the repository — Rule 7. `set()` also invalidates the row's request
+		// cache, which a raw UPDATE did not: a reaction and a re-read in the same
+		// request could disagree about the count.
+		\WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->set( $media_id, 'reaction_count', $total );
 	}
 }

@@ -76,7 +76,9 @@ class MediaTag {
 	public static function update_term_count( array $terms, $taxonomy ): void {
 		global $wpdb;
 
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		// Driving table is term_relationships; the index is joined to count only
+		// published media (Rule 7 — see MediaRepository::index_table()).
+		$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 
 		foreach ( (array) $terms as $term_taxonomy_id ) {
 			$term_taxonomy_id = (int) $term_taxonomy_id;
