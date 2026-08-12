@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-11T18:59:13Z",
+    "generated_at": "2026-08-12T05:46:58Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -18,7 +18,7 @@
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
         "free_files_scanned": 197,
-        "pro_files_scanned": 207
+        "pro_files_scanned": 210
     },
     "cross_plugin_duplicates": [
         {
@@ -230,7 +230,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/TagController.php",
-                    "lines": "468-468",
+                    "lines": "484-484",
                     "method": "admin_check"
                 },
                 {
@@ -242,7 +242,7 @@
                 {
                     "plugin": "pro",
                     "file": "includes/Quota/QuotaController.php",
-                    "lines": "653-653",
+                    "lines": "652-652",
                     "method": "admin_check"
                 },
                 {
@@ -321,7 +321,7 @@
                 {
                     "plugin": "pro",
                     "file": "includes/Quota/QuotaController.php",
-                    "lines": "641-641",
+                    "lines": "640-640",
                     "method": "logged_in_check"
                 },
                 {
@@ -329,6 +329,31 @@
                     "file": "includes/REST/PushController.php",
                     "lines": "139-139",
                     "method": "PushController::logged_in_check"
+                }
+            ]
+        },
+        {
+            "hash": "71a3c2ac7c29ca1caf17ad69ca891ede0f9de921",
+            "instances": 3,
+            "token_count": 32,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Repository/MediaRepository.php",
+                    "lines": "3101-3101",
+                    "method": "media_ids_in_album"
+                },
+                {
+                    "plugin": "free",
+                    "file": "includes/Services/AlbumService.php",
+                    "lines": "734-734",
+                    "method": "albums_for_media"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Battles/BattleService.php",
+                    "lines": "214-214",
+                    "method": "get_participant_ids"
                 }
             ]
         },
@@ -385,25 +410,6 @@
                     "file": "includes/Privacy/PrivacyUIService.php",
                     "lines": "74-74",
                     "method": "PrivacyUIService::init"
-                }
-            ]
-        },
-        {
-            "hash": "71a3c2ac7c29ca1caf17ad69ca891ede0f9de921",
-            "instances": 2,
-            "token_count": 32,
-            "sites": [
-                {
-                    "plugin": "free",
-                    "file": "includes/Services/AlbumService.php",
-                    "lines": "734-734",
-                    "method": "albums_for_media"
-                },
-                {
-                    "plugin": "pro",
-                    "file": "includes/Battles/BattleService.php",
-                    "lines": "214-214",
-                    "method": "get_participant_ids"
                 }
             ]
         },
@@ -622,12 +628,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1655-1655",
+                    "lines": "1671-1671",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1680-1680",
+                    "lines": "1696-1696",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -712,12 +718,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3403-3403",
+                    "lines": "3844-3844",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3431-3431",
+                    "lines": "3872-3872",
                     "method": "restore"
                 }
             ]
@@ -730,7 +736,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3232-3232",
+                    "lines": "3673-3673",
                     "method": "record_event"
                 },
                 {
@@ -789,12 +795,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3177-3177",
+                    "lines": "3618-3618",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3204-3204",
+                    "lines": "3645-3645",
                     "method": "set_stat"
                 }
             ]
@@ -948,12 +954,12 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1621-1621",
+                    "lines": "1637-1637",
                     "method": "create_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/TagController.php",
-                    "lines": "455-455",
+                    "lines": "471-471",
                     "method": "create_tag_permissions_check"
                 }
             ]
@@ -989,22 +995,22 @@
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "159-159",
+                    "lines": "301-301",
                     "method": "total_views"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "172-172",
+                    "lines": "314-314",
                     "method": "total_reactions"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "185-185",
+                    "lines": "327-327",
                     "method": "total_favorites"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "198-198",
+                    "lines": "340-340",
                     "method": "storage_size_bytes"
                 }
             ]
@@ -1035,12 +1041,12 @@
             "sites": [
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1003-1003",
+                    "lines": "1032-1032",
                     "method": "migrate_to_23"
                 },
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1035-1035",
+                    "lines": "1064-1064",
                     "method": "migrate_to_24"
                 }
             ]
@@ -1094,7 +1100,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3109-3109",
+                    "lines": "3550-3550",
                     "method": "get_user_stats"
                 },
                 {
