@@ -86,8 +86,8 @@ class TagController extends WP_REST_Controller {
 								// own sanitize_params() before any handler ran. Both answered 500
 								// on a public route:
 								//
-								//   GET /mvs/v1/media?slug=     -> 500 TypeError (preg_match)
-								//   GET /mvs/v1/media?slug[]=x  -> 500 TypeError (strip_tags)
+								// `GET /mvs/v1/media?slug=     ` -> 500 TypeError (preg_match)
+								// `GET /mvs/v1/media?slug[]=x` -> 500 TypeError (strip_tags)
 								//
 								// Taking only the value, and refusing a non-scalar, closes both.
 								return is_scalar( $value ) ? sanitize_title( (string) $value ) : '';

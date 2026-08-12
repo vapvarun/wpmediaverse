@@ -14,8 +14,37 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 28;
-	const VERSION_OPTION  = 'mvs_db_version';
+	const CURRENT_VERSION = 29;
+
+	/**
+	 * Option recording how far the v29 drive backfill has progressed.
+	 *
+	 * The backfill touches every row in the media index, so it runs in bounded
+	 * batches across requests rather than in one ALTER-sized transaction. This
+	 * holds the highest media_id already stamped; absent means "not started",
+	 * and the sentinel below means "finished".
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const DRIVE_BACKFILL_OPTION = 'mvs_drive_backfill_cursor';
+
+	/**
+	 * Cron hook that advances the v29 drive backfill.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const DRIVE_BACKFILL_HOOK = 'mvs_backfill_drive_columns';
+
+	/**
+	 * Rows stamped per backfill batch.
+	 *
+	 * @since 2.4.0
+	 * @var int
+	 */
+	const DRIVE_BACKFILL_BATCH = 2000;
+	const VERSION_OPTION       = 'mvs_db_version';
 
 	/**
 	 * Run pending migrations.
@@ -1879,6 +1908,158 @@ class Migrator {
 	 *
 	 * @since 2.4.0
 	 */
+	/**
+	 * Migration v29 — the drive columns (Phase 11 G1).
+	 *
+	 * A document uploaded to a Space root today stores only `post_author`, so it
+	 * would appear in the UPLOADER'S personal drive rather than the Space
+	 * library. Personal root listing is `folder_id = 0 AND post_author = %d`, and
+	 * that coincidence — ownership doubling as scoping — is the gap.
+	 *
+	 * COLUMNS, NOT POST META, per §23.2 G1: every listing this feature needs is
+	 * drive-scoped, and drive-scoped listing through post meta is a join that
+	 * degrades exactly as a Space library grows. Albums use meta because albums
+	 * are `wp_posts` and few; documents live here and are not.
+	 *
+	 * THE INDEX SHIPS WITH THE COLUMNS, and that is the part easy to miss.
+	 * `KEY doc_listing` is `(media_type, folder_id, status, created_at)` — once
+	 * root listing is keyed on the drive, the two new columns land AFTER its
+	 * prefix and cannot be used, so §12's "the index is the drive query verbatim"
+	 * would quietly stop being true, visible only on a large Space.
+	 * `drive_documents()` already carried a measured comment saying the clean fix
+	 * is an index this table does not have and "belongs in its own migration
+	 * rather than riding along with a UI phase". This is that migration.
+	 *
+	 * THE BACKFILL IS BOUNDED. Stamping every row in one pass is an unbounded
+	 * UPDATE on the hottest table in the product; a site with a large library
+	 * would hang its own upgrade. It runs in batches from a cursor, continued by
+	 * cron, and the default (`user` / 0) is a safe resting state throughout: an
+	 * unstamped row is resolved by `post_author` exactly as it is today.
+	 *
+	 * @since 2.4.0
+	 */
+	private function migrate_to_29(): void {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		if ( ! $this->column_exists( $index, 'drive_type' ) ) {
+			$prev = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$index} ADD COLUMN drive_type varchar(20) NOT NULL DEFAULT 'user'" );
+			$wpdb->show_errors( $prev );
+		}
+
+		if ( ! $this->column_exists( $index, 'drive_id' ) ) {
+			$prev = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$index} ADD COLUMN drive_id bigint(20) unsigned NOT NULL DEFAULT 0" );
+			$wpdb->show_errors( $prev );
+		}
+
+		// The drive query verbatim, left-to-right:
+		// WHERE media_type=? AND drive_type=? AND drive_id=? AND folder_id=?
+		// AND status=? ORDER BY created_at
+		$this->add_index_if_missing(
+			$index,
+			'drive_listing',
+			'drive_listing (media_type, drive_type, drive_id, folder_id, status, created_at)'
+		);
+
+		// Kick the bounded backfill off. It is idempotent and resumable, so an
+		// interrupted upgrade simply continues on the next tick.
+		if ( ! get_option( self::DRIVE_BACKFILL_OPTION ) ) {
+			update_option( self::DRIVE_BACKFILL_OPTION, 0, false );
+		}
+
+		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
+			wp_schedule_single_event( time() + 30, self::DRIVE_BACKFILL_HOOK );
+		}
+	}
+
+	/**
+	 * Stamp one batch of rows with their personal drive.
+	 *
+	 * Personal drives only — every existing row belongs to the member who
+	 * uploaded it, which is precisely what makes the backfill safe to do in
+	 * arrears. Space drives do not exist yet; when they do, ingest stamps them at
+	 * write time and this never sees them.
+	 *
+	 * Keyset pagination on `media_id`, not OFFSET: an offset walk over a table
+	 * being written to skips rows, and skipping here means a document that never
+	 * gets a drive.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return int Rows stamped in this batch.
+	 */
+	public static function backfill_drive_columns(): int {
+		global $wpdb;
+
+		$cursor = (int) get_option( self::DRIVE_BACKFILL_OPTION, 0 );
+
+		if ( $cursor < 0 ) {
+			return 0;
+		}
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, post_author FROM {$index}
+				  WHERE media_id > %d AND drive_id = 0
+				  ORDER BY media_id ASC
+				  LIMIT %d",
+				$cursor,
+				self::DRIVE_BACKFILL_BATCH
+			)
+		);
+
+		if ( ! $rows ) {
+			// -1 marks "finished" so a restart does not rescan the whole table.
+			update_option( self::DRIVE_BACKFILL_OPTION, -1, false );
+
+			return 0;
+		}
+
+		$stamped = 0;
+		$highest = $cursor;
+
+		foreach ( $rows as $row ) {
+			$media_id = (int) $row->media_id;
+			$author   = (int) $row->post_author;
+			$highest  = max( $highest, $media_id );
+
+			if ( $author <= 0 ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->update(
+				$index,
+				array(
+					'drive_type' => 'user',
+					'drive_id'   => $author,
+				),
+				array( 'media_id' => $media_id ),
+				array( '%s', '%d' ),
+				array( '%d' )
+			);
+
+			++$stamped;
+		}
+
+		update_option( self::DRIVE_BACKFILL_OPTION, $highest, false );
+
+		// More to do — come back for it.
+		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
+			wp_schedule_single_event( time() + 60, self::DRIVE_BACKFILL_HOOK );
+		}
+
+		return $stamped;
+	}
+
 	private function migrate_to_28(): void {
 		$stored = get_option( 'mvs_allowed_file_types', null );
 

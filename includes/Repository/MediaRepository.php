@@ -56,6 +56,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		// matches nothing, and every drive listing and privacy cascade silently
 		// finds no documents. Caught by the P3.8 cascade tests.
 		'folder_id',
+		// Added by Migrator v29 for Space drives (Phase 11 G1), and listed here
+		// for exactly the reason the comment above gives: without it,
+		// `set( $id, 'drive_id', … )` would write to mvs_media_meta instead of
+		// the column, `KEY drive_listing` would match nothing, and every
+		// drive-scoped listing would silently come back empty.
+		'drive_type',
+		'drive_id',
 		'view_count',
 		'reaction_count',
 		'comment_count',
@@ -1116,7 +1123,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		list( $type_sql, $params ) = MediaTypes::in_clause( $types );
 
-		$where = array( $type_sql, 'status = %s' );
+		$where    = array( $type_sql, 'status = %s' );
 		$params[] = 'publish';
 
 		if ( $public_only ) {
@@ -1428,11 +1435,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		// the only caller that asks for anything but `publish`, and it asks for a
 		// listing the member can restore from: without one, trashing is a one-way
 		// door and the row is simply gone from every surface they have.
-		$status = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
+		$status   = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
 			? (string) $args['status']
 			: 'publish';
-		$per_page  = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
-		$page      = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
 
@@ -1455,16 +1462,33 @@ class MediaRepository implements MediaRepositoryInterface {
 		// with a UI phase. Until then, a very deep OFFSET on a drive with tens
 		// of thousands of documents is the known soft spot.
 		$any_folder = ! empty( $args['any_folder'] );
-		$where  = $any_folder
+		$where      = $any_folder
 			? array( $type_sql, 'status = %s' )
 			: array( $type_sql, 'folder_id = %d', 'status = %s' );
-		$params = $any_folder
+		$params     = $any_folder
 			? array_merge( $type_params, array( $status ) )
 			: array_merge( $type_params, array( $folder_id, $status ) );
 
-		if ( ( $any_folder || 0 === $folder_id ) && $author > 0 ) {
-			$where[]  = 'post_author = %d';
-			$params[] = $author;
+		// ROOT SCOPING IS THE DRIVE, NOT THE AUTHOR (Phase 11 G1).
+		//
+		// This used to read `post_author = %d`, which worked only because a
+		// personal drive's owner and its documents' uploader are the same person.
+		// That coincidence is exactly what made a Space-root upload impossible:
+		// filed by a member, it would list under THEM rather than under the
+		// Space. `post_author` goes back to meaning only "who uploaded this".
+		//
+		// `drive_id = 0` is carried alongside for rows Migrator v29's bounded
+		// backfill has not reached yet — on those the author IS the drive, so
+		// falling back to it is correct rather than merely tolerant, and a
+		// half-migrated site lists exactly what it listed before.
+		$drive_type = isset( $args['drive_type'] ) ? (string) $args['drive_type'] : 'user';
+		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
+
+		if ( ( $any_folder || 0 === $folder_id ) && $drive_id > 0 ) {
+			$where[]  = '( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )';
+			$params[] = $drive_id;
+			$params[] = $drive_type;
+			$params[] = $author > 0 ? $author : $drive_id;
 		}
 
 		// A drive with 2,000 documents is unusable without a way to narrow it and

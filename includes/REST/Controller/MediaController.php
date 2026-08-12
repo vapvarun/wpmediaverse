@@ -357,9 +357,9 @@ class MediaController extends WP_REST_Controller {
 		// string — and a non-string is TRUTHY, so the old `if ( $slug )` let it
 		// through to `sanitize_title()`, which fataled the whole route:
 		//
-		//   GET /mvs/v1/media?slug=  ->  500
-		//   Uncaught TypeError: preg_match(): Argument #2 ($subject) must be of
-		//   type string, WP_REST_Request given
+		// GET /mvs/v1/media?slug=  ->  500
+		// Uncaught TypeError: preg_match(): Argument #2 ($subject) must be of
+		// type string, WP_REST_Request given
 		//
 		// Pre-existing and unrelated to the repository migration — verified by
 		// reproducing it with this file reverted. The same param is already
@@ -2032,8 +2032,8 @@ class MediaController extends WP_REST_Controller {
 					// own sanitize_params() before any handler ran. Both answered 500
 					// on a public route:
 					//
-					//   GET /mvs/v1/media?slug=     -> 500 TypeError (preg_match)
-					//   GET /mvs/v1/media?slug[]=x  -> 500 TypeError (strip_tags)
+					// GET /mvs/v1/media?slug=     -> 500 TypeError (preg_match)
+					// GET /mvs/v1/media?slug[]=x  -> 500 TypeError (strip_tags)
 					//
 					// Taking only the value, and refusing a non-scalar, closes both.
 					return is_scalar( $value ) ? sanitize_title( (string) $value ) : '';

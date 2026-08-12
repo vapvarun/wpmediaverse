@@ -185,6 +185,17 @@ class Plugin {
 		$migrator = new Migrator();
 		$migrator->run();
 
+		// v29's drive backfill continues in bounded batches rather than stamping
+		// every row inside the upgrade request — see Migrator::migrate_to_29().
+		add_action(
+			Migrator::DRIVE_BACKFILL_HOOK,
+			static function (): void {
+				// Wrapped because the cron callback must return nothing, while
+				// backfill_drive_columns() returns a count for CLI and tests.
+				Migrator::backfill_drive_columns();
+			}
+		);
+
 		// Build service container.
 		self::$container = new ServiceContainer();
 		self::register_services();
