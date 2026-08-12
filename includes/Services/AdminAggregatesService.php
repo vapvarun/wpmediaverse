@@ -156,6 +156,148 @@ class AdminAggregatesService {
 	/**
 	 * Total views aggregated across all media.
 	 */
+	/**
+	 * Engagement totals for the Stats page, optionally bounded by date.
+	 *
+	 * Views, reactions, comments and shares in ONE row rather than four calls —
+	 * the Stats page shows them together and they come from the same table.
+	 *
+	 * Lives here rather than in `MediaRepository` because Rule 16 puts site-wide
+	 * aggregates in this service, and because the join is `mvs_media_stats` ×
+	 * `mvs_media_index`: the index side contributes only `status = 'publish'` and
+	 * the date floor, so this is an aggregate that happens to need the index, not
+	 * an index query. It moved out of `Admin\StatsPage` for Rule 7 — the page was
+	 * building the join by hand.
+	 *
+	 * The unbounded case does not touch the index at all: with no date filter
+	 * every stats row already belongs to a media item, so the join only costs
+	 * work without changing the answer.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $since Optional `Y-m-d H:i:s` floor on the media's creation.
+	 * @return array{total_views:int, total_reactions:int, total_comments:int, total_shares:int}
+	 */
+	public function engagement_totals( string $since = '' ): array {
+		$key = 'admin_engagement_totals_' . ( '' === $since ? 'all' : md5( $since ) );
+
+		$totals = $this->cache->remember_persistent(
+			$key,
+			static function () use ( $since ): array {
+				global $wpdb;
+
+				$stats = $wpdb->prefix . 'mvs_media_stats';
+				$sums  = 'COALESCE(SUM(s.views), 0) AS total_views,
+					COALESCE(SUM(s.reactions), 0) AS total_reactions,
+					COALESCE(SUM(s.comments), 0) AS total_comments,
+					COALESCE(SUM(s.shares), 0) AS total_shares';
+
+				if ( '' === $since ) {
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+					$row = $wpdb->get_row( "SELECT {$sums} FROM {$stats} s", ARRAY_A );
+				} else {
+					$index = $wpdb->prefix . 'mvs_media_index';
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+					$row = $wpdb->get_row(
+						$wpdb->prepare(
+							"SELECT {$sums}
+							   FROM {$stats} s
+							   INNER JOIN {$index} m ON m.media_id = s.media_id
+							  WHERE m.status = 'publish' AND m.created_at >= %s",
+							$since
+						),
+						ARRAY_A
+					);
+				}
+
+				return array(
+					'total_views'     => (int) ( $row['total_views'] ?? 0 ),
+					'total_reactions' => (int) ( $row['total_reactions'] ?? 0 ),
+					'total_comments'  => (int) ( $row['total_comments'] ?? 0 ),
+					'total_shares'    => (int) ( $row['total_shares'] ?? 0 ),
+				);
+			}
+		);
+
+		return is_array( $totals ) ? $totals : array(
+			'total_views'     => 0,
+			'total_reactions' => 0,
+			'total_comments'  => 0,
+			'total_shares'    => 0,
+		);
+	}
+
+	/**
+	 * The most-viewed published media, for the Stats page's leaderboard.
+	 *
+	 * Same reasoning as `engagement_totals()`: a `mvs_media_stats` ×
+	 * `mvs_media_index` join whose index side contributes only the publish gate,
+	 * the date floor and the title. It moved out of `Admin\StatsPage` for Rule 7.
+	 *
+	 * @since 2.4.0
+	 *
+	 * ONE method for both the on-screen leaderboard and the CSV export. They are
+	 * the same question with a different row limit and a type filter, and the
+	 * export exists to be reconciled against the page — two queries that could
+	 * drift is exactly how an owner ends up with a CSV that disagrees with the
+	 * dashboard it came from (Rule 14).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string   $since       Optional `Y-m-d H:i:s` floor on the media's creation.
+	 * @param int      $limit       Rows to return.
+	 * @param string[] $media_types Optional type allowlist; empty means every type.
+	 * @return array<int, array<string, mixed>> media_id, views, reactions, comments, shares, post_title.
+	 */
+	public function top_media_by_views( string $since = '', int $limit = 10, array $media_types = array() ): array {
+		$limit = max( 1, min( 500, $limit ) );
+		$key   = 'admin_top_media_' . md5( $since . '|' . $limit . '|' . implode( ',', $media_types ) );
+
+		$rows = $this->cache->remember_persistent(
+			$key,
+			static function () use ( $since, $limit, $media_types ): array {
+				global $wpdb;
+
+				$stats = $wpdb->prefix . 'mvs_media_stats';
+				$index = $wpdb->prefix . 'mvs_media_index';
+
+				$where  = "m.status = 'publish'";
+				$params = array();
+
+				if ( '' !== $since ) {
+					$where   .= ' AND m.created_at >= %s';
+					$params[] = $since;
+				}
+
+				if ( $media_types ) {
+					list( $type_sql, $type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( $media_types, 'm.media_type' );
+					$where .= ' AND ' . $type_sql;
+					$params = array_merge( $params, $type_params );
+				}
+
+				$params[] = $limit;
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+				$found = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT s.media_id, s.views, s.reactions, s.comments, s.shares, m.title AS post_title
+						   FROM {$stats} s
+						   INNER JOIN {$index} m ON m.media_id = s.media_id
+						  WHERE {$where}
+						  ORDER BY s.views DESC
+						  LIMIT %d",
+						...$params
+					),
+					ARRAY_A
+				);
+
+				return is_array( $found ) ? $found : array();
+			}
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
 	public function total_views(): int {
 		return (int) $this->cache->remember_persistent(
 			'admin_total_views',

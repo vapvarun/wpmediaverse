@@ -68,30 +68,11 @@ class StatsPage {
 			return;
 		}
 
-		global $wpdb;
-		$stats_table = $wpdb->prefix . 'mvs_media_stats';
-
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-
-		// The export is the Stats page in CSV form, so it carries the same scope as
-		// the cards it exports. If the two disagreed, an owner reconciling the CSV
-		// against the dashboard would find rows that the totals never counted.
-		list( $mvs_csv_type_sql, $mvs_csv_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'm.media_type' );
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$top_media = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT s.media_id, s.views, s.reactions, s.comments, s.shares, m.title AS post_title
-				FROM {$stats_table} s
-				INNER JOIN {$index_table} m ON m.media_id = s.media_id
-				WHERE m.status = %s AND {$mvs_csv_type_sql}
-				ORDER BY s.views DESC
-				LIMIT 100",
-				...array_merge( array( 'publish' ), $mvs_csv_type_params )
-			),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// The export is the Stats page in CSV form, so it asks the SAME question
+		// through the same method — if the two disagreed, an owner reconciling
+		// the CSV against the dashboard would find rows the totals never counted.
+		$top_media = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )
+			->top_media_by_views( '', 100, MediaTypes::MEDIA_LIBRARY );
 
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename=wpmediaverse-stats-' . gmdate( 'Y-m-d' ) . '.csv' );
@@ -121,27 +102,6 @@ class StatsPage {
 
 		fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- CSV export to php://output requires native stream ops.
 		exit;
-	}
-
-	/**
-	 * Get the date range WHERE clause for stats queries.
-	 *
-	 * @param string $range Date range key.
-	 * @return string SQL date filter (already prepared or safe).
-	 */
-	private function get_date_filter( string $range ): string {
-		global $wpdb;
-
-		switch ( $range ) {
-			case 'today':
-				return $wpdb->prepare( 'AND m.created_at >= %s', gmdate( 'Y-m-d 00:00:00' ) );
-			case 'week':
-				return $wpdb->prepare( 'AND m.created_at >= %s', gmdate( 'Y-m-d 00:00:00', strtotime( '-7 days' ) ) );
-			case 'month':
-				return $wpdb->prepare( 'AND m.created_at >= %s', gmdate( 'Y-m-d 00:00:00', strtotime( '-30 days' ) ) );
-			default:
-				return '';
-		}
 	}
 
 	/**
@@ -249,7 +209,6 @@ class StatsPage {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$range       = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( $_GET['range'] ) ) : 'all';
-		$date_filter = $this->get_date_filter( $range );
 		$range_start = $this->get_range_start( $range );
 
 		// The card is labelled "Total Media", so it counts media. Documents get
@@ -260,19 +219,27 @@ class StatsPage {
 		list( $mvs_stats_doc_sql, $mvs_stats_doc_params )   = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
 
 		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
+		//
+		// Through `query_count()` rather than hand-built SQL — Rule 7. The filter
+		// set expresses all four of these exactly: `media_types` carries the same
+		// library split `MediaTypes::in_clause()` used to build, `since` carries
+		// the date floor, and `privacy => 'any'` keeps the admin totals
+		// unscoped, which is what an owner's dashboard has always shown.
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$mvs_count_args = array(
+			'status'  => 'publish',
+			'privacy' => 'any',
+		);
+
 		if ( $range_start ) {
-			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...array_merge( array( $range_start ), $mvs_stats_type_params )
-				)
-			);
-			$total_documents = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s AND {$mvs_stats_doc_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...array_merge( array( $range_start ), $mvs_stats_doc_params )
-				)
-			);
+			$mvs_count_args['since'] = $range_start;
+		}
+
+		$total_media     = $mvs_repo->query_count( array_merge( $mvs_count_args, array( 'media_types' => MediaTypes::MEDIA_LIBRARY ) ) );
+		$total_documents = $mvs_repo->query_count( array_merge( $mvs_count_args, array( 'media_types' => MediaTypes::DOCUMENT_LIBRARY ) ) );
+
+		if ( $range_start ) {
 			$total_albums = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s AND post_date_gmt >= %s",
@@ -282,78 +249,18 @@ class StatsPage {
 				)
 			);
 		} else {
-			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...$mvs_stats_type_params
-				)
-			);
-			$total_documents = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$mvs_stats_doc_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...$mvs_stats_doc_params
-				)
-			);
 			$album_counts = wp_count_posts( 'mvs_album' );
 			$total_albums = isset( $album_counts->publish ) ? (int) $album_counts->publish : 0;
 		}
 
-		// Stats totals.
-		$stats_table = $wpdb->prefix . 'mvs_media_stats';
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $date_filter ) {
-			$totals = $wpdb->get_row(
-				"SELECT
-					COALESCE(SUM(s.views), 0) AS total_views,
-					COALESCE(SUM(s.reactions), 0) AS total_reactions,
-					COALESCE(SUM(s.comments), 0) AS total_comments,
-					COALESCE(SUM(s.shares), 0) AS total_shares
-				FROM {$stats_table} s
-				INNER JOIN {$index_table} m ON m.media_id = s.media_id
-				WHERE m.status = 'publish' {$date_filter}",
-				ARRAY_A
-			);
-		} else {
-			$totals = $wpdb->get_row(
-				$wpdb->prepare(
-					"SELECT
-						COALESCE(SUM(views), 0) AS total_views,
-						COALESCE(SUM(reactions), 0) AS total_reactions,
-						COALESCE(SUM(comments), 0) AS total_comments,
-						COALESCE(SUM(shares), 0) AS total_shares
-					FROM {$stats_table} WHERE 1 = %d",
-					1
-				),
-				ARRAY_A
-			);
-		}
+		// Stats totals and leaderboard, through the aggregates service — Rule 16
+		// puts site-wide aggregates there, and Rule 7 keeps the index join out of
+		// an admin page.
+		$mvs_aggregates = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' );
+		$mvs_since      = $range_start ? (string) $range_start : '';
 
-		if ( $date_filter ) {
-			$top_media = $wpdb->get_results(
-				"SELECT s.media_id, s.views, s.reactions, m.title AS post_title
-				FROM {$stats_table} s
-				INNER JOIN {$index_table} m ON m.media_id = s.media_id
-				WHERE m.status = 'publish' {$date_filter}
-				ORDER BY s.views DESC
-				LIMIT 10",
-				ARRAY_A
-			);
-		} else {
-			$top_media = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT s.media_id, s.views, s.reactions, m.title AS post_title
-					FROM {$stats_table} s
-					INNER JOIN {$index_table} m ON m.media_id = s.media_id
-					WHERE m.status = %s
-					ORDER BY s.views DESC
-					LIMIT 10",
-					'publish'
-				),
-				ARRAY_A
-			);
-		}
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$totals    = $mvs_aggregates->engagement_totals( $mvs_since );
+		$top_media = $mvs_aggregates->top_media_by_views( $mvs_since, 10 );
 
 		// AI usage.
 		$ai_stats = $this->ai->get_usage_stats();
