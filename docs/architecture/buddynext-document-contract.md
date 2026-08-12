@@ -163,8 +163,9 @@ had only "not visible → 404" and "read-only → 403", and neither fits.
 The same run confirms `get_role()` returns `null` for a non-member and the stored role for an active
 one, and that the demo community uses only `owner` and `member` — no `admin`, as the schema says.
 
-**One decision is still open:** what a plain `member` maps to. That is BN's call, per space, and it
-is the only row in this table that is not already determined by code on one side or the other.
+**That decision is now made, in §7's bridge: a plain `member` maps to `write`.** An active member of
+a space may add to that space's library — the same thing they may already do to its feed — and
+`own` stays with the owner alone. It is one line in `drive_access()` if a site wants it otherwise.
 
 ---
 
@@ -186,6 +187,340 @@ size ceiling or the preview tiers disagrees with the server the moment an owner 
 
 ## 6. What is NOT frozen yet
 
-Everything under `plan/document-library.md` §23 that PR2–PR5 build: the drive columns, `GET /drives`,
-the `?drive=` parameter, and departing-member reassignment. This document covers the contract BN
-writes its error handling and tab logic against — not the routes those will arrive on.
+Departing-member reassignment (§23 G5/G6, PR5). The drive columns, `GET /drives` and the `?drive=`
+parameter shipped in PR2 and PR3 and are covered by §3 and §7.
+
+---
+
+## 7. The bridge — drop-in, and verified against real spaces
+
+**BuddyNext owns this file; nothing in it has been applied to BuddyNext.** It is written against
+BN branch `1.1.5` (3 commits past the `v1.1.4` tag — the version header still reads 1.1.4) and was
+executed against that branch's real `bn_spaces` / `bn_space_members` rows, so the behaviour below is
+measured rather than intended. Suggested home: `includes/Bridges/SpaceDriveBridge.php`, registered
+where the existing `WPMediaVerseBridge` is.
+
+### Two things to know before reading it
+
+**1. Composing `membership_map()` with `prime_viewer_roles()` corrupts BuddyNext's own cache.**
+The first returns `space_id => array( role, status )`; the second expects `space_id => role` and
+casts with `(string)`. Passing one straight into the other writes the literal string `"Array"` into
+the role cache for every space, and `get_role()` then returns `"Array"` — not null, so **every
+viewer reads as a contributing member** — for the rest of the request, to BuddyNext's own callers as
+much as to this bridge. Both calls are individually correct, which is why review does not catch it.
+The bridge flattens the map first. If BuddyNext would rather fix the shape mismatch at source, that
+is the better long-term answer and this bridge simplifies accordingly.
+
+**2. A banned member of an OPEN space keeps `read`.** `get_role()` filters `status = 'active'`, so
+banned collapses to "no role", and an open space's content is readable without a role. That matches
+what BuddyNext shows on the space page itself, so it is consistent rather than a hole — but if a ban
+is meant to remove read access to the library too, that is a decision to make explicitly, and it
+belongs in `can_view_content()` where the space page would pick it up as well.
+
+### The implementation
+
+```php
+<?php
+/**
+ * Space document drives — the BuddyNext side of the WPMediaVerse drive contract.
+ *
+ * WPMediaVerse never queries `bn_*`. It asks four filters and this answers them
+ * from BuddyNext's OWN canonical resolvers, so the drive and the space page can
+ * never disagree about who may see what.
+ *
+ * Contract: wpmediaverse/docs/architecture/buddynext-document-contract.md
+ *
+ * @package BuddyNext
+ */
+
+namespace BuddyNext\Bridges;
+
+use BuddyNext\Spaces\SpaceMemberService;
+use BuddyNext\Spaces\SpaceService;
+use BuddyNext\Spaces\SpaceVisibility;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Answers WPMediaVerse's document-drive filters for `space:<id>` drives.
+ */
+class SpaceDriveBridge {
+
+	/**
+	 * Space service.
+	 *
+	 * @var SpaceService|null
+	 */
+	private $spaces = null;
+
+	/**
+	 * Membership service.
+	 *
+	 * @var SpaceMemberService|null
+	 */
+	private $members = null;
+
+	/**
+	 * Hydrated space rows, keyed by id, for this request.
+	 *
+	 * Every filter below needs the row, and a drive listing asks about each of a
+	 * member's spaces in one page load.
+	 *
+	 * @var array<int, array<string, mixed>|null>
+	 */
+	private $space_cache = array();
+
+	/**
+	 * Register the four filters.
+	 *
+	 * @return void
+	 */
+	public function register(): void {
+		add_filter( 'mvs_document_drive_access', array( $this, 'drive_access' ), 10, 4 );
+		add_filter( 'mvs_document_drive_visible', array( $this, 'drive_visible' ), 10, 4 );
+		add_filter( 'mvs_document_drives_for_user', array( $this, 'drives_for_user' ), 10, 2 );
+		add_filter( 'mvs_document_drive_label', array( $this, 'drive_label' ), 10, 3 );
+	}
+
+	/**
+	 * Resolve `none|read|write|own` for one space drive and one viewer.
+	 *
+	 * The ladder, in the order the questions actually settle:
+	 *
+	 *   no space row            -> none  (WPMediaVerse answers 404)
+	 *   cannot view content     -> none  (private space, non-member)
+	 *   role owner              -> own
+	 *   role moderator | member -> write (an active member may contribute)
+	 *   otherwise               -> read  (open space, not a member)
+	 *
+	 * `get_role()` already filters `status = 'active'`, so pending, invited and
+	 * banned rows collapse to "no role" without being tested separately here —
+	 * a banned member of an OPEN space therefore keeps `read`, which is what
+	 * BuddyNext shows them on the space page itself.
+	 *
+	 * @param string $level      Level resolved so far.
+	 * @param string $drive_type Drive type.
+	 * @param int    $drive_id   Drive id (the space id).
+	 * @param int    $user_id    Viewer.
+	 * @return string
+	 */
+	public function drive_access( $level, $drive_type, $drive_id, $user_id ): string {
+		if ( 'space' !== (string) $drive_type ) {
+			return (string) $level;
+		}
+
+		$space = $this->space( (int) $drive_id );
+
+		if ( null === $space ) {
+			return 'none';
+		}
+
+		// The READ decision is BuddyNext's, from the same resolver its own
+		// templates and REST routes use — never re-derived from `type`.
+		if ( ! SpaceVisibility::can_view_content( $space, (int) $user_id ) ) {
+			return 'none';
+		}
+
+		$role = $this->members()->get_role( (int) $drive_id, (int) $user_id );
+
+		if ( 'owner' === $role ) {
+			return 'own';
+		}
+
+		if ( null !== $role ) {
+			// moderator and member both contribute. Sharing authority is a
+			// separate question and stays with `can_manage_space()`.
+			return 'write';
+		}
+
+		// Content is readable without membership — an open space.
+		return 'read';
+	}
+
+	/**
+	 * Whether the viewer may be told this space EXISTS.
+	 *
+	 * Decides 403 vs 404 for a drive they cannot open, and it is a different
+	 * question from access: a PRIVATE space is listed in the directory with a
+	 * join button, so 403 tells a non-member nothing they could not already
+	 * read. A SECRET space is listed nowhere, and answering 403 for it would
+	 * confirm the space exists to anyone who guessed an id.
+	 *
+	 * `can_view_space()` is registry-driven (`is_hidden_from_non_members()`),
+	 * not hardcoded to `secret`, so a custom space type is handled for free.
+	 *
+	 * @param bool   $visible    Default false.
+	 * @param string $drive_type Drive type.
+	 * @param int    $drive_id   Drive id (the space id).
+	 * @param int    $user_id    Viewer.
+	 * @return bool
+	 */
+	public function drive_visible( $visible, $drive_type, $drive_id, $user_id ): bool {
+		if ( 'space' !== (string) $drive_type ) {
+			return (bool) $visible;
+		}
+
+		$space = $this->space( (int) $drive_id );
+
+		return null !== $space && SpaceVisibility::can_view_space( $space, (int) $user_id );
+	}
+
+	/**
+	 * The space drives this member can reach.
+	 *
+	 * Only spaces they ACTIVELY belong to. An open space they have merely read
+	 * access to is deliberately absent: this list is "your libraries", and
+	 * padding it with every open space on the site would bury the member's own
+	 * drives under a site directory.
+	 *
+	 * @param array $drives  Drives resolved so far.
+	 * @param int   $user_id Viewer.
+	 * @return array
+	 */
+	public function drives_for_user( $drives, $user_id ): array {
+		$drives  = is_array( $drives ) ? $drives : array();
+		$user_id = (int) $user_id;
+
+		if ( $user_id <= 0 ) {
+			return $drives;
+		}
+
+		$space_ids = $this->members()->spaces_for_user( $user_id );
+
+		if ( empty( $space_ids ) ) {
+			return $drives;
+		}
+
+		// One priming call instead of a role lookup per space (the N+1 the
+		// contract calls out).
+		//
+		// THE TWO APIS DO NOT SHARE A SHAPE, and composing them naively corrupts
+		// BuddyNext's own cache rather than this bridge's: `membership_map()`
+		// returns `space_id => array( role, status )` while `prime_viewer_roles()`
+		// expects `space_id => role` and casts with `(string)`, so passing the map
+		// straight through writes the literal string "Array" into the role cache
+		// for every space. `get_role()` then returns "Array" — not null, so every
+		// viewer reads as a contributing member — for the rest of the request, to
+		// BuddyNext's own callers as much as to this one. Caught by running the
+		// bridge against real spaces; it is invisible to review because both calls
+		// are individually correct.
+		//
+		// Flattened here, honouring `get_role()`'s own semantics: only an ACTIVE
+		// row is a role, and everything else primes as '' ("not a member"), which
+		// is the value that function caches for a miss.
+		$roles  = $this->members()->membership_map( $user_id, $space_ids );
+		$primed = array();
+
+		foreach ( $roles as $mapped_id => $membership ) {
+			$primed[ (int) $mapped_id ] = ( 'active' === (string) ( $membership['status'] ?? '' ) )
+				? (string) ( $membership['role'] ?? '' )
+				: '';
+		}
+
+		$this->members()->prime_viewer_roles( $user_id, $primed );
+
+		foreach ( $space_ids as $space_id ) {
+			$space = $this->space( (int) $space_id );
+
+			if ( null === $space ) {
+				continue;
+			}
+
+			$drives[] = array(
+				'type'  => 'space',
+				'id'    => (int) $space_id,
+				'label' => (string) ( $space['name'] ?? '' ),
+			);
+		}
+
+		return $drives;
+	}
+
+	/**
+	 * A human label for a space drive.
+	 *
+	 * @param string $label      Label resolved so far.
+	 * @param string $drive_type Drive type.
+	 * @param int    $drive_id   Drive id (the space id).
+	 * @return string
+	 */
+	public function drive_label( $label, $drive_type, $drive_id ): string {
+		if ( 'space' !== (string) $drive_type ) {
+			return (string) $label;
+		}
+
+		$space = $this->space( (int) $drive_id );
+
+		return null === $space ? (string) $label : (string) ( $space['name'] ?? $label );
+	}
+
+	/**
+	 * Hydrate a space row once per request.
+	 *
+	 * @param int $space_id Space id.
+	 * @return array<string, mixed>|null
+	 */
+	private function space( int $space_id ): ?array {
+		if ( ! array_key_exists( $space_id, $this->space_cache ) ) {
+			$this->space_cache[ $space_id ] = $this->spaces()->get( $space_id );
+		}
+
+		return $this->space_cache[ $space_id ];
+	}
+
+	/**
+	 * Space service.
+	 *
+	 * @return SpaceService
+	 */
+	private function spaces(): SpaceService {
+		if ( null === $this->spaces ) {
+			$this->spaces = new SpaceService();
+		}
+
+		return $this->spaces;
+	}
+
+	/**
+	 * Membership service.
+	 *
+	 * @return SpaceMemberService
+	 */
+	private function members(): SpaceMemberService {
+		if ( null === $this->members ) {
+			$this->members = new SpaceMemberService();
+		}
+
+		return $this->members;
+	}
+}
+```
+
+### Measured against the seeded community
+
+15 spaces (11 open, 3 private, 1 secret), real memberships, no simulation:
+
+```
+refusals   secret space,  outsider  -> 404 mvs_drive_not_found
+           private space, outsider  -> 403 mvs_drive_forbidden
+           private space, member    -> 200, folders listed
+           open space,    outsider  -> readable, no refusal
+
+ladder     owner                    -> own
+           member (active)          -> write
+           member (pending)         -> read   on an open space
+           member (banned)          -> read   on an open space  (see note 2)
+           non-member, open         -> read
+           non-member, private      -> none
+           anyone, secret           -> none
+
+/drives    lists only spaces the member actively belongs to, with the same
+           access level the ladder resolves, and never a drive at access=none
+
+cache      get_role() returns 'owner' both before and after /drives primes
+           through the bridge — BuddyNext's cache is left as it was found
+```
+
+`/drives` deliberately lists only spaces the member **belongs to**, not every open space on the
+site: the route answers "your libraries", and padding it with a site directory would bury the
+member's own drives.
