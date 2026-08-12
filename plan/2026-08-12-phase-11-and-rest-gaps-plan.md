@@ -344,6 +344,65 @@ the rule before it is trusted — run it at promotion.
 
 **Do this before PR2** (see §2).
 
+### Progress, 2026-08-12 — 66 → 32 in Free
+
+Migrated: StatsPage (6), TemplateLoader + Activator (3), the social services and MediaTag (4), the
+compliance paths and hash lookup (4), the BuddyPress integrations and three render blocks (7),
+ModerationService (2), MediaListPage (5), and three of MediaController's (3). Every one proved
+equivalent against live data before the swap.
+
+**Three things the next person should not have to rediscover.**
+
+**1. The generic listing helpers are a trap for admin and compliance surfaces.** Twice, the obvious
+reuse would have silently dropped rows:
+
+```
+GDPR export       query_by_author()   1 of 58 rows    (privacy-filtered)
+Moderation queue  query_count()      64 of 161 rows   (media_types defaults to MEDIA_LIBRARY)
+```
+
+Both would have succeeded quietly. That is why `author_media_ids()`,
+`author_media_export_rows()`, `moderation_queue()` and `moderation_counts()` exist as separate,
+explicitly-unfiltered methods rather than reusing `query()`. Anything admin-facing or
+compliance-facing should get the same treatment.
+
+**2. Blocks register from `build/`, not `src/`.** The detector only scans `src/`, so editing a
+block's `render.php` and not rebuilding reports success while the running site stays on the old
+code. Run `npx grunt build` as part of any block migration.
+
+**3. `MediaController`'s feed query CANNOT be migrated as things stand — this is the finding.**
+Its four remaining sites are the REST feed's own query, and the blocker is not complexity:
+
+```php
+$feed_args = apply_filters( 'mvs_feed_query_args', array(
+    'where'  => $where,     // raw SQL fragments
+    'params' => $params,
+    …
+), $request );
+```
+
+`mvs_feed_query_args` is a SHIPPED PUBLIC FILTER that lets third parties inject raw WHERE fragments
+and bound params into this query. To move it into `query()`, `query()` would have to accept raw SQL
+from a filter — which turns the repository method into a passthrough and defeats the rule it is
+supposed to serve. On top of that the query carries `MATCH…AGAINST` with a LIKE fallback, a follows
+subquery, a blocked-authors `NOT IN`, the non-cover-group exclusion and a media_group meta subquery.
+
+**Do not migrate it by extending `query()`.** The options are, in order of preference:
+
+- **Make the detector's allowlist line-level.** It is file-level today
+  (`DEFAULT_ALLOWLIST` in `bin/lib/detect-media-index-leaks.py`), so allowlisting `MediaController.php`
+  would blanket-cover 1,100 lines and hide the next leak somebody adds there. Line-level entries with
+  a reason each would let these four be pinned precisely and let the rule reach `violation()` honestly.
+- Or leave them tracked in `known_gap()`, which is what that state is for, and accept that Rule 7
+  stays non-blocking until the feed's extension point is redesigned.
+
+**Deliberately not attempted here:** `CLI/Commands` (11), `CloudOps` (8) and `StorageRepairService`
+(3) — the storage-migration and cloud-transfer paths. They can be edited but not verified without a
+bucket and credentials, and this is the area that shipped two customer-visible bugs in 2.3.1
+(`migrate-storage` leaving variants behind, WebP 403s behind a CDN). `CptIdCollisionService` (6) is a
+diagnostic whose whole job is reading raw index rows and is probably an allowlist entry rather than a
+migration.
+
 ### C2 · Scale fixture (card 10192557558)
 
 Seed a 30k-document drive and **measure** the §12 claims rather than reasoning about them —
