@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-12T09:42:12Z",
+    "generated_at": "2026-08-12T11:39:16Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -340,7 +340,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3101-3101",
+                    "lines": "3156-3156",
                     "method": "media_ids_in_album"
                 },
                 {
@@ -718,12 +718,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3936-3936",
+                    "lines": "3991-3991",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3964-3964",
+                    "lines": "4019-4019",
                     "method": "restore"
                 }
             ]
@@ -736,7 +736,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3765-3765",
+                    "lines": "3820-3820",
                     "method": "record_event"
                 },
                 {
@@ -795,12 +795,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3710-3710",
+                    "lines": "3765-3765",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3737-3737",
+                    "lines": "3792-3792",
                     "method": "set_stat"
                 }
             ]
@@ -1100,7 +1100,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3642-3642",
+                    "lines": "3697-3697",
                     "method": "get_user_stats"
                 },
                 {

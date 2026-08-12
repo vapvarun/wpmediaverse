@@ -167,6 +167,35 @@ class TemplateLoader {
 			$mvs_dashboard_slug = get_post_field( 'post_name', $mvs_dashboard );
 
 			if ( $mvs_dashboard_slug ) {
+				// RESERVED SEGMENTS FIRST. `documents/(.+?)` below matches any path,
+				// so a view living at `documents/shared/` has to be declared ahead of
+				// it — otherwise the drive spends the request hunting for a folder
+				// called "shared", fails to find one, and falls back to the root,
+				// which a member reads as the tab doing nothing at all.
+				//
+				// These exist because ONE LIST PER URL: the shared listing needs its
+				// own address so it can carry its own `page/N/` without colliding
+				// with the drive's. Two lists on one URL cannot both paginate.
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/shared/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=shared&mvs_doc_page=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/shared/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=shared',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/trash/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=trash&mvs_doc_page=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/trash/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=trash',
+					'top'
+				);
 				add_rewrite_rule(
 					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/page/([0-9]+)/?$',
 					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_page=$matches[1]',
@@ -283,6 +312,7 @@ class TemplateLoader {
 		$vars[] = 'mvs_doc_view';
 		$vars[] = 'mvs_doc_path';
 		$vars[] = 'mvs_doc_page';
+		$vars[] = 'mvs_doc_show';
 		$vars[] = 'mvs_section';
 
 		$vars[] = 'mvs_media_archive';

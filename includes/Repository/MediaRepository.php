@@ -1539,6 +1539,93 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * The WHERE clause and bound params for "documents shared with this member".
+	 *
+	 * Extracted so the listing and its COUNT ask the same question. The
+	 * predicate is subtle — grantee type, role membership, revocation, expiry,
+	 * target type, and the owner exclusion — and two hand-written copies of it
+	 * would drift the moment one gained a clause. The count is the one that
+	 * would drift silently: a tab reading "12" beside a list of 8 is not an
+	 * obvious bug, it is just wrong.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int      $user_id Viewer.
+	 * @param string[] $roles   The viewer's roles.
+	 * @return array{0:string,1:array} WHERE fragment and its params, in placeholder order.
+	 */
+	private function shared_with_scope( int $user_id, array $roles ): array {
+		// Params are appended in PLACEHOLDER ORDER. Building them out of order and
+		// splicing one back into position works right up until somebody adds a
+		// clause, and a misaligned prepare() is a silent wrong-answer bug.
+		$grantee_sql = '( ( g.grantee_type = %s AND g.user_id = %d )';
+		$params      = array( 'user', $user_id );
+
+		if ( $roles ) {
+			$grantee_sql .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
+			$params[]     = 'role';
+			$params       = array_merge( $params, $roles );
+		}
+		$grantee_sql .= ' )';
+
+		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
+		// legitimately made to a role, and the uploader usually holds that role
+		// too — so sharing to "Subscriber" put your own document into your own
+		// Shared-with-me band (Basecamp 10190505530). The scope is what was
+		// missing, not the grant: `PermissionService::grant()` correctly refuses
+		// a DIRECT grant to the owner (`mvs_grant_redundant`) and must keep
+		// accepting the role grant, which is not redundant for its other holders.
+		$where = "{$grantee_sql}
+		           AND g.revoked_at IS NULL
+		           AND ( g.expires_at IS NULL OR g.expires_at > %s )
+		           AND g.target_type = %s
+		           AND m.media_type = %s
+		           AND m.status = %s
+		           AND m.post_author <> %d";
+
+		$params[] = current_time( 'mysql', true );
+		$params[] = 'media';
+		$params[] = 'document';
+		$params[] = 'publish';
+		$params[] = $user_id;
+
+		return array( $where, $params );
+	}
+
+	/**
+	 * How many documents are shared with this member.
+	 *
+	 * `COUNT(DISTINCT media_id)`, not `count()` of a page of rows — the drive's
+	 * "Shared with me" tab states the size of the set, and the set is larger
+	 * than any page of it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args { @type int $user_id, @type string[] $roles }.
+	 * @return int
+	 */
+	public function count_documents_shared_with( array $args = array() ): int {
+		global $wpdb;
+
+		$user_id = isset( $args['user_id'] ) ? (int) $args['user_id'] : 0;
+		$roles   = isset( $args['roles'] ) && is_array( $args['roles'] ) ? array_values( $args['roles'] ) : array();
+
+		if ( $user_id <= 0 ) {
+			return 0;
+		}
+
+		$grants = $wpdb->prefix . 'mvs_access_grants';
+		$index  = $wpdb->prefix . 'mvs_media_index';
+
+		list( $where, $params ) = $this->shared_with_scope( $user_id, $roles );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(DISTINCT m.media_id) FROM {$grants} g INNER JOIN {$index} m ON m.media_id = g.media_id WHERE {$where}", ...$params )
+		);
+	}
+
+	/**
 	 * Documents shared WITH a viewer, by direct grant.
 	 *
 	 * Here rather than in Pro because it JOINS `mvs_media_index`, and Free owns
@@ -1584,39 +1671,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$grants = $wpdb->prefix . 'mvs_access_grants';
 		$index  = $wpdb->prefix . 'mvs_media_index';
 
-		// Params are appended in PLACEHOLDER ORDER. Building them out of order and
-		// splicing one back into position works right up until somebody adds a
-		// clause, and a misaligned prepare() is a silent wrong-answer bug.
-		$grantee_sql = '( ( g.grantee_type = %s AND g.user_id = %d )';
-		$params      = array( 'user', $user_id );
-
-		if ( $roles ) {
-			$grantee_sql .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
-			$params[]     = 'role';
-			$params       = array_merge( $params, $roles );
-		}
-		$grantee_sql .= ' )';
-
-		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
-		// legitimately made to a role, and the uploader usually holds that role
-		// too — so sharing to "Subscriber" put your own document into your own
-		// Shared-with-me band (Basecamp 10190505530). The scope is what was
-		// missing, not the grant: `PermissionService::grant()` correctly refuses
-		// a DIRECT grant to the owner (`mvs_grant_redundant`) and must keep
-		// accepting the role grant, which is not redundant for its other holders.
-		$where = "{$grantee_sql}
-		           AND g.revoked_at IS NULL
-		           AND ( g.expires_at IS NULL OR g.expires_at > %s )
-		           AND g.target_type = %s
-		           AND m.media_type = %s
-		           AND m.status = %s
-		           AND m.post_author <> %d";
-
-		$params[] = current_time( 'mysql', true );
-		$params[] = 'media';
-		$params[] = 'document';
-		$params[] = 'publish';
-		$params[] = $user_id;
+		list( $where, $params ) = $this->shared_with_scope( $user_id, $roles );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$total = (int) $wpdb->get_var(
