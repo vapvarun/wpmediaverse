@@ -2830,6 +2830,68 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
 	 */
 	/**
+	 * Find a media id by an exact match on one INDEX COLUMN.
+	 *
+	 * The column name cannot be a prepare placeholder, so the allowlist IS the
+	 * injection guard — and it belongs here, with the table, rather than in each
+	 * caller. `ActivityContentIntegration` was carrying its own copy of the same
+	 * list beside its own copy of the query.
+	 *
+	 * Deliberately NOT `find_by_url()`: that one refuses any URL outside the
+	 * gated uploads directory, which is right for its caller and wrong for a
+	 * cloud-hosted file, whose CDN URL contains no such path. Swapping the two
+	 * would have quietly stopped resolving media on every CDN-backed site — the
+	 * 2.3.1 bug class exactly.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $column Index column; anything outside the allowlist returns 0.
+	 * @param string $value  Value to match.
+	 * @return int Media id, or 0.
+	 */
+	public function find_by_indexed_column( string $column, string $value ): int {
+		global $wpdb;
+
+		if ( ! in_array( $column, self::$index_columns, true ) ) {
+			return 0;
+		}
+
+		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE `{$column}` = %s LIMIT 1",
+				$value
+			)
+		);
+
+		return $id ? (int) $id : 0;
+	}
+
+	/**
+	 * Every media id filed under an album.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $album_id Album id.
+	 * @return int[]
+	 */
+	public function media_ids_in_album( int $album_id ): array {
+		global $wpdb;
+
+		if ( $album_id <= 0 ) {
+			return array();
+		}
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE album_id = %d",
+				$album_id
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
 	 * Find a media id by its stored file hash.
 	 *
 	 * @since 2.4.0

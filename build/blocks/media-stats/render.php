@@ -28,7 +28,9 @@ $user_id = get_current_user_id();
 // Get user stats.
 global $wpdb;
 $stats_table = $wpdb->prefix . 'mvs_media_stats';
-$index_table = $wpdb->prefix . 'mvs_media_index';
+// The index is the joined side of a query this template owns; the repository
+// supplies the name (Rule 7 — see MediaRepository::index_table()).
+$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 
 // Viewer-scoped privacy gate so a public stats block only aggregates media the
 // viewer is allowed to see: owner/moderator → all; member → public + members +

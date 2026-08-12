@@ -58,7 +58,9 @@ if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int)
 // Get album items joined with mvs_media_index for full media data.
 global $wpdb;
 $album_items_table = $wpdb->prefix . 'mvs_album_items';
-$index_table       = $wpdb->prefix . 'mvs_media_index';
+// The index is the joined side of a query this template owns; the repository
+// supplies the name (Rule 7 — see MediaRepository::index_table()).
+$index_table       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $items = $wpdb->get_results(

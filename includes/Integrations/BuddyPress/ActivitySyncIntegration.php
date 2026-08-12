@@ -673,12 +673,9 @@ class ActivitySyncIntegration {
 		global $wpdb;
 
 		// 1. Per-media upload activities for media in this album.
-		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE album_id = %d",
-				$album_id
-			)
-		);
+		$media_ids = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->media_ids_in_album( (int) $album_id );
 		foreach ( $media_ids as $mid ) {
 			$this->update_single_activity_hide_sitewide( (int) $mid );
 		}

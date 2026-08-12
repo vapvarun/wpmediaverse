@@ -112,7 +112,9 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 		}
 
 		global $wpdb;
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		// The index is the joined side of a query this file owns; the repository
+		// supplies the name (Rule 7 — see MediaRepository::index_table()).
+		$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 		// Viewer-scoped privacy gate, built in SQL so pagination stays honest.
