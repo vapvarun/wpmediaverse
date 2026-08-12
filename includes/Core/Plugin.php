@@ -1273,7 +1273,7 @@ class Plugin {
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
 			wp_enqueue_script( 'mvs-dismissible' );
-			wp_enqueue_script( 'mvs-list-toolbar' );
+			wp_enqueue_script( 'mvs-panel-toolbar' );
 			wp_enqueue_script( 'mvs-collection-filter' );
 			wp_enqueue_script( 'mvs-messages-scroll' );
 			wp_enqueue_script( 'mvs-album-cover' );
@@ -1537,12 +1537,13 @@ class Plugin {
 		// Dismissible callouts (logged-out CTA banner, profile prompt). No data
 		// or strings — pure localStorage hide-and-remember. Templates that emit
 		// a dismissible enqueue this handle in place of an inline snippet.
-		// The shared list toolbar's apply-on-change. Registered globally beside
-		// the other delegated helpers, and enqueued on MVS pages below — the
-		// toolbar appears on Explore Media, Explore Documents and the drive.
+		// Apply-on-change for `render_panel_toolbar()`. Registered globally beside
+		// the other delegated helpers and enqueued on MVS pages below — that one
+		// helper renders the toolbar on the drive, the dashboard panels, Explore
+		// Media and Explore Documents, so one script covers all four.
 		wp_register_script(
-			'mvs-list-toolbar',
-			MVS_PLUGIN_URL . 'assets/js/frontend/list-toolbar.js',
+			'mvs-panel-toolbar',
+			MVS_PLUGIN_URL . 'assets/js/frontend/panel-toolbar.js',
 			array(),
 			MVS_VERSION,
 			array(

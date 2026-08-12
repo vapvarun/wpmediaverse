@@ -364,29 +364,53 @@ $mvs_archive_url = home_url( '/media/' );
 	?>
 
 	<?php
-	// The shared toolbar. `$total_items` has been computed here since the feed
-	// was written — it drives `$max_pages` — and was never shown to anybody, so
-	// Explore was the one list surface that never said how much it held.
-	$mvs_toolbar_action = $mvs_archive_url;
-	$mvs_toolbar_hidden = array(
-		's'            => $mvs_search,
-		'mvs_tag'      => $mvs_filter_tag,
-		'mvs_category' => $mvs_filter_cat,
+	// THE SAME HELPER the drive and the dashboard panels use. `$total_items` has
+	// been computed by this template since the feed was written — it is what
+	// `$max_pages` divides — and was never displayed, so the busiest list on the
+	// site was the one that never said how much it held.
+	//
+	// Search is not passed: Explore has its own search bar above, with the
+	// people/media mode switch attached to it. Sort, direction and the count are
+	// what was missing.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_panel_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+		array(
+			'id'     => 'mvs-explore',
+			'form'   => true,
+			'class'  => 'mvs-explore__controls',
+			'hidden' => array_filter(
+				array(
+					's'            => $mvs_search,
+					'mvs_tag'      => $mvs_filter_tag,
+					'mvs_category' => $mvs_filter_cat,
+				)
+			),
+			'count'  => sprintf(
+				/* translators: %s: number of media items. */
+				_n( '%s item', '%s items', (int) $total_items, 'wpmediaverse' ),
+				number_format_i18n( (int) $total_items )
+			),
+			'sort'   => array(
+				'name'    => 'sort',
+				'label'   => __( 'Sort by', 'wpmediaverse' ),
+				'value'   => $mvs_sort,
+				'options' => array(
+					'created_at' => __( 'Date added', 'wpmediaverse' ),
+					'title'      => __( 'Title', 'wpmediaverse' ),
+					'views'      => __( 'Views', 'wpmediaverse' ),
+				),
+			),
+			'order'  => array(
+				'name'    => 'order',
+				'label'   => __( 'Direction', 'wpmediaverse' ),
+				'value'   => strtolower( $mvs_order ),
+				'options' => array(
+					'desc' => __( 'Newest first', 'wpmediaverse' ),
+					'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+				),
+			),
+			'submit' => __( 'Apply', 'wpmediaverse' ),
+		)
 	);
-	$mvs_toolbar_sorts  = array(
-		'created_at' => __( 'Date added', 'wpmediaverse' ),
-		'title'      => __( 'Title', 'wpmediaverse' ),
-		'views'      => __( 'Views', 'wpmediaverse' ),
-	);
-	$mvs_toolbar_sort  = $mvs_sort;
-	$mvs_toolbar_order = $mvs_order;
-	$mvs_toolbar_count = sprintf(
-		/* translators: %s: number of media items. */
-		_n( '%s item', '%s items', (int) $total_items, 'wpmediaverse' ),
-		number_format_i18n( (int) $total_items )
-	);
-
-	require MVS_PLUGIN_DIR . 'templates/partials/list-toolbar.php';
 	?>
 
 	<?php do_action( 'mvs_before_explore_grid' ); ?>

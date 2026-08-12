@@ -958,12 +958,20 @@ class Shortcodes {
 			array( 'public_only' => true )
 		);
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only listing controls.
+		$mvs_doc_sort_req = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+		$mvs_doc_sort     = in_array( $mvs_doc_sort_req, array( 'created_at', 'title', 'file_size' ), true ) ? $mvs_doc_sort_req : 'created_at';
+		$mvs_doc_order    = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
 		$mvs_doc_query = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->public_documents(
 			array(
 				'per_page' => $mvs_doc_per_page,
 				'page'     => $mvs_doc_page,
 				'doc_type' => $mvs_doc_filter,
 				'search'   => $mvs_doc_search,
+				'orderby'  => $mvs_doc_sort,
+				'order'    => $mvs_doc_order,
 			)
 		);
 

@@ -1342,6 +1342,18 @@ class MediaRepository implements MediaRepositoryInterface {
 		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
 		$doc_type = isset( $args['doc_type'] ) ? (string) $args['doc_type'] : '';
 
+		// SORT IS AN ALLOWLIST, never the caller's string. `orderby` is the one
+		// argument here that reaches SQL as an identifier rather than a bound
+		// value, so an unknown key falls back to the default instead of being
+		// escaped and hoped for.
+		$sortable = array(
+			'created_at' => 'created_at',
+			'title'      => 'title',
+			'file_size'  => 'file_size',
+		);
+		$orderby  = isset( $args['orderby'], $sortable[ $args['orderby'] ] ) ? $sortable[ $args['orderby'] ] : 'created_at';
+		$order    = ( isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
+
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
 
 		$where  = array( $type_sql, 'privacy = %s', 'status = %s', 'moderation_status = %s' );
@@ -1382,7 +1394,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY created_at DESC
+				  ORDER BY {$orderby} {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),

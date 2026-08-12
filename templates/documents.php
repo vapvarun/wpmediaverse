@@ -123,23 +123,55 @@ $mvs_doc_icons = array(
 	</div>
 	<?php endif; ?>
 
-	<header class="mvs-documents__header">
-		<?php
-		// No <h1> here: the page already supplies its title, and a second heading
-		// saying "Documents" under "Explore Documents" is noise a screen reader
-		// has to read twice. The count is the part that adds information.
-		printf(
-			'<p class="mvs-documents__count">%s</p>',
-			esc_html(
-				sprintf(
-					/* translators: %s: number of documents. */
-					_n( '%s document', '%s documents', $mvs_doc_total, 'wpmediaverse' ),
-					number_format_i18n( $mvs_doc_total )
+	<?php
+	// THE SAME HELPER the drive and the dashboard panels use, so this listing and
+	// the member's own drive read identically. It carries the count the header
+	// used to print alone — no <h1> here either: the page already supplies its
+	// title, and a second heading saying "Documents" under "Explore Documents"
+	// is noise a screen reader has to read twice.
+	//
+	// The type chips above are this surface's filter, so only sort, direction
+	// and the count come from the toolbar. Both chips and search are carried as
+	// hidden fields so changing the sort cannot silently drop either.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_panel_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+		array(
+			'id'     => 'mvs-documents',
+			'form'   => true,
+			'class'  => 'mvs-documents__controls',
+			'hidden' => array_filter(
+				array(
+					'doc_s'    => $mvs_doc_search,
+					'doc_type' => $mvs_doc_filter,
 				)
-			)
-		);
-		?>
-	</header>
+			),
+			'count'  => sprintf(
+				/* translators: %s: number of documents. */
+				_n( '%s document', '%s documents', $mvs_doc_total, 'wpmediaverse' ),
+				number_format_i18n( $mvs_doc_total )
+			),
+			'sort'   => array(
+				'name'    => 'sort',
+				'label'   => __( 'Sort by', 'wpmediaverse' ),
+				'value'   => isset( $mvs_doc_sort ) ? (string) $mvs_doc_sort : 'created_at',
+				'options' => array(
+					'created_at' => __( 'Date added', 'wpmediaverse' ),
+					'title'      => __( 'Title', 'wpmediaverse' ),
+					'file_size'  => __( 'Size', 'wpmediaverse' ),
+				),
+			),
+			'order'  => array(
+				'name'    => 'order',
+				'label'   => __( 'Direction', 'wpmediaverse' ),
+				'value'   => isset( $mvs_doc_order ) ? strtolower( (string) $mvs_doc_order ) : 'desc',
+				'options' => array(
+					'desc' => __( 'Newest first', 'wpmediaverse' ),
+					'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+				),
+			),
+			'submit' => __( 'Apply', 'wpmediaverse' ),
+		)
+	);
+	?>
 
 	<?php if ( ! $mvs_doc_items ) : ?>
 		<?php
