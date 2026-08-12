@@ -3199,6 +3199,27 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Whether the FULLTEXT search index exists on the media table.
+	 *
+	 * Schema introspection rather than a data read, and it belongs here for the
+	 * same reason the data reads do: the table is this class's to know about.
+	 * Callers use it to decide between MATCH…AGAINST and a LIKE fallback, so a
+	 * wrong answer silently changes how every search behaves.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	public function has_fulltext_index(): bool {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (bool) $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+	}
+
+	/**
 	 * The media-index table name, for callers that JOIN to it from their own.
 	 *
 	 * NARROW ON PURPOSE, and not a way around Rule 7. It is for the case where

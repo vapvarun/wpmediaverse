@@ -351,14 +351,26 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		// Slug lookup — return single item by slug column in mvs_media_index.
+		//
+		// TYPE-CHECKED, not just truthy. `slug` is not a declared arg on this
+		// collection route, so `get_param()` is not guaranteed to hand back a
+		// string — and a non-string is TRUTHY, so the old `if ( $slug )` let it
+		// through to `sanitize_title()`, which fataled the whole route:
+		//
+		//   GET /mvs/v1/media?slug=  ->  500
+		//   Uncaught TypeError: preg_match(): Argument #2 ($subject) must be of
+		//   type string, WP_REST_Request given
+		//
+		// Pre-existing and unrelated to the repository migration — verified by
+		// reproducing it with this file reverted. The same param is already
+		// handled this way further down in this class; this is that pattern.
 		$slug = $request->get_param( 'slug' );
-		if ( $slug ) {
-			$found_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND status = 'publish' LIMIT 1",
-					sanitize_title( $slug )
-				)
-			);
+		if ( is_string( $slug ) && '' !== trim( $slug ) ) {
+			$mvs_by_slug = \WPMediaVerse\Core\Plugin::container()
+				->get( 'media_repository' )
+				->get_by_slug( sanitize_title( $slug ) );
+
+			$found_id = $mvs_by_slug['media_id'] ?? 0;
 			if ( $found_id ) {
 				$item = $this->prepare_item_for_response( (int) $found_id, $request );
 				return rest_ensure_response( $item ? array( $item ) : array() );
@@ -768,10 +780,14 @@ class MediaController extends WP_REST_Controller {
 		// it must not be reachable by arrowing off the end of a photo.
 		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'mi.media_type' );
 
+		// Driving table is media_meta; the index is the joined side (Rule 7 — see
+		// MediaRepository::index_table()).
+		$mvs_index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
+
 		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
-				INNER JOIN {$wpdb->prefix}mvs_media_index mi ON mm.media_id = mi.media_id
+				INNER JOIN {$mvs_index_table} mi ON mm.media_id = mi.media_id
 				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'
 				  AND {$mvs_group_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$group_id,
@@ -2007,7 +2023,21 @@ class MediaController extends WP_REST_Controller {
 			),
 			'slug'         => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_title',
+				'sanitize_callback' => static function ( $value ) {
+					// NOT `sanitize_title` directly. WP calls a sanitize_callback as
+					// ( $value, $request, $param ), and sanitize_title's SECOND
+					// parameter is $fallback_title — so an empty slug made it return
+					// the WP_REST_Request object, which is truthy and then fataled
+					// downstream on preg_match(). An array value fataled inside WP's
+					// own sanitize_params() before any handler ran. Both answered 500
+					// on a public route:
+					//
+					//   GET /mvs/v1/media?slug=     -> 500 TypeError (preg_match)
+					//   GET /mvs/v1/media?slug[]=x  -> 500 TypeError (strip_tags)
+					//
+					// Taking only the value, and refusing a non-scalar, closes both.
+					return is_scalar( $value ) ? sanitize_title( (string) $value ) : '';
+				},
 			),
 			'orderby'      => array(
 				'type'              => 'string',
@@ -2125,11 +2155,9 @@ class MediaController extends WP_REST_Controller {
 		if ( null !== $cached ) {
 			return $cached;
 		}
-		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$exists = $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
-		$cached = (bool) $exists;
+		$cached = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->has_fulltext_index();
 		return $cached;
 	}
 }
