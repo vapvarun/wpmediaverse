@@ -446,25 +446,20 @@ class TemplateLoader {
 	 * @param string $slug Media slug (or numeric ID).
 	 */
 	private function serve_single_media( string $slug ): void {
-		global $wpdb;
+		// Through the repository — Rule 7. Same two lookups, same publish gate.
+		$repo = Plugin::container()->get( 'media_repository' );
 
 		// Look up by slug first, then by numeric ID.
 		if ( ctype_digit( $slug ) ) {
-			$media = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status = 'publish'",
-					(int) $slug
-				),
-				ARRAY_A
-			);
+			$media = $repo->get_batch( array( (int) $slug ) )[ (int) $slug ] ?? null;
+
+			// `get_batch()` does not filter status, and this route must not serve
+			// a trashed item as a public page.
+			if ( $media && 'publish' !== (string) ( $media['status'] ?? '' ) ) {
+				$media = null;
+			}
 		} else {
-			$media = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND status = 'publish'",
-					$slug
-				),
-				ARRAY_A
-			);
+			$media = $repo->get_by_slug( $slug );
 		}
 
 		if ( ! $media ) {

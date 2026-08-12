@@ -129,15 +129,18 @@ class Activator {
 			return true;
 		}
 
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (bool) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT 1 FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s LIMIT 1",
-				'legacy_document'
-			)
-		);
+		// Through the repository — Rule 7. `status => ''` keeps every lifecycle
+		// state in scope: a quarantined legacy row is the thing being looked for,
+		// and it is not necessarily published.
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->query_count(
+				array(
+					'media_types' => array( 'legacy_document' ),
+					'status'      => '',
+					'privacy'     => 'any',
+				)
+			) > 0;
 	}
 
 	/**
