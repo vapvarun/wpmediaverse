@@ -515,10 +515,24 @@ wp_interactivity_state(
 	require MVS_PLUGIN_DIR . 'templates/partials/profile-edit-panel.php';
 	?>
 
-	<?php if ( '' !== $mvs_dash_drive ) : ?>
+	<?php
+	// RENDERED ONLY WHEN ASKED FOR. The drive is server-rendered — folders,
+	// rows, per-row controls and its own pagination — while every other panel
+	// fetches its contents over REST when its tab is first opened. So the drive
+	// was the one panel paying its full cost on every section: measured at 27
+	// `mvs_media_index` reads and 26 `mvs_access_grants` reads on
+	// `/my-media/albums/` and `/my-media/profile/` alike, for a member with 46
+	// documents. A member with none paid 2 and 0 — the cost scales with their
+	// drive, on pages that are not their drive.
+	//
+	// The panel is a real page now rather than a hidden div, which is what it
+	// already behaved like: its folder path and page number live in the URL.
+	// `view.js` therefore lets the Documents tab navigate instead of swapping
+	// client-side — see the comment there.
+	?>
+	<?php if ( '' !== $mvs_dash_drive && 'documents' === $mvs_dash_active ) : ?>
 		<!-- Documents Panel -->
-		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab"
-			<?php echo get_query_var( 'mvs_doc_view' ) ? '' : 'hidden'; ?>>
+		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab">
 			<?php
 			// The drive, rendered server-side into the panel: folders, upload,
 			// filters and the per-row controls, on the same screen.

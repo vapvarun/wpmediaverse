@@ -581,6 +581,21 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// is how a link stops behaving like a link.
 			const plainClick = ! event.metaKey && ! event.ctrlKey && ! event.shiftKey && ! event.altKey && 0 === ( event.button || 0 );
 
+			// DOCUMENTS NAVIGATES. Every other panel fetches its contents over
+			// REST when first opened, so swapping to it client-side is honest —
+			// the markup is already here and the data arrives after. The drive
+			// is not like that: it is rendered server-side, with its folders,
+			// its per-row controls and its own pagination, and it is no longer
+			// emitted on sections that are not it (that render cost ~53 queries
+			// on every other tab for a member with a real drive). There is
+			// nothing in the page to swap to, so the link does what it says.
+			//
+			// Its state already lives in the URL — folder path and page number —
+			// which is why this is the tab that loses least by navigating.
+			if ( 'documents' === tab ) {
+				return;
+			}
+
 			if ( tabBtn.href && plainClick ) {
 				event.preventDefault();
 				window.history.pushState( {}, '', tabBtn.href );
