@@ -263,7 +263,9 @@ class TagController extends WP_REST_Controller {
 
 		// Get media IDs with the source tag via term_relationships + mvs_media_index.
 		global $wpdb;
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		// Driving table is term_relationships; the index is the joined side, so the
+		// repository supplies the name (Rule 7 — see MediaRepository::index_table()).
+		$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 		$source_tt   = (int) get_term( $source_id, 'mvs_tag' )->term_taxonomy_id;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared

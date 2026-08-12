@@ -823,7 +823,10 @@ class MediaListPage {
 			return;
 		}
 
-		$table = $wpdb->prefix . 'mvs_media_index';
+		// Status writes go through the repository (Rule 7), which also invalidates
+		// the row's request cache — a raw UPDATE did not, so a trash and a re-read
+		// in the same request could disagree.
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		// Cap + nonce pair per case. The function entry already gates on
 		// manage_options, but the inline pair documents authorization at
@@ -834,7 +837,7 @@ class MediaListPage {
 					return;
 				}
 				check_admin_referer( 'mvs_trash_media_' . $media_id );
-				$wpdb->update( $table, array( 'status' => 'trash' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$mvs_repo->set( $media_id, 'status', 'trash' );
 				break;
 
 			case 'restore':
@@ -842,7 +845,7 @@ class MediaListPage {
 					return;
 				}
 				check_admin_referer( 'mvs_restore_media_' . $media_id );
-				$wpdb->update( $table, array( 'status' => 'publish' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$mvs_repo->set( $media_id, 'status', 'publish' );
 				break;
 
 			case 'delete':
@@ -1119,7 +1122,9 @@ class MediaListPage {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
+
+		// Same repository path as the single-row actions above (Rule 7).
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		$count = 0;
 		foreach ( $ids as $media_id ) {
@@ -1130,14 +1135,16 @@ class MediaListPage {
 
 			switch ( $action ) {
 				case 'bulk_trash':
-					$ok = $wpdb->update( $table, array( 'status' => 'trash' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$mvs_repo->set( $media_id, 'status', 'trash' );
+					$ok = true;
 					if ( false !== $ok ) {
 						++$count;
 					}
 					break;
 
 				case 'bulk_restore':
-					$ok = $wpdb->update( $table, array( 'status' => 'publish' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$mvs_repo->set( $media_id, 'status', 'publish' );
+					$ok = true;
 					if ( false !== $ok ) {
 						++$count;
 					}
@@ -1338,9 +1345,10 @@ class MediaListPage {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$item = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE media_id = %d", $media_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$item = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get_batch( array( $media_id ) )[ $media_id ] ?? null;
 		if ( ! $item ) {
 			?>
 			<div class="wrap wpmediaverse-admin">
