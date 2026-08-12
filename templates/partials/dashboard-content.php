@@ -370,6 +370,26 @@ wp_interactivity_state(
 			: (string) get_query_var( 'mvs_section', '' )
 	);
 
+	// PANELS START HIDDEN EXCEPT THE ACTIVE ONE, in the HTML itself.
+	//
+	// Visibility was expressed only as `data-wp-bind--hidden`, which the
+	// Interactivity runtime applies after it hydrates. Before that moment every
+	// panel is visible, so a fresh page load painted the upload form, the media
+	// grid, albums, favourites and collections stacked on top of each other and
+	// then collapsed them a beat later.
+	//
+	// It was invisible while the dashboard only ever switched panels
+	// client-side — there was no second paint to see it in. The Documents
+	// section is a real page load now, which is what surfaced it, but the flash
+	// was always there for anyone arriving from a bookmark, a shared link or a
+	// refresh.
+	//
+	// The binding stays: it is what makes switching work after hydration. This
+	// only decides the state the markup is BORN in.
+	$mvs_dash_panel_hidden = static function ( string $mvs_dash_slug ) use ( $mvs_dash_active ): string {
+		return $mvs_dash_slug === $mvs_dash_active ? '' : ' hidden';
+	};
+
 	// Is there anything to put in the documents panel?
 	//
 	// `$mvs_dash_drive` was READ below and never assigned — anywhere. An
@@ -532,7 +552,7 @@ wp_interactivity_state(
 	?>
 	<?php if ( '' !== $mvs_dash_drive && 'documents' === $mvs_dash_active ) : ?>
 		<!-- Documents Panel -->
-		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab">
+		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'documents' ) ); ?>>
 			<?php
 			// The drive, rendered server-side into the panel: folders, upload,
 			// filters and the per-row controls, on the same screen.
@@ -557,7 +577,7 @@ wp_interactivity_state(
 	<?php endif; ?>
 
 	<!-- My Media Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isMediaTab">
+	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isMediaTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'media' ) ); ?>>
 		<!-- Upload Section -->
 		<div class="mvs-dashboard-upload">
 			<div class="mvs-dashboard-dropzone"
@@ -730,7 +750,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- My Albums Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab">
+	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'albums' ) ); ?>>
 		<div class="mvs-dashboard-actions">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
@@ -831,7 +851,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- My Favorites Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isFavoritesTab">
+	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isFavoritesTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'favorites' ) ); ?>>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -933,7 +953,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- My Collections Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab">
+	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'collections' ) ); ?>>
 		<div class="mvs-dashboard-actions">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
