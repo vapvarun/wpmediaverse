@@ -186,6 +186,7 @@ $mvs_archive_url = home_url( '/media/' );
 		<!-- User search results (populated via safe DOM methods) -->
 		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;"></div>
 	</div>
+
 	<?php
 // @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
 // enqueues this handle for every MVS-owned page. Enqueuing from a template body only
@@ -262,6 +263,17 @@ $mvs_archive_url = home_url( '/media/' );
 		$mvs_viewer_id = 0;
 	}
 
+	// SORT FROM THE URL, allowlisted. Explore has always been newest-first with
+	// no way to say otherwise, while the member's own library next door offers
+	// a field and a direction — the same feed, two different products depending
+	// which page you reached it from. An unknown value falls back rather than
+	// reaching the query, because `orderby` goes into SQL.
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view controls on a GET page.
+	$mvs_sort_request = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+	$mvs_sort         = in_array( $mvs_sort_request, array( 'created_at', 'title', 'views' ), true ) ? $mvs_sort_request : 'created_at';
+	$mvs_order        = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
 	$mvs_query_args = array(
 		'status'                  => 'publish',
 		'moderation_status'       => 'approved',
@@ -270,8 +282,8 @@ $mvs_archive_url = home_url( '/media/' );
 		'viewer_id'               => $mvs_viewer_id,
 		'exclude_non_cover_group' => true,
 		'exclude_empty_media_type' => true,
-		'orderby'                 => 'created_at',
-		'order'                   => 'DESC',
+		'orderby'                 => $mvs_sort,
+		'order'                   => $mvs_order,
 		'limit'                   => $per_page,
 		'offset'                  => $offset,
 	);
@@ -349,6 +361,32 @@ $mvs_archive_url = home_url( '/media/' );
 	$albums = array(); // no albums in this feed.
 
 	$has_items = ! empty( $media_items );
+	?>
+
+	<?php
+	// The shared toolbar. `$total_items` has been computed here since the feed
+	// was written — it drives `$max_pages` — and was never shown to anybody, so
+	// Explore was the one list surface that never said how much it held.
+	$mvs_toolbar_action = $mvs_archive_url;
+	$mvs_toolbar_hidden = array(
+		's'            => $mvs_search,
+		'mvs_tag'      => $mvs_filter_tag,
+		'mvs_category' => $mvs_filter_cat,
+	);
+	$mvs_toolbar_sorts  = array(
+		'created_at' => __( 'Date added', 'wpmediaverse' ),
+		'title'      => __( 'Title', 'wpmediaverse' ),
+		'views'      => __( 'Views', 'wpmediaverse' ),
+	);
+	$mvs_toolbar_sort  = $mvs_sort;
+	$mvs_toolbar_order = $mvs_order;
+	$mvs_toolbar_count = sprintf(
+		/* translators: %s: number of media items. */
+		_n( '%s item', '%s items', (int) $total_items, 'wpmediaverse' ),
+		number_format_i18n( (int) $total_items )
+	);
+
+	require MVS_PLUGIN_DIR . 'templates/partials/list-toolbar.php';
 	?>
 
 	<?php do_action( 'mvs_before_explore_grid' ); ?>
