@@ -1248,17 +1248,10 @@ class Plugin {
 			|| ( (bool) get_query_var( 'mvs_messages_page' )
 				&& ! apply_filters( 'mvs_buddynext_active', false ) );
 
-		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
-		$mvs_page_ids = array_filter(
-			array_map(
-				'absint',
-				array(
-					get_option( 'mvs_page_explore', 0 ),
-					get_option( 'mvs_page_dashboard', 0 ),
-					get_option( 'mvs_page_upload', 0 ),
-				)
-			)
-		);
+		// Detect mapped MVS pages — globals aren't set yet at enqueue time.
+		// From the slot map, so a page added later cannot be left without the
+		// plugin's own stylesheet the way Explore Documents was.
+		$mvs_page_ids = \WPMediaVerse\Core\SettingsHelper::all_page_ids();
 		$is_mvs_page  = is_page( $mvs_page_ids );
 
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
@@ -2578,16 +2571,13 @@ JS;
 			return true;
 		}
 
-		$mvs_page_ids = array_filter(
-			array_map(
-				'absint',
-				array(
-					get_option( 'mvs_page_explore', 0 ),
-					get_option( 'mvs_page_dashboard', 0 ),
-					get_option( 'mvs_page_upload', 0 ),
-				)
-			)
-		);
+		// From the slot map. This decides whether MediaVerse stands its ENTIRE
+		// frontend UI down on a BuddyNext site, so a page missing from the list
+		// does not merely lose a stylesheet — it renders with every `mvs-*`
+		// handle dequeued and deregistered by enforce_frontend_presence(), which
+		// is how Explore Documents came to serve its own search icon at 1140px
+		// square with no plugin CSS at all on this exact configuration.
+		$mvs_page_ids = SettingsHelper::all_page_ids();
 
 		return ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids );
 	}

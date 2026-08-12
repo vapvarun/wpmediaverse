@@ -1158,9 +1158,13 @@ class SettingsRegistrar {
 		);
 
 		$pages = array(
-			'mvs_page_dashboard' => __( 'Dashboard Page', 'wpmediaverse' ),
-			'mvs_page_explore'   => __( 'Explore Page', 'wpmediaverse' ),
-			'mvs_page_upload'    => __( 'Upload Page', 'wpmediaverse' ),
+			'mvs_page_dashboard'         => __( 'Dashboard Page', 'wpmediaverse' ),
+			'mvs_page_explore'           => __( 'Explore Page', 'wpmediaverse' ),
+			'mvs_page_upload'            => __( 'Upload Page', 'wpmediaverse' ),
+			// Created on activation since 2.4.0 but never offered here, so the
+			// owner could not point it anywhere — entry-point rule 18's backend
+			// half, missing for a page the plugin makes on their behalf.
+			'mvs_page_explore_documents' => __( 'Explore Documents Page', 'wpmediaverse' ),
 		);
 
 		foreach ( $pages as $option => $label ) {

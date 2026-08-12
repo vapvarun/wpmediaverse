@@ -1017,21 +1017,18 @@ class TemplateLoader {
 	 * gets announced by screen readers, still gets indexed, and still takes Tab
 	 * focus.
 	 *
-	 * Keyed on the three mvs_page_* options Activator writes; a page the plugin
-	 * never created is never routed here.
+	 * Keyed on the mvs_page_* options Activator writes (SettingsHelper's slot
+	 * map); a page the plugin never created is never routed here.
 	 *
 	 * @since 2.0.0
 	 *
 	 * @return int[] Post IDs of the plugin-owned app pages.
 	 */
 	public static function app_page_ids(): array {
-		$ids = array();
-		foreach ( array( 'dashboard', 'explore', 'upload' ) as $key ) {
-			$id = (int) get_option( 'mvs_page_' . $key, 0 );
-			if ( $id > 0 ) {
-				$ids[] = $id;
-			}
-		}
+		// From SettingsHelper's slot map, not a second copy of it — Explore
+		// Documents was missing here and so rendered with the theme's sidebar
+		// and no app template.
+		$ids = SettingsHelper::all_page_ids();
 
 		/**
 		 * Filters the pages that render with the plugin's full-bleed app template.

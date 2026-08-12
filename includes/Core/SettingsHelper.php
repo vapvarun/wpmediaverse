@@ -27,17 +27,53 @@ class SettingsHelper {
 	/**
 	 * Map of supported page slots to their stored option names.
 	 *
-	 * Slots match the three pages registered in
-	 * `Admin\Settings\SettingsRegistrar::register_pages_settings()`. Adding a
-	 * new page setting means: register it there + add it here.
+	 * THE one list. It was three lists, then four, and Explore Documents was
+	 * added to none of them when it shipped in 2.4.0 — so the page existed, was
+	 * created on activation, was linked from the menu, and then rendered with no
+	 * plugin CSS at all (a search icon at its viewBox size, 848px square), the
+	 * theme's blog sidebar beside it, and no way for the owner to remap it.
+	 * Every consumer now reads this instead of writing its own copy.
 	 *
 	 * @var array<string, string>
 	 */
-	private const PAGE_SLOT_OPTIONS = array(
-		'dashboard' => 'mvs_page_dashboard',
-		'explore'   => 'mvs_page_explore',
-		'upload'    => 'mvs_page_upload',
+	public const PAGE_SLOT_OPTIONS = array(
+		'dashboard'         => 'mvs_page_dashboard',
+		'explore'           => 'mvs_page_explore',
+		'upload'            => 'mvs_page_upload',
+		'explore_documents' => 'mvs_page_explore_documents',
 	);
+
+	/**
+	 * The stored option name for every page slot.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function page_options(): array {
+		return array_values( self::PAGE_SLOT_OPTIONS );
+	}
+
+	/**
+	 * The configured page id for every slot, skipping the unset ones.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return int[]
+	 */
+	public static function all_page_ids(): array {
+		$ids = array();
+
+		foreach ( array_keys( self::PAGE_SLOT_OPTIONS ) as $slot ) {
+			$id = self::get_page_id( $slot );
+
+			if ( $id > 0 ) {
+				$ids[] = $id;
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
 
 	/**
 	 * Resolve a configured page id by slot.
