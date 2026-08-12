@@ -467,6 +467,11 @@ class TemplateLoader {
 			return;
 		}
 
+		// Read once — four branches below ask what this is, and a fifth (the
+		// redirect filter) now tells a host so it can answer differently for a
+		// document than for a photo.
+		$mvs_media_type = (string) ( $media['media_type'] ?? '' );
+
 		// A document, on a site with documents switched off, is not a page.
 		//
 		// Found in the browser: with the master toggle unticked the drive tab and
@@ -479,7 +484,7 @@ class TemplateLoader {
 		//
 		// The row is untouched. Switching documents back on brings the page back.
 		if (
-			in_array( (string) ( $media['media_type'] ?? '' ), array( 'document', 'legacy_document' ), true )
+			in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true )
 			&& ! \WPMediaVerse\Core\Plugin::documents_enabled()
 		) {
 			self::render_branded_404( 'media', $slug );
@@ -493,11 +498,53 @@ class TemplateLoader {
 		 * rather than as a separate public page. Return '' (the default, and always
 		 * the case for standalone WPMediaVerse) to render the native single page.
 		 *
+		 * @since 2.4.0 The media type is passed so a host can answer differently
+		 *              for a document than for a photo.
+		 *
 		 * @param string $redirect_url Target URL, or '' to render the native page.
 		 * @param int    $media_id     The media item's id.
 		 * @param string $slug         The requested slug (or numeric id).
+		 * @param string $media_type   image|video|audio|document|legacy_document.
 		 */
-		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug );
+		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug, $mvs_media_type );
+
+		// A DOCUMENT IS NOT A FEED OBJECT, so it does not follow a redirect meant
+		// for one. The filter above predates documents and was written for the
+		// community-feed case in its own docblock: send a photo to the activity it
+		// was posted in rather than to a separate public page. A document has no
+		// such activity to go to — most are uploaded straight into a drive, and a
+		// private one cannot be posted to a feed at all — so a host resolving the
+		// redirect walks its fallback chain and lands the viewer on a photo surface
+		// that shows no documents (Basecamp #10194229966).
+		//
+		// This plugin's own surfaces are what break: the drive rows, the Explore
+		// Documents listing and Shared-with-me all link to /media/{slug}/. Free
+		// generates the link and then the redirect dead-ends it, so every document
+		// in the product is unopenable from the place the product sends you. That
+		// is broken regardless of which consumer is installed, which is why the
+		// default changes here rather than in any one host.
+		//
+		// The escape hatch keeps Production Rule 3: a host that genuinely wants
+		// documents redirected re-asserts it and gets exactly the old behaviour.
+		if ( '' !== $redirect_url && in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true ) ) {
+			/**
+			 * Whether a document permalink may be redirected away from its own page.
+			 *
+			 * Default false: a document renders its own page. Answer true to restore
+			 * the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for
+			 * documents as well as for media.
+			 *
+			 * @since 2.4.0
+			 *
+			 * @param bool   $allow        Default false.
+			 * @param int    $media_id     The document's id.
+			 * @param string $redirect_url The target the redirect filter resolved.
+			 */
+			if ( ! apply_filters( 'mvs_redirect_documents', false, (int) $media['media_id'], $redirect_url ) ) {
+				$redirect_url = '';
+			}
+		}
+
 		if ( '' !== $redirect_url ) {
 			wp_safe_redirect( $redirect_url, 301 );
 			exit;
@@ -525,7 +572,7 @@ class TemplateLoader {
 		// from "does not exist", which is the point.
 		if (
 			! $can_view
-			&& in_array( (string) ( $media['media_type'] ?? '' ), array( 'document', 'legacy_document' ), true )
+			&& in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true )
 		) {
 			self::render_branded_404( 'media', $slug );
 			return;
@@ -567,7 +614,7 @@ class TemplateLoader {
 		if ( $can_view ) {
 			add_action(
 				'wp_head',
-				function () use ( $media ) {
+				function () use ( $media, $mvs_media_type ) {
 					$title       = $media['title'] ? $media['title'] : __( 'Media', 'wpmediaverse' );
 					$description = isset( $media['description'] ) ? wp_strip_all_tags( $media['description'] ) : '';
 					if ( strlen( $description ) > 280 ) {
@@ -585,8 +632,8 @@ class TemplateLoader {
 
 					$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
 					$site_name = get_bloginfo( 'name' );
-					$is_video  = isset( $media['media_type'] ) && 'video' === $media['media_type'];
-					$is_audio  = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
+					$is_video  = 'video' === $mvs_media_type;
+					$is_audio  = 'audio' === $mvs_media_type;
 
 					echo "\n<!-- WPMediaVerse Open Graph -->\n";
 					echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
