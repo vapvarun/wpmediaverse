@@ -151,35 +151,19 @@ class ModerationService {
 
 		$args = wp_parse_args( $args, $defaults );
 
-		global $wpdb;
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-		$offset      = ( $args['page'] - 1 ) * $args['per_page'];
+		$offset = ( $args['page'] - 1 ) * $args['per_page'];
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$total = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$index_table} WHERE moderation_status = %s",
-				$args['status']
-			)
-		);
+		// Through the repository (Rule 7), and through a method that filters
+		// NOTHING but the bucket — see MediaRepository::moderation_queue().
+		$queue = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->moderation_queue( (string) $args['status'], (int) $args['per_page'], (int) $offset );
 
-		$media_ids = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT media_id FROM {$index_table}
-				WHERE moderation_status = %s
-				ORDER BY created_at DESC
-				LIMIT %d OFFSET %d",
-				$args['status'],
-				$args['per_page'],
-				$offset
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
+		$total = $queue['total'];
 		$pages = $args['per_page'] > 0 ? (int) ceil( $total / $args['per_page'] ) : 1;
 
 		return array(
-			'items' => $media_ids,
+			'items' => $queue['items'],
 			'total' => $total,
 			'pages' => $pages,
 		);
@@ -258,27 +242,8 @@ class ModerationService {
 	 * @return array{pending: int, flagged: int, rejected: int}
 	 */
 	public function get_counts(): array {
-		global $wpdb;
-
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-		$results     = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT moderation_status AS status, COUNT(*) AS count
-			FROM {$index_table}
-			WHERE moderation_status IN ('pending', 'flagged', 'rejected')
-			GROUP BY moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			ARRAY_A
-		);
-
-		$counts = array(
-			'pending'  => 0,
-			'flagged'  => 0,
-			'rejected' => 0,
-		);
-
-		foreach ( $results as $row ) {
-			$counts[ $row['status'] ] = (int) $row['count'];
-		}
-
-		return $counts;
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->moderation_counts( array( 'pending', 'flagged', 'rejected' ) );
 	}
 }

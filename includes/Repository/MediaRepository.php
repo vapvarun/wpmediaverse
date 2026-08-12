@@ -2830,6 +2830,96 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
 	 */
 	/**
+	 * One page of the moderation queue, plus its total.
+	 *
+	 * EVERY media type, EVERY privacy level, EVERY lifecycle status — a
+	 * moderation queue that hides rows is not a moderation queue.
+	 *
+	 * Its own method rather than `query()`/`query_count()` for a measured reason,
+	 * not a stylistic one: those default `media_types` to
+	 * `MediaTypes::MEDIA_LIBRARY`, which EXCLUDES documents. Asked for the
+	 * `approved` bucket on a site with both, `query_count()` answers 64 where the
+	 * table holds 161 — every document silently absent from the queue a moderator
+	 * is using to decide what has been reviewed. The same shape of trap as
+	 * `query_by_author()` on the compliance paths: a listing helper carries
+	 * listing defaults, and an admin surface needs none of them.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $moderation_status pending|approved|flagged|rejected.
+	 * @param int    $per_page          Page size.
+	 * @param int    $offset            Offset.
+	 * @return array{items:int[], total:int}
+	 */
+	public function moderation_queue( string $moderation_status, int $per_page, int $offset = 0 ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE moderation_status = %s", $moderation_status )
+		);
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$table}
+				  WHERE moderation_status = %s
+				  ORDER BY created_at DESC
+				  LIMIT %d OFFSET %d",
+				$moderation_status,
+				max( 1, $per_page ),
+				max( 0, $offset )
+			)
+		);
+
+		return array(
+			'items' => array_map( 'intval', (array) $ids ),
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * How many items sit in each moderation bucket.
+	 *
+	 * Same unfiltered scope as `moderation_queue()`, and the same reason.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $statuses Buckets to count.
+	 * @return array<string, int>
+	 */
+	public function moderation_counts( array $statuses ): array {
+		global $wpdb;
+
+		$statuses = array_values( array_filter( array_map( 'sanitize_key', $statuses ) ) );
+
+		if ( ! $statuses ) {
+			return array();
+		}
+
+		$table        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT moderation_status AS status, COUNT(*) AS count
+				   FROM {$table}
+				  WHERE moderation_status IN ({$placeholders})
+				  GROUP BY moderation_status",
+				...$statuses
+			)
+		);
+
+		$out = array_fill_keys( $statuses, 0 );
+
+		foreach ( (array) $rows as $row ) {
+			$out[ (string) $row->status ] = (int) $row->count;
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Find a media id by an exact match on one INDEX COLUMN.
 	 *
 	 * The column name cannot be a prepare placeholder, so the allowlist IS the
