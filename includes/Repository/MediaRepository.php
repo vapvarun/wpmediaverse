@@ -3258,10 +3258,19 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * its owner, and deleting the account has been taking the team's files with
 	 * it because the erasure cascade reads `post_author` alone.
 	 *
-	 * `drive_id > 0` is the test, not `drive_type <> 'user'`: the sentinel for
-	 * "personal drive" is `drive_id = 0` (see Migrator v29), so a row the
-	 * backfill has not reached is treated as personal and purged, which is the
-	 * safe direction — erasure stays complete and nothing is silently retained
+	 * THE TEST IS THE DRIVE TYPE, not `drive_id > 0`. That was the first version
+	 * and it was exactly backwards: it read `drive_id = 0` as "personal", when
+	 * `0` actually means "Migrator v29 has not reached this row yet". A personal
+	 * document is stamped `drive_type = user, drive_id = <author id>` by both the
+	 * v29 backfill and `DocumentIngestService`, so the author id — always > 0 —
+	 * made every personal file look like a team file. Measured on a real drive:
+	 * 58 of 58 personal documents were classified as team, which on account
+	 * deletion would have handed the lot to an administrator instead of erasing
+	 * them. The inverse of T1, and a GDPR erasure failure.
+	 *
+	 * An unstamped row (`drive_id = 0`, or a `drive_type` this build does not
+	 * know) therefore stays PERSONAL and is purged with its author. That is the
+	 * safe direction: erasure stays complete, and nothing is silently retained
 	 * because a migration was mid-flight.
 	 *
 	 * Deliberately unfiltered, for the same reason as `author_media_ids()`.
@@ -3275,7 +3284,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$rows = $this->author_scoped_rows(
 			array( 'media_id', 'drive_type', 'drive_id' ),
 			$user_id,
-			'AND drive_id > 0'
+			"AND drive_type <> '' AND drive_type <> 'user' AND drive_id > 0"
 		);
 
 		return array_map(
