@@ -2830,6 +2830,116 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
 	 */
 	/**
+	 * One page of the admin All-Media list, its total, and the status tab counts.
+	 *
+	 * Its own method because `query()` cannot express this screen, and forcing it
+	 * to would bend a member-facing listing into an admin one:
+	 *
+	 * - `query()`'s `privacy` argument is a MODE (`any`, `profile`, …), not a
+	 *   column filter, so it cannot answer "privacy = members".
+	 * - the screen's default is `status != 'trash'`, which is neither "any
+	 *   status" nor "one status".
+	 * - the tab counts are deliberately NOT narrowed by search, privacy or
+	 *   status — they are global per-status totals, the way WP's own post-list
+	 *   status links stay global while the table below them is filtered — but
+	 *   they ARE narrowed by type, because tabs that count a library the screen
+	 *   never renders would advertise "Published (100)" over a table that can
+	 *   only show 70.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type string $search   Title/description LIKE.
+	 *     @type string $type     One known media type; '' means the media library.
+	 *     @type string $status   Exact status; '' means everything except trash.
+	 *     @type string $privacy  Exact privacy level; '' means any.
+	 *     @type int    $per_page Page size.
+	 *     @type int    $offset   Offset.
+	 * }
+	 * @return array{items:array<int,array<string,mixed>>, total:int, status_counts:array<string,int>}
+	 */
+	public function admin_media_list( array $args ): array {
+		global $wpdb;
+
+		$search   = (string) ( $args['search'] ?? '' );
+		$type     = (string) ( $args['type'] ?? '' );
+		$status   = (string) ( $args['status'] ?? '' );
+		$privacy  = (string) ( $args['privacy'] ?? '' );
+		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
+		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
+
+		$table  = $wpdb->prefix . 'mvs_media_index';
+		$where  = array( '1=1' );
+		$params = array();
+
+		if ( '' !== $search ) {
+			$where[]  = '(title LIKE %s OR description LIKE %s)';
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		// An explicit type filter wins — that is how an owner asks this screen for
+		// one library. With no filter chosen it shows the MEDIA library, because
+		// that is what "All Media" means; documents get their own screen, where
+		// the columns suit them.
+		if ( '' !== $type && \WPMediaVerse\Core\MediaTypes::is_known( $type ) ) {
+			$type_sql    = 'media_type = %s';
+			$type_params = array( $type );
+		} else {
+			list( $type_sql, $type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA_LIBRARY );
+		}
+
+		$where[] = $type_sql;
+		$params  = array_merge( $params, $type_params );
+
+		if ( '' !== $status ) {
+			$where[]  = 'status = %s';
+			$params[] = $status;
+		} else {
+			$where[] = "status != 'trash'";
+		}
+
+		if ( '' !== $privacy ) {
+			$where[]  = 'privacy = %s';
+			$params[] = $privacy;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}";
+		$total     = $params
+			? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) )
+			: (int) $wpdb->get_var( $count_sql );
+
+		$items = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				...array_merge( $params, array( $per_page, $offset ) )
+			),
+			ARRAY_A
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT status, COUNT(*) AS cnt FROM {$table} WHERE {$type_sql} GROUP BY status", ...$type_params ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		$status_counts = array();
+		foreach ( (array) $rows as $row ) {
+			$status_counts[ (string) $row['status'] ] = (int) $row['cnt'];
+		}
+
+		return array(
+			'items'         => is_array( $items ) ? $items : array(),
+			'total'         => $total,
+			'status_counts' => $status_counts,
+		);
+	}
+
+	/**
 	 * One page of the moderation queue, plus its total.
 	 *
 	 * EVERY media type, EVERY privacy level, EVERY lifecycle status — a

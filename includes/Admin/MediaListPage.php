@@ -103,10 +103,6 @@ class MediaListPage {
 			);
 		}
 
-		global $wpdb;
-
-		$table = $wpdb->prefix . 'mvs_media_index';
-
 		// Filters.
 		$search         = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		$type_filter    = isset( $_GET['media_type'] ) ? sanitize_text_field( wp_unslash( $_GET['media_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
@@ -118,84 +114,26 @@ class MediaListPage {
 		$paged    = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
 		$offset   = ( $paged - 1 ) * $per_page;
 
-		// Build WHERE clause.
-		$where  = array( '1=1' );
-		$params = array();
-
-		if ( $search ) {
-			$where[]  = '(title LIKE %s OR description LIKE %s)';
-			$like     = '%' . $wpdb->esc_like( $search ) . '%';
-			$params[] = $like;
-			$params[] = $like;
-		}
-
-		// An explicit type filter wins — that is how an owner asks this screen for
-		// one library. With no filter chosen the screen shows the MEDIA library,
-		// because that is what "All Media" means; the document library gets its own
-		// screen rather than being folded in here where every column (dimensions,
-		// thumbnail, poster) is built for media.
-		//
-		// Same opt-in shape as the /media REST feed, and the same reason: an
-		// unconstrained default silently adopts every type added later.
-		if ( $type_filter && MediaTypes::is_known( $type_filter ) ) {
-			$mvs_type_sql    = 'media_type = %s';
-			$mvs_type_params = array( $type_filter );
-		} else {
-			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
-		}
-
-		$where[] = $mvs_type_sql;
-		$params  = array_merge( $params, $mvs_type_params );
-
-		if ( $status_filter ) {
-			$where[]  = 'status = %s';
-			$params[] = $status_filter;
-		} else {
-			$where[] = "status != 'trash'";
-		}
-
-		if ( $privacy_filter ) {
-			$where[]  = 'privacy = %s';
-			$params[] = $privacy_filter;
-		}
-
-		$where_sql = implode( ' AND ', $where );
-
-		// Count total.
-		$count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $params ) {
-			$total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		} else {
-			$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		}
-
-		$total_pages = (int) ceil( $total / $per_page );
-
-		// Fetch rows.
-		$orderby    = 'created_at';
-		$order      = 'DESC';
-		$query      = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$all_params = array_merge( $params, array( $per_page, $offset ) );
-		$items      = $wpdb->get_results( $wpdb->prepare( $query, ...$all_params ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-
-		// Status counts for tabs.
-		//
-		// Deliberately NOT narrowed by search / privacy / status: these are the
-		// global per-status totals, the same way WP's own post-list status links
-		// stay global while the table below them is filtered.
-		//
-		// Type is the exception, and it is the one predicate that must be applied.
-		// The tabs label the list beneath them, so counting a library this screen
-		// never renders would advertise "Published (100)" over a table that can
-		// only ever show 70 of them. Uses the same predicate the list resolved, so
-		// an explicit type filter narrows the tabs with it.
-		$status_counts = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->prepare(
-				"SELECT status, COUNT(*) AS cnt FROM {$table} WHERE {$mvs_type_sql} GROUP BY status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...$mvs_type_params
-			),
-			OBJECT_K
+		// The whole query — filters, page, total and the tab counts — lives in the
+		// repository (Rule 7). It is its own method rather than `query()` because
+		// this screen needs an exact `privacy` value and a "everything but trash"
+		// default, neither of which a member-facing listing expresses. See
+		// MediaRepository::admin_media_list().
+		$listing = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->admin_media_list(
+			array(
+				'search'   => $search,
+				'type'     => $type_filter,
+				'status'   => $status_filter,
+				'privacy'  => $privacy_filter,
+				'per_page' => $per_page,
+				'offset'   => $offset,
+			)
 		);
+
+		$items         = $listing['items'];
+		$total         = $listing['total'];
+		$status_counts = $listing['status_counts'];
+		$total_pages   = (int) ceil( $total / $per_page );
 
 		$base_url = admin_url( 'admin.php?page=mvs-media' );
 		?>
@@ -344,18 +282,18 @@ class MediaListPage {
 	 */
 	private static function render_status_tabs( $status_counts, string $current, string $base_url ): void {
 		$all_count = 0;
-		foreach ( $status_counts as $s ) {
-			if ( 'trash' !== $s->status ) {
-				$all_count += (int) $s->cnt;
+		foreach ( $status_counts as $mvs_status => $mvs_count ) {
+			if ( 'trash' !== $mvs_status ) {
+				$all_count += (int) $mvs_count;
 			}
 		}
 
 		$statuses = array(
 			''        => array( __( 'All', 'wpmediaverse' ), $all_count, 'mvs-stat-card--accent' ),
-			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish']->cnt ?? 0 ), 'mvs-stat-card--success' ),
-			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending']->cnt ?? 0 ), 'mvs-stat-card--warning' ),
-			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft']->cnt ?? 0 ), '' ),
-			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash']->cnt ?? 0 ), 'mvs-stat-card--danger' ),
+			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish'] ?? 0 ), 'mvs-stat-card--success' ),
+			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending'] ?? 0 ), 'mvs-stat-card--warning' ),
+			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft'] ?? 0 ), '' ),
+			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash'] ?? 0 ), 'mvs-stat-card--danger' ),
 		);
 		?>
 		<div class="mvs-admin-stats">
