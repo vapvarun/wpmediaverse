@@ -272,7 +272,15 @@ wp_interactivity_state(
 	$mvs_has_gravatar       = ! empty( $mvs_avatar_data['found_avatar'] );
 	$mvs_has_any_avatar     = $mvs_has_custom || $mvs_has_gravatar;
 	$mvs_profile_incomplete = ! $mvs_has_any_avatar || empty( $mvs_current_user->description );
-	if ( $mvs_profile_incomplete ) :
+
+	// DISMISSED IS ASKED SERVER-SIDE. This used to render regardless and let
+	// `dismissible.js` remove it after reading localStorage, which meant every
+	// dashboard load painted a 70px banner and then collapsed it — the largest
+	// layout shift on the page, and the reason it felt jumpy. The flag is user
+	// meta now, so a member who closed it never sees it again on any device.
+	$mvs_prompt_dismissed = (bool) get_user_meta( $mvs_current_user->ID, '_mvs_profile_prompt_dismissed', true );
+
+	if ( $mvs_profile_incomplete && ! $mvs_prompt_dismissed ) :
 		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
@@ -619,7 +627,7 @@ wp_interactivity_state(
 					<?php endif; ?>
 				</div>
 			</div>
-			<div class="mvs-dashboard-upload-review" data-wp-bind--hidden="!state.upload.hasPending">
+			<div class="mvs-dashboard-upload-review" data-wp-bind--hidden="!state.upload.hasPending" hidden>
 				<span class="mvs-dashboard-upload-review-label">
 					<?php esc_html_e( 'Add details above (optional), then upload.', 'wpmediaverse' ); ?>
 				</span>
@@ -637,7 +645,7 @@ wp_interactivity_state(
 				</div>
 			</div>
 			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
-				data-wp-text="state.upload.status"></div>
+				data-wp-text="state.upload.status" hidden></div>
 		</div>
 
 		<!-- Media Grid -->
@@ -725,7 +733,7 @@ wp_interactivity_state(
 			</template>
 		</div>
 		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
-			data-wp-bind--hidden="!state.showMediaLoading">
+			data-wp-bind--hidden="!state.showMediaLoading" hidden>
 			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
 			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
 		</div>
@@ -826,7 +834,7 @@ wp_interactivity_state(
 			</template>
 		</div>
 		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
-			data-wp-bind--hidden="!state.showAlbumsLoading">
+			data-wp-bind--hidden="!state.showAlbumsLoading" hidden>
 			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
 			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
 		</div>
@@ -928,7 +936,7 @@ wp_interactivity_state(
 			</template>
 		</div>
 		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
-			data-wp-bind--hidden="!state.showFavoritesLoading">
+			data-wp-bind--hidden="!state.showFavoritesLoading" hidden>
 			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
 			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
 		</div>
@@ -1041,7 +1049,7 @@ wp_interactivity_state(
 			</template>
 		</div>
 		<div class="mvs-dashboard-loading" role="status" aria-live="polite"
-			data-wp-bind--hidden="!state.showCollectionsLoading">
+			data-wp-bind--hidden="!state.showCollectionsLoading" hidden>
 			<span class="mvs-dashboard-loading__spinner" aria-hidden="true"></span>
 			<span class="mvs-dashboard-loading__label"><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></span>
 		</div>
@@ -1176,7 +1184,7 @@ wp_interactivity_state(
 						<span data-wp-bind--hidden="state.collectionModal.isEdit"><?php esc_html_e( 'Create', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!state.collectionModal.isEdit"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 					</span>
-					<span data-wp-bind--hidden="!state.collectionModal.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+					<span data-wp-bind--hidden="!state.collectionModal.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 				</button>
 			</div>
 		</div>
@@ -1268,7 +1276,7 @@ wp_interactivity_state(
 					data-wp-on--click="actions.saveEdit"
 					data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModal.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-					<span data-wp-bind--hidden="!state.editModal.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+					<span data-wp-bind--hidden="!state.editModal.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 				</button>
 			</div>
 		</div>
@@ -1316,7 +1324,7 @@ wp_interactivity_state(
 						<?php esc_html_e( 'Click a thumbnail to toggle selection. Click "Set Cover" to choose the album cover.', 'wpmediaverse' ); ?>
 					</p>
 					<div class="mvs-media-picker">
-						<p data-wp-bind--hidden="!state.albumModal.pickerLoading"><?php esc_html_e( 'Loading media...', 'wpmediaverse' ); ?></p>
+						<p data-wp-bind--hidden="!state.albumModal.pickerLoading" hidden><?php esc_html_e( 'Loading media...', 'wpmediaverse' ); ?></p>
 						<template data-wp-each="state.albumModal.pickerItems">
 							<div class="mvs-media-picker-item"
 								data-wp-bind--data-picker-id="context.item.id"
@@ -1360,7 +1368,7 @@ wp_interactivity_state(
 						<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Create', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!state.albumModal.isEdit"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 					</span>
-					<span data-wp-bind--hidden="!state.albumModal.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+					<span data-wp-bind--hidden="!state.albumModal.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 				</button>
 			</div>
 		</div>

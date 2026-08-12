@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-12T14:21:09Z",
+    "generated_at": "2026-08-12T14:38:32Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -261,7 +261,7 @@
         },
         {
             "hash": "4db8cb9c7eb2092d1bcc1916eb9d70b020d674bc",
-            "instances": 11,
+            "instances": 12,
             "token_count": 33,
             "sites": [
                 {
@@ -275,6 +275,12 @@
                     "file": "includes/REST/Controller/AdminController.php",
                     "lines": "69-69",
                     "method": "AdminController::logged_in_permissions_check"
+                },
+                {
+                    "plugin": "free",
+                    "file": "includes/REST/Controller/UserController.php",
+                    "lines": "516-516",
+                    "method": "logged_in_check"
                 },
                 {
                     "plugin": "free",

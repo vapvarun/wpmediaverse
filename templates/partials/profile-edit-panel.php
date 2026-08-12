@@ -69,7 +69,7 @@ defined( 'ABSPATH' ) || exit;
 				<div class="mvs-profile-avatar-actions">
 					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-avatar-upload-label">
 						<span data-wp-bind--hidden="context.uploadingAvatar"><?php esc_html_e( 'Change Avatar', 'wpmediaverse' ); ?></span>
-						<span data-wp-bind--hidden="!context.uploadingAvatar"><?php esc_html_e( 'Uploading...', 'wpmediaverse' ); ?></span>
+						<span data-wp-bind--hidden="!context.uploadingAvatar" hidden><?php esc_html_e( 'Uploading...', 'wpmediaverse' ); ?></span>
 						<input type="file" accept="image/jpeg,image/png,image/gif,image/webp"
 							class="mvs-profile-avatar-input"
 							data-wp-on--change="actions.uploadAvatar" />
@@ -135,7 +135,7 @@ defined( 'ABSPATH' ) || exit;
 						data-wp-bind--disabled="context.savingProfile"
 						data-wp-on--click="actions.saveProfile">
 						<span data-wp-bind--hidden="context.savingProfile"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-						<span data-wp-bind--hidden="!context.savingProfile"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+						<span data-wp-bind--hidden="!context.savingProfile" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>
 					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
 						data-wp-on--click="mvs/dashboard::actions.toggleProfileEdit">

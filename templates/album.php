@@ -189,7 +189,7 @@ $mvs_archive_url = home_url( '/media/' );
 									data-wp-on--click="actions.saveEdit"
 									data-wp-bind--disabled="context.saving">
 									<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-									<span data-wp-bind--hidden="!context.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+									<span data-wp-bind--hidden="!context.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 								</button>
 								<button class="mvs-btn mvs-btn--secondary" type="button"
 									data-wp-on--click="actions.cancelEdit">

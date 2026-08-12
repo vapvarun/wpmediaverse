@@ -172,7 +172,7 @@ wp_interactivity_state(
 				</div>
 
 				<!-- Upload progress -->
-				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading">
+				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading" hidden>
 					<div class="mvs-modal-progress-bar">
 						<div class="mvs-modal-progress-fill"
 							data-wp-style--width="state.uploadProgressWidth"></div>
@@ -259,7 +259,7 @@ wp_interactivity_state(
 
 			<div class="mvs-modal-body">
 				<!-- Loading state while fetching the current media data. -->
-				<div class="mvs-modal-loading" data-wp-bind--hidden="!state.editModalLoading">
+				<div class="mvs-modal-loading" data-wp-bind--hidden="!state.editModalLoading" hidden>
 					<div class="mvs-spinner"></div>
 					<p><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></p>
 				</div>
@@ -328,7 +328,7 @@ wp_interactivity_state(
 				</button>
 				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?></span>
-					<span data-wp-bind--hidden="!state.editModalSaving"><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
+					<span data-wp-bind--hidden="!state.editModalSaving" hidden><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
 				</button>
 			</div>
 		</div>
@@ -346,7 +346,7 @@ wp_interactivity_state(
 			</button>
 
 			<!-- Loading spinner -->
-			<div class="mvs-lightbox-loading" data-wp-bind--hidden="!state.lightboxLoading">
+			<div class="mvs-lightbox-loading" data-wp-bind--hidden="!state.lightboxLoading" hidden>
 				<div class="mvs-spinner"></div>
 			</div>
 

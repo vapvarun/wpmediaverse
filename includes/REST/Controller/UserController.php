@@ -38,6 +38,36 @@ class UserController extends WP_REST_Controller {
 	 * @since 1.1.0
 	 */
 	public function register_routes(): void {
+		// POST /me/dismiss — remember that this member closed a banner.
+		//
+		// SERVER-SIDE, because localStorage cannot stop a banner rendering. The
+		// profile prompt was painted on every dashboard load and then removed by
+		// JavaScript once it had read localStorage, which collapsed 70px and
+		// jumped the page under the member's cursor — measured as the largest
+		// layout shift on the dashboard, at 263ms. `dismissible.js` said as much
+		// in its own docblock: "the longer-term improvement is a REST-persisted
+		// dismiss flag checked server-side so the banner never renders dismissed
+		// in the first place."
+		//
+		// A dismissal is also a preference, not a browser fact: closing it on a
+		// laptop should close it on a phone.
+		register_rest_route(
+			$this->namespace,
+			'/me/dismiss',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'dismiss_notice' ),
+				'permission_callback' => array( $this, 'logged_in_check' ),
+				'args'                => array(
+					'key' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
 		// GET /users/{id} — public profile.
 		// PUBLIC_OK: returns display name, bio, avatar, follower/following/
 		// public-media counts to anonymous viewers. The `username`
@@ -448,5 +478,76 @@ class UserController extends WP_REST_Controller {
 			}
 		}
 		return $thumbs;
+	}
+
+	/**
+	 * The banners a member may dismiss, and the meta each one sets.
+	 *
+	 * An ALLOWLIST because the key arrives from the browser and ends up in a
+	 * meta key — an open map would let any caller write arbitrary user meta.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return array<string, string> Key => user meta key.
+	 */
+	public static function dismissible_notices(): array {
+		/**
+		 * Filter the dismissible banners.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array<string, string> $notices Key => user meta key.
+		 */
+		return (array) apply_filters(
+			'mvs_dismissible_notices',
+			array(
+				'profile_prompt' => '_mvs_profile_prompt_dismissed',
+			)
+		);
+	}
+
+	/**
+	 * Any logged-in member — a dismissal is their own state.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return true|WP_Error
+	 */
+	public function logged_in_check() {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error(
+				'mvs_unauthorized',
+				__( 'You must be logged in.', 'wpmediaverse' ),
+				array( 'status' => 401 )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * POST /me/dismiss — remember a closed banner for this member.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function dismiss_notice( WP_REST_Request $request ) {
+		$key     = (string) $request->get_param( 'key' );
+		$notices = self::dismissible_notices();
+
+		if ( ! isset( $notices[ $key ] ) ) {
+			// A refusal is never a success response (coding rule 20).
+			return new WP_Error(
+				'mvs_unknown_notice',
+				__( 'That is not a banner this site knows about.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		update_user_meta( get_current_user_id(), $notices[ $key ], 1 );
+
+		return rest_ensure_response( array( 'dismissed' => $key ) );
 	}
 }
