@@ -64,18 +64,18 @@ class BootGuardTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The missing-autoloader notice names the problem and reassures about data.
+	 * The incomplete-package notice names the problem and reassures about data.
 	 *
 	 * Someone reading this is looking at a site that just broke. The two things
 	 * they need are what went wrong and whether they have lost anything.
 	 */
-	public function test_missing_autoload_notice_explains_the_failure(): void {
+	public function test_incomplete_package_notice_explains_the_failure(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
-		mvs_boot_failure( 'autoload' );
+		mvs_boot_failure( 'incomplete' );
 		$notices = $this->notices();
 
-		$this->assertStringContainsString( 'vendor folder is missing', $notices, 'The notice must name the actual cause.' );
+		$this->assertStringContainsString( 'part of the plugin is missing', $notices, 'The notice must name the actual cause.' );
 		$this->assertStringContainsString( 'Nothing has been deleted', $notices, 'The notice must answer the question the owner will actually have.' );
 		$this->assertStringContainsString( 'notice-error', $notices );
 	}
@@ -105,9 +105,9 @@ class BootGuardTest extends WP_UnitTestCase {
 	public function test_notice_is_hidden_from_users_who_cannot_act_on_it(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 
-		mvs_boot_failure( 'autoload' );
+		mvs_boot_failure( 'incomplete' );
 
-		$this->assertStringNotContainsString( 'vendor folder is missing', $this->notices() );
+		$this->assertStringNotContainsString( 'part of the plugin is missing', $this->notices() );
 	}
 
 	/**
@@ -116,16 +116,102 @@ class BootGuardTest extends WP_UnitTestCase {
 	 * This is a shape assertion, and a deliberate one: proving the behaviour
 	 * would mean loading the entry file a second time inside a suite that has
 	 * already loaded it. What it pins is the exact thing that was wrong — the
-	 * check observed the missing autoloader and let execution carry on into
-	 * code that needs it.
+	 * check observed a missing piece and let execution carry on into code that
+	 * needs it.
 	 */
-	public function test_missing_autoload_stops_the_entry_file(): void {
-		$entry = $this->entry_file();
-
+	public function test_incomplete_package_stops_the_entry_file(): void {
 		$this->assertMatchesRegularExpression(
-			'/if\s*\(\s*!\s*file_exists\(\s*MVS_PLUGIN_DIR\s*\.\s*\'vendor\/autoload\.php\'\s*\)\s*\)\s*\{[^}]*return;/s',
-			$entry,
-			'A missing autoloader must return out of the entry file; continuing past it is what took the whole site down.'
+			'/if\s*\(\s*!\s*is_readable\(\s*MVS_PLUGIN_DIR\s*\.\s*\'includes\/Core\/Plugin\.php\'\s*\)\s*\)\s*\{[^}]*return;/s',
+			$this->entry_file(),
+			'An incomplete package must return out of the entry file; continuing past it is what took the whole site down.'
 		);
+	}
+
+	/**
+	 * Runtime does not depend on Composer.
+	 *
+	 * `vendor/` is dev tooling, gitignored, and excluded from the release zip.
+	 * Requiring its autoloader at runtime is what made a mis-built zip fatal on
+	 * every page — and would now fail on EVERY install, since the directory is
+	 * not there at all.
+	 */
+	public function test_runtime_does_not_load_the_composer_autoloader(): void {
+		$this->assertStringNotContainsString(
+			'vendor/autoload.php',
+			$this->entry_file(),
+			'The entry file must not require Composer at runtime — vendor/ does not ship.'
+		);
+
+		$this->assertStringContainsString(
+			'spl_autoload_register',
+			$this->entry_file(),
+			'The plugin loads its own classes through a hand-written autoloader.'
+		);
+	}
+
+	/**
+	 * The hand-written autoloader actually resolves this plugin's classes.
+	 *
+	 * Behavioural, unlike the assertions above: it asks for a class by name and
+	 * checks the file behind it was loaded. A typo in the prefix, the directory
+	 * or the separator replacement would leave every class unresolvable, which
+	 * is the same white screen by a different route.
+	 */
+	public function test_hand_written_autoloader_resolves_plugin_classes(): void {
+		$this->assertTrue(
+			class_exists( '\WPMediaVerse\Core\Migrator' ),
+			'A namespaced class must resolve to includes/Core/Migrator.php through the registered autoloader.'
+		);
+
+		$this->assertTrue(
+			class_exists( '\WPMediaVerse\Repository\MediaRepository' ),
+			'Deeper namespaces must resolve too — the separator replacement is what breaks here.'
+		);
+	}
+
+	/**
+	 * Runtime dependencies are bundled, not declared in composer.json.
+	 *
+	 * Both directions matter. A package listed in `require` but absent from
+	 * `libs/` is the Action Scheduler bug — declared, shipped, never loaded. A
+	 * package in `libs/` that is ALSO a Composer requirement invites the two
+	 * build paths to start disagreeing about it again.
+	 */
+	public function test_runtime_dependencies_are_bundled_not_required(): void {
+		$composer = json_decode( (string) file_get_contents( dirname( __DIR__, 2 ) . '/composer.json' ), true );
+		$require  = array_keys( $composer['require'] ?? array() );
+
+		$this->assertSame(
+			array( 'php' ),
+			$require,
+			'composer.json must require nothing but PHP — runtime dependencies live in libs/.'
+		);
+
+		foreach ( array( 'action-scheduler/action-scheduler.php', 'edd-sl-sdk/edd-sl-sdk.php' ) as $bundled ) {
+			$this->assertFileExists(
+				dirname( __DIR__, 2 ) . '/libs/' . $bundled,
+				"libs/{$bundled} must ship — nothing else loads it."
+			);
+		}
+	}
+
+	/**
+	 * Action Scheduler is loaded, not merely shipped.
+	 *
+	 * THE BUG THIS FILE EXISTS FOR, in its second form. The package was a
+	 * declared dependency and present in vendor/, but no line of the plugin ever
+	 * required it — so `WebhookService`, `StorageCleanupService` and
+	 * `StorageRepairService` all sat behind `function_exists( 'as_*' )` guards
+	 * that were false on any site without Pro or WooCommerce. Webhooks fell back
+	 * to sending inside the member's request; repair sweeps stopped mid-run.
+	 */
+	public function test_action_scheduler_is_actually_loaded(): void {
+		$this->assertTrue(
+			function_exists( 'as_enqueue_async_action' ),
+			'The three services that schedule background work check for this function and silently degrade without it.'
+		);
+
+		$this->assertTrue( function_exists( 'as_schedule_single_action' ) );
+		$this->assertTrue( function_exists( 'as_has_scheduled_action' ) );
 	}
 }

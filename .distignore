@@ -10,7 +10,14 @@
 /.gitignore
 /.gitattributes
 
-# Node + Composer + build artifacts
+# Node + Composer + build artifacts.
+#
+# /vendor is dev and build tooling ONLY and correctly excluded. That was not
+# always true: it used to hold the runtime dependencies too, while the Gruntfile
+# copied them — so a zip built from this file had no autoloader and every page,
+# including the Plugins screen, returned 500 with no way back but FTP. The
+# runtime dependencies now live committed under libs/, which SHIPS and must
+# never be added here.
 /node_modules
 /vendor
 /dist
@@ -60,7 +67,10 @@
 *.md
 !readme.txt
 
-# One-off seed / cleanup scripts that ride the repo for dev convenience
-/seed-demo-data.php
-/cleanup-demo-data.php
+# Dev-only showcase script. The seeder and its cleanup companion are NOT listed
+# here and must not be: `Admin\OverviewPage` requires seed-demo-data.php at
+# line 655 and cleanup-demo-data.php at 682 to serve the "Import Demo Data"
+# button. Excluding them shipped a button with no file behind it. This file and
+# the Gruntfile disagreed about exactly that — the Gruntfile was right, and says
+# so in a comment ("keep seed + cleanup for customer demo import").
 /populate-showcase.php

@@ -1,3 +1,10 @@
+# Composer vendor/ is dev and build tooling only (phpcs, phpstan, phpunit)
+# and is NOT shipped. The plugin uses a hand-written autoloader and bundles
+# its runtime deps (Action Scheduler, EDD SL SDK) committed under libs/.
+# Two build paths used to disagree about whether vendor/ shipped at all;
+# moving the runtime deps out is what removed the disagreement.
+/vendor/
+
 node_modules/
 
 # dist/ — only commit the final release ZIPs (e.g. wpmediaverse-1.2.0.zip).
@@ -20,7 +27,6 @@ dist/*/
 tests/e2e/fixtures/pw-priv-FULL*.txt
 .phpunit.result.cache
 .phpunit.cache
-CLAUDE.md
 .claude/
 
 # Dev reports

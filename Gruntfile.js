@@ -146,28 +146,19 @@ module.exports = function( grunt ) {
 							'!**/.gitkeep',
 							'!**/Thumbs.db',
 
-							// ── Vendor: strip ALL dev deps ──
-							// Keep: easy-digital-downloads (license SDK)
-							// Keep: woocommerce (Action Scheduler)
-							// Keep: composer (autoloader)
-							'!vendor/bin/**',
-							'!vendor/phpunit/**',
-							'!vendor/squizlabs/**',
-							'!vendor/wp-coding-standards/**',
-							'!vendor/phpcompatibility/**',
-							'!vendor/phpcsstandards/**',
-							'!vendor/szepeviktor/**',
-							'!vendor/phpstan/**',
-							'!vendor/php-stubs/**',
-							'!vendor/nikic/**',
-							'!vendor/dealerdirect/**',
-							'!vendor/doctrine/**',
-							'!vendor/myclabs/**',
-							'!vendor/phar-io/**',
-							'!vendor/theseer/**',
-							'!vendor/yoast/**',
-							'!vendor/sebastian/**',
-							'!vendor/symfony/**',
+							// ── Composer vendor/: excluded ENTIRELY ──
+							//
+							// It is dev and build tooling only. The runtime dependencies it used
+							// to hold (Action Scheduler, EDD SL SDK) are committed under libs/ and
+							// ship with the plugin, and the autoloader is hand-written in the entry
+							// file — so nothing under vendor/ is needed at runtime.
+							//
+							// This block used to keep three sub-trees and strip ~18 dev packages by
+							// name, which meant .distignore (excluding /vendor wholesale) and this
+							// file produced different zips from the same source. A zip built the
+							// .distignore way had no autoloader: HTTP 500 on every page, including
+							// the Plugins screen. One rule now, and no list to maintain.
+							'!vendor/**',
 						],
 						dest: 'dist/wpmediaverse/',
 					},
@@ -364,7 +355,13 @@ module.exports = function( grunt ) {
 	// staging copy as if it were source: every string picked up a duplicate
 	// `#: dist/...` reference, ~2,600 of them, growing with each rebuild. The
 	// first build on a clean tree looked fine, so it only showed up on a rebuild.
-	grunt.registerTask( 'dist', [ 'clean:dist', 'build', 'composer-prod', 'copy:dist', 'compress:dist', 'composer-restore', 'dist-summary' ] );
+	// composer-prod/composer-restore are deliberately NOT in this chain. They
+	// existed to strip dev packages so the shipped Composer autoloader only
+	// referenced production ones — but vendor/ no longer ships at all, and the
+	// runtime autoloader is hand-written in the entry file. Running them now
+	// would delete the dev tooling mid-build to produce something the zip
+	// excludes. The tasks remain callable by hand.
+	grunt.registerTask( 'dist', [ 'clean:dist', 'build', 'copy:dist', 'compress:dist', 'dist-summary' ] );
 
 	// Release: CI check + dist (for production releases)
 	grunt.registerTask( 'release', [ 'ci-check', 'dist' ] );

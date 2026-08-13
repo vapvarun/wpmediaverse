@@ -23,19 +23,27 @@ global $wpdb;
 //
 // `Migrator::tables()` is now the one place that knows, and
 // `UninstallCoverageTest` fails if a table is created without being listed
-// there. Autoload is required explicitly because uninstall.php runs standalone,
-// outside the plugin's own bootstrap.
-$mvs_autoload = __DIR__ . '/vendor/autoload.php';
+// there.
+//
+// The migrator's file is required DIRECTLY rather than through an autoloader,
+// because uninstall.php runs standalone — WordPress loads this file on its own,
+// outside the plugin's bootstrap, so nothing has registered an autoloader by the
+// time it runs. It used to require `vendor/autoload.php`; that stopped being
+// the answer when the runtime dependencies moved to `libs/` and `vendor/` became
+// dev-only and absent from the release zip. A one-line require of the one class
+// this file needs has no such failure mode.
+$mvs_migrator = __DIR__ . '/includes/Core/Migrator.php';
 
-if ( file_exists( $mvs_autoload ) ) {
-	require_once $mvs_autoload;
+if ( is_readable( $mvs_migrator ) ) {
+	require_once $mvs_migrator;
 }
 
 $mvs_tables = class_exists( '\WPMediaVerse\Core\Migrator' )
 	? \WPMediaVerse\Core\Migrator::tables()
-	// Autoload missing (a broken install being cleaned up) is the one case
-	// where a copy is better than nothing: the tables with member data in them.
-	// Deliberately short, and deliberately not maintained — the list above is.
+	// The migrator's own file missing (a broken install being cleaned up) is the
+	// one case where a copy is better than nothing: the tables with member data
+	// in them. Deliberately short, and deliberately not maintained — the list
+	// above is.
 	: array( 'mvs_media_index', 'mvs_media_meta', 'mvs_messages', 'mvs_conversations' );
 
 foreach ( $mvs_tables as $mvs_table ) {
