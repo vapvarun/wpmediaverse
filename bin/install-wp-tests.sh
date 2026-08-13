@@ -20,8 +20,19 @@ SKIP_DB_CREATE=${6-false}
 
 TMPDIR=${TMPDIR-/tmp}
 TMPDIR=$(echo $TMPDIR | sed -e "s/\/$//")
-WP_TESTS_DIR=${WP_TESTS_DIR-$TMPDIR/wordpress-tests-lib}
-WP_CORE_DIR=${WP_CORE_DIR-$TMPDIR/wordpress}
+
+# INSTALL WHERE local-ci.sh LOOKS, which is /tmp — not $TMPDIR.
+#
+# The upstream WP-CLI template defaults these to $TMPDIR. On Linux that is
+# /tmp and the two agree. On macOS $TMPDIR is a per-user
+# /var/folders/../T/ path, so the library installed somewhere local-ci.sh
+# never checks: the installer reported success, the gate reported "WP_TESTS_DIR
+# not installed", and the unit suites sat unrun on every Mac while looking
+# installed. Both Pro unit-suite cards were filed against that silence.
+#
+# Overridable, so CI images and Linux boxes can still point elsewhere.
+WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
+WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress}
 
 download() {
     if [ $(which curl) ]; then

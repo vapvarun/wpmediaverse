@@ -177,8 +177,8 @@ class DepartingMemberTest extends WP_UnitTestCase {
 	 * rather than being deleted.
 	 */
 	public function test_unclaimed_team_document_falls_back_to_an_administrator(): void {
-		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$team  = $this->seed_document( $this->leaver, 'space', 99 );
+		self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$team = $this->seed_document( $this->leaver, 'space', 99 );
 
 		// No `mvs_document_drive_successor` filter answers.
 		wp_delete_user( $this->leaver );
@@ -188,10 +188,27 @@ class DepartingMemberTest extends WP_UnitTestCase {
 			'A file nobody claims is still the team\'s file — losing it is the harm T1 exists to prevent.'
 		);
 
+		// THE LOWEST-ID ADMINISTRATOR, not whichever one this test happened to
+		// create. `fallback_successor()` orders by id precisely so the answer is
+		// stable across runs, and a fresh install always has user 1 — asserting
+		// on the factory's user encoded an assumption the implementation never
+		// made, and only looked right because no other admin existed.
+		$expected = (int) current(
+			get_users(
+				array(
+					'role'    => 'administrator',
+					'fields'  => 'ID',
+					'orderby' => 'ID',
+					'order'   => 'ASC',
+					'number'  => 1,
+				)
+			)
+		);
+
 		$this->assertSame(
-			$admin,
+			$expected,
 			$this->author_of( $team ),
-			'The documented fallback is a site administrator.'
+			'The documented fallback is the lowest-id site administrator.'
 		);
 	}
 

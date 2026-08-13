@@ -515,6 +515,7 @@ class RestGateTest extends WP_UnitTestCase {
 			'POST /mvs/v1/conversations/1/read' => 'self',
 			'POST /mvs/v1/conversations/1/typing' => 'self',
 			'POST /mvs/v1/me/avatar' => 'self',
+			'POST /mvs/v1/me/dismiss' => 'self',
 			'POST /mvs/v1/me/interests' => 'self',
 			'POST /mvs/v1/me/notifications/read' => 'self',
 			'POST /mvs/v1/me/onboarding/complete' => 'self',
