@@ -31,7 +31,7 @@
 
 | Namespace | Responsibility | Key Classes |
 |-----------|---------------|-------------|
-| `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade | `Plugin`, `ServiceContainer`, `Migrator`, `Loader`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers`, `Abilities`, `SettingsHelper`, `MediaUrl` |
+| `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade | `Plugin`, `ServiceContainer`, `Migrator`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers`, `Abilities`, `SettingsHelper`, `MediaUrl` (+ `Loader`, **deprecated 2.4.0**, never used, removal 4.0.0) |
 | `Admin\` | WP admin pages, moderation queue | `OverviewPage`, `StatsPage`, `ModerationQueue`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage` |
 | `Admin\Settings\` | Settings page (5 focused classes) | `SettingsPage`, `SettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
 | `REST\Controller\` | REST API endpoints (23 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController`, `AdminController`, `AuthController`, `ConfigController`, `InterestsController`, `TransactionController` |

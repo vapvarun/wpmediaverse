@@ -49,7 +49,35 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 	private function seed_media_row_at( int $media_id, int $author, string $title ): void {
 		global $wpdb;
 
-		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// CLEAR THE ID FIRST, AND CHECK THE INSERT LANDED.
+		//
+		// This helper writes an EXPLICIT primary key, which collides with
+		// whatever the table's own AUTO_INCREMENT has already handed out. MySQL
+		// never rolls an AUTO_INCREMENT counter back, so `mvs_media_index` ids
+		// and `wp_posts` ids both climb for the whole suite run and can cross —
+		// and where they cross depends on how many tests ran first. Adding any
+		// test file anywhere shifts it.
+		//
+		// If they crossed, `$wpdb->insert()` would fail on the duplicate key,
+		// return false with nobody looking, and the pre-existing row would
+		// survive — and the test would then assert on a row seeded by a
+		// DIFFERENT test file. That matches the recorded failure exactly: it
+		// reported `'Linkage C'` where it wanted `'Real Photo'`, and 'Linkage C'
+		// is seeded by ActivityMediaLinkageTest, which sorts earlier.
+		//
+		// HONEST LIMIT: that chain is consistent with every observation, but the
+		// original failure has NOT been reproduced on demand — deliberately
+		// shifting both id sequences by 7/14/21/28 and by 11/22/33 rows did not
+		// trigger it, with or without this guard. So this is not "the flake is
+		// fixed". It closes a silent-failure path that a fixture should never
+		// have had, and makes the next occurrence say what happened instead of
+		// mismatching a title. Basecamp 10198467141 stays open.
+		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_index',
+			array( 'media_id' => $media_id )
+		);
+
+		$inserted = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_index',
 			array(
 				'media_id'    => $media_id,
@@ -62,6 +90,15 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 				'file_path'   => '2026/08/seeded-' . $media_id . '.jpg',
 			)
 		);
+
+		// A silent false here is what made the failure look random. Say so.
+		$this->assertNotFalse(
+			$inserted,
+			"Could not seed mvs_media_index at media_id {$media_id}: " . $wpdb->last_error
+		);
+
+		// The repository caches per request, and this wrote around it.
+		\WPMediaVerse\Repository\MediaRepository::reset_test_cache();
 	}
 
 	/**
