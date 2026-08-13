@@ -1528,7 +1528,18 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$page_params   = $params;
 		$page_params[] = $per_page;
-		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// `offset` OVERRIDES the page-derived offset when given.
+		//
+		// The drive root pages folders and documents as ONE ordered set, folders
+		// first. Once the folders on a page are placed, the documents that follow
+		// start at an offset that is not a multiple of per_page — page 2 of a
+		// 22-folder drive with 25 rows per page begins at document 3, not 25. A
+		// page number cannot express that, so the caller passes the offset it
+		// computed. Absent, behaviour is exactly as before.
+		$page_params[] = isset( $args['offset'] )
+			? max( 0, (int) $args['offset'] )
+			: ( $page - 1 ) * $per_page;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = (array) $wpdb->get_results(
