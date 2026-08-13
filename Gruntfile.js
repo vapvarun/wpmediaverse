@@ -14,6 +14,19 @@ module.exports = function( grunt ) {
 					potFilename: 'wpmediaverse.pot',
 					type: 'wp-plugin',
 					updateTimestamp: false,
+					// NEVER SCAN A COPY OF OURSELVES. `dist/wpmediaverse/` is a
+					// staging copy of this plugin, so every string in it is a
+					// duplicate of a string in source — makepot recorded both and
+					// the POT grew a `#: dist/...` reference per string, ~2,600 of
+					// them, more with each rebuild.
+					//
+					// `dist` was taught to clean before building, which fixed
+					// `grunt dist`. It did not fix `grunt build`, which runs
+					// makepot with no clean at all — so anyone building after a
+					// dist still polluted the POT, and did until this line. The
+					// exclusion is the durable half: it holds whichever task runs
+					// and whatever is lying in the tree.
+					exclude: [ 'dist/.*', 'node_modules/.*', 'vendor/.*', 'tests/.*' ],
 					potHeaders: {
 						poedit: true,
 						'x-poedit-keywordslist': true,
