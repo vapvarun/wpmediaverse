@@ -1,9 +1,10 @@
 # WPMediaVerse — Capabilities
 
-What this plugin lets a site actually do, in buyer language. The manifest lists 114 REST
-endpoints and 22 tables; it never says what those add up to. This file does.
+What this plugin lets a site actually do, in buyer language. The plugin registers 91 REST
+routes (138 method-endpoints, counted off a live site) across 22 tables; that never
+says what they add up to. This file does.
 
-**Last verified against code:** 2026-08-05 (branch `main`, v2.3.1)
+**Last verified against code:** 2026-08-13 (branch `2.4.0`, v2.4.0)
 **Companion:** [WPMediaVerse Pro](../wpmediaverse-pro/) adds competitions, cloud storage,
 AI providers, quotas and video tooling — see its own `CAPABILITIES.md`.
 
@@ -97,7 +98,7 @@ Recorded so a future audit treats them as decisions, not gaps.
 
 | Not supported | Why |
 |---|---|
-| Document / PDF uploads | Owner decision (Basecamp #9962125462). The read path survives for historical PDFs; new uploads are refused. A separate Drive-style module is specced for Pro 2.5.0 |
+| Document / PDF uploads **into the media library** | Owner decision (Basecamp #9962125462), enforced by `UploadService::hard_refused_mimes()`. The read path survives for historical PDFs. Documents are not absent from the product — they have their own home: Pro 2.4.0 ships a per-member document drive, and `use_mvs_documents` is a Free capability |
 | Storefront / checkout for paid media | The entitlement layer exists (`mvs_access_rules`, `mvs_transactions`); the selling UI is out of scope |
 | Cloud storage drivers in Free | Contract in Free, implementations in Pro — deliberate free/pro split |
 | Versioning of media files | `/replace` overwrites; no version history by design |
