@@ -14,18 +14,29 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 global $wpdb;
 
 // Remove custom tables.
-$mvs_tables = array(
-	'mvs_reactions',
-	'mvs_favorites',
-	'mvs_media_views',
-	'mvs_media_stats',
-	'mvs_access_rules',
-	'mvs_access_grants',
-	'mvs_mentions',
-	'mvs_album_items',
-	'mvs_media_meta',
-	'mvs_media_index',
-);
+//
+// FROM THE MIGRATOR, not a second list. This file kept its own copy and had
+// drifted to 10 of the 22 tables the plugin creates: uninstalling left the whole
+// messaging stack behind — conversations, messages, participants, reactions —
+// along with notifications, follows, blocks, activity, reports and transactions,
+// rows and all. A member who deleted the plugin to remove their data did not.
+//
+// `Migrator::tables()` is now the one place that knows, and
+// `UninstallCoverageTest` fails if a table is created without being listed
+// there. Autoload is required explicitly because uninstall.php runs standalone,
+// outside the plugin's own bootstrap.
+$mvs_autoload = __DIR__ . '/vendor/autoload.php';
+
+if ( file_exists( $mvs_autoload ) ) {
+	require_once $mvs_autoload;
+}
+
+$mvs_tables = class_exists( '\WPMediaVerse\Core\Migrator' )
+	? \WPMediaVerse\Core\Migrator::tables()
+	// Autoload missing (a broken install being cleaned up) is the one case
+	// where a copy is better than nothing: the tables with member data in them.
+	// Deliberately short, and deliberately not maintained — the list above is.
+	: array( 'mvs_media_index', 'mvs_media_meta', 'mvs_messages', 'mvs_conversations' );
 
 foreach ( $mvs_tables as $mvs_table ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$mvs_table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL

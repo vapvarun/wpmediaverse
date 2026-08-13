@@ -47,6 +47,53 @@ class Migrator {
 	const VERSION_OPTION       = 'mvs_db_version';
 
 	/**
+	 * Every table this plugin creates, without the prefix.
+	 *
+	 * THE SINGLE SOURCE for "what belongs to WPMediaVerse". `uninstall.php` kept
+	 * its own hardcoded copy and had drifted to 10 of 22: uninstalling left
+	 * the whole messaging stack behind — conversations, messages, participants,
+	 * reactions — plus notifications, follows, blocks, activity, reports and
+	 * transactions, with their rows intact. On this development site that was
+	 * 366 rows of transactions and 56 follows surviving a delete.
+	 *
+	 * A list is only a source of truth if something checks it, so
+	 * `UninstallCoverageTest` runs the migrator on a clean database and asserts
+	 * the tables that appear are exactly the tables named here. Add a table
+	 * without listing it and that test fails rather than a customer finding it
+	 * years later.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[] Unprefixed table names.
+	 */
+	public static function tables(): array {
+		return array(
+			'mvs_access_grants',
+			'mvs_access_rules',
+			'mvs_activity',
+			'mvs_album_items',
+			'mvs_blocks',
+			'mvs_bp_activity_media',
+			'mvs_conversation_participants',
+			'mvs_conversations',
+			'mvs_error_log',
+			'mvs_favorites',
+			'mvs_follows',
+			'mvs_media_index',
+			'mvs_media_meta',
+			'mvs_media_stats',
+			'mvs_media_views',
+			'mvs_mentions',
+			'mvs_message_reactions',
+			'mvs_messages',
+			'mvs_notifications',
+			'mvs_reactions',
+			'mvs_reports',
+			'mvs_transactions',
+		);
+	}
+
+	/**
 	 * Run pending migrations.
 	 */
 	public function run(): void {

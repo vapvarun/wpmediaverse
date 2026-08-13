@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-13T04:36:21Z",
+    "generated_at": "2026-08-13T05:14:24Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -1047,12 +1047,12 @@
             "sites": [
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1032-1032",
+                    "lines": "1079-1079",
                     "method": "migrate_to_23"
                 },
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1064-1064",
+                    "lines": "1111-1111",
                     "method": "migrate_to_24"
                 }
             ]
