@@ -864,6 +864,68 @@ the setting: stripping rewrites the file, so the stored copy is not byte-identic
 | 10 | Caching | folder children and grant resolution cached per request, invalidated on write |
 | 11 | Concurrency | `UNIQUE KEY name_in_parent`; already-deleted / already-moved handled gracefully |
 
+### 12a. Measured, 2026-08-13 (P3.9)
+
+The table above was reasoned, not measured, and said so. It has now been measured
+against a **30,000-document fixture** across 25 drives, seeded with
+`wp mvs seed-documents --members=25 --docs-per=1200 --depth=8` (105 s) and removed
+with `--cleanup`. Everything below is a number taken off a live site, not an
+estimate.
+
+| Claim | Measured | Verdict |
+|---|---|---|
+| 1. Pagination | `drive_documents()` page 1: **2 queries, 6.6 ms**. Page 40 (deep offset): **2 queries, 6.9 ms** | **HOLDS** — flat with offset, which is the property that matters |
+| 3. N+1 | `prefetch()` over a 20-row page: **1 query, 0.7 ms**. Then `can_view()` ×20: **0 queries, 0 ms** | **BETTER THAN CLAIMED** — the claim says 2 queries/page; it is 1 |
+| 4. `COUNT(*)` | `count_documents()`: **1 query, 1 ms** over 30k rows | **HOLDS** |
+| Rename/move batched above 5,000 | Move of a **5,100-folder** subtree: web request **13.9 ms / 11 queries**, folder left wearing `moving`, **1** Action Scheduler action queued, **0 of 5,100** children rewritten in-request. The deferred rewrite: **5,100 rows in 125.3 ms as ONE `UPDATE`**, status back to `active` | **HOLDS** — 125 ms of work moved out of the request |
+| 2. Indexes | See correction below | **CLAIM IS STALE** |
+
+**Correction to claim 2.** `KEY doc_listing` is **not** the drive query verbatim any
+more, and is not the index the query uses. Both exist:
+
+```
+doc_listing    (media_type, folder_id, status, created_at)
+drive_listing  (media_type, drive_type, drive_id, folder_id, status, created_at)
+```
+
+The drive query filters `drive_type` and `drive_id` — columns v29 added *after* this
+claim was written — so the optimizer picks `drive_listing` (`type=ref`, 180 rows
+examined out of 30,108, backward index scan). `doc_listing` is not a prefix of
+`drive_listing`, so it is **not** automatically redundant: it still serves
+drive-agnostic listings. Whether it still earns its place is a separate question
+this measurement does not answer.
+
+**Search: the pdf fixture could not measure it, so the seeder gained `--format=text`.**
+`mvs_pro_document_search` held **104 rows against 30,108 seeded documents**, because
+the seeder wrote PDFs and PDFs are deliberately not extracted (`ExtractionService`: a
+PDF's text may be compressed, subsetted or outlined, and indexing plausible garbage
+returns a confident wrong answer — Basecamp 10194833916). A pdf-only fixture writes
+ZERO search rows, so it can never measure search.
+
+`wp mvs seed-documents --format=text` now seeds extractable prose. Measured with it:
+
+| | Measured |
+|---|---|
+| Extraction is **asynchronous** | 200 text documents queued **200** `mvs_pro_extract_document` Action Scheduler actions and wrote **no** search rows until the queue drained. A freshly seeded fixture has an empty search index until then — worth knowing before concluding search is broken |
+| Draining the queue | 200 actions in **0.7 s**, `status = indexed`, ~1,345 extracted chars each |
+| FULLTEXT query | **2.5–7.1 ms** for 20 hits, `EXPLAIN` confirms `media_content_ft`, `type=fulltext` |
+| Through the REST route | `GET /documents/search?q=supplier` → 200 in **12.6 ms**, results scoped to what the caller may see |
+
+One correction to my own first attempt, recorded because it is the trap: the column
+is `search_text`, not `content`, and the doc type for a `.txt` file is `text`, not
+`txt`. Passing `txt` refuses every row with `mvs_document_type_mismatch` — the ingest
+guard doing exactly its job, and how the mistake was caught.
+
+Claims 6–9 (mobile/RTL, dark mode, a11y, empty states) are UI properties. A query
+harness cannot speak to them and this measurement does not pretend to; they need the
+390px browser pass.
+
+**Also confirmed:** the batching path depends on `function_exists( 'as_enqueue_async_action' )`.
+Action Scheduler was a declared-but-never-loaded dependency in Free until 2026-08-13
+(Basecamp 10194740839) — so on a Free-only site that guard was false and the move fell
+through to the synchronous branch. That branch is one `UPDATE`, not a walk, and it
+clears the `moving` flag itself, so the fallback is correct rather than broken.
+
 ---
 
 ## 13. Measured against Google Drive for a team
