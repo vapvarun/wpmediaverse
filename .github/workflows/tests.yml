@@ -2,9 +2,14 @@ name: Tests
 
 on:
   push:
-    branches: [main, master]
+    # Release branches are named for the version they carry (2.4.0), and all the
+    # work happens there. With main/master alone, this workflow had not run for
+    # a single commit of the 2.4.0 cycle — the pre-push hook and local-CI were
+    # the only gate that ever fired. A CI that does not run on the branch you
+    # work on is not a CI.
+    branches: [main, master, '[0-9]*.[0-9]*.[0-9]*', 'release/**']
   pull_request:
-    branches: [main, master]
+    branches: [main, master, '[0-9]*.[0-9]*.[0-9]*', 'release/**']
 
 jobs:
   phpunit:
@@ -183,7 +188,22 @@ jobs:
         run: |
           # IMPORTANT: this exclude list must mirror Gruntfile.js copy:dist task.
           # Plugin Check should only inspect files that customers receive in the dist zip.
+          #
+          # This is the THIRD hand-maintained copy of that list (Gruntfile.js and
+          # .distignore are the other two), and keeping three in lockstep by hand
+          # is what produced the release that shipped without an autoloader:
+          # Gruntfile copied vendor/ minus named dev packages while .distignore
+          # excluded /vendor wholesale. Deriving all three from one source is
+          # worth doing — Basecamp 10194741538.
+          #
+          # vendor/ is excluded because it is dev and build tooling that does not
+          # ship. libs/ is deliberately NOT excluded: it holds Action Scheduler
+          # and the EDD SDK, which DO ship, and a check of "what customers
+          # receive" that skips them is checking a fiction. Expect third-party
+          # findings from those two packages; they are not ours to fix, and
+          # hiding them would be the wrong trade.
           rsync -a \
+            --exclude='vendor/' \
             --exclude='tests/' --exclude='bin/' --exclude='tools/' --exclude='dist/' \
             --exclude='docs/' --exclude='qa/' --exclude='audit/' --exclude='plan/' --exclude='plans/' --exclude='marketing/' \
             --exclude='node_modules/' --exclude='test-results/' \
