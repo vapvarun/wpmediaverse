@@ -2053,6 +2053,11 @@ left guessing which one they are in.
 6. WP-CLI backfill, batched.
 7. Admin state column + re-render.
 
+Legacy `.doc` / `.xls` / `.ppt` are the biggest single win in the list — they go from
+NO preview at all to full fidelity (§25.13) — so a fixture of all three belongs in the
+verification for step 5, not just the modern formats. Testing only `.docx` is how the
+hole stayed invisible.
+
 Each step is independently shippable and independently verifiable. Step 4 delivers
 value on its own even if conversion is never enabled — it fixes the browser-dependent
 branch for PDFs, which is the one inconsistency measured today.
@@ -2064,3 +2069,67 @@ decent for PowerPoint). Four renderers means four failure modes, four things to 
 and an owner who cannot answer "what happens when a member uploads a .docx?" without
 qualifications. One conversion path and one viewer is the simpler flow, and simplicity
 here is the feature.
+
+### 25.13 Coverage: every accepted type, and what changes
+
+**No new types are added.** `DocumentTypes` already accepts **11 named types across
+14 extensions and 15 MIME types**, and all 11 are on by default. §25 changes how they
+are PRESENTED, not what is accepted.
+
+| Ext | Named type | Today | After §25 |
+|---|---|---|---|
+| `.pdf` | `pdf` | Embedded — browser's own viewer | Embedded — **PDF.js**, same everywhere |
+| `.docx` | `word` | Extracted text | **Full fidelity** |
+| `.doc` | `word` | **Nothing — see below** | **Full fidelity** |
+| `.xlsx` | `excel` | Extracted cells | **Full fidelity** |
+| `.xls` | `excel` | **Nothing** | **Full fidelity** |
+| `.pptx` | `powerpoint` | Extracted slide text | **Full fidelity** |
+| `.ppt` | `powerpoint` | **Nothing** | **Full fidelity** |
+| `.odt` | `odf_text` | Extracted text | **Full fidelity** |
+| `.ods` | `odf_sheet` | Extracted cells | **Full fidelity** |
+| `.odp` | `odf_presentation` | Extracted slide text | **Full fidelity** |
+| `.rtf` | `rtf` | Extracted text | **Full fidelity** |
+| `.txt` | `text` | Rendered — IS the document | Unchanged |
+| `.md` | `markdown` | Rendered markdown (`<h2>`, lists) | Unchanged |
+| `.csv` | `csv` | Rendered table | Unchanged |
+
+#### The hole this audit found: legacy binary Office formats
+
+`.doc`, `.xls` and `.ppt` are **accepted at upload** — they are in `BY_MIME` and
+`BY_EXTENSION`, they map to `word` / `excel` / `powerpoint`, and all three are in the
+default `allowed_types`. But `OfficePreviewRenderer` is an **OOXML/ODF reader**: it
+opens a ZIP container and reads XML. A legacy `.doc` is an OLE2 compound file, not a
+ZIP, so there is nothing for it to read.
+
+Measured 2026-08-14 by handing the renderer non-ZIP bytes typed as each:
+
+```
+legacy-as-word         html = ''   note = "No readable text was found in this file…"
+legacy-as-excel        html = ''   same
+legacy-as-powerpoint   html = ''   same
+```
+
+Two things follow, and they are different severities:
+
+1. **These three extensions cannot be previewed at all today.** Not "lower fidelity" —
+   nothing. A member uploading a `.doc` gets a note where a preview should be.
+2. **The note misattributes the cause.** It says the file "may hold only images, or it
+   may not have saved" — describing an empty document. The truth is that we cannot read
+   the format. The member is told something wrong about their own file, and would go
+   looking for a problem that is not there.
+
+The graceful degradation is right — a note beats an empty panel, which is what
+`OfficePreviewRenderer`'s own docblock says it exists to avoid. Only the wording is
+wrong.
+
+**Both are fixed by §25**, because LibreOffice reads legacy binaries natively. Until
+it lands, item 2 is worth a one-line copy fix on its own: say "this format cannot be
+previewed" when the type is legacy, rather than blaming the file.
+
+#### Types deliberately NOT added
+
+`.zip` resolves to nothing by design (a bare archive is not a document, and admitting
+it would let any ZIP through the container check). Adding formats LibreOffice could
+also convert — `.odg`, `.pages`, `.key`, `.wpd` — is cheap AFTER §25, because
+conversion becomes the only question. It is deliberately not in scope: get the 11 that
+are already accepted presenting correctly first.
