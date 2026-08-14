@@ -31,7 +31,7 @@ class Commands {
 	 * @return \WPMediaVerse\Repository\MediaRepository
 	 */
 	private function repo() {
-		return $this->repo();
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 	}
 
 	/**
