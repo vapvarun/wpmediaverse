@@ -1386,8 +1386,8 @@ reader does not have to re-derive it.
   *Measured 2026-08-14 with the detector, not counted by hand:* **Free 32 call sites across 5
   files** (`CLI/Commands.php` 11, `Services/CloudOps.php` 8, `Services/CptIdCollisionService.php`
   6, `REST/Controller/MediaController.php` 4, `Services/StorageRepairService.php` 3). The "24
-  files / 66 call sites" figure this section carried was wrong. **Pro is at 0** and its Rule 7 is
-  now a hard `violation()`, mutation-tested. Free's stays `known_gap()` until its 32 clear.
+  files / 66 call sites" figure this section carried was wrong. **Both plugins are at 0** and Rule 7
+  is a hard `violation()` in both, mutation-tested. Free's 32 cleared 2026-08-15 — see §24.2 item 1.
 - **Scale fixture** (P3.9) — **DONE.** 30,000 documents across 25 drives, seeded in 105 s and
   removed after. §12a records every measurement and corrects §12's stale index claim. The fixture
   generator for per-format samples is committed at `wpmediaverse-pro/bin/make-document-fixtures.py`.
@@ -1410,8 +1410,8 @@ reader does not have to re-derive it.
   *Verified done 2026-08-11 (corrected §20.2 same day — an earlier pass of this section claimed
   the rule did not exist; it does):* both plugins' `bin/coding-rules-check.sh` carry Rule 7, with
   detector `bin/lib/detect-media-index-leaks.py` and mutation test `bin/mutation-test-rule7.sh`.
-  Currently `known_gap()` (tracked, non-blocking). What remains pending is only the P1.2 migration
-  listed above, then promote to `violation()`. Full allowlist + open call-site lists: §24.2 item 1.
+  A hard `violation()` in both plugins since 2026-08-15; the migration is complete and the open
+  call-site list is empty. Full allowlist with reasons: §24.2 item 1.
 - **P1.6 `AdminAggregatesService` counts documents separately.** *Verified done:*
   `total_documents()` exists with its own `admin_total_documents` cache key, and its docblock names
   the bug it fixed (a site whose members had uploaded 400 documents saw them added to "Total Media"
@@ -1771,46 +1771,64 @@ are release blockers for 2.4.0, but none should wait indefinitely either — the
 between "the structural guarantee in §8 is enforced" and "the structural guarantee in §8 is a
 convention someone has to remember."
 
-1. **CI ban on direct `mvs_media_index` queries (P1.3/P1.4) — DONE 2026-08-11, migration not started.**
-   Both plugins gained Rule 7 in `bin/coding-rules-check.sh`, backed by a shared detector
-   (`bin/lib/detect-media-index-leaks.py`, one copy per plugin so each `bin/` stays self-contained)
-   and a mutation test (`bin/mutation-test-rule7.sh`) that proves three things: a real violation is
-   caught, an allowlisted file is not, and a bare comment mentioning the table name is not a false
-   positive. Allowlist, each entry with a reason, not a bare path: `Repository/MediaRepository.php`,
-   `Repository/MediaRepositoryInterface.php` (docblock-only), `Core/Migrator.php` (schema DDL runs
-   before the repository's assumptions are safe), `Services/AdminAggregatesService.php` (the Rule-3
-   sanctioned aggregate home — routing its own queries through the repository would only relocate the
-   SQL). **Rule 7 is currently `known_gap()`, not `violation()` — it does not fail the script or block
-   a push.** Making it a hard gate today, with 66 Free + 6 Pro call sites still open, would fail every
-   future `git push` on unrelated work through the pre-push hook until all of them were migrated in
-   one sweep — the exact "no incremental patches vs. don't break the build for everyone" tension this
-   plan needs to resolve, not create. **Promote it to `violation()` the moment both lists are empty**,
-   so a 67th or 7th call site can never sneak back in unnoticed.
+1. **CI ban on direct `mvs_media_index` queries (P1.3/P1.4) — COMPLETE 2026-08-15.**
+   Rule 7 is a hard `violation()` in both plugins and every tracked call site is migrated. A new
+   direct query now fails `bin/coding-rules-check.sh` with exit 1 and blocks the push; verified by
+   planting one and watching it fail, then removing it and watching it pass.
 
-   Confirmed real violation list (2026-08-11, mutation-tested detector):
-   - **Free — 24 files, 66 call sites:** `Admin/MediaListPage.php`, `Admin/StatsPage.php`,
-     `CLI/Commands.php`, `Core/Activator.php`, `Core/TemplateLoader.php`,
-     `Integrations/BuddyPress/ActivityContentIntegration.php`,
-     `Integrations/BuddyPress/ActivitySyncIntegration.php`,
-     `Integrations/BuddyPress/GroupTabIntegration.php`, `REST/Controller/MediaController.php`,
-     `REST/Controller/TagController.php`, `Services/CloudOps.php`,
-     `Services/CptIdCollisionService.php`, `Services/GDPRService.php`,
-     `Services/ModerationService.php`, `Services/StorageRepairService.php`,
-     `Services/UploadService.php`, `Services/UserDeletionService.php`, `Social/ActivityService.php`,
-     `Social/FavoriteService.php`, `Social/ReactionService.php`, `Taxonomies/MediaTag.php`,
-     `src/blocks/album-viewer/render.php`, `src/blocks/media-grid/render.php`,
-     `src/blocks/media-stats/render.php`.
-   - **Pro — 4 files, 6 call sites:** `Leaderboard/LeaderboardService.php` (2),
-     `Integrations/RtMedia/MigrationAdmin.php` (1), `Stories/StoryService.php` (2),
-     `Documents/SearchService.php` (1). `MediaRepository` already exposes methods that look like a
-     direct fit for several of these (`get_by_slug`, `find_by_meta`, `query_by_author`,
-     `count_by_meta`) — some of this 30-file list may be a call-site bug (repository method exists,
-     nobody used it) rather than a missing-capability gap. Check before adding a new method.
+   **Free's 32, and where they went.** `CLI/Commands.php` (11), `Services/CloudOps.php` (8),
+   `Services/CptIdCollisionService.php` (6), `REST/Controller/MediaController.php` (4),
+   `Services/StorageRepairService.php` (3). The migration was NOT 32 new repository methods —
+   most were the same walk with different columns, so `query()` / `query_count()` gained four
+   predicates (`id_after` keyset cursor, `media_ids`, `status_in`, `has_file`, plus `privacy_not_in`
+   and `file_types_in`) and eleven call sites became argument lists. What genuinely did not fit got
+   named methods: `media_ids_missing_meta()` (an anti-join — absence of a meta row is a different
+   query, not another predicate), `count_public_cloud_candidates()` and `feed_page()`.
 
-   Run `bash bin/coding-rules-check.sh` in either plugin to see the current live list (it will not
-   match the numbers above verbatim forever — that's the point of it being a script, not a snapshot).
-   Migrate incrementally through `MediaRepository` — this is exactly the kind of multi-file mechanical
-   change Coding Rule 15 (debt tax) says to do without growing any Known-Debt file in the process.
+   **Two new homes, each for a stated reason.** `Repository/MediaIntegrityRepository.php` holds the
+   nine integrity/repair queries — a sibling of `MediaRepository`, not part of it, because that class
+   is already 4,900 lines and because these reads must bypass the row cache (an audit that reads its
+   subject through a cache is an audit of the cache). `CloudOps::counts_by_service()` moved to
+   `AdminAggregatesService::media_counts_by_service()`, where coding Rule 16 puts site-wide
+   COUNT+SUM aggregates; the old name stays as a delegate because Pro calls it (Production Rule 2).
+
+   **One call site keeps its SQL fragments and that is deliberate.** `MediaController`'s feed
+   assembles `$where`/`$params` and hands them to the **public filter** `mvs_feed_query_args`,
+   documented since 1.1.0. Those fragments ARE the published contract, so re-expressing the feed as
+   named arguments would break every integration using it. The fragments stay with the caller; the
+   execution — table name, stats join, trending formula, pagination, prepare — moved to
+   `MediaRepository::feed_page()`.
+
+   **Three real defects surfaced by doing this, none of them the point of the exercise:**
+   - `CloudOps::migrate_one()` wrote `file_url` with a raw `$wpdb->update`, leaving the row cache
+     holding the pre-migration URL for the rest of the request. Now goes through `set()`, which
+     invalidates.
+   - `CloudOps::count_candidates()` restated the predicate of `query_public_cloud_candidates()` by
+     hand under a comment saying it "must match exactly". They had already drifted once. Now one
+     method.
+   - `CLI moderation-stats` carried a byte-identical copy of `get_moderation_counts()`, so the CLI
+     and the admin moderation screen could have reported different backlogs to the same person.
+
+   **And one defect nearly introduced, caught by diffing live counts rather than by any test:**
+   writing `MediaTypes::ALL` to mean "no type filter" in the storage walks. It lists image, video,
+   audio and document — not `legacy_document`, which exists on real rows with real files. Had it
+   shipped, `relocalize-private` would have skipped legacy documents, leaving a private file
+   readable on a public bucket while reporting success. The storage walks pass `media_types => null`
+   (an explicit no-predicate mode added for exactly this), and
+   `MediaQueryWalkArgsTest::test_a_storage_walk_sees_legacy_document_rows()` pins it.
+
+   **Known gap left open on purpose:** the four storage commands still load their whole result set
+   when `--limit` is absent, as they always have. `id_after` now makes cursor-paging them a small
+   change, but it is a behaviour change to four commands and does not belong in a mechanical routing
+   commit. `generate-video-thumbnails` WAS converted, because its loop was simple enough that
+   leaving it unbounded next to the new cursor would have been the odd one out.
+
+   Allowlist, each entry with a reason rather than a bare path: `Repository/MediaRepository.php`,
+   `Repository/MediaRepositoryInterface.php` (docblock-only), `Repository/MediaIntegrityRepository.php`
+   (the repository layer; reads deliberately bypass the cache), `Core/Migrator.php` (schema DDL runs
+   before the repository's assumptions are safe), `Services/AdminAggregatesService.php` (the Rule-16
+   sanctioned aggregate home).
+
 2. **30k-document scale fixture (P3.9) — THE TOOL ALREADY EXISTS, only the measured run is pending.**
    §20.2 listed this as fully pending; that was stale. `wp mvs seed-documents` (Pro,
    `includes/CLI/SeedDocuments.php`) has existed since this feature shipped: seeds through

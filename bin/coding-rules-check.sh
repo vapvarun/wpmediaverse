@@ -278,28 +278,42 @@ check_no_direct_media_index_query_outside_repository() {
     local hits
     hits=$(python3 "$SCRIPT_DIR/lib/detect-media-index-leaks.py" "$PLUGIN_DIR" 2>/dev/null)
     if [ -n "$hits" ]; then
-        # known_gap(), not violation(): 31 pre-existing call sites across 12
-        # files were confirmed real on 2026-08-11 (mutation-tested detector,
-        # see bin/mutation-test-rule7.sh) and are being migrated incrementally
-        # per plan/document-library.md §24.2 item 1. Making this a hard
-        # violation() today would block every future `git push` on unrelated
-        # work through the pre-push hook until all 31 are fixed in one sweep —
-        # exactly the "no incremental patches" tension this rule is supposed
-        # to resolve, not create. PROMOTE THIS TO violation() the moment this
-        # list reaches zero, so a 32nd call site can never sneak back in.
+        # violation(), promoted from known_gap() on 2026-08-15 when the last of
+        # the 32 tracked call sites was migrated. It was a known_gap() while the
+        # list was non-empty for one reason: a hard failure would have blocked
+        # every push on unrelated work through the pre-push hook until all 32
+        # were fixed in a single sweep, which is the "no incremental patches"
+        # tension this rule exists to resolve rather than create.
+        #
+        # That reason is spent. The list is empty, so the only thing this can
+        # fail on now is a NEW leak — and a new leak caught at push time costs
+        # one edit, while the same leak found six months later costs the
+        # investigation that produced this rule in the first place.
         local count
         count=$(echo "$hits" | wc -l | tr -d ' ')
-        known_gap "Rule 7 — direct \$wpdb query against mvs_media_index outside MediaRepository ($count known, tracked, not yet blocking):"
+        violation "Rule 7 — direct \$wpdb query against mvs_media_index outside the repository layer ($count):"
         echo "$hits" | sed 's/^/    /'
-        echo "    Fix: add/use a MediaRepository method instead of querying the table"
-        echo "         directly. See plan/document-library.md §24.2 item 1 for the"
-        echo "         current known list and migration order. If this call site has"
-        echo "         a genuine architectural reason to stay direct (like Migrator.php"
-        echo "         or AdminAggregatesService.php), add it to the allowlist in"
-        echo "         bin/lib/detect-media-index-leaks.py with a one-line reason."
-        echo "    This is a known_gap(), not a violation() — it will not fail this"
-        echo "    script or block a push until the list above is empty. Do not add"
-        echo "    a 32nd line to it; new code must route through MediaRepository."
+        echo "    mvs_media_index is the authoritative media record and every read or"
+        echo "    write goes through includes/Repository/ — so caching, privacy"
+        echo "    filtering and query-shape changes apply everywhere at once instead"
+        echo "    of wherever someone remembered to duplicate them."
+        echo ""
+        echo "    Fix, in order of preference:"
+        echo "      1. Use an existing MediaRepository method. There are ~90; the"
+        echo "         general listing engine is query() / query_count(), which takes"
+        echo "         status, author, privacy, type, date, id-cursor and file filters."
+        echo "      2. Add an argument to query()'s builder if yours is a new"
+        echo "         PREDICATE over the same shape of question."
+        echo "      3. Add a named method if it is a genuinely different query"
+        echo "         (an anti-join, an aggregate, a schema question)."
+        echo "      4. Only if it is diagnostic or repair work whose reads must NOT"
+        echo "         pass through the row cache, put it in"
+        echo "         Repository/MediaIntegrityRepository.php."
+        echo ""
+        echo "    Allowlisting is a last resort and needs an ARCHITECTURAL reason"
+        echo "    written next to the entry in bin/lib/detect-media-index-leaks.py —"
+        echo "    'it was easier' is not one. Migrator.php qualifies because it runs"
+        echo "    before the repository's assumptions about the table are safe."
     else
         ok "Rule 7 — all mvs_media_index access routed through MediaRepository"
     fi

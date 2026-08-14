@@ -20,6 +20,46 @@ defined( 'ABSPATH' ) || exit;
 class CloudOps {
 
 	/**
+	 * The media repository.
+	 *
+	 * @return \WPMediaVerse\Repository\MediaRepository
+	 */
+	private static function repo() {
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+	}
+
+	/**
+	 * The one row a per-media cloud operation needs, or null if it cannot act.
+	 *
+	 * `migrate_one()` and `backfill_one()` each opened with the same query and
+	 * the same four conditions — a published-or-draft row that actually has a
+	 * file. Two copies of "which rows may we touch" is two chances to widen one
+	 * of them by accident, and widening THIS one means a cloud operation acting
+	 * on a row it was never meant to.
+	 *
+	 * @param int $media_id Media id.
+	 * @return array|null Row with media_id, file_path and privacy, or null.
+	 */
+	private static function actionable_row( int $media_id ): ?array {
+		$rows = self::repo()->query(
+			array(
+				'media_ids'   => array( $media_id ),
+				'status'      => '',
+				'status_in'   => array( 'publish', 'draft' ),
+				'has_file'    => true,
+				// No type predicate: storage is a property of the file. Not
+				// `MediaTypes::ALL`, which omits `legacy_document` and would
+				// make a per-media cloud operation refuse a row it was handed
+				// with "media row not found".
+				'media_types' => null,
+				'limit'       => 1,
+			)
+		);
+
+		return $rows ? (array) $rows[0] : null;
+	}
+
+	/**
 	 * Status option key. Stores the most recent admin-triggered job state.
 	 *
 	 * @var string
@@ -59,8 +99,7 @@ class CloudOps {
 	public static function migrate_one( int $media_id, string $from, string $to, bool $keep_source ): array {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT media_id, file_path, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''", $media_id ) );
+		$row = self::actionable_row( $media_id );
 		if ( ! $row ) {
 			return array(
 				'ok'     => false,
@@ -77,8 +116,8 @@ class CloudOps {
 		// `mvs_cloudops_allow_non_public_to_cloud` lets customers with
 		// private cloud buckets bypass after they've taken responsibility
 		// for restricting public access at the bucket / CDN layer.
-		if ( 'public' !== (string) $row->privacy && 'local' !== $to ) {
-			$allow = (bool) apply_filters( 'mvs_cloudops_allow_non_public_to_cloud', false, $media_id, (string) $row->privacy, $to );
+		if ( 'public' !== (string) $row['privacy'] && 'local' !== $to ) {
+			$allow = (bool) apply_filters( 'mvs_cloudops_allow_non_public_to_cloud', false, $media_id, (string) $row['privacy'], $to );
 			if ( ! $allow ) {
 				return array(
 					'ok'     => false,
@@ -88,7 +127,7 @@ class CloudOps {
 			}
 		}
 
-		$rel_path      = (string) $row->file_path;
+		$rel_path      = (string) $row['file_path'];
 		$source_driver = self::resolve_driver( $from );
 		$dest_driver   = self::resolve_driver( $to );
 
@@ -141,14 +180,15 @@ class CloudOps {
 		// get_driver_for_location() reads), then optionally delete sources.
 		$new_url = $dest_driver->url( $rel_path );
 		if ( '' !== $new_url ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->update(
-				$wpdb->prefix . 'mvs_media_index',
-				array( 'file_url' => $new_url ),
-				array( 'media_id' => $media_id ),
-				array( '%s' ),
-				array( '%d' )
-			);
+			// Through the repository, and that is a fix rather than a
+			// relocation. The raw UPDATE wrote the row and left
+			// MediaRepository's per-request row cache holding the OLD url, so
+			// anything that had already read this media in the same request —
+			// the CLI's own progress line, the admin migrate handler's response
+			// — kept resolving it to the driver it had just been moved off.
+			// `set()` invalidates on write, which is the entire reason writes are
+			// supposed to go through it.
+			self::repo()->set( $media_id, 'file_url', $new_url );
 		}
 
 		// Phase 2b — repoint every stored variant URL meta at the destination.
@@ -378,8 +418,7 @@ class CloudOps {
 			);
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT media_id, file_path, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''", $media_id ) );
+		$row = self::actionable_row( $media_id );
 		if ( ! $row ) {
 			return array(
 				'ok'     => false,
@@ -388,7 +427,7 @@ class CloudOps {
 			);
 		}
 
-		if ( 'public' !== (string) $row->privacy ) {
+		if ( 'public' !== (string) $row['privacy'] ) {
 			return array(
 				'ok'     => false,
 				'status' => 'skipped-non-public',
@@ -398,7 +437,7 @@ class CloudOps {
 
 		$upload_basedir = (string) ( wp_upload_dir()['basedir'] ?? '' );
 		$wpmv_local_dir = trailingslashit( $upload_basedir ) . 'wpmediaverse';
-		$rel_path       = (string) $row->file_path;
+		$rel_path       = (string) $row['file_path'];
 		$local_full     = trailingslashit( $wpmv_local_dir ) . $rel_path;
 
 		if ( ! file_exists( $local_full ) ) {
@@ -465,20 +504,32 @@ class CloudOps {
 	 * @return array{total:int, needs_migration:int, non_public_kept:int}
 	 */
 	public static function count_candidates(): array {
-		global $wpdb;
+		$repo = self::repo();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''" );
+		// The filter set every tile on this panel shares. NO type predicate:
+		// storage is a property of the file, and these tiles have to add up to
+		// what the migrate buttons will actually process. `MediaTypes::ALL`
+		// omits `legacy_document`, so it would under-count the total while the
+		// button still moved those files — the panel would report a backlog
+		// that never reached zero.
+		$base = array(
+			'status'      => '',
+			'status_in'   => array( 'publish', 'draft' ),
+			'has_file'    => true,
+			'media_types' => null,
+		);
 
-		// Must match query_public_cloud_candidates( $limit, true ) exactly — the
-		// migrate flow only processes privacy='public' rows, so the count has to
-		// share the privacy filter or it permanently over-counts (private/members
-		// media is always kept local and is never migrated → backlog never hits 0).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$still_local = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url LIKE 'http%/wp-content/uploads/%'" );
+		$total = $repo->query_count( $base );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$non_public = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy != 'public'" );
+		// The comment that used to sit here said this had to match
+		// `query_public_cloud_candidates( $limit, true )` EXACTLY — and then
+		// restated its predicate by hand, which is not matching, it is hoping.
+		// They had already drifted once, in the direction where the backlog
+		// never reaches zero and the migrate button never goes quiet. Now the
+		// list and its count are one method with one predicate.
+		$still_local = $repo->count_public_cloud_candidates( true );
+
+		$non_public = $repo->query_count( array_merge( $base, array( 'privacy_not_in' => array( 'public' ) ) ) );
 
 		// Counted from the index, NOT derived as `total - needs_migration`.
 		// That subtraction over-reported: `total` spans every privacy level
@@ -489,9 +540,10 @@ class CloudOps {
 		// actually on the CDN, and the three tiles summed past the total.
 		//
 		// This is the exact complement of `needs_migration` inside the public
-		// set, so on_cloud + needs_migration == public rows, by construction.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$on_cloud = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url NOT LIKE 'http%/wp-content/uploads/%'" );
+		// set, so on_cloud + needs_migration == public rows, by construction —
+		// which is why it is the same method with the LIKE inverted rather than
+		// a fifth predicate written out again.
+		$on_cloud = $repo->count_public_cloud_candidates( true, true );
 
 		return array(
 			'total'           => $total,
@@ -516,81 +568,7 @@ class CloudOps {
 	 * @return array<string,array{label:string,count:int,bytes:int}>
 	 */
 	public static function counts_by_service(): array {
-		global $wpdb;
-
-		$table = $wpdb->prefix . 'mvs_media_index';
-
-		// LIKE patterns per service: provider host(s) + any configured domain.
-		$like = static function ( $needle ) use ( $wpdb ) {
-			return '%' . $wpdb->esc_like( $needle ) . '%';
-		};
-
-		$services = array(
-			'local'    => array(
-				'label'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
-				'patterns' => array( '/wp-content/uploads/' ),
-			),
-			's3'       => array(
-				'label'    => __( 'Amazon S3', 'wpmediaverse' ),
-				'patterns' => array_filter( array( '.amazonaws.com/', (string) get_option( 'mvs_pro_s3_cdn_domain', '' ) ) ),
-			),
-			'bunnycdn' => array(
-				'label'    => __( 'BunnyCDN', 'wpmediaverse' ),
-				'patterns' => array_filter( array( '.b-cdn.net/', (string) get_option( 'mvs_pro_bunny_cdn_hostname', '' ) ) ),
-			),
-			'r2'       => array(
-				'label'    => __( 'Cloudflare R2', 'wpmediaverse' ),
-				'patterns' => array_filter( array( '.r2.cloudflarestorage.com/', '.r2.dev/', (string) get_option( 'mvs_pro_r2_cdn_domain', '' ) ) ),
-			),
-			'dospaces' => array(
-				'label'    => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
-				'patterns' => array_filter( array( '.digitaloceanspaces.com/', (string) get_option( 'mvs_pro_do_cdn_domain', '' ) ) ),
-			),
-		);
-
-		$out       = array();
-		$base      = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
-		$accounted = array(); // collect non-local patterns to derive `other`.
-
-		foreach ( $services as $slug => $svc ) {
-			// Every service carries at least its provider host literal, so the
-			// filtered pattern list is always non-empty.
-			$patterns = array_values( array_unique( array_filter( $svc['patterns'] ) ) );
-			$clauses  = array();
-			$params   = array();
-			foreach ( $patterns as $p ) {
-				$clauses[] = 'file_url LIKE %s';
-				$params[]  = $like( $p );
-				if ( 'local' !== $slug ) {
-					$accounted[] = $like( $p );
-				}
-			}
-			$where = $base . ' AND (' . implode( ' OR ', $clauses ) . ')';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$row          = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS c, COALESCE(SUM(file_size),0) AS b FROM {$table} WHERE {$where}", ...$params ), ARRAY_A );
-			$out[ $slug ] = array(
-				'label' => $svc['label'],
-				'count' => (int) ( $row['c'] ?? 0 ),
-				'bytes' => (int) ( $row['b'] ?? 0 ),
-			);
-		}
-
-		// `other`: has file_path, not local, and matches no known cloud host.
-		$other_where  = $base . ' AND file_url NOT LIKE %s';
-		$other_params = array( $like( '/wp-content/uploads/' ) );
-		foreach ( $accounted as $pat ) {
-			$other_where   .= ' AND file_url NOT LIKE %s';
-			$other_params[] = $pat;
-		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$other        = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS c, COALESCE(SUM(file_size),0) AS b FROM {$table} WHERE {$other_where}", ...$other_params ), ARRAY_A );
-		$out['other'] = array(
-			'label' => __( 'Other / external', 'wpmediaverse' ),
-			'count' => (int) ( $other['c'] ?? 0 ),
-			'bytes' => (int) ( $other['b'] ?? 0 ),
-		);
-
-		return $out;
+		return \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->media_counts_by_service();
 	}
 
 	/**

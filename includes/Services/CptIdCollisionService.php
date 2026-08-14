@@ -41,6 +41,21 @@ class CptIdCollisionService {
 	private const TAXONOMIES = array( 'mvs_category', 'mvs_tag' );
 
 	/**
+	 * The integrity queries this report is built from.
+	 *
+	 * Every SQL statement this class used to carry now lives in
+	 * `Repository\MediaIntegrityRepository` (architecture invariant 6, coding
+	 * Rule 7). What stays here is the part that is actually this class's job:
+	 * deciding what the numbers MEAN — whether the window is dangerous, what
+	 * the verdict sentence should say, which rows a human has to look at.
+	 *
+	 * @return \WPMediaVerse\Repository\MediaIntegrityRepository
+	 */
+	private function queries(): \WPMediaVerse\Repository\MediaIntegrityRepository {
+		return new \WPMediaVerse\Repository\MediaIntegrityRepository();
+	}
+
+	/**
 	 * Run every check and return a structured report.
 	 *
 	 * Performs no writes of any kind.
@@ -92,25 +107,10 @@ class CptIdCollisionService {
 	private function forecast(): array {
 		global $wpdb;
 
-		$index = $wpdb->prefix . 'mvs_media_index';
+		$queries = $this->queries();
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$next_post = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s',
-				$wpdb->dbname,
-				$wpdb->posts
-			)
-		);
-
-		$next_media = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s',
-				$wpdb->dbname,
-				$wpdb->prefix . 'mvs_media_index'
-			)
-		);
-		// phpcs:enable
+		$next_post  = $queries->next_auto_increment( $wpdb->posts );
+		$next_media = $queries->next_auto_increment( $queries->index_table_name() );
 
 		// Post IDs already past the media sequence — new albums land on unused
 		// ground and cannot collide until uploads catch up again.
@@ -128,11 +128,7 @@ class CptIdCollisionService {
 
 		$window = $next_media - $next_post;
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$occupied = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE media_id >= %d", $next_post )
-		);
-		// phpcs:enable
+		$occupied = $queries->count_rows_from_id( $next_post );
 
 		$risk = $window > 0 ? round( 100 * $occupied / $window, 1 ) : 0.0;
 
@@ -159,44 +155,7 @@ class CptIdCollisionService {
 	 * @return array<string,int>
 	 */
 	private function totals(): array {
-		global $wpdb;
-
-		$index = $wpdb->prefix . 'mvs_media_index';
-		$types = $this->cpt_placeholders();
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$cpt_posts = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type IN ({$types})", self::CPT_TYPES )
-		);
-
-		$cpt_indexed = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$index} m
-				 INNER JOIN {$wpdb->posts} p ON p.ID = m.media_id
-				 WHERE p.post_type IN ({$types})",
-				self::CPT_TYPES
-			)
-		);
-
-		$colliding = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$index} m
-				 INNER JOIN {$wpdb->posts} p ON p.ID = m.media_id
-				 WHERE p.post_type IN ({$types}) AND m.media_type <> ''",
-				self::CPT_TYPES
-			)
-		);
-
-		$media_rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$index} WHERE media_type <> ''" );
-		// phpcs:enable
-
-		return array(
-			'cpt_posts'       => $cpt_posts,
-			'cpt_indexed'     => $cpt_indexed,
-			'collisions'      => $colliding,
-			'privacy_only'    => $cpt_indexed - $colliding,
-			'real_media_rows' => $media_rows,
-		);
+		return $this->queries()->cpt_collision_totals( self::CPT_TYPES );
 	}
 
 	/**
@@ -211,13 +170,7 @@ class CptIdCollisionService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function collisions(): array {
-		return $this->cpt_rows(
-			'p.ID AS cpt_id, p.post_type, p.post_title AS cpt_title,
-			        p.post_author AS cpt_author, p.post_name AS cpt_slug,
-			        m.media_type, m.title AS media_title, m.slug AS index_slug,
-			        m.privacy, m.post_author AS media_author, m.file_path',
-			"AND m.media_type <> ''"
-		);
+		return $this->queries()->cpt_collisions( self::CPT_TYPES );
 	}
 
 	/**
@@ -228,11 +181,7 @@ class CptIdCollisionService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function privacy_only_rows(): array {
-		return $this->cpt_rows(
-			'p.ID AS cpt_id, p.post_type, p.post_title AS cpt_title,
-			        m.privacy, m.slug AS index_slug',
-			"AND m.media_type = ''"
-		);
+		return $this->queries()->cpt_privacy_only_rows( self::CPT_TYPES );
 	}
 
 	/**
@@ -246,11 +195,7 @@ class CptIdCollisionService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function slug_overwrites(): array {
-		return $this->cpt_rows(
-			'p.ID AS cpt_id, p.post_title AS cpt_title, p.post_name AS cpt_slug,
-			        m.title AS media_title, m.slug AS index_slug',
-			"AND m.media_type <> '' AND m.slug = p.post_name"
-		);
+		return $this->queries()->cpt_slug_overwrites( self::CPT_TYPES );
 	}
 
 	/**
@@ -264,28 +209,7 @@ class CptIdCollisionService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function cpt_meta_rows(): array {
-		global $wpdb;
-
-		$meta  = $wpdb->prefix . 'mvs_media_meta';
-		$index = $wpdb->prefix . 'mvs_media_index';
-		$types = $this->cpt_placeholders();
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (array) $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT p.ID AS cpt_id, p.post_type, mm.meta_key, mm.meta_value,
-				        CASE WHEN mi.media_type IS NOT NULL AND mi.media_type <> ''
-				             THEN 1 ELSE 0 END AS shares_with_media
-				   FROM {$meta} mm
-				   INNER JOIN {$wpdb->posts} p ON p.ID = mm.media_id
-				   LEFT JOIN {$index} mi ON mi.media_id = mm.media_id
-				  WHERE p.post_type IN ({$types})
-				  ORDER BY p.ID, mm.meta_key",
-				self::CPT_TYPES
-			),
-			ARRAY_A
-		);
-		// phpcs:enable
+		return $this->queries()->cpt_meta_rows( self::CPT_TYPES );
 	}
 
 	/**
@@ -300,11 +224,7 @@ class CptIdCollisionService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function purge_risk(): array {
-		return $this->cpt_rows(
-			'p.ID AS cpt_id, p.post_type, p.post_title AS cpt_title,
-			        m.title AS media_at_risk, m.file_path, m.post_author AS media_author',
-			"AND m.media_type <> '' AND m.file_path IS NOT NULL"
-		);
+		return $this->queries()->cpt_purge_risk( self::CPT_TYPES );
 	}
 
 	/**
@@ -315,75 +235,6 @@ class CptIdCollisionService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function taxonomy_spread(): array {
-		global $wpdb;
-
-		$index = $wpdb->prefix . 'mvs_media_index';
-		$types = $this->cpt_placeholders();
-		$taxes = implode( ', ', array_fill( 0, count( self::TAXONOMIES ), '%s' ) );
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (array) $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT tt.taxonomy,
-				        COUNT(*) AS relationships,
-				        SUM(CASE WHEN p.ID IS NOT NULL THEN 1 ELSE 0 END) AS on_cpt_post,
-				        SUM(CASE WHEN m.media_id IS NOT NULL AND m.media_type <> '' THEN 1 ELSE 0 END) AS on_media,
-				        SUM(CASE WHEN p.ID IS NOT NULL AND m.media_id IS NOT NULL AND m.media_type <> '' THEN 1 ELSE 0 END) AS ambiguous
-				   FROM {$wpdb->term_relationships} tr
-				   INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
-				   LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id AND p.post_type IN ({$types})
-				   LEFT JOIN {$index} m ON m.media_id = tr.object_id
-				  WHERE tt.taxonomy IN ({$taxes})
-				  GROUP BY tt.taxonomy",
-				array_merge( self::CPT_TYPES, self::TAXONOMIES )
-			),
-			ARRAY_A
-		);
-		// phpcs:enable
-	}
-
-	/**
-	 * Run one CPT-joined report query.
-	 *
-	 * Every detail section asks the same shape of question — "join mvs_media_index to
-	 * the album/collection posts sharing its IDs, then narrow" — so the join, the
-	 * post-type placeholders and the ARRAY_A shaping live here once.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param string $select      Column list for the SELECT.
-	 * @param string $extra_where Additional AND-conditions, or ''.
-	 * @return array<int,array<string,mixed>>
-	 */
-	private function cpt_rows( string $select, string $extra_where = '' ): array {
-		global $wpdb;
-
-		$index = $wpdb->prefix . 'mvs_media_index';
-		$types = $this->cpt_placeholders();
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (array) $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT {$select}
-				   FROM {$index} m
-				   INNER JOIN {$wpdb->posts} p ON p.ID = m.media_id
-				  WHERE p.post_type IN ({$types}) {$extra_where}
-				  ORDER BY p.ID",
-				self::CPT_TYPES
-			),
-			ARRAY_A
-		);
-		// phpcs:enable
-	}
-
-	/**
-	 * Placeholder list for the CPT type IN() clause.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @return string
-	 */
-	private function cpt_placeholders(): string {
-		return implode( ', ', array_fill( 0, count( self::CPT_TYPES ), '%s' ) );
+		return $this->queries()->cpt_taxonomy_spread( self::CPT_TYPES, self::TAXONOMIES );
 	}
 }

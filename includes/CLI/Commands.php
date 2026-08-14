@@ -11,12 +11,82 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_CLI;
 use WP_CLI\Utils;
+use WPMediaVerse\Core\MediaTypes;
 use WPMediaVerse\Services\CloudOps;
 
 /**
  * Manage WPMediaVerse media, stats, and maintenance tasks.
  */
 class Commands {
+
+	/**
+	 * The media repository — the only thing allowed to query `mvs_media_index`.
+	 *
+	 * Every command here goes through this rather than through `$wpdb` and the
+	 * table name (architecture invariant 6, coding Rule 7). The commands were
+	 * the largest single holdout: eleven hand-written walks over the index, each
+	 * with its own idea of which statuses count, whether a missing `file_path`
+	 * should be skipped, and whether to page by cursor or offset.
+	 *
+	 * @return \WPMediaVerse\Repository\MediaRepository
+	 */
+	private function repo() {
+		return $this->repo();
+	}
+
+	/**
+	 * The filter set every storage command walks the index with.
+	 *
+	 * Four commands — `migrate-storage`, `cloud-thumbs-backfill`,
+	 * `cleanup-local` and `relocalize-private` — each wrote the same predicate
+	 * by hand: rows that are published or draft and actually have a file. They
+	 * had already drifted in spelling (`file_path != ''` in three, `<> ''` in
+	 * the fourth) which is the harmless half of the same problem; the harmful
+	 * half is that a fix to one was a fix to one.
+	 *
+	 * Callers layer their own difference on top — which privacy levels, which
+	 * mime types, a single media id, a `--limit`.
+	 *
+	 * @param array $overrides Caller-specific filters.
+	 * @return array Args for MediaRepository::query() / query_count().
+	 */
+	private function storage_walk_args( array $overrides = array() ): array {
+		$media_id = isset( $overrides['media_id'] ) ? (int) $overrides['media_id'] : 0;
+		$limit    = isset( $overrides['limit'] ) ? (int) $overrides['limit'] : 0;
+		unset( $overrides['media_id'], $overrides['limit'] );
+
+		return array_merge(
+			array(
+				'status'      => '',
+				'status_in'   => array( 'publish', 'draft' ),
+				'has_file'    => true,
+				// NO type predicate, and this is load-bearing rather than lazy.
+				// Storage is a property of the FILE, not of what kind of media
+				// the row claims to be, and the original queries had no type
+				// condition at all.
+				//
+				// `MediaTypes::ALL` looks like the safe way to say "everything"
+				// and is not: it lists image, video, audio and document, which
+				// leaves out `legacy_document` — a real value, present on real
+				// sites, on rows with real files. Caught by diffing these counts
+				// against the pre-migration SQL on live data, where exactly one
+				// row differed. Had it shipped, `relocalize-private` would have
+				// skipped legacy documents, leaving a private file sitting on a
+				// public bucket with nothing reporting it.
+				'media_types' => null,
+				'orderby'     => 'media_id',
+				'order'       => 'ASC',
+				// No `--limit` means every matching row, which is what these
+				// commands have always done. Left as-is deliberately: making
+				// them cursor-paginated is a real improvement and a real
+				// behaviour change to four commands, and it does not belong in
+				// the same commit as a mechanical routing change.
+				'limit'       => $limit > 0 ? $limit : PHP_INT_MAX,
+			),
+			$media_id > 0 ? array( 'media_ids' => array( $media_id ) ) : array(),
+			$overrides
+		);
+	}
 
 	/**
 	 * Show plugin statistics.
@@ -201,11 +271,18 @@ class Commands {
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		do {
-			$rows = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id > %d ORDER BY media_id ASC LIMIT %d",
-					$last_id,
-					$batch_size
+			// `media_types => null` on purpose: this command's job is integrity,
+			// so it walks EVERY row, including one whose media_type is empty or
+			// unrecognised. A positive type list would hide exactly the rows
+			// reindex exists to find.
+			$rows = $this->repo()->query(
+				array(
+					'id_after'    => $last_id,
+					'limit'       => $batch_size,
+					'orderby'     => 'media_id',
+					'order'       => 'ASC',
+					'status'      => '',
+					'media_types' => null,
 				)
 			);
 
@@ -214,7 +291,7 @@ class Commands {
 			}
 
 			foreach ( $rows as $row ) {
-				$media_id = (int) $row->media_id;
+				$media_id = (int) $row['media_id'];
 				$last_id  = $media_id;
 
 				// Ensure stats row exists.
@@ -353,7 +430,7 @@ class Commands {
 				$media_id = (int) $act->secondary_item_id;
 			}
 
-			if ( ! $media_id || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			if ( ! $media_id || ! $this->repo()->exists( $media_id ) ) {
 				++$skipped;
 				$progress->tick();
 				continue;
@@ -367,7 +444,7 @@ class Commands {
 					'buddyboss'  => 'bb_media_id',
 				);
 				$check_key = $meta_keys[ $source ] ?? '';
-				if ( $check_key && ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( (int) $media_id, $check_key ) ) {
+				if ( $check_key && ! $this->repo()->get( (int) $media_id, $check_key ) ) {
 					++$skipped;
 					$progress->tick();
 					continue;
@@ -457,78 +534,97 @@ class Commands {
 			wp_mkdir_p( $thumb_dir );
 		}
 
-		// Query all video media.
-		$videos = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id, title FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s ORDER BY media_id ASC",
-				'video'
-			)
-		);
-
-		if ( empty( $videos ) ) {
-			WP_CLI::success( 'No video media found. Nothing to do.' );
-			return;
-		}
-
 		$generated = 0;
 		$skipped   = 0;
+		$seen      = 0;
+		$last_id   = 0;
 
-		foreach ( $videos as $video ) {
-			$media_id = (int) $video->media_id;
-			$title    = $video->title ?: "(ID: {$media_id})";
+		// Walked in batches rather than loaded whole. The previous query had no
+		// LIMIT at all, so a library with tens of thousands of videos loaded
+		// every row before generating a single poster — and this command runs on
+		// exactly the libraries big enough for that to matter. A cursor also
+		// survives the command being interrupted halfway, which one long result
+		// set does not.
+		//
+		// `status => ''` keeps the original behaviour: every video row whatever
+		// its status, because a draft video with no poster is still a video with
+		// no poster.
+		do {
+			$videos = $this->repo()->query(
+				array(
+					'media_types' => array( 'video' ),
+					'status'      => '',
+					'id_after'    => $last_id,
+					'orderby'     => 'media_id',
+					'order'       => 'ASC',
+					'limit'       => 100,
+				)
+			);
 
-			// Check if thumbnail already exists. Raw read — presence check,
-			// not URL emission.
-			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
-			if ( $existing_thumb && ! $force ) {
-				++$skipped;
-				if ( $dry_run ) {
-					WP_CLI::log( "Skip (has thumbnail): media {$media_id}: {$title}" );
+			foreach ( $videos as $video ) {
+				$media_id = (int) $video['media_id'];
+				$last_id  = $media_id;
+				$title    = $video['title'] ?: "(ID: {$media_id})";
+				++$seen;
+
+				// Check if thumbnail already exists. Raw read — presence check,
+				// not URL emission.
+				$existing_thumb = $this->repo()->get_raw( $media_id, 'thumb_large' );
+				if ( $existing_thumb && ! $force ) {
+					++$skipped;
+					if ( $dry_run ) {
+						WP_CLI::log( "Skip (has thumbnail): media {$media_id}: {$title}" );
+					}
+					continue;
 				}
-				continue;
-			}
 
-			// Resolve absolute filesystem path with traversal containment.
-			$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_filesystem_path( $media_id );
-			if ( null === $file_path ) {
-				++$skipped;
-				WP_CLI::warning( "No reachable file for media {$media_id}: {$title} — skipping." );
-				continue;
-			}
+				// Resolve absolute filesystem path with traversal containment.
+				$file_path = $this->repo()->get_filesystem_path( $media_id );
+				if ( null === $file_path ) {
+					++$skipped;
+					WP_CLI::warning( "No reachable file for media {$media_id}: {$title} — skipping." );
+					continue;
+				}
 
-			if ( $dry_run ) {
-				WP_CLI::log( "Would generate thumbnail for media {$media_id}: {$title}" );
-				++$generated;
-				continue;
-			}
+				if ( $dry_run ) {
+					WP_CLI::log( "Would generate thumbnail for media {$media_id}: {$title}" );
+					++$generated;
+					continue;
+				}
 
-			// Generate thumbnail with ffmpeg.
-			$thumb_name = 'video-thumb-' . $media_id . '.jpg';
-			$thumb_path = $thumb_dir . '/' . $thumb_name;
+				// Generate thumbnail with ffmpeg.
+				$thumb_name = 'video-thumb-' . $media_id . '.jpg';
+				$thumb_path = $thumb_dir . '/' . $thumb_name;
 
-			$escaped_input  = escapeshellarg( $file_path );
-			$escaped_output = escapeshellarg( $thumb_path );
-			$command        = "ffmpeg -y -i {$escaped_input} -ss 00:00:01 -vframes 1 -q:v 2 {$escaped_output} 2>&1";
-			$output         = array();
-			$return_code    = 0;
+				$escaped_input  = escapeshellarg( $file_path );
+				$escaped_output = escapeshellarg( $thumb_path );
+				$command        = "ffmpeg -y -i {$escaped_input} -ss 00:00:01 -vframes 1 -q:v 2 {$escaped_output} 2>&1";
+				$output         = array();
+				$return_code    = 0;
 
 			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- CLI-only, inputs sanitized with escapeshellarg.
-			exec( $command, $output, $return_code );
+				exec( $command, $output, $return_code );
 
-			if ( 0 !== $return_code || ! file_exists( $thumb_path ) ) {
-				++$skipped;
-				WP_CLI::warning( "ffmpeg failed for media {$media_id}: {$title} (exit code {$return_code})." );
-				continue;
+				if ( 0 !== $return_code || ! file_exists( $thumb_path ) ) {
+					++$skipped;
+					WP_CLI::warning( "ffmpeg failed for media {$media_id}: {$title} (exit code {$return_code})." );
+					continue;
+				}
+
+				// Store thumb URLs in meta.
+				$full_thumb_url = $thumb_url . '/' . $thumb_name;
+				$this->repo()->set( $media_id, 'thumb_large', $full_thumb_url );
+				$this->repo()->set( $media_id, 'thumb_medium', $full_thumb_url );
+				$this->repo()->set( $media_id, 'thumb_thumb', $full_thumb_url );
+
+				++$generated;
+				WP_CLI::log( "Generated thumbnail for media {$media_id}: {$title}" );
 			}
+		} while ( ! empty( $videos ) );
 
-			// Store thumb URLs in meta.
-			$full_thumb_url = $thumb_url . '/' . $thumb_name;
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large', $full_thumb_url );
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_medium', $full_thumb_url );
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_thumb', $full_thumb_url );
-
-			++$generated;
-			WP_CLI::log( "Generated thumbnail for media {$media_id}: {$title}" );
+		if ( 0 === $seen ) {
+			WP_CLI::success( 'No video media found. Nothing to do.' );
+			return;
 		}
 
 		$action = $dry_run ? 'Would generate' : 'Generated';
@@ -576,12 +672,16 @@ class Commands {
 		$only_missing = (bool) Utils\get_flag_value( $assoc_args, 'only-missing', false );
 		$batch        = max( 1, (int) Utils\get_flag_value( $assoc_args, 'batch', 200 ) );
 
-		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s",
-				'image'
-			)
+		// `status => ''` preserves this command's original reach: every image
+		// row whatever its status. The count and the walk below pass the same
+		// filters, so the progress bar cannot describe a different set from the
+		// one being processed.
+		$image_filters = array(
+			'media_types' => array( 'image' ),
+			'status'      => '',
 		);
+
+		$total = $this->repo()->query_count( $image_filters );
 
 		if ( 0 === $total ) {
 			WP_CLI::success( 'No image media found. Nothing to do.' );
@@ -599,7 +699,7 @@ class Commands {
 			)
 		);
 
-		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo        = $this->repo();
 		$service     = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
 		$progress    = Utils\make_progress_bar( $dry_run ? 'Scanning images' : 'Regenerating thumbnails', $total );
 		$regenerated = 0;
@@ -608,17 +708,20 @@ class Commands {
 		$last_id     = 0;
 
 		do {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s AND media_id > %d ORDER BY media_id ASC LIMIT %d",
-					'image',
-					$last_id,
-					$batch
+			$rows = $this->repo()->query(
+				array_merge(
+					$image_filters,
+					array(
+						'id_after' => $last_id,
+						'limit'    => $batch,
+						'orderby'  => 'media_id',
+						'order'    => 'ASC',
+					)
 				)
 			);
 
 			foreach ( $rows as $row ) {
-				$media_id = (int) $row->media_id;
+				$media_id = (int) $row['media_id'];
 				$last_id  = $media_id;
 
 				if ( $only_missing && $repo->get_raw( $media_id, 'thumb_large' ) ) {
@@ -673,12 +776,23 @@ class Commands {
 	public function moderation_stats( $args, $assoc_args ) {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name only, no user input.
-		$rows = $wpdb->get_results( "SELECT moderation_status, COUNT(*) as cnt FROM {$wpdb->prefix}mvs_media_index GROUP BY moderation_status", ARRAY_A );
+		// The repository already had this exact query, character for character.
+		// This command carried its own copy, so the two could have drifted and
+		// the admin moderation screen and the CLI would have reported different
+		// backlogs to the same person.
+		$counts = $this->repo()->get_moderation_counts();
 
-		if ( empty( $rows ) ) {
+		if ( empty( $counts ) ) {
 			WP_CLI::log( 'No media found in the index.' );
 			return;
+		}
+
+		$rows = array();
+		foreach ( $counts as $mvs_status => $mvs_count ) {
+			$rows[] = array(
+				'moderation_status' => $mvs_status,
+				'cnt'               => $mvs_count,
+			);
 		}
 
 		$items = array();
@@ -778,7 +892,7 @@ class Commands {
 				$media_id = (int) $act->secondary_item_id;
 			}
 
-			if ( $media_id <= 0 || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			if ( $media_id <= 0 || ! $this->repo()->exists( $media_id ) ) {
 				++$skipped;
 				$progress->tick();
 				continue;
@@ -972,17 +1086,16 @@ class Commands {
 		// a private cloud bucket and accept the responsibility for serving
 		// it themselves (e.g. via CloudFront with origin access identity).
 		$include_non_public = (bool) Utils\get_flag_value( $assoc_args, 'include-non-public', false );
-		$where              = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
-		if ( ! $include_non_public ) {
-			$where .= " AND privacy = 'public'";
-		}
-		if ( $media_id > 0 ) {
-			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
-		}
-		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( "SELECT media_id, file_path, file_size FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+		$rows = $this->repo()->query(
+			$this->storage_walk_args(
+				array(
+					'privacy_in' => $include_non_public ? array() : array( 'public' ),
+					'media_id'   => $media_id,
+					'limit'      => $limit,
+				)
+			)
+		);
 
 		$total = count( $rows );
 		if ( 0 === $total ) {
@@ -1019,13 +1132,13 @@ class Commands {
 		$progress = Utils\make_progress_bar( 'Migrating media', $total );
 
 		foreach ( $rows as $row ) {
-			$media_id_row = (int) $row->media_id;
+			$media_id_row = (int) $row['media_id'];
 
 			if ( $dry_run ) {
 				// Cheap preview: a row whose ORIGINAL is already on the
 				// destination is reported as skipped. The real run still
 				// re-checks every variant individually.
-				if ( $dest_driver->exists( (string) $row->file_path ) ) {
+				if ( $dest_driver->exists( (string) $row['file_path'] ) ) {
 					++$skipped;
 				} else {
 					++$migrated;
@@ -1153,14 +1266,16 @@ class Commands {
 		// gated /serve proxy which (as of 1.2.2) can only read from local
 		// disk — flipping non-public thumb meta to CDN URLs would 404 the
 		// proxy. Cloud-aware /serve is on the 1.3.0 list.
-		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%' AND i.privacy = 'public'";
-		if ( $media_id > 0 ) {
-			$where .= $wpdb->prepare( ' AND i.media_id = %d', $media_id );
-		}
-		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( "SELECT i.media_id, i.file_path, i.file_type FROM {$wpdb->prefix}mvs_media_index i WHERE {$where} ORDER BY i.media_id ASC{$limit_sql}" );
+		$rows = $this->repo()->query(
+			$this->storage_walk_args(
+				array(
+					'privacy_in'   => array( 'public' ),
+					'mime_like_in' => array( 'image/%' ),
+					'media_id'     => $media_id,
+					'limit'        => $limit,
+				)
+			)
+		);
 
 		$total = count( $rows );
 		if ( 0 === $total ) {
@@ -1175,7 +1290,7 @@ class Commands {
 			WP_CLI::confirm( 'Proceed?' );
 		}
 
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo     = $this->repo();
 		$service  = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
 		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-thumbs-' . uniqid() . '/';
 		$migrated = 0;
@@ -1184,13 +1299,13 @@ class Commands {
 		$progress = Utils\make_progress_bar( 'Backfilling thumbnails', $total );
 
 		foreach ( $rows as $row ) {
-			$rel_path = (string) $row->file_path;
+			$rel_path = (string) $row['file_path'];
 
 			// Skip if EVERY size already has a non-local URL — nothing to do.
 			$thumb_keys = array( 'thumb_large', 'thumb_medium', 'thumb_thumb' );
 			$all_cloud  = true;
 			foreach ( $thumb_keys as $key ) {
-				$val = (string) $repo->get_raw( (int) $row->media_id, $key );
+				$val = (string) $repo->get_raw( (int) $row['media_id'], $key );
 				if ( '' === $val ) {
 					$all_cloud = false;
 					break;
@@ -1213,7 +1328,7 @@ class Commands {
 			// the single-media view keeps 404ing. Skip only the expensive
 			// download + regenerate, never the sweep.
 			if ( $all_cloud ) {
-				$sweep = self::sweep_stored_variants( (int) $row->media_id, $driver_slug );
+				$sweep = self::sweep_stored_variants( (int) $row['media_id'], $driver_slug );
 				if ( $sweep ) {
 					++$migrated;
 				} else {
@@ -1226,7 +1341,7 @@ class Commands {
 			// Stage 1 — pull original from cloud to local temp.
 			$tmp_path = $tmp_root . ltrim( $rel_path, '/' );
 			if ( ! $driver->download( $rel_path, $tmp_path ) ) {
-				WP_CLI::warning( sprintf( 'Original download failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				WP_CLI::warning( sprintf( 'Original download failed for media #%d (path: %s)', $row['media_id'], $rel_path ) );
 				++$failed;
 				$progress->tick();
 				continue;
@@ -1235,12 +1350,12 @@ class Commands {
 			// Stage 2 — call generate_thumbnails. Same code path as a fresh
 			// upload: WP multi_resize creates locals, the driver pushes each
 			// to cloud, meta updates to cloud URLs.
-			$ok = $service->generate_thumbnails( (int) $row->media_id, $tmp_path, (string) $row->file_type );
+			$ok = $service->generate_thumbnails( (int) $row['media_id'], $tmp_path, (string) $row['file_type'] );
 
 			// Stage 2b — sweep any stored variant the resize pass does not own
 			// (see sweep_stored_variants).
 			if ( $ok ) {
-				self::sweep_stored_variants( (int) $row->media_id, $driver_slug );
+				self::sweep_stored_variants( (int) $row['media_id'], $driver_slug );
 			}
 
 			// Stage 3 — clean up the temp original (size variants the
@@ -1402,14 +1517,15 @@ class Commands {
 		// disk. Deleting locals for those would break /serve. Cloud-aware
 		// /serve lands in 1.3.0 — until then, private/members/friends
 		// media keeps its local copy as a hard requirement.
-		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public'";
-		if ( $media_id > 0 ) {
-			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
-		}
-		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( "SELECT media_id, file_path FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+		$rows = $this->repo()->query(
+			$this->storage_walk_args(
+				array(
+					'privacy_in' => array( 'public' ),
+					'media_id'   => $media_id,
+					'limit'      => $limit,
+				)
+			)
+		);
 
 		$total = count( $rows );
 		if ( 0 === $total ) {
@@ -1434,7 +1550,7 @@ class Commands {
 		$progress         = Utils\make_progress_bar( 'Cleaning local files', $total );
 
 		foreach ( $rows as $row ) {
-			$rel_path        = (string) $row->file_path;
+			$rel_path        = (string) $row['file_path'];
 			$local_full_path = trailingslashit( $wpmv_local_dir ) . $rel_path;
 
 			// 1. Skip if no local file exists (already cleaned, or born-on-cloud).
@@ -1448,7 +1564,7 @@ class Commands {
 			// one. A failed exists() check means we keep the local copy —
 			// never create an orphan.
 			if ( ! $driver->exists( $rel_path ) ) {
-				WP_CLI::warning( sprintf( 'Cloud verify FAILED for media #%d (%s) — keeping local file as safety', $row->media_id, $rel_path ) );
+				WP_CLI::warning( sprintf( 'Cloud verify FAILED for media #%d (%s) — keeping local file as safety', $row['media_id'], $rel_path ) );
 				++$skipped_no_cloud;
 				$progress->tick();
 				continue;
@@ -1542,14 +1658,28 @@ class Commands {
 
 		global $wpdb;
 
-		$where = "privacy <> 'public' AND file_path IS NOT NULL AND file_path <> ''";
-		if ( $media_id > 0 ) {
-			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
-		}
-		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( "SELECT media_id, privacy, file_path FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+		// NOTE two differences from its three siblings. This one is the INVERSE
+		// privacy set, and it carries no status predicate at all, because a
+		// non-public file stranded on a public bucket is a leak whatever the
+		// row's status.
+		//
+		// Expressed as `privacy_not_in`, NOT as a positive list of every level
+		// that is not `public`. A positive list has to be kept in step with the
+		// privacy vocabulary forever, and the first value it fell behind on
+		// would be silently skipped — `dm` is already such a value, deliberately
+		// absent from `PRIVACY_ORDER` because it is a messaging scope rather
+		// than a position on the scale. The original predicate was `<> 'public'`
+		// and this keeps meaning exactly that.
+		$rows = $this->repo()->query(
+			$this->storage_walk_args(
+				array(
+					'status_in'      => array(),
+					'privacy_not_in' => array( 'public' ),
+					'media_id'       => $media_id,
+					'limit'          => $limit,
+				)
+			)
+		);
 
 		$total = count( $rows );
 		if ( 0 === $total ) {
@@ -1565,20 +1695,20 @@ class Commands {
 		}
 
 		$storage  = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo     = $this->repo();
 		$healed   = 0;
 		$skipped  = 0;
 		$progress = Utils\make_progress_bar( 'Relocalizing URLs', $total );
 
 		foreach ( $rows as $row ) {
-			$mid = (int) $row->media_id;
+			$mid = (int) $row['media_id'];
 
 			if ( $dry_run ) {
 				// Detect whether any URL meta still points at non-local.
 				$needs_heal = $this->detect_cloud_urls( $repo, $mid );
 				if ( $needs_heal ) {
 					++$healed;
-					WP_CLI::log( sprintf( '  - media #%d (privacy=%s) would be relocalized', $mid, $row->privacy ) );
+					WP_CLI::log( sprintf( '  - media #%d (privacy=%s) would be relocalized', $mid, $row['privacy'] ) );
 				} else {
 					++$skipped;
 				}
@@ -1743,24 +1873,30 @@ class Commands {
 		$dry_run          = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
 		$include_failed   = (bool) Utils\get_flag_value( $assoc_args, 'include-failed', false );
 
-		global $wpdb;
-		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%'";
-		if ( '' !== $mime_filter ) {
-			$mimes = array_filter( array_map( 'trim', explode( ',', $mime_filter ) ) );
-			if ( ! empty( $mimes ) ) {
-				$placeholders = implode( ',', array_fill( 0, count( $mimes ), '%s' ) );
-				$where       .= $wpdb->prepare( " AND i.file_type IN ($placeholders)", $mimes ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			}
-		}
-		if ( '' !== $media_type ) {
-			$where .= $wpdb->prepare( ' AND i.media_type = %s', $media_type );
-		}
+		// `mime_like_in` and `file_types_in` are ANDed, which is what the two
+		// predicates here always were: the LIKE says "an image", the IN narrows
+		// to the mimes the operator named.
+		$mimes = '' !== $mime_filter
+			? array_values( array_filter( array_map( 'trim', explode( ',', $mime_filter ) ) ) )
+			: array();
 
-		$limit_sql  = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
-		$offset_sql = $offset > 0 ? $wpdb->prepare( ' OFFSET %d', $offset ) : '';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_col( "SELECT i.media_id FROM {$wpdb->prefix}mvs_media_index i WHERE {$where} ORDER BY i.media_id ASC{$limit_sql}{$offset_sql}" );
+		$rows = array_column(
+			$this->repo()->query(
+				$this->storage_walk_args(
+					array(
+						'mime_like_in'  => array( 'image/%' ),
+						'file_types_in' => $mimes,
+						// `null`, not MediaTypes::ALL — same reason as
+						// storage_walk_args(): ALL omits `legacy_document`, and
+						// the original query had no type predicate at all.
+						'media_types'   => '' !== $media_type ? array( $media_type ) : null,
+						'limit'         => $limit,
+						'offset'        => $offset,
+					)
+				)
+			),
+			'media_id'
+		);
 
 		$total = count( $rows );
 		if ( 0 === $total ) {
@@ -1770,7 +1906,7 @@ class Commands {
 
 		WP_CLI::log( sprintf( 'Optimizing %d image(s)%s%s', $total, $dry_run ? ' [DRY-RUN]' : '', $include_variants ? ' (with variants)' : '' ) );
 
-		$repo           = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo           = $this->repo();
 		$service        = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 		$progress       = Utils\make_progress_bar( 'Optimizing', $total );
 		$processed      = 0;
@@ -1881,19 +2017,31 @@ class Commands {
 		// idempotent: a media that completed (even with an empty description)
 		// or failed is not retried on the next run. --force reprocesses
 		// everything regardless.
-		$meta = $wpdb->prefix . 'mvs_media_meta';
-		$sql  = "SELECT m.media_id FROM {$wpdb->prefix}mvs_media_index m
-			LEFT JOIN {$meta} s ON s.media_id = m.media_id AND s.meta_key = 'ai_status'
-			WHERE m.media_type = 'image' AND m.status = 'publish'";
-		if ( ! $force ) {
-			$sql .= " AND ( s.meta_value IS NULL OR s.meta_value = '' )";
-		}
-		$sql .= ' ORDER BY m.media_id ASC';
-		if ( $limit > 0 ) {
-			$sql .= $wpdb->prepare( ' LIMIT %d', $limit );
-		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$ids = array_map( 'intval', (array) $wpdb->get_col( $sql ) );
+		$image_args = array(
+			'media_types' => array( 'image' ),
+			'status'      => 'publish',
+			'limit'       => $limit,
+		);
+
+		// `--force` drops the "never been through AI" condition, so it is a
+		// plain listing rather than an anti-join.
+		$ids = $force
+			? array_column(
+				$this->repo()->query(
+					array_merge(
+						$image_args,
+						array(
+							'orderby' => 'media_id',
+							'order'   => 'ASC',
+							'limit'   => $limit > 0 ? $limit : PHP_INT_MAX,
+						)
+					)
+				),
+				'media_id'
+			)
+			: $this->repo()->media_ids_missing_meta( 'ai_status', $image_args );
+
+		$ids = array_map( 'intval', $ids );
 
 		if ( empty( $ids ) ) {
 			WP_CLI::success( 'No media need AI backfill.' );

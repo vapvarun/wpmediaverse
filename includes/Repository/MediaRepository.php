@@ -972,10 +972,10 @@ class MediaRepository implements MediaRepositoryInterface {
 			);
 		}
 
-		$types = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
-		$where  = array_merge( $where, array( $type_sql ) );
-		$params = array_merge( $params, $type_params );
+		$where                          = array_merge( $where, array( $type_sql ) );
+		$params                         = array_merge( $params, $type_params );
 
 		$authors = isset( $args['authors'] ) && is_array( $args['authors'] ) ? array_map( 'intval', $args['authors'] ) : array();
 
@@ -2682,6 +2682,135 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * How many rows `query_public_cloud_candidates()` would return, unlimited.
+	 *
+	 * The sibling that should have existed from the start. `CloudOps::count_candidates()`
+	 * carried its own COUNT with the predicate copied out by hand, under a
+	 * comment reading "Must match query_public_cloud_candidates( $limit, true )
+	 * exactly" — which is a comment asking a human to keep two SQL strings in
+	 * step, and the admin panel's progress bar is what breaks when they drift.
+	 * It already had: the count kept a privacy filter the list did not, so the
+	 * backlog never reached zero and the migrate button never went quiet.
+	 *
+	 * `$local_url_only` means the same thing here as there: rows whose public URL
+	 * still points at the local uploads directory, i.e. the ones with work left.
+	 * Its inverse (`false` for the total, then subtract) is deliberately NOT how
+	 * the caller derives "already on cloud" — see the note in
+	 * `CloudOps::count_candidates()` about the subtraction that double-counted
+	 * private rows.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param bool $local_url_only Restrict to rows still pointing at local uploads.
+	 * @param bool $invert         Count rows NOT pointing at local uploads instead.
+	 * @return int
+	 */
+	public function count_public_cloud_candidates( bool $local_url_only = false, bool $invert = false ): int {
+		global $wpdb;
+
+		$where  = array( "status IN ('publish','draft')", 'file_path IS NOT NULL', "file_path != ''", 'privacy = %s' );
+		$params = array( 'public' );
+
+		if ( $local_url_only ) {
+			$where[]  = $invert ? 'file_url NOT LIKE %s' : 'file_url LIKE %s';
+			$params[] = 'http%/wp-content/uploads/%';
+		}
+
+		$sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE " . implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $wpdb->get_var( $wpdb->prepare( $sql, ...$params ) );
+	}
+
+	/**
+	 * Run the REST feed query — ids for one page, plus the total.
+	 *
+	 * THE ONE METHOD HERE THAT TAKES SQL FRAGMENTS, and it is worth saying why
+	 * rather than leaving it looking like a lapse. `MediaController` assembles
+	 * `$where` / `$params` and then hands them to the **public filter**
+	 * `mvs_feed_query_args`, documented since 1.1.0, which lets a site or Pro
+	 * add its own predicates. Those fragments ARE the published contract;
+	 * re-expressing the feed as named arguments would break every integration
+	 * using it, which Production Rules 1 and 3 do not allow.
+	 *
+	 * So the fragments stay with the caller and the EXECUTION moves here: the
+	 * table name, the stats join, the trending formula, the pagination and the
+	 * prepare. That is the part Rule 7 is actually protecting — the controller
+	 * no longer names `mvs_media_index`, and a change to how this table is read
+	 * happens in one file.
+	 *
+	 * `$orderby` is matched against fixed branches, never interpolated. Every
+	 * caller value is bound.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type string[] $where    WHERE fragments, already filtered.
+	 *     @type array    $params   Bound parameters for those fragments.
+	 *     @type string   $join     Extra JOIN fragments, or ''.
+	 *     @type string   $orderby  date|trending|popular.
+	 *     @type int      $per_page Page size.
+	 *     @type int      $offset   Page offset.
+	 * }
+	 * @return array{ids: int[], total: int}
+	 */
+	public function feed_page( array $args ): array {
+		global $wpdb;
+
+		$where    = isset( $args['where'] ) && is_array( $args['where'] ) ? $args['where'] : array( '1=1' );
+		$params   = isset( $args['params'] ) && is_array( $args['params'] ) ? $args['params'] : array();
+		$join     = isset( $args['join'] ) ? (string) $args['join'] : '';
+		$orderby  = isset( $args['orderby'] ) ? (string) $args['orderby'] : '';
+		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
+		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
+
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$stats     = $wpdb->prefix . 'mvs_media_stats';
+
+		// The COUNT deliberately does NOT join stats — it does not need them,
+		// and the join would change the row count if a media ever had more than
+		// one stats row.
+		$count_sql = "SELECT COUNT(*) FROM {$index} i{$join} WHERE {$where_sql}";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count_sql, ...$params ) : $count_sql );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = $offset;
+
+		if ( 'trending' === $orderby ) {
+			// (reactions * 3 + comments * 5 + views) / age_hours^1.5
+			$data_sql = "SELECT i.media_id,
+				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
+				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY trending_score DESC
+				LIMIT %d OFFSET %d";
+		} elseif ( 'popular' === $orderby ) {
+			$data_sql = "SELECT i.media_id
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY COALESCE(s.views, 0) DESC
+				LIMIT %d OFFSET %d";
+		} else {
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d";
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = (array) $wpdb->get_col( $wpdb->prepare( $data_sql, ...$page_params ) );
+
+		return array(
+			'ids'   => array_map( 'intval', $ids ),
+			'total' => $total,
+		);
+	}
+
+	/**
 	 * Aggregate row count + total bytes per file_type for a user.
 	 *
 	 * Used by Pro's QuotaService.recalculate_usage(). Single GROUP BY that
@@ -2997,6 +3126,49 @@ class MediaRepository implements MediaRepositoryInterface {
 				'exclude_non_cover_group'  => false,
 				'exclude_empty_media_type' => false,
 				'media_types'              => MediaTypes::MEDIA_LIBRARY,
+				// ── Maintenance-walk args (2.4.0) ─────────────────────────────
+				//
+				// Added so the CLI and the storage services stop hand-writing
+				// `SELECT ... FROM mvs_media_index WHERE ...` (architecture
+				// invariant 6 / Rule 7). Eleven of those call sites were the same
+				// query with different columns: "walk the table in media_id order,
+				// optionally narrowed by type, status, privacy or whether the row
+				// has a file at all". Expressed here once, they become arguments
+				// rather than SQL, and every one of them inherits the type
+				// predicate, the privacy handling and the prepare discipline this
+				// builder already gets right.
+				//
+				// `id_after` is a KEYSET cursor, not an offset. A batch walk that
+				// pages with OFFSET re-scans everything it has already read and,
+				// worse, skips rows whenever the set shifts underneath it — which
+				// it does, because these commands are usually writing to the rows
+				// they are walking.
+				'id_after'                 => 0,
+				'media_ids'                => array(),
+				'status_in'                => array(),
+				// The NEGATION, and it exists rather than being expressed as a
+				// positive list on purpose. `relocalize-private` wants "every
+				// privacy level except public"; spelled positively that list has
+				// to track the privacy vocabulary forever, and the first value it
+				// fell behind on would be silently skipped rather than reported.
+				// `dm` is already such a value — deliberately absent from
+				// PRIVACY_ORDER because it is a messaging scope, not a position
+				// on the scale — so a positive list built from that constant
+				// would strand exactly the media nobody is watching.
+				'privacy_not_in'           => array(),
+				// EXACT mime match, ANDed with `mime_like_in` rather than
+				// replacing it. `optimize-bulk` narrows within images: the LIKE
+				// establishes "an image", the IN narrows to the mimes the
+				// operator named. Folding them into one arg would turn an AND
+				// into an OR, and `--mime=video/mp4` would start optimising
+				// videos through the image pipeline instead of correctly
+				// matching nothing.
+				'file_types_in'            => array(),
+				// null = do not care. TRUE = the row has a stored file, which is
+				// what every storage command means by "a row worth looking at";
+				// FALSE is accepted for symmetry and finds index rows whose file
+				// went missing.
+				'has_file'                 => null,
 				'authors_in'               => array(),
 				'privacy_in'               => array(),
 				'mime_like_in'             => array(),
@@ -3065,7 +3237,14 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params      = array();
 		$distinct    = false;
 
-		if ( '' !== (string) $args['status'] ) {
+		// `status_in` REPLACES `status` rather than joining it. `status` defaults
+		// to 'publish', so ANDing the two would turn a request for
+		// publish-or-draft into publish-only — the maintenance commands would
+		// silently skip every draft and report success having walked half the
+		// table. Asserted by MediaQueryWalkArgsTest.
+		$mvs_status_in = array_values( array_filter( array_map( 'strval', (array) $args['status_in'] ) ) );
+
+		if ( ! $mvs_status_in && '' !== (string) $args['status'] ) {
 			$where[]  = 'm.status = %s';
 			$params[] = (string) $args['status'];
 		}
@@ -3117,6 +3296,40 @@ class MediaRepository implements MediaRepositoryInterface {
 			$params  = array_merge( $params, $or_params );
 		}
 
+		// ── Maintenance-walk predicates ───────────────────────────────────────
+		if ( (int) $args['id_after'] > 0 ) {
+			$where[]  = 'm.media_id > %d';
+			$params[] = (int) $args['id_after'];
+		}
+
+		$mvs_ids = array_values( array_unique( array_filter( array_map( 'intval', (array) $args['media_ids'] ) ) ) );
+		if ( $mvs_ids ) {
+			$where[] = 'm.media_id IN (' . implode( ',', array_fill( 0, count( $mvs_ids ), '%d' ) ) . ')';
+			$params  = array_merge( $params, $mvs_ids );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.status', '%s', $mvs_status_in );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		if ( null !== $args['has_file'] ) {
+			// Both halves are needed and neither is redundant: the column is
+			// nullable AND legacy rows carry the empty string. Testing only NULL
+			// hands a caller rows with no file to act on, which for the storage
+			// commands means a migrate loop that reports work it did not do.
+			$where[] = $args['has_file']
+				? "( m.file_path IS NOT NULL AND m.file_path != '' )"
+				: "( m.file_path IS NULL OR m.file_path = '' )";
+		}
+
+		$mvs_privacy_not = array_values( array_filter( array_map( 'strval', (array) $args['privacy_not_in'] ) ) );
+		if ( $mvs_privacy_not ) {
+			$where[] = 'm.privacy NOT IN (' . implode( ', ', array_fill( 0, count( $mvs_privacy_not ), '%s' ) ) . ')';
+			$params  = array_merge( $params, $mvs_privacy_not );
+		}
+
 		list( $or_where, $or_params ) = $this->or_set( 'm.privacy', '%s', $args['privacy_in'] );
 		if ( '' !== $or_where ) {
 			$where[] = $or_where;
@@ -3124,6 +3337,12 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		list( $or_where, $or_params ) = $this->or_set( 'm.file_type', '%s', $args['mime_like_in'], 'LIKE' );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.file_type', '%s', $args['file_types_in'] );
 		if ( '' !== $or_where ) {
 			$where[] = $or_where;
 			$params  = array_merge( $params, $or_params );
@@ -3199,14 +3418,29 @@ class MediaRepository implements MediaRepositoryInterface {
 		// The arg is still accepted and still does what its name says, because it
 		// is public API on the repository interface (Production Rule 2). It is now
 		// simply redundant: a positive list already excludes the empty string.
+		// EXPLICIT null = no type predicate at all. Reserved for whole-table
+		// maintenance walks and deliberately not the same thing as an empty
+		// array, which still means "match nothing".
+		//
+		// This is not a reopening of the fail-open hole the comment above
+		// describes. That hole was an OMISSION — listings that passed no types
+		// and silently matched everything, so documents surfaced in photo grids.
+		// This has to be asked for by name, and the reason it exists is
+		// `wp mvs reindex`, whose entire job is to find rows that are wrong. A
+		// row whose `media_type` is corrupt or empty is precisely what it must
+		// see, and a positive IN-list is exactly what would hide it. An
+		// integrity command that skips the broken rows reports a clean table.
 		$mvs_types = $args['media_types'];
-		if ( ! is_array( $mvs_types ) ) {
-			$mvs_types = MediaTypes::MEDIA_LIBRARY;
-		}
 
-		list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( $mvs_types, 'm.media_type' );
-		$where[]                                = $mvs_type_sql;
-		$params                                 = array_merge( $params, $mvs_type_params );
+		if ( null !== $mvs_types ) {
+			if ( ! is_array( $mvs_types ) ) {
+				$mvs_types = MediaTypes::MEDIA_LIBRARY;
+			}
+
+			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( $mvs_types, 'm.media_type' );
+			$where[]                                = $mvs_type_sql;
+			$params                                 = array_merge( $params, $mvs_type_params );
+		}
 
 		// No `1 = 1` fallback below this point: the type clause above is
 		// unconditional, so $where can no longer be empty. in_clause() also
@@ -3951,6 +4185,67 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Find all media IDs matching a meta key/value, with optional author scope.
 	 *
+	 * Media that do NOT have a meta key set — the anti-join.
+	 *
+	 * The shape `query()` cannot express and should not learn to: every other
+	 * filter on that builder narrows a set of index rows, while this one asks
+	 * about the ABSENCE of a row in another table. A LEFT JOIN … IS NULL is a
+	 * different query, not another predicate.
+	 *
+	 * `NULL or empty` is one condition here, not two, and the distinction
+	 * matters to the caller that needed it: `backfill_ai` marks its work with
+	 * `ai_status`, and a media that completed with an empty description must not
+	 * be retried forever. Treating only NULL as "not done" would re-run the AI
+	 * over the same images on every invocation, which costs the site owner money
+	 * per run.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $meta_key Meta key whose absence is being tested.
+	 * @param array  $args     {
+	 *     @type array  $media_types Type allowlist. Default the media library.
+	 *     @type string $status      Index status. Default 'publish'.
+	 *     @type int    $limit       Row cap. 0 = unbounded.
+	 * }
+	 * @return int[] Media ids, ascending.
+	 */
+	public function media_ids_missing_meta( string $meta_key, array $args = array() ): array {
+		global $wpdb;
+
+		$types  = isset( $args['media_types'] ) && is_array( $args['media_types'] ) ? $args['media_types'] : MediaTypes::MEDIA_LIBRARY;
+		$status = isset( $args['status'] ) ? (string) $args['status'] : 'publish';
+		$limit  = isset( $args['limit'] ) ? max( 0, (int) $args['limit'] ) : 0;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+
+		$where  = array( $type_sql, "( s.meta_value IS NULL OR s.meta_value = '' )" );
+		$params = array_merge( array( $meta_key ), $type_params );
+
+		if ( '' !== $status ) {
+			$where[]  = 'm.status = %s';
+			$params[] = $status;
+		}
+
+		$meta      = $wpdb->prefix . 'mvs_media_meta';
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+		$limit_sql = $limit > 0 ? ' LIMIT %d' : '';
+
+		if ( $limit > 0 ) {
+			$params[] = $limit;
+		}
+
+		$sql = "SELECT m.media_id
+		          FROM {$index} m
+		     LEFT JOIN {$meta} s ON s.media_id = m.media_id AND s.meta_key = %s
+		         WHERE {$where_sql}
+		      ORDER BY m.media_id ASC{$limit_sql}";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$params ) ) );
+	}
+
+	/**
 	 * Sister method to find_by_meta() which returns only the first match.
 	 * Use this for one-to-many meta keys (connector links, external IDs,
 	 * legacy multi-row meta) or when an author filter is needed.

@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-14T17:57:50Z",
+    "generated_at": "2026-08-14T18:49:16Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
-        "free_files_scanned": 197,
+        "free_files_scanned": 198,
         "pro_files_scanned": 212
     },
     "cross_plugin_duplicates": [
@@ -346,7 +346,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3611-3611",
+                    "lines": "3845-3845",
                     "method": "media_ids_in_album"
                 },
                 {
@@ -634,12 +634,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1671-1671",
+                    "lines": "1647-1647",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1696-1696",
+                    "lines": "1672-1672",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -724,12 +724,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4455-4455",
+                    "lines": "4750-4750",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4483-4483",
+                    "lines": "4778-4778",
                     "method": "restore"
                 }
             ]
@@ -742,7 +742,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4284-4284",
+                    "lines": "4579-4579",
                     "method": "record_event"
                 },
                 {
@@ -801,12 +801,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4229-4229",
+                    "lines": "4524-4524",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4256-4256",
+                    "lines": "4551-4551",
                     "method": "set_stat"
                 }
             ]
@@ -965,7 +965,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1637-1637",
+                    "lines": "1613-1613",
                     "method": "create_item_permissions_check"
                 },
                 {
@@ -1111,7 +1111,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4161-4161",
+                    "lines": "4456-4456",
                     "method": "get_user_stats"
                 },
                 {

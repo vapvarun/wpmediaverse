@@ -43,6 +43,13 @@ DEFAULT_SCAN_DIRS = ("includes", "templates", "src")
 DEFAULT_ALLOWLIST = (
     os.path.join("includes", "Repository", "MediaRepository.php"),
     os.path.join("includes", "Repository", "MediaRepositoryInterface.php"),
+    # The integrity/repair queries. A SIBLING of MediaRepository rather than
+    # part of it, and allowlisted for the same reason MediaRepository is: it IS
+    # the repository layer. The rule's subject is "SQL against this table lives
+    # in includes/Repository/", not "lives in one 4,900-line class". Its reads
+    # deliberately bypass the row cache and privacy handling, because an audit
+    # that reads its subject through a cache is an audit of the cache.
+    os.path.join("includes", "Repository", "MediaIntegrityRepository.php"),
     os.path.join("includes", "Core", "Migrator.php"),
     os.path.join("includes", "Services", "AdminAggregatesService.php"),
 )

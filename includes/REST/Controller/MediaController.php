@@ -650,46 +650,22 @@ class MediaController extends WP_REST_Controller {
 		$per_page = $feed_args['per_page'];
 		$offset   = $feed_args['offset'];
 
-		$where_sql = implode( ' AND ', $where );
-		$join_sql  = ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '';
+		// The fragments above stay here because they are the published contract
+		// of `mvs_feed_query_args`; the EXECUTION belongs to the repository,
+		// which owns the table (architecture invariant 6, coding Rule 7).
+		$feed_page = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->feed_page(
+			array(
+				'where'    => $where,
+				'params'   => $params,
+				'join'     => ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '',
+				'orderby'  => $request->get_param( 'orderby' ),
+				'per_page' => $per_page,
+				'offset'   => $offset,
+			)
+		);
 
-		// Count query.
-		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index i{$join_sql} WHERE {$where_sql}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-
-		// Determine sort order.
-		$orderby  = $request->get_param( 'orderby' );
-		$params[] = $per_page;
-		$params[] = $offset;
-
-		if ( 'trending' === $orderby ) {
-			// Trending score: (reactions * 3 + comments * 5 + views) / age_hours^1.5
-			// JOIN mvs_media_stats for engagement data.
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$data_sql = "SELECT i.media_id,
-				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
-				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
-				FROM {$wpdb->prefix}mvs_media_index i
-				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id{$join_sql}
-				WHERE {$where_sql}
-				ORDER BY trending_score DESC
-				LIMIT %d OFFSET %d";
-		} elseif ( 'popular' === $orderby ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$data_sql = "SELECT i.media_id
-				FROM {$wpdb->prefix}mvs_media_index i
-				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id{$join_sql}
-				WHERE {$where_sql}
-				ORDER BY COALESCE(s.views, 0) DESC
-				LIMIT %d OFFSET %d";
-		} else {
-			$data_sql = "SELECT i.media_id FROM {$wpdb->prefix}mvs_media_index i{$join_sql} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		}
-
-		$results = $wpdb->get_col( $wpdb->prepare( $data_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-		$ids     = $results;
-
-		$int_ids = array_map( 'intval', $ids );
+		$total   = $feed_page['total'];
+		$int_ids = $feed_page['ids'];
 
 		/**
 		 * Filter the final list of media IDs returned by the feed query.
