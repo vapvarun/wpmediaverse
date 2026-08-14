@@ -1349,15 +1349,28 @@ Read this section before planning any further document work. Ordered by what blo
 | `GET /drives` | **BUILT** | route registered — confirmed in the live route table |
 | `?drive=space:N` on the documents list | **BUILT** | `drive` collection param + `parse_drive()` in `DocumentController` |
 | T1 departing-member reassignment | **BUILT** | `UserDeletionService::reassign_team_drive_media()`, covered by `DepartingMemberTest` |
-| **Privacy token `space`** | **NOT BUILT** | `DocumentSettings::PRIVACY_VALUES` is `private, members, public`. A document on a Space drive has no "visible to this Space" level — the drive knows it is a Space, the privacy ladder does not |
+| **Privacy token `space`** | **BUILT 2026-08-14** | `PRIVACY_VALUES` is now `private, space, members, public`. The ladder resolves it by asking `drive_access()` — anything but `none` may read. Verified live against a simulated bridge: member 200, non-member 404, and all three of `read`/`write`/`own` admitted |
 | **BuddyNext bridge document hooks** | **NOT BUILT — and not ours to write** | `WPMediaVerseBridge.php` still has none. BuddyNext applies these; we supply the hooks |
 
-**So Space drives are not "entirely pending" — they are storage-complete and permission-complete,
-missing a privacy level and the bridge on the other side.** Practically: a Space document can be
-filed, listed, permissioned and reassigned today, but cannot be made visible *to the Space and only
-the Space* — it must borrow `members` (every signed-in member of the site) or `private`. That is
-the gap to close before Space drives are honestly shippable, and it is a smaller, better-defined
-piece of work than this section previously implied.
+**So Space drives are now complete on our side — storage, permissions, privacy — and waiting only
+on the bridge.** A Space document can be filed, listed, permissioned, reassigned, and made visible
+*to the Space and only the Space*. Nothing further is owed to BuddyNext; handover is
+`docs/architecture/pro/BUDDYNEXT-DRIVE-BRIDGE.md`.
+
+**What building `space` actually cost, because the estimate was wrong in an instructive way.** It
+read as "add a value to one constant". The constant was the smallest part: the vocabulary had SEVEN
+copies, three of which are structural and cannot be collapsed —
+`Sanitizers::WHITELISTS` must be a compile-time constant expression, and Free needs the list twice
+without being able to call Pro. Free's `document_privacy_labels()` INTERSECTS Pro's answer against
+its own copy, so adding the level to Pro alone would have left the admin editor silently offering
+three options for a four-option value — and a select rendered without its current value writes the
+first option on the next save. That is a privacy change made by an administrator who came to fix a
+title. Two more things had to move that no one would predict from the ticket: `drive_documents()`
+and `documents_by_ids()` filter on `drive_type`/`drive_id` but did not SELECT them, so a document at
+a Space drive ROOT (no folder) resolved as its author's personal file; and the folder privacy
+cascade ranks levels from `MediaRepository::PRIVACY_ORDER`, where an unranked level is never
+tightened — a folder set to `private` would have left its `space` documents readable, silently.
+`DocumentSettingsTest` now fails on any of those drifting.
 
 ### 20.2 Pending on the personal drive (not blocking release)
 
@@ -1479,12 +1492,31 @@ they read this file).
 
 ### The privacy vocabulary, corrected
 
-`PRIVACY_VALUES` is `private | members | public`. Until 2026-08-11 four places disagreed: the
-constant declared `private|members|unlisted` while `DriveActions` (twice) and the drive's row
-dropdown wrote `private|members|public`. Nothing ever wrote `unlisted`; `public` was written and
-undeclared. `DocumentController` was validating against MEDIA's vocabulary and so accepted levels no
-document ladder can honour. One list now, plus `privacy_labels()` and `is_valid_privacy()`, read by
-every consumer.
+`PRIVACY_VALUES` is `private | space | members | public`, tightest first. Until 2026-08-11 four
+places disagreed: the constant declared `private|members|unlisted` while `DriveActions` (twice) and
+the drive's row dropdown wrote `private|members|public`. Nothing ever wrote `unlisted`; `public` was
+written and undeclared. `DocumentController` was validating against MEDIA's vocabulary and so
+accepted levels no document ladder can honour. One runtime list now, plus `privacy_labels()` and
+`is_valid_privacy()`, read by every consumer.
+
+`space` was added 2026-08-14 and means **everyone who can read the drive this document sits on** —
+resolved by asking `drive_access()`, never by a membership list of ours. It is storable on any
+drive; on a personal drive it resolves exactly as `private`, with no branch implementing that
+(a personal drive answers `none` to everyone but its owner, who has already returned `edit`).
+
+Two distinctions that are easy to collapse and should not be:
+
+- **`privacy_labels()` is every level a document may HOLD; `privacy_choices()` is what to OFFER.**
+  The member's drive renders only personal drives, so it does not offer `space` — a control that
+  resolves to "just me" is a control that does nothing. The admin editor DOES offer it, deliberately:
+  that screen edits documents across every drive including Space ones, and is not drive-scoped.
+- **`privacy_choices()` always keeps the current value**, even when it would otherwise be filtered
+  out. Without that, a document moved off a Space drive would show a select missing its own value,
+  and the next save of any other field would rewrite its privacy.
+
+Three copies of the list survive for structural reasons (`Sanitizers::WHITELISTS` needs a
+compile-time constant; Free needs it twice and cannot call Pro). They are held together by
+`DocumentSettingsTest::test_every_copy_of_the_vocabulary_agrees()`, not by comments.
 
 ---
 

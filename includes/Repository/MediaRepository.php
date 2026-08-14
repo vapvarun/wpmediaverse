@@ -1437,7 +1437,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = (array) $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, folder_id, created_at
+				// `drive_type` / `drive_id` for the same reason as
+				// `drive_documents()`: Pro's privacy ladder cannot place a
+				// document at a drive root without them, and search feeds that
+				// ladder directly.
+				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, folder_id, drive_type, drive_id, created_at
 				   FROM {$index}
 				  WHERE {$type_sql} AND media_id IN ( {$placeholders} )",
 				...$params
@@ -1964,7 +1968,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = (array) $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, created_at
+				// `drive_type` / `drive_id` are selected because this method
+				// FILTERS on them (above) — a row set scoped by a column it does
+				// not return forces every consumer to re-derive the drive, and
+				// the one that did guessed "the folder it is in, else its
+				// author's drive". That guess is right for every foldered
+				// document and wrong for a document at a Space drive ROOT, which
+				// has no folder and is not its author's. Pro's privacy ladder
+				// reads them.
+				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
 				  ORDER BY {$orderby} {$order}

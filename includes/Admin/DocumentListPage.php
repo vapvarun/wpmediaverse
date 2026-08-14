@@ -256,7 +256,10 @@ class DocumentListPage {
 			$update['slug'] = $repo->generate_unique_slug( $slug, $media_id );
 		}
 
-		if ( in_array( $privacy, array( 'public', 'members', 'private' ), true ) ) {
+		// The same list the editor's dropdown was built from — a literal here
+		// would let the screen offer a level this save then discards, which
+		// looks to an administrator like the form ignored them.
+		if ( in_array( $privacy, Plugin::DOCUMENT_PRIVACY_VALUES, true ) ) {
 			$update['privacy'] = $privacy;
 		}
 

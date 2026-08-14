@@ -1897,7 +1897,27 @@ class Plugin {
 	}
 
 	/**
-	 * The labels for the three document privacy levels.
+	 * Every privacy level a document may hold, tightest first.
+	 *
+	 * FREE CANNOT ASK PRO FOR THIS, which is the whole difficulty: Pro owns the
+	 * document feature and declares the canonical list in
+	 * `Documents\DocumentSettings::PRIVACY_VALUES`, but Pro may not be
+	 * installed, and Free needs the list anyway — to bound the label filter and
+	 * to allowlist the admin editor's save. So it is restated here and the two
+	 * are asserted identical by Pro's `DocumentSettingsTest`, which is the side
+	 * that can see both.
+	 *
+	 * `space` means "everyone who can read the drive this document sits on".
+	 * Free never resolves it — that is Pro's ladder — but Free must not drop it
+	 * on the way past.
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	public const DOCUMENT_PRIVACY_VALUES = array( 'private', 'space', 'members', 'public' );
+
+	/**
+	 * The labels for the document privacy levels.
 	 *
 	 * One source, because the admin editor and the member's drive were writing
 	 * their own copies of the same three options and had already drifted: the
@@ -1920,17 +1940,14 @@ class Plugin {
 	 * @return array<string, string> Privacy value => label.
 	 */
 	public static function document_privacy_labels( string $context = 'self' ): array {
-		$labels = 'owner' === $context
-			? array(
-				'private' => __( 'Only the owner', 'wpmediaverse' ),
-				'members' => __( 'Members', 'wpmediaverse' ),
-				'public'  => __( 'Anyone', 'wpmediaverse' ),
-			)
-			: array(
-				'private' => __( 'Only me', 'wpmediaverse' ),
-				'members' => __( 'Members', 'wpmediaverse' ),
-				'public'  => __( 'Anyone', 'wpmediaverse' ),
-			);
+		$labels = array(
+			'private' => 'owner' === $context
+				? __( 'Only the owner', 'wpmediaverse' )
+				: __( 'Only me', 'wpmediaverse' ),
+			'space'   => __( 'Everyone on this drive', 'wpmediaverse' ),
+			'members' => __( 'All site members', 'wpmediaverse' ),
+			'public'  => __( 'Anyone', 'wpmediaverse' ),
+		);
 
 		/**
 		 * Filter the document privacy labels.
@@ -1946,17 +1963,18 @@ class Plugin {
 		 */
 		$labels = (array) apply_filters( 'mvs_document_privacy_labels', $labels, $context );
 
-		// The VALUES are a contract — a host may reword a label, never add a
-		// fourth level or drop one. `unlisted` reaching a dropdown is the exact
-		// thing the runbook's must-never table forbids.
-		return array_intersect_key(
-			$labels,
-			array(
-				'private' => '',
-				'members' => '',
-				'public'  => '',
-			)
-		);
+		// The VALUES are a contract — a HOST may reword a label, never invent a
+		// level or drop one. `unlisted` reaching a dropdown is the exact thing
+		// the runbook's must-never table forbids.
+		//
+		// This intersect is a gate on the FILTER, not a second opinion about the
+		// vocabulary: when the plugin's own list grows, this must grow with it in
+		// the same commit, or Pro offers a level the admin editor silently drops
+		// — and a select rendered without the value it currently holds shows the
+		// first option instead and writes it on the next save. That is a
+		// privacy change nobody asked for, made by someone fixing a typo in a
+		// title. `space` came within one edit of shipping exactly that way.
+		return array_intersect_key( $labels, array_flip( self::DOCUMENT_PRIVACY_VALUES ) );
 	}
 
 	/**

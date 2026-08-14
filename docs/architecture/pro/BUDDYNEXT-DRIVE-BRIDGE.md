@@ -6,7 +6,8 @@ to implement on your side, what each answer controls, and how to prove it works.
 You should not need to read MediaVerse's source to do this. If you do, that is a gap in
 this document — say so and it gets fixed here.
 
-- **Verified against running code:** 2026-08-14
+- **Verified against running code:** 2026-08-14 (filters and the `space` level both exercised
+  live against a simulated Space bridge — section 4 lists what was run)
 - **Requires:** WPMediaVerse Pro 2.4.0 (drive filters land in 2.4.0)
 - **Where your code goes:** `buddynext/includes/Integrations/WPMediaVerseBridge.php`
 - **Full design:** `wpmediaverse/plan/document-library.md` §22 (REST contract), §23 (gap
@@ -173,6 +174,8 @@ prove nothing.
 | Test | Expect |
 |---|---|
 | Member of a public Space opens its drive | 200, documents listed |
+| Member opens a document set to `space` | 200 — verified live for `read`, `write` and `own` |
+| Non-member opens that same `space` document | **404** `mvs_document_not_found` |
 | Same member uploads | 200 if you returned `write`, 403 `mvs_drive_read_only` if `read` |
 | Non-member opens a **private** Space drive | **403** — it is listed in your directory, so this leaks nothing |
 | Non-member opens a **secret** Space drive | **404** — 403 would confirm it exists |
@@ -189,24 +192,47 @@ Full refusal-code table: `plan/document-library.md` §22.
 
 ---
 
-## 5. What MediaVerse owes you and has NOT finished
+## 5. The `space` privacy level
 
-**Honest gap, so you do not discover it mid-implementation.**
+This section used to be a gap. It is now built — **`space` is a real privacy level**, added
+2026-08-14, and it is the one that means *"this Space and only this Space"*.
 
-There is **no `space` privacy level**. `DocumentSettings::PRIVACY_VALUES` is
-`private | members | public`. So a document on a Space drive can be:
+`DocumentSettings::PRIVACY_VALUES` is now `private | space | members | public`:
 
-- `private` — only the uploader (plus grants)
-- `members` — **every signed-in member of the site**, not of the Space
-- `public` — anyone
+| Level | Who can open the document |
+|---|---|
+| `private` | The uploader, plus anyone explicitly granted |
+| **`space`** | **Anyone your `..._drive_access` filter answers anything but `none` for** |
+| `members` | Every signed-in member **of the site** — not of the Space |
+| `public` | Anyone |
 
-There is currently no way to say *"visible to this Space and only this Space"*. Your filters
-control **who may reach the drive**, which is most of the way there — a non-member gets 404
-or 403 at the drive before privacy is consulted. But a document set to `members` is readable
-by any signed-in member who reaches it through another route.
+**`space` is resolved by your access filter, not by a membership list of ours.** We do not
+know who is in a Space and still never will: the ladder reaches `space`, asks
+`mvs_document_drive_access` for that drive, and admits anyone who is not `none`. Contributors
+(`write`) and admins (`own`) read it too, not only `read`.
 
-Tracked on our side. It does not block you starting: the filters are stable and the level
-will be additive.
+Three consequences worth knowing before you build against it:
+
+- **It works from the first document, including at the drive root.** A document with no
+  folder is placed by `mvs_media_index.drive_type` / `drive_id`, so a file dropped straight
+  into a Space drive is not mistaken for its uploader's personal file.
+- **With no bridge registered it is closed**, exactly like every other Space surface. The
+  level shipped before any Space exists; an unanswered drive denies.
+- **`members` is now labelled "All site members"** in every dropdown. It was "Members",
+  which a Space member would reasonably read as *their* Space — the one wording that could
+  make somebody publish a Space file to the whole site by picking the option that sounded
+  right.
+
+**What is still yours:** MediaVerse's own drive UI does not offer `space`, because that UI
+only ever renders a personal drive, where "everyone on this drive" is just the owner. Your
+Space Documents UI is where members choose it. Read the offer list from
+`DocumentSettings::privacy_choices( 'space', $current )` rather than hardcoding four options
+— it keeps the current value in the list even when it would otherwise be filtered out, which
+is what stops a select silently rewriting a document's privacy on an unrelated save.
+
+The value is storable on any drive and REST accepts it anywhere, so moving a document
+between drives never fails validation — it just resolves as `private` once it is somewhere
+with no wider audience.
 
 ---
 
@@ -220,6 +246,7 @@ will be additive.
 | `?drive=space:N` on the documents list | Built |
 | Departing-member reassignment (T1) | Built — a Space keeps its files when someone leaves |
 | Trash, restore, sharing, search, folders | Built, drive-agnostic |
+| `space` privacy level | Built — see section 5 |
 
 **Not yours to build:** MediaVerse's Space Documents UI does not exist and is not planned —
 you own the tabs and views. Do not set `post_author` to a Space id; it is always a real

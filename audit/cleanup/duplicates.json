@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-14T05:12:39Z",
+    "generated_at": "2026-08-14T17:57:50Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -18,7 +18,7 @@
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
         "free_files_scanned": 197,
-        "pro_files_scanned": 211
+        "pro_files_scanned": 212
     },
     "cross_plugin_duplicates": [
         {
@@ -346,7 +346,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "3599-3599",
+                    "lines": "3611-3611",
                     "method": "media_ids_in_album"
                 },
                 {
@@ -724,12 +724,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4443-4443",
+                    "lines": "4455-4455",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4471-4471",
+                    "lines": "4483-4483",
                     "method": "restore"
                 }
             ]
@@ -742,7 +742,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4272-4272",
+                    "lines": "4284-4284",
                     "method": "record_event"
                 },
                 {
@@ -801,12 +801,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4217-4217",
+                    "lines": "4229-4229",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4244-4244",
+                    "lines": "4256-4256",
                     "method": "set_stat"
                 }
             ]
@@ -927,7 +927,7 @@
         {
             "hash": "fdfea0f561afe490ff93b83260ca9d2cd934c3b2",
             "plugin": "pro",
-            "instances": 3,
+            "instances": 4,
             "token_count": 41,
             "sites": [
                 {
@@ -944,6 +944,11 @@
                     "file": "includes/Integrations/MemberPress/QuotaAdapter.php",
                     "lines": "173-173",
                     "method": "QuotaAdapter::get_mapping_strings"
+                },
+                {
+                    "file": "includes/Documents/DocumentSettings.php",
+                    "lines": "661-661",
+                    "method": "DocumentSettings::privacy_labels"
                 }
             ]
         },
@@ -1106,7 +1111,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4149-4149",
+                    "lines": "4161-4161",
                     "method": "get_user_stats"
                 },
                 {
