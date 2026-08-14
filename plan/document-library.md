@@ -2080,11 +2080,11 @@ are PRESENTED, not what is accepted.
 |---|---|---|---|
 | `.pdf` | `pdf` | Embedded — browser's own viewer | Embedded — **PDF.js**, same everywhere |
 | `.docx` | `word` | Extracted text | **Full fidelity** |
-| `.doc` | `word` | **Nothing — see below** | **Full fidelity** |
+| `.doc` | `word` | **Refused at upload, or accepted-and-unpreviewable — depends on the host's libmagic. See below** | **Full fidelity** |
 | `.xlsx` | `excel` | Extracted cells | **Full fidelity** |
-| `.xls` | `excel` | **Nothing** | **Full fidelity** |
+| `.xls` | `excel` | **Same as `.doc`** | **Full fidelity** |
 | `.pptx` | `powerpoint` | Extracted slide text | **Full fidelity** |
-| `.ppt` | `powerpoint` | **Nothing** | **Full fidelity** |
+| `.ppt` | `powerpoint` | **Same as `.doc`** | **Full fidelity** |
 | `.odt` | `odf_text` | Extracted text | **Full fidelity** |
 | `.ods` | `odf_sheet` | Extracted cells | **Full fidelity** |
 | `.odp` | `odf_presentation` | Extracted slide text | **Full fidelity** |
@@ -2095,11 +2095,39 @@ are PRESENTED, not what is accepted.
 
 #### The hole this audit found: legacy binary Office formats
 
-`.doc`, `.xls` and `.ppt` are **accepted at upload** — they are in `BY_MIME` and
-`BY_EXTENSION`, they map to `word` / `excel` / `powerpoint`, and all three are in the
-default `allowed_types`. But `OfficePreviewRenderer` is an **OOXML/ODF reader**: it
-opens a ZIP container and reads XML. A legacy `.doc` is an OLE2 compound file, not a
-ZIP, so there is nothing for it to read.
+**CORRECTED 2026-08-14 after testing with real files.** The first version of this
+section said legacy formats are "accepted at upload but cannot be previewed". That was
+half right, and the wrong half matters.
+
+They are in `BY_MIME` and `BY_EXTENSION`, map to `word` / `excel` / `powerpoint`, and
+all three are in the default `allowed_types` — so on paper they are accepted. But
+ingest resolves the type from the SNIFFED MIME, and libmagic reports an OLE2 compound
+file as `application/CDFV2`, which is in no map. Measured:
+
+```
+doc   sniffed=application/CDFV2   REFUSED: mvs_document_type_unsupported
+xls   sniffed=application/CDFV2   REFUSED: mvs_document_type_unsupported
+ppt   sniffed=application/CDFV2   REFUSED: mvs_document_type_unsupported
+```
+
+**The limit of that evidence, stated plainly:** the sample was a synthetic OLE2 header
+with no internal streams, and libmagic classifies a *real* `.doc` by looking at those
+streams — modern versions often answer `application/msword`, which IS in the map and
+WOULD be accepted. So the two possible behaviours are:
+
+| If libmagic says | Then |
+|---|---|
+| `application/CDFV2` | refused at upload — the member is told the type is unsupported |
+| `application/msword` etc. | accepted, then unpreviewable — the case below |
+
+**Which one a site gets depends on its libmagic version, and that is itself the
+problem**: the same file behaves differently on two hosts, and neither outcome is
+stated anywhere. Settling it needs a genuine `.doc` saved by Word, which was not
+available here — do not treat either row as confirmed without one.
+
+The preview hole is real whenever the file does get in: `OfficePreviewRenderer` is an
+**OOXML/ODF reader**: it opens a ZIP container and reads XML. A legacy `.doc` is an
+OLE2 compound file, not a ZIP, so there is nothing for it to read.
 
 Measured 2026-08-14 by handing the renderer non-ZIP bytes typed as each:
 
@@ -2125,6 +2153,18 @@ wrong.
 **Both are fixed by §25**, because LibreOffice reads legacy binaries natively. Until
 it lands, item 2 is worth a one-line copy fix on its own: say "this format cannot be
 previewed" when the type is legacy, rather than blaming the file.
+
+#### Verified with purpose-built samples, 2026-08-14
+
+A file of every extension was authored (valid OOXML with `[Content_Types].xml`, valid
+ODF with an uncompressed `mimetype` entry, plus text/markdown/csv/rtf/pdf), ingested
+through `DocumentIngestService` as a member, and opened on its own page. **11 of 14
+ingested and all 11 previewed with their real content** — the authored text came
+through, slide order held, markdown rendered as markdown. The 3 that did not are the
+legacy formats above.
+
+This is worth keeping as a fixture generator rather than a one-off: testing only the
+modern formats is what hid the legacy hole in the first place.
 
 #### Types deliberately NOT added
 
