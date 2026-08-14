@@ -428,6 +428,82 @@ interface MediaRepositoryInterface {
 	public function drive_documents( array $args = array() ): array;
 
 	/**
+	 * Published document ids whose TITLE matches a phrase, in title order.
+	 *
+	 * On the boundary interface for the same reason as `drive_documents()`: Pro
+	 * owns document SEARCH and must not query `mvs_media_index` itself
+	 * (architecture invariant 6). Pro's `SearchService` combines these
+	 * candidates with its own FULLTEXT hits over extracted text — a file whose
+	 * text is empty, which every PDF is by design, is findable only by name.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $query Search phrase. Escaped for LIKE by the implementation.
+	 * @param int    $limit Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_title_candidates( string $query, int $limit = 50 ): array;
+
+	/**
+	 * One page of the author leaderboard, plus how many members are ranked.
+	 *
+	 * On the boundary interface because Pro owns the leaderboard SURFACE while
+	 * `mvs_media_index` stays this class's to query (architecture invariant 6).
+	 * The page query, its total and `author_leaderboard_rank()` share one
+	 * condition here, which is what stops a member's rank being computed against
+	 * a different population from the board it is shown beside.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric   reactions|media_count.
+	 * @param string $window   all|30d|7d.
+	 * @param int    $per_page Rows per page (1-100).
+	 * @param int    $page     1-based page.
+	 * @return array{rows: array<int, array{user_id:int, score:int}>, total: int}
+	 */
+	public function author_leaderboard( string $metric, string $window, int $per_page = 20, int $page = 1 ): array;
+
+	/**
+	 * Where one member stands on that same board.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric  reactions|media_count.
+	 * @param string $window  all|30d|7d.
+	 * @param int    $user_id Member to locate.
+	 * @return array{rank: int|null, score: int} Rank is null when unranked.
+	 */
+	public function author_leaderboard_rank( string $metric, string $window, int $user_id ): array;
+
+	/**
+	 * Media carrying a set of meta conditions, paginated, with a total.
+	 *
+	 * DOMAIN-NEUTRAL ON PURPOSE. Pro's stories bar is the first caller, but Free
+	 * has no business knowing what a story is — the caller supplies the meta
+	 * keys and this supplies the join, the privacy scoping and the paging.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args meta, authors, viewer_id, privacy, types, per_page, page.
+	 * @return array{items: array<int, array<string, mixed>>, total: int}
+	 */
+	public function media_with_meta( array $args = array() ): array;
+
+	/**
+	 * Distinct viewers per media since a per-media timestamp held in meta.
+	 *
+	 * The owner is never counted. Domain-neutral for the same reason as
+	 * `media_with_meta()`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $media_ids      Media to count.
+	 * @param string $since_meta_key Meta key holding each row's start timestamp.
+	 * @return array<int, int> media_id => distinct viewers.
+	 */
+	public function viewer_counts_since_meta( array $media_ids, string $since_meta_key ): array;
+
+	/**
 	 * Public documents, for the public document listing page.
 	 *
 	 * @since 2.4.0

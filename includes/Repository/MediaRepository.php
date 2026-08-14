@@ -890,6 +890,426 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Media carrying a set of meta conditions, paginated, with a total.
+	 *
+	 * DOMAIN-NEUTRAL ON PURPOSE. Pro's stories bar is the first caller and needs
+	 * "media whose `is_story` meta is 1 and whose `story_expires_at` is still in
+	 * the future" — but `mvs_media_index` is this class's to query (architecture
+	 * invariant 6) and Free has no business knowing what a story IS. So the
+	 * caller supplies the meta keys and this supplies the join, the privacy
+	 * scoping and the paging.
+	 *
+	 * Each condition is INNER JOINed, so they are ANDed: media missing any one
+	 * of them does not appear.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type array $meta      List of {key, compare, value, select_as}. `compare`
+	 *                            is allowlisted to = != > >= < <=; anything else
+	 *                            becomes `=`. `select_as` returns that condition's
+	 *                            meta_value in the row under the given name.
+	 *     @type int[] $authors   Restrict to these authors. Empty means any.
+	 *     @type int   $viewer_id Apply privacy for this viewer. 0 = public only.
+	 *     @type bool  $privacy   Whether to apply privacy at all. Default true.
+	 *     @type array $types     media_type allowlist. Default the media library.
+	 *     @type int   $per_page  1-100. Default 20.
+	 *     @type int   $page      1-based. Default 1.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int}
+	 */
+	public function media_with_meta( array $args = array() ): array {
+		global $wpdb;
+
+		$meta_args = isset( $args['meta'] ) && is_array( $args['meta'] ) ? $args['meta'] : array();
+
+		if ( empty( $meta_args ) ) {
+			return array(
+				'items' => array(),
+				'total' => 0,
+			);
+		}
+
+		$index    = $wpdb->prefix . 'mvs_media_index';
+		$meta_tbl = $wpdb->prefix . 'mvs_media_meta';
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		$allowed_compare = array( '=', '!=', '>', '>=', '<', '<=' );
+
+		$joins   = array();
+		$where   = array( "idx.status = 'publish'" );
+		$params  = array();
+		$selects = array( 'idx.media_id', 'idx.post_author', 'idx.title', 'idx.media_type', 'idx.privacy', 'idx.created_at' );
+
+		foreach ( array_values( $meta_args ) as $i => $condition ) {
+			$alias   = 'm' . (int) $i;
+			$key     = isset( $condition['key'] ) ? (string) $condition['key'] : '';
+			$compare = isset( $condition['compare'] ) && in_array( $condition['compare'], $allowed_compare, true )
+				? (string) $condition['compare']
+				: '=';
+
+			if ( '' === $key ) {
+				continue;
+			}
+
+			// The alias is ours, the key and value are the caller's and both are
+			// bound. The COMPARE cannot be bound — hence the allowlist above.
+			$joins[]  = $wpdb->prepare( "INNER JOIN {$meta_tbl} {$alias} ON {$alias}.media_id = idx.media_id AND {$alias}.meta_key = %s", $key ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$where[]  = "{$alias}.meta_value {$compare} %s";
+			$params[] = (string) ( $condition['value'] ?? '' );
+
+			if ( ! empty( $condition['select_as'] ) ) {
+				$as        = preg_replace( '/[^a-zA-Z0-9_]/', '', (string) $condition['select_as'] );
+				$selects[] = "{$alias}.meta_value AS {$as}";
+			}
+		}
+
+		if ( empty( $joins ) ) {
+			return array(
+				'items' => array(),
+				'total' => 0,
+			);
+		}
+
+		$types = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
+		$where  = array_merge( $where, array( $type_sql ) );
+		$params = array_merge( $params, $type_params );
+
+		$authors = isset( $args['authors'] ) && is_array( $args['authors'] ) ? array_map( 'intval', $args['authors'] ) : array();
+
+		if ( $authors ) {
+			$where[] = 'idx.post_author IN (' . implode( ',', array_fill( 0, count( $authors ), '%d' ) ) . ')';
+			$params  = array_merge( $params, $authors );
+		}
+
+		$apply_privacy = ! isset( $args['privacy'] ) || (bool) $args['privacy'];
+
+		if ( $apply_privacy ) {
+			$viewer_id = isset( $args['viewer_id'] ) ? (int) $args['viewer_id'] : 0;
+
+			if ( $viewer_id > 0 ) {
+				$where[]  = "( idx.post_author = %d OR idx.privacy = 'public' OR idx.privacy = 'members' )";
+				$params[] = $viewer_id;
+			} else {
+				$where[] = "idx.privacy = 'public'";
+			}
+		}
+
+		$from = "FROM {$index} idx " . implode( ' ', $joins ) . ' WHERE ' . implode( ' AND ', $where );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) {$from}", ...$params ) );
+
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d",
+				...array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * Distinct viewers per media since a per-media timestamp held in meta.
+	 *
+	 * The owner is never counted: a member refreshing their own upload would
+	 * otherwise inflate its view count, which is the number other people are
+	 * shown.
+	 *
+	 * The "since" bound is per media rather than global — it comes from each
+	 * row's own meta value, so items that started at different times are each
+	 * counted from their own start. Domain-neutral for the same reason as
+	 * `media_with_meta()`: Pro's stories bar passes `story_started_at`, and this
+	 * class does not need to know why.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $media_ids      Media to count.
+	 * @param string $since_meta_key Meta key holding each row's start timestamp.
+	 * @return array<int, int> media_id => distinct viewers. Absent means zero.
+	 */
+	public function viewer_counts_since_meta( array $media_ids, string $since_meta_key ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+
+		if ( empty( $ids ) || '' === $since_meta_key ) {
+			return array();
+		}
+
+		$views        = $wpdb->prefix . 'mvs_media_views';
+		$meta_tbl     = $wpdb->prefix . 'mvs_media_meta';
+		$index        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT v.media_id, COUNT(DISTINCT v.user_id) AS c
+				   FROM {$views} v
+			 INNER JOIN {$meta_tbl} sm ON sm.media_id = v.media_id AND sm.meta_key = %s
+			 INNER JOIN {$index} idx ON idx.media_id = v.media_id
+				  WHERE v.media_id IN ({$placeholders})
+				    AND v.event_type = 'view'
+				    AND v.user_id IS NOT NULL
+				    AND v.user_id > 0
+				    AND v.user_id != idx.post_author
+				    AND v.created_at >= sm.meta_value
+			   GROUP BY v.media_id",
+				...array_merge( array( $since_meta_key ), $ids )
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+
+		foreach ( $rows as $row ) {
+			$counts[ (int) $row['media_id'] ] = (int) $row['c'];
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * The condition every author-ranking query shares.
+	 *
+	 * Public, approved, published media with a real author, narrowed to the
+	 * MEDIA library and optionally to a recent window. Built once so the page
+	 * query, its total, and a single member's rank cannot drift apart — three
+	 * queries that must agree on what "ranked" means or the rank a member is
+	 * shown does not match the board they are looking at.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $window all|30d|7d.
+	 * @return string SQL condition against alias `i`.
+	 */
+	private function ranking_condition( string $window ): string {
+		global $wpdb;
+
+		$cond = "i.status = 'publish' AND i.moderation_status = 'approved' AND i.privacy = 'public' AND i.post_author > 0";
+
+		// The board ranks the MEDIA library. Documents are cheap to produce in
+		// bulk, so counting them would let a member top a public ranking by
+		// uploading a few hundred files nobody browses.
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'i.media_type' );
+
+		$cond .= ' AND ' . (string) $wpdb->prepare( $type_sql, $type_params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$days = array(
+			'30d' => 30,
+			'7d'  => 7,
+		);
+
+		if ( isset( $days[ $window ] ) ) {
+			$cond .= $wpdb->prepare( ' AND i.created_at >= DATE_SUB( NOW(), INTERVAL %d DAY )', $days[ $window ] );
+		}
+
+		return $cond;
+	}
+
+	/**
+	 * One page of the author leaderboard, plus how many members are ranked.
+	 *
+	 * `$metric` and `$window` are ALLOWLISTED here rather than interpolated:
+	 * both reach this method from a URL. Anything unrecognised falls back to the
+	 * safe default instead of being passed to SQL.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric   reactions|media_count.
+	 * @param string $window   all|30d|7d.
+	 * @param int    $per_page Rows per page (1-100).
+	 * @param int    $page     1-based page.
+	 * @return array{rows: array<int, array{user_id:int, score:int}>, total: int}
+	 */
+	public function author_leaderboard( string $metric, string $window, int $per_page = 20, int $page = 1 ): array {
+		global $wpdb;
+
+		$metric   = 'media_count' === $metric ? 'media_count' : 'reactions';
+		$window   = in_array( $window, array( 'all', '30d', '7d' ), true ) ? $window : 'all';
+		$per_page = max( 1, min( 100, $per_page ) );
+		$offset   = ( max( 1, $page ) - 1 ) * $per_page;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$cond  = $this->ranking_condition( $window );
+
+		if ( 'media_count' === $metric ) {
+			$score_expr = 'COUNT(*)';
+			$having     = '';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$total = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT i.post_author) FROM {$index} i WHERE {$cond}" );
+		} else {
+			$score_expr = 'SUM(i.reaction_count)';
+			// A member with zero reactions is not ON the board; without this they
+			// would appear at the bottom with a score of 0 and inflate the total.
+			$having = ' HAVING score > 0';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$total = (int) $wpdb->get_var(
+				"SELECT COUNT(*) FROM ( SELECT i.post_author FROM {$index} i WHERE {$cond} GROUP BY i.post_author HAVING SUM(i.reaction_count) > 0 ) t"
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT i.post_author AS user_id, {$score_expr} AS score
+				   FROM {$index} i
+				  WHERE {$cond}
+			   GROUP BY i.post_author{$having}
+			   ORDER BY score DESC, i.post_author ASC
+				  LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		$clean = array();
+
+		foreach ( $rows as $row ) {
+			$clean[] = array(
+				'user_id' => (int) ( $row['user_id'] ?? 0 ),
+				'score'   => (int) ( $row['score'] ?? 0 ),
+			);
+		}
+
+		return array(
+			'rows'  => $clean,
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * Where one member stands on that same board.
+	 *
+	 * Rank is "how many members score HIGHER, plus one" rather than a row offset,
+	 * so it does not require paging to the member to find them, and ties share a
+	 * rank instead of depending on which row the database returned first.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric  reactions|media_count.
+	 * @param string $window  all|30d|7d.
+	 * @param int    $user_id Member to locate.
+	 * @return array{rank: int|null, score: int} Rank is null when they are not ranked at all.
+	 */
+	public function author_leaderboard_rank( string $metric, string $window, int $user_id ): array {
+		global $wpdb;
+
+		$none = array(
+			'rank'  => null,
+			'score' => 0,
+		);
+
+		if ( $user_id <= 0 ) {
+			return $none;
+		}
+
+		$metric = 'media_count' === $metric ? 'media_count' : 'reactions';
+		$window = in_array( $window, array( 'all', '30d', '7d' ), true ) ? $window : 'all';
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$cond  = $this->ranking_condition( $window );
+
+		if ( 'media_count' === $metric ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$score = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT COUNT(*) FROM {$index} i WHERE {$cond} AND i.post_author = %d", $user_id )
+			);
+
+			if ( $score <= 0 ) {
+				return $none;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$higher = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM ( SELECT i.post_author, COUNT(*) c FROM {$index} i WHERE {$cond} GROUP BY i.post_author HAVING c > %d ) t",
+					$score
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$score = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT SUM(i.reaction_count) FROM {$index} i WHERE {$cond} AND i.post_author = %d", $user_id )
+			);
+
+			if ( $score <= 0 ) {
+				return $none;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$higher = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM ( SELECT i.post_author, SUM(i.reaction_count) s FROM {$index} i WHERE {$cond} GROUP BY i.post_author HAVING s > %d ) t",
+					$score
+				)
+			);
+		}
+
+		return array(
+			'rank'  => $higher + 1,
+			'score' => $score,
+		);
+	}
+
+	/**
+	 * Published document ids whose TITLE matches a phrase, in title order.
+	 *
+	 * For the names an extractor never sees. Document search runs FULLTEXT over
+	 * extracted text, and a file whose text is empty — a PDF, an image-only
+	 * scan, anything not yet extracted — is findable only by what it is called.
+	 *
+	 * A `LIKE '%term%'` cannot use an index and is deliberately bounded by
+	 * `$limit` for that reason: it is a candidate list feeding a ranked search,
+	 * not a listing anyone pages through.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $query Search phrase. Escaped for LIKE here, not by callers.
+	 * @param int    $limit Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_title_candidates( string $query, int $limit = 50 ): array {
+		global $wpdb;
+
+		$query = trim( $query );
+
+		if ( '' === $query ) {
+			return array();
+		}
+
+		$limit = max( 1, min( 500, $limit ) );
+		$like  = '%' . $wpdb->esc_like( $query ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id
+				   FROM {$wpdb->prefix}mvs_media_index
+				  WHERE media_type = 'document'
+				    AND status = 'publish'
+				    AND title LIKE %s
+				  ORDER BY title ASC
+				  LIMIT %d",
+				$like,
+				$limit
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
 	 * Document ids after a cursor, in id order.
 	 *
 	 * Keyset pagination for background sweeps: an `OFFSET` walk over a large
