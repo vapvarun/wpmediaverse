@@ -1328,21 +1328,29 @@ its own right after a quarantined PDF was screenshotted rendering as a broken ti
 
 Read this section before planning any further document work. Ordered by what blocks what.
 
-### 20.1 Space / site drives — ENTIRELY PENDING
+### 20.1 Space / site drives — MOSTLY BUILT, two gaps
 
-**Nothing in §23 is built.** Personal drives are v1 and shipped; Space drives are the whole of
-Phase 11 and have not been started. The gap analysis is §23; the anti-patterns that must not be
-used are §23.7. Summary of what does not exist:
+> **RE-VERIFIED 2026-08-14 AGAINST THE RUNNING CODE. "Nothing in §23 is built" is no longer true —
+> six of the seven items below shipped during Phase 11.** The heading stayed accurate for weeks
+> after it stopped being, which is how a pending list starts costing more than it saves. Each row
+> states how it was checked. Gap analysis: §23; anti-patterns that must not be used: §23.7.
 
-| | State |
-|---|---|
-| Document→drive binding (`drive_type` / `drive_id` on the document) | not built — a Space-root upload would file into the uploader's PERSONAL drive |
-| `can_write_drive` — contribute distinct from own | not built — `owns_drive()` returns `false` by default for `space`/`site`, and a bool cannot express "may contribute" |
-| `GET /drives` | route does not exist |
-| `?drive=space:N` on the documents list | param does not exist — the list is author-scoped only |
-| BuddyNext bridge document hooks | `WPMediaVerseBridge.php` has none |
-| Privacy token `space` | not wired; `group` remains BuddyPress-only |
-| T1 departing-member reassignment | not built. Blocks Space being shippable, not personal |
+| | State, checked 2026-08-14 | How |
+|---|---|---|
+| Document→drive binding (`drive_type` / `drive_id`) | **BUILT** | Migrator v29 stamps both; live data shows 107 `user` and 1 `space` document |
+| `can_write_drive` — contribute distinct from own | **BUILT** | present in `includes/`, alongside `owns_drive()` |
+| `GET /drives` | **BUILT** | route registered — confirmed in the live route table |
+| `?drive=space:N` on the documents list | **BUILT** | `drive` collection param + `parse_drive()` in `DocumentController` |
+| T1 departing-member reassignment | **BUILT** | `UserDeletionService::reassign_team_drive_media()`, covered by `DepartingMemberTest` |
+| **Privacy token `space`** | **NOT BUILT** | `DocumentSettings::PRIVACY_VALUES` is `private, members, public`. A document on a Space drive has no "visible to this Space" level — the drive knows it is a Space, the privacy ladder does not |
+| **BuddyNext bridge document hooks** | **NOT BUILT — and not ours to write** | `WPMediaVerseBridge.php` still has none. BuddyNext applies these; we supply the hooks |
+
+**So Space drives are not "entirely pending" — they are storage-complete and permission-complete,
+missing a privacy level and the bridge on the other side.** Practically: a Space document can be
+filed, listed, permissioned and reassigned today, but cannot be made visible *to the Space and only
+the Space* — it must borrow `members` (every signed-in member of the site) or `private`. That is
+the gap to close before Space drives are honestly shippable, and it is a smaller, better-defined
+piece of work than this section previously implied.
 
 ### 20.2 Pending on the personal drive (not blocking release)
 
@@ -1350,18 +1358,31 @@ used are §23.7. Summary of what does not exist:
 stale statuses in both directions. What each claim was checked against is stated, so the next
 reader does not have to re-derive it.
 
-- **P1.2 call-site migration for `mvs_media_index`** — Rule 7 is landed (see DONE list below) but
-  still runs as `known_gap()`, not a hard `violation()`. Remaining open sites (re-verified
-  2026-08-11 in §24.2 item 1): Free 24 files / 66 call sites, Pro 4 files / 6 call sites. Until
-  those clear and Rule 7 is promoted to `violation()`, §8's structural guarantee is visible in CI
-  but non-blocking.
-- **Scale fixture** (P3.9) — a seeded 30k-document drive. Every big-site claim in §12 is reasoned,
-  not measured.
-- **Real-customer-DB pass on Migrator v27** (P2.2). Applied and verified on dev data only.
-- **~39 pre-existing Pro unit failures** from cross-test pollution in the gamification suites.
-  *Verified not ours:* `BoostServiceTest` run alone reproduces the identical
-  `DeliveryControllerTest` failures, and every affected suite passes in isolation. No CI gate runs
-  phpunit in either plugin.
+> **RE-VERIFIED 2026-08-14. Four of the five items below were stale — three are now done and one
+> had the wrong numbers.** Corrected in place rather than appended, because a pending list that is
+> read as current is worse than no list. What each claim was checked against is stated.
+
+- **P1.2 call-site migration for `mvs_media_index`** — **PRO IS DONE, FREE IS NOT.**
+  *Measured 2026-08-14 with the detector, not counted by hand:* **Free 32 call sites across 5
+  files** (`CLI/Commands.php` 11, `Services/CloudOps.php` 8, `Services/CptIdCollisionService.php`
+  6, `REST/Controller/MediaController.php` 4, `Services/StorageRepairService.php` 3). The "24
+  files / 66 call sites" figure this section carried was wrong. **Pro is at 0** and its Rule 7 is
+  now a hard `violation()`, mutation-tested. Free's stays `known_gap()` until its 32 clear.
+- **Scale fixture** (P3.9) — **DONE.** 30,000 documents across 25 drives, seeded in 105 s and
+  removed after. §12a records every measurement and corrects §12's stale index claim. The fixture
+  generator for per-format samples is committed at `wpmediaverse-pro/bin/make-document-fixtures.py`.
+- **Real-customer-DB pass on Migrator v27** (P2.2) — **CLOSED WITHOUT A DUMP, and the reasoning
+  matters.** Folders are new in 2.4.0, so `folder_id` (an `ALTER ADD COLUMN … DEFAULT 0`) has
+  nothing to migrate. The riskier half — the quarantine, which the code itself flags as not
+  naturally idempotent — is correct by construction for every possible customer state: because
+  2.4.0 is unreleased, no customer database can hold a *real* document, so every
+  `media_type='document'` row out there IS the pre-1.2.3 catch-all the quarantine targets. Six
+  tests cover it including idempotency. **This reasoning does not transfer to a later migration** —
+  once 2.4.0 ships, real documents exist in the wild.
+- **~39 pre-existing Pro unit failures** — **GONE, and a CI gate now runs the suites.** *Measured
+  2026-08-14:* Pro 571 tests / 2,604 assertions / 0 failures. The claim "No CI gate runs phpunit in
+  either plugin" is also no longer true: stage 2.4 of `bin/local-ci.sh` runs the full suite in
+  both.
 
 **Claimed pending by the old build plan, but actually DONE** — recorded so nobody rebuilds them:
 
