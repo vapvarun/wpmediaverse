@@ -1964,7 +1964,7 @@ What ships today is two mechanisms, and only one of them is an embed. Measured
 | `pdf` | `<iframe src="{signed url}">` | **yes** — the real document |
 | `word` `excel` `powerpoint` `odf ×3` `rtf` | server unzips XML, strips tags, returns HTML | **no — extraction.** The words, no layout, no images |
 | `text` `markdown` `csv` | server reads the file, returns HTML | n/a — these *are* text |
-| `archive` other | download card | no |
+| anything else (`.zip`, unknown) | download card | n/a — **not a document.** `resolve()` returns null and the upload is refused, so no such row exists to preview. This line describes the tier's default, not a supported type |
 
 Calling the middle row a preview oversells it: a member opening a contract sees its
 sentences in a plain column, not the contract. **`ext-zip` is a parsing prerequisite,
@@ -2244,10 +2244,51 @@ legacy formats above.
 This is worth keeping as a fixture generator rather than a one-off: testing only the
 modern formats is what hid the legacy hole in the first place.
 
+#### The download card, and the host that reaches it (2026-08-15)
+
+Tracing whether archives ever show a card turned up the one situation where the card IS
+reached by a real, supported document: **a host without PHP's zip extension**. Six of the
+eleven types — `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp` — are ZIP containers, so
+without ext-zip they cannot be opened even to read their text.
+
+`OfficePreviewRenderer::handles()` already declined them correctly there (an empty panel
+would be worse than a card). What it did not do was say so:
+
+- The card read **"This file type has no preview."** That is false — those types preview on
+  every host that has the extension. A member reads it as the product not supporting their
+  file; an owner has nothing to act on.
+- **Site Health said nothing at all** about ext-zip, so the one person who could fix it had
+  no signal.
+
+Both fixed. The card now distinguishes "no preview exists for this type" from "not on this
+server yet", via `OfficePreviewRenderer::blocked_only_by_missing_zip()`, and a new
+`mvs_document_zip` Site Health test names the six formats, says what still works (PDF, text,
+markdown, CSV, and downloads), gives the cause and the remedy. RECOMMENDED, never critical —
+nothing is broken, and this screen's one critical test is document privacy.
+
+**This path had never executed anywhere.** Every dev machine and CI runner has ext-zip, which
+is exactly how it came to say something untrue unnoticed. `ZipEntryReader::available()` now
+consults `mvs_pro_zip_reader_available`, which can only ever narrow (the `class_exists` check
+runs first, so a filter cannot force zip on and turn a card into a fatal). That makes the
+degraded path testable and browser-checkable; `MissingZipDegradationTest` covers it, and it
+was verified in a browser with the extension simulated away, at 390px, then restored.
+
+One test in that file **skips** rather than passing: the "filter can never force zip on"
+invariant cannot be distinguished from its own absence on a host that has the extension —
+written as a plain assertion it stayed green with the guard deleted. A skip that says why
+beats a green test that cannot fail.
+
 #### Types deliberately NOT added
 
 `.zip` resolves to nothing by design (a bare archive is not a document, and admitting
-it would let any ZIP through the container check). Adding formats LibreOffice could
+it would let any ZIP through the container check). **Re-verified 2026-08-15** against a
+real zip: `resolve('sample.zip')` returns null, and the same archive renamed `.docx` is
+also refused because it carries no OOXML marker. "List the archive's contents instead of
+a download card" was raised as a follow-up and is void — there is no archive document to
+list, and admitting one to build the feature would reopen the container check.
+
+What that investigation DID find is recorded below: on a host without ext-zip the card is
+reachable for six real types, and it was telling members something false. Adding formats LibreOffice could
 also convert — `.odg`, `.pages`, `.key`, `.wpd` — is cheap AFTER §25, because
 conversion becomes the only question. It is deliberately not in scope: get the 11 that
 are already accepted presenting correctly first.
