@@ -1259,6 +1259,13 @@ MediaVerse's only obligation is that the filter contract can express whatever BN
 why `mvs_document_drive_access` takes `($drive_type, $drive_id, $user_id)` and returns a permission
 rather than a boolean.
 
+**HANDOVER WRITTEN 2026-08-14:** `docs/architecture/pro/BUDDYNEXT-DRIVE-BRIDGE.md`. All four
+filters verified live (fired at `PermissionService:1320`, `DocumentController:367` and `:406`,
+`AbstractDocumentController:243`), with signatures, accepted-arg counts, a reference
+implementation per filter, the seven-row verification recipe, and the `space`-privacy gap stated
+plainly so BN does not meet it mid-build. The four questions above are reproduced there as theirs
+to answer.
+
 ---
 
 # Part II — absorbed 2026-08-11
