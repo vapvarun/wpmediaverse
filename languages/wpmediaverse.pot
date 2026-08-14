@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 2.4.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-08-13 04:11:22+00:00\n"
+"POT-Creation-Date: 2026-08-14 15:58:30+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -6802,7 +6802,23 @@ msgstr ""
 msgid "Showing %1$s of %2$s"
 msgstr ""
 
-#: wpmediaverse.php:80
+#: wpmediaverse.php:64
+#. translators: 1: required PHP version, 2: PHP version this site runs.
+msgid ""
+"WPMediaVerse needs PHP %1$s or later, and this site is running PHP %2$s. "
+"The plugin has stopped itself rather than take the site down. Ask your host "
+"to update PHP — your media and settings are untouched."
+msgstr ""
+
+#: wpmediaverse.php:69
+msgid ""
+"WPMediaVerse could not load: part of the plugin is missing, which usually "
+"means an upload or update did not finish. Re-install the plugin from a "
+"complete copy. Nothing has been deleted — your media, settings and members "
+"are untouched."
+msgstr ""
+
+#: wpmediaverse.php:204
 #. translators: 1: free version, 2: Pro version present, 3: required Pro
 #. version.
 msgid ""

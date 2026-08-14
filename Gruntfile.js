@@ -26,7 +26,13 @@ module.exports = function( grunt ) {
 					// dist still polluted the POT, and did until this line. The
 					// exclusion is the durable half: it holds whichever task runs
 					// and whatever is lying in the tree.
-					exclude: [ 'dist/.*', 'node_modules/.*', 'vendor/.*', 'tests/.*' ],
+					// `libs/` sits beside `vendor/` here for the same reason: it is
+					// third-party runtime code we ship but do not write, and its
+					// strings are not ours to translate. Missing it put 256 Action
+					// Scheduler and EDD SDK msgids into this plugin's POT the moment
+					// the runtime deps moved out of vendor/ — the same pollution that
+					// was cleaned up days earlier, walking back in through a new door.
+					exclude: [ 'dist/.*', 'node_modules/.*', 'vendor/.*', 'libs/.*', 'tests/.*' ],
 					potHeaders: {
 						poedit: true,
 						'x-poedit-keywordslist': true,
