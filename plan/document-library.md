@@ -1861,3 +1861,206 @@ decision from outside this repo and which do not:
 **Net: PR1's draft, PR2 and PR3 can start without anyone outside this repo weighing in. PR1's
 sign-off and PR4 are the two places this plan needs an answer from outside this session before
 proceeding.**
+
+---
+
+## 25. True document previews — LibreOffice → PDF → PDF.js
+
+**Decision, 2026-08-14 (Varun):** go with LibreOffice + PDF.js. This section is the
+plan; nothing here is built.
+
+**SCOPE: document types only.** Images, video and audio are already covered by
+MediaVerse's own media pipeline and are untouched by everything below. Video appears
+here once, as the PATTERN to copy — `PosterService` solves "optional binary on an
+unknown host" and that answer is reused rather than reinvented. No media surface,
+setting or table changes.
+
+### 25.1 The problem, stated exactly
+
+What ships today is two mechanisms, and only one of them is an embed. Measured
+2026-08-14 on a live site, one real file of every declared type through
+`GET /mvs-pro/v1/documents/{id}/preview`:
+
+| Type | Mechanism | Embed? |
+|---|---|---|
+| `pdf` | `<iframe src="{signed url}">` | **yes** — the real document |
+| `word` `excel` `powerpoint` `odf ×3` `rtf` | server unzips XML, strips tags, returns HTML | **no — extraction.** The words, no layout, no images |
+| `text` `markdown` `csv` | server reads the file, returns HTML | n/a — these *are* text |
+| `archive` other | download card | no |
+
+Calling the middle row a preview oversells it: a member opening a contract sees its
+sentences in a plain column, not the contract. **`ext-zip` is a parsing prerequisite,
+not an embed mechanism** — an early framing error in this work, corrected here.
+
+**No browser can render a `.docx`.** There is no native embed for Office or ODF;
+point an `<iframe>` at one and it downloads. PDF is the sole exception. So "embed
+every type the same way" has exactly one meaning: **turn every type into a PDF, and
+render that PDF ourselves.**
+
+### 25.2 Why the market answer is closed to us
+
+The two leading plugins split it the same way:
+
+| Plugin | PDF | Office |
+|---|---|---|
+| [Document Embedder](https://wordpress.org/plugins/document-emberdder/) | **PDF.js, locally** | Google Viewer |
+| [Embed Any Document](https://wordpress.org/plugins/embed-any-document/) | Google / Office Online | Google / Office Online |
+
+Embed Any Document's own FAQ: *"the viewers do not support locally hosted files, and
+your document has to be available online for the viewers to access"* — capped at 8 MB
+(Google) / 10 MB (Microsoft), because the file is uploaded to their service on every
+view.
+
+Those plugins embed **public page content**. Ours are **private member files** behind
+`DocumentUrls::signed()`. Publishing a document to satisfy a third-party viewer hands
+it to anyone with the link and to the viewer's operator. Incompatible with the drive
+— not a preference being declined.
+
+**But their PDF choice is worth copying:** PDF.js locally, which is exactly what
+removes our browser-dependent branch at no privacy cost.
+
+### 25.3 Target architecture
+
+```
+upload ──► [pdf?] ──yes──────────────────────────────► store original
+                │
+                no
+                ▼
+        LibreOffice --convert-to pdf   (Action Scheduler, background)
+                ▼
+        rendition stored beside the original
+                ▼
+        PDF.js renders it, fed by our own gated endpoint
+```
+
+One viewer for every type. The owner's mental model becomes one sentence: *we render
+a PDF of your document and show it ourselves.* Adding an accepted format later becomes
+a conversion question, never a rendering question.
+
+`text` / `markdown` / `csv` keep their existing HTML rendering — converting a text
+file to PDF to display it would be worse in every respect. That is a deliberate
+exception, not an oversight.
+
+### 25.4 The dependency, and the precedent for it
+
+LibreOffice must be on the server. **It is not installed on the dev host** (checked
+2026-08-14) and is absent from most shared hosting.
+
+This plugin has solved this exact shape once already, for video posters:
+
+| Concern | Existing answer to copy |
+|---|---|
+| Find the binary | `PosterService::resolve_ffmpeg_binary()` — first-match-wins over 4 paths |
+| Let a host override it | `mvs_ffmpeg_binary` filter |
+| Ask before using | `PosterService::is_ffmpeg_available()` |
+| Tell the owner | Site Health test `wpmediaverse_video_posters` |
+
+Mirror it exactly: `resolve_soffice_binary()`, `mvs_pro_soffice_binary`,
+`is_conversion_available()`, Site Health test `wpmediaverse_document_renditions`.
+
+**Invoke with `proc_open` and an ARRAY command**, as `PosterService::run_ffmpeg_extract()`
+does — arguments reach `execve()` directly with no shell, so a filename containing shell
+metacharacters is harmless. Do NOT copy `TranscodeService`'s `escapeshellarg()` string
+form; the array form is strictly safer and this input is member-supplied.
+
+### 25.5 LibreOffice specifics that will bite
+
+1. **It needs a writable user profile.** Without one it silently fails or hangs on a
+   web host. Pass `-env:UserInstallation=file:///<writable>/mvs-lo-profile` pointing
+   inside the uploads dir, one per site.
+2. **It is not safely concurrent** with a shared profile. Two conversions at once
+   corrupt each other. One-at-a-time via a lock, or a profile per job.
+3. **It must be told not to be interactive:** `--headless --norestore --invisible
+   --nolockcheck --nodefault`.
+4. **Macros are an attack surface.** LibreOffice parsing untrusted member uploads is
+   the single largest new risk in this plan. Run with macro execution disabled, a hard
+   timeout, and treat a non-zero exit as "unsupported", never as a retry loop.
+5. **A hard timeout is mandatory.** A malformed file can hang `soffice` forever;
+   `proc_open` + a deadline + `proc_terminate()`.
+6. **First run is slow** (profile creation). The queue absorbs it; a synchronous
+   request must never trigger a conversion.
+
+### 25.6 Rendition lifecycle
+
+Treated as a derived artifact, exactly like a video poster.
+
+| Event | Behaviour |
+|---|---|
+| Upload | Queue a render job. Document is usable immediately; preview says "preparing". |
+| Replace (`/documents/{id}/replace`) | Invalidate the rendition, re-queue. `ReplacedFileSweep` is the precedent for safely unlinking the stale one. |
+| Delete | Hook `mvs_media_deleted`, same as `ExtractionService::forget()`. |
+| Backfill | A WP-CLI command over existing documents, batched and resumable — never a big-bang on activation. 30k documents is a real number here (§12a). |
+
+**State, mirroring extraction's `pending` / `indexed` / `unsupported`:**
+`pending` → `ready` → `failed` / `unsupported`. The UI must be able to say which,
+because "preparing your preview" and "this file cannot be previewed" are different
+sentences and a member can tell.
+
+### 25.7 PDF.js
+
+- **Where it goes: `assets/js/vendor/`**, not `libs/`. `libs/` is the php-scoper path
+  for PHP packages; JS vendor already has a precedent in Free
+  (`assets/js/vendor/lucide.min.js`, explicitly un-ignored in `.gitignore`).
+- Ships `pdf.min.mjs` + `pdf.worker.min.mjs`. The worker is a separate file and its
+  URL must be set explicitly — the most common integration failure.
+- Enqueue **only** on document surfaces, never site-wide. It is ~1 MB.
+- **Range requests: `DeliveryController` does not support them.** It `readfile()`s with
+  a `Content-Length` and no `Accept-Ranges`. PDF.js will fall back to fetching the whole
+  file before first paint. Acceptable to start; add `206` handling if large PDFs feel
+  slow. **Do not claim progressive loading until the endpoint supports it.**
+- Same-origin fetch through the existing signed URL, so privacy is unchanged and no
+  new gate is needed.
+- **Fallback chain:** PDF.js → native `<iframe>` (today's behaviour) if JS is
+  unavailable → download button. Nothing regresses if the viewer fails to load.
+
+### 25.8 Owner surface
+
+- One setting: **render document previews** (on/off). Conversion costs CPU and storage;
+  an owner on a small host must be able to decline it.
+- Site Health states which of the two worlds they are in, in words they can act on:
+  what is missing, what it costs them, what to ask their host for.
+- The Documents admin screen shows rendition state per document, and offers a re-render
+  for a `failed` one.
+
+### 25.9 Two states, both honest
+
+| LibreOffice present | absent |
+|---|---|
+| Every type embeds identically at full fidelity | Office types fall back to extracted text — exactly today's behaviour |
+| | PDFs still embed, so nothing regresses |
+
+Two states is still a simple flow. What makes it trustworthy is that the owner is never
+left guessing which one they are in.
+
+### 25.10 Costs to accept before starting
+
+- **Storage roughly doubles for Office documents.** A PDF rendition per file.
+- **Conversion is background work** on the queue extraction already uses.
+- **LibreOffice parses untrusted input** — see §25.5 item 4. This is the risk to review
+  hardest.
+- **Fidelity is LibreOffice's**, not Microsoft's. A heavily-styled .docx may differ
+  slightly. Still incomparably closer than extracted text.
+
+### 25.11 Build order
+
+1. `RenditionService` — binary detection, availability probe, Site Health. No conversion
+   yet. Provable on a host with and without the binary.
+2. Conversion + storage + state machine, behind the setting, off by default.
+3. Queue integration and the lifecycle hooks (replace, delete).
+4. PDF.js viewer with the fallback chain, on the PDF path only — verifiable before any
+   conversion exists, because PDFs already are PDFs.
+5. Point converted types at the same viewer.
+6. WP-CLI backfill, batched.
+7. Admin state column + re-render.
+
+Each step is independently shippable and independently verifiable. Step 4 delivers
+value on its own even if conversion is never enabled — it fixes the browser-dependent
+branch for PDFs, which is the one inconsistency measured today.
+
+### 25.12 Not doing, and why
+
+**One JS library per format** (Mammoth for Word, SheetJS for spreadsheets, nothing
+decent for PowerPoint). Four renderers means four failure modes, four things to update,
+and an owner who cannot answer "what happens when a member uploads a .docx?" without
+qualifications. One conversion path and one viewer is the simpler flow, and simplicity
+here is the feature.
