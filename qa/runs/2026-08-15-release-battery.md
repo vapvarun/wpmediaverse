@@ -110,6 +110,54 @@ Two things worth carrying forward:
   still reads Explore" half of step 12 cannot be asserted on a BuddyNext site. It needs a
   standalone install.
 
+## 4b. Upgrade rehearsal, 2.3.1 → 2.4.0 — PASS
+
+Run against the populated reference install (199 index rows, 124 documents, 56
+folders), after a full `wp db export` to
+`~/Documents/sites/mediaverse.local/backups/`.
+
+**Method.** Fingerprint the data, then roll the schema back to a 2.3.1 state —
+`mvs_db_version` to 26, `drive_type` and `drive_id` dropped, the backfill cursor
+deleted — and let 2.4.0 upgrade it for real.
+
+**Result.** Every row, meta row and folder survived, and the MD5 over
+`media_id:slug:privacy` was identical before and after:
+
+| | before | after |
+|---|---|---|
+| index rows | 199 | 199 |
+| documents | 124 | 124 |
+| media | 74 | 74 |
+| meta rows | 1450 | 1450 |
+| folders | 56 | 56 |
+| checksum | `a4981195…` | `a4981195…` |
+
+v29 also finished the job more completely than the pre-rehearsal state had:
+**199/199 rows stamped** with `drive_type`/`drive_id` against 191 before, and the
+`drive_listing` index restored.
+
+**The migration is self-triggering, so the "un-migrated window" is one request
+wide.** The first page load after the rollback ran it. That is the honest reading
+of the 200s below rather than a claim that pre-migration code was exercised at
+length — home, Explore, Explore Documents, the drive and the REST feed all
+answered 200 immediately after, and the certs then passed 69/0/0 and 58/0/0.
+
+**The question this rehearsal existed to answer** was what happens to documents
+on a site that has no rendition meta, since 2.4.0 introduces it. Verified on a
+real row: a convertible document with no rendition state renders **extracted
+text** — precisely the pre-2.4.0 behaviour, so nothing regresses on upgrade day —
+and the same document switches to the full-layout PDF.js viewer the moment
+`wp mvs render-documents` reaches it. The upgrade costs nothing and the
+improvement is opt-in.
+
+**One thing seen and not explained:** immediately after the rehearsal, `wp mvs
+cert` and `wp mvs-pro cert` both reported "not a registered wp command" once,
+then ran normally on retry with no code change. Web surfaces were 200 throughout
+and the only fatal in `debug.log` was a probe script of mine with a wrong
+argument type. Recorded rather than diagnosed — it has the shape of the open
+stage-2.4 flake card (10198467141) and guessing at it would add noise to a card
+that is deliberately open.
+
 ## 5. What has NOT been run
 
 Stated rather than implied by a green summary:
@@ -121,12 +169,11 @@ Stated rather than implied by a green summary:
 - **Combo browser smoke** (`qa/.last-smoke-pass.json`) — the release gate in
   `bin/build-release.sh` reads it and will refuse to package without a fresh green pass.
 - **Plugin Check / WordPress.org packaging** on the built zip.
-- **A real upgrade run** from 2.3.1 to 2.4.0 on a populated site — Migrator v29 stamps
-  `drive_type`/`drive_id` on every row and has not been exercised as an upgrade this cycle.
+- ~~A real upgrade run from 2.3.1 to 2.4.0~~ — **done, see 4b.**
 
 ## 6. Recommendation
 
 2.4.0 is not ready to tag on this evidence. The gap is verification, not known defects:
 nothing failed today. The four run today were chosen by exposure and all passed, including the two that would
-have caught a privacy leak from this cycle's work. The shortest honest path to a tag is the
-combo smoke, the remaining 11 critical journeys, and an upgrade rehearsal from 2.3.1.
+have caught a privacy leak from this cycle's work. The upgrade rehearsal is now done and passed. The shortest honest path to a tag
+is the combo smoke and the remaining 11 critical journeys.
