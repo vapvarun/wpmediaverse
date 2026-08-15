@@ -46,7 +46,7 @@ data: 11 comparisons, all equal **after** fixing one that was not. `MediaTypes::
 been used to mean "no type filter" and silently omits `legacy_document`; the live table has
 one such row, which is the only reason it was caught.
 
-## 4. Journey suite — 1 of 34
+## 4. Journey suite — 4 of 34
 
 The runner emits a runbook for per-journey agent execution (Playwright + curl + mysql per
 step); it is not a single automated pass. One journey was run in full rather than sampling
@@ -55,8 +55,46 @@ several shallowly, chosen by blast radius:
 overriding `media_types`" as the cause of a document leak, and the Rule 7 work introduced
 exactly such an override.
 
-**Result: PASS** on every step run. Full record:
-`audit/journey-runs/2026-08-15-1816/` (gitignored — run artifacts).
+**Result: PASS** on every step run.
+
+Three more followed, all of the security set, chosen because this cycle touched privacy
+resolution (the `space` level) and every media query (Rule 7):
+
+| Journey | Priority | Result |
+|---|---|---|
+| `private-media-local-and-gated` | critical | **PASS** |
+| `anonymous-cannot-modify` | critical | **PASS** |
+| `blocked-member-cannot-interact` | critical | **PASS** |
+
+**`private-media-local-and-gated`** was run as a real upload, not an inspection of existing
+rows: a fresh private image ingested through `UploadService::handle()` while **bunnycdn was
+the active driver** kept its original and all three thumbnails on the local host, emitted no
+`b-cdn.net` URL, and was invisible to another subscriber and to anonymous — in `can_view()`
+and in both feeds.
+
+**`blocked-member-cannot-interact`** is the 2.1.0 incident sentinel and the one that most
+needed doing properly. Run over real HTTP with **Application Passwords for two distinct
+identities** — never `wp_set_current_user()` twice in one process, which the journey names
+as the harness limitation that let the original bug ship. **9/9 denials** (comment, reaction,
+favourite, share, follow, open conversation, message, DM reaction, accept — all 403
+`mvs_blocked`) and, just as important, **5/5 for the bystander control**: an uninvolved
+member still gets 201/200 on the same five calls, so the gate discriminates rather than
+refusing everyone. Credentials revoked and the setup password scrambled afterwards.
+
+Full records: `audit/journey-runs/2026-08-15-1816/` (gitignored — run artifacts).
+
+### A journey defect found and fixed
+
+`anonymous-cannot-modify` steps 3 and 4 sent `{"emoji":...}` and `{"body":...}`. Neither is a
+parameter of its route — they are `reaction_type` and `content`. WordPress validates required
+params **before** running the permission callback, so the documented payloads returned **400
+`rest_missing_callback_param`**, which satisfies a pass criterion of "non-2xx" while never
+once exercising the auth gate those steps exist to prove. Corrected, and the pass criteria now
+name specific codes rather than "non-2xx". With correct payloads both return 401
+`mvs_unauthorized`.
+
+That is the same failure shape as the decayed album fixture above, and the second instance of
+it today: **a step that passes without testing anything.**
 
 Two things worth carrying forward:
 
@@ -76,9 +114,10 @@ Two things worth carrying forward:
 
 Stated rather than implied by a green summary:
 
-- **33 journeys, 14 of them critical** — upload, privacy gating, messaging, signed-URL
-  expiry, blocked-member interaction, storage switch, activation-creates-pages. This
-  cycle's changes do not touch most of them directly; none have been re-proved either.
+- **30 journeys, 11 of them critical** — upload, messaging reliability, signed-URL expiry,
+  private-community gate, storage switch, activation-creates-pages, album privacy and
+  pagination. This cycle's changes do not touch most of them directly; none have been
+  re-proved either.
 - **Combo browser smoke** (`qa/.last-smoke-pass.json`) — the release gate in
   `bin/build-release.sh` reads it and will refuse to package without a fresh green pass.
 - **Plugin Check / WordPress.org packaging** on the built zip.
@@ -88,5 +127,6 @@ Stated rather than implied by a green summary:
 ## 6. Recommendation
 
 2.4.0 is not ready to tag on this evidence. The gap is verification, not known defects:
-nothing failed today. The shortest honest path to a tag is the combo smoke plus the 14
-critical journeys, and an upgrade rehearsal from 2.3.1.
+nothing failed today. The four run today were chosen by exposure and all passed, including the two that would
+have caught a privacy leak from this cycle's work. The shortest honest path to a tag is the
+combo smoke, the remaining 11 critical journeys, and an upgrade rehearsal from 2.3.1.
