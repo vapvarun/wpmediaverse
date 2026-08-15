@@ -2124,7 +2124,31 @@ left guessing which one they are in.
 1. `RenditionService` — binary detection, availability probe, Site Health. No conversion
    yet. Provable on a host with and without the binary.
 2. Conversion + storage + state machine, behind the setting, off by default.
-3. Queue integration and the lifecycle hooks (replace, delete).
+   **DONE 2026-08-15.** `RenditionService` gained `pending → ready → failed →
+   unsupported`, storage beside the original at 0640, and containment on the
+   rendition path (same rule as `readable_path()`, asserted independently —
+   a security check with two implementations has one that is out of date).
+3. Queue integration and the lifecycle hooks (replace, delete). **DONE 2026-08-15.**
+   `mvs_document_uploaded` queues, `mvs_document_replaced` invalidates and
+   re-queues, `mvs_media_deleted` forgets. All three hooks were confirmed to
+   actually fire before being relied on.
+
+   **The converter is a SEAM, not a hard dependency on LibreOffice.**
+   `mvs_pro_document_rendition` lets a host produce the PDF by any means —
+   modelled on Free's `mvs_optimize_image`, which is the same shape for the same
+   reason. That matters commercially, not just for testing: LibreOffice is absent
+   from most shared hosting, and without the seam those sites have no route to
+   this feature at all. With it, a cloud converter is a plugin away.
+
+   **Verified twice over**: the whole pipeline through the seam with a stub, and
+   then a REAL `.docx` → LibreOffice → PDF → PDF.js end to end, rendering the
+   document's actual text laid out on a page rather than the extracted-text
+   column it showed before. 3.3s for a two-paragraph file on LibreOffice 26.2.
+
+   **One bug this caught in itself:** `doc_type` is DERIVED from the mime via
+   `group_for_mime()`, not stored — the first version read it as meta, got an
+   empty string, and quietly queued nothing at all. It looked plausible, wrote no
+   error, and rendered nothing. Found only by running it.
 4. PDF.js viewer with the fallback chain, on the PDF path only — verifiable before any
    conversion exists, because PDFs already are PDFs. **DONE 2026-08-15.**
    `assets/js/document-pdf.js` + `assets/js/vendor/pdf.{min,worker.min}.mjs`
