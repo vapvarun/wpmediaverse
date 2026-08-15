@@ -4206,6 +4206,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type array  $media_types Type allowlist. Default the media library.
 	 *     @type string $status      Index status. Default 'publish'.
 	 *     @type int    $limit       Row cap. 0 = unbounded.
+	 *     @type int    $after_id    Keyset cursor; only ids above this. Default 0.
 	 * }
 	 * @return int[] Media ids, ascending.
 	 */
@@ -4215,6 +4216,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$types  = isset( $args['media_types'] ) && is_array( $args['media_types'] ) ? $args['media_types'] : MediaTypes::MEDIA_LIBRARY;
 		$status = isset( $args['status'] ) ? (string) $args['status'] : 'publish';
 		$limit  = isset( $args['limit'] ) ? max( 0, (int) $args['limit'] ) : 0;
+		$after  = isset( $args['after_id'] ) ? max( 0, (int) $args['after_id'] ) : 0;
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
 
@@ -4224,6 +4226,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( '' !== $status ) {
 			$where[]  = 'm.status = %s';
 			$params[] = $status;
+		}
+
+		// A KEYSET CURSOR, and it is not optional for every caller. A walk that
+		// relies on rows LEAVING this set as it works — because the meta gets
+		// written — repeats forever the moment nothing is written, which is
+		// exactly what `--dry-run` does. Found by running the backfill twice.
+		if ( $after > 0 ) {
+			$where[]  = 'm.media_id > %d';
+			$params[] = $after;
 		}
 
 		$meta      = $wpdb->prefix . 'mvs_media_meta';

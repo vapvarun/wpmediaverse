@@ -2167,9 +2167,38 @@ left guessing which one they are in.
    no file on disk**, so the first browser run fell back for a reason that had nothing
    to do with the code. A fresh sample was ingested and its id kept in option
    `mvs_pdfjs_sample_id` so the next run does not repeat that.
-5. Point converted types at the same viewer.
-6. WP-CLI backfill, batched.
-7. Admin state column + re-render.
+5. Point converted types at the same viewer. **DONE 2026-08-15.** All seven
+   convertible types verified end to end against REAL documents — docx, xlsx,
+   pptx, odt, ods, odp, rtf — each ingested, converted by LibreOffice 26.2 and
+   rendered by PDF.js. 7/7, roughly 1.6s each. A spreadsheet renders as a
+   spreadsheet: aligned columns, header row, sheet name.
+6. WP-CLI backfill, batched. **DONE 2026-08-15.** `wp mvs render-documents`
+   with `--limit`, `--batch`, `--dry-run`, `--force`. Never on activation: 30k
+   documents at ~1.6s each is over twelve hours of CPU, and an activation hook
+   that did that would take a site down with no explanation.
+7. Admin state column + re-render. **DONE 2026-08-15.** The document admin panel
+   states which of the four the document is in, and the `failed` case names the
+   remedy (`--force`) because that is the one state an owner can act on.
+
+**Three defects this stretch, all found by running things rather than reading
+them:**
+
+- **The fixture generator produces files LibreOffice cannot open.**
+  `make-document-fixtures.py` satisfies the admission checks and nothing more;
+  the first step-5 run reported six of seven types failing to convert, and the
+  cause was the fixtures, not the converter. Its docblock had claimed "these
+  fixtures are valid so a refusal here means a real regression" — too strong,
+  now corrected, with instructions to generate conversion fixtures using
+  LibreOffice itself.
+- **The backfill's dry run never terminated.** Resumability rested on rows
+  leaving the work list as they were processed, which is exactly what
+  `--dry-run` does not do; the same ids came back every pass and it repeated two
+  documents until `--limit` cut it off. `media_ids_missing_meta()` gained an
+  `after_id` keyset cursor. Found by running the command twice.
+- **`forget()` resurrected meta on delete.** It is hooked to `mvs_media_deleted`,
+  by which point `delete_cascade()` has removed every meta row — so writing the
+  cleared state back created two orphan rows per deleted document, forever.
+  Caught by Free's `test_delete_all`, two plugins away from the cause.
 
 Legacy `.doc` / `.xls` / `.ppt` are the biggest single win in the list — they go from
 NO preview at all to full fidelity (§25.13) — so a fixture of all three belongs in the
