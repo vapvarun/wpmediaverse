@@ -2126,7 +2126,23 @@ left guessing which one they are in.
 2. Conversion + storage + state machine, behind the setting, off by default.
 3. Queue integration and the lifecycle hooks (replace, delete).
 4. PDF.js viewer with the fallback chain, on the PDF path only — verifiable before any
-   conversion exists, because PDFs already are PDFs.
+   conversion exists, because PDFs already are PDFs. **DONE 2026-08-15.**
+   `assets/js/document-pdf.js` + `assets/js/vendor/pdf.{min,worker.min}.mjs`
+   (pdfjs-dist 6.2.108, Apache-2.0). All three rungs verified in a browser against a
+   real 5-page PDF: PDF.js draws to canvas (3 pages eagerly, the rest on scroll via
+   IntersectionObserver); a broken library url swaps in the native iframe; `<noscript>`
+   carries the same iframe at the same signed url. No horizontal page scroll at 390px,
+   44px download target, zero console errors. `PdfViewerMarkupTest` pins the contract
+   the script reads, and the zip was built and opened to confirm the vendored files
+   actually ship (the packaging failure this plugin has had before).
+
+   **Two corrections to §25.7 from doing it.** The real payload is **1.7 MB**, not
+   "~1 MB" — 455 KB library plus 1.26 MB worker; it is imported on demand by a 8.5 KB
+   booter, so only a page actually showing a PDF pays it, but the estimate was wrong.
+   And the fixtures were rotten: **every pre-existing PDF on the reference install had
+   no file on disk**, so the first browser run fell back for a reason that had nothing
+   to do with the code. A fresh sample was ingested and its id kept in option
+   `mvs_pdfjs_sample_id` so the next run does not repeat that.
 5. Point converted types at the same viewer.
 6. WP-CLI backfill, batched.
 7. Admin state column + re-render.
