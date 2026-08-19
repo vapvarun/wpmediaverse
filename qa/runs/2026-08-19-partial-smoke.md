@@ -50,6 +50,48 @@ reason recorded inline so the next reader does not "tidy" it back.
 | `wp mvs-pro cert` | PASS | 59 / 0 / 0 (58 + the new licence oracle) |
 | `debug.log` across the walk | PASS | **Zero** plugin-origin entries after every surface above |
 
+## 1b. Member write flows (second pass, driven by Application Password)
+
+Driven over real HTTP with an Application Password — **no cookie, no nonce** — which is the
+app-drivability contract Pro CLAUDE.md rule 6 makes mandatory. Credential revoked afterwards and
+verified gone.
+
+| Check | Result | Evidence |
+|---|---|---|
+| App-password auth | PASS | `/me/media`, `/documents`, `/drives` all 200. `/drives` → `can_write: true` while licensed |
+| `C.member.upload-public` | PASS | 201; row `public`/`publish`/`approved`/`image`; **all three rungs** (thumb/medium/large) plus WebP siblings and `_path` metas; stats row created; visible to anon in `/mvs/v1/media`; original + large both 200 from the CDN |
+| `C.member.grid-thumbnail-size` | PASS | `thumbnail_url` came back at the **1024 (large)** rung, which is the 1.8.0 contract |
+| `C.member.upload-rejections` | PASS | `.txt` → 400 `mvs_unsupported_file_type` with a human message, and **zero rows created** |
+| `C.member.edit-categories-persist` | **PARTIAL** | `OPTIONS` lists all 7 editable args (not id-only). PUT `[142]` → 200 `['Nature']`, GET back `['Nature']`, PUT `[]` clears. **But this baseline has no persistent object cache**, and the original bug was a persistent-cache miss taking a destructive else-branch — so the happy path is proved and the bug's own precondition is not |
+| `C.member.delete-own` | PASS | 204; index, meta and stats rows all gone; files removed from local disk AND from BunnyCDN storage (`exists()` → no) once the queued `mvs_cleanup_media_files` action ran |
+| `C.member.albums-lifecycle` 1–3, 6 | PASS | Create 201; add item 200 `{"added":1}`; item listed; **card shows "1 item" with a real cover thumbnail** — the collections-class trap is not present. Delete 204 purged `mvs_album_items` and **left the member's media intact** |
+
+### The one thing worth escalating from this pass
+
+**Deleted files keep serving from the CDN edge for up to 30 days.** Delete works correctly at both
+storage layers — local disk and the BunnyCDN storage zone (verified with the driver's own
+`exists()`, which answers `no`). But the object stays retrievable at its public URL because no
+cache purge is issued on delete, and the response carries
+`cache-control: public, max-age=2592000`. For media whose URL was already public the exposure is
+bounded, and every CDN-backed site behaves this way unless it purges — but "I deleted it and it is
+still online" is a real support ticket and a GDPR-adjacent one. **Not a broken contract** (the
+runbook asks for the file to be removed, and it is), so it is recorded as an enhancement rather
+than a failure: issue a purge on delete, or document the TTL.
+
+I checked this properly before reporting it. The first reading — CDN 200 after delete — looked like
+a leak; the storage driver said otherwise. Reporting the first reading would have been crying wolf.
+
+## 1c. Debug log across the write flows
+
+One `Fatal error`, and it is **`for`-origin, not ours**: an Action Scheduler deadlock
+(`Unable to claim actions … Deadlock found`) thrown from
+`plugins/buddynext/libs/action-scheduler/`. Worth noting rather than dismissing, because **both
+plugins bundle Action Scheduler against the same tables**, and this is almost certainly what made
+`wp action-scheduler run` refuse with "too many concurrent batches" during this walk. It did not
+originate in `wpmediaverse/` or `wpmediaverse-pro/` and is not a blocker for this release.
+
+No `from`-origin entries at any point in either pass.
+
 ## 2. Two things that looked like defects and were not
 
 Recorded because both will look like defects again to the next reader.
@@ -79,10 +121,11 @@ Stated rather than implied by a green table.
 - **Section B, upgrade** — walked 2.3.1 → 2.4.0 on 2026-08-15 and passed, but that predates the
   Migrator change in this session (`add_index_if_missing` now rebuilds a degraded index), so it
   needs redoing before the tag.
-- **Most member write flows** — upload, the 16-cell privacy matrix, upload rejections, delete-own,
-  bulk trash/restore/delete, the albums lifecycle, lightbox, the edit modal, categories-persist,
-  grid thumbnail size, video poster fallback, activity composer and preview, streak badge,
-  reactions/favourites/comments.
+- **Member write flows still unwalked after the second pass** — the 16-cell privacy matrix, bulk
+  trash/restore/delete through the UI, album reorder/set-cover/privacy (steps 3–5), lightbox and
+  its edit modal, video poster fallback, activity composer and preview, streak badge,
+  reactions/favourites/comments. Upload, rejections, delete-own, categories-persist, grid
+  thumbnail size and albums 1–3/6 are covered in §1b.
 - **Section D regression guards** and the rest of **Section E**.
 - **Section F cross-browser** — Firefox, Safari desktop, Safari iOS 390px. Tooling is Chromium-only;
   permanently manual.
