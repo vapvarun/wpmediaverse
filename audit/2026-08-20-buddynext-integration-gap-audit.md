@@ -72,26 +72,49 @@ The practical consequence: BuddyNext Spaces have no working space-scoped privacy
 content of any kind. Answering one filter turns it on for both. Card 10220148861 covers the
 filter; this audit is the reason its priority is higher than "documents in Spaces" alone implies.
 
-## GAP 3 — `group` privacy is BuddyPress-only, so Spaces cannot scope media
+## GAP 3 — CORRECTED 2026-08-20: not a design question, a missing write on OUR side
 
-`PrivacyService::check_group()` is hard-wired to BuddyPress:
+**The first version of this section framed `check_group()` being BuddyPress-only as a joint design
+decision. That was wrong, and Varun corrected it: space privacy for media is simply document
+privacy — the same model, already decided.** MediaVerse says so in its own code. The rank map is
+explicit:
 
 ```php
-if ( ! function_exists( 'groups_is_user_member' ) ) {
-    return false;   // BuddyPress not active — fall back to private
-}
+case 'group':
+case 'space':
+    // `group` stays BuddyPress-only and `space` is BuddyNext's — a space id
+    // must never be written into `group_id` (plan §23.3).
+    return 60;
 ```
 
-`includes/Services/PrivacyService.php:282`
+`includes/Services/PrivacyService.php:41-58`
 
-BuddyNext Spaces are **not** BuddyPress groups. On a BuddyNext-only site (no BuddyPress), media
-set to `group` privacy resolves to private for everyone but its owner. Combined with GAP 2, a
-BuddyNext-only stack has **no working mechanism to scope media to a Space** — neither `group`
-nor `space`.
+So `check_group()` staying BuddyPress-only is correct by design, not a gap. `space` is the
+BuddyNext path and it is already a first-class media privacy level.
 
-Whose fix: arguably MediaVerse's (teach `check_group()` to defer to a filter the way
-`check_space()` does), but BuddyNext is the only party that can answer it. Worth a joint decision
-rather than a card thrown over the fence.
+**What is actually missing is one write, on the MediaVerse side.** The chain:
+
+| Step | State |
+|---|---|
+| `space` ranked in the media privacy ordering (60) | BUILT |
+| `check_space()` resolves it through `mvs_document_drive_access` | BUILT |
+| BuddyNext answers that filter | NOT BUILT — BuddyNext, card 10220148861 |
+| **A media row carries `drive_type` / `drive_id` for a space** | **NOT BUILT — MediaVerse** |
+| `space` named in the media privacy vocabulary | NOT DONE — the REST arg's description lists "public, members, loggedin, friends, group, private, custom" and omits it |
+
+`check_space()` early-returns false on `drive_type === 'user'`, and nothing anywhere writes
+`drive_type = 'space'` onto a MEDIA row — only documents get drive binding (Migrator v29 and the
+document ingest path). So even with BuddyNext answering the filter perfectly, media `space`
+privacy can never evaluate true.
+
+**The fix is small and contained, and it is ours:** when media is posted into a Space, stamp the
+same two columns documents already use. No new schema — `drive_type` and `drive_id` are already on
+`mvs_media_index` for every row. Then add `space` to the privacy description so the vocabulary
+stops lying about what it accepts.
+
+Note the REST `privacy` arg has **no `enum`**, so `space` is already *accepted* on write today — it
+just resolves to false forever. That is the worse failure mode: a value the API takes and silently
+never honours.
 
 ## GAP 4 — Reactions and mentions never reach the BuddyNext notification centre
 
@@ -144,7 +167,9 @@ integrating. Do not card them.
 3. **The other three drive filters** — `mvs_document_drive_visible`,
    `mvs_document_drives_for_user`, `mvs_document_drive_label` (card 10220148861).
 4. **Profile and feed document surfaces** — cards 10220146196 and 10220143810.
-5. **Joint decision on `check_group()`** — MediaVerse-side change, BuddyNext-side answer (GAP 3).
+5. **MediaVerse-side: bind media to a space drive** (GAP 3). Without it, step 1 buys documents
+   only — BuddyNext can answer the filter perfectly and media `space` privacy still resolves false.
+   These two want doing in the same release or the feature half-works.
 
 ## Caveat on this audit's environment
 
