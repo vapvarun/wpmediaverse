@@ -1920,20 +1920,20 @@ class MediaRepository implements MediaRepositoryInterface {
 		// INDEX REALITY, re-measured 2026-08-19 on a 30,000-document fixture
 		// after the soft spot this comment used to describe was closed.
 		//
-		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY:
+		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY.
 		//
-		//   - Inside a folder, there is no drive predicate — the folder already
-		//     scoped the drive — so the query is `media_type`, `folder_id`,
-		//     `status`, `created_at`, which is `KEY doc_listing` verbatim. That
-		//     is why doc_listing is NOT redundant now drive_listing exists and
-		//     must not be dropped: drive_listing has `drive_type`/`drive_id` at
-		//     positions 2 and 3, so a folder listing that does not name a drive
-		//     cannot use it past `media_type`.
+		// INSIDE A FOLDER there is no drive predicate — the folder already
+		// scoped the drive — so the query is `media_type`, `folder_id`,
+		// `status`, `created_at`, which is `KEY doc_listing` verbatim. That is
+		// why doc_listing is NOT redundant now that drive_listing exists, and
+		// must not be dropped: drive_listing has `drive_type`/`drive_id` at
+		// positions 2 and 3, so a folder listing that does not name a drive
+		// cannot use it past `media_type`.
 		//
-		//   - At the drive root, the drive predicate makes the query
-		//     `media_type`, `drive_type`, `drive_id`, `folder_id`, `status`,
-		//     `created_at` — `KEY drive_listing` verbatim. Measured: 234 rows
-		//     examined at 100% filtered, against 8,032 at 1.38% before.
+		// AT THE DRIVE ROOT the drive predicate makes the query `media_type`,
+		// `drive_type`, `drive_id`, `folder_id`, `status`, `created_at` —
+		// `KEY drive_listing` verbatim. Measured: 234 rows examined at 100%
+		// filtered, against 8,032 at 1.38% before.
 		//
 		// `any_folder` (the Recent view) drops `folder_id`, so it reads
 		// drive_listing's first three columns and then stops — indexed, but not

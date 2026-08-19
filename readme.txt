@@ -128,6 +128,8 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * Dev      - New filters mvs_document_row_actions and mvs_document_admin_panels let an add-on contribute row actions and panels to the document admin screens.
 * Dev      - New filter mvs_user_can_use_documents decides per user whether the document library is available, so a membership plugin can put documents behind a paid tier without changing anyone's role.
 * Dev      - drive_documents() accepts a status, count_documents() accepts an author and status, and DashboardSections::slugs() reports the declared section vocabulary.
+* Improve  - Document drives stay fast as they grow. A drive listing now reads its index directly instead of scanning and filtering: on a 30,000-document library one page examined 234 rows where it previously examined 8,032.
+* Fix      - An upgrade could leave the document index in a state no later upgrade would repair. Adding a database index checked only its name, so an index left incomplete by an earlier operation was accepted as correct and never rebuilt, and the site kept running the slower query with nothing to indicate it.
 * Compat   - Aligned with WPMediaVerse Pro 2.4.0. Install both updates together.
 
 = 2.3.2 - August 2026 =

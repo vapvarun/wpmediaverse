@@ -100,6 +100,7 @@
         { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" },
         { "slug": "stories", "title": "Stories" },
         { "slug": "collections", "title": "Save to Collections (Pro Picker)" },
+        { "slug": "documents", "title": "Document Library" },
         { "slug": "mobile-app", "title": "Mobile App" }
       ]
     },
