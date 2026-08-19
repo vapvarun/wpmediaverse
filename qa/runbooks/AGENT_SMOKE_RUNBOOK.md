@@ -56,7 +56,7 @@ These are the inventories the runbook contracts are derived from. If a check is 
 
 ## Global preconditions
 
-- Working directory: `/Users/varundubey/Local Sites/mediaverse/app/public`
+- Working directory: `/Users/vapvarun/Local Sites/mediaverse/app/public`
 - Site URL: `http://mediaverse.local`
 - WP-CLI template: `wp --path="$WP_PATH" <cmd>` where `WP_PATH` is the working directory
 - Admin auto-login: `?autologin=1` on any front-end URL (admin = user 1)
@@ -69,8 +69,15 @@ These are the inventories the runbook contracts are derived from. If a check is 
 
 At the end of the walk, write exactly one JSON file. Path depends on mode:
 
-- `combo` mode → `wp-content/plugins/wpmediaverse/docs/qa/.last-smoke-pass.json`
-- `free` mode → `wp-content/plugins/wpmediaverse/docs/qa/.last-smoke-pass-free.json`
+- `combo` mode → `wp-content/plugins/wpmediaverse/qa/.last-smoke-pass.json`
+- `free` mode → `wp-content/plugins/wpmediaverse/qa/.last-smoke-pass-free.json`
+
+**`qa/`, not `docs/qa/`.** This said `docs/qa/` until 2026-08-19 and that directory does not
+exist — `bin/build-release.sh` reads `$FREE_ROOT/qa/.last-smoke-pass*.json` (lines 242 and 245).
+An agent following the old instruction wrote its report where nothing reads it, so the gate kept
+whatever stale pass it already had and the release packaged on evidence nobody had refreshed. The
+walk would have looked green the whole way through. Check the path against `build-release.sh`
+before trusting this line again.
 
 Both files have the same shape. The release-gate (`bin/build-release.sh`) reads the matching file for the selected build mode.
 
@@ -148,7 +155,7 @@ BASELINE_SIZE=$(wc -c < "$WP_PATH/wp-content/debug.log" 2>/dev/null || echo 0)
 tail -c +$((BASELINE_SIZE + 1)) "$WP_PATH/wp-content/debug.log" 2>/dev/null | grep -vE "^\s*$|^\[cli\]"
 ```
 
-At walk end, archive the diff window to `docs/qa/.debug-log-<release_version>-<ran_at>.txt`.
+At walk end, archive the diff window to `qa/runs/.debug-log-<release_version>-<ran_at>.txt`.
 
 ---
 
