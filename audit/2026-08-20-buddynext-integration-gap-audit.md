@@ -178,3 +178,79 @@ This audit reads the *current* checkout (branch `1.1.6`), so the code findings s
 behavioural observations in `qa/runs/2026-08-19-partial-smoke.md` — the single-media redirect and
 the Action Scheduler deadlock — were recorded against the old copy and need re-checking before
 they are trusted.
+
+---
+
+# Verification — runtime and browser, 2026-08-20
+
+Added after review. The first pass was grep plus code-reading; this section is the same claims
+re-checked against the manifest, the live call path, and the rendered UI.
+
+## The manifest cannot answer this, and that is itself a finding
+
+`audit/manifests/manifest.hooks.json` carries 239 hooks and a `consumed_by` field per hook, which
+looks exactly like the evidence this audit needs. It is not usable:
+
+- **It is stale.** `generated.at = 2026-07-24`, `branch = 2.2.0`. It predates every 2.4.0 document
+  change. `mvs_document_drive_access` — the filter this whole audit turns on — **is absent from
+  it**.
+- **`consumed_by` is `[]` for every hook**, including `mvs_comment_created`,
+  `mvs_favorite_toggled`, `mvs_media_uploaded` and `mvs_user_followed`, all of which BuddyNext
+  demonstrably wires in `WPMediaVerseBridge.php`. The field was never populated, so its emptiness
+  means nothing.
+
+Reading absence-of-consumption out of that field would have produced a confident, wrong audit.
+**Refresh the hooks manifest before anyone treats it as a coupling source.**
+
+## GAP 2 / GAP 3 — proven at runtime, not read
+
+Live call path on `mediaverse.local` (Free + Pro + BuddyPress + BuddyNext all active):
+
+```
+has_filter( 'mvs_document_drive_access' )            -> NO      (nothing answers it)
+apply_filters( 'mvs_document_drive_access', 'none' ) -> 'none'  (the default stands)
+PrivacyService::check_space( media 2248, viewer 28 ) -> false
+PrivacyService::can_view( 2248, 28 )                 -> false
+PrivacyService::can_view( 2248, 22 = owner )         -> true
+```
+
+And end-to-end over REST with Application Passwords, no cookie and no nonce:
+
+| Step | Result |
+|---|---|
+| `PUT /mvs/v1/media/2248 {"privacy":"space"}` as owner | **200**, response echoes `privacy: space` |
+| Stored row | `privacy = space`, `drive_type = user`, `drive_id = 22` |
+| `GET /media/2248` as owner (22) | 200 |
+| `GET /media/2248` as another member (28) | **403** |
+| `GET /media/2248` anonymous | **403** |
+| Present in that member's `/mvs/v1/media` listing | **false** |
+
+So `space` on media is **accepted on write and then behaves as `private`**. Not a theory: the API
+took the value, stored it, and silently never honoured it. The cause is the early return in
+`check_space()` — `drive_type` is `user`, because nothing binds media to a space drive.
+
+## GAP 4 — proven in the database and in the browser
+
+Member 28 reacted to member 22's media over REST (`POST /media/2248/reactions`, 200):
+
+| Where | Result |
+|---|---|
+| `mvs_notifications` for user 22 | **row created** — `type=media_reaction actor=28 media=2248` |
+| `bn_notifications` for user 22 | **no row** |
+| `/notifications/` rendered as user 22 | **"You're all caught up"** |
+
+The browser half is the part worth showing a product owner: **BuddyNext's notification centre has
+a dedicated "Reactions" tab and a "Reactions" entry in its BY TYPE rail** — first-class UI for
+exactly this category — and the MediaVerse reaction that just happened is not in it. BN's own
+`bn-tab__count` reads `0`, consistent with the empty list.
+
+(The `1` badges visible in the top bar are WordPress admin-bar and Reign theme chrome —
+`pending-count`, `rg-count` — not BuddyNext's notification count. Checked, so that it is not
+reported as a phantom count-versus-list inconsistency.)
+
+Screenshot: `~/Documents/work-artifacts/screenshots/2026-08/gap4-bn-notifications.png`
+
+## State restored
+
+Reaction removed, the `media_reaction` notification row deleted, media 2248 back to `privacy=public`
+/ `drive_type=user`, both Application Passwords revoked. Verified: 0 reactions, 0 leftover rows.
