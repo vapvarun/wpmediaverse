@@ -2361,3 +2361,88 @@ reachable for six real types, and it was telling members something false. Adding
 also convert — `.odg`, `.pages`, `.key`, `.wpd` — is cheap AFTER §25, because
 conversion becomes the only question. It is deliberately not in scope: get the 11 that
 are already accepted presenting correctly first.
+
+---
+
+## 26. Licensing — Documents is the one gated feature (shipped 2026-08-19)
+
+**Decision, 2026-08-15 (Varun).** Pro's EDD licence is updates-only everywhere else and that rule
+stands (`wpmediaverse-pro/CLAUDE.md` §7). Documents is the exception, and it is actionable ONLY
+because Documents is unreleased: 2.4.0 is version-bumped and changelogged but never tagged, so there
+is no installed base and nothing is taken from anybody. **The window closes when v2.4.0 tags** —
+after that, gating needs a grandfather flag and a migration. Competitions was considered and
+rejected: lightly used, so gating recovers ~nothing against the risk of a policy reversal on 50+
+live sites.
+
+### What was built
+
+`Documents\DocumentLicense` — one authority, two enforcement points, three predicate caps.
+
+| | Where | What it does |
+|---|---|---|
+| Authority | `DocumentLicense::can_write()` | `License::is_valid()`, memoised per request, plus the admin exemption |
+| REST | `rest_request_before_callbacks` | Refuses any non-GET/HEAD/OPTIONS on `/documents`, `/folders`, `/permissions`, `/drives` |
+| Front end | `DriveActions::handle()`, `DriveRenderer::handle_new_folder()` | The two `template_redirect` write handlers, refused with the `read_only` notice |
+| UI honesty | `can_write_drive()`, `can_edit()`, `can_grant()` | So no control is drawn that the write path would refuse |
+
+**The REST guard matches on METHOD, not on route names, and that is load-bearing.**
+`POST /documents/bulk` carries the read-shaped `get_items_permissions_check` — a gate written
+per-callback would have left the one route that moves a hundred documents at a time wide open.
+
+### What is deliberately NOT gated
+
+Each of these was a decision, not an omission:
+
+- **Reads.** Listing, opening, searching, downloading, previewing. A member must not lose access to
+  their own files because the site owner did not renew — they are not the one who did not renew.
+- **Registration.** Un-registering a route turns a refusal a client can read into a 404 it cannot.
+- **Revoking a share** (`DELETE /permissions/<id>`, and the `unshare` form action). You may always
+  take access away; you may not always hand it out. Gating revoke would leave a document shared with
+  exactly the person its owner is trying to cut off. A gate that can trap a document in somebody
+  else's hands is a safety failure, not a commercial lever.
+- **Whoever administers documents** (`manage_options` / `manage_mvs_documents`). The owner is the
+  person who can renew; blocking their cleanup produces a support ticket, not a sale.
+- **Storage drivers, watermarking, AI providers, quota adapters.** They run for media too.
+
+### The refusal
+
+`mvs_documents_read_only`, 403, added to `DriveContract::FROZEN`. **It does not name the licence**:
+the instruction to a client is identical either way — show the library, hide every write control —
+and a member's app has no business reading the site owner's billing state. The owner is told
+plainly, in an admin notice confined to the document screens. BuddyNext gets an additive contract
+row and can branch on it whenever; nothing breaks until it does.
+
+### Two things the build got wrong first, recorded because both were nearly invisible
+
+1. **The gate was almost pushed down into `drive_access()`** — one line instead of three, and it
+   reads as the tidier choice. It would have shipped a disaster: `owns_drive()` derives from
+   `drive_access()`, and `DriveRenderer` refuses to LIST a folder whose drive the viewer does not
+   own. Capping the shared ladder turns "read-only" into "your files are gone" for the owner of
+   every drive on the site. Pinned by `test_the_read_ladder_is_untouched`.
+2. **The first test of the write routes failed for the wrong reason.** Core validates a route's
+   required params BEFORE any callback, so a bare `POST /folders` answers 400
+   `rest_missing_callback_param` with the gate never consulted — and a looser assertion ("not 2xx")
+   would have PASSED while proving nothing. Same shape as the `anonymous-cannot-modify` journey
+   defect found on 2026-08-15. The data provider now supplies required params.
+
+### Test-suite consequence, which is worth knowing before the next document change
+
+Licence state used to be irrelevant to the Pro suite; it is not any more. 38 document tests failed
+the moment the predicates closed, because the test site had no licence. **`tests/bootstrap.php` now
+activates one** — a paying customer's site is licensed, so that is the default fixture — and
+`DocumentLicenseTest` lapses it per test and puts it back. Not `MVS_PRO_LICENSE_BYPASS`: that
+constant short-circuits `is_valid()` wholesale and would make the licence untestable in the one file
+that has to test it.
+
+### Verified
+
+Full Pro suite **637 tests / 3128 assertions / 0 failures**; Rules 1-8 pass (Rule 8 covers the new
+code); WPCS and template-style clean. Browser-verified on `mediaverse.local` as a member with 73
+documents, at 1280px and 390px, in dark mode: the toolbar drops Upload and New folder and keeps
+Trash, document rows fall back to a working Download link, folder rows and bulk tick-boxes
+disappear, the empty state stops inviting an upload, and a form left open across a lapse is refused
+with the notice and creates nothing. Activating the licence restores every control with no
+migration.
+
+**Open, deliberately:** the admin Documents screens are not gated (owner tooling), and the
+`space` privacy level is unaffected.
