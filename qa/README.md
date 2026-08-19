@@ -8,10 +8,19 @@ Doesn't matter who runs it — AI agent or human. The question at every release 
 
 The release gate (`bin/build-release.sh`) reads `.last-smoke-pass.json` (combo mode) or `.last-smoke-pass-free.json` (free-only) and refuses to package without a fresh green pass.
 
+## Before you run anything
+
+`MODEL-SITE.md` describes the install these runbooks assume — versions, settings, data shape, and
+the two things most likely to make a run report a fault that is not there: **the Pro licence must
+be active** (it gates document writes since 2026-08-19, so an unlicensed site looks like a broken
+drive) and **the QA fixtures stay put** (they have names like `PRIVATE Tax Records uid22`; the
+journeys depend on them, and this is not a demo site).
+
 ## Layout
 
 ```
 qa/
+├── MODEL-SITE.md             # the baseline install every run assumes — READ FIRST
 ├── runbooks/                 # what to walk, step by step
 │   ├── AGENT_SMOKE_RUNBOOK.md       # pre-release gate runbook (sections A–G)
 │   ├── MANUAL-UX-QA-free.md         # Free manual UX walkthrough

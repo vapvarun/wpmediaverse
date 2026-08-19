@@ -1769,7 +1769,15 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Lightbox URL respects the admin-chosen image source.
-		$lightbox_url      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) $all['file_url'] );
+		//
+		// `?? ''` because the key is NOT guaranteed — twelve lines up the same
+		// key is read behind `! empty()`, and this line was reading it raw, so
+		// any row without a stored `file_url` emitted a PHP warning on every
+		// media list. It fires on the boot smoke today, which is how it was
+		// found. The raw stored value is passed deliberately rather than the
+		// signed `$file_url` above: the helper resolves the lightbox source
+		// itself, and handing it a signed URL would sign it twice.
+		$lightbox_url      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) ( $all['file_url'] ?? '' ) );
 		$lightbox_webp_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_webp_url( $media_id, $lightbox_url );
 		$lightbox_avif_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_avif_url( $media_id, $lightbox_url );
 
