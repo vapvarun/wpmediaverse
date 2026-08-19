@@ -202,6 +202,110 @@ class MigratorLegacyDocumentTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A degraded index of the right NAME is rebuilt, not accepted.
+	 *
+	 * This is the defect the guard shipped with, and it is invisible from the
+	 * migration's own point of view: dropping a column does not drop the
+	 * composite index it belongs to — MySQL rewrites the index down to the
+	 * surviving columns. A name-only check then reports success forever, and
+	 * the site is left permanently missing an index its code comments promise
+	 * it has.
+	 *
+	 * Found on 2026-08-19 by reading SHOW INDEX on a database the 2026-08-15
+	 * upgrade rehearsal had rolled back and forward again: `drive_listing` had
+	 * silently become a byte-identical duplicate of `doc_listing`, paying write
+	 * cost on the hottest table in the product and serving nothing.
+	 */
+	public function test_an_index_with_the_wrong_columns_is_rebuilt(): void {
+		global $wpdb;
+
+		$this->run_v29();
+
+		// Degrade it exactly the way a dropped column does: same name, the
+		// surviving columns only.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$this->index} DROP KEY `drive_listing`" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$this->index} ADD KEY drive_listing (media_type, folder_id, status, created_at)" );
+
+		$this->assertSame(
+			array( 'media_type', 'folder_id', 'status', 'created_at' ),
+			$this->index_columns( 'drive_listing' ),
+			'The fixture did not degrade the index, so the test proves nothing.'
+		);
+
+		$this->run_v29();
+
+		$this->assertSame(
+			array( 'media_type', 'drive_type', 'drive_id', 'folder_id', 'status', 'created_at' ),
+			$this->index_columns( 'drive_listing' ),
+			'A degraded index kept its wrong shape — the guard is checking the name only.'
+		);
+	}
+
+	/**
+	 * An index that is already right is left alone.
+	 *
+	 * The other half of the guard, and the one that keeps it cheap: rebuilding
+	 * a correct index on every migration run would be an expensive no-op on a
+	 * large table.
+	 */
+	public function test_a_correct_index_is_not_rebuilt(): void {
+		$this->run_v29();
+		$before = $this->index_columns( 'drive_listing' );
+
+		$this->run_v29();
+
+		$this->assertSame( $before, $this->index_columns( 'drive_listing' ) );
+		$this->assertSame(
+			array( 'media_type', 'drive_type', 'drive_id', 'folder_id', 'status', 'created_at' ),
+			$before
+		);
+	}
+
+	/**
+	 * The columns of one index, in index order.
+	 *
+	 * @param string $key_name Index name.
+	 * @return string[]
+	 */
+	private function index_columns( string $key_name ): array {
+		global $wpdb;
+
+		// No ORDER BY: `SHOW INDEX` takes a WHERE clause but not an ORDER BY, and
+		// appending one makes the whole statement fail — which returns an empty
+		// list, which reads exactly like "the index is missing". Sort in PHP.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare( "SHOW INDEX FROM {$this->index} WHERE Key_name = %s", $key_name ),
+			ARRAY_A
+		);
+
+		usort(
+			$rows,
+			static function ( $a, $b ) {
+				return (int) $a['Seq_in_index'] <=> (int) $b['Seq_in_index'];
+			}
+		);
+
+		return array_map(
+			static function ( $row ) {
+				return strtolower( (string) $row['Column_name'] );
+			},
+			(array) $rows
+		);
+	}
+
+	/**
+	 * Run only v29, the way the version gate would.
+	 */
+	private function run_v29(): void {
+		$migrator = new Migrator();
+		$method   = new \ReflectionMethod( Migrator::class, 'migrate_to_29' );
+		$method->invoke( $migrator );
+	}
+
+	/**
 	 * folder_id defaults to 0 — the virtual drive root.
 	 */
 	public function test_folder_id_defaults_to_the_virtual_root(): void {

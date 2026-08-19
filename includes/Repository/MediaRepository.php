@@ -1833,15 +1833,49 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Has Migrator v29's drive backfill finished stamping every row?
+	 *
+	 * The cursor option holds the highest stamped `media_id` while the backfill
+	 * runs, and `-1` once a pass finds nothing left to do. So `-1` — and only
+	 * `-1` — means every row carries a real drive, which is what lets
+	 * `drive_documents()` drop its legacy `post_author` branch and become an
+	 * index-shaped query.
+	 *
+	 * ABSENT IS NOT FINISHED. A site that has never run v29 has no option at
+	 * all, and reading that as "done" would scope its listings by a column
+	 * nothing has written — every drive would look empty. The default is
+	 * therefore 0, which reads as "still running", and that is the safe answer
+	 * for the never-migrated and the half-migrated case alike.
+	 *
+	 * Memoised per request: the drive query runs several times a page, and this
+	 * cannot change mid-request in a way any caller would want to see.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	private static function drive_backfill_finished(): bool {
+		static $finished = null;
+
+		if ( null === $finished ) {
+			$finished = -1 === (int) get_option( \WPMediaVerse\Core\Migrator::DRIVE_BACKFILL_OPTION, 0 );
+		}
+
+		return $finished;
+	}
+
+	/**
 	 * Documents in one drive, optionally inside one folder.
 	 *
-	 * The drive query from design §4, verbatim, so `KEY doc_listing` serves it
-	 * left to right: `media_type`, `folder_id`, `status`, then `created_at` for
-	 * the sort. Verified with EXPLAIN against the P3.9 fixture (`type=ref`).
+	 * The drive query from design §4, verbatim, so an index serves it left to
+	 * right in both of its shapes — `KEY doc_listing` inside a folder,
+	 * `KEY drive_listing` at the drive root. Which one, and why both are needed,
+	 * is worked through at the `INDEX REALITY` comment in the body.
 	 *
-	 * `post_author` scopes the ROOT listing only. Inside a folder it is dropped,
-	 * because the folder already scoped the drive — carrying it would add a
-	 * column the index cannot use at that position and change nothing.
+	 * The DRIVE scopes the root listing, not the author (Phase 11 G1). Inside a
+	 * folder the scope is dropped, because the folder already scoped the drive —
+	 * carrying it would add columns the index cannot use at that position and
+	 * change nothing.
 	 *
 	 * Returns rows plus an honest total from a dedicated `COUNT(*)`. It does NOT
 	 * apply document permissions: the caller holds `PermissionService` and
@@ -1883,20 +1917,29 @@ class MediaRepository implements MediaRepositoryInterface {
 		// "Recent" view needs, since recency is a property of the document and
 		// not of where it happens to be filed.
 		//
-		// INDEX REALITY, measured rather than assumed. `KEY doc_listing` is
-		// (media_type, folder_id, status, created_at), so dropping `folder_id`
-		// leaves a gap and the index can only serve its first column — it cannot
-		// serve the `created_at` sort. EXPLAIN against the 2,000-document
-		// fixture confirms MySQL picks `rank_scan` instead (type=ref, ~991 rows
-		// on a deep page, ~8ms). Flat across pages 1 to 80 and indexed, so it is
-		// fine at this size, but it is NOT the clean left-to-right read the
-		// folder listing gets.
+		// INDEX REALITY, re-measured 2026-08-19 on a 30,000-document fixture
+		// after the soft spot this comment used to describe was closed.
 		//
-		// The clean fix is an index this table does not have —
-		// (media_type, post_author, status, created_at) — which is a schema
-		// change, so it belongs in its own migration rather than riding along
-		// with a UI phase. Until then, a very deep OFFSET on a drive with tens
-		// of thousands of documents is the known soft spot.
+		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY:
+		//
+		//   - Inside a folder, there is no drive predicate — the folder already
+		//     scoped the drive — so the query is `media_type`, `folder_id`,
+		//     `status`, `created_at`, which is `KEY doc_listing` verbatim. That
+		//     is why doc_listing is NOT redundant now drive_listing exists and
+		//     must not be dropped: drive_listing has `drive_type`/`drive_id` at
+		//     positions 2 and 3, so a folder listing that does not name a drive
+		//     cannot use it past `media_type`.
+		//
+		//   - At the drive root, the drive predicate makes the query
+		//     `media_type`, `drive_type`, `drive_id`, `folder_id`, `status`,
+		//     `created_at` — `KEY drive_listing` verbatim. Measured: 234 rows
+		//     examined at 100% filtered, against 8,032 at 1.38% before.
+		//
+		// `any_folder` (the Recent view) drops `folder_id`, so it reads
+		// drive_listing's first three columns and then stops — indexed, but not
+		// the clean left-to-right read the other two get. That is the remaining
+		// soft spot and it is a much smaller one: the drive scope is applied by
+		// the index rather than by a post-filter over the whole document table.
 		$any_folder = ! empty( $args['any_folder'] );
 		$where      = $any_folder
 			? array( $type_sql, 'status = %s' )
@@ -1921,10 +1964,38 @@ class MediaRepository implements MediaRepositoryInterface {
 		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
 
 		if ( ( $any_folder || 0 === $folder_id ) && $drive_id > 0 ) {
-			$where[]  = '( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )';
-			$params[] = $drive_id;
-			$params[] = $drive_type;
-			$params[] = $author > 0 ? $author : $drive_id;
+			// THE `OR` IS TEMPORARY, AND IT COSTS THE INDEX WHILE IT LASTS.
+			//
+			// Measured 2026-08-19 on a 30,000-document fixture: with the OR in
+			// place the optimiser SEES `drive_listing` in `possible_keys` and
+			// refuses it, falling back to `doc_listing` — 8,032 rows examined
+			// at 1.38% filtered for one page at OFFSET 1000. An OR cannot
+			// satisfy positions 2 and 3 of a composite index, so the six-column
+			// index v29 added was paying write cost on the hottest table in the
+			// product and serving nothing.
+			//
+			// The second branch exists only for rows Migrator v29's bounded
+			// backfill has not stamped yet. Once the backfill reports finished
+			// there are none, so the predicate collapses to the drive alone and
+			// `drive_listing` matches left-to-right — which is what §12 has
+			// claimed all along.
+			//
+			// Rows the backfill SKIPS are not lost by this: it skips only
+			// `post_author <= 0`, and the legacy branch could never match those
+			// either (it needs `post_author = %d` with a real author). An
+			// ownerless row belongs to no personal drive, so listing it under
+			// one was never right.
+			if ( self::drive_backfill_finished() ) {
+				$where[]  = 'drive_type = %s';
+				$where[]  = 'drive_id = %d';
+				$params[] = $drive_type;
+				$params[] = $drive_id;
+			} else {
+				$where[]  = '( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )';
+				$params[] = $drive_id;
+				$params[] = $drive_type;
+				$params[] = $author > 0 ? $author : $drive_id;
+			}
 		}
 
 		// A drive with 2,000 documents is unusable without a way to narrow it and

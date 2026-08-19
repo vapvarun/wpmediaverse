@@ -1896,28 +1896,63 @@ class Migrator {
 	}
 
 	/**
-	 * Add an index unless a key of that name already exists.
+	 * Add an index unless a key of that name already exists WITH THE RIGHT COLUMNS.
 	 *
 	 * Extracted rather than inlined twice: v25 and v27 both needed this SHOW INDEX
 	 * guard, and a second copy of a guarded ALTER is how one of them ends up
 	 * unguarded later.
+	 *
+	 * THE SHAPE CHECK IS NOT DEFENSIVE PADDING — it is the fix for a defect this
+	 * method shipped with, found on 2026-08-19 by reading `SHOW INDEX` on a real
+	 * database instead of trusting the migration that wrote it. The name-only
+	 * test made a degraded index permanent, and silently:
+	 *
+	 *   1. v29 adds `drive_type`/`drive_id` and `KEY drive_listing` over six
+	 *      columns including them.
+	 *   2. Anything later drops those two columns — the 2026-08-15 upgrade
+	 *      rehearsal did exactly this on purpose, and a restored dump from a
+	 *      mixed version or a host tool does it by accident. **MySQL does not
+	 *      drop the index; it rewrites it down to the surviving columns**, so
+	 *      `drive_listing` becomes `(media_type, folder_id, status, created_at)`
+	 *      — a byte-identical duplicate of `doc_listing`, paying write cost on
+	 *      the hottest table in the product for nothing.
+	 *   3. The columns come back. This method sees the NAME, returns true, and
+	 *      the six-column index is never rebuilt.
+	 *
+	 * The site is then permanently missing the index its own code comments
+	 * promise it has, and the deep-OFFSET soft spot on a large Space drive is
+	 * open again with nothing to indicate it. Nobody would look, because the
+	 * migration reports success.
+	 *
+	 * So: compare the actual column list, and rebuild when it differs. The DROP
+	 * costs a rebuild on a big table, but it only runs when the shape is already
+	 * wrong — and a wrong index is not cheaper than the right one, it is a write
+	 * cost buying nothing.
 	 *
 	 * @since 2.4.0
 	 *
 	 * @param string $table      Full table name (with prefix).
 	 * @param string $key_name   Index name to test for.
 	 * @param string $definition Index definition, e.g. "name (col_a, col_b)".
-	 * @return bool True when the index exists after this call.
+	 * @return bool True when the index exists, with the right columns, after this call.
 	 */
 	private function add_index_if_missing( string $table, string $key_name, string $definition ): bool {
 		global $wpdb;
 
-		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $key_name )
-		);
+		$have = $this->index_columns( $table, $key_name );
+		$want = $this->definition_columns( $definition );
 
-		if ( $exists ) {
-			return true;
+		if ( $have ) {
+			if ( $have === $want ) {
+				return true;
+			}
+
+			// Wrong shape under the right name. Drop it, then fall through and
+			// build the one the definition asks for.
+			$prev_drop = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$table} DROP KEY `{$key_name}`" );
+			$wpdb->show_errors( $prev_drop );
 		}
 
 		$prev_show = $wpdb->show_errors( false );
@@ -1925,11 +1960,78 @@ class Migrator {
 		$wpdb->query( "ALTER TABLE {$table} ADD KEY {$definition}" );
 		$wpdb->show_errors( $prev_show );
 
-		$after = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $key_name )
+		return $this->index_columns( $table, $key_name ) === $want;
+	}
+
+	/**
+	 * The columns an existing index is built over, in order.
+	 *
+	 * Ordered by `Seq_in_index`, because the ORDER is the index: the same four
+	 * columns in a different sequence serve a different query.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $table    Full table name.
+	 * @param string $key_name Index name.
+	 * @return string[] Lower-cased column names, empty when the index is absent.
+	 */
+	private function index_columns( string $table, string $key_name ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $key_name ),
+			ARRAY_A
 		);
 
-		return (bool) $after;
+		if ( ! $rows ) {
+			return array();
+		}
+
+		usort(
+			$rows,
+			static function ( $a, $b ) {
+				return (int) $a['Seq_in_index'] <=> (int) $b['Seq_in_index'];
+			}
+		);
+
+		return array_map(
+			static function ( $row ) {
+				return strtolower( (string) $row['Column_name'] );
+			},
+			$rows
+		);
+	}
+
+	/**
+	 * The columns a definition string asks for, in order.
+	 *
+	 * Parses `name (col_a, col_b(150))` — the prefix length is dropped, since
+	 * `SHOW INDEX` reports it in `Sub_part` rather than in `Column_name` and
+	 * comparing the two lists is the whole point.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $definition Index definition.
+	 * @return string[] Lower-cased column names.
+	 */
+	private function definition_columns( string $definition ): array {
+		if ( ! preg_match( '/\((.*)\)\s*$/s', $definition, $matches ) ) {
+			return array();
+		}
+
+		$columns = array();
+
+		foreach ( explode( ',', $matches[1] ) as $column ) {
+			$column = strtolower( trim( $column ) );
+			$column = preg_replace( '/\s*\(\d+\)$/', '', $column );
+			$column = trim( (string) $column, '`' );
+
+			if ( '' !== $column ) {
+				$columns[] = $column;
+			}
+		}
+
+		return $columns;
 	}
 
 	/**

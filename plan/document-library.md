@@ -2446,3 +2446,68 @@ migration.
 
 **Open, deliberately:** the admin Documents screens are not gated (owner tooling), and the
 `space` privacy level is unaffected.
+
+---
+
+## 27. The index question §0.1 deferred — answered by measuring, 2026-08-19
+
+The phase-11 plan left one decision open: *"whether `doc_listing` is then dropped or kept. Keeping
+both costs write throughput on the hottest table in the product; dropping it needs every remaining
+`folder_id`-without-drive query found first. Decide deliberately, do not accumulate."*
+
+**Answer: keep `doc_listing`. It is not a duplicate and cannot be dropped.** A folder listing
+carries no drive predicate — the folder already scoped the drive — so it is
+`media_type, folder_id, status, created_at`, which is `doc_listing` verbatim. `drive_listing` has
+`drive_type`/`drive_id` at positions 2 and 3, so a folder listing cannot use it past `media_type`.
+The two serve the two shapes of the same query.
+
+### But the measurement found two defects on the way to that answer
+
+**1. `drive_listing` was not the index the migration says it built.** On a real database it was
+`(media_type, folder_id, status, created_at)` — a byte-identical duplicate of `doc_listing`, paying
+write cost on the hottest table for nothing. `Migrator::add_index_if_missing()` tested the index
+NAME and never its columns, and **dropping a column does not drop the composite index it belongs
+to — MySQL rewrites the index down to the surviving columns.** So:
+
+- v29 builds `drive_listing` over six columns.
+- Anything drops `drive_type`/`drive_id` — the 2026-08-15 upgrade rehearsal did exactly this on
+  purpose, and a restored dump from a mixed version or a host tool does it by accident.
+- The columns come back, v29 re-runs, sees the name, reports success, and the six-column index is
+  never rebuilt.
+
+The site is then permanently missing an index its own code comments promise it has, with nothing to
+indicate it. **Fixed:** the guard now compares the actual column list and rebuilds on mismatch.
+Pinned by two tests — one degrades an index and asserts it is rebuilt, one asserts a correct index
+is left alone (rebuilding a correct index on every run is an expensive no-op on a large table).
+
+**2. Even correctly built, `drive_listing` served nothing, because of an `OR`.** The root query read
+`( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )` — the second
+branch covering rows v29's bounded backfill had not stamped yet. An OR cannot satisfy positions 2
+and 3 of a composite index, so the optimiser SAW `drive_listing` in `possible_keys` and refused it.
+
+**Fixed:** the legacy branch is emitted only while the backfill is still running. Its cursor option
+holds `-1` once a pass finds nothing left to do, and **absent reads as "still running"**, which is
+the safe answer for the never-migrated and half-migrated cases alike — reading absent as "done"
+would scope every listing by a column nothing has written and make every drive look empty. Rows the
+backfill skips (`post_author <= 0`) are not lost: the legacy branch could never match them either,
+since it needs a real author, and an ownerless row belongs to no personal drive.
+
+### Measured, 30,000 documents, one page at OFFSET 1000
+
+| | before | after |
+|---|---|---|
+| index chosen | `doc_listing` | **`drive_listing`** |
+| rows examined | 8,032 | **234** |
+| filtered | 1.38% | **100%** |
+| extra | Using where; Backward index scan | Backward index scan |
+
+That closes the deep-OFFSET soft spot `drive_documents()` has carried a comment about since the
+feature was written. **The remaining one is `any_folder`** (the Recent view), which drops
+`folder_id` and so reads only drive_listing's first three columns — indexed, and a much smaller
+problem than before, because the drive scope is now applied by the index rather than by a
+post-filter over the whole document table.
+
+**Lesson worth carrying:** both defects were invisible from the code. The migration reported
+success, the tests passed, and the comments asserted the index was correct. Reading `SHOW INDEX` and
+`EXPLAIN` on a real database with a real fixture is what found them — the same class of finding as
+the QA runs that keep turning up "a step that passes without testing anything".
