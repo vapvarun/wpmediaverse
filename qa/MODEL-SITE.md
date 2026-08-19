@@ -106,6 +106,18 @@ rows have never been walked. Not seeded, per the no-self-seeding guardrail.
 line per coloured output on PHP 8.5. Filter it out before reading:
 `grep -v "wp-cli\|php-cli-tools" wp-content/debug.log`.
 
+## 5b. What this install CANNOT verify
+
+**Single-media surfaces.** `/media/<slug>/` 301s to BuddyNext's activity permalink
+(`/p/<id>/`) via `WPMediaVerseBridge::redirect_single_media`. That is correct here, and it means
+the plugin's own single-media template never renders: og:image / og:title / twitter:card, the
+canonical share target, and the auth-gated actions on that page **cannot be asserted on this
+site**. They need a standalone non-BuddyNext install. Do not record them as passes here, and do
+not "fix" the redirect — it is the bridge doing its job.
+
+Chromium is the only browser the tooling drives, so Firefox, Safari desktop and Safari iOS 390px
+are permanently manual.
+
 ## 6. Restoring the baseline after a run
 
 Anything that seeds must clean up after itself. Two that do:
