@@ -1035,6 +1035,45 @@ class UploadService {
 	}
 
 	/**
+	 * A representative average colour of an image, as '#rrggbb'.
+	 *
+	 * Downscales the whole image to a single pixel with GD (a fast average) and
+	 * reads it — the cheap lazy-load placeholder alternative to a blurhash.
+	 * Returns '' when GD is absent or the file cannot be decoded; the placeholder
+	 * is a nicety, never a hard dependency.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $path Absolute image path.
+	 * @return string '#rrggbb', or '' on failure.
+	 */
+	private static function placeholder_color( string $path ): string {
+		if ( ! function_exists( 'imagecreatefromstring' ) || ! function_exists( 'imagecreatetruecolor' ) ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- raw bytes for GD; WP_Filesystem returns a string too but adds no safety for a local read here.
+		$bytes = @file_get_contents( $path );
+		if ( false === $bytes || '' === $bytes ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- a corrupt/unsupported image returns false, handled below.
+		$src = @imagecreatefromstring( $bytes );
+		if ( false === $src ) {
+			return '';
+		}
+
+		$one = imagecreatetruecolor( 1, 1 );
+		imagecopyresampled( $one, $src, 0, 0, 0, 0, 1, 1, imagesx( $src ), imagesy( $src ) );
+		$rgb = imagecolorat( $one, 0, 0 );
+		imagedestroy( $src );
+		imagedestroy( $one );
+
+		return sprintf( '#%02x%02x%02x', ( $rgb >> 16 ) & 0xFF, ( $rgb >> 8 ) & 0xFF, $rgb & 0xFF );
+	}
+
+	/**
 	 * Rewrite an image so its pixels are upright, then clear the EXIF flag.
 	 *
 	 * Phones store rotation as an EXIF Orientation tag rather than rotating the
@@ -1487,6 +1526,15 @@ class UploadService {
 					'height' => (int) $fixed[1],
 				)
 			);
+		}
+
+		// Representative average colour for the app's lazy-load placeholder — the
+		// cheap alternative to a blurhash. Computed once here (on upload and on
+		// explicit regeneration), stored as meta, and surfaced as
+		// `placeholder_color` in the media REST response (Basecamp 9667082287).
+		$mvs_placeholder = self::placeholder_color( $file_path );
+		if ( '' !== $mvs_placeholder ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'placeholder_color', $mvs_placeholder );
 		}
 
 		$editor = wp_get_image_editor( $file_path );

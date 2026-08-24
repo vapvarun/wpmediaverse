@@ -1847,6 +1847,11 @@ class MediaController extends WP_REST_Controller {
 			'lightbox_url'      => $lightbox_url,
 			'lightbox_webp_url' => $lightbox_webp_url,
 			'lightbox_avif_url' => $lightbox_avif_url,
+			// A representative average colour ('#rrggbb') for the app to paint as
+			// a lazy-load placeholder before the image arrives — the low-cost
+			// alternative to a blurhash, computed once at upload (empty when the
+			// media predates it or is not an image).
+			'placeholder_color' => ! empty( $all['placeholder_color'] ) ? (string) $all['placeholder_color'] : '',
 			'can_edit'          => $can_edit,
 			'is_favorited'      => $is_favorited,
 			'viewer_reaction'   => $viewer_reaction,
