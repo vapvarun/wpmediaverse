@@ -443,6 +443,38 @@ class UploadService {
 		 */
 		do_action( 'mvs_before_media_insert' );
 
+		// WHICH DRIVE this media lands on. Personal by default; a client posting
+		// media into a Space answers `mvs_media_drive` with array( 'space', <id> )
+		// so the item is visible to Space members through privacy=`space`, which
+		// resolves via the drive-access bridge (PrivacyService::check_space). Until
+		// this, media never got `drive_type=space`, so `space` privacy was accepted
+		// on write and silently never honoured. MediaVerse never queries bn_* — the
+		// bridge answers, the same seam documents use.
+		//
+		// FROZEN CONTRACT (pairs with BuddyNext card 10220148861):
+		//   apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
+		//     returns array( string $drive_type, int $drive_id ).
+		// (Basecamp 10220491230.)
+		$mvs_drive_type = 'user';
+		$mvs_drive_id   = 0;
+		$mvs_drive      = apply_filters( 'mvs_media_drive', array( 'user', 0 ), $user_id, $args );
+
+		if ( is_array( $mvs_drive ) && isset( $mvs_drive[0] ) && 'user' !== (string) $mvs_drive[0] ) {
+			$mvs_candidate_type = (string) $mvs_drive[0];
+			$mvs_candidate_id   = (int) ( $mvs_drive[1] ?? 0 );
+
+			// AUTHORIZE. A member must not file their media into a Space they cannot
+			// write to — otherwise it becomes visible to that Space's members. The
+			// binding is admitted only when the drive-access bridge grants
+			// `write`/`own` (the SAME gate documents use); otherwise the media falls
+			// back to the personal drive.
+			$mvs_level = (string) apply_filters( 'mvs_document_drive_access', 'none', $mvs_candidate_type, $mvs_candidate_id, $user_id );
+			if ( $mvs_candidate_id > 0 && in_array( $mvs_level, array( 'write', 'own' ), true ) ) {
+				$mvs_drive_type = $mvs_candidate_type;
+				$mvs_drive_id   = $mvs_candidate_id;
+			}
+		}
+
 		// Insert directly into mvs_media_index — the authoritative media record.
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
@@ -459,6 +491,8 @@ class UploadService {
 				'file_size'         => (int) $actual_size,
 				'file_hash'         => $hash,
 				'created_at'        => $created_at,
+				'drive_type'        => $mvs_drive_type,
+				'drive_id'          => $mvs_drive_id,
 			)
 		);
 

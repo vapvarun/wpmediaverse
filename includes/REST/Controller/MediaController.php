@@ -148,7 +148,7 @@ class MediaController extends WP_REST_Controller {
 						),
 						'privacy'        => array(
 							'type'        => 'string',
-							'description' => __( 'Privacy level (public, members, loggedin, friends, group, private, custom, or an extension-added level).', 'wpmediaverse' ),
+							'description' => __( 'Privacy level (public, members, loggedin, friends, group, space, private, custom, or an extension-added level). "space" is honoured only when the media is on a Space drive (see the mvs_media_drive filter); on a personal drive it resolves to private.', 'wpmediaverse' ),
 						),
 						'allow_download' => array(
 							'type'        => 'boolean',
