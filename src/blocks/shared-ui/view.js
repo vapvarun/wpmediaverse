@@ -156,6 +156,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		// --- Lightbox (flat) ---
 		lightboxVisible: false,
+		lightboxFullscreen: false,
 		lightboxMediaId: null,
 		lightboxMediaData: null,
 		lightboxGroupItems: [],
@@ -1497,7 +1498,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.openLightboxById( gridIds[ currentIdx + 1 ] );
 			}
 		},
+		toggleLightboxFullscreen() {
+			state.lightboxFullscreen = ! state.lightboxFullscreen;
+		},
 		closeLightbox() {
+			state.lightboxFullscreen = false;
 			// Pause any playing video/audio before closing.
 			const video = document.querySelector( '.mvs-lightbox-video' );
 			if ( video ) {
@@ -1531,7 +1536,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();
 				} else if ( state.lightboxVisible ) {
-					actions.closeLightbox();
+					// Escape steps out of fullscreen first, then closes — so a
+					// single Escape does not both un-maximise and dismiss.
+					if ( state.lightboxFullscreen ) {
+						state.lightboxFullscreen = false;
+					} else {
+						actions.closeLightbox();
+					}
 				} else if ( state.fabMenuOpen ) {
 					state.fabMenuOpen = false;
 				}
@@ -1540,6 +1551,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.lightboxPrev();
 				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {
 					actions.lightboxNext();
+				} else if ( event.key === 'f' || event.key === 'F' ) {
+					state.lightboxFullscreen = ! state.lightboxFullscreen;
 				}
 			}
 		},

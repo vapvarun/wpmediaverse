@@ -5701,6 +5701,56 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(0, 0, 0, .7);
 }
 
+/* Fullscreen toggle — sits just left of the close button, same pill treatment. */
+.mvs-lightbox-fullscreen {
+    position: absolute;
+    top: 12px;
+    right: 64px;
+    z-index: 10;
+    background: rgba(0, 0, 0, .5);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+}
+
+.mvs-lightbox-fullscreen:hover,
+.mvs-lightbox-fullscreen:focus-visible {
+    background: rgba(0, 0, 0, .7);
+}
+
+/* Swap expand/compress icon by state (the fullscreen class rides on .mvs-lightbox). */
+.mvs-lightbox-fs-compress {
+    display: none;
+}
+
+.mvs-lightbox--fullscreen .mvs-lightbox-fs-expand {
+    display: none;
+}
+
+.mvs-lightbox--fullscreen .mvs-lightbox-fs-compress {
+    display: block;
+}
+
+/* Fullscreen: fill the viewport and hide the comments sidebar so the media
+   gets the whole space (customer request, Basecamp 9822552686). The media
+   pane is flex:1, so it expands on its own once the sidebar is gone. */
+.mvs-lightbox--fullscreen {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+.mvs-lightbox--fullscreen .mvs-lightbox-sidebar {
+    display: none;
+}
+
 .mvs-lightbox-close svg {
     width: 20px;
     height: 20px;
