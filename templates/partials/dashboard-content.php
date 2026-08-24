@@ -122,17 +122,7 @@ $mvs_allowed_mimes = array_map( 'trim', explode( ',', get_option( 'mvs_allowed_f
 // (Basecamp 10190738445). Subtracting here fixes the member-facing half whatever
 // state the option is in, including a site that re-adds PDF through the filter.
 $mvs_allowed_mimes = array_values( array_diff( $mvs_allowed_mimes, \WPMediaVerse\Services\UploadService::hard_refused_mimes() ) );
-$mvs_mime_to_ext   = array(
-	'image/jpeg'      => '.jpg,.jpeg',
-	'image/png'       => '.png',
-	'image/gif'       => '.gif',
-	'image/webp'      => '.webp',
-	'video/mp4'       => '.mp4',
-	'video/webm'      => '.webm',
-	'audio/mpeg'      => '.mp3',
-	'audio/ogg'       => '.ogg',
-	'application/pdf' => '.pdf',
-);
+$mvs_mime_to_ext   = \WPMediaVerse\Services\UploadService::mime_extension_map();
 $mvs_allowed_exts  = array();
 foreach ( $mvs_allowed_mimes as $mvs_mime ) {
 	if ( isset( $mvs_mime_to_ext[ $mvs_mime ] ) ) {
@@ -610,7 +600,7 @@ wp_interactivity_state(
 				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>">
 				<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
 				<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
-				<input type="file" multiple accept="<?php echo esc_attr( $mvs_dash_ctx['allowedMimeTypes'] ); ?>" class="mvs-upload-file-input" style="display:none"
+				<input type="file" multiple accept="<?php echo esc_attr( \WPMediaVerse\Services\UploadService::accept_attribute( $mvs_allowed_mimes ) ); ?>" class="mvs-upload-file-input" style="display:none"
 					data-wp-on--change="actions.handleUploadFileSelect" />
 			</div>
 			<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"

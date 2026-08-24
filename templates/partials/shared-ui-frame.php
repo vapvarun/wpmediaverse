@@ -68,6 +68,15 @@ wp_interactivity_state(
 <div class="mvs-app-shell"
 	data-wp-interactive="mvs/shared-ui"
 	<?php
+	// Effective MIME list = the option minus what the media path hard-refuses, so
+	// the FAB picker never offers a type the server rejects (the same agreement
+	// `UploadService::hard_refused_mimes()` documents for the dashboard input).
+	$mvs_allowed_mimes = array_values(
+		array_diff(
+			array_map( 'trim', explode( ',', get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ) ) ),
+			\WPMediaVerse\Services\UploadService::hard_refused_mimes()
+		)
+	);
 	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 	echo wp_interactivity_data_wp_context(
 		array(
@@ -75,7 +84,11 @@ wp_interactivity_state(
 			'nonce'          => $mvs_nonce,
 			'currentUserId'  => $mvs_is_logged_in ? get_current_user_id() : 0,
 			'defaultPrivacy' => get_option( 'mvs_default_privacy', 'public' ),
-			'allowedTypes'   => get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ),
+			// Kept MIME-only: descendants validate a picked file's `type` against it.
+			'allowedTypes'   => implode( ',', $mvs_allowed_mimes ),
+			// The file input's `accept`: MIME types AND extensions, so the OS picker
+			// does not grey out files the server would accept.
+			'acceptAttr'     => \WPMediaVerse\Services\UploadService::accept_attribute( $mvs_allowed_mimes ),
 		)
 	);
 	?>

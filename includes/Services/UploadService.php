@@ -946,6 +946,61 @@ class UploadService {
 	}
 
 	/**
+	 * MIME type to file-extension(s) for the accepted media types.
+	 *
+	 * The ONE source for this mapping, so the dashboard input and the FAB modal
+	 * cannot advertise different extensions for the same type. Values are the
+	 * comma-separated extension list a file input's `accept` attribute expects
+	 * (with the leading dot).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return array<string,string>
+	 */
+	public static function mime_extension_map(): array {
+		return array(
+			'image/jpeg' => '.jpg,.jpeg',
+			'image/png'  => '.png',
+			'image/gif'  => '.gif',
+			'image/webp' => '.webp',
+			'video/mp4'  => '.mp4',
+			'video/webm' => '.webm',
+			'audio/mpeg' => '.mp3',
+			'audio/ogg'  => '.ogg',
+		);
+	}
+
+	/**
+	 * Build a file input's `accept` value from a list of allowed MIME types.
+	 *
+	 * Emits BOTH the MIME types and their file extensions. A MIME-only `accept`
+	 * greys out files the plugin actually accepts, because the OS file picker
+	 * matches on the extension it can see rather than on a MIME it may report
+	 * differently (or not at all) for the same file — so a `.jpg` the server
+	 * would take could be unselectable. Listing extensions alongside the MIMEs
+	 * lets the picker match either way. Callers pass the EFFECTIVE list (option
+	 * minus `hard_refused_mimes()`), so nothing is offered that the server
+	 * refuses.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $mimes Allowed MIME types.
+	 * @return string Comma-separated `accept` value (MIME types then extensions).
+	 */
+	public static function accept_attribute( array $mimes ): string {
+		$map  = self::mime_extension_map();
+		$exts = array();
+
+		foreach ( $mimes as $mime ) {
+			if ( isset( $map[ $mime ] ) ) {
+				$exts[] = $map[ $mime ];
+			}
+		}
+
+		return implode( ',', array_merge( $mimes, $exts ) );
+	}
+
+	/**
 	 * Rewrite an image so its pixels are upright, then clear the EXIF flag.
 	 *
 	 * Phones store rotation as an EXIF Orientation tag rather than rotating the

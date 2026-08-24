@@ -115,9 +115,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get uploadAccept() {
 			// Auto-detect flow: accept every supported type; the picked file(s)
-			// determine the mode (photo/gallery/video/audio).
-			const allowed = getContext().allowedTypes || '';
-			return allowed || 'image/*,video/*,audio/*';
+			// determine the mode (photo/gallery/video/audio). Prefer acceptAttr —
+			// MIME types AND extensions, so the OS picker does not grey out files
+			// the server accepts; fall back to the MIME-only list, then wildcards.
+			const ctx = getContext();
+			return ctx.acceptAttr || ctx.allowedTypes || 'image/*,video/*,audio/*';
 		},
 		get uploadMultiple() {
 			return true;
