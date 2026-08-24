@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 29;
+	const CURRENT_VERSION = 30;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -2124,6 +2124,38 @@ class Migrator {
 		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
 			wp_schedule_single_event( time() + 30, self::DRIVE_BACKFILL_HOOK );
 		}
+	}
+
+	/**
+	 * v30 — device tokens for native push notifications.
+	 *
+	 * Stores one row per (user, device) so the notification pipeline can dispatch
+	 * a push to a member's registered devices. The plugin OWNS the tokens and
+	 * fires the dispatch signal; the actual FCM/APNs send is a delivery
+	 * integration's job (credentials + platform SDKs live off the plugin).
+	 * Basecamp 9667082225.
+	 */
+	private function migrate_to_30(): void {
+		global $wpdb;
+
+		$prefix          = $wpdb->prefix;
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_device_tokens (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) unsigned NOT NULL,
+				platform varchar(20) NOT NULL,
+				token varchar(255) NOT NULL,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				UNIQUE KEY token (token),
+				KEY user_id (user_id)
+			) {$charset_collate};"
+		);
 	}
 
 	/**

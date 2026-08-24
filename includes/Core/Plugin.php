@@ -66,6 +66,7 @@ use WPMediaVerse\Social\ReportService;
 use WPMediaVerse\Social\ActivityService;
 use WPMediaVerse\REST\Controller\FollowController;
 use WPMediaVerse\REST\Controller\NotificationController;
+use WPMediaVerse\REST\Controller\DeviceController;
 use WPMediaVerse\REST\Controller\UserController;
 use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
@@ -819,6 +820,16 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'push',
+			function () {
+				return new \WPMediaVerse\Social\PushService();
+			}
+		);
+		// Eager: the dispatch must be hooked before any notification is created
+		// (notifications fire outside REST too), so bind it now rather than lazily.
+		self::$container->get( 'push' )->register();
+
+		self::$container->register(
 			'reports',
 			function () {
 				return new ReportService();
@@ -937,6 +948,7 @@ class Plugin {
 			new SignedUrlController( $signed_urls, $privacy ),
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),
+			new DeviceController( self::$container->get( 'push' ) ),
 			new TransactionController( self::$container->get( 'transactions' ) ),
 			new UserController(),
 			new ReportController( $reports ),
