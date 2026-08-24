@@ -96,15 +96,49 @@ wp_interactivity_state(
 >
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>
-	<div class="mvs-fab-container">
+	<?php
+	// When the member also has a Documents drive, the FAB opens a small menu
+	// (Media / Documents) so the drive is reachable from the global upload
+	// affordance; otherwise it keeps its single-action behaviour and opens the
+	// upload modal directly (Basecamp 10206301990). Documents availability + the
+	// drive URL come from Free's own seams — no Pro classes.
+	$mvs_fab_docs_url = '';
+	if ( $mvs_is_logged_in
+		&& \WPMediaVerse\Core\Plugin::documents_enabled()
+		&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
+	) {
+		$mvs_fab_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
+	}
+	?>
+	<div class="mvs-fab-container"
+		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'
+		<?php if ( '' !== $mvs_fab_docs_url ) : ?>data-wp-on-document--click="actions.closeFabMenuOnOutside"<?php endif; ?>>
+		<?php if ( '' !== $mvs_fab_docs_url ) : ?>
+		<div class="mvs-fab-menu" hidden data-wp-bind--hidden="!state.fabMenuOpen" role="menu" aria-label="<?php esc_attr_e( 'Add', 'wpmediaverse' ); ?>">
+			<button type="button" class="mvs-fab-menu-item" role="menuitem" data-wp-on--click="actions.fabUploadMedia">
+				<?php esc_html_e( 'Upload media', 'wpmediaverse' ); ?>
+			</button>
+			<a class="mvs-fab-menu-item" role="menuitem" href="<?php echo esc_url( $mvs_fab_docs_url ); ?>">
+				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
+			</a>
+		</div>
+		<button class="mvs-fab" data-wp-on--click="actions.toggleFabMenu"
+			aria-haspopup="true" data-wp-bind--aria-expanded="state.fabMenuOpen"
+			aria-label="<?php esc_attr_e( 'Add media or open Documents', 'wpmediaverse' ); ?>">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
+				<line x1="12" y1="5" x2="12" y2="19"></line>
+				<line x1="5" y1="12" x2="19" y2="12"></line>
+			</svg>
+		</button>
+		<?php else : ?>
 		<button class="mvs-fab" data-wp-on--click="actions.openUploadModal"
-			data-wp-context='{"uploadMode":"photo"}'
 			aria-label="<?php esc_attr_e( 'Upload media', 'wpmediaverse' ); ?>">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
 				<line x1="12" y1="5" x2="12" y2="19"></line>
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
 		</button>
+		<?php endif; ?>
 	</div>
 
 	<!-- Upload Modal Overlay -->

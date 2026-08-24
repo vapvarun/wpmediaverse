@@ -42,6 +42,49 @@
 	pointer-events: none;
 }
 
+/* FAB menu — shown above the button when the member also has a Documents drive. */
+.mvs-fab-menu {
+	position: absolute;
+	right: 0;
+	bottom: calc(56px + var(--mvs-space-3));
+	display: flex;
+	flex-direction: column;
+	gap: var(--mvs-space-1);
+	min-width: 168px;
+	padding: var(--mvs-space-2);
+	background: var(--mvs-surface);
+	border: 1px solid var(--mvs-border);
+	border-radius: var(--mvs-radius-md);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.mvs-fab-menu[hidden] {
+	display: none;
+}
+
+.mvs-fab-menu-item {
+	display: block;
+	width: 100%;
+	min-height: var(--mvs-touch-min);
+	box-sizing: border-box;
+	padding: var(--mvs-space-2) var(--mvs-space-3);
+	text-align: start;
+	background: none;
+	border: none;
+	border-radius: var(--mvs-radius-sm);
+	color: var(--mvs-text);
+	font-size: var(--mvs-font-md);
+	line-height: var(--mvs-touch-min);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.mvs-fab-menu-item:hover,
+.mvs-fab-menu-item:focus-visible {
+	background: var(--mvs-bg-subtle);
+	color: var(--mvs-primary);
+}
+
 /* ─── Modal Overlay ─── */
 .mvs-modal-overlay {
 	position: fixed;

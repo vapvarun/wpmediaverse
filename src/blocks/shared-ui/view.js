@@ -60,6 +60,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		tagResults: [],
 		tagVisible: false,
 
+		// --- FAB menu (only when the member also has a Documents drive) ---
+		fabMenuOpen: false,
+
 		// --- Upload Modal (flat) ---
 		uploadModalVisible: false,
 		uploadModalMode: 'photo', // photo | gallery | album | video
@@ -445,6 +448,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		hideTagAutocomplete() {
 			state.tagVisible = false;
 			state.tagResults = [];
+		},
+
+		// --- FAB menu ---
+		toggleFabMenu() {
+			state.fabMenuOpen = ! state.fabMenuOpen;
+		},
+		fabUploadMedia() {
+			state.fabMenuOpen = false;
+			this.openUploadModal();
+		},
+		closeFabMenuOnOutside( event ) {
+			// data-wp-on-document--click fires for every click, including the FAB
+			// toggle itself — only close when the click landed OUTSIDE the FAB.
+			if ( state.fabMenuOpen && event.target && ! event.target.closest( '.mvs-fab-container' ) ) {
+				state.fabMenuOpen = false;
+			}
 		},
 
 		// --- Upload Modal ---
@@ -1513,6 +1532,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.closeUploadModal();
 				} else if ( state.lightboxVisible ) {
 					actions.closeLightbox();
+				} else if ( state.fabMenuOpen ) {
+					state.fabMenuOpen = false;
 				}
 			} else if ( state.lightboxVisible ) {
 				if ( event.key === 'ArrowLeft' && state.lightboxHasPrev ) {
