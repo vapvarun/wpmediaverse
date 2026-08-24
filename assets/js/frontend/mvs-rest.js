@@ -95,6 +95,29 @@
 	}
 
 	/**
+	 * Collapse a malformed second query separator.
+	 *
+	 * A URL may carry only one `?`. When the REST base is query-style
+	 * (`/index.php?rest_route=/mvs/v1/`, the shape rest_url() returns without
+	 * pretty permalinks) and a caller concatenates a path that has its own query
+	 * (`me/media?per_page=20&page=1`), the result has TWO `?` and WordPress
+	 * cannot match the route → 404 (Basecamp 9793599140). This turns every `?`
+	 * after the first into `&`, which is correct for both URL shapes and a no-op
+	 * on a well-formed single-`?` URL. Fixes the class at one layer rather than
+	 * at each of the ~dozen concatenation sites across the blocks.
+	 *
+	 * @param {string} url
+	 * @return {string}
+	 */
+	function normalizeQuery( url ) {
+		var i = url.indexOf( '?' );
+		if ( i === -1 ) {
+			return url;
+		}
+		return url.slice( 0, i + 1 ) + url.slice( i + 1 ).replace( /\?/g, '&' );
+	}
+
+	/**
 	 * Return true when val is a plain object (not Array/FormData/null/etc.).
 	 *
 	 * @param {*} val
@@ -226,7 +249,7 @@
 			init.body = body;
 		}
 
-		var url = buildUrl( path );
+		var url = normalizeQuery( buildUrl( path ) );
 
 		return doFetch( url, init ).then( function ( response ) {
 			return parseBody( response ).then( function ( data ) {
