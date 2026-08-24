@@ -1085,10 +1085,12 @@ class MediaListPage {
 		}
 
 		/**
-		 * Listeners (Pro's TranscodeService) flip this true when they can
-		 * regenerate a poster for the media — e.g. video media on a host
-		 * with FFmpeg installed. Only listeners that ALSO subscribe to
-		 * mvs_repair_media_thumb should claim true here.
+		 * A repair path exists for this media. True for images with a local file
+		 * (above); an integration may answer true for other types if it can
+		 * actually regenerate them, but it must also subscribe to
+		 * mvs_repair_media_thumb. MediaVerse itself no longer frame-grabs videos
+		 * (no ffmpeg — it embeds media, it does not process it), so a cover-less
+		 * video is not repairable by core and keeps its default poster.
 		 *
 		 * @since 1.2.3
 		 *

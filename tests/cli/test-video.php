@@ -1,8 +1,8 @@
 <?php
 /**
- * CLI Tests: Pro Video features — Chapters, Resume, Captions, Transcode, Analytics.
+ * CLI Tests: Pro Video features — Chapters, Resume, Captions, Analytics.
  *
- * Covers: /mvs-pro/v1/media/{id}/chapters, /resume, /captions, /transcode, /analytics
+ * Covers: /mvs-pro/v1/media/{id}/chapters, /resume, /captions, /analytics
  */
 
 function run_video_tests(): array {
@@ -49,15 +49,8 @@ function run_video_tests(): array {
 	$r = rest( 'GET', "/mvs-pro/v1/media/$mid/captions/status" );
 	assert_test( 'Caption generation status', $r['ok'] || $r['status'] === 404, 'status:' . $r['status'] ) ? $p++ : $f++;
 
-	section( 'TRANSCODE' );
-	$r = rest( 'GET', "/mvs-pro/v1/media/$mid/transcodes" );
-	assert_test( 'List transcodes', $r['ok'] || $r['status'] === 404, 'status:' . $r['status'] ) ? $p++ : $f++;
-
-	$r = rest( 'GET', '/mvs-pro/v1/transcode/status' );
-	assert_test( 'Transcode status', $r['ok'] || $r['status'] === 404, 'status:' . $r['status'] ) ? $p++ : $f++;
-
-	$r = rest( 'GET', '/mvs-pro/v1/transcode/config' );
-	assert_test( 'Transcode config', $r['ok'] || $r['status'] === 404, 'status:' . $r['status'] ) ? $p++ : $f++;
+	// Transcode removed: MediaVerse embeds video, it does not process it (no
+	// ffmpeg). The /transcode* routes no longer exist.
 
 	section( 'ANALYTICS' );
 	$r = rest( 'GET', "/mvs-pro/v1/media/$mid/analytics" );

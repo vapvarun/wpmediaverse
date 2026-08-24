@@ -43,11 +43,6 @@ class HealthCheckService {
 			'test'  => array( $this, 'test_pages' ),
 		);
 
-		$tests['direct']['wpmediaverse_video_posters'] = array(
-			'label' => __( 'WPMediaVerse Video Posters (ffmpeg)', 'wpmediaverse' ),
-			'test'  => array( $this, 'test_video_posters' ),
-		);
-
 		return $tests;
 	}
 
@@ -212,50 +207,6 @@ class HealthCheckService {
 				__( 'Try deactivating and reactivating the plugin to recreate pages.', 'wpmediaverse' )
 			),
 			'test'        => 'wpmediaverse_pages',
-		);
-	}
-
-	/**
-	 * Test whether ffmpeg is available for generating video posters.
-	 *
-	 * Not having ffmpeg is not fatal: videos that embed a cover atom still get a
-	 * poster, and cover-less videos fall back to the bundled default poster SVG.
-	 * But without ffmpeg, cover-less videos never get a frame-grab poster, so
-	 * this is surfaced as a "recommended" improvement rather than an error.
-	 *
-	 * @since 1.7.0
-	 *
-	 * @return array
-	 */
-	public function test_video_posters(): array {
-		$available = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->is_ffmpeg_available();
-
-		if ( $available ) {
-			return array(
-				'label'       => __( 'Video poster generation is available', 'wpmediaverse' ),
-				'status'      => 'good',
-				'badge'       => array(
-					'label' => 'WPMediaVerse',
-					'color' => 'blue',
-				),
-				'description' => sprintf( '<p>%s</p>', __( 'ffmpeg is installed, so uploaded videos get a generated poster frame.', 'wpmediaverse' ) ),
-				'test'        => 'wpmediaverse_video_posters',
-			);
-		}
-
-		return array(
-			'label'       => __( 'ffmpeg is not available for video posters', 'wpmediaverse' ),
-			'status'      => 'recommended',
-			'badge'       => array(
-				'label' => 'WPMediaVerse',
-				'color' => 'orange',
-			),
-			'description' => sprintf(
-				'<p>%s</p><p>%s</p>',
-				__( 'ffmpeg was not found on this server. Videos that do not embed a cover image will fall back to a generic poster instead of a frame from the video. Uploading still works.', 'wpmediaverse' ),
-				__( 'Ask your host to install ffmpeg, or set its path with the mvs_ffmpeg_binary filter, to enable frame-grab posters for all videos.', 'wpmediaverse' )
-			),
-			'test'        => 'wpmediaverse_video_posters',
 		);
 	}
 }

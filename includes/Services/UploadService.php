@@ -1824,17 +1824,11 @@ class UploadService {
 			}
 		}
 
-		// Path B — no embedded poster (synthetic test files, some screen
-		// recordings, certain webm encodes). Fall back to extracting the
-		// first useful frame via ffmpeg. Skipped silently when ffmpeg is not
-		// available on the server; admins on hosts without it keep the
-		// play-icon placeholder and can run the per-row Repair thumbs action
-		// later (which Pro hooks for ffmpeg-equipped backends).
-		$poster_path = $poster->extract_via_ffmpeg( $media_id, $file_path );
-		if ( $poster_path && file_exists( $poster_path ) ) {
-			return $this->generate_thumbnails( $media_id, $poster_path, 'image/jpeg' );
-		}
-
+		// No embedded cover atom. MediaVerse embeds media, it does not process it
+		// — there is no ffmpeg frame-grab (that shell-out was host-dependent and
+		// tripped security scanners). A cover-less video keeps the play-icon
+		// placeholder / default poster; the browser can also stage a first frame
+		// client-side via stage_client_frame(). (Basecamp 10232926505)
 		return false;
 	}
 
