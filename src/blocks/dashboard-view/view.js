@@ -159,6 +159,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// wp_interactivity_state()'s value and /my-media/documents/ always
 		// opened on Media. The server seeds it; the getters below fall back.
 
+		// Bulk selection on the My Media grid.
+		bulkSelectedIds: [],
+		bulkPrivacyValue: 'public',
+
 		// My Media
 		media: {
 			items: [],
@@ -362,6 +366,22 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		get showMediaVideoPreview() {
 			return !! state.mediaVideoPreviewUrl;
+		},
+		// --- Bulk selection ---
+		get bulkCount() {
+			return state.bulkSelectedIds.length;
+		},
+		get hasBulkSelection() {
+			return state.bulkSelectedIds.length > 0;
+		},
+		get bulkCountLabel() {
+			const n = state.bulkSelectedIds.length;
+			const tmpl = ( 1 === n ? ( state.i18n?.bulkSelectedOne || '%d selected' ) : ( state.i18n?.bulkSelectedMany || '%d selected' ) );
+			return tmpl.replace( '%d', n );
+		},
+		get isItemBulkSelected() {
+			const item = getContext().item;
+			return !! item && state.bulkSelectedIds.includes( item.id );
 		},
 		get showMediaImage() {
 			// Static <img> path is image-only. Videos render via <video> (or the
@@ -1111,6 +1131,72 @@ const { state, actions } = store( 'mvs/dashboard', {
 					sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 				}
 			} );
+		},
+
+		/* =====================================================================
+		   Bulk actions (My Media grid)
+		   ===================================================================== */
+		toggleBulkSelect( event ) {
+			// Stop the card's thumb link/lightbox from also firing.
+			if ( event ) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+			const id = getContext().item?.id;
+			if ( ! id ) return;
+			if ( state.bulkSelectedIds.includes( id ) ) {
+				state.bulkSelectedIds = state.bulkSelectedIds.filter( ( x ) => x !== id );
+			} else {
+				state.bulkSelectedIds = [ ...state.bulkSelectedIds, id ];
+			}
+		},
+		selectAllBulk() {
+			state.bulkSelectedIds = state.media.items.map( ( m ) => m.id );
+		},
+		clearBulk() {
+			state.bulkSelectedIds = [];
+		},
+		setBulkPrivacy( event ) {
+			state.bulkPrivacyValue = event.target.value;
+		},
+		async bulkDelete( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length ) return;
+			sharedUI.actions.showConfirm(
+				( state.i18n?.bulkDeleteConfirm || 'Delete the selected items? This cannot be undone.' ),
+				async () => {
+					try {
+						const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'delete', media_ids: ids } } );
+						if ( res.ok ) {
+							state.media.items = state.media.items.filter( ( m ) => ! ids.includes( m.id ) );
+							state.bulkSelectedIds = [];
+							sharedUI.actions.showToast( ( state.i18n?.bulkDeleted || 'Selected items deleted.' ), 'success' );
+						} else {
+							sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+						}
+					} catch {
+						sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+					}
+				}
+			);
+		},
+		async applyBulkPrivacy( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length ) return;
+			try {
+				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'change_privacy', media_ids: ids, privacy: state.bulkPrivacyValue } } );
+				if ( res.ok ) {
+					state.bulkSelectedIds = [];
+					sharedUI.actions.showToast( ( state.i18n?.bulkPrivacyDone || 'Privacy updated.' ), 'success' );
+					actions.loadMedia( ctx, state.media.page || 1 );
+				} else {
+					sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+			}
 		},
 
 		/* =====================================================================

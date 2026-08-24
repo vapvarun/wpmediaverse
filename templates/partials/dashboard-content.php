@@ -240,6 +240,15 @@ wp_interactivity_state(
 			'collectionDeleted'       => __( 'Collection deleted.', 'wpmediaverse' ),
 			// Notifications.
 			'allNotificationsRead'    => __( 'All notifications marked as read.', 'wpmediaverse' ),
+			// Bulk actions.
+			/* translators: %d: number of selected items. */
+			'bulkSelectedOne'         => __( '%d selected', 'wpmediaverse' ),
+			/* translators: %d: number of selected items. */
+			'bulkSelectedMany'        => __( '%d selected', 'wpmediaverse' ),
+			'bulkDeleteConfirm'       => __( 'Delete the selected items? This cannot be undone.', 'wpmediaverse' ),
+			'bulkDeleted'             => __( 'Selected items deleted.', 'wpmediaverse' ),
+			'bulkPrivacyDone'         => __( 'Privacy updated.', 'wpmediaverse' ),
+			'bulkFailed'              => __( 'Bulk action failed.', 'wpmediaverse' ),
 		),
 	)
 );
@@ -698,9 +707,32 @@ wp_interactivity_state(
 			)
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
+		<div class="mvs-bulk-bar" data-wp-bind--hidden="!state.hasBulkSelection" hidden
+			role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
+			<span class="mvs-bulk-count" data-wp-text="state.bulkCountLabel"></span>
+			<label class="mvs-bulk-privacy-label">
+				<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
+				<select class="mvs-bulk-privacy" data-wp-on--change="actions.setBulkPrivacy">
+					<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+					<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+					<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+				</select>
+			</label>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--danger" data-wp-on--click="actions.bulkDelete"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.selectAllBulk"><?php esc_html_e( 'Select all', 'wpmediaverse' ); ?></button>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.clearBulk"><?php esc_html_e( 'Clear', 'wpmediaverse' ); ?></button>
+		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.media.items">
-				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
+				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id"
+					data-wp-class--mvs-dashboard-card--selected="state.isItemBulkSelected">
+					<button type="button" class="mvs-bulk-check" data-wp-on--click="actions.toggleBulkSelect"
+						data-wp-class--mvs-bulk-check--on="state.isItemBulkSelected"
+						data-wp-bind--aria-pressed="state.isItemBulkSelected"
+						aria-label="<?php esc_attr_e( 'Select for bulk actions', 'wpmediaverse' ); ?>">
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+					</button>
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openMediaLightbox">
 						<img data-wp-bind--hidden="!state.showMediaImage" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />

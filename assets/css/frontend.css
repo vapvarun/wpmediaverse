@@ -2144,6 +2144,92 @@ body.dark-mode .mvs-skeleton::after {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Bulk-select overlay checkbox on each card. Hidden until hover/selection so
+   it stays out of the way, but always keyboard-reachable. */
+.mvs-bulk-check {
+    position: absolute;
+    top: var(--mvs-space-2);
+    inset-inline-start: var(--mvs-space-2);
+    z-index: 3;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--mvs-on-primary);
+    border-radius: var(--mvs-radius-sm);
+    background: rgba(0, 0, 0, 0.45);
+    color: transparent;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.mvs-dashboard-card:hover .mvs-bulk-check,
+.mvs-bulk-check:focus-visible,
+.mvs-bulk-check--on {
+    opacity: 1;
+}
+
+.mvs-bulk-check--on {
+    background: var(--mvs-primary);
+    border-color: var(--mvs-primary);
+    color: var(--mvs-on-primary);
+}
+
+.mvs-bulk-check svg {
+    width: 18px;
+    height: 18px;
+}
+
+.mvs-dashboard-card--selected {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: -2px;
+}
+
+/* Sticky action bar shown while ≥1 card is selected. */
+.mvs-bulk-bar {
+    position: sticky;
+    top: var(--mvs-space-2);
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    margin-block-end: var(--mvs-space-3);
+    padding: var(--mvs-space-2) var(--mvs-space-3);
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.mvs-bulk-count {
+    font-weight: 600;
+    color: var(--mvs-text);
+    margin-inline-end: auto;
+}
+
+.mvs-bulk-privacy {
+    max-width: 160px;
+}
+
+@media (max-width: 480px) {
+    .mvs-bulk-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-bulk-count {
+        margin-inline-end: 0;
+    }
+
+    .mvs-bulk-privacy {
+        max-width: none;
+    }
+}
+
 .mvs-dashboard-card-thumb {
     position: relative;
     display: block;
