@@ -1220,6 +1220,28 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				$media_id = isset( $args['media_id'] ) ? (int) $args['media_id'] : 0;
 
 				if ( $media_id && $this->is_document( $media_id ) ) {
+					// The OWNER came from their own drive, so send them back
+					// there — not to the public Explore Documents listing, which
+					// excludes private rows and would drop them on an empty "No
+					// documents" grid the instant after previewing their own
+					// private file (Basecamp 10230967864). Everyone else (a
+					// non-owner member, a logged-out viewer) gets the public
+					// listing, which is the only documents surface they share.
+					$viewer = get_current_user_id();
+					$owner  = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+
+					if ( $viewer > 0 && $viewer === $owner ) {
+						$drive_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
+
+						if ( '' !== $drive_url ) {
+							$parent = array(
+								'url'   => $drive_url,
+								'label' => __( 'My documents', 'wpmediaverse' ),
+							);
+							break;
+						}
+					}
+
 					$documents_url = $this->resolve_documents_url();
 
 					if ( '' !== $documents_url ) {
