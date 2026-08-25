@@ -209,3 +209,16 @@
 .mvs-upload-story-toggle input {
 	margin: 0;
 }
+
+/* Pointer to the Documents library — this uploader is media-only. */
+.mvs-upload-docs-pointer {
+	margin: var(--mvs-space-2, 0.5rem) 0 0;
+	font-size: 0.875rem;
+	color: var(--mvs-text-secondary);
+	text-align: center;
+}
+
+.mvs-upload-docs-pointer a {
+	color: var(--mvs-primary);
+	text-decoration: underline;
+}

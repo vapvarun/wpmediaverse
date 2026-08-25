@@ -74,6 +74,18 @@ $mvs_stories_on = defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stori
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $mvs_prefill_story = $mvs_stories_on && isset( $_GET['mvs_story'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['mvs_story'] ) );
 
+// This uploader is for media (images, videos, audio); documents have their own
+// uploader in the Documents library, with the folder/privacy/type controls a
+// document needs. Rather than list a "Documents" category the input would
+// reject, point members who have documents at the right place. Only when the
+// feature is on AND this member may use it (Basecamp 10226421698).
+$mvs_docs_url = '';
+if ( \WPMediaVerse\Core\Plugin::documents_enabled()
+	&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
+) {
+	$mvs_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
+}
+
 // i18n for the mvs/media-upload store. It is a script MODULE (viewScriptModule), so
 // wp_set_script_translations() can't reach it and window.wp.i18n.__() falls
 // through to English. Seed PHP-translated strings into interactivity state; the
@@ -171,6 +183,17 @@ wp_interactivity_state(
 			</select>
 		<?php endif; ?>
 	</div>
+	<?php if ( '' !== $mvs_docs_url ) : ?>
+		<p class="mvs-upload-docs-pointer">
+			<?php
+			printf(
+				/* translators: %s: link to the member's Documents library. */
+				esc_html__( 'Looking to upload a document? Use your %s.', 'wpmediaverse' ),
+				'<a href="' . esc_url( $mvs_docs_url ) . '">' . esc_html__( 'Documents library', 'wpmediaverse' ) . '</a>'
+			);
+			?>
+		</p>
+	<?php endif; ?>
 	<!-- Optional metadata fields -->
 	<div class="mvs-upload-fields">
 		<input type="text" class="mvs-upload-title-input"
