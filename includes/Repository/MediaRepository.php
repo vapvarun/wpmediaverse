@@ -1717,7 +1717,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = (array) $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at
+				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at, folder_id, drive_type, drive_id
 				   FROM {$index}
 				  WHERE {$where_sql}
 				  ORDER BY {$orderby} {$order}
