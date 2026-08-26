@@ -194,7 +194,16 @@ $mvs_archive_url = home_url( '/media/' );
 			</div>
 		</form>
 		<!-- User search results (populated via safe DOM methods) -->
-		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;"></div>
+		<?php
+		// data-wp-ignore: the People-search result cards are injected at runtime
+		// and are NOT in the server markup, so when the iAPI router morphs this
+		// region during a client-side navigation it has no counterpart for them
+		// and re-parents one into the destination's profile header (Basecamp
+		// 10230881780). Marking the container ignored makes the router treat this
+		// subtree as opaque and never move its children — a structural fix, not a
+		// timing race. The click handler in explore-search.js still empties it.
+		?>
+		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;" data-wp-ignore></div>
 	</div>
 
 	<?php
