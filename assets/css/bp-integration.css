@@ -1393,6 +1393,39 @@
     gap: var(--mvs-space-2, 0.5rem);
 }
 
+#buddypress .mvs-profile-documents__count {
+    margin-block-end: var(--mvs-space-3, 1rem);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm, 14px);
+}
+
+#buddypress .mvs-profile-documents__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mvs-space-3, 1rem);
+    margin-block-start: var(--mvs-space-4, 1.5rem);
+}
+
+#buddypress .mvs-profile-documents__nav-link {
+    padding: var(--mvs-space-2, 0.5rem) var(--mvs-space-3, 1rem);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md, 8px);
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    text-decoration: none;
+}
+
+#buddypress .mvs-profile-documents__nav-link:hover,
+#buddypress .mvs-profile-documents__nav-link:focus-visible {
+    border-color: var(--mvs-primary);
+}
+
+#buddypress .mvs-profile-documents__nav-status {
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm, 14px);
+}
+
 #buddypress .mvs-profile-documents__item {
     margin: 0;
 }
