@@ -72,6 +72,7 @@ class DeviceController extends WP_REST_Controller {
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => 'sanitize_text_field',
+							'maxLength'         => 255,
 						),
 					),
 				),
@@ -84,6 +85,7 @@ class DeviceController extends WP_REST_Controller {
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => 'sanitize_text_field',
+							'maxLength'         => 255,
 						),
 					),
 				),
@@ -118,7 +120,10 @@ class DeviceController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function unregister_device( WP_REST_Request $request ): WP_REST_Response {
-		$removed = $this->push->unregister_token( (string) $request->get_param( 'token' ) );
+		$removed = $this->push->unregister_token(
+			get_current_user_id(),
+			(string) $request->get_param( 'token' )
+		);
 
 		return rest_ensure_response( array( 'removed' => $removed ) );
 	}

@@ -110,6 +110,14 @@ final class MemberDataMap {
 				'label'   => __( 'Notifications', 'wpmediaverse' ),
 			),
 
+			// Registered push device tokens. A token identifies the member's
+			// physical device, so an erasure request must drop it — otherwise
+			// pushes could still be sent to a departed member's phone.
+			'mvs_device_tokens'             => array(
+				'columns' => array( 'user_id' ),
+				'label'   => __( 'Push device tokens', 'wpmediaverse' ),
+			),
+
 			// Messaging. MediaVerse's policy is a uniform hard delete: leaving a
 			// community removes the person and what they said. This matches the
 			// existing account-delete path, and BuddyNext's identical policy, so

@@ -76,6 +76,7 @@ class Migrator {
 			'mvs_bp_activity_media',
 			'mvs_conversation_participants',
 			'mvs_conversations',
+			'mvs_device_tokens',
 			'mvs_error_log',
 			'mvs_favorites',
 			'mvs_follows',

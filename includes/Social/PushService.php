@@ -55,11 +55,22 @@ class PushService {
 	}
 
 	/**
+	 * The longest device token the store will accept (matches the column).
+	 *
+	 * @since 2.4.0
+	 * @var int
+	 */
+	private const MAX_TOKEN = 255;
+
+	/**
 	 * Register (or refresh) a device token for a member.
 	 *
-	 * Upserts on the token: the same device re-registering just moves the token
-	 * to the current user and bumps updated_at, so a shared device that changes
-	 * hands never delivers a member's pushes to whoever logged in after them.
+	 * A token already registered to a DIFFERENT member is REFUSED, not moved:
+	 * re-pointing it would redirect that member's device to someone else's
+	 * notifications and silence their own — a hijack, given the token can leak
+	 * through logs, crash reports or a shared device. A device that genuinely
+	 * changes hands is issued a fresh OS token, so this never blocks a real
+	 * re-registration. The same member re-registering just refreshes the row.
 	 *
 	 * @since 2.4.0
 	 *
@@ -74,7 +85,18 @@ class PushService {
 		$platform = in_array( $platform, self::PLATFORMS, true ) ? $platform : '';
 		$token    = trim( $token );
 
-		if ( $user_id <= 0 || '' === $platform || '' === $token ) {
+		// Reject rather than silently truncate to the column width — a truncated
+		// token stores fine, returns success, and then never receives a push.
+		if ( $user_id <= 0 || '' === $platform || '' === $token || strlen( $token ) > self::MAX_TOKEN ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- table name is code-controlled; value is prepared.
+		$owner = (int) $wpdb->get_var(
+			$wpdb->prepare( 'SELECT user_id FROM ' . $this->table() . ' WHERE token = %s', $token )
+		);
+
+		if ( $owner > 0 && $owner !== $user_id ) {
 			return false;
 		}
 
@@ -83,7 +105,7 @@ class PushService {
 			$wpdb->prepare(
 				'INSERT INTO ' . $this->table() . ' (user_id, platform, token, created_at, updated_at)
 				 VALUES (%d, %s, %s, %s, %s)
-				 ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), platform = VALUES(platform), updated_at = VALUES(updated_at)',
+				 ON DUPLICATE KEY UPDATE platform = VALUES(platform), updated_at = VALUES(updated_at)',
 				$user_id,
 				$platform,
 				$token,
@@ -96,27 +118,36 @@ class PushService {
 	}
 
 	/**
-	 * Remove a device token (logout / uninstall).
+	 * Remove one of a member's OWN device tokens (logout / uninstall).
 	 *
-	 * Deletes by token alone so a device can unregister itself without proving
-	 * which user it belonged to — the token IS the secret, and a member cannot
-	 * name another member's token.
+	 * Scoped to the owner: deleting by token alone let any member delete another
+	 * member's token (silencing their pushes) and turned the return value into a
+	 * token-existence oracle. A caller may only remove a token registered to
+	 * themselves.
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param string $token Device token.
+	 * @param int    $user_id Owner making the request.
+	 * @param string $token   Device token.
 	 * @return bool True when a row was removed.
 	 */
-	public function unregister_token( string $token ): bool {
+	public function unregister_token( int $user_id, string $token ): bool {
 		global $wpdb;
 
 		$token = trim( $token );
-		if ( '' === $token ) {
+		if ( $user_id <= 0 || '' === $token ) {
 			return false;
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		return (bool) $wpdb->delete( $this->table(), array( 'token' => $token ), array( '%s' ) );
+		return (bool) $wpdb->delete(
+			$this->table(),
+			array(
+				'token'   => $token,
+				'user_id' => $user_id,
+			),
+			array( '%s', '%d' )
+		);
 	}
 
 	/**
