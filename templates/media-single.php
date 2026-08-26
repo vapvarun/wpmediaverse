@@ -790,7 +790,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<!-- Comments Section -->
 			<div class="mvs-comments-section">
 				<h3 class="mvs-comments-title"><?php esc_html_e( 'Comments', 'wpmediaverse' ); ?></h3>
-				<?php if ( is_user_logged_in() ) : ?>
+				<?php if ( is_user_logged_in() && apply_filters( 'mvs_can_comment', true, $mvs_media_id, get_current_user_id() ) ) : ?>
 					<form class="mvs-comment-form" data-wp-on--submit="actions.submitComment">
 						<textarea placeholder="<?php esc_attr_e( 'Write a comment...', 'wpmediaverse' ); ?>" rows="2"
 							data-wp-bind--value="context.commentText"
