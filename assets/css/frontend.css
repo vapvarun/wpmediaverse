@@ -16,7 +16,7 @@
     /* Typography — BuddyNext first, then system stack fallback */
     --mvs-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     --mvs-font-heading: var(--font-display, var(--mvs-font));
-    /* Font-size scale — single source of truth for every var(--mvs-font-{xs,sm,md,lg})
+    /* Font-size scale — single source of truth for every font-xs/sm/md/lg
        callsite (137 of them, Free + Pro + admin). Was only in the never-enqueued
        src/shared/design-tokens.css, so bare uses silently fell back to inherited size. */
     --mvs-font-xs: 12px;
