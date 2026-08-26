@@ -71,6 +71,24 @@ if ( ! $mvs_pdf_repo->exists( $mvs_pdf_id ) ) {
 	return;
 }
 
+// Refuse a document. A document's PDF has file_type application/pdf and would
+// pass the check below, but documents live outside the media tree
+// ({uploads}/wpmediaverse-documents/, resolved by their own viewer) and carry a
+// per-user/role/space sharing model this public block cannot honour — the media
+// serve route can neither find the file nor apply that model, so the iframe just
+// 404'd. Documents are shown on their own page.
+if ( 'document' === (string) $mvs_pdf_repo->get( $mvs_pdf_id, 'media_type' ) ) {
+	?>
+	<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+		<div class="mvs-empty-state">
+			<i data-lucide="file-text" aria-hidden="true"></i>
+			<p><?php esc_html_e( 'Documents have their own viewer and cannot be embedded here. Pick a PDF media file instead.', 'wpmediaverse' ); ?></p>
+		</div>
+	</div>
+	<?php
+	return;
+}
+
 // Verify the file is actually a PDF — refuse to render an iframe for
 // other media types since browsers won't sandbox / view them inline
 // the same way.
