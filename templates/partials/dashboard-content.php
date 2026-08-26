@@ -314,7 +314,12 @@ wp_interactivity_state(
 	// dashboard page. Rendering a second bell here would surface the same
 	// items twice. The MVS bell stays as the canonical surface for
 	// non-BP sites where there is no other notification chrome.
-	$mvs_show_dashboard_bell = ! function_exists( 'buddypress' );
+	//
+	// BuddyNext ships its own header bell but does NOT define buddypress(), so
+	// the function_exists check alone let the duplicate through on exactly the
+	// stack that has its own bell. The mvs_buddynext_active filter (already
+	// honoured elsewhere) closes that gap.
+	$mvs_show_dashboard_bell = ! function_exists( 'buddypress' ) && ! apply_filters( 'mvs_buddynext_active', false );
 	?>
 	<?php
 	// THE PAGE ALREADY SAYS "My Media" — it is the h1 in the page band, 32px,
@@ -334,14 +339,14 @@ wp_interactivity_state(
 			role="button" tabindex="0" aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
 			<span class="mvs-notification-bell-icon">&#128276;</span>
 			<span class="mvs-notification-badge" data-wp-bind--hidden="!state.notifications.count"
-				data-wp-text="state.notifications.count"></span>
+				data-wp-text="state.notifications.count" hidden></span>
 			<div class="mvs-notification-dropdown" data-wp-bind--hidden="!state.notifications.visible"
-				data-wp-on--click="actions.stopPropagation">
+				data-wp-on--click="actions.stopPropagation" hidden>
 				<div class="mvs-notification-dropdown-header">
 					<strong><?php esc_html_e( 'Notifications', 'wpmediaverse' ); ?></strong>
 					<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 						data-wp-on--click="actions.markAllRead"
-						data-wp-bind--hidden="!state.notifications.count"><?php esc_html_e( 'Mark all read', 'wpmediaverse' ); ?></button>
+						data-wp-bind--hidden="!state.notifications.count" hidden><?php esc_html_e( 'Mark all read', 'wpmediaverse' ); ?></button>
 				</div>
 				<ul class="mvs-notification-list">
 					<template data-wp-each="state.notifications.items">
