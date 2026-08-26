@@ -457,7 +457,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		fabUploadMedia() {
 			state.fabMenuOpen = false;
-			this.openUploadModal();
+			// Sibling actions are called through the captured `actions` proxy, not
+			// `this` — inside an Interactivity action `this` does not resolve the
+			// store's actions, so `this.openUploadModal()` was a silent no-op and
+			// the FAB menu's "Upload media" did nothing (Basecamp 10240363216).
+			actions.openUploadModal();
 		},
 		closeFabMenuOnOutside( event ) {
 			// data-wp-on-document--click fires for every click, including the FAB
