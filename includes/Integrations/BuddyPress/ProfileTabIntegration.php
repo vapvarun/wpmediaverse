@@ -32,11 +32,44 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		add_action( 'bp_setup_nav', array( $this, 'add_profile_tab' ), 100 );
 		add_action( 'bp_template_redirect', array( $this, 'update_media_tab_count' ) );
 
+		// Keep MediaVerse's own stylesheets alive on its profile Media tabs.
+		// The Media / Albums / Documents tabs are MediaVerse content rendered
+		// inside a BuddyPress profile — BuddyNext does not replace them — so they
+		// must keep their CSS. Without this, on a BuddyNext site the handoff's
+		// enforce_frontend_presence() sweep deregisters every mvs-* handle here
+		// too, and the tabs paint with empty --mvs tokens: bare <ul> lists,
+		// icons at viewBox size, no grid spacing (Basecamp 10239276541, the
+		// sibling of the Explore-Documents page fix 10194672141). This exempts
+		// only the two stylesheets the tab content needs; the rest of the UI
+		// suppression is left untouched.
+		add_filter( 'mvs_frontend_presence_keep_handles', array( $this, 'keep_media_tab_styles' ) );
+
 		// Resolve member profile URLs to the BP member page. Lives here so core
 		// (TemplateHelpers::get_user_profile_url) stays standalone — it defaults
 		// to the plugin's own /media/@login/ route and BP/BuddyNext override via
 		// this filter. No bp_* calls in core templates or helpers.
 		add_filter( 'mvs_user_profile_url', array( $this, 'filter_user_profile_url' ), 10, 2 );
+	}
+
+	/**
+	 * Exempt the Media-tab stylesheets from the BuddyNext frontend-suppression
+	 * sweep while a member's Media tab (any sub-tab) is being viewed.
+	 *
+	 * Runs inside enforce_frontend_presence() at wp_enqueue_scripts@PHP_INT_MAX;
+	 * BuddyPress has resolved the current component by then, so the check is
+	 * reliable. Adds only the two stylesheets the tab content renders with.
+	 *
+	 * @param string[] $handles Handles the sweep must not strip.
+	 * @return string[]
+	 */
+	public function keep_media_tab_styles( array $handles ): array {
+		if ( function_exists( 'bp_is_user' ) && bp_is_user()
+			&& function_exists( 'bp_is_current_component' ) && bp_is_current_component( 'media' ) ) {
+			$handles[] = 'mvs-frontend';
+			$handles[] = 'mvs-bp-integration';
+		}
+
+		return $handles;
 	}
 
 	/**
