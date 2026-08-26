@@ -808,6 +808,41 @@ Mark notifications as read. Pass an `ids` array to mark specific notifications, 
 
 ---
 
+## Devices / push tokens
+
+Register a member's device so the site can deliver push notifications for new in-app notifications. Added in 2.4.0. Both routes require an authenticated member and upsert into the `mvs_device_tokens` table. This is the Free generic device-token surface, backed by `Social/PushService.php`; when a new in-app notification is created, `PushService` fires the action `mvs_push_send( int $user_id, array $tokens, array $payload )` for a push-delivery integration to send, gated by the filter `mvs_push_should_send` (return `false` to suppress). Pro's Expo push at `POST /mvs-pro/v1/push/register-device` (table `mvs_pro_push_devices`) is separate and additional — neither replaces the other.
+
+### POST /me/devices
+
+**Auth:** Authenticated.
+
+Register (upsert) a device push token for the current member.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `platform` | Yes | One of `ios`, `android`, `web` |
+| `token` | Yes | The push token string |
+
+```json
+{ "platform": "ios", "token": "abc123..." }
+```
+
+### DELETE /me/devices
+
+**Auth:** Authenticated.
+
+Unregister a device push token.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `token` | Yes | The push token string to remove |
+
+```json
+{ "token": "abc123..." }
+```
+
+---
+
 ## Native App & Interests
 
 Added in 1.9.0 to support a native mobile/headless client: a public pre-login config call, an interest-picker onboarding flow, and "people you may know" suggestions. See [`mvs_app_config_features`](hooks-filters.md#native-app-config-190) and related filters for how Free/Pro contribute to `/app/config`.

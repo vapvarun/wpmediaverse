@@ -52,7 +52,7 @@ and stats columns.
   strip → watermark → optimise → WebP/AVIF siblings → storage driver → thumbnails.
 - **Variants** — `VariantSpec` (canonical relative-path computation), `StorageRouter`
   (driver routing), `MediaVariantWriter` (single owner of every `thumb_*` meta write),
-  `PosterService` (video posters: getID3 cover atom, then ffmpeg fallback).
+  `PosterService` (video posters: getID3 cover atom).
 - **Serving** — `SignedUrlService` with HMAC-signed URLs, per-request privacy re-check
   for non-public media, `Accept`-header WebP/AVIF negotiation, render-stable public URLs
   with `Cache-Control` for CDN/page-cache friendliness.
@@ -145,7 +145,7 @@ locale blocks.
 |---|---|
 | **Competitions** | 1v1 photo battles, themed challenges with autopilot scheduling, single-elimination tournaments, a compete hub, leaderboards |
 | **Gamification** | Points/XP bridge, boosts (spend points for visibility), daily upload streaks with freeze |
-| **Video** | Chapters, resume playback, ffmpeg transcoding queue, play analytics and heatmaps |
+| **Video** | Chapters, resume playback, play analytics and heatmaps |
 | **Captions** | Whisper-backed auto-transcription |
 | **AI** | Google Vision and AWS Rekognition providers behind a circuit breaker; auto-describe and auto-tag |
 | **Storage** | S3, BunnyCDN, Cloudflare R2, DigitalOcean Spaces drivers + a Storage Management admin UI |

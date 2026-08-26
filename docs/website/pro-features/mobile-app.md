@@ -25,7 +25,7 @@ The app mirrors the feed layout you picked for the web Explore page - grid, Inst
 
 ## Feature Flags
 
-The app also learns which competitive and video features are switched on for your site - battles, challenges, tournaments, boosts, streaks, transcoded video, and stories - so it only mounts the screens you've actually enabled. Each flag mirrors the matching admin toggle (e.g. `mvs_challenges_enabled`); there is nothing extra to configure for the app itself.
+The app also learns which competitive and video features are switched on for your site - battles, challenges, tournaments, boosts, streaks, and stories - so it only mounts the screens you've actually enabled. Each flag mirrors the matching admin toggle (e.g. `mvs_challenges_enabled`); there is nothing extra to configure for the app itself.
 
 ## How the App Gets This (Developers)
 

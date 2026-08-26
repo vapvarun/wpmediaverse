@@ -62,7 +62,7 @@ When you change the title, the URL slug stays stable by default. Tick the new **
 
 ## What Happens After Upload
 
-- Thumbnails are generated automatically for images and videos (videos: ffmpeg poster extraction; run `wp mvs generate-video-thumbnails` to backfill any uploaded before 1.2.0)
+- Thumbnails are generated automatically for images and videos (videos: a poster is taken from the embedded cover atom (getID3); cover-less videos use a default poster)
 - EXIF GPS data is stripped from JPEG files (other metadata like camera model is kept)
 - A SHA-256 hash is computed to detect duplicate files
 - If AI moderation is enabled, the file is queued for automatic review

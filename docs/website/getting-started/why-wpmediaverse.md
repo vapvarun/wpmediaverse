@@ -67,7 +67,6 @@ With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN whil
 | Custom privacy levels | Basic | Basic | Basic | 6 levels (Pro) |
 | Direct messaging | No | Separate plugin | No | Built-in |
 | Gamification | No | No | No | Challenges, battles, tournaments (Pro) |
-| Video transcoding | No | No | No | Multi-quality + HLS (Pro) |
 | Cloud storage | No | No | No | S3 + BunnyCDN (Pro) |
 | AI moderation | No | No | No | OpenAI + Vision + Rekognition |
 | Upload quotas | No | No | No | Per-user packages (Pro) |

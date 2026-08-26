@@ -45,7 +45,6 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * Photo Challenges, 1v1 Battles, Tournament Brackets
 * Points, Streaks, Boosts gamification engine
 * S3 and BunnyCDN cloud storage drivers
-* Video transcoding with HLS adaptive streaming
 * Auto-captions via Whisper AI
 * Per-user storage quotas (MemberPress, WooCommerce, PMPro integration)
 * Voice messages, read receipts, typing indicators in DMs

@@ -9,7 +9,7 @@ Give every member a private drive for their files. Folders, sharing, search, tra
 
 Each member gets a **Documents** section on their My Media page: their own drive, with folders they create and name, an upload button, and a list showing name, size, when it changed and who owns it.
 
-Opening a document shows the document itself. A Word file, a spreadsheet, a presentation and a PDF all open in the same viewer, laid out the way the file really looks. Plain text, Markdown and CSV files render as text, because converting a text file to a page image would be worse in every respect.
+Opening a document uses the right view for its type. A PDF opens inline in a built-in viewer (pdf.js), laid out the way the file really looks. Plain text, Markdown and CSV render as formatted HTML. Word, Excel, PowerPoint, OpenDocument and RTF files show a download card - MediaVerse embeds what the browser can render and hands you the file for the rest, rather than converting one format into another.
 
 Beside their own drive members get:
 
@@ -41,21 +41,13 @@ A file is identified by what it actually is, never by its extension. A `.docx` r
 
 ## Document Previews
 
-Anything that is not already a PDF is converted to one on the server, and that PDF is shown in a built-in viewer. One viewer for every type.
+Opening a document uses the right tier for its type. MediaVerse embeds what the browser can show and hands you the file for everything else - it never converts one format into another.
 
-Conversion needs **LibreOffice installed on the server**. Most shared hosting does not have it. If it is missing, WPMediaVerse says so plainly:
+- **PDF** opens inline in a built-in viewer (pdf.js), page by page.
+- **Text, Markdown and CSV** render as server-generated HTML.
+- **Word, Excel, PowerPoint, OpenDocument and RTF** show a download card - a titled row with the file's type and size and a Download button.
 
-- **Site Health** carries a check, **Office and OpenDocument previews**, reporting whether this host can convert documents
-- Documents that cannot be converted fall back to showing their extracted text, which is what earlier versions did for every Office file
-- Downloads always work, whether or not a preview does
-
-Conversion runs in the background, never during a page load. To convert documents uploaded before this feature existed:
-
-```
-wp mvs render-documents
-```
-
-It works in batches, so it is safe on a large library.
+Downloads always work, whatever the type.
 
 ## For Site Owners
 
@@ -125,7 +117,6 @@ Every route works with an Application Password alone - no cookies, no nonce - so
 | `mvs_document_anon_links` | filter | Whether anonymous share links may be minted |
 | `mvs_document_row_actions` | filter | Add row actions to the admin document list |
 | `mvs_document_admin_panels` | filter | Add panels to the admin document editor |
-| `mvs_pro_soffice_binary` | filter | Where LibreOffice lives, when it is not on a standard path |
 | `mvs_document_uploaded` | action | Fires after a document is stored |
 
 A setting always wins over the screen it came from: if your site already sets one of these filters, it keeps winning after you upgrade, so upgrading into the settings screen never silently reconfigures a site.

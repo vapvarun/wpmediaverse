@@ -4,7 +4,7 @@
 >
 > **Manifest refresh: agent-enumeration-only.** `write-manifest.mjs` cannot see this plugin's registration patterns (SettingsRegistrar, ServiceContainer::register(), MediaCapabilities, PostTypes\Album::register(), CLI subcommands as methods) and would zero out settings/services/wp_cli/capabilities/post_types/taxonomies. Refresh by targeted delta against ground-truth grep — never by committing generator output. See `generated.refresh_2026_08_05` in the manifest.
 >
-> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifests/manifest.json`](audit/manifests/manifest.json) (v2.2 schema) covers **114 REST endpoints, 3 plugin AJAX actions, 20 admin pages, 40 settings, 220 unique hooks fired (incl. 4 added in 1.6.0: `mvs_media_alt_text`, `mvs_reports_enabled` filters + `mvs_album_deleted`, `mvs_collection_deleted` actions; `mvs_media_deleted` now fires once from the `delete_cascade` funnel), 22 tables, 9 registered blocks (13 `block.json` dirs; 4 are Interactivity-only, not registered as editor blocks), 37 container-registered services, 20 WP-CLI subcommands (incl. `wp mvs backfill_ai`, `repair_storage`)**. Detail files: [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md`](audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md). Reports: [`audit/reports/FEATURE_AUDIT.md`](audit/reports/FEATURE_AUDIT.md), [`audit/reports/CODE_FLOWS.md`](audit/reports/CODE_FLOWS.md), [`audit/reports/ROLE_MATRIX.md`](audit/reports/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Pro audit mirror: [`audit/pro/`](audit/pro/). Refresh: `/wp-plugin-onboard --refresh`.
+> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifests/manifest.json`](audit/manifests/manifest.json) (v2.2 schema) covers **114 REST endpoints, 3 plugin AJAX actions, 20 admin pages, 40 settings, 220 unique hooks fired (incl. 4 added in 1.6.0: `mvs_media_alt_text`, `mvs_reports_enabled` filters + `mvs_album_deleted`, `mvs_collection_deleted` actions; `mvs_media_deleted` now fires once from the `delete_cascade` funnel), 23 tables, 9 registered blocks (13 `block.json` dirs; 4 are Interactivity-only, not registered as editor blocks), 37 container-registered services, 20 WP-CLI subcommands (incl. `wp mvs backfill_ai`, `repair_storage`)**. Detail files: [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md`](audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md). Reports: [`audit/reports/FEATURE_AUDIT.md`](audit/reports/FEATURE_AUDIT.md), [`audit/reports/CODE_FLOWS.md`](audit/reports/CODE_FLOWS.md), [`audit/reports/ROLE_MATRIX.md`](audit/reports/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Pro audit mirror: [`audit/pro/`](audit/pro/). Refresh: `/wp-plugin-onboard --refresh`.
 
 ## Quick Facts
 
@@ -18,7 +18,7 @@
 | Runtime deps | Committed under `libs/` (Action Scheduler, EDD SL SDK) — see `libs/README.md` |
 | `vendor/` | Dev and build tooling ONLY. Gitignored, not in the release zip, never loaded at runtime. |
 | Text Domain | `wpmediaverse` |
-| Custom Tables | 22 (prefixed `mvs_`) |
+| Custom Tables | 23 (prefixed `mvs_`) |
 | REST Controllers | 23 (namespace `mvs/v1`) |
 | Pro Extension Hook | `mvs_loaded` (fires with `ServiceContainer`) |
 | Build | `npx grunt dist` |
@@ -99,7 +99,7 @@ Registered in `includes/Core/Plugin.php` via `register_services()` and `init_mes
 
 ---
 
-## Custom Tables (21)
+## Custom Tables (23)
 
 All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`.
 
@@ -126,6 +126,8 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | `mvs_messages` | Individual DM messages |
 | `mvs_message_reactions` | Reactions on DM messages |
 | `mvs_transactions` | Credit/monetization transactions |
+| `mvs_bp_activity_media` | BuddyPress activity-to-media mapping |
+| `mvs_device_tokens` | Registered push device tokens (`/me/devices`, Migrator v30) |
 
 ---
 

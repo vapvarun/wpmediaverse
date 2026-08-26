@@ -70,6 +70,8 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_notification_data` | filter | Free | 1.1 |
 | `mvs_notification_types` | filter | Free | 1.0 |
 | `mvs_notification_message` | filter | Free | 1.0 |
+| `mvs_push_send` | action | Free | 2.4.0 |
+| `mvs_push_should_send` | filter | Free | 2.4.0 |
 | `mvs_conversation_created` | action | Free | 1.0 |
 | `mvs_message_sent` | action | Free | 1.0 |
 | `mvs_message_request_accepted` | action | Free | 1.0 |
@@ -138,9 +140,7 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_story_expired` | action | Pro | 1.0 (moved from Free in 1.9.0) |
 | `mvs_privacy_can_view` | filter | Free | 1.0 |
 | `mvs_buddynext_active` | filter | Free | 1.0 |
-| `mvs_pro_transcode_complete` | action | Pro | 1.0 |
 | `mvs_pro_captions_generated` | action | Pro | 1.0 |
-| `mvs_pro_transcode_presets` | filter | Pro | 1.1 |
 | `mvs_pro_poster_frame` | filter | Pro | 1.1 |
 | `mvs_pro_analytics_recorded` | action | Pro | 1.1 |
 | `mvs_pro_analytics_event_data` | filter | Pro | 1.1 |
@@ -206,7 +206,6 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_optimize_jpeg_quality` | filter | Free | 1.3.0 |
 | `mvs_webp_quality` | filter | Free | 1.3.0 |
 | `mvs_avif_quality` | filter | Free | 1.3.0 |
-| `mvs_ffmpeg_binary` | filter | Free | 1.3.0 |
 | `mvs_default_video_poster_url` | filter | Free | 1.3.0 |
 | `mvs_media_privacy_changed` | action | Free | 1.3.0 |
 | `mvs_serve_public_cloud_direct` | filter | Free | 1.4.0 |
@@ -1073,6 +1072,67 @@ add_filter( 'mvs_should_send_notification', function( bool $should_send, int $us
 
 ---
 
+### `mvs_push_send` **(New in 2.4.0)**
+
+Fires when a new in-app notification is created, so a push-delivery integration can send it to the member's registered devices. Devices are registered via `POST /mvs/v1/me/devices` (see [REST API Reference](rest-api.md)) and backed by `Social/PushService.php`. Whether this action fires at all is gated by `mvs_push_should_send`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$user_id` | int | Recipient user ID |
+| `$tokens` | array | The recipient's registered device push tokens |
+| `$payload` | array | Notification payload to deliver (title, body, data) |
+
+```php
+/**
+ * Deliver an MVS push notification through a third-party gateway.
+ *
+ * @since 2.4.0
+ *
+ * @param int   $user_id Recipient user ID.
+ * @param array $tokens  Registered device push tokens.
+ * @param array $payload Notification payload.
+ */
+add_action( 'mvs_push_send', function( int $user_id, array $tokens, array $payload ) {
+    my_push_gateway_send( $tokens, $payload );
+}, 10, 3 );
+```
+
+---
+
+### `mvs_push_should_send` **(New in 2.4.0)**
+
+Filters whether a push notification should be delivered for a new in-app notification. Return `false` to suppress the `mvs_push_send` dispatch.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$should_send` | bool | Whether to dispatch the push (default `true`) |
+| `$user_id` | int | Recipient user ID |
+| `$payload` | array | Notification payload |
+
+**Returns:** `bool`
+
+```php
+/**
+ * Suppress pushes for a member who has muted a conversation.
+ *
+ * @since 2.4.0
+ *
+ * @param bool  $should_send Whether to dispatch the push.
+ * @param int   $user_id     Recipient user ID.
+ * @param array $payload     Notification payload.
+ * @return bool
+ */
+add_filter( 'mvs_push_should_send', function( bool $should_send, int $user_id, array $payload ) {
+    return $should_send;
+}, 10, 3 );
+```
+
+---
+
 ### Additional Notification Filters
 
 | Filter | Description | Parameters | Since |
@@ -1613,29 +1673,9 @@ add_filter( 'mvs_avif_quality', function( int $quality ) : int {
 
 ### Video Poster (1.3.0)
 
-#### `mvs_ffmpeg_binary`
-
-Filters the ffmpeg binary path used for video poster extraction. The plugin auto-detects common paths (`/opt/homebrew/bin/ffmpeg`, `/usr/local/bin/ffmpeg`, `/usr/bin/ffmpeg`, `/opt/ffmpeg/bin/ffmpeg`). Use this filter on hosts with a non-standard install location.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$binary` | string | Resolved path or `ffmpeg` if auto-detect failed |
-
-**Returns:** `string`
-
-```php
-add_filter( 'mvs_ffmpeg_binary', function( string $binary ) : string {
-    return '/opt/custom/bin/ffmpeg';
-} );
-```
-
----
-
 #### `mvs_default_video_poster_url`
 
-Filters the fallback poster URL shown when ffmpeg could not generate a frame (e.g. ffmpeg not installed, corrupt video). The URL is used at render time only and is never stored in media meta.
+Filters the fallback poster URL shown for a cover-less video (no embedded cover atom to extract via getID3). The URL is used at render time only and is never stored in media meta.
 
 **Parameters:**
 
@@ -2256,67 +2296,10 @@ add_filter( 'mvs_suppress_bp_comment_notification', '__return_false' );
 
 ## 15. Video Processing (Pro)
 
-### `mvs_pro_transcode_complete` **(Pro)**
-
-Fires when all transcode presets for a video have finished processing.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$media_id` | int | Media post ID |
-| `$results` | array | Per-preset result map |
-| `$final_status` | string | Overall status: `complete`, `partial`, `failed` |
-
-```php
-/**
- * Notify the uploader when video transcoding is done.
- *
- * @since 1.0
- *
- * @param int    $media_id     Media post ID.
- * @param array  $results      Per-preset results.
- * @param string $final_status Overall transcode status.
- */
-add_action( 'mvs_pro_transcode_complete', function( int $media_id, array $results, string $final_status ) {
-    if ( 'complete' === $final_status ) {
-        $author_id = (int) get_post_field( 'post_author', $media_id );
-        my_send_transcode_ready_email( $author_id, $media_id );
-    }
-}, 10, 3 );
-```
-
----
-
-### `mvs_pro_transcode_presets` **(Pro)** **(New in 1.1)**
-
-Filters the transcode quality presets before encoding starts. Use this to add, remove, or modify quality levels.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$presets` | array | Array of preset definitions (slug, bitrate, resolution) |
-| `$media_id` | int | Media post ID |
-
-**Returns:** `array`
-
-```php
-/**
- * Remove the 4K preset to save storage costs.
- *
- * @since 1.1
- *
- * @param array $presets  Transcode preset definitions.
- * @param int   $media_id Media post ID.
- * @return array
- */
-add_filter( 'mvs_pro_transcode_presets', function( array $presets, int $media_id ) {
-    return array_filter( $presets, fn( $p ) => '2160p' !== $p['slug'] );
-}, 10, 2 );
-```
-
----
+> Video transcoding was removed in 2.4.0 (MediaVerse embeds media, it does not
+> process it), so the `mvs_pro_transcode_*` hooks no longer exist. The player
+> uses the original file; posters come from the embedded cover atom or a
+> default SVG. The hooks below cover the video features that remain.
 
 ### Additional Video Hooks
 
@@ -2973,7 +2956,7 @@ Hooks marked **(Pro)** are fired by WPMediaVerse Pro and never run when only Fre
 | `mvs_filename_strategy_upgrade_default` | filter | `self::DEFAULT_FRESH` | Filter the default filename strategy applied when a site has not explicitly chosen one. Defaults to 'hashed' since 1.6.0. |
 | `mvs_hold_uploads_for_moderation` | filter | `false, $user_id` | Filter: hold ALL new uploads for manual moderation before they go live. Default false - members publish immediately (the engagement-first default for this community platform; the only standing limit on a member is their Pro storage/upload quota). |
 | `mvs_media_files_orphaned` | action | `$media_id, $orphaned_files` | Fires with every relative file path owned by a media item that is about to be torn down, so a cleanup listener can delete the bytes from disk and cloud asynchronously. |
-| `mvs_media_replaced` | action | `$media_id, $file_data, get_current_user_id(), $media_type` | Fires after a file replacement has been fully processed. Use this hook (not mvs_media_uploaded) for replace-specific reactions such as re-queuing transcoding or re-generating captions. |
+| `mvs_media_replaced` | action | `$media_id, $file_data, get_current_user_id(), $media_type` | Fires after a file replacement has been fully processed. Use this hook (not mvs_media_uploaded) for replace-specific reactions such as re-generating captions or a poster. |
 | `mvs_watermark_stamp_file` | filter | `false, $path, $mime, $user_id` | Stamp the admin watermark into bytes a member is publishing right now. THE RULE, stated once: stamp what the member publishes now; never re-process what is already in the library. |
 
 ### Albums and collections

@@ -90,7 +90,6 @@
         { "slug": "layout-modes", "title": "Layout Modes" },
         { "slug": "connected-accounts", "title": "Connected Accounts (Flickr Import)" },
         { "slug": "cloud-storage", "title": "Cloud Storage (S3, BunnyCDN & R2)" },
-        { "slug": "video-transcoding", "title": "Video Transcoding" },
         { "slug": "video-chapters", "title": "Video Chapters & Resume" },
         { "slug": "auto-captions", "title": "Auto Captions & Transcription" },
         { "slug": "watermarking", "title": "Watermarking" },

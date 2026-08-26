@@ -15,7 +15,7 @@
 - 6 privacy levels: public, members, friends, private, group, custom (access rules).
 - Storage drivers: local. Cloud drivers (BunnyCDN, AWS S3, Cloudflare R2, DigitalOcean Spaces) shipped via Pro.
 - Image variant pipeline: large/medium/thumb generated at upload, with WebP + AVIF siblings.
-- Video poster generation: getID3 cover-atom → ffmpeg first-frame → bundled default SVG.
+- Video poster generation: getID3 cover-atom → bundled default poster SVG.
 - Audio cover/waveform: ID3 art extraction → render-time SHA-1-seeded SVG waveform.
 - Signed-URL `/serve` endpoint with HMAC + expiry + per-request privacy re-check.
 - Direct-CDN bypass for public media on cloud drivers (filter `mvs_public_cloud_thumbnail_url`).
@@ -35,7 +35,7 @@
 - Competitions: 1v1 photo battles, weekly photo challenges, single-elimination tournaments, boosts (gamification credits), daily upload streaks.
 - Cloud drivers: BunnyCDN, AWS S3 (SigV4), Cloudflare R2, DigitalOcean Spaces. Test Connection per driver. Constant-backed credentials.
 - Storage Management screen: per-service file/size counts, one-click Migrate all (chunked AJAX + progress bar), batched Move/Delete-next-N.
-- Video: chapters, resume playback, transcoding (ffmpeg-backed), auto-captions (Whisper provider).
+- Video: chapters, resume playback, auto-captions (Whisper provider).
 - Video heatmaps + play analytics.
 - Watermarking: text (TTF + GD), image/logo, tile, position presets, dynamic tokens (`{username}`, `{site}`). Imagick-safe via GD-forcing filter.
 - Quota management: per-user upload + storage limits. Adapters for MemberPress, PaidMembershipsPro, WooCommerce Memberships.
@@ -75,7 +75,6 @@ These don't ship as features but are tracked so the next person editing the area
 
 - `Services/UploadService.php` — extract `ValidatorService` + `ProgressTrackerService` (already PARTIAL in Known Debt).
 - `Admin/Settings/SettingsRegistrar.php` — split remaining settings groups using the `AiSettingsRegistrar` template.
-- Pro `Video/TranscodeService.php` — extract `TranscodeQueue`.
 - Pro `Analytics/AnalyticsService.php` — extract `AnalyticsIngestor`.
 - Pro `Tournaments/TournamentService.php` — extract `TournamentRepository`.
 - Pro `Challenges/ChallengeService.php` — extract scoring vs state-machine.
