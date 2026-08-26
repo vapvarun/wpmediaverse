@@ -124,14 +124,23 @@
     --mvs-space-6: 3rem;     /* 48px */
     --mvs-space-7: 4rem;     /* 64px */
 
-    /* Z-index layers — never use bare integers in plugin CSS. */
+    /* Z-index layers — never use bare integers in plugin CSS.
+       The overlay-and-above band sits in the 9990s: theme sticky headers run
+       high (Reign #masthead is 999/1000, BuddyBoss ~991), and at the old
+       200–500 an MVS dropdown/modal/toast painted BEHIND the pinned header
+       (Basecamp 10240335491). The band clears common theme headers while
+       staying under the WP admin bar (99999), which must remain on top.
+       Ceiling note: a theme with a fixed header at 99999 (e.g. Divi) would
+       still win; that is a deliberate stop short of the admin bar rather than
+       an oversight. Page chrome that legitimately sits below a theme header
+       (base/sticky/fab) stays low. */
     --mvs-z-base:    1;
     --mvs-z-sticky:  50;
     --mvs-z-fab:     100;
-    --mvs-z-overlay: 200;
-    --mvs-z-modal:   300;
-    --mvs-z-toast:   400;
-    --mvs-z-tooltip: 500;
+    --mvs-z-overlay: 9990;
+    --mvs-z-modal:   9991;
+    --mvs-z-toast:   9992;
+    --mvs-z-tooltip: 9993;
 
     /* Motion */
     --mvs-duration-fast: 120ms;
