@@ -138,7 +138,7 @@ defined( 'ABSPATH' ) || exit;
 						<span data-wp-bind--hidden="!context.savingProfile" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>
 					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
-						data-wp-on--click="mvs/dashboard::actions.toggleProfileEdit">
+						data-wp-on--click="actions.cancelProfileEdit">
 						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 					</button>
 				</div>
