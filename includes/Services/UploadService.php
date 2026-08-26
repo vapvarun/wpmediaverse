@@ -329,8 +329,15 @@ class UploadService {
 		} else {
 			$privacy = $default_privacy;
 		}
-		// Reject unknown privacy values so a typo or hostile input cannot slip through.
-		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom', 'dm' ), true ) ) {
+		// Reject unknown privacy values so a typo or hostile input cannot slip
+		// through. 'space' is in the list precisely so it is NOT dropped to the
+		// site default (which is often public): media intended for a private
+		// Space must never fall through to public. When the item is bound to a
+		// Space drive (drive_type=space) PrivacyService::check_space() scopes it
+		// to that Space's members; when it is not (no drive bridge), check_space()
+		// finds drive_type=user and the item reads as private — inaccessible but
+		// never exposed. (Basecamp 10220491230.)
+		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom', 'dm', 'space' ), true ) ) {
 			$privacy = $default_privacy;
 		}
 
