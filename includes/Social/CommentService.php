@@ -190,6 +190,20 @@ class CommentService {
 			return new WP_Error( 'mvs_invalid_user', __( 'Invalid user.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
+		// Comment-permission gate at the single write, not on one route: being
+		// able to VIEW is enough to comment on ordinary media, but a document
+		// reached through a view-only share must not be commentable. Pro narrows
+		// the filter for documents; all other media keeps the default true. Lives
+		// here so every client — web, lightbox, BP composer, REST, the planned
+		// mobile app — is covered rather than just create_item (#10240475368).
+		if ( ! (bool) apply_filters( 'mvs_can_comment', true, $media_id, $user_id ) ) {
+			return new WP_Error(
+				'mvs_comment_forbidden',
+				__( 'You do not have permission to comment on this item.', 'wpmediaverse' ),
+				array( 'status' => 403 )
+			);
+		}
+
 		// Validate parent comment belongs to same media.
 		if ( $parent_id ) {
 			$parent = get_comment( $parent_id );

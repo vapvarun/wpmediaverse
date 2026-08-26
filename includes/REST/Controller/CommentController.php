@@ -225,16 +225,8 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		// Being able to VIEW is enough to comment on ordinary media — for a photo
-		// or video there is no separate "comment" permission. Documents (Pro) do
-		// have a view/comment/edit ladder, and a view-only grantee can view the
-		// file (Pro widens mvs_privacy_can_view for documents) yet must not be able
-		// to write. Pro narrows this filter for documents; all other media keeps
-		// the default true, so behaviour is unchanged everywhere else.
-		$can_comment = (bool) apply_filters( 'mvs_can_comment', true, (int) $media_id, get_current_user_id() );
-		if ( ! $can_comment ) {
-			return new WP_Error( 'mvs_comment_forbidden', __( 'You do not have permission to comment on this item.', 'wpmediaverse' ), array( 'status' => 403 ) );
-		}
+		// The comment-permission gate now lives in CommentService::add() (the
+		// single write path) so every client is covered, not just this route.
 
 		$content = sanitize_textarea_field( $request->get_param( 'content' ) );
 		if ( empty( $content ) ) {
