@@ -5,7 +5,7 @@
  * - Toast notifications
  * - Confirm dialogs
  * - Tag autocomplete
- * - Upload modal (photo, gallery, album, video)
+ * - Upload modal (photo, gallery, video, audio)
  * - Media lightbox (view, react, comment without page navigation)
  *
  * Other stores import via: store( 'mvs/shared-ui' ).actions.showToast( msg, type )
@@ -116,7 +116,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		// --- Upload Modal (flat) ---
 		uploadModalVisible: false,
-		uploadModalMode: 'photo', // photo | gallery | album | video
+		uploadModalMode: 'photo', // photo | gallery | video | audio (auto-detected from files)
 		uploadModalFiles: [],
 		uploadModalPreviews: [],
 		uploadModalUploading: false,
@@ -131,8 +131,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalDescription: '',
 		uploadModalTags: '',
 		uploadModalPrivacy: 'public',
-		uploadModalAlbumTitle: '',
-		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
 		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
 		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
@@ -147,10 +145,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// "Create new album" chosen in the "Add to album" select (value -1).
 			return state.uploadModalAlbum === -1;
 		},
-		get hideAlbumCoverHint() {
-			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
-		},
-
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
 			// while title empty".
@@ -161,7 +155,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const titles = {
 				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
 				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
-				album: ( state.i18n?.createAlbum || 'Create Album' ),
 				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
 				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
 			};
@@ -183,9 +176,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get isGalleryMode() {
 			return state.uploadModalMode === 'gallery';
-		},
-		get isAlbumMode() {
-			return state.uploadModalMode === 'album';
 		},
 		get isVideoMode() {
 			return state.uploadModalMode === 'video';
@@ -560,8 +550,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
 			state.uploadModalPrivacy = ctx.defaultPrivacy || 'public';
-			state.uploadModalAlbumTitle = '';
-			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
 			state.uploadModalAlbum = 0;
 			state.uploadModalNewAlbumName = '';
@@ -577,8 +565,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
 			state.uploadModalPrivacy = 'public';
-			state.uploadModalAlbumTitle = '';
-			state.uploadModalAlbumDescription = '';
 			state.uploadModalUploading = false;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
@@ -745,12 +731,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalSaving = false;
 			}
 		},
-		setUploadMode() {
-			const ctx = getContext();
-			state.uploadModalMode = ctx.uploadMode || 'photo';
-			state.uploadModalFiles = [];
-			state.uploadModalPreviews = [];
-		},
 		handleUploadClick() {
 			const input = document.getElementById( 'mvs-modal-file-input' );
 			if ( input ) {
@@ -892,7 +872,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		filterFilesByMode( files ) {
-			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
+			const prefixes = { photo: 'image/', gallery: 'image/', video: 'video/', audio: 'audio/' };
 			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
 			const valid = files.filter( ( f ) => f.type.startsWith( prefix ) );
 			const rejected = files.length - valid.length;
@@ -937,19 +917,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.userAlbums = [];
 			}
 		},
-		updateAlbumTitle( event ) {
-			state.uploadModalAlbumTitle = event.target.value;
-		},
-		updateAlbumDescription( event ) {
-			state.uploadModalAlbumDescription = event.target.value;
-		},
 		async submitUpload() {
 			const ctx = getContext();
 			const restUrl = ctx.restUrl;
 			const nonce = ctx.nonce;
 			const files = state.uploadModalFiles;
 
-			if ( ! files.length && state.uploadModalMode !== 'album' ) {
+			if ( ! files.length ) {
 				actions.showToast( ( state.i18n?.selectFiles || 'Please select files to upload.' ), 'error' );
 				return;
 			}
@@ -960,36 +934,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalFailed = 0;
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
-
-			// For album mode, create album first. Delegates to the single
-			// shared validate-name + POST path (window.mvsRest.createAlbum) so
-			// this surface and the BuddyPress albums tab share one create +
-			// message implementation (Basecamp 10069383195).
-			if ( state.uploadModalMode === 'album' ) {
-				const albumResult = await window.mvsRest.createAlbum(
-					state.uploadModalAlbumTitle,
-					{
-						description: state.uploadModalAlbumDescription,
-						privacy: state.uploadModalPrivacy,
-					}
-				);
-				if ( ! albumResult.ok ) {
-					actions.showToast( albumResult.message, 'error' );
-					state.uploadModalUploading = false;
-					return;
-				}
-				const albumData = albumResult.data;
-				state._pendingAlbumId = albumData.id;
-				actions.showToast( ( state.i18n?.albumCreated || 'Album "%s" created!' ).replace( '%s', albumData.title ) );
-				if ( ! files.length ) {
-					state.uploadModalUploading = false;
-					setTimeout( () => {
-						actions.closeUploadModal();
-						window.location.reload();
-					}, 800 );
-					return;
-				}
-			}
 
 			// "Create new album" chosen in the Add-to-album select: create it up
 			// front via the shared validate-name + POST helper so an invalid name
@@ -1017,17 +961,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				mediaGroup = 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 );
 			}
 
-			// Album mode doesn't carry per-file title/description/tags — the album
-			// owns those. Privacy still applies per-item so it's always sent.
-			const isAlbum = state.uploadModalMode === 'album';
-
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
 				const fd = new FormData();
 				fd.append( 'file', files[ i ] );
-				if ( ! isAlbum && state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
-				if ( ! isAlbum && state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
-				if ( ! isAlbum && state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
+				if ( state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
+				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
+				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
 				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );
 				if ( mediaGroup ) {
 					fd.append( 'media_group', mediaGroup );
@@ -1048,14 +988,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} catch { /* skip thumbnail */ }
 				}
 
-				// Album bulk-upload batch (≥2 files in one user action): tag the
-				// upload so flag_activity_upload sets the activity_upload skip
-				// flag. After the album link call below, the server emits ONE
-				// "uploaded N photos to album X" gallery activity instead of
-				// N "uploaded a new photo" per-file activities. Single-file
-				// album uploads keep the per-photo activity (no bundling needed).
-				const uploadUrl = restUrl + 'media' +
-					( isAlbum && files.length > 1 ? '?album_upload=1' : '' );
+				const uploadUrl = restUrl + 'media';
 
 				try {
 					const res = await window.mvsRest.restFetch( uploadUrl, {
