@@ -2167,8 +2167,10 @@ body.dark-mode .mvs-skeleton::after {
     top: var(--mvs-space-2);
     inset-inline-start: var(--mvs-space-2);
     z-index: 3;
-    width: 28px;
-    height: 28px;
+    /* 40px minimum tap target (Wbcom responsive contract). The check glyph
+       stays 18px; the box carries the hit area. */
+    width: 40px;
+    height: 40px;
     padding: 0;
     display: inline-flex;
     align-items: center;
