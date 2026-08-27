@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-19T05:53:28Z",
+    "generated_at": "2026-08-27T13:41:45Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,8 +17,8 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
-        "free_files_scanned": 198,
-        "pro_files_scanned": 214
+        "free_files_scanned": 200,
+        "pro_files_scanned": 208
     },
     "cross_plugin_duplicates": [
         {
@@ -167,7 +167,7 @@
                 {
                     "plugin": "pro",
                     "file": "includes/Quota/QuotaService.php",
-                    "lines": "720-720",
+                    "lines": "809-809",
                     "method": "get_credit_log"
                 }
             ]
@@ -212,7 +212,7 @@
         },
         {
             "hash": "c12d9ff272db4917f9857c8bf95588b894b04bf6",
-            "instances": 7,
+            "instances": 6,
             "token_count": 34,
             "sites": [
                 {
@@ -232,12 +232,6 @@
                     "file": "includes/REST/Controller/TagController.php",
                     "lines": "484-484",
                     "method": "admin_check"
-                },
-                {
-                    "plugin": "pro",
-                    "file": "includes/Video/TranscodeController.php",
-                    "lines": "401-401",
-                    "method": "TranscodeController::admin_check"
                 },
                 {
                     "plugin": "pro",
@@ -352,7 +346,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Services/AlbumService.php",
-                    "lines": "734-734",
+                    "lines": "769-769",
                     "method": "albums_for_media"
                 },
                 {
@@ -396,7 +390,7 @@
         },
         {
             "hash": "bd44162e59b66412fb4b95b9467229baefb15e4f",
-            "instances": 3,
+            "instances": 2,
             "token_count": 32,
             "sites": [
                 {
@@ -404,12 +398,6 @@
                     "file": "includes/Integrations/BPVerifiedMember/BadgeIntegration.php",
                     "lines": "51-51",
                     "method": "BadgeIntegration::init"
-                },
-                {
-                    "plugin": "free",
-                    "file": "includes/Services/ProfileService.php",
-                    "lines": "69-69",
-                    "method": "ProfileService::init"
                 },
                 {
                     "plugin": "pro",
@@ -688,7 +676,7 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/CommentController.php",
-                    "lines": "401-401",
+                    "lines": "404-404",
                     "method": "CommentController::create_item_permissions_check"
                 },
                 {
@@ -947,7 +935,7 @@
                 },
                 {
                     "file": "includes/Documents/DocumentSettings.php",
-                    "lines": "661-661",
+                    "lines": "673-673",
                     "method": "DocumentSettings::privacy_labels"
                 }
             ]
@@ -1052,12 +1040,12 @@
             "sites": [
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1079-1079",
+                    "lines": "1080-1080",
                     "method": "migrate_to_23"
                 },
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1111-1111",
+                    "lines": "1112-1112",
                     "method": "migrate_to_24"
                 }
             ]
@@ -1121,7 +1109,7 @@
                 },
                 {
                     "file": "includes/Messaging/MessagingService.php",
-                    "lines": "2507-2507",
+                    "lines": "2547-2547",
                     "method": "get_conversation_unread_count"
                 }
             ]

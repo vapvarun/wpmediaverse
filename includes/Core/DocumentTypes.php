@@ -440,6 +440,62 @@ final class DocumentTypes {
 	}
 
 	/**
+	 * The Lucide icon name for a document type, so a row is scannable by shape.
+	 *
+	 * Lives HERE, beside `label()`, because every document surface needs the
+	 * same answer and each one previously invented its own: `templates/
+	 * documents.php` carried the only real map, Pro's profile tab hardcoded an
+	 * empty span, and the grid and activity paths fell through to a PHOTO
+	 * glyph — a picture icon on a spreadsheet. One map means adding a type
+	 * updates every surface at once instead of three of five.
+	 *
+	 * Takes the TYPE, not the MIME, so a caller that already resolved the type
+	 * does not resolve it twice; pair it with `group_for_mime()` when starting
+	 * from a stored `file_type`. Accepts null and an unknown name and answers
+	 * `file` — a generic DOCUMENT icon. That fallback is the point: an
+	 * unrecognised document is still a document, and the failure mode this
+	 * replaces was showing it as an image.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string|null $type Named document type, or null when unresolved.
+	 * @return string Lucide icon name. Never empty.
+	 */
+	public static function icon( ?string $type ): string {
+		$icons = array(
+			'pdf'              => 'file-text',
+			'word'             => 'file-type',
+			'excel'            => 'file-spreadsheet',
+			'powerpoint'       => 'presentation',
+			'odf_text'         => 'file-type',
+			'odf_sheet'        => 'file-spreadsheet',
+			'odf_presentation' => 'presentation',
+			'text'             => 'file',
+			'markdown'         => 'file-code',
+			'csv'              => 'file-spreadsheet',
+			'rtf'              => 'file',
+		);
+
+		return $icons[ (string) $type ] ?? 'file';
+	}
+
+	/**
+	 * The Lucide icon for a stored MIME, resolving the type on the way.
+	 *
+	 * The convenience form for the common case: a surface holding a row's
+	 * `file_type` column and wanting an icon. Same guarantee as `icon()` — a
+	 * MIME that resolves to nothing still answers `file`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $mime Stored MIME type.
+	 * @return string Lucide icon name. Never empty.
+	 */
+	public static function icon_for_mime( string $mime ): string {
+		return self::icon( self::group_for_mime( $mime ) );
+	}
+
+	/**
 	 * The MIME this library stores for a named type.
 	 *
 	 * `group_for_mime()` is the only way anything downstream learns a document's

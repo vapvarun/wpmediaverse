@@ -54,7 +54,13 @@ class MediaDisplayHelper {
 	 */
 	public static function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
 		$media_type = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
-		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
+		// Documents are admitted here, and that is the fix for the blank card:
+		// this guard used to answer '' for anything that was not image/video/
+		// audio, so a document upload produced an activity that said "uploaded
+		// a new file" over an EMPTY body — announcing a file while giving no
+		// way to reach it. `legacy_document` and untyped rows still return ''
+		// on purpose: those are data defects, not content (see MediaTypes).
+		if ( ! in_array( $media_type, array( 'image', 'video', 'audio', 'document' ), true ) ) {
 			return '';
 		}
 
@@ -70,6 +76,55 @@ class MediaDisplayHelper {
 		$title     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		$href      = $permalink ?: $file_url;
 		$data_mid  = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
+
+		// A document has no picture, so the canonical thumbnail helper has
+		// nothing to return and the generic placeholder would draw a PHOTO
+		// glyph on a spreadsheet. Same shape as the audio card below — icon,
+		// name, meta — because that is already this file's answer to "renders
+		// as a card, not an image".
+		//
+		// THE LINK IS THE PERMALINK ONLY, never $file_url. Every other branch
+		// falls back to a broadcast-signed file URL, which is right for media
+		// and wrong here: that URL would be baked into bp_activity.content for
+		// a year and points straight AT the file, which is precisely what the
+		// gated /serve endpoint exists to stop. With no permalink the card
+		// renders unlinked rather than handing out a bypass.
+		if ( 'document' === $media_type ) {
+			$doc_mime = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
+			$doc_icon = \WPMediaVerse\Core\DocumentTypes::icon_for_mime( $doc_mime );
+			$doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $doc_mime );
+			$doc_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
+
+			$doc_meta = $doc_group ? \WPMediaVerse\Core\DocumentTypes::label( $doc_group ) : '';
+			if ( $doc_size > 0 ) {
+				$doc_meta = trim( $doc_meta . ( $doc_meta ? ' &middot; ' : '' ) . size_format( $doc_size ) );
+			}
+
+			// The glyph rides on a CLASS, not on `data-lucide`, and that is not a
+			// style preference — it is what makes the card work.
+			//
+			// Two things forced it. kses strips `data-lucide` on save (BP's
+			// allowed-tags list carries `data-mvs-media-id` and not this), so
+			// the element came back as a bare `<i></i>`. And activity content
+			// is BAKED into bp_activity.content and travels: the sitewide feed,
+			// group feeds, a single-activity permalink, another theme's
+			// template. Lucide is enqueued on none of those — measured
+			// `window.lucide === undefined` on the member activity stream — so
+			// an icon needing a JS hydrator would be an empty box everywhere
+			// the card actually goes. A CSS mask needs nothing but the
+			// stylesheet, and `class` is already allowed through kses.
+			$doc_inner = '<span class="mvs-activity-doc-icon" aria-hidden="true"><span class="mvs-doc-glyph mvs-doc-glyph-' . esc_attr( '-' . $doc_icon ) . '"></span></span>'
+				. '<span class="mvs-activity-doc-info">'
+				. '<span class="mvs-activity-doc-title">' . esc_html( $title ) . '</span>'
+				. ( $doc_meta ? '<span class="mvs-activity-doc-meta">' . $doc_meta . '</span>' : '' )
+				. '</span>';
+
+			$doc_body = $permalink
+				? '<a href="' . esc_url( (string) $permalink ) . '">' . $doc_inner . '</a>'
+				: $doc_inner;
+
+			return '<div class="mvs-activity-media mvs-activity-media--document"' . $data_mid . '>' . $doc_body . '</div>';
+		}
 
 		// Audio gets a compact card that isn't suitable for the canonical
 		// thumbnail helper (which targets square-ish grid cells). Keep it local.

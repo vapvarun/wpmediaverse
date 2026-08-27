@@ -370,6 +370,28 @@ class Plugin {
 		add_action( 'wp_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 
+		// The two stylesheets every BuddyPress surface asks for, registered at
+		// the SAME earliest priority and for the same reason.
+		//
+		// They used to be registered inside `enqueue_frontend_assets()` below,
+		// which is `wp_enqueue_scripts@10` — and BuddyPress fires
+		// `bp_enqueue_scripts` from its OWN `wp_enqueue_scripts@10`, added
+		// first, so it ran first. Measured on this hook: `bp_enqueue_scripts`
+		// at position 9, `enqueue_frontend_assets` at position 10. Every BP
+		// integration enqueuing at `bp_enqueue_scripts` therefore named a
+		// handle that did not exist yet, and `wp_enqueue_style()` on an
+		// unregistered handle fails SILENTLY — no notice, no style.
+		//
+		// The visible result was an activity stream with zero MediaVerse CSS:
+		// image, video and audio activity cards all rendered unstyled, which
+		// is why a document card there read as "blank" rather than as
+		// "unstyled". The profile tabs escaped it only by accident — they
+		// enqueue during template render, long after this race is over.
+		//
+		// Registration only. What gets ENQUEUED is unchanged and still decided
+		// per surface; re-registering the same handle later is a no-op.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'register_bp_shared_styles' ), 1 );
+
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
 
 		// Auto-pair the mvs-confirm stylesheet whenever its script is enqueued.
@@ -2464,6 +2486,41 @@ class Plugin {
 	public static function auto_enqueue_confirm_style(): void {
 		if ( wp_script_is( 'mvs-confirm', 'enqueued' ) && wp_style_is( 'mvs-confirm', 'registered' ) && ! wp_style_is( 'mvs-confirm', 'enqueued' ) ) {
 			wp_enqueue_style( 'mvs-confirm' );
+		}
+	}
+
+	/**
+	 * Register the frontend + BP-integration stylesheets before BuddyPress runs.
+	 *
+	 * Hooked at `wp_enqueue_scripts@1` so both handles exist by the time
+	 * BuddyPress fires `bp_enqueue_scripts` from its own priority-10 callback.
+	 * See the comment at the `add_action` for the race this closes.
+	 *
+	 * Idempotent: `wp_register_style()` on an existing handle is a no-op, so
+	 * the registrations still sitting in `enqueue_frontend_assets()` remain
+	 * harmless and this cannot double-print anything.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return void
+	 */
+	public static function register_bp_shared_styles(): void {
+		if ( ! wp_style_is( 'mvs-frontend', 'registered' ) ) {
+			wp_register_style(
+				'mvs-frontend',
+				MVS_PLUGIN_URL . 'assets/css/frontend.css',
+				array(),
+				MVS_VERSION
+			);
+		}
+
+		if ( ! wp_style_is( 'mvs-bp-integration', 'registered' ) ) {
+			wp_register_style(
+				'mvs-bp-integration',
+				MVS_PLUGIN_URL . 'assets/css/bp-integration.css',
+				array( 'mvs-frontend' ),
+				MVS_VERSION
+			);
 		}
 	}
 

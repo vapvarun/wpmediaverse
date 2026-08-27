@@ -469,6 +469,46 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			return $out;
 		}
 
+		if ( 'document' === $media_type ) {
+			// A document reaches the grid when a member SAVES one into a
+			// collection — the media library itself never lists documents
+			// (MediaTypes::MEDIA_LIBRARY). Before this branch it fell through
+			// to the generic placeholder below, whose glyph is `icon_image()`:
+			// a PICTURE icon, on a dark tile, for a spreadsheet.
+			//
+			// "Absent beats broken" settled the library case and does NOT apply
+			// here. That rule is about untyped rows nobody chose to publish; a
+			// document in a collection is there because its owner deliberately
+			// put it there, so hiding it would lose something they meant to
+			// keep. It needs a tile that says what it is instead.
+			//
+			// Same shape as the audio card above — glyph, title, meta — which is
+			// already this method's answer to "has no picture of its own".
+			$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$title = (string) $repo->get( $media_id, 'title' );
+			$mime  = (string) $repo->get( $media_id, 'file_type' );
+			$bytes = (int) $repo->get( $media_id, 'file_size' );
+			$group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mime );
+			$glyph = \WPMediaVerse\Core\DocumentTypes::icon( $group );
+
+			$meta = $group ? \WPMediaVerse\Core\DocumentTypes::label( $group ) : '';
+			if ( $bytes > 0 ) {
+				$meta = trim( $meta . ( '' !== $meta ? ' &middot; ' : '' ) . size_format( $bytes ) );
+			}
+
+			$out  = '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--document mvs-doc-card">';
+			$out .= '<span class="mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--' . esc_attr( $glyph ) . '" aria-hidden="true"></span>';
+			if ( '' !== $title ) {
+				$out .= '<span class="mvs-doc-card__title">' . esc_html( $title ) . '</span>';
+			}
+			if ( '' !== $meta ) {
+				$out .= '<span class="mvs-doc-card__meta">' . $meta . '</span>';
+			}
+			$out .= '</div>';
+
+			return $out;
+		}
+
 		return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--generic">' . $this->icon_image() . '</div>';
 	}
 

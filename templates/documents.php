@@ -33,23 +33,6 @@ $mvs_doc_pages  = isset( $mvs_doc_query['pages'] ) ? (int) $mvs_doc_query['pages
 $mvs_doc_helper = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
 $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-/**
- * Lucide icon per document group, so a row is scannable by shape.
- */
-$mvs_doc_icons = array(
-	'pdf'              => 'file-text',
-	'word'             => 'file-type',
-	'excel'            => 'file-spreadsheet',
-	'powerpoint'       => 'presentation',
-	'odf_text'         => 'file-type',
-	'odf_sheet'        => 'file-spreadsheet',
-	'odf_presentation' => 'presentation',
-	'text'             => 'file',
-	'markdown'         => 'file-code',
-	'csv'              => 'file-spreadsheet',
-	'rtf'              => 'file',
-);
-
 ?>
 <div class="mvs-documents mvs-page">
 	<?php
@@ -204,12 +187,10 @@ $mvs_doc_icons = array(
 				<?php
 				$mvs_doc_id     = (int) $mvs_doc['media_id'];
 				$mvs_doc_mime   = (string) $mvs_doc['file_type'];
-				$mvs_doc_group  = class_exists( '\WPMediaVerse\Core\DocumentTypes' )
-					? \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime )
-					: null;
-				$mvs_doc_icon   = $mvs_doc_group && isset( $mvs_doc_icons[ $mvs_doc_group ] )
-					? $mvs_doc_icons[ $mvs_doc_group ]
-					: 'file';
+				$mvs_doc_group  = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
+				// The icon map moved to DocumentTypes::icon() so the profile tab,
+				// the grid tile and the activity card answer this the same way.
+				$mvs_doc_icon   = \WPMediaVerse\Core\DocumentTypes::icon( $mvs_doc_group );
 				$mvs_doc_link   = $mvs_doc_repo->get_permalink( $mvs_doc_id );
 				$mvs_doc_author = get_userdata( (int) $mvs_doc['post_author'] );
 				$mvs_doc_size   = (int) $mvs_doc['file_size'];

@@ -724,6 +724,144 @@
     color: var(--mvs-text-muted);
 }
 
+/* Document card — icon + name + meta, the shape a file attachment takes in
+ * every feed people already use. NOT the audio card's gradient: a document is
+ * not a mood, and a coloured tile in a text feed reads as decoration. Fully
+ * token-driven, so it inverts with the rest of the page in dark mode instead
+ * of staying a light rectangle (Coding Rule 7 — the audio gradient above
+ * predates that rule).
+ *
+ * The whole card is the target rather than the filename alone: at 390px a
+ * text-width link is a ~200px tap area on a 44px-tall row, and the icon and
+ * meta beside it look tappable but are not. */
+#buddypress .mvs-activity-media--document,
+.activity-list .mvs-activity-media--document,
+#buddypress .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document,
+.activity-list .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document {
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md, 8px);
+    overflow: hidden;
+}
+
+#buddypress .mvs-activity-media--document a,
+.activity-list .mvs-activity-media--document a,
+#buddypress .mvs-activity-media--document > .mvs-activity-doc-icon,
+.activity-list .mvs-activity-media--document > .mvs-activity-doc-icon {
+    text-decoration: none;
+}
+
+#buddypress .mvs-activity-media--document a,
+.activity-list .mvs-activity-media--document a {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3, 1rem);
+    padding: var(--mvs-space-3, 1rem);
+    min-height: 40px;
+    color: var(--mvs-text);
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+#buddypress .mvs-activity-media--document a:hover,
+#buddypress .mvs-activity-media--document a:focus-visible,
+#buddypress .mvs-activity-media--document a:visited,
+.activity-list .mvs-activity-media--document a:hover,
+.activity-list .mvs-activity-media--document a:focus-visible,
+.activity-list .mvs-activity-media--document a:visited {
+    color: var(--mvs-text);
+    text-decoration: none;
+}
+
+#buddypress .mvs-activity-media--document a:hover,
+#buddypress .mvs-activity-media--document a:focus-visible,
+.activity-list .mvs-activity-media--document a:hover,
+.activity-list .mvs-activity-media--document a:focus-visible {
+    background: var(--mvs-info-bg, var(--mvs-surface-2));
+}
+
+/* Unlinked variant — a document with no permalink still renders as a card
+ * rather than collapsing, because the empty body is the bug being fixed. */
+#buddypress .mvs-activity-media--document,
+.activity-list .mvs-activity-media--document {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3, 1rem);
+}
+
+#buddypress .mvs-activity-media--document > a,
+.activity-list .mvs-activity-media--document > a {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    gap: var(--mvs-space-3, 1rem);
+}
+
+#buddypress .mvs-activity-doc-icon,
+.activity-list .mvs-activity-doc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    background: var(--mvs-surface-2);
+    border-radius: var(--mvs-radius-sm, 6px);
+    color: var(--mvs-text-secondary);
+}
+
+/* The glyph itself is .mvs-doc-glyph in frontend.css — one mechanism shared
+ * with the profile Documents row and the grid tile, rather than a third copy
+ * of the same icon map. This box only sizes and tints it. */
+#buddypress .mvs-activity-doc-icon > .mvs-doc-glyph,
+.activity-list .mvs-activity-doc-icon > .mvs-doc-glyph {
+    --mvs-doc-glyph-size: 20px;
+}
+
+#buddypress .mvs-activity-doc-info,
+.activity-list .mvs-activity-doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+#buddypress .mvs-activity-doc-title,
+.activity-list .mvs-activity-doc-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#buddypress .mvs-activity-doc-meta,
+.activity-list .mvs-activity-doc-meta {
+    font-size: 0.82em;
+    color: var(--mvs-text-muted);
+}
+
+/* The document card is a ROW, so it does not belong in the photo grid's
+ * square cells — let it span the full width when a batch upload mixes one in
+ * rather than being cropped to an aspect-ratio cell. */
+#buddypress .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document,
+.activity-list .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 480px) {
+    #buddypress .mvs-activity-media--document a,
+    .activity-list .mvs-activity-media--document a {
+        gap: var(--mvs-space-2, 0.5rem);
+        padding: var(--mvs-space-2, 0.5rem);
+    }
+
+    #buddypress .mvs-activity-doc-icon,
+    .activity-list .mvs-activity-doc-icon {
+        width: 32px;
+        height: 32px;
+    }
+}
+
 
 /* =============================================================================
  *  Activity stream — media images (single + multi-image grid)
@@ -1449,12 +1587,23 @@
     background: var(--mvs-info-bg, var(--mvs-surface-2));
 }
 
+/* Sized for the glyph it now contains. This box was styled when the span was
+ * emitted EMPTY, so it was a 24x24 grey square with nothing to lay out; a
+ * Lucide SVG defaults to 24x24 and would have filled it edge to edge. */
 #buddypress .mvs-profile-documents__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: var(--mvs-radius-sm, 6px);
     background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+}
+
+#buddypress .mvs-profile-documents__icon > .mvs-doc-glyph {
+    --mvs-doc-glyph-size: 18px;
 }
 
 #buddypress .mvs-profile-documents__name {
