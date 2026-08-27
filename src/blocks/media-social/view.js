@@ -78,6 +78,11 @@ async function fetchComments( ctx ) {
 					date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 					content: c.content,
 					canEdit: isOwnComment && commentAge < editWindow,
+					// Delete is not time-limited: the API lets an owner delete their
+					// own comment at any age, and a moderator delete anyone's — the UI
+					// used to hide Delete with Edit at 15 minutes, so the control was
+					// stricter than the route it drives (Basecamp 10148635942).
+					canDelete: isOwnComment || !! ctx.canModerateComments,
 					editing: false,
 					editText: '',
 				};
@@ -133,7 +138,16 @@ const { state } = store( 'mvs/media-social', {
 		shareLabel: 'Share',
 		get hideCommentActions() {
 			const item = getContext().item;
+			// Show the row while EITHER control is available (never while editing).
+			return ( ! item?.canEdit && ! item?.canDelete ) || item?.editing;
+		},
+		get hideEditComment() {
+			const item = getContext().item;
 			return ! item?.canEdit || item?.editing;
+		},
+		get hideDeleteComment() {
+			const item = getContext().item;
+			return ! item?.canDelete || item?.editing;
 		},
 	},
 	actions: {

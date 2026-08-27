@@ -539,6 +539,9 @@ $mvs_archive_url = home_url( '/media/' );
 					'mvs_comment_edit_window',
 					(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 				),
+				// A moderator may delete anyone's comment (the DELETE route allows it),
+				// so the Delete control shows on others' comments too — matching the API.
+				'canModerateComments' => current_user_can( 'moderate_comments' ),
 				'isOwner'            => $mvs_is_owner,
 				'authorId'           => $mvs_author_id,
 				'isFollowing'        => false,
@@ -833,8 +836,10 @@ $mvs_archive_url = home_url( '/media/' );
 								</div>
 								<div class="mvs-comment-actions" data-wp-bind--hidden="state.hideCommentActions">
 									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-bind--hidden="state.hideEditComment"
 										data-wp-on--click="actions.startEditComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
 									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+										data-wp-bind--hidden="state.hideDeleteComment"
 										data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
 								</div>
 							</div><!-- /.mvs-comment-body-wrap -->
