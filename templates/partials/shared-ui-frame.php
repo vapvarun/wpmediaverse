@@ -43,7 +43,17 @@ $mvs_show_fab = $mvs_is_logged_in && (
 wp_interactivity_state(
 	'mvs/shared-ui',
 	array(
-		'i18n' => array(
+		// In STATE, not context: the lightbox comment loader runs in whichever
+		// grid item's context opened it, which does not carry these — a comment's
+		// edit/delete flags must resolve the same regardless of what opened the
+		// lightbox (Basecamp 10148635942).
+		'currentUserId'       => is_user_logged_in() ? get_current_user_id() : 0,
+		'commentEditWindow'   => (int) apply_filters(
+			'mvs_comment_edit_window',
+			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
+		),
+		'canModerateComments' => current_user_can( 'moderate_comments' ),
+		'i18n'                => array(
 			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
 			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
 			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
@@ -96,23 +106,26 @@ wp_interactivity_state(
 >
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>
-	<?php
-	// When the member also has a Documents drive, the FAB opens a small menu
-	// (Media / Documents) so the drive is reachable from the global upload
-	// affordance; otherwise it keeps its single-action behaviour and opens the
-	// upload modal directly (Basecamp 10206301990). Documents availability + the
-	// drive URL come from Free's own seams — no Pro classes.
-	$mvs_fab_docs_url = '';
-	if ( $mvs_is_logged_in
+		<?php
+		// When the member also has a Documents drive, the FAB opens a small menu
+		// (Media / Documents) so the drive is reachable from the global upload
+		// affordance; otherwise it keeps its single-action behaviour and opens the
+		// upload modal directly (Basecamp 10206301990). Documents availability + the
+		// drive URL come from Free's own seams — no Pro classes.
+		$mvs_fab_docs_url = '';
+		if ( $mvs_is_logged_in
 		&& \WPMediaVerse\Core\Plugin::documents_enabled()
 		&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
-	) {
-		$mvs_fab_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
-	}
-	?>
+		) {
+			$mvs_fab_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
+		}
+		?>
 	<div class="mvs-fab-container"
 		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'
-		<?php if ( '' !== $mvs_fab_docs_url ) : ?>data-wp-on-document--click="actions.closeFabMenuOnOutside"<?php endif; ?>>
+		<?php
+		if ( '' !== $mvs_fab_docs_url ) :
+			?>
+			data-wp-on-document--click="actions.closeFabMenuOnOutside"<?php endif; ?>>
 		<?php if ( '' !== $mvs_fab_docs_url ) : ?>
 		<div class="mvs-fab-menu" hidden data-wp-bind--hidden="!state.fabMenuOpen" role="menu" aria-label="<?php esc_attr_e( 'Add', 'wpmediaverse' ); ?>">
 			<button type="button" class="mvs-fab-menu-item" role="menuitem" data-wp-on--click="actions.fabUploadMedia">
@@ -584,7 +597,28 @@ wp_interactivity_state(
 										</a>
 										<time class="mvs-lightbox-comment-time" data-wp-bind--datetime="context.item.date" data-wp-text="context.item.date_human"></time>
 									</div>
-									<p class="mvs-lightbox-comment-content" data-wp-text="context.item.content"></p>
+									<p class="mvs-lightbox-comment-content" data-wp-text="context.item.content" data-wp-bind--hidden="state.hideLightboxCommentContent"></p>
+
+									<div class="mvs-lightbox-comment-edit" data-wp-bind--hidden="state.hideLightboxCommentEditForm">
+										<textarea class="mvs-lightbox-comment-edit-input" rows="2"
+											data-wp-bind--value="context.item.editText"
+											data-wp-on--input="actions.updateLightboxEditText"></textarea>
+										<div class="mvs-lightbox-comment-edit-actions">
+											<button class="mvs-btn mvs-btn--small" type="button"
+												data-wp-on--click="actions.saveEditLightboxComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>
+											<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+												data-wp-on--click="actions.cancelEditLightboxComment"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+										</div>
+									</div>
+
+									<div class="mvs-lightbox-comment-actions" data-wp-bind--hidden="state.hideLightboxCommentActions">
+										<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+											data-wp-bind--hidden="state.hideLightboxEditComment"
+											data-wp-on--click="actions.startEditLightboxComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
+										<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+											data-wp-bind--hidden="state.hideLightboxDeleteComment"
+											data-wp-on--click="actions.deleteLightboxComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+									</div>
 								</div>
 							</li>
 						</template>

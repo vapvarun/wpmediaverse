@@ -23,6 +23,23 @@ let toastTimer = null;
 let tagSearchTimer = null;
 
 /**
+ * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s" with no zone)
+ * to epoch ms as UTC. new Date() would read the zone-less string as LOCAL time,
+ * so on a non-UTC browser a just-posted comment looked hours old and its edit
+ * window read as expired (Basecamp 10148635942).
+ *
+ * @param {string} s Date string.
+ * @return {number} Epoch ms (NaN-safe: returns Date.now() on an unparseable value).
+ */
+function gmtToMs( s ) {
+	s = String( s || '' );
+	const base = /[tT]/.test( s ) ? s : s.replace( ' ', 'T' );
+	const iso = /[zZ]|[+-]\d\d:?\d\d$/.test( base ) ? base : base + 'Z';
+	const ms = new Date( iso ).getTime();
+	return isNaN( ms ) ? Date.now() : ms;
+}
+
+/**
  * After lightbox data is set, tell <video>/<audio> to load the new src.
  * The Interactivity API updates `src` via data-wp-bind, but <video>/<audio>
  * elements require an explicit .load() call to fetch a dynamically changed src.
@@ -38,6 +55,40 @@ function loadLightboxMedia() {
 			audio.load();
 		}
 	} );
+}
+
+/**
+ * Shape a raw REST comment into a lightbox comment with edit/delete flags.
+ *
+ * Mirrors the single-media (media-social) computation so the two surfaces agree:
+ * canEdit is own-comment within the edit window; canDelete is own OR moderator
+ * with no time limit (the DELETE route allows it, so the control must too —
+ * Basecamp 10148635942).
+ *
+ * Identity/window come from STATE (not context): the loader runs in whichever
+ * grid item's context opened the lightbox, which does not carry them.
+ *
+ * @param {Object} c Raw comment from the REST payload.
+ * @return {Object} Lightbox comment.
+ */
+function mapLightboxComment( c ) {
+	const editWindow = ( state.commentEditWindow || 15 * 60 ) * 1000;
+	const age = Date.now() - gmtToMs( c.date );
+	const isOwn = state.currentUserId && c.author === state.currentUserId;
+	return {
+		id: c.id,
+		author: c.author,
+		author_name: c.author_name || 'Anonymous',
+		author_avatar: c.author_avatar || '',
+		author_url: c.author_url || '',
+		date: c.date,
+		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
+		content: c.content,
+		canEdit: !! ( isOwn && age < editWindow ),
+		canDelete: !! ( isOwn || ctx.canModerateComments ),
+		editing: false,
+		editText: '',
+	};
 }
 
 const { state, actions } = store( 'mvs/shared-ui', {
@@ -345,6 +396,26 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxHasMoreComments() {
 			return state.lightboxTotalComments > state.lightboxComments.length;
+		},
+		// Per-comment action visibility (in the data-wp-each loop, item = comment).
+		get hideLightboxCommentActions() {
+			const item = getContext().item;
+			return ( ! item?.canEdit && ! item?.canDelete ) || item?.editing;
+		},
+		get hideLightboxEditComment() {
+			const item = getContext().item;
+			return ! item?.canEdit || item?.editing;
+		},
+		get hideLightboxDeleteComment() {
+			const item = getContext().item;
+			return ! item?.canDelete || item?.editing;
+		},
+		// The inline edit form shows only while editing this comment.
+		get hideLightboxCommentEditForm() {
+			return ! getContext().item?.editing;
+		},
+		get hideLightboxCommentContent() {
+			return !! getContext().item?.editing;
 		},
 		// Reaction count getters.
 		get lightboxReactionCount_like() { return state.lightboxReactions?.like || ''; },
@@ -1204,7 +1275,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const c = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20' );
 				state.lightboxTotalComments = parseInt( ( c.headers && c.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const cd = c.data;
-				state.lightboxComments = Array.isArray( cd ) ? cd : [];
+				state.lightboxComments = Array.isArray( cd ) ? cd.map( ( x ) => mapLightboxComment( x ) ) : [];
 			} catch { state.lightboxComments = []; state.lightboxTotalComments = 0; }
 			// Stats.
 			try {
@@ -1336,7 +1407,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} );
 				const comment = r.data;
 				if ( comment && comment.id ) {
-					state.lightboxComments = [ ...state.lightboxComments, comment ];
+					// Map so the just-posted comment carries its own edit/delete flags.
+					state.lightboxComments = [ ...state.lightboxComments, mapLightboxComment( comment ) ];
 					state.lightboxCommentText = '';
 				}
 			} catch {
@@ -1345,6 +1417,67 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxCommentSubmitting = false;
 			}
 		},
+
+		/* --- Lightbox comment edit / delete (mirrors media-social) --- */
+		startEditLightboxComment() {
+			const item = getContext().item;
+			if ( ! item ) return;
+			item.editText = item.content;
+			item.editing = true;
+		},
+		updateLightboxEditText( event ) {
+			const item = getContext().item;
+			if ( item ) {
+				item.editText = event.target.value;
+			}
+		},
+		cancelEditLightboxComment() {
+			const item = getContext().item;
+			if ( item ) {
+				item.editing = false;
+				item.editText = '';
+			}
+		},
+		async saveEditLightboxComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item || ! item.editText || ! item.editText.trim() ) return;
+			try {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + item.id, {
+					method: 'PUT',
+					body: { content: item.editText.trim() },
+				} );
+				if ( res.ok && res.data ) {
+					item.content = res.data.content;
+					item.editing = false;
+					item.editText = '';
+					actions.showToast( ( state.i18n?.commentUpdated || 'Comment updated.' ), 'success' );
+				} else {
+					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+				}
+			} catch {
+				actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+			}
+		},
+		deleteLightboxComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return;
+			const id = item.id;
+			actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + id, {
+					method: 'DELETE',
+				} );
+				if ( res.ok ) {
+					state.lightboxComments = state.lightboxComments.filter( ( x ) => x.id !== id );
+					state.lightboxTotalComments = Math.max( 0, state.lightboxTotalComments - 1 );
+					actions.showToast( ( state.i18n?.commentDeleted || 'Comment deleted.' ), 'success' );
+				} else {
+					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
+				}
+			} );
+		},
+
 		/**
 		 * Open the edit modal for the item currently shown in the lightbox.
 		 *

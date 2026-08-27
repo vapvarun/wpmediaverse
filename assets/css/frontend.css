@@ -6412,6 +6412,29 @@ a.mvs-dashboard-card-title:hover {
     overflow-wrap: anywhere;
 }
 
+/* Edit/delete controls under a lightbox comment. Buttons reuse .mvs-btn. */
+.mvs-lightbox-comment-actions,
+.mvs-lightbox-comment-edit-actions {
+    display: flex;
+    gap: var(--mvs-space-2, 0.5rem);
+    margin-block-start: var(--mvs-space-2, 0.5rem);
+}
+
+.mvs-lightbox-comment-edit {
+    margin-block-start: var(--mvs-space-2, 0.5rem);
+}
+
+.mvs-lightbox-comment-edit-input {
+    width: 100%;
+    font: inherit;
+    padding: var(--mvs-space-2, 0.5rem);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md, 8px);
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    resize: vertical;
+}
+
 .mvs-lightbox-no-comments {
     color: var(--mvs-text-muted, #6b7280);
     font-size: 14px;
