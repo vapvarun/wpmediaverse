@@ -69,6 +69,13 @@ class ProfileService {
 	public function init(): void {
 		add_filter( 'pre_get_avatar_data', array( $this, 'filter_avatar_data' ), 10, 2 );
 		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 3 );
+		// BuddyPress's bp_core_fetch_avatar() reads its OWN uploads/avatars/ dir and
+		// routes through neither of the WP filters above, so a member's MVS avatar
+		// showed on no BP surface — the members directory, activity, cards all fell
+		// back to the theme default (Basecamp 10128286574). Serve the MVS avatar
+		// through BP's own filters too. (These only fire when BuddyPress is active.)
+		add_filter( 'bp_core_fetch_avatar_url', array( $this, 'filter_bp_avatar_url' ), 10, 2 );
+		add_filter( 'bp_core_fetch_avatar', array( $this, 'filter_bp_avatar_html' ), 10, 2 );
 	}
 
 	/**
@@ -462,6 +469,72 @@ class ProfileService {
 		// Same MV-scoped avatar seam as filter_avatar_data(), applied on the
 		// direct get_avatar_url filter so BuddyNext wins on both code paths.
 		return (string) apply_filters( 'mvs_user_avatar_url', $url, $user_id, $size );
+	}
+
+	/**
+	 * The MVS custom-avatar URL for a BuddyPress avatar request, or false.
+	 *
+	 * Only user avatars — a group or blog avatar is left untouched.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param mixed $params BP avatar params array.
+	 * @return string|false
+	 */
+	private function bp_custom_avatar_url( $params ) {
+		if ( ! is_array( $params ) || 'user' !== (string) ( $params['object'] ?? 'user' ) ) {
+			return false;
+		}
+
+		$user_id = (int) ( $params['item_id'] ?? 0 );
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		$size = (int) ( $params['width'] ?? ( $params['height'] ?? 96 ) );
+		$url  = $this->get_custom_avatar_url( $user_id, $size ?: 96 );
+		if ( ! $url ) {
+			return false;
+		}
+
+		return (string) apply_filters( 'mvs_user_avatar_url', $url, $user_id, $size ?: 96 );
+	}
+
+	/**
+	 * Serve the MVS custom avatar through BuddyPress's URL filter.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $url    BP-resolved avatar URL.
+	 * @param mixed  $params BP avatar params.
+	 * @return string
+	 */
+	public function filter_bp_avatar_url( $url, $params ): string {
+		$mvs = $this->bp_custom_avatar_url( $params );
+		return $mvs ? $mvs : (string) $url;
+	}
+
+	/**
+	 * Serve the MVS custom avatar through BuddyPress's HTML filter by swapping the
+	 * <img src> to it, preserving BP's own classes and dimensions.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $html   BP-built <img> markup.
+	 * @param mixed  $params BP avatar params.
+	 * @return string
+	 */
+	public function filter_bp_avatar_html( $html, $params ): string {
+		$mvs = $this->bp_custom_avatar_url( $params );
+		if ( ! $mvs || ! is_string( $html ) || false === strpos( $html, '<img' ) ) {
+			return (string) $html;
+		}
+
+		// Swap the src (and drop a now-stale srcset) on the first <img>.
+		$html = preg_replace( '/(\bsrc=)([\'"]).*?\2/i', '${1}${2}' . esc_url( $mvs ) . '${2}', $html, 1 );
+		$html = preg_replace( '/\ssrcset=([\'"]).*?\1/i', '', (string) $html, 1 );
+
+		return (string) $html;
 	}
 
 	/**
