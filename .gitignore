@@ -7,11 +7,13 @@
 
 node_modules/
 
-# dist/ — only commit the final release ZIPs (e.g. wpmediaverse-1.2.0.zip).
-# The extracted plugin tree under dist/<slug>/ is a build artifact that
-# gets fully recreated on every `npx grunt dist` run; tracking it bloats
-# the repo with thousands of derived-file diffs.
+# dist/ — build artifacts, never committed. The extracted tree AND the release
+# ZIP are both recreated by `npx grunt dist`. A committed ZIP goes STALE against
+# the source and a malware scanner then flags shell calls in the OLD bundled code
+# that the current source no longer contains (Basecamp 10232926505). Build the
+# release ZIP fresh at release time and attach it to the GitHub Release instead.
 dist/*/
+dist/*.zip
 
 *.log
 .DS_Store
