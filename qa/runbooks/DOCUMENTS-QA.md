@@ -215,7 +215,9 @@ journey), `WHAT-TO-CHECK.md` §3 "Document library" filter table.
 1. **Baseline.** `wp option get mvs_pro_documents_enabled` (absent or `1` is correct — an absent
    option must read as ON, since a default-off toggle introduced on a shipped feature would take
    Documents away from every existing site on upgrade). `curl -s -o /dev/null -w '%{http_code}'
-   $SITE_URL/wp-json/mvs-pro/v1/documents` → **200**.
+   $SITE_URL/wp-json/mvs-pro/v1/documents` → **401** with no cookie (the list is member-scoped —
+   `mvs_unauthorized` is correct, not a bug; **404** when the master toggle is off). A `200` here
+   would mean the member-only list is world-readable. (Basecamp 10190137038.)
 
 2. **Record what the site holds.** Count documents and folders (see the journey's step 2 query, or
    reuse Section 1/3's counting approach). Note both numbers.
