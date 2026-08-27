@@ -863,6 +863,46 @@ class MessagingService {
 	}
 
 	/**
+	 * Whether a conversation is currently muted FOR a given recipient.
+	 *
+	 * The single source of truth for "should this member be notified about this
+	 * thread". Any notification producer must ask this — MediaVerse's own
+	 * listener does, and a host bridge (BuddyNext routes DM notifications through
+	 * its own store) must too, or a muted thread still pings on that stack
+	 * (Basecamp 10153578635). An EXPIRED timed mute auto-unmutes here and returns
+	 * false, so the expiry rule lives in one place rather than being re-derived
+	 * by every caller.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $conversation_id Conversation ID.
+	 * @param int $user_id         Recipient user ID.
+	 * @return bool True when muted (and the mute has not expired).
+	 */
+	public function is_conversation_muted( int $conversation_id, int $user_id ): bool {
+		$conv = $this->get_conversation( $conversation_id, $user_id );
+		if ( ! $conv || empty( $conv->is_muted ) ) {
+			return false;
+		}
+
+		// A timed mute that has run out no longer suppresses; clear it so the next
+		// read is cheap and the state is honest.
+		if ( ! empty( $conv->muted_until ) && strtotime( (string) $conv->muted_until ) < time() ) {
+			$this->update_participant(
+				$conversation_id,
+				$user_id,
+				array(
+					'is_muted'    => 0,
+					'muted_until' => null,
+				)
+			);
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Leave / delete a conversation (for the user).
 	 *
 	 * @param int $conversation_id Conversation ID.
