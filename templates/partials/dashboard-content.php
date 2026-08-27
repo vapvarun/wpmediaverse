@@ -669,6 +669,20 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_media = $mvs_toolbar_state( 'media', 'date' );
+		/**
+		 * Fires immediately before a dashboard panel's search/filter toolbar.
+		 *
+		 * The default vertical order — upload, then toolbar, then grid — is a
+		 * deliberate call, not an oversight: the filter controls sit directly
+		 * above the grid they filter, matching WordPress list tables and the
+		 * file managers members already know (Basecamp 10226435631). This hook
+		 * is the per-site escape hatch: a child theme can echo content here (or
+		 * key off $panel to target one panel) without overriding this 1,400-line
+		 * partial. It fires once per panel so the four stay symmetrical.
+		 *
+		 * @param string $panel Panel slug: media|albums|favorites|collections.
+		 */
+		do_action( 'mvs_dashboard_before_panel_toolbar', 'media' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-media',
@@ -806,6 +820,8 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_albums = $mvs_toolbar_state( 'albums', 'date' );
+		/** This action is documented in templates/partials/dashboard-content.php */
+		do_action( 'mvs_dashboard_before_panel_toolbar', 'albums' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-albums',
@@ -903,6 +919,8 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_favorites = $mvs_toolbar_state( 'favorites', 'favorited' );
+		/** This action is documented in templates/partials/dashboard-content.php */
+		do_action( 'mvs_dashboard_before_panel_toolbar', 'favorites' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-favorites',
@@ -1009,6 +1027,8 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_collections = $mvs_toolbar_state( 'collections', 'date' );
+		/** This action is documented in templates/partials/dashboard-content.php */
+		do_action( 'mvs_dashboard_before_panel_toolbar', 'collections' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-collections',
