@@ -71,7 +71,23 @@ function loadLightboxMedia() {
  * @param {Object} c Raw comment from the REST payload.
  * @return {Object} Lightbox comment.
  */
-function mapLightboxComment( c ) {
+/**
+ * Shape one API comment for the lightbox.
+ *
+ * `canModerate` is a PARAMETER, not a free variable. It used to read
+ * `ctx.canModerateComments`, and `ctx` is not in scope in this function — every
+ * other use of it in this file is a local `const ctx = getContext()`. That made
+ * the expression a ReferenceError, but only sometimes: `isOwn || ctx.…`
+ * short-circuits, so the author of a comment never evaluated it and saw their
+ * comment normally, while for anyone else it threw inside the .map() and was
+ * swallowed by the caller's catch, which set lightboxComments to []. The symptom
+ * was that a media's comments were visible only to whoever wrote them.
+ *
+ * @param {Object}  c           Comment from the REST API.
+ * @param {boolean} canModerate Whether the viewer may delete others' comments.
+ * @return {Object} Comment shaped for the lightbox template.
+ */
+function mapLightboxComment( c, canModerate = false ) {
 	const editWindow = ( state.commentEditWindow || 15 * 60 ) * 1000;
 	const age = Date.now() - gmtToMs( c.date );
 	const isOwn = state.currentUserId && c.author === state.currentUserId;
@@ -85,7 +101,7 @@ function mapLightboxComment( c ) {
 		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 		content: c.content,
 		canEdit: !! ( isOwn && age < editWindow ),
-		canDelete: !! ( isOwn || ctx.canModerateComments ),
+		canDelete: !! ( isOwn || canModerate ),
 		editing: false,
 		editText: '',
 	};
@@ -1208,8 +1224,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const c = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20' );
 				state.lightboxTotalComments = parseInt( ( c.headers && c.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const cd = c.data;
-				state.lightboxComments = Array.isArray( cd ) ? cd.map( ( x ) => mapLightboxComment( x ) ) : [];
-			} catch { state.lightboxComments = []; state.lightboxTotalComments = 0; }
+				state.lightboxComments = Array.isArray( cd )
+					? cd.map( ( x ) => mapLightboxComment( x, !! ctx.canModerateComments ) )
+					: [];
+			} catch ( e ) {
+				// Log rather than fail silently. This catch used to turn a code
+				// error in the map above into an ordinary-looking "No comments
+				// yet" — the failure was indistinguishable from an empty thread,
+				// which is why it survived. A load failure still degrades to an
+				// empty list; it just says so.
+				state.lightboxComments = [];
+				state.lightboxTotalComments = 0;
+				// eslint-disable-next-line no-console
+				console.error( '[WPMediaVerse] lightbox comments failed to load', e );
+			}
 			// Stats.
 			try {
 				const s = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/stats' );
@@ -1341,7 +1369,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const comment = r.data;
 				if ( comment && comment.id ) {
 					// Map so the just-posted comment carries its own edit/delete flags.
-					state.lightboxComments = [ ...state.lightboxComments, mapLightboxComment( comment ) ];
+					state.lightboxComments = [ ...state.lightboxComments, mapLightboxComment( comment, !! ctx.canModerateComments ) ];
 					state.lightboxCommentText = '';
 				}
 			} catch {
