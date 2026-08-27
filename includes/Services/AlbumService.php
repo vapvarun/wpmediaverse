@@ -82,6 +82,89 @@ class AlbumService {
 	 */
 	public function set_privacy( int $album_id, string $privacy ): void {
 		update_post_meta( $album_id, self::PRIVACY_META, sanitize_text_field( $privacy ) );
+
+		// Cascade to the album's existing items. Privacy was inherited when an
+		// item was ADDED but never when the album's privacy CHANGED, so an owner
+		// who made an existing album private left its contents public — still in
+		// the Explore feed and individually fetchable, with no warning (Basecamp
+		// #10149366902). Same one-way clamp as the add path: it only tightens, so
+		// making an album more public never loosens an item a member set private.
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$ids  = array_map(
+			static function ( $row ) {
+				return (int) $row['media_id'];
+			},
+			$repo->album_items( $album_id )
+		);
+		$this->clamp_items_privacy( $album_id, $ids );
+	}
+
+	/**
+	 * Tighten a set of the album's items to the album's privacy.
+	 *
+	 * Shared by add_items() (on ADD) and set_privacy() (on CHANGE) so both carry
+	 * the album's privacy down by exactly the same rule.
+	 *
+	 * Clamping is one-way and only ever tightens: an item already more restrictive
+	 * than the album keeps its own setting, and a public/empty album tightens
+	 * nothing. The `mvs_album_inherit_privacy` filter turns the whole behaviour off
+	 * (album and item privacy fully independent, how Free behaved before 2.3.0 —
+	 * Production Rule 3).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id  Album post ID.
+	 * @param int[] $media_ids Item media IDs to clamp.
+	 * @return void
+	 */
+	private function clamp_items_privacy( int $album_id, array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		/**
+		 * Filters whether an album's media inherits (is clamped to) its privacy.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param bool  $inherit   Whether to clamp. Default true.
+		 * @param int   $album_id  Album ID.
+		 * @param int[] $media_ids Media IDs being clamped.
+		 */
+		$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
+		$album_privacy = $inherit ? $this->get_privacy( $album_id ) : '';
+
+		// A public or unset album tightens nothing.
+		if ( '' === $album_privacy || 'public' === $album_privacy ) {
+			return;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		foreach ( $media_ids as $mid ) {
+			$mid           = (int) $mid;
+			$media_privacy = (string) $repo->get( $mid, 'privacy' );
+			if ( '' === $media_privacy ) {
+				$media_privacy = 'public';
+			}
+
+			$effective = PrivacyService::more_restrictive( $album_privacy, $media_privacy );
+			if ( $effective !== $media_privacy ) {
+				$repo->set( $mid, 'privacy', $effective );
+
+				/**
+				 * Fires when an item's privacy is tightened by its album.
+				 *
+				 * @since 2.3.0
+				 *
+				 * @param int    $media_id Media ID.
+				 * @param string $from     Previous privacy slug.
+				 * @param string $to       New privacy slug.
+				 * @param int    $album_id Album that caused the clamp.
+				 */
+				do_action( 'mvs_media_privacy_clamped_by_album', $mid, $media_privacy, $effective, $album_id );
+			}
+		}
 	}
 
 	/**
@@ -373,62 +456,14 @@ class AlbumService {
 		if ( $added > 0 ) {
 			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-			/**
-			 * Filters whether media added to an album inherits the album's privacy.
-			 *
-			 * A member who creates a Private album and uploads into it expects the
-			 * contents to be private. Before 2.3.0 nothing carried the album's
-			 * privacy down: the item kept its own value, which for the album-page
-			 * and BuddyPress-tab uploaders was the site default (usually public),
-			 * because neither of those uploaders sent a privacy field at all. The
-			 * album showed a "Private" badge while its photos sat in the public
-			 * Explore feed (Basecamp #10149366902).
-			 *
-			 * Clamping is one-way and only ever tightens: an item that is already
-			 * more restrictive than the album keeps its own setting.
-			 *
-			 * Return false to keep album and item privacy fully independent, which
-			 * is how Free behaved before 2.3.0 (Production Rule 3).
-			 *
-			 * @since 2.3.0
-			 *
-			 * @param bool  $inherit   Whether to clamp. Default true.
-			 * @param int   $album_id  Album ID.
-			 * @param int[] $media_ids Media IDs being added.
-			 */
-			$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
-			$album_privacy = $inherit ? $this->get_privacy( $album_id ) : '';
-
+			// Record the album association on each item, then clamp their privacy to
+			// the album's — the same one-way tightening that set_privacy() re-applies
+			// when the album's own privacy later changes.
 			foreach ( $media_ids as $mid ) {
-				$mid = (int) $mid;
-				$repo->set( $mid, 'album_id', $album_id );
-
-				if ( '' === $album_privacy || 'public' === $album_privacy ) {
-					continue;
-				}
-
-				$media_privacy = (string) $repo->get( $mid, 'privacy' );
-				if ( '' === $media_privacy ) {
-					$media_privacy = 'public';
-				}
-
-				$effective = PrivacyService::more_restrictive( $album_privacy, $media_privacy );
-				if ( $effective !== $media_privacy ) {
-					$repo->set( $mid, 'privacy', $effective );
-
-					/**
-					 * Fires when an item's privacy is tightened by its album.
-					 *
-					 * @since 2.3.0
-					 *
-					 * @param int    $media_id   Media ID.
-					 * @param string $from       Previous privacy slug.
-					 * @param string $to         New privacy slug.
-					 * @param int    $album_id   Album that caused the clamp.
-					 */
-					do_action( 'mvs_media_privacy_clamped_by_album', $mid, $media_privacy, $effective, $album_id );
-				}
+				$repo->set( (int) $mid, 'album_id', $album_id );
 			}
+
+			$this->clamp_items_privacy( $album_id, array_map( 'intval', $media_ids ) );
 
 			// The actor may be a co-collaborator, not the album owner — keep it
 			// distinct from the author lookup so gamification adapters can award
