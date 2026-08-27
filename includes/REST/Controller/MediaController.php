@@ -1768,6 +1768,21 @@ class MediaController extends WP_REST_Controller {
 			$thumbnail_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, $grid_size );
 		}
 
+		// Per-size image URLs so the app can pick a size tier per context
+		// (Basecamp 9667082287): thumb (~150), medium (~640), large (~1080),
+		// plus the original as full_url. Each resolves exactly like
+		// thumbnail_url above — the stored signed variant first, generating
+		// only when that size is absent. Public media resolves to
+		// render-stable URLs (1.7.0), so a list stays cheap; the per-size
+		// signing cost is bounded to private rows, which a large list already
+		// pays once for thumbnail_url.
+		$mvs_repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$mvs_tpl      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+		$mvs_size_url = static function ( string $size ) use ( $mvs_repo, $mvs_tpl, $media_id ): string {
+			$stored = (string) $mvs_repo->get( $media_id, 'thumb_' . $size );
+			return '' !== $stored ? $stored : (string) $mvs_tpl->get_thumb_url( $media_id, $size );
+		};
+
 		// Lightbox URL respects the admin-chosen image source.
 		//
 		// `?? ''` because the key is NOT guaranteed — twelve lines up the same
@@ -1844,6 +1859,11 @@ class MediaController extends WP_REST_Controller {
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
+			// srcset-style size tiers for the app to choose per context.
+			'thumb_url'         => $mvs_size_url( 'thumb' ),
+			'medium_url'        => $mvs_size_url( 'medium' ),
+			'large_url'         => $mvs_size_url( 'large' ),
+			'full_url'          => $file_url,
 			'lightbox_url'      => $lightbox_url,
 			'lightbox_webp_url' => $lightbox_webp_url,
 			'lightbox_avif_url' => $lightbox_avif_url,

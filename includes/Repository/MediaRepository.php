@@ -2704,6 +2704,54 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Image rows that carry no value for a given meta key — the target set for
+	 * a backfill (e.g. `placeholder_color` on a library uploaded before it
+	 * existed). LEFT JOIN + NULL is the "meta absent" test.
+	 *
+	 * Keyset-paginated on `media_id` rather than OFFSET: as the caller writes
+	 * the meta on each processed row it leaves this set, so an OFFSET would skip
+	 * rows as the set shrinks, and a row that can never get a value (undecodable
+	 * image) would loop forever at OFFSET 0. Walking `media_id > $after` visits
+	 * each row once regardless of what the caller writes, and stays index-driven
+	 * on a 2000+ item library.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $meta_key Meta key to test for absence.
+	 * @param int    $limit    Max rows this page.
+	 * @param int    $after    Return rows with media_id greater than this.
+	 * @return array<int, array{media_id:int, file_path:string, file_type:string, privacy:string}>
+	 */
+	public function query_images_missing_meta( string $meta_key, int $limit, int $after = 0 ): array {
+		global $wpdb;
+
+		$limit = max( 1, $limit );
+		$after = max( 0, $after );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT mi.media_id, mi.file_path, mi.file_type, mi.privacy
+				FROM {$wpdb->prefix}mvs_media_index mi
+				LEFT JOIN {$wpdb->prefix}mvs_media_meta mm
+					ON mm.media_id = mi.media_id AND mm.meta_key = %s
+				WHERE mi.media_id > %d
+					AND mi.file_type LIKE %s
+					AND mi.status = 'publish'
+					AND mm.media_id IS NULL
+				ORDER BY mi.media_id ASC
+				LIMIT %d",
+				$meta_key,
+				$after,
+				$wpdb->esc_like( 'image/' ) . '%',
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Find public-privacy media rows for cloud operations (migrate / cleanup).
 	 *
 	 * Returns rows with the small set of columns CloudOps actually reads

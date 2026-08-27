@@ -459,8 +459,8 @@ class UploadService {
 		// bridge answers, the same seam documents use.
 		//
 		// FROZEN CONTRACT (pairs with BuddyNext card 10220148861):
-		//   apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
-		//     returns array( string $drive_type, int $drive_id ).
+		// apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
+		// returns array( string $drive_type, int $drive_id ).
 		// (Basecamp 10220491230.)
 		$mvs_drive_type = 'user';
 		$mvs_drive_id   = 0;
@@ -1042,12 +1042,38 @@ class UploadService {
 	}
 
 	/**
-	 * A representative average colour of an image, as '#rrggbb'.
+	 * Compute and store the placeholder colour for one image from a local file.
 	 *
-	 * Downscales the whole image to a single pixel with GD (a fast average) and
-	 * reads it — the cheap lazy-load placeholder alternative to a blurhash.
-	 * Returns '' when GD is absent or the file cannot be decoded; the placeholder
-	 * is a nicety, never a hard dependency.
+	 * The public entry point behind `wp mvs backfill-placeholder-color`. Shares
+	 * the exact compute-then-store the upload path uses, so a backfilled colour
+	 * is identical to one written at upload time. Writes nothing when the image
+	 * cannot be decoded (returns '').
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int    $media_id   Media row id.
+	 * @param string $local_path Absolute path to a local copy of the image.
+	 * @return string The stored '#rrggbb', or '' when nothing was written.
+	 */
+	public function record_placeholder_color( int $media_id, string $local_path ): string {
+		$color = self::placeholder_color( $local_path );
+		if ( '' !== $color ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'placeholder_color', $color );
+		}
+		return $color;
+	}
+
+	/**
+	 * The dominant colour of an image, as '#rrggbb'.
+	 *
+	 * The cheap lazy-load placeholder alternative to a blurhash. It is the
+	 * DOMINANT colour, not the average: a two-tone image (say half red, half
+	 * blue) averages to a purple that appears nowhere in it (Basecamp
+	 * 9667082287), so we downscale, quantise into coarse colour buckets, and
+	 * return the most-populated bucket's own mean — a colour the image actually
+	 * contains. Tries Imagick first because a managed-WordPress host commonly
+	 * ships Imagick without GD; falls back to GD. Returns '' when neither editor
+	 * can decode the file — the placeholder is a nicety, never a hard dependency.
 	 *
 	 * @since 2.4.0
 	 *
@@ -1055,29 +1081,120 @@ class UploadService {
 	 * @return string '#rrggbb', or '' on failure.
 	 */
 	private static function placeholder_color( string $path ): string {
-		if ( ! function_exists( 'imagecreatefromstring' ) || ! function_exists( 'imagecreatetruecolor' ) ) {
+		if ( class_exists( 'Imagick' ) ) {
+			$color = self::dominant_color_imagick( $path );
+			if ( '' !== $color ) {
+				return $color;
+			}
+		}
+		if ( function_exists( 'imagecreatefromstring' ) && function_exists( 'imagecreatetruecolor' ) ) {
+			return self::dominant_color_gd( $path );
+		}
+		return '';
+	}
+
+	/**
+	 * Dominant colour via Imagick's quantised histogram.
+	 *
+	 * @param string $path Absolute image path.
+	 * @return string '#rrggbb', or '' on failure.
+	 */
+	private static function dominant_color_imagick( string $path ): string {
+		try {
+			$img = new \Imagick( $path );
+			if ( ! $img->getImageWidth() ) {
+				$img->clear();
+				return '';
+			}
+			// Downscale so the histogram is cheap, then reduce to a handful of
+			// colours so near-identical shades collapse into one bucket; the
+			// most frequent of those is the dominant colour.
+			$img->setImageColorspace( \Imagick::COLORSPACE_SRGB );
+			$img->thumbnailImage( 64, 64, true );
+			$img->quantizeImage( 8, \Imagick::COLORSPACE_SRGB, 0, false, false );
+			$best      = null;
+			$best_seen = -1;
+			foreach ( $img->getImageHistogram() as $pixel ) {
+				$count = $pixel->getColorCount();
+				if ( $count > $best_seen ) {
+					$best_seen = $count;
+					$best      = $pixel;
+				}
+			}
+			if ( null === $best ) {
+				$img->clear();
+				return '';
+			}
+			// getColorValue returns 0..1 across bit depths, unlike getColor().
+			$r = (int) round( $best->getColorValue( \Imagick::COLOR_RED ) * 255 );
+			$g = (int) round( $best->getColorValue( \Imagick::COLOR_GREEN ) * 255 );
+			$b = (int) round( $best->getColorValue( \Imagick::COLOR_BLUE ) * 255 );
+			$img->clear();
+			return sprintf( '#%02x%02x%02x', $r & 0xFF, $g & 0xFF, $b & 0xFF );
+		} catch ( \Exception $e ) {
 			return '';
 		}
+	}
 
+	/**
+	 * Dominant colour via GD: downscale to a small grid, quantise into coarse
+	 * buckets, and return the most-populated bucket's mean.
+	 *
+	 * @param string $path Absolute image path.
+	 * @return string '#rrggbb', or '' on failure.
+	 */
+	private static function dominant_color_gd( string $path ): string {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- raw bytes for GD; WP_Filesystem returns a string too but adds no safety for a local read here.
 		$bytes = @file_get_contents( $path );
 		if ( false === $bytes || '' === $bytes ) {
 			return '';
 		}
-
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- a corrupt/unsupported image returns false, handled below.
 		$src = @imagecreatefromstring( $bytes );
 		if ( false === $src ) {
 			return '';
 		}
+		// 16x16 = 256 samples is enough to find the dominant hue cheaply.
+		$grid  = 16;
+		$small = imagecreatetruecolor( $grid, $grid );
+		imagecopyresampled( $small, $src, 0, 0, 0, 0, $grid, $grid, imagesx( $src ), imagesy( $src ) );
+		// $src and $small are function-scoped GD handles, freed on return (and
+		// imagedestroy() is a no-op on PHP 8+), so no explicit free is needed.
 
-		$one = imagecreatetruecolor( 1, 1 );
-		imagecopyresampled( $one, $src, 0, 0, 0, 0, 1, 1, imagesx( $src ), imagesy( $src ) );
-		$rgb = imagecolorat( $one, 0, 0 );
-		imagedestroy( $src );
-		imagedestroy( $one );
-
-		return sprintf( '#%02x%02x%02x', ( $rgb >> 16 ) & 0xFF, ( $rgb >> 8 ) & 0xFF, $rgb & 0xFF );
+		$buckets = array();
+		for ( $y = 0; $y < $grid; $y++ ) {
+			for ( $x = 0; $x < $grid; $x++ ) {
+				$rgb = imagecolorat( $small, $x, $y );
+				$r   = ( $rgb >> 16 ) & 0xFF;
+				$g   = ( $rgb >> 8 ) & 0xFF;
+				$b   = $rgb & 0xFF;
+				// Quantise to 6 levels per channel (~43-wide buckets) so shades
+				// of one colour collapse together instead of splitting the vote.
+				$key = ( intdiv( $r, 43 ) << 8 ) | ( intdiv( $g, 43 ) << 4 ) | intdiv( $b, 43 );
+				if ( ! isset( $buckets[ $key ] ) ) {
+					$buckets[ $key ] = array( 0, 0, 0, 0 );
+				}
+				++$buckets[ $key ][0];
+				$buckets[ $key ][1] += $r;
+				$buckets[ $key ][2] += $g;
+				$buckets[ $key ][3] += $b;
+			}
+		}
+		if ( empty( $buckets ) ) {
+			return '';
+		}
+		$best = null;
+		foreach ( $buckets as $bucket ) {
+			if ( null === $best || $bucket[0] > $best[0] ) {
+				$best = $bucket;
+			}
+		}
+		return sprintf(
+			'#%02x%02x%02x',
+			intdiv( $best[1], $best[0] ),
+			intdiv( $best[2], $best[0] ),
+			intdiv( $best[3], $best[0] )
+		);
 	}
 
 	/**
@@ -1535,10 +1652,11 @@ class UploadService {
 			);
 		}
 
-		// Representative average colour for the app's lazy-load placeholder — the
-		// cheap alternative to a blurhash. Computed once here (on upload and on
+		// Dominant colour for the app's lazy-load placeholder — the cheap
+		// alternative to a blurhash. Computed once here (on upload and on
 		// explicit regeneration), stored as meta, and surfaced as
-		// `placeholder_color` in the media REST response (Basecamp 9667082287).
+		// `placeholder_color` in the media REST response. Backfill an existing
+		// library with `wp mvs backfill-placeholder-color` (Basecamp 9667082287).
 		$mvs_placeholder = self::placeholder_color( $file_path );
 		if ( '' !== $mvs_placeholder ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'placeholder_color', $mvs_placeholder );

@@ -1258,6 +1258,140 @@ class Commands {
 	}
 
 	/**
+	 * Backfill the lazy-load placeholder colour for images uploaded before it
+	 * existed (Basecamp 9667082287).
+	 *
+	 * Walks the library in keyset batches so it scales past the per-item
+	 * Regenerate action, which was the only backfill path there was. Reads the
+	 * original from local disk; when the active driver is a cloud driver and the
+	 * original lives only there, it downloads a copy to a temp file, reads it,
+	 * and cleans up. Private media is always local, so it is read in place.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--batch=<n>]
+	 * : Rows fetched per page. Default 200.
+	 *
+	 * [--limit=<n>]
+	 * : Stop after processing this many rows (0 = every image missing a colour).
+	 *
+	 * [--media-id=<id>]
+	 * : Only this media id, recomputed even if it already has a colour.
+	 *
+	 * [--dry-run]
+	 * : Report what would change; write nothing.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs backfill-placeholder-color
+	 *     wp mvs backfill-placeholder-color --limit=500
+	 *     wp mvs backfill-placeholder-color --media-id=1234
+	 *
+	 * @subcommand backfill-placeholder-color
+	 *
+	 * @param array $args       Positional args (unused).
+	 * @param array $assoc_args Flags.
+	 * @return void
+	 */
+	public function backfill_placeholder_color( $args, $assoc_args ) {
+		unset( $args );
+
+		$batch    = max( 1, (int) Utils\get_flag_value( $assoc_args, 'batch', 200 ) );
+		$limit    = max( 0, (int) Utils\get_flag_value( $assoc_args, 'limit', 0 ) );
+		$media_id = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$dry_run  = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+
+		$repo    = $this->repo();
+		$service = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		$driver      = null;
+		if ( 'local' !== $driver_slug ) {
+			$maybe = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+			if ( $maybe instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+				$driver = $maybe;
+			}
+		}
+
+		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-phc-' . uniqid() . '/';
+		$set      = 0;
+		$failed   = 0;
+
+		// Resolve one row's image to a local path (downloading from the active
+		// cloud driver when the original is not on disk), run the shared
+		// compute-and-store, and clean up any temp copy.
+		$process = function ( array $row ) use ( $repo, $service, $driver, $tmp_root, $dry_run, &$set, &$failed ) {
+			$id    = (int) $row['media_id'];
+			$local = $repo->get_filesystem_path( $id );
+			$tmp   = '';
+
+			if ( null === $local && null !== $driver ) {
+				$rel = ltrim( (string) $repo->get_raw( $id, 'file_path' ), '/' );
+				if ( '' !== $rel ) {
+					$tmp = $tmp_root . $rel;
+					wp_mkdir_p( dirname( $tmp ) );
+					if ( $driver->download( $rel, $tmp ) ) {
+						$local = $tmp;
+					}
+				}
+			}
+
+			if ( null === $local || '' === $local ) {
+				WP_CLI::warning( sprintf( 'Original not readable for media #%d — skipped.', $id ) );
+				++$failed;
+				return;
+			}
+
+			if ( $dry_run ) {
+				++$set;
+			} elseif ( '' !== $service->record_placeholder_color( $id, $local ) ) {
+				++$set;
+			} else {
+				WP_CLI::warning( sprintf( 'Could not decode media #%d — no colour written.', $id ) );
+				++$failed;
+			}
+
+			if ( '' !== $tmp && file_exists( $tmp ) ) {
+				wp_delete_file( $tmp );
+			}
+		};
+
+		if ( $media_id > 0 ) {
+			$type = (string) $repo->get_raw( $media_id, 'file_type' );
+			if ( 0 !== strpos( $type, 'image/' ) ) {
+				WP_CLI::error( sprintf( 'Media #%d is not an image (type: %s).', $media_id, '' !== $type ? $type : 'unknown' ) );
+			}
+			$process( array( 'media_id' => $media_id ) );
+		} else {
+			WP_CLI::log( sprintf( 'Backfilling placeholder colours%s...', $dry_run ? ' [DRY-RUN]' : '' ) );
+			$after     = 0;
+			$processed = 0;
+			while ( true ) {
+				$page = $repo->query_images_missing_meta( 'placeholder_color', $batch, $after );
+				if ( empty( $page ) ) {
+					break;
+				}
+				foreach ( $page as $row ) {
+					$after = (int) $row['media_id'];
+					$process( $row );
+					++$processed;
+					if ( $limit > 0 && $processed >= $limit ) {
+						break 2;
+					}
+				}
+			}
+		}
+
+		if ( is_dir( $tmp_root ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir; WP_Filesystem isn't initialized in this CLI context.
+			@rmdir( $tmp_root );
+		}
+
+		$verb = $dry_run ? 'Would set' : 'Set';
+		WP_CLI::success( sprintf( '%s placeholder colour on %d image(s). Failed %d.', $verb, $set, $failed ) );
+	}
+
+	/**
 	 * Copy any stored variant still missing from the active cloud driver.
 	 *
 	 * `generate_thumbnails()` rebuilds the SIZE variants and their WebP/AVIF

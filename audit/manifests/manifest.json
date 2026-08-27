@@ -5185,6 +5185,11 @@
       "file": "includes/CLI/Commands.php:1040"
     },
     {
+      "command": "wp mvs backfill-placeholder-color",
+      "handler": "Commands::backfill_placeholder_color",
+      "file": "includes/CLI/Commands.php:1296"
+    },
+    {
       "command": "wp mvs cleanup-local",
       "handler": "Commands::cleanup_local",
       "file": "includes/CLI/Commands.php:1232"

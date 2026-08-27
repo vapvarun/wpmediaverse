@@ -30,7 +30,7 @@
     "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 4,
-    "wp_cli": 20,
+    "wp_cli": 21,
     "journeys": 34,
     "migrator_version": 29
   },
