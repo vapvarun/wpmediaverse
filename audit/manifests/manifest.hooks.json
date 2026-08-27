@@ -767,6 +767,14 @@
 			"consumed_by": []
 		},
 		{
+			"name": "mvs_dashboard_before_panel_toolbar",
+			"type": "action",
+			"args_count": 1,
+			"args_signature": [ "$panel" ],
+			"where": "templates/partials/dashboard-content.php:685",
+			"consumed_by": []
+		},
+		{
 			"name": "mvs_dashboard_panels",
 			"type": "action",
 			"args_count": 0,
