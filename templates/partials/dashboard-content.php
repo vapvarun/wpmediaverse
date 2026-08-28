@@ -602,6 +602,69 @@ wp_interactivity_state(
 
 	<!-- My Media Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isMediaTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'media' ) ); ?>>
+		<!-- Search / filter toolbar. Above the upload block per Basecamp 10226435631. -->
+		<?php
+		// The SAME toolbar the document drive renders, from the same helper.
+		// Client-driven here, so it applies on change and needs no Apply button.
+		$mvs_tb_media = $mvs_toolbar_state( 'media', 'date' );
+		/**
+		 * Fires immediately before a dashboard panel's search/filter toolbar.
+		 *
+		 * The toolbar sits at the top of each panel, above the upload
+		 * block, so search and filter are the first thing a member reaches
+		 * on a large library (Basecamp 10226435631 — the card's ask,
+		 * confirmed by a later QA pass). This hook is the per-site escape
+		 * hatch: a child theme can echo content here (or key off $panel to
+		 * target one panel) without overriding this 1,400-line partial. It
+		 * fires once per panel so the four stay symmetrical.
+		 *
+		 * @param string $panel Panel slug: media|albums|favorites|collections.
+		 */
+		do_action( 'mvs_dashboard_before_panel_toolbar', 'media' );
+		echo $mvs_tpl->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-media',
+				// Bound, not baked. The drive's toolbar prints how many rows
+				// the view holds and these four printed nothing, so the shape
+				// they were told to copy read differently on every panel. The
+				// text is a placeholder the Interactivity binding replaces on
+				// first render and after every search.
+				'count'  => array(
+					'attrs' => array( 'data-wp-text' => 'state.mediaCountLabel' ),
+				),
+				'search' => array(
+					'name'  => 'q',
+					'label' => __( 'Search your media', 'wpmediaverse' ),
+					'value' => $mvs_tb_media['s'],
+					'attrs' => array(
+						'data-panel'        => 'media',
+						'data-wp-on--input' => 'actions.toolbarSearch',
+					),
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $mvs_tb_media['orderby'],
+					'options' => $mvs_sort_options_media,
+					'attrs'   => array(
+						'data-panel'         => 'media',
+						'data-wp-on--change' => 'actions.toolbarSort',
+					),
+				),
+				'order'  => array(
+					'name'    => 'order',
+					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'value'   => $mvs_tb_media['order'],
+					'options' => $mvs_order_options,
+					'attrs'   => array(
+						'data-panel'         => 'media',
+						'data-wp-on--change' => 'actions.toolbarOrder',
+					),
+				),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
+		?>
+
 		<!-- Upload Section -->
 		<div class="mvs-dashboard-upload">
 			<div class="mvs-dashboard-dropzone"
@@ -665,67 +728,6 @@ wp_interactivity_state(
 		</div>
 
 		<!-- Media Grid -->
-		<?php
-		// The SAME toolbar the document drive renders, from the same helper.
-		// Client-driven here, so it applies on change and needs no Apply button.
-		$mvs_tb_media = $mvs_toolbar_state( 'media', 'date' );
-		/**
-		 * Fires immediately before a dashboard panel's search/filter toolbar.
-		 *
-		 * The default vertical order — upload, then toolbar, then grid — is a
-		 * deliberate call, not an oversight: the filter controls sit directly
-		 * above the grid they filter, matching WordPress list tables and the
-		 * file managers members already know (Basecamp 10226435631). This hook
-		 * is the per-site escape hatch: a child theme can echo content here (or
-		 * key off $panel to target one panel) without overriding this 1,400-line
-		 * partial. It fires once per panel so the four stay symmetrical.
-		 *
-		 * @param string $panel Panel slug: media|albums|favorites|collections.
-		 */
-		do_action( 'mvs_dashboard_before_panel_toolbar', 'media' );
-		echo $mvs_tpl->render_panel_toolbar(
-			array(
-				'id'     => 'mvs-media',
-				// Bound, not baked. The drive's toolbar prints how many rows
-				// the view holds and these four printed nothing, so the shape
-				// they were told to copy read differently on every panel. The
-				// text is a placeholder the Interactivity binding replaces on
-				// first render and after every search.
-				'count'  => array(
-					'attrs' => array( 'data-wp-text' => 'state.mediaCountLabel' ),
-				),
-				'search' => array(
-					'name'  => 'q',
-					'label' => __( 'Search your media', 'wpmediaverse' ),
-					'value' => $mvs_tb_media['s'],
-					'attrs' => array(
-						'data-panel'        => 'media',
-						'data-wp-on--input' => 'actions.toolbarSearch',
-					),
-				),
-				'sort'   => array(
-					'name'    => 'sort',
-					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $mvs_tb_media['orderby'],
-					'options' => $mvs_sort_options_media,
-					'attrs'   => array(
-						'data-panel'         => 'media',
-						'data-wp-on--change' => 'actions.toolbarSort',
-					),
-				),
-				'order'  => array(
-					'name'    => 'order',
-					'label'   => __( 'Direction', 'wpmediaverse' ),
-					'value'   => $mvs_tb_media['order'],
-					'options' => $mvs_order_options,
-					'attrs'   => array(
-						'data-panel'         => 'media',
-						'data-wp-on--change' => 'actions.toolbarOrder',
-					),
-				),
-			)
-		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
-		?>
 		<div class="mvs-bulk-bar" data-wp-bind--hidden="!state.hasBulkSelection" hidden
 			role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
 			<span class="mvs-bulk-count" data-wp-text="state.bulkCountLabel"></span>
