@@ -373,23 +373,8 @@ if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_us
 	);
 endif;
 
-// Shared UI: Confirm Dialog (required for delete action).
-// Toast is provided globally by shared-ui-frame.php in wp_footer.
-?>
-<div class="mvs-confirm-overlay" hidden
-	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.confirmVisible">
-	<div class="mvs-confirm">
-		<p data-wp-text="state.confirmMessage"></p>
-		<div class="mvs-confirm-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-			<button class="mvs-btn mvs-btn--danger" type="button"
-				data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
-		</div>
-	</div>
-</div>
-<?php
+// Shared UI confirm dialog + toast are provided globally by
+// shared-ui-frame.php in wp_footer — no per-template copy needed.
 require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );

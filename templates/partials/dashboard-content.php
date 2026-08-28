@@ -1437,20 +1437,7 @@ wp_interactivity_state(
 
 	<!-- Toast is provided globally by shared-ui-frame.php in wp_footer. -->
 
-	<!-- Confirm Dialog (shared-ui) -->
-	<div class="mvs-confirm-overlay" hidden
-		data-wp-interactive="mvs/shared-ui"
-		data-wp-bind--hidden="!state.confirmVisible">
-		<div class="mvs-confirm">
-			<p data-wp-text="state.confirmMessage"></p>
-			<div class="mvs-confirm-actions">
-				<button class="mvs-btn mvs-btn--secondary" type="button"
-					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn mvs-btn--danger" type="button"
-					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
-			</div>
-		</div>
-	</div>
+	<!-- Confirm dialog is provided globally by shared-ui-frame.php in wp_footer. -->
 
 	<?php
 	/**

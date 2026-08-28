@@ -6499,12 +6499,47 @@ a.mvs-dashboard-card-title:hover {
     overflow-wrap: anywhere;
 }
 
-/* Edit/delete controls under a lightbox comment. Buttons reuse .mvs-btn. */
+/* Edit/delete controls under a lightbox comment. Edit-mode Save/Cancel reuse
+   .mvs-btn; the own-comment Edit/Delete are micro icon buttons (below). */
 .mvs-lightbox-comment-actions,
 .mvs-lightbox-comment-edit-actions {
     display: flex;
     gap: var(--mvs-space-2, 0.5rem);
     margin-block-start: var(--mvs-space-2, 0.5rem);
+}
+
+/* Micro icon buttons: a small pencil/trash on a member's own comment, not the
+   large filled .mvs-btn. Transparent until hover so they read as icons, with a
+   comfortable 28px hit area around the 14px glyph. */
+.mvs-lightbox-comment-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 28px;
+    block-size: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--mvs-text-muted, #64748b);
+    border-radius: var(--mvs-radius-sm, 6px);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.mvs-lightbox-comment-action:hover,
+.mvs-lightbox-comment-action:focus-visible {
+    background: var(--mvs-surface-2, rgba(100, 116, 139, 0.12));
+    color: var(--mvs-text, #0f172a);
+}
+
+.mvs-lightbox-comment-action--danger:hover,
+.mvs-lightbox-comment-action--danger:focus-visible {
+    color: var(--mvs-danger, #dc2626);
+}
+
+.mvs-lightbox-comment-action svg {
+    inline-size: 14px;
+    block-size: 14px;
 }
 
 .mvs-lightbox-comment-edit {

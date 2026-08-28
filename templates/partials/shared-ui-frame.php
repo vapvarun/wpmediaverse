@@ -618,12 +618,20 @@ wp_interactivity_state(
 									</div>
 
 									<div class="mvs-lightbox-comment-actions" data-wp-bind--hidden="state.hideLightboxCommentActions">
-										<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										<button class="mvs-lightbox-comment-action" type="button"
 											data-wp-bind--hidden="state.hideLightboxEditComment"
-											data-wp-on--click="actions.startEditLightboxComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-										<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+											data-wp-on--click="actions.startEditLightboxComment"
+											aria-label="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>"
+											title="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>">
+											<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+										</button>
+										<button class="mvs-lightbox-comment-action mvs-lightbox-comment-action--danger" type="button"
 											data-wp-bind--hidden="state.hideLightboxDeleteComment"
-											data-wp-on--click="actions.deleteLightboxComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+											data-wp-on--click="actions.deleteLightboxComment"
+											aria-label="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"
+											title="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>">
+											<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+										</button>
 									</div>
 								</div>
 							</li>
@@ -670,5 +678,25 @@ wp_interactivity_state(
 				<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
 			</svg>
 		</button>
+	</div>
+
+	<!-- Confirm dialog — shared by every mvs/shared-ui showConfirm() caller
+	     (lightbox comment delete/edit, etc.). It lives here, in the global
+	     wp_footer frame, so it is present wherever the lightbox is. Before this
+	     it was copy-pasted into media-single/album/dashboard only, so the same
+	     confirm-driven action was inert on every other surface (Explore, profile
+	     grids): showConfirm() set state.confirmVisible with nothing bound to it. -->
+	<div class="mvs-confirm-overlay" hidden
+		data-wp-interactive="mvs/shared-ui"
+		data-wp-bind--hidden="!state.confirmVisible">
+		<div class="mvs-confirm">
+			<p data-wp-text="state.confirmMessage"></p>
+			<div class="mvs-confirm-actions">
+				<button class="mvs-btn mvs-btn--secondary" type="button"
+					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+				<button class="mvs-btn mvs-btn--danger" type="button"
+					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
+			</div>
+		</div>
 	</div>
 </div>
