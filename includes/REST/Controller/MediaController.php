@@ -1836,6 +1836,24 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
+		// Per-type document glyph + friendly label, resolved once from the single
+		// DocumentTypes map so the app and the media lightbox bind these instead
+		// of re-deriving an icon and a label from the raw MIME — the lightbox used
+		// to hardcode the file-text glyph and print the raw MIME (Basecamp
+		// 10248528902). Empty for non-documents.
+		$mvs_doc_icon  = '';
+		$mvs_doc_label = '';
+		if ( 'document' === $media_type_value ) {
+			$mvs_doc_mime  = (string) ( $all['file_type'] ?? '' );
+			$mvs_doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
+			$mvs_doc_icon  = \WPMediaVerse\Core\DocumentTypes::icon_for_mime( $mvs_doc_mime );
+			$mvs_doc_label = $mvs_doc_group ? \WPMediaVerse\Core\DocumentTypes::label( $mvs_doc_group ) : '';
+			$mvs_doc_bytes = (int) ( $all['file_size'] ?? 0 );
+			if ( $mvs_doc_bytes > 0 ) {
+				$mvs_doc_label = trim( $mvs_doc_label . ( '' !== $mvs_doc_label ? ' · ' : '' ) . size_format( $mvs_doc_bytes ) );
+			}
+		}
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
@@ -1847,6 +1865,9 @@ class MediaController extends WP_REST_Controller {
 			'file_size'         => ! empty( $all['file_size'] ) ? (int) $all['file_size'] : 0,
 			'file_type'         => ! empty( $all['file_type'] ) ? $all['file_type'] : '',
 			'media_type'        => $media_type_value,
+			// Document glyph slug + friendly label (empty for non-documents).
+			'doc_icon'          => $mvs_doc_icon,
+			'doc_label'         => $mvs_doc_label,
 			'privacy'           => $privacy_value,
 			'allow_download'    => $allow_download,
 			// Display filename — original user-provided name when the upload

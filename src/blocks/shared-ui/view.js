@@ -270,6 +270,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// open full-size images instead of the low-res grid thumbnail.
 			return d.lightbox_url || d.file_url || d.thumbnail_url || '';
 		},
+		get lightboxImageSrc() {
+			// Bound to the <img src>. When there is no image (document/video/audio)
+			// a bound empty string makes the browser resolve src="" to the page URL
+			// and fetch it — harmless (the <img> is hidden) but wasteful. A 1x1
+			// transparent GIF is inert. (Basecamp 10248528902)
+			return state.lightboxImageUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+		},
 		get lightboxImageWebpUrl() {
 			// WebP sibling of the lightbox image. Empty string when the upload
 			// pre-dates 1.2.2 optimization or the variant is not safe to embed
@@ -320,6 +327,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxHideDocument() {
 			return state.lightboxMediaData?.media_type !== 'document';
+		},
+		get lightboxDocGlyphClass() {
+			// Per-type glyph from the REST doc_icon (resolved server-side from the
+			// single DocumentTypes map), so a spreadsheet is not drawn as a text
+			// file. Falls back to the generic file glyph. (Basecamp 10248528902)
+			const icon = state.lightboxMediaData?.doc_icon || 'file-text';
+			return 'mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--' + icon;
+		},
+		get lightboxDocLabel() {
+			// Friendly type label ("Excel · 12 KB") from the REST doc_label, never
+			// the raw MIME. Falls back to file_type only if the label is absent.
+			return state.lightboxMediaData?.doc_label || state.lightboxMediaData?.file_type || '';
 		},
 		get lightboxHideImage() {
 			// Show the <img> only when there is a real image URL. lightboxImageUrl
