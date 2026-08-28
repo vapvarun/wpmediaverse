@@ -44,7 +44,7 @@
         "phpcs:fix": "vendor/bin/phpcbf --standard=phpcs.xml",
         "phpcs:full": "vendor/bin/phpcs --standard=phpcs.xml -p",
         "phpstan": "vendor/bin/phpstan analyze --no-progress --memory-limit=2G",
-        "test:contract": "vendor/bin/phpunit --filter SettingsContractTest",
+        "test:contract": "php -d opcache.enable_cli=0 vendor/bin/phpunit --filter SettingsContractTest",
         "test:unit": "php -d opcache.enable_cli=0 vendor/bin/phpunit",
         "install-hooks": "git config core.hooksPath bin/git-hooks && echo 'Pre-push hook installed (bypass with SKIP_LOCAL_CI=1)'"
     }
