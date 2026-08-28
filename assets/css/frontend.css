@@ -6515,8 +6515,8 @@ a.mvs-dashboard-card-title:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: 28px;
-    block-size: 28px;
+    inline-size: 24px;
+    block-size: 24px;
     padding: 0;
     border: none;
     background: transparent;
@@ -6589,11 +6589,12 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-form {
     display: flex;
-    gap: 0;
+    gap: 8px;
+    align-items: center;
     /* Composer sits at the top of the thread (Twitter/LinkedIn), so the
        divider goes below it, above the comment list. */
     border-block-end: 1px solid var(--mvs-border-light, #e5e7eb);
-    padding: 0;
+    padding: 12px 16px;
     /* Was #fff — the lightbox sidebar is var(--mvs-surface) (dark in dark mode)
        and the input text is var(--mvs-text) (light), so a white bar made the
        typed text invisible. Match the sidebar surface. */
@@ -6602,12 +6603,20 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-input {
     flex: 1;
-    border: none;
-    padding: 14px 16px;
+    /* Explicit surface + text tokens (not the theme's input styling) so the
+       field is a defined rounded control that stays readable in dark mode. */
+    border: 1px solid var(--mvs-border, #d1d5db);
+    border-radius: 999px;
+    padding: 9px 14px;
     font-size: 14px;
     outline: none;
-    background: transparent;
+    background: var(--mvs-surface);
+    color: var(--mvs-text, inherit);
     min-width: 0;
+}
+
+.mvs-lightbox-comment-input:focus {
+    border-color: var(--mvs-primary, #E35656);
 }
 
 .mvs-lightbox-comment-input:focus-visible {
@@ -6616,14 +6625,26 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-comment-post {
+    flex-shrink: 0;
     background: var(--mvs-primary, #E35656);
     border: none;
     color: #ffffff;
     font-weight: 600;
-    padding: 10px 20px;
+    padding: 9px 18px;
+    border-radius: 999px;
     cursor: pointer;
     font-size: 14px;
-    transition: filter 0.15s ease;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.mvs-lightbox-comment-post:hover:not(:disabled) {
+    filter: brightness(0.93);
+}
+
+/* Faded primary while empty, not the theme's grey disabled bg. */
+.mvs-lightbox-comment-post:disabled {
+    opacity: 0.45;
+    cursor: default;
 }
 
 .mvs-lightbox-comment-post:disabled {
