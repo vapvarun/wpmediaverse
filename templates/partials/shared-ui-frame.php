@@ -590,6 +590,26 @@ wp_interactivity_state(
 					<h3 class="mvs-lightbox-comments-heading" data-wp-bind--hidden="!state.lightboxHasComments">
 						<?php esc_html_e( 'Comments', 'wpmediaverse' ); ?>
 					</h3>
+					<?php if ( $mvs_is_logged_in ) : ?>
+						<div class="mvs-lightbox-comment-form">
+							<input type="text" class="mvs-lightbox-comment-input"
+								placeholder="<?php esc_attr_e( 'Add a comment…', 'wpmediaverse' ); ?>"
+								data-wp-on--input="actions.lightboxUpdateComment"
+								data-wp-on--keydown="actions.lightboxCommentKeydown"
+								data-wp-bind--value="state.lightboxCommentText" />
+							<button class="mvs-lightbox-comment-post"
+								data-wp-on--click="actions.lightboxPostComment"
+								data-wp-bind--disabled="state.lightboxCannotPostComment">
+								<?php esc_html_e( 'Post', 'wpmediaverse' ); ?>
+							</button>
+						</div>
+					<?php else : ?>
+						<p class="mvs-lightbox-login-prompt">
+							<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
+								<?php esc_html_e( 'Log in to comment', 'wpmediaverse' ); ?>
+							</a>
+						</p>
+					<?php endif; ?>
 					<ul class="mvs-lightbox-comment-list" role="list">
 						<template data-wp-each="state.lightboxComments">
 							<li class="mvs-lightbox-comment">
@@ -643,26 +663,6 @@ wp_interactivity_state(
 					<a class="mvs-lightbox-view-all-comments" data-wp-bind--href="state.lightboxPermalink" data-wp-bind--hidden="!state.lightboxHasMoreComments">
 						<?php esc_html_e( 'View all comments', 'wpmediaverse' ); ?> &rarr;
 					</a>
-					<?php if ( $mvs_is_logged_in ) : ?>
-						<div class="mvs-lightbox-comment-form">
-							<input type="text" class="mvs-lightbox-comment-input"
-								placeholder="<?php esc_attr_e( 'Add a comment…', 'wpmediaverse' ); ?>"
-								data-wp-on--input="actions.lightboxUpdateComment"
-								data-wp-on--keydown="actions.lightboxCommentKeydown"
-								data-wp-bind--value="state.lightboxCommentText" />
-							<button class="mvs-lightbox-comment-post"
-								data-wp-on--click="actions.lightboxPostComment"
-								data-wp-bind--disabled="state.lightboxCannotPostComment">
-								<?php esc_html_e( 'Post', 'wpmediaverse' ); ?>
-							</button>
-						</div>
-					<?php else : ?>
-						<p class="mvs-lightbox-login-prompt">
-							<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
-								<?php esc_html_e( 'Log in to comment', 'wpmediaverse' ); ?>
-							</a>
-						</p>
-					<?php endif; ?>
 				</div>
 			</div>
 		</div>

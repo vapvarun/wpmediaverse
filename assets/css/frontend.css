@@ -6423,16 +6423,6 @@ a.mvs-dashboard-card-title:hover {
     padding: 8px 0;
     margin: 0;
     list-style: none;
-    display: flex;
-    flex-direction: column;
-}
-
-/* A short thread would otherwise strand its comments at the top over a tall
-   empty gap down to the composer. Bottom-align them so they sit just above
-   where you type; the auto margin collapses once comments fill or overflow
-   the list (the lightbox caps how many it shows, then links to "View all"). */
-.mvs-lightbox-comment-list > .mvs-lightbox-comment:first-child {
-    margin-block-start: auto;
 }
 
 .mvs-lightbox-comment {
@@ -6600,7 +6590,9 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-comment-form {
     display: flex;
     gap: 0;
-    border-top: 1px solid var(--mvs-border-light, #e5e7eb);
+    /* Composer sits at the top of the thread (Twitter/LinkedIn), so the
+       divider goes below it, above the comment list. */
+    border-block-end: 1px solid var(--mvs-border-light, #e5e7eb);
     padding: 0;
     /* Was #fff — the lightbox sidebar is var(--mvs-surface) (dark in dark mode)
        and the input text is var(--mvs-text) (light), so a white bar made the
