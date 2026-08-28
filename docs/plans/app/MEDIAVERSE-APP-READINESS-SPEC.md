@@ -88,7 +88,7 @@ Production Rule #7/#8: a **patch** (`1.8.x`) is bug-fixes only; **new features/e
      ```
    - Branding: Pro white-label settings → Free core settings fallback. **Do not** restate site name/description/icon (those come from the core `/wp-json/` index).
 2. **`mvs_app_config_features` filter (Free)** — Free seeds always-on/free flags (`messaging` from `mvs_dm_access_level !== 'nobody'`, `reactions`, `comments`, `albums`, AI). `pro_active` = whether `mvs_pro_loaded` ran.
-3. **Pro contributes flags** — Pro hooks `mvs_app_config_features` and adds its toggles (read-only): `mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_streaks_enabled`, `mvs_pro_transcode_enabled` (→`video`), and `mvs_stories_enabled` (→`stories`, from Phase 5). Additive — adding a plugin needs no Free change.
+3. **Pro contributes flags** — Pro hooks `mvs_app_config_features` and adds its toggles (read-only): `mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_streaks_enabled`, and `mvs_stories_enabled` (→`stories`, from Phase 5). Additive — adding a plugin needs no Free change.
 
 **Manifest:** add `/app/config` route + `mvs_app_config_features` filter (Free + Pro).
 **Tests:** unauthenticated 200; toggling a Pro option flips its `features.*` key; `pro_active` false when Pro inactive.

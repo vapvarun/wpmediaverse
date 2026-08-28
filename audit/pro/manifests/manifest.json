@@ -187,56 +187,6 @@
         "file": "includes/Connectors/ConnectorRESTController.php:276"
       },
       {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcodes",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TranscodeController::get_transcodes",
-        "permission": "owner_or_admin",
-        "purpose": "List transcode renditions for media",
-        "file": "includes/Video/TranscodeController.php:66"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcodes",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "TranscodeController::delete_transcodes",
-        "permission": "owner_or_admin",
-        "purpose": "Delete transcode renditions for media",
-        "file": "includes/Video/TranscodeController.php:75"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcode",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TranscodeController::trigger_transcode",
-        "permission": "owner_or_admin",
-        "purpose": "Trigger transcode job for media",
-        "file": "includes/Video/TranscodeController.php:86"
-      },
-      {
-        "route": "/mvs-pro/v1/transcode/status",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TranscodeController::get_queue_status",
-        "permission": "admin_check",
-        "purpose": "Get transcode queue status",
-        "file": "includes/Video/TranscodeController.php:108"
-      },
-      {
-        "route": "/mvs-pro/v1/transcode/config",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TranscodeController::get_config",
-        "permission": "admin_check",
-        "purpose": "Get transcode configuration",
-        "file": "includes/Video/TranscodeController.php:139"
-      },
-      {
         "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
         "methods": [
           "GET"
@@ -1201,13 +1151,6 @@
       "file": "includes/Admin/ProSettings.php:1209"
     },
     {
-      "title": "Settings tab/section: Video Transcoding",
-      "slug": "mvs-settings-video / mvs_pro_transcode",
-      "parent": "mvs-settings (Video tab, Pro-owned)",
-      "capability": "manage_mvs_settings",
-      "file": "includes/Admin/ProSettings.php:1384 (section); :117 (tab)"
-    },
-    {
       "title": "Settings section: Stories (Gamification)",
       "slug": "mvs-settings-gamification",
       "parent": "mvs-settings (Competitions tab)",
@@ -1305,12 +1248,6 @@
       "file": "includes/Admin/ProSettings.php:943; applied includes/Core/Plugin.php:370"
     },
     {
-      "option": "mvs_pro_transcode_enabled",
-      "default": "0",
-      "controls": "Video transcoding pipeline; app/config 'video' flag",
-      "file": "includes/Admin/ProSettings.php:1392; read includes/Core/Plugin.php:992"
-    },
-    {
       "option": "mvs_pro_documents_enabled",
       "default": "'1' - and ABSENT READS AS ON, so a site that already has documents keeps them on upgrade",
       "controls": "Every document SURFACE: the drive, the viewer, the shortcodes, the dashboard section, the admin panels and all mvs-pro/v1 document + folder + permission routes. Storage guards, Site Health and the extraction hooks stay registered - they must survive the switch.",
@@ -1399,11 +1336,9 @@
       "key_classes": [
         "VideoController",
         "ChapterService",
-        "ResumeService",
-        "TranscodeService",
-        "TranscodeController"
+        "ResumeService"
       ],
-      "purpose": "Chapters, resume playback, FFmpeg transcoding"
+      "purpose": "Chapters, resume playback"
     },
     {
       "namespace": "Captions",
@@ -1866,12 +1801,6 @@
       "interval": "cron 0 2 * * * (AS cron)",
       "handler": "Streaks\\StreakService::daily_check",
       "file": "includes/Streaks/StreakService.php:99 (schedule); :71 (handler)"
-    },
-    {
-      "hook": "mvs_pro_transcode_cleanup",
-      "interval": "hourly (WP-Cron)",
-      "handler": "Video\\TranscodeService::cleanup_temp_files",
-      "file": "includes/Core/Plugin.php:355 (schedule); :357 (handler)"
     },
     {
       "hook": "mvs_story_cleanup",
@@ -3063,18 +2992,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_poster_frame",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "$poster_url",
-        "$media_id",
-        "$input"
-      ],
-      "where": "includes/Video/TranscodeService.php:834",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_quota_default_applies_to_unassigned",
       "type": "filter",
       "args_count": 2,
@@ -3117,29 +3034,6 @@
         "$user_id"
       ],
       "where": "includes/Quota/QuotaService.php:277",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_transcode_complete",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "$media_id",
-        "$results",
-        "$final_status"
-      ],
-      "where": "includes/Video/TranscodeService.php:521",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_transcode_presets",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$presets",
-        "$media_id"
-      ],
-      "where": "includes/Video/TranscodeService.php:458",
       "consumed_by": []
     },
     {
@@ -3417,16 +3311,6 @@
       "file": "includes/Video/VideoController.php"
     },
     {
-      "key": "video.transcode",
-      "class": "Video\\TranscodeService",
-      "file": "includes/Video/TranscodeService.php"
-    },
-    {
-      "key": "video.transcode_controller",
-      "class": "Video\\TranscodeController",
-      "file": "includes/Video/TranscodeController.php"
-    },
-    {
       "key": "captions.transcription",
       "class": "Captions\\TranscriptionService",
       "file": "includes/Captions/TranscriptionService.php"
@@ -3639,7 +3523,6 @@
         "includes/Admin/MigrationPage.php:87",
         "includes/Admin/AnalyticsDashboard.php:62,96",
         "includes/Core/ConnectionTester.php:71,117,160,198",
-        "includes/Video/TranscodeController.php:385,402",
         "includes/Captions/CaptionController.php:352",
         "includes/Challenges/ChallengeController.php:346"
       ],

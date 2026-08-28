@@ -16,9 +16,9 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 91,
+    "rest_endpoints": 86,
     "ajax": 8,
-    "admin_pages": 31,
+    "admin_pages": 30,
     "settings": 0,
     "tables": 10,
     "subsystems": 19,
@@ -26,7 +26,7 @@
     "free_services_consumed": 1,
     "free_filters_hooked": 22,
     "extension_patterns": 6,
-    "cron": 15,
+    "cron": 14,
     "wp_cli": 6,
     "storage_drivers": 2,
     "templates": 16,
@@ -38,10 +38,10 @@
     "free_actions_hooked_baseline": 25,
     "hooks_fired_baseline": 72,
     "capabilities": 4,
-    "services": 60,
+    "services": 58,
     "post_types": 0,
     "taxonomies": 0,
-    "hooks_fired_unique": 84
+    "hooks_fired_unique": 81
   },
   "detail_files": {
     "rest": "manifest.rest.json",

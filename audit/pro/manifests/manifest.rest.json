@@ -145,56 +145,6 @@
         "file": "includes/Connectors/ConnectorRESTController.php:276"
       },
       {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcodes",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TranscodeController::get_transcodes",
-        "permission": "owner_or_admin",
-        "purpose": "List transcode renditions for media",
-        "file": "includes/Video/TranscodeController.php:66"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcodes",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "TranscodeController::delete_transcodes",
-        "permission": "owner_or_admin",
-        "purpose": "Delete transcode renditions for media",
-        "file": "includes/Video/TranscodeController.php:75"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcode",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TranscodeController::trigger_transcode",
-        "permission": "owner_or_admin",
-        "purpose": "Trigger transcode job for media",
-        "file": "includes/Video/TranscodeController.php:86"
-      },
-      {
-        "route": "/mvs-pro/v1/transcode/status",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TranscodeController::get_queue_status",
-        "permission": "admin_check",
-        "purpose": "Get transcode queue status",
-        "file": "includes/Video/TranscodeController.php:108"
-      },
-      {
-        "route": "/mvs-pro/v1/transcode/config",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TranscodeController::get_config",
-        "permission": "admin_check",
-        "purpose": "Get transcode configuration",
-        "file": "includes/Video/TranscodeController.php:139"
-      },
-      {
         "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
         "methods": [
           "GET"

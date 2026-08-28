@@ -34,24 +34,19 @@ marked *conditional* are gated by a per-feature `get_option()` toggle.
     + AS hook:               mvs_pro_transcribe_media
 15. CaptionController        - REST: /media/{id}/captions, /captions/generate,
                                /captions/status
-16. TranscodeService         - FFmpeg multi-preset transcoding pipeline
-    + AS hook:               mvs_pro_transcode_video
-    + WP Cron:               mvs_pro_transcode_cleanup (hourly, remove >24h temp)
-17. TranscodeController      - REST: /media/{id}/transcode(s), /transcode/status,
-                               /transcode/config
-18. Storage driver filter    - mvs_storage_driver (S3, Backblaze B2, etc.)
-19. Watermark filter         - mvs_watermark_enabled + mvs_generate_watermark
-20. AI providers action      - mvs_ai_providers
-21. ConnectionTester         - admin AJAX for testing S3/API connections
-22. AnalyticsService         - play event recording, heatmaps, retention curves
+16. Storage driver filter    - mvs_storage_driver (S3, Backblaze B2, etc.)
+17. Watermark filter         - mvs_watermark_enabled + mvs_generate_watermark
+18. AI providers action      - mvs_ai_providers
+19. ConnectionTester         - admin AJAX for testing S3/API connections
+20. AnalyticsService         - play event recording, heatmaps, retention curves
     + WP Cron:               mvs_pro_prune_play_events (daily)
-23. AnalyticsController      - REST: /media/{id}/events, /media/{id}/analytics,
+21. AnalyticsController      - REST: /media/{id}/events, /media/{id}/analytics,
                                /analytics/top, /analytics/overview
-24. BattleService            - (conditional: mvs_battles_enabled)
+22. BattleService            - (conditional: mvs_battles_enabled)
     + BattleController       - REST: /battles, /battles/{id}, accept/decline/
                                submit/vote
     + AS recurring:          mvs_resolve_expired_battles (hourly)
-25. ChallengeService         - (conditional: mvs_challenges_enabled)
+23. ChallengeService         - (conditional: mvs_challenges_enabled)
     + AutopilotService       - weekly auto-creation from theme pool
       + AS recurring:        mvs_autopilot_create_weekly_challenge (weekly)
     + ChallengeController    - REST: /challenges, /challenges/{id}, entries, vote,
@@ -59,35 +54,35 @@ marked *conditional* are gated by a per-feature `get_option()` toggle.
     + AS recurring (x3):     mvs_activate_scheduled_challenges,
                              mvs_close_challenge_entries,
                              mvs_finalize_expired_challenges (all hourly)
-26. TournamentService        - (conditional: mvs_tournaments_enabled)
+24. TournamentService        - (conditional: mvs_tournaments_enabled)
     + TournamentController   - REST: /tournaments, /tournaments/{id}, register,
                                bracket, participants, matches/submit, matches/vote
     + AS recurring (x2):     mvs_start_registered_tournaments,
                              mvs_resolve_expired_matches (both hourly)
-27. BoostService             - (conditional: mvs_boosts_enabled)
+25. BoostService             - (conditional: mvs_boosts_enabled)
     + BoostController        - REST: /boosts (list + create)
     + AS recurring:          mvs_expire_boosts (hourly)
-28. CompeteSummaryController - REST: /competitions/active-summary (public)
-29. StreakService             - upload streak tracking + milestone XP
-30. Streak badge filter      - mvs_user_display_name (appends streak badge)
-31. Activity types filter    - mvs_activity_types (registers 8 gamification types)
-32. GamificationTemplateLoader - frontend pages: /media/battles/, /media/challenges/,
+26. CompeteSummaryController - REST: /competitions/active-summary (public)
+27. StreakService             - upload streak tracking + milestone XP
+28. Streak badge filter      - mvs_user_display_name (appends streak badge)
+29. Activity types filter    - mvs_activity_types (registers 8 gamification types)
+30. GamificationTemplateLoader - frontend pages: /media/battles/, /media/challenges/,
                                 /media/tournaments/
-33. Admin block (is_admin):
+31. Admin block (is_admin):
       ProSettings, QuotaPage, MigrationPage, ReportManager,
       AnalyticsDashboard, GamificationSettings,
       ChallengeManager, TournamentManager, BattleMonitor,
       CompetitionsDashboard, ThemeLibrary
     + mvs_moderation_tabs filter (adds User Reports tab)
     + mvs_stats_tabs filter (adds Video Analytics tab)
-34. First-run seed           - seeds default theme pool + creates first weekly
+32. First-run seed           - seeds default theme pool + creates first weekly
                                challenge (once, on activation)
-35. admin_enqueue_scripts    - Pro admin CSS/JS
-36. Submenu reorder          - admin_menu priority 999 for logical grouping
-37. Reserved paths filter    - mvs_reserved_media_paths (reserves /compete/)
-38. Explore banner action    - mvs_before_explore_grid (pinned competition card)
-39. Nav menu filter          - wp_nav_menu_items (injects Compete link)
-40. Dashboard tabs           - mvs_dashboard_tabs + mvs_dashboard_panels (My Media
+33. admin_enqueue_scripts    - Pro admin CSS/JS
+34. Submenu reorder          - admin_menu priority 999 for logical grouping
+35. Reserved paths filter    - mvs_reserved_media_paths (reserves /compete/)
+36. Explore banner action    - mvs_before_explore_grid (pinned competition card)
+37. Nav menu filter          - wp_nav_menu_items (injects Compete link)
+38. Dashboard tabs           - mvs_dashboard_tabs + mvs_dashboard_panels (My Media
                                compete panels)
 ```
 
@@ -377,17 +372,7 @@ All routes are under the `mvs-pro/v1` namespace.
 | POST | `/media/{id}/captions/generate` | owner or manage_mvs_settings | Queue transcription (202) |
 | GET | `/media/{id}/captions/status` | public | Poll transcription status |
 
-### 3.5 Transcoding
-
-| Method | Route | Permission | Description |
-|---|---|---|---|
-| GET | `/media/{id}/transcodes` | owner or manage_mvs_settings | Get transcode results |
-| DELETE | `/media/{id}/transcodes` | owner or manage_mvs_settings | Delete transcoded files |
-| POST | `/media/{id}/transcode` | owner or manage_mvs_settings | Trigger transcode (202) |
-| GET | `/transcode/status` | manage_mvs_settings | Admin job queue overview |
-| GET | `/transcode/config` | manage_mvs_settings | FFmpeg availability + presets |
-
-### 3.6 Analytics
+### 3.5 Analytics
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
@@ -396,7 +381,7 @@ All routes are under the `mvs-pro/v1` namespace.
 | GET | `/analytics/top` | manage_mvs_settings | Top media by engagement |
 | GET | `/analytics/overview` | manage_mvs_settings | Site-wide summary |
 
-### 3.7 Battles
+### 3.6 Battles
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
@@ -408,7 +393,7 @@ All routes are under the `mvs-pro/v1` namespace.
 | POST | `/battles/{id}/submit` | logged_in | Submit media entry |
 | POST | `/battles/{id}/vote` | logged_in | Cast vote |
 
-### 3.8 Challenges
+### 3.7 Challenges
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
@@ -423,7 +408,7 @@ All routes are under the `mvs-pro/v1` namespace.
 | DELETE | `/challenges/{id}/entries/{eid}/vote` | logged_in | Remove vote |
 | GET | `/challenges/{id}/results` | public | Finalized results |
 
-### 3.9 Tournaments
+### 3.8 Tournaments
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
@@ -437,14 +422,14 @@ All routes are under the `mvs-pro/v1` namespace.
 | POST | `/tournaments/{id}/matches/{mid}/submit` | logged_in | Submit media for match |
 | POST | `/tournaments/{id}/matches/{mid}/vote` | logged_in | Vote in match |
 
-### 3.10 Boosts
+### 3.9 Boosts
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
 | GET | `/boosts` | logged_in | List current user's boosts |
 | POST | `/boosts` | logged_in | Create a boost |
 
-### 3.11 Messaging
+### 3.10 Messaging
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
@@ -467,7 +452,7 @@ All routes are under the `mvs-pro/v1` namespace.
 | POST | `/conversations/{id}/decline` | logged_in | Decline message request |
 | POST | `/messages/upload` | logged_in | Upload DM attachment |
 
-### 3.12 Competition Summary
+### 3.11 Competition Summary
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
@@ -483,8 +468,6 @@ All hooks are within `includes/`. Organized by category.
 
 | Hook | Type | Schedule | File : Line |
 |---|---|---|---|
-| `mvs_pro_transcode_video` | AS single | on-demand | TranscodeService.php:59 |
-| `mvs_pro_transcode_cleanup` | WP Cron | hourly | Plugin.php:153 |
 | `mvs_pro_transcribe_media` | AS single | on-demand | TranscriptionService.php:50 |
 | `mvs_pro_prune_play_events` | WP Cron | daily | AnalyticsService.php:47 |
 | `mvs_resolve_expired_battles` | AS recurring | hourly | Plugin.php:206 |
@@ -563,13 +546,10 @@ All hooks are within `includes/`. Organized by category.
 | `mvs_autopilot_challenge_created` | action | AutopilotService.php:158 |
 | `mvs_autopilot_pool_reset` | action | AutopilotService.php:417 |
 
-### 4.7 Video / Transcoding / Captions Hooks
+### 4.7 Video / Captions Hooks
 
 | Hook | Type | File : Line |
 |---|---|---|
-| `mvs_pro_transcode_presets` | filter | TranscodeService.php:306 |
-| `mvs_pro_poster_frame` | filter | TranscodeService.php:682 |
-| `mvs_pro_transcode_complete` | action | TranscodeService.php:369 |
 | `mvs_pro_captions_generated` | action | TranscriptionService.php:210 |
 
 ### 4.8 Privacy Hooks
@@ -697,53 +677,7 @@ Each competition type has hourly recurring AS actions:
 
 ## 6. Video Pipeline
 
-### 6.1 Transcoding Flow
-
-```
-Upload (mvs_media_uploaded)
-  |
-  v
-TranscodeService::maybe_queue()
-  - checks: transcoding enabled? auto-transcode on? media_type = video? ffmpeg available?
-  |
-  v
-TranscodeService::queue_transcode($media_id)
-  - idempotent: skips if pending AS action already exists
-  - sets meta: transcode_status = 'queued'
-  - schedules AS single action: mvs_pro_transcode_video (+5s delay)
-  |
-  v
-TranscodeService::transcode($media_id)  [AS worker]
-  - concurrency control: max 4 concurrent jobs; re-queues with 30s delay if at limit
-  - sets meta: transcode_status = 'processing'
-  - resolves source file path from MediaMeta
-  - for each configured preset (720p, 480p, 360p):
-      - spawns FFmpeg: -vf scale=-2:{height} -crf {crf} -c:a aac -b:a {audio_bitrate}
-      - output: {uploads}/mvs-transcodes/{media_id}/{preset}.mp4
-  - optionally generates HLS playlist
-  - optionally generates poster frame (thumbnail)
-  - stores results in meta: _mvs_transcodes (preset => {url, width, height, size, status})
-  - sets meta: transcode_status = 'complete' or 'failed'
-  - fires: do_action('mvs_pro_transcode_complete', $media_id, $results, $status)
-  |
-  v
-mvs_pro_transcode_cleanup [WP Cron, hourly]
-  - removes temp files older than 24 hours from {uploads}/mvs-transcodes/
-```
-
-### 6.2 Presets
-
-Defined in `TranscodeService::PRESETS`:
-
-| Preset | Height | CRF | Audio Bitrate |
-|---|---|---|---|
-| 720p | 720 | 23 | 128k |
-| 480p | 480 | 25 | 96k |
-| 360p | 360 | 27 | 80k |
-
-Presets are filterable via `mvs_pro_transcode_presets`.
-
-### 6.3 Captions / Transcription
+### 6.1 Captions / Transcription
 
 ```
 CaptionController: POST /media/{id}/captions/generate

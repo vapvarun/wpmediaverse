@@ -370,18 +370,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_transcode_complete",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "$media_id",
-        "$results",
-        "$final_status"
-      ],
-      "where": "includes/Video/TranscodeService.php:521",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_woo_package_assigned",
       "type": "action",
       "args_count": 4,
@@ -823,18 +811,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_poster_frame",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "$poster_url",
-        "$media_id",
-        "$input"
-      ],
-      "where": "includes/Video/TranscodeService.php:834",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_quota_default_applies_to_unassigned",
       "type": "filter",
       "args_count": 2,
@@ -866,17 +842,6 @@
         "$user_id"
       ],
       "where": "includes/Quota/QuotaService.php:277",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_transcode_presets",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$presets",
-        "$media_id"
-      ],
-      "where": "includes/Video/TranscodeService.php:458",
       "consumed_by": []
     },
     {
