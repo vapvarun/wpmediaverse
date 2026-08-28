@@ -6423,6 +6423,16 @@ a.mvs-dashboard-card-title:hover {
     padding: 8px 0;
     margin: 0;
     list-style: none;
+    display: flex;
+    flex-direction: column;
+}
+
+/* A short thread would otherwise strand its comments at the top over a tall
+   empty gap down to the composer. Bottom-align them so they sit just above
+   where you type; the auto margin collapses once comments fill or overflow
+   the list (the lightbox caps how many it shows, then links to "View all"). */
+.mvs-lightbox-comment-list > .mvs-lightbox-comment:first-child {
+    margin-block-start: auto;
 }
 
 .mvs-lightbox-comment {
@@ -6540,6 +6550,13 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-comment-action svg {
     inline-size: 14px;
     block-size: 14px;
+}
+
+/* The edit/delete icons line up on the right, under the timestamp, rather
+   than floating on the left under the comment text. */
+.mvs-lightbox-comment-actions {
+    justify-content: flex-end;
+    margin-block-start: 0;
 }
 
 .mvs-lightbox-comment-edit {
