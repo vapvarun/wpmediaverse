@@ -262,7 +262,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return '';
 			}
 			// Prefer the admin-chosen lightbox_url (honors `mvs_lightbox_image_source`);
@@ -276,7 +276,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// directly (gated /serve route). Empty `srcset` makes the browser
 			// skip the `<source>` and use the JPEG `<img>` fallback.
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return '';
 			}
 			return d.lightbox_webp_url || '';
@@ -286,7 +286,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// showing a non-image item. `data-wp-bind--hidden` on a `<source>`
 			// element makes the browser ignore it during type negotiation.
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return true;
 			}
 			return ! d.lightbox_webp_url;
@@ -297,14 +297,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// FIRST in the template; AVIF-capable browsers (Chrome, Firefox,
 			// Safari 16.4+, Edge) pick it and skip the WebP/JPEG fallbacks.
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return '';
 			}
 			return d.lightbox_avif_url || '';
 		},
 		get lightboxHideImageAvif() {
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return true;
 			}
 			return ! d.lightbox_avif_url;
@@ -315,9 +315,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxIsAudio() {
 			return state.lightboxMediaData?.media_type === 'audio';
 		},
+		get lightboxIsDocument() {
+			return state.lightboxMediaData?.media_type === 'document';
+		},
+		get lightboxHideDocument() {
+			return state.lightboxMediaData?.media_type !== 'document';
+		},
 		get lightboxHideImage() {
-			const t = state.lightboxMediaData?.media_type;
-			return t === 'video' || t === 'audio';
+			// Show the <img> only when there is a real image URL. lightboxImageUrl
+			// now returns '' for every non-image type, so a document (or any item
+			// with no displayable image) never synthesises a broken <img> under
+			// the media chrome (Basecamp 10248528902).
+			return ! state.lightboxImageUrl;
 		},
 		get lightboxHideVideo() {
 			return state.lightboxMediaData?.media_type !== 'video';

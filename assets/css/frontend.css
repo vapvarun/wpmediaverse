@@ -3649,6 +3649,26 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-muted, #7a8494);
 }
 
+/* A document opened in the media lightbox (Basecamp 10248528902). A document has
+   no displayable image, so instead of a broken <img> it renders as a centered
+   card; the lightbox chrome around it (Open / Download) still reaches the file. */
+.mvs-lightbox-document.mvs-doc-card {
+    width: min(340px, 80vw);
+    height: auto;
+    gap: 14px;
+    padding: 40px 32px;
+    background: var(--mvs-bg, #ffffff);
+    border-radius: 12px;
+}
+
+.mvs-lightbox-document .mvs-doc-card__glyph {
+    --mvs-doc-glyph-size: 72px;
+}
+
+.mvs-lightbox-document .mvs-doc-card__title {
+    font-size: 1.05em;
+}
+
 @media (max-width: 480px) {
     .mvs-doc-card {
         gap: 6px;

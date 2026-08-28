@@ -439,6 +439,12 @@ wp_interactivity_state(
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
 				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
+				<?php // A document has no displayable image, so instead of synthesising a broken <img> from its file URL the lightbox shows a doc card (glyph + title + type); the chrome below (Open / Download) still reaches the file. (Basecamp 10248528902) ?>
+				<div class="mvs-lightbox-document mvs-doc-card" data-wp-bind--hidden="state.lightboxHideDocument" hidden>
+					<span class="mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--file-text" aria-hidden="true"></span>
+					<span class="mvs-doc-card__title" data-wp-text="state.lightboxTitle"></span>
+					<span class="mvs-doc-card__meta" data-wp-text="state.lightboxFileType"></span>
+				</div>
 
 				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
