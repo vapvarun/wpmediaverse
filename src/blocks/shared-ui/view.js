@@ -332,6 +332,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Per-type glyph from the REST doc_icon (resolved server-side from the
 			// single DocumentTypes map), so a spreadsheet is not drawn as a text
 			// file. Falls back to the generic file glyph. (Basecamp 10248528902)
+			//
+			// MUST return the FULL class string, not just the `--<icon>` modifier:
+			// the template binds this with `data-wp-bind--class`, which REPLACES
+			// the element's whole class attribute. Drop the base classes here and
+			// the glyph loses `mvs-doc-glyph` and stops painting its mask.
 			const icon = state.lightboxMediaData?.doc_icon || 'file-text';
 			return 'mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--' + icon;
 		},
