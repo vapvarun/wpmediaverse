@@ -1188,10 +1188,22 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Update media index with new file data.
-		$media_type = explode( '/', $mime )[0]; // image, video, audio.
-		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
-			$media_type = 'document';
-		}
+		//
+		// Through UploadService, not inline — the fourth time this endpoint has
+		// had to stop reimplementing a step of the ingest pipeline (filename
+		// strategy, EXIF orientation and the MIME guard above were the first
+		// three). What stood here was the pre-1.2.3 catch-all: anything not
+		// image/video/audio became `document`. `get_media_type()` moved to an
+		// allowlist in 2.4.0 and this copy did not, so it was the last inverted
+		// one left in Free.
+		//
+		// It was DEAD code, not a live bug: `reject_unsupported_mime()` above
+		// already refuses every MIME this resolver answers '' for, so the
+		// `document` branch was unreachable and no row could be re-typed by a
+		// replacement. Removed rather than guarded — adding a second refusal
+		// here would duplicate that check, which is how these two paths drifted
+		// apart the previous three times. The '' case cannot reach this line.
+		$media_type = $upload_service->get_media_type_public( $mime );
 
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
 			$media_id,
