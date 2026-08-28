@@ -1180,9 +1180,8 @@ class UploadService {
 				$buckets[ $key ][3] += $b;
 			}
 		}
-		if ( empty( $buckets ) ) {
-			return '';
-		}
+		// The 16x16 sample loop always populates at least one bucket, so no
+		// empty guard is needed here.
 		$best = null;
 		foreach ( $buckets as $bucket ) {
 			if ( null === $best || $bucket[0] > $best[0] ) {

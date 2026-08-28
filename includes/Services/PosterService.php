@@ -116,5 +116,4 @@ class PosterService {
 		@unlink( $tmp_path );
 		return $dest;
 	}
-
 }
