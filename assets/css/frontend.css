@@ -3020,9 +3020,20 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-tag-cloud-item:hover,
+/*
+ * The foreground must move WITH the background. This set `--mvs-text` — the
+ * body text colour — on top of the primary fill, so the selected chip scored
+ * 2.05 in light mode and 1.13 in dark, i.e. the one filter a member has chosen
+ * was the least readable thing on the page (Basecamp 10252222011).
+ *
+ * `--mvs-on-primary` is the token that exists for exactly this: whatever reads
+ * correctly on the accent, resolved from the theme. Same pairing the attention
+ * badge uses. Renders on Explore, /media-tag/ archives and member profiles, so
+ * this one rule covers three surfaces.
+ */
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
-    color: var(--mvs-text);
+    color: var(--mvs-on-primary, #fff);
 }
 
 /* ==========================================================================
