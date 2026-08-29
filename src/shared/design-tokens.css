@@ -69,9 +69,28 @@
 	--mvs-color-info: #2563eb;
 	--mvs-color-info-bg: #eff6ff;
 
-	/* Responsive breakpoints (used by CSS generation utility) */
-	--mvs-bp-tablet: 1024px;
-	--mvs-bp-mobile: 767px;
+	/*
+	 * Responsive breakpoints — DOCUMENTATION ONLY (a @media query cannot read a
+	 * custom property). The numbers the block CSS generator actually emits live
+	 * in src/shared/utils/css.js: `max-width: 1024px` for tablet, `max-width:
+	 * 767px` for mobile.
+	 *
+	 * This block used to say tablet=1024 / mobile=767 while frontend.css said
+	 * tablet=768 / mobile=480 — the same two names, different numbers, so
+	 * whichever file you read decided what you wrote. That is how the codebase
+	 * ended up with rules at both 767 and 768 and at both 1023 and 1024
+	 * (Basecamp 10252222205). Both blocks now carry the same list.
+	 *
+	 *   480px  small phone
+	 *   640px  phone — the most-used breakpoint in the codebase
+	 *   768px  tablet boundary; below it is 767
+	 *  1024px  top of tablet; desktop is 1025+
+	 *   782px  WordPress admin's own breakpoint — core's number, not ours
+	 */
+	--mvs-bp-phone-sm: 480px;
+	--mvs-bp-phone: 640px;
+	--mvs-bp-tablet: 768px;
+	--mvs-bp-desktop: 1025px;
 
 	/* Transition */
 	--mvs-transition-fast: 150ms ease;

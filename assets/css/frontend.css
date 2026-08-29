@@ -175,10 +175,32 @@
     --mvs-radius-lg: var(--r-lg, 12px);
     --mvs-radius-pill: var(--r-full, 100px);
 
-    /* Breakpoints (reference only — used in @media rules) */
-    --mvs-bp-mobile: 480px;
+    /*
+     * Breakpoints — DOCUMENTATION ONLY. A @media query cannot read a custom
+     * property, so nothing consumes these; they exist so that "the tablet
+     * breakpoint" means one thing to the next person.
+     *
+     * They previously did not. This block said tablet=768 / mobile=480 while
+     * src/shared/design-tokens.css said tablet=1024 / mobile=767 — the same two
+     * names, different numbers, and whichever file you happened to read decided
+     * what you wrote. That is how this codebase ended up with rules at both 767
+     * and 768, and at both 1023 and 1024 (Basecamp 10252222205). Both blocks now
+     * carry the list below.
+     *
+     *   480px  small phone                       (13 rules)
+     *   640px  phone — the most-used breakpoint  (24 Free / 38 Pro)
+     *   768px  tablet boundary; below it is 767  (17 rules)
+     *  1024px  top of tablet; desktop is 1025+   (5 rules)
+     *   782px  WordPress admin's own breakpoint — core's number, not ours
+     *
+     * The contract asks for three and there are five. Collapsing them is a
+     * deliberate redesign, not a tidy-up, and is NOT what this card did — the
+     * fix here was to stop the same name meaning two things.
+     */
+    --mvs-bp-phone-sm: 480px;
+    --mvs-bp-phone: 640px;
     --mvs-bp-tablet: 768px;
-    --mvs-bp-desktop: 1024px;
+    --mvs-bp-desktop: 1025px;
 
     /* ─── Mobile UX guideline tokens (see docs/MOBILE_UX_GUIDELINE.md §2.2) ── */
 
@@ -407,8 +429,15 @@ body.mvs-page {
 
 /* §3.1 — Universal touch-target floor below the desktop breakpoint.
    Every interactive element clears 44×44 in both axes, expanding via padding
-   when the visible chip is smaller. */
-@media (max-width: 1023px) /* var(--mvs-bp-desktop) */ {
+   when the visible chip is smaller.
+
+   1024, not 1023. Desktop starts at 1025 (src/shared/base.css), tablet is
+   768-1024, and the block CSS generator emits `max-width: 1024px` for its
+   tablet tier — so at exactly 1024px, which is iPad landscape, this floor was
+   the ONLY tablet rule in the plugin that switched itself off. The three other
+   tablet blocks in this file already say 1024; this one was the outlier
+   (Basecamp 10252222205). */
+@media (max-width: 1024px) {
     .mvs-page .mvs-btn,
     .mvs-page .mvs-icon-btn,
     .mvs-page .mvs-fab,
@@ -469,7 +498,7 @@ body.mvs-page {
     flex-shrink: 0;
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     /* Hide textual label — keep the chevron only.
        The screen-reader label stays via aria-label on the anchor. */
     .mvs-back-link__label {
@@ -516,7 +545,7 @@ body.mvs-page {
     flex-shrink: 0;
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-btn--icon-collapse .mvs-btn__label {
         position: absolute;
         width: 1px;
@@ -649,7 +678,7 @@ body.dark-mode .mvs-skeleton::after {
     gap: var(--mvs-space-2);
 }
 
-@media (min-width: 768px) /* var(--mvs-bp-tablet) */ {
+@media (min-width: 768px) /* --mvs-bp-tablet and up */ {
     .mvs-skeleton-grid {
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: var(--mvs-space-3);
@@ -1859,7 +1888,7 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-bg);
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     /* Hide the view count on mobile to reclaim space — it's a passive metric. */
     .mvs-single-media .mvs-social-actions .mvs-view-count {
         display: none;
@@ -2553,7 +2582,7 @@ a.mvs-dashboard-card-title:hover {
    Modal slides up from the bottom edge with a drag handle, max 90vh,
    safe-area-inset honored for iOS home indicator. Animation respects
    prefers-reduced-motion. */
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-modal-overlay {
         align-items: flex-end;
         padding: 0;
@@ -2835,7 +2864,7 @@ a.mvs-dashboard-card-title:hover {
     /* Honor the FAB safe area so toasts never collide with the upload button. */
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-toast {
         /* On mobile, sit above both the FAB safe area and the home indicator. */
         bottom: calc(var(--mvs-fab-safe) + 8px + env(safe-area-inset-bottom, 0px));
