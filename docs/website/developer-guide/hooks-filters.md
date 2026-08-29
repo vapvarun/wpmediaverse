@@ -110,6 +110,10 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_ai_moderation_result` | filter | Free | 1.1 |
 | `mvs_openai_api_key` | filter | Free | 1.0 |
 | `mvs_media_deleted` | action | Free | 1.0 |
+| `mvs_media_trashed` | action | Free | 2.4.0 |
+| `mvs_media_restored` | action | Free | 2.4.0 |
+| `mvs_has_custom_avatar` | filter | Free | 2.4.0 |
+| `mvs_media_drive_access` | filter | Free | 2.4.0 |
 | `mvs_storage_driver` | filter | Free | 1.0 |
 | `mvs_watermark_enabled` | filter | Free | 1.0 |
 | `mvs_watermark_stamp_file` | filter | Free | 1.0 |
@@ -1999,7 +2003,9 @@ add_filter( 'mvs_filename_strategy', function( string $strategy, int $user_id ) 
 
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
-| `mvs_media_deleted` | action | Media permanently deleted | `$media_id`, `$author_id` | 1.0 |
+| `mvs_media_deleted` | action | Media permanently deleted | `$media_id`, `$author_id`, `$permalink` (since 1.9.0) | 1.0 |
+| `mvs_media_trashed` | action | Media moved to the trash. Same three arguments as `mvs_media_deleted`, so one listener can withdraw a mirror on either event | `$media_id`, `$author_id`, `$permalink` | 2.4.0 |
+| `mvs_media_restored` | action | Media restored from the trash. Paired with `mvs_media_trashed` so a withdrawn mirror can be re-added | `$media_id`, `$author_id`, `$permalink` | 2.4.0 |
 | `mvs_watermark_enabled` | filter | Enable/disable watermark per media item | `$enabled` (bool), `$media_id` | 1.0 |
 | `mvs_cloud_thumbnail_url` | filter | Override the cloud URL stored for a generated thumbnail size at upload time. Return non-empty to use a custom URL | `$url` (string, empty), `$size_name` (string), `$media_id` (int) | 1.3.0 |
 | `mvs_thumbnail_sizes` | filter | Filter the size definitions array used for thumbnail generation | `$sizes` (array) | 1.3.0 |
@@ -2012,6 +2018,40 @@ add_filter( 'mvs_filename_strategy', function( string $strategy, int $user_id ) 
 ---
 
 ## 12. User Profiles
+
+### `mvs_has_custom_avatar`
+
+Whether a member has an avatar **they chose**, as opposed to a site default or a generated placeholder. Defaults to whether MediaVerse's own avatar store has one.
+
+For avatar providers other than MediaVerse. Without it, `has_custom_avatar` answers "is there a row in OUR store", so a member who set their picture in another plugin is reported as having none while their real photograph is being served beside it — and anything gating on the flag (an upload-a-photo nudge, a profile-completion check) asks them for a picture they already have.
+
+**Answer `true` only for a picture the member actually supplied.** Never for a site default or a generated initials placeholder — a seam that returns `true` for everyone is as useless as the bug it replaces, because nothing can then tell the two apart. This cannot be resolved by reading the avatar chain: core's `found_avatar` is set by placeholder generators too.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$has` | bool | True if MediaVerse's own avatar store has one |
+| `$user_id` | int | User ID |
+
+**Returns:** `bool`
+
+```php
+/**
+ * Report avatars this plugin stores itself.
+ *
+ * @since 2.4.0
+ *
+ * @param bool $has     MediaVerse's own answer.
+ * @param int  $user_id User ID.
+ * @return bool
+ */
+add_filter( 'mvs_has_custom_avatar', function( bool $has, int $user_id ) {
+    return $has || (bool) get_user_meta( $user_id, 'my_plugin_avatar', true );
+}, 10, 2 );
+```
+
+---
 
 ### `mvs_user_profile_url`
 
@@ -2091,6 +2131,47 @@ add_filter( 'mvs_user_display_name', function( string $name, int $user_id ) {
 ---
 
 ## 13. Access & Privacy
+
+### `mvs_media_drive_access`
+
+How much access a member has to a shared drive **for media**. Media and documents are two different things a member can put on a drive, and until 2.4.0 one filter answered for both — so a bridge could not allow photos in a Space while keeping files behind that Space's own files setting.
+
+Defaults to whatever `mvs_document_drive_access` answered, so leaving this alone keeps existing behaviour exactly.
+
+**This is a privacy boundary, not a placement hint.** The same answer governs both gates: which drive an upload lands on, AND who may read media already scoped to that drive. Answering `write` for someone who is not a member would expose that drive's media to them. The two gates share one resolver deliberately — if they disagreed, media would be stored scoped to a drive its own members could not open.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$level` | string | Access from `mvs_document_drive_access`: `none`, `read`, `write` or `own` |
+| `$drive_type` | string | Drive type, e.g. `space` |
+| `$drive_id` | int | Drive ID |
+| `$user_id` | int | User being tested (0 for anonymous) |
+
+**Returns:** `string`
+
+```php
+/**
+ * Any member of a Space may post media to it, whatever the files setting says.
+ *
+ * @since 2.4.0
+ *
+ * @param string $level      Level from the document filter.
+ * @param string $drive_type Drive type.
+ * @param int    $drive_id   Drive ID.
+ * @param int    $user_id    User being tested.
+ * @return string
+ */
+add_filter( 'mvs_media_drive_access', function( string $level, string $drive_type, int $drive_id, int $user_id ) {
+    if ( 'space' !== $drive_type ) {
+        return $level;
+    }
+    return my_user_is_space_member( $user_id, $drive_id ) ? 'write' : $level;
+}, 10, 4 );
+```
+
+---
 
 ### `mvs_privacy_can_view`
 

@@ -56,3 +56,11 @@ safety
 # album through the join table, and the fixture's smart collection matches on
 # `privacy = public` — so it matches every listing's criteria except type.
 document-never-in-media-surface
+
+# 2.4.0 integration + privacy contracts. Each of these is a seam another plugin
+# depends on, which is exactly the kind of feature that can be dropped in a
+# refactor without any test noticing — the boost-drop class, one layer out.
+media-drive-access-seam
+anonymous-document-reads
+media-trash-lifecycle
+avatar-flag-truthfulness
