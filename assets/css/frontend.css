@@ -3031,6 +3031,25 @@ a.mvs-dashboard-card-title:hover {
  * badge uses. Renders on Explore, /media-tag/ archives and member profiles, so
  * this one rule covers three surfaces.
  */
+/*
+ * Visually hidden, still announced. Ours on purpose: `.screen-reader-text` is
+ * WordPress core's class and its presence depends on the THEME defining it. A
+ * label that becomes visible on a theme that does not would be worse than the
+ * placeholder-only field it replaced — and "the theme will have it" is the
+ * assumption this audit kept finding to be wrong.
+ */
+.mvs-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
     color: var(--mvs-on-primary, #fff);

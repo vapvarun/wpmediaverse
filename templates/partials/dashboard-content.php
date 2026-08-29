@@ -699,17 +699,28 @@ wp_interactivity_state(
 				<span data-wp-bind--hidden="state.upload.showFields"><?php esc_html_e( 'Add title, tags & privacy', 'wpmediaverse' ); ?></span>
 				<span data-wp-bind--hidden="!state.upload.showFields"><?php esc_html_e( 'Hide fields', 'wpmediaverse' ); ?></span>
 			</button>
+			<?php
+			// Real labels, visually hidden. A placeholder is a HINT: it vanishes
+			// on the first keystroke, so a screen-reader user never hears the
+			// field's name and a returning member loses it the moment they type
+			// (Basecamp 10252222135). The placeholders stay — they are useful
+			// as hints — but they are no longer carrying the label's job.
+			?>
 			<div class="mvs-dashboard-upload-fields" data-wp-bind--hidden="!state.upload.showFields">
-				<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-title"
+				<label class="mvs-sr-only" for="mvs-upload-meta-title"><?php esc_html_e( 'Media title', 'wpmediaverse' ); ?></label>
+				<input type="text" id="mvs-upload-meta-title" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-title"
 					data-wp-on--input="actions.setUploadTitle" />
-				<textarea placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-desc" rows="2"
+				<label class="mvs-sr-only" for="mvs-upload-meta-desc"><?php esc_html_e( 'Media description', 'wpmediaverse' ); ?></label>
+				<textarea id="mvs-upload-meta-desc" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-desc" rows="2"
 					data-wp-on--input="actions.setUploadDesc"></textarea>
 				<div class="mvs-dashboard-upload-row">
-					<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
+					<label class="mvs-sr-only" for="mvs-upload-meta-tags"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
+					<input type="text" id="mvs-upload-meta-tags" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
 						data-wp-on--input="actions.setUploadTags" />
 					<?php $mvs_def_priv = get_option( 'mvs_default_privacy', 'public' ); ?>
 					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
-					<select class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
+					<label class="mvs-sr-only" for="mvs-upload-meta-privacy"><?php esc_html_e( 'Who can see this', 'wpmediaverse' ); ?></label>
+					<select id="mvs-upload-meta-privacy" class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
 						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
 						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
