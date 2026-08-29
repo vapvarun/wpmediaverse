@@ -47,7 +47,7 @@ Pro is for sites that have outgrown a single server or want to earn from media. 
 | Theme | The pitch |
 |---|---|
 | Scale | Offload to S3, BunnyCDN, R2, or Spaces for global CDN delivery |
-| Video | Multi-quality transcoding, HLS, chapters, auto-captions, engagement analytics |
+| Video | Chapters, resume playback, auto-captions, engagement analytics |
 | Revenue | Quota packages sold through MemberPress, PMPro, or WooCommerce |
 | Engagement | Challenges, battles, tournaments, boosts, streaks |
 | Identity | Instagram, Pinterest, Flickr, and Dribbble layout modes |
@@ -68,12 +68,13 @@ Write the benefit, not the feature. The feature belongs in the supporting senten
 | EXIF stripping | Members do not publish their home address in a photo's GPS tag |
 | Quota packages (Pro) | Storage becomes a product you sell, not a cost you absorb |
 | Layout modes (Pro) | The community looks like the platform your members already use |
-| Transcoding (Pro) | Video plays smoothly on a phone on mobile data |
+| Resume playback (Pro) | A long video picks up where the member left off |
 | Gamification (Pro) | Members come back tomorrow |
 
 ## Words to avoid
 
 - **"Unlimited"** anything - storage is a real cost, and the claim invites a refund request.
+- **"Transcoding"**, **"HLS"**, **"adaptive streaming"**, **"multi-quality"** - removed in 2.4.0 and not coming back. MediaVerse embeds and plays media; it does not process it. The FFmpeg path was host-dependent (absent on most shared hosts) and its shell calls tripped security scanners. Say what is true instead: chapters, resume playback, auto-captions, engagement analytics. Selling a codec pipeline we do not ship is the same refund request as "unlimited", arriving a month later.
 - **"Replaces Instagram."** It does not, and the comparison invites feature-by-feature scrutiny we lose.
 - **"Enterprise-grade", "revolutionary", "seamless", "game-changing."** Say the specific thing instead.
 - **Competitor names in a negative claim.** Describe the shape of the problem, not the rival's failings. The `compare-tech` card compares approaches, not brands.
