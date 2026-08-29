@@ -6225,6 +6225,8 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 20px;               /* only appear on hover/active state to */
     padding: 4px 10px;                 /* keep the strip clean against the */
     cursor: pointer;                   /* light sidebar background */
+    min-block-size: var(--mvs-touch-min, 44px);
+    justify-content: center;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -6618,6 +6620,9 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     inline-size: 24px;
     block-size: 24px;
+    /* The 24px box is deliberate and stays. The TARGET grows instead, via the
+       ::after below — see the note there. */
+    position: relative;
     padding: 0;
     border: none;
     background: transparent;
@@ -6625,6 +6630,29 @@ a.mvs-dashboard-card-title:hover {
     border-radius: var(--mvs-radius-sm, 6px);
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/*
+ * Hit area, not icon size.
+ *
+ * These measured 24x24 against a 40px floor, but the 24px glyph is a
+ * deliberate design choice for this row and enlarging it would rebuild the
+ * comment meta line. So the target grows and the button does not.
+ *
+ * 40x44, not 44x44: the siblings sit 8.5px apart, so a 44px-wide area would
+ * overlap its neighbour by ~11px and the later button in the DOM would win
+ * every click in the overlap — silently turning "edit" into "delete" near the
+ * boundary. 40 wide leaves 0.5px between areas and still clears the floor.
+ * Basecamp 10252222115.
+ */
+.mvs-lightbox-comment-action::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    translate: -50% -50%;
+    inline-size: 40px;
+    block-size: var(--mvs-touch-min, 44px);
 }
 
 .mvs-lightbox-comment-action:hover,
@@ -6727,6 +6755,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-post {
     flex-shrink: 0;
+    min-block-size: var(--mvs-touch-min, 44px);
     background: var(--mvs-primary, #E35656);
     border: none;
     color: #ffffff;
@@ -7998,3 +8027,42 @@ a.mvs-dashboard-tab:focus-visible {
     --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M10%2012.5%208%2015l2%202.5%22%2F%3E%3Cpath%20d%3D%22m14%2012.5%202%202.5-2%202.5%22%2F%3E%3Cpath%20d%3D%22M14%202v4a2%202%200%200%200%202%202h4%22%2F%3E%3Cpath%20d%3D%22M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7z%22%2F%3E%3C%2Fsvg%3E");
 }
 
+
+
+/* ── Tap targets ───────────────────────────────────────────────────────────
+ *
+ * The member-side controls the audit measured under the 40px contract:
+ * mvs-search-mode-btn 66x26, mvs-tag-cloud-item 44x31, mvs-dashboard-tab
+ * 202x37, mvs-dashboard-rail-head__link 81x19 (Basecamp 10252222115).
+ *
+ * One rule on the component bases rather than per instance. `min-height` only
+ * raises, and `align-items: center` keeps the label optically centred instead
+ * of sitting at the top of a taller box.
+ */
+.mvs-search-mode-btn,
+.mvs-tag-cloud-item,
+.mvs-dashboard-tab,
+.mvs-dashboard-rail-head__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--mvs-touch-min);
+}
+
+/*
+ * Upload form fields.
+ *
+ * These four carried NO rule of their own — every pixel of their size came
+ * from whatever the active theme does to a bare input. On the QA baseline that
+ * produced 42 / 60 / 36 / 42 for four fields in one form: the tags input under
+ * the 40px floor, and visibly shorter than the title input beside it. On
+ * another theme the numbers are different and so is which one is wrong.
+ *
+ * The floor is ours; the flavour stays the theme's — this sets a minimum and
+ * nothing else, so a theme's padding, border and font still come through.
+ * Basecamp 10252222115.
+ */
+.mvs-upload-meta-title,
+.mvs-upload-meta-tags,
+.mvs-upload-meta-privacy {
+    min-height: var(--mvs-touch-min);
+}

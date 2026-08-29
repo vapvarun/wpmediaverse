@@ -48,7 +48,13 @@
 	font-weight: 600;
 	font-size: 13px;
 	text-decoration: none;
-	color: var(--mvs-accent, #d63638);
+	/* Fallback was #d63638, the accent this plugin used before the admin-blue
+	   decision. It only ever showed if admin.css failed to load, which is
+	   exactly when a stale fallback is least likely to be noticed. */
+	color: var(--mvs-accent, #2271b1);
+	/* A call to action on its own line is a control, not a link in a sentence:
+	   18px tall before this (Basecamp 10252222115). */
+	min-height: var(--mvs-touch-min);
 }
 .mvs-fam-header__link:hover { text-decoration: underline; }
 .mvs-fam-header__link [data-lucide] { width: 14px; height: 14px; }
