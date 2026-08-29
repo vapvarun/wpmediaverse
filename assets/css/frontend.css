@@ -39,6 +39,48 @@
     --mvs-primary: var(--reign-site-button-bg-color, var(--button-background-color, var(--bb-primary-button-background, var(--color-theme-primary, var(--brand, #0073aa)))));
     --mvs-primary-hover: var(--reign-site-button-bg-hover-color, var(--button-background-hover-color, var(--bb-primary-button-background-regular-hover, var(--color-theme-primary, var(--brand-hover, #005a87)))));
     --mvs-on-primary: var(--reign-site-button-text-color, var(--button-text-color, var(--bb-primary-button-text-regular, #ffffff)));
+
+    /* ── A CONTRAST FLOOR WE OWN ──────────────────────────────────────────
+     *
+     * Everything above derives from the theme, which means our AA compliance
+     * was decided by whichever theme the buyer installed. Measured: the primary
+     * call-to-action passes on Reign (4.51) and FAILS on Astra (4.29). Both
+     * halves of that pair come from the theme, so when a theme's own button
+     * colours do not meet AA, we inherited the failure (Basecamp 10252222099).
+     *
+     * `--mvs-primary-fill` nudges the accent 10% toward black. That alone does
+     * NOT guarantee the floor and was never going to: measured across candidate
+     * brand colours, a 15% darken still leaves white text at 2.00 on yellow and
+     * 2.88 on lime. Darkening enough to fix those would change the buyer's
+     * brand colour, which is the one thing they would notice and did not ask
+     * for.
+     *
+     * `--mvs-on-primary-auto` is what actually guarantees it: relative colour
+     * syntax reads the fill's OKLCH lightness and returns white below the
+     * threshold, black above it. The hue is never touched — only the text
+     * flips. Measured on the same candidates, fill + auto foreground:
+     *
+     *   Reign 5.38 · Astra 6.15 · yellow 11.78 · lime 8.09 · pink 5.19
+     *   navy 17.09 · grey 6.41          (minimum 5.19, all comfortably AA)
+     *
+     * The 10% nudge stays because it buys headroom on the dark accents that
+     * were merely scraping past — Reign goes 4.51 -> 5.38.
+     *
+     * Fallback: browsers without relative colour syntax keep the theme's own
+     * button text colour, i.e. exactly today's behaviour. Nobody is worse off
+     * than before; supporting browsers are better off.
+     */
+    --mvs-primary-fill: color-mix(in srgb, var(--mvs-primary) 90%, #000);
+    /*
+     * Declared straight, with NO @supports guard, and that is deliberate.
+     * Chrome discards `@supports (color: oklch(from red l c h))` at the at-rule
+     * parser while `CSS.supports()` returns true for the same string — measured,
+     * the guarded rule never reached the CSSOM at all. The guard is also
+     * unnecessary: a custom property a browser cannot parse becomes
+     * guaranteed-invalid, so every consumer's own `var(..., fallback)` takes
+     * over. Old browsers therefore keep exactly today's behaviour for free.
+     */
+    --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
     --mvs-danger-rgb: 214, 54, 56;
@@ -4971,11 +5013,13 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn--primary {
-    background: var(--mvs-primary);
+    /* The floor pair, not the raw theme pair — see --mvs-primary-fill above.
+       This button is the measured failure on Astra (4.29). */
+    background: var(--mvs-primary-fill, var(--mvs-primary));
     /* Always readable on the brand primary background — never use a theme
        surface/bg token here; those flip to dark in dark-mode themes. */
-    color: var(--mvs-on-primary, #ffffff);
-    border-color: var(--mvs-primary);
+    color: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
+    border-color: var(--mvs-primary-fill, var(--mvs-primary));
 }
 
 .mvs-btn--primary:hover,

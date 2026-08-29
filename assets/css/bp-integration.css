@@ -324,8 +324,9 @@
  * #buddypress button:hover (1,0,1) — re-scope them so the plugin wins
  * (card 10127407439). Tokens flip automatically in dark mode. */
 #buddypress .mvs-btn.mvs-btn--primary {
-    background: var(--mvs-primary);
-    color: var(--mvs-on-primary, #fff);
+    /* Floor pair — the BuddyPress copy of the same button. */
+    background: var(--mvs-primary-fill, var(--mvs-primary));
+    color: var(--mvs-on-primary-auto, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn.mvs-btn--primary:hover,
