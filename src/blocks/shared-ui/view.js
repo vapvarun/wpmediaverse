@@ -58,36 +58,25 @@ function loadLightboxMedia() {
 }
 
 /**
- * Shape a raw REST comment into a lightbox comment with edit/delete flags.
- *
- * Mirrors the single-media (media-social) computation so the two surfaces agree:
- * canEdit is own-comment within the edit window; canDelete is own OR moderator
- * with no time limit (the DELETE route allows it, so the control must too —
- * Basecamp 10148635942).
- *
- * Identity/window come from STATE (not context): the loader runs in whichever
- * grid item's context opened the lightbox, which does not carry them.
- *
- * @param {Object} c Raw comment from the REST payload.
- * @return {Object} Lightbox comment.
- */
-/**
  * Shape one API comment for the lightbox.
  *
- * `canModerate` is a PARAMETER, not a free variable. It used to read
- * `ctx.canModerateComments`, and `ctx` is not in scope in this function — every
- * other use of it in this file is a local `const ctx = getContext()`. That made
- * the expression a ReferenceError, but only sometimes: `isOwn || ctx.…`
- * short-circuits, so the author of a comment never evaluated it and saw their
- * comment normally, while for anyone else it threw inside the .map() and was
- * swallowed by the caller's catch, which set lightboxComments to []. The symptom
- * was that a media's comments were visible only to whoever wrote them.
+ * Identity, edit window and moderation rights all come from STATE, never from
+ * context: the loader runs in whichever grid item's context opened the lightbox
+ * (or a synthetic { restUrl, nonce, isLoggedIn } from openLightboxById), and
+ * neither carries them. Reading canModerate from a caller-supplied ctx made it
+ * silently false everywhere, so moderators lost Delete on other members'
+ * comments in the lightbox while the single page and the DELETE route still
+ * allowed it (Basecamp 10248799004; 10148635942 for the same lesson on
+ * currentUserId / commentEditWindow).
  *
- * @param {Object}  c           Comment from the REST API.
- * @param {boolean} canModerate Whether the viewer may delete others' comments.
+ * canEdit is own-comment within the edit window; canDelete is own OR moderator
+ * with no time limit — matching the API.
+ *
+ * @param {Object} c Comment from the REST API.
  * @return {Object} Comment shaped for the lightbox template.
  */
-function mapLightboxComment( c, canModerate = false ) {
+function mapLightboxComment( c ) {
+	const canModerate = !! state.canModerateComments;
 	const editWindow = ( state.commentEditWindow || 15 * 60 ) * 1000;
 	const age = Date.now() - gmtToMs( c.date );
 	const isOwn = state.currentUserId && c.author === state.currentUserId;
@@ -1258,7 +1247,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxTotalComments = parseInt( ( c.headers && c.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const cd = c.data;
 				state.lightboxComments = Array.isArray( cd )
-					? cd.map( ( x ) => mapLightboxComment( x, !! ctx.canModerateComments ) )
+					? cd.map( ( x ) => mapLightboxComment( x ) )
 					: [];
 			} catch ( e ) {
 				// Log rather than fail silently. This catch used to turn a code
@@ -1402,7 +1391,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const comment = r.data;
 				if ( comment && comment.id ) {
 					// Map so the just-posted comment carries its own edit/delete flags.
-					state.lightboxComments = [ ...state.lightboxComments, mapLightboxComment( comment, !! ctx.canModerateComments ) ];
+					state.lightboxComments = [ ...state.lightboxComments, mapLightboxComment( comment ) ];
 					state.lightboxCommentText = '';
 				}
 			} catch {
