@@ -4877,13 +4877,30 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int $media_id Media ID.
 	 * @return bool True on success.
 	 */
-	public function trash( int $media_id ): bool {
+	/**
+	 * Write a media row's status and drop its cached copy.
+	 *
+	 * The shared half of trash() and restore(), which are otherwise the same
+	 * statement twice. Each of those keeps its own `do_action` rather than
+	 * passing a hook name in here: a `do_action( $hook, … )` with a variable name
+	 * is invisible to every hook-documentation tool and to anyone grepping for
+	 * where an event is fired.
+	 *
+	 * 1.2.1 cache layer: row_cache holds the pre-write status, so without the
+	 * invalidation a following get_raw() returns the stale value — caught by
+	 * test_trash_then_restore_round_trip.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $status   New status.
+	 * @return bool True if the write succeeded.
+	 */
+	private function write_status( int $media_id, string $status ): bool {
 		global $wpdb;
 
 		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_index',
 			array(
-				'status'     => 'trash',
+				'status'     => $status,
 				'updated_at' => current_time( 'mysql', true ),
 			),
 			array( 'media_id' => $media_id ),
@@ -4891,12 +4908,42 @@ class MediaRepository implements MediaRepositoryInterface {
 			array( '%d' )
 		);
 
-		// 1.2.1 cache layer: row_cache holds the pre-trash status. Without
-		// this invalidation, subsequent get_raw() calls return the stale
-		// value — caught by test_trash_then_restore_round_trip.
 		self::invalidate_row_cache( $media_id );
 
 		return false !== $result;
+	}
+
+	public function trash( int $media_id ): bool {
+		if ( ! $this->write_status( $media_id, 'trash' ) ) {
+			return false;
+		}
+
+		/**
+		 * Fires after a media item has been moved to the trash.
+		 *
+		 * Trash is the ordinary delete a member performs; permanent delete is
+		 * the rare one. Until 2.4.0 only the permanent path had a hook, so an
+		 * integration mirroring media — a BuddyNext activity card — had nothing
+		 * to listen to and went on advertising a trashed item, linking to a URL
+		 * that now 404s. `mvs_document_trashed` already existed for the document
+		 * half of the same lifecycle; this is the missing twin.
+		 *
+		 * Same three arguments as `mvs_media_deleted`, deliberately: a listener
+		 * that withdraws a mirror keyed on the URL can handle both events with
+		 * one method rather than resolving the permalink itself for a row that
+		 * is now trashed.
+		 *
+		 * Paired with `mvs_media_restored`.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param int    $media_id  The trashed media ID.
+		 * @param int    $author_id The author user ID.
+		 * @param string $permalink The media's public permalink.
+		 */
+		do_action( 'mvs_media_trashed', $media_id, (int) $this->get_author( $media_id ), $this->get_permalink( $media_id ) );
+
+		return true;
 	}
 
 	/**
@@ -4906,23 +4953,26 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return bool True on success.
 	 */
 	public function restore( int $media_id ): bool {
-		global $wpdb;
+		if ( ! $this->write_status( $media_id, 'publish' ) ) {
+			return false;
+		}
 
-		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_media_index',
-			array(
-				'status'     => 'publish',
-				'updated_at' => current_time( 'mysql', true ),
-			),
-			array( 'media_id' => $media_id ),
-			array( '%s', '%s' ),
-			array( '%d' )
-		);
+		/**
+		 * Fires after a media item has been restored from the trash.
+		 *
+		 * Paired with `mvs_media_trashed` so an integration can re-add a
+		 * reference it withdrew — without this, trashing and restoring is a
+		 * one-way trip for every mirror.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param int    $media_id  The restored media ID.
+		 * @param int    $author_id The author user ID.
+		 * @param string $permalink The media's public permalink.
+		 */
+		do_action( 'mvs_media_restored', $media_id, (int) $this->get_author( $media_id ), $this->get_permalink( $media_id ) );
 
-		// Same cache-invalidation rationale as trash() above.
-		self::invalidate_row_cache( $media_id );
-
-		return false !== $result;
+		return true;
 	}
 
 	/**

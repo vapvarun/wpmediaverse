@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-29T20:03:13Z",
+    "generated_at": "2026-08-29T20:25:54Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -705,24 +705,6 @@
             ]
         },
         {
-            "hash": "60d08f9ef7049658c9f61fee311c16db233b820c",
-            "plugin": "free",
-            "instances": 2,
-            "token_count": 64,
-            "sites": [
-                {
-                    "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4880-4880",
-                    "method": "trash"
-                },
-                {
-                    "file": "includes/Repository/MediaRepository.php",
-                    "lines": "4908-4908",
-                    "method": "restore"
-                }
-            ]
-        },
-        {
             "hash": "1a16c64631f9ad1fc12ce6a33048eca7c3edf590",
             "plugin": "free",
             "instances": 3,
@@ -873,6 +855,24 @@
                     "file": "includes/Services/SignedUrlService.php",
                     "lines": "1196-1196",
                     "method": "SignedUrlService::client_accepts_avif"
+                }
+            ]
+        },
+        {
+            "hash": "7d170b7b4afb51c7307ee52ac97eb72920941417",
+            "plugin": "free",
+            "instances": 2,
+            "token_count": 42,
+            "sites": [
+                {
+                    "file": "includes/Repository/MediaRepository.php",
+                    "lines": "4916-4916",
+                    "method": "trash"
+                },
+                {
+                    "file": "includes/Repository/MediaRepository.php",
+                    "lines": "4955-4955",
+                    "method": "restore"
                 }
             ]
         },

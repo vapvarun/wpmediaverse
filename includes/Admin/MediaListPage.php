@@ -837,7 +837,11 @@ class MediaListPage {
 					return;
 				}
 				check_admin_referer( 'mvs_trash_media_' . $media_id );
-				$mvs_repo->set( $media_id, 'status', 'trash' );
+				// trash()/restore(), not set(): they are the funnel that fires
+				// mvs_media_trashed / mvs_media_restored. Writing the column
+				// directly here is why an admin trashing media left every
+				// integration's mirror in place (Basecamp 10252324048).
+				$mvs_repo->trash( $media_id );
 				break;
 
 			case 'restore':
@@ -845,7 +849,7 @@ class MediaListPage {
 					return;
 				}
 				check_admin_referer( 'mvs_restore_media_' . $media_id );
-				$mvs_repo->set( $media_id, 'status', 'publish' );
+				$mvs_repo->restore( $media_id );
 				break;
 
 			case 'delete':
@@ -1137,16 +1141,15 @@ class MediaListPage {
 
 			switch ( $action ) {
 				case 'bulk_trash':
-					$mvs_repo->set( $media_id, 'status', 'trash' );
-					$ok = true;
+					// Same funnel as the row action above.
+					$ok = $mvs_repo->trash( $media_id );
 					if ( false !== $ok ) {
 						++$count;
 					}
 					break;
 
 				case 'bulk_restore':
-					$mvs_repo->set( $media_id, 'status', 'publish' );
-					$ok = true;
+					$ok = $mvs_repo->restore( $media_id );
 					if ( false !== $ok ) {
 						++$count;
 					}

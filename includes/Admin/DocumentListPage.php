@@ -381,13 +381,27 @@ class DocumentListPage {
 		switch ( $action ) {
 			case 'trash':
 				check_admin_referer( 'mvs_trash_document_' . $media_id );
-				$repo->set( $media_id, 'status', 'trash' );
+
+				/*
+				 * Two hooks, and neither used to fire from this screen.
+				 *
+				 * `trash()` is the funnel for `mvs_media_trashed`; the document
+				 * event is separate and more specific, and integrations already
+				 * listen to it (BuddyNext withdraws a document's activity card on
+				 * it). The member-facing paths in Pro fire it, but this admin
+				 * screen wrote the status column directly — so an admin trashing
+				 * a document left the mirror in place, the same defect reported
+				 * for media (Basecamp 10252324048).
+				 */
+				$repo->trash( $media_id );
+				do_action( 'mvs_document_trashed', $media_id );
 				self::redirect_with_notice( 1, 'trashed' );
 				break;
 
 			case 'restore':
 				check_admin_referer( 'mvs_restore_document_' . $media_id );
-				$repo->set( $media_id, 'status', 'publish' );
+				$repo->restore( $media_id );
+				do_action( 'mvs_document_restored', $media_id );
 				self::redirect_with_notice( 1, 'restored' );
 				break;
 
@@ -429,12 +443,15 @@ class DocumentListPage {
 
 			switch ( $action ) {
 				case 'trash':
-					$repo->set( $id, 'status', 'trash' );
+					// Same funnel and same pair of events as the row action.
+					$repo->trash( $id );
+					do_action( 'mvs_document_trashed', $id );
 					++$applied;
 					break;
 
 				case 'restore':
-					$repo->set( $id, 'status', 'publish' );
+					$repo->restore( $id );
+					do_action( 'mvs_document_restored', $id );
 					++$applied;
 					break;
 
