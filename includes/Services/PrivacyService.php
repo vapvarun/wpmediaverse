@@ -25,6 +25,84 @@ class PrivacyService {
 	private $cache = array();
 
 	/**
+	 * The privacy levels this site will ACCEPT on a write.
+	 *
+	 * One list, asked by every write path. It used to be an inline array in
+	 * UploadService and nothing at all on `PUT /media/{id}`, so the update route
+	 * stored whatever string it was handed — `banana` included, which then failed
+	 * closed in `check_access()`'s default arm and read as private forever. A
+	 * value the API accepts and never applies is worse than one it rejects
+	 * (Basecamp 10220491230).
+	 *
+	 * Filterable rather than a hard enum because the vocabulary genuinely is
+	 * extensible: `mvs_privacy_can_view` lets an extension answer for a level
+	 * this class has never heard of. An extension that adds one must add it here
+	 * too, or writes of it are refused at the edge — which is the intended
+	 * failure, not an accident.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function supported_levels(): array {
+		return array_values(
+			array_unique(
+				array_map(
+					'strval',
+					(array) apply_filters(
+						'mvs_privacy_levels',
+						array( 'public', 'members', 'loggedin', 'friends', 'group', 'space', 'private', 'dm', 'custom' )
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * WHICH DRIVE a new media item lands on: personal, or a Space.
+	 *
+	 * A client posting media into a Space answers `mvs_media_drive` with
+	 * array( 'space', <id> ), and the row is stamped so `privacy = space`
+	 * resolves through the drive bridge in `check_space()`. MediaVerse never
+	 * queries `bn_*` — the bridge answers, the same seam documents use.
+	 *
+	 * AUTHORIZED HERE, not by the caller. A member must not file media into a
+	 * Space they cannot write to, or it becomes readable by that Space's members.
+	 * The binding is admitted only when the drive-access bridge grants
+	 * `write`/`own` (the SAME gate documents use); anything else falls back to
+	 * the personal drive.
+	 *
+	 * FROZEN CONTRACT (pairs with BuddyNext card 10220148861, and declared in
+	 * Pro's DriveContract::FILTER_MEDIA_DRIVE):
+	 * apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
+	 * returns array( string $drive_type, int $drive_id ).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int                  $user_id User doing the write.
+	 * @param array<string, mixed> $args    Write args, passed to the filter unchanged.
+	 * @return array{0:string, 1:int} Drive type and id; array( 'user', 0 ) when personal.
+	 */
+	public static function resolve_drive_for_user( int $user_id, array $args = array() ): array {
+		$drive = apply_filters( 'mvs_media_drive', array( 'user', 0 ), $user_id, $args );
+
+		if ( ! is_array( $drive ) || ! isset( $drive[0] ) || 'user' === (string) $drive[0] ) {
+			return array( 'user', 0 );
+		}
+
+		$type = (string) $drive[0];
+		$id   = (int) ( $drive[1] ?? 0 );
+
+		if ( $id <= 0 ) {
+			return array( 'user', 0 );
+		}
+
+		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $type, $id, $user_id );
+
+		return in_array( $level, array( 'write', 'own' ), true ) ? array( $type, $id ) : array( 'user', 0 );
+	}
+
+	/**
 	 * Numeric restrictiveness of a privacy slug. Higher is more restrictive.
 	 *
 	 * Canonical home for this ordering. It grew up as a static on

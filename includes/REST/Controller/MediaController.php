@@ -1004,9 +1004,47 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Update privacy.
-		$privacy = $request->get_param( 'privacy' );
+		//
+		// VALIDATED HERE, not just on upload. This route used to store whatever
+		// string it was handed: `banana` persisted and then failed closed in
+		// PrivacyService's default arm, and `space` persisted on a personal-drive
+		// item where check_space() can never resolve it — 200 OK, never applied,
+		// member believes it saved (Basecamp 10220491230). The vocabulary is
+		// PrivacyService's single filterable list, so upload and update cannot
+		// drift apart again.
+		$privacy         = $request->get_param( 'privacy' );
+		$privacy_changed = false;
 		if ( $privacy ) {
-			$update_data['privacy'] = sanitize_text_field( $privacy );
+			$clean_privacy = sanitize_text_field( $privacy );
+
+			if ( ! in_array( $clean_privacy, PrivacyService::supported_levels(), true ) ) {
+				return new WP_Error(
+					'mvs_privacy_unsupported',
+					__( 'That privacy level is not available on this site.', 'wpmediaverse' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			// `space` means "the members of the Space this lives on", and a media
+			// item is bound to a Space at UPLOAD, by the drive bridge. There is no
+			// move-between-drives route yet, so on a personal-drive item the level
+			// is unhonourable — refuse rather than store it and read as private.
+			if ( 'space' === $clean_privacy ) {
+				$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+				$drive_type = (string) $repo->get( $media_id, 'drive_type' );
+				$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
+
+				if ( 'user' === $drive_type || $drive_id <= 0 ) {
+					return new WP_Error(
+						'mvs_privacy_space_requires_drive',
+						__( 'This media is not in a Space, so it cannot be limited to a Space\'s members.', 'wpmediaverse' ),
+						array( 'status' => 400 )
+					);
+				}
+			}
+
+			$update_data['privacy'] = $clean_privacy;
+			$privacy_changed        = true;
 		}
 
 		// JSON body inspection — used by the tags/categories block further
@@ -1030,6 +1068,14 @@ class MediaController extends WP_REST_Controller {
 		// Write all index/meta changes in one call.
 		if ( ! empty( $update_data ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many( $media_id, $update_data );
+		}
+
+		// The privacy answer this request already gave is now stale. PrivacyService
+		// memoises can_view() per media:user for the request, and the response
+		// prepared below asks it again — without this, an item just made private
+		// can still be described as viewable in the very response that changed it.
+		if ( $privacy_changed ) {
+			$this->privacy->flush_cache();
 		}
 
 		if ( array_key_exists( 'tags', $json_params ) ) {

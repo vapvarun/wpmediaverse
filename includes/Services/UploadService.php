@@ -330,15 +330,27 @@ class UploadService {
 			$privacy = $default_privacy;
 		}
 		// Reject unknown privacy values so a typo or hostile input cannot slip
-		// through. 'space' is in the list precisely so it is NOT dropped to the
-		// site default (which is often public): media intended for a private
-		// Space must never fall through to public. When the item is bound to a
-		// Space drive (drive_type=space) PrivacyService::check_space() scopes it
-		// to that Space's members; when it is not (no drive bridge), check_space()
-		// finds drive_type=user and the item reads as private — inaccessible but
-		// never exposed. (Basecamp 10220491230.)
-		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom', 'dm', 'space' ), true ) ) {
+		// through. The vocabulary is PrivacyService's, not a second copy here —
+		// the copy was the bug on the update route, which had no list at all.
+		if ( ! in_array( $privacy, PrivacyService::supported_levels(), true ) ) {
 			$privacy = $default_privacy;
+		}
+
+		// WHICH DRIVE this lands on. Resolved BEFORE the file is stored so a
+		// refusal below costs nothing to undo.
+		list( $mvs_drive_type, $mvs_drive_id ) = PrivacyService::resolve_drive_for_user( $user_id, $args );
+
+		// `space` means "the members of the Space this lives on". On a personal
+		// drive there is no such Space, so the level cannot be honoured — and an
+		// accepted-then-ignored level is the defect this card exists for
+		// (Basecamp 10220491230). Say no instead of storing a value that will
+		// silently read as private forever.
+		if ( 'space' === $privacy && ( 'user' === $mvs_drive_type || $mvs_drive_id <= 0 ) ) {
+			return new WP_Error(
+				'mvs_privacy_space_requires_drive',
+				__( 'This media is not in a Space, so it cannot be limited to a Space\'s members.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
 		}
 
 		// Store file. Public media uses the active (possibly cloud) driver;
@@ -449,38 +461,6 @@ class UploadService {
 		 * @since 1.1.0
 		 */
 		do_action( 'mvs_before_media_insert' );
-
-		// WHICH DRIVE this media lands on. Personal by default; a client posting
-		// media into a Space answers `mvs_media_drive` with array( 'space', <id> )
-		// so the item is visible to Space members through privacy=`space`, which
-		// resolves via the drive-access bridge (PrivacyService::check_space). Until
-		// this, media never got `drive_type=space`, so `space` privacy was accepted
-		// on write and silently never honoured. MediaVerse never queries bn_* — the
-		// bridge answers, the same seam documents use.
-		//
-		// FROZEN CONTRACT (pairs with BuddyNext card 10220148861):
-		// apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
-		// returns array( string $drive_type, int $drive_id ).
-		// (Basecamp 10220491230.)
-		$mvs_drive_type = 'user';
-		$mvs_drive_id   = 0;
-		$mvs_drive      = apply_filters( 'mvs_media_drive', array( 'user', 0 ), $user_id, $args );
-
-		if ( is_array( $mvs_drive ) && isset( $mvs_drive[0] ) && 'user' !== (string) $mvs_drive[0] ) {
-			$mvs_candidate_type = (string) $mvs_drive[0];
-			$mvs_candidate_id   = (int) ( $mvs_drive[1] ?? 0 );
-
-			// AUTHORIZE. A member must not file their media into a Space they cannot
-			// write to — otherwise it becomes visible to that Space's members. The
-			// binding is admitted only when the drive-access bridge grants
-			// `write`/`own` (the SAME gate documents use); otherwise the media falls
-			// back to the personal drive.
-			$mvs_level = (string) apply_filters( 'mvs_document_drive_access', 'none', $mvs_candidate_type, $mvs_candidate_id, $user_id );
-			if ( $mvs_candidate_id > 0 && in_array( $mvs_level, array( 'write', 'own' ), true ) ) {
-				$mvs_drive_type = $mvs_candidate_type;
-				$mvs_drive_id   = $mvs_candidate_id;
-			}
-		}
 
 		// Insert directly into mvs_media_index — the authoritative media record.
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
