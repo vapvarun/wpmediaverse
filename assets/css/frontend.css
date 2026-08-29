@@ -81,6 +81,35 @@
      * over. Old browsers therefore keep exactly today's behaviour for free.
      */
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+
+    /*
+     * The primary button's colours, resolved ONCE.
+     *
+     * `.mvs-btn--primary` is declared in four stylesheets across the two
+     * plugins — here, shared-ui-frame.css (modals), bp-integration.css
+     * (#buddypress, where a class-only rule loses to the theme's
+     * `#buddypress button`) and Pro's gamification.css (which wins on the
+     * competition pages by load order). The three extra copies exist for
+     * specificity and load order, which are real problems; restating the
+     * COLOUR in each of them was not. It meant the contrast-floor fix had to
+     * be made four times, and whichever copy someone forgets is the one that
+     * ships broken — which is exactly how a `color: var(--mvs-surface)` (a
+     * page-surface token used as button text, black-on-brand in dark mode)
+     * survived in shared-ui-frame.css long after the same mistake was found
+     * and commented elsewhere.
+     *
+     * The other three now reference these four tokens and declare no colour of
+     * their own, so the formula lives here and changing it changes every
+     * surface. They keep a plain `var(--mvs-primary)` fallback so a context
+     * that somehow loads without this file degrades to the theme colour rather
+     * than to nothing — a fallback, deliberately not a second copy of the
+     * formula. Basecamp 10252281364.
+     */
+    --mvs-btn-primary-bg: var(--mvs-primary-fill, var(--mvs-primary));
+    --mvs-btn-primary-fg: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
+    --mvs-btn-primary-bg-hover: var(--mvs-primary-hover);
+    --mvs-btn-primary-fg-hover: var(--mvs-on-primary, #ffffff);
+
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
     --mvs-danger-rgb: 214, 54, 56;
@@ -5013,20 +5042,19 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn--primary {
-    /* The floor pair, not the raw theme pair — see --mvs-primary-fill above.
-       This button is the measured failure on Astra (4.29). */
-    background: var(--mvs-primary-fill, var(--mvs-primary));
-    /* Always readable on the brand primary background — never use a theme
-       surface/bg token here; those flip to dark in dark-mode themes. */
-    color: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
-    border-color: var(--mvs-primary-fill, var(--mvs-primary));
+    /* --mvs-btn-primary-* is defined once in the token block above and is what
+       the other three copies of this button reference. Never put a theme
+       surface/bg token in `color` here; those flip dark in dark-mode themes. */
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
+    border-color: var(--mvs-btn-primary-bg);
 }
 
 .mvs-btn--primary:hover,
 .mvs-btn--primary:focus,
 .mvs-btn--primary:visited {
-    background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #ffffff);
+    background: var(--mvs-btn-primary-bg-hover);
+    color: var(--mvs-btn-primary-fg-hover);
 }
 
 .mvs-btn--primary:disabled {

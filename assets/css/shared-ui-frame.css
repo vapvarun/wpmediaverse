@@ -536,16 +536,17 @@
 
 /* ─── Buttons ─── */
 /*
- * Two fixes in one pair. `color: var(--mvs-surface)` was the page-surface
- * token used as BUTTON TEXT — it flips to near-black in dark mode, which is
- * the same defect already commented on the attention badge and the logged-out
- * banner. And the background now takes the contrast floor, because this copy
- * of .mvs-btn--primary (one of four across the two plugins) paints the modal
- * buttons (Basecamp 10252222099).
+ * This copy exists for the MODAL GEOMETRY below — padding, radius, weight.
+ * The colour comes from --mvs-btn-primary-*, defined once in frontend.css, so
+ * this rule no longer restates the formula (Basecamp 10252281364).
+ *
+ * It previously said `color: var(--mvs-surface)` — a page-surface token used
+ * as button text, which flips to near-black in dark mode. That is precisely
+ * the failure the shared token now makes impossible to reintroduce here.
  */
 .mvs-btn--primary {
-	background: var(--mvs-primary-fill, var(--mvs-primary));
-	color: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
+	background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+	color: var(--mvs-btn-primary-fg, var(--mvs-on-primary, #ffffff));
 	border: none;
 	padding: 10px 24px;
 	border-radius: 8px;
@@ -556,7 +557,7 @@
 }
 
 .mvs-btn--primary:hover {
-	background: var(--mvs-primary-hover);
+	background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover));
 }
 
 .mvs-btn--secondary {

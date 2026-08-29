@@ -323,16 +323,19 @@
  * rules in frontend.css are class-only (0,3,0) and lose to the theme's
  * #buddypress button:hover (1,0,1) — re-scope them so the plugin wins
  * (card 10127407439). Tokens flip automatically in dark mode. */
+/* This copy exists ONLY to out-specify the theme's `#buddypress button`. The
+   values come from --mvs-btn-primary-*, defined once in frontend.css — this
+   rule carries specificity, not a second opinion about the colour
+   (Basecamp 10252281364). */
 #buddypress .mvs-btn.mvs-btn--primary {
-    /* Floor pair — the BuddyPress copy of the same button. */
-    background: var(--mvs-primary-fill, var(--mvs-primary));
-    color: var(--mvs-on-primary-auto, var(--mvs-on-primary, #fff));
+    background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+    color: var(--mvs-btn-primary-fg, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn.mvs-btn--primary:hover,
 #buddypress .mvs-btn.mvs-btn--primary:focus {
-    background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #fff);
+    background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover));
+    color: var(--mvs-btn-primary-fg-hover, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn.mvs-btn--secondary {
