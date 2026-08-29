@@ -90,6 +90,88 @@ function isTextEntry( target ) {
 }
 
 /**
+ * Focus management for the lightbox, which is a modal dialog in behaviour and
+ * was not one in fact.
+ *
+ * Three things were missing and they only work together: the dialog never took
+ * focus, never held it, and never gave it back. A member pressed Enter on a
+ * grid tile, the overlay covered the page, and their next Tab walked the 27
+ * controls BEHIND it — reachable, invisible, and with no way to tell they had
+ * left (Basecamp 10252222057).
+ *
+ * Kept as plain functions over the live DOM rather than store state: the
+ * lightbox markup is server-rendered once and shown by a `hidden` binding, so
+ * there is no per-open component instance to hang a ref on.
+ */
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** The element that had focus when the lightbox opened, so it can be handed back. */
+let lightboxReturnFocus = null;
+
+function lightboxFocusables() {
+	const box = document.querySelector( '.mvs-lightbox' );
+
+	if ( ! box ) {
+		return [];
+	}
+
+	return Array.from( box.querySelectorAll( FOCUSABLE ) ).filter( ( el ) => {
+		// Visible in practice — the fullscreen toggle hides the comment column,
+		// and tabbing into something nobody can see is the bug in miniature.
+		const r = el.getBoundingClientRect();
+		return r.width > 0 && r.height > 0 && el.offsetParent !== null;
+	} );
+}
+
+/**
+ * Remember who opened the lightbox. The focus MOVE itself happens in
+ * `callbacks.lightboxFocus`, not here.
+ *
+ * That split is deliberate. The overlay is revealed by a `hidden` binding, and
+ * an element inside a hidden ancestor cannot take focus — so this originally
+ * deferred with two requestAnimationFrames and still lost the race: the
+ * Interactivity API renders on its own schedule, and measuring showed focus
+ * still on the grid tile after the overlay was open. Guessing a frame count is
+ * how that becomes flaky on a slower machine. `data-wp-watch` runs AFTER the
+ * render that reveals the overlay, which is the only moment that is actually
+ * correct.
+ */
+function lightboxRememberTrigger() {
+	lightboxReturnFocus = document.activeElement;
+}
+
+/**
+ * Keep Tab inside the dialog.
+ *
+ * Without this the trap is only half-built: focus starts inside but the first
+ * Tab past the last control walks straight out into the page behind.
+ */
+function lightboxTrapTab( event ) {
+	const items = lightboxFocusables();
+
+	if ( ! items.length ) {
+		return;
+	}
+
+	const first = items[ 0 ];
+	const last = items[ items.length - 1 ];
+	const active = document.activeElement;
+
+	if ( event.shiftKey ) {
+		if ( active === first || ! document.querySelector( '.mvs-lightbox' ).contains( active ) ) {
+			event.preventDefault();
+			last.focus();
+		}
+		return;
+	}
+
+	if ( active === last ) {
+		event.preventDefault();
+		first.focus();
+	}
+}
+
+/**
  * Shape one API comment for the lightbox.
  *
  * Identity, edit window and moderation rights all come from STATE, never from
@@ -1164,6 +1246,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.lightboxGroupItems = [];
 			state.lightboxCurrentIndex = 0;
 			document.body.style.overflow = 'hidden';
+			lightboxRememberTrigger();
 
 			try {
 				const res = await window.mvsRest.restFetch(
@@ -1198,6 +1281,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		async openLightboxById( mediaId ) {
 			if ( ! mediaId ) return;
+
+			// This is the path the Explore grid actually uses — the tiles carry
+			// no click directive of their own, so a delegated caller resolves
+			// the id and lands here. Missing this call was why focus was never
+			// handed back on close: openLightbox() had it and this did not, so
+			// the trigger was never captured for the one route members take.
+			lightboxRememberTrigger();
 
 			state.lightboxMediaId = mediaId;
 			state.lightboxVisible = true;
@@ -1682,6 +1772,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			event.stopPropagation();
 		},
 		handleLightboxKeydown( event ) {
+			// Tab is trapped BEFORE the Escape branch and before the typing
+			// guard, because it applies whether or not the member is in a
+			// field — a text input inside the dialog is still inside it.
+			if ( event.key === 'Tab' && state.lightboxVisible ) {
+				lightboxTrapTab( event );
+				return;
+			}
+
 			if ( event.key === 'Escape' ) {
 				if ( state.editModalVisible ) {
 					actions.closeEditModal();
@@ -1725,6 +1823,58 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 	},
 	callbacks: {
+		/**
+		 * Move focus into the dialog once it is genuinely on screen.
+		 *
+		 * Bound with `data-wp-watch` on the overlay, so it runs after the
+		 * render that removes `hidden` — the earliest point at which anything
+		 * inside can take focus at all. Runs on every change, so it checks
+		 * whether focus is already inside and does nothing if so; otherwise
+		 * navigating between gallery images would yank focus back to Close
+		 * mid-interaction.
+		 */
+		lightboxFocus() {
+			const box = document.querySelector( '.mvs-lightbox' );
+
+			if ( ! box ) {
+				return;
+			}
+
+			// CLOSING — hand focus back to whatever opened it.
+			//
+			// Restoring inside closeLightbox() looked right and did not work:
+			// it runs before the render, so focus landed on the trigger and was
+			// then dropped to <body> when the framework re-rendered the grid.
+			// Measured. Both directions therefore live here, after the render
+			// that actually changed what is on screen.
+			if ( ! state.lightboxVisible ) {
+				const back = lightboxReturnFocus;
+
+				lightboxReturnFocus = null;
+
+				if ( back && typeof back.focus === 'function' && document.contains( back ) ) {
+					back.focus();
+				}
+
+				return;
+			}
+
+			// OPENING — put focus inside, unless it is already there. That
+			// check matters: this runs on every state change, and without it
+			// navigating between gallery images would yank focus back to Close
+			// mid-interaction.
+			if ( box.contains( document.activeElement ) ) {
+				return;
+			}
+
+			// The close button first: it is the control a member most often
+			// wants, and landing there makes the dialog's boundary obvious.
+			const target = box.querySelector( '.mvs-lightbox-close' ) || lightboxFocusables()[ 0 ];
+
+			if ( target ) {
+				target.focus();
+			}
+		},
 		// Inject trusted badge HTML (verified-member, VIP, etc.) into the
 		// lightbox author sibling node. The Interactivity API has no built-in
 		// HTML directive — `data-wp-text` would render markup as literal text

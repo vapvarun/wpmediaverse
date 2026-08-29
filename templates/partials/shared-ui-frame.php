@@ -396,8 +396,23 @@ wp_interactivity_state(
 	<?php endif; ?>
 
 	<!-- Lightbox Overlay -->
-	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
-		<div class="mvs-lightbox" data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreen">
+	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox"
+		data-wp-watch="callbacks.lightboxFocus">
+		<?php
+		// A modal has to SAY it is one. This element takes over the viewport,
+		// locks page scroll and overlays everything, and carried no dialog
+		// semantics at all — so a screen-reader user got no announcement that a
+		// dialog had opened, no name for it, and no boundary telling them where
+		// it ended (Basecamp 10252222057).
+		//
+		// `aria-label` rather than `aria-labelledby`: the lightbox shows photos,
+		// video, audio and documents, and only the document branch renders a
+		// title node. A label that is sometimes empty is worse than a constant
+		// one that is always true.
+		?>
+		<div class="mvs-lightbox" role="dialog" aria-modal="true"
+			aria-label="<?php esc_attr_e( 'Media viewer', 'wpmediaverse' ); ?>"
+			data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreen">
 			<!-- Fullscreen toggle — hides the comments sidebar and expands the media. -->
 			<button class="mvs-lightbox-fullscreen" data-wp-on--click="actions.toggleLightboxFullscreen"
 				data-wp-bind--aria-pressed="state.lightboxFullscreen"
