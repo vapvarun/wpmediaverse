@@ -26,10 +26,31 @@
 	--mvs-text-secondary:#646970;
 	--mvs-border:        #dcdcde;
 	--mvs-border-light:  #e5e5e7;
-	--mvs-accent:        #d63638;
-	--mvs-accent-hover:  #b02426;
-	--mvs-primary:       #d63638;
-	--mvs-primary-hover: #b02426;
+	/*
+	 * WordPress admin blue, NOT the danger red these four used to be.
+	 *
+	 * `--mvs-accent`, `--mvs-primary` and `--mvs-danger` were all #d63638, so a
+	 * primary button was a solid block of the universal destructive colour and
+	 * a danger button — which is an outline that FILLS on hover — became
+	 * visually identical to Save the moment the pointer touched it. Colour
+	 * carried no information about consequence anywhere in the admin, on the
+	 * one screen where the owner does irreversible things (Basecamp
+	 * 10252223639).
+	 *
+	 * The frontend never had this problem: there `--mvs-primary` is the theme's
+	 * button colour, `--mvs-accent` is indigo and `--mvs-danger` is red — three
+	 * distinct roles. The two halves of the product simply disagreed.
+	 *
+	 * #2271b1 / #135e96 are WordPress's own admin primary and its hover, so the
+	 * plugin now reads as part of wp-admin rather than as a permanent warning.
+	 * Verified nothing destructive was styled with `--mvs-accent` before
+	 * changing it — it drives links, focus rings, active tabs and card headers,
+	 * so turning it blue cannot make a dangerous control look safe.
+	 */
+	--mvs-accent:        #2271b1;
+	--mvs-accent-hover:  #135e96;
+	--mvs-primary:       #2271b1;
+	--mvs-primary-hover: #135e96;
 	--mvs-success:       #00a32a;
 	--mvs-warning:       #dba617;
 	--mvs-warn:          #dba617;
