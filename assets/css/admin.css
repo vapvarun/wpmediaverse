@@ -231,29 +231,48 @@ a.mvs-stat-card:focus {
 	margin-top: 20px;
 }
 
+/*
+ * `min-width: 0` on the items, and it is not cosmetic.
+ *
+ * A grid item defaults to `min-width: auto`, which refuses to shrink below its
+ * content's intrinsic minimum — and `1fr` is `minmax(auto, 1fr)`, so the track
+ * inherits that floor. The columns below DO collapse to one at 782px, which is
+ * why this looked fine in the CSS; the single track then still refused to go
+ * under ~395px because a widget inside it would not narrow. At a 390px viewport
+ * that pushed the document to 405px and scrolled the whole admin page
+ * sideways (Basecamp 10252222077).
+ *
+ * This is the fix rather than a breakpoint override because the floor is set by
+ * CONTENT, not by viewport: capping the column at a width only fixes the
+ * widths somebody thought to test.
+ */
+.mvs-admin-columns > * {
+	min-width: 0;
+}
+
 .mvs-admin-columns--2 {
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .mvs-admin-columns--2-1 {
-	grid-template-columns: 2fr 1fr;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
 }
 
 .mvs-admin-columns--1-2 {
-	grid-template-columns: 1fr 2fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 }
 
 .mvs-admin-columns--3-2 {
-	grid-template-columns: 3fr 2fr;
+	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 }
 
 .mvs-admin-columns--3 {
-	grid-template-columns: 1fr 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 @media (max-width: 1200px) {
 	.mvs-admin-columns--3 {
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	}
 }
 
@@ -263,7 +282,7 @@ a.mvs-stat-card:focus {
 	.mvs-admin-columns--1-2,
 	.mvs-admin-columns--3-2,
 	.mvs-admin-columns--3 {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
 
@@ -1952,6 +1971,25 @@ a.mvs-stat-card:focus {
 
 /* Log viewer table */
 .mvs-log-table { width: 100%; border-spacing: 0; }
+
+/*
+ * The log table has more columns than a phone has room for, and a <table>
+ * ignores its container's width — it sizes to its content, so at 390px it
+ * rendered 470px and pushed the PAGE into horizontal scroll rather than
+ * scrolling itself (Basecamp 10252222077).
+ *
+ * Same treatment Pro already gives `.mvs-recent-table` and the document-health
+ * snippet: let the table scroll inside its own box. `display: block` is what
+ * lets a table take an overflow at all.
+ */
+@media (max-width: 782px) {
+
+	.mvs-log-table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+}
 .mvs-log-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--mvs-border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mvs-text-muted); }
 .mvs-log-table td { padding: 8px 12px; border-bottom: 1px solid var(--mvs-bg); vertical-align: middle; }
 .mvs-log-table tr:last-child td { border-bottom: none; }
@@ -1990,6 +2028,26 @@ a.mvs-stat-card:focus {
 
 	.mvs-settings-sidebar {
 		width: 100%;
+		/*
+		 * `width: 100%` + horizontal padding under the default `content-box`
+		 * is what overflowed here: 368px resolved width + 12px padding either
+		 * side = 392px in a 390px viewport, scrolling the whole admin page
+		 * sideways (Basecamp 10252222077). `border-box` folds the padding back
+		 * inside the 100%.
+		 *
+		 * `min-width: 0` keeps the nav scrolling inside itself rather than
+		 * stretching this box, since a flex item otherwise refuses to shrink
+		 * below its content.
+		 *
+		 * NOTE, deliberately not fixed here: 350 of 359 MediaVerse admin
+		 * elements are `content-box`, so this is one instance of a class.
+		 * Only this one overflows today — measured — and flipping the box
+		 * model globally across 18 admin screens is the kind of invisible,
+		 * wide-blast-radius change that breaks sites nobody can see. That
+		 * belongs in its own pass with per-screen verification.
+		 */
+		box-sizing: border-box;
+		min-width: 0;
 		border-right: none;
 		border-bottom: 1px solid var(--mvs-admin-border);
 	}
