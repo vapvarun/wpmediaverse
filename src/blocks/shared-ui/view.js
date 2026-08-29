@@ -58,6 +58,38 @@ function loadLightboxMedia() {
 }
 
 /**
+ * Whether a key event is destined for somewhere the member is typing.
+ *
+ * Document-level shortcuts must not steal keys from a field. Covers the three
+ * cases that exist in these surfaces: <input> (any text-ish type), <textarea>,
+ * and anything contenteditable. Non-text inputs (checkbox, radio, button) are
+ * NOT text entry — space and arrows are legitimate shortcuts there.
+ *
+ * @param {EventTarget} target Event target.
+ * @return {boolean} True when the target takes text input.
+ */
+function isTextEntry( target ) {
+	if ( ! target || ! target.tagName ) {
+		return false;
+	}
+
+	const tag = target.tagName.toLowerCase();
+
+	if ( 'textarea' === tag || target.isContentEditable ) {
+		return true;
+	}
+
+	if ( 'input' !== tag ) {
+		return false;
+	}
+
+	// Everything except the handful of inputs a keystroke cannot land text in.
+	return ! [ 'checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'range', 'color' ].includes(
+		( target.type || 'text' ).toLowerCase()
+	);
+}
+
+/**
  * Shape one API comment for the lightbox.
  *
  * Identity, edit window and moderation rights all come from STATE, never from
@@ -1667,6 +1699,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.fabMenuOpen = false;
 				}
 			} else if ( state.lightboxVisible ) {
+				// Not while the member is typing. This handler is bound with
+				// `data-wp-on-document--keydown`, so it sees every key in the
+				// document — including the ones going into the comment box and
+				// the "+ New collection" field inside the lightbox itself. The
+				// f/F shortcut ate the `f` of "Office" and jumped to fullscreen,
+				// and Arrow keys navigated the gallery instead of moving the
+				// caret (Basecamp 10249014961).
+				//
+				// Guards the SHORTCUT branch only, deliberately: Escape is
+				// handled above and must keep working from inside a field —
+				// that is how a member backs out of one.
+				if ( isTextEntry( event.target ) ) {
+					return;
+				}
+
 				if ( event.key === 'ArrowLeft' && state.lightboxHasPrev ) {
 					actions.lightboxPrev();
 				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {

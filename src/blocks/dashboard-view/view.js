@@ -1563,7 +1563,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const data = res.data;
 				// Enrich with match counts for smart collections.
 				for ( const item of data ) {
-					item.link = '/?p=' + item.id;
+					// No `item.link = '/?p=' + item.id` here. The REST payload
+					// already carries the real permalink (CollectionController's
+					// get_permalink()), and overwriting it shipped every card as
+					// an ugly /?p=<id> that WordPress then 301'd — so the URL a
+					// member copied or bookmarked was never the canonical one
+					// (Basecamp 10249047170). loadAlbums never did this, which is
+					// why album cards were always right.
 					if ( item.type === 'smart' ) {
 						try {
 							const detail = await apiFetch( ctx, 'collections/' + item.id + '?per_page=1' );

@@ -5603,7 +5603,13 @@ a.mvs-dashboard-card-title:hover {
         background: var(--mvs-bg);
         padding: 8px 0;
         border-bottom: 1px solid var(--mvs-border);
-        margin: 0 -20px;
+        /* Inline axis ONLY. `margin: 0 -20px` bled the sticky bar edge-to-edge
+           and, being a shorthand, silently reset the base rule's
+           `margin-bottom: 24px` — so the toolbar underneath sat flush against
+           the tab bar and its focus ring overlapped the border (Basecamp
+           10248974871). margin-inline also survives RTL, which the shorthand
+           did not. */
+        margin-inline: -20px;
         padding-left: 20px;
         padding-right: 20px;
         overflow-x: auto;
