@@ -15,6 +15,68 @@ defined( 'ABSPATH' ) || exit;
 class FieldRenderer {
 
 	/**
+	 * Render callbacks that emit exactly ONE control, and can therefore carry the
+	 * row heading as that control's label.
+	 *
+	 * Everything else is deliberately absent: the checkbox renderers wrap their
+	 * own <label>, and pointing the row heading at one member of a checkbox GROUP
+	 * would name the group after its first item. A renderer added later gets no
+	 * label until it is listed here, which is visible in this array rather than
+	 * silently wrong on the page.
+	 *
+	 * @var string[]
+	 */
+	private const LABELLED_RENDERERS = array(
+		'render_number_field',
+		'render_size_field',
+		'render_textarea_field',
+		'render_select_field',
+		'render_password_field',
+		'render_text_field',
+		'render_color_field',
+		'render_page_dropdown_field',
+	);
+
+	/**
+	 * Register a settings field, giving its control a real label.
+	 *
+	 * WordPress renders the row heading as a bare `<th scope="row">Title</th>`
+	 * unless the field declares `label_for`, and a row header does not name a
+	 * form control sitting inside the cell. Measured on the accessibility tree,
+	 * the Max Upload Size input reported its value and NO name at all — a screen
+	 * reader announced "spinbutton, 100" with nothing to say what it configures.
+	 * Seven controls on the Settings screen were in that state.
+	 *
+	 * `label_for` is what core provides for this, so every registration goes
+	 * through here rather than repeating the argument 46 times and missing some.
+	 * The matching `id` is emitted by the render methods themselves.
+	 *
+	 * Basecamp 10252222135.
+	 *
+	 * @param string   $id       Field ID.
+	 * @param string   $title    Row heading.
+	 * @param callable $callback Render callback. `callable`, not `array`: every
+	 *                            call site passes a [class, method] pair today,
+	 *                            but a Closure is a valid callback and narrowing
+	 *                            the hint would turn that into a fatal on the
+	 *                            settings screen rather than a missing label.
+	 * @param string   $page     Settings page slug.
+	 * @param string   $section  Section ID.
+	 * @param array    $args     Field arguments.
+	 */
+	public static function add_field( string $id, string $title, $callback, string $page, string $section, array $args = array() ): void {
+		$method = is_array( $callback ) && isset( $callback[1] ) ? $callback[1] : '';
+
+		if ( ! isset( $args['label_for'] )
+			&& ! empty( $args['option'] )
+			&& in_array( $method, self::LABELLED_RENDERERS, true ) ) {
+			$args['label_for'] = $args['option'];
+		}
+
+		add_settings_field( $id, $title, $callback, $page, $section, $args );
+	}
+
+	/**
 	 * Render a number input field.
 	 *
 	 * @param array $args Field arguments.
@@ -26,7 +88,7 @@ class FieldRenderer {
 			: '';
 		$value      = get_option( $args['option'], $default );
 		printf(
-			'<input type="number" name="%s" value="%s" class="regular-text" min="0" />',
+			'<input type="number" name="%1$s" id="%1$s" value="%2$s" class="regular-text" min="0" />',
 			esc_attr( $args['option'] ),
 			esc_attr( $value )
 		);
@@ -62,7 +124,7 @@ class FieldRenderer {
 		$server_mb  = round( $server_max / MB_IN_BYTES );
 
 		printf(
-			'<input type="number" name="%s" value="%s" class="small-text" min="1" max="%s" step="1" /> <strong>MB</strong>',
+			'<input type="number" name="%1$s" id="%1$s" value="%2$s" class="small-text" min="1" max="%3$s" step="1" /> <strong>MB</strong>',
 			esc_attr( $args['option'] ),
 			esc_attr( $mb_value ),
 			esc_attr( $server_mb )
@@ -172,7 +234,7 @@ class FieldRenderer {
 	public static function render_textarea_field( array $args ): void {
 		$value = get_option( $args['option'], '' );
 		printf(
-			'<textarea name="%s" rows="3" class="large-text">%s</textarea>',
+			'<textarea name="%1$s" id="%1$s" rows="3" class="large-text">%2$s</textarea>',
 			esc_attr( $args['option'] ),
 			esc_textarea( $value )
 		);
@@ -209,7 +271,7 @@ class FieldRenderer {
 		$value      = get_option( $args['option'], $default );
 		$choices    = $args['choices'] ?? array();
 
-		printf( '<select name="%s">', esc_attr( $args['option'] ) );
+		printf( '<select name="%1$s" id="%1$s">', esc_attr( $args['option'] ) );
 		foreach ( $choices as $key => $label ) {
 			printf(
 				'<option value="%s" %s>%s</option>',
@@ -252,7 +314,7 @@ class FieldRenderer {
 		}
 
 		printf(
-			'<input type="password" name="%s" value="%s" class="regular-text" autocomplete="off" placeholder="%s" />',
+			'<input type="password" name="%1$s" id="%1$s" value="%2$s" class="regular-text" autocomplete="off" placeholder="%3$s" />',
 			esc_attr( $args['option'] ),
 			'',
 			esc_attr( $display ? sprintf( 'Current: %s', $display ) : '' )
@@ -379,7 +441,7 @@ class FieldRenderer {
 	public static function render_text_field( array $args ): void {
 		$value = get_option( $args['option'], '' );
 		printf(
-			'<input type="text" name="%s" value="%s" class="regular-text" />',
+			'<input type="text" name="%1$s" id="%1$s" value="%2$s" class="regular-text" />',
 			esc_attr( $args['option'] ),
 			esc_attr( $value )
 		);
@@ -411,7 +473,7 @@ class FieldRenderer {
 	public static function render_color_field( array $args ): void {
 		$value = get_option( $args['option'], '#ffffff' );
 		printf(
-			'<input type="color" name="%s" value="%s" />',
+			'<input type="color" name="%1$s" id="%1$s" value="%2$s" />',
 			esc_attr( $args['option'] ),
 			esc_attr( $value )
 		);
@@ -477,19 +539,20 @@ class FieldRenderer {
 		?>
 		<fieldset>
 			<p>
-				<label><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
+				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all (Basecamp 10252222135). ?>
+				<label for="mvs-webhook-url"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
 				<input type="url" name="mvs_webhooks[0][url]" id="mvs-webhook-url" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"
 					placeholder="https://example.com/webhook"
 				/>
 			</p>
 			<p>
-				<label><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
+				<label for="mvs-webhook-secret"><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
 				<?php
 				$wh_secret  = $webhook['secret'] ?? '';
 				$wh_display = $wh_secret ? str_repeat( '*', max( 0, strlen( $wh_secret ) - 4 ) ) . substr( $wh_secret, -4 ) : '';
 				?>
-				<input type="password" name="mvs_webhooks[0][secret]" class="regular-text" autocomplete="off"
+				<input type="password" name="mvs_webhooks[0][secret]" id="mvs-webhook-secret" class="regular-text" autocomplete="off"
 					value=""
 					placeholder="<?php echo esc_attr( $wh_display ? sprintf( 'Current: %s', $wh_display ) : esc_attr__( 'Shared secret for HMAC signing', 'wpmediaverse' ) ); ?>"
 				/>

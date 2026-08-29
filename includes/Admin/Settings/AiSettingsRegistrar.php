@@ -36,7 +36,7 @@ class AiSettingsRegistrar {
 			)
 		);
 		if ( self::is_pro_active() ) {
-			add_settings_field(
+			FieldRenderer::add_field(
 				'mvs_ai_provider',
 				__( 'AI Provider', 'wpmediaverse' ),
 				array( FieldRenderer::class, 'render_select_field' ),
@@ -54,7 +54,7 @@ class AiSettingsRegistrar {
 				)
 			);
 		} else {
-			add_settings_field(
+			FieldRenderer::add_field(
 				'mvs_ai_provider',
 				__( 'AI Provider', 'wpmediaverse' ),
 				array( FieldRenderer::class, 'render_pro_select_field' ),
@@ -81,7 +81,7 @@ class AiSettingsRegistrar {
 				'default'           => '',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_openai_api_key',
 			__( 'OpenAI API Key', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_password_field' ),
@@ -107,7 +107,7 @@ class AiSettingsRegistrar {
 				'default'           => 'gpt-4o-mini',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_openai_model',
 			__( 'OpenAI Model', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -133,7 +133,7 @@ class AiSettingsRegistrar {
 				'default'           => false,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_auto_analyze',
 			__( 'Auto-Analyze Uploads', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -157,7 +157,7 @@ class AiSettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_auto_describe',
 			__( 'Generate Descriptions', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -178,7 +178,7 @@ class AiSettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_auto_tag',
 			__( 'Generate Tags', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -199,7 +199,7 @@ class AiSettingsRegistrar {
 				'default'           => false,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_auto_apply_tags',
 			__( 'Auto-Apply Tags', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -220,7 +220,7 @@ class AiSettingsRegistrar {
 				'default'           => false,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_auto_moderate',
 			__( 'Auto-Moderate Uploads', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -248,7 +248,7 @@ class AiSettingsRegistrar {
 				'default'           => 10,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_monthly_budget',
 			__( 'Monthly AI Budget ($)', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),

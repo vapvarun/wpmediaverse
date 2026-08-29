@@ -201,7 +201,12 @@ class BulkController extends WP_REST_Controller {
 						},
 						$tags
 					),
-					'strlen'
+					// Not `'strlen'` (PHPStan: needs a bool-returning callable) and
+					// not a bare array_filter, which would drop a tag literally
+					// named "0". This keeps exactly the old behaviour.
+					static function ( $tag ) {
+						return '' !== $tag;
+					}
 				)
 			)
 		);

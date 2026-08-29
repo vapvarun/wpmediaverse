@@ -114,7 +114,7 @@ class SettingsRegistrar {
 				'default'           => 104857600,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_max_upload_size',
 			__( 'Max Upload Size', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_size_field' ),
@@ -158,7 +158,7 @@ class SettingsRegistrar {
 			2
 		);
 
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_allowed_file_types',
 			__( 'Allowed File Types', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_file_types_field' ),
@@ -179,7 +179,7 @@ class SettingsRegistrar {
 				'default'           => 'public',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_default_privacy',
 			__( 'Default Privacy Level', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -205,7 +205,7 @@ class SettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_allow_user_privacy',
 			__( 'Allow Users to Set Privacy', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -227,7 +227,7 @@ class SettingsRegistrar {
 				'default'           => 'warn',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_duplicate_action',
 			__( 'Duplicate Detection', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -253,7 +253,7 @@ class SettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_strip_exif',
 			__( 'Strip EXIF Data', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -281,7 +281,7 @@ class SettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_app_password_login',
 			__( 'App Sign-In', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -307,7 +307,7 @@ class SettingsRegistrar {
 			)
 		);
 		if ( self::is_pro_active() ) {
-			add_settings_field(
+			FieldRenderer::add_field(
 				'mvs_storage_driver',
 				__( 'Storage Driver', 'wpmediaverse' ),
 				array( FieldRenderer::class, 'render_select_field' ),
@@ -326,7 +326,7 @@ class SettingsRegistrar {
 				)
 			);
 		} else {
-			add_settings_field(
+			FieldRenderer::add_field(
 				'mvs_storage_driver',
 				__( 'Storage Driver', 'wpmediaverse' ),
 				array( FieldRenderer::class, 'render_pro_select_field' ),
@@ -354,7 +354,7 @@ class SettingsRegistrar {
 				'default'           => 3600,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_signed_url_ttl',
 			__( 'Signed URL Expiry (seconds)', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),
@@ -397,7 +397,7 @@ class SettingsRegistrar {
 				'default'           => \WPMediaVerse\Services\ViewRetentionService::DEFAULT_DAYS,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			\WPMediaVerse\Services\ViewRetentionService::SETTING,
 			__( 'View Event Retention (days)', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),
@@ -428,7 +428,7 @@ class SettingsRegistrar {
 				'default'           => false,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
 			__( 'Compress uploaded images', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -452,7 +452,7 @@ class SettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
 			__( 'Create WebP copies for faster loading', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -478,7 +478,7 @@ class SettingsRegistrar {
 				'default'           => false,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
 			__( 'Create AVIF copies for the smallest possible files', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -504,7 +504,7 @@ class SettingsRegistrar {
 				'default'           => false,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
 			__( 'Help improve WPMediaVerse', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -533,7 +533,7 @@ class SettingsRegistrar {
 				'default'           => \WPMediaVerse\Services\FilenameStrategy::effective_default(),
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			\WPMediaVerse\Services\FilenameStrategy::SETTING,
 			__( 'Stored Filenames', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -569,7 +569,7 @@ class SettingsRegistrar {
 				'default'           => 3,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_grid_columns',
 			__( 'Grid Columns', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -596,7 +596,7 @@ class SettingsRegistrar {
 				'default'           => 12,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_items_per_page',
 			__( 'Items Per Page', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -625,7 +625,7 @@ class SettingsRegistrar {
 				'default'           => 'original',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_thumbnail_style',
 			__( 'Thumbnail Style', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -654,7 +654,7 @@ class SettingsRegistrar {
 				'default'           => 'medium',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_thumbnail_size',
 			__( 'Thumbnail Quality', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -682,7 +682,7 @@ class SettingsRegistrar {
 				'default'           => 1024,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_large_image_size',
 			__( 'Large Image Size', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),
@@ -711,7 +711,7 @@ class SettingsRegistrar {
 				'default'           => 'large',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_lightbox_image_source',
 			__( 'Lightbox Image Size', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -745,7 +745,7 @@ class SettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_allow_downloads',
 			__( 'Allow Downloads', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -802,7 +802,7 @@ class SettingsRegistrar {
 					'default'           => '',
 				)
 			);
-			add_settings_field(
+			FieldRenderer::add_field(
 				$option,
 				$labels[0],
 				array( FieldRenderer::class, 'render_text_field' ),
@@ -827,7 +827,7 @@ class SettingsRegistrar {
 				'default'           => '',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_abuse_contact_email',
 			__( 'Abuse Contact Email', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_text_field' ),
@@ -854,7 +854,7 @@ class SettingsRegistrar {
 				'default'           => true,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_enable_reports',
 			__( 'Member Reporting', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
@@ -883,7 +883,7 @@ class SettingsRegistrar {
 				'default'           => 'flag',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_moderation_auto_action',
 			__( 'When AI Flags Content', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -913,7 +913,7 @@ class SettingsRegistrar {
 				'default'           => \WPMediaVerse\Services\AIService::MODERATION_CATEGORIES,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_moderation_categories',
 			__( 'AI Flag Criteria', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_group_field' ),
@@ -946,7 +946,7 @@ class SettingsRegistrar {
 				'default'           => '',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_ai_moderation_custom_terms',
 			__( 'Custom Flag Terms', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_textarea_field' ),
@@ -968,7 +968,7 @@ class SettingsRegistrar {
 				'default'           => 3,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_report_auto_hide_threshold',
 			__( 'Auto-Hide Threshold', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),
@@ -996,7 +996,7 @@ class SettingsRegistrar {
 				'default'           => array(),
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_webhooks',
 			__( 'Webhook Configuration', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_webhook_field' ),
@@ -1035,7 +1035,7 @@ class SettingsRegistrar {
 				'default'           => 'everyone',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_dm_access',
 			__( 'Who Can Send DMs', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -1063,7 +1063,7 @@ class SettingsRegistrar {
 				'default'           => 0,
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_dm_min_age',
 			__( 'Minimum Account Age (days)', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),
@@ -1087,7 +1087,7 @@ class SettingsRegistrar {
 				'default'           => 'everywhere',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_chat_panel_visibility',
 			__( 'Chat Panel Visibility', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -1115,7 +1115,7 @@ class SettingsRegistrar {
 				'default'           => 'everyone',
 			)
 		);
-		add_settings_field(
+		FieldRenderer::add_field(
 			'mvs_show_online_status',
 			__( 'Online Status Visibility', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
@@ -1177,7 +1177,7 @@ class SettingsRegistrar {
 					'default'           => 0,
 				)
 			);
-			add_settings_field(
+			FieldRenderer::add_field(
 				$option,
 				$label,
 				array( FieldRenderer::class, 'render_page_dropdown_field' ),
