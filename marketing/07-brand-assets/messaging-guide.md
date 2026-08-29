@@ -8,7 +8,7 @@ Reference document for anyone writing copy — sales pages, emails, social posts
 
 WPMediaVerse is a WordPress media platform plugin. It gives communities a dedicated place to upload, organise, and engage with photos and videos — separate from the activity feed, with real media features that WordPress does not provide out of the box.
 
-It works standalone or alongside BuddyPress. It uses custom database tables instead of the WordPress post system. The Pro version adds layout modes, gamification (photo battles, challenges, tournaments), cloud storage, video transcoding, and quota management.
+It works standalone or alongside BuddyPress. It uses custom database tables instead of the WordPress post system. The Pro version adds layout modes, gamification (photo battles, challenges, tournaments), cloud storage, video chapters and captions, and quota management.
 
 ---
 
@@ -67,7 +67,7 @@ These are tested options in order of preference. Use the primary for most placem
 
 ### 30-Second Version (for product pages, hero sections)
 
-WordPress communities deserve better media management than an activity feed can provide. WPMediaVerse gives your members a dedicated photo and video platform — with albums, reactions, comments, direct messages, and AI moderation included in the free version. Pro adds four layout modes, photo competitions and tournaments, S3 and BunnyCDN cloud storage, video transcoding with chapters and captions, and per-user quotas that connect to MemberPress or WooCommerce.
+WordPress communities deserve better media management than an activity feed can provide. WPMediaVerse gives your members a dedicated photo and video platform — with albums, reactions, comments, direct messages, and AI moderation included in the free version. Pro adds four layout modes, photo competitions and tournaments, S3 and BunnyCDN cloud storage, video chapters, resume playback and auto-captions, and per-user quotas that connect to MemberPress or WooCommerce.
 
 ### 10-Second Version (for ads, social bios)
 
@@ -123,7 +123,7 @@ WPMediaVerse is built on custom tables — not wp_posts. Every major operation f
 
 **vs. rtMedia:** rtMedia is the incumbent but has not evolved its UI or architecture in years. WPMediaVerse uses custom tables, has a more modern media experience, and ships gamification and cloud storage that rtMedia does not offer.
 
-**vs. MediaPress:** MediaPress is stable and BuddyPress-native, but customisation requires working around it rather than with it. WPMediaVerse has cleaner extension points and adds video transcoding, HLS streaming, and a competition engine that MediaPress does not have.
+**vs. MediaPress:** MediaPress is stable and BuddyPress-native, but customisation requires working around it rather than with it. WPMediaVerse has cleaner extension points and adds video chapters, auto-captions, and a competition engine that MediaPress does not have.
 
 **vs. BuddyBoss Media:** BuddyBoss is a full platform — theme plus plugin — that costs significantly more and locks you into their ecosystem. WPMediaVerse is a media layer that works with your existing site and theme.
 
@@ -139,7 +139,7 @@ Use these names consistently across all copy. Do not improvise variations.
 | Competitions | Photo Battles, Photo Challenges, Tournaments | "contests", "competitions feature" |
 | Points system | Points and badges (via gamification) | "gamification system", "XP" |
 | Storage | Cloud storage (S3, BunnyCDN) | "CDN support", "offload" |
-| Video | Video transcoding, HLS streaming | "video processing", "adaptive streaming" |
+| Video | Video chapters, resume playback, auto-captions | "video transcoding", "HLS", "adaptive streaming" — we do not transcode |
 | Privacy | Per-item privacy controls | "visibility settings", "access control" |
 | Moderation | AI moderation | "smart moderation", "automated filtering" |
 | Quotas | Per-user storage quotas | "storage limits", "user quotas" |

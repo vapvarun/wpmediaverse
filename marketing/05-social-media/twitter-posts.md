@@ -114,14 +114,14 @@ WPMediaVerse Pro routes uploads directly to S3 or BunnyCDN. Your server handles 
 
 ---
 
-**Post 8 — Video transcoding**
+**Post 8 — Video**
 
 Members upload MP4s. WPMediaVerse Pro:
 
-1. Transcodes in the background (async queue)
-2. Serves as HLS for adaptive streaming
-3. Supports chapter markers
-4. Supports closed captions
+1. Plays the original file — no encoding queue, no FFmpeg
+2. Adds chapter markers
+3. Resumes where each member stopped watching
+4. Auto-captions with Whisper
 
 No YouTube. No Vimeo. Stays on your site.
 
@@ -184,7 +184,7 @@ rtMedia vs WPMediaVerse:
 
 rtMedia: wp_posts-based storage, no competitions, no AI moderation, UI unchanged for years.
 
-WPMediaVerse: custom tables, photo battles/tournaments, AI moderation in free, video transcoding.
+WPMediaVerse: custom tables, photo battles/tournaments, AI moderation in free, video chapters and captions.
 
 Both have BuddyPress integration. The architecture and feature set are different categories at this point.
 
@@ -198,7 +198,7 @@ BuddyBoss is a full platform — theme + plugin + hosting recommendations. $228/
 
 WPMediaVerse is a media plugin. It works with your existing theme, your existing BuddyPress setup, your existing everything.
 
-If you need competitions, video transcoding, and cloud storage without rebuilding your site: WPMediaVerse Pro.
+If you need competitions, video chapters and captions, and cloud storage without rebuilding your site: WPMediaVerse Pro.
 
 [link] #WordPress #BuddyBoss
 

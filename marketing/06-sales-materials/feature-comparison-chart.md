@@ -6,11 +6,11 @@ Last updated: March 2026. Competitor information is based on publicly available 
 
 ## Quick Summary
 
-**WPMediaVerse** — Modern architecture, purpose-built for communities. Free version includes AI moderation and BuddyPress integration. Pro adds layout modes, competitions, cloud storage, video transcoding, and quotas.
+**WPMediaVerse** — Modern architecture, purpose-built for communities. Free version includes AI moderation and BuddyPress integration. Pro adds layout modes, competitions, cloud storage, video chapters and captions, and quotas.
 
 **rtMedia** — Long-established, large install base, familiar to BuddyPress users. Uses WordPress post types for media storage. Core features in free; most useful features in Pro.
 
-**MediaPress** — BuddyPress-native, stable, focused on gallery and album management. Limited extensibility. No video transcoding or competition features.
+**MediaPress** — BuddyPress-native, stable, focused on gallery and album management. Limited extensibility. No competition features.
 
 **BuddyBoss Media** — Part of the BuddyBoss Platform (requires BuddyBoss theme). Full platform play, higher price, theme lock-in. Media features are solid but cannot be separated from the broader platform.
 
@@ -25,8 +25,8 @@ Last updated: March 2026. Competitor information is based on publicly available 
 | Albums / galleries | Free | Free | Free | Platform |
 | Photo lightbox | Free | Free | Free | Platform |
 | Video upload | Free (basic) | Pro | Free (limited) | Platform |
-| Video transcoding | Pro | No | No | No |
-| HLS adaptive streaming | Pro | No | No | No |
+| Video chapters + resume playback | Pro | No | No | No |
+| Auto-captions (Whisper) | Pro | No | No | No |
 | Video chapter markers | Pro | No | No | No |
 | Video closed captions | Pro | No | No | No |
 | Audio file support | No | Pro | No | No |
@@ -188,7 +188,7 @@ Last updated: March 2026. Competitor information is based on publicly available 
 | Theme required | Any | Any | Any | Any | BuddyBoss only |
 | AI moderation | Yes | Yes | No | No | No |
 | Competitions | No | Yes | No | No | No |
-| Video transcoding | No | Yes | No | No | No |
+| Video chapters + captions | No | Yes | No | No | No |
 | Cloud storage | No | Yes | Partial | No | No |
 
 ---
@@ -199,7 +199,7 @@ Last updated: March 2026. Competitor information is based on publicly available 
 - You need photo competitions, battles, or tournaments
 - AI moderation out of the box matters to you
 - You want modern architecture (custom tables, REST API, documented hooks)
-- You need video transcoding and HLS streaming
+- You need chapters, resume playback, and auto-captions on member video
 - Cloud storage routing (S3/BunnyCDN) is a requirement
 - You want a plugin that works with your existing theme
 
@@ -215,4 +215,4 @@ Last updated: March 2026. Competitor information is based on publicly available 
 **Consider BuddyBoss if:**
 - You want a full platform (theme + social network + media) under one subscription
 - You are building a new site and are comfortable with theme lock-in
-- You do not need competitions or video transcoding
+- You do not need competitions or the Pro video tooling

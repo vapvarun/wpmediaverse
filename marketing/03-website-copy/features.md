@@ -166,19 +166,29 @@ Each section follows the format: what the feature does, why it matters, and who 
 
 ## Video (Pro)
 
-### Multi-Quality Transcoding With HLS
+### Chapters and Resume Playback
 
-**What it does:** Uploaded videos are transcoded by FFmpeg into multiple quality tiers and delivered via HLS (HTTP Live Streaming). The player selects the quality that matches the viewer's connection automatically.
+**What it does:** Pro adds chapter markers to a video and remembers where each member stopped watching, so a long video reopens at the point they left it rather than at zero.
 
-**Why it matters:** A 1080p video uploaded raw will buffer constantly for mobile viewers. HLS transcoding means the same video works well on a 5G connection and on a slow hotel Wi-Fi without the viewer doing anything. Storage costs are also reduced versus storing a single massive file.
+**Why it matters:** A forty-minute tutorial is unusable without a way back into the middle of it. Chapters let a member jump to the part they need; resume means they can watch it over three sittings without hunting for their place each time.
 
-**Who it is for:** Any site accepting video uploads where viewer experience matters.
+**Who it is for:** Sites publishing long-form video — tutorials, lectures, recorded sessions.
+
+---
+
+### Plays the Original File
+
+**What it does:** MediaVerse embeds and plays the file the member uploaded. It does not re-encode video into other formats or bitrates.
+
+**Why it matters:** No encoding queue to babysit, no FFmpeg to install, and no background job competing with your site for CPU. It also means MediaVerse runs on shared hosting, where an encoding pipeline either is not available or will get you throttled. The trade is real and worth stating plainly: a large source file is served as uploaded, so a site accepting long 4K video should set an upload limit and use cloud storage with a CDN.
+
+**Who it is for:** Every site, and especially anyone who has been told they need a dedicated server to accept video.
 
 ---
 
 ### Auto-Captions (OpenAI Whisper)
 
-**What it does:** After a video is transcoded, Whisper AI generates a caption file automatically. Captions are displayed in the player and stored as a file downloadable by the uploader.
+**What it does:** Whisper AI generates a caption file from the uploaded video automatically. Captions are displayed in the player and stored as a file downloadable by the uploader.
 
 **Why it matters:** Captions improve accessibility for viewers with hearing impairments and for anyone watching in a sound-off environment (which accounts for a substantial portion of video views on most platforms). They are also indexed for search.
 

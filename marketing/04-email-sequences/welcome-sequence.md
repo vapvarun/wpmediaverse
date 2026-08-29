@@ -201,8 +201,8 @@ Photo Battles (head-to-head voting), Challenges (theme + deadline + leaderboard)
 **Your storage costs are getting out of hand.**
 If you have an active community uploading photos regularly, local storage fills up fast. Pro connects directly to Amazon S3 or BunnyCDN. Your uploads go straight to the cloud. Your server handles the logic, not the files.
 
-**You need video with proper transcoding.**
-Members uploading MP4s is a free-version feature, but transcoding them to HLS with adaptive quality, chapter markers, and caption support is Pro. If your community produces video content — tutorials, competition entries, vlogs — the difference is significant.
+**You need more from video than a play button.**
+Members uploading MP4s is a free-version feature; chapter markers, resume playback, auto-captions, and retention analytics are Pro. If your community produces video content — tutorials, competition entries, vlogs — the difference is significant.
 
 **You have a membership site with tiered storage.**
 If you run memberships with different tiers (MemberPress or WooCommerce), Pro lets you assign storage quotas per tier. 1GB on the free plan, 10GB on the paid plan. It connects directly to your existing membership setup.

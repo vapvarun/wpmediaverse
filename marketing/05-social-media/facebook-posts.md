@@ -23,7 +23,7 @@ The free version gives your community:
 - AI moderation — it checks every upload before it goes into the feed, so you are not reviewing everything manually
 - Full BuddyPress integration if your site uses it
 
-The Pro version adds photo competitions (Battles, Challenges, and full Tournament brackets), four layout modes including a beautiful masonry gallery view, cloud storage so your server does not buckle under the weight of everyone's photos, and video support with proper transcoding.
+The Pro version adds photo competitions (Battles, Challenges, and full Tournament brackets), four layout modes including a beautiful masonry gallery view, cloud storage so your server does not buckle under the weight of everyone's photos, and video with chapters, resume playback, and automatic captions.
 
 If you run a photography community, an online club, or any kind of WordPress site where members share media — this is for you.
 
