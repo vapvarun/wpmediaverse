@@ -5262,31 +5262,52 @@ a.mvs-dashboard-card-title:hover {
     /* White button on the purple banner in both modes — was var(--mvs-bg),
        which flips dark in dark mode and breaks the intended white pill. */
     background: #fff;
-    color: #667eea;
+    /* #4c51bf, not #667eea. The banner's own indigo scored 3.66 on the white
+       pill — a fail, on the single control that decides whether a visitor
+       joins at all (Basecamp 10252222150). Same hue family, just dark enough:
+       6.49. Not `--mvs-primary`, because this pill sits on a fixed purple
+       gradient that does not follow the theme, so its text must not either. */
+    color: #4c51bf;
     border: none;
 }
 
 .mvs-logged-out-banner__actions .mvs-btn--secondary {
     background: transparent;
-    color: var(--mvs-bg);
+    /* Fixed white, for the reason the comment above already gives: the banner
+       is a fixed purple gradient in BOTH modes, and `var(--mvs-bg)` flips to
+       near-black in dark — dark text on purple. The primary button was fixed
+       for exactly this and the secondary was left behind. */
+    color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .mvs-logged-out-banner__close {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7);
+    /* Full white, not 70% — at 0.7 on the gradient this was the faintest
+       control on a banner shown to every visitor. */
+    color: #fff;
     font-size: 20px;
     cursor: pointer;
-    padding: 4px;
+    /* Was 20x28. A dismiss control needs to be hittable, and this one sits in
+       a corner where a thumb is least accurate. Centring the glyph in a
+       touch-sized box costs no layout, since the button is absolutely
+       positioned. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--mvs-touch-min, 44px);
+    min-height: var(--mvs-touch-min, 44px);
+    padding: 0;
     line-height: 1;
     position: absolute;
-    top: 18px;
-    right: 8px;
+    top: 8px;
+    right: 4px;
 }
 
 .mvs-logged-out-banner__close:hover {
-    color: var(--mvs-bg);
+    /* Not `var(--mvs-bg)`: same dark-mode flip as the buttons above. */
+    color: #fff;
     background: none;
     border: none;
 }
