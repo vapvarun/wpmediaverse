@@ -2431,6 +2431,19 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_has_custom_avatar",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $has",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Seam for other avatar providers. Nothing in the avatar chain distinguishes a photograph from a generated placeholder (core found_avatar is set by both), so the owner of the avatar answers. Basecamp 10252323883."
+    },
+    {
       "name": "mvs_user_badge_html",
       "type": "filter",
       "args_count": 2,

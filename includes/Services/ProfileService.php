@@ -331,15 +331,51 @@ class ProfileService {
 	}
 
 	/**
-	 * Check if a user has a custom avatar.
+	 * Whether a member has a real avatar they chose — from anywhere, not just us.
+	 *
+	 * This answers the question every caller actually has: may I nag this member
+	 * to add a profile photo? It used to answer a narrower one — is there a row
+	 * in OUR avatar store — and the two stop agreeing the moment another plugin
+	 * on the site also provides avatars.
+	 *
+	 * Measured on the QA site with BuddyNext active, 8 of 8 members who had
+	 * uploaded a picture there got `false` from this method while the `avatar`
+	 * field beside it in the same REST response served their real photograph.
+	 * Anything gating on this — an "upload a profile photo" nudge, a
+	 * profile-completion check — asked them for a picture they already had
+	 * (Basecamp 10252323883).
+	 *
+	 * It cannot be resolved by inspecting the avatar chain. Core's
+	 * `found_avatar` looks like the signal and is not: a plugin that generates
+	 * per-member initials sets it too, so on this same site it was `true` for a
+	 * member with no avatar of any kind. Nor can the URL be compared against a
+	 * known placeholder, because a generated placeholder differs per member.
+	 * Only the plugin that owns an avatar knows whether it is a photograph or a
+	 * stand-in, so that is who gets asked.
 	 *
 	 * @since 1.1.0
+	 * @since 2.4.0 Added the `mvs_has_custom_avatar` filter.
 	 *
 	 * @param int $user_id User ID.
 	 * @return bool
 	 */
 	public function has_custom_avatar( int $user_id ): bool {
-		return (bool) $this->get_custom_avatar_id( $user_id );
+		$has = (bool) $this->get_custom_avatar_id( $user_id );
+
+		/**
+		 * Whether this member has an avatar they chose.
+		 *
+		 * For avatar providers other than MediaVerse. Answer true only for a
+		 * picture the MEMBER supplied — never for a site default or a generated
+		 * placeholder, or every consumer of this flag stops being able to tell
+		 * the difference and no one is ever asked for a photo again.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $has     True if MediaVerse's own avatar store has one.
+		 * @param int  $user_id User ID.
+		 */
+		return (bool) apply_filters( 'mvs_has_custom_avatar', $has, $user_id );
 	}
 
 	/**
