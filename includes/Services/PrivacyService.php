@@ -97,9 +97,59 @@ class PrivacyService {
 			return array( 'user', 0 );
 		}
 
-		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $type, $id, $user_id );
+		$level = self::media_drive_access( $type, $id, $user_id );
 
 		return in_array( $level, array( 'write', 'own' ), true ) ? array( $type, $id ) : array( 'user', 0 );
+	}
+
+	/**
+	 * How much access a member has to a drive, for MEDIA.
+	 *
+	 * Media and documents are two different things a member can put on a drive,
+	 * and until 2.4.0 one filter answered for both. There was no way for a
+	 * bridge to say "any space member may post a photo here" while keeping
+	 * files behind the space's own Files switch, so a site owner's toggle could
+	 * not mean what it said (Basecamp 10252314484).
+	 *
+	 * The document filter is still asked first and its answer is the default,
+	 * so a site that has not adopted the new one behaves exactly as it did.
+	 *
+	 * BOTH media gates route through here — placement in
+	 * `resolve_drive_for_user()` and the read check in `check_space()`. That is
+	 * the point of the method existing rather than the two lines being written
+	 * twice: if placement said yes and the read gate asked a different question,
+	 * a photo would be stored scoped to a space whose members then could not
+	 * open it. That is the same shape as the leak BuddyNext closed in 4186355f,
+	 * arrived at from the opposite direction.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $drive_type Drive type, e.g. `space`.
+	 * @param int    $drive_id   Drive id.
+	 * @param int    $user_id    User to test.
+	 * @return string `none`, `read`, `write` or `own`.
+	 */
+	private static function media_drive_access( string $drive_type, int $drive_id, int $user_id ): string {
+		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $drive_type, $drive_id, $user_id );
+
+		/**
+		 * A member's access to a drive for MEDIA specifically.
+		 *
+		 * Answer this to let photos and videos follow a different rule from
+		 * files — typically "any member of the space", while documents stay
+		 * behind whatever the space's own files setting says.
+		 *
+		 * Defaults to the `mvs_document_drive_access` answer, so leaving this
+		 * alone keeps today's behaviour exactly.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $level      Access from the document filter: none|read|write|own.
+		 * @param string $drive_type Drive type, e.g. `space`.
+		 * @param int    $drive_id   Drive id.
+		 * @param int    $user_id    User being tested.
+		 */
+		return (string) apply_filters( 'mvs_media_drive_access', $level, $drive_type, $drive_id, $user_id );
 	}
 
 	/**
@@ -405,9 +455,10 @@ class PrivacyService {
 			return false;
 		}
 
-		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $drive_type, $drive_id, $user_id );
-
-		return 'none' !== $level;
+		// Same resolver as placement — see media_drive_access(). A read gate that
+		// asked a different question from the write gate would accept media onto
+		// a drive whose members then could not open it.
+		return 'none' !== self::media_drive_access( $drive_type, $drive_id, $user_id );
 	}
 
 	/**

@@ -2627,6 +2627,21 @@
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_drive_access",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $level",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/PrivacyService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Media-specific twin of mvs_document_drive_access, whose answer is its default so the seam is additive. Governs BOTH the placement gate and the space read gate, deliberately: if the two disagreed, media would be stored scoped to a drive its members could not read. Basecamp 10252314484."
     }
   ],
   "generated": {
