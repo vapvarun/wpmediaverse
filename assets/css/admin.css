@@ -54,6 +54,25 @@
 	--mvs-success:       #00a32a;
 	--mvs-warning:       #dba617;
 	--mvs-warn:          #dba617;
+	/*
+	 * WordPress's notice green and amber are designed as ACCENTS — borders,
+	 * icons, rules. Used as text or as a fill behind white text they do not
+	 * reach AA, and the admin used them for both: measured 3.35 for "Active"
+	 * and 2.22 for "Not set" and "WARNING", so the text telling an owner that
+	 * something is WRONG was the least legible on the page (Basecamp
+	 * 10252222182).
+	 *
+	 * These darker variants exist for the text-bearing cases ONLY. The originals
+	 * stay for borders and icons, where 3.35 is fine and where changing them
+	 * would restyle screens nobody complained about.
+	 *
+	 * Values are measured, not guessed — each clears 4.5 against every surface
+	 * it actually lands on:
+	 *   #00761f  white 5.82 · green tints 5.12 / 5.30
+	 *   #8a6100  white 5.54 · as a fill under white text 5.54
+	 */
+	--mvs-success-strong: #00761f;
+	--mvs-warning-strong: #8a6100;
 	--mvs-danger:        #d63638;
 	--mvs-shadow-sm:     0 1px 2px rgba(0, 0, 0, .04);
 	--mvs-shadow-md:     0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
@@ -187,7 +206,7 @@
 }
 
 .mvs-stat-card--warning .mvs-stat-number {
-	color: var(--mvs-warning);
+	color: var(--mvs-warning-strong);
 }
 
 .mvs-stat-card--danger {
@@ -203,7 +222,7 @@
 }
 
 .mvs-stat-card--success .mvs-stat-number {
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 /* Clickable stat cards */
@@ -450,12 +469,13 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text);
 }
 
+/* Text, so the strong variant — see the token block. */
 .mvs-status-list .mvs-status-ok {
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 .mvs-status-list .mvs-status-warn {
-	color: var(--mvs-warn);
+	color: var(--mvs-warning-strong);
 }
 
 .mvs-status-list .mvs-status-bad {
@@ -1023,7 +1043,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-setup-progress-step.completed {
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 .mvs-setup-progress-number {
@@ -1173,7 +1193,7 @@ a.mvs-stat-card:focus {
 	width: 64px;
 	height: 64px;
 	stroke-width: 1;
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 .mvs-setup-done-links {
@@ -1635,23 +1655,24 @@ a.mvs-stat-card:focus {
 
 .mvs-media-badge--image { background: var(--mvs-accent); }
 .mvs-media-badge--video { background: #9b59b6; }
-.mvs-media-badge--audio { background: #e67e22; }
+/* Darkened from #e67e22 (white text scored 2.85) to 5.57. */
+.mvs-media-badge--audio { background: #a35209; }
 .mvs-media-badge--document { background: #27ae60; }
 
-.mvs-media-badge--public { background: var(--mvs-success); }
+.mvs-media-badge--public { background: var(--mvs-success-strong); }
 .mvs-media-badge--members { background: var(--mvs-accent); }
 .mvs-media-badge--private { background: var(--mvs-danger); }
 .mvs-media-badge--group { background: #9b59b6; }
 .mvs-media-badge--friends { background: #e67e22; }
 .mvs-media-badge--loggedin { background: #3498db; }
 
-.mvs-media-badge--publish { background: var(--mvs-success); }
+.mvs-media-badge--publish { background: var(--mvs-success-strong); }
 .mvs-media-badge--draft { background: var(--mvs-text-secondary); }
 .mvs-media-badge--pending { background: var(--mvs-warn); }
 .mvs-media-badge--trash { background: var(--mvs-danger); }
 
 /* Semantic variants used by the optimization column and detail page. */
-.mvs-media-badge--success { background: var(--mvs-success); }
+.mvs-media-badge--success { background: var(--mvs-success-strong); }
 .mvs-media-badge--danger { background: var(--mvs-danger); }
 .mvs-media-badge--neutral { background: var(--mvs-text-secondary); }
 
@@ -2001,7 +2022,8 @@ a.mvs-stat-card:focus {
 
 /* Log level badge color variants */
 .mvs-log-level--error { background: var(--mvs-danger); }
-.mvs-log-level--warning { background: var(--mvs-warn); }
+/* Fill under WHITE text — 2.22 before. */
+.mvs-log-level--warning { background: var(--mvs-warning-strong); }
 .mvs-log-level--info { background: var(--mvs-accent); }
 .mvs-log-level--default { background: var(--mvs-text-muted); }
 

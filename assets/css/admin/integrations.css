@@ -131,8 +131,11 @@
 	line-height: 1.6;
 	white-space: nowrap;
 }
-.mvs-status-badge--success { background: #e6f4ea; color: var(--mvs-success, #00a32a); }
-.mvs-status-badge--warning { background: #fef9e7; color: var(--mvs-warn, #dba617); }
+/* Text on a tinted chip. The notice green and amber are ACCENT colours and do
+   not reach AA as text — measured 2.95 for "Connected" on this tint. The strong
+   variants are defined in admin.css (Basecamp 10252222182). */
+.mvs-status-badge--success { background: #e6f4ea; color: var(--mvs-success-strong, #00761f); }
+.mvs-status-badge--warning { background: #fef9e7; color: var(--mvs-warning-strong, #8a6100); }
 .mvs-status-badge--muted   { background: var(--mvs-surface-alt, #f6f7f7); color: var(--mvs-text-muted, #646970); }
 
 /* ── Connected state ghost button ──────────────────────────────────────── */
