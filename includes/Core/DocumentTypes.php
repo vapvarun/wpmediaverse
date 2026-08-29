@@ -544,4 +544,38 @@ final class DocumentTypes {
 	public static function allowed_mimes(): array {
 		return array_keys( self::BY_MIME );
 	}
+
+	/**
+	 * File extensions belonging to the given document types.
+	 *
+	 * Exists so a picker can set `accept` from the owner's allowed-types setting
+	 * without keeping a second copy of the extension vocabulary. A second copy is
+	 * how `.psd` ends up admitted by one surface and refused by another — the
+	 * same class of drift that put a `doc` label ahead of the file resolver in
+	 * the MediaPress importer (Basecamp 10245253286).
+	 *
+	 * NOT a permission check and must never be used as one: `accept` is a file
+	 * dialog hint the member can defeat by typing a name, and the server still
+	 * resolves every upload from the FILE. This only spares them picking
+	 * something that was always going to be refused.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $types Document type keys; unknown ones are ignored.
+	 * @return string[] Extensions without the leading dot, in map order.
+	 */
+	public static function extensions_for( array $types ): array {
+		$wanted = array_map( 'strval', $types );
+
+		return array_values(
+			array_keys(
+				array_filter(
+					self::BY_EXTENSION,
+					static function ( $type ) use ( $wanted ) {
+						return in_array( $type, $wanted, true );
+					}
+				)
+			)
+		);
+	}
 }
