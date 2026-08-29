@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-28T10:24:39Z",
+    "generated_at": "2026-08-29T20:03:13Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -218,7 +218,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/BulkController.php",
-                    "lines": "273-273",
+                    "lines": "397-397",
                     "method": "bulk_permissions_check"
                 },
                 {
@@ -622,12 +622,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1659-1659",
+                    "lines": "1705-1705",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1684-1684",
+                    "lines": "1730-1730",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -640,12 +640,12 @@
             "sites": [
                 {
                     "file": "includes/Admin/Settings/FieldRenderer.php",
-                    "lines": "379-379",
+                    "lines": "441-441",
                     "method": "FieldRenderer::render_text_field"
                 },
                 {
                     "file": "includes/Admin/Settings/FieldRenderer.php",
-                    "lines": "411-411",
+                    "lines": "473-473",
                     "method": "FieldRenderer::render_color_field"
                 }
             ]
@@ -953,7 +953,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1625-1625",
+                    "lines": "1671-1671",
                     "method": "create_item_permissions_check"
                 },
                 {
@@ -1122,17 +1122,17 @@
             "sites": [
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "395-395",
+                    "lines": "420-420",
                     "method": "get_user_battles"
                 },
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "453-453",
+                    "lines": "478-478",
                     "method": "get_user_challenges"
                 },
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "507-507",
+                    "lines": "532-532",
                     "method": "get_user_tournaments"
                 }
             ]
