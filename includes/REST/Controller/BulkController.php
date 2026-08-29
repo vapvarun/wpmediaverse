@@ -51,7 +51,7 @@ class BulkController extends WP_REST_Controller {
 					'action'    => array(
 						'type'     => 'string',
 						'required' => true,
-						'enum'     => array( 'delete', 'move_to_album', 'change_privacy' ),
+						'enum'     => array( 'delete', 'move_to_album', 'change_privacy', 'add_tags' ),
 					),
 					'media_ids' => array(
 						'type'     => 'array',
@@ -65,6 +65,10 @@ class BulkController extends WP_REST_Controller {
 					'privacy'   => array(
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'tags'      => array(
+						'type'  => 'array',
+						'items' => array( 'type' => 'string' ),
 					),
 				),
 			)
@@ -96,29 +100,144 @@ class BulkController extends WP_REST_Controller {
 		}
 
 		// Filter to items the user can modify.
+		$requested   = count( $media_ids );
 		$allowed_ids = $this->filter_allowed_ids( $media_ids, $user_id );
 
 		switch ( $action ) {
 			case 'delete':
-				return $this->bulk_delete( $allowed_ids );
+				$response = $this->bulk_delete( $allowed_ids );
+				break;
 
 			case 'move_to_album':
 				$album_id = $request->get_param( 'album_id' );
 				if ( ! $album_id ) {
 					return new WP_Error( 'mvs_missing_album', __( 'album_id is required for move_to_album.', 'wpmediaverse' ), array( 'status' => 400 ) );
 				}
-				return $this->bulk_move_to_album( $allowed_ids, $album_id );
+				$response = $this->bulk_move_to_album( $allowed_ids, $album_id );
+				break;
 
 			case 'change_privacy':
 				$privacy = $request->get_param( 'privacy' );
 				if ( ! $privacy ) {
 					return new WP_Error( 'mvs_missing_privacy', __( 'privacy is required for change_privacy.', 'wpmediaverse' ), array( 'status' => 400 ) );
 				}
-				return $this->bulk_change_privacy( $allowed_ids, $privacy );
+				$response = $this->bulk_change_privacy( $allowed_ids, $privacy );
+				break;
+
+			case 'add_tags':
+				$tags = $request->get_param( 'tags' );
+				if ( ! is_array( $tags ) || ! array_filter( array_map( 'trim', array_map( 'strval', $tags ) ) ) ) {
+					return new WP_Error( 'mvs_missing_tags', __( 'tags is required for add_tags.', 'wpmediaverse' ), array( 'status' => 400 ) );
+				}
+				$response = $this->bulk_add_tags( $allowed_ids, $tags );
+				break;
 
 			default:
 				return new WP_Error( 'mvs_invalid_action', __( 'Invalid bulk action.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
+
+		return $this->with_counts( $response, $requested );
+	}
+
+	/**
+	 * Say how many items the caller asked for, not just how many we touched.
+	 *
+	 * `filter_allowed_ids()` silently drops anything the member may not edit,
+	 * and every handler then reported `total` as the count of what SURVIVED
+	 * that filter. Select twelve, own four, and the response was
+	 * `processed: 4, total: 4` — an unqualified success for an operation that
+	 * ignored two thirds of the request. That is the same "accepted and never
+	 * applied" shape as the space-privacy and categories bugs, and a client
+	 * cannot detect it because nothing in the payload disagrees.
+	 *
+	 * The UI is capped to selectable-and-owned items, so in practice `skipped`
+	 * should be 0 — which is exactly why it must be reported rather than
+	 * assumed. A number that is always zero costs nothing; a silent drop costs
+	 * a member their trust in the button.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param WP_REST_Response|WP_Error $response  Handler result.
+	 * @param int                       $requested How many ids the caller sent.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function with_counts( $response, int $requested ) {
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$data = (array) $response->get_data();
+
+		$data['requested'] = $requested;
+		$data['skipped']   = max( 0, $requested - (int) ( $data['processed'] ?? 0 ) );
+
+		$response->set_data( $data );
+
+		return $response;
+	}
+
+	/**
+	 * Add tags to every selected item, KEEPING the tags already there.
+	 *
+	 * Append, not replace, and the action is named Add Tags for the same
+	 * reason: applying one tag to two hundred items must not silently wipe
+	 * every other tag those items carried. There is no bulk remove — taking
+	 * tags away in bulk is a separate, more dangerous action and deserves its
+	 * own decision rather than being the accidental side effect of this one.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]    $media_ids Media IDs.
+	 * @param string[] $tags      Tag names.
+	 * @return WP_REST_Response
+	 */
+	private function bulk_add_tags( array $media_ids, array $tags ): WP_REST_Response {
+		$clean = array_values(
+			array_unique(
+				array_filter(
+					array_map(
+						static function ( $tag ) {
+							return sanitize_text_field( trim( (string) $tag ) );
+						},
+						$tags
+					),
+					'strlen'
+				)
+			)
+		);
+
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$updated = 0;
+
+		foreach ( $media_ids as $media_id ) {
+			// `true` is the append flag. Without it this is a replace, which is
+			// the destructive version of the same call.
+			$result = wp_set_object_terms( $media_id, $clean, 'mvs_tag', true );
+
+			if ( is_wp_error( $result ) ) {
+				continue;
+			}
+
+			// Re-read rather than merge in PHP: the cached list must match the
+			// taxonomy exactly, and the taxonomy is what just decided how the
+			// names resolved (existing terms, slug collisions, capitalisation).
+			$names = wp_get_object_terms( $media_id, 'mvs_tag', array( 'fields' => 'names' ) );
+
+			if ( ! is_wp_error( $names ) ) {
+				$repo->set( $media_id, 'tags', wp_json_encode( array_values( $names ) ) );
+			}
+
+			++$updated;
+		}
+
+		return rest_ensure_response(
+			array(
+				'action'    => 'add_tags',
+				'tags'      => $clean,
+				'processed' => $updated,
+				'total'     => count( $media_ids ),
+			)
+		);
 	}
 
 	/**

@@ -436,6 +436,76 @@ $mvs_archive_url = home_url( '/media/' );
 
 	<?php if ( $has_items ) : ?>
 		<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
+		<?php
+		// Bulk actions on Explore.
+		//
+		// The tick boxes are rendered by render_grid_item() and ONLY on media
+		// the viewer owns, so this bar can never act on somebody else's photo —
+		// the gate is in the markup, not here. A moderator sees exactly what a
+		// member sees: one page at one URL, with no invisible capability
+		// changing what is drawn. Logged-out visitors get no tiles with boxes,
+		// so the bar never appears for them either.
+		if ( is_user_logged_in() ) :
+			wp_interactivity_state(
+				'mvs/explore',
+				array(
+					'i18n' => array(
+						/* translators: %d: number of selected items. */
+						'selected'      => __( '%d selected', 'wpmediaverse' ),
+						'deleteConfirm' => __( 'Delete the selected items? This cannot be undone.', 'wpmediaverse' ),
+						'deleted'       => __( 'Selected items deleted.', 'wpmediaverse' ),
+						'privacyDone'   => __( 'Privacy updated.', 'wpmediaverse' ),
+						'tagsAdded'     => __( 'Tags added.', 'wpmediaverse' ),
+						'movedToAlbum'  => __( 'Moved to album.', 'wpmediaverse' ),
+						'failed'        => __( 'Bulk action failed.', 'wpmediaverse' ),
+						/* translators: 1: number changed. 2: number selected. 3: number skipped. */
+						'partial'       => __( '%1$d of %2$d updated. %3$d were not yours to change.', 'wpmediaverse' ),
+					),
+				)
+			);
+			?>
+			<div class="mvs-bulk-bar" data-wp-interactive="mvs/explore"
+				<?php echo wp_interactivity_data_wp_context( array( 'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				data-wp-on-document--keydown="actions.exploreBulkKeydown"
+				data-wp-bind--hidden="!state.hasBulk" hidden
+				role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
+				<span class="mvs-bulk-count" data-wp-text="state.bulkLabel"></span>
+
+				<label class="mvs-bulk-privacy-label">
+					<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
+					<select class="mvs-bulk-privacy" data-wp-on--change="actions.setExploreBulkPrivacy">
+						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+					</select>
+				</label>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkPrivacy" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+
+				<label class="mvs-bulk-album-label">
+					<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+					<select class="mvs-bulk-album" data-wp-on--change="actions.setExploreBulkAlbum" data-wp-on--focus="actions.ensureExploreAlbums">
+						<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+						<template data-wp-each="state.bulkAlbums">
+							<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
+						</template>
+					</select>
+				</label>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+
+				<label class="mvs-bulk-tags-label">
+					<span class="screen-reader-text"><?php esc_html_e( 'Tags to add to selected', 'wpmediaverse' ); ?></span>
+					<input type="text" class="mvs-bulk-tags" placeholder="<?php esc_attr_e( 'Add tags (comma separated)', 'wpmediaverse' ); ?>"
+						data-wp-bind--value="state.bulkTags" data-wp-on--input="actions.setExploreBulkTags" />
+				</label>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkTags" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add tags', 'wpmediaverse' ); ?></button>
+
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--danger" data-wp-on--click="actions.exploreBulkDelete"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.selectAllExploreBulk"><?php esc_html_e( 'Select all', 'wpmediaverse' ); ?></button>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.clearExploreBulk"><?php esc_html_e( 'Clear', 'wpmediaverse' ); ?></button>
+			</div>
+			<?php
+		endif;
+		?>
 		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style() ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
 			<?php
 			// Render albums first.
@@ -510,7 +580,13 @@ $mvs_archive_url = home_url( '/media/' );
 				\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 					$item_id,
 					$my_stats,
-					array( 'show_author' => true )
+					// `bulk` is opt-in per surface: the same helper renders
+					// albums, collections and both BuddyPress tabs, and only
+					// Explore asked for selection.
+					array(
+						'show_author' => true,
+						'bulk'        => is_user_logged_in(),
+					)
 				);
 			endforeach;
 			?>

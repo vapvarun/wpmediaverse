@@ -979,12 +979,14 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
 	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
 	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
+	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
 	 *                        - 'size' (string) Image size. Default 'medium'.
 	 */
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
 		$show_actions = $options['show_actions'] ?? false;
+		$bulk         = $options['bulk'] ?? false;
 		$data_attrs   = $options['data_attrs'] ?? array();
 		$size         = $options['size'] ?? \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key();
 
@@ -1051,6 +1053,30 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() output (encoded + escaped JSON for the data-wp-context attribute).
 			. '>';
+
+		// Bulk-select control, OPT-IN per surface and OWN ITEMS ONLY.
+		//
+		// Opt-in because this helper renders Explore, albums, collections and
+		// both BuddyPress tabs — a checkbox added unconditionally would appear
+		// on five surfaces when one asked for it.
+		//
+		// Own items only, and that is the whole design decision. A member must
+		// never see a selection control on somebody else's photo: on a public
+		// feed it reads as a bug or a leak, and it is the shape of support
+		// ticket an owner gets asked about. The server would refuse the write
+		// anyway — but it refuses SILENTLY, dropping the ids and returning 200,
+		// so a checkbox here would produce "12 selected" and four changed. A
+		// moderator sees exactly what a member sees, deliberately: one page at
+		// one URL, with no invisible capability changing what is drawn.
+		if ( $bulk && $author_id && get_current_user_id() === $author_id ) {
+			printf(
+				'<button type="button" class="mvs-bulk-check" data-mvs-bulk-id="%1$d" data-wp-interactive="mvs/explore" data-wp-on--click="actions.toggleExploreBulk" aria-pressed="false" aria-label="%2$s">'
+					. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+				. '</button>',
+				(int) $media_id,
+				esc_attr__( 'Select for bulk actions', 'wpmediaverse' )
+			);
+		}
 
 		// Owner actions (delete) — rendered only when the caller explicitly
 		// opts in via `show_actions`. Delete belongs on the user's own

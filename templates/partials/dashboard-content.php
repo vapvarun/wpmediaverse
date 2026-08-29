@@ -249,6 +249,12 @@ wp_interactivity_state(
 			'bulkDeleted'             => __( 'Selected items deleted.', 'wpmediaverse' ),
 			'bulkPrivacyDone'         => __( 'Privacy updated.', 'wpmediaverse' ),
 			'bulkFailed'              => __( 'Bulk action failed.', 'wpmediaverse' ),
+			'bulkMovedToAlbum'        => __( 'Moved to album.', 'wpmediaverse' ),
+			'bulkPickAlbum'           => __( 'Choose an album first.', 'wpmediaverse' ),
+			'bulkTagsAdded'           => __( 'Tags added.', 'wpmediaverse' ),
+			'bulkTypeTags'            => __( 'Type at least one tag.', 'wpmediaverse' ),
+			/* translators: 1: number changed. 2: number selected. 3: number skipped. */
+			'bulkPartial'             => __( '%1$d of %2$d updated. %3$d were not yours to change.', 'wpmediaverse' ),
 		),
 	)
 );
@@ -256,7 +262,15 @@ wp_interactivity_state(
 <div class="mvs-dashboard"
 	data-wp-interactive="mvs/dashboard"
 	<?php echo wp_interactivity_data_wp_context( $mvs_dash_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() encodes + escapes the JSON payload itself. ?>
-	data-wp-init="callbacks.init">
+	data-wp-init="callbacks.init"
+	<?php
+	// Grid shortcuts: Ctrl/Cmd+A select all visible, Escape clear, Delete
+	// remove (through the same confirm the button uses). Bound on DOCUMENT
+	// because a member pressing them is looking at the grid, not focused
+	// inside it — and the handler's first job is to bow out of any field
+	// they are typing in, which is the bug the lightbox shipped (10249014961).
+	?>
+	data-wp-on-document--keydown="actions.bulkKeydown">
 
 
 	<?php
@@ -740,6 +754,35 @@ wp_interactivity_state(
 				</select>
 			</label>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+
+			<?php
+			// Move to album. The REST action has existed since bulk shipped —
+			// only the control was missing. The picker fills on first focus
+			// from the SAME loader the Albums panel uses, so there is never a
+			// second album list to drift.
+			?>
+			<label class="mvs-bulk-album-label">
+				<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+				<select class="mvs-bulk-album" data-wp-on--change="actions.setBulkAlbum" data-wp-on--focus="actions.ensureBulkAlbums">
+					<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+					<template data-wp-each="state.albums.items">
+						<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
+					</template>
+				</select>
+			</label>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.bulkMoveToAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+
+			<?php
+			// Add tags. Comma-separated, matching the upload form, so there is
+			// one convention to learn. Appends — see BulkController.
+			?>
+			<label class="mvs-bulk-tags-label">
+				<span class="screen-reader-text"><?php esc_html_e( 'Tags to add to selected', 'wpmediaverse' ); ?></span>
+				<input type="text" class="mvs-bulk-tags" placeholder="<?php esc_attr_e( 'Add tags (comma separated)', 'wpmediaverse' ); ?>"
+					data-wp-bind--value="state.bulkTagsValue" data-wp-on--input="actions.setBulkTags" />
+			</label>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.bulkAddTags" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add tags', 'wpmediaverse' ); ?></button>
+
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--danger" data-wp-on--click="actions.bulkDelete"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.selectAllBulk"><?php esc_html_e( 'Select all', 'wpmediaverse' ); ?></button>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.clearBulk"><?php esc_html_e( 'Clear', 'wpmediaverse' ); ?></button>

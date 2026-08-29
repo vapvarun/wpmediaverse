@@ -162,6 +162,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Bulk selection on the My Media grid.
 		bulkSelectedIds: [],
 		bulkPrivacyValue: 'public',
+		bulkAlbumValue: 0,
+		bulkTagsValue: '',
+		bulkBusy: false,
 
 		// My Media
 		media: {
@@ -1159,6 +1162,90 @@ const { state, actions } = store( 'mvs/dashboard', {
 		setBulkPrivacy( event ) {
 			state.bulkPrivacyValue = event.target.value;
 		},
+		setBulkAlbum( event ) {
+			state.bulkAlbumValue = parseInt( event.target.value, 10 ) || 0;
+		},
+		setBulkTags( event ) {
+			state.bulkTagsValue = event.target.value;
+		},
+		/**
+		 * Fill the Move-to-album picker the first time it is needed.
+		 *
+		 * Reuses loadAlbums() rather than adding a second album fetch: the panel
+		 * loader already handles paging, sort and the empty case, and two loaders
+		 * for one list is how they drift. Only fires when the list is empty, so
+		 * selecting media on the Albums tab costs nothing.
+		 */
+		async ensureBulkAlbums( ctxOrEvent ) {
+			if ( state.albums.items.length || state.albums.loading ) {
+				return;
+			}
+			await actions.loadAlbums( ctxOrEvent );
+		},
+		/**
+		 * Grid keyboard shortcuts: Ctrl/Cmd+A, Escape, Delete.
+		 *
+		 * Bound on document, so the FIRST thing it does is get out of the way of
+		 * anything the member is typing into — the same guard the lightbox needed
+		 * (10249014961). Delete is deliberately routed through the same confirm
+		 * as the button: a destructive shortcut with no confirmation is how a
+		 * library disappears to a mis-aimed keypress.
+		 */
+		bulkKeydown( event ) {
+			const el = event.target;
+			const tag = el && el.tagName ? el.tagName.toLowerCase() : '';
+
+			if ( 'input' === tag || 'textarea' === tag || 'select' === tag || ( el && el.isContentEditable ) ) {
+				return;
+			}
+
+			if ( ( event.ctrlKey || event.metaKey ) && 'a' === event.key.toLowerCase() ) {
+				if ( ! state.media.items.length ) return;
+				event.preventDefault();
+				actions.selectAllBulk();
+				return;
+			}
+
+			if ( ! state.bulkSelectedIds.length ) {
+				return;
+			}
+
+			if ( 'Escape' === event.key ) {
+				actions.clearBulk();
+				return;
+			}
+
+			if ( 'Delete' === event.key || 'Backspace' === event.key ) {
+				event.preventDefault();
+				actions.bulkDelete();
+			}
+		},
+		/**
+		 * One place that turns a bulk response into what the member is told.
+		 *
+		 * The server now reports `requested` alongside `processed`, because
+		 * filter_allowed_ids drops anything they may not edit and every handler
+		 * used to report the SURVIVING count as the total — a clean success for
+		 * a partly-ignored request. If anything was skipped the member hears so,
+		 * rather than the operation quietly meaning less than it said.
+		 */
+		bulkResultMessage( data, doneMessage ) {
+			const skipped = parseInt( data?.skipped, 10 ) || 0;
+
+			if ( ! skipped ) {
+				return { text: doneMessage, type: 'success' };
+			}
+
+			const tmpl = state.i18n?.bulkPartial || '%1$d of %2$d updated. %3$d were not yours to change.';
+
+			return {
+				text: tmpl
+					.replace( '%1$d', String( parseInt( data?.processed, 10 ) || 0 ) )
+					.replace( '%2$d', String( parseInt( data?.requested, 10 ) || 0 ) )
+					.replace( '%3$d', String( skipped ) ),
+				type: 'warning',
+			};
+		},
 		async bulkDelete( ctxOrEvent ) {
 			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			const ids = state.bulkSelectedIds.slice();
@@ -1171,7 +1258,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 						if ( res.ok ) {
 							state.media.items = state.media.items.filter( ( m ) => ! ids.includes( m.id ) );
 							state.bulkSelectedIds = [];
-							sharedUI.actions.showToast( ( state.i18n?.bulkDeleted || 'Selected items deleted.' ), 'success' );
+							const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkDeleted || 'Selected items deleted.' ) );
+							sharedUI.actions.showToast( msg.text, msg.type );
 						} else {
 							sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
 						}
@@ -1181,6 +1269,77 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 			);
 		},
+		/**
+		 * Move every selected item into an album.
+		 *
+		 * The endpoint has supported this since bulk actions shipped —
+		 * `move_to_album` has always been in the action enum and
+		 * `bulk_move_to_album()` has always been implemented. Only the control
+		 * was missing, which is why this is UI and not a new route.
+		 */
+		async bulkMoveToAlbum( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length || state.bulkBusy ) return;
+
+			if ( ! state.bulkAlbumValue ) {
+				sharedUI.actions.showToast( ( state.i18n?.bulkPickAlbum || 'Choose an album first.' ), 'error' );
+				return;
+			}
+
+			state.bulkBusy = true;
+			try {
+				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'move_to_album', media_ids: ids, album_id: state.bulkAlbumValue } } );
+				if ( res.ok ) {
+					state.bulkSelectedIds = [];
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkMovedToAlbum || 'Moved to album.' ) );
+					sharedUI.actions.showToast( msg.text, msg.type );
+				} else {
+					// The route's own reason beats ours — it knows about a
+					// missing album and about an album that is not the
+					// member's to add to.
+					sharedUI.actions.showToast( res.data?.message || ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+			}
+			state.bulkBusy = false;
+		},
+		/**
+		 * Add tags to every selected item, keeping the ones already there.
+		 *
+		 * Comma-separated, matching the upload form's tag field, so a member
+		 * only learns one convention.
+		 */
+		async bulkAddTags( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length || state.bulkBusy ) return;
+
+			const tags = state.bulkTagsValue.split( ',' ).map( ( t ) => t.trim() ).filter( Boolean );
+
+			if ( ! tags.length ) {
+				sharedUI.actions.showToast( ( state.i18n?.bulkTypeTags || 'Type at least one tag.' ), 'error' );
+				return;
+			}
+
+			state.bulkBusy = true;
+			try {
+				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'add_tags', media_ids: ids, tags } } );
+				if ( res.ok ) {
+					state.bulkSelectedIds = [];
+					state.bulkTagsValue = '';
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkTagsAdded || 'Tags added.' ) );
+					sharedUI.actions.showToast( msg.text, msg.type );
+					actions.loadMedia( ctx, state.media.page || 1 );
+				} else {
+					sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+			}
+			state.bulkBusy = false;
+		},
 		async applyBulkPrivacy( ctxOrEvent ) {
 			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			const ids = state.bulkSelectedIds.slice();
@@ -1189,7 +1348,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'change_privacy', media_ids: ids, privacy: state.bulkPrivacyValue } } );
 				if ( res.ok ) {
 					state.bulkSelectedIds = [];
-					sharedUI.actions.showToast( ( state.i18n?.bulkPrivacyDone || 'Privacy updated.' ), 'success' );
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkPrivacyDone || 'Privacy updated.' ) );
+					sharedUI.actions.showToast( msg.text, msg.type );
 					actions.loadMedia( ctx, state.media.page || 1 );
 				} else {
 					sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
