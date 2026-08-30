@@ -1,7 +1,39 @@
-# Bunny Stream video encoding — design plan
+# Video encoding — design plan
 
-**Status:** PLAN ONLY. Nothing implemented. Written 2026-08-30 for review before any code.
-**Owner decision needed on §7 and §8 before this can be built.**
+**Status:** PLAN ONLY. Nothing implemented, and nothing to implement until the questions in §12
+are answered.
+
+**Direction chosen by the owner 2026-08-30: a Wbcom-run ENCODE-AND-RETURN service (§10b).**
+Bunny Stream (§2-§9) is kept in this document as the costed alternative and as the fallback if the
+service does not get built — most of the plugin-side design is identical either way, which is the
+point of §0.
+
+## 0. The constraint that decides the shape
+
+The owner's requirement is "FFmpeg at plugin level, without security flagging". That is achievable,
+but only in specific ways, and it is worth being exact because the obvious reading of it is not
+possible.
+
+**There is no way for PHP to invoke a binary without `exec()`, `proc_open()`, `shell_exec()`,
+`system()` or `popen()`.** Scanners match those call sites in the shipped source — not at runtime,
+not conditionally. A capability check like `if ( ffmpeg_available() )` does not help, because the
+call site is still in the file being scanned. This is why 2.4.0 removed the path rather than gating
+it (commit `c96415ba`).
+
+So there are exactly three ways to have FFmpeg without the plugin carrying the flag:
+
+| # | Where FFmpeg runs | What the plugin ships | Flagged? |
+|---|---|---|---|
+| 1 | **A Wbcom service** | `wp_remote_post()` to an HTTPS endpoint | No |
+| 2 | **The member's browser** (`ffmpeg.wasm`) | JavaScript. No PHP exec at all | No |
+| 3 | **The site owner's own mu-plugin** | nothing — they write the exec | No, it is their file |
+
+Option 1 is the chosen direction. Option 3 already works today with zero core changes and deserves
+a docs recipe (§11). Option 2 is a real possibility that is NOT in this plan and is sketched in §10c
+because it fits a pattern this plugin already uses.
+
+**What is not on the list: the plugin running FFmpeg on the customer's server.** That is the thing
+that cannot be done without the flag, and no amount of gating changes it.
 
 ## 1. What this is for
 
@@ -203,9 +235,9 @@ You become a video infrastructure provider. That is an ops commitment, not a fea
 | Data + liability | Members' private media transits and rests on your servers. GDPR posture, data residency, retention, DMCA, abuse. Bunny already carries this. |
 | Support | "My video is stuck" becomes your ticket, not the customer's host's. |
 
-### The variant that removes most of that: encode-and-return
+### THE CHOSEN SHAPE: encode-and-return
 
-**Do not host the video. Encode it and hand it back.**
+**Do not host the video. Encode it and hand it back.** Selected by the owner 2026-08-30.
 
 The service accepts a file, returns renditions, and the customer stores them in the storage they
 already configured — local, S3, R2, Bunny Storage, DigitalOcean. Wbcom never serves playback.
@@ -231,6 +263,24 @@ What would decide it: expected videos/month across the install base, and average
 is known today, and guessing them is how infrastructure gets built for load that never arrives — or
 falls over on load nobody modelled.
 
+## 10c. Not planned, but worth knowing exists: encode in the browser
+
+`ffmpeg.wasm` runs FFmpeg in the member's browser. The plugin would ship JavaScript and no PHP
+exec, so it satisfies §0 with no server and no per-minute cost to anyone.
+
+**This plugin already does client-side media work**, so it is not a foreign idea here: a video with
+no embedded cover atom gets its poster from a client-captured canvas frame. The pattern exists.
+
+Why it is not the plan: the WASM payload is tens of megabytes, encoding is far slower than native,
+and it is memory-hungry on exactly the devices most members upload from. A phone encoding a 4K clip
+will heat up, take minutes, and may simply fail — and it fails on the member's device, in front of
+them, rather than quietly on a server.
+
+Where it could earn its place later: a **pre-upload downscale** — cap a 4K phone video to 1080p
+before it is uploaded at all. That saves the member's bandwidth, the site's storage and the encode
+cost, and it fails safe (if WASM is unavailable, upload the original as today). That is a smaller,
+better-shaped feature than full transcoding and worth its own plan if it is ever wanted.
+
 ## 11. What is deliberately NOT in this plan
 
 - Server-side FFmpeg. Already possible today for a capable site with zero core changes: hook
@@ -242,10 +292,14 @@ falls over on load nobody modelled.
 
 ## 12. What I need from the owner before building
 
-0. **§10b — who runs the encoder?** Bunny (their ops, their SLA, free standard encoding, their
-   revenue) or a Wbcom service (your ops, your liability, your revenue). Answer with expected
-   videos/month and average file size, or it is a guess. Either way the plugin should be written
-   against a provider interface so this is not load-bearing.
+0. **ANSWERED 2026-08-30 — a Wbcom encode-and-return service (§10b).** The remaining questions
+   below still apply, and two new ones come with this choice:
+   - **Capacity.** Expected videos/month across the install base and average file size. Still
+     unknown, still needed — it decides the queue and the instance sizing, and guessing it is how
+     infrastructure gets built for load that never arrives or falls over on load nobody modelled.
+   - **The rendition ladder.** Which outputs come back (1080/720/480?), in what codec, and who
+     picks which one plays. Without adaptive streaming the player chooses once, so this is a real
+     product decision rather than an encoder setting.
 1. **§6 — iframe or hls.js?** Iframe is much cheaper but Bunny's player draws the chapters and
    resume, not ours. Which matters more: shipping speed, or keeping those two Pro features on our
    own implementation?
