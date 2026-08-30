@@ -2611,13 +2611,16 @@ class MessagingService {
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
+		// The mute predicate mirrors is_conversation_muted(): an EXPIRED timed mute
+		// must stop suppressing here too, or the badge keeps undercounting a thread
+		// the member already un-muted by the clock (Basecamp 10153578635).
 		$count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*)
 				FROM {$msg_table} m
 				INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id AND p.user_id = %d
 				WHERE p.status = 'active'
-				AND p.is_muted = 0
+				AND ( p.is_muted = 0 OR ( p.muted_until IS NOT NULL AND p.muted_until <= UTC_TIMESTAMP() ) )
 				AND m.sender_id != %d
 				AND m.deleted_for_all = 0
 				AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)
