@@ -35,6 +35,60 @@ because it fits a pattern this plugin already uses.
 **What is not on the list: the plugin running FFmpeg on the customer's server.** That is the thing
 that cannot be done without the flag, and no amount of gating changes it.
 
+## 0b. The plan for the scanner problem, specifically
+
+### Can we keep FFmpeg in the plugin and stop the flagging instead?
+
+No, not reliably, and it is worth writing down why so the question does not get reopened every
+release.
+
+- **The set of scanners is not knowable.** Wordfence, Patchstack, Sucuri, MalCare, Solid Security,
+  Jetpack Protect, plus host-level scanners at SiteGround, WP Engine and others, plus WP.org's own
+  Plugin Check at review time. A fix that satisfies one says nothing about the rest.
+- **Vendor false-positive processes exist but do not scale.** Wordfence and Patchstack will both
+  take a false-positive report and adjust a signature. That is per-vendor, per-signature, ongoing,
+  and gives no guarantee — and it does nothing about a generic "this plugin calls exec()" advisory
+  or a host's own scanner.
+- **Obfuscation makes it strictly worse.** `call_user_func( 'exec', … )`, a variable function name,
+  or a base64'd command string are flagged HARDER by heuristics, because that is what actual
+  malware looks like. It also risks removal from WP.org. Never do this.
+
+So the plan is relocation, not persuasion. §0 has the three legitimate places FFmpeg can run.
+
+### Current state: already clean, and measured
+
+Audited 2026-08-30 across both plugins' `includes/`:
+
+| Pattern | Count |
+|---|---|
+| `exec` / `shell_exec` / `proc_open` / `system` / `passthru` / `popen` | **0** |
+| `eval`, `gzinflate`, `str_rot13`, `assert(`, `create_function`, `preg_replace /e` | **0** |
+| dynamic `call_user_func('…')`, variable-variables, `extract()` | **0** |
+| `base64_decode` | **1** — `Connectors/OAuthHelper.php:236`, decoding an OAuth state parameter. Legitimate, `$strict = true`, already carries a phpcs justification. |
+
+Outbound hosts are all named API endpoints (OpenAI, Anthropic, AWS, Google, Flickr, Expo push, the
+Wbcom store). Nothing arbitrary, nothing user-supplied.
+
+**There is nothing left in either plugin for a scanner to match.** The problem is not open; the risk
+is regression.
+
+### So the plan is three parts, and two are done
+
+1. **Remove the trigger.** Done in 2.4.0.
+2. **Make it unable to return.** Done 2026-08-30 — `bin/coding-rules-check.sh` Rule 8 in BOTH
+   plugins fails the build on any exec-family call, mutation-tested by planting a `proc_open` and
+   confirming exit 1. This is the part that turns a decision someone remembers into a property the
+   build enforces, which is what "stable" has to mean when you cannot see the customer's scanner.
+3. **Give the capability back somewhere else.** The rest of this document.
+
+### If a customer still reports a flag
+
+Ask which scanner and for the exact file and line. Then: `bash bin/coding-rules-check.sh` proves
+the shipped source is clean, and `git log` shows when the path was removed. If the finding is real
+it is a Rule 8 escape and a build gate failed, which is a bug in the gate worth fixing immediately.
+If it is a stale signature matching an old version, that is a vendor false-positive report with a
+concrete diff to point at.
+
 ## 1. What this is for
 
 A member uploads a video. It gets encoded into multiple qualities. The player then uses the
