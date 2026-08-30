@@ -74,7 +74,11 @@ Write the benefit, not the feature. The feature belongs in the supporting senten
 ## Words to avoid
 
 - **"Unlimited"** anything - storage is a real cost, and the claim invites a refund request.
-- **"Transcoding"**, **"HLS"**, **"adaptive streaming"**, **"multi-quality"** - removed in 2.4.0 and not coming back. MediaVerse embeds and plays media; it does not process it. The FFmpeg path was host-dependent (absent on most shared hosts) and its shell calls tripped security scanners. Say what is true instead: chapters, resume playback, auto-captions, engagement analytics. Selling a codec pipeline we do not ship is the same refund request as "unlimited", arriving a month later.
+- **"Transcoding"**, **"HLS"**, **"adaptive streaming"**, **"multi-quality"** - NOT TRUE TODAY. The FFmpeg path was pulled in 2.4.0 because it was host-dependent and its shell calls tripped security scanners on every install; the replacement is a cloud encoder, designed but not yet built (`docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md`).
+
+  So this is a TIMING rule, not a permanent one. Until that ships, MediaVerse embeds and plays media rather than processing it, and copy should say what is true now: chapters, resume playback, auto-captions, engagement analytics. When the encoder lands, delete this entry rather than working around it.
+
+  The reason it is worth holding the line in the meantime: a buyer who purchases on a transcoding claim this month gets nothing for it this month. That is a refund and a support ticket, and it costs more than the sale.
 - **"Replaces Instagram."** It does not, and the comparison invites feature-by-feature scrutiny we lose.
 - **"Enterprise-grade", "revolutionary", "seamless", "game-changing."** Say the specific thing instead.
 - **Competitor names in a negative claim.** Describe the shape of the problem, not the rival's failings. The `compare-tech` card compares approaches, not brands.
