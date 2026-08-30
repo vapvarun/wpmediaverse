@@ -281,6 +281,49 @@ before it is uploaded at all. That saves the member's bandwidth, the site's stor
 cost, and it fails safe (if WASM is unavailable, upload the original as today). That is a smaller,
 better-shaped feature than full transcoding and worth its own plan if it is ever wanted.
 
+## 10d. The encoder already exists — recover it, do not rewrite it
+
+**This capability was built, shipped and promised to customers.** It was removed for the scanner
+problem alone, not because it did not work. The implementation is recoverable from git:
+
+```
+wpmediaverse-pro  commit 3ef1f30^   includes/Video/TranscodeService.php     1361 lines
+                                    includes/Video/TranscodeController.php   458 lines
+```
+
+What is in there and still valid, because none of it is about WHERE ffmpeg runs:
+
+- **The rendition ladder is already decided and shipped** — which answers the open question in §12:
+
+  | preset | height | crf | audio |
+  |---|---|---|---|
+  | 720p | 720 | 23 | 128k |
+  | 480p | 480 | 25 | 96k |
+  | 360p | 360 | 27 | 80k |
+
+  These are also the exact resolutions the live marketing promises, so recovering them keeps the
+  promise rather than inventing a new one that makes the copy wrong a second time.
+
+- Action Scheduler queueing (`AS_HOOK`), concurrency capping (`MAX_CONCURRENT = 4`), stale-lock
+  handling, and a working-directory cleanup sweep.
+- The async status model — `_mvs_transcodes` and `_mvs_transcode_status` meta — which is the same
+  shape §4 sketches for the pending state. That sketch can be replaced with what already worked.
+- `scale='min(1280,iw)':-2`, the never-upscale guard, which is the kind of detail that is
+  rediscovered painfully rather than reasoned out.
+
+**What has to change is one thing: where the binary runs.** The command construction, the ladder,
+the queue, the locking and the status model move to the encode-and-return service. The plugin keeps
+the queueing-and-status half and swaps `proc_open` for `wp_remote_post`.
+
+That reframes the estimate in §13 considerably. This is a port, not a build.
+
+### Rule 8 does not block this
+
+`bin/coding-rules-check.sh` Rule 8 (added 2026-08-30) fails the build on any exec-family call in
+either plugin. That is deliberate and it does NOT conflict with this plan — the recovered code goes
+into the SERVICE, which is not scanned by a customer's security plugin because it does not ship to
+them. If Rule 8 ever blocks this work, the code is being put back in the wrong place.
+
 ## 11. What is deliberately NOT in this plan
 
 - Server-side FFmpeg. Already possible today for a capable site with zero core changes: hook
@@ -297,9 +340,10 @@ better-shaped feature than full transcoding and worth its own plan if it is ever
    - **Capacity.** Expected videos/month across the install base and average file size. Still
      unknown, still needed — it decides the queue and the instance sizing, and guessing it is how
      infrastructure gets built for load that never arrives or falls over on load nobody modelled.
-   - **The rendition ladder.** Which outputs come back (1080/720/480?), in what codec, and who
-     picks which one plays. Without adaptive streaming the player chooses once, so this is a real
-     product decision rather than an encoder setting.
+   - **The rendition ladder — ANSWERED, see §10d.** 720p/480p/360p at crf 23/25/27 already
+     shipped in `TranscodeService::PRESETS` and are the resolutions the live marketing promises.
+     Recover them rather than inventing new ones. What remains open is only who picks which
+     rendition plays, since without adaptive streaming the player chooses once.
 1. **§6 — iframe or hls.js?** Iframe is much cheaper but Bunny's player draws the chapters and
    resume, not ours. Which matters more: shipping speed, or keeping those two Pro features on our
    own implementation?
