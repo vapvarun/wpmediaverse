@@ -2227,8 +2227,37 @@ body.dark-mode .mvs-skeleton::after {
     }
 }
 
+/*
+ * Every tab's content sits in the SAME wrapper.
+ *
+ * The panel used to be a bare `min-height` — transparent, no padding, no edge —
+ * so each section's content sat directly on the page background and looked
+ * unframed next to the rail and streak banner beside it, which are both carded.
+ * Whether a screen looked finished depended on whether its content happened to
+ * bring its own card: Media did (the upload zone), Albums, Collections,
+ * Favorites, Documents and Edit profile did not.
+ *
+ * Matches the rail's treatment deliberately — same border, radius and surface
+ * token — so the two columns read as one interface rather than two.
+ *
+ * Geometry was already uniform across desktop / iPad / mobile (identical x,
+ * width and padding at 1440 / 820 / 390); what was missing was the frame.
+ */
 .mvs-dashboard-panel {
     min-height: 200px;
+    padding: var(--mvs-space-4);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-bg-subtle);
+}
+
+
+@media (max-width: 640px) {
+    /* Tighter on a phone: a full-width card with desktop padding wastes the
+       narrowest axis, which is the one that matters there. */
+    .mvs-dashboard-panel {
+        padding: var(--mvs-space-3);
+    }
 }
 
 /* Interactivity API uses [hidden] attribute for show/hide */
@@ -4927,9 +4956,11 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* Inline Edit Form */
-.mvs-dashboard-profile-edit-form {
-    padding-top: 0.5rem;
-}
+/* `padding-top: 0.5rem` used to live here. It predated the panel wrapper and,
+   being a later rule of equal specificity, out-specified it — Edit profile was
+   the one tab whose content started higher than every other. Removed rather
+   than zeroed, so the panel's own padding applies on all four sides like every
+   other tab. */
 
 .mvs-profile-form-inline {
     display: flex;
