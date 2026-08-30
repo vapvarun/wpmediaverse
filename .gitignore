@@ -94,3 +94,15 @@ templates/**/*.min.css
 # (the `mvs-lucide` handle, Plugin::register_lucide_script).
 !assets/js/vendor/*.min.js
 !assets/js/vendor/*.min.css
+
+# Regenerated audit output — written fresh on every local-CI / pre-push run, so
+# committing it means the run that pushes the commit immediately dirties the
+# tree again. Both are pure derived artifacts:
+#   ux-audit-<date>.md   written by bin/local-ci.sh stage 2.5 each run
+#   duplicates.json      rewritten by bin/cleanup-duplicate-detect.php before
+#                        duplication-gate.sh reads it, every single time
+# The BASELINE the gate compares against (duplicates-baseline.txt) is NOT here
+# and stays tracked — that one is an input, and losing it breaks the gate.
+# Past reports remain in git history; this only stops new churn.
+audit/ux-audit-*.md
+audit/cleanup/duplicates.json
