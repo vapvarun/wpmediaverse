@@ -132,7 +132,10 @@
        source of truth, dark-mode-safe. */
     --mvs-bg-subtle: var(--mvs-surface-2);     /* subtle panel fill */
     --mvs-on-danger: #ffffff;                  /* text on danger (red both modes) */
-    --mvs-border-strong: var(--mvs-border);    /* emphasized divider */
+    /* Emphasis tier — see the border contract below. Mixing toward --mvs-text
+       means this strengthens in BOTH modes off one declaration: dark redefines
+       --mvs-border and --mvs-text, so the mix re-resolves lighter there. */
+    --mvs-border-strong: color-mix(in oklab, var(--mvs-border), var(--mvs-text) 30%);
     --mvs-accent: #6366f1;                      /* indigo accent (boosts/highlights) */
     --mvs-accent-2: #ec4899;                     /* secondary accent (stories-ring gradient end) */
     --mvs-accent-soft: rgba(99, 102, 241, 0.12); /* translucent → works light + dark */
@@ -159,7 +162,26 @@
     --mvs-text-secondary: var(--reign-site-alternate-text-color, var(--global-font-color, var(--text-2, #646970)));
     --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, var(--text-3, #a7aaad)));
 
-    /* Borders & Shadows */
+    /* ── Borders: THREE TIERS, ONE JOB EACH ─────────────────────────────────
+       Before 2.4.0 every box drew the same line: a text input, the card holding
+       it, and the panel holding that were all `1px solid var(--mvs-border)`. So
+       nesting produced three identical edges and nothing receded — the member
+       counted boxes instead of reading content. Pick by JOB, never by taste:
+
+         --mvs-border-light   STRUCTURE — cards, panels, sections, rows,
+                              dividers. Neutral and quiet; it separates, it does
+                              not ask to be looked at.
+         --mvs-border         CONTROLS  — input, select, textarea, button, chip,
+                              dropzone. Theme-tinted: a visible edge here means
+                              "you can interact with me".
+         --mvs-border-strong  EMPHASIS  — active/selected state, table head rule.
+
+       Two hard rules that keep this from drifting back:
+       1. A bordered box MUST NOT contain another bordered box. Where nesting is
+          real, the OUTER one drops its border and expresses depth with
+          background + spacing instead.
+       2. Semantic borders (success/warning/danger, brand) are NOT part of this
+          ladder — never swap one for a neutral tier, it destroys the meaning. */
     --mvs-border: var(--reign-site-border-color, var(--global-border-color, var(--border, #dcdcde)));
     --mvs-border-light: var(--border-soft, #e9e9ea);
     /* Elevation — BuddyNext-first (soft, layered --bn-shadow-*), with a matching
@@ -2167,7 +2189,7 @@ body.dark-mode .mvs-skeleton::after {
         z-index: var(--mvs-z-sticky);
         background: var(--mvs-bg);
         padding: 8px 0;
-        border-bottom: 1px solid var(--mvs-border);
+        border-bottom: 1px solid var(--mvs-border-light);
         /* Inline axis ONLY. `margin: 0 -20px` bled the sticky bar edge-to-edge
            and, being a shorthand, silently reset the base rule's
            `margin-bottom: 24px` — so the toolbar underneath sat flush against
@@ -2223,7 +2245,7 @@ body.dark-mode .mvs-skeleton::after {
 
     /* A group with no heading still shows its break. */
     .mvs-dashboard-tabs .mvs-dashboard-tab--group-start {
-        border-block-start: 1px solid var(--mvs-border) !important;
+        border-block-start: 1px solid var(--mvs-border-light) !important;
     }
 }
 
@@ -2243,10 +2265,13 @@ body.dark-mode .mvs-skeleton::after {
  * Geometry was already uniform across desktop / iPad / mobile (identical x,
  * width and padding at 1440 / 820 / 390); what was missing was the frame.
  */
+/* The panel is a LAYOUT REGION, not a card — it holds cards that draw their own
+   border, and an outline here made every tab read as a box inside a box inside a
+   box. Depth comes from the tinted ground + padding instead (border contract
+   rule 1: a bordered box must not contain another bordered box). */
 .mvs-dashboard-panel {
     min-height: 200px;
     padding: var(--mvs-space-4);
-    border: 1px solid var(--mvs-border);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-bg-subtle);
 }
@@ -2404,7 +2429,7 @@ body.dark-mode .mvs-skeleton::after {
     margin-block-end: var(--mvs-space-3);
     padding: var(--mvs-space-2) var(--mvs-space-3);
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: var(--mvs-radius-md);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
@@ -2800,7 +2825,7 @@ a.mvs-dashboard-card-title:hover {
     flex-wrap: wrap;
     gap: 4px;
     padding: 6px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 6px;
     min-height: 38px;
     align-items: center;
@@ -2859,7 +2884,7 @@ a.mvs-dashboard-card-title:hover {
     left: 0;
     right: 0;
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-top: none;
     border-radius: 0 0 6px 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -3275,7 +3300,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-upload {
     margin-bottom: 24px;
     background: var(--mvs-bg, #fff);
-    border: 1px solid var(--mvs-border, #dcdcde);
+    border: 1px solid var(--mvs-border-light, #dcdcde);
     border-radius: 12px;
     padding: 20px;
 }
@@ -3287,7 +3312,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin: 0 0 1rem;
     padding: 28px 20px;
-    border: 2px dashed var(--mvs-border-light);
+    border: 2px dashed var(--mvs-border);
     border-radius: 8px;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
@@ -3375,8 +3400,10 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin-top: 12px;
     padding: 10px 12px;
+    /* Sits INSIDE the bordered upload card — the tinted ground already separates
+       it, so an outline here would be the third edge in a row (border contract
+       rule 1). */
     background: var(--mvs-bg-subtle, #f6f7f8);
-    border: 1px solid var(--mvs-border, #e0e0e0);
     border-radius: 6px;
 }
 
@@ -3504,7 +3531,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 16px 0;
     padding: 20px;
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
 }
 
@@ -3578,7 +3605,7 @@ a.mvs-dashboard-card-title:hover {
     height: 80px;
     object-fit: cover;
     border-radius: 6px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
 }
 
 .mvs-bp-upload-thumb-name {
@@ -3824,7 +3851,7 @@ a.mvs-dashboard-card-title:hover {
  * and cannot. */
 .mvs-grid-item-placeholder--document {
     background: var(--mvs-surface-2, #f5f6f8);
-    border: 1px solid var(--mvs-border, #e2e5ea);
+    border: 1px solid var(--mvs-border-light, #e2e5ea);
     color: var(--mvs-text-secondary, #5c6472);
 }
 
@@ -3921,7 +3948,7 @@ a.mvs-dashboard-card-title:hover {
     max-width: 700px;
     margin: 20px auto;
     background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
     overflow: hidden;
 }
@@ -4138,7 +4165,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-search-input {
     flex: 1;
     padding: 10px 16px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 8px 0 0 8px;
     font-size: 0.95em;
     background: var(--mvs-bg);
@@ -4472,7 +4499,7 @@ a.mvs-dashboard-card-title:hover {
     max-height: 400px;
     overflow-y: auto;
     background: var(--mvs-bg, #fff);
-    border: 1px solid var(--mvs-border, #ddd);
+    border: 1px solid var(--mvs-border-light, #ddd);
     border-radius: 8px;
     box-shadow: var(--mvs-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.18));
     z-index: 998;
@@ -4691,7 +4718,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-grid-pagination-links span {
     display: inline-block;
     padding: 8px 14px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 4px;
     text-decoration: none;
     font-size: 13px;
@@ -4821,7 +4848,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 3px;
     padding: 5px 10px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -4853,7 +4880,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-favorite-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -4870,7 +4897,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-share-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -5092,7 +5119,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-field input[type="text"],
 .mvs-profile-field textarea {
     padding: 0.625rem 0.75rem;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9375rem;
     font-family: inherit;
@@ -5271,7 +5298,7 @@ a.mvs-dashboard-card-title:hover {
        the text inherited the ambient theme colour and went unreadable in dark
        mode (measured 1.07-1.38:1). */
     color: var(--mvs-text);
-    border: 1.5px solid var(--mvs-border-light);
+    border: 1.5px solid var(--mvs-border);
     border-radius: 100px;
     padding: 5px 5px 5px 6px;
     gap: 0;
@@ -5377,7 +5404,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
     margin-bottom: 8px;
     text-decoration: none;
@@ -5868,7 +5895,7 @@ a.mvs-dashboard-card-title:hover {
         position: sticky;
         bottom: 0;
         background: var(--mvs-bg);
-        border-top: 1px solid var(--mvs-border);
+        border-top: 1px solid var(--mvs-border-light);
         padding: 8px 16px;
         margin: 0 -16px;
         z-index: 5;
@@ -7265,7 +7292,7 @@ body.dark-mode .mvs-auth-gate__card {
 
 .mvs-usage-history {
     background: var(--mvs-surface);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: var(--mvs-radius-lg);
     padding: var(--mvs-space-4);
     color: var(--mvs-text);
@@ -7452,7 +7479,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 	list-style: none;
 	margin: 0;
 	padding: 0;
-	border: 1px solid var(--mvs-border, #dcdcde);
+	border: 1px solid var(--mvs-border-light, #dcdcde);
 	border-radius: var(--mvs-radius-md, 8px);
 	overflow: hidden;
 }
@@ -7463,7 +7490,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 	align-items: center;
 	gap: var(--mvs-space-md, 16px);
 	padding: var(--mvs-space-md, 16px);
-	border-block-end: 1px solid var(--mvs-border, #dcdcde);
+	border-block-end: 1px solid var(--mvs-border-light, #dcdcde);
 	background: var(--mvs-surface, #fff);
 }
 
@@ -7603,7 +7630,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
     align-items: center;
     gap: var(--mvs-space-3);
     padding: var(--mvs-space-4);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface);
 }
@@ -7721,7 +7748,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 	margin: 0 0 var(--mvs-space-4);
 	padding: 0;
 	list-style: none;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-documents__tab {
@@ -7792,7 +7819,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
         flex-direction: column;
         gap: 2px;
         padding: var(--mvs-space-2);
-        border: 1px solid var(--mvs-border);
+        border: 1px solid var(--mvs-border-light);
         border-radius: var(--mvs-radius-md);
         background: var(--mvs-bg-subtle);
     }
@@ -7992,7 +8019,7 @@ a.mvs-dashboard-tab:focus-visible {
     gap: var(--mvs-space-3);
     margin-bottom: var(--mvs-space-3);
     padding: var(--mvs-space-3);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-bg-subtle);
 }

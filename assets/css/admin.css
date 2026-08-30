@@ -24,8 +24,14 @@
 	--mvs-text:          #1d2327;
 	--mvs-text-muted:    #646970;
 	--mvs-text-secondary:#646970;
+	/* Border tiers — same contract as frontend.css: -light = STRUCTURE (cards,
+	   panels, rows), plain = CONTROLS (input, select, button), -strong =
+	   EMPHASIS (table head rule, active state). Admin cannot borrow the
+	   frontend :root — frontend.css is not enqueued in wp-admin — so all three
+	   are defined here or they resolve to nothing. */
 	--mvs-border:        #dcdcde;
 	--mvs-border-light:  #e5e5e7;
+	--mvs-border-strong: #a7aaad;
 	/*
 	 * WordPress admin blue, NOT the danger red these four used to be.
 	 *
@@ -173,7 +179,7 @@
 
 .mvs-stat-card {
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 	padding: 20px 16px 16px;
 	text-align: center;
@@ -319,12 +325,12 @@ a.mvs-stat-card:focus {
 
 .mvs-admin-widget {
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 }
 
 .mvs-admin-widget .mvs-widget-header {
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 	padding: 10px 16px;
 }
 
@@ -403,7 +409,7 @@ a.mvs-stat-card:focus {
 .mvs-recent-table th {
 	text-align: left;
 	padding: 8px 12px;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-strong);
 	font-size: 12px;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
@@ -650,7 +656,7 @@ a.mvs-stat-card:focus {
 
 .mvs-settings-panel {
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-md);
 	margin-bottom: 16px;
 	overflow: hidden;
@@ -766,7 +772,7 @@ a.mvs-stat-card:focus {
 	display: flex;
 	align-items: flex-start;
 	background: linear-gradient(135deg, var(--mvs-info-bg) 0%, var(--mvs-info-bg) 100%);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-left: 4px solid var(--mvs-accent);
 	border-radius: var(--mvs-radius-sm);
 	padding: 20px 24px;
@@ -822,7 +828,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 12px;
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-md);
 	padding: 12px 16px;
 	text-decoration: none;
@@ -951,7 +957,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 8px;
 	padding: 8px 12px;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 	background: var(--mvs-surface-alt);
 }
 
@@ -1014,7 +1020,7 @@ a.mvs-stat-card:focus {
 	max-width: 700px;
 	margin: 40px auto;
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-lg);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -1148,7 +1154,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 12px;
 	padding: 12px 16px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-md);
 	background: var(--mvs-surface-2);
 }
@@ -1191,7 +1197,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 8px;
 	padding: 10px 14px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 	cursor: pointer;
 	transition: background 0.15s;
@@ -1245,7 +1251,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	justify-content: space-between;
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-lg);
 	padding: 16px 24px;
 	margin: 20px 0 0;
@@ -1312,7 +1318,7 @@ a.mvs-stat-card:focus {
 .mvs-settings-page-header__version {
 	display: inline-block;
 	background: var(--mvs-bg);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 	padding: 2px 8px;
 	font-size: 12px;
@@ -1357,7 +1363,7 @@ a.mvs-stat-card:focus {
 	width: 260px;
 	flex-shrink: 0;
 	background: var(--mvs-surface);
-	border-right: 1px solid var(--mvs-border);
+	border-right: 1px solid var(--mvs-border-light);
 	padding: 0;
 	position: sticky;
 	top: 62px;
@@ -1616,7 +1622,7 @@ a.mvs-stat-card:focus {
 		height: auto;
 		position: static;
 		border-right: none;
-		border-bottom: 1px solid var(--mvs-border);
+		border-bottom: 1px solid var(--mvs-border-light);
 		display: flex;
 		flex-wrap: wrap;
 		padding: 12px;
@@ -1871,7 +1877,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border-light);
+	border: 1px solid var(--mvs-border);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -1947,7 +1953,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border-light);
+	border: 1px solid var(--mvs-border);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -2178,7 +2184,7 @@ a.mvs-stat-card:focus {
 .mvs-admin-tabs {
 	display: flex;
 	gap: 0;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 	margin: 0 0 20px;
 	padding: 0;
 }
