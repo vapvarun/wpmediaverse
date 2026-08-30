@@ -321,6 +321,44 @@ check_no_direct_media_index_query_outside_repository() {
 
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# Rule 8: no exec-family call may appear in shipped source.
+#
+# Why this exists, and why it is a hard gate rather than a review habit:
+#
+# The FFmpeg path was removed in 2.4.0 (commit c96415ba) because security
+# plugins flag exec()/proc_open() as a possible backdoor. That is not a bug we
+# can engineer around. Scanners match the CALL SITE IN THE SHIPPED FILE — not at
+# runtime, not conditionally — so wrapping it in `if ( ffmpeg_available() )`
+# changes nothing, and we cannot know which scanner any given customer runs.
+# The owner's words for the cost: it "keeps making them panic".
+#
+# So the property we need is not "we removed it" but "it cannot come back". One
+# proc_open added for a thumbnail in six months puts every Wordfence install
+# back into a red warning, and the first we hear of it is a support queue.
+#
+# If a future feature genuinely needs a binary, it does NOT go here. The three
+# ways to have FFmpeg without carrying the flag are in
+# docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md section 0:
+# a remote service (wp_remote_post), the browser (ffmpeg.wasm), or the site
+# owner's own mu-plugin. This rule is what keeps that decision from quietly
+# eroding.
+check_no_exec_family_calls() {
+    local hits
+    hits="$(grep -rnE '(^|[^a-zA-Z_>$-])(exec|shell_exec|proc_open|system|passthru|popen)[[:space:]]*\(' \
+        --include='*.php' "$PLUGIN_DIR/includes" "$PLUGIN_DIR/templates" 2>/dev/null \
+        | grep -v '/dist/' \
+        | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|#)' \
+        | grep -vE '(safe_exec|_exec_context|execute)' || true)"
+
+    if [ -n "$hits" ]; then
+        while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            violation "Rule 8" "exec-family call in shipped source — security plugins flag this as a backdoor: $line"
+        done <<< "$hits"
+    fi
+}
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
@@ -332,6 +370,7 @@ check_no_per_entity_transients
 check_rest_per_page_has_maximum
 check_no_refusal_reported_as_success
 check_no_direct_media_index_query_outside_repository
+check_no_exec_family_calls
 
 echo ""
 COUNT=$(violations_count)

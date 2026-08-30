@@ -157,6 +157,16 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
 
 20. **A refusal is never a success response.** `wp_send_json_success()` must carry an outcome the caller asked for; a guard that declines the request returns `wp_send_json_error()` so the UI can say why. The demo importer refused ("demo data already exists") through a success envelope, so the admin JS took its success path and the Import button silently did nothing — no error, no data, no clue. Note what this means for tooling: every wiring layer was correct (button, JS binding, `wp_ajax_` handler, nonce), so a cross-layer action audit passed it cleanly. Wiring audits prove the plumbing connects, not that the logic behind it is right. Enforced by `bin/coding-rules-check.sh` Rule 6, which greps success responses for refusal language. (2026-08-01.)
 
+21. **No exec-family call in shipped source.** `exec`, `shell_exec`, `proc_open`, `system`,
+    `passthru`, `popen` — none of them, in either plugin. Security plugins flag them as a possible
+    backdoor, and they match the CALL SITE IN THE SHIPPED FILE, not the runtime path: wrapping one
+    in `if ( ffmpeg_available() )` changes nothing, and we cannot know which scanner a customer
+    runs. The FFmpeg transcoding path was removed in 2.4.0 for exactly this (`c96415ba`) after it
+    "kept making them panic". If a feature genuinely needs a binary, it runs somewhere else — a
+    remote service, the browser, or the site owner's own mu-plugin; the three shapes are in
+    `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md` §0. Enforced by
+    `bin/coding-rules-check.sh` Rule 8 in BOTH plugins, mutation-tested. (2026-08-30.)
+
 **Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
 
 ---
