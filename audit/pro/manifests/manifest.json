@@ -1739,6 +1739,10 @@
       "name": "{prefix}mvs_boosts",
       "purpose": "Media boosts (points-for-visibility)",
       "file": "includes/Core/Migrator.php:588"
+    },
+    {
+      "name": "{prefix}mvs_pro_webhook_events",
+      "note": "Pro-owned. CREATE at includes/Core/Migrator.php:399. Missing from the 2.2.0-branch generation."
     }
   ],
   "cron": [
@@ -2170,7 +2174,10 @@
       "known_issue_recorded_not_fixed": "RtMedia\\Importer maps unknown rtMedia media types to 'document' by elimination - the same catch-all shape 1.2.3 removed from uploads. Once the document library ships this would manufacture documents that never passed validation and have no folder. Should map to legacy_document or be rejected. Recorded on Basecamp 10184326656.",
       "verification": "Pro local-CI green (lint, WPCS, PHPStan, coding rules, architecture invariants). Pro unit suite 215 tests / 40 errors / 43 failures - unchanged from before this work, the pre-existing red tracked at Basecamp 10184313297. Duplication gate: 47 clusters baselined, 0 new."
     },
-    "refresh_2026_08_30": "TARGETED DELTA, not generator output. The previous entry was generated on the 2.2.0 branch and predated the document library, so manifest.hooks.json listed 88 hooks against 105 in code — the 37 added here are mostly Documents. Ten hooks the code grep did NOT find were KEPT rather than removed: they fire from templates/ or under a variable name, and deleting them on an incomplete grep is the exact failure this file warns about. Counts still needing a real refresh: tables (manifest 10, Migrator 11), services, settings, wp_cli."
+    "refresh_2026_08_30": "TARGETED DELTA, not generator output. The previous entry was generated on the 2.2.0 branch and predated the document library, so manifest.hooks.json listed 88 hooks against 105 in code — the 37 added here are mostly Documents. Ten hooks the code grep did NOT find were KEPT rather than removed: they fire from templates/ or under a variable name, and deleting them on an incomplete grep is the exact failure this file warns about. Counts still needing a real refresh: tables (manifest 10, Migrator 11), services, settings, wp_cli.",
+    "settings_added_2026_08_30": "The settings section did not exist. Enumerated from register_setting() plus the field-map loops several sections use instead — Pro registers most fields by looping over a map, which a plain register_setting() grep misses. Verified against a live `wp mvs-pro cert` run and the rendered Settings screen (216 controls, all labelled).",
+    "services_count_unverified_2026_08_30": "The services figure (58) is NOT verified and was left as generated. Pro does not use a service container — it instantiates and calls ->register(), of which there are 13, against 144 classes under includes/. 58 matches neither, so whatever the generator counted cannot be reconstructed from the code, and replacing it with 13 or 144 would be a guess wearing the authority of a measurement. Treat as soft until a real refresh defines the term.",
+    "verified_2026_08_30": "hooks_fired (88 -> 118, targeted delta), tables (10 -> 11: mvs_pro_webhook_events was missing; mvs_access_grants deliberately NOT added because Free owns it and Pro only ALTERs it), settings (absent -> 63), wp_cli (6, checked and CORRECT — `mvs-pro cert` confirmed against a live site and the three importers exist, so no change was made)."
   },
   "category_sources": {
     "rest": [
@@ -3585,5 +3592,259 @@
       "note": "Exists so document administration can be delegated to a role WITHOUT manage_options. Offered as a column on Free's role matrix through mvs_managed_caps."
     }
   ],
-  "hooks_fired_count": 118
+  "hooks_fired_count": 118,
+  "settings": [
+    {
+      "option": "mvs_app_accent_color",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_app_dark_mode_default",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_app_login_bg_id",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_app_logo_id",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_autopilot_day",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_autopilot_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_autopilot_entry_days",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_autopilot_hour",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_autopilot_max_entries",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_autopilot_voting_days",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_battles_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_boosts_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_challenges_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_connectors_enabled",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_anthropic_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_anthropic_model",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_aws_access_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_aws_region",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_aws_secret_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_battle_win_xp",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_pro_boost_cost_per_100",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_pro_boost_expiry_days",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_pro_boost_max_impressions",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_pro_bunny_api_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_bunny_cdn_hostname",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_bunny_region",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_bunny_zone",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_connector_flickr_app_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_connector_flickr_app_secret",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_do_access_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_do_bucket",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_do_cdn_domain",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_do_region",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_do_secret_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_feed_layout",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_google_vision_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_r2_access_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_r2_account_id",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_r2_bucket",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_r2_cdn_domain",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_r2_secret_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_s3_access_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_s3_bucket",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_s3_cdn_domain",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_s3_region",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_s3_secret_key",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_settings",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_pro_streak_freeze_cost",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_pro_webhook_secret",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_stories_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_streak_freezes_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_streaks_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_tournaments_enabled",
+      "where": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "option": "mvs_watermark_apply",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_color",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_enabled",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_font_size",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_image_id",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_opacity",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_position",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_roles",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_text",
+      "where": "includes/Admin/ProSettings.php"
+    },
+    {
+      "option": "mvs_watermark_type",
+      "where": "includes/Admin/ProSettings.php"
+    }
+  ]
 }
