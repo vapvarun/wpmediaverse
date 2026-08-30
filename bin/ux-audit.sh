@@ -202,7 +202,7 @@ done < <(find "$PLUGIN_DIR" -name '*.css' "${FIND_EXCLUDES[@]}" -not -name '*.mi
                /var\(--mvs-border[,)]/ &&
                sel ~ /(panel|card|__list|section|-wrap|-grid|modal-body|__row)/ &&
                sel !~ /(input|select|textarea|button|btn|field|chip|search|dropzone|picker-item|actions)/ {
-                 print FILENAME":"NR":"$0 }
+                 print FILENAME":"FNR":"$0 }
          ' 2>/dev/null | head -10 || true)
 
 echo
