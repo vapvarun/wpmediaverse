@@ -173,6 +173,64 @@ already know:
 - Premium encoding toggle, off, with the per-minute cost stated
 - Read-only status line: "N videos encoded, N encoding, N failed"
 
+## 10b. OPTION B — a Wbcom-run encoding service (FFmpeg in Docker)
+
+Raised by the owner. Instead of sending video to Bunny, Wbcom runs the encoder: the plugin POSTs
+the file to a Wbcom service, FFmpeg runs in a container, renditions come back.
+
+**The plugin side is nearly identical to Option A** — same `mvs_media_uploaded` listener, same
+async pending state, same webhook, same URL swap through the existing filters. Only the API client
+differs. That matters for the decision: the integration should be written against a small provider
+interface so the choice is not load-bearing, and can even be made after the plugin work starts.
+
+### What it solves that Bunny does not
+
+- **The revenue is Wbcom's.** With Bunny, the customer pays Bunny. This is a service you can price,
+  bundle with a Pro tier, or meter through the credits/quota system you already ship.
+- FFmpeg runs on **your** container, so the scanner objection is gone and the customer's host is
+  irrelevant — the same two problems Bunny solves, solved without a third party in the middle.
+- Full control of the quality ladder, output format and roadmap. No vendor deprecation risk.
+
+### What it costs, honestly
+
+You become a video infrastructure provider. That is an ops commitment, not a feature:
+
+| Concern | Why it bites |
+|---|---|
+| **Egress, not CPU** | Encoding CPU is cheap. Moving video is where the money goes. This is the single biggest cost driver and it is easy to under-model. |
+| Burst load | Fifty sites uploading 2 GB files in the same hour. Needs a real queue and autoscaling, or it is a 30-minute wait and a support ticket. |
+| Uptime | An outage now stops encoding for every customer at once. Option A's outage is Bunny's problem and their SLA. |
+| Data + liability | Members' private media transits and rests on your servers. GDPR posture, data residency, retention, DMCA, abuse. Bunny already carries this. |
+| Support | "My video is stuck" becomes your ticket, not the customer's host's. |
+
+### The variant that removes most of that: encode-and-return
+
+**Do not host the video. Encode it and hand it back.**
+
+The service accepts a file, returns renditions, and the customer stores them in the storage they
+already configured — local, S3, R2, Bunny Storage, DigitalOcean. Wbcom never serves playback.
+
+That single choice removes egress at scale (you pay to receive and return once, not to serve every
+view), removes the CDN, removes long-term storage of customer media, and shrinks the data-protection
+surface to transient processing. It also fits the existing architecture exactly, because the storage
+drivers and `MediaVariantWriter` already know how to place derived files.
+
+It is worse than Bunny in one respect worth naming: no adaptive bitrate. You would hand back a small
+set of MP4 renditions and let the player pick one, rather than a real HLS ladder. For most community
+video that is fine and it is what the old FFmpeg path did anyway. It is not "adaptive streaming",
+and the copy must not say so.
+
+### Recommendation
+
+Not either/or, and not now. **Write the plugin against a provider interface, ship one provider
+first.** Bunny is the lower-risk first provider precisely because none of the ops above is yours;
+the Wbcom service is the better business if the volume justifies running it, and encode-and-return
+is the version worth costing first.
+
+What would decide it: expected videos/month across the install base, and average file size. Neither
+is known today, and guessing them is how infrastructure gets built for load that never arrives — or
+falls over on load nobody modelled.
+
 ## 11. What is deliberately NOT in this plan
 
 - Server-side FFmpeg. Already possible today for a capable site with zero core changes: hook
@@ -184,6 +242,10 @@ already know:
 
 ## 12. What I need from the owner before building
 
+0. **§10b — who runs the encoder?** Bunny (their ops, their SLA, free standard encoding, their
+   revenue) or a Wbcom service (your ops, your liability, your revenue). Answer with expected
+   videos/month and average file size, or it is a guess. Either way the plugin should be written
+   against a provider interface so this is not load-bearing.
 1. **§6 — iframe or hls.js?** Iframe is much cheaper but Bunny's player draws the chapters and
    resume, not ours. Which matters more: shipping speed, or keeping those two Pro features on our
    own implementation?
