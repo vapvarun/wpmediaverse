@@ -18,7 +18,7 @@
 	font-size: 14px;
 	font-weight: 500;
 	border-radius: 6px;
-	border: 1px solid var(--mvs-border-light);
+	border: 1px solid var(--mvs-border);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
