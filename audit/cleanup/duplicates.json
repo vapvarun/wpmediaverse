@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-30T08:16:40Z",
+    "generated_at": "2026-08-30T15:07:40Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -18,7 +18,7 @@
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
         "free_files_scanned": 200,
-        "pro_files_scanned": 208
+        "pro_files_scanned": 210
     },
     "cross_plugin_duplicates": [
         {
@@ -1122,17 +1122,17 @@
             "sites": [
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "420-420",
+                    "lines": "423-423",
                     "method": "get_user_battles"
                 },
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "478-478",
+                    "lines": "481-481",
                     "method": "get_user_challenges"
                 },
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "532-532",
+                    "lines": "535-535",
                     "method": "get_user_tournaments"
                 }
             ]

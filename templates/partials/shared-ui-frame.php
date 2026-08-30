@@ -257,10 +257,11 @@ wp_interactivity_state(
 						<details class="mvs-modal-details">
 							<summary class="mvs-modal-details__summary"><?php esc_html_e( 'Add details', 'wpmediaverse' ); ?></summary>
 							<div class="mvs-modal-field">
-								<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
+								<?php // A placeholder is a hint that vanishes on the first keystroke, so it cannot be the field's name. The Tags input below already had an aria-label; these two were missed (Basecamp 10252222135). ?>
+								<input type="text" aria-label="<?php esc_attr_e( 'Media title', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
 							</div>
 							<div class="mvs-modal-field">
-								<textarea rows="2" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadDescription" data-wp-bind--value="state.uploadModalDescription"></textarea>
+								<textarea rows="2" aria-label="<?php esc_attr_e( 'Media description', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadDescription" data-wp-bind--value="state.uploadModalDescription"></textarea>
 							</div>
 							<div class="mvs-modal-field">
 								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
