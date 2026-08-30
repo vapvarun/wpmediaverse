@@ -35,6 +35,10 @@ class TemplateLoader {
 		add_action( 'init', array( $this, 'register_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 
+		// Send off-site sections to where they actually live. Before
+		// load_media_templates, or the dead panel renders first.
+		add_action( 'template_redirect', array( $this, 'redirect_offsite_section' ), 4 );
+
 		// Serve media templates via template_redirect.
 		add_action( 'template_redirect', array( $this, 'load_media_templates' ), 5 );
 
@@ -397,6 +401,72 @@ class TemplateLoader {
 		}
 
 		return $this->is_mvs_virtual_route() ? true : $preempt;
+	}
+
+	/**
+	 * Send /<dashboard>/<slug>/ to where an off-site section actually lives.
+	 *
+	 * Every declared section gets a dashboard route (see register_rewrite_rules)
+	 * so it can be linked and bookmarked. A section that ALSO declares its own
+	 * `url` lives somewhere else entirely, and its local route had nothing bound
+	 * to it: the panels rendered into the DOM and stayed hidden forever, so the
+	 * URL answered 200 with a blank content column. Pro's `compete` is the case
+	 * that surfaced it — its panels bind to `activeTab === 'challenges'` while
+	 * the section slug is `compete`, so nothing ever matched.
+	 *
+	 * Fixed here, at the routing layer, rather than by teaching one panel one
+	 * extra slug: the registry already knows a section is off-site, so every
+	 * present and future section of that shape is covered by this one rule.
+	 * Redirecting rather than 404ing keeps stale bookmarks working.
+	 *
+	 * 302 and not 301 on purpose — sections are declared through a filter, so a
+	 * site can stop being off-site at any time, and a permanent redirect cached
+	 * in every visitor's browser would outlive the declaration that caused it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return void
+	 */
+	public function redirect_offsite_section(): void {
+		$slug = sanitize_key( (string) get_query_var( 'mvs_section', '' ) );
+
+		if ( '' === $slug ) {
+			return;
+		}
+
+		$section = DashboardSections::all()[ $slug ] ?? null;
+
+		if ( ! $section || '' === (string) $section['url'] ) {
+			return;
+		}
+
+		$target = DashboardSections::url( $slug );
+
+		// A section whose declared url IS this route would redirect to itself.
+		if ( '' === $target || untrailingslashit( $target ) === untrailingslashit( home_url( add_query_arg( array() ) ) ) ) {
+			return;
+		}
+
+		// The target comes from a server-side section declaration, never from the
+		// request, so an off-domain one is trusted — but wp_safe_redirect would
+		// silently drop it on the home page, which is this same blank-screen bug
+		// wearing a different hat. Widen the allow-list for THIS redirect only,
+		// so every other caller keeps its open-redirect protection.
+		$host = wp_parse_url( $target, PHP_URL_HOST );
+
+		if ( $host ) {
+			add_filter(
+				'allowed_redirect_hosts',
+				static function ( array $hosts ) use ( $host ): array {
+					$hosts[] = $host;
+
+					return $hosts;
+				}
+			);
+		}
+
+		wp_safe_redirect( $target, 302 );
+		exit;
 	}
 
 	public function load_media_templates(): void {

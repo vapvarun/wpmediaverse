@@ -133,6 +133,22 @@ final class DashboardSections {
 	}
 
 	/**
+	 * Drop the resolved-sections memo.
+	 *
+	 * The registry memoises per request, so the FIRST caller of all() fixes what
+	 * every later one sees — anything that declares a section after that point
+	 * is silently ignored, and in tests the first case to touch it decides the
+	 * registry for the rest. Both are the same bug; this is the escape hatch.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return void
+	 */
+	public static function flush(): void {
+		self::$resolved = null;
+	}
+
+	/**
 	 * Sections grouped for rendering, empty groups omitted.
 	 *
 	 * @since 2.4.0

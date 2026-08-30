@@ -18,9 +18,20 @@
 namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
+use WPMediaVerse\Core\DashboardSections;
 use WPMediaVerse\Core\TemplateLoader;
 
 class TemplateLoaderTest extends WP_UnitTestCase {
+
+	/**
+	 * DashboardSections::all() memoises for the whole PHP process, so without
+	 * this the first case to touch it decides the registry every later case
+	 * sees — which is exactly how the off-domain assertion below first failed.
+	 */
+	public function set_up(): void {
+		parent::set_up();
+		DashboardSections::flush();
+	}
 
 	/**
 	 * A page recorded in mvs_page_dashboard is an app page.
@@ -57,5 +68,102 @@ class TemplateLoaderTest extends WP_UnitTestCase {
 		);
 
 		$this->assertTrue( TemplateLoader::is_app_page( $page_id ) );
+	}
+
+	/**
+	 * Capture where a redirect would send us, without letting the exit run.
+	 *
+	 * wp_safe_redirect() fires `wp_redirect` before sending headers, so throwing
+	 * from that filter records the target AND unwinds before redirect_offsite_
+	 * section() reaches its exit — which would otherwise kill the test runner.
+	 *
+	 * @return string Target URL, or '' when no redirect was attempted.
+	 */
+	private function capture_redirect(): string {
+		$caught = '';
+
+		add_filter(
+			'wp_redirect',
+			static function ( $location ) use ( &$caught ) {
+				$caught = (string) $location;
+				throw new \RuntimeException( 'mvs-test-redirect' );
+			}
+		);
+
+		try {
+			( new TemplateLoader() )->redirect_offsite_section();
+		} catch ( \RuntimeException $e ) {
+			if ( 'mvs-test-redirect' !== $e->getMessage() ) {
+				throw $e;
+			}
+		}
+
+		return $caught;
+	}
+
+	/**
+	 * Declare a section that lives somewhere else.
+	 */
+	private function declare_offsite_section( string $slug, string $url ): void {
+		add_filter(
+			'mvs_dashboard_sections',
+			static function ( array $sections ) use ( $slug, $url ): array {
+				$sections[ $slug ] = array(
+					'label' => 'Offsite',
+					'url'   => $url,
+				);
+
+				return $sections;
+			}
+		);
+
+		// The filter is added after set_up(), so drop the memo again or all()
+		// answers from the copy resolved before this declaration existed.
+		DashboardSections::flush();
+	}
+
+	/**
+	 * A section declaring its own url redirects there instead of rendering a
+	 * dashboard panel nothing is bound to (Basecamp 10252947433).
+	 */
+	public function test_offsite_section_redirects_to_its_declared_url(): void {
+		$target = home_url( '/compete/' );
+		$this->declare_offsite_section( 'compete', $target );
+		set_query_var( 'mvs_section', 'compete' );
+
+		$this->assertSame( $target, $this->capture_redirect() );
+	}
+
+	/**
+	 * An ordinary dashboard section is NOT redirected — it renders in place.
+	 * This is the assertion that keeps the fix from swallowing the dashboard.
+	 */
+	public function test_local_section_is_not_redirected(): void {
+		set_query_var( 'mvs_section', 'albums' );
+
+		$this->assertSame( '', $this->capture_redirect() );
+	}
+
+	/**
+	 * No section requested (the dashboard root) is left alone.
+	 */
+	public function test_no_section_is_not_redirected(): void {
+		set_query_var( 'mvs_section', '' );
+
+		$this->assertSame( '', $this->capture_redirect() );
+	}
+
+	/**
+	 * An off-domain declaration survives wp_safe_redirect's host check.
+	 *
+	 * Without the scoped allowed_redirect_hosts widening, wp_safe_redirect
+	 * rewrites this to the home page — landing the member somewhere they did
+	 * not ask for, which is the same blank-screen surprise in a new costume.
+	 */
+	public function test_offdomain_section_url_is_not_downgraded_to_home(): void {
+		$this->declare_offsite_section( 'partner', 'https://community.example.org/compete/' );
+		set_query_var( 'mvs_section', 'partner' );
+
+		$this->assertSame( 'https://community.example.org/compete/', $this->capture_redirect() );
 	}
 }
