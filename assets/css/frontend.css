@@ -2144,6 +2144,63 @@ body.dark-mode .mvs-skeleton::after {
    underline down a rail reads as a rule under one row, which is what it looked
    like. Declared at the same weight as the armour above, or the armour wins
    again — the whole point of this block. */
+/* ── Dashboard tab strip: the scrolling form ───────────────────────────────
+ *
+ * `max-width: 860px`, NOT 768. These rules lived inside the mobile block and
+ * the vertical rail that replaces them starts at `min-width: 861px`, so 769px
+ * to 860px was covered by NEITHER: the strip fell back to the base
+ * `display: flex` with no wrap and no overflow, and its content — 912px wide
+ * with the full tab set — simply spilled out of the container with no way to
+ * scroll to it. Three tabs were unreachable across a 78px band of desktop
+ * widths, and the page itself did not scroll, so nothing looked wrong.
+ *
+ * Found by walking every distinct breakpoint at desktop rather than by reading
+ * the CSS, which is the only way this shows up: each rule is correct on its own
+ * and the bug lives in the gap between them (Basecamp 10252222205).
+ *
+ * The two boundaries now meet exactly at 860/861. If either moves, move both.
+ */
+@media (max-width: 860px) {
+    .mvs-dashboard-tabs {
+        position: sticky;
+        top: 0;
+        z-index: var(--mvs-z-sticky);
+        background: var(--mvs-bg);
+        padding: 8px 0;
+        border-bottom: 1px solid var(--mvs-border);
+        /* Inline axis ONLY. `margin: 0 -20px` bled the sticky bar edge-to-edge
+           and, being a shorthand, silently reset the base rule's
+           `margin-bottom: 24px` — so the toolbar underneath sat flush against
+           the tab bar and its focus ring overlapped the border (Basecamp
+           10248974871). margin-inline also survives RTL, which the shorthand
+           did not. */
+        margin-inline: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        /* Edge-fade so users see there are more tabs to swipe to. */
+        -webkit-mask-image: linear-gradient(to right,
+            black 0,
+            black calc(100% - 24px),
+            transparent 100%);
+        mask-image: linear-gradient(to right,
+            black 0,
+            black calc(100% - 24px),
+            transparent 100%);
+    }
+
+    .mvs-dashboard-tabs::-webkit-scrollbar { display: none; }
+
+    .mvs-dashboard-tabs > .mvs-dashboard-tab {
+        scroll-snap-align: start;
+    }
+}
+
 @media (min-width: 861px) {
 
     .mvs-dashboard-tabs .mvs-dashboard-tab {
@@ -5748,44 +5805,6 @@ a.mvs-dashboard-card-title:hover {
     }
 
     /* Sticky dashboard tabs — mobile guideline §5.2 */
-    .mvs-dashboard-tabs {
-        position: sticky;
-        top: 0;
-        z-index: var(--mvs-z-sticky);
-        background: var(--mvs-bg);
-        padding: 8px 0;
-        border-bottom: 1px solid var(--mvs-border);
-        /* Inline axis ONLY. `margin: 0 -20px` bled the sticky bar edge-to-edge
-           and, being a shorthand, silently reset the base rule's
-           `margin-bottom: 24px` — so the toolbar underneath sat flush against
-           the tab bar and its focus ring overlapped the border (Basecamp
-           10248974871). margin-inline also survives RTL, which the shorthand
-           did not. */
-        margin-inline: -20px;
-        padding-left: 20px;
-        padding-right: 20px;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x proximity;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        /* Edge-fade so users see there are more tabs to swipe to. */
-        -webkit-mask-image: linear-gradient(to right,
-            black 0,
-            black calc(100% - 24px),
-            transparent 100%);
-        mask-image: linear-gradient(to right,
-            black 0,
-            black calc(100% - 24px),
-            transparent 100%);
-    }
-
-    .mvs-dashboard-tabs::-webkit-scrollbar { display: none; }
-
-    .mvs-dashboard-tabs > .mvs-dashboard-tab {
-        scroll-snap-align: start;
-    }
 
     .mvs-dashboard-tab {
         min-height: 44px;
