@@ -345,7 +345,7 @@ check_no_direct_media_index_query_outside_repository() {
 # eroding.
 check_no_exec_family_calls() {
     local hits
-    hits="$(grep -rnE '(^|[^a-zA-Z_>$-])(exec|shell_exec|proc_open|system|passthru|popen)[[:space:]]*\(' \
+    hits="$(grep -rnE '(^|[^a-zA-Z_>$-])(exec|shell_exec|proc_open|system|passthru|popen|pcntl_exec)[[:space:]]*\(' \
         --include='*.php' "$PLUGIN_DIR/includes" "$PLUGIN_DIR/templates" 2>/dev/null \
         | grep -v '/dist/' \
         | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|#)' \

@@ -55,6 +55,57 @@ release.
 
 So the plan is relocation, not persuasion. §0 has the three legitimate places FFmpeg can run.
 
+### "Can we keep TranscodeService without using those functions?"
+
+Asked directly, and it deserves a direct answer: **no, because that list is not a blocklist to route
+around — it IS PHP's complete process-execution API.**
+
+Verified on this stack rather than recalled:
+
+```
+exec  shell_exec  system  passthru  popen  proc_open  pcntl_exec
+```
+
+Seven functions, plus the backtick operator which is `shell_exec` in different syntax. That is the
+entire surface by which PHP can start a process. There is no eighth door. Scanners did not pick six
+names arbitrarily; they enumerated the API.
+
+Everything that looks like a way round it is worse:
+
+| Idea | Why not |
+|---|---|
+| `php-ffmpeg` composer library | It is a wrapper AROUND `proc_open`. The call lives in `vendor/`, which we ship and which gets scanned. Same flag, now harder to find. |
+| Backticks `` `ffmpeg …` `` | `shell_exec` with different punctuation. Flagged, and less greppable for us. |
+| Write a shell script, let system cron run it | Drop-a-file-then-execute is the canonical malware persistence pattern. Flagged HARDER than a plain `exec`. |
+| Imagick / GD | Imagick reads video FRAMES through delegates — useful for a poster, useless for an H.264 rendition. GD is images only. Neither can transcode. |
+| A PECL ffmpeg extension | Abandoned; not installable on any host a customer will have. |
+| Obfuscate the call | Dynamic invocation is what malware looks like. Flagged harder, and risks WP.org removal. |
+
+### What DOES work, if the encoder must stay on the customer's server
+
+**A separate, optional add-on plugin.** Not a way round the flag — a way to scope who ever sees it.
+
+- `wpmediaverse` and `wpmediaverse-pro` — the plugins every customer installs — stay at zero, and
+  Rule 8 keeps them there.
+- A third plugin, e.g. `wpmediaverse-encoder`, carries the recovered `TranscodeService` and its
+  `proc_open`. It is the only thing a scanner can flag, and only for the customers who chose to
+  install it, having read what it does.
+- Rule 8 covers the two shipped plugins by design. A dedicated encoder add-on is exactly where the
+  exception belongs — visible, opt-in, and isolated.
+
+Honest about what this does and does not buy:
+
+- It DOES stop the flag reaching the whole install base, which is the actual damage: an owner who
+  never asked for transcoding gets a red warning about a plugin they trusted.
+- It does NOT make the add-on itself unflagged. Whoever installs it may still see a warning, and
+  the plugin description has to say so plainly rather than hoping they do not.
+- WP.org may not accept the add-on. It would likely be distributed from the store, like the Pro
+  plugins.
+
+That is the whole decision, stated plainly: **the exec cannot be hidden, only located.** Either it
+sits on a Wbcom server (§10b, nobody's scanner sees it), or it sits in an add-on the customer
+opted into (their scanner sees it, and they knew).
+
 ### Current state: already clean, and measured
 
 Audited 2026-08-30 across both plugins' `includes/`:
