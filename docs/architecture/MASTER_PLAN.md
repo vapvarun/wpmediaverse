@@ -99,7 +99,8 @@ These don't ship as features but are tracked so the next person editing the area
 | Performance | **Per-media object cache layer** in `MediaRepository`. Has request-cache + prefetch already; persistent cache would help heavy-read sites. |
 | Compat | **BuddyBoss Platform deeper integration** — beyond the existing importer. Activity types, member directory hooks. |
 | Compat | **Multisite network-admin shared media library.** |
-| Pro | **Live-stream support** (RTMP ingest + HLS playback). Major scope. |
+| Pro | **Bunny Stream video encoding** — multi-quality renditions via a cloud encoder, replacing the FFmpeg path removed in 2.4.0. DESIGNED, NOT BUILT: `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md`. Blocked on four owner decisions in its §12 — read those first, the plan is not startable without them. |
+| Pro | **Live-stream support** (RTMP ingest + HLS playback). Major scope. Would share the Bunny Stream integration above if that lands first. |
 | Pro | **Marketplace mode** — monetize media (already have credits SDK and quota; missing storefront UI). |
 
 ---
