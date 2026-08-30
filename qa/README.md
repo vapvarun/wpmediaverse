@@ -8,6 +8,25 @@ Doesn't matter who runs it — AI agent or human. The question at every release 
 
 The release gate (`bin/build-release.sh`) reads `.last-smoke-pass.json` (combo mode) or `.last-smoke-pass-free.json` (free-only) and refuses to package without a fresh green pass.
 
+## Freshness, honestly (checked 2026-08-30)
+
+Not every file here tracks the code equally, and a stale runbook that looks authoritative is worse
+than an obviously missing one. Current state:
+
+| File | Last updated | Trust |
+|---|---|---|
+| `runbooks/AGENT_SMOKE_RUNBOOK.md` | 2026-08-30 | current |
+| `inventory/WHAT-TO-CHECK.md` | 2026-08-30 | current |
+| `MODEL-SITE.md` | 2026-08-19 | current |
+| `inventory/FUNCTIONALITY-JOURNEYS.md` | 2026-06-24 | **stale** — the executable journeys under `audit/journeys/` are the live list |
+| `runbooks/MANUAL-UX-QA-free.md` | 2026-07-08 | **stale** — predates the 2026-08-29 UX audit and everything it fixed |
+| `runbooks/MANUAL-UX-QA-pro.md` | 2026-05-11 | **STALE, ~4 months** — predates documents, drives and the whole 2.4.0 cycle |
+
+The two manual UX runbooks are the ones to distrust. They will not mention documents, drives, the
+2.4.0 integration seams, or any of the contrast, tap-target and labelling work — walking them will
+not catch a regression in any of it. Refresh them, or work from `WHAT-TO-CHECK.md` plus the
+executable journeys instead.
+
 ## Before you run anything
 
 `MODEL-SITE.md` describes the install these runbooks assume — versions, settings, data shape, and

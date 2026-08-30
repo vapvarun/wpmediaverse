@@ -232,6 +232,21 @@ When any of these diverge, UI silently breaks (the envelope-drift class):
 - **Action vs filter names share ONE registry** — `mvs_dashboard_tabs` is an action with subscribers that echo; `apply_filters()` on that name would print their markup mid-filter and assign `null`. Registry data goes through the separate `mvs_dashboard_tab_registry`
 - **Extension-derived MIME ↔ byte-sniffed MIME** — `wp_check_filetype_and_ext()` returns the MIME derived from the EXTENSION for non-images, so any check that only fires on a sniffed value is unreachable in production (the OOXML archive-marker check was, for months of test-green)
 
+### 2.4.0 integration seams — each is a contract another plugin depends on
+
+These are filters and actions a sibling plugin binds to. They break silently: nothing in this
+plugin fails, the OTHER plugin just stops working, and the first report is from a customer running
+both. Each has an executable journey and a smoke D row; this table is the flat statement of what
+must remain true.
+
+| Contract | Must hold | Breaks as |
+|---|---|---|
+| `mvs_media_drive_access` | Governs BOTH the placement gate and the space READ gate, through one resolver. **It is a privacy boundary, not a placement hint** — the same answer decides who can read media already scoped to a drive. | The two gates disagree: media stored scoped to a drive whose own members cannot open it. |
+| `mvs_media_trashed` / `_restored` | Fire from ALL FOUR trash paths — member REST, admin row action, admin bulk, and the two Documents admin paths — with a non-empty `$permalink`. | An integration's mirror survives a trash. A community feed advertises a video that 404s. |
+| `mvs_has_custom_avatar` | Defaults to our own store and can be widened by another provider. Must stay FALSE for a member with no avatar anywhere. | Either every member is nagged for a photo they have, or nobody is ever asked. |
+| Anonymous document reads | `/documents` refuses anonymous unless `mvs_pro_documents_anon_links` is on AND the ladder grants read. Writes always 401. `/me/shared` and `/drives` never serve anonymous. | Either `read` is a level the route silently voids, or opting in to share links quietly publishes every drive. |
+| No exec-family call in shipped source | Zero `exec`/`shell_exec`/`proc_open`/`system`/`passthru`/`popen`/`pcntl_exec` in either plugin. Enforced by `bin/coding-rules-check.sh` Rule 8. | Security plugins flag the plugin as a possible backdoor on every install. This is what removed transcoding in 2.4.0. |
+
 ---
 
 ## 6. Plugin-owned URLs + surfaces recap
