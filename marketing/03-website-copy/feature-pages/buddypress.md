@@ -130,7 +130,7 @@ Individual components can be disabled in WPMediaVerse's admin settings under the
 | Profile media tab | Yes | Yes | Yes |
 | Group media tab | Yes | Yes | Yes |
 | 5 layout modes | Yes (Pro) | No | No |
-| Video chapters + captions | Yes (Pro) | No | No |
+| Video chapters + captions | Yes (Pro) | No | Not documented |
 | Gamification | Yes (Pro) | No | No |
 | REST API | Yes (80+ endpoints) | Limited | Limited |
 | Gutenberg blocks | Yes (13) | No | No |

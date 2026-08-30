@@ -12,7 +12,7 @@ rtMedia has a free version, yes. But the features people typically need — clou
 
 More importantly, they are different products at this point. rtMedia was built years ago and its architecture reflects that. It uses WordPress post types and meta tables for media storage, which works at small scale but creates real performance issues on active communities. WPMediaVerse uses custom tables built specifically for media queries.
 
-The feature gap is also significant. rtMedia does not have Photo Battles, Tournaments, or a Challenge engine. It does not have video chapters, resume playback, or auto-captions. It does not have AI moderation in the free version. These are not minor additions — they are different categories of functionality.
+The feature gap is also significant. rtMedia does not have Photo Battles, Tournaments, or a Challenge engine. It does not have video chapters, resume playback, or auto-captions. Be precise about transcoding if it comes up: rtMedia never had it in core either — it was the separate Transcoder plugin, which rtCamp has discontinued in favour of GoDAM. Neither product transcodes in core, so it is not a differentiator in either direction. It does not have AI moderation in the free version. These are not minor additions — they are different categories of functionality.
 
 If you genuinely only need basic photo upload and album support, rtMedia's free tier may be all you need. If you want a media platform that can run competitions, handle video properly, and scale with your community, WPMediaVerse is the better fit.
 

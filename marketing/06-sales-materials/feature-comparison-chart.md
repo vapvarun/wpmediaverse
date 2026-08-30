@@ -35,6 +35,25 @@ Last updated: March 2026. Competitor information is based on publicly available 
 
 ---
 
+
+## How the competitor columns were checked
+
+Checked 2026-08-30. Anyone publishing from this file should re-check before it goes out, and a
+prospect who finds one wrong cell will discount every other row — which is why the basis is written
+down rather than assumed.
+
+| Product | Video chapters / resume / auto-captions | Basis |
+|---------|----------------------------------------|-------|
+| rtMedia | No, in core | Transcoding was never core rtMedia — it was the separate Transcoder plugin, now discontinued in favour of rtCamp's GoDAM. Core rtMedia documents a gallery, photo tagging, watermarking and membership; no chapters or captions. |
+| MediaPress | No | Documents galleries, playlists, masonry grid and a lightbox. Its "Caption Effect" is a PHOTO caption display effect — not video captions, and an easy row to get wrong. |
+| BuddyBoss | Not documented | Its media docs cover upload, supported formats and albums. Native chapters or captions are not documented; absence of documentation is weaker evidence than the two above, so treat this cell as the softest one in the table. |
+
+Sources: rtmedia.io/docs/transcoder, wordpress.org/plugins/buddypress-media, wordpress.org/plugins/mediapress,
+buddyboss.com/resources/docs/components/media.
+
+**Where a competitor ships a capability through a paid add-on rather than core, say "Add-on", not "No".**
+That distinction is the one most likely to be challenged, and it costs nothing to be right about.
+
 ## Layout and Display
 
 | Feature | WPMediaVerse | rtMedia | MediaPress | BuddyBoss Media |
