@@ -18,14 +18,30 @@ than an obviously missing one. Current state:
 | `runbooks/AGENT_SMOKE_RUNBOOK.md` | 2026-08-30 | current |
 | `inventory/WHAT-TO-CHECK.md` | 2026-08-30 | current |
 | `MODEL-SITE.md` | 2026-08-19 | current |
-| `inventory/FUNCTIONALITY-JOURNEYS.md` | 2026-06-24 | **stale** — the executable journeys under `audit/journeys/` are the live list |
-| `runbooks/MANUAL-UX-QA-free.md` | 2026-07-08 | **stale** — predates the 2026-08-29 UX audit and everything it fixed |
-| `runbooks/MANUAL-UX-QA-pro.md` | 2026-05-11 | **STALE, ~4 months** — predates documents, drives and the whole 2.4.0 cycle |
+| `runbooks/MANUAL-UX-QA-free.md` | 2026-08-30 | current — J17 admin screens, J18 messaging, J19 the 2.4.0 seams |
+| `runbooks/MANUAL-UX-QA-pro.md` | 2026-08-30 | current — P22 captions/privacy/push/connectors, P23 documents |
+| `runbooks/DOCUMENTS-QA.md` | 2026-08-19 | current |
+| `inventory/FUNCTIONALITY-JOURNEYS.md` | 2026-06-24 | **stale, and deliberately not refreshed** — it duplicates what `audit/journeys/` now holds executably. Use those; this file is history. |
 
-The two manual UX runbooks are the ones to distrust. They will not mention documents, drives, the
-2.4.0 integration seams, or any of the contrast, tap-target and labelling work — walking them will
-not catch a regression in any of it. Refresh them, or work from `WHAT-TO-CHECK.md` plus the
-executable journeys instead.
+## Coverage, measured 2026-08-30
+
+Not asserted — diffed against the code:
+
+| Scope | Covered | Basis |
+|---|---|---|
+| Pro feature namespaces | **28 / 28** | every dir under `wpmediaverse-pro/includes/` except `Core`, `data` and `Cert` (internal tooling, no UX surface) |
+| Free admin screens + member surfaces | **24 / 24** | the 13 admin pages plus the 11 member surfaces |
+| Required executable journeys | **23 / 23** | `audit/journeys/REQUIRED-COVERS.txt`, enforced by local-CI gate 1.6 |
+
+The gaps this closed, found by diffing rather than by memory: Pro had no journey for captions,
+privacy, push or connectors, and none for documents — its largest feature — because that runbook
+predated it. Free had none for the Documents, Integrations or Import admin screens, and none for
+direct messaging at all.
+
+**What this number does and does not mean.** It means every shipped surface is NAMED in a runbook
+someone can walk. It does not mean every surface has been walked recently — that is
+`.last-smoke-pass.json`, which is currently a deliberate partial (22 pass / 98 skipped) and which
+the release gate correctly refuses to package on.
 
 ## Before you run anything
 
