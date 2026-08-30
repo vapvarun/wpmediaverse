@@ -668,7 +668,7 @@
 }
 
 /* ─── Responsive ─── */
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 	.mvs-modal {
 		width: 100vw;
 		max-width: 100vw;

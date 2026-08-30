@@ -1253,7 +1253,7 @@ body.dark-mode .mvs-skeleton::after {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 
     .mvs-cols-3,
     .mvs-cols-4,
@@ -1378,7 +1378,7 @@ body.dark-mode .mvs-skeleton::after {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 
     .mvs-grid--original.mvs-cols-3,
     .mvs-grid--original.mvs-cols-4,
@@ -2344,7 +2344,7 @@ body.dark-mode .mvs-skeleton::after {
 @media (max-width: 1024px) {
     .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(4, 1fr); }
 }
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-dashboard-grid.mvs-cols-3,
     .mvs-dashboard-grid.mvs-cols-4,
     .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(2, 1fr); }
@@ -4965,9 +4965,9 @@ a.mvs-dashboard-card-title:hover {
    31. Explore Page Grid Fixes
    ========================================================================== */
 
-@media (max-width: 768px) {}
-
-@media (max-width: 480px) {}
+/* Section 31 held two EMPTY media blocks (767 and 480). They shipped nothing
+   and inflated the breakpoint count that made this file look like it had more
+   responsive behaviour than it does. Removed rather than kept as placeholders. */
 
 /* ==========================================================================
    32. Profile Header (Dashboard) & Profile Edit
@@ -5833,7 +5833,7 @@ a.mvs-dashboard-card-title:hover {
    36. Mobile Touch Targets & Responsiveness
    ========================================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 
     /* Ensure minimum 44px touch targets */
     .mvs-reaction-btn {
@@ -6039,7 +6039,7 @@ a.mvs-dashboard-card-title:hover {
    Mobile — Search Bar Responsive Fixes
    ========================================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-search-bar {
         max-width: 100%;
     }
@@ -6536,7 +6536,7 @@ a.mvs-dashboard-card-title:hover {
    media off-screen and force a horizontal scrollbar on narrow viewports.
    Action buttons distribute evenly (flex:1) so 5 fit on one row at any
    width without scrolling. */
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-lightbox {
         flex-direction: column;
         max-width: 100vw;
@@ -6922,7 +6922,7 @@ a.mvs-dashboard-card-title:hover {
     color: #ffffff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-lightbox {
         flex-direction: column;
         width: 100vw;
