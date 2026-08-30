@@ -2009,9 +2009,9 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-07-24T00:00:00Z",
+    "at": "2026-08-30T06:32:38Z",
     "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "2.2.0",
+    "branch": "2.4.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -2169,7 +2169,8 @@
       },
       "known_issue_recorded_not_fixed": "RtMedia\\Importer maps unknown rtMedia media types to 'document' by elimination - the same catch-all shape 1.2.3 removed from uploads. Once the document library ships this would manufacture documents that never passed validation and have no folder. Should map to legacy_document or be rejected. Recorded on Basecamp 10184326656.",
       "verification": "Pro local-CI green (lint, WPCS, PHPStan, coding rules, architecture invariants). Pro unit suite 215 tests / 40 errors / 43 failures - unchanged from before this work, the pre-existing red tracked at Basecamp 10184313297. Duplication gate: 47 clusters baselined, 0 new."
-    }
+    },
+    "refresh_2026_08_30": "TARGETED DELTA, not generator output. The previous entry was generated on the 2.2.0 branch and predated the document library, so manifest.hooks.json listed 88 hooks against 105 in code — the 37 added here are mostly Documents. Ten hooks the code grep did NOT find were KEPT rather than removed: they fire from templates/ or under a variable name, and deleting them on an incomplete grep is the exact failure this file warns about. Counts still needing a real refresh: tables (manifest 10, Migrator 11), services, settings, wp_cli."
   },
   "category_sources": {
     "rest": [
@@ -3583,5 +3584,6 @@
       ],
       "note": "Exists so document administration can be delegated to a role WITHOUT manage_options. Offered as a column on Free's role matrix through mvs_managed_caps."
     }
-  ]
+  ],
+  "hooks_fired_count": 118
 }

@@ -1,47 +1,70 @@
 {
   "release_version": "2.4.0",
   "mode": "combo",
-  "ran_at": "2026-08-11T04:51:28Z",
+  "ran_at": "2026-08-30T06:30:51Z",
   "free_version": "2.4.0",
   "pro_version": "2.4.0",
+  "walk_scope": "PARTIAL, AND THE COUNTS SAY SO. An agent-driven walk over real HTTP, real REST dispatch and Chromium, covering the surfaces reachable that way. Rows needing a fresh install, an upgrade from a prior version, a second browser engine, or a human eye on a visual are recorded as skipped rather than assumed. Do not read this as a full A-G walk.",
   "sections": {
     "A_fresh_install": {
-      "pass": 5,
-      "fail": 0,
-      "skipped": 0
-    },
-    "B_upgrade": {
-      "pass": 3,
-      "fail": 0,
-      "skipped": 0
-    },
-    "C_core_flows": {
-      "pass": 34,
-      "fail": 0,
-      "skipped": 6
-    },
-    "D_regression_guards": {
-      "pass": 15,
-      "fail": 0,
-      "skipped": 8
-    },
-    "E_pro_smoke": {
-      "pass": 9,
-      "fail": 0,
-      "skipped": 15
-    },
-    "F_cross_browser": {
       "pass": 0,
       "fail": 0,
-      "skipped": 4
+      "skipped": 5
+    },
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 3
+    },
+    "C_core_flows": {
+      "pass": 7,
+      "fail": 0,
+      "skipped": 37
+    },
+    "D_regression_guards": {
+      "pass": 8,
+      "fail": 0,
+      "skipped": 32
+    },
+    "E_pro_smoke": {
+      "pass": 4,
+      "fail": 0,
+      "skipped": 20
+    },
+    "F_cross_browser": {
+      "pass": 3,
+      "fail": 0,
+      "skipped": 1
     }
   },
   "failures": [],
+  "found_and_fixed_during_this_walk": [
+    {
+      "id": "F.a11y",
+      "origin": "from",
+      "triage_note": "Ours. Found by the walk, not by a card \u2014 the reason to run one.",
+      "expected": "Every interactive control on /my-media/ has an accessible name.",
+      "actual": "`.mvs-dashboard-rail-head__avatar-link` had no aria-label, no title and no text, and its <img alt> is empty in the server render (filled by an Interactivity binding only after hydration). A screen reader on first paint, or with JS unavailable, announced 'link' and nothing else.",
+      "fix": "Server-rendered aria-label naming the destination: 'View <name>'s profile'. templates/partials/dashboard-content.php.",
+      "reverified": "0 nameless controls of ours at both 1440px and 390px."
+    }
+  ],
   "debug_log_issues": [],
+  "debug_log_note": "8 new lines since baseline, ALL of them two fatals from the walk harness itself (wp_delete_user() is admin-side and the scratchpad script had not required wp-admin/includes/user.php). Zero from-origin lines from either plugin across the walk.",
+  "also_run": {
+    "free_unit_suite": "439 pass",
+    "pro_unit_suite": "592 pass",
+    "free_functional_cert": "69 pass / 0 fail / 0 hole",
+    "pro_functional_cert": "56 pass / 0 fail / 0 hole",
+    "free_local_ci": "green (17 stages, incl. cert)",
+    "pro_local_ci": "green (13 stages, incl. cert)",
+    "journey_coverage": "23/23 required features claimed"
+  },
   "manual_required": [
-    "Firefox Desktop and Safari Desktop: full walk (Playwright is Chromium-only)",
-    "Safari iOS 390px: lightbox swipe and native share sheet",
-    "E_pro_smoke: AI, S3 and Whisper rows require external credentials",
-    "Active-tournament rows: no active tournament in the fixture set (finalized only); not seeded, per the no-self-seeding guardrail"
+    "F.firefox-desktop: not run \u2014 Chromium only. Needs a second engine.",
+    "Safari iOS 390px: not run.",
+    "A_fresh_install: not run. mediaverse.local is the QA baseline and carries fixtures; deactivating to re-activate would destroy them. Needs a throwaway site.",
+    "B_upgrade: not run. No prior version installed to upgrade from.",
+    "The 37 C, 32 D and 20 E rows counted as skipped above \u2014 most need a seeded fixture, a specific member persona, or a human looking at a rendered screen."
   ]
 }

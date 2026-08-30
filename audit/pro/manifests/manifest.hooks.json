@@ -9,11 +9,31 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_active_layout",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$slug"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:119",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_after_content",
       "type": "action",
       "args_count": 0,
       "args_signature": [],
       "where": "templates/challenges-body.php:266",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_moderation_terms",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "self::CATEGORIES"
+      ],
+      "where": "includes/Integrations/Anthropic/AIProvider.php:163",
       "consumed_by": []
     },
     {
@@ -159,6 +179,108 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_challenge_email_created_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_created_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:127",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_entry_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:171",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_entry_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:170",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_participant_body",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:293",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_participant_subject",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:292",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_winner_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:261",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_winner_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:260",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_challenge_entry_submitted",
       "type": "action",
       "args_count": 3,
@@ -234,6 +356,181 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_connectors",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array"
+      ],
+      "where": "includes/Connectors/ConnectorManager.php:57",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_allowed_types",
+      "type": "filter",
+      "where": "includes/Documents/DocumentSettings.php:528",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_anon_links",
+      "type": "filter",
+      "where": "includes/Documents/DocumentSettings.php:606",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_can_grant",
+      "type": "filter",
+      "where": "includes/Documents/PermissionService.php:1409",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_default_privacy",
+      "type": "filter",
+      "where": "includes/Documents/DocumentSettings.php:579",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_folder_created",
+      "type": "action",
+      "where": "includes/Documents/FolderService.php:352",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_folder_privacy_cascaded",
+      "type": "action",
+      "where": "includes/Documents/FolderService.php:1300",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_folder_restored",
+      "type": "action",
+      "where": "includes/Documents/FolderService.php:1416",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_folder_trashed",
+      "type": "action",
+      "where": "includes/Documents/FolderService.php:1471",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_max_depth",
+      "type": "filter",
+      "where": "includes/Documents/FolderService.php:129",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_max_size",
+      "type": "filter",
+      "where": "includes/Documents/DocumentSettings.php:487",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_owns_drive",
+      "type": "filter",
+      "where": "includes/Documents/PermissionService.php:1666",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_pdf_height",
+      "type": "filter",
+      "where": "includes/Documents/DocumentViewer.php:359",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_preview_bytes",
+      "type": "filter",
+      "where": "includes/Documents/PreviewRenderer.php:127",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_replaced",
+      "type": "action",
+      "where": "includes/Documents/DocumentIngestService.php:515",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_replaced_ttl",
+      "type": "filter",
+      "where": "includes/Documents/DocumentIngestService.php:543",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_restored",
+      "type": "action",
+      "where": "includes/Documents/DocumentActionService.php:194",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_scan_file",
+      "type": "filter",
+      "where": "includes/",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_shared",
+      "type": "action",
+      "where": "includes/Documents/PermissionService.php:1054",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_strip_metadata",
+      "type": "filter",
+      "where": "includes/Documents/MetadataStripper.php:131",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_trashed",
+      "type": "action",
+      "where": "includes/Documents/DocumentActionService.php:165",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_uploaded",
+      "type": "action",
+      "where": "includes/Documents/DocumentIngestService.php:355",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_viewer_html",
+      "type": "filter",
+      "where": "includes/Documents/AdminDocumentPanels.php:199",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_feed_query_args",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$mvs_query_args",
+        "string"
+      ],
+      "where": "templates/layouts/pinterest/feed-body.php:95",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_finalize_expired_challenges",
       "type": "action",
       "args_count": 0,
@@ -251,6 +548,45 @@
       ],
       "where": "includes/Frontend/Layouts/LayoutManager.php:272",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_config",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$config",
+        "$slug"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:93",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_modes",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "self::MODES"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:139",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_template_map",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$map",
+        "$this"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:162",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_drive",
+      "type": "filter",
+      "where": "includes/Documents/DriveContract.php:258",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_media_exported",
@@ -277,6 +613,48 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_media_uploaded",
+      "type": "filter",
+      "where": "includes/",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_openai_api_key",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$key"
+      ],
+      "where": "includes/Integrations/Whisper/CaptionProvider.php:136",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_can_view",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "null",
+        "$album_id",
+        "$user_id",
+        "$album_privacy"
+      ],
+      "where": "includes/Privacy/PrivacyUIService.php:155",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_event_data",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$event_data",
+        "$media_id",
+        "$event_type"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:117",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_analytics_recorded",
       "type": "action",
       "args_count": 3,
@@ -286,6 +664,29 @@
         "$user_id"
       ],
       "where": "includes/Analytics/AnalyticsService.php:142",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_summary",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$overview",
+        "int",
+        "string"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:646",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_before_quota_check",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$args",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:537",
       "consumed_by": []
     },
     {
@@ -300,6 +701,43 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_pro_captions_reaped",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $count"
+      ],
+      "where": "includes/Captions/TranscriptionService.php:365",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_collections_manage_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$mvs_collections_url"
+      ],
+      "where": "includes/Core/Plugin.php:919",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_compete_points_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$mvs_hub_page_id"
+      ],
+      "where": "templates/compete-hub-body.php:53",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_compete_summary_cache_ttl",
+      "type": "filter",
+      "where": "includes/REST/CompeteSummaryController.php:153",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
       "name": "mvs_pro_credits_added",
       "type": "action",
       "args_count": 4,
@@ -310,6 +748,52 @@
         "$source"
       ],
       "where": "includes/Quota/QuotaService.php:428",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_document_extraction_enabled",
+      "type": "filter",
+      "where": "includes/Documents/ExtractionService.php:200",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_document_quota_precheck",
+      "type": "filter",
+      "where": "includes/Documents/DocumentIngestService.php:238",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_inject_compete_nav",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool"
+      ],
+      "where": "includes/Core/Plugin.php:856",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_leaderboard_cache_ttl",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "5 * MINUTE_IN_SECONDS"
+      ],
+      "where": "includes/REST/LeaderboardController.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_leaderboard_xp_rows",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array",
+        "int",
+        "$window"
+      ],
+      "where": "includes/Leaderboard/LeaderboardService.php:79",
       "consumed_by": []
     },
     {
@@ -359,6 +843,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_pro_quota_default_applies_to_unassigned",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:263",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_quota_package_unassigned",
       "type": "action",
       "args_count": 2,
@@ -368,6 +863,64 @@
       ],
       "where": "includes/Quota/QuotaService.php:362",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_revert_to_default_on_end",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool",
+        "$user_id",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:343",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_source",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$package",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:277",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_widget_visible",
+      "type": "filter",
+      "where": "includes/Frontend/UsageWidget.php:118",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_webhook_event_ttl",
+      "type": "filter",
+      "where": "includes/Quota/QuotaController.php:610",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_webhook_replay_window",
+      "type": "filter",
+      "where": "includes/Quota/QuotaController.php:531",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_webhook_require_timestamp",
+      "type": "filter",
+      "where": "includes/Quota/QuotaController.php:469",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_webhook_timestamp_tolerance",
+      "type": "filter",
+      "where": "includes/Quota/QuotaController.php:459",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_woo_package_assigned",
@@ -395,6 +948,13 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_pro_zip_reader_available",
+      "type": "filter",
+      "where": "includes/Documents/ZipEntryReader.php:83",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
       "name": "mvs_quota_render_mapping_fields",
       "type": "action",
       "args_count": 0,
@@ -417,6 +977,23 @@
       "args_signature": [],
       "where": "includes/Competitions/CompetitionsScheduler.php:153",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_pagination_max",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int"
+      ],
+      "where": "includes/Challenges/ChallengeController.php:93",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_require_auth",
+      "type": "filter",
+      "where": "includes/Documents/AppConfig.php:258",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_start_registered_tournaments",
@@ -526,333 +1103,11 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_active_layout",
+      "name": "mvs_upload_args",
       "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "$slug"
-      ],
-      "where": "includes/Frontend/Layouts/LayoutManager.php:119",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_moderation_terms",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "self::CATEGORIES"
-      ],
-      "where": "includes/Integrations/Anthropic/AIProvider.php:163",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_created_body",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "$body",
-        "$challenge_id",
-        "$args",
-        "$created_by"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:126",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_created_subject",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "$subject",
-        "$challenge_id",
-        "$args",
-        "$created_by"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:127",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_entry_body",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "$body",
-        "$challenge_id",
-        "$user_id",
-        "$media_id"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:171",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_entry_subject",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "$subject",
-        "$challenge_id",
-        "$user_id",
-        "$media_id"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:170",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_participant_body",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "$body",
-        "$challenge_id",
-        "$user_id"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:293",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_participant_subject",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "$subject",
-        "$challenge_id",
-        "$user_id"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:292",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_winner_body",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "$body",
-        "$challenge_id",
-        "$user_id",
-        "$rank"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:261",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_challenge_email_winner_subject",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "$subject",
-        "$challenge_id",
-        "$user_id",
-        "$rank"
-      ],
-      "where": "includes/Challenges/ChallengeNotificationListener.php:260",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_connectors",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array"
-      ],
-      "where": "includes/Connectors/ConnectorManager.php:57",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_query_args",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$mvs_query_args",
-        "string"
-      ],
-      "where": "templates/layouts/pinterest/feed-body.php:95",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_layout_config",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$config",
-        "$slug"
-      ],
-      "where": "includes/Frontend/Layouts/LayoutManager.php:93",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_layout_modes",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "self::MODES"
-      ],
-      "where": "includes/Frontend/Layouts/LayoutManager.php:139",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_layout_template_map",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$map",
-        "$this"
-      ],
-      "where": "includes/Frontend/Layouts/LayoutManager.php:162",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_openai_api_key",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "$key"
-      ],
-      "where": "includes/Integrations/Whisper/CaptionProvider.php:136",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_privacy_can_view",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "null",
-        "$album_id",
-        "$user_id",
-        "$album_privacy"
-      ],
-      "where": "includes/Privacy/PrivacyUIService.php:155",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_analytics_event_data",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "$event_data",
-        "$media_id",
-        "$event_type"
-      ],
-      "where": "includes/Analytics/AnalyticsService.php:117",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_analytics_summary",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "$overview",
-        "int",
-        "string"
-      ],
-      "where": "includes/Analytics/AnalyticsService.php:646",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_before_quota_check",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$args",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:537",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_collections_manage_url",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "$mvs_collections_url"
-      ],
-      "where": "includes/Core/Plugin.php:919",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_compete_points_url",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "$mvs_hub_page_id"
-      ],
-      "where": "templates/compete-hub-body.php:53",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_inject_compete_nav",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "bool"
-      ],
-      "where": "includes/Core/Plugin.php:856",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_leaderboard_cache_ttl",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "5 * MINUTE_IN_SECONDS"
-      ],
-      "where": "includes/REST/LeaderboardController.php:126",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_leaderboard_xp_rows",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "array",
-        "int",
-        "$window"
-      ],
-      "where": "includes/Leaderboard/LeaderboardService.php:79",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_default_applies_to_unassigned",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:263",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_revert_to_default_on_end",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool",
-        "$user_id",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:343",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_source",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$package",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:277",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_pagination_max",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int"
-      ],
-      "where": "includes/Challenges/ChallengeController.php:93",
-      "consumed_by": []
+      "where": "includes/",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_watermark_font_path",
@@ -866,14 +1121,18 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_captions_reaped",
-      "type": "action",
-      "args_count": 1,
-      "args_signature": [
-        "int $count"
-      ],
-      "where": "includes/Captions/TranscriptionService.php:365",
-      "consumed_by": []
+      "name": "mvs_watermark_text_opacity",
+      "type": "filter",
+      "where": "includes/Core/Watermarker.php:97",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_watermark_text_position",
+      "type": "filter",
+      "where": "includes/Core/Watermarker.php:94",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     }
   ],
   "generated": {

@@ -469,7 +469,16 @@ wp_interactivity_state(
 	?>
 	<div class="mvs-dashboard-rail-head">
 		<?php if ( $mvs_dash_profile_url ) : ?>
-			<a class="mvs-dashboard-rail-head__avatar-link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>">
+			<?php
+			// The link's accessible name cannot come from the image. `alt` is
+			// empty in the server render and filled by the Interactivity binding
+			// after hydration, so a screen reader meeting this link on first
+			// paint — or with JS unavailable — announces "link" and nothing
+			// else. The label is server-rendered for that reason, and it names
+			// the destination rather than repeating the avatar.
+			?>
+			<a class="mvs-dashboard-rail-head__avatar-link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>"
+				aria-label="<?php echo esc_attr( sprintf( /* translators: %s: member display name. */ __( 'View %s\'s profile', 'wpmediaverse' ), $mvs_current_user->display_name ) ); ?>">
 				<img class="mvs-dashboard-rail-head__avatar" data-wp-bind--src="context.avatarUrl"
 					alt="" data-wp-bind--alt="context.displayName" width="40" height="40" />
 			</a>
