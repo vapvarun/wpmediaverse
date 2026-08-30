@@ -81,7 +81,31 @@ Everything that looks like a way round it is worse:
 | A PECL ffmpeg extension | Abandoned; not installable on any host a customer will have. |
 | Obfuscate the call | Dynamic invocation is what malware looks like. Flagged harder, and risks WP.org removal. |
 
-### What DOES work, if the encoder must stay on the customer's server
+### The add-on split — RULED OUT by the owner, 2026-08-30
+
+Considered and rejected: putting the exec in a separate opt-in `wpmediaverse-encoder` plugin so the
+main plugins stay clean. The owner's call, and the reasoning is sound:
+
+> "it does not matter we keep it at main plugin or add on plugin, end of day it will be part of our
+> code"
+
+It reduces the blast radius from every install to only those who opted in, but it does not change
+what matters commercially: it is a Wbcom plugin being flagged as a possible backdoor, the support
+ticket still lands here, and the sentence a customer repeats is "the Wbcom plugin got flagged" —
+not which one.
+
+**The criterion is therefore not "is it our code".** The service is our code too, and so is a browser
+encoder. What scanners match is PHP process-execution primitives inside a plugin installed on the
+customer's site. Our code is fine anywhere it is not that.
+
+Which leaves exactly two shapes, both of them ours to write and neither of them flagged:
+
+1. **The encode-and-return service** (§10b) — our code, our server, plugin ships `wp_remote_post`.
+   **Chosen.**
+2. **The browser** (§10c) — our code, our JavaScript, no PHP process execution at all. Not planned,
+   and the pre-upload downscale is the shape worth revisiting.
+
+### (superseded) What would work if the encoder had to stay on the customer's server
 
 **A separate, optional add-on plugin.** Not a way round the flag — a way to scope who ever sees it.
 
