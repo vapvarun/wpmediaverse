@@ -1,7 +1,7 @@
 {
   "release_version": "2.4.0",
   "mode": "combo",
-  "ran_at": "2026-08-31T06:08:17Z",
+  "ran_at": "2026-08-31T06:43:02Z",
   "free_version": "2.4.0",
   "pro_version": "2.4.0",
   "sections": {
@@ -26,9 +26,9 @@
       "skipped": 29
     },
     "E_pro_smoke": {
-      "pass": 0,
+      "pass": 5,
       "fail": 0,
-      "skipped": 24
+      "skipped": 19
     },
     "F_cross_browser": {
       "pass": 1,
@@ -41,8 +41,10 @@
   "manual_required": [
     "Firefox Desktop: not run. Chromium desktop only.",
     "Safari iOS 390px: not run.",
-    "E_pro_smoke (24 rows): not walked this session.",
-    "C.member.grid-thumbnail-size: dashboard tiles observed at the large rung and cloud tiles bypass /serve by design, but the mvs_grid_thumb_size_key filter escape-hatch was NOT exercised. Recorded as skipped, not passed."
+    "E_pro_smoke: 19 of 24 rows not walked (video-intelligence, cloud-storage, ai-providers, watermarking, quota, instagram-feed, migration-importers, group-dm, collections-lifecycle, boosts, battles, challenges, tournaments end-to-end, privacy-pro-ui, gamification winners, and others). Each needs seeded fixtures, third-party credentials or a licensed key.",
+    "E.streaks.daily-check-bounded: PARTIAL - DAILY_BATCH_SIZE=100 and DAILY_MAX_PER_RUN=2000 confirmed in code, but the >2000-user drain was not seeded.",
+    "E.battles.win-xp-configured: PARTIAL - the mvs_pro_battle_win_xp option and its default of 100 are confirmed in Gamification settings; a full battle create/resolve XP assertion was not run.",
+    "C.member.grid-thumbnail-size: dashboard tiles observed at the large rung; the mvs_grid_thumb_size_key filter escape-hatch was NOT exercised."
   ],
   "environment_caveats": [
     "Host runs BuddyNext + BuddyPress. BuddyNext owns several MediaVerse routes and suppresses the chat panel (mvs_buddynext_active === true). Most customers do not run BuddyNext, so this walk does NOT certify the native path for those surfaces.",
@@ -71,11 +73,17 @@
     "A5": "default_privacy=public; signed_url_ttl resolves to 3600 via SignedUrlService::DEFAULT_TTL (the option row is unset, which is correct); chat_panel_visibility defaults to everywhere",
     "B1": "2.3.0 -> 2.4.0 with seeded data: db_version 25->30, tables 32->36, and an md5 checksum over (slug,title,privacy,view_count,reaction_count) is BYTE-IDENTICAL before and after. Favorites, album items and albums all preserved. No debug.log during the upgrade",
     "B2": "Pro option-prefix migration: mvs_boost_cost_per_100='777' -> mvs_pro_boost_cost_per_100='777' with the old key deleted; forcing a second run (flag cleared) left both values unchanged. Idempotent",
-    "B3": "Columns added by 2.4.0 are back-filled on rows created at 2.3.0: folder_id=0, drive_type='user', drive_id=0 - none left NULL"
+    "B3": "Columns added by 2.4.0 are back-filled on rows created at 2.3.0: folder_id=0, drive_type='user', drive_id=0 - none left NULL",
+    "E.competitions.cron-bounded": "FAILED, then FIXED. TournamentService::resolve_expired_matches() ran two queries with NO LIMIT and no ORDER BY while its four siblings were all capped at 50. Proven at runtime both directions: unbounded processed all 120 seeded matches in one tick; bounded processes 50 and drains (120 -> 70 -> 20). Fixed in Pro, CRON_BATCH_SIZE=50.",
+    "E.tournaments.sparse-bracket": "PASS - the case that previously fataled the whole feature. bracket_size=16 with 3 entries: no fatal, 2 matches, exactly 1 real, 1 bye, 0 both-null rows, status -> active. bracket_size=64 with 2 entries (max sparseness): no fatal, 1 match, 1 real, 0 both-null, status -> active.",
+    "E.streaks.freeze-proportional-cost": "PASS - 1 freeze over a 6-day gap (missed=5) RESETS the streak to 1 and does NOT consume the freeze, so a long lapse cannot be bridged cheaply. 3 freezes over a 4-day gap (missed=3) preserves the streak (10 -> 11) and consumes all 3.",
+    "E.compete-hub": "PASS - /compete/ returns 200 for an anonymous visitor with Battles, Challenges and Tournaments cards present and a log-in CTA, no fatal.",
+    "E.feature-toggle-degradation": "PASS - with battles/challenges/tournaments toggles set to 0, /compete/ and all three listing routes still return 200 with zero fatals rather than white-screening."
   },
   "found_and_fixed_during_walk": [
     "PHP Warning: Undefined variable $mvs_filter_tag / $mvs_filter_cat in templates/explore.php:402-403 on EVERY profile route (/media/@user/). Assigned inside `if ( ! $mvs_profile )` but read unconditionally. Fixed by hoisting the initialisation above the branch; re-walked to 0 warnings. This is why the report shows debug_log_issues: [] - the warning is fixed in the code being packaged, not omitted.",
-    "Runbook A1 acceptance was wrong in two ways and would have failed a correct install: it said 21 tables (actual 23) and that mvs_db_version equals MVS_VERSION (it is a schema integer, 30). Corrected in AGENT_SMOKE_RUNBOOK.md."
+    "Runbook A1 acceptance was wrong in two ways and would have failed a correct install: it said 21 tables (actual 23) and that mvs_db_version equals MVS_VERSION (it is a schema integer, 30). Corrected in AGENT_SMOKE_RUNBOOK.md.",
+    "TournamentService::resolve_expired_matches() ran two UNBOUNDED cron queries and resolved every expired match in a single tick, each resolution advancing a bracket and notifying players. A timeout part-way through would leave brackets half-advanced with no signal. Now capped at 50 like its four siblings; mutation-proven both directions."
   ],
   "hosts": {
     "primary": "mediaverse.local (Local, BuddyX+BuddyNext+BuddyPress, BunnyCDN driver) \u2014 sections C, D, F",
