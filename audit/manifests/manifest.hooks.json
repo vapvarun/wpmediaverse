@@ -568,6 +568,18 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_can_comment",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $can",
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Social/CommentService.php:199",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_can_repair_thumb",
       "type": "filter",
       "args_count": 4,
@@ -785,16 +797,14 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_dashboard_tab_registry",
+      "name": "mvs_dashboard_sections",
       "type": "filter",
       "args_count": 1,
       "args_signature": [
-        "array $tabs"
+        "array $sections"
       ],
-      "where": "templates/partials/dashboard-content.php:481",
-      "consumed_by": [
-        "Core\\Plugin::register_documents_tab"
-      ]
+      "where": "includes/Core/DashboardSections.php:95",
+      "consumed_by": []
     },
     {
       "name": "mvs_dashboard_tabs",
@@ -821,6 +831,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_default_privacy",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $privacy"
+      ],
+      "where": "includes/Core/SettingsHelper.php:319",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_default_thumbnail_style",
       "type": "filter",
       "args_count": 1,
@@ -838,6 +858,16 @@
         "string $default"
       ],
       "where": "includes/Core/TemplateHelpers.php:535",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dismissible_notices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array<string,string> $notices"
+      ],
+      "where": "includes/REST/Controller/UserController.php:501",
       "consumed_by": []
     },
     {
@@ -926,6 +956,18 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_document_admin_main_panels",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "array $row"
+      ],
+      "where": "templates/admin/document-single.php:145",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_document_admin_panels",
       "type": "filter",
       "args_count": 3,
@@ -949,6 +991,32 @@
       "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:can_grant()",
       "consumed_by": [],
       "note": "D1 seam for non-personal drives. DEFAULTS FALSE so an unanswered filter denies rather than opening sharing to every member of a space."
+    },
+    {
+      "name": "mvs_document_drive_access",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $level",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/PrivacyService.php:133",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_drive_successor",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "int $successor",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/UserDeletionService.php:73",
+      "consumed_by": []
     },
     {
       "name": "mvs_document_folder_created",
@@ -987,6 +1055,17 @@
       "note": "Fires after a folder and its subtree are trashed."
     },
     {
+      "name": "mvs_document_location_label",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $label",
+        "int $media_id"
+      ],
+      "where": "templates/media-single.php:232",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_document_max_depth",
       "type": "filter",
       "args_count": 1,
@@ -1010,6 +1089,31 @@
       "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:owns_drive()",
       "consumed_by": [],
       "note": "Space-drive ownership seam, resolved once per drive per request. Defaults false."
+    },
+    {
+      "name": "mvs_document_privacy_labels",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $labels",
+        "string $context"
+      ],
+      "where": "includes/Core/Plugin.php:2011",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_reassigned",
+      "type": "action",
+      "args_count": 5,
+      "args_signature": [
+        "int $media_id",
+        "int $successor",
+        "int $user_id",
+        "string $drive_type",
+        "int $drive_id"
+      ],
+      "where": "includes/Services/UserDeletionService.php:125",
+      "consumed_by": []
     },
     {
       "name": "mvs_document_row_actions",
@@ -1050,6 +1154,28 @@
       ]
     },
     {
+      "name": "mvs_documents_drive_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "string $drive_type",
+        "array $args"
+      ],
+      "where": "includes/Shortcodes/Shortcodes.php:877",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_documents_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php:1943",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_explore_query_args",
       "type": "filter",
       "args_count": 2,
@@ -1058,6 +1184,16 @@
         "mixed $profile"
       ],
       "where": "templates/explore.php:268",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_explore_tag_cloud_limit",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $limit"
+      ],
+      "where": "templates/explore.php:240",
       "consumed_by": []
     },
     {
@@ -1110,16 +1246,6 @@
         "array $options"
       ],
       "where": "includes/REST/Controller/MediaController.php:1844",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ffmpeg_binary",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $binary"
-      ],
-      "where": "includes/Services/PosterService.php:120",
       "consumed_by": []
     },
     {
@@ -1178,6 +1304,19 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_has_custom_avatar",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $has",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Seam for other avatar providers. Nothing in the avatar chain distinguishes a photograph from a generated placeholder (core found_avatar is set by both), so the owner of the avatar answers. Basecamp 10252323883."
+    },
+    {
       "name": "mvs_hide_submenu_slugs",
       "type": "filter",
       "args_count": 1,
@@ -1226,6 +1365,16 @@
       "args_count": 2,
       "args_signature": [],
       "where": "includes/Core/TemplateHelpers.php:580",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_managed_caps",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array<string,string> $caps"
+      ],
+      "where": "includes/Admin/Settings/PermissionsManager.php:99",
       "consumed_by": []
     },
     {
@@ -1278,32 +1427,19 @@
       ]
     },
     {
-      "name": "mvs_media_trashed",
-      "type": "action",
-      "args_count": 3,
+      "name": "mvs_media_drive_access",
+      "type": "filter",
+      "args_count": 4,
       "args_signature": [
-        "int $media_id",
-        "int $author_id",
-        "string $permalink"
+        "string $level",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
       ],
-      "where": "includes/Repository/MediaRepository.php",
+      "where": "includes/Services/PrivacyService.php",
       "consumed_by": [],
       "since": "2.4.0",
-      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
-    },
-    {
-      "name": "mvs_media_restored",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $media_id",
-        "int $author_id",
-        "string $permalink"
-      ],
-      "where": "includes/Repository/MediaRepository.php",
-      "consumed_by": [],
-      "since": "2.4.0",
-      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
+      "note": "Media-specific twin of mvs_document_drive_access, whose answer is its default so the seam is additive. Governs BOTH the placement gate and the space read gate, deliberately: if the two disagreed, media would be stored scoped to a drive its members could not read. Basecamp 10252314484."
     },
     {
       "name": "mvs_media_feed_allows_documents",
@@ -1428,6 +1564,20 @@
       ]
     },
     {
+      "name": "mvs_media_restored",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "string $permalink"
+      ],
+      "where": "includes/Repository/MediaRepository.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
+    },
+    {
       "name": "mvs_media_shared",
       "type": "action",
       "args_count": 3,
@@ -1453,6 +1603,20 @@
         "wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
       ],
       "added": "2.1.0"
+    },
+    {
+      "name": "mvs_media_trashed",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "string $permalink"
+      ],
+      "where": "includes/Repository/MediaRepository.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
     },
     {
       "name": "mvs_media_type_for_mime",
@@ -1791,6 +1955,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_privacy_levels",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array<int,string> $levels"
+      ],
+      "where": "includes/Services/PrivacyService.php:52",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_document_extraction_enabled",
       "type": "filter",
       "args_count": 1,
@@ -1809,6 +1983,18 @@
         "int $user_id"
       ],
       "where": "includes/Services/ProfileService.php:119",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_profile_documents_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $owner_id",
+        "int $viewer_id"
+      ],
+      "where": "includes/Integrations/BuddyPress/ProfileTabIntegration.php:262",
       "consumed_by": []
     },
     {
@@ -1906,6 +2092,30 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_push_send",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "array $tokens",
+        "array $payload"
+      ],
+      "where": "includes/Social/PushService.php:243",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_push_should_send",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $should_send",
+        "int $user_id",
+        "string $type"
+      ],
+      "where": "includes/Social/PushService.php:213",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_reaction_added",
       "type": "action",
       "args_count": 3,
@@ -1939,6 +2149,18 @@
         "string $action"
       ],
       "where": "includes/REST/Controller/ReactionController.php:191",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_redirect_documents",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $redirect",
+        "int $media_id",
+        "string $redirect_url"
+      ],
+      "where": "includes/Core/TemplateLoader.php:643",
       "consumed_by": []
     },
     {
@@ -2431,19 +2653,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_has_custom_avatar",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $has",
-        "int $user_id"
-      ],
-      "where": "includes/Services/ProfileService.php",
-      "consumed_by": [],
-      "since": "2.4.0",
-      "note": "Seam for other avatar providers. Nothing in the avatar chain distinguishes a photograph from a generated placeholder (core found_avatar is set by both), so the owner of the avatar answers. Basecamp 10252323883."
-    },
-    {
       "name": "mvs_user_badge_html",
       "type": "filter",
       "args_count": 2,
@@ -2463,6 +2672,17 @@
         "int $blocked_id"
       ],
       "where": "includes/Social/ReportService.php:252",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_can_use_documents",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $can",
+        "int $user_id"
+      ],
+      "where": "includes/Core/Plugin.php:2085",
       "consumed_by": []
     },
     {
@@ -2627,21 +2847,6 @@
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
       "consumed_by": []
-    },
-    {
-      "name": "mvs_media_drive_access",
-      "type": "filter",
-      "args_count": 4,
-      "args_signature": [
-        "string $level",
-        "string $drive_type",
-        "int $drive_id",
-        "int $user_id"
-      ],
-      "where": "includes/Services/PrivacyService.php",
-      "consumed_by": [],
-      "since": "2.4.0",
-      "note": "Media-specific twin of mvs_document_drive_access, whose answer is its default so the seam is additive. Governs BOTH the placement gate and the space read gate, deliberately: if the two disagreed, media would be stored scoped to a drive its members could not read. Basecamp 10252314484."
     }
   ],
   "generated": {
@@ -2823,6 +3028,31 @@
       ],
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
     },
-    "refresh_2026_08_01": "2.3.0 baseline: +4 Auth-module hooks (see manifest.json .generated.refresh_2026_08_01_v230_baseline)"
+    "refresh_2026_08_01": "2.3.0 baseline: +4 Auth-module hooks (see manifest.json .generated.refresh_2026_08_01_v230_baseline)",
+    "refresh_2026_09_01": {
+      "scope": "targeted delta — hooks only, verified by grepping every apply_filters/do_action call in both plugins against this file, in BOTH directions",
+      "method": "agent enumeration + bidirectional diff. The write-manifest.mjs generator is NOT usable on this plugin (see CLAUDE.md) and was not run.",
+      "branch": "2.4.0",
+      "plugin_version": "2.4.0",
+      "hooks_fired_total": 262,
+      "added": 20,
+      "removed": [
+        "mvs_ffmpeg_binary — the FFmpeg transcoding path was removed in 2.4.0 (commit c96415ba); the filter no longer exists and advertising it was false",
+        "mvs_dashboard_tab_registry — renamed to mvs_dashboard_sections in the 2.4.0 My Media sections rework; the old name fires nowhere"
+      ],
+      "known_exclusions": {
+        "mvs_settings_render_{renderer}": "dynamic hook, recorded under its braced documentation form rather than the literal prefix",
+        "action_scheduler_actions": [
+          "mvs_activate_scheduled_challenges",
+          "mvs_close_challenge_entries",
+          "mvs_finalize_expired_challenges",
+          "mvs_resolve_expired_matches",
+          "mvs_start_registered_tournaments"
+        ],
+        "action_scheduler_note": "scheduled in Pro Core/Plugin.php and fired by Action Scheduler, so they carry no literal do_action call site in our source. Real hooks, deliberately kept.",
+        "mvs_rest_public_namespaces": "asserted by Pro tests/unit/AnonymousLinkGuardsTest.php D4 as a guard against a FUTURE exemption. Nothing fires it today, so it is deliberately not listed as fired."
+      },
+      "verification": "0 hooks fired in code missing from a manifest; 0 hooks in a manifest fired nowhere."
+    }
   }
 }
