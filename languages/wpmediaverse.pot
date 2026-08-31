@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 2.4.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-08-14 15:58:30+00:00\n"
+"POT-Creation-Date: 2026-08-31 03:51:48+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -37,11 +37,13 @@ msgid "48"
 msgstr ""
 
 #: build/blocks/album-viewer/render.php:33
+#: build/blocks/blocks/album-viewer/render.php:33
 #: src/blocks/album-viewer/render.php:33 templates/404.php:43
 msgid "Album not found"
 msgstr ""
 
 #: build/blocks/album-viewer/render.php:35
+#: build/blocks/blocks/album-viewer/render.php:35
 #: src/blocks/album-viewer/render.php:35
 msgid ""
 "This block points at an album that no longer exists. Pick another album in "
@@ -49,115 +51,135 @@ msgid ""
 msgstr ""
 
 #: build/blocks/album-viewer/render.php:36
+#: build/blocks/blocks/album-viewer/render.php:36
 #: src/blocks/album-viewer/render.php:36
 msgid "Choose an album in the block settings to display it here."
 msgstr ""
 
 #: build/blocks/album-viewer/render.php:137
+#: build/blocks/blocks/album-viewer/render.php:137
 #: src/blocks/album-viewer/render.php:137
 msgid "Empty album"
 msgstr ""
 
 #: build/blocks/album-viewer/render.php:138
+#: build/blocks/blocks/album-viewer/render.php:138
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:232
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:248
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:363
 #: src/blocks/album-viewer/render.php:138 templates/album.php:340
 msgid "This album is empty."
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:72
 #: build/blocks/explore-feed/render.php:72
 #: src/blocks/explore-feed/render.php:72
 msgid "Couldn’t load more. Tap to retry."
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:73
 #: build/blocks/explore-feed/render.php:73
 #: src/blocks/explore-feed/render.php:73
 msgid "(untitled)"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:107
 #: build/blocks/explore-feed/render.php:107
-#: includes/Admin/MediaListPage.php:192 includes/Core/Plugin.php:1449
-#: src/blocks/explore-feed/render.php:107 templates/explore.php:181
+#: includes/Admin/MediaListPage.php:192 includes/Core/Plugin.php:1483
+#: src/blocks/explore-feed/render.php:107 templates/explore.php:197
 msgid "Search media..."
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:108
 #: build/blocks/explore-feed/render.php:108
-#: src/blocks/explore-feed/render.php:108 templates/explore.php:180
+#: src/blocks/explore-feed/render.php:108 templates/explore.php:196
 msgid "Search media"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:138
 #: build/blocks/explore-feed/render.php:138
 #: includes/Admin/MediaListPage.php:292 src/blocks/explore-feed/render.php:138
-#: templates/documents.php:97 templates/explore.php:232
+#: templates/documents.php:80 templates/explore.php:257
 #: templates/partials/chat-list.php:33
 msgid "All"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:139
 #: build/blocks/explore-feed/render.php:139
-#: includes/Admin/Settings/FieldRenderer.php:96
+#: includes/Admin/Settings/FieldRenderer.php:158
 #: src/blocks/explore-feed/render.php:139
 msgid "Images"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:140
 #: build/blocks/explore-feed/render.php:140
 #: includes/Admin/CollectionMetaBox.php:222
-#: includes/Admin/Settings/FieldRenderer.php:102 includes/Core/Plugin.php:1204
-#: includes/Core/Plugin.php:2382 includes/Messaging/MessagingService.php:2024
+#: includes/Admin/Settings/FieldRenderer.php:164 includes/Core/Plugin.php:1238
+#: includes/Core/Plugin.php:2434 includes/Messaging/MessagingService.php:2064
 #: src/blocks/explore-feed/render.php:140
-#: templates/partials/dashboard-content.php:198
+#: templates/partials/dashboard-content.php:188
 #: templates/partials/usage-history.php:30
 msgid "Video"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:141
 #: build/blocks/explore-feed/render.php:141
 #: includes/Admin/CollectionMetaBox.php:223
-#: includes/Admin/Settings/FieldRenderer.php:106 includes/Core/Plugin.php:2383
-#: includes/Messaging/MessagingService.php:2025
+#: includes/Admin/Settings/FieldRenderer.php:168 includes/Core/Plugin.php:2435
+#: includes/Messaging/MessagingService.php:2065
 #: src/blocks/explore-feed/render.php:141
-#: templates/partials/dashboard-content.php:199
+#: templates/partials/dashboard-content.php:189
 #: templates/partials/usage-history.php:31
 msgid "Audio"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:180
 #: build/blocks/explore-feed/render.php:180
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:472
-#: src/blocks/explore-feed/render.php:180 templates/explore.php:514
-#: templates/partials/dashboard-content.php:768
-#: templates/partials/dashboard-content.php:869
-#: templates/partials/dashboard-content.php:971
-#: templates/partials/dashboard-content.php:1084
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:488
+#: src/blocks/explore-feed/render.php:180 templates/explore.php:615
+#: templates/partials/dashboard-content.php:874
+#: templates/partials/dashboard-content.php:977
+#: templates/partials/dashboard-content.php:1081
+#: templates/partials/dashboard-content.php:1196
 msgid "Load More"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:181
 #: build/blocks/explore-feed/render.php:181
 #: src/blocks/explore-feed/render.php:181
 #: templates/partials/chat-conversation.php:43
 msgid "Loading..."
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:189
+#: build/blocks/blocks/media-grid/render.php:297
 #: build/blocks/explore-feed/render.php:189
 #: build/blocks/media-grid/render.php:297 includes/Admin/MediaListPage.php:237
 #: src/blocks/explore-feed/render.php:189 src/blocks/media-grid/render.php:297
-#: templates/partials/dashboard-content.php:760
+#: templates/partials/dashboard-content.php:866
 msgid "No media yet"
 msgstr ""
 
+#: build/blocks/blocks/explore-feed/render.php:190
+#: build/blocks/blocks/media-grid/render.php:298
 #: build/blocks/explore-feed/render.php:190
 #: build/blocks/media-grid/render.php:298
 #: src/blocks/explore-feed/render.php:190 src/blocks/media-grid/render.php:298
 msgid "No media items found."
 msgstr ""
 
+#: build/blocks/blocks/lock-overlay/render.php:19
 #: build/blocks/lock-overlay/render.php:19
 #: src/blocks/lock-overlay/render.php:19
 msgid "Restricted Content"
 msgstr ""
 
+#: build/blocks/blocks/lock-overlay/render.php:121
 #: build/blocks/lock-overlay/render.php:121
 #: src/blocks/lock-overlay/render.php:121
 msgid "Log in to View"
 msgstr ""
 
+#: build/blocks/blocks/lock-overlay/render.php:125
 #: build/blocks/lock-overlay/render.php:125
 #: src/blocks/lock-overlay/render.php:125
 msgid ""
@@ -165,26 +187,31 @@ msgid ""
 "access."
 msgstr ""
 
+#: build/blocks/blocks/media-grid/render.php:271
 #: build/blocks/media-grid/render.php:271 src/blocks/media-grid/render.php:271
 #. translators: 1: current page, 2: total pages
 msgid "Page %1$d of %2$d (%3$d items)"
 msgstr ""
 
+#: build/blocks/blocks/media-grid/render.php:281
 #: build/blocks/media-grid/render.php:281 src/blocks/media-grid/render.php:281
-#: templates/documents.php:256 templates/partials/shared-ui-frame.php:359
+#: templates/documents.php:237 templates/partials/shared-ui-frame.php:446
 msgid "Previous"
 msgstr ""
 
+#: build/blocks/blocks/media-grid/render.php:282
 #: build/blocks/media-grid/render.php:282 src/blocks/media-grid/render.php:282
-#: templates/documents.php:273 templates/partials/shared-ui-frame.php:376
+#: templates/documents.php:254 templates/partials/shared-ui-frame.php:469
 msgid "Next"
 msgstr ""
 
+#: build/blocks/blocks/media-player/render.php:30
 #: build/blocks/media-player/render.php:30 includes/Admin/MediaListPage.php:678
-#: includes/Admin/MediaListPage.php:1355 src/blocks/media-player/render.php:30
+#: includes/Admin/MediaListPage.php:1360 src/blocks/media-player/render.php:30
 msgid "Media not found"
 msgstr ""
 
+#: build/blocks/blocks/media-player/render.php:32
 #: build/blocks/media-player/render.php:32
 #: src/blocks/media-player/render.php:32
 msgid ""
@@ -192,16 +219,19 @@ msgid ""
 "block settings."
 msgstr ""
 
+#: build/blocks/blocks/media-player/render.php:33
 #: build/blocks/media-player/render.php:33
 #: src/blocks/media-player/render.php:33
 msgid "Choose a video or audio item in the block settings to play it here."
 msgstr ""
 
+#: build/blocks/blocks/media-player/render.php:66
 #: build/blocks/media-player/render.php:66
 #: src/blocks/media-player/render.php:66
 msgid "Not a playable item"
 msgstr ""
 
+#: build/blocks/blocks/media-player/render.php:67
 #: build/blocks/media-player/render.php:67
 #: src/blocks/media-player/render.php:67
 msgid ""
@@ -209,105 +239,123 @@ msgid ""
 "display an image."
 msgstr ""
 
+#: build/blocks/blocks/media-player/render.php:159
 #: build/blocks/media-player/render.php:159
 #: src/blocks/media-player/render.php:159 templates/media-single.php:450
-#: templates/partials/shared-ui-frame.php:487
+#: templates/partials/shared-ui-frame.php:580
 msgid "Download"
 msgstr ""
 
+#: build/blocks/blocks/media-stats/render.php:100
 #: build/blocks/media-stats/render.php:100
 #: includes/Services/GDPRService.php:165 src/blocks/media-stats/render.php:100
 msgid "Media Items"
 msgstr ""
 
+#: build/blocks/blocks/media-stats/render.php:106
+#: build/blocks/blocks/media-stats/render.php:150
 #: build/blocks/media-stats/render.php:106
 #: build/blocks/media-stats/render.php:150 includes/Admin/StatsPage.php:346
-#: includes/Core/Plugin.php:1208 src/blocks/media-stats/render.php:106
-#: src/blocks/media-stats/render.php:150 templates/explore.php:399
+#: includes/Core/Plugin.php:1242 src/blocks/media-stats/render.php:106
+#: src/blocks/media-stats/render.php:150 templates/explore.php:424
 msgid "Views"
 msgstr ""
 
+#: build/blocks/blocks/media-stats/render.php:113
 #: build/blocks/media-stats/render.php:113
 #: src/blocks/media-stats/render.php:113
 msgid "Downloads"
 msgstr ""
 
+#: build/blocks/blocks/media-stats/render.php:120
+#: build/blocks/blocks/media-stats/render.php:151
 #: build/blocks/media-stats/render.php:120
 #: build/blocks/media-stats/render.php:151 includes/Admin/StatsPage.php:324
 #: includes/Admin/StatsPage.php:347 includes/Privacy/MemberDataMap.php:77
 #: includes/Services/GDPRService.php:232 src/blocks/media-stats/render.php:120
-#: src/blocks/media-stats/render.php:151 templates/media-single.php:588
-#: templates/partials/shared-ui-frame.php:413
+#: src/blocks/media-stats/render.php:151 templates/media-single.php:591
+#: templates/partials/shared-ui-frame.php:506
 msgid "Reactions"
 msgstr ""
 
+#: build/blocks/blocks/media-stats/render.php:145
 #: build/blocks/media-stats/render.php:145
 #: src/blocks/media-stats/render.php:145
 msgid "Top Media"
 msgstr ""
 
+#: build/blocks/blocks/media-stats/render.php:149
 #: build/blocks/media-stats/render.php:149 includes/Admin/MediaListPage.php:206
-#: includes/Admin/MediaListPage.php:254 includes/Admin/MediaListPage.php:1458
+#: includes/Admin/MediaListPage.php:254 includes/Admin/MediaListPage.php:1463
 #: includes/Admin/ModerationQueue.php:358 includes/Admin/OverviewPage.php:396
 #: includes/Admin/StatsPage.php:345 includes/Admin/TagManagementPage.php:687
 #: includes/Services/GDPRService.php:169 src/blocks/media-stats/render.php:149
 #: templates/admin/document-single.php:65 templates/admin/documents.php:145
 #: templates/admin/documents.php:174 templates/album.php:168
-#: templates/documents.php:158 templates/explore.php:398
-#: templates/media-single.php:719 templates/partials/dashboard-content.php:1114
-#: templates/partials/dashboard-content.php:1215
-#: templates/partials/dashboard-content.php:1310
-#: templates/partials/shared-ui-frame.php:270
+#: templates/documents.php:141 templates/explore.php:423
+#: templates/media-single.php:722 templates/partials/dashboard-content.php:1226
+#: templates/partials/dashboard-content.php:1327
+#: templates/partials/dashboard-content.php:1422
+#: templates/partials/shared-ui-frame.php:331
 msgid "Title"
 msgstr ""
 
+#: build/blocks/blocks/media-upload/render.php:20
 #: build/blocks/media-upload/render.php:20
 #: src/blocks/media-upload/render.php:20
 msgid "Log in to upload"
 msgstr ""
 
+#: build/blocks/blocks/media-upload/render.php:21
 #: build/blocks/media-upload/render.php:21
 #: src/blocks/media-upload/render.php:21
 msgid "You need an account to share media."
 msgstr ""
 
+#: build/blocks/blocks/media-upload/render.php:25
 #: build/blocks/media-upload/render.php:25
 #: src/blocks/media-upload/render.php:25
 msgid "Log in"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:85
-#: includes/Shortcodes/Shortcodes.php:708 src/blocks/media-upload/render.php:85
+#: build/blocks/blocks/media-upload/render.php:97
+#: build/blocks/media-upload/render.php:97
+#: includes/Shortcodes/Shortcodes.php:708 src/blocks/media-upload/render.php:97
 #: templates/partials/profile-edit-panel.php:72 templates/profile-edit.php:122
 msgid "Uploading..."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:86
-#: src/blocks/media-upload/render.php:86
+#: build/blocks/blocks/media-upload/render.php:98
+#: build/blocks/media-upload/render.php:98
+#: src/blocks/media-upload/render.php:98
 msgid "Upload 1 file"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:88
-#: src/blocks/media-upload/render.php:88
+#: build/blocks/blocks/media-upload/render.php:100
+#: build/blocks/media-upload/render.php:100
+#: src/blocks/media-upload/render.php:100
 #. translators: %d: number of files.
 msgid "Upload %d files"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:90
-#: src/blocks/media-upload/render.php:90
+#: build/blocks/blocks/media-upload/render.php:102
+#: build/blocks/media-upload/render.php:102
+#: src/blocks/media-upload/render.php:102
 #. translators: %d: number of files.
 msgid "Uploading %d file(s)..."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:91
-#: src/blocks/media-upload/render.php:91
+#: build/blocks/blocks/media-upload/render.php:103
+#: build/blocks/media-upload/render.php:103
+#: src/blocks/media-upload/render.php:103
 msgid "Upload limit reached. Please upgrade your plan."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:93 includes/Core/Plugin.php:1529
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:378
-#: src/blocks/media-upload/render.php:93
-#: templates/partials/dashboard-content.php:223
+#: build/blocks/blocks/media-upload/render.php:105
+#: build/blocks/media-upload/render.php:105 includes/Core/Plugin.php:1563
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:394
+#: src/blocks/media-upload/render.php:105
+#: templates/partials/dashboard-content.php:213
 #. translators: %1$d: current file number, %2$d: total number of files.
 #. translators: 1: current file number, 2: total files
 #. translators: 1: current file number, 2: total files.
@@ -316,163 +364,201 @@ msgstr ""
 msgid "Uploading %1$d of %2$d..."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:95
-#: src/blocks/media-upload/render.php:95
+#: build/blocks/blocks/media-upload/render.php:107
+#: build/blocks/media-upload/render.php:107
+#: src/blocks/media-upload/render.php:107
 #. translators: %s: file name.
 msgid "Upload failed for %s."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:97
-#: src/blocks/media-upload/render.php:97
+#: build/blocks/blocks/media-upload/render.php:109
+#: build/blocks/media-upload/render.php:109
+#: src/blocks/media-upload/render.php:109
 #. translators: %s: file name.
 msgid "Network error uploading %s."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:99
-#: src/blocks/media-upload/render.php:99
+#: build/blocks/blocks/media-upload/render.php:111
+#: build/blocks/media-upload/render.php:111
+#: src/blocks/media-upload/render.php:111
 #. translators: %d: number of files uploaded.
 msgid "%d file(s) uploaded successfully!"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:101
-#: src/blocks/media-upload/render.php:101
-#: templates/partials/dashboard-content.php:227
+#: build/blocks/blocks/media-upload/render.php:113
+#: build/blocks/media-upload/render.php:113
+#: src/blocks/media-upload/render.php:113
+#: templates/partials/dashboard-content.php:217
 #. translators: %1$d: number uploaded, %2$d: total number of files.
 #. translators: 1: uploaded count, 2: total files.
 msgid "%1$d of %2$d file(s) uploaded."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:103
-#: src/blocks/media-upload/render.php:103
+#: build/blocks/blocks/media-upload/render.php:115
+#: build/blocks/media-upload/render.php:115
+#: src/blocks/media-upload/render.php:115
 #. translators: %1$d: number of duplicate files, %2$d: existing media ID.
 msgid ""
 "%1$d duplicate file(s) detected. Existing media #%2$d already contains this "
 "content."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:104
-#: src/blocks/media-upload/render.php:104
+#: build/blocks/blocks/media-upload/render.php:116
+#: build/blocks/media-upload/render.php:116
+#: src/blocks/media-upload/render.php:116
 msgid "images, videos, and audio files"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:106
-#: src/blocks/media-upload/render.php:106
+#: build/blocks/blocks/media-upload/render.php:118
+#: build/blocks/media-upload/render.php:118
+#: src/blocks/media-upload/render.php:118
 #. translators: %1$s: rejected file names, %2$s: supported formats.
 msgid "File type not allowed: %1$s. Supported formats: %2$s."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:148
-#: src/blocks/media-upload/render.php:148
-#: templates/partials/shared-ui-frame.php:170
+#: build/blocks/blocks/media-upload/render.php:160
+#: build/blocks/media-upload/render.php:160
+#: src/blocks/media-upload/render.php:160
+#: templates/partials/shared-ui-frame.php:230
 msgid "Drag & drop files here or click to browse"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:150
-#: src/blocks/media-upload/render.php:150
+#: build/blocks/blocks/media-upload/render.php:162
+#: build/blocks/media-upload/render.php:162
+#: src/blocks/media-upload/render.php:162
 msgid "Choose files to upload"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:164
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:338
-#: src/blocks/media-upload/render.php:164
+#: build/blocks/blocks/media-upload/render.php:176
+#: build/blocks/media-upload/render.php:176
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:354
+#: src/blocks/media-upload/render.php:176
 msgid "Who can see this media"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:165
+#: build/blocks/blocks/media-upload/render.php:177
+#: build/blocks/media-upload/render.php:177
 #: includes/Integrations/BuddyPress/ActivityFormIntegration.php:78
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:339
-#: src/blocks/media-upload/render.php:165
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:355
+#: src/blocks/media-upload/render.php:177
 msgid "Public: anyone can see"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:166
+#: build/blocks/blocks/media-upload/render.php:178
+#: build/blocks/media-upload/render.php:178
 #: includes/Integrations/BuddyPress/ActivityFormIntegration.php:79
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:340
-#: src/blocks/media-upload/render.php:166
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:356
+#: src/blocks/media-upload/render.php:178
 msgid "Members: logged-in users only"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:168
+#: build/blocks/blocks/media-upload/render.php:180
+#: build/blocks/media-upload/render.php:180
 #: includes/Integrations/BuddyPress/ActivityFormIntegration.php:81
-#: src/blocks/media-upload/render.php:168
+#: src/blocks/media-upload/render.php:180
 msgid "Friends: BuddyPress friends only"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:170
+#: build/blocks/blocks/media-upload/render.php:182
+#: build/blocks/media-upload/render.php:182
 #: includes/Integrations/BuddyPress/ActivityFormIntegration.php:83
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:344
-#: src/blocks/media-upload/render.php:170
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:360
+#: src/blocks/media-upload/render.php:182
 msgid "Only me: hidden from everyone else"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:177
-#: build/blocks/media-upload/render.php:178
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:329
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:330
-#: src/blocks/media-upload/render.php:177
-#: src/blocks/media-upload/render.php:178
-#: templates/partials/dashboard-content.php:622
-#: templates/partials/shared-ui-frame.php:200
+#: build/blocks/blocks/media-upload/render.php:191
+#: build/blocks/media-upload/render.php:191
+#: src/blocks/media-upload/render.php:191
+#. translators: %s: link to the member's Documents library.
+msgid "Looking to upload a document? Use your %s."
+msgstr ""
+
+#: build/blocks/blocks/media-upload/render.php:192
+#: build/blocks/media-upload/render.php:192
+#: src/blocks/media-upload/render.php:192
+msgid "Documents library"
+msgstr ""
+
+#: build/blocks/blocks/media-upload/render.php:200
+#: build/blocks/blocks/media-upload/render.php:201
+#: build/blocks/media-upload/render.php:200
+#: build/blocks/media-upload/render.php:201
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:345
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:346
+#: src/blocks/media-upload/render.php:200
+#: src/blocks/media-upload/render.php:201
+#: templates/partials/dashboard-content.php:720
+#: templates/partials/shared-ui-frame.php:261
 msgid "Title (optional)"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:181
-#: build/blocks/media-upload/render.php:182
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:404
-#: src/blocks/media-upload/render.php:181
-#: src/blocks/media-upload/render.php:182
-#: templates/partials/dashboard-content.php:624
-#: templates/partials/shared-ui-frame.php:203
+#: build/blocks/blocks/media-upload/render.php:204
+#: build/blocks/blocks/media-upload/render.php:205
+#: build/blocks/media-upload/render.php:204
+#: build/blocks/media-upload/render.php:205
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:420
+#: src/blocks/media-upload/render.php:204
+#: src/blocks/media-upload/render.php:205
+#: templates/partials/dashboard-content.php:723
+#: templates/partials/shared-ui-frame.php:264
 msgid "Description (optional)"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:185
-#: build/blocks/media-upload/render.php:186
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:335
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:336
-#: src/blocks/media-upload/render.php:185
-#: src/blocks/media-upload/render.php:186
-#: templates/partials/dashboard-content.php:627
-#: templates/partials/shared-ui-frame.php:206
+#: build/blocks/blocks/media-upload/render.php:208
+#: build/blocks/blocks/media-upload/render.php:209
+#: build/blocks/media-upload/render.php:208
+#: build/blocks/media-upload/render.php:209
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:351
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:352
+#: src/blocks/media-upload/render.php:208
+#: src/blocks/media-upload/render.php:209
+#: templates/partials/dashboard-content.php:727
+#: templates/partials/shared-ui-frame.php:267
 msgid "Tags (comma separated)"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:191
-#: src/blocks/media-upload/render.php:191
+#: build/blocks/blocks/media-upload/render.php:214
+#: build/blocks/media-upload/render.php:214
+#: src/blocks/media-upload/render.php:214
 msgid "Also share as a story (visible for 24 hours)"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:198
-#: src/blocks/media-upload/render.php:198
-#: templates/partials/dashboard-content.php:644
+#: build/blocks/blocks/media-upload/render.php:221
+#: build/blocks/media-upload/render.php:221
+#: src/blocks/media-upload/render.php:221
+#: templates/partials/dashboard-content.php:745
 msgid "Add details above (optional), then upload."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:201 includes/Core/Plugin.php:1416
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:350
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:409
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:620
-#: src/blocks/media-upload/render.php:201 templates/album.php:196
-#: templates/album.php:222 templates/album.php:386
-#: templates/media-single.php:784 templates/media-single.php:831
-#: templates/media-single.php:876 templates/partials/chat-composer.php:72
-#: templates/partials/dashboard-content.php:655
-#: templates/partials/dashboard-content.php:1191
-#: templates/partials/dashboard-content.php:1286
-#: templates/partials/dashboard-content.php:1375
-#: templates/partials/dashboard-content.php:1399
+#: build/blocks/blocks/media-upload/render.php:224
+#: build/blocks/media-upload/render.php:224 includes/Core/Plugin.php:1450
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:366
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:425
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:636
+#: src/blocks/media-upload/render.php:224 templates/album.php:196
+#: templates/album.php:222 templates/media-single.php:787
+#: templates/media-single.php:834 templates/partials/chat-composer.php:72
+#: templates/partials/dashboard-content.php:756
+#: templates/partials/dashboard-content.php:1303
+#: templates/partials/dashboard-content.php:1398
+#: templates/partials/dashboard-content.php:1487
 #: templates/partials/profile-actions.php:119
 #: templates/partials/profile-edit-panel.php:142
-#: templates/partials/shared-ui-frame.php:234
-#: templates/partials/shared-ui-frame.php:327
+#: templates/partials/shared-ui-frame.php:295
+#: templates/partials/shared-ui-frame.php:388
+#: templates/partials/shared-ui-frame.php:652
+#: templates/partials/shared-ui-frame.php:712
 msgid "Cancel"
 msgstr ""
 
-#: build/blocks/media-upload/render.php:206
-#: src/blocks/media-upload/render.php:206
+#: build/blocks/blocks/media-upload/render.php:229
+#: build/blocks/media-upload/render.php:229
+#: src/blocks/media-upload/render.php:229
 msgid "Dismiss error"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:92
 #: build/blocks/member-photos/render.php:92 build/member-photos/render.php:92
 #: src/blocks/member-photos/render.php:92
 msgid ""
@@ -480,41 +566,50 @@ msgid ""
 "profile, set a User ID in the block sidebar, or log in to see it in action."
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:163
 #: build/blocks/member-photos/render.php:163 build/member-photos/render.php:163
 #: src/blocks/member-photos/render.php:163
+#: templates/partials/dashboard-content.php:481
 #. translators: %s: member display name.
 msgid "View %s's profile"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:191
 #: build/blocks/member-photos/render.php:191 build/member-photos/render.php:191
 #: src/blocks/member-photos/render.php:191
 msgid "Member statistics"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:194
 #: build/blocks/member-photos/render.php:194 build/member-photos/render.php:194
 #: src/blocks/member-photos/render.php:194
 msgid "Photos"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:200
 #: build/blocks/member-photos/render.php:200
 #: src/blocks/member-photos/render.php:200
 msgid "View followers"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:202
 #: build/blocks/member-photos/render.php:202 build/member-photos/render.php:198
 #: src/blocks/member-photos/render.php:202
 #: templates/partials/follows-modal.php:36
 msgid "Followers"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:208
 #: build/blocks/member-photos/render.php:208
 #: src/blocks/member-photos/render.php:208
 msgid "View following"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:210
+#: build/blocks/blocks/member-photos/render.php:226
 #: build/blocks/member-photos/render.php:210
 #: build/blocks/member-photos/render.php:226 build/member-photos/render.php:202
-#: build/member-photos/render.php:218 includes/Core/Plugin.php:1475
+#: build/member-photos/render.php:218 includes/Core/Plugin.php:1509
 #: includes/Services/GDPRService.php:262
 #: src/blocks/member-photos/render.php:210
 #: src/blocks/member-photos/render.php:226 templates/media-single.php:192
@@ -523,42 +618,56 @@ msgstr ""
 msgid "Following"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:217
 #: build/blocks/member-photos/render.php:217 build/member-photos/render.php:209
 #: src/blocks/member-photos/render.php:217
-#: templates/partials/dashboard-content.php:467
+#: templates/partials/dashboard-content.php:494
 msgid "View profile"
 msgstr ""
 
+#: build/blocks/blocks/member-photos/render.php:225
 #: build/blocks/member-photos/render.php:225 build/member-photos/render.php:217
-#: includes/Core/Plugin.php:1476 src/blocks/member-photos/render.php:225
+#: includes/Core/Plugin.php:1510 src/blocks/member-photos/render.php:225
 #: templates/media-single.php:191 templates/partials/profile-actions.php:63
 msgid "Follow"
 msgstr ""
 
-#: build/blocks/pdf-viewer/render.php:53 build/pdf-viewer/render.php:53
-#: src/blocks/pdf-viewer/render.php:53
+#: build/blocks/blocks/pdf-viewer/render.php:67
+#: build/blocks/pdf-viewer/render.php:67 build/pdf-viewer/render.php:53
+#: src/blocks/pdf-viewer/render.php:67
 msgid "No PDF selected. Edit this block and set a Media ID to display a PDF."
 msgstr ""
 
-#: build/blocks/pdf-viewer/render.php:67 build/pdf-viewer/render.php:67
-#: src/blocks/pdf-viewer/render.php:67
+#: build/blocks/blocks/pdf-viewer/render.php:74
+#: build/blocks/pdf-viewer/render.php:74 build/pdf-viewer/render.php:67
+#: src/blocks/pdf-viewer/render.php:74
 msgid "PDF not found."
 msgstr ""
 
-#: build/blocks/pdf-viewer/render.php:84 build/pdf-viewer/render.php:84
-#: src/blocks/pdf-viewer/render.php:84
+#: build/blocks/blocks/pdf-viewer/render.php:85
+#: build/blocks/pdf-viewer/render.php:85 src/blocks/pdf-viewer/render.php:85
+msgid ""
+"Documents have their own viewer and cannot be embedded here. Pick a PDF "
+"media file instead."
+msgstr ""
+
+#: build/blocks/blocks/pdf-viewer/render.php:94
+#: build/blocks/pdf-viewer/render.php:94 build/pdf-viewer/render.php:84
+#: src/blocks/pdf-viewer/render.php:94
 msgid ""
 "This block can only display PDF files. Pick a media item whose file is a "
 "PDF."
 msgstr ""
 
-#: build/blocks/pdf-viewer/render.php:103 build/pdf-viewer/render.php:103
-#: src/blocks/pdf-viewer/render.php:103
+#: build/blocks/blocks/pdf-viewer/render.php:107
+#: build/blocks/pdf-viewer/render.php:107 build/pdf-viewer/render.php:103
+#: src/blocks/pdf-viewer/render.php:107
 msgid "You do not have permission to view this PDF."
 msgstr ""
 
-#: build/blocks/pdf-viewer/render.php:120 build/pdf-viewer/render.php:120
-#: src/blocks/pdf-viewer/render.php:120
+#: build/blocks/blocks/pdf-viewer/render.php:121
+#: build/blocks/pdf-viewer/render.php:121 build/pdf-viewer/render.php:120
+#: src/blocks/pdf-viewer/render.php:121
 msgid "PDF document"
 msgstr ""
 
@@ -579,12 +688,12 @@ msgid "Collection Settings"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:122
-#: templates/partials/dashboard-content.php:1129
+#: templates/partials/dashboard-content.php:1241
 msgid "Manual"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:126
-#: templates/partials/dashboard-content.php:1134
+#: templates/partials/dashboard-content.php:1246
 msgid "Smart"
 msgstr ""
 
@@ -597,7 +706,7 @@ msgid "Rules (all must match):"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:152
-#: templates/partials/dashboard-content.php:1182
+#: templates/partials/dashboard-content.php:1294
 msgid "Add Rule"
 msgstr ""
 
@@ -617,23 +726,23 @@ msgstr ""
 #: includes/Admin/CollectionMetaBox.php:231
 #: includes/Admin/CollectionMetaBox.php:241
 #: includes/Admin/CollectionMetaBox.php:253
-#: templates/partials/dashboard-content.php:196
-#: templates/partials/dashboard-content.php:1152
+#: templates/partials/dashboard-content.php:186
+#: templates/partials/dashboard-content.php:1264
 msgid "-- Select --"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:207
-#: templates/partials/dashboard-content.php:1153
+#: templates/partials/dashboard-content.php:1265
 msgid "Media Type"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:208
-#: templates/partials/dashboard-content.php:1154
+#: templates/partials/dashboard-content.php:1266
 msgid "Tag"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:209
-#: templates/partials/dashboard-content.php:1155
+#: templates/partials/dashboard-content.php:1267
 msgid "Category"
 msgstr ""
 
@@ -641,7 +750,7 @@ msgstr ""
 #: includes/Admin/MediaListPage.php:207 includes/Admin/MediaListPage.php:255
 #: includes/Admin/ModerationQueue.php:359 includes/Admin/OverviewPage.php:397
 #: templates/admin/documents.php:148 templates/admin/documents.php:309
-#: templates/partials/dashboard-content.php:1156
+#: templates/partials/dashboard-content.php:1268
 msgid "Author"
 msgstr ""
 
@@ -649,21 +758,21 @@ msgstr ""
 #: includes/Admin/MediaListPage.php:209 includes/Admin/MediaListPage.php:257
 #: includes/Services/GDPRService.php:181 templates/admin/documents.php:149
 #: templates/admin/documents.php:310 templates/album.php:178
-#: templates/media-single.php:732 templates/partials/dashboard-content.php:1157
-#: templates/partials/dashboard-content.php:1232
-#: templates/partials/dashboard-content.php:1320
-#: templates/partials/shared-ui-frame.php:187
-#: templates/partials/shared-ui-frame.php:285
+#: templates/media-single.php:735 templates/partials/dashboard-content.php:1269
+#: templates/partials/dashboard-content.php:1344
+#: templates/partials/dashboard-content.php:1432
+#: templates/partials/shared-ui-frame.php:247
+#: templates/partials/shared-ui-frame.php:346
 msgid "Privacy"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:212
-#: templates/partials/dashboard-content.php:1158
+#: templates/partials/dashboard-content.php:1270
 msgid "Date After"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:213
-#: templates/partials/dashboard-content.php:1159
+#: templates/partials/dashboard-content.php:1271
 msgid "Date Before"
 msgstr ""
 
@@ -672,14 +781,14 @@ msgid "Media type value"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:221
-#: includes/Admin/MediaListPage.php:1590
-#: templates/partials/dashboard-content.php:197
+#: includes/Admin/MediaListPage.php:1595
+#: templates/partials/dashboard-content.php:187
 #: templates/partials/usage-history.php:29
 msgid "Image"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:224
-#: templates/partials/dashboard-content.php:200
+#: templates/partials/dashboard-content.php:190
 #: templates/partials/usage-history.php:32
 msgid "Document"
 msgstr ""
@@ -689,31 +798,34 @@ msgid "Privacy value"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:232
-#: includes/Admin/Settings/SettingsRegistrar.php:191
-#: templates/partials/dashboard-content.php:201
-#: templates/partials/dashboard-content.php:632
-#: templates/partials/dashboard-content.php:1234
-#: templates/partials/dashboard-content.php:1322
-#: templates/partials/shared-ui-frame.php:188
+#: includes/Admin/Settings/SettingsRegistrar.php:191 templates/explore.php:483
+#: templates/partials/dashboard-content.php:191
+#: templates/partials/dashboard-content.php:733
+#: templates/partials/dashboard-content.php:771
+#: templates/partials/dashboard-content.php:1346
+#: templates/partials/dashboard-content.php:1434
+#: templates/partials/shared-ui-frame.php:248
 msgid "Public"
 msgstr ""
 
-#: includes/Admin/CollectionMetaBox.php:233 includes/Core/Plugin.php:1926
-#: includes/Core/Plugin.php:1931 templates/partials/dashboard-content.php:202
-#: templates/partials/dashboard-content.php:633
-#: templates/partials/dashboard-content.php:1235
-#: templates/partials/dashboard-content.php:1323
+#: includes/Admin/CollectionMetaBox.php:233 templates/explore.php:484
+#: templates/partials/dashboard-content.php:192
+#: templates/partials/dashboard-content.php:734
+#: templates/partials/dashboard-content.php:772
+#: templates/partials/dashboard-content.php:1347
+#: templates/partials/dashboard-content.php:1435
 #: templates/partials/follows-modal.php:29
 msgid "Members"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:234
-#: includes/Admin/Settings/SettingsRegistrar.php:193
-#: templates/media-single.php:248 templates/partials/dashboard-content.php:203
-#: templates/partials/dashboard-content.php:637
-#: templates/partials/dashboard-content.php:1239
-#: templates/partials/dashboard-content.php:1327
-#: templates/partials/shared-ui-frame.php:193
+#: includes/Admin/Settings/SettingsRegistrar.php:193 templates/explore.php:485
+#: templates/media-single.php:248 templates/partials/dashboard-content.php:193
+#: templates/partials/dashboard-content.php:738
+#: templates/partials/dashboard-content.php:773
+#: templates/partials/dashboard-content.php:1351
+#: templates/partials/dashboard-content.php:1439
+#: templates/partials/shared-ui-frame.php:253
 msgid "Private"
 msgstr ""
 
@@ -730,7 +842,7 @@ msgid "Date value"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:270
-#: templates/partials/dashboard-content.php:204
+#: templates/partials/dashboard-content.php:194
 msgid "User ID"
 msgstr ""
 
@@ -755,32 +867,32 @@ msgstr ""
 msgid "That document could not be found."
 msgstr ""
 
-#: includes/Admin/DocumentListPage.php:499
+#: includes/Admin/DocumentListPage.php:519
 #. translators: %s: number of documents.
 msgid "%s document moved to trash."
 msgid_plural "%s documents moved to trash."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/DocumentListPage.php:503
+#: includes/Admin/DocumentListPage.php:523
 #. translators: %s: number of documents.
 msgid "%s document restored."
 msgid_plural "%s documents restored."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/DocumentListPage.php:507
+#: includes/Admin/DocumentListPage.php:527
 #. translators: %s: number of documents.
 msgid "%s document deleted."
 msgid_plural "%s documents deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/DocumentListPage.php:510
+#: includes/Admin/DocumentListPage.php:530
 msgid "Document updated."
 msgstr ""
 
-#: includes/Admin/DocumentListPage.php:515
+#: includes/Admin/DocumentListPage.php:535
 msgid "A document needs a title, so nothing was saved."
 msgstr ""
 
@@ -998,7 +1110,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: includes/Admin/MediaListPage.php:145 includes/Admin/OverviewPage.php:236
-#: includes/Core/Plugin.php:1021 includes/Core/Plugin.php:1022
+#: includes/Core/Plugin.php:1055 includes/Core/Plugin.php:1056
 msgid "All Media"
 msgstr ""
 
@@ -1013,6 +1125,7 @@ msgid "Select bulk action"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:164 templates/admin/documents.php:118
+#: templates/explore.php:477 templates/partials/dashboard-content.php:766
 msgid "Bulk actions"
 msgstr ""
 
@@ -1027,14 +1140,14 @@ msgstr ""
 msgid "Delete permanently"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:169 includes/Admin/MediaListPage.php:1639
+#: includes/Admin/MediaListPage.php:169 includes/Admin/MediaListPage.php:1644
 msgid "Move to Trash"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:172 includes/Admin/ModerationQueue.php:334
 #: includes/Admin/TagManagementPage.php:179
 #: includes/Admin/TagManagementPage.php:265 templates/admin/documents.php:123
-#: templates/documents.php:171 templates/explore.php:411
+#: templates/documents.php:154 templates/explore.php:436
 msgid "Apply"
 msgstr ""
 
@@ -1046,8 +1159,8 @@ msgstr ""
 msgid "All Privacy"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:193 includes/Core/TemplateHelpers.php:1492
-#: templates/collection.php:124
+#: includes/Admin/MediaListPage.php:193 includes/Core/TemplateHelpers.php:1580
+#: templates/collection.php:125
 msgid "Search"
 msgstr ""
 
@@ -1073,18 +1186,18 @@ msgstr ""
 #: includes/Services/GDPRService.php:177 includes/Services/GDPRService.php:240
 #: templates/admin/document-single.php:160 templates/admin/documents.php:146
 #: templates/admin/documents.php:297
-#: templates/partials/dashboard-content.php:1124
+#: templates/partials/dashboard-content.php:1236
 #: templates/partials/usage-history.php:50
 msgid "Type"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:210 includes/Admin/MediaListPage.php:258
-#: includes/Admin/MediaListPage.php:1464 includes/Admin/MediaListPage.php:1499
+#: includes/Admin/MediaListPage.php:1469 includes/Admin/MediaListPage.php:1504
 msgid "Status"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:211 includes/Admin/MediaListPage.php:259
-#: includes/Admin/MediaListPage.php:1471
+#: includes/Admin/MediaListPage.php:1476
 msgid "Optimization"
 msgstr ""
 
@@ -1132,8 +1245,8 @@ msgstr ""
 msgid "(no title)"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:362 includes/Admin/MediaListPage.php:1613
-#: includes/Admin/MediaListPage.php:1620
+#: includes/Admin/MediaListPage.php:362 includes/Admin/MediaListPage.php:1618
+#: includes/Admin/MediaListPage.php:1625
 #: includes/Admin/Settings/PermissionsManager.php:76
 msgid "View"
 msgstr ""
@@ -1179,7 +1292,7 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:508 includes/Admin/MediaListPage.php:1536
+#: includes/Admin/MediaListPage.php:508 includes/Admin/MediaListPage.php:1541
 msgid "Not optimized"
 msgstr ""
 
@@ -1187,7 +1300,7 @@ msgstr ""
 msgid "WebP ready"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:532 includes/Admin/MediaListPage.php:1527
+#: includes/Admin/MediaListPage.php:532 includes/Admin/MediaListPage.php:1532
 msgid "No size gain"
 msgstr ""
 
@@ -1221,12 +1334,12 @@ msgstr ""
 msgid "Rejected"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:679 includes/Admin/MediaListPage.php:1356
+#: includes/Admin/MediaListPage.php:679 includes/Admin/MediaListPage.php:1361
 msgid "Back to all media"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:752 includes/Admin/MediaListPage.php:775
-#: includes/Admin/TagManagementPage.php:346 templates/explore.php:389
+#: includes/Admin/TagManagementPage.php:346 templates/explore.php:414
 #. translators: %s: number of items
 #. translators: %s: number of items, formatted for the current locale.
 #. translators: %s: number of media items.
@@ -1235,18 +1348,18 @@ msgid_plural "%s items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/MediaListPage.php:894
+#: includes/Admin/MediaListPage.php:898
 #. translators: 1: media id, 2: error code list
 msgid "Could not optimize media #%1$d: %2$s"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:904
+#: includes/Admin/MediaListPage.php:908
 #. translators: 1: media id, 2: bytes before formatted, 3: bytes after
 #. formatted, 4: savings percentage
 msgid "Optimized media #%1$d: %2$s to %3$s (saved %4$s%%)."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:991
+#: includes/Admin/MediaListPage.php:995
 #: includes/REST/Controller/FavoriteController.php:161
 #: includes/REST/Controller/ModerationController.php:227
 #: includes/REST/Controller/ModerationController.php:245
@@ -1256,93 +1369,93 @@ msgstr ""
 msgid "Media not found."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1043
+#: includes/Admin/MediaListPage.php:1047
 #. translators: 1: media id, 2: count of regenerated thumbs
 msgid "Media #%1$d — regenerated %2$d size variant."
 msgid_plural "Media #%1$d — regenerated %2$d size variants."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/MediaListPage.php:1059
+#: includes/Admin/MediaListPage.php:1063
 #. translators: %d: media id
 msgid ""
 "Media #%d — no repair path available. Image needs the original on local "
 "disk; video needs WPMediaVerse Pro with FFmpeg."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1111
+#: includes/Admin/MediaListPage.php:1117
 msgid "You are not allowed to perform bulk actions."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1228
+#: includes/Admin/MediaListPage.php:1233
 #. translators: %d: media id
 msgid ""
 "AI result accepted for media #%d. The description was applied and tags were "
 "saved."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1262
+#: includes/Admin/MediaListPage.php:1267
 #. translators: %d: media id
 msgid "AI result rejected for media #%d. The AI description and tags were cleared."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1290
+#: includes/Admin/MediaListPage.php:1295
 #. translators: %d: media id
 msgid ""
 "AI re-run queued for media #%d. Reload this page in a moment to see the new "
 "result."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1297
+#: includes/Admin/MediaListPage.php:1302
 #. translators: %d: media id
 msgid "AI re-run completed for media #%d."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1421 includes/Admin/ReportsPage.php:237
+#: includes/Admin/MediaListPage.php:1426 includes/Admin/ReportsPage.php:237
 #. translators: %d: media id
 #. translators: %d: media ID.
 msgid "Media #%d"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1425 templates/admin/ai-review.php:46
+#: includes/Admin/MediaListPage.php:1430 templates/admin/ai-review.php:46
 msgid "All media"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1455
+#: includes/Admin/MediaListPage.php:1460
 msgid "About this image"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1460
+#: includes/Admin/MediaListPage.php:1465
 msgid "Image size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1460
+#: includes/Admin/MediaListPage.php:1465
 msgid "pixels"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1462
+#: includes/Admin/MediaListPage.php:1467
 msgid "File size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1463 templates/admin/document-single.php:97
+#: includes/Admin/MediaListPage.php:1468 templates/admin/document-single.php:97
 msgid "Who can see it"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1465
+#: includes/Admin/MediaListPage.php:1470
 #: templates/admin/document-single.php:168 templates/admin/documents.php:150
 #: templates/admin/documents.php:311
 msgid "Uploaded"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1466
+#: includes/Admin/MediaListPage.php:1471
 msgid "Preview"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1466
+#: includes/Admin/MediaListPage.php:1471
 msgid "Open the original image"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1491
+#: includes/Admin/MediaListPage.php:1496
 msgid ""
 "Your server is using PHP-GD for image processing. GD is a weaker JPEG and "
 "WebP encoder than ImageMagick, so already-high-quality photos often cannot "
@@ -1350,67 +1463,67 @@ msgid ""
 "the ImageMagick PHP extension for better savings on large photos."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1504
+#: includes/Admin/MediaListPage.php:1509
 msgid "Could not optimize"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1505
+#: includes/Admin/MediaListPage.php:1510
 msgid ""
 "Try Re-optimize below. If it keeps failing, ask your developer to check the "
 "error logs."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1509
+#: includes/Admin/MediaListPage.php:1514
 msgid "Optimized"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1513 includes/Admin/MediaListPage.php:1522
+#: includes/Admin/MediaListPage.php:1518 includes/Admin/MediaListPage.php:1527
 #. translators: %s: human-readable date and time
 msgid "on %s"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1518
+#: includes/Admin/MediaListPage.php:1523
 msgid "WebP copy created"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1531
+#: includes/Admin/MediaListPage.php:1536
 #. translators: %s: human-readable date and time
 msgid "checked on %s"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1537
+#: includes/Admin/MediaListPage.php:1542
 msgid "Click Re-optimize below to shrink this image."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1544
+#: includes/Admin/MediaListPage.php:1549
 msgid "Original size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1545
+#: includes/Admin/MediaListPage.php:1550
 msgid "After optimization"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1547
+#: includes/Admin/MediaListPage.php:1552
 msgid "Space saved"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1551
+#: includes/Admin/MediaListPage.php:1556
 #. translators: 1: saved size in human-readable form, 2: saved percentage
 msgid "%1$s smaller (%2$s%% less)"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1557
+#: includes/Admin/MediaListPage.php:1562
 msgid "Result"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1562
+#: includes/Admin/MediaListPage.php:1567
 #. translators: %s: file size in human-readable form
 msgid ""
 "Re-compression could not shrink this %s image further. A smaller WebP copy "
 "was created instead, so visitors on modern browsers get a faster page load."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1565
+#: includes/Admin/MediaListPage.php:1570
 #. translators: %s: file size in human-readable form
 msgid ""
 "This %s image was saved at a high quality level. Re-compressing it would "
@@ -1420,67 +1533,67 @@ msgid ""
 "a lower JPEG quality before uploading."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1572 includes/Admin/MediaListPage.php:1591
+#: includes/Admin/MediaListPage.php:1577 includes/Admin/MediaListPage.php:1596
 msgid "WebP copy"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1575
+#: includes/Admin/MediaListPage.php:1580
 msgid "Available"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1576
+#: includes/Admin/MediaListPage.php:1581
 msgid "Open WebP copy"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1578
+#: includes/Admin/MediaListPage.php:1583
 msgid "Not created yet"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1585
+#: includes/Admin/MediaListPage.php:1590
 msgid "Thumbnail sizes"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1586
+#: includes/Admin/MediaListPage.php:1591
 msgid "WPMediaVerse keeps three smaller versions of every image so pages load fast."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1589
+#: includes/Admin/MediaListPage.php:1594
 #: templates/admin/document-single.php:164 templates/admin/documents.php:147
-#: templates/admin/documents.php:308 templates/documents.php:159
+#: templates/admin/documents.php:308 templates/documents.php:142
 msgid "Size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1596
+#: includes/Admin/MediaListPage.php:1601
 msgid "Large"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1597
+#: includes/Admin/MediaListPage.php:1602
 msgid "Medium"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1598
+#: includes/Admin/MediaListPage.php:1603
 msgid "Thumbnail"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1615
+#: includes/Admin/MediaListPage.php:1620
 msgid "Not available"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1622
+#: includes/Admin/MediaListPage.php:1627
 msgid "Not created"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1631 includes/Admin/ModerationQueue.php:363
+#: includes/Admin/MediaListPage.php:1636 includes/Admin/ModerationQueue.php:363
 #: includes/Admin/TagManagementPage.php:226
 #: includes/Admin/TagManagementPage.php:253
 msgid "Actions"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1634
+#: includes/Admin/MediaListPage.php:1639
 msgid "Re-optimize"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1637
+#: includes/Admin/MediaListPage.php:1642
 msgid "Repair thumbnails"
 msgstr ""
 
@@ -1682,16 +1795,17 @@ msgid "Total Media"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:199 includes/Admin/StatsPage.php:312
-#: includes/Core/Plugin.php:1038 includes/Core/Plugin.php:1039
-#: includes/Core/Plugin.php:2052 includes/Core/TemplateHelpers.php:1228
-#: templates/admin/documents.php:58
+#: includes/Core/Plugin.php:1072 includes/Core/Plugin.php:1073
+#: includes/Core/Plugin.php:2104 includes/Core/TemplateHelpers.php:1316
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:149
+#: templates/admin/documents.php:58 templates/partials/shared-ui-frame.php:135
 msgid "Documents"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:203 includes/Admin/StatsPage.php:316
-#: includes/Core/DashboardSections.php:313
+#: includes/Core/DashboardSections.php:329
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:277
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:99
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:132
 #: includes/PostTypes/Album.php:22 includes/PostTypes/Album.php:32
 #: includes/PostTypes/Album.php:33 templates/cpt-archive.php:68
 msgid "Albums"
@@ -1715,7 +1829,7 @@ msgid "Settings"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:253 includes/Admin/StatsPage.php:48
-#: includes/Core/Plugin.php:1206
+#: includes/Core/Plugin.php:1240
 msgid "Stats"
 msgstr ""
 
@@ -1849,13 +1963,13 @@ msgid "Dismiss welcome banner"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:574 includes/Admin/SetupWizard.php:252
-#: includes/Core/TemplateLoader.php:748 includes/Core/TemplateLoader.php:752
-#: includes/Services/HealthCheckService.php:176
+#: includes/Core/TemplateLoader.php:818 includes/Core/TemplateLoader.php:822
+#: includes/Services/HealthCheckService.php:171
 msgid "Explore Media"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:575 includes/Admin/SetupWizard.php:257
-#: includes/Core/Plugin.php:1828 includes/Services/HealthCheckService.php:177
+#: includes/Core/Plugin.php:1862 includes/Services/HealthCheckService.php:172
 msgid "My Media"
 msgstr ""
 
@@ -1884,7 +1998,7 @@ msgid "Cleanup did not return a response."
 msgstr ""
 
 #: includes/Admin/ReportsPage.php:79 includes/Admin/ReportsPage.php:86
-#: includes/Privacy/MemberDataMap.php:172
+#: includes/Privacy/MemberDataMap.php:180
 msgid "Reports"
 msgstr ""
 
@@ -1951,15 +2065,15 @@ msgstr ""
 #: includes/Admin/ReportsPage.php:260
 #: includes/Admin/Settings/SettingsPage.php:353
 #: includes/Admin/Settings/SettingsPage.php:358
-#: includes/Core/DashboardSections.php:306 includes/Core/TemplateLoader.php:634
-#: includes/Core/TemplateLoader.php:648
+#: includes/Core/DashboardSections.php:322 includes/Core/TemplateLoader.php:704
+#: includes/Core/TemplateLoader.php:718
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:55
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:274
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:76
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:88
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:134
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:109
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:121
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:185
 #: includes/Privacy/MemberDataMap.php:65 templates/admin/ai-review.php:69
-#: templates/explore.php:175
+#: templates/explore.php:191
 #. translators: %s: media count
 msgid "Media"
 msgstr ""
@@ -1973,8 +2087,8 @@ msgid "Resolve"
 msgstr ""
 
 #: includes/Admin/ReportsPage.php:275 templates/explore.php:41
-#: templates/partials/dashboard-content.php:296
-#: templates/partials/shared-ui-frame.php:570
+#: templates/partials/dashboard-content.php:309
+#: templates/partials/shared-ui-frame.php:692
 msgid "Dismiss"
 msgstr ""
 
@@ -2094,62 +2208,62 @@ msgid ""
 "OpenAI account itself."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:74
+#: includes/Admin/Settings/FieldRenderer.php:136
 #. translators: %s: server upload limit in MB
 msgid "Maximum file size per upload. Server limit: %s MB."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:163
+#: includes/Admin/Settings/FieldRenderer.php:225
 msgid ""
 "Uploads are limited to the image, video, and audio formats WordPress "
 "supports natively. Developers can allow additional MIME types in code with "
 "the filter:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:261
+#: includes/Admin/Settings/FieldRenderer.php:323
 msgid "Leave empty to keep the current key."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:450
+#: includes/Admin/Settings/FieldRenderer.php:512
 msgid "Select a page"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:460
+#: includes/Admin/Settings/FieldRenderer.php:522
 msgid "View Page"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:480
+#: includes/Admin/Settings/FieldRenderer.php:543
 msgid "URL:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:487
+#: includes/Admin/Settings/FieldRenderer.php:550
 msgid "Secret:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:494
+#: includes/Admin/Settings/FieldRenderer.php:557
 msgid "Shared secret for HMAC signing"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:497
+#: includes/Admin/Settings/FieldRenderer.php:560
 msgid "Leave empty to keep the current secret."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:501
+#: includes/Admin/Settings/FieldRenderer.php:564
 msgid "Events:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:506
+#: includes/Admin/Settings/FieldRenderer.php:569
 msgid "All events"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:517
+#: includes/Admin/Settings/FieldRenderer.php:580
 msgid ""
 "Events are saved only when a destination URL is set above. Without a URL "
 "the webhook is removed and the event selection resets to \"All events\"."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:538
-#: includes/Admin/Settings/FieldRenderer.php:551
+#: includes/Admin/Settings/FieldRenderer.php:601
+#: includes/Admin/Settings/FieldRenderer.php:614
 #: includes/Admin/Settings/SettingsPage.php:464
 #: includes/Admin/Settings/SettingsPage.php:493
 #: includes/Admin/Settings/SettingsPage.php:569
@@ -2159,9 +2273,9 @@ msgid "Pro"
 msgstr ""
 
 #: includes/Admin/Settings/PermissionsManager.php:75
-#: templates/partials/dashboard-content.php:649
-#: templates/partials/shared-ui-frame.php:53
-#: templates/partials/shared-ui-frame.php:237
+#: templates/partials/dashboard-content.php:750
+#: templates/partials/shared-ui-frame.php:63
+#: templates/partials/shared-ui-frame.php:298
 msgid "Upload"
 msgstr ""
 
@@ -2437,7 +2551,7 @@ msgid "Default Privacy Level"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:192
-#: templates/partials/shared-ui-frame.php:189
+#: templates/partials/shared-ui-frame.php:249
 msgid "Members Only"
 msgstr ""
 
@@ -2504,31 +2618,31 @@ msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:319
 #: includes/Admin/Settings/SettingsRegistrar.php:336
-#: includes/Services/CloudOps.php:530
+#: includes/Services/AdminAggregatesService.php:413
 msgid "Local (WordPress uploads)"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:320
 #: includes/Admin/Settings/SettingsRegistrar.php:338
-#: includes/Services/CloudOps.php:534
+#: includes/Services/AdminAggregatesService.php:417
 msgid "Amazon S3"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:321
 #: includes/Admin/Settings/SettingsRegistrar.php:339
-#: includes/Services/CloudOps.php:538
+#: includes/Services/AdminAggregatesService.php:421
 msgid "BunnyCDN"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:322
 #: includes/Admin/Settings/SettingsRegistrar.php:340
-#: includes/Services/CloudOps.php:542
+#: includes/Services/AdminAggregatesService.php:425
 msgid "Cloudflare R2"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:323
 #: includes/Admin/Settings/SettingsRegistrar.php:341
-#: includes/Services/CloudOps.php:546
+#: includes/Services/AdminAggregatesService.php:429
 msgid "DigitalOcean Spaces"
 msgstr ""
 
@@ -2877,7 +2991,7 @@ msgid "Drugs"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:930
-#: includes/Core/TemplateHelpers.php:1665
+#: includes/Core/TemplateHelpers.php:1753
 #: templates/partials/profile-actions.php:49
 msgid "Spam"
 msgstr ""
@@ -3081,8 +3195,8 @@ msgid "Personal dashboard for users to manage their uploads."
 msgstr ""
 
 #: includes/Admin/SetupWizard.php:262 includes/Core/Abilities.php:75
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:299
-#: templates/explore.php:628
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:315
+#: templates/explore.php:729
 msgid "Upload Media"
 msgstr ""
 
@@ -3138,8 +3252,8 @@ msgstr ""
 msgid "Media Stats"
 msgstr ""
 
-#: includes/Admin/StatsPage.php:137 includes/Core/Plugin.php:1008
-#: includes/Core/Plugin.php:1009
+#: includes/Admin/StatsPage.php:137 includes/Core/Plugin.php:1042
+#: includes/Core/Plugin.php:1043
 msgid "Overview"
 msgstr ""
 
@@ -3147,7 +3261,7 @@ msgstr ""
 msgid "Track views, downloads, reactions, and AI usage across your media library."
 msgstr ""
 
-#: includes/Admin/StatsPage.php:279 includes/Core/Plugin.php:2388
+#: includes/Admin/StatsPage.php:279 includes/Core/Plugin.php:2440
 msgid "Today"
 msgstr ""
 
@@ -3203,10 +3317,11 @@ msgstr ""
 msgid "AI Settings"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:123 includes/Core/Plugin.php:1053
-#: includes/Core/Plugin.php:1054 includes/Taxonomies/MediaTag.php:35
-#: templates/admin/document-single.php:89 templates/media-single.php:749
-#: templates/partials/dashboard-content.php:1250
+#: includes/Admin/TagManagementPage.php:123 includes/Core/Plugin.php:1087
+#: includes/Core/Plugin.php:1088 includes/Taxonomies/MediaTag.php:35
+#: templates/admin/document-single.php:89 templates/media-single.php:752
+#: templates/partials/dashboard-content.php:726
+#: templates/partials/dashboard-content.php:1362
 msgid "Tags"
 msgstr ""
 
@@ -3225,18 +3340,22 @@ msgstr ""
 msgid "Search Tags"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:153
+#: includes/Admin/TagManagementPage.php:153 templates/explore.php:510
+#: templates/partials/dashboard-content.php:808
 msgid "Clear"
 msgstr ""
 
 #: includes/Admin/TagManagementPage.php:177
 #: includes/Admin/TagManagementPage.php:263
-#: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1417
-#: includes/Core/TemplateHelpers.php:1662 templates/media-single.php:696
-#: templates/media-single.php:699 templates/media-single.php:838
-#: templates/partials/dashboard-content.php:741
-#: templates/partials/dashboard-content.php:842
-#: templates/partials/dashboard-content.php:1057
+#: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1451
+#: includes/Core/TemplateHelpers.php:1750 templates/explore.php:508
+#: templates/media-single.php:699 templates/media-single.php:702
+#: templates/media-single.php:843 templates/partials/dashboard-content.php:806
+#: templates/partials/dashboard-content.php:847
+#: templates/partials/dashboard-content.php:950
+#: templates/partials/dashboard-content.php:1169
+#: templates/partials/shared-ui-frame.php:667
+#: templates/partials/shared-ui-frame.php:668
 msgid "Delete"
 msgstr ""
 
@@ -3272,11 +3391,13 @@ msgid "No tags found."
 msgstr ""
 
 #: includes/Admin/TagManagementPage.php:309 templates/admin/documents.php:197
-#: templates/media-single.php:689 templates/media-single.php:692
-#: templates/media-single.php:836 templates/partials/dashboard-content.php:739
-#: templates/partials/dashboard-content.php:840
-#: templates/partials/dashboard-content.php:1055
-#: templates/partials/shared-ui-frame.php:477
+#: templates/media-single.php:692 templates/media-single.php:695
+#: templates/media-single.php:840 templates/partials/dashboard-content.php:845
+#: templates/partials/dashboard-content.php:948
+#: templates/partials/dashboard-content.php:1167
+#: templates/partials/shared-ui-frame.php:570
+#: templates/partials/shared-ui-frame.php:660
+#: templates/partials/shared-ui-frame.php:661
 msgid "Edit"
 msgstr ""
 
@@ -3513,8 +3634,8 @@ msgid "View public or following-scoped activity feed."
 msgstr ""
 
 #: includes/Core/Abilities.php:248 includes/Privacy/MemberDataMap.php:110
-#: templates/partials/dashboard-content.php:335
-#: templates/partials/dashboard-content.php:342
+#: templates/partials/dashboard-content.php:353
+#: templates/partials/dashboard-content.php:360
 msgid "Notifications"
 msgstr ""
 
@@ -3530,18 +3651,18 @@ msgstr ""
 msgid "View public user profiles with stats, media, and follow counts."
 msgstr ""
 
-#: includes/Core/DashboardSections.php:319 includes/PostTypes/Collection.php:22
+#: includes/Core/DashboardSections.php:335 includes/PostTypes/Collection.php:22
 #: includes/PostTypes/Collection.php:32 includes/PostTypes/Collection.php:33
 #: templates/cpt-archive.php:70
 msgid "Collections"
 msgstr ""
 
-#: includes/Core/DashboardSections.php:325
+#: includes/Core/DashboardSections.php:341
 #: includes/Privacy/MemberDataMap.php:73 includes/Services/GDPRService.php:287
 msgid "Favorites"
 msgstr ""
 
-#: includes/Core/DashboardSections.php:341
+#: includes/Core/DashboardSections.php:357
 msgid "Edit profile"
 msgstr ""
 
@@ -3589,365 +3710,382 @@ msgstr ""
 msgid "RTF"
 msgstr ""
 
-#: includes/Core/Plugin.php:1203 includes/Core/TemplateHelpers.php:1030
+#: includes/Core/Plugin.php:1237 includes/Core/TemplateHelpers.php:1096
 msgid "Delete media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1205
+#: includes/Core/Plugin.php:1239
 msgid "View media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1207
+#: includes/Core/Plugin.php:1241
 msgid "Likes"
 msgstr ""
 
-#: includes/Core/Plugin.php:1414
+#: includes/Core/Plugin.php:1448
 msgid "Are you sure?"
 msgstr ""
 
-#: includes/Core/Plugin.php:1415
+#: includes/Core/Plugin.php:1449
 msgid "Confirm"
 msgstr ""
 
-#: includes/Core/Plugin.php:1448 templates/partials/chat-new.php:28
+#: includes/Core/Plugin.php:1482 templates/partials/chat-new.php:28
 msgid "Search users..."
 msgstr ""
 
-#: includes/Core/Plugin.php:1450
+#: includes/Core/Plugin.php:1484
 msgid "No users found."
 msgstr ""
 
-#: includes/Core/Plugin.php:1451
-#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:145
-#: templates/explore.php:152
+#: includes/Core/Plugin.php:1485
+#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:200
+#: templates/explore.php:168
 msgid "media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1477 templates/partials/profile-actions.php:89
+#: includes/Core/Plugin.php:1511 templates/partials/profile-actions.php:89
 msgid "Block"
 msgstr ""
 
-#: includes/Core/Plugin.php:1478 templates/partials/blocked-members.php:66
+#: includes/Core/Plugin.php:1512 templates/partials/blocked-members.php:66
 #: templates/partials/profile-actions.php:89
 msgid "Unblock"
 msgstr ""
 
-#: includes/Core/Plugin.php:1479 templates/partials/profile-actions.php:88
+#: includes/Core/Plugin.php:1513 templates/partials/profile-actions.php:88
 msgid "Block this member"
 msgstr ""
 
-#: includes/Core/Plugin.php:1480 templates/partials/profile-actions.php:88
+#: includes/Core/Plugin.php:1514 templates/partials/profile-actions.php:88
 msgid "Unblock this member"
 msgstr ""
 
-#: includes/Core/Plugin.php:1530
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:381
+#: includes/Core/Plugin.php:1564
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:397
 msgid "Adding to album..."
 msgstr ""
 
-#: includes/Core/Plugin.php:1532
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:383
+#: includes/Core/Plugin.php:1566
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:399
 #. translators: %d: number of files added
 #. translators: %d: number of files.
 msgid "%d file(s) added to album!"
 msgstr ""
 
-#: includes/Core/Plugin.php:1623 templates/partials/shared-ui-frame.php:331
+#: includes/Core/Plugin.php:1657 templates/partials/shared-ui-frame.php:392
 msgid "Saving…"
 msgstr ""
 
-#: includes/Core/Plugin.php:1624 templates/album.php:330
+#: includes/Core/Plugin.php:1658 templates/album.php:330
 msgid "Set as cover"
 msgstr ""
 
-#: includes/Core/Plugin.php:1625
+#: includes/Core/Plugin.php:1659
 msgid "Could not set cover"
 msgstr ""
 
-#: includes/Core/Plugin.php:1925
+#: includes/Core/Plugin.php:1979
 msgid "Only the owner"
 msgstr ""
 
-#: includes/Core/Plugin.php:1927 includes/Core/Plugin.php:1932
-msgid "Anyone"
-msgstr ""
-
-#: includes/Core/Plugin.php:1930
+#: includes/Core/Plugin.php:1980
 msgid "Only me"
 msgstr ""
 
-#: includes/Core/Plugin.php:2368
+#: includes/Core/Plugin.php:1981
+msgid "Everyone on this drive"
+msgstr ""
+
+#: includes/Core/Plugin.php:1982
+msgid "All site members"
+msgstr ""
+
+#: includes/Core/Plugin.php:1983
+msgid "Anyone"
+msgstr ""
+
+#: includes/Core/Plugin.php:2420
 msgid "Request failed"
 msgstr ""
 
-#: includes/Core/Plugin.php:2369
+#: includes/Core/Plugin.php:2421
 msgid "Could not open conversation."
 msgstr ""
 
-#: includes/Core/Plugin.php:2370
+#: includes/Core/Plugin.php:2422
 msgid "Could not share media."
 msgstr ""
 
-#: includes/Core/Plugin.php:2371
+#: includes/Core/Plugin.php:2423
 msgid "Upload failed"
 msgstr ""
 
-#: includes/Core/Plugin.php:2373
+#: includes/Core/Plugin.php:2425
 #. translators: %s: file name
 msgid "Uploading %s…"
 msgstr ""
 
-#: includes/Core/Plugin.php:2374
+#: includes/Core/Plugin.php:2426
 msgid "Only image, video, and audio files can be shared in messages."
 msgstr ""
 
-#: includes/Core/Plugin.php:2375
+#: includes/Core/Plugin.php:2427
 msgid "Microphone access denied"
 msgstr ""
 
-#: includes/Core/Plugin.php:2376
+#: includes/Core/Plugin.php:2428
 msgid "You reacted — tap to remove"
 msgstr ""
 
-#: includes/Core/Plugin.php:2377
+#: includes/Core/Plugin.php:2429
 msgid "Reacted"
 msgstr ""
 
-#: includes/Core/Plugin.php:2380 includes/Messaging/MessagingService.php:2022
+#: includes/Core/Plugin.php:2432 includes/Messaging/MessagingService.php:2062
 msgid "Voice message"
 msgstr ""
 
-#: includes/Core/Plugin.php:2381 includes/Messaging/MessagingService.php:2023
+#: includes/Core/Plugin.php:2433 includes/Messaging/MessagingService.php:2063
 msgid "Photo"
 msgstr ""
 
-#: includes/Core/Plugin.php:2384 includes/Messaging/MessagingService.php:2026
+#: includes/Core/Plugin.php:2436 includes/Messaging/MessagingService.php:2066
 #: templates/media-single.php:440 templates/media-single.php:443
 msgid "File"
 msgstr ""
 
-#: includes/Core/Plugin.php:2385 includes/Messaging/MessagingService.php:2027
+#: includes/Core/Plugin.php:2437 includes/Messaging/MessagingService.php:2067
 msgid "Shared a media"
 msgstr ""
 
-#: includes/Core/Plugin.php:2386 includes/Messaging/MessagingService.php:2041
+#: includes/Core/Plugin.php:2438 includes/Messaging/MessagingService.php:2081
 msgid "Attachment"
 msgstr ""
 
-#: includes/Core/Plugin.php:2389
+#: includes/Core/Plugin.php:2441
 msgid "Yesterday"
 msgstr ""
 
-#: includes/Core/Plugin.php:2391
+#: includes/Core/Plugin.php:2443
 msgid "Mute notifications"
 msgstr ""
 
-#: includes/Core/Plugin.php:2392
+#: includes/Core/Plugin.php:2444
 msgid "Unmute notifications"
 msgstr ""
 
-#: includes/Core/Plugin.php:2393
+#: includes/Core/Plugin.php:2445
 msgid "Voice messages need a secure (https) connection."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1027
-#: templates/partials/shared-ui-frame.php:251
+#: includes/Core/TemplateHelpers.php:1077
+#: templates/partials/dashboard-content.php:817
+msgid "Select for bulk actions"
+msgstr ""
+
+#: includes/Core/TemplateHelpers.php:1093
+#: templates/partials/shared-ui-frame.php:312
 msgid "Edit media settings"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1027
+#: includes/Core/TemplateHelpers.php:1093
 msgid "Edit settings"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1236
-#: includes/Core/TemplateHelpers.php:1250 templates/explore.php:86
+#: includes/Core/TemplateHelpers.php:1305
+msgid "My documents"
+msgstr ""
+
+#: includes/Core/TemplateHelpers.php:1324
+#: includes/Core/TemplateHelpers.php:1338 templates/explore.php:92
 msgid "Explore"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1245
+#: includes/Core/TemplateHelpers.php:1333
 msgid "Profile"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1260
+#: includes/Core/TemplateHelpers.php:1348
 msgid "My profile"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1268
+#: includes/Core/TemplateHelpers.php:1356
 msgid "Challenges"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1275
+#: includes/Core/TemplateHelpers.php:1363
 msgid "Battles"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1282
+#: includes/Core/TemplateHelpers.php:1370
 msgid "Tournaments"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1313
+#: includes/Core/TemplateHelpers.php:1401
 #: templates/partials/chat-conversation.php:13
 #: templates/partials/chat-new.php:13
 msgid "Back"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1317
+#: includes/Core/TemplateHelpers.php:1405
 #. translators: %s: parent page label
 msgid "Back to %s"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1631
+#: includes/Core/TemplateHelpers.php:1719
 msgid "Please log in to react."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1632
+#: includes/Core/TemplateHelpers.php:1720
 msgid "Could not save reaction."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1633
+#: includes/Core/TemplateHelpers.php:1721
 msgid "Network error."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1635
+#: includes/Core/TemplateHelpers.php:1723
 msgid "Please log in to favorite."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1636
+#: includes/Core/TemplateHelpers.php:1724
 msgid "Could not update favorite."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1638
+#: includes/Core/TemplateHelpers.php:1726
 msgid "Please log in to comment."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1639
+#: includes/Core/TemplateHelpers.php:1727
 msgid "Could not post comment."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1640
+#: includes/Core/TemplateHelpers.php:1728
 msgid "Comment updated."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1641
+#: includes/Core/TemplateHelpers.php:1729
 msgid "Edit failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1642
+#: includes/Core/TemplateHelpers.php:1730
 msgid "Delete this comment?"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1643
+#: includes/Core/TemplateHelpers.php:1731
 msgid "Comment deleted."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1645
+#: includes/Core/TemplateHelpers.php:1733
 msgid "✓ Copied!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1646
+#: includes/Core/TemplateHelpers.php:1734
 msgid "Link copied to clipboard!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1650 templates/album.php:142
-#: templates/media-single.php:574 templates/media-single.php:660
-#: templates/media-single.php:663 templates/partials/shared-ui-frame.php:482
+#: includes/Core/TemplateHelpers.php:1738 templates/album.php:142
+#: templates/media-single.php:577 templates/media-single.php:663
+#: templates/media-single.php:666 templates/partials/shared-ui-frame.php:575
 msgid "Share"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1651
+#: includes/Core/TemplateHelpers.php:1739
 msgid "Could not copy link. Please copy the URL manually."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1653
+#: includes/Core/TemplateHelpers.php:1741
 msgid "Follow action failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1655
-#: templates/partials/shared-ui-frame.php:54
+#: includes/Core/TemplateHelpers.php:1743
+#: templates/partials/shared-ui-frame.php:64
 msgid "Saved! Redirecting to the new URL…"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1656
+#: includes/Core/TemplateHelpers.php:1744
 msgid "Album saved!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1657
+#: includes/Core/TemplateHelpers.php:1745
 msgid "Saved!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1658
-#: templates/partials/dashboard-content.php:238
+#: includes/Core/TemplateHelpers.php:1746
+#: templates/partials/dashboard-content.php:228
 msgid "Save failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1660
-#: templates/partials/dashboard-content.php:242
+#: includes/Core/TemplateHelpers.php:1748
+#: templates/partials/dashboard-content.php:232
 msgid "Delete this album? Media items will not be deleted."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1661
-#: templates/partials/dashboard-content.php:235
+#: includes/Core/TemplateHelpers.php:1749
+#: templates/partials/dashboard-content.php:225
 msgid "Delete this media item? This cannot be undone."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1664
+#: includes/Core/TemplateHelpers.php:1752
 msgid "Please log in to report content."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1666
+#: includes/Core/TemplateHelpers.php:1754
 msgid "Harassment"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1667
+#: includes/Core/TemplateHelpers.php:1755
 #: templates/partials/profile-actions.php:51
 msgid "Nudity or sexual content"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1668
+#: includes/Core/TemplateHelpers.php:1756
 msgid "Violence or dangerous acts"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1669
+#: includes/Core/TemplateHelpers.php:1757
 #: templates/partials/profile-actions.php:53
 msgid "Copyright infringement"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1670
+#: includes/Core/TemplateHelpers.php:1758
 #: templates/partials/profile-actions.php:54
 msgid "Misinformation"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1671
+#: includes/Core/TemplateHelpers.php:1759
 #: templates/partials/profile-actions.php:55
 msgid "Other"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1672
+#: includes/Core/TemplateHelpers.php:1760
 msgid "Why are you reporting this media?"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1673
+#: includes/Core/TemplateHelpers.php:1761
 msgid "Report submitted. Thank you."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1674
+#: includes/Core/TemplateHelpers.php:1762
 msgid "Already reported or error occurred."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:1675 templates/media-single.php:705
-#: templates/media-single.php:708 templates/partials/profile-actions.php:80
+#: includes/Core/TemplateHelpers.php:1763 templates/media-single.php:708
+#: templates/media-single.php:711 templates/partials/profile-actions.php:80
 #: templates/partials/profile-actions.php:120
-#: templates/partials/shared-ui-frame.php:500
+#: templates/partials/shared-ui-frame.php:593
 msgid "Report"
 msgstr ""
 
-#: includes/Core/TemplateLoader.php:790 includes/Core/TemplateLoader.php:795
+#: includes/Core/TemplateLoader.php:860 includes/Core/TemplateLoader.php:865
 #. translators: %s: user display name
 msgid "%s: Media"
 msgstr ""
 
-#: includes/Core/TemplateLoader.php:819 includes/Core/TemplateLoader.php:823
-#: includes/Shortcodes/Shortcodes.php:690 templates/explore.php:141
-#: templates/partials/dashboard-content.php:292 templates/profile-edit.php:102
+#: includes/Core/TemplateLoader.php:889 includes/Core/TemplateLoader.php:893
+#: includes/Shortcodes/Shortcodes.php:690 templates/explore.php:157
+#: templates/partials/dashboard-content.php:305 templates/profile-edit.php:102
 msgid "Edit Profile"
 msgstr ""
 
@@ -3965,6 +4103,7 @@ msgid "Who can see this post"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/ActivityFormIntegration.php:103
+#: templates/explore.php:503 templates/partials/dashboard-content.php:801
 msgid "Add tags (comma separated)"
 msgstr ""
 
@@ -4024,7 +4163,7 @@ msgid "A member commented on a media item"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:335
-#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:70
+#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:76
 msgid "Untitled"
 msgstr ""
 
@@ -4057,84 +4196,84 @@ msgstr[1] ""
 #: includes/REST/Controller/AlbumController.php:565
 #: includes/REST/Controller/AlbumController.php:700
 #: includes/REST/Controller/AlbumController.php:725
-#: includes/REST/Controller/BulkController.php:174
-#: includes/Services/AlbumService.php:227
-#: includes/Services/AlbumService.php:519 templates/album.php:38
+#: includes/REST/Controller/BulkController.php:298
+#: includes/Services/AlbumService.php:310
+#: includes/Services/AlbumService.php:554 templates/album.php:38
 msgid "Album not found."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:307
-#: templates/partials/dashboard-content.php:612
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:323
+#: templates/partials/dashboard-content.php:702
 msgid "Drop files here or click to upload"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:332
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:333
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:348
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:349
 msgid "Caption (optional)"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:342
-#: templates/partials/dashboard-content.php:635
-#: templates/partials/dashboard-content.php:1237
-#: templates/partials/dashboard-content.php:1325
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:358
+#: templates/partials/dashboard-content.php:736
+#: templates/partials/dashboard-content.php:1349
+#: templates/partials/dashboard-content.php:1437
 msgid "Friends"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:380
-#: templates/partials/dashboard-content.php:229
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:396
+#: templates/partials/dashboard-content.php:219
 #. translators: %d: number of files.
 #. translators: %d: number of files uploaded.
 msgid "%d file(s) uploaded!"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:396
-#: templates/partials/dashboard-content.php:776
-#: templates/partials/dashboard-content.php:1303
-#: templates/partials/shared-ui-frame.php:50
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:412
+#: templates/partials/dashboard-content.php:882
+#: templates/partials/dashboard-content.php:1415
+#: templates/partials/shared-ui-frame.php:60
 msgid "Create Album"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:402
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:418
 msgid "Album Name"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:403
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:419
 msgid "Enter album name..."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:405
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:421
 msgid "Album description..."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:408
-#: templates/partials/dashboard-content.php:1196
-#: templates/partials/dashboard-content.php:1380
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:424
+#: templates/partials/dashboard-content.php:1308
+#: templates/partials/dashboard-content.php:1492
 msgid "Create"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:476
-#: templates/explore.php:519
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:492
+#: templates/explore.php:620
 msgid "You're all caught up!"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:512
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:528
 #: templates/album.php:153 templates/album.php:154
 msgid "Edit album"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:515
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:531
 #: templates/album.php:160 templates/album.php:161
 msgid "Delete album"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:565
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:581
 msgid "Back to Albums"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:586
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:602
 #: templates/album.php:97 templates/collection.php:102
 #: templates/cpt-archive.php:150 templates/cpt-archive.php:159
-#: templates/partials/dashboard-content.php:218
+#: templates/partials/dashboard-content.php:208
 #. translators: %d: number of items
 #. translators: %d: number of items
 #. translators: %d: item count
@@ -4143,12 +4282,12 @@ msgid_plural "%d items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:607
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:623
 #: templates/album.php:207
 msgid "Add Media"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:615
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:631
 #: templates/album.php:217
 msgid "Drop files here or click to upload into this album"
 msgstr ""
@@ -4164,23 +4303,23 @@ msgid "No group albums yet."
 msgstr ""
 
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:228
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:244
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:359
 msgid "This album is empty. Add some media!"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:148
+#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:203
 msgid "photo"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:151
+#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:206
 msgid "video"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:154
+#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:209
 msgid "audio file"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:156
+#: includes/Integrations/BuddyPress/MediaDisplayHelper.php:211
 msgid "file"
 msgstr ""
 
@@ -4213,19 +4352,27 @@ msgstr ""
 msgid "%s mentioned you"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:228
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:272
+msgid "You haven't added any documents yet."
+msgstr ""
+
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:273
+msgid "No documents to show."
+msgstr ""
+
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:343
 msgid "You haven't uploaded any media yet. Get started!"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:232
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:347
 msgid "This user hasn't uploaded any media yet."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:236
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:351
 msgid "You haven't created any albums yet."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:240
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:355
 msgid "This user hasn't created any albums yet."
 msgstr ""
 
@@ -4445,7 +4592,7 @@ msgid "Add New Album"
 msgstr ""
 
 #: includes/PostTypes/Album.php:26 templates/album.php:156
-#: templates/partials/dashboard-content.php:1304
+#: templates/partials/dashboard-content.php:1416
 msgid "Edit Album"
 msgstr ""
 
@@ -4478,7 +4625,7 @@ msgid "Add New Collection"
 msgstr ""
 
 #: includes/PostTypes/Collection.php:26
-#: templates/partials/dashboard-content.php:1108
+#: templates/partials/dashboard-content.php:1220
 msgid "Edit Collection"
 msgstr ""
 
@@ -4526,32 +4673,36 @@ msgstr ""
 msgid "Blocks"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:119
+#: includes/Privacy/MemberDataMap.php:118
+msgid "Push device tokens"
+msgstr ""
+
+#: includes/Privacy/MemberDataMap.php:127
 msgid "Conversations"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:123 templates/partials/chat-list.php:13
+#: includes/Privacy/MemberDataMap.php:131 templates/partials/chat-list.php:13
 #: templates/partials/chat-panel.php:51
 msgid "Messages"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:127
+#: includes/Privacy/MemberDataMap.php:135
 msgid "Message reactions"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:133
+#: includes/Privacy/MemberDataMap.php:141
 msgid "Error log"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:181
+#: includes/Privacy/MemberDataMap.php:189
 msgid "Usage ledger"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:194
+#: includes/Privacy/MemberDataMap.php:202
 msgid "Conversations created"
 msgstr ""
 
-#: includes/Privacy/MemberDataMap.php:208
+#: includes/Privacy/MemberDataMap.php:216
 msgid "Activity media links"
 msgstr ""
 
@@ -4569,18 +4720,18 @@ msgstr ""
 #: includes/REST/Controller/CommentController.php:225
 #: includes/REST/Controller/FavoriteController.php:184
 #: includes/REST/Controller/FavoriteController.php:189
+#: includes/REST/Controller/MediaController.php:720
 #: includes/REST/Controller/MediaController.php:744
-#: includes/REST/Controller/MediaController.php:768
-#: includes/REST/Controller/MediaController.php:979
-#: includes/REST/Controller/MediaController.php:1128
-#: includes/REST/Controller/MediaController.php:1383
+#: includes/REST/Controller/MediaController.php:955
+#: includes/REST/Controller/MediaController.php:1150
 #: includes/REST/Controller/MediaController.php:1417
-#: includes/REST/Controller/MediaController.php:1484
-#: includes/REST/Controller/MediaController.php:1546
-#: includes/REST/Controller/MediaController.php:1592
-#: includes/REST/Controller/MediaController.php:1654
-#: includes/REST/Controller/MediaController.php:1676
-#: includes/REST/Controller/MediaController.php:1701
+#: includes/REST/Controller/MediaController.php:1451
+#: includes/REST/Controller/MediaController.php:1518
+#: includes/REST/Controller/MediaController.php:1580
+#: includes/REST/Controller/MediaController.php:1626
+#: includes/REST/Controller/MediaController.php:1688
+#: includes/REST/Controller/MediaController.php:1710
+#: includes/REST/Controller/MediaController.php:1735
 #: includes/REST/Controller/ReactionController.php:125
 #: includes/REST/Controller/ReactionController.php:132
 #: includes/REST/Controller/ReactionController.php:173
@@ -4588,7 +4739,7 @@ msgstr ""
 #: includes/REST/Controller/ReactionController.php:230
 #: includes/REST/Controller/SignedUrlController.php:232
 #: includes/REST/Controller/StatsController.php:108
-#: includes/Services/AlbumService.php:532
+#: includes/Services/AlbumService.php:567
 msgid "Media item not found."
 msgstr ""
 
@@ -4694,31 +4845,35 @@ msgstr ""
 msgid "MediaVerse app"
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:91
+#: includes/REST/Controller/BulkController.php:95
 msgid "No media IDs provided."
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:95
+#: includes/REST/Controller/BulkController.php:99
 msgid "Maximum 100 items per bulk operation."
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:108
+#: includes/REST/Controller/BulkController.php:114
 msgid "album_id is required for move_to_album."
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:115
+#: includes/REST/Controller/BulkController.php:122
 msgid "privacy is required for change_privacy."
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:120
+#: includes/REST/Controller/BulkController.php:130
+msgid "tags is required for add_tags."
+msgstr ""
+
+#: includes/REST/Controller/BulkController.php:136
 msgid "Invalid bulk action."
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:180
+#: includes/REST/Controller/BulkController.php:304
 msgid "You do not have permission to add items to this album."
 msgstr ""
 
-#: includes/REST/Controller/BulkController.php:275
+#: includes/REST/Controller/BulkController.php:399
 msgid "You do not have permission for bulk operations."
 msgstr ""
 
@@ -4750,44 +4905,44 @@ msgstr ""
 msgid "You do not have permission to modify this collection."
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:230
-#: includes/REST/Controller/CommentController.php:335
+#: includes/REST/Controller/CommentController.php:233
+#: includes/REST/Controller/CommentController.php:338
 msgid "Comment content is required."
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:265
-#: includes/Social/CommentService.php:420
-#: includes/Social/CommentService.php:466
+#: includes/REST/Controller/CommentController.php:268
+#: includes/Social/CommentService.php:434
+#: includes/Social/CommentService.php:480
 #. translators: %s: human-readable time difference, e.g. "2 days"
 msgid "%s ago"
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:293
-#: includes/Social/CommentService.php:352
+#: includes/REST/Controller/CommentController.php:296
+#: includes/Social/CommentService.php:366
 msgid "Comment not found."
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:298
+#: includes/REST/Controller/CommentController.php:301
 msgid "You can only edit your own comments."
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:304
-#: includes/REST/Controller/CommentController.php:383
+#: includes/REST/Controller/CommentController.php:307
+#: includes/REST/Controller/CommentController.php:386
 msgid "Comment does not belong to this media item."
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:321
+#: includes/REST/Controller/CommentController.php:324
 #. translators: %d: number of minutes in the edit window.
 msgid "Comments can only be edited within %d minute of posting."
 msgid_plural "Comments can only be edited within %d minutes of posting."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/REST/Controller/CommentController.php:346
+#: includes/REST/Controller/CommentController.php:349
 msgid "Failed to update comment."
 msgstr ""
 
-#: includes/REST/Controller/CommentController.php:403
+#: includes/REST/Controller/CommentController.php:406
 msgid "You must be logged in to comment."
 msgstr ""
 
@@ -4811,8 +4966,10 @@ msgstr ""
 
 #: includes/REST/Controller/MediaController.php:151
 msgid ""
-"Privacy level (public, members, loggedin, friends, group, private, custom, "
-"or an extension-added level)."
+"Privacy level (public, members, loggedin, friends, group, space, private, "
+"custom, or an extension-added level). \"space\" is honoured only when the "
+"media is on a Space drive (see the mvs_media_drive filter); on a personal "
+"drive it resolves to private."
 msgstr ""
 
 #: includes/REST/Controller/MediaController.php:155
@@ -4831,70 +4988,79 @@ msgstr ""
 msgid "Documents are not served by the media feed. Use the document routes instead."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:751
+#: includes/REST/Controller/MediaController.php:727
 msgid "You do not have permission to view this media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:840
+#: includes/REST/Controller/MediaController.php:816
 msgid "No file was uploaded."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:845
+#: includes/REST/Controller/MediaController.php:821
 msgid "File upload error."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1002
+#: includes/REST/Controller/MediaController.php:978
 msgid "Media title cannot be empty."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1079
+#: includes/REST/Controller/MediaController.php:1023
+msgid "That privacy level is not available on this site."
+msgstr ""
+
+#: includes/REST/Controller/MediaController.php:1040
+#: includes/Services/UploadService.php:351
+msgid "This media is not in a Space, so it cannot be limited to a Space's members."
+msgstr ""
+
+#: includes/REST/Controller/MediaController.php:1101
 msgid "Could not save categories for this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1133
+#: includes/REST/Controller/MediaController.php:1155
 msgid "No file provided."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1156
+#: includes/REST/Controller/MediaController.php:1178
 #: includes/Services/UploadService.php:107
 msgid "This file type is not allowed."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1205
+#: includes/REST/Controller/MediaController.php:1227
 msgid "Failed to store the file."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1423
-#: includes/REST/Controller/MediaController.php:1490
-#: includes/REST/Controller/MediaController.php:1551
-#: includes/REST/Controller/MediaController.php:1660
+#: includes/REST/Controller/MediaController.php:1457
+#: includes/REST/Controller/MediaController.php:1524
+#: includes/REST/Controller/MediaController.php:1585
+#: includes/REST/Controller/MediaController.php:1694
 #: includes/REST/Controller/SignedUrlController.php:157
 #: includes/REST/Controller/SignedUrlController.php:241
 #: includes/REST/Controller/StatsController.php:113
 msgid "You do not have access to this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1471
+#: includes/REST/Controller/MediaController.php:1505
 msgid "Downloads are disabled on this site."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1497
+#: includes/REST/Controller/MediaController.php:1531
 msgid "The owner has disabled downloads for this media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1639
+#: includes/REST/Controller/MediaController.php:1673
 msgid "You do not have permission to upload media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1687
+#: includes/REST/Controller/MediaController.php:1721
 msgid "You do not have permission to edit this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1712
+#: includes/REST/Controller/MediaController.php:1746
 msgid "You do not have permission to delete this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1986
+#: includes/REST/Controller/MediaController.php:2074
 msgid ""
 "Resolve specific media IDs to full objects in one call (e.g. album items). "
 "Max 100, privacy-gated, order preserved."
@@ -5068,22 +5234,22 @@ msgstr ""
 msgid "Your account is no longer scheduled for deletion."
 msgstr ""
 
-#: includes/Services/AlbumService.php:154
+#: includes/Services/AdminAggregatesService.php:471
+msgid "Other / external"
+msgstr ""
+
+#: includes/Services/AlbumService.php:237
 msgid "Album title is required."
 msgstr ""
 
-#: includes/Services/AlbumService.php:542
+#: includes/Services/AlbumService.php:577
 msgid "Cover image must be an image (not video or audio)."
 msgstr ""
 
-#: includes/Services/AlbumService.php:555
+#: includes/Services/AlbumService.php:590
 msgid ""
 "Could not add the selected media to this album (the album type may not "
 "accept it)."
-msgstr ""
-
-#: includes/Services/CloudOps.php:588
-msgid "Other / external"
 msgstr ""
 
 #: includes/Services/GDPRService.php:40
@@ -5104,11 +5270,11 @@ msgid "%1$s was kept but anonymised. %2$s"
 msgstr ""
 
 #: includes/Services/GDPRService.php:173 templates/admin/document-single.php:83
-#: templates/album.php:173 templates/media-single.php:724
-#: templates/partials/dashboard-content.php:1119
-#: templates/partials/dashboard-content.php:1224
-#: templates/partials/dashboard-content.php:1315
-#: templates/partials/shared-ui-frame.php:276
+#: templates/album.php:173 templates/media-single.php:727
+#: templates/partials/dashboard-content.php:1231
+#: templates/partials/dashboard-content.php:1336
+#: templates/partials/dashboard-content.php:1427
+#: templates/partials/shared-ui-frame.php:337
 msgid "Description"
 msgstr ""
 
@@ -5157,104 +5323,75 @@ msgstr ""
 msgid "WPMediaVerse Required Pages"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:47
-msgid "WPMediaVerse Video Posters (ffmpeg)"
-msgstr ""
-
-#: includes/Services/HealthCheckService.php:93
+#: includes/Services/HealthCheckService.php:88
 msgid "WPMediaVerse database tables are present"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:99
+#: includes/Services/HealthCheckService.php:94
 msgid "All required database tables exist."
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:105
+#: includes/Services/HealthCheckService.php:100
 msgid "WPMediaVerse database tables are missing"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:113
+#: includes/Services/HealthCheckService.php:108
 msgid "Missing tables"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:115
+#: includes/Services/HealthCheckService.php:110
 msgid "Try deactivating and reactivating the plugin to recreate tables."
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:132
+#: includes/Services/HealthCheckService.php:127
 msgid "Upload directory is not writable"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:146
+#: includes/Services/HealthCheckService.php:141
 msgid "WPMediaVerse upload directory is not writable"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:152
+#: includes/Services/HealthCheckService.php:147
 msgid "Directory not writable"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:158
+#: includes/Services/HealthCheckService.php:153
 msgid "WPMediaVerse upload directory is writable"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:164
+#: includes/Services/HealthCheckService.php:159
 msgid "Media files can be uploaded successfully."
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:190
+#: includes/Services/HealthCheckService.php:185
 msgid "WPMediaVerse pages are set up"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:196
+#: includes/Services/HealthCheckService.php:191
 msgid "All required pages exist and are published."
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:202
+#: includes/Services/HealthCheckService.php:197
 msgid "WPMediaVerse pages are missing"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:210
+#: includes/Services/HealthCheckService.php:205
 msgid "Missing pages"
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:212
+#: includes/Services/HealthCheckService.php:207
 msgid "Try deactivating and reactivating the plugin to recreate pages."
 msgstr ""
 
-#: includes/Services/HealthCheckService.php:235
-msgid "Video poster generation is available"
-msgstr ""
-
-#: includes/Services/HealthCheckService.php:241
-msgid "ffmpeg is installed, so uploaded videos get a generated poster frame."
-msgstr ""
-
-#: includes/Services/HealthCheckService.php:247
-msgid "ffmpeg is not available for video posters"
-msgstr ""
-
-#: includes/Services/HealthCheckService.php:255
-msgid ""
-"ffmpeg was not found on this server. Videos that do not embed a cover image "
-"will fall back to a generic poster instead of a frame from the video. "
-"Uploading still works."
-msgstr ""
-
-#: includes/Services/HealthCheckService.php:256
-msgid ""
-"Ask your host to install ffmpeg, or set its path with the mvs_ffmpeg_binary "
-"filter, to enable frame-grab posters for all videos."
-msgstr ""
-
-#: includes/Services/ProfileService.php:177
+#: includes/Services/ProfileService.php:184
 msgid "No valid fields to update."
 msgstr ""
 
-#: includes/Services/ProfileService.php:226
+#: includes/Services/ProfileService.php:233
 msgid "Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image."
 msgstr ""
 
-#: includes/Services/ProfileService.php:238
+#: includes/Services/ProfileService.php:245
 #. translators: %s: maximum file size
 msgid "Avatar file is too large. Maximum size is %s."
 msgstr ""
@@ -5273,19 +5410,19 @@ msgstr ""
 msgid "This file extension is not allowed."
 msgstr ""
 
-#: includes/Services/UploadService.php:353
+#: includes/Services/UploadService.php:372
 msgid "Failed to store the uploaded file."
 msgstr ""
 
-#: includes/Services/UploadService.php:470
+#: includes/Services/UploadService.php:491
 msgid "Failed to create media record."
 msgstr ""
 
-#: includes/Services/UploadService.php:905
+#: includes/Services/UploadService.php:926
 msgid "PDFs are uploaded to your Documents library rather than to media."
 msgstr ""
 
-#: includes/Services/UploadService.php:913
+#: includes/Services/UploadService.php:934
 msgid "This file type is not supported."
 msgstr ""
 
@@ -5333,7 +5470,7 @@ msgid "No media in this collection."
 msgstr ""
 
 #: includes/Shortcodes/Shortcodes.php:612
-#: templates/partials/dashboard-content.php:208
+#: templates/partials/dashboard-content.php:198
 msgid "(Untitled)"
 msgstr ""
 
@@ -5414,9 +5551,9 @@ msgid "No"
 msgstr ""
 
 #: includes/Shortcodes/Shortcodes.php:784 templates/album.php:192
-#: templates/media-single.php:780 templates/partials/dashboard-content.php:1199
-#: templates/partials/dashboard-content.php:1291
-#: templates/partials/dashboard-content.php:1383
+#: templates/media-single.php:783 templates/partials/dashboard-content.php:1311
+#: templates/partials/dashboard-content.php:1403
+#: templates/partials/dashboard-content.php:1495
 #: templates/partials/profile-edit-panel.php:138 templates/profile-edit.php:199
 msgid "Saving..."
 msgstr ""
@@ -5439,19 +5576,23 @@ msgstr ""
 msgid "Invalid user."
 msgstr ""
 
-#: includes/Social/CommentService.php:197
+#: includes/Social/CommentService.php:202
+msgid "You do not have permission to comment on this item."
+msgstr ""
+
+#: includes/Social/CommentService.php:211
 msgid "Invalid parent comment."
 msgstr ""
 
-#: includes/Social/CommentService.php:215
+#: includes/Social/CommentService.php:229
 msgid "You have already posted that comment."
 msgstr ""
 
-#: includes/Social/CommentService.php:239
+#: includes/Social/CommentService.php:253
 msgid "Failed to create comment."
 msgstr ""
 
-#: includes/Social/CommentService.php:357
+#: includes/Social/CommentService.php:371
 msgid "You cannot delete this comment."
 msgstr ""
 
@@ -5615,7 +5756,7 @@ msgid ""
 "private."
 msgstr ""
 
-#: templates/404.php:77 templates/explore.php:550 templates/explore.php:591
+#: templates/404.php:77 templates/explore.php:651 templates/explore.php:692
 msgid "Browse all media"
 msgstr ""
 
@@ -5742,7 +5883,7 @@ msgid ""
 msgstr ""
 
 #: templates/admin/document-single.php:122
-#: templates/partials/shared-ui-frame.php:330
+#: templates/partials/shared-ui-frame.php:391
 msgid "Save changes"
 msgstr ""
 
@@ -5756,7 +5897,7 @@ msgstr ""
 
 #: templates/admin/document-single.php:157
 #: templates/admin/document-single.php:161 templates/admin/documents.php:305
-#: templates/admin/documents.php:309 templates/documents.php:238
+#: templates/admin/documents.php:309 templates/documents.php:219
 #: templates/media-single.php:100
 msgid "Unknown"
 msgstr ""
@@ -5765,7 +5906,7 @@ msgstr ""
 msgid "View on site"
 msgstr ""
 
-#: templates/admin/documents.php:72 templates/documents.php:84
+#: templates/admin/documents.php:72 templates/documents.php:67
 msgid "Search documents"
 msgstr ""
 
@@ -5809,14 +5950,15 @@ msgstr ""
 msgid "Move to trash"
 msgstr ""
 
-#: templates/admin/documents.php:130 templates/documents.php:149
+#: templates/admin/documents.php:130 templates/documents.php:132
 #. translators: %s: number of documents.
 msgid "%s document"
 msgid_plural "%s documents"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/admin/documents.php:142
+#: templates/admin/documents.php:142 templates/explore.php:509
+#: templates/partials/dashboard-content.php:807
 msgid "Select all"
 msgstr ""
 
@@ -5849,13 +5991,14 @@ msgstr ""
 msgid "Delete Album"
 msgstr ""
 
-#: templates/album.php:191 templates/media-single.php:638
-#: templates/media-single.php:779 templates/media-single.php:829
-#: templates/partials/dashboard-content.php:1197
-#: templates/partials/dashboard-content.php:1290
-#: templates/partials/dashboard-content.php:1381
+#: templates/album.php:191 templates/media-single.php:641
+#: templates/media-single.php:782 templates/media-single.php:832
+#: templates/partials/dashboard-content.php:1309
+#: templates/partials/dashboard-content.php:1402
+#: templates/partials/dashboard-content.php:1493
 #: templates/partials/profile-edit-panel.php:137
-#: templates/partials/shared-ui-frame.php:455
+#: templates/partials/shared-ui-frame.php:548
+#: templates/partials/shared-ui-frame.php:650
 msgid "Save"
 msgstr ""
 
@@ -5863,19 +6006,23 @@ msgstr ""
 msgid "View details"
 msgstr ""
 
-#: templates/album.php:324 templates/partials/dashboard-content.php:1366
+#: templates/album.php:324 templates/partials/dashboard-content.php:1478
 msgid "Cover"
 msgstr ""
 
 #: templates/collection.php:123
+msgid "Search in this collection"
+msgstr ""
+
+#: templates/collection.php:124
 msgid "Search in this collection..."
 msgstr ""
 
-#: templates/collection.php:162
+#: templates/collection.php:163
 msgid "No media matches the current rules."
 msgstr ""
 
-#: templates/collection.php:164
+#: templates/collection.php:165
 msgid "This collection is empty."
 msgstr ""
 
@@ -5891,65 +6038,65 @@ msgstr ""
 msgid "No collections yet. Create your first collection to get started."
 msgstr ""
 
-#: templates/documents.php:86
+#: templates/documents.php:69
 msgid "Search documents..."
 msgstr ""
 
-#: templates/documents.php:154 templates/explore.php:394
-#: templates/partials/dashboard-content.php:690
-#: templates/partials/dashboard-content.php:804
-#: templates/partials/dashboard-content.php:901
-#: templates/partials/dashboard-content.php:1007
+#: templates/documents.php:137 templates/explore.php:419
+#: templates/partials/dashboard-content.php:669
+#: templates/partials/dashboard-content.php:912
+#: templates/partials/dashboard-content.php:1011
+#: templates/partials/dashboard-content.php:1119
 msgid "Sort by"
 msgstr ""
 
-#: templates/documents.php:157 templates/explore.php:397
+#: templates/documents.php:140 templates/explore.php:422
 msgid "Date added"
 msgstr ""
 
-#: templates/documents.php:164 templates/explore.php:404
-#: templates/partials/dashboard-content.php:700
-#: templates/partials/dashboard-content.php:814
-#: templates/partials/dashboard-content.php:911
-#: templates/partials/dashboard-content.php:1017
+#: templates/documents.php:147 templates/explore.php:429
+#: templates/partials/dashboard-content.php:679
+#: templates/partials/dashboard-content.php:922
+#: templates/partials/dashboard-content.php:1021
+#: templates/partials/dashboard-content.php:1129
 msgid "Direction"
 msgstr ""
 
-#: templates/documents.php:167 templates/explore.php:407
+#: templates/documents.php:150 templates/explore.php:432
 #: templates/partials/dashboard-content.php:43
 msgid "Newest first"
 msgstr ""
 
-#: templates/documents.php:168 templates/explore.php:408
+#: templates/documents.php:151 templates/explore.php:433
 #: templates/partials/dashboard-content.php:44
 msgid "Oldest first"
 msgstr ""
 
-#: templates/documents.php:184
+#: templates/documents.php:167
 msgid "Nothing matches that search"
 msgstr ""
 
-#: templates/documents.php:185
+#: templates/documents.php:168
 msgid "No documents yet"
 msgstr ""
 
-#: templates/documents.php:187
+#: templates/documents.php:170
 msgid "Try a different word, or browse everything instead."
 msgstr ""
 
-#: templates/documents.php:188
+#: templates/documents.php:171
 msgid "Documents shared publicly will appear here."
 msgstr ""
 
-#: templates/documents.php:193
+#: templates/documents.php:176
 msgid "Browse all documents"
 msgstr ""
 
-#: templates/documents.php:253
+#: templates/documents.php:234
 msgid "Documents pagination"
 msgstr ""
 
-#: templates/documents.php:264
+#: templates/documents.php:245
 #. translators: 1: current page, 2: total pages.
 msgid "Page %1$s of %2$s"
 msgstr ""
@@ -5970,60 +6117,123 @@ msgstr ""
 msgid "Register"
 msgstr ""
 
-#: templates/explore.php:75
+#: templates/explore.php:81
 #. translators: %s: tag name
 msgid "Tag: %s"
 msgstr ""
 
-#: templates/explore.php:82
+#: templates/explore.php:88
 #. translators: %s: category name
 msgid "Category: %s"
 msgstr ""
 
-#: templates/explore.php:155
+#: templates/explore.php:171
 msgid "followers"
 msgstr ""
 
-#: templates/explore.php:159
+#: templates/explore.php:175
 msgid "following"
 msgstr ""
 
-#: templates/explore.php:174
+#: templates/explore.php:190
 msgid "Search mode"
 msgstr ""
 
-#: templates/explore.php:176
+#: templates/explore.php:192
 msgid "People"
 msgstr ""
 
-#: templates/explore.php:535
+#: templates/explore.php:460 templates/partials/dashboard-content.php:245
+#: templates/partials/dashboard-content.php:247
+#. translators: %d: number of selected items.
+msgid "%d selected"
+msgstr ""
+
+#: templates/explore.php:461 templates/partials/dashboard-content.php:248
+msgid "Delete the selected items? This cannot be undone."
+msgstr ""
+
+#: templates/explore.php:462 templates/partials/dashboard-content.php:249
+msgid "Selected items deleted."
+msgstr ""
+
+#: templates/explore.php:463 templates/partials/dashboard-content.php:250
+msgid "Privacy updated."
+msgstr ""
+
+#: templates/explore.php:464 templates/partials/dashboard-content.php:254
+msgid "Tags added."
+msgstr ""
+
+#: templates/explore.php:465 templates/partials/dashboard-content.php:252
+msgid "Moved to album."
+msgstr ""
+
+#: templates/explore.php:466 templates/partials/dashboard-content.php:251
+msgid "Bulk action failed."
+msgstr ""
+
+#: templates/explore.php:468 templates/partials/dashboard-content.php:257
+#. translators: 1: number changed. 2: number selected. 3: number skipped.
+msgid "%1$d of %2$d updated. %3$d were not yours to change."
+msgstr ""
+
+#: templates/explore.php:481 templates/partials/dashboard-content.php:769
+msgid "Set privacy for selected"
+msgstr ""
+
+#: templates/explore.php:488 templates/partials/dashboard-content.php:776
+msgid "Set privacy"
+msgstr ""
+
+#: templates/explore.php:491 templates/partials/dashboard-content.php:785
+msgid "Move selected to album"
+msgstr ""
+
+#: templates/explore.php:493 templates/partials/dashboard-content.php:787
+msgid "Move to album…"
+msgstr ""
+
+#: templates/explore.php:499 templates/partials/dashboard-content.php:793
+msgid "Move"
+msgstr ""
+
+#: templates/explore.php:502 templates/partials/dashboard-content.php:800
+msgid "Tags to add to selected"
+msgstr ""
+
+#: templates/explore.php:506 templates/partials/dashboard-content.php:804
+msgid "Add tags"
+msgstr ""
+
+#: templates/explore.php:636
 #. translators: %s: tag slug that could not be found.
 msgid "Tag \"%s\" not found"
 msgstr ""
 
-#: templates/explore.php:541
+#: templates/explore.php:642
 #. translators: %s: category slug that could not be found.
 msgid "Category \"%s\" not found"
 msgstr ""
 
-#: templates/explore.php:547
+#: templates/explore.php:648
 msgid "Browse all media, or pick a popular tag below."
 msgstr ""
 
-#: templates/explore.php:583
+#: templates/explore.php:684
 #. translators: %s: search term entered by the user.
 msgid "No results for \"%s\""
 msgstr ""
 
-#: templates/explore.php:588
+#: templates/explore.php:689
 msgid "Try a different keyword or browse by popular tag:"
 msgstr ""
 
-#: templates/explore.php:621
+#: templates/explore.php:722
 msgid "No media has been shared yet"
 msgstr ""
 
-#: templates/explore.php:622
+#: templates/explore.php:723
 msgid "Be the first to share something with the community!"
 msgstr ""
 
@@ -6064,73 +6274,73 @@ msgstr ""
 msgid "Log in to view"
 msgstr ""
 
-#: templates/media-single.php:613 templates/media-single.php:616
-#: templates/media-single.php:624
+#: templates/media-single.php:616 templates/media-single.php:619
+#: templates/media-single.php:627
 msgid "Favorite"
 msgstr ""
 
-#: templates/media-single.php:614
+#: templates/media-single.php:617
 msgid "Add to favorites"
 msgstr ""
 
-#: templates/media-single.php:620 templates/media-single.php:621
-#: templates/media-single.php:622
+#: templates/media-single.php:623 templates/media-single.php:624
+#: templates/media-single.php:625
 msgid "Log in to favorite"
 msgstr ""
 
-#: templates/media-single.php:635 templates/media-single.php:636
+#: templates/media-single.php:638 templates/media-single.php:639
 msgid "Save to a collection"
 msgstr ""
 
-#: templates/media-single.php:661 templates/partials/shared-ui-frame.php:480
+#: templates/media-single.php:664 templates/partials/shared-ui-frame.php:573
 msgid "Share this media"
 msgstr ""
 
-#: templates/media-single.php:690 templates/partials/shared-ui-frame.php:475
+#: templates/media-single.php:693 templates/partials/shared-ui-frame.php:568
 msgid "Edit this media"
 msgstr ""
 
-#: templates/media-single.php:697
+#: templates/media-single.php:700
 msgid "Delete this media"
 msgstr ""
 
-#: templates/media-single.php:706
+#: templates/media-single.php:709
 msgid "Report this media"
 msgstr ""
 
-#: templates/media-single.php:742 templates/partials/dashboard-content.php:1243
-#: templates/partials/shared-ui-frame.php:298
+#: templates/media-single.php:745 templates/partials/dashboard-content.php:1355
+#: templates/partials/shared-ui-frame.php:359
 msgid ""
 "Tick to regenerate the URL slug from the new title. Off by default to keep "
 "inbound links stable."
 msgstr ""
 
-#: templates/media-single.php:744 templates/partials/dashboard-content.php:1245
-#: templates/partials/shared-ui-frame.php:302
+#: templates/media-single.php:747 templates/partials/dashboard-content.php:1357
+#: templates/partials/shared-ui-frame.php:363
 msgid "Update URL slug"
 msgstr ""
 
-#: templates/media-single.php:760 templates/partials/dashboard-content.php:1261
+#: templates/media-single.php:763 templates/partials/dashboard-content.php:1373
 msgid "Add tags..."
 msgstr ""
 
-#: templates/media-single.php:792 templates/partials/shared-ui-frame.php:514
+#: templates/media-single.php:795 templates/partials/shared-ui-frame.php:607
 msgid "Comments"
 msgstr ""
 
-#: templates/media-single.php:795
+#: templates/media-single.php:798
 msgid "Write a comment..."
 msgstr ""
 
-#: templates/media-single.php:798
+#: templates/media-single.php:801
 msgid "Post comment"
 msgstr ""
 
-#: templates/media-single.php:798 templates/partials/shared-ui-frame.php:550
+#: templates/media-single.php:801 templates/partials/shared-ui-frame.php:619
 msgid "Post"
 msgstr ""
 
-#: templates/media-single.php:803
+#: templates/media-single.php:806
 msgid "Log in to leave a comment"
 msgstr ""
 
@@ -6203,14 +6413,14 @@ msgid "New message"
 msgstr ""
 
 #: templates/partials/chat-list.php:17 templates/partials/chat-new.php:17
-#: templates/partials/dashboard-content.php:1110
-#: templates/partials/dashboard-content.php:1211
-#: templates/partials/dashboard-content.php:1306
+#: templates/partials/dashboard-content.php:1222
+#: templates/partials/dashboard-content.php:1323
+#: templates/partials/dashboard-content.php:1418
 #: templates/partials/follows-modal.php:39
 #: templates/partials/profile-actions.php:100
-#: templates/partials/shared-ui-frame.php:103
-#: templates/partials/shared-ui-frame.php:253
-#: templates/partials/shared-ui-frame.php:342
+#: templates/partials/shared-ui-frame.php:163
+#: templates/partials/shared-ui-frame.php:314
+#: templates/partials/shared-ui-frame.php:429
 msgid "Close"
 msgstr ""
 
@@ -6314,250 +6524,272 @@ msgstr ""
 msgid "Date created"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:205
+#: templates/partials/dashboard-content.php:195
 msgid "YYYY-MM-DD"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:206
+#: templates/partials/dashboard-content.php:196
 msgid "Value"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:210
+#: templates/partials/dashboard-content.php:200
 #. translators: %d: number of items.
 msgid "%d items"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:221
+#: templates/partials/dashboard-content.php:211
 #. translators: 1: rejected file names, 2: supported extensions.
 msgid "File type not allowed: %1$s. Supported: %2$s"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:224
+#: templates/partials/dashboard-content.php:214
 msgid "Upload failed."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:225
+#: templates/partials/dashboard-content.php:215
 msgid "Upload failed. Please try again."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:230
+#: templates/partials/dashboard-content.php:220
 msgid "File replaced!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:231
+#: templates/partials/dashboard-content.php:221
 msgid "Replace failed."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:233
+#: templates/partials/dashboard-content.php:223
 msgid "Media updated!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:234
+#: templates/partials/dashboard-content.php:224
 msgid "Update failed."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:236
+#: templates/partials/dashboard-content.php:226
 msgid "Media deleted."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:237
+#: templates/partials/dashboard-content.php:227
 msgid "Delete failed."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:240
+#: templates/partials/dashboard-content.php:230
 msgid "Album updated!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:241
+#: templates/partials/dashboard-content.php:231
 msgid "Album created!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:243
+#: templates/partials/dashboard-content.php:233
 msgid "Album deleted."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:245
+#: templates/partials/dashboard-content.php:235
 msgid "Removed from favorites."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:247
+#: templates/partials/dashboard-content.php:237
 msgid "Collection updated!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:248
+#: templates/partials/dashboard-content.php:238
 msgid "Collection created!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:249
+#: templates/partials/dashboard-content.php:239
 msgid "Delete this collection? Media items will not be deleted."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:250
+#: templates/partials/dashboard-content.php:240
 msgid "Collection deleted."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:252
+#: templates/partials/dashboard-content.php:242
 msgid "All notifications marked as read."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:288
+#: templates/partials/dashboard-content.php:253
+msgid "Choose an album first."
+msgstr ""
+
+#: templates/partials/dashboard-content.php:255
+msgid "Type at least one tag."
+msgstr ""
+
+#: templates/partials/dashboard-content.php:301
 msgid "Complete your profile. Add an avatar and bio to help others find you."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:345
+#: templates/partials/dashboard-content.php:363
 msgid "Mark all read"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:359
+#: templates/partials/dashboard-content.php:377
 msgid "No notifications yet."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:473
+#: templates/partials/dashboard-content.php:500
 msgid "Your library"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:481
+#: templates/partials/dashboard-content.php:508
 msgid "Library"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:482
+#: templates/partials/dashboard-content.php:509
 msgid "Compete"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:483
+#: templates/partials/dashboard-content.php:510
 msgid "Account"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:610
-msgid "Upload media files"
-msgstr ""
-
-#: templates/partials/dashboard-content.php:618
-msgid "Add title, tags & privacy"
-msgstr ""
-
-#: templates/partials/dashboard-content.php:619
-msgid "Hide fields"
-msgstr ""
-
-#: templates/partials/dashboard-content.php:651
-msgid "file(s)"
-msgstr ""
-
-#: templates/partials/dashboard-content.php:681
+#: templates/partials/dashboard-content.php:660
 msgid "Search your media"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:750
-#: templates/partials/dashboard-content.php:851
-#: templates/partials/dashboard-content.php:953
-#: templates/partials/dashboard-content.php:1066
-#: templates/partials/follows-modal.php:42
+#: templates/partials/dashboard-content.php:700
+msgid "Upload media files"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:708
+msgid "Add title, tags & privacy"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:709
+msgid "Hide fields"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:719
+#: templates/partials/shared-ui-frame.php:261
+msgid "Media title"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:722
 #: templates/partials/shared-ui-frame.php:264
+msgid "Media description"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:731
+msgid "Who can see this"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:752
+msgid "file(s)"
+msgstr ""
+
+#: templates/partials/dashboard-content.php:856
+#: templates/partials/dashboard-content.php:959
+#: templates/partials/dashboard-content.php:1063
+#: templates/partials/dashboard-content.php:1178
+#: templates/partials/follows-modal.php:42
+#: templates/partials/shared-ui-frame.php:325
 msgid "Loading…"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:761
+#: templates/partials/dashboard-content.php:867
 msgid "Upload your first photo, video or audio file to get started."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:795
+#: templates/partials/dashboard-content.php:903
 msgid "Search your albums"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:861
+#: templates/partials/dashboard-content.php:969
 msgid "No albums yet"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:862
+#: templates/partials/dashboard-content.php:970
 msgid "Create your first album to organize your media into collections."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:892
+#: templates/partials/dashboard-content.php:1002
 msgid "Search your favourites"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:945
+#: templates/partials/dashboard-content.php:1055
 msgid "Unfavorite"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:963
+#: templates/partials/dashboard-content.php:1073
 msgid "No favourites yet"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:964
+#: templates/partials/dashboard-content.php:1074
 msgid "Media you favourite appears here so you can find it again."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:979
-#: templates/partials/dashboard-content.php:1107
+#: templates/partials/dashboard-content.php:1089
+#: templates/partials/dashboard-content.php:1219
 msgid "Create Collection"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:998
+#: templates/partials/dashboard-content.php:1110
 msgid "Search your collections"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1076
+#: templates/partials/dashboard-content.php:1188
 msgid "No collections yet"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1077
+#: templates/partials/dashboard-content.php:1189
 msgid "Create a smart collection to auto-organize your media!"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1138
+#: templates/partials/dashboard-content.php:1250
 msgid "Add media to this collection manually via the Favorites button."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1141
+#: templates/partials/dashboard-content.php:1253
 msgid "Define rules and media matching all conditions will appear automatically."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1147
+#: templates/partials/dashboard-content.php:1259
 msgid "Rules (all must match)"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1185
+#: templates/partials/dashboard-content.php:1297
 msgid "media items match"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1210
+#: templates/partials/dashboard-content.php:1322
 msgid "Edit Media"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1221
-#: templates/partials/shared-ui-frame.php:47
+#: templates/partials/dashboard-content.php:1333
+#: templates/partials/shared-ui-frame.php:57
 msgid "Title cannot be empty."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1279
+#: templates/partials/dashboard-content.php:1391
 msgid "Replace File"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1282
+#: templates/partials/dashboard-content.php:1394
 msgid "Upload a new file. Metadata is preserved."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1332
+#: templates/partials/dashboard-content.php:1444
 msgid "Select Media"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1333
+#: templates/partials/dashboard-content.php:1445
 msgid "Album Media & Cover"
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1336
+#: templates/partials/dashboard-content.php:1448
 msgid ""
 "Click a thumbnail to toggle selection. Click \"Set Cover\" to choose the "
 "album cover."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1339
+#: templates/partials/dashboard-content.php:1451
 msgid "Loading media..."
 msgstr ""
 
-#: templates/partials/dashboard-content.php:1363
+#: templates/partials/dashboard-content.php:1475
 msgid "Set Cover"
 msgstr ""
 
@@ -6598,183 +6830,200 @@ msgstr ""
 msgid "Max 2 MB. JPEG, PNG, GIF, WebP."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:48
+#: templates/partials/shared-ui-frame.php:58
 msgid "Upload Photo"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:49
+#: templates/partials/shared-ui-frame.php:59
 msgid "Create Gallery Post"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:51
+#: templates/partials/shared-ui-frame.php:61
 msgid "Upload Video"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:52
+#: templates/partials/shared-ui-frame.php:62
 msgid "Upload Audio"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:55
+#: templates/partials/shared-ui-frame.php:65
 msgid "Media settings saved."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:56
+#: templates/partials/shared-ui-frame.php:66
 msgid "Please select files to upload."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:58
+#: templates/partials/shared-ui-frame.php:68
 #. translators: %s: album name.
 msgid "Album \"%s\" created!"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:59
+#: templates/partials/shared-ui-frame.php:69
 msgid "Failed to load media."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:60
+#: templates/partials/shared-ui-frame.php:70
 msgid "Failed to post comment."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:61
+#: templates/partials/shared-ui-frame.php:71
 msgid "Link copied!"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:62
+#: templates/partials/shared-ui-frame.php:72
 msgid "Could not copy link. Use the Open button to view this media in a new tab."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:63
+#: templates/partials/shared-ui-frame.php:73
 msgid "This media is not available for download."
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:89
+#: templates/partials/shared-ui-frame.php:130
+msgid "Add"
+msgstr ""
+
+#: templates/partials/shared-ui-frame.php:132
+#: templates/partials/shared-ui-frame.php:148
 msgid "Upload media"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:154
+#: templates/partials/shared-ui-frame.php:140
+msgid "Add media or open Documents"
+msgstr ""
+
+#: templates/partials/shared-ui-frame.php:214
 msgid "Remove this file from upload"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:191
+#: templates/partials/shared-ui-frame.php:251
 msgid "Friends Only"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:198
+#: templates/partials/shared-ui-frame.php:258
 msgid "Add details"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:209
+#: templates/partials/shared-ui-frame.php:270
 msgid "Add to album"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:210
+#: templates/partials/shared-ui-frame.php:271
 msgid "Add to album (optional)"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:211
+#: templates/partials/shared-ui-frame.php:272
 msgid "+ Create new album…"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:218
+#: templates/partials/shared-ui-frame.php:279
 msgid "New album name"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:220
+#: templates/partials/shared-ui-frame.php:281
 msgid "Popular tags"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:221
+#: templates/partials/shared-ui-frame.php:282
 msgid "Popular tags:"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:289
+#: templates/partials/shared-ui-frame.php:350
 msgid "Public — anyone can view"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:290
+#: templates/partials/shared-ui-frame.php:351
 msgid "Members Only — logged-in users"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:292
+#: templates/partials/shared-ui-frame.php:353
 msgid "Friends Only — BuddyPress friends"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:294
+#: templates/partials/shared-ui-frame.php:355
 msgid "Private — only you"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:312
+#: templates/partials/shared-ui-frame.php:373
 msgid "Allow viewers to download this media"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:315
+#: templates/partials/shared-ui-frame.php:376
 msgid ""
 "Uncheck to hide the Download button on this single item. The site-wide "
 "download setting still applies."
 msgstr ""
 
 #: templates/partials/shared-ui-frame.php:415
+msgid "Media viewer"
+msgstr ""
+
+#: templates/partials/shared-ui-frame.php:420
+msgid "Toggle fullscreen"
+msgstr ""
+
+#: templates/partials/shared-ui-frame.php:508
 msgid "Like"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:418
+#: templates/partials/shared-ui-frame.php:511
 msgid "Love"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:421
+#: templates/partials/shared-ui-frame.php:514
 msgid "Haha"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:424
+#: templates/partials/shared-ui-frame.php:517
 msgid "Wow"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:427
+#: templates/partials/shared-ui-frame.php:520
 msgid "Sad"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:430
+#: templates/partials/shared-ui-frame.php:523
 msgid "Angry"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:446
+#: templates/partials/shared-ui-frame.php:539
 msgid "Favorite this media"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:453
+#: templates/partials/shared-ui-frame.php:546
 msgid "Save this media to a collection"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:485
+#: templates/partials/shared-ui-frame.php:578
 msgid "Download this media to your device"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:490
+#: templates/partials/shared-ui-frame.php:583
 msgid "Open this media in a new tab"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:492
+#: templates/partials/shared-ui-frame.php:585
 msgid "Open"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:498
+#: templates/partials/shared-ui-frame.php:591
 msgid "Report this media for review"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:535
-msgid "No comments yet. Be the first to say something!"
-msgstr ""
-
-#: templates/partials/shared-ui-frame.php:538
-msgid "View all comments"
-msgstr ""
-
-#: templates/partials/shared-ui-frame.php:543
+#: templates/partials/shared-ui-frame.php:612
 msgid "Add a comment…"
 msgstr ""
 
-#: templates/partials/shared-ui-frame.php:556
+#: templates/partials/shared-ui-frame.php:625
 msgid "Log in to comment"
+msgstr ""
+
+#: templates/partials/shared-ui-frame.php:677
+msgid "No comments yet. Be the first to say something!"
+msgstr ""
+
+#: templates/partials/shared-ui-frame.php:680
+msgid "View all comments"
 msgstr ""
 
 #: templates/partials/usage-history.php:37
