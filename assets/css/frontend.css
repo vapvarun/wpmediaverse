@@ -82,6 +82,23 @@
      */
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
 
+    /* The brand colour AS TEXT, dark enough to pass AA.
+     *
+     * --mvs-primary is tuned to be a button BACKGROUND, where white sits on it
+     * and passes easily. The same value used as text on a light page does not:
+     * measured 4.36:1 on the dashboard rail link and the active tab label,
+     * under the 4.5 floor for normal text (Basecamp 10253005724).
+     *
+     * Clamping lightness keeps the theme's hue - a site's brand still reads as
+     * its brand - while guaranteeing the contrast. Text only; the button
+     * background keeps the unmodified colour, which is why this is a separate
+     * token rather than a change to --mvs-primary.
+     *
+     * The dark block below sets it back to --mvs-primary: a theme lightens its
+     * brand for dark mode already (measured 7.98:1 there), so darkening again
+     * would make it worse in exactly the mode that was fine. */
+    --mvs-primary-text: oklch(from var(--mvs-primary) min(l, 0.48) c h);
+
     /*
      * The primary button's colours, resolved ONCE.
      *
@@ -304,6 +321,10 @@ body.dark-mode {
     --mvs-text-muted: var(--reign-site-alternate-text-color, #888888);
     --mvs-border: var(--reign-site-border-color, #363636);
     --mvs-border-light: #2e2e2e;
+    /* Dark mode: a theme already lightens its brand here (measured 7.98:1 on
+       the same rail link that fails at 4.36:1 in light), so the light-mode
+       darkening must NOT apply or it would break the mode that was correct. */
+    --mvs-primary-text: var(--mvs-primary);
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
     --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
@@ -2102,7 +2123,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-dashboard-tab:hover,
 .mvs-dashboard-tab:focus {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     background: none;
     border: none;
     border-bottom: 2px solid var(--mvs-primary);
@@ -2114,7 +2135,9 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-tab.active {
-    color: var(--mvs-primary);
+    /* Label is text -> AA-safe variant. The underline is not text, so it keeps
+       the unmodified brand colour and stays visually true to the theme. */
+    color: var(--mvs-primary-text, var(--mvs-primary));
     border-bottom-color: var(--mvs-primary);
 }
 
@@ -2158,7 +2181,10 @@ body.dark-mode .mvs-skeleton::after {
     .mvs-dashboard-tabs .mvs-dashboard-tab:focus,
     .mvs-dashboard-tabs .mvs-dashboard-tab.active {
         border-bottom-color: var(--mvs-primary) !important;
-        color: var(--mvs-primary) !important;
+        /* Text -> AA-safe variant. These theme-defense rules carry !important,
+           so they are where the tab label's colour is actually decided; setting
+           the token on the non-important rules alone left it at 4.36:1. */
+        color: var(--mvs-primary-text, var(--mvs-primary)) !important;
     }
 }
 
@@ -2240,7 +2266,7 @@ body.dark-mode .mvs-skeleton::after {
     .mvs-dashboard-tabs .mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary) !important;
         background: var(--mvs-surface) !important;
-        color: var(--mvs-primary) !important;
+        color: var(--mvs-primary-text, var(--mvs-primary)) !important;
     }
 
     /* A group with no heading still shows its break. */
@@ -7873,7 +7899,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
     .mvs-dashboard-tabs button.mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary);
         background: var(--mvs-surface);
-        color: var(--mvs-primary);
+        color: var(--mvs-primary-text, var(--mvs-primary));
         font-weight: 600;
     }
 }
@@ -7979,7 +8005,10 @@ a.mvs-dashboard-tab:focus-visible {
     border-block-end: 0;
     border-inline-start-color: var(--mvs-primary);
     background: var(--mvs-surface);
-    color: var(--mvs-primary);
+    /* Text -> AA-safe variant. These theme-defense rules out-specify the base
+       .mvs-dashboard-tab.active rule, so setting the token there alone left the
+       label at 4.36:1 - the fix has to land where the cascade actually ends. */
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-weight: 600;
 }
 
@@ -8065,7 +8094,8 @@ a.mvs-dashboard-tab:focus-visible {
     border: 0;
     background: none;
     box-shadow: none;
-    color: var(--mvs-primary);
+    /* Text, so it takes the AA-safe variant - the raw brand measured 4.36:1. */
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-size: var(--mvs-font-xs);
     text-decoration: none;
 }

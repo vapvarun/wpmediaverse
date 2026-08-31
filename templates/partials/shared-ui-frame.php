@@ -608,7 +608,9 @@ wp_interactivity_state(
 					</h3>
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<div class="mvs-lightbox-comment-form">
+							<?php // A placeholder is not an accessible name: it is not announced by every screen reader, and it disappears the moment the member types. ?>
 							<input type="text" class="mvs-lightbox-comment-input"
+								aria-label="<?php esc_attr_e( 'Add a comment', 'wpmediaverse' ); ?>"
 								placeholder="<?php esc_attr_e( 'Add a comment…', 'wpmediaverse' ); ?>"
 								data-wp-on--input="actions.lightboxUpdateComment"
 								data-wp-on--keydown="actions.lightboxCommentKeydown"
