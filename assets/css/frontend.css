@@ -2101,6 +2101,15 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-tab {
+    /* 12px padding on a 0.95em label lands at ~37px, under the 40px contract.
+       The earlier tap-target sweep missed these because it measured buttons and
+       .mvs-btn, and a tab is neither - it is an <a class="mvs-dashboard-tab">
+       (QA re-verify, Basecamp 10252222115: 7 tabs measured 36.6-37.6px).
+       min-height enforces the floor without changing the visual padding on
+       surfaces where the label already pushes it past 40px. */
+    min-height: var(--mvs-touch-min, 40px);
+    display: inline-flex;
+    align-items: center;
     padding: 12px 24px;
     background: none;
     border: none;
@@ -7144,7 +7153,16 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-auth-gate__secondary {
     font-size: 14px;
-    color: var(--mvs-text-secondary, #646970);
+    /* --mvs-text-secondary measured 3.52:1 on the gate's own background, under
+       the 4.5 floor for text, and the link was 18.2px tall against a 40px
+       contract - the earlier pass fixed the PRIMARY call to action on this gate
+       and stopped there (QA re-verify, Basecamp 10252222150).
+       Body text colour carries the contrast; inline-flex + min-height give the
+       control a real hit area without turning it into a button. */
+    color: var(--mvs-text, #1e1e1e);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--mvs-touch-min, 40px);
     text-decoration: none;
     transition: color 150ms ease;
 }
@@ -7933,7 +7951,10 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
         border-inline-start: 2px solid transparent;
         border-radius: var(--mvs-radius-sm);
         padding: var(--mvs-space-2) var(--mvs-space-3);
-        min-height: 0;
+        /* No min-height reset here. The rail's padding alone lands a row at
+           ~37px, and this selector outranks the base tab rule - which is why
+           the 40px floor added there was inert on desktop (QA re-verify,
+           Basecamp 10252222115). The base rule's --mvs-touch-min now applies. */
         color: var(--mvs-text-secondary);
         font-size: var(--mvs-font-sm);
         font-weight: 500;
