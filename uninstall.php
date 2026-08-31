@@ -14,18 +14,37 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 global $wpdb;
 
 // Remove custom tables.
-$mvs_tables = array(
-	'mvs_reactions',
-	'mvs_favorites',
-	'mvs_media_views',
-	'mvs_media_stats',
-	'mvs_access_rules',
-	'mvs_access_grants',
-	'mvs_mentions',
-	'mvs_album_items',
-	'mvs_media_meta',
-	'mvs_media_index',
-);
+//
+// FROM THE MIGRATOR, not a second list. This file kept its own copy and had
+// drifted to 10 of the 22 tables the plugin creates: uninstalling left the whole
+// messaging stack behind — conversations, messages, participants, reactions —
+// along with notifications, follows, blocks, activity, reports and transactions,
+// rows and all. A member who deleted the plugin to remove their data did not.
+//
+// `Migrator::tables()` is now the one place that knows, and
+// `UninstallCoverageTest` fails if a table is created without being listed
+// there.
+//
+// The migrator's file is required DIRECTLY rather than through an autoloader,
+// because uninstall.php runs standalone — WordPress loads this file on its own,
+// outside the plugin's bootstrap, so nothing has registered an autoloader by the
+// time it runs. It used to require `vendor/autoload.php`; that stopped being
+// the answer when the runtime dependencies moved to `libs/` and `vendor/` became
+// dev-only and absent from the release zip. A one-line require of the one class
+// this file needs has no such failure mode.
+$mvs_migrator = __DIR__ . '/includes/Core/Migrator.php';
+
+if ( is_readable( $mvs_migrator ) ) {
+	require_once $mvs_migrator;
+}
+
+$mvs_tables = class_exists( '\WPMediaVerse\Core\Migrator' )
+	? \WPMediaVerse\Core\Migrator::tables()
+	// The migrator's own file missing (a broken install being cleaned up) is the
+	// one case where a copy is better than nothing: the tables with member data
+	// in them. Deliberately short, and deliberately not maintained — the list
+	// above is.
+	: array( 'mvs_media_index', 'mvs_media_meta', 'mvs_messages', 'mvs_conversations' );
 
 foreach ( $mvs_tables as $mvs_table ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$mvs_table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL

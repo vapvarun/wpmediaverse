@@ -27,6 +27,15 @@ violation() {
     echo "v" >> "$VIOLATIONS_FILE"
 }
 ok() { echo "✓ $*"; }
+# known_gap: same visibility as violation(), but does NOT fail the overall exit
+# code or block the pre-push hook. Use for a rule that is correct and real but
+# has a known, currently-nonzero backlog being worked down incrementally (see
+# Rule 2's original rollout). A rule stays here only as long as the backlog is
+# actually shrinking release over release — a known_gap() that never empties is
+# a rule nobody is honoring, which is worse than not having the rule.
+known_gap() {
+    echo "⚠ $*"
+}
 violations_count() { wc -l < "$VIOLATIONS_FILE" | tr -d ' '; }
 
 # ------------------------------------------------------------------------------
@@ -238,6 +247,118 @@ check_no_refusal_reported_as_success() {
 
 # ------------------------------------------------------------------------------
 
+# Rule 7: no direct $wpdb query against mvs_media_index outside MediaRepository.
+#
+# Architecture invariant 6 (documented in MediaRepositoryInterface.php's docblock
+# since 2.4.0, never mechanically enforced until now — see plan/document-library.md
+# §24.1/§24.2): mvs_media_index is the authoritative media record and every read or
+# write against it goes through Repository\MediaRepository, so caching, privacy
+# filtering and query-shape changes apply everywhere at once instead of wherever
+# someone remembered to duplicate them. A predicate-checking rule (Rule 3's SUM/COUNT
+# grep, for example) does not catch this class of leak, which is exactly why one
+# call site can still slip past every existing rule with a clean CI run.
+#
+# Detection: any $wpdb->{get_results|get_var|get_row|get_col|query|prepare}( ... )
+# call whose argument contains the literal table name, matched across the whole
+# call (not line-by-line, so multi-line prepare() calls are caught) via a Python
+# pass — same approach as Rule 5, for the same reason: a regex anchored to one line
+# misses the common case of a query string spanning several.
+#
+# Allowlist, each with an architectural reason, not a convenience exemption:
+#   - Repository/MediaRepository.php      the repository itself
+#   - Repository/MediaRepositoryInterface.php   docblock-only references, no queries
+#   - Core/Migrator.php                   schema DDL + one-time backfills run before
+#                                          the repository's assumptions about the
+#                                          table's shape are safe to rely on
+#   - Services/AdminAggregatesService.php the Rule-3-sanctioned home for site-wide
+#                                          SUM/COUNT aggregates; routing its own
+#                                          queries through the repository would only
+#                                          relocate the SQL, not remove a leak
+check_no_direct_media_index_query_outside_repository() {
+    local hits
+    hits=$(python3 "$SCRIPT_DIR/lib/detect-media-index-leaks.py" "$PLUGIN_DIR" 2>/dev/null)
+    if [ -n "$hits" ]; then
+        # violation(), promoted from known_gap() on 2026-08-15 when the last of
+        # the 32 tracked call sites was migrated. It was a known_gap() while the
+        # list was non-empty for one reason: a hard failure would have blocked
+        # every push on unrelated work through the pre-push hook until all 32
+        # were fixed in a single sweep, which is the "no incremental patches"
+        # tension this rule exists to resolve rather than create.
+        #
+        # That reason is spent. The list is empty, so the only thing this can
+        # fail on now is a NEW leak — and a new leak caught at push time costs
+        # one edit, while the same leak found six months later costs the
+        # investigation that produced this rule in the first place.
+        local count
+        count=$(echo "$hits" | wc -l | tr -d ' ')
+        violation "Rule 7 — direct \$wpdb query against mvs_media_index outside the repository layer ($count):"
+        echo "$hits" | sed 's/^/    /'
+        echo "    mvs_media_index is the authoritative media record and every read or"
+        echo "    write goes through includes/Repository/ — so caching, privacy"
+        echo "    filtering and query-shape changes apply everywhere at once instead"
+        echo "    of wherever someone remembered to duplicate them."
+        echo ""
+        echo "    Fix, in order of preference:"
+        echo "      1. Use an existing MediaRepository method. There are ~90; the"
+        echo "         general listing engine is query() / query_count(), which takes"
+        echo "         status, author, privacy, type, date, id-cursor and file filters."
+        echo "      2. Add an argument to query()'s builder if yours is a new"
+        echo "         PREDICATE over the same shape of question."
+        echo "      3. Add a named method if it is a genuinely different query"
+        echo "         (an anti-join, an aggregate, a schema question)."
+        echo "      4. Only if it is diagnostic or repair work whose reads must NOT"
+        echo "         pass through the row cache, put it in"
+        echo "         Repository/MediaIntegrityRepository.php."
+        echo ""
+        echo "    Allowlisting is a last resort and needs an ARCHITECTURAL reason"
+        echo "    written next to the entry in bin/lib/detect-media-index-leaks.py —"
+        echo "    'it was easier' is not one. Migrator.php qualifies because it runs"
+        echo "    before the repository's assumptions about the table are safe."
+    else
+        ok "Rule 7 — all mvs_media_index access routed through MediaRepository"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Rule 8: no exec-family call may appear in shipped source.
+#
+# Why this exists, and why it is a hard gate rather than a review habit:
+#
+# The FFmpeg path was removed in 2.4.0 (commit c96415ba) because security
+# plugins flag exec()/proc_open() as a possible backdoor. That is not a bug we
+# can engineer around. Scanners match the CALL SITE IN THE SHIPPED FILE — not at
+# runtime, not conditionally — so wrapping it in `if ( ffmpeg_available() )`
+# changes nothing, and we cannot know which scanner any given customer runs.
+# The owner's words for the cost: it "keeps making them panic".
+#
+# So the property we need is not "we removed it" but "it cannot come back". One
+# proc_open added for a thumbnail in six months puts every Wordfence install
+# back into a red warning, and the first we hear of it is a support queue.
+#
+# If a future feature genuinely needs a binary, it does NOT go here. The three
+# ways to have FFmpeg without carrying the flag are in
+# docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md section 0:
+# a remote service (wp_remote_post), the browser (ffmpeg.wasm), or the site
+# owner's own mu-plugin. This rule is what keeps that decision from quietly
+# eroding.
+check_no_exec_family_calls() {
+    local hits
+    hits="$(grep -rnE '(^|[^a-zA-Z_>$-])(exec|shell_exec|proc_open|system|passthru|popen|pcntl_exec)[[:space:]]*\(' \
+        --include='*.php' "$PLUGIN_DIR/includes" "$PLUGIN_DIR/templates" 2>/dev/null \
+        | grep -v '/dist/' \
+        | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|#)' \
+        | grep -vE '(safe_exec|_exec_context|execute)' || true)"
+
+    if [ -n "$hits" ]; then
+        while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            violation "Rule 8" "exec-family call in shipped source — security plugins flag this as a backdoor: $line"
+        done <<< "$hits"
+    fi
+}
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
@@ -248,6 +369,8 @@ check_no_raw_aggregate_queries_outside_service
 check_no_per_entity_transients
 check_rest_per_page_has_maximum
 check_no_refusal_reported_as_success
+check_no_direct_media_index_query_outside_repository
+check_no_exec_family_calls
 
 echo ""
 COUNT=$(violations_count)

@@ -14,8 +14,85 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 25;
-	const VERSION_OPTION  = 'mvs_db_version';
+	const CURRENT_VERSION = 30;
+
+	/**
+	 * Option recording how far the v29 drive backfill has progressed.
+	 *
+	 * The backfill touches every row in the media index, so it runs in bounded
+	 * batches across requests rather than in one ALTER-sized transaction. This
+	 * holds the highest media_id already stamped; absent means "not started",
+	 * and the sentinel below means "finished".
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const DRIVE_BACKFILL_OPTION = 'mvs_drive_backfill_cursor';
+
+	/**
+	 * Cron hook that advances the v29 drive backfill.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const DRIVE_BACKFILL_HOOK = 'mvs_backfill_drive_columns';
+
+	/**
+	 * Rows stamped per backfill batch.
+	 *
+	 * @since 2.4.0
+	 * @var int
+	 */
+	const DRIVE_BACKFILL_BATCH = 2000;
+	const VERSION_OPTION       = 'mvs_db_version';
+
+	/**
+	 * Every table this plugin creates, without the prefix.
+	 *
+	 * THE SINGLE SOURCE for "what belongs to WPMediaVerse". `uninstall.php` kept
+	 * its own hardcoded copy and had drifted to 10 of 22: uninstalling left
+	 * the whole messaging stack behind — conversations, messages, participants,
+	 * reactions — plus notifications, follows, blocks, activity, reports and
+	 * transactions, with their rows intact. On this development site that was
+	 * 366 rows of transactions and 56 follows surviving a delete.
+	 *
+	 * A list is only a source of truth if something checks it, so
+	 * `UninstallCoverageTest` runs the migrator on a clean database and asserts
+	 * the tables that appear are exactly the tables named here. Add a table
+	 * without listing it and that test fails rather than a customer finding it
+	 * years later.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[] Unprefixed table names.
+	 */
+	public static function tables(): array {
+		return array(
+			'mvs_access_grants',
+			'mvs_access_rules',
+			'mvs_activity',
+			'mvs_album_items',
+			'mvs_blocks',
+			'mvs_bp_activity_media',
+			'mvs_conversation_participants',
+			'mvs_conversations',
+			'mvs_device_tokens',
+			'mvs_error_log',
+			'mvs_favorites',
+			'mvs_follows',
+			'mvs_media_index',
+			'mvs_media_meta',
+			'mvs_media_stats',
+			'mvs_media_views',
+			'mvs_mentions',
+			'mvs_message_reactions',
+			'mvs_messages',
+			'mvs_notifications',
+			'mvs_reactions',
+			'mvs_reports',
+			'mvs_transactions',
+		);
+	}
 
 	/**
 	 * Run pending migrations.
@@ -1567,5 +1644,618 @@ class Migrator {
 			'rows_updated'    => $rows_updated,
 			'rows_unresolved' => $rows_unresolved,
 		);
+	}
+
+	/**
+	 * Migration v26 — evict album/collection rows from mvs_media_index.
+	 *
+	 * THE INVARIANT: mvs_media_index holds media, one row per media item, and an
+	 * album or collection ID must never appear in media_id. Albums are wp_posts rows
+	 * that media point at; their own attributes belong in post meta.
+	 *
+	 * Before 2.4.0 albums wrote privacy/album_type/import-markers through
+	 * MediaRepository keyed on their post ID. media_id is AUTO_INCREMENT for media,
+	 * so on any site where uploads have outrun post IDs that write landed on a real
+	 * photo and overwrote its slug and privacy.
+	 *
+	 * This pass is COPY-THEN-DELETE and never the reverse, so an interruption leaves
+	 * data duplicated rather than lost. It is idempotent: existing post meta is never
+	 * overwritten, and a second run finds nothing to do.
+	 *
+	 * Rows carrying real media are PRESERVED and logged. Their album data was
+	 * destroyed at write time and is not recoverable — the photo is real and must not
+	 * be touched.
+	 *
+	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md
+	 *
+	 * @since 2.4.0
+	 * @return void
+	 */
+	private function migrate_to_26(): void {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+
+		// Keys only an album ever writes. Safe to lift and remove even from a colliding
+		// row, because a media item never uses them. Everything else under a colliding
+		// ID belongs to the photo (thumbnails, webp paths, EXIF) and must be left alone.
+		$album_only_keys = array(
+			'album_type'       => '_mvs_album_type',
+			'mpp_gallery_id'   => '_mvs_mpp_gallery_id',
+			'rtmedia_album_id' => '_mvs_rtmedia_album_id',
+			'bb_album_id'      => '_mvs_bb_album_id',
+		);
+
+		// AMBIGUOUS: media uses group_id too — PrivacyService::check_group() reads it
+		// off a media row to resolve BuddyPress group visibility. On a colliding ID
+		// there is no way to tell whose it is, so it is neither copied nor deleted
+		// there: guessing wrong would either mis-scope the album or destroy the
+		// photo's group assignment. On a clean album row it migrates normally.
+		$ambiguous_keys = array(
+			'group_id' => '_mvs_group_id',
+		);
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.ID AS cpt_id, p.post_type, m.privacy, m.media_type
+				   FROM {$index} m
+				   INNER JOIN {$wpdb->posts} p ON p.ID = m.media_id
+				  WHERE p.post_type IN ( %s, %s )",
+				'mvs_album',
+				'mvs_collection'
+			),
+			ARRAY_A
+		);
+
+		$migrated  = 0;
+		$preserved = array();
+
+		foreach ( (array) $rows as $row ) {
+			$cpt_id    = (int) $row['cpt_id'];
+			$colliding = '' !== (string) $row['media_type'];
+
+			// 1. Privacy onto the post. Never overwrite a value already there.
+			if ( '' === (string) get_post_meta( $cpt_id, '_mvs_privacy', true ) ) {
+				$privacy = (string) $row['privacy'];
+				update_post_meta( $cpt_id, '_mvs_privacy', '' !== $privacy ? $privacy : 'public' );
+			}
+
+			// 2. Album attribute meta onto the post, then drop just those keys.
+			$movable = $colliding ? $album_only_keys : array_merge( $album_only_keys, $ambiguous_keys );
+
+			foreach ( $movable as $old_key => $post_key ) {
+				$value = $wpdb->get_var(
+					$wpdb->prepare( "SELECT meta_value FROM {$meta} WHERE media_id = %d AND meta_key = %s", $cpt_id, $old_key )
+				);
+				if ( null === $value ) {
+					continue;
+				}
+				if ( '' === (string) get_post_meta( $cpt_id, $post_key, true ) ) {
+					update_post_meta( $cpt_id, $post_key, $value );
+				}
+				$wpdb->delete(
+					$meta,
+					array(
+						'media_id' => $cpt_id,
+						'meta_key' => $old_key,
+					),
+					array( '%d', '%s' )
+				);
+			}
+
+			if ( $colliding ) {
+				// A real media row wearing this album's privacy. Keep every byte of it.
+				$preserved[] = $cpt_id;
+				continue;
+			}
+
+			// 3. Attribute-only row — it was never legitimate. Remove it.
+			$wpdb->delete( $index, array( 'media_id' => $cpt_id ), array( '%d' ) );
+			++$migrated;
+		}
+
+		// 4. Album-space taxonomy rows. Categories on albums were write-only (nothing
+		// read them back) and shared object_id space with media. Clear them ONLY where
+		// the ID is not also a media row — where it is, the terms are the photo's and
+		// deleting them would be the same class of data loss this migration exists to
+		// stop.
+		$orphan_terms = (int) $wpdb->query(
+			$wpdb->prepare(
+				"DELETE tr FROM {$wpdb->term_relationships} tr
+				   INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				   INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
+				   LEFT JOIN {$index} m ON m.media_id = tr.object_id AND m.media_type <> ''
+				  WHERE tt.taxonomy IN ( %s, %s )
+				    AND p.post_type IN ( %s, %s )
+				    AND m.media_id IS NULL",
+				'mvs_category',
+				'mvs_tag',
+				'mvs_album',
+				'mvs_collection'
+			)
+		);
+		// phpcs:enable
+
+		if ( ! empty( $preserved ) ) {
+			update_option( 'mvs_cpt_id_collisions', $preserved, false );
+		}
+
+		if ( class_exists( '\\WPMediaVerse\\Services\\LoggerService' ) ) {
+			\WPMediaVerse\Services\LoggerService::error(
+				'migration',
+				'v26 evicted album/collection rows from mvs_media_index',
+				array(
+					'rows_removed'     => $migrated,
+					'collisions_kept'  => count( $preserved ),
+					'collision_ids'    => $preserved,
+					'orphan_term_rows' => $orphan_terms,
+				)
+			);
+		}
+	}
+
+	/**
+	 * Option recording that the legacy-document quarantine has run.
+	 *
+	 * The quarantine is the one step in v27 that is NOT naturally idempotent:
+	 * re-running it after the document library ships would re-type real member
+	 * documents as legacy. The version gate already runs each migration once, but
+	 * this makes the property hold no matter how the method is invoked, which is
+	 * what the test asserts.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	const LEGACY_QUARANTINE_OPTION = 'mvs_legacy_documents_quarantined';
+
+	/**
+	 * Migration v27 — quarantine the catch-all rows, then open the document schema.
+	 *
+	 * ORDER MATTERS AND IS NOT COSMETIC. The quarantine runs FIRST, before anything
+	 * can create a real document row. Until 1.2.3 `UploadService::get_media_type()`
+	 * returned 'document' for anything that was not image/video/audio — an inverse
+	 * allowlist — so on a site that ran with PDFs enabled, `media_type='document'`
+	 * means "we could not classify this", not "a member uploaded a document". The
+	 * document library is about to give that exact string a real meaning, and the
+	 * two populations must be separated before they can ever mix.
+	 *
+	 * WHY THEY STAY VISIBLE. `legacy_document` is in `MediaTypes::MEDIA_LIBRARY`, so
+	 * these rows keep appearing everywhere they appear today. That is deliberate:
+	 * members can see them in their libraries right now, and dropping them from
+	 * listings would delete content from a member's library on upgrade — a visible
+	 * regression on precisely the sites this protects, and the kind of
+	 * default-behaviour change Production Rule 3 forbids. They are NOT in
+	 * `DOCUMENTS`: they never passed `DocumentTypes::resolve()`, have no folder and
+	 * no extraction, so the document library must not claim them. Adopting them is a
+	 * deliberate, owner-initiated migration, never an upgrade side effect.
+	 *
+	 * The remaining three steps are additive DDL — a column and two indexes, each
+	 * guarded so a partial prior run resumes cleanly. `search_text` is deliberately
+	 * NOT here: it lives on the `mvs_document_search` side table (P8.1), because a
+	 * longtext + FULLTEXT on `mvs_media_index` would put that cost on the hottest
+	 * table in the product for every media write on the site.
+	 *
+	 * Design: plan/document-library.md §2; what shipped, §19.
+	 *
+	 * @since 2.4.0
+	 * @return void
+	 */
+	private function migrate_to_27(): void {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		// 1. Quarantine, once and once only. See LEGACY_QUARANTINE_OPTION.
+		if ( ! get_option( self::LEGACY_QUARANTINE_OPTION ) ) {
+			$quarantined = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+				$wpdb->prepare(
+					"UPDATE {$index} SET media_type = %s WHERE media_type = %s",
+					\WPMediaVerse\Core\MediaTypes::LEGACY_DOCUMENT,
+					'document'
+				)
+			);
+
+			update_option(
+				self::LEGACY_QUARANTINE_OPTION,
+				array(
+					'rows' => $quarantined,
+					'at'   => current_time( 'mysql', true ),
+				),
+				false
+			);
+
+			if ( $quarantined > 0 && class_exists( '\\WPMediaVerse\\Services\\LoggerService' ) ) {
+				\WPMediaVerse\Services\LoggerService::error(
+					'migration',
+					'v27 quarantined pre-1.2.3 catch-all rows as legacy_document',
+					array( 'rows' => $quarantined )
+				);
+			}
+		}
+
+		// 2. folder_id — documents only, 0 means "at the drive root". Separate from
+		// album_id on purpose (design §2): an item is in an album OR a folder, the
+		// two id spaces are unrelated, and overloading one column would make every
+		// drive query depend on knowing which meaning was stored.
+		if ( ! $this->column_exists( $index, 'folder_id' ) ) {
+			$prev_show = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$index} ADD COLUMN folder_id bigint(20) unsigned NOT NULL DEFAULT 0" );
+			$wpdb->show_errors( $prev_show );
+		}
+
+		// 3. KEY doc_listing IS the drive query verbatim, left-to-right —
+		// WHERE media_type=? AND folder_id=? AND status=? ORDER BY created_at.
+		// Without it the drive degrades to a scan of the whole media table at
+		// exactly the sites with the most documents.
+		$this->add_index_if_missing( $index, 'doc_listing', 'doc_listing (media_type, folder_id, status, created_at)' );
+
+		// 4. KEY type_file backs "every PDF in this drive" without a scan.
+		$this->add_index_if_missing( $index, 'type_file', 'type_file (media_type, file_type)' );
+	}
+
+	/**
+	 * Add an index unless a key of that name already exists WITH THE RIGHT COLUMNS.
+	 *
+	 * Extracted rather than inlined twice: v25 and v27 both needed this SHOW INDEX
+	 * guard, and a second copy of a guarded ALTER is how one of them ends up
+	 * unguarded later.
+	 *
+	 * THE SHAPE CHECK IS NOT DEFENSIVE PADDING — it is the fix for a defect this
+	 * method shipped with, found on 2026-08-19 by reading `SHOW INDEX` on a real
+	 * database instead of trusting the migration that wrote it. The name-only
+	 * test made a degraded index permanent, and silently:
+	 *
+	 *   1. v29 adds `drive_type`/`drive_id` and `KEY drive_listing` over six
+	 *      columns including them.
+	 *   2. Anything later drops those two columns — the 2026-08-15 upgrade
+	 *      rehearsal did exactly this on purpose, and a restored dump from a
+	 *      mixed version or a host tool does it by accident. **MySQL does not
+	 *      drop the index; it rewrites it down to the surviving columns**, so
+	 *      `drive_listing` becomes `(media_type, folder_id, status, created_at)`
+	 *      — a byte-identical duplicate of `doc_listing`, paying write cost on
+	 *      the hottest table in the product for nothing.
+	 *   3. The columns come back. This method sees the NAME, returns true, and
+	 *      the six-column index is never rebuilt.
+	 *
+	 * The site is then permanently missing the index its own code comments
+	 * promise it has, and the deep-OFFSET soft spot on a large Space drive is
+	 * open again with nothing to indicate it. Nobody would look, because the
+	 * migration reports success.
+	 *
+	 * So: compare the actual column list, and rebuild when it differs. The DROP
+	 * costs a rebuild on a big table, but it only runs when the shape is already
+	 * wrong — and a wrong index is not cheaper than the right one, it is a write
+	 * cost buying nothing.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $table      Full table name (with prefix).
+	 * @param string $key_name   Index name to test for.
+	 * @param string $definition Index definition, e.g. "name (col_a, col_b)".
+	 * @return bool True when the index exists, with the right columns, after this call.
+	 */
+	private function add_index_if_missing( string $table, string $key_name, string $definition ): bool {
+		global $wpdb;
+
+		$have = $this->index_columns( $table, $key_name );
+		$want = $this->definition_columns( $definition );
+
+		if ( $have ) {
+			if ( $have === $want ) {
+				return true;
+			}
+
+			// Wrong shape under the right name. Drop it, then fall through and
+			// build the one the definition asks for.
+			$prev_drop = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$table} DROP KEY `{$key_name}`" );
+			$wpdb->show_errors( $prev_drop );
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$table} ADD KEY {$definition}" );
+		$wpdb->show_errors( $prev_show );
+
+		return $this->index_columns( $table, $key_name ) === $want;
+	}
+
+	/**
+	 * The columns an existing index is built over, in order.
+	 *
+	 * Ordered by `Seq_in_index`, because the ORDER is the index: the same four
+	 * columns in a different sequence serve a different query.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $table    Full table name.
+	 * @param string $key_name Index name.
+	 * @return string[] Lower-cased column names, empty when the index is absent.
+	 */
+	private function index_columns( string $table, string $key_name ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", $key_name ),
+			ARRAY_A
+		);
+
+		if ( ! $rows ) {
+			return array();
+		}
+
+		usort(
+			$rows,
+			static function ( $a, $b ) {
+				return (int) $a['Seq_in_index'] <=> (int) $b['Seq_in_index'];
+			}
+		);
+
+		return array_map(
+			static function ( $row ) {
+				return strtolower( (string) $row['Column_name'] );
+			},
+			$rows
+		);
+	}
+
+	/**
+	 * The columns a definition string asks for, in order.
+	 *
+	 * Parses `name (col_a, col_b(150))` — the prefix length is dropped, since
+	 * `SHOW INDEX` reports it in `Sub_part` rather than in `Column_name` and
+	 * comparing the two lists is the whole point.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $definition Index definition.
+	 * @return string[] Lower-cased column names.
+	 */
+	private function definition_columns( string $definition ): array {
+		if ( ! preg_match( '/\((.*)\)\s*$/s', $definition, $matches ) ) {
+			return array();
+		}
+
+		$columns = array();
+
+		foreach ( explode( ',', $matches[1] ) as $column ) {
+			$column = strtolower( trim( $column ) );
+			$column = preg_replace( '/\s*\(\d+\)$/', '', $column );
+			$column = trim( (string) $column, '`' );
+
+			if ( '' !== $column ) {
+				$columns[] = $column;
+			}
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Migration v28 — clear hard-refused MIME types out of the stored
+	 * `mvs_allowed_file_types`.
+	 *
+	 * Every install predating 1.2.3 still carries `application/pdf` in that
+	 * option. Card #9962125462 removed PDF from the settings grid and made the
+	 * upload path refuse it, but neither half covered an install whose option
+	 * ALREADY contained it — so the picker went on advertising PDF to members,
+	 * the server went on refusing it, and the owner had no way to stop it: PDF is
+	 * absent from the grid so there is no box to untick, and the sanitizer's
+	 * preserve-custom-types rule (correct in itself) wrote it back on every save.
+	 * The stored value was unreachable by any admin action (Basecamp 10190738445).
+	 *
+	 * Nothing is lost: the media path has refused these types since 1.2.3, so
+	 * removing them from the option removes an entry that only ever produced a
+	 * failed upload. PDFs belong in the document library, which accepts them.
+	 *
+	 * Idempotent — re-running finds nothing to strip. A site that genuinely wants
+	 * one of these back can still add it through the `mvs_allowed_file_types`
+	 * filter, which this does not touch.
+	 *
+	 * @since 2.4.0
+	 */
+	/**
+	 * Migration v29 — the drive columns (Phase 11 G1).
+	 *
+	 * A document uploaded to a Space root today stores only `post_author`, so it
+	 * would appear in the UPLOADER'S personal drive rather than the Space
+	 * library. Personal root listing is `folder_id = 0 AND post_author = %d`, and
+	 * that coincidence — ownership doubling as scoping — is the gap.
+	 *
+	 * COLUMNS, NOT POST META, per §23.2 G1: every listing this feature needs is
+	 * drive-scoped, and drive-scoped listing through post meta is a join that
+	 * degrades exactly as a Space library grows. Albums use meta because albums
+	 * are `wp_posts` and few; documents live here and are not.
+	 *
+	 * THE INDEX SHIPS WITH THE COLUMNS, and that is the part easy to miss.
+	 * `KEY doc_listing` is `(media_type, folder_id, status, created_at)` — once
+	 * root listing is keyed on the drive, the two new columns land AFTER its
+	 * prefix and cannot be used, so §12's "the index is the drive query verbatim"
+	 * would quietly stop being true, visible only on a large Space.
+	 * `drive_documents()` already carried a measured comment saying the clean fix
+	 * is an index this table does not have and "belongs in its own migration
+	 * rather than riding along with a UI phase". This is that migration.
+	 *
+	 * THE BACKFILL IS BOUNDED. Stamping every row in one pass is an unbounded
+	 * UPDATE on the hottest table in the product; a site with a large library
+	 * would hang its own upgrade. It runs in batches from a cursor, continued by
+	 * cron, and the default (`user` / 0) is a safe resting state throughout: an
+	 * unstamped row is resolved by `post_author` exactly as it is today.
+	 *
+	 * @since 2.4.0
+	 */
+	private function migrate_to_29(): void {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		if ( ! $this->column_exists( $index, 'drive_type' ) ) {
+			$prev = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$index} ADD COLUMN drive_type varchar(20) NOT NULL DEFAULT 'user'" );
+			$wpdb->show_errors( $prev );
+		}
+
+		if ( ! $this->column_exists( $index, 'drive_id' ) ) {
+			$prev = $wpdb->show_errors( false );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE {$index} ADD COLUMN drive_id bigint(20) unsigned NOT NULL DEFAULT 0" );
+			$wpdb->show_errors( $prev );
+		}
+
+		// The drive query verbatim, left-to-right:
+		// WHERE media_type=? AND drive_type=? AND drive_id=? AND folder_id=?
+		// AND status=? ORDER BY created_at
+		$this->add_index_if_missing(
+			$index,
+			'drive_listing',
+			'drive_listing (media_type, drive_type, drive_id, folder_id, status, created_at)'
+		);
+
+		// Kick the bounded backfill off. It is idempotent and resumable, so an
+		// interrupted upgrade simply continues on the next tick.
+		if ( ! get_option( self::DRIVE_BACKFILL_OPTION ) ) {
+			update_option( self::DRIVE_BACKFILL_OPTION, 0, false );
+		}
+
+		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
+			wp_schedule_single_event( time() + 30, self::DRIVE_BACKFILL_HOOK );
+		}
+	}
+
+	/**
+	 * v30 — device tokens for native push notifications.
+	 *
+	 * Stores one row per (user, device) so the notification pipeline can dispatch
+	 * a push to a member's registered devices. The plugin OWNS the tokens and
+	 * fires the dispatch signal; the actual FCM/APNs send is a delivery
+	 * integration's job (credentials + platform SDKs live off the plugin).
+	 * Basecamp 9667082225.
+	 */
+	private function migrate_to_30(): void {
+		global $wpdb;
+
+		$prefix          = $wpdb->prefix;
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_device_tokens (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) unsigned NOT NULL,
+				platform varchar(20) NOT NULL,
+				token varchar(255) NOT NULL,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				UNIQUE KEY token (token),
+				KEY user_id (user_id)
+			) {$charset_collate};"
+		);
+	}
+
+	/**
+	 * Stamp one batch of rows with their personal drive.
+	 *
+	 * Personal drives only — every existing row belongs to the member who
+	 * uploaded it, which is precisely what makes the backfill safe to do in
+	 * arrears. Space drives do not exist yet; when they do, ingest stamps them at
+	 * write time and this never sees them.
+	 *
+	 * Keyset pagination on `media_id`, not OFFSET: an offset walk over a table
+	 * being written to skips rows, and skipping here means a document that never
+	 * gets a drive.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return int Rows stamped in this batch.
+	 */
+	public static function backfill_drive_columns(): int {
+		global $wpdb;
+
+		$cursor = (int) get_option( self::DRIVE_BACKFILL_OPTION, 0 );
+
+		if ( $cursor < 0 ) {
+			return 0;
+		}
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, post_author FROM {$index}
+				  WHERE media_id > %d AND drive_id = 0
+				  ORDER BY media_id ASC
+				  LIMIT %d",
+				$cursor,
+				self::DRIVE_BACKFILL_BATCH
+			)
+		);
+
+		if ( ! $rows ) {
+			// -1 marks "finished" so a restart does not rescan the whole table.
+			update_option( self::DRIVE_BACKFILL_OPTION, -1, false );
+
+			return 0;
+		}
+
+		$stamped = 0;
+		$highest = $cursor;
+
+		foreach ( $rows as $row ) {
+			$media_id = (int) $row->media_id;
+			$author   = (int) $row->post_author;
+			$highest  = max( $highest, $media_id );
+
+			if ( $author <= 0 ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->update(
+				$index,
+				array(
+					'drive_type' => 'user',
+					'drive_id'   => $author,
+				),
+				array( 'media_id' => $media_id ),
+				array( '%s', '%d' ),
+				array( '%d' )
+			);
+
+			++$stamped;
+		}
+
+		update_option( self::DRIVE_BACKFILL_OPTION, $highest, false );
+
+		// More to do — come back for it.
+		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
+			wp_schedule_single_event( time() + 60, self::DRIVE_BACKFILL_HOOK );
+		}
+
+		return $stamped;
+	}
+
+	private function migrate_to_28(): void {
+		$stored = get_option( 'mvs_allowed_file_types', null );
+
+		if ( null === $stored || '' === $stored ) {
+			return;
+		}
+
+		$types  = array_filter( array_map( 'trim', explode( ',', (string) $stored ) ) );
+		$closed = array_values( array_diff( $types, \WPMediaVerse\Services\UploadService::hard_refused_mimes() ) );
+
+		if ( count( $closed ) === count( $types ) ) {
+			return;
+		}
+
+		update_option( 'mvs_allowed_file_types', implode( ',', $closed ) );
 	}
 }

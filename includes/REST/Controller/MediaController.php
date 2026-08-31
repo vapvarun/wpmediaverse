@@ -7,6 +7,8 @@
 
 namespace WPMediaVerse\REST\Controller;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
@@ -146,7 +148,7 @@ class MediaController extends WP_REST_Controller {
 						),
 						'privacy'        => array(
 							'type'        => 'string',
-							'description' => __( 'Privacy level (public, members, loggedin, friends, group, private, custom, or an extension-added level).', 'wpmediaverse' ),
+							'description' => __( 'Privacy level (public, members, loggedin, friends, group, space, private, custom, or an extension-added level). "space" is honoured only when the media is on a Space drive (see the mvs_media_drive filter); on a personal drive it resolves to private.', 'wpmediaverse' ),
 						),
 						'allow_download' => array(
 							'type'        => 'boolean',
@@ -303,14 +305,45 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Whether the media feed may still serve documents.
+	 *
+	 * Production Rule 3 escape hatch. Until 2.4.0 `GET /media?media_type=document`
+	 * returned document rows, and the parameter has advertised `document` in its
+	 * enum since the first release — so a site or client depending on that can
+	 * restore it with one line:
+	 *
+	 *     add_filter( 'mvs_media_feed_allows_documents', '__return_true' );
+	 *
+	 * Restoring it re-opens the two problems described in `get_items()`, so it is
+	 * a migration aid rather than a supported configuration. The filter stays for
+	 * at least two majors; removal no earlier than 4.0.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool True when documents may be served by the media feed.
+	 */
+	public static function media_feed_allows_documents(): bool {
+		/**
+		 * Filters whether the media feed may serve document rows.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $allowed Default false — documents are read through the
+		 *                      document routes, not the media feed.
+		 */
+		return (bool) apply_filters( 'mvs_media_feed_allows_documents', false );
+	}
+
+	/**
 	 * Get collection of media items.
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_items( $request ) {
 		// Rate limit public reads: 120/min per user/IP to prevent scraping.
 		$rate_check = RateLimiter::check( 'media_read', 120, 60 );
+
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
 		}
@@ -318,14 +351,26 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		// Slug lookup — return single item by slug column in mvs_media_index.
+		//
+		// TYPE-CHECKED, not just truthy. `slug` is not a declared arg on this
+		// collection route, so `get_param()` is not guaranteed to hand back a
+		// string — and a non-string is TRUTHY, so the old `if ( $slug )` let it
+		// through to `sanitize_title()`, which fataled the whole route:
+		//
+		// GET /mvs/v1/media?slug=  ->  500
+		// Uncaught TypeError: preg_match(): Argument #2 ($subject) must be of
+		// type string, WP_REST_Request given
+		//
+		// Pre-existing and unrelated to the repository migration — verified by
+		// reproducing it with this file reverted. The same param is already
+		// handled this way further down in this class; this is that pattern.
 		$slug = $request->get_param( 'slug' );
-		if ( $slug ) {
-			$found_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND status = 'publish' LIMIT 1",
-					sanitize_title( $slug )
-				)
-			);
+		if ( is_string( $slug ) && '' !== trim( $slug ) ) {
+			$mvs_by_slug = \WPMediaVerse\Core\Plugin::container()
+				->get( 'media_repository' )
+				->get_by_slug( sanitize_title( $slug ) );
+
+			$found_id = $mvs_by_slug['media_id'] ?? 0;
 			if ( $found_id ) {
 				$item = $this->prepare_item_for_response( (int) $found_id, $request );
 				return rest_ensure_response( $item ? array( $item ) : array() );
@@ -369,12 +414,68 @@ class MediaController extends WP_REST_Controller {
 		$media_type = $request->get_param( 'media_type' );
 		$author     = $request->get_param( 'author' );
 
-		// media_type != '' excludes the privacy-only stub rows albums/collections
-		// leave in mvs_media_index (media_type empty — see PrivacyService). Without
-		// it the /media feed (and the mobile app that reads it) returned those
-		// stubs as empty items. Same fix as the media-grid block. Basecamp 10074442944.
-		$where  = array( 'moderation_status = %s', "media_type != ''" );
-		$params = array( 'approved' );
+		// The old media_type != '' guard existed to hide the privacy-only stub rows
+		// albums and collections used to leave in mvs_media_index (Basecamp
+		// 10074442944). Migrator v26 evicted those rows entirely, so that job is done;
+		// what replaces it below is a positive type group, which is a different and
+		// stronger guarantee.
+		// status = 'publish' is NOT optional here, and its absence is why a trashed
+		// item kept appearing at the top of the feed with a working signed URL: the
+		// owner removed it and every member -- and the mobile app, which reads this
+		// same route -- went on being served it.
+		//
+		// The column is a lifecycle field with several legitimate non-publish
+		// values (trash, and scheduled items awaiting publish_at), so this must
+		// assert publish rather than exclude trash; != 'trash' would leak scheduled
+		// items instead. MediaRepository's shared query builder already defaults to
+		// exactly this, which is why the slug lookup and the album-items query were
+		// never affected -- this route hand-builds its WHERE and simply omitted it.
+		$where  = array( 'status = %s', 'moderation_status = %s' );
+		$params = array( 'publish', 'approved' );
+
+		// POSITIVE INCLUSION, never exclusion. This clause used to read
+		// media_type != '' — which answered "what do I not want today" and passed
+		// every future type straight through. `document` rows would have landed in
+		// this feed, and in the mobile app that reads the same route, without a line
+		// of code changing. The trashed-media leak (68113454) was the same shape: it
+		// too carried a media_type predicate and still leaked.
+		//
+		// An explicit ?media_type= is honoured for the MEDIA vocabulary, and it is
+		// validated against the known types rather than passed through, so an
+		// unknown value narrows to nothing instead of silently widening the feed.
+		//
+		// `document` is REFUSED here, and that is a deliberate reversal. The
+		// comment this replaced read "that is how a document surface asks for
+		// documents", but the document library does not ask through this route:
+		//
+		// 1. It reads documents under MEDIA privacy (public / members / author).
+		// Document access is grants-first through the folder ancestor chain
+		// (design §5), so once PermissionService lands this route resolves the
+		// wrong answer by construction — an ACL bypass, not a stale filter.
+		//
+		// 2. On a document, `public` means UNLISTED — reachable by URL, never
+		// discoverable (design §5). A feed that enumerates public documents to
+		// anonymous callers breaks that, and this route is read by the mobile
+		// app, so the leak would ship to every client at once.
+		//
+		// Documents are read through the Pro document routes instead.
+		$mvs_wants_documents = $media_type && in_array( (string) $media_type, MediaTypes::DOCUMENTS, true );
+		if ( $mvs_wants_documents && ! self::media_feed_allows_documents() ) {
+			return new WP_Error(
+				'mvs_document_route',
+				__( 'Documents are not served by the media feed. Use the document routes instead.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( $media_type && MediaTypes::is_known( (string) $media_type ) ) {
+			$where[]  = 'media_type = %s';
+			$params[] = sanitize_text_field( (string) $media_type );
+		} else {
+			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
+			$where[]                                = $mvs_type_sql;
+			$params                                 = array_merge( $params, $mvs_type_params );
+		}
 
 		// Privacy filtering via index table.
 		if ( ! $user_id ) {
@@ -383,11 +484,6 @@ class MediaController extends WP_REST_Controller {
 		} elseif ( ! user_can( $user_id, 'moderate_mvs_media' ) ) {
 			$where[]  = "(privacy = 'public' OR privacy = 'members' OR post_author = %d)";
 			$params[] = $user_id;
-		}
-
-		if ( $media_type ) {
-			$where[]  = 'media_type = %s';
-			$params[] = sanitize_text_field( $media_type );
 		}
 
 		if ( $author ) {
@@ -554,46 +650,22 @@ class MediaController extends WP_REST_Controller {
 		$per_page = $feed_args['per_page'];
 		$offset   = $feed_args['offset'];
 
-		$where_sql = implode( ' AND ', $where );
-		$join_sql  = ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '';
+		// The fragments above stay here because they are the published contract
+		// of `mvs_feed_query_args`; the EXECUTION belongs to the repository,
+		// which owns the table (architecture invariant 6, coding Rule 7).
+		$feed_page = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->feed_page(
+			array(
+				'where'    => $where,
+				'params'   => $params,
+				'join'     => ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '',
+				'orderby'  => $request->get_param( 'orderby' ),
+				'per_page' => $per_page,
+				'offset'   => $offset,
+			)
+		);
 
-		// Count query.
-		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index i{$join_sql} WHERE {$where_sql}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-
-		// Determine sort order.
-		$orderby  = $request->get_param( 'orderby' );
-		$params[] = $per_page;
-		$params[] = $offset;
-
-		if ( 'trending' === $orderby ) {
-			// Trending score: (reactions * 3 + comments * 5 + views) / age_hours^1.5
-			// JOIN mvs_media_stats for engagement data.
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$data_sql = "SELECT i.media_id,
-				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
-				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
-				FROM {$wpdb->prefix}mvs_media_index i
-				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id{$join_sql}
-				WHERE {$where_sql}
-				ORDER BY trending_score DESC
-				LIMIT %d OFFSET %d";
-		} elseif ( 'popular' === $orderby ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$data_sql = "SELECT i.media_id
-				FROM {$wpdb->prefix}mvs_media_index i
-				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id{$join_sql}
-				WHERE {$where_sql}
-				ORDER BY COALESCE(s.views, 0) DESC
-				LIMIT %d OFFSET %d";
-		} else {
-			$data_sql = "SELECT i.media_id FROM {$wpdb->prefix}mvs_media_index i{$join_sql} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		}
-
-		$results = $wpdb->get_col( $wpdb->prepare( $data_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-		$ids     = $results;
-
-		$int_ids = array_map( 'intval', $ids );
+		$total   = $feed_page['total'];
+		$int_ids = $feed_page['ids'];
 
 		/**
 		 * Filter the final list of media IDs returned by the feed query.
@@ -679,12 +751,23 @@ class MediaController extends WP_REST_Controller {
 
 		// Query group members from mvs_media_meta custom table.
 		global $wpdb;
+		// Type group, not an exclusion. This feeds the gallery lightbox, which steps
+		// through members with prev/next — a document has nothing to render there, so
+		// it must not be reachable by arrowing off the end of a photo.
+		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'mi.media_type' );
+
+		// Driving table is media_meta; the index is the joined side (Rule 7 — see
+		// MediaRepository::index_table()).
+		$mvs_index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
+
 		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
-				INNER JOIN {$wpdb->prefix}mvs_media_index mi ON mm.media_id = mi.media_id
-				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$group_id
+				INNER JOIN {$mvs_index_table} mi ON mm.media_id = mi.media_id
+				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'
+				  AND {$mvs_group_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$group_id,
+				...$mvs_group_type_params
 			)
 		);
 
@@ -921,9 +1004,47 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Update privacy.
-		$privacy = $request->get_param( 'privacy' );
+		//
+		// VALIDATED HERE, not just on upload. This route used to store whatever
+		// string it was handed: `banana` persisted and then failed closed in
+		// PrivacyService's default arm, and `space` persisted on a personal-drive
+		// item where check_space() can never resolve it — 200 OK, never applied,
+		// member believes it saved (Basecamp 10220491230). The vocabulary is
+		// PrivacyService's single filterable list, so upload and update cannot
+		// drift apart again.
+		$privacy         = $request->get_param( 'privacy' );
+		$privacy_changed = false;
 		if ( $privacy ) {
-			$update_data['privacy'] = sanitize_text_field( $privacy );
+			$clean_privacy = sanitize_text_field( $privacy );
+
+			if ( ! in_array( $clean_privacy, PrivacyService::supported_levels(), true ) ) {
+				return new WP_Error(
+					'mvs_privacy_unsupported',
+					__( 'That privacy level is not available on this site.', 'wpmediaverse' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			// `space` means "the members of the Space this lives on", and a media
+			// item is bound to a Space at UPLOAD, by the drive bridge. There is no
+			// move-between-drives route yet, so on a personal-drive item the level
+			// is unhonourable — refuse rather than store it and read as private.
+			if ( 'space' === $clean_privacy ) {
+				$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+				$drive_type = (string) $repo->get( $media_id, 'drive_type' );
+				$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
+
+				if ( 'user' === $drive_type || $drive_id <= 0 ) {
+					return new WP_Error(
+						'mvs_privacy_space_requires_drive',
+						__( 'This media is not in a Space, so it cannot be limited to a Space\'s members.', 'wpmediaverse' ),
+						array( 'status' => 400 )
+					);
+				}
+			}
+
+			$update_data['privacy'] = $clean_privacy;
+			$privacy_changed        = true;
 		}
 
 		// JSON body inspection — used by the tags/categories block further
@@ -947,6 +1068,14 @@ class MediaController extends WP_REST_Controller {
 		// Write all index/meta changes in one call.
 		if ( ! empty( $update_data ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many( $media_id, $update_data );
+		}
+
+		// The privacy answer this request already gave is now stale. PrivacyService
+		// memoises can_view() per media:user for the request, and the response
+		// prepared below asks it again — without this, an item just made private
+		// can still be described as viewable in the very response that changed it.
+		if ( $privacy_changed ) {
+			$this->privacy->flush_cache();
 		}
 
 		if ( array_key_exists( 'tags', $json_params ) ) {
@@ -1035,13 +1164,14 @@ class MediaController extends WP_REST_Controller {
 		$mime           = finfo_file( $finfo, $file['tmp_name'] );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
-		// PDF/document uploads are not supported. Mirror the hard guard in
-		// UploadService::handle() so a member can't slip a PDF in via the
-		// replace endpoint even if a legacy mvs_allowed_file_types option still
-		// lists application/pdf (audit 2026-06-04, #9962125462 — caught by the
-		// double-verifier as a replace_file bypass of the upload guard).
-		if ( 'application/pdf' === $mime || 'document' === $upload_service->get_media_type_public( $mime ) ) {
-			return new \WP_Error( 'mvs_document_not_supported', __( 'PDF uploads are not supported.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		// The SAME guard as UploadService::handle(), not a mirror of it. This
+		// endpoint bypassing the upload guard is exactly what the double-verifier
+		// caught in 2026-06-04 (#9962125462), and a second copy is how that
+		// happens again — the 2.4.0 change from a name test to an unknown test
+		// would have needed both edited in lockstep to stay correct.
+		$mvs_refusal = $upload_service->reject_unsupported_mime( $mime );
+		if ( $mvs_refusal ) {
+			return $mvs_refusal;
 		}
 
 		if ( ! in_array( $mime, $allowed, true ) ) {
@@ -1104,10 +1234,22 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Update media index with new file data.
-		$media_type = explode( '/', $mime )[0]; // image, video, audio.
-		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
-			$media_type = 'document';
-		}
+		//
+		// Through UploadService, not inline — the fourth time this endpoint has
+		// had to stop reimplementing a step of the ingest pipeline (filename
+		// strategy, EXIF orientation and the MIME guard above were the first
+		// three). What stood here was the pre-1.2.3 catch-all: anything not
+		// image/video/audio became `document`. `get_media_type()` moved to an
+		// allowlist in 2.4.0 and this copy did not, so it was the last inverted
+		// one left in Free.
+		//
+		// It was DEAD code, not a live bug: `reject_unsupported_mime()` above
+		// already refuses every MIME this resolver answers '' for, so the
+		// `document` branch was unreachable and no row could be re-typed by a
+		// replacement. Removed rather than guarded — adding a second refusal
+		// here would duplicate that check, which is how these two paths drifted
+		// apart the previous three times. The '' case cannot reach this line.
+		$media_type = $upload_service->get_media_type_public( $mime );
 
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
 			$media_id,
@@ -1684,8 +1826,31 @@ class MediaController extends WP_REST_Controller {
 			$thumbnail_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, $grid_size );
 		}
 
+		// Per-size image URLs so the app can pick a size tier per context
+		// (Basecamp 9667082287): thumb (~150), medium (~640), large (~1080),
+		// plus the original as full_url. Each resolves exactly like
+		// thumbnail_url above — the stored signed variant first, generating
+		// only when that size is absent. Public media resolves to
+		// render-stable URLs (1.7.0), so a list stays cheap; the per-size
+		// signing cost is bounded to private rows, which a large list already
+		// pays once for thumbnail_url.
+		$mvs_repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$mvs_tpl      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+		$mvs_size_url = static function ( string $size ) use ( $mvs_repo, $mvs_tpl, $media_id ): string {
+			$stored = (string) $mvs_repo->get( $media_id, 'thumb_' . $size );
+			return '' !== $stored ? $stored : (string) $mvs_tpl->get_thumb_url( $media_id, $size );
+		};
+
 		// Lightbox URL respects the admin-chosen image source.
-		$lightbox_url      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) $all['file_url'] );
+		//
+		// `?? ''` because the key is NOT guaranteed — twelve lines up the same
+		// key is read behind `! empty()`, and this line was reading it raw, so
+		// any row without a stored `file_url` emitted a PHP warning on every
+		// media list. It fires on the boot smoke today, which is how it was
+		// found. The raw stored value is passed deliberately rather than the
+		// signed `$file_url` above: the helper resolves the lightbox source
+		// itself, and handing it a signed URL would sign it twice.
+		$lightbox_url      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) ( $all['file_url'] ?? '' ) );
 		$lightbox_webp_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_webp_url( $media_id, $lightbox_url );
 		$lightbox_avif_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_avif_url( $media_id, $lightbox_url );
 
@@ -1729,6 +1894,24 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
+		// Per-type document glyph + friendly label, resolved once from the single
+		// DocumentTypes map so the app and the media lightbox bind these instead
+		// of re-deriving an icon and a label from the raw MIME — the lightbox used
+		// to hardcode the file-text glyph and print the raw MIME (Basecamp
+		// 10248528902). Empty for non-documents.
+		$mvs_doc_icon  = '';
+		$mvs_doc_label = '';
+		if ( 'document' === $media_type_value ) {
+			$mvs_doc_mime  = (string) ( $all['file_type'] ?? '' );
+			$mvs_doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
+			$mvs_doc_icon  = \WPMediaVerse\Core\DocumentTypes::icon_for_mime( $mvs_doc_mime );
+			$mvs_doc_label = $mvs_doc_group ? \WPMediaVerse\Core\DocumentTypes::label( $mvs_doc_group ) : '';
+			$mvs_doc_bytes = (int) ( $all['file_size'] ?? 0 );
+			if ( $mvs_doc_bytes > 0 ) {
+				$mvs_doc_label = trim( $mvs_doc_label . ( '' !== $mvs_doc_label ? ' · ' : '' ) . size_format( $mvs_doc_bytes ) );
+			}
+		}
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
@@ -1740,6 +1923,9 @@ class MediaController extends WP_REST_Controller {
 			'file_size'         => ! empty( $all['file_size'] ) ? (int) $all['file_size'] : 0,
 			'file_type'         => ! empty( $all['file_type'] ) ? $all['file_type'] : '',
 			'media_type'        => $media_type_value,
+			// Document glyph slug + friendly label (empty for non-documents).
+			'doc_icon'          => $mvs_doc_icon,
+			'doc_label'         => $mvs_doc_label,
 			'privacy'           => $privacy_value,
 			'allow_download'    => $allow_download,
 			// Display filename — original user-provided name when the upload
@@ -1752,9 +1938,19 @@ class MediaController extends WP_REST_Controller {
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
+			// srcset-style size tiers for the app to choose per context.
+			'thumb_url'         => $mvs_size_url( 'thumb' ),
+			'medium_url'        => $mvs_size_url( 'medium' ),
+			'large_url'         => $mvs_size_url( 'large' ),
+			'full_url'          => $file_url,
 			'lightbox_url'      => $lightbox_url,
 			'lightbox_webp_url' => $lightbox_webp_url,
 			'lightbox_avif_url' => $lightbox_avif_url,
+			// A representative average colour ('#rrggbb') for the app to paint as
+			// a lazy-load placeholder before the image arrives — the low-cost
+			// alternative to a blurhash, computed once at upload (empty when the
+			// media predates it or is not an image).
+			'placeholder_color' => ! empty( $all['placeholder_color'] ) ? (string) $all['placeholder_color'] : '',
 			'can_edit'          => $can_edit,
 			'is_favorited'      => $is_favorited,
 			'viewer_reaction'   => $viewer_reaction,
@@ -1897,6 +2093,13 @@ class MediaController extends WP_REST_Controller {
 				'minimum'           => 1,
 				'sanitize_callback' => 'absint',
 			),
+			// `document` stays in the enum on purpose. Dropping it would make WP
+			// answer a document request with a generic rest_invalid_param before
+			// the handler ever runs, which tells a client nothing about where
+			// documents actually live — and it would also make the
+			// `mvs_media_feed_allows_documents` escape hatch unreachable, since
+			// the value would be rejected upstream of the filter. The handler
+			// refuses it with `mvs_document_route` instead. @deprecated 2.4.0
 			'media_type'   => array(
 				'type'              => 'string',
 				'enum'              => array( 'image', 'video', 'audio', 'document' ),
@@ -1908,7 +2111,21 @@ class MediaController extends WP_REST_Controller {
 			),
 			'slug'         => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_title',
+				'sanitize_callback' => static function ( $value ) {
+					// NOT `sanitize_title` directly. WP calls a sanitize_callback as
+					// ( $value, $request, $param ), and sanitize_title's SECOND
+					// parameter is $fallback_title — so an empty slug made it return
+					// the WP_REST_Request object, which is truthy and then fataled
+					// downstream on preg_match(). An array value fataled inside WP's
+					// own sanitize_params() before any handler ran. Both answered 500
+					// on a public route:
+					//
+					// GET /mvs/v1/media?slug=     -> 500 TypeError (preg_match)
+					// GET /mvs/v1/media?slug[]=x  -> 500 TypeError (strip_tags)
+					//
+					// Taking only the value, and refusing a non-scalar, closes both.
+					return is_scalar( $value ) ? sanitize_title( (string) $value ) : '';
+				},
 			),
 			'orderby'      => array(
 				'type'              => 'string',
@@ -2026,11 +2243,9 @@ class MediaController extends WP_REST_Controller {
 		if ( null !== $cached ) {
 			return $cached;
 		}
-		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$exists = $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
-		$cached = (bool) $exists;
+		$cached = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->has_fulltext_index();
 		return $cached;
 	}
 }

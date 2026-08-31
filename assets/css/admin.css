@@ -24,15 +24,69 @@
 	--mvs-text:          #1d2327;
 	--mvs-text-muted:    #646970;
 	--mvs-text-secondary:#646970;
+	/* Border tiers — same contract as frontend.css: -light = STRUCTURE (cards,
+	   panels, rows), plain = CONTROLS (input, select, button), -strong =
+	   EMPHASIS (table head rule, active state). Admin cannot borrow the
+	   frontend :root — frontend.css is not enqueued in wp-admin — so all three
+	   are defined here or they resolve to nothing. */
 	--mvs-border:        #dcdcde;
 	--mvs-border-light:  #e5e5e7;
-	--mvs-accent:        #d63638;
-	--mvs-accent-hover:  #b02426;
-	--mvs-primary:       #d63638;
-	--mvs-primary-hover: #b02426;
+	--mvs-border-strong: #a7aaad;
+	/*
+	 * WordPress admin blue, NOT the danger red these four used to be.
+	 *
+	 * `--mvs-accent`, `--mvs-primary` and `--mvs-danger` were all #d63638, so a
+	 * primary button was a solid block of the universal destructive colour and
+	 * a danger button — which is an outline that FILLS on hover — became
+	 * visually identical to Save the moment the pointer touched it. Colour
+	 * carried no information about consequence anywhere in the admin, on the
+	 * one screen where the owner does irreversible things (Basecamp
+	 * 10252223639).
+	 *
+	 * The frontend never had this problem: there `--mvs-primary` is the theme's
+	 * button colour, `--mvs-accent` is indigo and `--mvs-danger` is red — three
+	 * distinct roles. The two halves of the product simply disagreed.
+	 *
+	 * #2271b1 / #135e96 are WordPress's own admin primary and its hover, so the
+	 * plugin now reads as part of wp-admin rather than as a permanent warning.
+	 * Verified nothing destructive was styled with `--mvs-accent` before
+	 * changing it — it drives links, focus rings, active tabs and card headers,
+	 * so turning it blue cannot make a dangerous control look safe.
+	 */
+	--mvs-accent:        #2271b1;
+	--mvs-accent-hover:  #135e96;
+	--mvs-primary:       #2271b1;
+	--mvs-primary-hover: #135e96;
 	--mvs-success:       #00a32a;
 	--mvs-warning:       #dba617;
 	--mvs-warn:          #dba617;
+	/*
+	 * WordPress's notice green and amber are designed as ACCENTS — borders,
+	 * icons, rules. Used as text or as a fill behind white text they do not
+	 * reach AA, and the admin used them for both: measured 3.35 for "Active"
+	 * and 2.22 for "Not set" and "WARNING", so the text telling an owner that
+	 * something is WRONG was the least legible on the page (Basecamp
+	 * 10252222182).
+	 *
+	 * These darker variants exist for the text-bearing cases ONLY. The originals
+	 * stay for borders and icons, where 3.35 is fine and where changing them
+	 * would restyle screens nobody complained about.
+	 *
+	 * Values are measured, not guessed — each clears 4.5 against every surface
+	 * it actually lands on:
+	 *   #00761f  white 5.82 · green tints 5.12 / 5.30
+	 *   #8a6100  white 5.54 · as a fill under white text 5.54
+	 */
+	/*
+	 * The admin density floor. `--mvs-touch-min` is 44px in frontend.css and was
+	 * simply never defined here — which is why every admin control sits at
+	 * 28-32px (Basecamp 10252222115). 34px is the density exception the design
+	 * system allows for compact admin rows, not the 40px member contract:
+	 * pointer targets, not thumbs.
+	 */
+	--mvs-touch-min: 34px;
+	--mvs-success-strong: #00761f;
+	--mvs-warning-strong: #8a6100;
 	--mvs-danger:        #d63638;
 	--mvs-shadow-sm:     0 1px 2px rgba(0, 0, 0, .04);
 	--mvs-shadow-md:     0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
@@ -125,7 +179,7 @@
 
 .mvs-stat-card {
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 	padding: 20px 16px 16px;
 	text-align: center;
@@ -166,7 +220,7 @@
 }
 
 .mvs-stat-card--warning .mvs-stat-number {
-	color: var(--mvs-warning);
+	color: var(--mvs-warning-strong);
 }
 
 .mvs-stat-card--danger {
@@ -182,7 +236,7 @@
 }
 
 .mvs-stat-card--success .mvs-stat-number {
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 /* Clickable stat cards */
@@ -210,29 +264,48 @@ a.mvs-stat-card:focus {
 	margin-top: 20px;
 }
 
+/*
+ * `min-width: 0` on the items, and it is not cosmetic.
+ *
+ * A grid item defaults to `min-width: auto`, which refuses to shrink below its
+ * content's intrinsic minimum — and `1fr` is `minmax(auto, 1fr)`, so the track
+ * inherits that floor. The columns below DO collapse to one at 782px, which is
+ * why this looked fine in the CSS; the single track then still refused to go
+ * under ~395px because a widget inside it would not narrow. At a 390px viewport
+ * that pushed the document to 405px and scrolled the whole admin page
+ * sideways (Basecamp 10252222077).
+ *
+ * This is the fix rather than a breakpoint override because the floor is set by
+ * CONTENT, not by viewport: capping the column at a width only fixes the
+ * widths somebody thought to test.
+ */
+.mvs-admin-columns > * {
+	min-width: 0;
+}
+
 .mvs-admin-columns--2 {
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .mvs-admin-columns--2-1 {
-	grid-template-columns: 2fr 1fr;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
 }
 
 .mvs-admin-columns--1-2 {
-	grid-template-columns: 1fr 2fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 }
 
 .mvs-admin-columns--3-2 {
-	grid-template-columns: 3fr 2fr;
+	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 }
 
 .mvs-admin-columns--3 {
-	grid-template-columns: 1fr 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 @media (max-width: 1200px) {
 	.mvs-admin-columns--3 {
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	}
 }
 
@@ -242,7 +315,7 @@ a.mvs-stat-card:focus {
 	.mvs-admin-columns--1-2,
 	.mvs-admin-columns--3-2,
 	.mvs-admin-columns--3 {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
 
@@ -252,12 +325,12 @@ a.mvs-stat-card:focus {
 
 .mvs-admin-widget {
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 }
 
 .mvs-admin-widget .mvs-widget-header {
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 	padding: 10px 16px;
 }
 
@@ -336,7 +409,7 @@ a.mvs-stat-card:focus {
 .mvs-recent-table th {
 	text-align: left;
 	padding: 8px 12px;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-strong);
 	font-size: 12px;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
@@ -410,12 +483,13 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text);
 }
 
+/* Text, so the strong variant — see the token block. */
 .mvs-status-list .mvs-status-ok {
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 .mvs-status-list .mvs-status-warn {
-	color: var(--mvs-warn);
+	color: var(--mvs-warning-strong);
 }
 
 .mvs-status-list .mvs-status-bad {
@@ -582,7 +656,7 @@ a.mvs-stat-card:focus {
 
 .mvs-settings-panel {
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-md);
 	margin-bottom: 16px;
 	overflow: hidden;
@@ -698,7 +772,7 @@ a.mvs-stat-card:focus {
 	display: flex;
 	align-items: flex-start;
 	background: linear-gradient(135deg, var(--mvs-info-bg) 0%, var(--mvs-info-bg) 100%);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-left: 4px solid var(--mvs-accent);
 	border-radius: var(--mvs-radius-sm);
 	padding: 20px 24px;
@@ -726,6 +800,12 @@ a.mvs-stat-card:focus {
 	border: none;
 	cursor: pointer;
 	padding: 4px;
+	/* Icon-only, so nothing but the glyph gave it size — 26x29 measured. */
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--mvs-touch-min);
+	min-height: var(--mvs-touch-min);
 	color: var(--mvs-text-muted);
 	position: absolute;
 	top: 12px;
@@ -748,7 +828,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 12px;
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-md);
 	padding: 12px 16px;
 	text-decoration: none;
@@ -877,7 +957,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 8px;
 	padding: 8px 12px;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 	background: var(--mvs-surface-alt);
 }
 
@@ -940,7 +1020,7 @@ a.mvs-stat-card:focus {
 	max-width: 700px;
 	margin: 40px auto;
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-lg);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -983,7 +1063,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-setup-progress-step.completed {
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 .mvs-setup-progress-number {
@@ -1050,6 +1130,12 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text-muted);
 	text-decoration: none;
 	font-size: 13px;
+	/* Sits in .mvs-setup-actions beside the hero button — a standalone escape
+	   hatch from the wizard, not a link inside a sentence, so it gets the floor.
+	   Measured 64x18 (Basecamp 10252222115). */
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--mvs-touch-min);
 }
 
 .mvs-setup-skip:hover {
@@ -1068,7 +1154,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 12px;
 	padding: 12px 16px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-md);
 	background: var(--mvs-surface-2);
 }
@@ -1111,7 +1197,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 8px;
 	padding: 10px 14px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 	cursor: pointer;
 	transition: background 0.15s;
@@ -1133,7 +1219,7 @@ a.mvs-stat-card:focus {
 	width: 64px;
 	height: 64px;
 	stroke-width: 1;
-	color: var(--mvs-success);
+	color: var(--mvs-success-strong);
 }
 
 .mvs-setup-done-links {
@@ -1165,7 +1251,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	justify-content: space-between;
 	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-lg);
 	padding: 16px 24px;
 	margin: 20px 0 0;
@@ -1232,7 +1318,7 @@ a.mvs-stat-card:focus {
 .mvs-settings-page-header__version {
 	display: inline-block;
 	background: var(--mvs-bg);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-light);
 	border-radius: var(--mvs-radius-sm);
 	padding: 2px 8px;
 	font-size: 12px;
@@ -1277,7 +1363,7 @@ a.mvs-stat-card:focus {
 	width: 260px;
 	flex-shrink: 0;
 	background: var(--mvs-surface);
-	border-right: 1px solid var(--mvs-border);
+	border-right: 1px solid var(--mvs-border-light);
 	padding: 0;
 	position: sticky;
 	top: 62px;
@@ -1536,7 +1622,7 @@ a.mvs-stat-card:focus {
 		height: auto;
 		position: static;
 		border-right: none;
-		border-bottom: 1px solid var(--mvs-border);
+		border-bottom: 1px solid var(--mvs-border-light);
 		display: flex;
 		flex-wrap: wrap;
 		padding: 12px;
@@ -1595,23 +1681,24 @@ a.mvs-stat-card:focus {
 
 .mvs-media-badge--image { background: var(--mvs-accent); }
 .mvs-media-badge--video { background: #9b59b6; }
-.mvs-media-badge--audio { background: #e67e22; }
+/* Darkened from #e67e22 (white text scored 2.85) to 5.57. */
+.mvs-media-badge--audio { background: #a35209; }
 .mvs-media-badge--document { background: #27ae60; }
 
-.mvs-media-badge--public { background: var(--mvs-success); }
+.mvs-media-badge--public { background: var(--mvs-success-strong); }
 .mvs-media-badge--members { background: var(--mvs-accent); }
 .mvs-media-badge--private { background: var(--mvs-danger); }
 .mvs-media-badge--group { background: #9b59b6; }
 .mvs-media-badge--friends { background: #e67e22; }
 .mvs-media-badge--loggedin { background: #3498db; }
 
-.mvs-media-badge--publish { background: var(--mvs-success); }
+.mvs-media-badge--publish { background: var(--mvs-success-strong); }
 .mvs-media-badge--draft { background: var(--mvs-text-secondary); }
 .mvs-media-badge--pending { background: var(--mvs-warn); }
 .mvs-media-badge--trash { background: var(--mvs-danger); }
 
 /* Semantic variants used by the optimization column and detail page. */
-.mvs-media-badge--success { background: var(--mvs-success); }
+.mvs-media-badge--success { background: var(--mvs-success-strong); }
 .mvs-media-badge--danger { background: var(--mvs-danger); }
 .mvs-media-badge--neutral { background: var(--mvs-text-secondary); }
 
@@ -1782,12 +1869,15 @@ a.mvs-stat-card:focus {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	height: 32px;
+	/* Was `height: 32px`. A fixed height on the base is why every variant that
+	   does not pass through --sm (--danger, --primary) sat under the floor
+	   (Basecamp 10252222115). min-height only raises, so --hero keeps its 44. */
+	min-height: var(--mvs-touch-min);
 	padding: 0 14px;
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border-light);
+	border: 1px solid var(--mvs-border);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -1863,7 +1953,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border-light);
+	border: 1px solid var(--mvs-border);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -1931,6 +2021,25 @@ a.mvs-stat-card:focus {
 
 /* Log viewer table */
 .mvs-log-table { width: 100%; border-spacing: 0; }
+
+/*
+ * The log table has more columns than a phone has room for, and a <table>
+ * ignores its container's width — it sizes to its content, so at 390px it
+ * rendered 470px and pushed the PAGE into horizontal scroll rather than
+ * scrolling itself (Basecamp 10252222077).
+ *
+ * Same treatment Pro already gives `.mvs-recent-table` and the document-health
+ * snippet: let the table scroll inside its own box. `display: block` is what
+ * lets a table take an overflow at all.
+ */
+@media (max-width: 782px) {
+
+	.mvs-log-table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+}
 .mvs-log-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--mvs-border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mvs-text-muted); }
 .mvs-log-table td { padding: 8px 12px; border-bottom: 1px solid var(--mvs-bg); vertical-align: middle; }
 .mvs-log-table tr:last-child td { border-bottom: none; }
@@ -1942,7 +2051,8 @@ a.mvs-stat-card:focus {
 
 /* Log level badge color variants */
 .mvs-log-level--error { background: var(--mvs-danger); }
-.mvs-log-level--warning { background: var(--mvs-warn); }
+/* Fill under WHITE text — 2.22 before. */
+.mvs-log-level--warning { background: var(--mvs-warning-strong); }
 .mvs-log-level--info { background: var(--mvs-accent); }
 .mvs-log-level--default { background: var(--mvs-text-muted); }
 
@@ -1969,6 +2079,26 @@ a.mvs-stat-card:focus {
 
 	.mvs-settings-sidebar {
 		width: 100%;
+		/*
+		 * `width: 100%` + horizontal padding under the default `content-box`
+		 * is what overflowed here: 368px resolved width + 12px padding either
+		 * side = 392px in a 390px viewport, scrolling the whole admin page
+		 * sideways (Basecamp 10252222077). `border-box` folds the padding back
+		 * inside the 100%.
+		 *
+		 * `min-width: 0` keeps the nav scrolling inside itself rather than
+		 * stretching this box, since a flex item otherwise refuses to shrink
+		 * below its content.
+		 *
+		 * NOTE, deliberately not fixed here: 350 of 359 MediaVerse admin
+		 * elements are `content-box`, so this is one instance of a class.
+		 * Only this one overflows today — measured — and flipping the box
+		 * model globally across 18 admin screens is the kind of invisible,
+		 * wide-blast-radius change that breaks sites nobody can see. That
+		 * belongs in its own pass with per-screen verification.
+		 */
+		box-sizing: border-box;
+		min-width: 0;
 		border-right: none;
 		border-bottom: 1px solid var(--mvs-admin-border);
 	}
@@ -2054,7 +2184,7 @@ a.mvs-stat-card:focus {
 .mvs-admin-tabs {
 	display: flex;
 	gap: 0;
-	border-bottom: 1px solid var(--mvs-border);
+	border-bottom: 1px solid var(--mvs-border-light);
 	margin: 0 0 20px;
 	padding: 0;
 }
@@ -2156,4 +2286,147 @@ a.mvs-stat-card:focus {
 .mvs-report-status-form {
 	display: inline-block;
 	margin-right: 4px;
+}
+
+/* ============================================================================
+ * Documents admin screen.
+ *
+ * The table itself is a core `wp-list-table` and inherits core's styling and
+ * its ≤782px collapse; what is styled here is the filter bar, the empty state,
+ * and the trashed badge — the parts core knows nothing about.
+ *
+ * Uses the :root tokens directly, NOT the `--mvs-admin-*` aliases: those are
+ * declared inside `.mvs-settings-wrap` only, so on this page they resolve to
+ * nothing and every rule using them silently drops. The token-contract check
+ * cannot catch that — it verifies a token is declared somewhere, not that it is
+ * in scope where it is used.
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+.mvs-documents-admin__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.mvs-documents-admin__filters input[type="search"] {
+    min-width: 200px;
+    flex: 1 1 200px;
+}
+
+.mvs-documents-admin__empty {
+    padding: 32px 24px;
+    border: 1px solid var(--mvs-border-light);
+    border-radius: var(--mvs-radius-lg);
+    background: var(--mvs-surface-muted);
+    text-align: center;
+    color: var(--mvs-text);
+}
+
+.mvs-documents-admin__empty p {
+    margin: 0 0 8px;
+}
+
+.mvs-documents-admin__empty .description {
+    color: var(--mvs-text-secondary);
+}
+
+.mvs-documents-admin__badge {
+    display: inline-block;
+    margin-inline-start: 6px;
+    padding: 1px 8px;
+    border-radius: var(--mvs-radius-sm);
+    background: var(--mvs-surface-muted);
+    color: var(--mvs-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+}
+
+/* Column widths, because `table-layout: fixed` with none declared splits the
+   width EQUALLY — six columns, an equal sixth each. Measured at 1813px: the
+   Title column got 279px while its row-actions ("Edit | View on site |
+   Download | Trash | Delete") need 350px on one line, so they wrapped to two.
+   Those actions are positioned off-screen until hover but still occupy their
+   height, so every row was 79px instead of 58px, and the extra 21px read as an
+   unexplained gap under each filename. Meanwhile Size and Privacy — never
+   wider than "29 KB" and "Private" — held 279px each.
+
+   The narrow columns are sized to their longest real content; Title takes what
+   is left, which is what a filename column wants anyway. */
+.mvs-documents-admin__table .column-doctype {
+    width: 12%;
+}
+
+.mvs-documents-admin__table .column-filesize {
+    width: 8%;
+}
+
+.mvs-documents-admin__table .column-author {
+    width: 14%;
+}
+
+.mvs-documents-admin__table .column-privacy {
+    width: 10%;
+}
+
+.mvs-documents-admin__table .column-uploaded {
+    width: 14%;
+}
+
+@media screen and (max-width: 782px) {
+
+    /* Core stacks list tables into cards below 782px and prints the column
+       name from `data-colname` beside each value. Percentage widths fight that
+       — a 8%-wide cell in a stacked card is a column of single characters. */
+    .mvs-documents-admin__table .column-doctype,
+    .mvs-documents-admin__table .column-filesize,
+    .mvs-documents-admin__table .column-author,
+    .mvs-documents-admin__table .column-privacy,
+    .mvs-documents-admin__table .column-uploaded {
+        width: auto;
+    }
+}
+
+@media screen and (max-width: 640px) {
+
+    .mvs-documents-admin__filters {
+        /* Each control gets its own line rather than three cramped ones. */
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-documents-admin__filters input[type="search"],
+    .mvs-documents-admin__filters select,
+    .mvs-documents-admin__filters button {
+        width: 100%;
+    }
+
+    .mvs-documents-admin__filters input[type="search"] {
+        /* The desktop `flex: 1 1 200px` sets a basis along the MAIN axis, and
+           the main axis is now the column — so it read as a 200px-TALL search
+           box. Reset it once the direction flips. */
+        flex: 0 0 auto;
+    }
+}
+
+
+/* ── Tap targets ───────────────────────────────────────────────────────────
+ *
+ * One rule rather than editing the 110 sub-40px height declarations in this
+ * file: these four component bases are what the audit actually measured as
+ * too small, and every instance inherits from them. `min-height` only raises,
+ * so nothing that is already comfortable changes.
+ *
+ * Basecamp 10252222115.
+ */
+.mvs-admin-tab,
+.mvs-range-btn,
+.mvs-settings-nav-item {
+	min-height: var(--mvs-touch-min);
 }

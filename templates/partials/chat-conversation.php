@@ -40,7 +40,7 @@ defined( 'ABSPATH' ) || exit;
 	<div class="mvs-chat-messages__load-more" data-wp-bind--hidden="!state.hasMoreMessages">
 		<button data-wp-on--click="actions.loadOlderMessages" type="button">
 			<span data-wp-bind--hidden="state.loadingMessages"><?php esc_html_e( 'Load older messages', 'wpmediaverse' ); ?></span>
-			<span data-wp-bind--hidden="!state.loadingMessages"><?php esc_html_e( 'Loading...', 'wpmediaverse' ); ?></span>
+			<span data-wp-bind--hidden="!state.loadingMessages" hidden><?php esc_html_e( 'Loading...', 'wpmediaverse' ); ?></span>
 		</button>
 	</div>
 

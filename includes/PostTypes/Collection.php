@@ -69,10 +69,22 @@ class Collection {
 			return;
 		}
 
-		// Collections also carry an mvs_media_index row (privacy storage). Purge it
-		// so a deleted collection doesn't leave a dead tile on Explore — same gap
-		// and fix as albums. Basecamp 10073671889.
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->purge_index_record( $post_id );
+		// NO index purge here — deliberately removed 2.4.0, and it must not come back.
+		//
+		// The original comment claimed "collections also carry an mvs_media_index row
+		// (privacy storage)". They do not: CollectionService and CollectionController
+		// write only wp_postmeta (_mvs_collection_type, _mvs_collection_rules), and no
+		// code path anywhere puts a collection post ID into mvs_media_index.
+		//
+		// So purge_index_record( $post_id ) could never find a collection's own row —
+		// but mvs_media_index.media_id is AUTO_INCREMENT for real media, and a
+		// collection's post ID can equal a real media_id. When it did, this call
+		// deleted that media item's index record: the file survived on disk and the
+		// item vanished from every surface. It guarded a state that cannot occur and
+		// its only possible effect was data loss.
+		//
+		// Basecamp 10183850886. Analysis: plan/2026-08-08-cpt-id-collision-fix-plan.md
+		// §3.5 C2. Run `wp mvs diagnose_cpt_ids` to see whether a site is affected.
 
 		/**
 		 * Fires when a collection is permanently deleted.

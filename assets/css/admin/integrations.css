@@ -12,7 +12,7 @@
 	gap: 18px;
 	padding: 20px 22px;
 	margin: 0 0 20px;
-	border: 1px solid var(--mvs-border, #dcdcde);
+	border: 1px solid var(--mvs-border-light, #dcdcde);
 	border-radius: var(--mvs-radius-lg, 8px);
 	background: var(--mvs-surface, #fff);
 	box-shadow: var(--mvs-shadow-sm, 0 1px 2px rgba(0, 0, 0, .04));
@@ -48,7 +48,13 @@
 	font-weight: 600;
 	font-size: 13px;
 	text-decoration: none;
-	color: var(--mvs-accent, #d63638);
+	/* Fallback was #d63638, the accent this plugin used before the admin-blue
+	   decision. It only ever showed if admin.css failed to load, which is
+	   exactly when a stale fallback is least likely to be noticed. */
+	color: var(--mvs-accent, #2271b1);
+	/* A call to action on its own line is a control, not a link in a sentence:
+	   18px tall before this (Basecamp 10252222115). */
+	min-height: var(--mvs-touch-min);
 }
 .mvs-fam-header__link:hover { text-decoration: underline; }
 .mvs-fam-header__link [data-lucide] { width: 14px; height: 14px; }
@@ -66,7 +72,7 @@
 	flex-direction: column;
 	gap: 10px;
 	padding: 18px;
-	border: 1px solid var(--mvs-border, #dcdcde);
+	border: 1px solid var(--mvs-border-light, #dcdcde);
 	border-radius: var(--mvs-radius-lg, 8px);
 	background: var(--mvs-surface, #fff);
 	box-shadow: var(--mvs-shadow-sm, 0 1px 2px rgba(0, 0, 0, .04));
@@ -131,8 +137,11 @@
 	line-height: 1.6;
 	white-space: nowrap;
 }
-.mvs-status-badge--success { background: #e6f4ea; color: var(--mvs-success, #00a32a); }
-.mvs-status-badge--warning { background: #fef9e7; color: var(--mvs-warn, #dba617); }
+/* Text on a tinted chip. The notice green and amber are ACCENT colours and do
+   not reach AA as text — measured 2.95 for "Connected" on this tint. The strong
+   variants are defined in admin.css (Basecamp 10252222182). */
+.mvs-status-badge--success { background: #e6f4ea; color: var(--mvs-success-strong, #00761f); }
+.mvs-status-badge--warning { background: #fef9e7; color: var(--mvs-warning-strong, #8a6100); }
 .mvs-status-badge--muted   { background: var(--mvs-surface-alt, #f6f7f7); color: var(--mvs-text-muted, #646970); }
 
 /* ── Connected state ghost button ──────────────────────────────────────── */

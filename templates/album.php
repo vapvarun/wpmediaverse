@@ -101,18 +101,7 @@ $mvs_archive_url = home_url( '/media/' );
 					</span>
 					<span class="mvs-collection-type-badge"><?php echo esc_html( $album_type ? $album_type : 'album' ); ?></span>
 					<span class="mvs-privacy-badge"><?php echo esc_html( ucfirst( $album_privacy ) ); ?></span>
-					<?php
-					$mvs_album_categories = get_the_terms( get_the_ID(), 'mvs_category' );
-					if ( $mvs_album_categories && ! is_wp_error( $mvs_album_categories ) ) :
-						?>
-						<span class="mvs-collection-meta-categories">
-							<?php foreach ( $mvs_album_categories as $mvs_album_cat ) : ?>
-								<a class="mvs-category-pill" href="<?php echo esc_url( get_term_link( $mvs_album_cat ) ); ?>">
-									<?php echo esc_html( $mvs_album_cat->name ); ?>
-								</a>
-							<?php endforeach; ?>
-						</span>
-					<?php endif; ?>
+
 				</div>
 				<?php if ( get_the_content() ) : ?>
 					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>
@@ -200,7 +189,7 @@ $mvs_archive_url = home_url( '/media/' );
 									data-wp-on--click="actions.saveEdit"
 									data-wp-bind--disabled="context.saving">
 									<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-									<span data-wp-bind--hidden="!context.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+									<span data-wp-bind--hidden="!context.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 								</button>
 								<button class="mvs-btn mvs-btn--secondary" type="button"
 									data-wp-on--click="actions.cancelEdit">
@@ -384,23 +373,8 @@ if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_us
 	);
 endif;
 
-// Shared UI: Confirm Dialog (required for delete action).
-// Toast is provided globally by shared-ui-frame.php in wp_footer.
-?>
-<div class="mvs-confirm-overlay" hidden
-	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.confirmVisible">
-	<div class="mvs-confirm">
-		<p data-wp-text="state.confirmMessage"></p>
-		<div class="mvs-confirm-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-			<button class="mvs-btn mvs-btn--danger" type="button"
-				data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
-		</div>
-	</div>
-</div>
-<?php
+// Shared UI confirm dialog + toast are provided globally by
+// shared-ui-frame.php in wp_footer — no per-template copy needed.
 require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );

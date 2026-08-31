@@ -112,7 +112,7 @@ GDPR compliance is non-negotiable — the university has a legal team that will 
 - Per-user storage quotas that integrate with existing membership or role systems
 - AI moderation with configurable sensitivity settings
 - Per-item privacy controls (public, members only, faculty only, private)
-- Video support with reasonable transcoding — students submit MP4s, not raw files
+- Video support that does not need a media server — students submit MP4s and they just play
 - GDPR-compliant data handling with a clear data export/deletion path
 
 ### Her Biggest Fear
@@ -132,7 +132,7 @@ A student submitting inappropriate content that stays up because moderation fail
 
 ### Messaging Angle
 
-Lead with quotas and moderation. Mention MemberPress and WooCommerce integration by name. Put GDPR on the table proactively — do not make her dig for it. Video transcoding with HLS and captions is a strong secondary point for the journalism and film programs.
+Lead with quotas and moderation. Mention MemberPress and WooCommerce integration by name. Put GDPR on the table proactively — do not make her dig for it. Video chapters and auto-captions are a strong secondary point for the journalism and film programs.
 
 ---
 

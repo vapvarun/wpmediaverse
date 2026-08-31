@@ -153,12 +153,39 @@ class CertRunner {
 				continue;
 			}
 
+			// WHO the oracle dispatches AS is part of what it is testing.
+			//
+			// The runner signs in as user 1 — an administrator — because most
+			// gates are site-wide and an admin can reach every route. A gate
+			// that deliberately EXEMPTS administrators cannot be proved that
+			// way: the OFF dispatch succeeds, and the oracle reports the gate
+			// dead when the gate is working exactly as designed. The document
+			// licence gate is the first of those (the site owner keeps working
+			// while lapsed, so they can tidy up and renew), and it will not be
+			// the last.
+			//
+			// `as_role` names a role to dispatch as instead. The user is made
+			// for the run and removed after it, so the oracle leaves nothing
+			// behind on the site it certified.
+			$as_role = isset( $oracle['as_role'] ) ? (string) $oracle['as_role'] : '';
+			$actor   = $as_role ? $this->make_actor( $as_role ) : 0;
+			$prev    = $actor ? get_current_user_id() : 0;
+
+			if ( $actor ) {
+				wp_set_current_user( $actor );
+			}
+
 			$snapshot = $this->snapshot( $id, $kind );
 			$this->set_state( $id, $kind, false );
 			$off = $this->dispatch( $route, $method, $params );
 			$this->set_state( $id, $kind, true );
 			$on = $this->dispatch( $route, $method, $params );
 			$this->restore( $id, $kind, $snapshot );
+
+			if ( $actor ) {
+				wp_set_current_user( $prev );
+				wp_delete_user( $actor );
+			}
 
 			$off_enforced = ( $off['code'] === $off_code );
 			$on_allows    = ( $on['code'] !== $off_code );
@@ -419,13 +446,49 @@ class CertRunner {
 	}
 
 	/**
+	 * Create a throwaway user in the given role, for one oracle.
+	 *
+	 * Deleted by the caller as soon as the oracle finishes — a certification
+	 * run that leaves accounts behind on the site it certified is a worse
+	 * problem than the one it was checking.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $role Role slug.
+	 * @return int User id, or 0 when the user could not be made.
+	 */
+	private function make_actor( string $role ): int {
+		if ( ! function_exists( 'wp_insert_user' ) || ! function_exists( 'wp_delete_user' ) ) {
+			return 0;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+
+		$suffix = (string) wp_rand( 100000, 999999 );
+
+		$user_id = wp_insert_user(
+			array(
+				'user_login' => 'mvs-cert-' . $suffix,
+				'user_email' => 'mvs-cert-' . $suffix . '@example.invalid',
+				'user_pass'  => wp_generate_password( 24, true ),
+				'role'       => $role,
+			)
+		);
+
+		return is_wp_error( $user_id ) ? 0 : (int) $user_id;
+	}
+
+	/**
 	 * Read the current stored value of a toggle (sentinel when never set).
 	 *
 	 * @param string $id   Option name (or feature slug for kind 'feature').
-	 * @param string $kind 'option' | 'feature'.
+	 * @param string $kind 'option' | 'feature' | 'license'.
 	 * @return mixed
 	 */
 	private function snapshot( string $id, string $kind ) {
+		if ( 'license' === $kind ) {
+			return get_option( $id, self::ABSENT );
+		}
 		if ( 'feature' === $kind ) {
 			$store = get_option( $this->feature_store(), array() );
 			return ( is_array( $store ) && array_key_exists( $id, $store ) ) ? $store[ $id ] : self::ABSENT;
@@ -443,10 +506,36 @@ class CertRunner {
 	 * matches the admin hidden-0 toggle convention.
 	 *
 	 * @param string $id   Option name (or feature slug).
-	 * @param string $kind 'option' | 'feature'.
+	 * @param string $kind 'option' | 'feature' | 'license'.
 	 * @param bool   $on   Desired state.
 	 */
 	private function set_state( string $id, string $kind, bool $on ): void {
+		// A LICENSE IS NOT A CHECKBOX. Its stored value is the activation
+		// response object the EDD SDK saved, and the reader asks it three
+		// questions — is it an object, does `license` say valid, has `expires`
+		// passed. Writing '1' would be read as "no license" exactly like '0',
+		// so an option-kind oracle would flip nothing and then report that the
+		// gate does not enforce: a false failure that teaches people the cert
+		// is unreliable.
+		//
+		// OFF is DELETED rather than falsified, because that is the real state
+		// being modelled — a site that never activated, or whose activation was
+		// removed.
+		if ( 'license' === $kind ) {
+			if ( $on ) {
+				update_option(
+					$id,
+					(object) array(
+						'license' => 'valid',
+						'expires' => 'lifetime',
+					)
+				);
+			} else {
+				delete_option( $id );
+			}
+
+			return;
+		}
 		if ( 'feature' === $kind ) {
 			$store = get_option( $this->feature_store(), array() );
 			if ( ! is_array( $store ) ) {
@@ -463,10 +552,19 @@ class CertRunner {
 	 * Restore a toggle to its captured value (delete when it was never set).
 	 *
 	 * @param string $id       Option name (or feature slug).
-	 * @param string $kind     'option' | 'feature'.
+	 * @param string $kind     'option' | 'feature' | 'license'.
 	 * @param mixed  $snapshot Value from snapshot().
 	 */
 	private function restore( string $id, string $kind, $snapshot ): void {
+		if ( 'license' === $kind ) {
+			if ( self::ABSENT === $snapshot ) {
+				delete_option( $id );
+			} else {
+				update_option( $id, $snapshot );
+			}
+
+			return;
+		}
 		if ( 'feature' === $kind ) {
 			$store = get_option( $this->feature_store(), array() );
 			if ( ! is_array( $store ) ) {

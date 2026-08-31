@@ -130,7 +130,7 @@ Individual components can be disabled in WPMediaVerse's admin settings under the
 | Profile media tab | Yes | Yes | Yes |
 | Group media tab | Yes | Yes | Yes |
 | 5 layout modes | Yes (Pro) | No | No |
-| Video transcoding | Yes (Pro) | Paid add-on | No |
+| Video chapters + captions | Yes (Pro) | No | Not documented |
 | Gamification | Yes (Pro) | No | No |
 | REST API | Yes (80+ endpoints) | Limited | Limited |
 | Gutenberg blocks | Yes (13) | No | No |
@@ -154,7 +154,7 @@ Individual components can be disabled in WPMediaVerse's admin settings under the
 
 Every BuddyPress integration feature — activity uploads, lightbox in the feed, profile tabs, group tabs, comment sync, profile URL routing — is included in the free version of WPMediaVerse.
 
-Pro adds layout modes, video transcoding, gamification, cloud storage, and the rest of the Pro feature set — but the BuddyPress integration itself does not require a paid license.
+Pro adds layout modes, video chapters and captions, gamification, cloud storage, and the rest of the Pro feature set — but the BuddyPress integration itself does not require a paid license.
 
 ---
 

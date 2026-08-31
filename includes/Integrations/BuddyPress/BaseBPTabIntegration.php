@@ -274,6 +274,22 @@ abstract class BaseBPTabIntegration {
 		wp_enqueue_style( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-bp-actions' );
+		// Lucide, for the SAME reason as mvs-load-more above: it is registered
+		// globally by Plugin but only ENQUEUED on MVS-native pages, and a BP
+		// profile or group screen is not one. Without it every `data-lucide`
+		// element on these tabs stays an empty <i> — measured on
+		// /members/<user>/media/: 4 icons emitted (upload-cloud x2, settings,
+		// trash-2), 0 hydrated, `window.lucide` undefined. The Upload Media
+		// button rendered as a bare label, which is why this reads as "the
+		// button lost its icon" rather than as a missing script.
+		//
+		// Belongs in the BASE class, not in the tab that noticed it: every tab
+		// these two subclasses render emits Lucide markup, so a per-tab enqueue
+		// would fix one screen and leave the identical bug on its siblings.
+		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			\WPMediaVerse\Core\Plugin::register_lucide_script();
+		}
+		wp_enqueue_script( 'mvs-lucide' );
 		wp_localize_script(
 			'mvs-bp-actions',
 			'mvsBpActions',

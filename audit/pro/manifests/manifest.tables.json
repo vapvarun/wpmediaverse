@@ -49,6 +49,10 @@
       "name": "{prefix}mvs_boosts",
       "purpose": "Media boosts (points-for-visibility)",
       "file": "includes/Core/Migrator.php:588"
+    },
+    {
+      "name": "{prefix}mvs_pro_webhook_events",
+      "note": "Pro-owned. CREATE at includes/Core/Migrator.php:399. Missing from the 2.2.0-branch generation."
     }
   ],
   "generated": {

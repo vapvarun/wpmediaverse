@@ -1,0 +1,875 @@
+{
+  "task": "P1.1",
+  "generated": "2026-08-08",
+  "method": "Three parallel readers, each opening every file. A grep undercounted Free (filename mentions, not queries) and reported ZERO for Pro, which builds the table name into a variable first.",
+  "totals": {
+    "sites": 98,
+    "route": 47,
+    "allow": 48,
+    "dead": 3,
+    "route_high_risk": 28
+  },
+  "sites": [
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 572,
+      "purpose": "/media feed pagination COUNT",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "WHERE has media_type != '' \u2014 an EXCLUSION that passes documents through. Same pattern as the trashed-media leak 68113454."
+    },
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 587,
+      "purpose": "/media feed rows, orderby=trending",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 595,
+      "purpose": "/media feed rows, orderby=popular",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 601,
+      "purpose": "/media feed rows, default order",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Feeds /media, /me/media and the mobile app."
+    },
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 693,
+      "purpose": "gallery lightbox sibling items",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 325,
+      "purpose": "single media by slug",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/REST/Controller/MediaController.php",
+      "line": 2043,
+      "purpose": "SHOW INDEX schema probe",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Schema introspection, not a data query."
+    },
+    {
+      "file": "free:includes/REST/Controller/UserController.php",
+      "line": 183,
+      "purpose": "profile public media COUNT badge",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/REST/Controller/UserController.php",
+      "line": 426,
+      "purpose": "people-you-may-know thumbnails",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/REST/Controller/InterestsController.php",
+      "line": 198,
+      "purpose": "interest-category cover image",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Comment says \"shown to EVERYONE\"."
+    },
+    {
+      "file": "free:includes/Social/SuggestionService.php",
+      "line": 126,
+      "purpose": "who-to-follow candidate ranking",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Document-heavy accounts rank higher."
+    },
+    {
+      "file": "free:includes/Social/SuggestionService.php",
+      "line": 189,
+      "purpose": "interest-author ranking boost",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/Services/CollectionService.php",
+      "line": 264,
+      "purpose": "smart-collection COUNT (params)",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Any collection built on author/tag/privacy/date rules silently pulls documents."
+    },
+    {
+      "file": "free:includes/Services/CollectionService.php",
+      "line": 271,
+      "purpose": "smart-collection COUNT",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/Services/CollectionService.php",
+      "line": 285,
+      "purpose": "smart-collection paginated fetch",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "free:includes/Integrations/BuddyPress/ActivityContentIntegration.php",
+      "line": 381,
+      "purpose": "legacy id-map single lookup",
+      "constrains_media_type": "N/A",
+      "verdict": "ROUTE",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Integrations/BuddyPress/ActivityContentIntegration.php",
+      "line": 820,
+      "purpose": "file_url single lookup",
+      "constrains_media_type": "N/A",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "MediaRepository::find_by_url() already exists and duplicates this."
+    },
+    {
+      "file": "free:includes/Integrations/BuddyPress/ActivitySyncIntegration.php",
+      "line": 676,
+      "purpose": "album privacy fan-out sync",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Type-agnostic is correct here; route for consistency."
+    },
+    {
+      "file": "free:includes/Core/TemplateLoader.php",
+      "line": 378,
+      "purpose": "single media by id for /media/{id}/",
+      "constrains_media_type": "N/A",
+      "verdict": "ROUTE",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Core/TemplateLoader.php",
+      "line": 386,
+      "purpose": "single media by slug",
+      "constrains_media_type": "N/A",
+      "verdict": "ROUTE",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Admin/StatsPage.php",
+      "line": 249,
+      "purpose": "Total Media card, date-ranged",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Coding Rule 16: site-wide aggregates must go through AdminAggregatesService."
+    },
+    {
+      "file": "free:includes/Admin/StatsPage.php",
+      "line": 264,
+      "purpose": "Total Media card, all-time",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Same Rule 16 violation."
+    },
+    {
+      "file": "free:includes/Admin/StatsPage.php",
+      "line": 74,
+      "purpose": "CSV export top-100 by views",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Cross-table admin report."
+    },
+    {
+      "file": "free:includes/Admin/StatsPage.php",
+      "line": 276,
+      "purpose": "engagement SUM totals",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Cross-table admin report."
+    },
+    {
+      "file": "free:includes/Admin/StatsPage.php",
+      "line": 303,
+      "purpose": "Top Media widget, date-ranged",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Admin/StatsPage.php",
+      "line": 313,
+      "purpose": "Top Media widget, all-time",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 150,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 162,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 167,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 871,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 879,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 1167,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 1174,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Admin/MediaListPage.php",
+      "line": 1377,
+      "purpose": "admin All Media list / row actions",
+      "constrains_media_type": "opt-in via ?media_type=",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Admin-only; listing all types is this page's purpose. Route for one access point."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 512,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 581,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 647,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 905,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 940,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 1121,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 1168,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 1311,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Core/Migrator.php",
+      "line": 1597,
+      "purpose": "schema DDL or one-time data migration",
+      "constrains_media_type": "N/A",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Migrations must see every row by definition."
+    },
+    {
+      "file": "free:includes/Services/StatsService.php",
+      "line": 69,
+      "purpose": "GET /stats/me member totals",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Member-facing REST; mobile app reads it."
+    },
+    {
+      "file": "free:includes/Services/AlbumService.php",
+      "line": 270,
+      "purpose": "album items in position order",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Member-facing album grid."
+    },
+    {
+      "file": "free:includes/Services/AlbumService.php",
+      "line": 329,
+      "purpose": "album item count",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Must move in lockstep with :270 or count and list diverge."
+    },
+    {
+      "file": "free:includes/Services/AlbumService.php",
+      "line": 733,
+      "purpose": "album cover fallback, any type",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "A document becomes an album cover thumbnail \u2014 visible broken image."
+    },
+    {
+      "file": "free:includes/Services/AlbumService.php",
+      "line": 718,
+      "purpose": "album cover, image-scoped",
+      "constrains_media_type": "via file_type",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Services/UploadService.php",
+      "line": 1708,
+      "purpose": "duplicate detection by file_hash",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Belongs on MediaRepository with the other finders."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 677,
+      "purpose": "moderation-stats CLI report",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Duplicates MediaRepository::get_moderation_counts()."
+    },
+    {
+      "file": "free:includes/Services/CacheService.php",
+      "line": 198,
+      "purpose": "cached per-user stats",
+      "constrains_media_type": "NO",
+      "verdict": "DEAD",
+      "risk": "LOW",
+      "reason": "Unreachable. Looser than the repository version \u2014 no status filter either."
+    },
+    {
+      "file": "free:includes/Services/CacheService.php",
+      "line": 239,
+      "purpose": "cached moderation counts",
+      "constrains_media_type": "NO",
+      "verdict": "DEAD",
+      "risk": "LOW",
+      "reason": "Unreachable duplicate."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 206,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 463,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 581,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 613,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 985,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 1163,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 1412,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 1552,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 1763,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/CLI/Commands.php",
+      "line": 1885,
+      "purpose": "CLI maintenance",
+      "constrains_media_type": "varies",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "CLI maintenance must see every row."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 63,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 145,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 382,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 471,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 478,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 481,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 494,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 570,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/CloudOps.php",
+      "line": 586,
+      "purpose": "storage migration / admin storage tiles",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Storage ops are type-agnostic by design."
+    },
+    {
+      "file": "free:includes/Services/AdminAggregatesService.php",
+      "line": 68,
+      "purpose": "canonical site-wide aggregate",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "THIS is the Rule 16 canonical service. Fix counting inside it, never route it away."
+    },
+    {
+      "file": "free:includes/Services/AdminAggregatesService.php",
+      "line": 93,
+      "purpose": "canonical site-wide aggregate",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "THIS is the Rule 16 canonical service. Fix counting inside it, never route it away."
+    },
+    {
+      "file": "free:includes/Services/AdminAggregatesService.php",
+      "line": 145,
+      "purpose": "canonical site-wide aggregate",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "THIS is the Rule 16 canonical service. Fix counting inside it, never route it away."
+    },
+    {
+      "file": "free:includes/Services/AdminAggregatesService.php",
+      "line": 170,
+      "purpose": "canonical site-wide aggregate",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "THIS is the Rule 16 canonical service. Fix counting inside it, never route it away."
+    },
+    {
+      "file": "free:includes/Services/GDPRService.php",
+      "line": 157,
+      "purpose": "GDPR export / erase",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Must be exhaustive across every type."
+    },
+    {
+      "file": "free:includes/Services/GDPRService.php",
+      "line": 437,
+      "purpose": "GDPR export / erase",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Must be exhaustive across every type."
+    },
+    {
+      "file": "free:includes/Services/UserDeletionService.php",
+      "line": 53,
+      "purpose": "user deletion cascade",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Must see every row."
+    },
+    {
+      "file": "free:includes/Services/StorageRepairService.php",
+      "line": 185,
+      "purpose": "storage path repair probe",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Services/StorageRepairService.php",
+      "line": 215,
+      "purpose": "storage path repair probe",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Services/StorageRepairService.php",
+      "line": 289,
+      "purpose": "storage path repair probe",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "free:includes/Services/StorageRepairService.php",
+      "line": 311,
+      "purpose": "storage path repair probe",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW"
+    },
+    {
+      "file": "pro:includes/Frontend/Layouts/InstagramLayout.php",
+      "line": 163,
+      "purpose": "Instagram feed count / rows",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Documents render as photo cards."
+    },
+    {
+      "file": "pro:includes/Frontend/Layouts/InstagramLayout.php",
+      "line": 172,
+      "purpose": "Instagram feed count / rows",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Documents render as photo cards."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 93,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 99,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 104,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 156,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 162,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 169,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Leaderboard/LeaderboardService.php",
+      "line": 175,
+      "purpose": "leaderboard ranking / viewer rank",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH",
+      "reason": "Uploading documents inflates public ranking \u2014 gameable."
+    },
+    {
+      "file": "pro:includes/Stories/StoryService.php",
+      "line": 213,
+      "purpose": "stories bar count / rows",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "pro:includes/Stories/StoryService.php",
+      "line": 217,
+      "purpose": "stories bar count / rows",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "HIGH"
+    },
+    {
+      "file": "pro:includes/Stories/StoryService.php",
+      "line": 342,
+      "purpose": "view counts for known story ids",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Ids pre-scoped by caller."
+    },
+    {
+      "file": "pro:includes/REST/CompeteSummaryController.php",
+      "line": 460,
+      "purpose": "my-challenges card, joins Free table",
+      "constrains_media_type": "NO",
+      "verdict": "ROUTE",
+      "risk": "LOW",
+      "reason": "Raw JOIN on a Free table breaks architecture invariant 6."
+    },
+    {
+      "file": "pro:includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 320,
+      "purpose": "rtMedia activity rewrite",
+      "constrains_media_type": "NO",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Admin migration, scoped to one activity."
+    },
+    {
+      "file": "pro:includes/Video/TranscodeController.php",
+      "line": 272,
+      "purpose": "transcode queue status",
+      "constrains_media_type": "via meta key",
+      "verdict": "ALLOW",
+      "risk": "LOW",
+      "reason": "Already container-routed."
+    },
+    {
+      "file": "pro:templates/partials/dashboard-challenges-panel.php",
+      "line": 16,
+      "purpose": "unused $index_table variable",
+      "constrains_media_type": "N/A",
+      "verdict": "DEAD",
+      "risk": "LOW",
+      "reason": "Assigned, never referenced."
+    }
+  ]
+}

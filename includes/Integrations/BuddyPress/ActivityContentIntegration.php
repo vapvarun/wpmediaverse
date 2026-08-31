@@ -374,17 +374,15 @@ class ActivityContentIntegration {
 	private function find_media_by_meta_key( string $key, string $value ): int {
 		global $wpdb;
 
-		// Check if this is an index column.
-		$index_columns = array( 'media_type', 'privacy', 'file_url', 'file_type', 'file_size', 'moderation_status', 'post_author' );
+		// Index columns go to the repository, which owns both the table and the
+		// allowlist that makes a dynamic column name safe (Rule 7). The copy of
+		// that list that used to live here is gone with the query.
+		$found = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->find_by_indexed_column( $key, $value );
 
-		if ( in_array( $key, $index_columns, true ) ) {
-			$result = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE `{$key}` = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$value
-				)
-			);
-			return $result ? (int) $result : 0;
+		if ( $found > 0 ) {
+			return $found;
 		}
 
 		// Otherwise check mvs_media_meta.
@@ -817,13 +815,19 @@ class ActivityContentIntegration {
 		$clean = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $url );
 
 		// 1. Direct lookup in mvs_media_index by file_url (handles imported media).
-		$media_id = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_url = %s OR file_url = %s LIMIT 1",
-				$clean,
-				set_url_scheme( $clean )
-			)
-		);
+		//
+		// Two lookups rather than the old `OR`, and deliberately NOT
+		// `find_by_url()`: that method refuses any URL outside the gated uploads
+		// directory, which is right for its own caller and wrong here — a
+		// cloud-hosted file's CDN URL contains no such path, so swapping it in
+		// would quietly stop resolving media on every CDN-backed site.
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$media_id = $mvs_repo->find_by_indexed_column( 'file_url', $clean );
+
+		if ( ! $media_id ) {
+			$media_id = $mvs_repo->find_by_indexed_column( 'file_url', set_url_scheme( $clean ) );
+		}
+
 		if ( $media_id ) {
 			return $media_id;
 		}

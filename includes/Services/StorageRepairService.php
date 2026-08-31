@@ -45,6 +45,20 @@ defined( 'ABSPATH' ) || exit;
 class StorageRepairService {
 
 	/**
+	 * The integrity queries this sweep is driven by.
+	 *
+	 * The SQL moved to `Repository\MediaIntegrityRepository` (architecture
+	 * invariant 6, coding Rule 7). What is left here is the sweep itself —
+	 * scheduling, batching, state and the per-row repair — which is this
+	 * service's actual job.
+	 *
+	 * @return \WPMediaVerse\Repository\MediaIntegrityRepository
+	 */
+	private function queries(): \WPMediaVerse\Repository\MediaIntegrityRepository {
+		return new \WPMediaVerse\Repository\MediaIntegrityRepository();
+	}
+
+	/**
 	 * Action Scheduler hook that processes one batch.
 	 */
 	const REPAIR_HOOK = 'mvs_repair_storage_paths';
@@ -176,13 +190,7 @@ class StorageRepairService {
 	 * @return array{absolute:int,stranded:bool,needs_repair:bool}
 	 */
 	public function count_broken(): array {
-		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
-
-		// LEFT(file_path,1)='/' detects absolute paths (a literal comparison —
-		// no LIKE wildcard; file_path is an unindexed TEXT column either way).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$absolute = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE status IN ('publish','draft') AND LEFT(file_path,1) = '/'" );
+		$absolute = $this->queries()->count_absolute_file_paths();
 
 		$stranded = $this->probe_stranded();
 
@@ -207,29 +215,7 @@ class StorageRepairService {
 			return false; // No cloud driver -> nothing to push.
 		}
 
-		global $wpdb;
-		$idx  = $wpdb->prefix . 'mvs_media_index';
-		$meta = $wpdb->prefix . 'mvs_media_meta';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$found = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT i.media_id
-				 FROM {$idx} i
-				 JOIN {$meta} m ON m.media_id = i.media_id AND m.meta_key IN ('thumb_large','thumb_medium','thumb_thumb')
-				 WHERE i.status IN ('publish','draft')
-				   AND i.privacy = 'public'
-				   AND LEFT(i.file_path,1) != '/'
-				   AND i.file_url != ''
-				   AND i.file_url NOT LIKE %s
-				   AND m.meta_value LIKE %s
-				 LIMIT 1",
-				'%/wp-content/uploads/%',
-				'%/wp-content/uploads/%'
-			)
-		);
-
-		return ! empty( $found );
+		return $this->queries()->has_stranded_public_thumbnail();
 	}
 
 	/**
@@ -254,12 +240,12 @@ class StorageRepairService {
 		$state = is_array( $state ) ? $state : array();
 
 		foreach ( $ids as $media_id ) {
-			$result                      = $this->repair_one( (int) $media_id );
-			$state['scanned']            = ( (int) ( $state['scanned'] ?? 0 ) ) + 1;
-			$state['healed_absolute']    = ( (int) ( $state['healed_absolute'] ?? 0 ) ) + ( 'absolute' === $result ? 1 : 0 );
-			$state['healed_stranded']    = ( (int) ( $state['healed_stranded'] ?? 0 ) ) + ( 'stranded' === $result ? 1 : 0 );
-			$state['failed']             = ( (int) ( $state['failed'] ?? 0 ) ) + ( 'failed' === $result ? 1 : 0 );
-			$cursor                      = max( $cursor, (int) $media_id );
+			$result                   = $this->repair_one( (int) $media_id );
+			$state['scanned']         = ( (int) ( $state['scanned'] ?? 0 ) ) + 1;
+			$state['healed_absolute'] = ( (int) ( $state['healed_absolute'] ?? 0 ) ) + ( 'absolute' === $result ? 1 : 0 );
+			$state['healed_stranded'] = ( (int) ( $state['healed_stranded'] ?? 0 ) ) + ( 'stranded' === $result ? 1 : 0 );
+			$state['failed']          = ( (int) ( $state['failed'] ?? 0 ) ) + ( 'failed' === $result ? 1 : 0 );
+			$cursor                   = max( $cursor, (int) $media_id );
 		}
 
 		$state['status'] = 'running';
@@ -278,48 +264,11 @@ class StorageRepairService {
 	 * @return int[]
 	 */
 	private function candidate_ids( int $cursor ): array {
-		global $wpdb;
-		$idx  = $wpdb->prefix . 'mvs_media_index';
-		$meta = $wpdb->prefix . 'mvs_media_meta';
-
-		$is_cloud = ( 'local' !== (string) get_option( 'mvs_storage_driver', 'local' ) );
-
-		if ( $is_cloud ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT DISTINCT i.media_id
-					 FROM {$idx} i
-					 LEFT JOIN {$meta} m ON m.media_id = i.media_id AND m.meta_key IN ('thumb_large','thumb_medium','thumb_thumb')
-					 WHERE i.status IN ('publish','draft')
-					   AND i.media_id > %d
-					   AND (
-					        LEFT(i.file_path,1) = '/'
-					        OR ( i.privacy = 'public' AND LEFT(i.file_path,1) != '/' AND i.file_url != '' AND i.file_url NOT LIKE %s AND m.meta_value LIKE %s )
-					   )
-					 ORDER BY i.media_id ASC
-					 LIMIT %d",
-					$cursor,
-					'%/wp-content/uploads/%',
-					'%/wp-content/uploads/%',
-					self::BATCH
-				)
-			);
-		} else {
-			// Local driver active: only State D is actionable.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT i.media_id FROM {$idx} i
-					 WHERE i.status IN ('publish','draft') AND i.media_id > %d AND LEFT(i.file_path,1) = '/'
-					 ORDER BY i.media_id ASC LIMIT %d",
-					$cursor,
-					self::BATCH
-				)
-			);
-		}
-
-		return array_map( 'intval', (array) $ids );
+		return $this->queries()->storage_repair_candidate_ids(
+			$cursor,
+			'local' !== (string) get_option( 'mvs_storage_driver', 'local' ),
+			self::BATCH
+		);
 	}
 
 	/**

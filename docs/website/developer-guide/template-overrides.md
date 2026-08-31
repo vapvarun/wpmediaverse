@@ -219,3 +219,37 @@ if ( empty( $mvs_shortcode_context ) ) {
     $wrapper_attrs = get_block_wrapper_attributes();
 }
 ```
+
+## Styling Tokens: the Border Contract
+
+The plugin's colours come from CSS custom properties defined once on `:root` in
+`assets/css/frontend.css` (and again in `assets/css/admin.css`, because wp-admin
+does not load the frontend stylesheet). Override a token in your theme and every
+surface follows; there is no need to target individual components.
+
+Borders in particular use **three tiers, one job each**. This matters when you
+override them, because before 2.4.0 a single token did all three jobs and
+changing it moved every outline in the plugin at once:
+
+| Token | Job | Use it for |
+|---|---|---|
+| `--mvs-border-light` | **Structure** | Cards, panels, sections, rows, dividers. Quiet: it separates, it does not ask to be looked at. |
+| `--mvs-border` | **Controls** | `input`, `select`, `textarea`, buttons, chips, dropzones. A visible edge here means "you can interact with me". |
+| `--mvs-border-strong` | **Emphasis** | Active or selected state, table head rules. |
+
+`--mvs-border` inherits from the active theme (Reign, BuddyX, BuddyNext, then a
+neutral fallback), so a themed border colour reaches the plugin's controls
+automatically. `--mvs-border-strong` is derived with `color-mix()` from
+`--mvs-border` and `--mvs-text`, so it strengthens correctly in both light and
+dark mode from one declaration.
+
+Two rules the plugin follows internally, worth keeping if you extend it:
+
+1. **A bordered box does not contain another bordered box.** Where nesting is
+   real, the outer element drops its border and expresses depth with background
+   and spacing instead. Repeated 1px lines read as boxes inside boxes.
+2. **Semantic borders are not part of this ladder.** Success, warning, danger and
+   brand colours carry meaning; never substitute a neutral tier for one.
+
+`bin/ux-audit.sh` reports an advisory row when a container selector draws a
+border with the control token, which is the drift these rules exist to prevent.

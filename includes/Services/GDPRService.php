@@ -151,19 +151,12 @@ class GDPRService {
 		$per_page = 50;
 		$offset   = ( $page - 1 ) * $per_page;
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id, title, description, media_type, privacy, file_url, created_at
-				FROM {$wpdb->prefix}mvs_media_index
-				WHERE post_author = %d
-				ORDER BY media_id ASC
-				LIMIT %d OFFSET %d",
-				$user->ID,
-				$per_page,
-				$offset
-			),
-			ARRAY_A
-		);
+		// UNFILTERED on purpose — an export must disclose everything the person
+		// authored, whatever its privacy. See
+		// MediaRepository::author_media_export_rows().
+		$rows = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->author_media_export_rows( (int) $user->ID, $per_page, $offset );
 
 		$export_items = array();
 		foreach ( $rows as $row ) {
@@ -431,14 +424,13 @@ class GDPRService {
 
 		global $wpdb;
 
-		$per_page  = 50;
-		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d ORDER BY media_id ASC LIMIT %d",
-				$user->ID,
-				$per_page
-			)
-		);
+		$per_page = 50;
+
+		// UNFILTERED on purpose — an erasure must reach everything the person
+		// authored. See MediaRepository::author_media_ids().
+		$media_ids = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->author_media_ids( (int) $user->ID, $per_page );
 
 		$removed = 0;
 		foreach ( $media_ids as $media_id ) {

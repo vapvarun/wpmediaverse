@@ -119,7 +119,7 @@ wp_enqueue_script_module(
 		<div class="mvs-profile-avatar-actions">
 			<label class="mvs-btn mvs-btn--secondary mvs-profile-avatar-upload-label">
 				<span data-wp-bind--hidden="context.uploadingAvatar"><?php esc_html_e( 'Change Avatar', 'wpmediaverse' ); ?></span>
-				<span data-wp-bind--hidden="!context.uploadingAvatar"><?php esc_html_e( 'Uploading...', 'wpmediaverse' ); ?></span>
+				<span data-wp-bind--hidden="!context.uploadingAvatar" hidden><?php esc_html_e( 'Uploading...', 'wpmediaverse' ); ?></span>
 				<input type="file"
 					accept="image/jpeg,image/png,image/gif,image/webp"
 					class="mvs-profile-avatar-input"
@@ -196,7 +196,7 @@ wp_enqueue_script_module(
 			<button type="submit" class="mvs-btn mvs-btn--primary"
 				data-wp-bind--disabled="context.saving">
 				<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save Changes', 'wpmediaverse' ); ?></span>
-				<span data-wp-bind--hidden="!context.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+				<span data-wp-bind--hidden="!context.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 			</button>
 		</div>
 	</form>

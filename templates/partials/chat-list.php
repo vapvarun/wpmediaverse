@@ -102,7 +102,7 @@ defined( 'ABSPATH' ) || exit;
 		</button>
 	</template>
 
-	<div class="mvs-chat-list__loading" data-wp-bind--hidden="!state.loadingConversations" role="status">
+	<div class="mvs-chat-list__loading" data-wp-bind--hidden="!state.loadingConversations" role="status" hidden>
 		<p><?php esc_html_e( 'Loading conversations…', 'wpmediaverse' ); ?></p>
 	</div>
 

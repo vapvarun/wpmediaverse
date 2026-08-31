@@ -16,6 +16,13 @@
     /* Typography — BuddyNext first, then system stack fallback */
     --mvs-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     --mvs-font-heading: var(--font-display, var(--mvs-font));
+    /* Font-size scale — single source of truth for every font-xs/sm/md/lg
+       callsite (137 of them, Free + Pro + admin). Was only in the never-enqueued
+       src/shared/design-tokens.css, so bare uses silently fell back to inherited size. */
+    --mvs-font-xs: 12px;
+    --mvs-font-sm: 14px;
+    --mvs-font-md: 16px;
+    --mvs-font-lg: 18px;
 
     /* Brand — prefer theme BUTTON tokens first so the plugin's primary
        buttons (Follow / Post / Add Media (+) / .mvs-btn--primary / .mvs-fab)
@@ -32,6 +39,77 @@
     --mvs-primary: var(--reign-site-button-bg-color, var(--button-background-color, var(--bb-primary-button-background, var(--color-theme-primary, var(--brand, #0073aa)))));
     --mvs-primary-hover: var(--reign-site-button-bg-hover-color, var(--button-background-hover-color, var(--bb-primary-button-background-regular-hover, var(--color-theme-primary, var(--brand-hover, #005a87)))));
     --mvs-on-primary: var(--reign-site-button-text-color, var(--button-text-color, var(--bb-primary-button-text-regular, #ffffff)));
+
+    /* ── A CONTRAST FLOOR WE OWN ──────────────────────────────────────────
+     *
+     * Everything above derives from the theme, which means our AA compliance
+     * was decided by whichever theme the buyer installed. Measured: the primary
+     * call-to-action passes on Reign (4.51) and FAILS on Astra (4.29). Both
+     * halves of that pair come from the theme, so when a theme's own button
+     * colours do not meet AA, we inherited the failure (Basecamp 10252222099).
+     *
+     * `--mvs-primary-fill` nudges the accent 10% toward black. That alone does
+     * NOT guarantee the floor and was never going to: measured across candidate
+     * brand colours, a 15% darken still leaves white text at 2.00 on yellow and
+     * 2.88 on lime. Darkening enough to fix those would change the buyer's
+     * brand colour, which is the one thing they would notice and did not ask
+     * for.
+     *
+     * `--mvs-on-primary-auto` is what actually guarantees it: relative colour
+     * syntax reads the fill's OKLCH lightness and returns white below the
+     * threshold, black above it. The hue is never touched — only the text
+     * flips. Measured on the same candidates, fill + auto foreground:
+     *
+     *   Reign 5.38 · Astra 6.15 · yellow 11.78 · lime 8.09 · pink 5.19
+     *   navy 17.09 · grey 6.41          (minimum 5.19, all comfortably AA)
+     *
+     * The 10% nudge stays because it buys headroom on the dark accents that
+     * were merely scraping past — Reign goes 4.51 -> 5.38.
+     *
+     * Fallback: browsers without relative colour syntax keep the theme's own
+     * button text colour, i.e. exactly today's behaviour. Nobody is worse off
+     * than before; supporting browsers are better off.
+     */
+    --mvs-primary-fill: color-mix(in srgb, var(--mvs-primary) 90%, #000);
+    /*
+     * Declared straight, with NO @supports guard, and that is deliberate.
+     * Chrome discards `@supports (color: oklch(from red l c h))` at the at-rule
+     * parser while `CSS.supports()` returns true for the same string — measured,
+     * the guarded rule never reached the CSSOM at all. The guard is also
+     * unnecessary: a custom property a browser cannot parse becomes
+     * guaranteed-invalid, so every consumer's own `var(..., fallback)` takes
+     * over. Old browsers therefore keep exactly today's behaviour for free.
+     */
+    --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+
+    /*
+     * The primary button's colours, resolved ONCE.
+     *
+     * `.mvs-btn--primary` is declared in four stylesheets across the two
+     * plugins — here, shared-ui-frame.css (modals), bp-integration.css
+     * (#buddypress, where a class-only rule loses to the theme's
+     * `#buddypress button`) and Pro's gamification.css (which wins on the
+     * competition pages by load order). The three extra copies exist for
+     * specificity and load order, which are real problems; restating the
+     * COLOUR in each of them was not. It meant the contrast-floor fix had to
+     * be made four times, and whichever copy someone forgets is the one that
+     * ships broken — which is exactly how a `color: var(--mvs-surface)` (a
+     * page-surface token used as button text, black-on-brand in dark mode)
+     * survived in shared-ui-frame.css long after the same mistake was found
+     * and commented elsewhere.
+     *
+     * The other three now reference these four tokens and declare no colour of
+     * their own, so the formula lives here and changing it changes every
+     * surface. They keep a plain `var(--mvs-primary)` fallback so a context
+     * that somehow loads without this file degrades to the theme colour rather
+     * than to nothing — a fallback, deliberately not a second copy of the
+     * formula. Basecamp 10252281364.
+     */
+    --mvs-btn-primary-bg: var(--mvs-primary-fill, var(--mvs-primary));
+    --mvs-btn-primary-fg: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
+    --mvs-btn-primary-bg-hover: var(--mvs-primary-hover);
+    --mvs-btn-primary-fg-hover: var(--mvs-on-primary, #ffffff);
+
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
     --mvs-danger-rgb: 214, 54, 56;
@@ -54,7 +132,10 @@
        source of truth, dark-mode-safe. */
     --mvs-bg-subtle: var(--mvs-surface-2);     /* subtle panel fill */
     --mvs-on-danger: #ffffff;                  /* text on danger (red both modes) */
-    --mvs-border-strong: var(--mvs-border);    /* emphasized divider */
+    /* Emphasis tier — see the border contract below. Mixing toward --mvs-text
+       means this strengthens in BOTH modes off one declaration: dark redefines
+       --mvs-border and --mvs-text, so the mix re-resolves lighter there. */
+    --mvs-border-strong: color-mix(in oklab, var(--mvs-border), var(--mvs-text) 30%);
     --mvs-accent: #6366f1;                      /* indigo accent (boosts/highlights) */
     --mvs-accent-2: #ec4899;                     /* secondary accent (stories-ring gradient end) */
     --mvs-accent-soft: rgba(99, 102, 241, 0.12); /* translucent → works light + dark */
@@ -81,7 +162,26 @@
     --mvs-text-secondary: var(--reign-site-alternate-text-color, var(--global-font-color, var(--text-2, #646970)));
     --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, var(--text-3, #a7aaad)));
 
-    /* Borders & Shadows */
+    /* ── Borders: THREE TIERS, ONE JOB EACH ─────────────────────────────────
+       Before 2.4.0 every box drew the same line: a text input, the card holding
+       it, and the panel holding that were all `1px solid var(--mvs-border)`. So
+       nesting produced three identical edges and nothing receded — the member
+       counted boxes instead of reading content. Pick by JOB, never by taste:
+
+         --mvs-border-light   STRUCTURE — cards, panels, sections, rows,
+                              dividers. Neutral and quiet; it separates, it does
+                              not ask to be looked at.
+         --mvs-border         CONTROLS  — input, select, textarea, button, chip,
+                              dropzone. Theme-tinted: a visible edge here means
+                              "you can interact with me".
+         --mvs-border-strong  EMPHASIS  — active/selected state, table head rule.
+
+       Two hard rules that keep this from drifting back:
+       1. A bordered box MUST NOT contain another bordered box. Where nesting is
+          real, the OUTER one drops its border and expresses depth with
+          background + spacing instead.
+       2. Semantic borders (success/warning/danger, brand) are NOT part of this
+          ladder — never swap one for a neutral tier, it destroys the meaning. */
     --mvs-border: var(--reign-site-border-color, var(--global-border-color, var(--border, #dcdcde)));
     --mvs-border-light: var(--border-soft, #e9e9ea);
     /* Elevation — BuddyNext-first (soft, layered --bn-shadow-*), with a matching
@@ -97,10 +197,32 @@
     --mvs-radius-lg: var(--r-lg, 12px);
     --mvs-radius-pill: var(--r-full, 100px);
 
-    /* Breakpoints (reference only — used in @media rules) */
-    --mvs-bp-mobile: 480px;
+    /*
+     * Breakpoints — DOCUMENTATION ONLY. A @media query cannot read a custom
+     * property, so nothing consumes these; they exist so that "the tablet
+     * breakpoint" means one thing to the next person.
+     *
+     * They previously did not. This block said tablet=768 / mobile=480 while
+     * src/shared/design-tokens.css said tablet=1024 / mobile=767 — the same two
+     * names, different numbers, and whichever file you happened to read decided
+     * what you wrote. That is how this codebase ended up with rules at both 767
+     * and 768, and at both 1023 and 1024 (Basecamp 10252222205). Both blocks now
+     * carry the list below.
+     *
+     *   480px  small phone                       (13 rules)
+     *   640px  phone — the most-used breakpoint  (24 Free / 38 Pro)
+     *   768px  tablet boundary; below it is 767  (17 rules)
+     *  1024px  top of tablet; desktop is 1025+   (5 rules)
+     *   782px  WordPress admin's own breakpoint — core's number, not ours
+     *
+     * The contract asks for three and there are five. Collapsing them is a
+     * deliberate redesign, not a tidy-up, and is NOT what this card did — the
+     * fix here was to stop the same name meaning two things.
+     */
+    --mvs-bp-phone-sm: 480px;
+    --mvs-bp-phone: 640px;
     --mvs-bp-tablet: 768px;
-    --mvs-bp-desktop: 1024px;
+    --mvs-bp-desktop: 1025px;
 
     /* ─── Mobile UX guideline tokens (see docs/MOBILE_UX_GUIDELINE.md §2.2) ── */
 
@@ -117,14 +239,23 @@
     --mvs-space-6: 3rem;     /* 48px */
     --mvs-space-7: 4rem;     /* 64px */
 
-    /* Z-index layers — never use bare integers in plugin CSS. */
+    /* Z-index layers — never use bare integers in plugin CSS.
+       The overlay-and-above band sits in the 9990s: theme sticky headers run
+       high (Reign #masthead is 999/1000, BuddyBoss ~991), and at the old
+       200–500 an MVS dropdown/modal/toast painted BEHIND the pinned header
+       (Basecamp 10240335491). The band clears common theme headers while
+       staying under the WP admin bar (99999), which must remain on top.
+       Ceiling note: a theme with a fixed header at 99999 (e.g. Divi) would
+       still win; that is a deliberate stop short of the admin bar rather than
+       an oversight. Page chrome that legitimately sits below a theme header
+       (base/sticky/fab) stays low. */
     --mvs-z-base:    1;
     --mvs-z-sticky:  50;
     --mvs-z-fab:     100;
-    --mvs-z-overlay: 200;
-    --mvs-z-modal:   300;
-    --mvs-z-toast:   400;
-    --mvs-z-tooltip: 500;
+    --mvs-z-overlay: 9990;
+    --mvs-z-modal:   9991;
+    --mvs-z-toast:   9992;
+    --mvs-z-tooltip: 9993;
 
     /* Motion */
     --mvs-duration-fast: 120ms;
@@ -320,8 +451,15 @@ body.mvs-page {
 
 /* §3.1 — Universal touch-target floor below the desktop breakpoint.
    Every interactive element clears 44×44 in both axes, expanding via padding
-   when the visible chip is smaller. */
-@media (max-width: 1023px) /* var(--mvs-bp-desktop) */ {
+   when the visible chip is smaller.
+
+   1024, not 1023. Desktop starts at 1025 (src/shared/base.css), tablet is
+   768-1024, and the block CSS generator emits `max-width: 1024px` for its
+   tablet tier — so at exactly 1024px, which is iPad landscape, this floor was
+   the ONLY tablet rule in the plugin that switched itself off. The three other
+   tablet blocks in this file already say 1024; this one was the outlier
+   (Basecamp 10252222205). */
+@media (max-width: 1024px) {
     .mvs-page .mvs-btn,
     .mvs-page .mvs-icon-btn,
     .mvs-page .mvs-fab,
@@ -382,7 +520,7 @@ body.mvs-page {
     flex-shrink: 0;
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     /* Hide textual label — keep the chevron only.
        The screen-reader label stays via aria-label on the anchor. */
     .mvs-back-link__label {
@@ -429,7 +567,7 @@ body.mvs-page {
     flex-shrink: 0;
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-btn--icon-collapse .mvs-btn__label {
         position: absolute;
         width: 1px;
@@ -562,7 +700,7 @@ body.dark-mode .mvs-skeleton::after {
     gap: var(--mvs-space-2);
 }
 
-@media (min-width: 768px) /* var(--mvs-bp-tablet) */ {
+@media (min-width: 768px) /* --mvs-bp-tablet and up */ {
     .mvs-skeleton-grid {
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: var(--mvs-space-3);
@@ -746,7 +884,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-media-header {
-    padding: 16px 24px;
+    padding: 16px var(--mvs-space-4);
 }
 
 .mvs-media-header-row {
@@ -807,6 +945,117 @@ body.dark-mode .mvs-skeleton::after {
     line-height: 1.3;
 }
 
+/* ==========================================================================
+   Document identity line — type, size, privacy, location.
+   The drive row already showed all four; this page showed none, so opening a
+   document from the list LOST information. Privacy is the one that matters:
+   without it a member cannot tell a private contract from a public one, on the
+   same screen as a button that can mint a link anyone can open.
+   ========================================================================== */
+
+.mvs-media-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    margin: var(--mvs-space-2) 0 0;
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+    line-height: 1.4;
+}
+
+/* Separator is drawn, not typed, so the parts stay independently omittable —
+   any of type / size / privacy / location can be absent without leaving a
+   stranded bullet behind. */
+.mvs-media-meta__item + .mvs-media-meta__item::before,
+.mvs-media-meta__type + .mvs-media-meta__item::before,
+.mvs-media-meta__privacy + .mvs-media-meta__item::before {
+    content: "·";
+    margin-inline-end: var(--mvs-space-2);
+    opacity: 0.55;
+}
+
+.mvs-media-meta__item {
+    font-variant-numeric: tabular-nums;
+}
+
+/* The type chip is a LABEL, not a status, so it stays neutral.
+   It deliberately does NOT copy the drive's `--mvs-info-bg` + `--mvs-primary`
+   pairing: on this theme `--mvs-primary` is red, so that pair renders red text
+   on a blue wash. A neutral chip also lets the privacy chip beside it be the
+   only coloured thing on the line, which is the one worth noticing. */
+.mvs-media-meta__type {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: var(--mvs-radius-sm);
+    background: var(--mvs-bg-muted);
+    color: var(--mvs-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* Amber wash carries the "restricted" signal; the TEXT is the normal ink so it
+   stays legible. `--mvs-warning` on `--mvs-warning-bg` is the same hue at 15%
+   alpha — amber on amber, which measured at almost no contrast in either
+   theme. */
+.mvs-media-meta__privacy {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--mvs-radius-pill);
+    background: var(--mvs-warning-bg);
+    color: var(--mvs-text);
+    font-size: var(--mvs-font-sm);
+    font-weight: 600;
+}
+
+.mvs-media-meta__privacy i,
+.mvs-media-meta__privacy svg {
+    color: var(--mvs-warning);
+}
+
+.mvs-media-meta__privacy i,
+.mvs-media-meta__privacy svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* The document block lines up with the title above it.
+   `.mvs-media-content` is deliberately flush at 0 so a PHOTO can run edge to
+   edge in its card — that is right for an image and wrong for a page of text,
+   which sat 24px to the left of its own heading. Inset the document wrapper
+   only, rather than padding the shared content area and boxing in every image
+   on the site. */
+.mvs-media-document {
+    padding-inline: var(--mvs-space-4);
+}
+
+@media (max-width: 640px) {
+
+    .mvs-media-document {
+        padding-inline: var(--mvs-space-3);
+    }
+
+}
+
+/* Follow steps back on a document page so Download is the only primary. */
+.mvs-btn.mvs-follow-btn--quiet {
+    background: transparent;
+    border-color: var(--mvs-border);
+    color: var(--mvs-text-secondary);
+    font-weight: 500;
+}
+
+.mvs-btn.mvs-follow-btn--quiet:hover,
+.mvs-btn.mvs-follow-btn--quiet:focus-visible {
+    border-color: var(--mvs-primary);
+    color: var(--mvs-primary);
+}
+
 /* Media Content */
 .mvs-media-content {
     padding: 0;
@@ -850,7 +1099,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-media-description {
-    padding: 12px 16px 0;
+    padding: 12px var(--mvs-space-4) 0;
     line-height: 1.6;
     color: var(--mvs-text);
     font-size: 0.9375rem;
@@ -861,8 +1110,22 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 /* Footer & Tags */
+
+/*
+ * ONE HORIZONTAL RHYTHM ON THE MEDIA CARD.
+ *
+ * The card's four rows each chose their own inline padding — header 24px,
+ * content 0 (its own children re-inset to 24), social wrapper 0, footer and
+ * comments 16px — so the comment box and the description sat 8px closer to the
+ * card's edge than the title, meta, preview and actions above them. Reported as
+ * "why is it touching the border": nothing was overflowing, the rows simply
+ * disagreed about where the edge is.
+ *
+ * 24px desktop / 16px mobile, on every row, so a vertical line drawn down the
+ * card touches the start of all of them.
+ */
 .mvs-media-footer {
-    padding: 8px 16px 16px;
+    padding: 8px var(--mvs-space-4) var(--mvs-space-4);
 }
 
 .mvs-media-tags {
@@ -990,7 +1253,7 @@ body.dark-mode .mvs-skeleton::after {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 
     .mvs-cols-3,
     .mvs-cols-4,
@@ -1115,7 +1378,7 @@ body.dark-mode .mvs-skeleton::after {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 
     .mvs-grid--original.mvs-cols-3,
     .mvs-grid--original.mvs-cols-4,
@@ -1548,16 +1811,6 @@ body.dark-mode .mvs-skeleton::after {
    12. Social Interactions Bar (for Step 47d)
    ========================================================================== */
 
-.mvs-social-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 12px 24px;
-    border-top: 1px solid var(--mvs-border-light);
-}
-
 .mvs-reactions {
     display: flex;
     align-items: center;
@@ -1657,7 +1910,7 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-bg);
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     /* Hide the view count on mobile to reclaim space — it's a passive metric. */
     .mvs-single-media .mvs-social-actions .mvs-view-count {
         display: none;
@@ -1669,7 +1922,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-comments-section {
-    padding: 12px 16px 16px;
+    padding: 12px var(--mvs-space-4) var(--mvs-space-4);
     border-top: 1px solid var(--mvs-border-light);
 }
 
@@ -1867,31 +2120,169 @@ body.dark-mode .mvs-skeleton::after {
 
 /* Theme defense. Some themes (e.g. BuddyX) style bare <button> with a filled
    accent background + full border + radius, which turns these flat tabs into
-   chunky colored buttons. Re-assert the intended clean look so the dashboard
-   reads the same on any theme: flat text tabs, primary underline on the active
-   tab. !important is the standard pattern for a frontend plugin defending its
-   own controls inside arbitrary themes. Bug #10019404777. */
+   chunky colored buttons. Re-assert the intended look so the dashboard reads
+   the same on any theme. !important is the standard pattern for a frontend
+   plugin defending its own controls inside arbitrary themes. Bug #10019404777.
+
+   IT WAS ALSO DEFENDING A DESIGN THAT NO LONGER EXISTS. Written for the
+   horizontal strip, it pinned `border-bottom: 2px solid transparent`,
+   `border-radius: 0` and `background: none` with !important — so when the
+   sections became a vertical rail, every rule the rail wrote for its own
+   appearance lost to armour the plugin had aimed at itself. That is why rail
+   items rendered as red underlined links with no active fill and no
+   inline-start marker: not the theme winning, the plugin's own past winning.
+   Diagnosed by computed style, after `display: flex` from a rule applied while
+   `border: 0` from the SAME rule did not.
+
+   What is invariant across both designs stays here. What is per-design moves
+   into the breakpoint that owns that design — because below 861px the strip IS
+   horizontal, and there an underline is the right marker. */
 .mvs-dashboard-tabs .mvs-dashboard-tab {
     background: none !important;
     border: 0 !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
     box-shadow: none !important;
     /* The theme also forces button text white; without re-asserting the text
        color the label turns white-on-light = invisible once the fill is gone. */
     color: var(--mvs-text) !important;
 }
 
-.mvs-dashboard-tabs .mvs-dashboard-tab:hover,
-.mvs-dashboard-tabs .mvs-dashboard-tab:focus,
-.mvs-dashboard-tabs .mvs-dashboard-tab.active {
-    background: none !important;
-    border-bottom-color: var(--mvs-primary) !important;
-    color: var(--mvs-primary) !important;
+/* Horizontal strip: the active marker is an underline. */
+@media (max-width: 860px) {
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab {
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0 !important;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:hover,
+    .mvs-dashboard-tabs .mvs-dashboard-tab:focus,
+    .mvs-dashboard-tabs .mvs-dashboard-tab.active {
+        border-bottom-color: var(--mvs-primary) !important;
+        color: var(--mvs-primary) !important;
+    }
 }
 
+/* Rail: the active marker is the inline-start edge plus a surface fill. An
+   underline down a rail reads as a rule under one row, which is what it looked
+   like. Declared at the same weight as the armour above, or the armour wins
+   again — the whole point of this block. */
+/* ── Dashboard tab strip: the scrolling form ───────────────────────────────
+ *
+ * `max-width: 860px`, NOT 768. These rules lived inside the mobile block and
+ * the vertical rail that replaces them starts at `min-width: 861px`, so 769px
+ * to 860px was covered by NEITHER: the strip fell back to the base
+ * `display: flex` with no wrap and no overflow, and its content — 912px wide
+ * with the full tab set — simply spilled out of the container with no way to
+ * scroll to it. Three tabs were unreachable across a 78px band of desktop
+ * widths, and the page itself did not scroll, so nothing looked wrong.
+ *
+ * Found by walking every distinct breakpoint at desktop rather than by reading
+ * the CSS, which is the only way this shows up: each rule is correct on its own
+ * and the bug lives in the gap between them (Basecamp 10252222205).
+ *
+ * The two boundaries now meet exactly at 860/861. If either moves, move both.
+ */
+@media (max-width: 860px) {
+    .mvs-dashboard-tabs {
+        position: sticky;
+        top: 0;
+        z-index: var(--mvs-z-sticky);
+        background: var(--mvs-bg);
+        padding: 8px 0;
+        border-bottom: 1px solid var(--mvs-border-light);
+        /* Inline axis ONLY. `margin: 0 -20px` bled the sticky bar edge-to-edge
+           and, being a shorthand, silently reset the base rule's
+           `margin-bottom: 24px` — so the toolbar underneath sat flush against
+           the tab bar and its focus ring overlapped the border (Basecamp
+           10248974871). margin-inline also survives RTL, which the shorthand
+           did not. */
+        margin-inline: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        /* Edge-fade so users see there are more tabs to swipe to. */
+        -webkit-mask-image: linear-gradient(to right,
+            black 0,
+            black calc(100% - 24px),
+            transparent 100%);
+        mask-image: linear-gradient(to right,
+            black 0,
+            black calc(100% - 24px),
+            transparent 100%);
+    }
+
+    .mvs-dashboard-tabs::-webkit-scrollbar { display: none; }
+
+    .mvs-dashboard-tabs > .mvs-dashboard-tab {
+        scroll-snap-align: start;
+    }
+}
+
+@media (min-width: 861px) {
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab {
+        border-inline-start: 2px solid transparent !important;
+        border-radius: var(--mvs-radius-sm) !important;
+        color: var(--mvs-text-secondary) !important;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:hover,
+    .mvs-dashboard-tabs .mvs-dashboard-tab:focus {
+        background: var(--mvs-surface) !important;
+        color: var(--mvs-text) !important;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab.active {
+        border-inline-start-color: var(--mvs-primary) !important;
+        background: var(--mvs-surface) !important;
+        color: var(--mvs-primary) !important;
+    }
+
+    /* A group with no heading still shows its break. */
+    .mvs-dashboard-tabs .mvs-dashboard-tab--group-start {
+        border-block-start: 1px solid var(--mvs-border-light) !important;
+    }
+}
+
+/*
+ * Every tab's content sits in the SAME wrapper.
+ *
+ * The panel used to be a bare `min-height` — transparent, no padding, no edge —
+ * so each section's content sat directly on the page background and looked
+ * unframed next to the rail and streak banner beside it, which are both carded.
+ * Whether a screen looked finished depended on whether its content happened to
+ * bring its own card: Media did (the upload zone), Albums, Collections,
+ * Favorites, Documents and Edit profile did not.
+ *
+ * Matches the rail's treatment deliberately — same border, radius and surface
+ * token — so the two columns read as one interface rather than two.
+ *
+ * Geometry was already uniform across desktop / iPad / mobile (identical x,
+ * width and padding at 1440 / 820 / 390); what was missing was the frame.
+ */
+/* The panel is a LAYOUT REGION, not a card — it holds cards that draw their own
+   border, and an outline here made every tab read as a box inside a box inside a
+   box. Depth comes from the tinted ground + padding instead (border contract
+   rule 1: a bordered box must not contain another bordered box). */
 .mvs-dashboard-panel {
     min-height: 200px;
+    padding: var(--mvs-space-4);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-bg-subtle);
+}
+
+
+@media (max-width: 640px) {
+    /* Tighter on a phone: a full-width card with desktop padding wastes the
+       narrowest axis, which is the one that matters there. */
+    .mvs-dashboard-panel {
+        padding: var(--mvs-space-3);
+    }
 }
 
 /* Interactivity API uses [hidden] attribute for show/hide */
@@ -1953,7 +2344,7 @@ body.dark-mode .mvs-skeleton::after {
 @media (max-width: 1024px) {
     .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(4, 1fr); }
 }
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-dashboard-grid.mvs-cols-3,
     .mvs-dashboard-grid.mvs-cols-4,
     .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(2, 1fr); }
@@ -1978,6 +2369,94 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-dashboard-card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Bulk-select overlay checkbox on each card. Hidden until hover/selection so
+   it stays out of the way, but always keyboard-reachable. */
+.mvs-bulk-check {
+    position: absolute;
+    top: var(--mvs-space-2);
+    inset-inline-start: var(--mvs-space-2);
+    z-index: 3;
+    /* 40px minimum tap target (Wbcom responsive contract). The check glyph
+       stays 18px; the box carries the hit area. */
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--mvs-on-primary);
+    border-radius: var(--mvs-radius-sm);
+    background: rgba(0, 0, 0, 0.45);
+    color: transparent;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.mvs-dashboard-card:hover .mvs-bulk-check,
+.mvs-bulk-check:focus-visible,
+.mvs-bulk-check--on {
+    opacity: 1;
+}
+
+.mvs-bulk-check--on {
+    background: var(--mvs-primary);
+    border-color: var(--mvs-primary);
+    color: var(--mvs-on-primary);
+}
+
+.mvs-bulk-check svg {
+    width: 18px;
+    height: 18px;
+}
+
+.mvs-dashboard-card--selected {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: -2px;
+}
+
+/* Sticky action bar shown while ≥1 card is selected. */
+.mvs-bulk-bar {
+    position: sticky;
+    top: var(--mvs-space-2);
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    margin-block-end: var(--mvs-space-3);
+    padding: var(--mvs-space-2) var(--mvs-space-3);
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border-light);
+    border-radius: var(--mvs-radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.mvs-bulk-count {
+    font-weight: 600;
+    color: var(--mvs-text);
+    margin-inline-end: auto;
+}
+
+.mvs-bulk-privacy {
+    max-width: 160px;
+}
+
+@media (max-width: 480px) {
+    .mvs-bulk-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-bulk-count {
+        margin-inline-end: 0;
+    }
+
+    .mvs-bulk-privacy {
+        max-width: none;
+    }
 }
 
 .mvs-dashboard-card-thumb {
@@ -2071,6 +2550,118 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* ==========================================================================
+   Panel toolbar — the one shape above every list or grid.
+   Emitted by TemplateHelpers::render_panel_toolbar(). Used by the four
+   dashboard panels (client-driven) and the document drive (GET form), so the
+   two rendering engines look like one product.
+   ========================================================================== */
+
+.mvs-panel-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    margin-bottom: var(--mvs-space-4);
+}
+
+.mvs-panel-toolbar__search {
+    /* Takes the slack so the selects keep their natural width; the floor stops
+       it collapsing to nothing once several filters are present. */
+    flex: 1 1 12rem;
+    min-width: 0;
+    min-height: var(--mvs-touch-min);
+    padding: 0 var(--mvs-space-3);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    /* !important fights BuddyX's bx-tokens-applied.css, whose form rule is
+       `input:not([type="submit"]):not([type="button"]):not([type="checkbox"])
+       :not([type="radio"]):not([type="range"])` — specificity (0,5,1), which no
+       sane class selector beats. Without this the search box stayed white on a
+       dark dashboard while the select beside it went dark, because the theme's
+       grouped selector only carries that weight on its `input` branch.
+       Colour only: layout above is left to lose normally. */
+    background: var(--mvs-surface) !important;
+    color: var(--mvs-text) !important;
+    font-size: var(--mvs-font-md);
+}
+
+.mvs-panel-toolbar__select {
+    min-height: var(--mvs-touch-min);
+    padding: 0 var(--mvs-space-3);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-surface);
+    color: var(--mvs-text);
+    font-size: var(--mvs-font-sm);
+}
+
+.mvs-panel-toolbar__count {
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mvs-panel-toolbar__search:focus-visible,
+.mvs-panel-toolbar__select:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+
+    .mvs-panel-toolbar__search {
+        /* The search owns the first row on a phone; the selects wrap beneath it
+           rather than each being squeezed to a few characters wide. */
+        flex-basis: 100%;
+    }
+
+    .mvs-panel-toolbar__select {
+        flex: 1 1 auto;
+    }
+
+}
+
+/* Dashboard panel loading state.
+   Every panel's `loading` flag was already being SET by the store and read by
+   nothing, so a slow first request rendered an entirely blank panel: the grid
+   was empty and the empty state was deliberately suppressed. This is the other
+   half of that pair, and it is the same markup in all four panels so they say
+   "loading" the same way. */
+.mvs-dashboard-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--mvs-space-2);
+    padding: var(--mvs-space-5) var(--mvs-space-3);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+}
+
+.mvs-dashboard-loading__spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--mvs-border);
+    /* One side inherits the accent so the ring reads as spinning. */
+    border-top-color: var(--mvs-primary);
+    border-radius: 50%;
+    animation: mvs-dashboard-spin 0.7s linear infinite;
+}
+
+@keyframes mvs-dashboard-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .mvs-dashboard-loading__spinner {
+        /* The label still says "Loading…", so removing the spin costs nothing. */
+        animation: none;
+    }
+
+}
+
+/* ==========================================================================
    15. Modal
    ========================================================================== */
 
@@ -2102,7 +2693,7 @@ a.mvs-dashboard-card-title:hover {
    Modal slides up from the bottom edge with a drag handle, max 90vh,
    safe-area-inset honored for iOS home indicator. Animation respects
    prefers-reduced-motion. */
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-modal-overlay {
         align-items: flex-end;
         padding: 0;
@@ -2234,7 +2825,7 @@ a.mvs-dashboard-card-title:hover {
     flex-wrap: wrap;
     gap: 4px;
     padding: 6px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 6px;
     min-height: 38px;
     align-items: center;
@@ -2293,7 +2884,7 @@ a.mvs-dashboard-card-title:hover {
     left: 0;
     right: 0;
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-top: none;
     border-radius: 0 0 6px 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -2384,7 +2975,7 @@ a.mvs-dashboard-card-title:hover {
     /* Honor the FAB safe area so toasts never collide with the upload button. */
 }
 
-@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-toast {
         /* On mobile, sit above both the FAB safe area and the home indicator. */
         bottom: calc(var(--mvs-fab-safe) + 8px + env(safe-area-inset-bottom, 0px));
@@ -2464,10 +3055,25 @@ a.mvs-dashboard-card-title:hover {
     border-color: var(--mvs-primary);
 }
 
-.mvs-media-picker-item img {
+/* The picker reuses the grid's MARKUP classes, but the grid's sizing is scoped
+   to `.mvs-grid-item`, so inside a picker cell a video/audio tile matched no
+   sizing rule at all and rendered ragged next to the images. Sized here for
+   every child the picker can hold, not just `img` (Basecamp 10190678139). */
+.mvs-media-picker-item img,
+.mvs-media-picker-item video,
+.mvs-media-picker-item .mvs-grid-video-preview,
+.mvs-media-picker-item .mvs-grid-item-placeholder {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* `.mvs-grid-item-placeholder--video` pins `aspect-ratio: 16 / 9`, which cannot
+   fill a square cell that clips its overflow. Inside the picker the cell decides
+   the shape. */
+.mvs-media-picker-item .mvs-grid-item-placeholder--video,
+.mvs-media-picker-item .mvs-grid-item-placeholder--audio {
+    aspect-ratio: auto;
 }
 
 .mvs-media-picker-check {
@@ -2625,9 +3231,39 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-tag-cloud-item:hover,
+/*
+ * The foreground must move WITH the background. This set `--mvs-text` — the
+ * body text colour — on top of the primary fill, so the selected chip scored
+ * 2.05 in light mode and 1.13 in dark, i.e. the one filter a member has chosen
+ * was the least readable thing on the page (Basecamp 10252222011).
+ *
+ * `--mvs-on-primary` is the token that exists for exactly this: whatever reads
+ * correctly on the accent, resolved from the theme. Same pairing the attention
+ * badge uses. Renders on Explore, /media-tag/ archives and member profiles, so
+ * this one rule covers three surfaces.
+ */
+/*
+ * Visually hidden, still announced. Ours on purpose: `.screen-reader-text` is
+ * WordPress core's class and its presence depends on the THEME defining it. A
+ * label that becomes visible on a theme that does not would be worse than the
+ * placeholder-only field it replaced — and "the theme will have it" is the
+ * assumption this audit kept finding to be wrong.
+ */
+.mvs-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
-    color: var(--mvs-text);
+    color: var(--mvs-on-primary, #fff);
 }
 
 /* ==========================================================================
@@ -2664,7 +3300,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-upload {
     margin-bottom: 24px;
     background: var(--mvs-bg, #fff);
-    border: 1px solid var(--mvs-border, #dcdcde);
+    border: 1px solid var(--mvs-border-light, #dcdcde);
     border-radius: 12px;
     padding: 20px;
 }
@@ -2676,7 +3312,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin: 0 0 1rem;
     padding: 28px 20px;
-    border: 2px dashed var(--mvs-border-light);
+    border: 2px dashed var(--mvs-border);
     border-radius: 8px;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
@@ -2764,8 +3400,10 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin-top: 12px;
     padding: 10px 12px;
+    /* Sits INSIDE the bordered upload card — the tinted ground already separates
+       it, so an outline here would be the third edge in a row (border contract
+       rule 1). */
     background: var(--mvs-bg-subtle, #f6f7f8);
-    border: 1px solid var(--mvs-border, #e0e0e0);
     border-radius: 6px;
 }
 
@@ -2893,7 +3531,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 16px 0;
     padding: 20px;
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
 }
 
@@ -2967,7 +3605,7 @@ a.mvs-dashboard-card-title:hover {
     height: 80px;
     object-fit: cover;
     border-radius: 6px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
 }
 
 .mvs-bp-upload-thumb-name {
@@ -3200,6 +3838,91 @@ a.mvs-dashboard-card-title:hover {
     background: linear-gradient(135deg, #2b3544, #1a1f2b);
 }
 
+/* Document tile — the cell a document takes in a collection grid.
+ *
+ * A LIGHT, bordered card rather than the dark gradient the generic
+ * placeholder uses. The dark tile is right for media that has a picture we
+ * could not produce (a video still, a missing thumbnail): it reads as a
+ * photograph slot. A document has no picture and never will, so a photo slot
+ * is the wrong metaphor — the reported bug was literally "a black tile with a
+ * tiny generic icon". This says "file" instead of "image we lost".
+ *
+ * Token-driven, so it inverts in dark mode; the gradient above is a literal
+ * and cannot. */
+.mvs-grid-item-placeholder--document {
+    background: var(--mvs-surface-2, #f5f6f8);
+    border: 1px solid var(--mvs-border-light, #e2e5ea);
+    color: var(--mvs-text-secondary, #5c6472);
+}
+
+.mvs-doc-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 18px;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.mvs-doc-card__glyph {
+    --mvs-doc-glyph-size: 44px;
+    color: var(--mvs-text-secondary, #5c6472);
+    opacity: 0.9;
+}
+
+.mvs-doc-card__title {
+    font-weight: 600;
+    line-height: 1.3;
+    max-width: 100%;
+    color: var(--mvs-text, #1a1f2b);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+.mvs-doc-card__meta {
+    font-size: 0.82em;
+    color: var(--mvs-text-muted, #7a8494);
+}
+
+/* A document opened in the media lightbox (Basecamp 10248528902). A document has
+   no displayable image, so instead of a broken <img> it renders as a centered
+   card; the lightbox chrome around it (Open / Download) still reaches the file. */
+.mvs-lightbox-document.mvs-doc-card {
+    width: min(340px, 80vw);
+    height: auto;
+    gap: 14px;
+    padding: 40px 32px;
+    background: var(--mvs-bg, #ffffff);
+    border-radius: 12px;
+}
+
+.mvs-lightbox-document .mvs-doc-card__glyph {
+    --mvs-doc-glyph-size: 72px;
+}
+
+.mvs-lightbox-document .mvs-doc-card__title {
+    font-size: 1.05em;
+}
+
+@media (max-width: 480px) {
+    .mvs-doc-card {
+        gap: 6px;
+        padding: 10px 12px;
+    }
+
+    .mvs-doc-card__glyph {
+        --mvs-doc-glyph-size: 32px;
+    }
+}
+
 .mvs-grid-audio-icon,
 .mvs-grid-generic-icon {
     display: inline-flex;
@@ -3225,7 +3948,7 @@ a.mvs-dashboard-card-title:hover {
     max-width: 700px;
     margin: 20px auto;
     background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
     overflow: hidden;
 }
@@ -3442,7 +4165,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-search-input {
     flex: 1;
     padding: 10px 16px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 8px 0 0 8px;
     font-size: 0.95em;
     background: var(--mvs-bg);
@@ -3741,11 +4464,6 @@ a.mvs-dashboard-card-title:hover {
     gap: 16px;
 }
 
-.mvs-dashboard-heading {
-    font-size: 1.4em;
-    font-weight: 700;
-}
-
 .mvs-notification-bell {
     position: relative;
     cursor: pointer;
@@ -3781,7 +4499,7 @@ a.mvs-dashboard-card-title:hover {
     max-height: 400px;
     overflow-y: auto;
     background: var(--mvs-bg, #fff);
-    border: 1px solid var(--mvs-border, #ddd);
+    border: 1px solid var(--mvs-border-light, #ddd);
     border-radius: 8px;
     box-shadow: var(--mvs-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.18));
     z-index: 998;
@@ -3908,9 +4626,9 @@ a.mvs-dashboard-card-title:hover {
    30. Album Cover Picker
    ========================================================================== */
 
-.mvs-media-picker-item {
-    position: relative;
-}
+/* `.mvs-media-picker-item` is declared in §19 with its full box, including
+   `position: relative`. The duplicate rule that used to sit here restated only
+   that one property — Coding Rule 12 forbids duplicate class rules. */
 
 .mvs-media-picker-cover-btn {
     position: absolute;
@@ -3928,8 +4646,24 @@ a.mvs-dashboard-card-title:hover {
     z-index: 3;
 }
 
-.mvs-media-picker-item:hover .mvs-media-picker-cover-btn {
+.mvs-media-picker-item:hover .mvs-media-picker-cover-btn,
+.mvs-media-picker-cover-btn:focus-visible {
     opacity: 1;
+}
+
+/* A hover-only reveal is unreachable on touch: there is no hover on a phone or
+   tablet, so "Set Cover" was invisible and effectively untappable — while the
+   hint directly above the picker instructs the member to click it. On a coarse
+   pointer the button is simply always visible (Basecamp 10190678139). */
+@media (hover: none), (pointer: coarse) {
+    .mvs-media-picker-cover-btn {
+        opacity: 1;
+        /* Revealing it is only half the fix — at 28px tall it was still under
+           the 40px touch floor, so it would have been visible and awkward to
+           hit. Padding rather than height so the label stays centred. */
+        min-height: 40px;
+        padding-block: 8px;
+    }
 }
 
 .mvs-media-picker-cover-badge {
@@ -3984,7 +4718,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-grid-pagination-links span {
     display: inline-block;
     padding: 8px 14px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 4px;
     text-decoration: none;
     font-size: 13px;
@@ -4089,12 +4823,18 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 4px;
 }
 
+/* ONE declaration. There were two, at identical specificity with no media
+   query between them — `12px 24px` earlier in the file and this one later —
+   so the first was dead code and its `justify-content: space-between` never
+   applied to anything. The horizontal value is 24px so the bar's contents line
+   up with the title and body of the card it closes; at 16px it sat 8px to
+   their left on every media page. */
 .mvs-social-bar {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    padding: 10px 16px;
+    padding: 10px var(--mvs-space-4);
     border-top: 1px solid var(--mvs-border-light);
 }
 
@@ -4108,7 +4848,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 3px;
     padding: 5px 10px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -4140,7 +4880,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-favorite-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -4157,7 +4897,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-share-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -4191,7 +4931,7 @@ a.mvs-dashboard-card-title:hover {
 
 @media (max-width: 480px) {
     .mvs-media-header {
-        padding: 12px;
+        padding: 12px var(--mvs-space-3);
     }
 
     .mvs-media-title {
@@ -4209,15 +4949,15 @@ a.mvs-dashboard-card-title:hover {
     }
 
     .mvs-comments-section {
-        padding: 10px 12px 12px;
+        padding: 10px var(--mvs-space-3) var(--mvs-space-3);
     }
 
     .mvs-media-description {
-        padding: 10px 12px 0;
+        padding: 10px var(--mvs-space-3) 0;
     }
 
     .mvs-media-footer {
-        padding: 6px 12px 12px;
+        padding: 6px var(--mvs-space-3) var(--mvs-space-3);
     }
 }
 
@@ -4225,75 +4965,29 @@ a.mvs-dashboard-card-title:hover {
    31. Explore Page Grid Fixes
    ========================================================================== */
 
-@media (max-width: 768px) {}
-
-@media (max-width: 480px) {}
+/* Section 31 held two EMPTY media blocks (767 and 480). They shipped nothing
+   and inflated the breakpoint count that made this file look like it had more
+   responsive behaviour than it does. Removed rather than kept as placeholders. */
 
 /* ==========================================================================
    32. Profile Header (Dashboard) & Profile Edit
    ========================================================================== */
 
-/* Dashboard Profile Header */
-.mvs-dashboard-profile-header {
-    margin-bottom: 1.5rem;
-    padding: 1.25rem;
-    background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border, #dcdcde);
-    border-radius: 12px;
-}
-
-.mvs-dashboard-profile-view {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.mvs-dashboard-profile-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.mvs-dashboard-profile-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.mvs-dashboard-profile-name {
-    font-size: 1.125rem;
-    margin: 0 0 0.125rem;
-    font-weight: 600;
-}
-
-.mvs-dashboard-profile-bio {
-    font-size: 0.8125rem;
-    color: var(--mvs-text-secondary);
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mvs-dashboard-profile-actions {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.mvs-dashboard-profile-actions .mvs-btn {
-    font-size: 0.875rem;
-}
+/* The profile CARD that lived above the rail is gone — its avatar, name, bio
+   and buttons became the rail head plus the `profile` section, so its rules go
+   with it rather than lingering as selectors nothing emits (Coding Rule 12).
+   The edit FORM's own styling continues below; only the card is removed. */
 
 .mvs-dashboard-profile-edit-btn {
     flex-shrink: 0;
 }
 
 /* Inline Edit Form */
-.mvs-dashboard-profile-edit-form {
-    padding-top: 0.5rem;
-}
+/* `padding-top: 0.5rem` used to live here. It predated the panel wrapper and,
+   being a later rule of equal specificity, out-specified it — Edit profile was
+   the one tab whose content started higher than every other. Removed rather
+   than zeroed, so the panel's own padding applies on all four sides like every
+   other tab. */
 
 .mvs-profile-form-inline {
     display: flex;
@@ -4425,7 +5119,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-field input[type="text"],
 .mvs-profile-field textarea {
     padding: 0.625rem 0.75rem;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9375rem;
     font-family: inherit;
@@ -4492,18 +5186,19 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn--primary {
-    background: var(--mvs-primary);
-    /* Always readable on the brand primary background — never use a theme
-       surface/bg token here; those flip to dark in dark-mode themes. */
-    color: var(--mvs-on-primary, #ffffff);
-    border-color: var(--mvs-primary);
+    /* --mvs-btn-primary-* is defined once in the token block above and is what
+       the other three copies of this button reference. Never put a theme
+       surface/bg token in `color` here; those flip dark in dark-mode themes. */
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
+    border-color: var(--mvs-btn-primary-bg);
 }
 
 .mvs-btn--primary:hover,
 .mvs-btn--primary:focus,
 .mvs-btn--primary:visited {
-    background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #ffffff);
+    background: var(--mvs-btn-primary-bg-hover);
+    color: var(--mvs-btn-primary-fg-hover);
 }
 
 .mvs-btn--primary:disabled {
@@ -4586,15 +5281,6 @@ a.mvs-dashboard-card-title:hover {
         text-align: center;
     }
 
-    .mvs-dashboard-profile-view {
-        flex-wrap: wrap;
-    }
-
-    .mvs-dashboard-profile-actions {
-        flex: 0 0 100%;
-        flex-wrap: wrap;
-    }
-
     .mvs-profile-field-row {
         grid-template-columns: 1fr;
     }
@@ -4612,7 +5298,7 @@ a.mvs-dashboard-card-title:hover {
        the text inherited the ambient theme colour and went unreadable in dark
        mode (measured 1.07-1.38:1). */
     color: var(--mvs-text);
-    border: 1.5px solid var(--mvs-border-light);
+    border: 1.5px solid var(--mvs-border);
     border-radius: 100px;
     padding: 5px 5px 5px 6px;
     gap: 0;
@@ -4718,7 +5404,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
     margin-bottom: 8px;
     text-decoration: none;
@@ -4811,31 +5497,52 @@ a.mvs-dashboard-card-title:hover {
     /* White button on the purple banner in both modes — was var(--mvs-bg),
        which flips dark in dark mode and breaks the intended white pill. */
     background: #fff;
-    color: #667eea;
+    /* #4c51bf, not #667eea. The banner's own indigo scored 3.66 on the white
+       pill — a fail, on the single control that decides whether a visitor
+       joins at all (Basecamp 10252222150). Same hue family, just dark enough:
+       6.49. Not `--mvs-primary`, because this pill sits on a fixed purple
+       gradient that does not follow the theme, so its text must not either. */
+    color: #4c51bf;
     border: none;
 }
 
 .mvs-logged-out-banner__actions .mvs-btn--secondary {
     background: transparent;
-    color: var(--mvs-bg);
+    /* Fixed white, for the reason the comment above already gives: the banner
+       is a fixed purple gradient in BOTH modes, and `var(--mvs-bg)` flips to
+       near-black in dark — dark text on purple. The primary button was fixed
+       for exactly this and the secondary was left behind. */
+    color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .mvs-logged-out-banner__close {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7);
+    /* Full white, not 70% — at 0.7 on the gradient this was the faintest
+       control on a banner shown to every visitor. */
+    color: #fff;
     font-size: 20px;
     cursor: pointer;
-    padding: 4px;
+    /* Was 20x28. A dismiss control needs to be hittable, and this one sits in
+       a corner where a thumb is least accurate. Centring the glyph in a
+       touch-sized box costs no layout, since the button is absolutely
+       positioned. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--mvs-touch-min, 44px);
+    min-height: var(--mvs-touch-min, 44px);
+    padding: 0;
     line-height: 1;
     position: absolute;
-    top: 18px;
-    right: 8px;
+    top: 8px;
+    right: 4px;
 }
 
 .mvs-logged-out-banner__close:hover {
-    color: var(--mvs-bg);
+    /* Not `var(--mvs-bg)`: same dark-mode flip as the buttons above. */
+    color: #fff;
     background: none;
     border: none;
 }
@@ -5126,7 +5833,7 @@ a.mvs-dashboard-card-title:hover {
    36. Mobile Touch Targets & Responsiveness
    ========================================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 
     /* Ensure minimum 44px touch targets */
     .mvs-reaction-btn {
@@ -5156,38 +5863,6 @@ a.mvs-dashboard-card-title:hover {
     }
 
     /* Sticky dashboard tabs — mobile guideline §5.2 */
-    .mvs-dashboard-tabs {
-        position: sticky;
-        top: 0;
-        z-index: var(--mvs-z-sticky);
-        background: var(--mvs-bg);
-        padding: 8px 0;
-        border-bottom: 1px solid var(--mvs-border);
-        margin: 0 -20px;
-        padding-left: 20px;
-        padding-right: 20px;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x proximity;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        /* Edge-fade so users see there are more tabs to swipe to. */
-        -webkit-mask-image: linear-gradient(to right,
-            black 0,
-            black calc(100% - 24px),
-            transparent 100%);
-        mask-image: linear-gradient(to right,
-            black 0,
-            black calc(100% - 24px),
-            transparent 100%);
-    }
-
-    .mvs-dashboard-tabs::-webkit-scrollbar { display: none; }
-
-    .mvs-dashboard-tabs > .mvs-dashboard-tab {
-        scroll-snap-align: start;
-    }
 
     .mvs-dashboard-tab {
         min-height: 44px;
@@ -5220,7 +5895,7 @@ a.mvs-dashboard-card-title:hover {
         position: sticky;
         bottom: 0;
         background: var(--mvs-bg);
-        border-top: 1px solid var(--mvs-border);
+        border-top: 1px solid var(--mvs-border-light);
         padding: 8px 16px;
         margin: 0 -16px;
         z-index: 5;
@@ -5364,7 +6039,7 @@ a.mvs-dashboard-card-title:hover {
    Mobile — Search Bar Responsive Fixes
    ========================================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-search-bar {
         max-width: 100%;
     }
@@ -5448,6 +6123,56 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-close:hover {
     background: rgba(0, 0, 0, .7);
+}
+
+/* Fullscreen toggle — sits just left of the close button, same pill treatment. */
+.mvs-lightbox-fullscreen {
+    position: absolute;
+    top: 12px;
+    right: 64px;
+    z-index: 10;
+    background: rgba(0, 0, 0, .5);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+}
+
+.mvs-lightbox-fullscreen:hover,
+.mvs-lightbox-fullscreen:focus-visible {
+    background: rgba(0, 0, 0, .7);
+}
+
+/* Swap expand/compress icon by state (the fullscreen class rides on .mvs-lightbox). */
+.mvs-lightbox-fs-compress {
+    display: none;
+}
+
+.mvs-lightbox--fullscreen .mvs-lightbox-fs-expand {
+    display: none;
+}
+
+.mvs-lightbox--fullscreen .mvs-lightbox-fs-compress {
+    display: block;
+}
+
+/* Fullscreen: fill the viewport and hide the comments sidebar so the media
+   gets the whole space (customer request, Basecamp 9822552686). The media
+   pane is flex:1, so it expands on its own once the sidebar is gone. */
+.mvs-lightbox--fullscreen {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+.mvs-lightbox--fullscreen .mvs-lightbox-sidebar {
+    display: none;
 }
 
 .mvs-lightbox-close svg {
@@ -5634,6 +6359,8 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 20px;               /* only appear on hover/active state to */
     padding: 4px 10px;                 /* keep the strip clean against the */
     cursor: pointer;                   /* light sidebar background */
+    min-block-size: var(--mvs-touch-min, 44px);
+    justify-content: center;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -5809,7 +6536,7 @@ a.mvs-dashboard-card-title:hover {
    media off-screen and force a horizontal scrollbar on narrow viewports.
    Action buttons distribute evenly (flex:1) so 5 fit on one row at any
    width without scrolling. */
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-lightbox {
         flex-direction: column;
         max-width: 100vw;
@@ -6009,6 +6736,97 @@ a.mvs-dashboard-card-title:hover {
     overflow-wrap: anywhere;
 }
 
+/* Edit/delete controls under a lightbox comment. Edit-mode Save/Cancel reuse
+   .mvs-btn; the own-comment Edit/Delete are micro icon buttons (below). */
+.mvs-lightbox-comment-actions,
+.mvs-lightbox-comment-edit-actions {
+    display: flex;
+    gap: var(--mvs-space-2, 0.5rem);
+    margin-block-start: var(--mvs-space-2, 0.5rem);
+}
+
+/* Micro icon buttons: a small pencil/trash on a member's own comment, not the
+   large filled .mvs-btn. Transparent until hover so they read as icons, with a
+   comfortable 28px hit area around the 14px glyph. */
+.mvs-lightbox-comment-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 24px;
+    block-size: 24px;
+    /* The 24px box is deliberate and stays. The TARGET grows instead, via the
+       ::after below — see the note there. */
+    position: relative;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--mvs-text-muted, #64748b);
+    border-radius: var(--mvs-radius-sm, 6px);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/*
+ * Hit area, not icon size.
+ *
+ * These measured 24x24 against a 40px floor, but the 24px glyph is a
+ * deliberate design choice for this row and enlarging it would rebuild the
+ * comment meta line. So the target grows and the button does not.
+ *
+ * 40x44, not 44x44: the siblings sit 8.5px apart, so a 44px-wide area would
+ * overlap its neighbour by ~11px and the later button in the DOM would win
+ * every click in the overlap — silently turning "edit" into "delete" near the
+ * boundary. 40 wide leaves 0.5px between areas and still clears the floor.
+ * Basecamp 10252222115.
+ */
+.mvs-lightbox-comment-action::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    translate: -50% -50%;
+    inline-size: 40px;
+    block-size: var(--mvs-touch-min, 44px);
+}
+
+.mvs-lightbox-comment-action:hover,
+.mvs-lightbox-comment-action:focus-visible {
+    background: var(--mvs-surface-2, rgba(100, 116, 139, 0.12));
+    color: var(--mvs-text, #0f172a);
+}
+
+.mvs-lightbox-comment-action--danger:hover,
+.mvs-lightbox-comment-action--danger:focus-visible {
+    color: var(--mvs-danger, #dc2626);
+}
+
+.mvs-lightbox-comment-action svg {
+    inline-size: 14px;
+    block-size: 14px;
+}
+
+/* The edit/delete icons line up on the right, under the timestamp, rather
+   than floating on the left under the comment text. */
+.mvs-lightbox-comment-actions {
+    justify-content: flex-end;
+    margin-block-start: 0;
+}
+
+.mvs-lightbox-comment-edit {
+    margin-block-start: var(--mvs-space-2, 0.5rem);
+}
+
+.mvs-lightbox-comment-edit-input {
+    width: 100%;
+    font: inherit;
+    padding: var(--mvs-space-2, 0.5rem);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md, 8px);
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    resize: vertical;
+}
+
 .mvs-lightbox-no-comments {
     color: var(--mvs-text-muted, #6b7280);
     font-size: 14px;
@@ -6034,9 +6852,12 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-form {
     display: flex;
-    gap: 0;
-    border-top: 1px solid var(--mvs-border-light, #e5e7eb);
-    padding: 0;
+    gap: 8px;
+    align-items: center;
+    /* Composer sits at the top of the thread (Twitter/LinkedIn), so the
+       divider goes below it, above the comment list. */
+    border-block-end: 1px solid var(--mvs-border-light, #e5e7eb);
+    padding: 12px 16px;
     /* Was #fff — the lightbox sidebar is var(--mvs-surface) (dark in dark mode)
        and the input text is var(--mvs-text) (light), so a white bar made the
        typed text invisible. Match the sidebar surface. */
@@ -6045,12 +6866,20 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-input {
     flex: 1;
-    border: none;
-    padding: 14px 16px;
+    /* Explicit surface + text tokens (not the theme's input styling) so the
+       field is a defined rounded control that stays readable in dark mode. */
+    border: 1px solid var(--mvs-border, #d1d5db);
+    border-radius: 999px;
+    padding: 9px 14px;
     font-size: 14px;
     outline: none;
-    background: transparent;
+    background: var(--mvs-surface);
+    color: var(--mvs-text, inherit);
     min-width: 0;
+}
+
+.mvs-lightbox-comment-input:focus {
+    border-color: var(--mvs-primary, #E35656);
 }
 
 .mvs-lightbox-comment-input:focus-visible {
@@ -6059,14 +6888,27 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-comment-post {
+    flex-shrink: 0;
+    min-block-size: var(--mvs-touch-min, 44px);
     background: var(--mvs-primary, #E35656);
     border: none;
     color: #ffffff;
     font-weight: 600;
-    padding: 10px 20px;
+    padding: 9px 18px;
+    border-radius: 999px;
     cursor: pointer;
     font-size: 14px;
-    transition: filter 0.15s ease;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.mvs-lightbox-comment-post:hover:not(:disabled) {
+    filter: brightness(0.93);
+}
+
+/* Faded primary while empty, not the theme's grey disabled bg. */
+.mvs-lightbox-comment-post:disabled {
+    opacity: 0.45;
+    cursor: default;
 }
 
 .mvs-lightbox-comment-post:disabled {
@@ -6080,7 +6922,7 @@ a.mvs-dashboard-card-title:hover {
     color: #ffffff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
     .mvs-lightbox {
         flex-direction: column;
         width: 100vw;
@@ -6450,7 +7292,7 @@ body.dark-mode .mvs-auth-gate__card {
 
 .mvs-usage-history {
     background: var(--mvs-surface);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: var(--mvs-radius-lg);
     padding: var(--mvs-space-4);
     color: var(--mvs-text);
@@ -6612,4 +7454,749 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 }
 .mvs-media-gate__cta {
 	margin-top: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Document listing — /explore-document
+ *
+ * ROWS, not tiles. A grid of identical PDF icons carries no information, and a
+ * media grid asked to draw a PDF produces a broken tile. A row shows what
+ * actually distinguishes one document from another.
+ * ------------------------------------------------------------------------- */
+.mvs-documents__header {
+	display: flex;
+	align-items: baseline;
+	gap: var(--mvs-space-sm, 8px);
+	margin-block-end: var(--mvs-space-lg, 24px);
+}
+
+.mvs-documents__count {
+	color: var(--mvs-text-muted, #646970);
+	margin: 0;
+}
+
+.mvs-documents__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--mvs-border-light, #dcdcde);
+	border-radius: var(--mvs-radius-md, 8px);
+	overflow: hidden;
+}
+
+.mvs-documents__row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+	align-items: center;
+	gap: var(--mvs-space-md, 16px);
+	padding: var(--mvs-space-md, 16px);
+	border-block-end: 1px solid var(--mvs-border-light, #dcdcde);
+	background: var(--mvs-surface, #fff);
+}
+
+.mvs-documents__row:last-child {
+	border-block-end: 0;
+}
+
+.mvs-documents__icon {
+	display: inline-flex;
+	color: var(--mvs-text-muted, #646970);
+}
+
+.mvs-documents__main {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.mvs-documents__name {
+	font-weight: 600;
+	text-decoration: none;
+	color: var(--mvs-text, #1d2327);
+	/* 40px tap target on touch without stretching the row on desktop. */
+	padding-block: 4px;
+}
+
+.mvs-documents__name:hover,
+.mvs-documents__name:focus-visible {
+	text-decoration: underline;
+}
+
+.mvs-documents__excerpt,
+.mvs-documents__owner,
+.mvs-documents__size,
+.mvs-documents__date {
+	color: var(--mvs-text-muted, #646970);
+	font-size: var(--mvs-font-sm, 0.875rem);
+}
+
+.mvs-documents__excerpt {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-documents__chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px var(--mvs-space-sm, 8px);
+	border-radius: var(--mvs-radius-pill, 999px);
+	background: var(--mvs-surface-2, #f0f0f1);
+	color: var(--mvs-text-muted, #646970);
+	font-size: var(--mvs-font-xs, 0.75rem);
+	font-weight: 600;
+	letter-spacing: 0.02em;
+}
+
+.mvs-documents__pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--mvs-space-md, 16px);
+	margin-block-start: var(--mvs-space-lg, 24px);
+}
+
+/* Under 640px the metadata columns stop earning their width, so the row stops
+ * being a grid entirely.
+ *
+ * It cannot stay a grid with the meta cells sharing one area: four siblings
+ * assigned to the same grid-area STACK on top of each other, which is exactly
+ * what the 390px screenshot showed — "PDF", the owner, the size and the date
+ * all overprinting in one box. Flex-wrap flows them instead. */
+@media (max-width: 640px) {
+	.mvs-documents__row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		column-gap: var(--mvs-space-sm, 8px);
+		row-gap: 4px;
+	}
+
+	.mvs-documents__main {
+		/* Take the rest of the first line, pushing the meta to the next. */
+		flex: 1 1 60%;
+	}
+
+	.mvs-documents__excerpt {
+		white-space: normal;
+	}
+
+	/* The row is the whole visual hit area on a phone, but the LINK is what a
+	 * finger aims at, and at desktop line-height it lands at 30px. Raise it past
+	 * the 40px floor rather than relying on the row's padding, which is not
+	 * clickable. */
+	.mvs-documents__name {
+		min-height: 40px;
+		display: flex;
+		align-items: center;
+	}
+
+	.mvs-documents__chip,
+	.mvs-documents__owner,
+	.mvs-documents__size,
+	.mvs-documents__date {
+		flex: 0 0 auto;
+	}
+
+	/* The meta line starts under the icon, not beside it. */
+	.mvs-documents__chip {
+		margin-inline-start: calc(20px + var(--mvs-space-md, 16px));
+	}
+}
+
+/* ============================================================================
+ * Document card + download button.
+ *
+ * Free renders this card on the single-document page when Pro is absent, and
+ * Pro's viewer reuses the same class names for its tier-3/4 card — one card,
+ * one stylesheet, so the two cannot drift apart.
+ *
+ * The button is styled here rather than reusing `.mvs-btn-primary` because that
+ * class is only ever defined inside a `#buddypress` scope: outside BuddyPress it
+ * matches nothing and the download rendered as bare text. All four link states
+ * are set explicitly — a theme's `a:visited` will happily repaint an anchor
+ * button that only declared its resting colour.
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+.mvs-media-document {
+    width: 100%;
+}
+
+.mvs-doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3);
+    padding: var(--mvs-space-4);
+    border: 1px solid var(--mvs-border-light);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-surface);
+}
+
+.mvs-doc-card__icon {
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--mvs-radius-sm);
+    background: var(--mvs-bg-muted);
+}
+
+.mvs-doc-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mvs-space-1);
+    min-width: 0;
+}
+
+.mvs-doc-card__name {
+    overflow-wrap: anywhere;
+    color: var(--mvs-text);
+    font-weight: 600;
+}
+
+.mvs-doc-card__detail {
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+}
+
+.mvs-doc-download,
+.mvs-doc-download:link,
+.mvs-doc-download:visited {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    gap: var(--mvs-space-2);
+    /* A download is the primary action on this page and has to clear the
+       minimum tap target on a phone. */
+    min-height: var(--mvs-touch-min);
+    padding: var(--mvs-space-2) var(--mvs-space-4);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-primary);
+    color: var(--mvs-on-primary);
+    font-size: var(--mvs-font-md);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--mvs-duration-fast) var(--mvs-easing);
+}
+
+.mvs-doc-download:hover,
+.mvs-doc-download:focus-visible {
+    background: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary);
+    text-decoration: none;
+}
+
+.mvs-doc-download:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .mvs-doc-download {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+
+    .mvs-doc-card {
+        /* Icon and text stay side by side; the name wraps to its own line only
+           when it genuinely cannot fit. */
+        flex-wrap: wrap;
+    }
+
+    .mvs-doc-download {
+        align-self: stretch;
+    }
+}
+
+/* A registered dashboard tab is an anchor, not a button — its content lives on
+   another page. It has to look and size identically to the button tabs beside
+   it, or the row reads as two different kinds of control. */
+.mvs-dashboard-tab--link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.mvs-dashboard-tab--link:hover,
+.mvs-dashboard-tab--link:focus-visible {
+    text-decoration: none;
+}
+
+
+/* ============================================================================
+ * Document page tabs — Public / My Drive / Shared with me / Recent.
+ *
+ * Free renders this nav, so Free styles it. It previously lived in Pro's drive
+ * stylesheet, which is only enqueued when the DRIVE renders — so on the Public
+ * tab, and for every logged-out visitor, the nav degraded to a bullet list.
+ * Markup and its CSS belong to the same plugin (Coding Rule 12).
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+
+.mvs-documents__tabs ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--mvs-space-1);
+	margin: 0 0 var(--mvs-space-4);
+	padding: 0;
+	list-style: none;
+	border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-documents__tab {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--mvs-touch-min);
+	padding: 0 var(--mvs-space-4);
+	border-bottom: 2px solid transparent;
+	color: var(--mvs-text-muted);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.mvs-documents__tab:hover,
+.mvs-documents__tab:focus-visible {
+	color: var(--mvs-text);
+}
+
+.mvs-documents__tab.is-active {
+	border-bottom-color: var(--mvs-primary);
+	color: var(--mvs-primary);
+}
+
+
+
+/* ============================================================================
+ * My Media — vertical rail.
+ *
+ * The dashboard began with four tabs and carries eight. A horizontal row stops
+ * working somewhere around six: it wraps to two lines, the wrap point moves
+ * with the theme, and nothing groups. A rail with headings makes eight items
+ * readable and leaves an obvious place for the ninth.
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+/* The grid goes on `.mvs-dashboard__body`, which holds ONLY the rail and the
+   panels. Putting it on `.mvs-dashboard` swept the streak bar, the profile
+   header and the completion notice into the rail column too — every child of a
+   grid is a grid item, including the ones that were never meant to be. */
+@media (min-width: 861px) {
+
+    .mvs-dashboard__body {
+        display: grid;
+        grid-template-columns: 13rem minmax(0, 1fr);
+        /* Two rows, and the SECOND one absorbs the slack. Without this both
+           rows shared the panel's height, so a tall panel pushed the sections
+           box a long way down the page and left the rail looking broken in
+           two. The head is auto — as tall as a name and a link — and
+           everything left over goes to the sections column. */
+        grid-template-rows: auto 1fr;
+        gap: var(--mvs-space-5);
+        align-items: start;
+    }
+
+    /* The identity sits above the sections, in the rail column. */
+    .mvs-dashboard-rail-head {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .mvs-dashboard-tabs {
+        position: sticky;
+        top: var(--mvs-space-4);
+        grid-column: 1;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--mvs-space-2);
+        border: 1px solid var(--mvs-border-light);
+        border-radius: var(--mvs-radius-md);
+        background: var(--mvs-bg-subtle);
+    }
+
+    /* Every panel stacks into the same cell; only the active one is visible,
+       so the column is as tall as whichever is showing. Spanning both rail rows
+       so the panel starts level with the member's name rather than level with
+       the first section below it. */
+    .mvs-dashboard-panel {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        min-width: 0;
+    }
+
+    /* `a.` bumps specificity past the base tab rule, which sets a bottom
+       border every rail item inherited — a red rule under each row. */
+    .mvs-dashboard-tabs a.mvs-dashboard-tab,
+    .mvs-dashboard-tabs button.mvs-dashboard-tab {
+        justify-content: flex-start;
+        gap: var(--mvs-space-2);
+        /* The horizontal tab styling puts a border on the bottom of every item,
+           which down a rail reads as a rule under each row. All four sides are
+           reset here rather than only the active one — that was the red line
+           under Favorites and Collections. */
+        border: 0;
+        border-inline-start: 2px solid transparent;
+        border-radius: var(--mvs-radius-sm);
+        padding: var(--mvs-space-2) var(--mvs-space-3);
+        min-height: 0;
+        color: var(--mvs-text-secondary);
+        font-size: var(--mvs-font-sm);
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: start;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:hover {
+        background: var(--mvs-surface);
+        color: var(--mvs-text);
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:focus-visible {
+        outline: 2px solid var(--mvs-primary);
+        outline-offset: -2px;
+    }
+
+    /* The horizontal tab styling underlines the active item, which on a rail
+       reads as a stray rule under one row. The selector carries the rail so it
+       outranks the base tab rule. */
+    .mvs-dashboard-tabs a.mvs-dashboard-tab.active,
+    .mvs-dashboard-tabs button.mvs-dashboard-tab.active {
+        border-inline-start-color: var(--mvs-primary);
+        background: var(--mvs-surface);
+        color: var(--mvs-primary);
+        font-weight: 600;
+    }
+}
+
+
+.mvs-dashboard-tabs__group {
+    padding: var(--mvs-space-3) var(--mvs-space-3) var(--mvs-space-1);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* A rail item is an anchor now, so it has to be told not to look like body
+   copy — themes style `a` inside content aggressively. */
+a.mvs-dashboard-tab,
+a.mvs-dashboard-tab:hover,
+a.mvs-dashboard-tab:focus-visible {
+    text-decoration: none;
+}
+
+@media (max-width: 860px) {
+
+    /* Below the rail's width the group headings earn nothing — they cost a
+       whole row in a horizontal scroller. */
+    .mvs-dashboard-tabs__group {
+        display: none;
+    }
+}
+
+
+/* The count sits at the far end of a rail item, quiet until you look for it. */
+.mvs-dashboard-tab__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mvs-dashboard-tab__count {
+    flex: 0 0 auto;
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.mvs-dashboard-tab.active .mvs-dashboard-tab__count {
+    color: var(--mvs-primary);
+}
+
+.mvs-dashboard-tabs__group:first-child {
+    padding-top: var(--mvs-space-1);
+}
+
+/* ---------------------------------------------------------------------------
+   The rail states its own appearance.
+
+   Everything above sets rail styling inside a min-width media query, so below
+   that breakpoint — and anywhere the theme's `a` rules are more specific — the
+   items fell back to being links: red, underlined, with the horizontal tab's
+   bottom border still under each row. Three items showed it and three did not,
+   which is the signature of inherited styling rather than declared styling.
+
+   These rules are unconditional and name every property a theme is likely to
+   set on an anchor, so the rail looks the same on any theme. This is the
+   "plugin owns its classes" rule (Varun, 2026-08-09): a surface must not
+   depend on a property it never declares.
+   --------------------------------------------------------------------------- */
+.mvs-dashboard-tabs a.mvs-dashboard-tab,
+.mvs-dashboard-tabs button.mvs-dashboard-tab {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    box-sizing: border-box;
+    width: 100%;
+    /* Declared, not inherited: the theme's link colour and the horizontal
+       tab's bottom border are both overwritten here rather than fought
+       selector by selector when a screenshot catches them. */
+    border: 0;
+    border-inline-start: 2px solid transparent;
+    border-radius: var(--mvs-radius-sm);
+    background: transparent;
+    box-shadow: none;
+    color: var(--mvs-text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.mvs-dashboard-tabs a.mvs-dashboard-tab:hover,
+.mvs-dashboard-tabs a.mvs-dashboard-tab:focus,
+.mvs-dashboard-tabs button.mvs-dashboard-tab:hover,
+.mvs-dashboard-tabs button.mvs-dashboard-tab:focus {
+    border-block-end: 0;
+    background: var(--mvs-surface);
+    color: var(--mvs-text);
+    text-decoration: none;
+}
+
+.mvs-dashboard-tabs a.mvs-dashboard-tab.active,
+.mvs-dashboard-tabs button.mvs-dashboard-tab.active {
+    border-block-end: 0;
+    border-inline-start-color: var(--mvs-primary);
+    background: var(--mvs-surface);
+    color: var(--mvs-primary);
+    font-weight: 600;
+}
+
+/* The count is a quantity, not part of the name — a pill at the far end reads
+   as one and stops "Documents 6" scanning as a title. */
+.mvs-dashboard-tabs .mvs-dashboard-tab__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 0.0625rem var(--mvs-space-1);
+    border-radius: 999px;
+    background: var(--mvs-border-light, var(--mvs-surface));
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+}
+
+.mvs-dashboard-tabs .mvs-dashboard-tab.active .mvs-dashboard-tab__count {
+    background: var(--mvs-primary);
+    color: var(--mvs-on-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   The rail head: who you are, and the way to your public profile.
+
+   Unconditional, for the same reason the rail items are: a theme that paints
+   anchors will paint these, and declaring appearance only inside a min-width
+   query is what left half the rail looking like links. Every property a theme
+   is likely to set on an anchor is named here.
+   --------------------------------------------------------------------------- */
+.mvs-dashboard-rail-head {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3);
+    margin-bottom: var(--mvs-space-3);
+    padding: var(--mvs-space-3);
+    border: 1px solid var(--mvs-border-light);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-bg-subtle);
+}
+
+.mvs-dashboard-rail-head__avatar {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    object-fit: cover;
+}
+
+.mvs-dashboard-rail-head__avatar-link {
+    display: block;
+    flex: 0 0 auto;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    line-height: 0;
+    text-decoration: none;
+}
+
+.mvs-dashboard-rail-head__id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* WRAPS rather than truncating. A 13rem rail minus a 40px avatar cut
+   "journey-member" to "journey-mem…" — and a name is the one string on this
+   page where the end matters, because that is where people put the digits that
+   tell two accounts apart. Two lines are cheaper than the wrong name. */
+.mvs-dashboard-rail-head__name {
+    color: var(--mvs-text);
+    font-size: var(--mvs-font-sm);
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.mvs-dashboard-rail-head__link {
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--mvs-primary);
+    font-size: var(--mvs-font-xs);
+    text-decoration: none;
+}
+
+.mvs-dashboard-rail-head__link:hover,
+.mvs-dashboard-rail-head__link:focus-visible {
+    color: var(--mvs-primary);
+    text-decoration: underline;
+}
+
+/* Below the rail breakpoint the rail is a horizontal scroller, so the head
+   stops being a column header and becomes a line above it. */
+@media (max-width: 860px) {
+
+    .mvs-dashboard-rail-head {
+        margin-bottom: var(--mvs-space-2);
+    }
+}
+
+/* A group that earned no heading still gets its break. Drawn on the item that
+   starts it, because the rail is a flat list of items — there is no element
+   standing for "the group" to hang a border on.
+
+   The border itself lives with the theme-defense block, which is the only
+   place that can outrank its own `border: 0 !important`; spacing is free to
+   live here. One border, one implementation. */
+.mvs-dashboard-tabs .mvs-dashboard-tab--group-start {
+    margin-block-start: var(--mvs-space-2);
+    padding-block-start: var(--mvs-space-2);
+}
+
+
+/* =============================================================================
+ *  Document type glyphs — ONE mechanism for every document surface.
+ *
+ *  Used by the BP activity card, the profile Documents row, and the grid tile
+ *  a document takes in a collection. They previously disagreed: one drew a
+ *  Lucide <i>, one hardcoded an empty box, and the grid drew a PHOTO icon on a
+ *  spreadsheet.
+ *
+ *  A CSS MASK rather than an <svg> or a Lucide element, because the surfaces
+ *  do not share a JS environment. Activity content is baked into
+ *  bp_activity.content and re-rendered by whatever theme or feed it lands in,
+ *  where Lucide is not enqueued (measured: `window.lucide === undefined` on the
+ *  member activity stream) and where kses strips `data-lucide` on save anyway.
+ *  A mask needs nothing but this stylesheet.
+ *
+ *  Painted with `background-color: currentColor`, so the glyph takes the
+ *  colour of whatever it sits in and inverts with dark mode for free — a
+ *  background-image with a baked fill would stay one colour in both themes.
+ *
+ *  Artwork is the Lucide set the rest of the product draws (v0.460.0), read
+ *  back from the live hydrator so the shapes match exactly.
+ *  Size with --mvs-doc-glyph-size at the call site.
+ * ========================================================================== */
+.mvs-doc-glyph {
+    display: block;
+    flex: 0 0 auto;
+    width: var(--mvs-doc-glyph-size, 20px);
+    height: var(--mvs-doc-glyph-size, 20px);
+    background-color: currentColor;
+    -webkit-mask-image: var(--mvs-doc-glyph);
+    mask-image: var(--mvs-doc-glyph);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.mvs-doc-glyph--file-text {
+    --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7Z%22%2F%3E%3Cpath%20d%3D%22M14%202v4a2%202%200%200%200%202%202h4%22%2F%3E%3Cpath%20d%3D%22M10%209H8%22%2F%3E%3Cpath%20d%3D%22M16%2013H8%22%2F%3E%3Cpath%20d%3D%22M16%2017H8%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.mvs-doc-glyph--file-type {
+    --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7Z%22%2F%3E%3Cpath%20d%3D%22M14%202v4a2%202%200%200%200%202%202h4%22%2F%3E%3Cpath%20d%3D%22M9%2013v-1h6v1%22%2F%3E%3Cpath%20d%3D%22M12%2012v6%22%2F%3E%3Cpath%20d%3D%22M11%2018h2%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.mvs-doc-glyph--file-spreadsheet {
+    --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7Z%22%2F%3E%3Cpath%20d%3D%22M14%202v4a2%202%200%200%200%202%202h4%22%2F%3E%3Cpath%20d%3D%22M8%2013h2%22%2F%3E%3Cpath%20d%3D%22M14%2013h2%22%2F%3E%3Cpath%20d%3D%22M8%2017h2%22%2F%3E%3Cpath%20d%3D%22M14%2017h2%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.mvs-doc-glyph--presentation {
+    --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%203h20%22%2F%3E%3Cpath%20d%3D%22M21%203v11a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V3%22%2F%3E%3Cpath%20d%3D%22m7%2021%205-5%205%205%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.mvs-doc-glyph--file {
+    --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7Z%22%2F%3E%3Cpath%20d%3D%22M14%202v4a2%202%200%200%200%202%202h4%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.mvs-doc-glyph--file-code {
+    --mvs-doc-glyph: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M10%2012.5%208%2015l2%202.5%22%2F%3E%3Cpath%20d%3D%22m14%2012.5%202%202.5-2%202.5%22%2F%3E%3Cpath%20d%3D%22M14%202v4a2%202%200%200%200%202%202h4%22%2F%3E%3Cpath%20d%3D%22M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7z%22%2F%3E%3C%2Fsvg%3E");
+}
+
+
+
+/* ── Tap targets ───────────────────────────────────────────────────────────
+ *
+ * The member-side controls the audit measured under the 40px contract:
+ * mvs-search-mode-btn 66x26, mvs-tag-cloud-item 44x31, mvs-dashboard-tab
+ * 202x37, mvs-dashboard-rail-head__link 81x19 (Basecamp 10252222115).
+ *
+ * One rule on the component bases rather than per instance. `min-height` only
+ * raises, and `align-items: center` keeps the label optically centred instead
+ * of sitting at the top of a taller box.
+ */
+.mvs-search-mode-btn,
+.mvs-tag-cloud-item,
+.mvs-dashboard-tab,
+.mvs-dashboard-rail-head__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--mvs-touch-min);
+}
+
+/*
+ * Upload form fields.
+ *
+ * These four carried NO rule of their own — every pixel of their size came
+ * from whatever the active theme does to a bare input. On the QA baseline that
+ * produced 42 / 60 / 36 / 42 for four fields in one form: the tags input under
+ * the 40px floor, and visibly shorter than the title input beside it. On
+ * another theme the numbers are different and so is which one is wrong.
+ *
+ * The floor is ours; the flavour stays the theme's — this sets a minimum and
+ * nothing else, so a theme's padding, border and font still come through.
+ * Basecamp 10252222115.
+ */
+.mvs-upload-meta-title,
+.mvs-upload-meta-tags,
+.mvs-upload-meta-privacy {
+    min-height: var(--mvs-touch-min);
 }

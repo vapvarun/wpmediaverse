@@ -44,30 +44,45 @@ $mvs_classes = trim(
 );
 $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 
+// A block-configuration notice is shown to editors and NOBODY else: a visitor
+// gets nothing rather than an instruction meant for whoever placed the block —
+// which would also confirm the id resolves to something real. Convention from
+// card 10168162725; rendered through the shared frontend empty-state helper
+// (.mvs-empty-state-frontend), not a hand-rolled admin-flavoured div.
+$mvs_pdf_tpl    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+$mvs_pdf_notice = static function ( $icon, $message ) use ( $wrapper, $mvs_pdf_tpl ) {
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return '';
+	}
+	return '<div ' . $wrapper . '>' . $mvs_pdf_tpl->render_block_empty_state(
+		array(
+			'icon'    => $icon,
+			'message' => $message,
+		)
+	) . '</div>';
+};
+
 // Empty state: no media id configured.
 if ( ! $mvs_pdf_id ) {
-	?>
-	<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-		<div class="mvs-empty-state">
-			<i data-lucide="file-text" aria-hidden="true"></i>
-			<p><?php esc_html_e( 'No PDF selected. Edit this block and set a Media ID to display a PDF.', 'wpmediaverse' ); ?></p>
-		</div>
-	</div>
-	<?php
+	echo $mvs_pdf_notice( 'file-text', __( 'No PDF selected. Edit this block and set a Media ID to display a PDF.', 'wpmediaverse' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper output is escaped.
 	return;
 }
 
 $mvs_pdf_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 if ( ! $mvs_pdf_repo->exists( $mvs_pdf_id ) ) {
-	?>
-	<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-		<div class="mvs-empty-state">
-			<i data-lucide="file-text" aria-hidden="true"></i>
-			<p><?php esc_html_e( 'PDF not found.', 'wpmediaverse' ); ?></p>
-		</div>
-	</div>
-	<?php
+	echo $mvs_pdf_notice( 'file-text', __( 'PDF not found.', 'wpmediaverse' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper output is escaped.
+	return;
+}
+
+// Refuse a document. A document's PDF has file_type application/pdf and would
+// pass the check below, but documents live outside the media tree
+// ({uploads}/wpmediaverse-documents/, resolved by their own viewer) and carry a
+// per-user/role/space sharing model this public block cannot honour — the media
+// serve route can neither find the file nor apply that model, so the iframe just
+// 404'd. Documents are shown on their own page.
+if ( 'document' === (string) $mvs_pdf_repo->get( $mvs_pdf_id, 'media_type' ) ) {
+	echo $mvs_pdf_notice( 'file-text', __( 'Documents have their own viewer and cannot be embedded here. Pick a PDF media file instead.', 'wpmediaverse' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper output is escaped.
 	return;
 }
 
@@ -76,16 +91,7 @@ if ( ! $mvs_pdf_repo->exists( $mvs_pdf_id ) ) {
 // the same way.
 $mvs_pdf_file_type = (string) $mvs_pdf_repo->get( $mvs_pdf_id, 'file_type' );
 if ( 'application/pdf' !== $mvs_pdf_file_type ) {
-	?>
-	<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-		<div class="mvs-empty-state">
-			<i data-lucide="file-text" aria-hidden="true"></i>
-			<p>
-				<?php esc_html_e( 'This block can only display PDF files. Pick a media item whose file is a PDF.', 'wpmediaverse' ); ?>
-			</p>
-		</div>
-	</div>
-	<?php
+	echo $mvs_pdf_notice( 'file-text', __( 'This block can only display PDF files. Pick a media item whose file is a PDF.', 'wpmediaverse' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper output is escaped.
 	return;
 }
 
@@ -96,14 +102,9 @@ $mvs_pdf_url    = $mvs_pdf_signed
 	: '';
 
 if ( ! $mvs_pdf_url ) {
-	?>
-	<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-		<div class="mvs-empty-state">
-			<i data-lucide="lock" aria-hidden="true"></i>
-			<p><?php esc_html_e( 'You do not have permission to view this PDF.', 'wpmediaverse' ); ?></p>
-		</div>
-	</div>
-	<?php
+	// A viewer who lacks access gets nothing (the embed simply does not appear);
+	// an editor is told why, through the same gated helper.
+	echo $mvs_pdf_notice( 'lock', __( 'You do not have permission to view this PDF.', 'wpmediaverse' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper output is escaped.
 	return;
 }
 

@@ -32,7 +32,7 @@ rtMedia and MediaPress have been the standard options for years. They work. But 
 - Four layout modes (Instagram, Flickr, Pinterest, Dribbble)
 - Photo Battles, Challenges, and Tournament brackets with a full gamification engine
 - Amazon S3 and BunnyCDN cloud storage integration
-- Video transcoding with HLS adaptive streaming, chapter markers, and captions
+- Video chapter markers, resume playback, and auto-captions
 - Per-user storage quotas tied to MemberPress or WooCommerce
 
 We built it because we build community sites for clients and kept hitting the same ceiling with the available tools. The plugin we wanted did not exist, so we built it.
@@ -118,7 +118,7 @@ These are the right questions. Here is how WPMediaVerse answers them.
 
 **Customisation:** Template hierarchy like WooCommerce. Documented filter and action hooks for every major operation. REST API for custom front-ends. Your developer extends it — no template forks needed for most use cases.
 
-**Scale:** Custom database tables with indexed queries. Cloud storage integration to offload file serving. Async video transcoding that does not block page loads. The architecture is built for active communities.
+**Scale:** Custom database tables with indexed queries. Cloud storage integration to offload file serving. Video served as uploaded rather than re-encoded, so there is no encoding queue competing with the site. The architecture is built for active communities.
 
 **Licensing:** Agency tier at [X]/year, unlimited client sites. Builds into your project quotes cleanly.
 
@@ -144,13 +144,13 @@ Moderation — A student portfolio platform is public-facing and tied to the ins
 
 Privacy per item — Some students want their portfolios public for employers to find. Others want work visible only to faculty. Others want it visible to classmates for peer critique but not the wider web. A single public/private toggle is not enough.
 
-Video — Journalism, film, and communications programs produce a lot of video. Transcoding that handles MP4 uploads and serves HLS for adaptive playback, with support for captions and chapter markers, is a real requirement.
+Video — Journalism, film, and communications programs produce a lot of video. Chapter markers, resume playback and automatic captions on a long recorded session are a real requirement, and none of it needs a media server.
 
 GDPR — European universities, and any institution with international students, need data export and deletion built in.
 
 **How WPMediaVerse Pro handles each:**
 
-Quotas integrate directly with MemberPress and WooCommerce — role-based limits, no custom code. Moderation runs at upload, flagging content before it goes live. Privacy controls operate per item: public, members-only, or private. Video transcoding handles MP4 → HLS with chapters and captions. Data export and erasure use WordPress's standard privacy tools.
+Quotas integrate directly with MemberPress and WooCommerce — role-based limits, no custom code. Moderation runs at upload, flagging content before it goes live. Privacy controls operate per item: public, members-only, or private. Video adds chapters, resume playback and auto-captions to the uploaded file. Data export and erasure use WordPress's standard privacy tools.
 
 If you manage a student portfolio platform and are working around these limitations with multiple plugins, this is worth looking at.
 

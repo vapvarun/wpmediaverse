@@ -35,6 +35,10 @@ class TemplateLoader {
 		add_action( 'init', array( $this, 'register_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 
+		// Send off-site sections to where they actually live. Before
+		// load_media_templates, or the dead panel renders first.
+		add_action( 'template_redirect', array( $this, 'redirect_offsite_section' ), 4 );
+
 		// Serve media templates via template_redirect.
 		add_action( 'template_redirect', array( $this, 'load_media_templates' ), 5 );
 
@@ -150,6 +154,104 @@ class TemplateLoader {
 	 *   /media/edit-profile/             — Profile edit
 	 */
 	public function register_rewrite_rules(): void {
+		// The member's documents, as a real path.
+		//
+		// `/my-media/?drive=my-drive&folder=69#documents` was three mechanisms
+		// doing one job: a query var left over from when the drive lived on the
+		// public page, a raw database id, and a hash the server never sees. A
+		// folder id in a URL is also a number a member can edit — the guard
+		// refuses it, but offering it at all invites the attempt.
+		//
+		// `/my-media/documents/contracts/2026/` instead: the path IS the folder
+		// path, it survives being shared, and the server can render the right
+		// folder on first paint rather than after JavaScript runs.
+		$mvs_dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
+
+		if ( $mvs_dashboard ) {
+			$mvs_dashboard_slug = get_post_field( 'post_name', $mvs_dashboard );
+
+			if ( $mvs_dashboard_slug ) {
+				// RESERVED SEGMENTS FIRST. `documents/(.+?)` below matches any path,
+				// so a view living at `documents/shared/` has to be declared ahead of
+				// it — otherwise the drive spends the request hunting for a folder
+				// called "shared", fails to find one, and falls back to the root,
+				// which a member reads as the tab doing nothing at all.
+				//
+				// These exist because ONE LIST PER URL: the shared listing needs its
+				// own address so it can carry its own `page/N/` without colliding
+				// with the drive's. Two lists on one URL cannot both paginate.
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/shared/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=shared&mvs_doc_page=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/shared/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=shared',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/trash/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=trash&mvs_doc_page=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/trash/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_show=trash',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_page=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/(.+?)/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_path=$matches[1]&mvs_doc_page=$matches[2]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/(.+?)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_path=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1',
+					'top'
+				);
+
+				// Every other section gets a URL too. A section that exists only
+				// as JavaScript state cannot be linked, bookmarked or returned
+				// to — and "send me your albums" is a thing people say.
+				//
+				// Built FROM THE REGISTRY rather than from a literal list. The
+				// literal said `media|albums|favorites|collections|challenges|
+				// battles|tournaments`, while `DashboardSections::url()` builds
+				// `/my-media/<slug>/` for whatever is declared — so declaring a
+				// section through the documented filter produced a rail item
+				// linking to a 404, and the registry's whole promise is that
+				// declaring a section is all you do. `documents` only escaped it
+				// by owning separate rewrites for its folder paths.
+				//
+				// Rewrites are cached in the `rewrite_rules` option, so a plugin
+				// that adds a section must flush on activation — as Pro already
+				// does for its own document paths.
+				$mvs_section_slugs = array_map(
+					static fn( $slug ) => preg_quote( $slug, '/' ),
+					\WPMediaVerse\Core\DashboardSections::slugs()
+				);
+
+				if ( $mvs_section_slugs ) {
+					add_rewrite_rule(
+						'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/(' . implode( '|', $mvs_section_slugs ) . ')/?$',
+						'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_section=$matches[1]',
+						'top'
+					);
+				}
+			}
+		}
+
 		// Media archive (explore).
 		add_rewrite_rule(
 			'^media/page/([0-9]+)/?$',
@@ -210,6 +312,13 @@ class TemplateLoader {
 	 * @return string[]
 	 */
 	public function register_query_vars( array $vars ): array {
+		// The member's documents view and the folder path within it.
+		$vars[] = 'mvs_doc_view';
+		$vars[] = 'mvs_doc_path';
+		$vars[] = 'mvs_doc_page';
+		$vars[] = 'mvs_doc_show';
+		$vars[] = 'mvs_section';
+
 		$vars[] = 'mvs_media_archive';
 		$vars[] = 'mvs_media_slug';
 		$vars[] = 'mvs_profile_user';
@@ -294,6 +403,72 @@ class TemplateLoader {
 		return $this->is_mvs_virtual_route() ? true : $preempt;
 	}
 
+	/**
+	 * Send /<dashboard>/<slug>/ to where an off-site section actually lives.
+	 *
+	 * Every declared section gets a dashboard route (see register_rewrite_rules)
+	 * so it can be linked and bookmarked. A section that ALSO declares its own
+	 * `url` lives somewhere else entirely, and its local route had nothing bound
+	 * to it: the panels rendered into the DOM and stayed hidden forever, so the
+	 * URL answered 200 with a blank content column. Pro's `compete` is the case
+	 * that surfaced it — its panels bind to `activeTab === 'challenges'` while
+	 * the section slug is `compete`, so nothing ever matched.
+	 *
+	 * Fixed here, at the routing layer, rather than by teaching one panel one
+	 * extra slug: the registry already knows a section is off-site, so every
+	 * present and future section of that shape is covered by this one rule.
+	 * Redirecting rather than 404ing keeps stale bookmarks working.
+	 *
+	 * 302 and not 301 on purpose — sections are declared through a filter, so a
+	 * site can stop being off-site at any time, and a permanent redirect cached
+	 * in every visitor's browser would outlive the declaration that caused it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return void
+	 */
+	public function redirect_offsite_section(): void {
+		$slug = sanitize_key( (string) get_query_var( 'mvs_section', '' ) );
+
+		if ( '' === $slug ) {
+			return;
+		}
+
+		$section = DashboardSections::all()[ $slug ] ?? null;
+
+		if ( ! $section || '' === (string) $section['url'] ) {
+			return;
+		}
+
+		$target = DashboardSections::url( $slug );
+
+		// A section whose declared url IS this route would redirect to itself.
+		if ( '' === $target || untrailingslashit( $target ) === untrailingslashit( home_url( add_query_arg( array() ) ) ) ) {
+			return;
+		}
+
+		// The target comes from a server-side section declaration, never from the
+		// request, so an off-domain one is trusted — but wp_safe_redirect would
+		// silently drop it on the home page, which is this same blank-screen bug
+		// wearing a different hat. Widen the allow-list for THIS redirect only,
+		// so every other caller keeps its open-redirect protection.
+		$host = wp_parse_url( $target, PHP_URL_HOST );
+
+		if ( $host ) {
+			add_filter(
+				'allowed_redirect_hosts',
+				static function ( array $hosts ) use ( $host ): array {
+					$hosts[] = $host;
+
+					return $hosts;
+				}
+			);
+		}
+
+		wp_safe_redirect( $target, 302 );
+		exit;
+	}
+
 	public function load_media_templates(): void {
 		// Gate single album/collection privacy here (template_redirect@5), BEFORE
 		// the theme renders. The in-template gates in album.php / collection.php
@@ -371,28 +546,47 @@ class TemplateLoader {
 	 * @param string $slug Media slug (or numeric ID).
 	 */
 	private function serve_single_media( string $slug ): void {
-		global $wpdb;
+		// Through the repository — Rule 7. Same two lookups, same publish gate.
+		$repo = Plugin::container()->get( 'media_repository' );
 
 		// Look up by slug first, then by numeric ID.
 		if ( ctype_digit( $slug ) ) {
-			$media = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status = 'publish'",
-					(int) $slug
-				),
-				ARRAY_A
-			);
+			$media = $repo->get_batch( array( (int) $slug ) )[ (int) $slug ] ?? null;
+
+			// `get_batch()` does not filter status, and this route must not serve
+			// a trashed item as a public page.
+			if ( $media && 'publish' !== (string) ( $media['status'] ?? '' ) ) {
+				$media = null;
+			}
 		} else {
-			$media = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND status = 'publish'",
-					$slug
-				),
-				ARRAY_A
-			);
+			$media = $repo->get_by_slug( $slug );
 		}
 
 		if ( ! $media ) {
+			self::render_branded_404( 'media', $slug );
+			return;
+		}
+
+		// Read once — four branches below ask what this is, and a fifth (the
+		// redirect filter) now tells a host so it can answer differently for a
+		// document than for a photo.
+		$mvs_media_type = (string) ( $media['media_type'] ?? '' );
+
+		// A document, on a site with documents switched off, is not a page.
+		//
+		// Found in the browser: with the master toggle unticked the drive tab and
+		// the admin screen went away, and this page carried on rendering a
+		// document card with a Download button — pointing at a delivery route
+		// that is one of the surfaces the switch takes down, so the button 404'd
+		// while the page around it looked fine. Answering 404 for the whole page
+		// is the honest version of what the owner asked for, and it is the same
+		// answer a Free-only site has always given.
+		//
+		// The row is untouched. Switching documents back on brings the page back.
+		if (
+			in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true )
+			&& ! \WPMediaVerse\Core\Plugin::documents_enabled()
+		) {
 			self::render_branded_404( 'media', $slug );
 			return;
 		}
@@ -404,11 +598,53 @@ class TemplateLoader {
 		 * rather than as a separate public page. Return '' (the default, and always
 		 * the case for standalone WPMediaVerse) to render the native single page.
 		 *
+		 * @since 2.4.0 The media type is passed so a host can answer differently
+		 *              for a document than for a photo.
+		 *
 		 * @param string $redirect_url Target URL, or '' to render the native page.
 		 * @param int    $media_id     The media item's id.
 		 * @param string $slug         The requested slug (or numeric id).
+		 * @param string $media_type   image|video|audio|document|legacy_document.
 		 */
-		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug );
+		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug, $mvs_media_type );
+
+		// A DOCUMENT IS NOT A FEED OBJECT, so it does not follow a redirect meant
+		// for one. The filter above predates documents and was written for the
+		// community-feed case in its own docblock: send a photo to the activity it
+		// was posted in rather than to a separate public page. A document has no
+		// such activity to go to — most are uploaded straight into a drive, and a
+		// private one cannot be posted to a feed at all — so a host resolving the
+		// redirect walks its fallback chain and lands the viewer on a photo surface
+		// that shows no documents (Basecamp #10194229966).
+		//
+		// This plugin's own surfaces are what break: the drive rows, the Explore
+		// Documents listing and Shared-with-me all link to /media/{slug}/. Free
+		// generates the link and then the redirect dead-ends it, so every document
+		// in the product is unopenable from the place the product sends you. That
+		// is broken regardless of which consumer is installed, which is why the
+		// default changes here rather than in any one host.
+		//
+		// The escape hatch keeps Production Rule 3: a host that genuinely wants
+		// documents redirected re-asserts it and gets exactly the old behaviour.
+		if ( '' !== $redirect_url && in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true ) ) {
+			/**
+			 * Whether a document permalink may be redirected away from its own page.
+			 *
+			 * Default false: a document renders its own page. Answer true to restore
+			 * the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for
+			 * documents as well as for media.
+			 *
+			 * @since 2.4.0
+			 *
+			 * @param bool   $allow        Default false.
+			 * @param int    $media_id     The document's id.
+			 * @param string $redirect_url The target the redirect filter resolved.
+			 */
+			if ( ! apply_filters( 'mvs_redirect_documents', false, (int) $media['media_id'], $redirect_url ) ) {
+				$redirect_url = '';
+			}
+		}
+
 		if ( '' !== $redirect_url ) {
 			wp_safe_redirect( $redirect_url, 301 );
 			exit;
@@ -421,6 +657,26 @@ class TemplateLoader {
 		// download are never exposed to a denied viewer (see mvs_media_can_view;
 		// MediaUrl::file()/get_thumb_url() already return '' when the gate denies).
 		$can_view = $this->can_view_media( $media );
+
+		// Documents get a DIFFERENT refusal contract than media: 404, never
+		// 403. Media's 403-with-login-prompt page is deliberate (see the
+		// comment above `$can_view`) — a photo's privacy state is not
+		// sensitive to reveal. A document's filename can carry a client's
+		// name, so confirming "this exists but you can't see it" (what 403
+		// means) is itself the leak the checklist's must-never-happen table
+		// exists to prevent. Confirmed 2026-08-11 combo QA (F2): a
+		// revoked-grant document and a never-granted document both answered
+		// 403 here before this fix. Documents-disabled (above) and
+		// documents-refused (here) now both render the identical branded
+		// 404 — a denied viewer cannot tell "off" from "not yours to see"
+		// from "does not exist", which is the point.
+		if (
+			! $can_view
+			&& in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true )
+		) {
+			self::render_branded_404( 'media', $slug );
+			return;
+		}
 
 		// Set globals for the template.
 		$GLOBALS['mvs_current_media']  = $media;
@@ -458,7 +714,7 @@ class TemplateLoader {
 		if ( $can_view ) {
 			add_action(
 				'wp_head',
-				function () use ( $media ) {
+				function () use ( $media, $mvs_media_type ) {
 					$title       = $media['title'] ? $media['title'] : __( 'Media', 'wpmediaverse' );
 					$description = isset( $media['description'] ) ? wp_strip_all_tags( $media['description'] ) : '';
 					if ( strlen( $description ) > 280 ) {
@@ -476,8 +732,8 @@ class TemplateLoader {
 
 					$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
 					$site_name = get_bloginfo( 'name' );
-					$is_video  = isset( $media['media_type'] ) && 'video' === $media['media_type'];
-					$is_audio  = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
+					$is_video  = 'video' === $mvs_media_type;
+					$is_audio  = 'audio' === $mvs_media_type;
 
 					echo "\n<!-- WPMediaVerse Open Graph -->\n";
 					echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
@@ -861,21 +1117,18 @@ class TemplateLoader {
 	 * gets announced by screen readers, still gets indexed, and still takes Tab
 	 * focus.
 	 *
-	 * Keyed on the three mvs_page_* options Activator writes; a page the plugin
-	 * never created is never routed here.
+	 * Keyed on the mvs_page_* options Activator writes (SettingsHelper's slot
+	 * map); a page the plugin never created is never routed here.
 	 *
 	 * @since 2.0.0
 	 *
 	 * @return int[] Post IDs of the plugin-owned app pages.
 	 */
 	public static function app_page_ids(): array {
-		$ids = array();
-		foreach ( array( 'dashboard', 'explore', 'upload' ) as $key ) {
-			$id = (int) get_option( 'mvs_page_' . $key, 0 );
-			if ( $id > 0 ) {
-				$ids[] = $id;
-			}
-		}
+		// From SettingsHelper's slot map, not a second copy of it — Explore
+		// Documents was missing here and so rendered with the theme's sidebar
+		// and no app template.
+		$ids = SettingsHelper::all_page_ids();
 
 		/**
 		 * Filters the pages that render with the plugin's full-bleed app template.

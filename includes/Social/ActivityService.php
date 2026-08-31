@@ -141,7 +141,9 @@ class ActivityService {
 		// can't see that media (audit 2026-06-04). Non-media activities
 		// (media_id = 0, e.g. follows) always pass. LEFT JOIN so a since-deleted
 		// media's orphan activity is hidden rather than erroring.
-		$index_table                                    = $wpdb->prefix . 'mvs_media_index';
+		// Driving table is activity; the index is joined only for the privacy
+		// gate below, whose clause this same repository already supplies.
+		$index_table                                    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 		list( $mvs_act_priv_sql, $mvs_act_priv_params ) = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )->explore_privacy_clause( 'mi', $viewer_id );
 		$privacy_join                                   = " LEFT JOIN {$index_table} mi ON mi.media_id = a.media_id";

@@ -22,7 +22,7 @@ No upsell screens. No feature nags. The free version is complete on its own.
 
 WPMediaVerse Pro extends the core platform with features that turn a media library into an active, monetizable community.
 
-Four additional layout modes (Instagram card feed, Pinterest masonry, Flickr gallery, Dribbble portfolio) give you precise control over how media is discovered and displayed. Video upload adds multi-quality HLS transcoding via FFmpeg, video retention analytics with heatmaps, chapter markers, and auto-captions powered by OpenAI Whisper.
+Four additional layout modes (Instagram card feed, Pinterest masonry, Flickr gallery, Dribbble portfolio) give you precise control over how media is discovered and displayed. Video adds retention analytics with heatmaps, chapter markers, resume playback, and auto-captions powered by OpenAI Whisper.
 
 The gamification engine introduces photo challenges with community voting, 1v1 photo battles, multi-round tournament brackets, and a boost system — all tied to a 14-action point system that rewards the behaviors that build an active community.
 

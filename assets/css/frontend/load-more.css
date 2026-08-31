@@ -18,7 +18,7 @@
 	font-size: 14px;
 	font-weight: 500;
 	border-radius: 6px;
-	border: 1px solid var(--mvs-border-light);
+	border: 1px solid var(--mvs-border);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -69,7 +69,13 @@
 @media (max-width: 640px) {
 	.mvs-load-more-btn {
 		padding: 0 16px;
-		height: 36px;
+		/*
+		 * `height: 36px` was here. The base is a compliant 40px and this override
+		 * shrank it BELOW the floor at exactly the viewport the floor exists for —
+		 * on a phone, Load More is the only way to page the grid.
+		 * Tightening the padding and type for small screens is right; taking the
+		 * target with them was not. Basecamp 10252222115.
+		 */
 		font-size: 13px;
 	}
 }

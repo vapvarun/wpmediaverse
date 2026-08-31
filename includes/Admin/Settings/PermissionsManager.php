@@ -60,10 +60,18 @@ class PermissionsManager {
 	/**
 	 * The caps the matrix manages, cap => column label.
 	 *
+	 * Filterable so a Pro feature can add its own column without Free having to
+	 * know the feature exists. The list is used for BOTH rendering and saving —
+	 * `process_role_caps_save()` reads the same method — so a cap added here is
+	 * automatically writable, and one that is NOT here can never be granted or
+	 * revoked through the matrix by a crafted POST.
+	 *
+	 * @since 2.4.0 The `mvs_managed_caps` filter.
+	 *
 	 * @return array<string, string>
 	 */
 	private function get_managed_caps(): array {
-		return array(
+		$caps = array(
 			'upload_mvs_media'        => __( 'Upload', 'wpmediaverse' ),
 			'read_mvs_media'          => __( 'View', 'wpmediaverse' ),
 			'publish_mvs_media'       => __( 'Publish', 'wpmediaverse' ),
@@ -75,6 +83,20 @@ class PermissionsManager {
 			'manage_mvs_access'       => __( 'Manage Access', 'wpmediaverse' ),
 			'manage_mvs_settings'     => __( 'Manage Settings', 'wpmediaverse' ),
 		);
+
+		/**
+		 * The capabilities shown as columns in the role matrix.
+		 *
+		 * Adding a cap here makes it grantable per role on the Permissions tab.
+		 * The matrix already enumerates every role registered on the site, so a
+		 * new column appears for custom, BuddyPress and WooCommerce roles with
+		 * no further work.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array<string,string> $caps Capability => column label.
+		 */
+		return (array) apply_filters( 'mvs_managed_caps', $caps );
 	}
 
 	/**
@@ -193,47 +215,18 @@ class PermissionsManager {
 			}
 		}
 
-		$overrides = get_option( MediaCapabilities::OVERRIDES_OPTION, array() );
-		if ( ! is_array( $overrides ) ) {
-			$overrides = array();
-		}
-
-		$updated_count = 0;
+		// Build the full matrix, then hand it to the single cap writer. The
+		// grant/revoke, the plural-twin sync and the overrides bookkeeping all
+		// live in MediaCapabilities::apply_role_caps() so that this screen and
+		// Pro's "Who can use documents" field cannot drift apart.
+		$matrix = array();
 		foreach ( $roles as $role_slug ) {
-			$role_obj = get_role( $role_slug );
-			if ( ! $role_obj ) {
-				continue;
-			}
-			$changed = false;
 			foreach ( $caps as $cap ) {
-				$granted = ! empty( $submitted[ $role_slug ][ $cap ] );
-				$current = $role_obj->has_cap( $cap );
-				if ( $granted !== $current ) {
-					$changed = true;
-				}
-				if ( $granted ) {
-					$role_obj->add_cap( $cap );
-				} else {
-					$role_obj->remove_cap( $cap );
-				}
-				// Keep plural CPT caps in sync with singular caps.
-				if ( isset( MediaCapabilities::PLURAL_CAP_MAP[ $cap ] ) ) {
-					$plural = MediaCapabilities::PLURAL_CAP_MAP[ $cap ];
-					if ( $granted ) {
-						$role_obj->add_cap( $plural );
-					} else {
-						$role_obj->remove_cap( $plural );
-					}
-				}
-
-				$overrides[ $role_slug ][ $cap ] = $granted ? 1 : 0;
-			}
-			if ( $changed ) {
-				++$updated_count;
+				$matrix[ $role_slug ][ $cap ] = ! empty( $submitted[ $role_slug ][ $cap ] );
 			}
 		}
 
-		update_option( MediaCapabilities::OVERRIDES_OPTION, $overrides, false );
+		$updated_count = MediaCapabilities::apply_role_caps( $matrix );
 
 		add_settings_error( 'mvs_role_caps', 'mvs_role_caps_saved', __( 'Permissions saved.', 'wpmediaverse' ), 'updated' );
 

@@ -25,6 +25,134 @@ class PrivacyService {
 	private $cache = array();
 
 	/**
+	 * The privacy levels this site will ACCEPT on a write.
+	 *
+	 * One list, asked by every write path. It used to be an inline array in
+	 * UploadService and nothing at all on `PUT /media/{id}`, so the update route
+	 * stored whatever string it was handed — `banana` included, which then failed
+	 * closed in `check_access()`'s default arm and read as private forever. A
+	 * value the API accepts and never applies is worse than one it rejects
+	 * (Basecamp 10220491230).
+	 *
+	 * Filterable rather than a hard enum because the vocabulary genuinely is
+	 * extensible: `mvs_privacy_can_view` lets an extension answer for a level
+	 * this class has never heard of. An extension that adds one must add it here
+	 * too, or writes of it are refused at the edge — which is the intended
+	 * failure, not an accident.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function supported_levels(): array {
+		return array_values(
+			array_unique(
+				array_map(
+					'strval',
+					(array) apply_filters(
+						'mvs_privacy_levels',
+						array( 'public', 'members', 'loggedin', 'friends', 'group', 'space', 'private', 'dm', 'custom' )
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * WHICH DRIVE a new media item lands on: personal, or a Space.
+	 *
+	 * A client posting media into a Space answers `mvs_media_drive` with
+	 * array( 'space', <id> ), and the row is stamped so `privacy = space`
+	 * resolves through the drive bridge in `check_space()`. MediaVerse never
+	 * queries `bn_*` — the bridge answers, the same seam documents use.
+	 *
+	 * AUTHORIZED HERE, not by the caller. A member must not file media into a
+	 * Space they cannot write to, or it becomes readable by that Space's members.
+	 * The binding is admitted only when the drive-access bridge grants
+	 * `write`/`own` (the SAME gate documents use); anything else falls back to
+	 * the personal drive.
+	 *
+	 * FROZEN CONTRACT (pairs with BuddyNext card 10220148861, and declared in
+	 * Pro's DriveContract::FILTER_MEDIA_DRIVE):
+	 * apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
+	 * returns array( string $drive_type, int $drive_id ).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int                  $user_id User doing the write.
+	 * @param array<string, mixed> $args    Write args, passed to the filter unchanged.
+	 * @return array{0:string, 1:int} Drive type and id; array( 'user', 0 ) when personal.
+	 */
+	public static function resolve_drive_for_user( int $user_id, array $args = array() ): array {
+		$drive = apply_filters( 'mvs_media_drive', array( 'user', 0 ), $user_id, $args );
+
+		if ( ! is_array( $drive ) || ! isset( $drive[0] ) || 'user' === (string) $drive[0] ) {
+			return array( 'user', 0 );
+		}
+
+		$type = (string) $drive[0];
+		$id   = (int) ( $drive[1] ?? 0 );
+
+		if ( $id <= 0 ) {
+			return array( 'user', 0 );
+		}
+
+		$level = self::media_drive_access( $type, $id, $user_id );
+
+		return in_array( $level, array( 'write', 'own' ), true ) ? array( $type, $id ) : array( 'user', 0 );
+	}
+
+	/**
+	 * How much access a member has to a drive, for MEDIA.
+	 *
+	 * Media and documents are two different things a member can put on a drive,
+	 * and until 2.4.0 one filter answered for both. There was no way for a
+	 * bridge to say "any space member may post a photo here" while keeping
+	 * files behind the space's own Files switch, so a site owner's toggle could
+	 * not mean what it said (Basecamp 10252314484).
+	 *
+	 * The document filter is still asked first and its answer is the default,
+	 * so a site that has not adopted the new one behaves exactly as it did.
+	 *
+	 * BOTH media gates route through here — placement in
+	 * `resolve_drive_for_user()` and the read check in `check_space()`. That is
+	 * the point of the method existing rather than the two lines being written
+	 * twice: if placement said yes and the read gate asked a different question,
+	 * a photo would be stored scoped to a space whose members then could not
+	 * open it. That is the same shape as the leak BuddyNext closed in 4186355f,
+	 * arrived at from the opposite direction.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $drive_type Drive type, e.g. `space`.
+	 * @param int    $drive_id   Drive id.
+	 * @param int    $user_id    User to test.
+	 * @return string `none`, `read`, `write` or `own`.
+	 */
+	private static function media_drive_access( string $drive_type, int $drive_id, int $user_id ): string {
+		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $drive_type, $drive_id, $user_id );
+
+		/**
+		 * A member's access to a drive for MEDIA specifically.
+		 *
+		 * Answer this to let photos and videos follow a different rule from
+		 * files — typically "any member of the space", while documents stay
+		 * behind whatever the space's own files setting says.
+		 *
+		 * Defaults to the `mvs_document_drive_access` answer, so leaving this
+		 * alone keeps today's behaviour exactly.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $level      Access from the document filter: none|read|write|own.
+		 * @param string $drive_type Drive type, e.g. `space`.
+		 * @param int    $drive_id   Drive id.
+		 * @param int    $user_id    User being tested.
+		 */
+		return (string) apply_filters( 'mvs_media_drive_access', $level, $drive_type, $drive_id, $user_id );
+	}
+
+	/**
 	 * Numeric restrictiveness of a privacy slug. Higher is more restrictive.
 	 *
 	 * Canonical home for this ordering. It grew up as a static on
@@ -46,6 +174,11 @@ class PrivacyService {
 			case 'friends':
 				return 40;
 			case 'group':
+			case 'space':
+				// The same restriction as a BuddyPress group, because it is the
+				// same shape of restriction: readable by a defined membership.
+				// `group` stays BuddyPress-only and `space` is BuddyNext's — a
+				// space id must never be written into `group_id` (plan §23.3).
 				return 60;
 			case 'private':
 				return 80;
@@ -91,7 +224,11 @@ class PrivacyService {
 			return $media_privacy;
 		}
 
-		$album_privacy = (string) $repo->get( $album_id, 'privacy' );
+		// Album privacy is a property of the album post, not of any media row.
+		// Before 2.4.0 this read mvs_media_index at media_id = <album post ID>, which
+		// on a colliding ID returned an unrelated PHOTO's privacy and clamped this
+		// item against it. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 		if ( '' === $album_privacy || 'public' === $album_privacy ) {
 			return $media_privacy;
 		}
@@ -128,29 +265,31 @@ class PrivacyService {
 	 * @return bool
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
-		// Resolve the item's author. A real media item lives in mvs_media_index
-		// with a concrete media_type (image/video/audio). Albums and collections
-		// are CPTs whose authoritative author is wp_posts.post_author — but they
-		// may ALSO get an mvs_media_index row that only stores their privacy
-		// (media_type left empty). That row's post_author is unreliable (0 or
-		// stale), so an indexed album must NOT be treated as media, or the owner
-		// is denied their own non-public album (Basecamp 10071824547). Keying on
-		// media_type keeps the hot media-grid path (media_type set) fast — no
-		// get_post() — and only albums/collections fall through to the CPT branch.
-		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$in_index   = $repo->exists( $media_id );
-		$media_type = $in_index ? (string) $repo->get( $media_id, 'media_type' ) : '';
+		// Resolve the item's author, and with it which KIND of thing this ID is.
+		//
+		// Albums and collections are CPTs; media lives in mvs_media_index. Since
+		// 2.4.0 those are two clean ID spaces — a CPT never writes an index row — so
+		// the post type is authoritative and cheap to trust.
+		//
+		// This replaces the media_type sniff added by 3cfff321 for Basecamp
+		// 10071824547 ("owner denied their own private album"). That workaround read
+		// the index row and, when media_type was empty, treated the ID as a CPT. It
+		// could not survive a collision: where an album's post ID landed on a real
+		// photo, media_type was 'image', so the album was access-checked as that
+		// photo — resolving to the PHOTO's owner and the PHOTO's privacy. The album's
+		// owner was denied their own album and an unrelated member was granted it.
+		// Root cause, not symptom: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$post_type     = get_post_type( $media_id );
+		$allowed_types = array( 'mvs_album', 'mvs_collection' );
 
-		if ( $in_index && '' !== $media_type ) {
+		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
+			// Album / collection CPT — wp_posts.post_author is authoritative.
+			$author_id = (int) get_post_field( 'post_author', $media_id );
+		} elseif ( $repo->exists( $media_id ) ) {
 			$author_id = $repo->get_author( $media_id );
 		} else {
-			// Album / collection CPT (no index row, or a privacy-only row).
-			$post          = get_post( $media_id );
-			$allowed_types = array( 'mvs_album', 'mvs_collection' );
-			if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {
-				return false;
-			}
-			$author_id = (int) $post->post_author;
+			return false;
 		}
 
 		// Owners and admins always have access.
@@ -158,7 +297,13 @@ class PrivacyService {
 			return true;
 		}
 
-		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+		// Same split for the privacy value itself: an album's lives in post meta,
+		// a media item's in its index row.
+		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
+			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $media_id );
+		} else {
+			$privacy = (string) $repo->get( $media_id, 'privacy' );
+		}
 		if ( ! $privacy ) {
 			$privacy = 'public';
 		}
@@ -184,7 +329,7 @@ class PrivacyService {
 		// fail ("We couldn't find that media"). Consulted only for restrictive
 		// levels (public/members/loggedin already resolve below) and only when
 		// the messaging engine is loaded. Owner/admin were granted earlier.
-		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'custom' ), true ) ) {
+		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'space', 'custom' ), true ) ) {
 			$container = \WPMediaVerse\Core\Plugin::container();
 			if ( $container->has( 'messaging' ) ) {
 				$messaging = $container->get( 'messaging' );
@@ -207,6 +352,9 @@ class PrivacyService {
 
 			case 'group':
 				return $this->check_group( $media_id, $user_id );
+
+			case 'space':
+				return $this->check_space( $media_id, $user_id );
 
 			case 'private':
 				// Owner/admin already handled above.
@@ -270,6 +418,47 @@ class PrivacyService {
 		}
 
 		return groups_is_user_member( $user_id, $group_id );
+	}
+
+	/**
+	 * Check membership of the space this media lives on.
+	 *
+	 * NOT a second authority. It asks the frozen drive filter — the same one
+	 * `GET /drives` and every document gate ask — so a space's library and its
+	 * privacy cannot answer differently for the same viewer. MediaVerse still
+	 * never queries `bn_*`; the bridge answers.
+	 *
+	 * The drive columns are the source, never `group_id`: those are BuddyPress's,
+	 * they die with BuddyPress, and an importer would read a space id there as a
+	 * BP group (plan §23.3 anti-pattern 1).
+	 *
+	 * Falls back to private when nothing answers, which is what an unbridged site
+	 * should do with a privacy level it cannot evaluate.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $media_id Media id.
+	 * @param int $user_id  Requesting user.
+	 * @return bool
+	 */
+	private function check_space( int $media_id, int $user_id ): bool {
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$drive_type = (string) $repo->get( $media_id, 'drive_type' );
+		$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
+
+		if ( 'user' === $drive_type || $drive_id <= 0 ) {
+			// Not on a team drive at all — nothing to be a member of.
+			return false;
+		}
+
+		// Same resolver as placement — see media_drive_access(). A read gate that
+		// asked a different question from the write gate would accept media onto
+		// a drive whose members then could not open it.
+		return 'none' !== self::media_drive_access( $drive_type, $drive_id, $user_id );
 	}
 
 	/**

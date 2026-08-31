@@ -32,11 +32,44 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		add_action( 'bp_setup_nav', array( $this, 'add_profile_tab' ), 100 );
 		add_action( 'bp_template_redirect', array( $this, 'update_media_tab_count' ) );
 
+		// Keep MediaVerse's own stylesheets alive on its profile Media tabs.
+		// The Media / Albums / Documents tabs are MediaVerse content rendered
+		// inside a BuddyPress profile — BuddyNext does not replace them — so they
+		// must keep their CSS. Without this, on a BuddyNext site the handoff's
+		// enforce_frontend_presence() sweep deregisters every mvs-* handle here
+		// too, and the tabs paint with empty --mvs tokens: bare <ul> lists,
+		// icons at viewBox size, no grid spacing (Basecamp 10239276541, the
+		// sibling of the Explore-Documents page fix 10194672141). This exempts
+		// only the two stylesheets the tab content needs; the rest of the UI
+		// suppression is left untouched.
+		add_filter( 'mvs_frontend_presence_keep_handles', array( $this, 'keep_media_tab_styles' ) );
+
 		// Resolve member profile URLs to the BP member page. Lives here so core
 		// (TemplateHelpers::get_user_profile_url) stays standalone — it defaults
 		// to the plugin's own /media/@login/ route and BP/BuddyNext override via
 		// this filter. No bp_* calls in core templates or helpers.
 		add_filter( 'mvs_user_profile_url', array( $this, 'filter_user_profile_url' ), 10, 2 );
+	}
+
+	/**
+	 * Exempt the Media-tab stylesheets from the BuddyNext frontend-suppression
+	 * sweep while a member's Media tab (any sub-tab) is being viewed.
+	 *
+	 * Runs inside enforce_frontend_presence() at wp_enqueue_scripts@PHP_INT_MAX;
+	 * BuddyPress has resolved the current component by then, so the check is
+	 * reliable. Adds only the two stylesheets the tab content renders with.
+	 *
+	 * @param string[] $handles Handles the sweep must not strip.
+	 * @return string[]
+	 */
+	public function keep_media_tab_styles( array $handles ): array {
+		if ( function_exists( 'bp_is_user' ) && bp_is_user()
+			&& function_exists( 'bp_is_current_component' ) && bp_is_current_component( 'media' ) ) {
+			$handles[] = 'mvs-frontend';
+			$handles[] = 'mvs-bp-integration';
+		}
+
+		return $handles;
 	}
 
 	/**
@@ -104,6 +137,24 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 				'position'        => 20,
 			)
 		);
+
+		// Documents sub-tab — only when the feature is switched on site-wide
+		// (Pro flips `mvs_documents_enabled`). Free owns the tab; Pro renders the
+		// viewer-scoped, privacy-filtered list (documents are a Pro feature and
+		// their permission ladder lives there). Missing the guard would put an
+		// always-empty Documents tab on every profile of a Free-only site.
+		if ( \WPMediaVerse\Core\Plugin::documents_enabled() ) {
+			bp_core_new_subnav_item(
+				array(
+					'name'            => __( 'Documents', 'wpmediaverse' ),
+					'slug'            => 'documents',
+					'parent_url'      => $media_link,
+					'parent_slug'     => 'media',
+					'screen_function' => array( $this, 'render_profile_documents_tab' ),
+					'position'        => 30,
+				)
+			);
+		}
 	}
 
 	/**
@@ -163,6 +214,70 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 			add_action( 'bp_template_content', array( $this, 'albums_content' ) );
 		}
 		bp_core_load_template( 'members/single/plugins' );
+	}
+
+	/**
+	 * BP screen function for the Documents subnav.
+	 */
+	public function render_profile_documents_tab(): void {
+		add_action( 'bp_template_content', array( $this, 'documents_content' ) );
+		bp_core_load_template( 'members/single/plugins' );
+	}
+
+	/**
+	 * Render the displayed member's documents inside their profile.
+	 *
+	 * Free owns the tab but cannot render the document ladder — rows, folders,
+	 * grants and the privacy resolution all live in Pro. So this emits a seam
+	 * Pro answers with the finished, VIEWER-SCOPED, privacy-filtered HTML. The
+	 * viewer id travels with it precisely because the list is viewer-relative:
+	 * the owner sees everything, a member sees members-level + public + anything
+	 * shared with them, a stranger sees only public. Pro is responsible for
+	 * filtering every row through PermissionService before it renders — Free has
+	 * no way to, and must not, list documents itself.
+	 */
+	public function documents_content(): void {
+		// Same CSS bundle the Media and Albums tabs load (mvs-frontend design
+		// tokens + mvs-bp-integration, which carries the .mvs-profile-documents
+		// rules). Enqueued here so the list is styled whether Pro renders it or
+		// Free paints the empty state.
+		$this->enqueue_assets();
+
+		$owner_id  = (int) bp_displayed_user_id();
+		$viewer_id = (int) get_current_user_id();
+
+		/**
+		 * Viewer-scoped documents HTML for a member's profile.
+		 *
+		 * Answered by Pro. Default '' means "nothing to show" — either the
+		 * feature is inert or the viewer may see none of this member's
+		 * documents — and Free renders the empty state below.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $html      Rendered list HTML. Default ''.
+		 * @param int    $owner_id  The profile owner whose documents to list.
+		 * @param int    $viewer_id The current viewer (0 when logged out).
+		 */
+		$html = (string) apply_filters( 'mvs_profile_documents_html', '', $owner_id, $viewer_id );
+
+		if ( '' !== trim( $html ) ) {
+			// Pro escapes each field as it builds the list.
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pro renderer escapes every value.
+			return;
+		}
+
+		$is_owner = $viewer_id > 0 && $viewer_id === $owner_id;
+		$message  = $is_owner
+			? __( "You haven't added any documents yet.", 'wpmediaverse' )
+			: __( 'No documents to show.', 'wpmediaverse' );
+
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns escaped markup.
+			array(
+				'icon'    => 'file-text',
+				'message' => $message,
+			)
+		);
 	}
 
 	// ============================================================

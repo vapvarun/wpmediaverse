@@ -70,8 +70,8 @@ final class ConfigController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_config( $request ) {
-		unset( $request );
-
+		// The request WAS discarded here — nothing in the payload depended on it.
+		// The ETag does: `If-None-Match` is the whole point of P4.4.
 		$dm_access = get_option( 'mvs_dm_access', 'everyone' );
 
 		/**
@@ -173,7 +173,71 @@ final class ConfigController extends WP_REST_Controller {
 			'auth'              => \WPMediaVerse\Auth\AppConnect::auth_block(),
 		);
 
-		return rest_ensure_response( $config );
+		/**
+		 * The whole app config, after Free has assembled its own.
+		 *
+		 * Pro adds its `documents` block here so the app never hardcodes the
+		 * format list, the size ceiling or the preview tiers — a client that
+		 * guesses those disagrees with the server the moment an owner changes a
+		 * setting, and disagreeing about the size ceiling means uploading a file
+		 * only to be told 413 at the end (design §9).
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array $config Assembled config payload.
+		 */
+		$config = (array) apply_filters( 'mvs_app_config', $config );
+
+		return $this->respond_with_etag( $config, $request );
+	}
+
+	/**
+	 * Send the config with an ETag, answering 304 when nothing changed.
+	 *
+	 * The app fetches this on every cold start. It is a handful of options and a
+	 * few filters, so the cost is not the query — it is the payload crossing a
+	 * mobile connection to say nothing new. An ETag turns that into an empty 304.
+	 *
+	 * The tag is derived from the RESPONSE ITSELF rather than from a version
+	 * constant or a timestamp, so it changes exactly when what the client would
+	 * receive changes — including when a filter somewhere alters it. A tag keyed
+	 * on anything else eventually claims "unchanged" about a payload that did.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array           $config  Config payload.
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	private function respond_with_etag( array $config, WP_REST_Request $request ) {
+		$etag = '"' . md5( (string) wp_json_encode( $config ) ) . '"';
+
+		// The route always hands us a WP_REST_Request, so no defensive branch.
+		$candidates = (string) $request->get_header( 'if_none_match' );
+
+		// A client may send several tags, and some proxies weaken them with a
+		// `W/` prefix. Compare each candidate rather than the raw header.
+		foreach ( array_map( 'trim', explode( ',', $candidates ) ) as $candidate ) {
+			if ( '' === $candidate ) {
+				continue;
+			}
+
+			if ( ltrim( $candidate, 'W/' ) === ltrim( $etag, 'W/' ) ) {
+				$response = new \WP_REST_Response( null, 304 );
+				$response->header( 'ETag', $etag );
+				$response->header( 'Cache-Control', 'private, must-revalidate' );
+
+				return $response;
+			}
+		}
+
+		$response = rest_ensure_response( $config );
+		$response->header( 'ETag', $etag );
+		// must-revalidate, not a max-age: a config the client keeps for an hour
+		// is a config an owner cannot turn off for an hour.
+		$response->header( 'Cache-Control', 'private, must-revalidate' );
+
+		return $response;
 	}
 
 	/**

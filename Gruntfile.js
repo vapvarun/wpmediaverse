@@ -14,6 +14,25 @@ module.exports = function( grunt ) {
 					potFilename: 'wpmediaverse.pot',
 					type: 'wp-plugin',
 					updateTimestamp: false,
+					// NEVER SCAN A COPY OF OURSELVES. `dist/wpmediaverse/` is a
+					// staging copy of this plugin, so every string in it is a
+					// duplicate of a string in source — makepot recorded both and
+					// the POT grew a `#: dist/...` reference per string, ~2,600 of
+					// them, more with each rebuild.
+					//
+					// `dist` was taught to clean before building, which fixed
+					// `grunt dist`. It did not fix `grunt build`, which runs
+					// makepot with no clean at all — so anyone building after a
+					// dist still polluted the POT, and did until this line. The
+					// exclusion is the durable half: it holds whichever task runs
+					// and whatever is lying in the tree.
+					// `libs/` sits beside `vendor/` here for the same reason: it is
+					// third-party runtime code we ship but do not write, and its
+					// strings are not ours to translate. Missing it put 256 Action
+					// Scheduler and EDD SDK msgids into this plugin's POT the moment
+					// the runtime deps moved out of vendor/ — the same pollution that
+					// was cleaned up days earlier, walking back in through a new door.
+					exclude: [ 'dist/.*', 'node_modules/.*', 'vendor/.*', 'libs/.*', 'tests/.*' ],
 					potHeaders: {
 						poedit: true,
 						'x-poedit-keywordslist': true,
@@ -133,28 +152,19 @@ module.exports = function( grunt ) {
 							'!**/.gitkeep',
 							'!**/Thumbs.db',
 
-							// ── Vendor: strip ALL dev deps ──
-							// Keep: easy-digital-downloads (license SDK)
-							// Keep: woocommerce (Action Scheduler)
-							// Keep: composer (autoloader)
-							'!vendor/bin/**',
-							'!vendor/phpunit/**',
-							'!vendor/squizlabs/**',
-							'!vendor/wp-coding-standards/**',
-							'!vendor/phpcompatibility/**',
-							'!vendor/phpcsstandards/**',
-							'!vendor/szepeviktor/**',
-							'!vendor/phpstan/**',
-							'!vendor/php-stubs/**',
-							'!vendor/nikic/**',
-							'!vendor/dealerdirect/**',
-							'!vendor/doctrine/**',
-							'!vendor/myclabs/**',
-							'!vendor/phar-io/**',
-							'!vendor/theseer/**',
-							'!vendor/yoast/**',
-							'!vendor/sebastian/**',
-							'!vendor/symfony/**',
+							// ── Composer vendor/: excluded ENTIRELY ──
+							//
+							// It is dev and build tooling only. The runtime dependencies it used
+							// to hold (Action Scheduler, EDD SL SDK) are committed under libs/ and
+							// ship with the plugin, and the autoloader is hand-written in the entry
+							// file — so nothing under vendor/ is needed at runtime.
+							//
+							// This block used to keep three sub-trees and strip ~18 dev packages by
+							// name, which meant .distignore (excluding /vendor wholesale) and this
+							// file produced different zips from the same source. A zip built the
+							// .distignore way had no autoloader: HTTP 500 on every page, including
+							// the Plugins screen. One rule now, and no list to maintain.
+							'!vendor/**',
 						],
 						dest: 'dist/wpmediaverse/',
 					},
@@ -346,7 +356,18 @@ module.exports = function( grunt ) {
 	grunt.registerTask( 'build', [ 'blocks', 'cssmin', 'uglify', 'makepot' ] );
 
 	// Dist: full build + strip dev deps + package zip + restore dev deps
-	grunt.registerTask( 'dist', [ 'build', 'composer-prod', 'clean:dist', 'copy:dist', 'compress:dist', 'composer-restore', 'dist-summary' ] );
+	// `clean:dist` runs FIRST, before `build`. It used to sit after, which meant
+	// `makepot` (inside `build`) scanned the PREVIOUS run's `dist/wpmediaverse/`
+	// staging copy as if it were source: every string picked up a duplicate
+	// `#: dist/...` reference, ~2,600 of them, growing with each rebuild. The
+	// first build on a clean tree looked fine, so it only showed up on a rebuild.
+	// composer-prod/composer-restore are deliberately NOT in this chain. They
+	// existed to strip dev packages so the shipped Composer autoloader only
+	// referenced production ones — but vendor/ no longer ships at all, and the
+	// runtime autoloader is hand-written in the entry file. Running them now
+	// would delete the dev tooling mid-build to produce something the zip
+	// excludes. The tasks remain callable by hand.
+	grunt.registerTask( 'dist', [ 'clean:dist', 'build', 'copy:dist', 'compress:dist', 'dist-summary' ] );
 
 	// Release: CI check + dist (for production releases)
 	grunt.registerTask( 'release', [ 'ci-check', 'dist' ] );

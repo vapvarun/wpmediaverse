@@ -469,6 +469,46 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			return $out;
 		}
 
+		if ( 'document' === $media_type ) {
+			// A document reaches the grid when a member SAVES one into a
+			// collection — the media library itself never lists documents
+			// (MediaTypes::MEDIA_LIBRARY). Before this branch it fell through
+			// to the generic placeholder below, whose glyph is `icon_image()`:
+			// a PICTURE icon, on a dark tile, for a spreadsheet.
+			//
+			// "Absent beats broken" settled the library case and does NOT apply
+			// here. That rule is about untyped rows nobody chose to publish; a
+			// document in a collection is there because its owner deliberately
+			// put it there, so hiding it would lose something they meant to
+			// keep. It needs a tile that says what it is instead.
+			//
+			// Same shape as the audio card above — glyph, title, meta — which is
+			// already this method's answer to "has no picture of its own".
+			$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$title = (string) $repo->get( $media_id, 'title' );
+			$mime  = (string) $repo->get( $media_id, 'file_type' );
+			$bytes = (int) $repo->get( $media_id, 'file_size' );
+			$group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mime );
+			$glyph = \WPMediaVerse\Core\DocumentTypes::icon( $group );
+
+			$meta = $group ? \WPMediaVerse\Core\DocumentTypes::label( $group ) : '';
+			if ( $bytes > 0 ) {
+				$meta = trim( $meta . ( '' !== $meta ? ' &middot; ' : '' ) . size_format( $bytes ) );
+			}
+
+			$out  = '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--document mvs-doc-card">';
+			$out .= '<span class="mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--' . esc_attr( $glyph ) . '" aria-hidden="true"></span>';
+			if ( '' !== $title ) {
+				$out .= '<span class="mvs-doc-card__title">' . esc_html( $title ) . '</span>';
+			}
+			if ( '' !== $meta ) {
+				$out .= '<span class="mvs-doc-card__meta">' . $meta . '</span>';
+			}
+			$out .= '</div>';
+
+			return $out;
+		}
+
 		return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--generic">' . $this->icon_image() . '</div>';
 	}
 
@@ -939,12 +979,14 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
 	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
 	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
+	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
 	 *                        - 'size' (string) Image size. Default 'medium'.
 	 */
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
 		$show_actions = $options['show_actions'] ?? false;
+		$bulk         = $options['bulk'] ?? false;
 		$data_attrs   = $options['data_attrs'] ?? array();
 		$size         = $options['size'] ?? \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key();
 
@@ -1011,6 +1053,30 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() output (encoded + escaped JSON for the data-wp-context attribute).
 			. '>';
+
+		// Bulk-select control, OPT-IN per surface and OWN ITEMS ONLY.
+		//
+		// Opt-in because this helper renders Explore, albums, collections and
+		// both BuddyPress tabs — a checkbox added unconditionally would appear
+		// on five surfaces when one asked for it.
+		//
+		// Own items only, and that is the whole design decision. A member must
+		// never see a selection control on somebody else's photo: on a public
+		// feed it reads as a bug or a leak, and it is the shape of support
+		// ticket an owner gets asked about. The server would refuse the write
+		// anyway — but it refuses SILENTLY, dropping the ids and returning 200,
+		// so a checkbox here would produce "12 selected" and four changed. A
+		// moderator sees exactly what a member sees, deliberately: one page at
+		// one URL, with no invisible capability changing what is drawn.
+		if ( $bulk && $author_id && get_current_user_id() === $author_id ) {
+			printf(
+				'<button type="button" class="mvs-bulk-check" data-mvs-bulk-id="%1$d" data-wp-interactive="mvs/explore" data-wp-on--click="actions.toggleExploreBulk" aria-pressed="false" aria-label="%2$s">'
+					. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+				. '</button>',
+				(int) $media_id,
+				esc_attr__( 'Select for bulk actions', 'wpmediaverse' )
+			);
+		}
 
 		// Owner actions (delete) — rendered only when the caller explicitly
 		// opts in via `show_actions`. Delete belongs on the user's own
@@ -1155,11 +1221,104 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return home_url( '/media/' );
 	}
 
+	/**
+	 * The document listing page URL, or '' when there is not one.
+	 *
+	 * Returns an empty string rather than a fallback on purpose: with no document
+	 * page there is nowhere sensible to send a member, and sending them to the
+	 * MEDIA grid — which by design contains no documents — would be worse than
+	 * leaving the link as Explore.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string
+	 */
+	public function resolve_documents_url(): string {
+		$page_id = (int) get_option( 'mvs_page_explore_documents', 0 );
+
+		if ( $page_id ) {
+			$url = get_permalink( $page_id );
+			if ( $url ) {
+				return (string) $url;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Whether a media row is a document of either kind.
+	 *
+	 * Uses DOCUMENT_LIBRARY, so a quarantined `legacy_document` also returns to
+	 * the document page — it is not in a media grid either, so Explore would be
+	 * just as wrong for it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $media_id Media id.
+	 * @return bool
+	 */
+	private function is_document( int $media_id ): bool {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( ! $repo->exists( $media_id ) ) {
+			return false;
+		}
+
+		return in_array(
+			(string) $repo->get( $media_id, 'media_type' ),
+			\WPMediaVerse\Core\MediaTypes::DOCUMENT_LIBRARY,
+			true
+		);
+	}
+
 	public function get_parent_route( string $context, array $args = array() ): ?array {
 		$parent = null;
 
 		switch ( $context ) {
 			case 'single-media':
+				// A document goes back to the DOCUMENT page, never to Explore.
+				// `media-single.php` is shared by both — that reuse is deliberate
+				// (design §10) — but the back link is the one place where sharing
+				// a template would tell a member the wrong thing about where they
+				// came from, and offer them a grid their item is not in.
+				// (Owner, 2026-08-09.)
+				$media_id = isset( $args['media_id'] ) ? (int) $args['media_id'] : 0;
+
+				if ( $media_id && $this->is_document( $media_id ) ) {
+					// The OWNER came from their own drive, so send them back
+					// there — not to the public Explore Documents listing, which
+					// excludes private rows and would drop them on an empty "No
+					// documents" grid the instant after previewing their own
+					// private file (Basecamp 10230967864). Everyone else (a
+					// non-owner member, a logged-out viewer) gets the public
+					// listing, which is the only documents surface they share.
+					$viewer = get_current_user_id();
+					$owner  = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+
+					if ( $viewer > 0 && $viewer === $owner ) {
+						$drive_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
+
+						if ( '' !== $drive_url ) {
+							$parent = array(
+								'url'   => $drive_url,
+								'label' => __( 'My documents', 'wpmediaverse' ),
+							);
+							break;
+						}
+					}
+
+					$documents_url = $this->resolve_documents_url();
+
+					if ( '' !== $documents_url ) {
+						$parent = array(
+							'url'   => $documents_url,
+							'label' => __( 'Documents', 'wpmediaverse' ),
+						);
+						break;
+					}
+				}
+
 				$parent = array(
 					'url'   => $this->resolve_explore_url(),
 					'label' => __( 'Explore', 'wpmediaverse' ),
@@ -1299,6 +1458,216 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$html .= '</div>';
 
 		return $html;
+	}
+
+	/**
+	 * Render the toolbar that sits above a panel's list or grid.
+	 *
+	 * ONE shape for every list surface: search, count, filters, sort, direction.
+	 * Before this there was exactly one toolbar in the whole dashboard — the
+	 * document drive's — and it was a private method on a Pro class. Media,
+	 * Albums, Favourites and Collections had no search, no sort, no filter and
+	 * no count at all, so "the same product" meant five different answers to
+	 * "how do I find one of these".
+	 *
+	 * BOTH RENDERING MODELS ARE SERVED, deliberately, because the dashboard runs
+	 * two: the document drive is a server-rendered GET form (works with
+	 * JavaScript off, every view a shareable URL), and the other four panels are
+	 * client-side Interactivity. This helper emits the markup; the caller says
+	 * how it is driven. `form` wraps it in a GET form for the server-rendered
+	 * side; `attrs` on any control carries the Interactivity bindings for the
+	 * client side. Both write the SAME query keys — `s`, `orderby`, `order` —
+	 * so a URL from one panel reads the same as a URL from another.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type string $id       Id prefix for label/control association. Required.
+	 *     @type bool   $form     Wrap in a GET form (server-rendered panels).
+	 *     @type array  $hidden   [ name => value ] hidden fields carried on submit.
+	 *     @type array  $search   [ name, value, label, placeholder, attrs ].
+	 *     @type string $count    Pre-formatted, already-pluralised count line.
+	 *     @type array  $filters  List of [ name, label, value, options, attrs ].
+	 *     @type array  $sort     [ name, label, value, options, attrs ].
+	 *     @type array  $order    [ name, label, value, options, attrs ].
+	 *     @type string $submit   Submit label. Omit for client-driven panels,
+	 *                            which apply on change and need no button.
+	 *     @type string $class    Extra wrapper class(es).
+	 * }
+	 * @return string Escaped HTML.
+	 */
+	public function render_panel_toolbar( array $args = array() ): string {
+		$id     = isset( $args['id'] ) ? (string) $args['id'] : 'mvs-panel';
+		$form   = ! empty( $args['form'] );
+		$extra  = isset( $args['class'] ) ? ' ' . (string) $args['class'] : '';
+		$submit = isset( $args['submit'] ) ? (string) $args['submit'] : '';
+
+		$html = $form
+			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search">'
+			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search">';
+
+		if ( $form && ! empty( $args['hidden'] ) && is_array( $args['hidden'] ) ) {
+			foreach ( $args['hidden'] as $name => $value ) {
+				// Carrying the view across is what stops a filter from teleporting
+				// the member out of the folder or the trash they were looking at.
+				$html .= sprintf(
+					'<input type="hidden" name="%1$s" value="%2$s" />',
+					esc_attr( (string) $name ),
+					esc_attr( (string) $value )
+				);
+			}
+		}
+
+		if ( ! empty( $args['search'] ) && is_array( $args['search'] ) ) {
+			$html .= $this->toolbar_search( $id, $args['search'] );
+		}
+
+		if ( ! empty( $args['count'] ) ) {
+			// A string for a server-rendered panel; an array for a client-driven
+			// one, which needs somewhere to hang `data-wp-text` so the number
+			// follows the search rather than freezing at whatever the page was
+			// built with. The comment below always claimed the panels rewrote
+			// this — there was no way for them to.
+			$count = is_array( $args['count'] ) ? $args['count'] : array( 'text' => $args['count'] );
+
+			// aria-live: a client-driven panel rewrites this after a search, and
+			// "3 albums" changing silently is the result a screen reader misses.
+			$html .= '<span class="mvs-panel-toolbar__count" aria-live="polite"'
+				. $this->toolbar_attrs( $count ) . '>'
+				. esc_html( (string) ( $count['text'] ?? '' ) )
+				. '</span>';
+		}
+
+		$selects = array();
+
+		if ( ! empty( $args['filters'] ) && is_array( $args['filters'] ) ) {
+			foreach ( $args['filters'] as $filter ) {
+				$selects[] = $filter;
+			}
+		}
+
+		foreach ( array( 'sort', 'order' ) as $key ) {
+			if ( ! empty( $args[ $key ] ) && is_array( $args[ $key ] ) ) {
+				$selects[] = $args[ $key ];
+			}
+		}
+
+		foreach ( $selects as $select ) {
+			$html .= $this->toolbar_select( $id, $select );
+		}
+
+		if ( '' !== $submit ) {
+			$html .= '<button type="submit" class="mvs-btn mvs-btn--secondary mvs-panel-toolbar__apply">' . esc_html( $submit ) . '</button>';
+		}
+
+		$html .= $form ? '</form>' : '</div>';
+
+		return $html;
+	}
+
+	/**
+	 * The toolbar's search field.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $id     Id prefix.
+	 * @param array  $search Field config.
+	 * @return string
+	 */
+	private function toolbar_search( string $id, array $search ): string {
+		$name        = isset( $search['name'] ) ? (string) $search['name'] : 's';
+		$value       = isset( $search['value'] ) ? (string) $search['value'] : '';
+		$label       = isset( $search['label'] ) ? (string) $search['label'] : __( 'Search', 'wpmediaverse' );
+		$placeholder = isset( $search['placeholder'] ) ? (string) $search['placeholder'] : $label;
+		$field_id    = $id . '-search';
+
+		return sprintf(
+			'<label class="screen-reader-text" for="%1$s">%2$s</label>'
+			. '<input id="%1$s" class="mvs-panel-toolbar__search" type="search" name="%3$s" value="%4$s" placeholder="%5$s"%6$s />',
+			esc_attr( $field_id ),
+			esc_html( $label ),
+			esc_attr( $name ),
+			esc_attr( $value ),
+			esc_attr( $placeholder ),
+			$this->toolbar_attrs( $search )
+		);
+	}
+
+	/**
+	 * One labelled select in the toolbar.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $id     Id prefix.
+	 * @param array  $select Select config.
+	 * @return string
+	 */
+	private function toolbar_select( string $id, array $select ): string {
+		$name    = isset( $select['name'] ) ? (string) $select['name'] : '';
+		$label   = isset( $select['label'] ) ? (string) $select['label'] : '';
+		$value   = isset( $select['value'] ) ? (string) $select['value'] : '';
+		$options = ( isset( $select['options'] ) && is_array( $select['options'] ) ) ? $select['options'] : array();
+
+		if ( '' === $name || ! $options ) {
+			return '';
+		}
+
+		$field_id = $id . '-' . sanitize_key( $name );
+
+		$html = sprintf(
+			'<label class="screen-reader-text" for="%1$s">%2$s</label><select id="%1$s" class="mvs-panel-toolbar__select" name="%3$s"%4$s>',
+			esc_attr( $field_id ),
+			esc_html( $label ),
+			esc_attr( $name ),
+			$this->toolbar_attrs( $select )
+		);
+
+		foreach ( $options as $option_value => $option_label ) {
+			$html .= sprintf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( (string) $option_value ),
+				selected( $value, (string) $option_value, false ),
+				esc_html( (string) $option_label )
+			);
+		}
+
+		return $html . '</select>';
+	}
+
+	/**
+	 * Extra attributes for a toolbar control.
+	 *
+	 * This is the seam that lets one markup helper serve both engines: the
+	 * client-side panels pass their `data-wp-on--*` bindings through here and
+	 * the server-rendered drive passes nothing.
+	 *
+	 * Attribute NAMES are restricted to `data-*` and `aria-*`. A caller cannot
+	 * reach in and set `onclick`, and cannot overwrite `name`, `value` or `id`
+	 * and quietly repoint the control at a different parameter.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $config Control config, possibly carrying `attrs`.
+	 * @return string Leading-space-prefixed attribute string, or ''.
+	 */
+	private function toolbar_attrs( array $config ): string {
+		if ( empty( $config['attrs'] ) || ! is_array( $config['attrs'] ) ) {
+			return '';
+		}
+
+		$out = '';
+
+		foreach ( $config['attrs'] as $attr => $value ) {
+			$attr = (string) $attr;
+
+			if ( ! preg_match( '/^(data|aria)-[a-z0-9_-]+$/i', $attr ) ) {
+				continue;
+			}
+
+			$out .= sprintf( ' %s="%s"', esc_attr( $attr ), esc_attr( (string) $value ) );
+		}
+
+		return $out;
 	}
 
 	/**

@@ -225,6 +225,9 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// The comment-permission gate now lives in CommentService::add() (the
+		// single write path) so every client is covered, not just this route.
+
 		$content = sanitize_textarea_field( $request->get_param( 'content' ) );
 		if ( empty( $content ) ) {
 			return new WP_Error( 'mvs_empty_comment', __( 'Comment content is required.', 'wpmediaverse' ), array( 'status' => 400 ) );

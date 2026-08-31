@@ -186,6 +186,17 @@ function wp_register_sidebar_widget( ...$a ): void {}
 function register_widget( ...$a ): void {}
 function wp_upload_dir() { return array( 'basedir' => sys_get_temp_dir(), 'baseurl' => 'https://example.test/wp-content/uploads', 'path' => sys_get_temp_dir(), 'url' => 'https://example.test/wp-content/uploads', 'subdir' => '', 'error' => false ); }
 function wp_get_upload_dir() { return wp_upload_dir(); }
+/**
+ * Real behaviour, not a no-op: Pro's document storage calls this on EVERY load
+ * (the deny files it writes are a release blocker, and they get removed by
+ * migrations and sync tools long after activation), then checks the directory
+ * it asked for actually exists. A stub returning true without creating anything
+ * would make the smoke pass while the code under test took its failure path —
+ * the worst kind of green.
+ *
+ * Writes under the harness's temp WP_CONTENT_DIR, so it makes no mess.
+ */
+function wp_mkdir_p( string $target ): bool { return is_dir( $target ) || mkdir( $target, 0777, true ) || is_dir( $target ); }
 function wp_timezone_string(): string { return 'UTC'; }
 function wp_timezone() { return new DateTimeZone( 'UTC' ); }
 function get_user_by( string $f, $v ) { return false; }
@@ -342,6 +353,26 @@ if ( ! class_exists( 'WP_Role' ) ) {
 		public function add_cap( string $c, bool $g = true ): void { $this->capabilities[ $c ] = $g; }
 		public function remove_cap( string $c ): void { unset( $this->capabilities[ $c ] ); }
 		public function has_cap( string $c ): bool { return ! empty( $this->capabilities[ $c ] ); }
+	}
+}
+
+if ( ! class_exists( 'WP_Query' ) ) {
+	/**
+	 * Enough WP_Query to boot, and no more.
+	 *
+	 * `Activator::create_pages()` looks for an existing page by title before
+	 * inserting one, and that runs on every upgrade — so a harness without this
+	 * class reports a fatal for code that is perfectly correct under real
+	 * WordPress. Answering "no posts" is the honest stub: the harness has no
+	 * database, so there genuinely are none.
+	 */
+	class WP_Query {
+		public array $posts = array();
+		public int $post_count = 0;
+		public int $found_posts = 0;
+		public function __construct( $args = array() ) {}
+		public function have_posts(): bool { return false; }
+		public function get_posts(): array { return array(); }
 	}
 }
 

@@ -66,6 +66,7 @@ use WPMediaVerse\Social\ReportService;
 use WPMediaVerse\Social\ActivityService;
 use WPMediaVerse\REST\Controller\FollowController;
 use WPMediaVerse\REST\Controller\NotificationController;
+use WPMediaVerse\REST\Controller\DeviceController;
 use WPMediaVerse\REST\Controller\UserController;
 use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
@@ -185,15 +186,31 @@ class Plugin {
 		$migrator = new Migrator();
 		$migrator->run();
 
-		// Build service container.
-		self::$container = new ServiceContainer();
-		self::register_services();
+		// v29's drive backfill continues in bounded batches rather than stamping
+		// every row inside the upgrade request — see Migrator::migrate_to_29().
+		add_action(
+			Migrator::DRIVE_BACKFILL_HOOK,
+			static function (): void {
+				// Wrapped because the cron callback must return nothing, while
+				// backfill_drive_columns() returns a count for CLI and tests.
+				Migrator::backfill_drive_columns();
+			}
+		);
+
+		// Build the service container — or adopt the one an earlier caller on
+		// this request already built (activation does exactly that). Rebuilding
+		// would strand every service the earlier caller had resolved.
+		self::container();
 
 		// Register post types, taxonomies, and blocks.
 		add_action( 'init', array( self::class, 'register_types' ) );
 
 		// Custom admin menu (replaces CPT-based menu).
 		add_action( 'admin_menu', array( self::class, 'register_admin_menu' ), 5 );
+
+		// "Administrator, OR a role the owner delegated documents to" — one
+		// capability, two ways to hold it. See map_document_screen_cap().
+		add_filter( 'map_meta_cap', array( self::class, 'map_document_screen_cap' ), 10, 3 );
 
 		$blocks = new BlockRegistrar();
 		$blocks->init();
@@ -286,6 +303,19 @@ class Plugin {
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
 		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
 
+		// Deferred cloud sync. Uploads always land on local disk and queue the
+		// cloud copy, so the member never waits on a CDN round trip to see
+		// their own photo (UploadService::handle). This is the worker.
+		add_action(
+			'mvs_cloud_sync_media',
+			static function ( $args ) {
+				$media_id = is_array( $args ) ? (int) ( $args['media_id'] ?? 0 ) : (int) $args;
+				\WPMediaVerse\Services\UploadService::run_cloud_sync( $media_id );
+			},
+			10,
+			1
+		);
+
 		// Storage re-localization on privacy escalation. When a media row
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or
@@ -302,6 +332,14 @@ class Plugin {
 		// Access rules privacy filter (priority 20 — after default privacy at 10).
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
+
+		// NOTE: the dashboard's Documents tab is no longer registered here. It
+		// began as a registry LINK out to the documents page, and became a real
+		// panel rendering the drive in place — a member managing their media
+		// should not be sent elsewhere to manage their documents, and the upload
+		// control has to be on the screen they are already on. The registry
+		// itself stays: it is the seam that fixed the action/filter collision,
+		// and it remains the supported way for anything else to add a tab.
 
 		// Signing now lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url') — the
 		// previous `mvs_media_response` listener at priority 10 was retired
@@ -345,6 +383,28 @@ class Plugin {
 		add_action( 'wp_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 
+		// The two stylesheets every BuddyPress surface asks for, registered at
+		// the SAME earliest priority and for the same reason.
+		//
+		// They used to be registered inside `enqueue_frontend_assets()` below,
+		// which is `wp_enqueue_scripts@10` — and BuddyPress fires
+		// `bp_enqueue_scripts` from its OWN `wp_enqueue_scripts@10`, added
+		// first, so it ran first. Measured on this hook: `bp_enqueue_scripts`
+		// at position 9, `enqueue_frontend_assets` at position 10. Every BP
+		// integration enqueuing at `bp_enqueue_scripts` therefore named a
+		// handle that did not exist yet, and `wp_enqueue_style()` on an
+		// unregistered handle fails SILENTLY — no notice, no style.
+		//
+		// The visible result was an activity stream with zero MediaVerse CSS:
+		// image, video and audio activity cards all rendered unstyled, which
+		// is why a document card there read as "blank" rather than as
+		// "unstyled". The profile tabs escaped it only by accident — they
+		// enqueue during template render, long after this race is over.
+		//
+		// Registration only. What gets ENQUEUED is unchanged and still decided
+		// per surface; re-registering the same handle later is a no-op.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'register_bp_shared_styles' ), 1 );
+
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
 
 		// Auto-pair the mvs-confirm stylesheet whenever its script is enqueued.
@@ -365,6 +425,14 @@ class Plugin {
 
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
+
+		// The half of activation that an UPDATE also needs. `init` at 99 because
+		// it has to run after Pro has declared itself — the documents page only
+		// exists where something can show a document, and Pro answers that on
+		// `mvs_loaded`, which is earlier. Ahead of the rewrite flush on the same
+		// hook, so a page created here is covered by the flush rather than
+		// waiting for the next version to be reachable.
+		add_action( 'init', array( Activator::class, 'maybe_upgrade' ), 98 );
 
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();
@@ -787,6 +855,16 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'push',
+			function () {
+				return new \WPMediaVerse\Social\PushService();
+			}
+		);
+		// Eager: the dispatch must be hooked before any notification is created
+		// (notifications fire outside REST too), so bind it now rather than lazily.
+		self::$container->get( 'push' )->register();
+
+		self::$container->register(
 			'reports',
 			function () {
 				return new ReportService();
@@ -905,6 +983,7 @@ class Plugin {
 			new SignedUrlController( $signed_urls, $privacy ),
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),
+			new DeviceController( self::$container->get( 'push' ) ),
 			new TransactionController( self::$container->get( 'transactions' ) ),
 			new UserController(),
 			new ReportController( $reports ),
@@ -994,6 +1073,25 @@ class Plugin {
 		);
 		if ( $media_hook ) {
 			add_action( 'load-' . $media_hook, array( \WPMediaVerse\Admin\MediaListPage::class, 'handle_bulk_actions' ) );
+		}
+
+		// Documents — the backend entry point for the document library (Coding
+		// Rule 18). Documents never appear on a media surface, so without this
+		// screen a site owner could not see what members had uploaded.
+		// Only when something can show a document (Pro). A screen that can only
+		// ever be empty is worse than no screen.
+		$document_hook = self::documents_enabled() ? add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Documents', 'wpmediaverse' ),
+			__( 'Documents', 'wpmediaverse' ),
+			\WPMediaVerse\Admin\DocumentListPage::CAP,
+			\WPMediaVerse\Admin\DocumentListPage::SLUG,
+			array( \WPMediaVerse\Admin\DocumentListPage::class, 'render' )
+		) : '';
+		if ( $document_hook ) {
+			// Same reason as All Media above: row and bulk actions redirect, so
+			// they have to run before any output.
+			add_action( 'load-' . $document_hook, array( \WPMediaVerse\Admin\DocumentListPage::class, 'handle_actions' ) );
 		}
 
 		// Tags — tag management page.
@@ -1197,17 +1295,10 @@ class Plugin {
 			|| ( (bool) get_query_var( 'mvs_messages_page' )
 				&& ! apply_filters( 'mvs_buddynext_active', false ) );
 
-		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
-		$mvs_page_ids = array_filter(
-			array_map(
-				'absint',
-				array(
-					get_option( 'mvs_page_explore', 0 ),
-					get_option( 'mvs_page_dashboard', 0 ),
-					get_option( 'mvs_page_upload', 0 ),
-				)
-			)
-		);
+		// Detect mapped MVS pages — globals aren't set yet at enqueue time.
+		// From the slot map, so a page added later cannot be left without the
+		// plugin's own stylesheet the way Explore Documents was.
+		$mvs_page_ids = \WPMediaVerse\Core\SettingsHelper::all_page_ids();
 		$is_mvs_page  = is_page( $mvs_page_ids );
 
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
@@ -1229,6 +1320,7 @@ class Plugin {
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
 			wp_enqueue_script( 'mvs-dismissible' );
+			wp_enqueue_script( 'mvs-panel-toolbar' );
 			wp_enqueue_script( 'mvs-collection-filter' );
 			wp_enqueue_script( 'mvs-messages-scroll' );
 			wp_enqueue_script( 'mvs-album-cover' );
@@ -1492,6 +1584,21 @@ class Plugin {
 		// Dismissible callouts (logged-out CTA banner, profile prompt). No data
 		// or strings — pure localStorage hide-and-remember. Templates that emit
 		// a dismissible enqueue this handle in place of an inline snippet.
+		// Apply-on-change for `render_panel_toolbar()`. Registered globally beside
+		// the other delegated helpers and enqueued on MVS pages below — that one
+		// helper renders the toolbar on the drive, the dashboard panels, Explore
+		// Media and Explore Documents, so one script covers all four.
+		wp_register_script(
+			'mvs-panel-toolbar',
+			MVS_PLUGIN_URL . 'assets/js/frontend/panel-toolbar.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
 		wp_register_script(
 			'mvs-dismissible',
 			MVS_PLUGIN_URL . 'assets/js/frontend/dismissible.js',
@@ -1639,8 +1746,10 @@ class Plugin {
 	/**
 	 * Reorder the WPMediaVerse submenu for a logical admin experience.
 	 *
-	 * Order: Overview > separator > All Media > Add New > Tags > Categories >
-	 * Albums > Collections > separator > Settings > Moderation > Stats.
+	 * Groups (Wbcom Rule 2): Overview → Content → Moderation → Insights →
+	 * Tools → Settings last. Pro extends this list via its own reorder when
+	 * active; Free must still order every slug it registers so items like
+	 * Documents / Tags / Logs do not land in a random middle bucket.
 	 */
 	public static function reorder_submenu(): void {
 		global $submenu;
@@ -1650,23 +1759,48 @@ class Plugin {
 			return;
 		}
 
-		$order_map = array(
-			self::ADMIN_SLUG   => 1,
-			'mvs-media'        => 5,
-			'mvs-settings'     => 50,
-			'mvs-moderation'   => 51,
-			'mvs-stats'        => 52,
-			'mvs-integrations' => 53,
+		// Explicit order. Unknown slugs append at the end (hidden Setup, etc.).
+		$order = array(
+			// Dashboard.
+			self::ADMIN_SLUG,
+			// Content.
+			'mvs-media',
+			'mvs-documents',
+			'edit.php?post_type=mvs_album',
+			'edit.php?post_type=mvs_collection',
+			'mvs-tags',
+			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_album',
+			// Moderation / trust & safety queues.
+			'mvs-moderation',
+			'mvs-reports',
+			// Insights.
+			'mvs-stats',
+			// Tools.
+			'mvs-integrations',
+			'mvs-logs',
+			// Config — always last.
+			'mvs-settings',
 		);
 
-		usort(
-			$submenu[ $parent ],
-			function ( $a, $b ) use ( $order_map ) {
-				$a_order = $order_map[ $a[2] ] ?? 30;
-				$b_order = $order_map[ $b[2] ] ?? 30;
-				return $a_order - $b_order;
+		$by_slug  = array();
+		$leftover = array();
+		foreach ( $submenu[ $parent ] as $item ) {
+			$slug = $item[2] ?? '';
+			if ( in_array( $slug, $order, true ) ) {
+				$by_slug[ $slug ] = $item;
+			} else {
+				$leftover[] = $item;
 			}
-		);
+		}
+
+		$sorted = array();
+		foreach ( $order as $slug ) {
+			if ( isset( $by_slug[ $slug ] ) ) {
+				$sorted[] = $by_slug[ $slug ];
+			}
+		}
+
+		$submenu[ $parent ] = array_merge( $sorted, $leftover ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 	}
 
 	/**
@@ -1750,11 +1884,274 @@ class Plugin {
 	}
 
 	/**
-	 * Get the service container.
+	 * Resolve the Documents-screen meta capability.
+	 *
+	 * WordPress's `add_submenu_page()` takes ONE capability, and the answer here
+	 * is genuinely "either of two": an administrator, or a role the owner
+	 * delegated document administration to. Expressing that as a meta cap is the
+	 * WordPress-shaped way — the alternative, hardcoding `manage_mvs_documents`
+	 * on the menu, would take the screen away from any administrator on a site
+	 * where the grant had not run.
+	 *
+	 * Free defines this even though Pro owns the primitive. `user_can()` on a
+	 * capability nobody has granted is simply false, so on a Free-only site the
+	 * mapping resolves to `manage_options` and nothing changes.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $caps    Primitive capabilities required.
+	 * @param string   $cap     Capability being checked.
+	 * @param int      $user_id User being checked.
+	 * @return string[]
+	 */
+	public static function map_document_screen_cap( $caps, $cap, $user_id ): array {
+		if ( \WPMediaVerse\Admin\DocumentListPage::CAP !== $cap ) {
+			return (array) $caps;
+		}
+
+		return user_can( (int) $user_id, 'manage_mvs_documents' )
+			? array( 'manage_mvs_documents' )
+			: array( 'manage_options' );
+	}
+
+	/**
+	 * Whether anything on this site can actually show a document.
+	 *
+	 * Documents are a PRO feature. Free still has to KNOW what a document is —
+	 * `MediaTypes::DOCUMENT_LIBRARY` is what keeps them out of every media grid,
+	 * and `DocumentTypes` sits on Free's upload path — but Free must not put up
+	 * surfaces for a feature it cannot deliver. A Free-only site was getting an
+	 * `/explore-document/` page and a wp-admin Documents screen that could only
+	 * ever be empty.
+	 *
+	 * A filter rather than a class_exists check: Free asks whether the capability
+	 * is present and something else answers, which is the same seam the drive
+	 * already uses and keeps the dependency pointing one way.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	public static function documents_enabled(): bool {
+		/**
+		 * Filter whether document surfaces are available.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $enabled Default false — Free alone cannot show a document.
+		 */
+		return (bool) apply_filters( 'mvs_documents_enabled', false );
+	}
+
+	/**
+	 * Every privacy level a document may hold, tightest first.
+	 *
+	 * FREE CANNOT ASK PRO FOR THIS, which is the whole difficulty: Pro owns the
+	 * document feature and declares the canonical list in
+	 * `Documents\DocumentSettings::PRIVACY_VALUES`, but Pro may not be
+	 * installed, and Free needs the list anyway — to bound the label filter and
+	 * to allowlist the admin editor's save. So it is restated here and the two
+	 * are asserted identical by Pro's `DocumentSettingsTest`, which is the side
+	 * that can see both.
+	 *
+	 * `space` means "everyone who can read the drive this document sits on".
+	 * Free never resolves it — that is Pro's ladder — but Free must not drop it
+	 * on the way past.
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	public const DOCUMENT_PRIVACY_VALUES = array( 'private', 'space', 'members', 'public' );
+
+	/**
+	 * The labels for the document privacy levels.
+	 *
+	 * One source, because the admin editor and the member's drive were writing
+	 * their own copies of the same three options and had already drifted: the
+	 * admin screen hardcoded its own wording while every other surface read
+	 * `DocumentSettings::privacy_labels()` (Basecamp #10194230388). Free cannot
+	 * call that directly — Pro may not be installed — so it asks and Pro answers,
+	 * the same seam `documents_enabled()` uses.
+	 *
+	 * `$context` exists because the same VALUE is not the same SENTENCE depending
+	 * on who is reading it. A member setting their own document says "Only me". An
+	 * administrator editing somebody else's document is not "me", and offering
+	 * that wording on a screen whose next line already says "People the owner
+	 * shared it with…" would have the screen contradict itself in two adjacent
+	 * sentences. Values are identical in every context; only the wording moves.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $context 'self' (the owner is reading) or 'owner' (somebody
+	 *                        else is editing this member's document).
+	 * @return array<string, string> Privacy value => label.
+	 */
+	public static function document_privacy_labels( string $context = 'self' ): array {
+		$labels = array(
+			'private' => 'owner' === $context
+				? __( 'Only the owner', 'wpmediaverse' )
+				: __( 'Only me', 'wpmediaverse' ),
+			'space'   => __( 'Everyone on this drive', 'wpmediaverse' ),
+			'members' => __( 'All site members', 'wpmediaverse' ),
+			'public'  => __( 'Anyone', 'wpmediaverse' ),
+		);
+
+		/**
+		 * Filter the document privacy labels.
+		 *
+		 * Pro answers this with its canonical vocabulary so the drive, the
+		 * settings default and the admin editor cannot offer three different
+		 * names for one setting.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array<string, string> $labels  Privacy value => label.
+		 * @param string                $context 'self' or 'owner'.
+		 */
+		$labels = (array) apply_filters( 'mvs_document_privacy_labels', $labels, $context );
+
+		// The VALUES are a contract — a HOST may reword a label, never invent a
+		// level or drop one. `unlisted` reaching a dropdown is the exact thing
+		// the runbook's must-never table forbids.
+		//
+		// This intersect is a gate on the FILTER, not a second opinion about the
+		// vocabulary: when the plugin's own list grows, this must grow with it in
+		// the same commit, or Pro offers a level the admin editor silently drops
+		// — and a select rendered without the value it currently holds shows the
+		// first option instead and writes it on the next save. That is a
+		// privacy change nobody asked for, made by someone fixing a typo in a
+		// title. `space` came within one edit of shipping exactly that way.
+		return array_intersect_key( $labels, array_flip( self::DOCUMENT_PRIVACY_VALUES ) );
+	}
+
+	/**
+	 * Whether a PARTICULAR member may use the document library.
+	 *
+	 * `documents_enabled()` answers "does this site have documents at all".
+	 * This answers "are they for this person", and every member-facing document
+	 * surface asks it: the drive, folder creation, upload, sharing, the
+	 * dashboard section, the REST routes behind them.
+	 *
+	 * THE ANONYMOUS CASE IS DELIBERATE. With no user there is no role, so there
+	 * is no role question to answer, and this falls back to the site-wide
+	 * switch. Gating logged-out visitors on a capability would break every
+	 * anonymous share link and empty the public Explore Documents listing —
+	 * whether an already-public document can be read is a PRIVACY decision, made
+	 * by `PermissionService::can_view()`, and this must not second-guess it. The
+	 * consequence, stated plainly so nobody reads it as a bug: a member whose
+	 * role has been switched off still sees public documents after logging out,
+	 * exactly as any other visitor does.
+	 *
+	 * THE FILTER IS THE MEMBERSHIP SEAM. A role is the wrong shape for
+	 * "documents are part of the paid tier" — membership levels are per user and
+	 * change without the role changing. BuddyNext hooks `mvs_user_can_use_documents`
+	 * and answers per user; the role remains the default when nothing else
+	 * cares. That is why the filter runs LAST and can widen as well as narrow.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Optional. Defaults to the current user.
+	 * @return bool
+	 */
+	public static function user_can_use_documents( int $user_id = 0 ): bool {
+		if ( ! self::documents_enabled() ) {
+			return false;
+		}
+
+		$user_id = $user_id > 0 ? $user_id : get_current_user_id();
+
+		// No user, no role question — privacy decides from here.
+		$can = $user_id > 0
+			? user_can( $user_id, \WPMediaVerse\Capabilities\MediaCapabilities::USE_DOCUMENTS_CAP )
+			: true;
+
+		/**
+		 * Filter whether a given user may use the document library.
+		 *
+		 * The seam for membership-driven access: answer per user to put
+		 * documents behind a paid tier without touching WordPress roles.
+		 * Returning true widens as readily as returning false narrows, so a
+		 * membership plugin can grant documents to a role that does not have
+		 * the capability.
+		 *
+		 * Only reached when documents are switched on site-wide — the master
+		 * toggle is not overridable here by design.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $can     Whether the user's role allows document use.
+		 * @param int  $user_id User being asked about; 0 for a logged-out visitor.
+		 */
+		return (bool) apply_filters( 'mvs_user_can_use_documents', $can, $user_id );
+	}
+
+	/**
+	 * Register the dashboard's Documents tab.
+	 *
+	 * Only when the documents page actually exists. A tab pointing nowhere is
+	 * worse than no tab: it teaches a member that part of the product is broken.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $tabs Registered tabs.
+	 * @return array
+	 */
+	public static function register_documents_tab( array $tabs ): array {
+		$helpers = self::container()->get( 'template_helpers' );
+
+		// method_exists rather than a null check: the container always returns a
+		// helper, and what actually varies is whether this build has the
+		// document resolver at all.
+		if ( ! method_exists( $helpers, 'resolve_documents_url' ) ) {
+			return $tabs;
+		}
+
+		$url = $helpers->resolve_documents_url();
+
+		if ( '' === $url ) {
+			return $tabs;
+		}
+
+		$tabs[] = array(
+			'slug'  => 'documents',
+			'label' => __( 'Documents', 'wpmediaverse' ),
+			'url'   => $url,
+		);
+
+		return $tabs;
+	}
+
+	/**
+	 * Get the service container, building it if nothing has yet.
+	 *
+	 * ACTIVATION IS THE CASE THIS EXISTS FOR. `register_activation_hook` fires
+	 * synchronously, in the same request as the click, and BEFORE this plugin's
+	 * `plugins_loaded` callback — an inactive plugin never registered one, so
+	 * `init()` has not run and the container was still null. The signature
+	 * promises a `ServiceContainer`, so returning it threw a TypeError and
+	 * WordPress reported the whole thing as "Plugin could not be activated
+	 * because it triggered a fatal error", naming no line. On a fresh install
+	 * without Pro that happened every time: activation was fully blocked, not
+	 * just documents (Basecamp #10194150741).
+	 *
+	 * Eight call sites across `Activator`, `Migrator` and `TemplateLoader` are on
+	 * that path, so guarding the one that happened to be first would only have
+	 * moved the fatal a few lines down.
+	 *
+	 * Building here is free and cannot run ahead of WordPress: `register_services()`
+	 * only stores closures, and nothing inside one runs until `get()` asks for it.
+	 * `init()` calls this too, so there is still exactly one container per request.
+	 *
+	 * @since 2.4.0 Builds on demand instead of returning null.
 	 *
 	 * @return ServiceContainer
 	 */
 	public static function container(): ServiceContainer {
+		if ( ! self::$container instanceof ServiceContainer ) {
+			self::$container = new ServiceContainer();
+			self::register_services();
+		}
+
 		return self::$container;
 	}
 
@@ -2105,6 +2502,41 @@ class Plugin {
 		}
 	}
 
+	/**
+	 * Register the frontend + BP-integration stylesheets before BuddyPress runs.
+	 *
+	 * Hooked at `wp_enqueue_scripts@1` so both handles exist by the time
+	 * BuddyPress fires `bp_enqueue_scripts` from its own priority-10 callback.
+	 * See the comment at the `add_action` for the race this closes.
+	 *
+	 * Idempotent: `wp_register_style()` on an existing handle is a no-op, so
+	 * the registrations still sitting in `enqueue_frontend_assets()` remain
+	 * harmless and this cannot double-print anything.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return void
+	 */
+	public static function register_bp_shared_styles(): void {
+		if ( ! wp_style_is( 'mvs-frontend', 'registered' ) ) {
+			wp_register_style(
+				'mvs-frontend',
+				MVS_PLUGIN_URL . 'assets/css/frontend.css',
+				array(),
+				MVS_VERSION
+			);
+		}
+
+		if ( ! wp_style_is( 'mvs-bp-integration', 'registered' ) ) {
+			wp_register_style(
+				'mvs-bp-integration',
+				MVS_PLUGIN_URL . 'assets/css/bp-integration.css',
+				array( 'mvs-frontend' ),
+				MVS_VERSION
+			);
+		}
+	}
+
 	public static function register_lucide_script(): void {
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			return;
@@ -2255,16 +2687,13 @@ JS;
 			return true;
 		}
 
-		$mvs_page_ids = array_filter(
-			array_map(
-				'absint',
-				array(
-					get_option( 'mvs_page_explore', 0 ),
-					get_option( 'mvs_page_dashboard', 0 ),
-					get_option( 'mvs_page_upload', 0 ),
-				)
-			)
-		);
+		// From the slot map. This decides whether MediaVerse stands its ENTIRE
+		// frontend UI down on a BuddyNext site, so a page missing from the list
+		// does not merely lose a stylesheet — it renders with every `mvs-*`
+		// handle dequeued and deregistered by enforce_frontend_presence(), which
+		// is how Explore Documents came to serve its own search icon at 1140px
+		// square with no plugin CSS at all on this exact configuration.
+		$mvs_page_ids = SettingsHelper::all_page_ids();
 
 		return ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids );
 	}

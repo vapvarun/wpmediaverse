@@ -55,18 +55,24 @@ $mvs_archive_url = home_url( '/media/' );
 	<?php
 	// Profile user detection (set by TemplateLoader).
 	$mvs_profile = isset( $GLOBALS['mvs_profile_user'] ) ? $GLOBALS['mvs_profile_user'] : null;
+
+	// Resolved BEFORE the header branch, not inside it. These were assigned only
+	// when `! $mvs_profile`, yet read unconditionally further down (the toolbar's
+	// hidden inputs), so every profile route — /media/@user/ — emitted two
+	// "Undefined variable" warnings per request. The scattered `?? ''` and
+	// `! empty()` guards at the other read sites were the symptom of exactly
+	// that. One initialisation here makes every consumer safe on both branches.
+	$mvs_filter_tag = get_query_var( 'mvs_tag', '' );
+	if ( ! $mvs_filter_tag && isset( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		$mvs_filter_tag = sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+	}
+	$mvs_filter_cat = get_query_var( 'mvs_category', '' );
 	?>
 
 	<?php if ( ! $mvs_profile ) : ?>
 	<header class="mvs-explore-header">
 		<h1>
 		<?php
-		// Check for tag/category filter via query vars.
-		$mvs_filter_tag = get_query_var( 'mvs_tag', '' );
-		if ( ! $mvs_filter_tag && isset( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$mvs_filter_tag = sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-		}
-		$mvs_filter_cat = get_query_var( 'mvs_category', '' );
 
 		if ( $mvs_filter_tag ) {
 			$tag_term = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
@@ -137,7 +143,17 @@ $mvs_archive_url = home_url( '/media/' );
 				?>
 				</h2>
 				<?php if ( $mvs_is_own_profile ) : ?>
-					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_dashboard_link ); ?>">
+					<?php
+					// Link to the profile EDIT section, not the dashboard root —
+					// "Edit Profile" that lands on /my-media/ takes the member to a
+					// media grid, not a form (Basecamp 10226445842). The dashboard
+					// base is the fallback if the profile section has no URL.
+					$mvs_edit_profile_url = \WPMediaVerse\Core\DashboardSections::url( 'profile' );
+					if ( '' === $mvs_edit_profile_url ) {
+						$mvs_edit_profile_url = $mvs_dashboard_link;
+					}
+					?>
+					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_edit_profile_url ); ?>">
 						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
 					</a>
 				<?php elseif ( is_user_logged_in() ) : ?>
@@ -184,8 +200,18 @@ $mvs_archive_url = home_url( '/media/' );
 			</div>
 		</form>
 		<!-- User search results (populated via safe DOM methods) -->
-		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;"></div>
+		<?php
+		// data-wp-ignore: the People-search result cards are injected at runtime
+		// and are NOT in the server markup, so when the iAPI router morphs this
+		// region during a client-side navigation it has no counterpart for them
+		// and re-parents one into the destination's profile header (Basecamp
+		// 10230881780). Marking the container ignored makes the router treat this
+		// subtree as opaque and never move its children — a structural fix, not a
+		// timing race. The click handler in explore-search.js still empties it.
+		?>
+		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;" data-wp-ignore></div>
 	</div>
+
 	<?php
 // @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
 // enqueues this handle for every MVS-owned page. Enqueuing from a template body only
@@ -262,6 +288,17 @@ $mvs_archive_url = home_url( '/media/' );
 		$mvs_viewer_id = 0;
 	}
 
+	// SORT FROM THE URL, allowlisted. Explore has always been newest-first with
+	// no way to say otherwise, while the member's own library next door offers
+	// a field and a direction — the same feed, two different products depending
+	// which page you reached it from. An unknown value falls back rather than
+	// reaching the query, because `orderby` goes into SQL.
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view controls on a GET page.
+	$mvs_sort_request = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+	$mvs_sort         = in_array( $mvs_sort_request, array( 'created_at', 'title', 'views' ), true ) ? $mvs_sort_request : 'created_at';
+	$mvs_order        = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
 	$mvs_query_args = array(
 		'status'                  => 'publish',
 		'moderation_status'       => 'approved',
@@ -270,8 +307,8 @@ $mvs_archive_url = home_url( '/media/' );
 		'viewer_id'               => $mvs_viewer_id,
 		'exclude_non_cover_group' => true,
 		'exclude_empty_media_type' => true,
-		'orderby'                 => 'created_at',
-		'order'                   => 'DESC',
+		'orderby'                 => $mvs_sort,
+		'order'                   => $mvs_order,
 		'limit'                   => $per_page,
 		'offset'                  => $offset,
 	);
@@ -351,10 +388,130 @@ $mvs_archive_url = home_url( '/media/' );
 	$has_items = ! empty( $media_items );
 	?>
 
+	<?php
+	// THE SAME HELPER the drive and the dashboard panels use. `$total_items` has
+	// been computed by this template since the feed was written — it is what
+	// `$max_pages` divides — and was never displayed, so the busiest list on the
+	// site was the one that never said how much it held.
+	//
+	// Search is not passed: Explore has its own search bar above, with the
+	// people/media mode switch attached to it. Sort, direction and the count are
+	// what was missing.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_panel_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+		array(
+			'id'     => 'mvs-explore',
+			'form'   => true,
+			'class'  => 'mvs-explore__controls',
+			'hidden' => array_filter(
+				array(
+					's'            => $mvs_search,
+					'mvs_tag'      => $mvs_filter_tag,
+					'mvs_category' => $mvs_filter_cat,
+				)
+			),
+			'count'  => sprintf(
+				/* translators: %s: number of media items. */
+				_n( '%s item', '%s items', (int) $total_items, 'wpmediaverse' ),
+				number_format_i18n( (int) $total_items )
+			),
+			'sort'   => array(
+				'name'    => 'sort',
+				'label'   => __( 'Sort by', 'wpmediaverse' ),
+				'value'   => $mvs_sort,
+				'options' => array(
+					'created_at' => __( 'Date added', 'wpmediaverse' ),
+					'title'      => __( 'Title', 'wpmediaverse' ),
+					'views'      => __( 'Views', 'wpmediaverse' ),
+				),
+			),
+			'order'  => array(
+				'name'    => 'order',
+				'label'   => __( 'Direction', 'wpmediaverse' ),
+				'value'   => strtolower( $mvs_order ),
+				'options' => array(
+					'desc' => __( 'Newest first', 'wpmediaverse' ),
+					'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+				),
+			),
+			'submit' => __( 'Apply', 'wpmediaverse' ),
+		)
+	);
+	?>
+
 	<?php do_action( 'mvs_before_explore_grid' ); ?>
 
 	<?php if ( $has_items ) : ?>
 		<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
+		<?php
+		// Bulk actions on Explore.
+		//
+		// The tick boxes are rendered by render_grid_item() and ONLY on media
+		// the viewer owns, so this bar can never act on somebody else's photo —
+		// the gate is in the markup, not here. A moderator sees exactly what a
+		// member sees: one page at one URL, with no invisible capability
+		// changing what is drawn. Logged-out visitors get no tiles with boxes,
+		// so the bar never appears for them either.
+		if ( is_user_logged_in() ) :
+			wp_interactivity_state(
+				'mvs/explore',
+				array(
+					'i18n' => array(
+						/* translators: %d: number of selected items. */
+						'selected'      => __( '%d selected', 'wpmediaverse' ),
+						'deleteConfirm' => __( 'Delete the selected items? This cannot be undone.', 'wpmediaverse' ),
+						'deleted'       => __( 'Selected items deleted.', 'wpmediaverse' ),
+						'privacyDone'   => __( 'Privacy updated.', 'wpmediaverse' ),
+						'tagsAdded'     => __( 'Tags added.', 'wpmediaverse' ),
+						'movedToAlbum'  => __( 'Moved to album.', 'wpmediaverse' ),
+						'failed'        => __( 'Bulk action failed.', 'wpmediaverse' ),
+						/* translators: 1: number changed. 2: number selected. 3: number skipped. */
+						'partial'       => __( '%1$d of %2$d updated. %3$d were not yours to change.', 'wpmediaverse' ),
+					),
+				)
+			);
+			?>
+			<div class="mvs-bulk-bar" data-wp-interactive="mvs/explore"
+				<?php echo wp_interactivity_data_wp_context( array( 'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				data-wp-on-document--keydown="actions.exploreBulkKeydown"
+				data-wp-bind--hidden="!state.hasBulk" hidden
+				role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
+				<span class="mvs-bulk-count" data-wp-text="state.bulkLabel"></span>
+
+				<label class="mvs-bulk-privacy-label">
+					<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
+					<select class="mvs-bulk-privacy" data-wp-on--change="actions.setExploreBulkPrivacy">
+						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+					</select>
+				</label>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkPrivacy" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+
+				<label class="mvs-bulk-album-label">
+					<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+					<select class="mvs-bulk-album" data-wp-on--change="actions.setExploreBulkAlbum" data-wp-on--focus="actions.ensureExploreAlbums">
+						<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+						<template data-wp-each="state.bulkAlbums">
+							<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
+						</template>
+					</select>
+				</label>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+
+				<label class="mvs-bulk-tags-label">
+					<span class="screen-reader-text"><?php esc_html_e( 'Tags to add to selected', 'wpmediaverse' ); ?></span>
+					<input type="text" class="mvs-bulk-tags" placeholder="<?php esc_attr_e( 'Add tags (comma separated)', 'wpmediaverse' ); ?>"
+						data-wp-bind--value="state.bulkTags" data-wp-on--input="actions.setExploreBulkTags" />
+				</label>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkTags" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add tags', 'wpmediaverse' ); ?></button>
+
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--danger" data-wp-on--click="actions.exploreBulkDelete"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.selectAllExploreBulk"><?php esc_html_e( 'Select all', 'wpmediaverse' ); ?></button>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.clearExploreBulk"><?php esc_html_e( 'Clear', 'wpmediaverse' ); ?></button>
+			</div>
+			<?php
+		endif;
+		?>
 		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style() ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
 			<?php
 			// Render albums first.
@@ -429,7 +586,13 @@ $mvs_archive_url = home_url( '/media/' );
 				\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 					$item_id,
 					$my_stats,
-					array( 'show_author' => true )
+					// `bulk` is opt-in per surface: the same helper renders
+					// albums, collections and both BuddyPress tabs, and only
+					// Explore asked for selection.
+					array(
+						'show_author' => true,
+						'bulk'        => is_user_logged_in(),
+					)
 				);
 			endforeach;
 			?>

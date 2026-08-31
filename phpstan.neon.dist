@@ -8,6 +8,10 @@ parameters:
         - includes/
     scanFiles:
         - wpmediaverse.php
+        # Action Scheduler is bundled under libs/ rather than installed by
+        # Composer, so PHPStan no longer discovers its global as_*() API through
+        # the vendor autoloader. Three services call it behind function_exists().
+        - libs/action-scheduler/functions.php
     ignoreErrors:
         -
             message: '#(BuddyPress|bp_|BP_)#'

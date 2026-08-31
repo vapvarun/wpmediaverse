@@ -9,6 +9,8 @@
 
 namespace WPMediaVerse\Services;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -55,44 +57,12 @@ class StatsService {
 	 * @return array Aggregated stats.
 	 */
 	public function get_for_user( int $user_id ): array {
-		global $wpdb;
-
-		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT
-					COUNT(*) as total_media,
-					COALESCE(SUM(s.views), 0) as total_views,
-					COALESCE(SUM(s.downloads), 0) as total_downloads,
-					COALESCE(SUM(s.reactions), 0) as total_reactions,
-					COALESCE(SUM(s.comments), 0) as total_comments,
-					COALESCE(SUM(s.shares), 0) as total_shares
-				FROM {$wpdb->prefix}mvs_media_index i
-				INNER JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
-				WHERE i.post_author = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id
-			),
-			ARRAY_A
-		);
-
-		if ( ! $row ) {
-			return array(
-				'total_media'     => 0,
-				'total_views'     => 0,
-				'total_downloads' => 0,
-				'total_reactions' => 0,
-				'total_comments'  => 0,
-				'total_shares'    => 0,
-			);
-		}
-
-		return array(
-			'total_media'     => (int) $row['total_media'],
-			'total_views'     => (int) $row['total_views'],
-			'total_downloads' => (int) $row['total_downloads'],
-			'total_reactions' => (int) $row['total_reactions'],
-			'total_comments'  => (int) $row['total_comments'],
-			'total_shares'    => (int) $row['total_shares'],
-		);
+		// Through the repository (P1.2). `total_media` counts MEDIA — the type
+		// group and the deliberate absence of a status filter both live in
+		// MediaRepository::user_media_totals(), documented there.
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->user_media_totals( $user_id );
 	}
 
 	/**

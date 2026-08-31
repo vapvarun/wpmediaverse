@@ -48,14 +48,14 @@ class ModerationQueue {
 		}
 		$badge = $counts['flagged'];
 
-		$menu_title = __( 'Media Moderation', 'wpmediaverse' );
+		$menu_title = __( 'Moderation', 'wpmediaverse' );
 		if ( $badge > 0 ) {
 			$menu_title .= sprintf( ' <span class="awaiting-mod">%d</span>', $badge );
 		}
 
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
-			__( 'Media Moderation', 'wpmediaverse' ),
+			__( 'Moderation', 'wpmediaverse' ),
 			$menu_title,
 			'manage_options',
 			self::PAGE_SLUG,
@@ -213,7 +213,7 @@ class ModerationQueue {
 				<div class="mvs-page-header__left">
 					<h1 class="mvs-page-header__title">
 						<i data-lucide="shield-check"></i>
-						<?php esc_html_e( 'Media Moderation', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Moderation', 'wpmediaverse' ); ?>
 					</h1>
 					<p class="mvs-page-header__desc"><?php esc_html_e( 'Review and manage flagged, pending, and reported media items.', 'wpmediaverse' ); ?></p>
 				</div>

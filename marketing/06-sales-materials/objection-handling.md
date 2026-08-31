@@ -12,13 +12,13 @@ rtMedia has a free version, yes. But the features people typically need — clou
 
 More importantly, they are different products at this point. rtMedia was built years ago and its architecture reflects that. It uses WordPress post types and meta tables for media storage, which works at small scale but creates real performance issues on active communities. WPMediaVerse uses custom tables built specifically for media queries.
 
-The feature gap is also significant. rtMedia does not have Photo Battles, Tournaments, or a Challenge engine. It does not have video transcoding with HLS and chapters. It does not have AI moderation in the free version. These are not minor additions — they are different categories of functionality.
+The feature gap is also significant. rtMedia does not have Photo Battles, Tournaments, or a Challenge engine. It does not have video chapters, resume playback, or auto-captions. Be precise about transcoding if it comes up: rtMedia never had it in core either — it was the separate Transcoder plugin, which rtCamp has discontinued in favour of GoDAM. Neither product transcodes in core, so it is not a differentiator in either direction. It does not have AI moderation in the free version. These are not minor additions — they are different categories of functionality.
 
 If you genuinely only need basic photo upload and album support, rtMedia's free tier may be all you need. If you want a media platform that can run competitions, handle video properly, and scale with your community, WPMediaVerse is the better fit.
 
 **Short version for sales conversations:**
 
-rtMedia free is for basic upload and albums. WPMediaVerse free includes AI moderation and BuddyPress integration. Pro adds things rtMedia does not have at any price: competitions, video transcoding, and a gamification engine. Compare the full products, not just the free tiers.
+rtMedia free is for basic upload and albums. WPMediaVerse free includes AI moderation and BuddyPress integration. Pro adds things rtMedia does not have at any price: competitions, video chapters and auto-captions, and a gamification engine. Compare the full products, not just the free tiers.
 
 ---
 
@@ -26,7 +26,7 @@ rtMedia free is for basic upload and albums. WPMediaVerse free includes AI moder
 
 **The honest answer:**
 
-You probably do not need to switch — WPMediaVerse can work alongside BuddyBoss. If you are using BuddyBoss Platform and happy with it, WPMediaVerse adds the media layer that BuddyBoss's built-in media tools do not provide: photo competitions, cloud storage routing, video transcoding, and per-user storage quotas.
+You probably do not need to switch — WPMediaVerse can work alongside BuddyBoss. If you are using BuddyBoss Platform and happy with it, WPMediaVerse adds the media layer that BuddyBoss's built-in media tools do not provide: photo competitions, cloud storage routing, video chapters and captions, and per-user storage quotas.
 
 That said, if you are evaluating options before committing to BuddyBoss, here is the real comparison:
 
@@ -54,13 +54,13 @@ The areas where performance depends on your setup:
 
 **Media files:** If you are using local storage (default), large files are served from your hosting server. On a shared host with 500+ active users, that will eventually create load. The Pro cloud storage integration — S3 and BunnyCDN — offloads file serving entirely. That is the recommended setup for any site expecting significant media volume.
 
-**Video transcoding:** Transcoding happens asynchronously via a background queue. It does not block page loads, but it does use server CPU. On a resource-constrained server, active transcoding will compete with other processes. A dedicated or managed server is the right environment for video-heavy sites.
+**Video:** MediaVerse does not transcode. It stores and plays the original uploaded file, so there is no encoding queue competing with your site for CPU and no FFmpeg to install — which is why it runs on shared hosting where an encoding pipeline would not. The honest trade is bandwidth rather than CPU: a large source file is served as uploaded, so a video-heavy site should set an upload size limit and pair Pro's cloud storage with a CDN.
 
 **AI moderation:** Moderation checks run on upload, not on page load. They add a few hundred milliseconds to the upload process, not to browsing.
 
 **Short version for sales conversations:**
 
-WPMediaVerse is more efficient than post-based media plugins for database queries. File serving performance depends on your hosting and whether you use cloud storage (recommended for active communities). Transcoding runs in the background and does not affect page loads.
+WPMediaVerse is more efficient than post-based media plugins for database queries. File serving performance depends on your hosting and whether you use cloud storage (recommended for active communities). Video is served as uploaded rather than re-encoded, so there is no background encoding load at all.
 
 ---
 
@@ -68,7 +68,7 @@ WPMediaVerse is more efficient than post-based media plugins for database querie
 
 **The honest answer:**
 
-Fair concern. WPMediaVerse is built modularly — features load conditionally, not all at once. If you are using the free version for basic photo uploads and albums, you are not loading the gamification engine, the video transcoder, or the cloud storage layer. Those are Pro modules that only initialise when Pro is active and configured.
+Fair concern. WPMediaVerse is built modularly — features load conditionally, not all at once. If you are using the free version for basic photo uploads and albums, you are not loading the gamification engine, the video analytics layer, or the cloud storage layer. Those are Pro modules that only initialise when Pro is active and configured.
 
 The free version ships with: photo upload, albums, an Instagram-style feed, reactions, comments, DMs, follows, AI moderation, and BuddyPress integration. That is it. No competition engine, no cloud storage configuration, no quota management UI. The admin panel reflects what is active.
 

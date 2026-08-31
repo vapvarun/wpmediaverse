@@ -29,6 +29,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_dashboard', array( $this, 'render_dashboard' ) );
 		add_shortcode( 'mvs_collection', array( $this, 'render_collection' ) );
 		add_shortcode( 'mvs_profile_edit', array( $this, 'render_profile_edit' ) );
+		add_shortcode( 'mvs_documents', array( $this, 'render_documents' ) );
 		add_shortcode( 'mvs_explore_feed', array( $this, 'render_explore_feed' ) );
 		add_shortcode( 'mvs_lock_overlay', array( $this, 'render_lock_overlay' ) );
 		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
@@ -363,10 +364,6 @@ class Shortcodes {
 	 */
 	public function render_dashboard( $atts ): string {
 		if ( ! is_user_logged_in() ) {
-			wp_enqueue_style( 'mvs-frontend' );
-			if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
-				wp_enqueue_script( 'mvs-lucide' );
-			}
 			$return_url = get_permalink();
 			$login_url  = \WPMediaVerse\Core\TemplateHelpers::login_url( $return_url );
 			$signup_url = function_exists( 'wc_registration_url' )
@@ -814,6 +811,172 @@ class Shortcodes {
 
 		ob_start();
 		require \WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/usage-history.php';
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render the [mvs_documents] shortcode — the public document listing.
+	 *
+	 * Documents get their own page rather than a corner of Explore (owner,
+	 * 2026-08-09). Two reasons, and the first is visible in a screenshot: a media
+	 * grid draws pictures, a PDF has none, so a document in one renders as a
+	 * broken tile. The second is that a single document's back link needs
+	 * somewhere honest to point — sending a member to a grid their item is not in
+	 * is worse than no link.
+	 *
+	 * ROWS, NOT TILES, per the display contract: a grid of identical PDF icons
+	 * carries no information, so each document is a row with a type chip, an
+	 * owner and a date.
+	 *
+	 * Lists PUBLIC documents only. Private ones live in the member's drive, which
+	 * is a different surface with a different permission model — this page never
+	 * tries to answer "what may this viewer see", it lists what is already public.
+	 *
+	 * Usage: [mvs_documents per_page="20"]
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_documents( $atts ): string {
+		// Documents switched off means OFF, on this page too.
+		//
+		// Found in the browser rather than in review: with the master toggle
+		// unticked the dashboard tab and the admin screen both went away, and
+		// this page carried on listing documents — every row linking to a single
+		// page that no longer renders anything, because the viewer is one of the
+		// surfaces the switch takes down. A member would have met a list of dead
+		// links on the one document page still standing.
+		//
+		// Editors get told why the page went blank; visitors get nothing rather
+		// than an explanation of a setting that is none of their business.
+		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
+			return current_user_can( 'manage_options' )
+				? '<p class="mvs-documents__notice">' . esc_html__( 'Documents are switched off in WPMediaVerse settings, so this page has nothing to list.', 'wpmediaverse' ) . '</p>'
+				: '';
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'per_page' => 20,
+				'type'     => '',
+				'folder'   => 0,
+			),
+			$atts,
+			'mvs_documents'
+		);
+
+		// `folder` scopes the list to one folder, which needs the folder tree
+		// AND the permission ladder — both Pro's. Rather than a second seam,
+		// this reuses the one the drive already goes through, so a folder list
+		// in a post and a folder in the drive cannot render differently.
+		$mvs_doc_folder_att = (int) $atts['folder'];
+
+		if ( $mvs_doc_folder_att > 0 ) {
+			$mvs_doc_folder_html = (string) apply_filters(
+				'mvs_documents_drive_html',
+				'',
+				'my-drive',
+				array(
+					'folder' => $mvs_doc_folder_att,
+					'page'   => max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				)
+			);
+
+			// Empty means nothing can render a folder here — Pro absent. Saying
+			// so to an editor beats printing nothing and looking broken.
+			if ( '' === $mvs_doc_folder_html ) {
+				return current_user_can( 'edit_posts' )
+					? '<p class="mvs-documents__notice">' . esc_html__( 'Folder listings need WPMediaVerse Pro.', 'wpmediaverse' ) . '</p>'
+					: '';
+			}
+
+			return $mvs_doc_folder_html;
+		}
+
+		$mvs_doc_per_page = max( 1, min( 100, (int) $atts['per_page'] ) );
+		$mvs_doc_page     = max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$mvs_doc_filter   = sanitize_key( (string) ( $_GET['doc_type'] ?? $atts['type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		// Which view: the public listing, or one of the drive's virtual roots.
+		// An unknown value falls back to the public listing rather than to an
+		// empty screen — a mistyped URL should show something real.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$mvs_doc_root   = sanitize_key( (string) ( $_GET['drive'] ?? '' ) );
+		$mvs_doc_folder = isset( $_GET['folder'] ) ? absint( $_GET['folder'] ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		if ( ! in_array( $mvs_doc_root, array( 'my-drive', 'shared', 'recent' ), true ) ) {
+			$mvs_doc_root   = '';
+			$mvs_doc_folder = 0;
+		}
+
+		// `?drive=my-drive|shared|recent` is a VIRTUAL ROOT of the member's own
+		// drive - a different concept from the public listing below, and it
+		// needs the same seam the `folder` attribute already uses two branches
+		// up. Before this fix, `$mvs_doc_root` was computed correctly (for the
+		// template's chrome/heading) but never actually used to choose a data
+		// source: every root, including 'shared', silently fell through to
+		// `public_documents()` below - so `?drive=shared` rendered the PUBLIC
+		// listing under a "Shared with me" heading. Confirmed 2026-08-11 combo
+		// QA (F1): a real grant existed and `GET /mvs-pro/v1/me/shared`
+		// returned it correctly, proving the REST controller's query was
+		// always right - only this page template's query was wrong. Route
+		// through the SAME `mvs_documents_drive_html` filter the folder branch
+		// uses, so there is one seam for "this needs Pro's drive", not two
+		// that can drift apart again.
+		if ( '' !== $mvs_doc_root ) {
+			$mvs_doc_root_html = (string) apply_filters(
+				'mvs_documents_drive_html',
+				'',
+				$mvs_doc_root,
+				array(
+					'page' => max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				)
+			);
+
+			if ( '' === $mvs_doc_root_html ) {
+				return current_user_can( 'edit_posts' )
+					? '<p class="mvs-documents__notice">' . esc_html__( 'This drive view needs WPMediaVerse Pro.', 'wpmediaverse' ) . '</p>'
+					: '';
+			}
+
+			return $mvs_doc_root_html;
+		}
+
+		wp_enqueue_style( 'mvs-frontend' );
+		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			wp_enqueue_script( 'mvs-lucide' );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only listing control.
+		$mvs_doc_search = isset( $_GET['doc_s'] ) ? sanitize_text_field( wp_unslash( $_GET['doc_s'] ) ) : '';
+
+		// Only the types this site actually HAS, so no chip is a dead end.
+		$mvs_doc_type_counts = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->document_type_counts(
+			array( 'public_only' => true )
+		);
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only listing controls.
+		$mvs_doc_sort_req = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+		$mvs_doc_sort     = in_array( $mvs_doc_sort_req, array( 'created_at', 'title', 'file_size' ), true ) ? $mvs_doc_sort_req : 'created_at';
+		$mvs_doc_order    = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		$mvs_doc_query = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->public_documents(
+			array(
+				'per_page' => $mvs_doc_per_page,
+				'page'     => $mvs_doc_page,
+				'doc_type' => $mvs_doc_filter,
+				'search'   => $mvs_doc_search,
+				'orderby'  => $mvs_doc_sort,
+				'order'    => $mvs_doc_order,
+			)
+		);
+
+		ob_start();
+		require \WPMediaVerse\Core\TemplateLoader::locate( 'documents.php' ) ?: MVS_PLUGIN_DIR . 'templates/documents.php';
 		return (string) ob_get_clean();
 	}
 }

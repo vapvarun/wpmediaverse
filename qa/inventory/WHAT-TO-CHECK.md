@@ -28,6 +28,13 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | `/messages/` | conversation list + composer | "start a conversation" CTA |
 | BP `/members/{user}/media/` | real thumbnails (not page URL) | empty state, no broken img tags |
 | BP `/groups/{slug}/media/` | group media | "no media in this group" |
+| `/explore-document/` public listing | rows (never tiles) with type chip, size, author, pagination | "no documents yet" / filtered → "nothing matches that filter" + browse-all |
+| `/explore-document/?drive=my-drive` | folders first, then documents; upload button; filter + sort | "your drive is empty" — and it says uploads are private until shared |
+| `/explore-document/?drive=my-drive&folder=N` | folder contents + breadcrumb trail | "this folder is empty"; a folder that is not yours → "that folder is not available" (never "forbidden") |
+| `/explore-document/?drive=shared` | documents others shared, including ones in folders you cannot open | "nothing shared with you yet" |
+| `/explore-document/?drive=recent` | newest first across every folder | "nothing here yet" |
+| `/media/{slug}/` single DOCUMENT | tier 1 PDF in a frame; tier 2 rendered HTML; tier 3/4 card — plus Download, and Share for those who may grant | file missing → "the file for this document is missing", not an empty box |
+| wp-admin → WPMediaVerse → Documents | paginated table, search + type + privacy filters, sortable, row + bulk actions | "no documents uploaded yet" / filtered → "no documents match these filters" + clear-filters |
 | Lightbox | image + sidebar (reactions + favorites + comments + share) | state resets cleanly between items |
 | Admin WPMediaVerse Overview | stat cards with numbers | seeded-zero state with guidance |
 | Admin Moderation Queue | flagged items with actions | "queue clear" celebration state |
@@ -61,7 +68,7 @@ Render rule (standing): every row above must produce visible output in both popu
 
 | Surface | Locked spec | Regression history |
 |---------|-------------|-------------------|
-| Activity composer preview (1 image) | Compact tile 120-150px wide, 1:1 aspect, `max-height: 150px`. Consistent with multi-image grid cells. Never a "hero preview". | Regressed in `ba9f711` (2026-04-22) to 200-320px hero; restored in `04175ec` (2026-04-24). |
+| Activity composer preview (1 image) | Fixed **64px** square, 1:1 aspect, same size regardless of file count. Never a "hero preview" (200-320px). | Regressed in `ba9f711` (2026-04-22) to 200-320px hero; restored in `04175ec` (2026-04-24). **Row corrected 2026-08-11:** it had said 120-150px, but `bp-integration.css` has carried an explicit `width:64px; height:64px` with the rationale "fixed 64px square regardless of file count so the preview strip stays predictable; no grid-N-up variants needed". The guard that matters is *not a hero*, and 64px satisfies it — the older number was the doc, not the code. |
 | Activity composer preview (2-6 images) | CSS Grid with per-count column templates (`mvs-preview-grid-2` → 2col, `-3` → 3col, `-4` → 2x2, `-5/6` → 3col). Collapses to 2col at ≤640px. | — |
 | Streak badge in display name | Must carry both `title` AND `aria-label` with identical copy. `wp_kses` allowlists for `span` in display-name render paths must include `aria-label`. | F3 (5 surfaces, fixed 2026-04-23). |
 | Plugin-mapped URL render paths | Must emit `mvs-frontend` CSS + `mvs-lucide` JS on every page that uses plugin markup. Integrations that enqueue their own scripts MUST register-if-absent + enqueue `mvs-lucide` when any `data-lucide` attribute is in their output. | Missed on 404 (fixed `c5231b9`) and BP activity composer (fixed `e466cf9`). Architectural fix pending — central `Plugin::ensure_frontend_assets()` helper so integrations don't re-solve the same puzzle. |
@@ -69,6 +76,13 @@ Render rule (standing): every row above must produce visible output in both popu
 | Activity composer attach-media + privacy alignment | `#mvs-activity-media-btn` and `#mvs-activity-privacy` render on the same row inside `.mvs-activity-media-btn-wrap` (flex row, 10px gap). Both at `min-height: 36px`, matching `4px` border-radius, `13px` font-size, `1px` border. Select uses custom chevron SVG, not native UA arrow. `yDelta` between their top edges must be 0px on wb-reign-theme. | Regressed repeatedly because raw CSS rules targeting `<select>` inside `#whats-new-form #whats-new-options` in Reign's `main.min.css` have specificity `(3,1,3)` with `height: 42px`; our rule must anchor at `#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy` (specificity `5,1,0`) and force `height: auto`. |
 | BP CSS file ownership | **All BP-specific CSS lives in `assets/css/bp-integration.css`**, scoped under `#buddypress` (and `.activity-list` where an AJAX-injected activity stream can render outside `#buddypress`). `frontend.css` is for generic plugin frontend only: design tokens, templates, shortcodes, blocks, dashboard, single-media, lightbox. `ActivityFormIntegration`, `ProfileTabIntegration`, `GroupTabIntegration` all enqueue both stylesheets. A new BP rule added to `frontend.css` is a bug — move it to `bp-integration.css`. | Entire BP rule set (~2500 lines across 5+ sections) was initially accumulated in `frontend.css` because `ActivityFormIntegration` only enqueued `mvs-frontend`. Dead `.theme-flavor` selectors, duplicate `.mvs-activity-media-btn` class/ID pairs, and a broken dangling `.theme-flavor` selector merging into a sibling rule all landed as consequence. Migrated in commits `8f63b3b` → `df15593` (2026-04-24). |
 | Lightbox 6-reaction a11y | Each of `Like / Love / Haha / Wow / Sad / Angry` carries `aria-label` (sentence-form), `aria-pressed` toggle, and the emoji span has `aria-hidden="true"`. Group wrapper has `role="group" aria-label="Reactions"`. Toolbar buttons (Share / Open / Favorite / Report / Download / Fullscreen) all carry `aria-label`. `:focus-visible` outline on `.mvs-lightbox-action / -close / -nav` so keyboard nav is visible. | A11y pass 2026-05-03 (`51d95ba` + `c250f75`). Drift = screen-reader-only users see emoji glyphs only, no semantic action name. |
+| **A document must never appear on a MEDIA surface** | Explore, the media grid, album items, activity, `/media?media_type=document`, and the admin All Media list all carry POSITIVE type predicates (`MediaTypes::MEDIA_LIBRARY`). A grid draws pictures; a PDF has none, so a document in a grid is a broken tile, not content. `/mvs/v1/media?media_type=document` answers **400 `mvs_document_route`** with `mvs_media_feed_allows_documents` as the escape hatch. | Owner reversal 2026-08-09, WITH A SCREENSHOT of a quarantined PDF rendering as a broken tile in Explore. `legacy_document` was in `MEDIA_LIBRARY` until then. Release-blocker journey: `audit/journeys/security/07-document-never-in-media-surface.md`. |
+| **Breadcrumbs must never name an ancestor the viewer cannot open** | `PermissionService::visible_breadcrumbs()` returns only permitted ancestors plus a `truncated` flag; the hidden part renders as an ellipsis with an accessible label, never a name and never a link. **Check the JSON, not just the rendered crumb.** | Folder names carry client identities and project codenames — an ancestor crumb is an information leak, not a display bug. P9.2 release blocker. Verified both in the JSON (`{"truncated":true,"crumbs":[]}`) and in the page HTML. |
+| Cancelling an upload leaves NO orphan row | `DocumentIngestService` writes the index row only AFTER the whole body has arrived and every guard has run. Abort ⇒ the server never reaches that point. Never create-a-row-then-stream-into-it. | P9.4. Proving it needs a file big enough to still be in flight — a small file "cancelled" has already finished sending, and a clean count then proves refusal, not abort. |
+| Share modal a11y | Trigger is a `<button>`. Focus moves into the dialog, Tab wraps forward, **Shift+Tab wraps backward**, ESC closes AND returns focus to the trigger. | P9.5. Shift+Tab is the half people forget, and it is the half that drops focus into browser chrome. |
+| An un-indexed search says "indexing", never "no results" | Every search response carries an `index` block (`disabled\|empty\|indexing\|partial\|ready`), and `/app/config` exposes the same. | P8.4. The schema lands six phases before extraction fills it; a search box answering 0 for every query reads as broken, and the member concludes their document is gone. |
+| Document embeds resolve permission for the READER, every render | `[mvs_document]` and both blocks check `can_view()` for the current viewer on every render. No caching, no transient, no resolved-at-save. **No oEmbed and no auto-embed on paste.** | WordPress's internal-link embed renders with the AUTHOR's permission at save time and caches it — one editor's access becomes everyone's. P10.3. |
+| A refused document is silent, not explained | Delivery routes answer **404**, never 403; the shortcode renders nothing for a stranger. | A 403 confirms the document exists, and for a filename carrying a client name that is itself the leak. |
 | Share button must NOT show `window.prompt` fallback | `lightboxShare` action: try `navigator.share()` → `navigator.clipboard.writeText()` → toast on failure. Never `window.prompt()`. The third popup ("Copy this link:") is a shipping bug. | Removed during 1.2.0 RC walkthrough — customer flagged the ugly browser-native prompt screenshot. |
 | `mvs_pro_*` option prefix on Pro side | Every Pro-owned setting carries `mvs_pro_` prefix. Activation migration copies any unprefixed `mvs_*` value once on first 1.2.0 boot then deletes the old key. | Renamed in 1.2.0 to avoid Free namespace collision. A regression here = duplicate options + drift. |
 | Block render must enqueue Layout assets (Pro Rule 6) | Any Pro block whose `render.php` instantiates a `WPMediaVersePro\Frontend\Layouts\*` class MUST call `$layout->enqueue_assets()` in the same file. Idempotent — `wp_enqueue_*` dedupes by handle. | Enforced by `bin/coding-rules-check.sh` Rule 6. The bug class shipped briefly in 1.2.0 — feed blocks instantiated Layout but never enqueued per-layout CSS, so SVG icons rendered at viewBox-default size. Locked 2026-05-03. |
@@ -164,6 +178,17 @@ For each: saving it should change what users see or what the system allows.
 
 Every key must have at least one reader in `templates/` or `includes/**/Service.php`. A setting with no reader is dead weight — flag it.
 
+### Document library
+
+| Setting / filter | Must change |
+|---|---|
+| `mvs_media_library_types` filter | The escape hatch for the Total Media count and every media surface. Adding `legacy_document` back restores pre-2.4.0 counting — this is what makes the default change legal under Production Rule 3 |
+| `mvs_media_feed_allows_documents` filter | Re-opens `/mvs/v1/media?media_type=document`, which otherwise answers 400 |
+| `mvs_pro_document_extraction_enabled` filter | Stops text extraction. The Action Scheduler hooks stay registered regardless, so jobs queued before it was switched off do not retry forever against nothing |
+| `mvs_document_viewer_html` filter | What the single-document page renders. Returning '' must fall back to Free's download card, never to a blank slot |
+| `mvs_documents_drive_html` filter | The drive tabs. Returning '' must mean the tabs are not OFFERED — never a tab that opens onto nothing |
+| Storage guard (`.htaccess` + nginx rule + canary) | `probe_public_access()` must ASK THE SERVER over HTTP. nginx ignores `.htaccess`, so a file-presence check reported "protected" while the document served at 200 |
+
 ---
 
 ## 4. Data stores that must have matched writers + readers
@@ -183,6 +208,10 @@ Every key must have at least one reader in `templates/` or `includes/**/Service.
 | `mvs_competitions` + `_entries` + `_votes` + `_matches` | `BattleService` / `ChallengeService` / `TournamentService` | `/compete/`, detail pages, admin managers |
 | `mvs_boosts` | `BoostService::create()` | feed ranking, boost indicator |
 | `mvs_quota_packages` + `mvs_credit_log` | admin | `QuotaService::can_upload()`, usage widget |
+| `mvs_media_index.folder_id` (Free v27) | `DocumentIngestService`, `FolderService` moves | `drive_documents()` via `KEY doc_listing`. **Must be in `MediaRepository::$index_columns`** — when it was not, every write silently went to `mvs_media_meta` and the index matched nothing |
+| `mvs_pro_folders` (Pro v11) | `FolderService::create/rename/move/trash` | the drive, breadcrumbs, folder REST routes, `[mvs_documents folder]` |
+| `mvs_pro_document_search` (Pro v12) | `ExtractionService::extract()` — writes a row for EVERY outcome, including `unsupported` | `SearchService` FULLTEXT + `readiness()`. A missing row means "not looked at yet", which is why failures are recorded rather than skipped |
+| `mvs_access_grants.token_hash` (link shares) | `PermissionController::create_link()` | `PermissionService::permission_from_link()`. **This pair was broken end to end**: tokens were minted and stored and nothing ever read them back, so every share link 404'd |
 | `_mvs_current_streak` user meta | streak cron | streak badge filter, streak widget |
 
 Any store written but never read = wasted I/O + confusing data. Any store read but never written = silent zero everywhere. Either direction is a bug.
@@ -198,6 +227,25 @@ When any of these diverge, UI silently breaks (the envelope-drift class):
 - Block attribute schema ↔ `render.php` expected attributes
 - Hook signatures ↔ callers (filter `mvs_*` arg count + types match)
 - Cron schedule names ↔ `wp_schedule_event()` callers (typos = silent no-op)
+- **`doc_type` ↔ stored `file_type`** — `doc_type` is NOT a column; everything re-derives it via `group_for_mime()`. So the MIME ingest stores must round-trip back to the type it resolved, or the decision is silently lost (`.md` sniffs as `text/plain` and became a text document)
+- **Route `args` ↔ service expectations** — `doc_type` was `required` on the upload route while the ingest treated it as optional, which locked out browser uploads entirely
+- **Action vs filter names share ONE registry** — `mvs_dashboard_tabs` is an action with subscribers that echo; `apply_filters()` on that name would print their markup mid-filter and assign `null`. Registry data goes through the separate `mvs_dashboard_tab_registry`
+- **Extension-derived MIME ↔ byte-sniffed MIME** — `wp_check_filetype_and_ext()` returns the MIME derived from the EXTENSION for non-images, so any check that only fires on a sniffed value is unreachable in production (the OOXML archive-marker check was, for months of test-green)
+
+### 2.4.0 integration seams — each is a contract another plugin depends on
+
+These are filters and actions a sibling plugin binds to. They break silently: nothing in this
+plugin fails, the OTHER plugin just stops working, and the first report is from a customer running
+both. Each has an executable journey and a smoke D row; this table is the flat statement of what
+must remain true.
+
+| Contract | Must hold | Breaks as |
+|---|---|---|
+| `mvs_media_drive_access` | Governs BOTH the placement gate and the space READ gate, through one resolver. **It is a privacy boundary, not a placement hint** — the same answer decides who can read media already scoped to a drive. | The two gates disagree: media stored scoped to a drive whose own members cannot open it. |
+| `mvs_media_trashed` / `_restored` | Fire from ALL FOUR trash paths — member REST, admin row action, admin bulk, and the two Documents admin paths — with a non-empty `$permalink`. | An integration's mirror survives a trash. A community feed advertises a video that 404s. |
+| `mvs_has_custom_avatar` | Defaults to our own store and can be widened by another provider. Must stay FALSE for a member with no avatar anywhere. | Either every member is nagged for a photo they have, or nobody is ever asked. |
+| Anonymous document reads | `/documents` refuses anonymous unless `mvs_pro_documents_anon_links` is on AND the ladder grants read. Writes always 401. `/me/shared` and `/drives` never serve anonymous. | Either `read` is a level the route silently voids, or opting in to share links quietly publishes every drive. |
+| No exec-family call in shipped source | Zero `exec`/`shell_exec`/`proc_open`/`system`/`passthru`/`popen`/`pcntl_exec` in either plugin. Enforced by `bin/coding-rules-check.sh` Rule 8. | Security plugins flag the plugin as a possible backdoor on every install. This is what removed transcoding in 2.4.0. |
 
 ---
 
@@ -207,7 +255,9 @@ When any of these diverge, UI silently breaks (the envelope-drift class):
 
 **Pro frontend:** `/compete/`, `/media/battles/`, `/media/challenges/`, `/media/tournaments/`, and `/media/` under each of 4 layout modes (instagram / flickr / pinterest / dribbble) in addition to the default grid.
 
-**Free admin:** Overview, Settings (8 tabs), Moderation, Stats, Logs, All Media, Setup Wizard.
+**Documents (Free page, Pro drive):** `/explore-document/` — public listing; `?drive=my-drive`, `?drive=shared`, `?drive=recent`; `?drive=my-drive&folder=N`; the type/sort controls (`doc_type`, `sort`, `order`, `doc_page`); a shared link at `?mvs_doc_token=…` on a document permalink. Single documents render at `/media/{slug}/` — the SAME route media uses, because the containment promise is about grids and feeds, not about the permalink.
+
+**Free admin:** Overview, Settings (8 tabs), Moderation, Stats, Logs, All Media, **Documents**, Setup Wizard.
 
 **Pro admin:** Competitions Dashboard, Challenge Manager, Tournament Manager, Battle Monitor, Quota & Credits, Theme Library, Migration, Gamification Settings, License, Pro settings tabs (AI / S3 / BunnyCDN / FFmpeg), Moderation's User Reports tab, Stats' Video Analytics tab.
 

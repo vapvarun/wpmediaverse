@@ -42,6 +42,49 @@
 	pointer-events: none;
 }
 
+/* FAB menu — shown above the button when the member also has a Documents drive. */
+.mvs-fab-menu {
+	position: absolute;
+	right: 0;
+	bottom: calc(56px + var(--mvs-space-3));
+	display: flex;
+	flex-direction: column;
+	gap: var(--mvs-space-1);
+	min-width: 168px;
+	padding: var(--mvs-space-2);
+	background: var(--mvs-surface);
+	border: 1px solid var(--mvs-border-light);
+	border-radius: var(--mvs-radius-md);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.mvs-fab-menu[hidden] {
+	display: none;
+}
+
+.mvs-fab-menu-item {
+	display: block;
+	width: 100%;
+	min-height: var(--mvs-touch-min);
+	box-sizing: border-box;
+	padding: var(--mvs-space-2) var(--mvs-space-3);
+	text-align: start;
+	background: none;
+	border: none;
+	border-radius: var(--mvs-radius-sm);
+	color: var(--mvs-text);
+	font-size: var(--mvs-font-md);
+	line-height: var(--mvs-touch-min);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.mvs-fab-menu-item:hover,
+.mvs-fab-menu-item:focus-visible {
+	background: var(--mvs-bg-subtle);
+	color: var(--mvs-primary);
+}
+
 /* ─── Modal Overlay ─── */
 .mvs-modal-overlay {
 	position: fixed;
@@ -185,7 +228,7 @@
 
 /* ─── Dropzone ─── */
 .mvs-modal-dropzone {
-	border: 2px dashed var(--mvs-border-light);
+	border: 2px dashed var(--mvs-border);
 	border-radius: 12px;
 	padding: 32px;
 	text-align: center;
@@ -492,9 +535,18 @@
 }
 
 /* ─── Buttons ─── */
+/*
+ * This copy exists for the MODAL GEOMETRY below — padding, radius, weight.
+ * The colour comes from --mvs-btn-primary-*, defined once in frontend.css, so
+ * this rule no longer restates the formula (Basecamp 10252281364).
+ *
+ * It previously said `color: var(--mvs-surface)` — a page-surface token used
+ * as button text, which flips to near-black in dark mode. That is precisely
+ * the failure the shared token now makes impossible to reintroduce here.
+ */
 .mvs-btn--primary {
-	background: var(--mvs-primary);
-	color: var(--mvs-surface);
+	background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+	color: var(--mvs-btn-primary-fg, var(--mvs-on-primary, #ffffff));
 	border: none;
 	padding: 10px 24px;
 	border-radius: 8px;
@@ -505,7 +557,7 @@
 }
 
 .mvs-btn--primary:hover {
-	background: var(--mvs-primary-hover);
+	background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover));
 }
 
 .mvs-btn--secondary {
@@ -616,7 +668,7 @@
 }
 
 /* ─── Responsive ─── */
-@media (max-width: 768px) {
+@media (max-width: 767px) /* below --mvs-bp-tablet */ {
 	.mvs-modal {
 		width: 100vw;
 		max-width: 100vw;

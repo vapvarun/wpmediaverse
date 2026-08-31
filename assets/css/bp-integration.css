@@ -42,7 +42,7 @@
     margin: 0 0 24px;
     padding: 0;
     list-style: none;
-    border-bottom: 2px solid var(--mvs-border);
+    border-bottom: 2px solid var(--mvs-border-light);
 }
 
 #buddypress .mvs-bp-screen .mvs-bp-sub-tab {
@@ -173,7 +173,7 @@
     margin: 16px 0 24px;
     padding: 20px;
     background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
 }
 
@@ -283,7 +283,7 @@
     font-size: 14px;
     background: var(--mvs-surface-2);
     color: var(--mvs-text-secondary);
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     cursor: pointer;
 }
@@ -323,15 +323,19 @@
  * rules in frontend.css are class-only (0,3,0) and lose to the theme's
  * #buddypress button:hover (1,0,1) — re-scope them so the plugin wins
  * (card 10127407439). Tokens flip automatically in dark mode. */
+/* This copy exists ONLY to out-specify the theme's `#buddypress button`. The
+   values come from --mvs-btn-primary-*, defined once in frontend.css — this
+   rule carries specificity, not a second opinion about the colour
+   (Basecamp 10252281364). */
 #buddypress .mvs-btn.mvs-btn--primary {
-    background: var(--mvs-primary);
-    color: var(--mvs-on-primary, #fff);
+    background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+    color: var(--mvs-btn-primary-fg, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn.mvs-btn--primary:hover,
 #buddypress .mvs-btn.mvs-btn--primary:focus {
-    background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #fff);
+    background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover));
+    color: var(--mvs-btn-primary-fg-hover, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn.mvs-btn--secondary {
@@ -374,7 +378,7 @@
     border-radius: 8px;
     overflow: hidden;
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     aspect-ratio: auto;
@@ -513,7 +517,7 @@
     text-align: center;
     color: var(--mvs-text-secondary);
     background: var(--mvs-surface-2);
-    border: 1px dashed var(--mvs-border);
+    border: 1px dashed var(--mvs-border-light);
     border-radius: 12px;
 }
 
@@ -722,6 +726,144 @@
 .activity-list .mvs-activity-audio-meta {
     font-size: 0.82em;
     color: var(--mvs-text-muted);
+}
+
+/* Document card — icon + name + meta, the shape a file attachment takes in
+ * every feed people already use. NOT the audio card's gradient: a document is
+ * not a mood, and a coloured tile in a text feed reads as decoration. Fully
+ * token-driven, so it inverts with the rest of the page in dark mode instead
+ * of staying a light rectangle (Coding Rule 7 — the audio gradient above
+ * predates that rule).
+ *
+ * The whole card is the target rather than the filename alone: at 390px a
+ * text-width link is a ~200px tap area on a 44px-tall row, and the icon and
+ * meta beside it look tappable but are not. */
+#buddypress .mvs-activity-media--document,
+.activity-list .mvs-activity-media--document,
+#buddypress .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document,
+.activity-list .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document {
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border-light);
+    border-radius: var(--mvs-radius-md, 8px);
+    overflow: hidden;
+}
+
+#buddypress .mvs-activity-media--document a,
+.activity-list .mvs-activity-media--document a,
+#buddypress .mvs-activity-media--document > .mvs-activity-doc-icon,
+.activity-list .mvs-activity-media--document > .mvs-activity-doc-icon {
+    text-decoration: none;
+}
+
+#buddypress .mvs-activity-media--document a,
+.activity-list .mvs-activity-media--document a {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3, 1rem);
+    padding: var(--mvs-space-3, 1rem);
+    min-height: 40px;
+    color: var(--mvs-text);
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+#buddypress .mvs-activity-media--document a:hover,
+#buddypress .mvs-activity-media--document a:focus-visible,
+#buddypress .mvs-activity-media--document a:visited,
+.activity-list .mvs-activity-media--document a:hover,
+.activity-list .mvs-activity-media--document a:focus-visible,
+.activity-list .mvs-activity-media--document a:visited {
+    color: var(--mvs-text);
+    text-decoration: none;
+}
+
+#buddypress .mvs-activity-media--document a:hover,
+#buddypress .mvs-activity-media--document a:focus-visible,
+.activity-list .mvs-activity-media--document a:hover,
+.activity-list .mvs-activity-media--document a:focus-visible {
+    background: var(--mvs-info-bg, var(--mvs-surface-2));
+}
+
+/* Unlinked variant — a document with no permalink still renders as a card
+ * rather than collapsing, because the empty body is the bug being fixed. */
+#buddypress .mvs-activity-media--document,
+.activity-list .mvs-activity-media--document {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3, 1rem);
+}
+
+#buddypress .mvs-activity-media--document > a,
+.activity-list .mvs-activity-media--document > a {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    gap: var(--mvs-space-3, 1rem);
+}
+
+#buddypress .mvs-activity-doc-icon,
+.activity-list .mvs-activity-doc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    background: var(--mvs-surface-2);
+    border-radius: var(--mvs-radius-sm, 6px);
+    color: var(--mvs-text-secondary);
+}
+
+/* The glyph itself is .mvs-doc-glyph in frontend.css — one mechanism shared
+ * with the profile Documents row and the grid tile, rather than a third copy
+ * of the same icon map. This box only sizes and tints it. */
+#buddypress .mvs-activity-doc-icon > .mvs-doc-glyph,
+.activity-list .mvs-activity-doc-icon > .mvs-doc-glyph {
+    --mvs-doc-glyph-size: 20px;
+}
+
+#buddypress .mvs-activity-doc-info,
+.activity-list .mvs-activity-doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+#buddypress .mvs-activity-doc-title,
+.activity-list .mvs-activity-doc-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#buddypress .mvs-activity-doc-meta,
+.activity-list .mvs-activity-doc-meta {
+    font-size: 0.82em;
+    color: var(--mvs-text-muted);
+}
+
+/* The document card is a ROW, so it does not belong in the photo grid's
+ * square cells — let it span the full width when a batch upload mixes one in
+ * rather than being cropped to an aspect-ratio cell. */
+#buddypress .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document,
+.activity-list .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--document {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 480px) {
+    #buddypress .mvs-activity-media--document a,
+    .activity-list .mvs-activity-media--document a {
+        gap: var(--mvs-space-2, 0.5rem);
+        padding: var(--mvs-space-2, 0.5rem);
+    }
+
+    #buddypress .mvs-activity-doc-icon,
+    .activity-list .mvs-activity-doc-icon {
+        width: 32px;
+        height: 32px;
+    }
 }
 
 
@@ -1028,7 +1170,7 @@
     min-height: 36px;
     margin: 0;
     padding: 6px 14px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 4px;
     background-color: var(--mvs-bg);
     color: var(--mvs-text);
@@ -1112,7 +1254,7 @@
     min-height: 36px;
     margin: 0;
     padding: 6px 14px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 4px;
     background-color: var(--mvs-bg);
     color: var(--mvs-text);
@@ -1192,7 +1334,7 @@
     margin: 10px 0;
     padding: 8px;
     background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-light);
     border-radius: 8px;
     max-width: 100%;
     box-sizing: border-box;
@@ -1363,9 +1505,30 @@
     #buddypress .mvs-activity-grid-5,
     .activity-list .mvs-activity-grid-5,
     #buddypress .mvs-activity-grid-6,
-    .activity-list .mvs-activity-grid-6 {
+    .activity-list .mvs-activity-grid-6,
+    #buddypress .mvs-activity-grid-2,
+    .activity-list .mvs-activity-grid-2 {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: 140px 140px 140px;
+
+        /* AUTO rows, not three fixed ones. `grid-template-rows: 140px 140px
+         * 140px` declared three tracks whatever the photo count, so a 3- or
+         * 4-photo post - which needs only two rows in two columns - carried a
+         * third empty 140px track: 160px of blank space under the photos,
+         * measured at 375px. 5 and 6 photos happened to fill three rows, which
+         * is why this survived. grid-auto-rows creates exactly the rows the
+         * content needs, so every count from 2 to 6 is right by construction.
+         *
+         * grid-template-rows must be reset to none or the desktop template
+         * (280px for 2-up, 175px 175px for 3-up, and so on) still governs the
+         * leading rows and the collapse does nothing.
+         *
+         * This also brings 2-up in. It kept the desktop 280px row on phones
+         * while 3-6 collapsed to 140px, so each tile became a 154x280 portrait
+         * slot (0.55 aspect) and object-fit:cover cropped a landscape photo to
+         * about a third of its width. Now a 2-up tile is exactly the size of a
+         * 3-up tile at the same column width. Basecamp 10253855410. */
+        grid-template-rows: none;
+        grid-auto-rows: 140px;
     }
 
     #buddypress .mvs-activity-grid-3 .mvs-activity-media:first-child,
@@ -1376,5 +1539,120 @@
     .activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(-n+5) {
         grid-column: auto;
         grid-row: auto;
+    }
+}
+
+/* -----------------------------------------------------------------------------
+ * Profile Documents sub-tab — read-only, viewer-scoped list (Pro renders the
+ * markup; these rules live here because it is a BuddyPress profile surface,
+ * Coding Rule 12). Token-driven, scoped under #buddypress.
+ * -------------------------------------------------------------------------- */
+#buddypress .mvs-profile-documents {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--mvs-space-2, 0.5rem);
+}
+
+#buddypress .mvs-profile-documents__count {
+    margin-block-end: var(--mvs-space-3, 1rem);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm, 14px);
+}
+
+#buddypress .mvs-profile-documents__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mvs-space-3, 1rem);
+    margin-block-start: var(--mvs-space-4, 1.5rem);
+}
+
+#buddypress .mvs-profile-documents__nav-link {
+    padding: var(--mvs-space-2, 0.5rem) var(--mvs-space-3, 1rem);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md, 8px);
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    text-decoration: none;
+}
+
+#buddypress .mvs-profile-documents__nav-link:hover,
+#buddypress .mvs-profile-documents__nav-link:focus-visible {
+    border-color: var(--mvs-primary);
+}
+
+#buddypress .mvs-profile-documents__nav-status {
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm, 14px);
+}
+
+#buddypress .mvs-profile-documents__item {
+    margin: 0;
+}
+
+#buddypress .mvs-profile-documents__link {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3, 1rem);
+    padding: var(--mvs-space-3, 1rem);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md, 8px);
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    text-decoration: none;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+#buddypress .mvs-profile-documents__link:hover,
+#buddypress .mvs-profile-documents__link:focus-visible {
+    border-color: var(--mvs-primary);
+    background: var(--mvs-info-bg, var(--mvs-surface-2));
+}
+
+/* Sized for the glyph it now contains. This box was styled when the span was
+ * emitted EMPTY, so it was a 24x24 grey square with nothing to lay out; a
+ * Lucide SVG defaults to 24x24 and would have filled it edge to edge. */
+#buddypress .mvs-profile-documents__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--mvs-radius-sm, 6px);
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+}
+
+#buddypress .mvs-profile-documents__icon > .mvs-doc-glyph {
+    --mvs-doc-glyph-size: 18px;
+}
+
+#buddypress .mvs-profile-documents__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+#buddypress .mvs-profile-documents__meta {
+    flex: 0 0 auto;
+    color: var(--mvs-text-secondary);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 480px) {
+    #buddypress .mvs-profile-documents__link {
+        flex-wrap: wrap;
+        gap: var(--mvs-space-2, 0.5rem);
+    }
+
+    #buddypress .mvs-profile-documents__meta {
+        flex-basis: 100%;
     }
 }

@@ -263,14 +263,26 @@ class AlbumController extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 		$page     = $page ? (int) $page : 1;
 
+		// Allowlisted, never passed through: `orderby` reaches SQL through
+		// WP_Query and an arbitrary string there is an injection surface.
+		$orderby = (string) $request->get_param( 'orderby' );
+		$orderby = in_array( $orderby, array( 'date', 'title' ), true ) ? $orderby : 'date';
+		$order   = 'asc' === strtolower( (string) $request->get_param( 'order' ) ) ? 'ASC' : 'DESC';
+
 		$args = array(
 			'post_type'      => 'mvs_album',
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $page,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
+			'orderby'        => $orderby,
+			'order'          => $order,
 		);
+
+		$search = (string) $request->get_param( 's' );
+
+		if ( '' !== $search ) {
+			$args['s'] = $search;
+		}
 
 		$author = $request->get_param( 'author' );
 		if ( $author ) {
@@ -291,34 +303,45 @@ class AlbumController extends WP_REST_Controller {
 		// found_posts over-reported and paginated visitors hit empty/short pages
 		// ("albums not visible to visitors", Basecamp 10071400189).
 		//
-		// Albums are CPTs; their privacy lives in mvs_media_index.privacy. LEFT
-		// JOIN it and reuse the one canonical privacy definition
-		// (MediaRepository::explore_privacy_clause) — same rule as every media
-		// list. Albums with no index row have no privacy set = public, matching
-		// PrivacyService's default. The per-item can_view() below stays as a
-		// defense-in-depth gate; the SQL set is a subset of it, so it never drops
-		// a counted row (totals stay accurate).
+		// Album privacy lives in post meta (AlbumService::PRIVACY_META). LEFT JOIN it
+		// and express the same rule explore_privacy_clause() applies to media:
+		// public, or members-level to a logged-in viewer, or the viewer's own.
+		// private / friends / group / custom are owner-only in the list, matching how
+		// media explore treats them.
+		//
+		// Before 2.4.0 this joined mvs_media_index on wp_posts.ID, because album
+		// privacy was stored there at media_id = <album post ID>. That is the defect
+		// this release removes: the album ID collided with a real media_id, so the
+		// clause could filter an album by an unrelated PHOTO's privacy. Migrator v26
+		// writes _mvs_privacy for every existing album before this path can run
+		// (Plugin::init() runs migrations on every load), so the meta is always
+		// present; a missing value still falls back to public, which is the documented
+		// default and matches the previous behaviour for albums with no index row.
+		//
+		// THIS CLAUSE IS THE ONLY PRIVACY GATE ON THIS ENDPOINT. The per-item
+		// can_view() re-check was removed deliberately (see below) — do not weaken it.
 		global $wpdb;
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		list( $priv_sql, $priv_params ) = $repo->explore_privacy_clause( 'mvidx', $user_id );
-		$priv_fragment = empty( $priv_params )
-			? $priv_sql
-			: $wpdb->prepare( $priv_sql, ...$priv_params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$privacy_meta = AlbumService::PRIVACY_META;
 
-		// The album's author is wp_posts.post_author — album index rows carry
-		// post_author = 0, so explore_privacy_clause's own-media check (which
-		// keys on mvidx.post_author) never matches an album. Add an owner OR on
-		// the post row so a logged-in viewer still sees THEIR OWN non-public
-		// albums in the list.
-		$owner_extra = $user_id
-			? $wpdb->prepare( " OR {$wpdb->posts}.post_author = %d", (int) $user_id ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			: '';
+		if ( $user_id && user_can( $user_id, 'moderate_mvs_media' ) ) {
+			$priv_fragment = '1 = 1';
+		} elseif ( $user_id ) {
+			$priv_fragment = $wpdb->prepare(
+				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				(int) $user_id
+			);
+		} else {
+			$priv_fragment = "( mvpriv.meta_value IS NULL OR mvpriv.meta_value = 'public' )";
+		}
 
-		$join_cb = static function ( $join ) use ( $wpdb ) {
-			return $join . " LEFT JOIN {$wpdb->prefix}mvs_media_index mvidx ON mvidx.media_id = {$wpdb->posts}.ID ";
+		$join_cb  = static function ( $join ) use ( $wpdb, $privacy_meta ) {
+			return $join . $wpdb->prepare(
+				" LEFT JOIN {$wpdb->postmeta} mvpriv ON mvpriv.post_id = {$wpdb->posts}.ID AND mvpriv.meta_key = %s ", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$privacy_meta
+			);
 		};
-		$where_cb = static function ( $where ) use ( $priv_fragment, $owner_extra ) {
-			return $where . " AND ( mvidx.media_id IS NULL OR ( {$priv_fragment}{$owner_extra} ) )";
+		$where_cb = static function ( $where ) use ( $priv_fragment ) {
+			return $where . " AND {$priv_fragment}";
 		};
 
 		add_filter( 'posts_join', $join_cb );
@@ -445,7 +468,6 @@ class AlbumController extends WP_REST_Controller {
 				'privacy'     => $request->get_param( 'privacy' ) ?? 'public',
 				'album_type'  => $request->get_param( 'album_type' ) ?? 'default',
 				'group_id'    => $request->get_param( 'group_id' ),
-				'categories'  => $request->get_param( 'categories' ),
 			)
 		);
 
@@ -502,19 +524,12 @@ class AlbumController extends WP_REST_Controller {
 
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
+			$this->albums->set_privacy( $album_id, sanitize_text_field( $privacy ) );
 		}
 
-		// Categories — distinguish "not sent" from "explicitly cleared" by checking the JSON body,
-		// same pattern MediaController uses for tags/categories updates so an unrelated save
-		// never wipes the existing category list.
+		// Read the raw JSON body so "not sent" can be told apart from "explicitly sent
+		// as 0" for cover_media_id — get_param() alone cannot make that distinction.
 		$json_params = (array) $request->get_json_params();
-		if ( array_key_exists( 'categories', $json_params ) ) {
-			$categories = $request->get_param( 'categories' );
-			if ( is_array( $categories ) ) {
-				wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $categories ) ), 'mvs_category' );
-			}
-		}
 
 		// Cover image — only act when the caller explicitly sends cover_media_id
 		// (0 = clear the pinned cover; >0 = set to that media item).
@@ -552,8 +567,11 @@ class AlbumController extends WP_REST_Controller {
 
 		$this->albums->delete_all_items( $album_id );
 
-		// Clean up taxonomy relationships so deleted albums don't leave dangling term assignments.
-		wp_delete_object_term_relationships( $album_id, array( 'mvs_category' ) );
+		// No taxonomy cleanup here. Albums no longer carry categories (2.4.0), and this
+		// call was itself a data-loss vector: an album's post ID can equal a real
+		// media_id, and wp_delete_object_term_relationships() keys on that shared
+		// object_id space — so deleting an album wiped the colliding photo's categories.
+		// Legacy album term rows are cleared once by Migrator v26.
 
 		$deleted = wp_delete_post( $album_id, true );
 
@@ -723,20 +741,8 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	private function prepare_album_response( $post, bool $include_items = false ): array {
 		$album_id      = $post->ID;
-		$privacy_value = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
-		$album_type    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
-
-		$category_terms = get_the_terms( $album_id, 'mvs_category' );
-		$categories     = array();
-		if ( $category_terms && ! is_wp_error( $category_terms ) ) {
-			foreach ( $category_terms as $term ) {
-				$categories[] = array(
-					'id'   => (int) $term->term_id,
-					'name' => $term->name,
-					'slug' => $term->slug,
-				);
-			}
-		}
+		$privacy_value = $this->albums->get_privacy( $album_id );
+		$album_type    = $this->albums->get_album_type( $album_id );
 
 		$viewer   = get_current_user_id();
 		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
@@ -755,7 +761,6 @@ class AlbumController extends WP_REST_Controller {
 			'media_count'    => $this->albums->get_item_count( $album_id ),
 			'cover_url'      => $this->albums->get_cover_url( $album_id ),
 			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
-			'categories'     => $categories,
 			'is_owner'       => $is_owner,
 			'can_edit'       => $can_edit,
 		);
@@ -803,6 +808,25 @@ class AlbumController extends WP_REST_Controller {
 				'type'              => 'string',
 				'enum'              => array( 'default', 'playlist' ),
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			// The dashboard toolbar's vocabulary, identical across every panel:
+			// `s`, `orderby`, `order`. Named `s` rather than core's `search` so
+			// one client helper can drive media, albums, collections and
+			// favourites without a per-panel translation table.
+			's'          => array(
+				'type'              => 'string',
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'orderby'    => array(
+				'type'    => 'string',
+				'default' => 'date',
+				'enum'    => array( 'date', 'title' ),
+			),
+			'order'      => array(
+				'type'    => 'string',
+				'default' => 'desc',
+				'enum'    => array( 'asc', 'desc' ),
 			),
 		);
 	}

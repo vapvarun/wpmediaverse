@@ -351,4 +351,180 @@ interface MediaRepositoryInterface {
 	 * @param int $media_id The mvs_media_index PK.
 	 */
 	public function purge_index_record( int $media_id ): void;
+
+	/**
+	 * Tighten the privacy of every document sitting in the given folders.
+	 *
+	 * On the boundary interface because Pro's FolderService drives the T2
+	 * cascade and must reach this WITHOUT writing `mvs_media_index` itself —
+	 * Free owns that table (architecture invariant 6).
+	 *
+	 * Tightening only: rows already at or beyond the target are left alone, so
+	 * an explicit `private` on one file outranks its container.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids whose documents are affected.
+	 * @param string $privacy    Target privacy.
+	 * @param int    $limit      0 for no limit; above 0 caps the update for batching.
+	 * @return int Rows changed.
+	 */
+	public function tighten_document_privacy_in_folders( array $folder_ids, string $privacy, int $limit = 0 ): int;
+
+	/**
+	 * How many documents a privacy tightening would change.
+	 *
+	 * Backs the confirmation copy, counted the same way the UPDATE selects so the
+	 * number a member is shown is the number that moves.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids.
+	 * @param string $privacy    Target privacy.
+	 * @return int
+	 */
+	public function count_documents_to_tighten( array $folder_ids, string $privacy ): int;
+
+	/**
+	 * How closed a privacy value is. Higher is more restrictive; -1 if unknown.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return int
+	 */
+	public function privacy_level( string $privacy ): int;
+
+	/**
+	 * Every privacy value strictly looser than the given one.
+	 *
+	 * Exposed so a caller can tighten its OWN table with the same definition of
+	 * "looser" this repository uses. Without it Pro would have to re-implement
+	 * the ordering, and two copies of a privacy comparison drifting apart is a
+	 * security bug rather than an inconsistency.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return string[] Empty when nothing is looser, or the value is unknown.
+	 */
+	public function privacy_levels_looser_than( string $privacy ): array;
+
+	/**
+	 * Documents in one drive, optionally inside one folder.
+	 *
+	 * On the boundary interface because Pro's document REST surface lists a drive
+	 * and must not query `mvs_media_index` itself (architecture invariant 6).
+	 *
+	 * Applies NO document permissions — the caller resolves a whole page through
+	 * PermissionService in two queries, which is the only way that stays within
+	 * budget. Filtering per row here would reintroduce the N+1 the design avoids.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args author, folder_id, per_page, page.
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function drive_documents( array $args = array() ): array;
+
+	/**
+	 * Published document ids whose TITLE matches a phrase, in title order.
+	 *
+	 * On the boundary interface for the same reason as `drive_documents()`: Pro
+	 * owns document SEARCH and must not query `mvs_media_index` itself
+	 * (architecture invariant 6). Pro's `SearchService` combines these
+	 * candidates with its own FULLTEXT hits over extracted text — a file whose
+	 * text is empty, which every PDF is by design, is findable only by name.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $query Search phrase. Escaped for LIKE by the implementation.
+	 * @param int    $limit Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_title_candidates( string $query, int $limit = 50 ): array;
+
+	/**
+	 * One page of the author leaderboard, plus how many members are ranked.
+	 *
+	 * On the boundary interface because Pro owns the leaderboard SURFACE while
+	 * `mvs_media_index` stays this class's to query (architecture invariant 6).
+	 * The page query, its total and `author_leaderboard_rank()` share one
+	 * condition here, which is what stops a member's rank being computed against
+	 * a different population from the board it is shown beside.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric   reactions|media_count.
+	 * @param string $window   all|30d|7d.
+	 * @param int    $per_page Rows per page (1-100).
+	 * @param int    $page     1-based page.
+	 * @return array{rows: array<int, array{user_id:int, score:int}>, total: int}
+	 */
+	public function author_leaderboard( string $metric, string $window, int $per_page = 20, int $page = 1 ): array;
+
+	/**
+	 * Where one member stands on that same board.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric  reactions|media_count.
+	 * @param string $window  all|30d|7d.
+	 * @param int    $user_id Member to locate.
+	 * @return array{rank: int|null, score: int} Rank is null when unranked.
+	 */
+	public function author_leaderboard_rank( string $metric, string $window, int $user_id ): array;
+
+	/**
+	 * Media carrying a set of meta conditions, paginated, with a total.
+	 *
+	 * DOMAIN-NEUTRAL ON PURPOSE. Pro's stories bar is the first caller, but Free
+	 * has no business knowing what a story is — the caller supplies the meta
+	 * keys and this supplies the join, the privacy scoping and the paging.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args meta, authors, viewer_id, privacy, types, per_page, page.
+	 * @return array{items: array<int, array<string, mixed>>, total: int}
+	 */
+	public function media_with_meta( array $args = array() ): array;
+
+	/**
+	 * Distinct viewers per media since a per-media timestamp held in meta.
+	 *
+	 * The owner is never counted. Domain-neutral for the same reason as
+	 * `media_with_meta()`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $media_ids      Media to count.
+	 * @param string $since_meta_key Meta key holding each row's start timestamp.
+	 * @return array<int, int> media_id => distinct viewers.
+	 */
+	public function viewer_counts_since_meta( array $media_ids, string $since_meta_key ): array;
+
+	/**
+	 * Public documents, for the public document listing page.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args per_page, page, doc_type.
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function public_documents( array $args = array() ): array;
+
+	/**
+	 * Documents shared WITH a viewer, by direct grant.
+	 *
+	 * On the interface because it JOINS `mvs_media_index`, which Free owns. Pro's
+	 * `/me/shared` route built this query itself at first, assigning the table to
+	 * a variable — the documented grep blind spot, which survived both the
+	 * architecture check and the duplication gate.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args user_id, roles, per_page, page.
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function documents_shared_with( array $args = array() ): array;
 }

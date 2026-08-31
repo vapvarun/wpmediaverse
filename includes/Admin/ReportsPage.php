@@ -76,14 +76,14 @@ class ReportsPage {
 	public function add_menu_page(): void {
 		$pending = $this->reports->count_by_status( 'pending' );
 
-		$menu_title = __( 'Member Reports', 'wpmediaverse' );
+		$menu_title = __( 'Reports', 'wpmediaverse' );
 		if ( $pending > 0 ) {
 			$menu_title .= sprintf( ' <span class="awaiting-mod">%d</span>', $pending );
 		}
 
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
-			__( 'Member Reports', 'wpmediaverse' ),
+			__( 'Reports', 'wpmediaverse' ),
 			$menu_title,
 			'manage_options',
 			self::PAGE_SLUG,

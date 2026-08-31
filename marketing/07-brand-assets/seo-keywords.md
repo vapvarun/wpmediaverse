@@ -59,7 +59,7 @@ These people are researching a problem or category. They are not ready to buy ye
 |---------|-------|
 | wordpress student portfolio plugin | Strong education persona match. |
 | wordpress media storage quota | Specific to Pro quota feature — low volume, high intent. |
-| wordpress video assignment submission | Education niche. HLS/transcoding angle. |
+| wordpress video assignment submission | Education niche. Chapters + captions angle. |
 | memberpress media storage | Integration keyword. Low volume, high conversion. |
 | woocommerce file upload plugin users | Adjacent audience. Could convert with quota/commerce angle. |
 
@@ -87,8 +87,8 @@ These people are actively comparing options and evaluating solutions. They know 
 |---------|----------|-------|
 | wordpress cloud storage plugin s3 | Medium | S3 integration landing page. |
 | wordpress bunnycdn plugin | Low-Medium | More specific but strong fit. |
-| wordpress video transcoding plugin | Medium | HLS/transcoding feature page. |
-| wordpress hls video plugin | Low | Technical, but high-fit when found. |
+| wordpress video captions plugin | Medium | Whisper auto-captions feature page. |
+| wordpress video chapters plugin | Low | Technical, but high-fit when found. |
 | wordpress gamification photography | Low-Medium | Niche — Photo Battles use case page. |
 | wordpress photo battle plugin | Low | Very niche, almost no competition. Own it. |
 | wordpress media plugin custom tables | Low | Developer audience. Niche, very high quality signal. |
@@ -143,7 +143,7 @@ Group related keywords into topic clusters for better topical authority.
 
 ### Cluster 4: Video for WordPress Communities
 - Core: "wordpress video hosting plugin"
-- Supporting: wordpress video transcoding plugin, wordpress hls video plugin, wordpress video assignment submission
+- Supporting: wordpress video captions plugin, wordpress video chapters plugin, wordpress video assignment submission
 - Anchor page: Video feature page
 
 ### Cluster 5: Storage and Scale

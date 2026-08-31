@@ -9,6 +9,8 @@
 
 namespace WPMediaVerse\Services;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -120,8 +122,14 @@ class CollectionService {
 	/**
 	 * Resolve smart collection rules to media IDs.
 	 *
+	 * A collection draws from the MEDIA library only. The document library has its
+	 * own folders and surfaces, and no rule set can opt a collection into it.
+	 *
 	 * Supported rule keys:
-	 * - media_type: string (image, video, audio, document)
+	 * - media_type: string — matched against the MIME type (`file_type LIKE`), so
+	 *   the useful values are 'image', 'video', 'audio'. This key has never
+	 *   filtered the `media_type` column despite its name; 'document' was listed
+	 *   here but could not match, because the stored MIME is 'application/pdf'.
 	 * - tag: int (term ID for mvs_tag)
 	 * - category: int (term ID for mvs_category)
 	 * - author: int (user ID)
@@ -137,32 +145,21 @@ class CollectionService {
 	public function resolve( int $collection_id, int $per_page = 20, int $page = 1 ): array {
 		$rules = $this->get_rules( $collection_id );
 
+		$empty = array(
+			'items' => array(),
+			'total' => 0,
+		);
+
 		if ( empty( $rules ) ) {
-			return array(
-				'items' => array(),
-				'total' => 0,
-			);
+			return $empty;
 		}
-
-		global $wpdb;
-
-		// JOIN placeholders appear before WHERE placeholders in the final SQL,
-		// so their params are collected separately and merged join-first.
-		// A single rule-ordered array misaligned every value when a WHERE-type
-		// rule (media_type/privacy/...) preceded a tag/category rule.
-		$index_table  = $wpdb->prefix . 'mvs_media_index';
-		$joins        = array();
-		$wheres       = array( "idx.status = 'publish'" );
-		$join_params  = array();
-		$where_params = array();
-		$join_idx     = 0;
 
 		// Group rule values by key, then combine SAME-key values with OR and
 		// DIFFERENT keys with AND. A flat AND over every rule made same-key rules
-		// mutually exclusive — e.g. two media_type rules became
-		// `file_type LIKE '%image%' AND file_type LIKE '%video%'`, which no single
-		// file can satisfy, so the collection resolved to 0 items and showed the
-		// placeholder cover ("broken image" with multiple rules). (#9962118482)
+		// mutually exclusive — two media_type rules became `file_type LIKE
+		// '%image%' AND file_type LIKE '%video%'`, which no single file can
+		// satisfy, so the collection resolved to 0 items and showed the
+		// placeholder cover (#9962118482).
 		$by_key = array();
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {
@@ -171,51 +168,49 @@ class CollectionService {
 			$by_key[ $rule['key'] ][] = $rule['value'];
 		}
 
+		// Translate rules into repository args. This method no longer builds SQL:
+		// the OR-within-key semantic lives in MediaRepository::or_set(), and the
+		// MEDIA_LIBRARY type default lives in build_query_parts(), so a collection
+		// cannot resolve to a document however its rules are written.
+		$args = array(
+			'status'  => 'publish',
+			'privacy' => 'any',
+			'orderby' => 'created_at',
+			'order'   => 'DESC',
+			'limit'     => $per_page,
+			'offset'    => ( $page - 1 ) * $per_page,
+			'tax_terms' => array(),
+		);
+
 		foreach ( $by_key as $key => $values ) {
 			switch ( $key ) {
 				case 'media_type':
-					$ors = array();
+					// Historically matched against the MIME (`file_type LIKE`),
+					// never the media_type column, despite the rule's name. Kept
+					// as-is: renaming would break stored rules on live sites.
 					foreach ( $values as $value ) {
-						$ors[]          = 'idx.file_type LIKE %s';
-						$where_params[] = '%' . $wpdb->esc_like( sanitize_text_field( $value ) ) . '%';
+						$args['mime_like_in'][] = '%' . sanitize_text_field( (string) $value ) . '%';
 					}
-					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
 					break;
 
 				case 'author':
-					$ors = array();
 					foreach ( $values as $value ) {
-						$ors[]          = 'idx.post_author = %d';
-						$where_params[] = (int) $value;
+						$args['authors_in'][] = (int) $value;
 					}
-					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
 					break;
 
 				case 'privacy':
-					$ors = array();
 					foreach ( $values as $value ) {
-						$ors[]          = 'idx.privacy = %s';
-						$where_params[] = sanitize_text_field( $value );
+						$args['privacy_in'][] = sanitize_text_field( (string) $value );
 					}
-					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
 					break;
 
 				case 'date_after':
-					$ors = array();
-					foreach ( $values as $value ) {
-						$ors[]          = 'idx.created_at >= %s';
-						$where_params[] = sanitize_text_field( $value ) . ' 00:00:00';
-					}
-					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
+					$args['since'] = sanitize_text_field( (string) end( $values ) ) . ' 00:00:00';
 					break;
 
 				case 'date_before':
-					$ors = array();
-					foreach ( $values as $value ) {
-						$ors[]          = 'idx.created_at <= %s';
-						$where_params[] = sanitize_text_field( $value ) . ' 23:59:59';
-					}
-					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
+					$args['until'] = sanitize_text_field( (string) end( $values ) ) . ' 23:59:59';
 					break;
 
 				case 'tag':
@@ -228,72 +223,33 @@ class CollectionService {
 							$term_ids[] = $term_id;
 						}
 					}
-					$term_ids = array_values( array_unique( $term_ids ) );
+
+					// No resolvable term for this key can never match anything.
 					if ( empty( $term_ids ) ) {
-						// No resolvable term for this key can never match anything.
-						return array(
-							'items' => array(),
-							'total' => 0,
-						);
+						return $empty;
 					}
-					// Same-key terms OR together via term_id IN (...); different
-					// taxonomies (tag vs category) stay separate JOINs, so they AND.
-					$alias_tr     = 'tr' . $join_idx;
-					$alias_tt     = 'tt' . $join_idx;
-					$placeholders = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
-					$joins[]      = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
-					$joins[]      = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id IN ({$placeholders})";
-					$join_params[] = $taxonomy;
-					foreach ( $term_ids as $term_id ) {
-						$join_params[] = $term_id;
-					}
-					++$join_idx;
+
+					// TERM ids plus their taxonomy — never term_taxonomy_ids. The
+					// repository joins term_taxonomy and matches tt.term_id, which
+					// is a different column from tr.term_taxonomy_id and equal to it
+					// only by coincidence.
+					$args['tax_terms'][] = array(
+						'taxonomy' => $taxonomy,
+						'term_ids' => array_values( array_unique( $term_ids ) ),
+					);
 					break;
 			}
 		}
 
-		$params    = array_merge( $join_params, $where_params );
-		$join_sql  = implode( ' ', $joins );
-		$where_sql = implode( ' AND ', $wheres );
-		$offset    = ( $page - 1 ) * $per_page;
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-
-		// Count total matches.
-		if ( ! empty( $params ) ) {
-			$total = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...$params
-				)
-			);
-		} else {
-			$total = (int) $wpdb->get_var(
-				"SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-			);
-		}
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$total = $repo->query_count( $args );
 
 		if ( 0 === $total ) {
-			return array(
-				'items' => array(),
-				'total' => 0,
-			);
+			return $empty;
 		}
 
-		// Fetch page of results.
-		$all_params = array_merge( $params, array( $per_page, $offset ) );
-		$rows       = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT DISTINCT idx.media_id, idx.created_at FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...$all_params
-			),
-			ARRAY_A
-		);
-
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-
 		$items = array();
-		foreach ( $rows as $row ) {
+		foreach ( $repo->query( $args ) as $row ) {
 			$items[] = array(
 				'media_id'   => (int) $row['media_id'],
 				'created_at' => $row['created_at'],

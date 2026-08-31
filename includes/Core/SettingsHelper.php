@@ -27,17 +27,53 @@ class SettingsHelper {
 	/**
 	 * Map of supported page slots to their stored option names.
 	 *
-	 * Slots match the three pages registered in
-	 * `Admin\Settings\SettingsRegistrar::register_pages_settings()`. Adding a
-	 * new page setting means: register it there + add it here.
+	 * THE one list. It was three lists, then four, and Explore Documents was
+	 * added to none of them when it shipped in 2.4.0 — so the page existed, was
+	 * created on activation, was linked from the menu, and then rendered with no
+	 * plugin CSS at all (a search icon at its viewBox size, 848px square), the
+	 * theme's blog sidebar beside it, and no way for the owner to remap it.
+	 * Every consumer now reads this instead of writing its own copy.
 	 *
 	 * @var array<string, string>
 	 */
-	private const PAGE_SLOT_OPTIONS = array(
-		'dashboard' => 'mvs_page_dashboard',
-		'explore'   => 'mvs_page_explore',
-		'upload'    => 'mvs_page_upload',
+	public const PAGE_SLOT_OPTIONS = array(
+		'dashboard'         => 'mvs_page_dashboard',
+		'explore'           => 'mvs_page_explore',
+		'upload'            => 'mvs_page_upload',
+		'explore_documents' => 'mvs_page_explore_documents',
 	);
+
+	/**
+	 * The stored option name for every page slot.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function page_options(): array {
+		return array_values( self::PAGE_SLOT_OPTIONS );
+	}
+
+	/**
+	 * The configured page id for every slot, skipping the unset ones.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return int[]
+	 */
+	public static function all_page_ids(): array {
+		$ids = array();
+
+		foreach ( array_keys( self::PAGE_SLOT_OPTIONS ) as $slot ) {
+			$id = self::get_page_id( $slot );
+
+			if ( $id > 0 ) {
+				$ids[] = $id;
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
 
 	/**
 	 * Resolve a configured page id by slot.
@@ -225,5 +261,61 @@ class SettingsHelper {
 		}
 
 		return $key;
+	}
+
+	/**
+	 * The maximum upload size in bytes, already filtered.
+	 *
+	 * Exists so Pro's document ingest reads this the same way Free's media
+	 * ingest does. Pro reading `get_option( 'mvs_max_upload_size' )` itself is an
+	 * architecture violation (A4) for a good reason rather than a stylistic one:
+	 * two readers of one setting drift, and the one that forgets to apply
+	 * `mvs_max_upload_size` silently enforces a different ceiling from the one
+	 * the site owner configured.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id User the limit applies to.
+	 * @return int Bytes.
+	 */
+	public static function get_max_upload_size( int $user_id = 0 ): int {
+		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
+
+		/** This filter is documented in includes/Services/UploadService.php */
+		return (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
+	}
+
+	/**
+	 * The privacy a newly uploaded media item lands on.
+	 *
+	 * The third of media's three upload settings to gain a code-level override.
+	 * Size and allowed types already had one — `mvs_max_upload_size` and
+	 * `mvs_allowed_file_types` — and privacy was the odd one out, read straight
+	 * from the option at two call sites with no way for a site to change it
+	 * without a settings write.
+	 *
+	 * Introduced alongside the document library's `mvs_document_default_privacy`
+	 * so the two features are uniform. They stay SEPARATE on purpose: a photo is
+	 * posted and a document is private until shared, so one control answering for
+	 * both is how an owner publishes files they thought were private.
+	 *
+	 * Purely additive — the option still decides where a site has set one, so no
+	 * shipped install changes behaviour.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string Privacy slug.
+	 */
+	public static function get_default_privacy(): string {
+		$privacy = (string) get_option( 'mvs_default_privacy', 'public' );
+
+		/**
+		 * The privacy a new upload is created with.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $privacy Privacy slug from the site's settings.
+		 */
+		return (string) apply_filters( 'mvs_default_privacy', $privacy );
 	}
 }

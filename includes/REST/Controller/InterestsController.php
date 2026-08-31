@@ -8,6 +8,8 @@
 
 namespace WPMediaVerse\REST\Controller;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
@@ -194,22 +196,29 @@ final class InterestsController extends WP_REST_Controller {
 	 * @return string
 	 */
 	private function category_cover_url( int $tt_id, $tpl ): string {
-		global $wpdb;
-		$media_id = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT i.media_id
-				FROM {$wpdb->prefix}mvs_media_index i
-				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id = %d
-				-- privacy = 'public' is intentional and required here: this picks the public
-				-- cover image shown to EVERYONE for an interest tag, so it must never surface
-				-- members/friends/private media. Do NOT route through the viewer-aware
-				-- MediaRepository::build_privacy_where() helper — that would leak non-public media.
-				WHERE i.status = 'publish' AND i.moderation_status = 'approved' AND i.privacy = 'public'
-				ORDER BY i.reaction_count DESC
-				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$tt_id
+		// Through the repository (P1.2). A cover has to render, and documents
+		// produce no thumbnail, so one winning on reaction_count would leave the
+		// interest picker showing an empty card — the repository's MEDIA_LIBRARY
+		// default is what prevents that.
+		//
+		// `privacy => 'public'` is intentional and required: this cover is shown
+		// to EVERYONE for an interest, so it must never surface members/friends/
+		// private media. Do NOT switch it to the viewer-aware 'visible' or
+		// 'profile' modes — those are for listings the viewer owns a place in.
+		$rows = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->query(
+			array(
+				'category_tt_id'    => $tt_id,
+				'status'            => 'publish',
+				'moderation_status' => 'approved',
+				'privacy'           => 'public',
+				'orderby'           => 'reaction_count',
+				'order'             => 'DESC',
+				'limit'             => 1,
 			)
 		);
+
+		$media_id = isset( $rows[0]['media_id'] ) ? (int) $rows[0]['media_id'] : 0;
+
 		return ( $media_id && $tpl ) ? (string) $tpl->get_thumb_url( $media_id, 'medium' ) : '';
 	}
 

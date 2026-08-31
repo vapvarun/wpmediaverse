@@ -245,6 +245,43 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 		$this->assertSame( 'publish', $this->repo->get_raw( $media_id, 'status' ) );
 	}
 
+	/**
+	 * Trash and restore each announce themselves.
+	 *
+	 * The status column changing is not the point — an integration mirroring
+	 * media (a BuddyNext activity card) has no way to see a column change. Until
+	 * 2.4.0 only the permanent delete fired anything, so a member trashing a
+	 * video left the community feed advertising it with a link that 404s
+	 * (Basecamp 10252324048).
+	 *
+	 * The permalink argument is asserted because it is the reason the signature
+	 * matches `mvs_media_deleted`: a listener withdrawing a mirror keyed on the
+	 * URL handles both events with one method.
+	 */
+	public function test_trash_and_restore_fire_their_actions(): void {
+		$media_id = $this->insert_media();
+		$seen     = array();
+
+		$capture = static function ( $id, $author, $permalink ) use ( &$seen ) {
+			$seen[ current_action() ] = array( $id, $author, $permalink );
+		};
+
+		add_action( 'mvs_media_trashed', $capture, 10, 3 );
+		add_action( 'mvs_media_restored', $capture, 10, 3 );
+
+		$this->repo->trash( $media_id );
+		$this->repo->restore( $media_id );
+
+		remove_action( 'mvs_media_trashed', $capture, 10 );
+		remove_action( 'mvs_media_restored', $capture, 10 );
+
+		$this->assertArrayHasKey( 'mvs_media_trashed', $seen, 'Trashing fired nothing to listen to.' );
+		$this->assertArrayHasKey( 'mvs_media_restored', $seen, 'Restoring fired nothing to listen to.' );
+		$this->assertSame( $media_id, $seen['mvs_media_trashed'][0] );
+		$this->assertSame( $media_id, $seen['mvs_media_restored'][0] );
+		$this->assertIsString( $seen['mvs_media_trashed'][2] );
+	}
+
 	public function test_delete_cascade_removes_index_row(): void {
 		$media_id = $this->insert_media();
 		$this->assertTrue( $this->repo->exists( $media_id ) );

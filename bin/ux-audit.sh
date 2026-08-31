@@ -184,6 +184,27 @@ if [ "${RTL_RAW:-0}" -gt 0 ]; then
              | head -10 || true)
 fi
 
+# ── Advisory: border contract — structure using the CONTROL token ──
+# Three tiers, one job each (see frontend.css :root): --mvs-border-light is
+# STRUCTURE, --mvs-border is CONTROLS, --mvs-border-strong is EMPHASIS. Before
+# 2.4.0 one token did all three, so a text input drew the same line as the
+# panel containing it and nesting produced identical stacked edges. Only
+# unambiguous container words are matched here, so this stays advisory-quiet
+# rather than second-guessing every selector.
+while IFS=: read -r file line snippet; do
+    [ -z "$file" ] && continue
+    violation "advisory" "Border contract structure-uses-control-token" "$file" "$line" "\`$(echo "$snippet" | head -c 70 | tr '\n' ' ' | sed 's/|/\\|/g')\`"
+    ADVISORY_COUNT=$((ADVISORY_COUNT+1))
+done < <(find "$PLUGIN_DIR" -name '*.css' "${FIND_EXCLUDES[@]}" -not -name '*.min.css' -not -name '*-rtl.css' -print0 2>/dev/null \
+         | xargs -0 awk '
+             /\{[[:space:]]*$/ && !/^[[:space:]]*@/ { sel=$0; sub(/[[:space:]]*\{.*/,"",sel) }
+             /^[[:space:]]*border(-(top|bottom|left|right|inline|block)[a-z-]*)?[[:space:]]*:[[:space:]]*[0-9]/ &&
+               /var\(--mvs-border[,)]/ &&
+               sel ~ /(panel|card|__list|section|-wrap|-grid|modal-body|__row)/ &&
+               sel !~ /(input|select|textarea|button|btn|field|chip|search|dropzone|picker-item|actions)/ {
+                 print FILENAME":"FNR":"$0 }
+         ' 2>/dev/null | head -10 || true)
+
 echo
 echo "---"
 echo "**Block-severity violations: $BLOCK_COUNT** | **Advisory: $ADVISORY_COUNT**"

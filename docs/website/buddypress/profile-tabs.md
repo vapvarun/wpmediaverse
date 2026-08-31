@@ -29,6 +29,26 @@ The Media tab displays the profile owner's published media items in a paginated 
 
 ![Media tab content showing grid of photos with privacy badges](../images/bp-profile-media.jpg)
 
+## Sub-tabs
+
+As of 2.4.0 the profile **Media** tab has three sub-tabs:
+
+| Sub-tab | URL |
+|---------|-----|
+| Media | `/members/{username}/media/` |
+| Albums | `/members/{username}/media/albums/` |
+| Documents | `/members/{username}/media/documents/` |
+
+### Documents sub-tab
+
+The Documents sub-tab lists the profile owner's documents, filtered by what the **viewer** is allowed to see:
+
+- The profile **owner** sees all of their own documents.
+- A **logged-in member** sees members-level and public documents, plus anything shared directly with them.
+- A **logged-out visitor** sees only public documents.
+
+Free registers the sub-tab and emits the filter `mvs_profile_documents_html( string $html, int $owner_id, int $viewer_id )`; WPMediaVerse Pro answers it (`Documents/ProfileDocuments.php`) with the privacy-filtered document list. It works on both BuddyPress and BuddyBoss (BuddyPress-compatible). This is BuddyPress-only - there is no standalone `/author` Documents tab.
+
 ## Profile URL Pattern
 
 WPMediaVerse also registers a standalone media profile URL:

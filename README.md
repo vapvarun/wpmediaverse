@@ -3,10 +3,10 @@
 [![WordPress](https://img.shields.io/badge/WordPress-6.5%2B-blue?logo=wordpress)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF?logo=php)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPLv2-green)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/Version-1.3.0-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/v1.3.0)
+[![Version](https://img.shields.io/badge/Version-2.4.0-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/v2.4.0)
 [![BuddyPress](https://img.shields.io/badge/BuddyPress-Compatible-orange)](https://buddypress.org/)
 [![Gutenberg](https://img.shields.io/badge/Gutenberg-12%20Blocks-purple)](https://developer.wordpress.org/block-editor/)
-[![REST API](https://img.shields.io/badge/REST%20API-80%2B%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
+[![REST API](https://img.shields.io/badge/REST%20API-138%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
 
 **The media layer your community site is missing.** Custom database tables, AI moderation, direct messaging, and a full social layer — without requiring BuddyPress. The only WordPress media plugin that doesn't store uploads in `wp_posts`.
 
@@ -14,75 +14,22 @@
 
 [Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2) · [Download Free](https://store.wbcomdesigns.com/wpmediaverse/) · [Get Pro](https://store.wbcomdesigns.com/wpmediaverse-pro/) · [Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/) · [Announcement](https://vapvarun.com/why-i-built-wpmediaverse/)
 
-> **Why WPMediaVerse?** Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in `wp_posts`. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses 21 dedicated, indexed MySQL tables — media queries never touch your posts, pages, or products. Performance stays predictable at 100,000+ media items.
+> **Why WPMediaVerse?** Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in `wp_posts`. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses 22 dedicated, indexed MySQL tables — media queries never touch your posts, pages, or products. Performance stays predictable at 100,000+ media items.
 
 ---
 
-## What's New in 1.3.0 (May 2026)
+## What's New in 2.4.0
 
-Major release. Automatic image optimization, modern WebP and AVIF formats, cloud storage migration tools, FULLTEXT search at scale, security hardening, and dozens of fixes. Bundles all work from the unreleased 1.2.1 and 1.2.2 branches.
+Documents get a real home, and My Media becomes a set of addressable sections.
 
-**Image performance jump**
+- New: **A document drive per member** (with Pro) — folders, trash and restore, targeted sharing to a member or a role, in-drive search. Documents are deliberately not photos and do not live in the media library.
+- New: **`use_mvs_documents` capability** answers "may this member have a document library at all", separately from whether they may upload and from whether a given file is readable. Granted to every role by default, because it arrives on a feature that already shipped.
+- New: **Every My Media section is a URL** (`/my-media/<slug>/`), painted server-side on first load. Editing your profile became a section, which returned about 110px at the top of every visit.
+- Improve: Documents admin gained a single view and edit screen, writing through the same path the REST API uses so the two cannot drift.
+- Fix: Album IDs are evicted from `mvs_media_index`. Albums had been writing `wp_posts` IDs into a table whose primary key auto-increments for media — on a site where uploads have outrun post IDs, creating an album overwrote a real photo's slug and privacy.
+- Fix: A missing `vendor/` took the whole site down rather than the plugin. Runtime dependencies now ship under `libs/` and the autoloader is hand-written, so there is no Composer autoloader that can go missing.
 
-- New: Automatic image optimization on every upload. JPEGs, PNGs, and GIFs are re-encoded for smaller file size with hidden camera data stripped. Most uploads drop 10 to 30 percent without any visible quality change.
-- New: WebP image format support. Every uploaded image gets a second copy in WebP, around 25 to 35 percent smaller than JPEG. Modern browsers automatically use the smaller file; older browsers keep using the original.
-- New: AVIF image format support for even smaller files. AVIF is roughly 30 percent smaller than WebP again. Opt in from Settings, Storage tab.
-- New: Frontend serves WebP across every surface. Explore grid, BuddyPress activity feed, dashboard cards, single-media view, and the lightbox all swap in WebP automatically when the visitor's browser supports it.
-- New: Private images now also serve WebP and AVIF. Access-rule-protected media gets the same modern-format speed boost as public media.
-- New: WP-CLI commands to optimize existing media. Run `wp mvs optimize 123` on one item or `wp mvs optimize-bulk` across the whole library. Resume-safe if interrupted.
-- New: Compatible with EWWW, Imagify, Smush, and ShortPixel through a single extension point.
-
-**Storage management**
-
-- New: Cloud storage migration tools. Move existing local media to S3 or BunnyCDN in batches, then clean up the local copies after verification. New WP-CLI command `wp mvs migrate-storage --from=local --to=bunnycdn` handles the bulk move with idempotent resume support.
-- New: Direct CDN URLs for public media. New setting on the Storage tab: when enabled on a cloud-storage install, public images load directly from your CDN edge instead of being proxied through WordPress.
-
-**Admin + tools**
-
-- New: New Optimization column on the All Media admin listing. Shows percent saved per file. Row actions Optimize and Details. The Details page shows everything stored about a file with inline buttons to re-optimize, repair thumbnails, or move to trash.
-- New: Default video poster for videos without an embedded cover image. Previously these showed a black frame. Now they render a clean placeholder.
-- New: Audio card design. Audio with embedded cover art shows the cover; audio without art shows a unique waveform image generated from the file id.
-- New: Filename strategy setting. New uploads can be saved with hashed filenames or sanitized original names.
-- New: Faster search at scale. Explore search now uses a FULLTEXT index for 3+ character queries, returning results across 100,000+ media items in milliseconds.
-- New: Opt-in usage telemetry to help us prioritize features. Default off. No personal data, file names, or content ever leaves your site.
-
-**Security + stability**
-
-- Fix: BuddyPress activity privacy now follows media privacy. Previously a non-public media uploaded to a BP activity would leak the activity card (composer text, timestamp, author) to the public stream.
-- Fix: REST per-page hardening across all list endpoints. Callers can no longer request unbounded result sets to slow the site.
-- Fix: Most MP4 video uploads now generate proper poster images on managed WordPress hosts.
-- Fix: Cloud storage uploads now generate thumbnails reliably.
-- Fix: Animated GIFs stay animated through the optimization pipeline.
-- Fix: PHP 8.4 and PHP 8.5 compatibility — all deprecation warnings cleared.
-
-[Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/v1.3.0) · [Changelog](#changelog) (below)
-
----
-
-## What's New in 1.2.0 (May 2026)
-
-The "complete the experience" release. Every UX gap from 1.1.x closed before shipping. WCAG 2.1 AA pass on every customer-facing surface.
-
-- New: Member Photos block and shortcode (`mvs/member-photos`, `[mvs_member_photos]`). Auto-detects whose photos to render: explicit `userId`, BuddyPress displayed user, post author, or current user.
-- New: PDF Viewer block and shortcode (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`). Browser-native PDF embed with configurable height and toolbar toggle. Five distinct empty states.
-- New: Sort options on Media Grid: Most Popular, Most Viewed, Most Reactions, Random, plus asc/desc and per-author filter.
-- New: Search autocomplete on Explore. Debounced 250 ms, top-8 title matches, full keyboard navigation.
-- New: Lightbox Download and Fullscreen. Toolbar buttons plus `F` keyboard shortcut. Download count tracked, rate-limited at 30 per minute per user.
-- New: Per-media Edit modal. Cog icon on your own dashboard cards opens a prefilled modal for title, description, privacy, and allow-download. Live update without reload.
-- New: Open Graph and Twitter Card meta on every `/media/{slug}/` so links unfurl correctly in Slack, Twitter, LinkedIn, and Discord.
-- New: Popular tag pills in the upload modal, per-tile filename and remove buttons, and an audio-fallback icon.
-- New: Bulk Actions on All Media. Multi-select plus a context-aware action menu (Restore + Delete permanently in the Trash filter, otherwise Move to Trash).
-- New: Chat panel visibility setting. Choose Everywhere, WPMediaVerse pages only, BuddyPress pages only, or Disabled. Filter `mvs_should_render_chat_panel` for fine-grained overrides.
-- New: Global "Allow downloads" toggle under Media Display. Single switch hides the lightbox button site-wide and refuses the REST endpoint.
-- New: 6-reaction lightbox bar gains `aria-label` and `aria-pressed`. Toolbar buttons all gain `aria-label` and `:focus-visible` outlines.
-- New: Block render forms get `aria-label` (placeholder is not a label, per WCAG).
-- New: `Core\SettingsHelper` canonical static accessor for paired-plugin settings reads.
-- New: `SettingsContractTest` catches register_setting drift at unit-test time instead of at customer save-time.
-- New: Block standard alignment. All 9 registered Free blocks share Spacing, Border, Shadow, and Visibility panels with Pro and wbcom-essential.
-- New: `BaseBPTabIntegration` extracted. A single bug fix on either BuddyPress tab now propagates to both.
-- Fix: BuddyPress notification dedup. Notifications mirror to the BP bell only, no double-render on the dashboard.
-
-[Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/v1.2.0) · [Changelog](#changelog) (below)
+[Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/v2.4.0) · [Changelog](#changelog) (below)
 
 ---
 
@@ -208,7 +155,7 @@ Deeply integrated with BuddyPress — all features activate automatically when B
 | Shared UI | `mvs/shared-ui` | Lightbox shell (image/video/audio), FAB uploader, shared components |
 | Lock Overlay | `mvs/lock-overlay` | Paywall overlay with blurred preview + unlock prompt |
 
-12 more Pro blocks coming in 1.2.0 (Pro layout feeds + tournament/challenge/battle/leaderboard/compete-hub blocks). See [Roadmap](#-roadmap--120-in-development).
+WPMediaVerse Pro adds 12 more blocks: the four layout feeds plus tournament, challenge, battle, leaderboard and compete-hub blocks.
 
 ### Shortcodes
 
@@ -425,7 +372,9 @@ No. WPMediaVerse works standalone. BuddyPress features (activity, profile/group 
 Yes. Use access rules (role, capability, or purchase-based) combined with signed URLs and the lock overlay block to gate premium media content.
 
 **What file types are supported?**
-Images (jpg, png, gif, webp, svg), video (mp4, webm, mov), audio (mp3, wav, ogg, flac), and documents (pdf, doc, zip). Configurable via settings. PDF inline preview block coming in 1.2.0.
+Images (jpg, png, gif, webp, svg), video (mp4, webm, mov) and audio (mp3, wav, ogg, flac), configurable in settings.
+
+PDFs and other documents are deliberately **not** accepted by the media library — a contract is not a photo, and mixing them made both worse. New PDF uploads are refused there (`UploadService::hard_refused_mimes()`), while historical PDFs keep rendering. Documents have their own home instead: WPMediaVerse Pro 2.4.0 gives each member a document drive with folders, trash, sharing and search.
 
 **Can I import from rtMedia?**
 Yes. Use `wp mvs import-rtmedia --dry-run` to preview, then run without `--dry-run` to import. Handles media, albums, album-media relationships, and engagement (reactions, comments, views) as of 1.2.0.

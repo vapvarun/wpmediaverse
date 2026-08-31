@@ -56,8 +56,6 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | GDPR data export & erasure | Yes | Yes |
 | **Video** | | |
 | Video upload & playback | Yes | Yes |
-| Multi-quality transcoding (720p/480p/360p) | -- | Yes |
-| HLS adaptive streaming | -- | Yes |
 | Video chapter markers | -- | Yes |
 | Resume playback (pick up where you left off) | -- | Yes |
 | Auto-captions via OpenAI Whisper | -- | Yes |
@@ -115,8 +113,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | 150+ action and filter hooks | Yes | Yes |
 | Template override system | Yes | Yes |
 | Custom storage driver API | Yes | Yes |
-| WP-CLI commands (18 commands, `wp mvs` namespace) | Yes | Yes |
-| `wp mvs generate-video-thumbnails` (poster backfill) | Yes | Yes |
+| WP-CLI commands (`wp mvs` namespace) | Yes | Yes |
 | Migration tools (rtMedia, MediaPress, BuddyBoss) | -- | Yes |
 | MigrationPage admin (per-platform cards) | -- | Yes |
 | **Accessibility** | | |
@@ -168,7 +165,7 @@ WPMediaVerse Pro is for sites that need professional-grade features:
 
 - **Visual identity** - Choose from Instagram, Pinterest, Flickr, or Dribbble layouts to match your community's style
 - **Scale** - Offload media to S3 or BunnyCDN for global CDN delivery and unlimited storage
-- **Video intelligence** - Multi-quality transcoding, adaptive streaming, chapters, auto-captions, and engagement analytics
+- **Video intelligence** - Chapters, auto-captions, and engagement analytics
 - **Engagement** - Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
 - **Monetization** - Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
 - **Privacy** - A picker UI for all six privacy levels, plus saved presets and bulk privacy management

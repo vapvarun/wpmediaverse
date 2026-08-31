@@ -166,38 +166,6 @@ wp mvs moderation-stats
 
 ---
 
-## wp mvs generate-video-thumbnails
-
-Generate poster frames for video media items that don't have a `thumb_large` meta entry yet. Uses ffmpeg to extract a frame at the second mark of each video. Idempotent - videos that already have a poster are skipped unless `--force` is passed.
-
-Recommended after upgrading to 1.2.0 to backfill posters for any video uploaded before the fix. Without a poster, video media renders a black frame in the lightbox until playback starts; with a poster, the first frame appears immediately.
-
-```bash
-# Backfill missing posters (skips videos that already have one).
-wp mvs generate-video-thumbnails
-
-# Dry-run to count what would be processed.
-wp mvs generate-video-thumbnails --dry-run
-
-# Re-extract posters even when they already exist (e.g. after switching ffmpeg builds).
-wp mvs generate-video-thumbnails --force
-```
-
-**Requirements:**
-
-- ffmpeg available on the host system (check with `which ffmpeg`).
-
-**Options:**
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--force` | off | Overwrite existing `thumb_large` posters |
-| `--dry-run` | off | Count eligible videos without writing to disk or DB |
-
-Added in 1.2.0.
-
----
-
 ## wp mvs backfill-activity-thumbnails
 
 Backfill BuddyPress activity thumbnails for media items that were imported without them (e.g., bulk imports or migrations from another plugin). Modifies the `bp_activity` table directly, so take a database backup before running without `--dry-run`. Requires the BuddyPress Activity component to be active; the command exits early otherwise.

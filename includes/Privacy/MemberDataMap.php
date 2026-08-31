@@ -110,6 +110,14 @@ final class MemberDataMap {
 				'label'   => __( 'Notifications', 'wpmediaverse' ),
 			),
 
+			// Registered push device tokens. A token identifies the member's
+			// physical device, so an erasure request must drop it — otherwise
+			// pushes could still be sent to a departed member's phone.
+			'mvs_device_tokens'             => array(
+				'columns' => array( 'user_id' ),
+				'label'   => __( 'Push device tokens', 'wpmediaverse' ),
+			),
+
 			// Messaging. MediaVerse's policy is a uniform hard delete: leaving a
 			// community removes the person and what they said. This matches the
 			// existing account-delete path, and BuddyNext's identical policy, so
@@ -167,7 +175,7 @@ final class MemberDataMap {
 			// simply by leaving — and the moderator who acted on it loses the
 			// record of why. The reporter's identity is anonymised; the case
 			// stays.
-			'mvs_reports'      => array(
+			'mvs_reports'           => array(
 				'columns' => array( 'reporter_id', 'target_id' ),
 				'label'   => __( 'Reports', 'wpmediaverse' ),
 				'reason'  => 'Moderation evidence. A member must not be able to erase the report another member filed about them, and the moderator needs the record of why they acted.',
@@ -176,7 +184,7 @@ final class MemberDataMap {
 
 			// A usage/billing ledger. Site owners have accounting obligations
 			// that outlive a member's account.
-			'mvs_transactions' => array(
+			'mvs_transactions'      => array(
 				'columns' => array( 'user_id' ),
 				'label'   => __( 'Usage ledger', 'wpmediaverse' ),
 				'reason'  => 'Billing and usage ledger the site owner may be legally required to retain.',
@@ -189,7 +197,7 @@ final class MemberDataMap {
 			// other active participants survives — its created_by must be removed,
 			// not the whole thread, or erasing one member would destroy a
 			// conversation others are part of.
-			'mvs_conversations' => array(
+			'mvs_conversations'     => array(
 				'columns' => array( 'created_by' ),
 				'label'   => __( 'Conversations created', 'wpmediaverse' ),
 				'reason'  => 'A conversation with other active participants is a shared record; erasing its creator must not delete the thread for everyone else.',

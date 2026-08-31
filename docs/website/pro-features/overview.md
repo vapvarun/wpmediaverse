@@ -64,7 +64,6 @@ The migration tool admin page is now a generic shell that hosts per-platform car
 |----------|------|--------------|
 | Layout Modes | [layout-modes.md](layout-modes.md) | Instagram, Pinterest, Flickr, and Dribbble feed layouts |
 | Cloud Storage | [cloud-storage.md](cloud-storage.md) | Amazon S3 and BunnyCDN storage drivers |
-| Video Transcoding | [video-transcoding.md](video-transcoding.md) | Async FFmpeg transcoding to 720p/480p/360p and HLS |
 | Video Chapters | [video-chapters.md](video-chapters.md) | Chapter markers and resume playback |
 | Auto-Captions | [auto-captions.md](auto-captions.md) | OpenAI Whisper transcription and WebVTT captions |
 | Watermarking | [watermarking.md](watermarking.md) | GD-based text and logo watermarks on media |

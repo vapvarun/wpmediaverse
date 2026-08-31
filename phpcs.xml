@@ -98,6 +98,9 @@
 	</rule>
 
 	<exclude-pattern>vendor/*</exclude-pattern>
+	<!-- Bundled runtime libraries (Action Scheduler, EDD SL SDK). Third-party
+	     source we ship as-is; we do not own its coding standards. -->
+	<exclude-pattern>libs/*</exclude-pattern>
 	<exclude-pattern>node_modules/*</exclude-pattern>
 	<exclude-pattern>assets/*</exclude-pattern>
 	<exclude-pattern>build/*</exclude-pattern>

@@ -42,7 +42,7 @@ class ActivityFormIntegration {
 		}
 
 		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
-		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
+		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		?>
 		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
 			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*,audio/*" multiple style="display:none" />

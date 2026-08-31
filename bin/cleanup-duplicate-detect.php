@@ -43,7 +43,12 @@ if ( ! is_dir( $out_dir ) ) {
 }
 
 const MIN_TOKENS = 30;
-const EXCLUDED_DIRS = array( 'vendor', 'node_modules', 'dist', 'build', 'audit', 'tests' );
+// `libs` sits beside `vendor` here for the same reason: it is third-party source
+// we ship but do not write. Bundling Action Scheduler and the EDD SDK under
+// libs/ put 145 files of other people's code in front of this detector, which
+// reported 14 duplicate clusters — every one of them inside those two packages,
+// and none of them ours to fix. The gate is for OUR copy-paste.
+const EXCLUDED_DIRS = array( 'vendor', 'libs', 'node_modules', 'dist', 'build', 'audit', 'tests' );
 
 /**
  * Recursively find PHP files under $dir, excluding library trees.

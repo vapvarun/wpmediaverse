@@ -1,0 +1,866 @@
+<title>MediaVerse Document Library — plan & UX</title>
+
+<style>
+:root{
+  --ground:#EFF1EE; --surface:#FFFFFF; --surface-2:#F7F8F6; --surface-3:#E7EAE6;
+  --ink:#19211F; --ink-2:#59635F; --ink-3:#8B9591;
+  --rule:#DADEd9; --rule-2:#C4CAC3;
+  --accent:#0B6E5F; --accent-2:#08544A; --accent-soft:#DBEAE5;
+  --warn:#8A5E17; --warn-soft:#F3E8D2; --crit:#9C3527; --crit-soft:#F5E0DB;
+  --ok:#416B2F; --ok-soft:#E3EDDB; --on-accent:#FFFFFF;
+  --shadow:0 1px 2px rgba(25,33,31,.05), 0 8px 24px -12px rgba(25,33,31,.18);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,ui-serif,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#111614; --surface:#191F1D; --surface-2:#1E2523; --surface-3:#252D2A;
+    --ink:#E4E9E6; --ink-2:#9BA5A1; --ink-3:#78827E;
+    --rule:#2B3330; --rule-2:#3A433F;
+    --accent:#4FBFA8; --accent-2:#79D3C0; --accent-soft:#16302B;
+    --warn:#D6A55B; --warn-soft:#2E2617; --crit:#E0897A; --crit-soft:#331F1B;
+    --ok:#8DBE71; --ok-soft:#1D2818; --on-accent:#0C1A17;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#111614; --surface:#191F1D; --surface-2:#1E2523; --surface-3:#252D2A;
+  --ink:#E4E9E6; --ink-2:#9BA5A1; --ink-3:#78827E;
+  --rule:#2B3330; --rule-2:#3A433F;
+  --accent:#4FBFA8; --accent-2:#79D3C0; --accent-soft:#16302B;
+  --warn:#D6A55B; --warn-soft:#2E2617; --crit:#E0897A; --crit-soft:#331F1B;
+  --ok:#8DBE71; --ok-soft:#1D2818; --on-accent:#0C1A17;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+.col{max-width:72ch}
+
+/* ---------- masthead ---------- */
+.mast{padding:clamp(40px,7vw,86px) 0 34px;border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+}
+.eyebrow::after{content:"";height:1px;flex:1;min-width:30px;background:var(--rule-2)}
+h1{
+  font-family:var(--serif);font-weight:600;font-size:clamp(34px,5.4vw,58px);
+  line-height:1.04;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;
+}
+.lede{font-size:clamp(17px,2vw,19.5px);color:var(--ink-2);margin:0;max-width:62ch}
+.lede b{color:var(--ink);font-weight:600}
+
+.facts{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);
+  margin-top:38px;border-radius:3px;overflow:hidden;
+}
+.fact{background:var(--surface);padding:14px 16px}
+.fact dt{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 6px;
+}
+.fact dd{margin:0;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.fact dd small{font-size:12.5px;font-weight:400;color:var(--ink-2);letter-spacing:0}
+
+/* ---------- nav ---------- */
+nav.toc{
+  position:sticky;top:0;z-index:40;background:var(--ground);
+  background:color-mix(in srgb,var(--ground) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);
+}
+nav.toc ol{
+  list-style:none;margin:0 auto;padding:0 clamp(16px,4vw,40px);max-width:1180px;
+  display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin;
+}
+nav.toc a{
+  display:block;padding:12px 12px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);text-decoration:none;
+  white-space:nowrap;border-bottom:2px solid transparent;
+}
+nav.toc a:hover{color:var(--accent);border-bottom-color:var(--accent-soft)}
+nav.toc a:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:2px}
+
+/* ---------- sections ---------- */
+section{padding:clamp(46px,6vw,76px) 0;border-bottom:1px solid var(--rule)}
+.sec-head{display:flex;gap:16px;align-items:baseline;margin:0 0 10px}
+.sec-num{
+  font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.1em;
+  flex:none;padding-top:6px;
+}
+h2{
+  font-family:var(--serif);font-weight:600;font-size:clamp(25px,3.4vw,36px);
+  line-height:1.14;letter-spacing:-.012em;margin:0;text-wrap:balance;
+}
+.sec-sub{color:var(--ink-2);margin:0 0 30px 44px;max-width:64ch}
+@media(max-width:640px){.sec-sub{margin-left:0}}
+h3{
+  font-family:var(--sans);font-weight:650;font-size:15px;letter-spacing:.005em;
+  margin:34px 0 12px;
+}
+h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 10px;font-weight:500}
+p{margin:0 0 16px}
+strong{font-weight:650}
+code,.m{font-family:var(--mono);font-size:.875em;background:var(--surface-3);padding:.12em .34em;border-radius:3px;color:var(--ink)}
+a{color:var(--accent-2)}
+
+/* ---------- callout ---------- */
+.note{
+  border-left:2px solid var(--accent);background:var(--surface);padding:16px 20px;
+  margin:22px 0;border-radius:0 3px 3px 0;box-shadow:var(--shadow);
+}
+.note.crit{border-left-color:var(--crit)}
+.note.warn{border-left-color:var(--warn)}
+.note p:last-child{margin-bottom:0}
+.note .tag{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--accent);display:block;margin-bottom:7px;
+}
+.note.crit .tag{color:var(--crit)} .note.warn .tag{color:var(--warn)}
+
+/* ---------- schema cards ---------- */
+.schema{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:18px;margin:26px 0 8px}
+.tbl{background:var(--surface);border:1px solid var(--rule);border-radius:4px;overflow:hidden;box-shadow:var(--shadow)}
+.tbl-h{padding:11px 14px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tbl-h b{font-family:var(--mono);font-size:12.5px;font-weight:600}
+.tbl-h .badge{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+  padding:3px 7px;border-radius:2px;background:var(--surface-3);color:var(--ink-2);white-space:nowrap;
+}
+.tbl-h .badge.new{background:var(--accent-soft);color:var(--accent)}
+.tbl-h .badge.add{background:var(--warn-soft);color:var(--warn)}
+.tbl ul{list-style:none;margin:0;padding:6px 0}
+.tbl li{
+  font-family:var(--mono);font-size:11.5px;line-height:1.5;padding:3px 14px;
+  display:flex;justify-content:space-between;gap:12px;color:var(--ink-2);
+}
+.tbl li i{font-style:normal;color:var(--ink-3);font-size:10.5px}
+.tbl li.key{color:var(--accent);font-weight:600}
+.tbl li.fk{background:var(--accent-soft);color:var(--accent);font-weight:600;padding-top:4px;padding-bottom:4px}
+.tbl li.newcol{color:var(--warn);font-weight:600}
+
+/* ---------- generic data table ---------- */
+.scroll{overflow-x:auto;margin:22px 0;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;background:var(--surface-2);white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:none}
+td .m{font-size:12px}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;padding:3px 7px;border-radius:2px;white-space:nowrap;font-weight:600;
+}
+.chip.crit{background:var(--crit-soft);color:var(--crit)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.neutral{background:var(--surface-3);color:var(--ink-2)}
+.chip.accent{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- roots diagram ---------- */
+.roots{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px;margin:26px 0}
+.root{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.root::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--accent)}
+.root.computed::before{background:repeating-linear-gradient(180deg,var(--accent) 0 5px,transparent 5px 10px)}
+.root h5{margin:0 0 4px;font-size:15px;font-weight:650;font-family:var(--sans)}
+.root .src{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);display:block;margin-bottom:10px}
+.root p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.55}
+
+/* ---------- wireframes ---------- */
+.wfgrid{display:grid;gap:22px;margin:26px 0}
+@media(min-width:900px){.wfgrid.two{grid-template-columns:1fr 1fr}}
+.wf{
+  background:var(--surface);border:1px solid var(--rule-2);border-radius:5px;
+  overflow:hidden;box-shadow:var(--shadow);font-size:13px;
+}
+.wf-cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 8px;
+}
+.wf-chrome{
+  background:var(--surface-2);border-bottom:1px solid var(--rule);padding:8px 12px;
+  display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:var(--ink-3);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--rule-2);flex:none}
+.wf-crumb{
+  padding:11px 14px;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:11.5px;
+  color:var(--ink-2);display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+}
+.wf-crumb b{color:var(--ink);font-weight:600}
+.wf-crumb .sep{color:var(--ink-3)}
+.wf-crumb .locked{color:var(--ink-3);font-style:italic}
+.wf-bar{
+  padding:9px 14px;border-bottom:1px solid var(--rule);display:flex;gap:7px;
+  flex-wrap:wrap;align-items:center;background:var(--surface-2);
+}
+.btn{
+  font-size:11.5px;padding:5px 11px;border-radius:3px;border:1px solid var(--rule-2);
+  background:var(--surface);color:var(--ink-2);white-space:nowrap;
+}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.ghost{border-style:dashed}
+.spacer{flex:1;min-width:8px}
+.wf-heads{
+  display:grid;grid-template-columns:22px 1fr 74px 106px 92px;gap:10px;padding:7px 14px;
+  border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+}
+.wf-row{
+  display:grid;grid-template-columns:22px 1fr 74px 106px 92px;gap:10px;padding:9px 14px;
+  border-bottom:1px solid var(--rule);align-items:center;
+}
+.wf-row:last-child{border-bottom:none}
+.wf-row .nm{font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-row .meta{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.wf-row.folder .nm{color:var(--accent)}
+.ic{
+  width:20px;height:20px;border-radius:3px;display:grid;place-items:center;
+  font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:-.02em;
+  background:var(--surface-3);color:var(--ink-3);
+}
+.ic.f{background:var(--accent-soft);color:var(--accent)}
+.ic.pdf{background:var(--crit-soft);color:var(--crit)}
+.ic.doc{background:var(--accent-soft);color:var(--accent)}
+.ic.xls{background:var(--ok-soft);color:var(--ok)}
+.wf-empty{padding:30px 18px;text-align:center;color:var(--ink-3)}
+.wf-empty b{display:block;color:var(--ink-2);font-weight:600;margin-bottom:5px;font-size:14px}
+.wf-note{
+  padding:9px 14px;background:var(--warn-soft);color:var(--warn);
+  font-family:var(--mono);font-size:10.5px;line-height:1.5;border-bottom:1px solid var(--rule);
+}
+.wf-sect{padding:13px 14px;border-bottom:1px solid var(--rule)}
+.wf-sect:last-child{border-bottom:none}
+.wf-sect h6{
+  margin:0 0 9px;font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;
+}
+.person{display:flex;align-items:center;gap:9px;padding:5px 0}
+.av{width:24px;height:24px;border-radius:50%;background:var(--surface-3);flex:none;display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--ink-3)}
+.person .who{flex:1;font-size:12.5px}
+.person .who i{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);font-family:var(--mono)}
+.sel{font-family:var(--mono);font-size:11px;padding:3px 8px;border:1px solid var(--rule-2);border-radius:3px;color:var(--ink-2);background:var(--surface-2)}
+.preview-pane{
+  margin:0;padding:26px 14px;background:var(--surface-2);border-bottom:1px solid var(--rule);
+  display:grid;place-items:center;text-align:center;gap:5px;min-height:118px;
+}
+.preview-pane .big{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.09em;text-transform:uppercase}
+.social{display:flex;gap:7px;padding:11px 14px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.pill{font-family:var(--mono);font-size:10.5px;padding:4px 9px;border-radius:11px;border:1px solid var(--rule-2);color:var(--ink-2)}
+.mobile{max-width:330px}
+.wf-row.mob{grid-template-columns:22px 1fr auto}
+.wf-row.mob .sub{grid-column:2/4;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:2px}
+.wf-heads.mob{grid-template-columns:22px 1fr auto}
+
+/* ---------- phase chart ---------- */
+.phases{margin:26px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface)}
+.ph{
+  display:grid;grid-template-columns:40px minmax(150px,1.1fr) minmax(120px,2.2fr) 52px;
+  gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--rule);
+}
+.ph:last-child{border-bottom:none}
+.ph .no{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ph .nm{font-size:13.5px;font-weight:550;line-height:1.35}
+.ph .nm i{display:block;font-style:normal;font-weight:400;font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.bar{height:9px;border-radius:2px;background:var(--accent);min-width:3px;width:calc(var(--d)/7*100%)}
+.bar.risk{background:var(--crit)}
+.bar.free{background:var(--ok)}
+.bar.dec{background:repeating-linear-gradient(90deg,var(--ink-3) 0 3px,transparent 3px 6px);height:9px;width:100%;opacity:.5}
+.ph .d{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
+.ph.total{background:var(--surface-2);font-weight:650}
+.ph.total .d{color:var(--ink);font-weight:700}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0 0;font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:7px;border-radius:2px;display:inline-block}
+
+/* ---------- ladder ---------- */
+.ladder{counter-reset:s;margin:24px 0;padding:0;list-style:none}
+.ladder li{
+  position:relative;padding:12px 16px 12px 52px;border:1px solid var(--rule);
+  border-bottom:none;background:var(--surface);font-size:14px;
+}
+.ladder li:first-child{border-radius:4px 4px 0 0}
+.ladder li:last-child{border-bottom:1px solid var(--rule);border-radius:0 0 4px 4px}
+.ladder li::before{
+  counter-increment:s;content:counter(s);position:absolute;left:16px;top:12px;
+  width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+  font-family:var(--mono);font-size:11px;font-weight:700;display:grid;place-items:center;
+}
+.ladder li:last-child::before{background:var(--surface-3);color:var(--ink-3)}
+.ladder b{font-weight:650}
+.ladder i{font-style:normal;color:var(--ink-2);display:block;font-size:12.5px;margin-top:3px}
+
+/* ---------- footer ---------- */
+footer{padding:44px 0 66px;color:var(--ink-2);font-size:13.5px}
+footer h4{margin-top:0}
+footer ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+footer li{font-family:var(--mono);font-size:12px}
+footer li b{color:var(--ink);font-weight:600}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<nav class="toc" aria-label="Sections">
+  <ol>
+    <li><a href="#shift">The shift</a></li>
+    <li><a href="#model">Data model</a></li>
+    <li><a href="#nav">Navigation</a></li>
+    <li><a href="#screens">Screens</a></li>
+    <li><a href="#access">Access</a></li>
+    <li><a href="#build">Build order</a></li>
+    <li><a href="#embed">Embeds</a></li>
+    <li><a href="#decide">Decisions</a></li>
+    <li><a href="#drive">Drive parity</a></li>
+  </ol>
+</nav>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="eyebrow">MediaVerse Free + Pro 2.5.0 · planning</p>
+    <h1>A document library that reuses the library you already have</h1>
+    <p class="lede">Documents become <b>one more media type</b>, not a second content system. Folders get a single purpose-built table. The drive root is a number, not a row. What was a nine-table migration across fifty production sites is now <b>two purpose-built tables and a handful of added columns</b> — folders, and a search side table that keeps the FULLTEXT index off the hot media table (scale review, 2026-08-08).</p>
+    <p class="lede" style="margin-top:14px;font-size:15.5px"><b>Phase 0 is closed.</b> Eight decisions locked 2026-08-08, two of them corrected after a team review found real schema defects. Build against them.</p>
+
+    <dl class="facts">
+      <div class="fact"><dt>New tables</dt><dd>2 <small>was 3</small></dd></div>
+      <div class="fact"><dt>Schema rewrites</dt><dd>0 <small>keys, PKs, backfills</small></dd></div>
+      <div class="fact"><dt>Build</dt><dd>34.5<small> days</small></dd></div>
+      <div class="fact"><dt>Phases</dt><dd>11<small> + decisions</small></dd></div>
+      <div class="fact"><dt>Decisions</dt><dd>8<small> locked</small></dd></div>
+    </dl>
+  </div>
+</header>
+
+<section id="shift">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">01</span><h2>What changed, and why it matters</h2></div>
+    <p class="sec-sub">The original design made documents a separate entity with their own tables. Reversing that removed every blocker in the audit rather than mitigating them.</p>
+
+    <div class="col">
+      <p>The separation bought exactly one thing: a structural guarantee that a document could never appear in a media grid. It paid for that with <strong>two independent ID spaces</strong> — and the invoice was long.</p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Cost of two ID spaces</th><th>Under one</th></tr></thead>
+        <tbody>
+          <tr><td>Nine Free tables need an <span class="m">object_type</span> column</td><td><span class="chip ok">gone</span></td></tr>
+          <tr><td>Four unique keys widened, two PRIMARY KEYs rebuilt on 50+ live sites</td><td><span class="chip ok">gone</span></td></tr>
+          <tr><td>Parallel comment scope, parallel taxonomy, parallel permission seam</td><td><span class="chip ok">gone</span></td></tr>
+          <tr><td>New REST controllers for every social action</td><td><span class="chip ok">gone</span> — <span class="m">/media/{id}/…</span> already works</td></tr>
+          <tr><td>Quota system that cannot see documents</td><td><span class="chip ok">gone</span> — resolves the owner already</td></tr>
+          <tr><td>PDF viewer rebuilt (it is keyed on <span class="m">media_id</span>)</td><td><span class="chip ok">gone</span> — works untouched</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <div class="note">
+        <span class="tag">The trade, stated plainly</span>
+        <p>“A document never renders in a media grid” becomes a <strong>query guarantee</strong> instead of a structural one. A missed filter puts a PDF in the explore grid — visible on sight, fixed in a patch. The alternative was a botched key migration during auto-update: silent, permanent, on every customer site. Trading an unrecoverable risk for a recoverable one is the right direction.</p>
+      </div>
+      <p>Three mechanisms hold the guarantee: one repository choke point, a one-pass audit of the ~66 files that query <span class="m">mvs_media_index</span> directly, and a CI rule that fails any new query lacking a <span class="m">media_type</span> predicate. That work ships <em>before</em> a single document row can exist.</p>
+    </div>
+  </div>
+</section>
+
+<section id="model">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">02</span><h2>The data model</h2></div>
+    <p class="sec-sub">Two relationships, both single-column and indexed. A document points at one folder; a folder points at one parent. No junction table, no meta join, no recursive query on any read path.</p>
+
+    <div class="schema">
+      <div class="tbl">
+        <div class="tbl-h"><b>mvs_media_index</b><span class="badge">existing</span></div>
+        <ul>
+          <li class="key">media_id <i>PK auto-inc</i></li>
+          <li class="key">media_type <i>the discriminator</i></li>
+          <li class="fk">folder_id <i>new → folders</i></li>
+          <li>album_id <i>media only, untouched</i></li>
+          <li>post_author <i>uploader / drive at root</i></li>
+          <li>privacy <i>default answer</i></li>
+          <li>status, moderation_status</li>
+          <li>file_type <i>the validated MIME</i></li>
+          <li>file_size, file_hash, slug</li>
+          <li>created_at, updated_at</li>
+        </ul>
+      </div>
+
+      <div class="tbl">
+        <div class="tbl-h"><b>mvs_pro_folders</b><span class="badge new">new</span></div>
+        <ul>
+          <li class="key">folder_id <i>PK auto-inc</i></li>
+          <li class="fk">parent_id <i>self · 0 = root</i></li>
+          <li>drive_type <i>user | space | site</i></li>
+          <li>drive_id</li>
+          <li>name, slug</li>
+          <li>path <i>/12/48/ materialized</i></li>
+          <li>depth <i>cap 12</i></li>
+          <li>privacy, status</li>
+          <li>created_by</li>
+          <li>created_at, updated_at, trashed_at</li>
+          <li class="newcol">UNIQUE (drive_type, drive_id,<br>&nbsp;&nbsp;parent_id, name(150)) <i>fixed</i></li>
+        </ul>
+      </div>
+
+      <div class="tbl">
+        <div class="tbl-h"><b>mvs_document_search</b><span class="badge new">new — search only</span></div>
+        <ul>
+          <li class="key">media_id <i>PK, joins the index</i></li>
+          <li>search_text <i>FULLTEXT lives here</i></li>
+          <li>updated_at <i>cache key for renders</i></li>
+        </ul>
+      </div>
+
+      <div class="tbl">
+        <div class="tbl-h"><b>mvs_access_grants</b><span class="badge add">+5 columns</span></div>
+        <ul>
+          <li class="key">id <i>PK</i></li>
+          <li class="fk">media_id <i>document OR folder</i></li>
+          <li class="newcol">target_type <i>media | folder</i></li>
+          <li class="newcol">grantee_type <i>user | role | link</i></li>
+          <li class="newcol">grantee_role</li>
+          <li class="newcol">token_hash <i>NULL, never ''</i></li>
+          <li class="newcol">permission <i>view | comment | edit</i></li>
+          <li>user_id, expires_at, revoked_at</li>
+          <li>source <i>purchase vs share</i></li>
+          <li class="newcol">KEY grantee <i>new — was missing</i></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="note warn">
+        <span class="tag">One migration trap</span>
+        <p><span class="m">token_hash</span> must be <span class="m">DEFAULT NULL</span>. With <span class="m">DEFAULT ''</span> every existing grant row takes the same value and <span class="m">ADD UNIQUE KEY</span> fails on the duplicates. MySQL exempts NULL from UNIQUE — nullable is both correct and the only thing that works.</p>
+      </div>
+
+      <h3>Why folders get a table, not a post type</h3>
+      <p><span class="m">wp_posts</span> on a BuddyPress community holds <strong>65 rows</strong> — 42 of them email templates, because community data lives in <span class="m">bp_*</span> and <span class="m">mvs_*</span> tables. At 10,000 members, folders would be ~99% of that table, and the three meta rows each folder needs would take <span class="m">wp_postmeta</span> from 13 rows to tens of thousands, with a join on every listing.</p>
+      <p>A folder as a post also wastes 15 of 23 columns, including three empty <span class="m">longtext</span>s. A term is worse still — <span class="m">wp_terms</span> has no column for an owner, a timestamp or a status, and the folder view sorts by <em>modified</em> and shows <em>owner</em>.</p>
+      <p><strong>And no folder-meta table.</strong> A folder’s twelve attributes are fixed and nearly all filtered or sorted on. That is the definition of a column.</p>
+
+      <h3>The root is a number</h3>
+      <p><span class="m">folder_id = 0</span> on a document and <span class="m">parent_id = 0</span> on a folder both mean “at the drive root.” There is no root row — so no lazy creation, no ID cache, no delete guard, no race rule. Four mechanisms that existed only to represent an absence.</p>
+      <p><strong>Folder rows scale with deliberate folder creation, not member count.</strong> Ten thousand members who never make a folder produce zero rows.</p>
+    </div>
+  </div>
+</section>
+
+<section id="nav">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Three surfaces, not one tree</h2></div>
+    <p class="sec-sub">A folder shared with you lives in someone else’s drive — its parent chain ends at their root, not yours. Grafting it in would mean one item with two parents in two ownership domains.</p>
+
+    <div class="roots">
+      <div class="root">
+        <h5>My Drive</h5>
+        <span class="src">drive_type='user' · drive_id=me</span>
+        <p>What you own. Real folder rows, real hierarchy, root at <span class="m">0</span>.</p>
+      </div>
+      <div class="root computed">
+        <h5>Shared with me</h5>
+        <span class="src">computed from grants · KEY grantee</span>
+        <p>Entry points others gave you — not their drives. No row, no parent, nothing can be created in it.</p>
+      </div>
+      <div class="root">
+        <h5>Space drives</h5>
+        <span class="src">mvs_document_drive_owners filter</span>
+        <p>One per Space you are an active member of. BuddyNext answers; MediaVerse never reads <span class="m">bn_*</span>.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <p>Two details make the shared surface behave. <strong>Topmost-grant collapsing:</strong> granted both <span class="m">/Contracts</span> and <span class="m">/Contracts/2026</span>, you see one entry — otherwise the same files appear twice at different depths and people think they have duplicates. It is a path-prefix comparison in PHP over the grant set, no extra query.</p>
+
+      <div class="note crit">
+        <span class="tag">Breadcrumbs are a leak vector</span>
+        <p>Open a shared folder and you are inside the owner’s tree. A full breadcrumb would show every ancestor <strong>name</strong> above your grant point — <span class="m">Clients / AcmeCorp-litigation / Contracts</span> when you were given only <em>Contracts</em>. Folder names carry client identities and project codenames.</p>
+        <p><strong>The breadcrumb starts at the highest ancestor you hold a grant on.</strong> Everything above renders as one non-navigable root crumb, never as names — in templates, in API payloads, everywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="screens">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">04</span><h2>The screens</h2></div>
+    <p class="sec-sub">Files are rows, not tiles — a grid of identical PDF icons carries no information. Name, size and modified date are what people scan.</p>
+
+    <div class="wfgrid two">
+      <div>
+        <p class="wf-cap">My Drive — folder view</p>
+        <div class="wf">
+          <div class="wf-chrome"><span class="dot"></span><span>/documents/work/2026/</span></div>
+          <div class="wf-crumb"><span>My Documents</span><span class="sep">/</span><span>Work</span><span class="sep">/</span><b>2026</b></div>
+          <div class="wf-bar">
+            <span class="btn pri">Upload</span><span class="btn ghost">New folder</span>
+            <span class="spacer"></span>
+            <span class="btn">All types</span><span class="btn">Modified</span>
+          </div>
+          <div class="wf-heads"><span></span><span>Name</span><span>Items</span><span>Modified</span><span>Owner</span></div>
+          <div class="wf-row folder"><span class="ic f">DIR</span><span class="nm">Invoices</span><span class="meta">24</span><span class="meta">2 Aug</span><span class="meta">You</span></div>
+          <div class="wf-row folder"><span class="ic f">DIR</span><span class="nm">Contracts</span><span class="meta">8</span><span class="meta">28 Jul</span><span class="meta">You</span></div>
+          <div class="wf-row"><span class="ic pdf">PDF</span><span class="nm">Q3-forecast.pdf</span><span class="meta">2.4 MB</span><span class="meta">6 Aug</span><span class="meta">You</span></div>
+          <div class="wf-row"><span class="ic xls">XLS</span><span class="nm">headcount.xlsx</span><span class="meta">180 KB</span><span class="meta">5 Aug</span><span class="meta">Priya</span></div>
+          <div class="wf-row"><span class="ic doc">DOC</span><span class="nm">retro-notes.docx</span><span class="meta">44 KB</span><span class="meta">1 Aug</span><span class="meta">You</span></div>
+        </div>
+        <p class="wf-cap" style="margin-top:8px">Folders sort above files; counts are direct children — one <span class="m">GROUP BY</span> per page, never recursive.</p>
+      </div>
+
+      <div>
+        <p class="wf-cap">Shared with me</p>
+        <div class="wf">
+          <div class="wf-chrome"><span class="dot"></span><span>/documents/shared/</span></div>
+          <div class="wf-crumb"><b>Shared with me</b></div>
+          <div class="wf-note">Breadcrumb truncated at the grant point. Ancestor folder names above it are never sent.</div>
+          <div class="wf-heads"><span></span><span>Name</span><span>Access</span><span>Shared by</span><span>Expires</span></div>
+          <div class="wf-row folder"><span class="ic f">DIR</span><span class="nm">Contracts</span><span class="meta">Edit</span><span class="meta">Priya</span><span class="meta">—</span></div>
+          <div class="wf-row"><span class="ic pdf">PDF</span><span class="nm">msa-final.pdf</span><span class="meta">View</span><span class="meta">Dan</span><span class="meta">14 Sep</span></div>
+          <div class="wf-row folder"><span class="ic f">DIR</span><span class="nm">Brand assets</span><span class="meta">Comment</span><span class="meta">Space: Design</span><span class="meta">—</span></div>
+        </div>
+        <p class="wf-cap" style="margin-top:8px">Grants collapse to the topmost — a folder and a file inside it list once, not twice.</p>
+      </div>
+    </div>
+
+    <div class="wfgrid two">
+      <div>
+        <p class="wf-cap">Document — single view</p>
+        <div class="wf">
+          <div class="wf-chrome"><span class="dot"></span><span>/documents/q3-forecast/</span></div>
+          <div class="wf-crumb"><span>My Documents</span><span class="sep">/</span><span>Work</span><span class="sep">/</span><span>2026</span><span class="sep">/</span><b>Q3-forecast.pdf</b></div>
+          <div class="preview-pane">
+            <span class="ic pdf" style="width:34px;height:34px;font-size:10px">PDF</span>
+            <span class="big">Tier 1 — native browser viewer</span>
+            <span class="meta" style="font-family:var(--mono);font-size:10.5px;color:var(--ink-3)">signed URL · nosniff · sandboxed frame</span>
+          </div>
+          <div class="social"><span class="pill">12 reactions</span><span class="pill">Favourite</span><span class="pill">3 comments</span><span class="pill">Download</span><span class="pill">Share</span></div>
+          <div class="wf-sect">
+            <h6>Reused from media-single, unchanged</h6>
+            <p style="margin:0;font-size:12.5px;color:var(--ink-2)">Header row, privacy gate, description, social bar and inline edit are identical. Only the preview panel differs.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="wf-cap">Share — permissions</p>
+        <div class="wf">
+          <div class="wf-chrome"><span class="dot"></span><span>Share “Contracts”</span></div>
+          <div class="wf-sect">
+            <h6>People with access</h6>
+            <div class="person"><span class="av">P</span><span class="who">Priya Raman<i>priya@studio.example</i></span><span class="sel">Edit</span></div>
+            <div class="person"><span class="av">D</span><span class="who">Dan Okoye<i>dan@studio.example</i></span><span class="sel">View</span></div>
+            <div class="person"><span class="av">S</span><span class="who">Design Space<i>role · 14 members</i></span><span class="sel">Comment</span></div>
+          </div>
+          <div class="wf-sect">
+            <h6>Add people or a role</h6>
+            <div style="display:flex;gap:7px;align-items:center"><span class="btn ghost spacer">Search members…</span><span class="sel">View</span><span class="btn pri">Add</span></div>
+          </div>
+          <div class="wf-sect">
+            <h6>Link</h6>
+            <div style="display:flex;gap:7px;align-items:center;margin-bottom:9px"><span class="btn">Off</span><span style="font-size:12.5px;color:var(--ink-2)">Anyone with the link can view</span></div>
+            <div class="wf-note" style="border:none;padding:8px 10px;border-radius:3px">Copy now — the link is shown once and stored hashed. It cannot be shown again.</div>
+          </div>
+        </div>
+        <p class="wf-cap" style="margin-top:8px">Never labelled “Public”. On a document, public means unlisted — reachable by URL, never in a feed.</p>
+      </div>
+    </div>
+
+    <div class="wfgrid two">
+      <div>
+        <p class="wf-cap">Empty state — shared drive, read-only</p>
+        <div class="wf">
+          <div class="wf-crumb"><b>Design Space</b><span class="sep">/</span><span>Brand assets</span></div>
+          <div class="wf-empty">
+            <b>No files have been added to this Space yet</b>
+            <span style="font-size:12.5px">Members with edit access can upload here.</span>
+          </div>
+        </div>
+        <p class="wf-cap" style="margin-top:8px">No upload button a member cannot use — that is a support ticket waiting to happen.</p>
+      </div>
+
+      <div>
+        <p class="wf-cap">390px — the drive at phone width</p>
+        <div class="wf mobile">
+          <div class="wf-crumb"><span>…</span><span class="sep">/</span><b>2026</b></div>
+          <div class="wf-bar"><span class="btn pri">Upload</span><span class="btn ghost">New folder</span></div>
+          <div class="wf-heads mob"><span></span><span>Name</span><span>Size</span></div>
+          <div class="wf-row mob folder"><span class="ic f">DIR</span><span class="nm">Invoices</span><span class="meta">24</span><span class="sub">2 Aug · You</span></div>
+          <div class="wf-row mob"><span class="ic pdf">PDF</span><span class="nm">Q3-forecast.pdf</span><span class="meta">2.4 MB</span><span class="sub">6 Aug · You</span></div>
+          <div class="wf-row mob"><span class="ic xls">XLS</span><span class="nm">headcount.xlsx</span><span class="meta">180 KB</span><span class="sub">5 Aug · Priya</span></div>
+        </div>
+        <p class="wf-cap" style="margin-top:8px">Secondary meta moves under the name; overflow becomes a sheet; 40px tap targets.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="access">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Access — privacy is the default, grants are the override</h2></div>
+    <p class="sec-sub">This is where documents genuinely diverge from media, and the same column means something subtly different.</p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th></th><th>Media</th><th>Documents</th></tr></thead>
+        <tbody>
+          <tr><td><span class="m">privacy</span></td><td>the whole story — public media is browsable in Explore</td><td>the <strong>default answer</strong> absent a grant</td></tr>
+          <tr><td>Grants</td><td>rare — paid access rules</td><td><strong>the primary mechanism.</strong> This is a collaboration product</td></tr>
+          <tr><td>“Public” means</td><td>discoverable — feeds, grids, Explore</td><td><strong>reachable by URL, never discoverable</strong></td></tr>
+          <tr><td>Default</td><td><span class="m">public</span> (column default)</td><td><span class="m">private</span>, set explicitly in the service</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <p>A member marking a contract public gets a URL anyone can open — they do <strong>not</strong> get it posted to the community feed. That is the safer reading of the word, and the one the UI must state.</p>
+
+      <h4>Resolution ladder — two queries per page, at any page size</h4>
+      <ol class="ladder">
+        <li><b>Drive owner or admin</b><i>Space answer resolved once per request per drive and cached — never per row, or the membership lookup becomes the N+1 this exists to prevent.</i></li>
+        <li><b>Explicit grant</b><i>Document grant first, then nearest folder ancestor. One query for the whole page.</i></li>
+        <li><b>Privacy level</b><i>Ancestor chain parsed from <span class="m">path</span> — zero queries.</i></li>
+        <li><b>Deny</b><i>Most specific wins; highest permission among equals.</i></li>
+      </ol>
+
+      <div class="note crit">
+        <span class="tag">Found while checking team behaviour</span>
+        <p>Privacy is resolved at <em>move</em> time and written to the row — deliberately, so tightening a folder later cannot silently re-expose files. That blocks the dangerous direction and breaks the safe one:</p>
+        <p>A member drops ten public documents into <span class="m">/Working</span>, realises the folder should be private, switches it — <strong>and the ten documents stay public.</strong> Nothing says so.</p>
+        <p>Fix: one indexed <span class="m">UPDATE</span> over the subtree via <span class="m">path</span>. <strong>Tightening cascades; loosening does not</strong> — an explicit <span class="m">private</span> on a file outranks its container. With a confirmation, because it is a bulk permission change.</p>
+      </div>
+
+      <h3>Never inferred, only named</h3>
+      <p>Today <span class="m">get_media_type()</span> ends <span class="m">return 'document'</span> — anything unrecognised becomes a document, and the upload guard depends on that fallback to know what to reject. Both change together: return <span class="m">''</span>, and reject on unknown.</p>
+      <p>Strictly safer than today. An unrecognised file is currently <em>labelled</em> a document then rejected by that label; afterwards it is rejected <em>because it is unrecognised</em>. The value <span class="m">'document'</span> is then produced by exactly one function, which returns a named type or <span class="m">null</span> and has no default branch.</p>
+      <p><strong>And grouping is by inclusion, never exclusion.</strong> The reference database already holds a row with an empty <span class="m">media_type</span>. <span class="m">WHERE media_type != 'document'</span> would sweep it into the media library; <span class="m">IN ('image','video','audio')</span> never does.</p>
+    </div>
+  </div>
+</section>
+
+<section id="embed">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">06</span><h2>How each type is displayed</h2></div>
+    <p class="sec-sub">The tiers say <em>how</em> a file becomes viewable. This says <em>where</em>, and what each type looks like on each of the four surfaces that carry documents.</p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Type</th><th>Drive row</th><th>Single view</th><th>Embed block</th><th>Activity</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip crit">PDF</span></td><td>icon, name, size, modified</td><td>native browser viewer, sandboxed iframe</td><td><strong>inline viewer</strong>, height configurable</td><td>card + Open</td></tr>
+          <tr><td><span class="chip accent">MD / TXT / CSV</span></td><td>same</td><td>server-rendered sanitized HTML</td><td><strong>inline HTML</strong>, capped per page</td><td>card + first-line excerpt</td></tr>
+          <tr><td><span class="chip ok">DOCX / XLSX</span></td><td>same</td><td>client-parsed on Preview click</td><td><strong>click-to-load only</strong> — never auto-parsed</td><td>card, no preview</td></tr>
+          <tr><td><span class="chip neutral">PPT / ODF / RTF / legacy</span></td><td>same</td><td>metadata card + Download</td><td>metadata card + Download</td><td>card, no preview</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <p><strong>Icons, not thumbnails.</strong> A PDF first-page poster needs Imagick with Ghostscript, absent on much of shared hosting. Every surface uses a type icon. If a poster is wanted later, follow the video-poster precedent — capability-detect, fall back, never block the upload.</p>
+
+      <h3>The four rules embedding adds</h3>
+      <ol class="ladder">
+        <li><b>The privacy gate runs in the embed, every render</b><i>Resolved for the <strong>viewer</strong>, not the author. A private document in a public post shows the lock, never the content. This is the most likely way to leak a document — precisely because the author sees it working.</i></li>
+        <li><b>Tier 3 is click-to-load, always</b><i>Ten .docx embeds on a page would otherwise pull ~1.5&nbsp;MB of parser before anyone asks to read anything.</i></li>
+        <li><b>Server-rendered tiers cap at 5 per page</b><i>Each is a file read plus a parse on every uncached load. Beyond the cap it degrades to the metadata card. Output cached against the document's updated_at.</i></li>
+        <li><b>Missing or newly-restricted degrades, never fatals</b><i>"This document is no longer available" — the same for one whose privacy tightened after the post was published.</i></li>
+      </ol>
+
+      <div class="note crit">
+        <span class="tag">No oEmbed, no auto-embed on paste</span>
+        <p>Pasting a document permalink leaves a plain link. WordPress's internal-link embed would render a preview using the <strong>author's</strong> permission at save time and cache it — exactly the leak rule 1 exists to prevent. An explicit block is the only way in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="build">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Build order</h2></div>
+    <p class="sec-sub">The original plan opened with a nine-table migration across fifty live sites — the step it called the only irreversible-feeling one. That phase no longer exists.</p>
+
+    <div class="phases">
+      <div class="ph"><span class="no">00</span><span class="nm">Decisions <span class="chip ok">closed</span><i>All eight locked — see below</i></span><span><span class="bar dec"></span></span><span class="d">—</span></div>
+      <div class="ph"><span class="no">01</span><span class="nm">Query discipline<i>Choke point, ~66-file audit, CI rule, journey</i></span><span><span class="bar risk" style="--d:2"></span></span><span class="d">2.0</span></div>
+      <div class="ph"><span class="no">02</span><span class="nm">Schema<i>Migrator v26 / Pro v11, type groups, quarantine</i></span><span><span class="bar" style="--d:1.5"></span></span><span class="d">1.5</span></div>
+      <div class="ph"><span class="no">03</span><span class="nm">Pro engine<i>Types, upload, folders, permissions, delivery, cloud</i></span><span><span class="bar" style="--d:7"></span></span><span class="d">7.0</span></div>
+      <div class="ph"><span class="no">03b</span><span class="nm">Team-drive correctness<i>Deletion branch, privacy cascade, grant authority, trash sweep</i></span><span><span class="bar risk" style="--d:2"></span></span><span class="d">2.0</span></div>
+      <div class="ph"><span class="no">04</span><span class="nm">REST + app contract<i>Full surface, /app/config, shared-with-me</i></span><span><span class="bar" style="--d:3.5"></span></span><span class="d">3.5</span></div>
+      <div class="ph"><span class="no">05</span><span class="nm">Viewers<i>Tiers 2–4 — tier 1 is free</i></span><span><span class="bar" style="--d:4"></span></span><span class="d">4.0</span></div>
+      <div class="ph"><span class="no">06</span><span class="nm">Admin screen<i>Largely the existing media list, type-filtered</i></span><span><span class="bar" style="--d:1.5"></span></span><span class="d">1.5</span></div>
+      <div class="ph"><span class="no">07</span><span class="nm">Parity verification<i>Proving social/GDPR/quota work — not building them</i></span><span><span class="bar free" style="--d:1"></span></span><span class="d">1.0</span></div>
+      <div class="ph"><span class="no">08</span><span class="nm">Extraction + search<i>Async, FULLTEXT</i></span><span><span class="bar" style="--d:3"></span></span><span class="d">3.0</span></div>
+      <div class="ph"><span class="no">09</span><span class="nm">Frontend<i>Drive, single view, overlay, share, three roots</i></span><span><span class="bar" style="--d:5"></span></span><span class="d">5.0</span></div>
+      <div class="ph"><span class="no">10</span><span class="nm">Interlinking<i>Dashboard tab, profile nav, unified search</i></span><span><span class="bar" style="--d:2"></span></span><span class="d">2.0</span></div>
+      <div class="ph"><span class="no">11</span><span class="nm">Space drives<i>Resolver; BuddyNext builds the bridge</i></span><span><span class="bar" style="--d:2"></span></span><span class="d">2.0</span></div>
+      <div class="ph total"><span class="no"></span><span class="nm">Total</span><span></span><span class="d">34.5</span></div>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--accent)"></i> build</span>
+      <span><i class="sw" style="background:var(--crit)"></i> correctness gate</span>
+      <span><i class="sw" style="background:var(--ok)"></i> verification only</span>
+      <span><i class="sw" style="background:var(--ink-3);opacity:.5"></i> decision, no code</span>
+    </div>
+
+    <div class="col">
+      <p><strong>Phase 1 ships before any document row exists.</strong> With one shared table the media-grid guarantee is a query guarantee — so the choke point, the audit and the CI rule land while there is still nothing to leak. Doing it afterwards means auditing under time pressure against live data.</p>
+      <p><strong>Phase 0 is closed.</strong> All eight decisions are locked. They changed what the permission service and the upload path do, which is why they had to be settled before phase 3 rather than during it.</p>
+      <div class="note">
+        <span class="tag">The v1 cut</span>
+        <p>~34.5 days is a large surface to hold open. <strong>Ship personal drives first</strong> — everything except Space drives. The schema carries <span class="m">drive_type</span> / <span class="m">drive_id</span> from day one, so nothing is rebuilt; only the resolver and BuddyNext's bridge land later.</p>
+        <p><strong>And mind the gap in search:</strong> <span class="m">search_text</span> lands in the schema at phase 2, but extraction lands at phase 8. Between them the column is empty — the UI must not imply search works at first enable. A search box that silently returns nothing reads as broken.</p>
+      </div>
+      <p><strong>Nothing member-visible ships before phase 9.</strong> Phases 1–8 leave the feature reachable by API and admin only — the half-cooked state the three-entry-point rule forbids.</p>
+
+      <h3>Release blockers, not polish</h3>
+      <p>A build that ships without any one of these is not shippable, regardless of what else is done.</p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Blocker</th><th>Why it is not optional</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip warn">T1 · phase 11</span> <strong>Departing member: purge personal-drive docs, <em>reassign</em> team-drive ones</strong></td><td>Otherwise a member leaving takes the team's files with them — silent, permanent, triggered by a routine event. <strong>Blocks Phase 11, not v1:</strong> a personal-only v1 has nothing to reassign, and purging personal documents is the existing cascade. The other four block v1</td></tr>
+          <tr><td><span class="chip crit">T2</span> <strong>Tightening a folder cascades; loosening does not</strong></td><td>Otherwise a folder set to private leaves its documents public, with nothing to indicate it</td></tr>
+          <tr><td><span class="chip crit">Journey</span> <strong>A document appears in the drive and in no media surface</strong></td><td>This is what replaced the structural guarantee. Without it the query discipline has no regression net</td></tr>
+          <tr><td><span class="chip crit">Breadcrumb</span> <strong>Shared view starts at the highest granted ancestor</strong></td><td>Folder names carry client identities and project codenames. An information leak, not a display bug</td></tr>
+          <tr><td><span class="chip crit">Storage</span> <strong>Local deny rules + Site Health check the bucket is not public-read</strong></td><td>The difference between "documents are private" being true and being merely intended</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+    </div>
+  </div>
+</section>
+
+<section id="decide">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">08</span><h2>Decisions — locked</h2></div>
+    <p class="sec-sub">Signed off 2026-08-08. These change <span class="m">PermissionService</span> or the upload path, so deciding them mid-build would mean rewriting Phase&nbsp;3. Build against them.</p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>#</th><th>Decision</th><th>Why this and not the obvious alternative</th></tr></thead>
+        <tbody>
+          <tr><td><strong>D1</strong></td><td><strong>Only the drive owner or a drive-admin may grant access or mint a link</strong></td><td>view / comment / edit say what a grantee can do with the item — none confer the right to hand access to someone else. "Edit implies share" lets any editor mint an anonymous link to a contract. Widening is additive later; narrowing takes something away, so start narrow</td></tr>
+          <tr><td><strong>D2</strong></td><td><strong>One quota pool. Media, video and documents all increment the same member counter</strong> <span class="chip warn">corrected</span></td><td>A first draft proposed a drive-level allowance, possibly with its own table — SaaS thinking. <span class="m">QuotaService</span> is per-user <em>by design</em> so allowance ties to a membership level, which is what the MemberPress / PMPro / WooCommerce adapters do. A Space is not a billing entity. Also no <span class="m">document_count</span>: storage only</td></tr>
+          <tr><td><strong>D3</strong></td><td><strong>Replace keeps the superseded file 30 days, admin-restorable</strong></td><td>An undo, not versioning — no history UI, no version table, no schema. It removes the only unrecoverable member action for a meta key and a cron sweep</td></tr>
+          <tr><td><strong>D4</strong></td><td><strong>Anonymous links are absent whenever private-community mode is armed</strong></td><td>The gate 401s the namespace and BuddyNext arms it, so the feature cannot work there regardless of the setting. No exemption is punched through a gate whose purpose is "no unauthenticated reads"</td></tr>
+          <tr><td><strong>D5</strong></td><td><strong>Rate limiting ships with anonymous links, or they do not ship</strong></td><td>Redemption is an unauthenticated exact-match token lookup. Hashing protects a database leak; it does nothing against guessing. <span class="m">RateLimiter</span> has zero call sites in Pro today</td></tr>
+          <tr><td><strong>D6</strong></td><td><strong>Documents reuse <span class="m">mvs_tag</span> and <span class="m">mvs_category</span></strong></td><td>One ID space means no correctness argument for separate vocabularies, and one vocabulary makes unified search simpler</td></tr>
+          <tr><td><strong>D7</strong></td><td><strong>Gated streaming is the default; presigned CDN is opt-in</strong> <span class="chip warn">corrected</span></td><td>A first draft defaulted to presigned URLs and counted downloads "at mint" — a hosted-service answer. A plugin has to work on shared hosting with no cloud. The default should be the one that works everywhere and tells the truth</td></tr>
+          <tr><td><strong>D8</strong></td><td><strong>Documents get their own private bucket; cloud is opt-in</strong></td><td>Not a preference — one bucket cannot serve both. Public media needs a <strong>public-read</strong> bucket for direct CDN URLs; documents need a private one. Sharing it leaves every document world-readable behind an unguessable path</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <div class="note warn">
+        <span class="tag">Team review found two real schema defects</span>
+        <p><strong>The folder unique key was wrong.</strong> Keyed on <span class="m">(parent_id, name)</span> — and every drive root uses <span class="m">parent_id = 0</span>, so two members creating "Invoices" at their own root would collide and the second insert would fail. Now <span class="m">(drive_type, drive_id, parent_id, name(150))</span>, the prefix trimmed to stay under InnoDB's 767-byte COMPACT limit.</p>
+        <p><strong>The index the query named did not exist.</strong> "Shared with me" was written against <span class="m">KEY grantee_user</span>, carried over from an abandoned table design, so the surface's only query had nothing behind it. The index now added is <span class="m">KEY grantee</span>.</p>
+      </div>
+
+      <h3>What a second bucket costs</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Provider</th><th>Extra bucket / zone</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Cloudflare R2</td><td><span class="chip ok">free</span></td><td>Private by default — the wanted posture</td></tr>
+            <tr><td>AWS S3</td><td><span class="chip ok">free</span></td><td>Billed on storage + requests only</td></tr>
+            <tr><td>BunnyCDN</td><td><span class="chip ok">free</span></td><td>Storage Zones cost nothing; just don't attach a Pull Zone</td></tr>
+            <tr><td>DigitalOcean Spaces</td><td><span class="chip warn">~$5/mo</span></td><td>Billed per Space — belongs in the setting description, not on an invoice</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sizing for context: 500 members × 40 files × 800&nbsp;KB is ~16&nbsp;GB — single-digit dollars. <strong>Storage cost is not the deciding factor. Bucket access policy is.</strong></p>
+
+      <h3>Still delegated to BuddyNext — not blocking</h3>
+      <p>Automatic vs opt-in Space drives; whether <span class="m">secret</span> Spaces get drives at all (if so, an unauthorized caller gets <strong>404, never 403</strong>); child-Space inheritance; whether <span class="m">moderator</span> implies <span class="m">edit</span>. MediaVerse holds an opaque drive id and asks — which is why <span class="m">mvs_document_drive_access</span> returns a permission, not a boolean.</p>
+
+      <div class="note crit">
+        <span class="tag">Separate cards — shipped bugs, now fixed</span>
+        <p><strong>Album IDs collided with media IDs</strong> in <span class="m">mvs_media_index</span>, and <strong>categories carried two ID spaces</strong>. Both were fixed on the 2.3.3 branch. This design depends on that fix: it puts documents into <span class="m">mvs_media_index</span>, and that work is what makes the ID space safe to share.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="drive">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">09</span><h2>Measured against Google Drive for a team</h2></div>
+    <p class="sec-sub">The storage model needs no changes to serve a team. The collaboration model needs four — one was reconsidered.</p>
+    <div class="col">
+      <div class="note">
+        <span class="tag">Read this as a checklist, not a product to clone</span>
+        <p>Google Drive is a hosted service with a billing entity, an org directory and an admin console. This is a WordPress plugin: the site owner owns the disk, membership plugins own the tiers, and anything needing a subsystem WordPress does not have gets a filter instead. Where a Drive behaviour does not map — team storage metering being the clearest case — it is <strong>not adopted</strong>, and the reason is recorded rather than the gap left open.</p>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Hole</th><th>What happens</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="chip crit">data loss</span> <strong>A departing member takes the team’s files</strong></td>
+            <td>Files belong to the uploader, and the deletion cascade purges a member’s media. Someone uploads 200 files to a Space drive, deletes their account, and the drive loses all 200. This is exactly why Google built Shared Drives.</td>
+            <td>A branch in the cascade: purge personal-drive documents, reassign team-drive ones. No schema.</td>
+          </tr>
+          <tr>
+            <td><span class="chip crit">leak</span> <strong>Tightening a folder doesn’t tighten its contents</strong></td>
+            <td>Make a folder private and the public documents inside stay public, silently.</td>
+            <td>One indexed <span class="m">UPDATE</span> over the subtree. Tightening cascades, loosening does not.</td>
+          </tr>
+          <tr>
+            <td><span class="chip warn">governance</span> <strong>Who may share is undefined</strong></td>
+            <td>Whoever builds the endpoint invents the rule.</td>
+            <td>Decide it — see above.</td>
+          </tr>
+          <tr>
+            <td><span class="chip ok">not adopted</span> <strong>Space drives have no separate ceiling</strong></td>
+            <td>Google meters shared-drive storage against the org — it has a billing entity per workspace.</td>
+            <td><strong>D2.</strong> A WordPress site owner owns the disk. Every upload counts against the uploading member, which is what the membership adapters already meter. A per-Space cap is a filter, not a subsystem.</td>
+          </tr>
+          <tr>
+            <td><span class="chip ok">designed</span> <strong>Nothing showed what was shared with you</strong></td>
+            <td>A file shared from a private drive was unreachable if the notification was missed.</td>
+            <td>Three virtual roots, topmost collapsing, truncated breadcrumbs. No schema.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <h3>Where this is already ahead of Drive</h3>
+      <p>Duplicate detection on file hash — Drive happily stores the same contract nine times. A virus-scan seam the site owner wires to their own scanner. <strong>Metadata stripping</strong>, which Drive does not do at all: a <span class="m">.docx</span> carries author names, tracked changes and deleted comments, and a shared contract leaking the other side’s internal notes is a real incident. And self-hosting — no third-party processor relationship, which for a team handling contracts is the entire reason not to use Drive.</p>
+
+      <h3>Deliberate divergences</h3>
+      <p><strong>One folder per file.</strong> Google dropped multi-parenting too, but replaced it with shortcuts. Ours is a grant, which shares with a <em>person</em>, not a <em>place</em>. Acceptable for v1 and worth naming in the docs so it is not discovered as a bug.</p>
+      <p><strong>Fewer preview formats.</strong> Drive previews about a hundred; we cover PDF natively, render markdown, text and CSV server-side, parse Word and Excel client-side, and show an honest metadata card for the rest. The rejection of Office Online and Google Docs viewers is deliberate — both require the file to be publicly reachable and ship customer documents to a third party, which destroys the permission model entirely. That divergence is a feature.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap col">
+    <h4>Where this lives</h4>
+    <ul>
+      <li><b>docs/architecture/specs/2026-08-05-document-library.md</b> — architecture and schema</li>
+      <li><b>plan/2026-08-08-document-library-v2-implementation-plan.md</b> — the build</li>
+      <li><b>plan/2026-08-08-document-library-plan-audit.md</b> — how the model was reversed</li>
+      <li><b>plan/2026-08-08-google-drive-team-parity-audit.md</b> — team behaviour</li>
+      <li><b>plan/2026-08-05-document-library-plan.md</b> — viewers, per-screen UX, app contract</li>
+    </ul>
+  </div>
+</footer>

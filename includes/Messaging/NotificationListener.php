@@ -47,23 +47,10 @@ class NotificationListener {
 	 */
 	public function on_message_sent( int $message_id, int $conversation_id, int $sender_id, array $recipient_ids ): void {
 		foreach ( $recipient_ids as $recipient_id ) {
-			// Skip muted conversations.
-			$conv = $this->service->get_conversation( $conversation_id, $recipient_id );
-			if ( $conv && $conv->is_muted ) {
-				// Check if mute has expired.
-				if ( $conv->muted_until && strtotime( $conv->muted_until ) < time() ) {
-					// Mute expired, unmute and proceed.
-					$this->service->update_participant(
-						$conversation_id,
-						$recipient_id,
-						array(
-							'is_muted'    => 0,
-							'muted_until' => null,
-						)
-					);
-				} else {
-					continue;
-				}
+			// Skip muted conversations — one shared check (expiry/auto-unmute
+			// included) that a host bridge must also honour (Basecamp 10153578635).
+			if ( $this->service->is_conversation_muted( $conversation_id, $recipient_id ) ) {
+				continue;
 			}
 
 			// When BuddyNext is active it owns notification routing and its own coalescing.

@@ -38,7 +38,9 @@ if ( ! empty( $mvs_shortcode_context ) ) {
 }
 
 global $wpdb;
-$index_table = $wpdb->prefix . 'mvs_media_index';
+// The index is the joined side of a query this template owns; the repository
+// supplies the name (Rule 7 — see MediaRepository::index_table()).
+$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 // Build WHERE/JOIN clauses.

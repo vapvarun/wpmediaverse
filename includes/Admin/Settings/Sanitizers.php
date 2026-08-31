@@ -7,6 +7,8 @@
 
 namespace WPMediaVerse\Admin\Settings;
 
+use WPMediaVerse\Services\UploadService;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -182,8 +184,17 @@ class Sanitizers {
 		// Preserve currently-stored types that are OUTSIDE the picker universe
 		// (added in code via the mvs_allowed_file_types filter). The picker can
 		// never represent them, so unchecking boxes must not wipe them.
+		//
+		// EXCEPT the ones the upload path refuses outright. A legacy stored
+		// `application/pdf` is indistinguishable from a filter-added type, so
+		// this rule preserved it forever: absent from the grid (nothing to
+		// untick), preserved by every save, and still offered to members in the
+		// picker the server would then refuse. Unreachable by any admin action
+		// (Basecamp 10190738445). Preserving a type the server will never accept
+		// serves nobody, so it is excluded from the rescue.
 		$stored_types  = array_filter( array_map( 'trim', explode( ',', $stored ) ) );
-		$custom_stored = array_values( array_diff( $stored_types, $known ) );
+		$preserve_from = array_diff( $stored_types, UploadService::hard_refused_mimes() );
+		$custom_stored = array_values( array_diff( $preserve_from, $known ) );
 
 		$result = array_values( array_unique( array_merge( $custom_stored, $kept_known ) ) );
 

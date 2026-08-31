@@ -335,6 +335,65 @@ Cycle `wp_options.mvs_pro_feed_layout` through every registered slug and verify 
 
 ---
 
+## 21.6. Journey P22 — Pro features this runbook never covered (added 2026-08-30)
+
+A coverage diff on 2026-08-30 compared this runbook against Pro's actual namespaces and found four
+shipped features with no journey here. This runbook was last updated 2026-05-11 and predates the
+whole document library.
+
+### Captions (Whisper transcription)
+
+- [ ] **P22.1** Upload a video with speech → a caption file is generated and offered in the player.
+- [ ] **P22.2** Language and provider settings on the AI tab persist and are honoured.
+- [ ] **P22.3** With no API key configured the feature says so plainly and does NOT queue work that
+      cannot run.
+- [ ] **P22.4** Whisper is the ONLY thing that touches video here — Pro does not transcode. If any
+      UI implies renditions or adaptive quality, that is a copy bug (removed 2.4.0).
+
+### Privacy (Pro UI)
+
+- [ ] **P22.5** The Pro privacy surfaces render for a member and an admin.
+- [ ] **P22.6** A privacy change on a Pro surface writes the same value the Free REST path would —
+      one vocabulary, not two.
+
+### Push notifications
+
+- [ ] **P22.7** Device registration through `/me/devices` succeeds and is listed.
+- [ ] **P22.8** With no push credentials configured, registration fails visibly rather than silently
+      queueing to nowhere.
+
+### Integrations / Connectors
+
+- [ ] **P22.9** Connector cards render; connect and disconnect both use the plugin's own modal, not
+      a native `confirm()` (Coding Rule: no native dialogs).
+- [ ] **P22.10** Auto-export on upload fires for a connected account and does nothing for a
+      disconnected one.
+
+**Heuristic score for P22:** __ / 50. Findings:
+
+---
+
+## 21.7. Journey P23 — Documents (added 2026-08-30)
+
+The document library shipped in 2.4.0 and is Pro's largest feature. **Deep coverage is in
+`runbooks/DOCUMENTS-QA.md` (508 lines)** — this journey exists so a Pro walk cannot silently skip
+it, and it names the traps that make a run report a fault that is not there.
+
+- [ ] **P23.1** The Pro licence is ACTIVE. It gates document writes since 2026-08-19, so an
+      unlicensed site looks like a broken drive and every finding after this point is noise.
+- [ ] **P23.2** Drive renders for a member: folders, documents, empty state.
+- [ ] **P23.3** Upload, preview (PDF inline; text/Markdown/CSV in place), download, share.
+- [ ] **P23.4** Role gate — a role without `use_mvs_documents` gets 403 `mvs_documents_unavailable`
+      from `/documents`, `/folders` and `/me/shared`, and no dashboard section.
+- [ ] **P23.5** Trash and restore from BOTH the member drive and the admin screen, and both fire
+      `mvs_document_trashed` / `_restored`.
+- [ ] **P23.6** A document NEVER appears in a media surface — grids draw pictures and a document
+      has none (this regressed once).
+
+**Heuristic score for P23:** __ / 30. Findings:
+
+---
+
 ## 22. Regression Hot-Spots for Pro
 
 - [ ] **22.1** Feature toggle OFF for a module must disappear it from nav, dashboard panels, hub cards, and 404 the frontend page gracefully — never half-broken.

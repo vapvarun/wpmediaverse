@@ -2,7 +2,7 @@
 
 > **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-WPMediaVerse Pro stamps a text or logo watermark onto uploaded images using PHP's GD library, so your brand or credit travels with every photo members share.
+WPMediaVerse Pro stamps a text, logo, or combined watermark onto uploaded images using PHP's GD library, so your brand or credit travels with every photo members share.
 
 ![Watermark settings panel showing text and logo options](../images/admin-settings-display.png)
 
@@ -32,7 +32,7 @@ Go to **Media > Settings > Display > Image Watermarking** and configure the opti
 | Enable Watermark | `mvs_watermark_enabled` | `0` | Stamp a watermark onto uploaded images |
 | Apply to | `mvs_watermark_apply` | `all` | `all` = every uploaded image; `roles` = only images uploaded by the roles selected below |
 | Watermark uploads from | `mvs_watermark_roles` | (none) | The uploader roles to watermark. Only used when **Apply to** is `roles`; with none selected, nothing is watermarked |
-| Watermark Type | `mvs_watermark_type` | `text` | `text` to overlay a text string, `image` to overlay a logo |
+| Watermark Type | `mvs_watermark_type` | `text` | `text` to overlay a text string, `image` to overlay a logo, or `both` to stamp the logo and the `@username` text in opposite corners |
 | Watermark Text | `mvs_watermark_text` | site title | The text to overlay (used when type is `text`); defaults to your site name. Supports the `{site}` and `{username}` tokens |
 | Watermark Image | `mvs_watermark_image_id` | `0` | WordPress attachment ID of the logo image (used when type is `image`) |
 | Position | `mvs_watermark_position` | `bottom-right` | Where on the image to place the watermark |
@@ -78,6 +78,10 @@ add_filter( 'mvs_watermark_font_path', function ( $path, $config ) {
 ## Logo watermarks
 
 When **Watermark Type** is `image`, select an image from your WordPress Media Library using the **Watermark Image** field (its attachment ID is stored in `mvs_watermark_image_id`). WPMediaVerse Pro scales the logo to roughly 20% of the base image width before compositing. A PNG with a transparent background is recommended.
+
+## Both (logo and text)
+
+When **Watermark Type** is `both`, WPMediaVerse Pro stamps the logo watermark and the `@username` text watermark together, placed in opposite corners so they do not overlap. Both draws use the same opacity, font, and image settings described above.
 
 ## For developers
 

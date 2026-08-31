@@ -18,6 +18,192 @@ defined( 'ABSPATH' ) || exit;
 class AlbumService {
 
 	/**
+	 * Post-meta key holding an album's own privacy.
+	 *
+	 * Album privacy controls how the ALBUM is visible. It is a property of the
+	 * album post, not of any media item, and it lives here — never in
+	 * mvs_media_index, whose `privacy` column means a media item's own visibility.
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	public const PRIVACY_META = '_mvs_privacy';
+
+	/**
+	 * Post-meta key holding an album's type (default | playlist).
+	 *
+	 * @since 2.4.0
+	 * @var string
+	 */
+	public const TYPE_META = '_mvs_album_type';
+
+	/**
+	 * Read an album's privacy.
+	 *
+	 * Post meta is authoritative. The mvs_media_index fallback exists only for
+	 * installs upgrading from before 2.4.0 whose Migrator v26 pass has not run yet
+	 * (or failed): without it every album would read as the default and a private
+	 * album would be exposed. It is a safety net for one migration window, not a
+	 * supported storage location.
+	 *
+	 * Note the fallback can return the WRONG value on a legacy install: where an
+	 * album's post ID collided with a real media_id, the index row holds that
+	 * photo's privacy. That is the defect being fixed, and Migrator v26 records
+	 * every such album for review.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return string Privacy slug; 'public' when nothing is stored.
+	 */
+	public function get_privacy( int $album_id ): string {
+		$privacy = (string) get_post_meta( $album_id, self::PRIVACY_META, true );
+
+		if ( '' !== $privacy ) {
+			return $privacy;
+		}
+
+		// @deprecated 2.4.0 Legacy read. Remove in 3.0.0 once every install has run v26.
+		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get( $album_id, 'privacy' );
+
+		return '' !== $legacy ? $legacy : 'public';
+	}
+
+	/**
+	 * Store an album's privacy.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int    $album_id Album post ID.
+	 * @param string $privacy  Privacy slug.
+	 * @return void
+	 */
+	public function set_privacy( int $album_id, string $privacy ): void {
+		update_post_meta( $album_id, self::PRIVACY_META, sanitize_text_field( $privacy ) );
+
+		// Cascade to the album's existing items. Privacy was inherited when an
+		// item was ADDED but never when the album's privacy CHANGED, so an owner
+		// who made an existing album private left its contents public — still in
+		// the Explore feed and individually fetchable, with no warning (Basecamp
+		// #10149366902). Same one-way clamp as the add path: it only tightens, so
+		// making an album more public never loosens an item a member set private.
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$ids  = array_map(
+			static function ( $row ) {
+				return (int) $row['media_id'];
+			},
+			$repo->album_items( $album_id )
+		);
+		$this->clamp_items_privacy( $album_id, $ids );
+	}
+
+	/**
+	 * Tighten a set of the album's items to the album's privacy.
+	 *
+	 * Shared by add_items() (on ADD) and set_privacy() (on CHANGE) so both carry
+	 * the album's privacy down by exactly the same rule.
+	 *
+	 * Clamping is one-way and only ever tightens: an item already more restrictive
+	 * than the album keeps its own setting, and a public/empty album tightens
+	 * nothing. The `mvs_album_inherit_privacy` filter turns the whole behaviour off
+	 * (album and item privacy fully independent, how Free behaved before 2.3.0 —
+	 * Production Rule 3).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id  Album post ID.
+	 * @param int[] $media_ids Item media IDs to clamp.
+	 * @return void
+	 */
+	private function clamp_items_privacy( int $album_id, array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		/**
+		 * Filters whether an album's media inherits (is clamped to) its privacy.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param bool  $inherit   Whether to clamp. Default true.
+		 * @param int   $album_id  Album ID.
+		 * @param int[] $media_ids Media IDs being clamped.
+		 */
+		$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
+		$album_privacy = $inherit ? $this->get_privacy( $album_id ) : '';
+
+		// A public or unset album tightens nothing.
+		if ( '' === $album_privacy || 'public' === $album_privacy ) {
+			return;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		foreach ( $media_ids as $mid ) {
+			$mid           = (int) $mid;
+			$media_privacy = (string) $repo->get( $mid, 'privacy' );
+			if ( '' === $media_privacy ) {
+				$media_privacy = 'public';
+			}
+
+			$effective = PrivacyService::more_restrictive( $album_privacy, $media_privacy );
+			if ( $effective !== $media_privacy ) {
+				$repo->set( $mid, 'privacy', $effective );
+
+				/**
+				 * Fires when an item's privacy is tightened by its album.
+				 *
+				 * @since 2.3.0
+				 *
+				 * @param int    $media_id Media ID.
+				 * @param string $from     Previous privacy slug.
+				 * @param string $to       New privacy slug.
+				 * @param int    $album_id Album that caused the clamp.
+				 */
+				do_action( 'mvs_media_privacy_clamped_by_album', $mid, $media_privacy, $effective, $album_id );
+			}
+		}
+	}
+
+	/**
+	 * Read an album's type.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return string 'default' when nothing is stored.
+	 */
+	public function get_album_type( int $album_id ): string {
+		$type = (string) get_post_meta( $album_id, self::TYPE_META, true );
+
+		if ( '' !== $type ) {
+			return $type;
+		}
+
+		// @deprecated 2.4.0 Legacy read. Remove in 3.0.0.
+		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get( $album_id, 'album_type' );
+
+		return '' !== $legacy ? $legacy : 'default';
+	}
+
+	/**
+	 * Store an album's type.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int    $album_id Album post ID.
+	 * @param string $type     Album type slug.
+	 * @return void
+	 */
+	public function set_album_type( int $album_id, string $type ): void {
+		update_post_meta( $album_id, self::TYPE_META, sanitize_text_field( $type ) );
+	}
+
+	/**
 	 * Create a new album.
 	 *
 	 * Wraps the `mvs_album` CPT insertion + privacy / album_type / group
@@ -41,7 +227,6 @@ class AlbumService {
 	 *                               written to both mvs_media_meta AND
 	 *                               post_meta `_mvs_group_id` (BP group tab
 	 *                               listings WP_Query against post_meta).
-	 *     @type array  $categories  Optional. mvs_category term IDs.
 	 * }
 	 * @return int|\WP_Error Album post ID on success, WP_Error on validation
 	 *                      failure or DB error.
@@ -67,37 +252,32 @@ class AlbumService {
 			return $album_id;
 		}
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-
 		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
 		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
 
-		// Create the index row with a unique slug in the first write. Calling
-		// set() per-key would INSERT a row with slug left at its DEFAULT '' —
-		// and mvs_media_index has a UNIQUE KEY on slug, so the first album would
-		// take slug='' and every subsequent album would collide on that key and
-		// silently fail, losing privacy/album_type (read back as public/default).
-		$repo->set_many(
-			$album_id,
-			array(
-				'slug'       => $repo->generate_unique_slug( $title ),
-				'privacy'    => $privacy,
-				'album_type' => $album_type,
-			)
-		);
+		// Album attributes live in post meta. Before 2.4.0 they were written through
+		// MediaRepository at media_id = <album post ID>, which put an album ID into the
+		// media ID sequence: on any site where uploads have outrun post IDs — most of
+		// them — the write landed on a real photo and overwrote its slug and privacy.
+		// The album's own slug is wp_posts.post_name, which wp_insert_post() has
+		// already made unique. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		$this->set_privacy( $album_id, $privacy );
+		$this->set_album_type( $album_id, $album_type );
 
 		// Group association — only honour when the author is actually a member.
 		$group_id = isset( $args['group_id'] ) ? absint( $args['group_id'] ) : 0;
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $author_id, $group_id ) ) {
-			$repo->set( $album_id, 'privacy', 'group' );
-			$repo->set( $album_id, 'group_id', $group_id );
+			$this->set_privacy( $album_id, 'group' );
 			update_post_meta( $album_id, '_mvs_group_id', $group_id );
 		}
 
-		// Categories (mvs_category taxonomy on the mvs_album CPT).
-		if ( isset( $args['categories'] ) && is_array( $args['categories'] ) ) {
-			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $args['categories'] ) ), 'mvs_category' );
-		}
+		// Album categories removed in 2.4.0. They were write-only: every browsing,
+		// filtering and archive surface resolves mvs_category by joining
+		// wp_term_relationships.object_id to mvs_media_index.media_id, so a category
+		// assigned to an album matched nothing anywhere. Worse, the album's post ID and
+		// a media item's ID share that object_id space, so an album's terms could be
+		// read back as a photo's. Media categories are unaffected.
+		// Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §3.4.
 
 		return (int) $album_id;
 	}
@@ -160,23 +340,14 @@ class AlbumService {
 	 * @return array Array of items with media_id and position.
 	 */
 	public function get_items( int $album_id ): array {
-		global $wpdb;
-
-		return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				// Trashed media is excluded here rather than by each caller. An
-				// album item row survives its media being trashed, so without this
-				// join a deleted photo stayed in every album it belonged to - as a
-				// broken tile, and counted in get_item_count() below.
-				"SELECT ai.media_id, ai.position
-				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.status <> 'trash'
-				ORDER BY ai.position ASC",
-				$album_id
-			),
-			ARRAY_A
-		);
+		// Through the repository (P1.2). The join, the publish assertion and the
+		// type group live in MediaRepository::album_items() so this method and
+		// get_item_count() below cannot drift — and they had drifted: both once
+		// excluded trash while the render path asserted publish, so an album
+		// reported twelve items and rendered nine.
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->album_items( $album_id );
 	}
 
 	/**
@@ -221,19 +392,10 @@ class AlbumService {
 	 * @return int
 	 */
 	public function get_item_count( int $album_id ): int {
-		global $wpdb;
-
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				// Must apply the SAME filter as get_items(), or an album reports
-				// twelve items and renders nine.
-				"SELECT COUNT(*)
-				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.status <> 'trash'",
-				$album_id
-			)
-		);
+		// Same args as get_items(), by construction — see album_items_parts().
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->count_album_items( $album_id );
 	}
 
 	/**
@@ -248,7 +410,7 @@ class AlbumService {
 	public function add_items( int $album_id, array $media_ids ): int {
 		global $wpdb;
 
-		$is_playlist = 'playlist' === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
+		$is_playlist = 'playlist' === $this->get_album_type( $album_id );
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -294,62 +456,14 @@ class AlbumService {
 		if ( $added > 0 ) {
 			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-			/**
-			 * Filters whether media added to an album inherits the album's privacy.
-			 *
-			 * A member who creates a Private album and uploads into it expects the
-			 * contents to be private. Before 2.3.0 nothing carried the album's
-			 * privacy down: the item kept its own value, which for the album-page
-			 * and BuddyPress-tab uploaders was the site default (usually public),
-			 * because neither of those uploaders sent a privacy field at all. The
-			 * album showed a "Private" badge while its photos sat in the public
-			 * Explore feed (Basecamp #10149366902).
-			 *
-			 * Clamping is one-way and only ever tightens: an item that is already
-			 * more restrictive than the album keeps its own setting.
-			 *
-			 * Return false to keep album and item privacy fully independent, which
-			 * is how Free behaved before 2.3.0 (Production Rule 3).
-			 *
-			 * @since 2.3.0
-			 *
-			 * @param bool  $inherit   Whether to clamp. Default true.
-			 * @param int   $album_id  Album ID.
-			 * @param int[] $media_ids Media IDs being added.
-			 */
-			$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
-			$album_privacy = $inherit ? (string) $repo->get( $album_id, 'privacy' ) : '';
-
+			// Record the album association on each item, then clamp their privacy to
+			// the album's — the same one-way tightening that set_privacy() re-applies
+			// when the album's own privacy later changes.
 			foreach ( $media_ids as $mid ) {
-				$mid = (int) $mid;
-				$repo->set( $mid, 'album_id', $album_id );
-
-				if ( '' === $album_privacy || 'public' === $album_privacy ) {
-					continue;
-				}
-
-				$media_privacy = (string) $repo->get( $mid, 'privacy' );
-				if ( '' === $media_privacy ) {
-					$media_privacy = 'public';
-				}
-
-				$effective = PrivacyService::more_restrictive( $album_privacy, $media_privacy );
-				if ( $effective !== $media_privacy ) {
-					$repo->set( $mid, 'privacy', $effective );
-
-					/**
-					 * Fires when an item's privacy is tightened by its album.
-					 *
-					 * @since 2.3.0
-					 *
-					 * @param int    $media_id   Media ID.
-					 * @param string $from       Previous privacy slug.
-					 * @param string $to         New privacy slug.
-					 * @param int    $album_id   Album that caused the clamp.
-					 */
-					do_action( 'mvs_media_privacy_clamped_by_album', $mid, $media_privacy, $effective, $album_id );
-				}
+				$repo->set( (int) $mid, 'album_id', $album_id );
 			}
+
+			$this->clamp_items_privacy( $album_id, array_map( 'intval', $media_ids ) );
 
 			// The actor may be a co-collaborator, not the album owner — keep it
 			// distinct from the author lookup so gamification adapters can award
@@ -611,41 +725,35 @@ class AlbumService {
 	 * @return int|null Media post ID or null.
 	 */
 	private function get_first_image_item( int $album_id ): ?int {
-		global $wpdb;
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$media_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT ai.media_id
-				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.file_type LIKE %s AND idx.status <> 'trash'
-				ORDER BY ai.position ASC
-				LIMIT 1",
-				$album_id,
-				'image/%'
+		// Prefer a real image.
+		$rows = $repo->album_items(
+			$album_id,
+			array(
+				'mime_like' => 'image/%',
+				'limit'     => 1,
 			)
 		);
 
-		// If no image item, fall back to just the first item (for video thumbnails etc).
-		if ( ! $media_id ) {
-			$media_id = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT ai.media_id
-					FROM {$wpdb->prefix}mvs_album_items ai
-					INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
-					WHERE ai.album_id = %d AND idx.status <> 'trash'
-					ORDER BY ai.position ASC
-					LIMIT 1",
-					$album_id
-				)
-			);
+		if ( ! empty( $rows[0]['media_id'] ) ) {
+			return (int) $rows[0]['media_id'];
 		}
-		// phpcs:enable
 
-		return $media_id ? (int) $media_id : null;
+		// Fallback when the album holds no image. It must still be something that
+		// RENDERS as a cover: video and audio carry a poster, a document has
+		// nothing to show, so a document picked here would be a broken thumbnail
+		// on explore, the CPT archive, album REST and the BuddyPress tab. Hence
+		// MEDIA, which is narrower than the MEDIA_LIBRARY default.
+		$rows = $repo->album_items(
+			$album_id,
+			array(
+				'types' => \WPMediaVerse\Core\MediaTypes::MEDIA,
+				'limit' => 1,
+			)
+		);
+
+		return empty( $rows[0]['media_id'] ) ? null : (int) $rows[0]['media_id'];
 	}
 
 	/**

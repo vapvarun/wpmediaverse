@@ -304,7 +304,57 @@ print('RAN_AT=' + ran_at)
 		fail "smoke report recorded $FROM_ISSUES from-origin debug.log entries during the walk. Fix them before packaging."
 		exit 30
 	fi
-	ok "browser smoke report v$REPORT_VERSION ($REPORT_MODE) — green, dated $RAN_AT"
+	# FRESHNESS. Version + mode + zero failures is what this gate checked until
+	# 2026-08-19, and none of those notice a report that predates the code it
+	# claims to have walked. The 2.4.0 cycle proved it: the combo report was
+	# dated 2026-08-11 and still passed every check above while four later
+	# changes — document previews, the licence gate, an index fix and a PHP
+	# warning — had never been walked at all. A version match is not a
+	# freshness check; the version had not moved.
+	#
+	# So: the report must be NEWER than the last commit that touched plugin
+	# source. Compared against real commits rather than a fixed max age,
+	# because a quiet week is not staleness and an hour of edits is.
+	LAST_SRC_COMMIT=0
+	for _root in "$FREE_ROOT" "$PRO_ROOT"; do
+		[ -d "$_root/.git" ] || continue
+		_ts="$( cd "$_root" && git log -1 --format=%ct -- includes templates assets src 2>/dev/null || echo 0 )"
+		[ -n "$_ts" ] || _ts=0
+		[ "$_ts" -gt "$LAST_SRC_COMMIT" ] && LAST_SRC_COMMIT="$_ts"
+	done
+
+	REPORT_TS="$( python3 -c "
+import datetime, sys
+raw = '''$RAN_AT'''.strip().replace('Z', '+00:00')
+try:
+    print(int(datetime.datetime.fromisoformat(raw).timestamp()))
+except Exception:
+    print(0)
+" 2>/dev/null || echo 0 )"
+
+	if [ "$LAST_SRC_COMMIT" -gt 0 ] && [ "$REPORT_TS" -le "$LAST_SRC_COMMIT" ]; then
+		fail "smoke report is STALE: dated $RAN_AT, but plugin source was committed after that."
+		fail "It walked code that is no longer what you are packaging."
+		fail "Rerun the smoke in $REQUIRED_MODE mode against HEAD."
+		exit 30
+	fi
+
+	# COVERAGE. Zero failures is not evidence when nothing ran — a report whose
+	# sections are entirely skipped satisfies every check above. Require the
+	# core-flow section to have actually walked something.
+	CORE_PASSES="$( python3 -c "
+import json
+d = json.load(open('$SMOKE_REPORT'))
+print(int(((d.get('sections') or {}).get('C_core_flows') or {}).get('pass') or 0))
+" 2>/dev/null || echo 0 )"
+
+	if [ "$CORE_PASSES" -lt 10 ]; then
+		fail "smoke report records only $CORE_PASSES passing core-flow checks."
+		fail "Zero failures is not evidence when nothing was walked."
+		exit 30
+	fi
+
+	ok "browser smoke report v$REPORT_VERSION ($REPORT_MODE) — green, dated $RAN_AT, $CORE_PASSES core-flow passes"
 fi
 
 # --- 6. produce the zips via grunt dist ----------------------------------

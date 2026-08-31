@@ -162,7 +162,7 @@ Both of those plugins were built specifically for BuddyPress — and they store 
 | Dribbble Portfolio layout mode | No | Yes |
 | Multi-file upload | No | Yes |
 | Video upload and playback | No | Yes |
-| Video transcoding (multi-quality HLS) | No | Yes |
+| Video chapters, resume playback, captions | No | Yes |
 | Auto-captions (Whisper AI) | No | Yes |
 | Video analytics (retention, heatmaps) | No | Yes |
 | Cloud storage (S3, BunnyCDN) | No | Yes |
@@ -188,7 +188,7 @@ Includes the full core platform: custom tables, grid layout, uploads, albums, re
 ---
 
 ### Pro — Single Site
-All Pro features on one site: all five layout modes, video transcoding, HLS streaming, auto-captions, video analytics, cloud storage (S3 + BunnyCDN), quota management, gamification engine (challenges, battles, tournaments, boosts), voice messages, read receipts, Google Vision and AWS Rekognition moderation, all 12+ monetization integrations, and migration importers.
+All Pro features on one site: all five layout modes, video chapters, resume playback, auto-captions, video analytics, cloud storage (S3 + BunnyCDN), quota management, gamification engine (challenges, battles, tournaments, boosts), voice messages, read receipts, Google Vision and AWS Rekognition moderation, all 12+ monetization integrations, and migration importers.
 
 **$[PRICE]/year — 1 site**
 
@@ -233,8 +233,8 @@ WPMediaVerse ships with 13 Gutenberg blocks. For page builders, the REST API and
 **Can I use my own cloud storage?**
 Pro supports Amazon S3 and BunnyCDN as storage drivers. Files are uploaded directly to cloud storage. Local disk storage is the default for the free version.
 
-**How does video transcoding work?**
-Pro uses FFmpeg (installed on your server, or via a configured transcoding service) to convert uploaded videos into multiple quality levels delivered via HLS. Users get the highest quality their connection supports. Auto-captions are generated via OpenAI Whisper.
+**Does WPMediaVerse transcode video?**
+No. MediaVerse embeds and plays the original uploaded file — it does not re-encode video into other formats or bitrates. That means no FFmpeg to install and no encoding queue competing with your site for CPU, which is also why it runs on shared hosting. What Pro adds on top of the file is chapter markers, resume playback, auto-captions via OpenAI Whisper, and retention analytics with heatmaps. For long 4K uploads, set an upload size limit and pair it with cloud storage and a CDN.
 
 **Is the REST API documented?**
 Yes. The API has 80+ endpoints across 17 controllers. Full documentation is available at [docs link].

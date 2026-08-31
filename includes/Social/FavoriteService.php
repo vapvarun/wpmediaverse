@@ -102,22 +102,50 @@ class FavoriteService {
 	 * @param int      $page          Page number.
 	 * @return array{items: array, total: int}
 	 */
-	public function get_user_favorites( int $user_id, ?int $collection_id = null, int $per_page = 20, int $page = 1 ): array {
+	public function get_user_favorites( int $user_id, ?int $collection_id = null, int $per_page = 20, int $page = 1, string $search = '', string $orderby = 'favorited', string $order = 'DESC' ): array {
 		global $wpdb;
 		$table  = $wpdb->prefix . 'mvs_favorites';
+		// Driving table is favourites; the index is only the joined side, so the
+		// repository supplies the name rather than swallowing the query (Rule 7 —
+		// see MediaRepository::index_table()).
+		$index  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 		$offset = ( $page - 1 ) * $per_page;
 
-		$where  = 'user_id = %d';
+		$where  = 'f.user_id = %d';
 		$params = array( $user_id );
 
 		if ( null !== $collection_id ) {
-			$where   .= ' AND collection_id = %d';
+			$where   .= ' AND f.collection_id = %d';
 			$params[] = $collection_id;
+		}
+
+		// Sorting by anything the FAVOURITE does not itself know, or searching
+		// at all, needs the media row. Everything is allowlisted to a column
+		// name here — `orderby` reaches SQL and can never be interpolated.
+		$columns = array(
+			'favorited' => 'f.created_at',
+			'title'     => 'm.title',
+			'date'      => 'm.created_at',
+		);
+
+		$orderby = isset( $columns[ $orderby ] ) ? $orderby : 'favorited';
+		$order   = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
+		$needs_media = '' !== $search || 'favorited' !== $orderby;
+
+		// The join stays OFF on the default path. Adding it unconditionally would
+		// silently change `total` for every existing caller: a favourite whose
+		// media was deleted is counted today and would stop being counted, which
+		// is a behaviour change dressed up as a refactor (Production Rule 3).
+		$join = $needs_media ? " INNER JOIN {$index} m ON m.media_id = f.media_id" : '';
+
+		if ( '' !== $search ) {
+			$where   .= ' AND m.title LIKE %s';
+			$params[] = '%' . $wpdb->esc_like( $search ) . '%';
 		}
 
 		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT COUNT(*) FROM {$table} f{$join} WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...$params
 			)
 		);
@@ -127,7 +155,7 @@ class FavoriteService {
 
 		$items = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT media_id, collection_id, created_at FROM {$table} WHERE {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT f.media_id, f.collection_id, f.created_at FROM {$table} f{$join} WHERE {$where} ORDER BY {$columns[ $orderby ]} {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...$params
 			),
 			ARRAY_A

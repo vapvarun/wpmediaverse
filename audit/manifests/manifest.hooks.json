@@ -294,6 +294,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_app_config",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $config"
+      ],
+      "where": "includes/REST/Controller/ConfigController.php:189",
+      "consumed_by": [],
+      "note": "Extension point Pro fills with the `documents` block, so a client never hardcodes the format list, size ceiling or preview tiers. P4.4."
+    },
+    {
       "name": "mvs_app_config_branding",
       "type": "filter",
       "args_signature": [],
@@ -756,12 +767,34 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_dashboard_before_panel_toolbar",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$panel"
+      ],
+      "where": "templates/partials/dashboard-content.php:685",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_dashboard_panels",
       "type": "action",
       "args_count": 0,
       "args_signature": [],
       "where": "templates/partials/dashboard-content.php:622",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_tab_registry",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $tabs"
+      ],
+      "where": "templates/partials/dashboard-content.php:481",
+      "consumed_by": [
+        "Core\\Plugin::register_documents_tab"
+      ]
     },
     {
       "name": "mvs_dashboard_tabs",
@@ -891,6 +924,130 @@
       ],
       "where": "includes/Messaging/MessagingService.php (send_message)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_document_admin_panels",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "array $row"
+      ],
+      "where": "includes/Admin/DocumentListPage.php"
+    },
+    {
+      "name": "mvs_document_can_grant",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $can",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:can_grant()",
+      "consumed_by": [],
+      "note": "D1 seam for non-personal drives. DEFAULTS FALSE so an unanswered filter denies rather than opening sharing to every member of a space."
+    },
+    {
+      "name": "mvs_document_folder_created",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $folder_id",
+        "array $args"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:create()",
+      "consumed_by": [],
+      "note": "Fires after a document folder is created."
+    },
+    {
+      "name": "mvs_document_folder_privacy_cascaded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $folder_id",
+        "string $privacy",
+        "int $cascaded"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:set_privacy()",
+      "consumed_by": [],
+      "note": "T2. Fires after a tightening has swept the subtree. Loosening never cascades, so it does not fire."
+    },
+    {
+      "name": "mvs_document_folder_trashed",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $folder_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:trash()",
+      "consumed_by": [],
+      "note": "Fires after a folder and its subtree are trashed."
+    },
+    {
+      "name": "mvs_document_max_depth",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $depth"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:max_depth()",
+      "consumed_by": [],
+      "note": "Folder nesting cap, default 12. Raising past 16 pushes `path` beyond KEY subtree's 150-byte prefix, so deep trees silently stop using the index."
+    },
+    {
+      "name": "mvs_document_owns_drive",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $owns",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:owns_drive()",
+      "consumed_by": [],
+      "note": "Space-drive ownership seam, resolved once per drive per request. Defaults false."
+    },
+    {
+      "name": "mvs_document_row_actions",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "bool $trashed"
+      ],
+      "where": "templates/admin/documents.php"
+    },
+    {
+      "name": "mvs_document_uploaded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "string $doc_type",
+        "int $folder_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/DocumentIngestService.php:handle()",
+      "consumed_by": [],
+      "note": "Fires after a document is ingested. Quota rides the existing mvs_media_uploaded instead, which is why D2 needs no fourth counter."
+    },
+    {
+      "name": "mvs_document_viewer_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "string $mime"
+      ],
+      "where": "templates/media-single.php:334",
+      "consumed_by": [
+        "wpmediaverse-pro: includes/Documents/DocumentViewer.php::render"
+      ]
     },
     {
       "name": "mvs_explore_query_args",
@@ -1121,6 +1278,45 @@
       ]
     },
     {
+      "name": "mvs_media_trashed",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "string $permalink"
+      ],
+      "where": "includes/Repository/MediaRepository.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
+    },
+    {
+      "name": "mvs_media_restored",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "string $permalink"
+      ],
+      "where": "includes/Repository/MediaRepository.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
+    },
+    {
+      "name": "mvs_media_feed_allows_documents",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $allowed"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:334",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for P1.5. GET /media?media_type=document (and /me/media, which delegates to the same handler) returned document rows until 2.4.0 and the parameter has advertised 'document' in its enum since the first release. The route now answers 400 mvs_document_route; this filter restores the old behaviour for at least two majors. Default false."
+    },
+    {
       "name": "mvs_media_files_orphaned",
       "type": "action",
       "args_count": 2,
@@ -1152,6 +1348,17 @@
       ],
       "where": "includes/REST/Controller/MediaController.php:803",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_library_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string[] $types"
+      ],
+      "where": "includes/Core/MediaTypes.php:library_types()",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for narrowing MEDIA_LIBRARY to media only (owner, 2026-08-09: documents never render in a media grid). Restoring legacy_document re-accepts the broken tile."
     },
     {
       "name": "mvs_media_metadata",
@@ -1243,9 +1450,21 @@
       ],
       "where": "templates/media-single.php:479",
       "consumed_by": [
-        "wpmediaverse-pro (Frontend\\BoostAffordance \u2014 boost store/modal + owner button on the canonical single-media page, all layouts)"
+        "wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
       ],
       "added": "2.1.0"
+    },
+    {
+      "name": "mvs_media_type_for_mime",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $type",
+        "string $mime"
+      ],
+      "where": "includes/Services/UploadService.php:866",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for P2.1. get_media_type() used to return 'document' for any unrecognised MIME; it now returns ''. A filter value outside MediaTypes::ALL is ignored, so an unknown string cannot defeat the positive type predicates downstream. Added to the manifest 2026-08-09 -- it shipped in the P2.1 commit without a manifest delta."
     },
     {
       "name": "mvs_media_uploaded",
@@ -1569,6 +1788,16 @@
         "string $privacy"
       ],
       "where": "includes/Services/PrivacyService.php:91",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_document_extraction_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "wpmediaverse-pro: includes/Documents/ExtractionService.php::is_enabled",
       "consumed_by": []
     },
     {
@@ -2202,6 +2431,19 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_has_custom_avatar",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $has",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Seam for other avatar providers. Nothing in the avatar chain distinguishes a photograph from a generated placeholder (core found_avatar is set by both), so the owner of the avatar answers. Basecamp 10252323883."
+    },
+    {
       "name": "mvs_user_badge_html",
       "type": "filter",
       "args_count": 2,
@@ -2385,6 +2627,21 @@
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_drive_access",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $level",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/PrivacyService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Media-specific twin of mvs_document_drive_access, whose answer is its default so the seam is additive. Governs BOTH the placement gate and the space read gate, deliberately: if the two disagreed, media would be stored scoped to a drive its members could not read. Basecamp 10252314484."
     }
   ],
   "generated": {
@@ -2402,7 +2659,7 @@
           "WPMediaVerse\\Services\\CloudOps"
         ],
         "interface_changes": [
-          "StorageDriverInterface::download(string $path, string $local_dest): bool \u2014 new contract method"
+          "StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
         ],
         "cli_subcommands_added": [
           "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
@@ -2413,14 +2670,14 @@
           "mvs_cloud_direct_public_urls (boolean, default false)"
         ],
         "filters_added": [
-          "mvs_cloud_thumbnail_url($url, $size, $media_id) \u2014 delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
-          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) \u2014 opt-in for private-bucket setups"
+          "mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
         ],
         "options_added": [
-          "mvs_cloud_ops_status \u2014 last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+          "mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
         ],
         "i18n_strings_wrapped": 98,
-        "pot_entries": "1 \u2192 1,179",
+        "pot_entries": "1 → 1,179",
         "wp_localize_script_handles": [
           "mvsConfirmI18n",
           "mvsCardBuildersI18n"
@@ -2548,13 +2805,13 @@
         "Admin bulk-optimize progress UI"
       ]
     },
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only \u2014 inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired \u2014 manifest category counts unchanged. Full re-scan deferred to next structural change.",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
-      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",

@@ -39,13 +39,26 @@ class MediaTag {
 			'labels'                => $labels,
 			'hierarchical'          => false,
 			'public'                => true,
+			'show_ui'               => true,
+			// Hide the core taxonomy submenu — TagManagementPage (`mvs-tags`) is
+			// the single Tags screen. Leaving show_in_menu on produced two "Tags"
+			// entries under WPMediaVerse (custom page + edit-tags.php).
+			'show_in_menu'          => false,
 			'show_in_rest'          => true,
 			'show_admin_column'     => true,
 			'rewrite'               => array( 'slug' => 'media-tag' ),
 			'update_count_callback' => array( __CLASS__, 'update_term_count' ),
+			// No metabox on the album editor. Every mvs_tag write in this plugin passes a
+			// media-index ID, but core's default metabox on the album screen wrote
+			// ALBUM post IDs into the same wp_term_relationships.object_id space — a
+			// contamination path no plugin code accounted for. Closed in 2.4.0.
+			'meta_box_cb'           => false,
 		);
 
-		// Registered on mvs_album for admin UI. Media-tag associations stored in custom tables.
+		// Registered on mvs_album as a registration vehicle for the term-management
+		// screen, not because albums have tags. Media-tag associations are stored
+		// against mvs_media_index.media_id. See MediaCategory::register() for the full
+		// reasoning and the residual /wp/v2/mvs-albums note.
 		register_taxonomy( 'mvs_tag', 'mvs_album', $args );
 	}
 
@@ -63,7 +76,9 @@ class MediaTag {
 	public static function update_term_count( array $terms, $taxonomy ): void {
 		global $wpdb;
 
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		// Driving table is term_relationships; the index is joined to count only
+		// published media (Rule 7 — see MediaRepository::index_table()).
+		$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 
 		foreach ( (array) $terms as $term_taxonomy_id ) {
 			$term_taxonomy_id = (int) $term_taxonomy_id;

@@ -77,7 +77,21 @@ class TagController extends WP_REST_Controller {
 						),
 						'slug' => array(
 							'type'              => 'string',
-							'sanitize_callback' => 'sanitize_title',
+							'sanitize_callback' => static function ( $value ) {
+								// NOT `sanitize_title` directly. WP calls a sanitize_callback as
+								// ( $value, $request, $param ), and sanitize_title's SECOND
+								// parameter is $fallback_title — so an empty slug made it return
+								// the WP_REST_Request object, which is truthy and then fataled
+								// downstream on preg_match(). An array value fataled inside WP's
+								// own sanitize_params() before any handler ran. Both answered 500
+								// on a public route:
+								//
+								// `GET /mvs/v1/media?slug=     ` -> 500 TypeError (preg_match)
+								// `GET /mvs/v1/media?slug[]=x` -> 500 TypeError (strip_tags)
+								//
+								// Taking only the value, and refusing a non-scalar, closes both.
+								return is_scalar( $value ) ? sanitize_title( (string) $value ) : '';
+							},
 						),
 					),
 				),
@@ -263,7 +277,9 @@ class TagController extends WP_REST_Controller {
 
 		// Get media IDs with the source tag via term_relationships + mvs_media_index.
 		global $wpdb;
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		// Driving table is term_relationships; the index is the joined side, so the
+		// repository supplies the name (Rule 7 — see MediaRepository::index_table()).
+		$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
 		$source_tt   = (int) get_term( $source_id, 'mvs_tag' )->term_taxonomy_id;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared

@@ -194,6 +194,10 @@ class OverviewPage {
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['total_media'] ) ); ?></span>
 					<span class="mvs-stat-label"><?php esc_html_e( 'Total Media', 'wpmediaverse' ); ?></span>
 				</a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . \WPMediaVerse\Admin\DocumentListPage::SLUG ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['total_documents'] ) ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Documents', 'wpmediaverse' ); ?></span>
+				</a>
 				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_album' ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['total_albums'] ) ); ?></span>
 					<span class="mvs-stat-label"><?php esc_html_e( 'Albums', 'wpmediaverse' ); ?></span>
@@ -609,7 +613,7 @@ class OverviewPage {
 	/**
 	 * Gather at-a-glance counts.
 	 *
-	 * @return array{total_media:int, total_albums:int, pending_moderation:int, total_views:int, storage_used:string}
+	 * @return array{total_media:int, total_documents:int, total_albums:int, pending_moderation:int, total_views:int, storage_used:string}
 	 */
 	private function get_stats(): array {
 		// Single source of truth — see AdminAggregatesService::overview_cards.

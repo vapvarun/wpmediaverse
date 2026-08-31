@@ -69,7 +69,7 @@ Data export and erasure, member self-service account deletion with a grace perio
 WPMediaVerse Pro is for sites that have outgrown one server, or that want media to earn its keep.
 
 - **Cloud storage** - Amazon S3, BunnyCDN, Cloudflare R2, or DigitalOcean Spaces, with signed URLs for private media
-- **Video** - multi-quality transcoding, HLS adaptive streaming, chapters, auto-captions, and engagement heatmaps
+- **Video** - chapters, resume playback, auto-captions, and engagement heatmaps
 - **Sell storage** - quota packages integrated with MemberPress, Paid Memberships Pro, and WooCommerce
 - **Gamification** - photo challenges, head-to-head battles, tournament brackets, boosts, and streaks
 - **Layout modes** - present the community as Instagram, Pinterest, Flickr, or Dribbble

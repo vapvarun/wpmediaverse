@@ -43,7 +43,17 @@ $mvs_show_fab = $mvs_is_logged_in && (
 wp_interactivity_state(
 	'mvs/shared-ui',
 	array(
-		'i18n' => array(
+		// In STATE, not context: the lightbox comment loader runs in whichever
+		// grid item's context opened it, which does not carry these — a comment's
+		// edit/delete flags must resolve the same regardless of what opened the
+		// lightbox (Basecamp 10148635942).
+		'currentUserId'       => is_user_logged_in() ? get_current_user_id() : 0,
+		'commentEditWindow'   => (int) apply_filters(
+			'mvs_comment_edit_window',
+			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
+		),
+		'canModerateComments' => current_user_can( 'moderate_comments' ),
+		'i18n'                => array(
 			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
 			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
 			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
@@ -68,6 +78,15 @@ wp_interactivity_state(
 <div class="mvs-app-shell"
 	data-wp-interactive="mvs/shared-ui"
 	<?php
+	// Effective MIME list = the option minus what the media path hard-refuses, so
+	// the FAB picker never offers a type the server rejects (the same agreement
+	// `UploadService::hard_refused_mimes()` documents for the dashboard input).
+	$mvs_allowed_mimes = array_values(
+		array_diff(
+			array_map( 'trim', explode( ',', get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ) ) ),
+			\WPMediaVerse\Services\UploadService::hard_refused_mimes()
+		)
+	);
 	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 	echo wp_interactivity_data_wp_context(
 		array(
@@ -75,7 +94,11 @@ wp_interactivity_state(
 			'nonce'          => $mvs_nonce,
 			'currentUserId'  => $mvs_is_logged_in ? get_current_user_id() : 0,
 			'defaultPrivacy' => get_option( 'mvs_default_privacy', 'public' ),
-			'allowedTypes'   => get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ),
+			// Kept MIME-only: descendants validate a picked file's `type` against it.
+			'allowedTypes'   => implode( ',', $mvs_allowed_mimes ),
+			// The file input's `accept`: MIME types AND extensions, so the OS picker
+			// does not grey out files the server would accept.
+			'acceptAttr'     => \WPMediaVerse\Services\UploadService::accept_attribute( $mvs_allowed_mimes ),
 		)
 	);
 	?>
@@ -83,15 +106,52 @@ wp_interactivity_state(
 >
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>
-	<div class="mvs-fab-container">
+		<?php
+		// When the member also has a Documents drive, the FAB opens a small menu
+		// (Media / Documents) so the drive is reachable from the global upload
+		// affordance; otherwise it keeps its single-action behaviour and opens the
+		// upload modal directly (Basecamp 10206301990). Documents availability + the
+		// drive URL come from Free's own seams — no Pro classes.
+		$mvs_fab_docs_url = '';
+		if ( $mvs_is_logged_in
+		&& \WPMediaVerse\Core\Plugin::documents_enabled()
+		&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
+		) {
+			$mvs_fab_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
+		}
+		?>
+	<div class="mvs-fab-container"
+		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'
+		<?php
+		if ( '' !== $mvs_fab_docs_url ) :
+			?>
+			data-wp-on-document--click="actions.closeFabMenuOnOutside"<?php endif; ?>>
+		<?php if ( '' !== $mvs_fab_docs_url ) : ?>
+		<div class="mvs-fab-menu" hidden data-wp-bind--hidden="!state.fabMenuOpen" role="menu" aria-label="<?php esc_attr_e( 'Add', 'wpmediaverse' ); ?>">
+			<button type="button" class="mvs-fab-menu-item" role="menuitem" data-wp-on--click="actions.fabUploadMedia">
+				<?php esc_html_e( 'Upload media', 'wpmediaverse' ); ?>
+			</button>
+			<a class="mvs-fab-menu-item" role="menuitem" href="<?php echo esc_url( $mvs_fab_docs_url ); ?>">
+				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
+			</a>
+		</div>
+		<button class="mvs-fab" data-wp-on--click="actions.toggleFabMenu"
+			aria-haspopup="true" data-wp-bind--aria-expanded="state.fabMenuOpen"
+			aria-label="<?php esc_attr_e( 'Add media or open Documents', 'wpmediaverse' ); ?>">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
+				<line x1="12" y1="5" x2="12" y2="19"></line>
+				<line x1="5" y1="12" x2="19" y2="12"></line>
+			</svg>
+		</button>
+		<?php else : ?>
 		<button class="mvs-fab" data-wp-on--click="actions.openUploadModal"
-			data-wp-context='{"uploadMode":"photo"}'
 			aria-label="<?php esc_attr_e( 'Upload media', 'wpmediaverse' ); ?>">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
 				<line x1="12" y1="5" x2="12" y2="19"></line>
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
 		</button>
+		<?php endif; ?>
 	</div>
 
 	<!-- Upload Modal Overlay -->
@@ -172,7 +232,7 @@ wp_interactivity_state(
 				</div>
 
 				<!-- Upload progress -->
-				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading">
+				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading" hidden>
 					<div class="mvs-modal-progress-bar">
 						<div class="mvs-modal-progress-fill"
 							data-wp-style--width="state.uploadProgressWidth"></div>
@@ -197,10 +257,11 @@ wp_interactivity_state(
 						<details class="mvs-modal-details">
 							<summary class="mvs-modal-details__summary"><?php esc_html_e( 'Add details', 'wpmediaverse' ); ?></summary>
 							<div class="mvs-modal-field">
-								<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
+								<?php // A placeholder is a hint that vanishes on the first keystroke, so it cannot be the field's name. The Tags input below already had an aria-label; these two were missed (Basecamp 10252222135). ?>
+								<input type="text" aria-label="<?php esc_attr_e( 'Media title', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
 							</div>
 							<div class="mvs-modal-field">
-								<textarea rows="2" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadDescription" data-wp-bind--value="state.uploadModalDescription"></textarea>
+								<textarea rows="2" aria-label="<?php esc_attr_e( 'Media description', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadDescription" data-wp-bind--value="state.uploadModalDescription"></textarea>
 							</div>
 							<div class="mvs-modal-field">
 								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
@@ -259,7 +320,7 @@ wp_interactivity_state(
 
 			<div class="mvs-modal-body">
 				<!-- Loading state while fetching the current media data. -->
-				<div class="mvs-modal-loading" data-wp-bind--hidden="!state.editModalLoading">
+				<div class="mvs-modal-loading" data-wp-bind--hidden="!state.editModalLoading" hidden>
 					<div class="mvs-spinner"></div>
 					<p><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></p>
 				</div>
@@ -328,7 +389,7 @@ wp_interactivity_state(
 				</button>
 				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?></span>
-					<span data-wp-bind--hidden="!state.editModalSaving"><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
+					<span data-wp-bind--hidden="!state.editModalSaving" hidden><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
 				</button>
 			</div>
 		</div>
@@ -336,8 +397,34 @@ wp_interactivity_state(
 	<?php endif; ?>
 
 	<!-- Lightbox Overlay -->
-	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
-		<div class="mvs-lightbox" data-wp-on--click="actions.handleModalClick">
+	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox"
+		data-wp-watch="callbacks.lightboxFocus">
+		<?php
+		// A modal has to SAY it is one. This element takes over the viewport,
+		// locks page scroll and overlays everything, and carried no dialog
+		// semantics at all — so a screen-reader user got no announcement that a
+		// dialog had opened, no name for it, and no boundary telling them where
+		// it ended (Basecamp 10252222057).
+		//
+		// `aria-label` rather than `aria-labelledby`: the lightbox shows photos,
+		// video, audio and documents, and only the document branch renders a
+		// title node. A label that is sometimes empty is worse than a constant
+		// one that is always true.
+		?>
+		<div class="mvs-lightbox" role="dialog" aria-modal="true"
+			aria-label="<?php esc_attr_e( 'Media viewer', 'wpmediaverse' ); ?>"
+			data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreen">
+			<!-- Fullscreen toggle — hides the comments sidebar and expands the media. -->
+			<button class="mvs-lightbox-fullscreen" data-wp-on--click="actions.toggleLightboxFullscreen"
+				data-wp-bind--aria-pressed="state.lightboxFullscreen"
+				aria-label="<?php esc_attr_e( 'Toggle fullscreen', 'wpmediaverse' ); ?>">
+				<svg class="mvs-lightbox-fs-expand" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+				</svg>
+				<svg class="mvs-lightbox-fs-compress" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+				</svg>
+			</button>
 			<!-- Close button -->
 			<button class="mvs-lightbox-close" data-wp-on--click="actions.closeLightbox" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -346,7 +433,7 @@ wp_interactivity_state(
 			</button>
 
 			<!-- Loading spinner -->
-			<div class="mvs-lightbox-loading" data-wp-bind--hidden="!state.lightboxLoading">
+			<div class="mvs-lightbox-loading" data-wp-bind--hidden="!state.lightboxLoading" hidden>
 				<div class="mvs-spinner"></div>
 			</div>
 
@@ -363,11 +450,17 @@ wp_interactivity_state(
 				<picture data-wp-bind--hidden="state.lightboxHideImage">
 					<source type="image/avif" data-wp-bind--srcset="state.lightboxImageAvifUrl" data-wp-bind--hidden="state.lightboxHideImageAvif" />
 					<source type="image/webp" data-wp-bind--srcset="state.lightboxImageWebpUrl" data-wp-bind--hidden="state.lightboxHideImageWebp" />
-					<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
+					<img data-wp-bind--src="state.lightboxImageSrc" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
 				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
+				<?php // A document has no displayable image, so instead of synthesising a broken <img> from its file URL the lightbox shows a doc card (glyph + title + type); the chrome below (Open / Download) still reaches the file. (Basecamp 10248528902) ?>
+				<div class="mvs-lightbox-document mvs-doc-card" data-wp-bind--hidden="state.lightboxHideDocument" hidden>
+					<span class="mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--file-text" data-wp-bind--class="state.lightboxDocGlyphClass" aria-hidden="true"></span>
+					<span class="mvs-doc-card__title" data-wp-text="state.lightboxTitle"></span>
+					<span class="mvs-doc-card__meta" data-wp-text="state.lightboxDocLabel"></span>
+				</div>
 
 				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
@@ -513,30 +606,6 @@ wp_interactivity_state(
 					<h3 class="mvs-lightbox-comments-heading" data-wp-bind--hidden="!state.lightboxHasComments">
 						<?php esc_html_e( 'Comments', 'wpmediaverse' ); ?>
 					</h3>
-					<ul class="mvs-lightbox-comment-list" role="list">
-						<template data-wp-each="state.lightboxComments">
-							<li class="mvs-lightbox-comment">
-								<a class="mvs-lightbox-comment-avatar-link" data-wp-bind--href="context.item.author_url">
-									<img class="mvs-lightbox-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="40" height="40" loading="lazy" />
-								</a>
-								<div class="mvs-lightbox-comment-body">
-									<div class="mvs-lightbox-comment-header">
-										<a class="mvs-lightbox-comment-author-link" data-wp-bind--href="context.item.author_url">
-											<strong class="mvs-lightbox-comment-author" data-wp-text="context.item.author_name"></strong>
-										</a>
-										<time class="mvs-lightbox-comment-time" data-wp-bind--datetime="context.item.date" data-wp-text="context.item.date_human"></time>
-									</div>
-									<p class="mvs-lightbox-comment-content" data-wp-text="context.item.content"></p>
-								</div>
-							</li>
-						</template>
-					</ul>
-					<p class="mvs-lightbox-no-comments" data-wp-bind--hidden="state.lightboxHasComments">
-						<?php esc_html_e( 'No comments yet. Be the first to say something!', 'wpmediaverse' ); ?>
-					</p>
-					<a class="mvs-lightbox-view-all-comments" data-wp-bind--href="state.lightboxPermalink" data-wp-bind--hidden="!state.lightboxHasMoreComments">
-						<?php esc_html_e( 'View all comments', 'wpmediaverse' ); ?> &rarr;
-					</a>
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<div class="mvs-lightbox-comment-form">
 							<input type="text" class="mvs-lightbox-comment-input"
@@ -557,6 +626,59 @@ wp_interactivity_state(
 							</a>
 						</p>
 					<?php endif; ?>
+					<ul class="mvs-lightbox-comment-list" role="list">
+						<template data-wp-each="state.lightboxComments">
+							<li class="mvs-lightbox-comment">
+								<a class="mvs-lightbox-comment-avatar-link" data-wp-bind--href="context.item.author_url">
+									<img class="mvs-lightbox-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="40" height="40" loading="lazy" />
+								</a>
+								<div class="mvs-lightbox-comment-body">
+									<div class="mvs-lightbox-comment-header">
+										<a class="mvs-lightbox-comment-author-link" data-wp-bind--href="context.item.author_url">
+											<strong class="mvs-lightbox-comment-author" data-wp-text="context.item.author_name"></strong>
+										</a>
+										<time class="mvs-lightbox-comment-time" data-wp-bind--datetime="context.item.date" data-wp-text="context.item.date_human"></time>
+									</div>
+									<p class="mvs-lightbox-comment-content" data-wp-text="context.item.content" data-wp-bind--hidden="state.hideLightboxCommentContent"></p>
+
+									<div class="mvs-lightbox-comment-edit" data-wp-bind--hidden="state.hideLightboxCommentEditForm">
+										<textarea class="mvs-lightbox-comment-edit-input" rows="2"
+											data-wp-bind--value="context.item.editText"
+											data-wp-on--input="actions.updateLightboxEditText"></textarea>
+										<div class="mvs-lightbox-comment-edit-actions">
+											<button class="mvs-btn mvs-btn--small" type="button"
+												data-wp-on--click="actions.saveEditLightboxComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>
+											<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+												data-wp-on--click="actions.cancelEditLightboxComment"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+										</div>
+									</div>
+
+									<div class="mvs-lightbox-comment-actions" data-wp-bind--hidden="state.hideLightboxCommentActions">
+										<button class="mvs-lightbox-comment-action" type="button"
+											data-wp-bind--hidden="state.hideLightboxEditComment"
+											data-wp-on--click="actions.startEditLightboxComment"
+											aria-label="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>"
+											title="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>">
+											<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+										</button>
+										<button class="mvs-lightbox-comment-action mvs-lightbox-comment-action--danger" type="button"
+											data-wp-bind--hidden="state.hideLightboxDeleteComment"
+											data-wp-on--click="actions.deleteLightboxComment"
+											aria-label="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"
+											title="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>">
+											<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+										</button>
+									</div>
+								</div>
+							</li>
+						</template>
+					</ul>
+					<p class="mvs-lightbox-no-comments" data-wp-bind--hidden="state.lightboxHasComments">
+						<?php esc_html_e( 'No comments yet. Be the first to say something!', 'wpmediaverse' ); ?>
+					</p>
+					<a class="mvs-lightbox-view-all-comments" data-wp-bind--href="state.lightboxPermalink" data-wp-bind--hidden="!state.lightboxHasMoreComments">
+						<?php esc_html_e( 'View all comments', 'wpmediaverse' ); ?> &rarr;
+					</a>
 				</div>
 			</div>
 		</div>
@@ -572,5 +694,25 @@ wp_interactivity_state(
 				<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
 			</svg>
 		</button>
+	</div>
+
+	<!-- Confirm dialog — shared by every mvs/shared-ui showConfirm() caller
+	     (lightbox comment delete/edit, etc.). It lives here, in the global
+	     wp_footer frame, so it is present wherever the lightbox is. Before this
+	     it was copy-pasted into media-single/album/dashboard only, so the same
+	     confirm-driven action was inert on every other surface (Explore, profile
+	     grids): showConfirm() set state.confirmVisible with nothing bound to it. -->
+	<div class="mvs-confirm-overlay" hidden
+		data-wp-interactive="mvs/shared-ui"
+		data-wp-bind--hidden="!state.confirmVisible">
+		<div class="mvs-confirm">
+			<p data-wp-text="state.confirmMessage"></p>
+			<div class="mvs-confirm-actions">
+				<button class="mvs-btn mvs-btn--secondary" type="button"
+					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+				<button class="mvs-btn mvs-btn--danger" type="button"
+					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
+			</div>
+		</div>
 	</div>
 </div>

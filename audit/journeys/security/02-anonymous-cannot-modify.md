@@ -25,12 +25,22 @@ estimated_runtime_minutes: 2
 - **Expect**: HTTP 401/403.
 
 ### 3. Anonymous POST /media/(id)/reactions
-- **Action**: `curl -X POST -d '{"emoji":"like"}' -H 'Content-Type: application/json' $SITE_URL/wp-json/mvs/v1/media/1/reactions`
-- **Expect**: HTTP 401/403.
+- **Action**: `curl -X POST -d '{"reaction_type":"like"}' -H 'Content-Type: application/json' $SITE_URL/wp-json/mvs/v1/media/<id>/reactions`
+- **Expect**: HTTP **401** `mvs_unauthorized`.
+- **The param name is load-bearing** — see the note below. `reaction_type` is required and
+  enum-constrained (`like|love|haha|wow|sad|angry`); `emoji` is not a parameter of this route.
 
 ### 4. Anonymous POST /media/(id)/comments
-- **Action**: `curl -X POST -d '{"body":"hi"}' -H 'Content-Type: application/json' $SITE_URL/wp-json/mvs/v1/media/1/comments`
-- **Expect**: HTTP 401/403.
+- **Action**: `curl -X POST -d '{"content":"hi"}' -H 'Content-Type: application/json' $SITE_URL/wp-json/mvs/v1/media/<id>/comments`
+- **Expect**: HTTP **401** `mvs_unauthorized`. The required param is `content`, not `body`.
+
+> **Send the CORRECT payload, or this journey passes without testing anything.** Corrected
+> 2026-08-15: steps 3 and 4 previously sent `emoji` and `body`, neither of which is a
+> parameter of its route. WordPress validates required params **before** running the
+> permission callback, so a wrong param name returns **400 `rest_missing_callback_param`** —
+> which satisfies a pass criterion of "non-2xx" while never once exercising the auth gate
+> these steps exist to prove. Both were verified with correct payloads on 2026-08-15 and
+> return 401. Use a real media id too: `1` is not a media id on most installs.
 
 ### 5. Anonymous can read public profile (positive control)
 - **Action**: `curl $SITE_URL/wp-json/mvs/v1/users/1`
@@ -38,7 +48,12 @@ estimated_runtime_minutes: 2
 
 ## Pass criteria
 
-ALL of steps 1–4 return non-2xx; step 5 returns 200.
+Steps 1-2 return **403 `mvs_forbidden`**, steps 3-4 return **401 `mvs_unauthorized`**, and
+step 5 returns 200.
+
+Stated as specific codes rather than "non-2xx" deliberately: a 400 from param validation is
+also non-2xx and proves nothing about authentication. The point of this journey is that the
+permission callback was reached and said no.
 
 ## Fail diagnostics
 
@@ -46,3 +61,4 @@ ALL of steps 1–4 return non-2xx; step 5 returns 200.
 |---|---|---|
 | Step 1–4 returns 200 | `permission_callback` removed or set to `__return_true` | `includes/REST/Controller/MediaController.php`, `CommentController.php`, `ReactionController.php` |
 | Step 5 returns 401 | Public profile gated by mistake | `includes/REST/Controller/UserController.php` |
+| Step 3-4 returns 400 `rest_missing_callback_param` | **Your payload is wrong, not the code.** The permission callback was never reached | check the route's required args with `rest_get_server()->get_routes()` |

@@ -51,6 +51,15 @@ $is_image = 'image' === $mvs_media_type;
 $is_video = 'video' === $mvs_media_type;
 $is_audio = 'audio' === $mvs_media_type;
 
+// A document is any row the document library owns. Both types matter here:
+// `document` is a 2.4.0 upload, `legacy_document` is a pre-2.4.0 file the v27
+// quarantine reclassified. Neither has an image, a player, or an aspect ratio,
+// and before this branch existed both fell through EVERY branch above and
+// rendered nothing at all — the page showed a title, reactions and a comment
+// box with no document on it and no way to download one. Coding Rule 11: no
+// silent render fallthrough.
+$is_document = in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true );
+
 // Extra metadata from meta table.
 $artist     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'artist' );
 $album_name = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'album_name' );
@@ -103,7 +112,15 @@ $mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository'
 $mvs_archive_url = home_url( '/media/' );
 ?>
 <div class="mvs-single-media mvs-page">
-	<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'single-media' ); ?>
+	<?php
+	// The id decides where "back" goes: a document returns to the document page,
+	// media to Explore. This template is shared by both on purpose (design §10),
+	// and the back link is the one part that must not be.
+	\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link(
+		'single-media',
+		array( 'media_id' => $mvs_media_id )
+	);
+	?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
@@ -154,7 +171,15 @@ $mvs_archive_url = home_url( '/media/' );
 					);
 					?>
 					data-wp-init="callbacks.initFollow">
-					<button class="mvs-btn mvs-btn--small mvs-follow-btn" type="button"
+					<?php
+					// On a DOCUMENT page Follow steps back to a quiet button.
+					// Follow and Download were both solid primaries at opposite
+					// corners, which made the loudest thing on the page a social
+					// action about the author — not why anyone opened a contract.
+					// Scoped to documents: on a photo, following the person who
+					// posted it is a perfectly reasonable primary action.
+					?>
+					<button class="mvs-btn mvs-btn--small mvs-follow-btn<?php echo $is_document ? ' mvs-follow-btn--quiet' : ''; ?>" type="button"
 						data-wp-class--active="context.isFollowing"
 						data-wp-on--click="actions.toggleFollow"
 						aria-label="
@@ -170,6 +195,79 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php endif; ?>
 			</div>
 			<h1 class="mvs-media-title"><?php echo esc_html( $mvs_title ); ?></h1>
+
+			<?php if ( $is_document ) : ?>
+				<?php
+				/*
+				 * What the document IS, not just what it says.
+				 *
+				 * The drive row already shows type, size, privacy and location;
+				 * this page showed none of them, so opening a document from the
+				 * list LOST information. Every value here comes off the row that
+				 * was already loaded — no extra query.
+				 *
+				 * The one that matters is privacy. Without it a member looking at
+				 * a private contract sees exactly what they would see looking at a
+				 * public one, and the Share button beside it can mint a link
+				 * anyone can open.
+				 */
+				$mvs_doc_type_key = class_exists( '\WPMediaVerse\Core\DocumentTypes' )
+					? \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $mvs_file_type )
+					: null;
+
+				$mvs_doc_size = (int) ( $mvs_media['file_size'] ?? 0 );
+
+				/**
+				 * Where the document sits on its owner's drive.
+				 *
+				 * Folders are a Pro concept, so Free asks and renders nothing when
+				 * nobody answers — a Free-only site must not show an empty slot
+				 * where a folder name would be.
+				 *
+				 * @since 2.4.0
+				 *
+				 * @param string $label    Human-readable location, or ''.
+				 * @param int    $media_id Document id.
+				 */
+				$mvs_doc_location = (string) apply_filters( 'mvs_document_location_label', '', $mvs_media_id );
+				?>
+				<p class="mvs-media-meta mvs-media-meta--document">
+					<?php if ( $mvs_doc_type_key ) : ?>
+						<span class="mvs-media-meta__type"><?php echo esc_html( \WPMediaVerse\Core\DocumentTypes::label( $mvs_doc_type_key ) ); ?></span>
+					<?php endif; ?>
+
+					<?php if ( $mvs_doc_size > 0 ) : ?>
+						<span class="mvs-media-meta__item"><?php echo esc_html( size_format( $mvs_doc_size ) ); ?></span>
+					<?php endif; ?>
+
+					<?php
+					// Absence is the quiet default: a PUBLIC document gets no chip,
+					// so a chip on screen always means "this one is restricted".
+					if ( 'public' !== $mvs_privacy ) :
+						$mvs_privacy_labels = array(
+							'private' => __( 'Private', 'wpmediaverse' ),
+							'members' => __( 'Members only', 'wpmediaverse' ),
+						);
+						?>
+						<span class="mvs-media-meta__privacy">
+							<i data-lucide="lock" aria-hidden="true"></i>
+							<?php echo esc_html( $mvs_privacy_labels[ $mvs_privacy ] ?? ucfirst( (string) $mvs_privacy ) ); ?>
+						</span>
+					<?php endif; ?>
+
+					<?php if ( '' !== $mvs_doc_location ) : ?>
+						<span class="mvs-media-meta__item">
+							<?php
+							printf(
+								/* translators: %s: folder name. */
+								esc_html__( 'in %s', 'wpmediaverse' ),
+								esc_html( $mvs_doc_location )
+							);
+							?>
+						</span>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
 		</header>
 
 		<div class="mvs-media-content">
@@ -294,6 +392,67 @@ $mvs_archive_url = home_url( '/media/' );
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</audio>
 				</div>
+			<?php elseif ( $is_document ) : ?>
+				<?php
+				/**
+				 * Filter the document viewer markup.
+				 *
+				 * Pro answers this with a tiered viewer — the browser's own PDF
+				 * frame, or server-rendered HTML for the text family, or a card.
+				 * Free deliberately does NOT try to render document contents: the
+				 * renderer that makes a `.md` safe to display lives in Pro, and
+				 * Free showing a half-safe version of it would be worse than Free
+				 * showing none.
+				 *
+				 * Returning '' keeps the honest fallback below.
+				 *
+				 * @since 2.4.0
+				 *
+				 * @param string $html     Viewer markup. Must be fully escaped.
+				 * @param int    $media_id Document id.
+				 * @param string $mime     Stored MIME type.
+				 */
+				$mvs_doc_viewer = (string) apply_filters( 'mvs_document_viewer_html', '', $mvs_media_id, (string) $mvs_file_type );
+				?>
+				<div class="mvs-media-document">
+					<?php if ( '' !== $mvs_doc_viewer ) : ?>
+						<?php echo $mvs_doc_viewer; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the filter contract requires escaped markup; Pro's renderer escapes on the way in. ?>
+					<?php else : ?>
+						<?php
+						// The fallback is a real answer, not a placeholder: it
+						// names the file and hands over a working download.
+						$mvs_doc_size = (int) ( $mvs_media['file_size'] ?? 0 );
+						$mvs_doc_type = class_exists( '\WPMediaVerse\Core\DocumentTypes' )
+							? \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $mvs_file_type )
+							: null;
+						?>
+						<div class="mvs-doc-card">
+							<span class="mvs-doc-card__icon" aria-hidden="true"></span>
+							<div class="mvs-doc-card__meta">
+								<span class="mvs-doc-card__name"><?php echo esc_html( $mvs_title ); ?></span>
+								<span class="mvs-doc-card__detail">
+									<?php
+									echo esc_html(
+										$mvs_doc_size
+											? sprintf(
+												/* translators: 1: document type, 2: file size. */
+												_x( '%1$s document, %2$s', 'document card detail', 'wpmediaverse' ),
+												strtoupper( (string) ( $mvs_doc_type ?: __( 'File', 'wpmediaverse' ) ) ),
+												size_format( $mvs_doc_size )
+											)
+											: strtoupper( (string) ( $mvs_doc_type ?: __( 'File', 'wpmediaverse' ) ) )
+									);
+									?>
+								</span>
+							</div>
+							<?php if ( '' !== $mvs_file_url ) : ?>
+								<a class="mvs-doc-download" href="<?php echo esc_url( $mvs_file_url ); ?>" download>
+									<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
+								</a>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
+				</div>
 			<?php endif; ?>
 
 			<?php if ( $mvs_can_view && $mvs_desc ) : ?>
@@ -380,6 +539,9 @@ $mvs_archive_url = home_url( '/media/' );
 					'mvs_comment_edit_window',
 					(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 				),
+				// A moderator may delete anyone's comment (the DELETE route allows it),
+				// so the Delete control shows on others' comments too — matching the API.
+				'canModerateComments' => current_user_can( 'moderate_comments' ),
 				'isOwner'            => $mvs_is_owner,
 				'authorId'           => $mvs_author_id,
 				'isFollowing'        => false,
@@ -618,7 +780,7 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-on--click="actions.saveEdit"
 						data-wp-bind--disabled="context.saving">
 						<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-						<span data-wp-bind--hidden="!context.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+						<span data-wp-bind--hidden="!context.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>
 					<button class="mvs-btn mvs-btn--secondary" type="button"
 						data-wp-on--click="actions.cancelEdit">
@@ -631,7 +793,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<!-- Comments Section -->
 			<div class="mvs-comments-section">
 				<h3 class="mvs-comments-title"><?php esc_html_e( 'Comments', 'wpmediaverse' ); ?></h3>
-				<?php if ( is_user_logged_in() ) : ?>
+				<?php if ( is_user_logged_in() && apply_filters( 'mvs_can_comment', true, $mvs_media_id, get_current_user_id() ) ) : ?>
 					<form class="mvs-comment-form" data-wp-on--submit="actions.submitComment">
 						<textarea placeholder="<?php esc_attr_e( 'Write a comment...', 'wpmediaverse' ); ?>" rows="2"
 							data-wp-bind--value="context.commentText"
@@ -674,8 +836,10 @@ $mvs_archive_url = home_url( '/media/' );
 								</div>
 								<div class="mvs-comment-actions" data-wp-bind--hidden="state.hideCommentActions">
 									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-bind--hidden="state.hideEditComment"
 										data-wp-on--click="actions.startEditComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
 									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+										data-wp-bind--hidden="state.hideDeleteComment"
 										data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
 								</div>
 							</div><!-- /.mvs-comment-body-wrap -->
@@ -704,23 +868,8 @@ $mvs_archive_url = home_url( '/media/' );
 	</article>
 </div>
 <?php
-// Shared UI: Confirm Dialog (required for delete/share actions).
-// Toast is provided globally by shared-ui-frame.php in wp_footer.
-?>
-<div class="mvs-confirm-overlay" hidden
-	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.confirmVisible">
-	<div class="mvs-confirm">
-		<p data-wp-text="state.confirmMessage"></p>
-		<div class="mvs-confirm-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-			<button class="mvs-btn mvs-btn--danger" type="button"
-				data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
-		</div>
-	</div>
-</div>
-<?php
+// Shared UI confirm dialog + toast are provided globally by
+// shared-ui-frame.php in wp_footer — no per-template copy needed.
 require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );

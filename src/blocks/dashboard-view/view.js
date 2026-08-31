@@ -9,6 +9,56 @@
 import { store, getContext } from '@wordpress/interactivity';
 
 /**
+ * Which loader owns each panel, and what its default sort is.
+ *
+ * The four panels answer the same toolbar with the same query keys — `s`,
+ * `orderby`, `order` — so one set of actions drives all of them instead of four
+ * near-identical copies. The defaults differ because the questions differ:
+ * favourites sort by when YOU saved them, everything else by when it was made.
+ */
+const PANELS = {
+	media: { loader: 'loadMedia', orderby: 'date' },
+	albums: { loader: 'loadAlbums', orderby: 'date' },
+	favorites: { loader: 'loadFavorites', orderby: 'favorited' },
+	collections: { loader: 'loadCollections', orderby: 'date' },
+};
+
+/**
+ * Debounce timer for the search field.
+ *
+ * Module-scoped rather than on `state`: it is a timer id, not something any
+ * binding should be able to read or render.
+ */
+let toolbarTimer = null;
+
+/**
+ * Build the toolbar's slice of a panel's query string.
+ *
+ * Only non-default keys are emitted, so an untouched panel requests exactly
+ * what it always did and the URL of an untouched panel stays clean.
+ *
+ * @param {Object} panelState One of state.media / albums / favorites / collections.
+ * @param {string} slug       Panel slug.
+ * @return {string} Query fragment, leading `&`, or ''.
+ */
+function toolbarQuery( panelState, slug ) {
+	const parts = [];
+	const search = ( panelState.s || '' ).trim();
+
+	if ( search ) {
+		parts.push( 's=' + encodeURIComponent( search ) );
+	}
+	if ( panelState.orderby && panelState.orderby !== PANELS[ slug ].orderby ) {
+		parts.push( 'orderby=' + encodeURIComponent( panelState.orderby ) );
+	}
+	if ( panelState.order && panelState.order !== 'desc' ) {
+		parts.push( 'order=' + encodeURIComponent( panelState.order ) );
+	}
+
+	return parts.length ? '&' + parts.join( '&' ) : '';
+}
+
+/**
  * Grab a poster frame from a video File and append it as `thumbnail`.
  *
  * See the twin in src/blocks/media-upload/view.js for the full rationale: a
@@ -65,6 +115,17 @@ async function appendVideoPoster( formData, file ) {
 	}
 }
 
+// The toolbar's item count. Reuses `itemsCount`, the string the album and
+// collection cards already print, rather than minting a second one that would
+// need translating separately and could drift from it. The template is passed
+// in rather than read from the store here: `store()` inside a getter re-enters
+// the store on every read, and the callers already hold `state`.
+function countLabel( total, plural, one ) {
+	const n = Number( total ) || 0;
+	const template = 1 === n ? ( one || '%d item' ) : ( plural || '%d items' );
+	return template.replace( '%d', n );
+}
+
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here.
 // PHP (dashboard-content.php) seeds translated strings into interactivity state;
 // read them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
@@ -93,12 +154,27 @@ function proApiFetch( ctx, path, opts = {} ) {
 
 const { state, actions } = store( 'mvs/dashboard', {
 	state: {
-		activeTab: 'media',
+		// NOT defaulted here. The client state literal is applied ON TOP of the
+		// server's, so a default in this file silently overwrote
+		// wp_interactivity_state()'s value and /my-media/documents/ always
+		// opened on Media. The server seeds it; the getters below fall back.
+
+		// Bulk selection on the My Media grid.
+		bulkSelectedIds: [],
+		bulkPrivacyValue: 'public',
+		bulkAlbumValue: 0,
+		bulkTagsValue: '',
+		bulkBusy: false,
+
 		// My Media
 		media: {
 			items: [],
+			s: '',
+			orderby: 'date',
+			order: 'desc',
 			page: 1,
 			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Upload
@@ -131,6 +207,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Albums
 		albums: {
 			items: [],
+			s: '',
+			orderby: 'date',
+			order: 'desc',
+			page: 1,
+			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Album modal
@@ -156,13 +238,23 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Favorites
 		favorites: {
 			items: [],
+			s: '',
+			orderby: 'favorited',
+			order: 'desc',
 			page: 1,
 			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Collections
 		collections: {
 			items: [],
+			s: '',
+			orderby: 'date',
+			order: 'desc',
+			page: 1,
+			totalPages: 1,
+			total: 0,
 			loading: false,
 		},
 		// Pro gamification tabs (data populated by lazy-load actions).
@@ -197,23 +289,56 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get editModalTitleMissing() {
 			return '' === String( state.editModal.title || '' ).trim();
 		},
-		get isMediaTab() { return state.activeTab === 'media'; },
-		get isAlbumsTab() { return state.activeTab === 'albums'; },
-		get isFavoritesTab() { return state.activeTab === 'favorites'; },
-		get isCollectionsTab() { return state.activeTab === 'collections'; },
+		get isMediaTab() { return ( state.activeTab || 'media' ) === 'media'; },
+		get isAlbumsTab() { return ( state.activeTab || 'media' ) === 'albums'; },
+		get isFavoritesTab() { return ( state.activeTab || 'media' ) === 'favorites'; },
+		get isCollectionsTab() { return ( state.activeTab || 'media' ) === 'collections'; },
+		// Documents: a server-rendered panel, so the store only owns which tab
+		// is showing. The drive inside it is plain HTML — no client state to
+		// keep in step with it.
+		get isDocumentsTab() { return ( state.activeTab || 'media' ) === 'documents'; },
+		// Profile edit: was a card above the rail toggled by context.editingProfile,
+		// now a section like any other, so it binds like any other.
+		get isProfileTab() { return ( state.activeTab || 'media' ) === 'profile'; },
 		// Pro gamification tabs (computed here so panels can bind without store extension).
-		get isChallengesTab() { return state.activeTab === 'challenges'; },
-		get isBattlesTab() { return state.activeTab === 'battles'; },
-		get isTournamentsTab() { return state.activeTab === 'tournaments'; },
+		get isChallengesTab() { return ( state.activeTab || 'media' ) === 'challenges'; },
+		get isBattlesTab() { return ( state.activeTab || 'media' ) === 'battles'; },
+		get isTournamentsTab() { return ( state.activeTab || 'media' ) === 'tournaments'; },
 		// Pro connectors tab.
-		get isConnectorsTab() { return state.activeTab === 'connectors'; },
+		get isConnectorsTab() { return ( state.activeTab || 'media' ) === 'connectors'; },
+		// How many rows the panel holds, in the same words the album and
+		// collection cards already use ("%d items"), so the toolbar and the
+		// cards below it cannot describe the same library differently.
+		get mediaCountLabel() { return countLabel( state.media.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+		get albumsCountLabel() { return countLabel( state.albums.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+		get favoritesCountLabel() { return countLabel( state.favorites.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+		get collectionsCountLabel() { return countLabel( state.collections.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
+
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
+		get hasMoreAlbums() { return state.albums.page < state.albums.totalPages; },
+		get hasMoreCollections() { return state.collections.page < state.collections.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading; },
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
 		get showCollectionsEmpty() { return state.collections.items.length === 0 && ! state.collections.loading; },
+
+		/*
+		 * The other half of the empty-state pair.
+		 *
+		 * Each `loading` flag above SUPPRESSES the empty state, and until now
+		 * nothing replaced it: on a slow request a member saw an entirely blank
+		 * panel — no rows, no spinner, no "nothing here yet". These bind the flag
+		 * that was already being set and never read.
+		 *
+		 * Only on the FIRST load. Paging in more must not blank the grid the
+		 * member is already reading.
+		 */
+		get showMediaLoading() { return state.media.loading && state.media.items.length === 0; },
+		get showAlbumsLoading() { return state.albums.loading && state.albums.items.length === 0; },
+		get showFavoritesLoading() { return state.favorites.loading && state.favorites.items.length === 0; },
+		get showCollectionsLoading() { return state.collections.loading && state.collections.items.length === 0; },
 		get showChallengesEmpty() { return state.challenges.items.length === 0 && ! state.challenges.loading; },
 		get showBattlesEmpty() { return state.battles.items.length === 0 && ! state.battles.loading; },
 		get showTournamentsEmpty() { return state.tournaments.items.length === 0 && ! state.tournaments.loading; },
@@ -244,6 +369,22 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		get showMediaVideoPreview() {
 			return !! state.mediaVideoPreviewUrl;
+		},
+		// --- Bulk selection ---
+		get bulkCount() {
+			return state.bulkSelectedIds.length;
+		},
+		get hasBulkSelection() {
+			return state.bulkSelectedIds.length > 0;
+		},
+		get bulkCountLabel() {
+			const n = state.bulkSelectedIds.length;
+			const tmpl = ( 1 === n ? ( state.i18n?.bulkSelectedOne || '%d selected' ) : ( state.i18n?.bulkSelectedMany || '%d selected' ) );
+			return tmpl.replace( '%d', n );
+		},
+		get isItemBulkSelected() {
+			const item = getContext().item;
+			return !! item && state.bulkSelectedIds.includes( item.id );
 		},
 		get showMediaImage() {
 			// Static <img> path is image-only. Videos render via <video> (or the
@@ -340,10 +481,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return getContext().item?.privacy || 'public';
 		},
 		get albumItemCount() {
-			return ( state.i18n?.itemsCount || '%d items' ).replace( '%d', getContext().item?.media_count || 0 );
+			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );
 		},
 		get collectionItemCount() {
-			return ( state.i18n?.itemsCount || '%d items' ).replace( '%d', getContext().item?.matchCount || 0 );
+			return countLabel( getContext().item?.matchCount, state.i18n?.itemsCount, state.i18n?.itemCount );
 		},
 		get rulePillText() {
 			const rule = getContext().rule;
@@ -362,6 +503,18 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isPickerCover() {
 			const ctx = getContext();
 			return ctx.item && state.albumModal.coverId === ctx.item.id;
+		},
+		// The picker's selection state had NO renderer: togglePickerItem()
+		// mutated selectedIds and nothing on screen changed, because the CSS
+		// hangs off `.selected` and no getter or binding ever emitted it. Most
+		// visible on Edit Album, where openAlbumModal() pre-populates
+		// selectedIds from the album's current items and then draws none of it —
+		// the member sees an undifferentiated grid and cannot tell what is in
+		// the album, what they just toggled, or what Save will do
+		// (Basecamp 10190678139).
+		get isPickerSelected() {
+			const ctx = getContext();
+			return !! ctx.item && state.albumModal.selectedIds.includes( ctx.item.id );
 		},
 		get isSmartType() {
 			return state.collectionModal.collectionType === 'smart';
@@ -440,8 +593,43 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const tabBtn = event.target.closest( '[data-tab]' );
 			const tab = tabBtn?.dataset.tab;
 			if ( ! tab ) return;
+
+			// The rail items are real links now, so a section can be shared,
+			// bookmarked and opened in a new tab. Switching still happens
+			// client-side — the panels are already in the page — so the click is
+			// intercepted and the URL is written with pushState instead.
+			//
+			// Modified clicks are left alone: cmd/ctrl/shift-click and
+			// middle-click mean "open this somewhere else", and hijacking them
+			// is how a link stops behaving like a link.
+			const plainClick = ! event.metaKey && ! event.ctrlKey && ! event.shiftKey && ! event.altKey && 0 === ( event.button || 0 );
+
+			// DOCUMENTS NAVIGATES. Every other panel fetches its contents over
+			// REST when first opened, so swapping to it client-side is honest —
+			// the markup is already here and the data arrives after. The drive
+			// is not like that: it is rendered server-side, with its folders,
+			// its per-row controls and its own pagination, and it is no longer
+			// emitted on sections that are not it (that render cost ~53 queries
+			// on every other tab for a member with a real drive). There is
+			// nothing in the page to swap to, so the link does what it says.
+			//
+			// Its state already lives in the URL — folder path and page number —
+			// which is why this is the tab that loses least by navigating.
+			if ( 'documents' === tab ) {
+				return;
+			}
+
+			if ( tabBtn.href && plainClick ) {
+				event.preventDefault();
+				window.history.pushState( {}, '', tabBtn.href );
+			} else if ( tabBtn.href ) {
+				// Let the browser handle it.
+				return;
+			} else {
+				window.location.hash = tab;
+			}
+
 			state.activeTab = tab;
-			window.location.hash = tab;
 			// Mobile §5.2: scroll the tapped tab into view so users can see what's
 			// next when the strip overflows. Center inline keeps neighbours visible.
 			if ( tabBtn && typeof tabBtn.scrollIntoView === 'function' ) {
@@ -658,9 +846,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.media.page = page;
 
 			try {
-				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page );
+				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page + toolbarQuery( state.media, 'media' ) );
 				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
 				state.media.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				// X-WP-Total is the count the toolbar shows. Reading items.length
+				// instead would report the loaded PAGE, so a 60-item library would
+				// say "20 items" until somebody pressed Load more.
+				state.media.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
@@ -893,11 +1085,31 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
+		// Kept, and kept honest: profile editing is now a SECTION, so this moves
+		// between it and the library instead of flipping a card open above the
+		// rail. The name still describes what a member sees, and the two callers
+		// that were here before — the completion prompt and the form's own
+		// Cancel — go on working without knowing anything changed.
+		//
+		// `editingProfile` is still written for any theme override still binding
+		// to it (Production Rule 1: nothing is removed in a minor).
 		toggleProfileEdit() {
 			const ctx = getContext();
-			ctx.editingProfile = ! ctx.editingProfile;
+			const goingToEdit = ( state.activeTab || 'media' ) !== 'profile';
+
+			state.activeTab = goingToEdit ? 'profile' : 'media';
+			ctx.editingProfile = goingToEdit;
 			ctx.profileMessage = '';
 			ctx.profileError = '';
+
+			// Keep the URL honest with the panel. The rail already knows every
+			// section's address, so the link is read from it rather than rebuilt
+			// here — one implementation of what a section URL looks like.
+			const railLink = document.querySelector( `.mvs-dashboard-tab[data-tab="${ state.activeTab }"]` );
+
+			if ( railLink?.href ) {
+				window.history.pushState( {}, '', railLink.href );
+			}
 		},
 
 		/* =====================================================================
@@ -925,19 +1137,336 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		/* =====================================================================
+		   Bulk actions (My Media grid)
+		   ===================================================================== */
+		toggleBulkSelect( event ) {
+			// Stop the card's thumb link/lightbox from also firing.
+			if ( event ) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+			const id = getContext().item?.id;
+			if ( ! id ) return;
+			if ( state.bulkSelectedIds.includes( id ) ) {
+				state.bulkSelectedIds = state.bulkSelectedIds.filter( ( x ) => x !== id );
+			} else {
+				state.bulkSelectedIds = [ ...state.bulkSelectedIds, id ];
+			}
+		},
+		selectAllBulk() {
+			state.bulkSelectedIds = state.media.items.map( ( m ) => m.id );
+		},
+		clearBulk() {
+			state.bulkSelectedIds = [];
+		},
+		setBulkPrivacy( event ) {
+			state.bulkPrivacyValue = event.target.value;
+		},
+		setBulkAlbum( event ) {
+			state.bulkAlbumValue = parseInt( event.target.value, 10 ) || 0;
+		},
+		setBulkTags( event ) {
+			state.bulkTagsValue = event.target.value;
+		},
+		/**
+		 * Fill the Move-to-album picker the first time it is needed.
+		 *
+		 * Reuses loadAlbums() rather than adding a second album fetch: the panel
+		 * loader already handles paging, sort and the empty case, and two loaders
+		 * for one list is how they drift. Only fires when the list is empty, so
+		 * selecting media on the Albums tab costs nothing.
+		 */
+		async ensureBulkAlbums( ctxOrEvent ) {
+			if ( state.albums.items.length || state.albums.loading ) {
+				return;
+			}
+			await actions.loadAlbums( ctxOrEvent );
+		},
+		/**
+		 * Grid keyboard shortcuts: Ctrl/Cmd+A, Escape, Delete.
+		 *
+		 * Bound on document, so the FIRST thing it does is get out of the way of
+		 * anything the member is typing into — the same guard the lightbox needed
+		 * (10249014961). Delete is deliberately routed through the same confirm
+		 * as the button: a destructive shortcut with no confirmation is how a
+		 * library disappears to a mis-aimed keypress.
+		 */
+		bulkKeydown( event ) {
+			const el = event.target;
+			const tag = el && el.tagName ? el.tagName.toLowerCase() : '';
+
+			if ( 'input' === tag || 'textarea' === tag || 'select' === tag || ( el && el.isContentEditable ) ) {
+				return;
+			}
+
+			if ( ( event.ctrlKey || event.metaKey ) && 'a' === event.key.toLowerCase() ) {
+				if ( ! state.media.items.length ) return;
+				event.preventDefault();
+				actions.selectAllBulk();
+				return;
+			}
+
+			if ( ! state.bulkSelectedIds.length ) {
+				return;
+			}
+
+			if ( 'Escape' === event.key ) {
+				actions.clearBulk();
+				return;
+			}
+
+			if ( 'Delete' === event.key || 'Backspace' === event.key ) {
+				event.preventDefault();
+				actions.bulkDelete();
+			}
+		},
+		/**
+		 * One place that turns a bulk response into what the member is told.
+		 *
+		 * The server now reports `requested` alongside `processed`, because
+		 * filter_allowed_ids drops anything they may not edit and every handler
+		 * used to report the SURVIVING count as the total — a clean success for
+		 * a partly-ignored request. If anything was skipped the member hears so,
+		 * rather than the operation quietly meaning less than it said.
+		 */
+		bulkResultMessage( data, doneMessage ) {
+			const skipped = parseInt( data?.skipped, 10 ) || 0;
+
+			if ( ! skipped ) {
+				return { text: doneMessage, type: 'success' };
+			}
+
+			const tmpl = state.i18n?.bulkPartial || '%1$d of %2$d updated. %3$d were not yours to change.';
+
+			return {
+				text: tmpl
+					.replace( '%1$d', String( parseInt( data?.processed, 10 ) || 0 ) )
+					.replace( '%2$d', String( parseInt( data?.requested, 10 ) || 0 ) )
+					.replace( '%3$d', String( skipped ) ),
+				type: 'warning',
+			};
+		},
+		async bulkDelete( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length ) return;
+			sharedUI.actions.showConfirm(
+				( state.i18n?.bulkDeleteConfirm || 'Delete the selected items? This cannot be undone.' ),
+				async () => {
+					try {
+						const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'delete', media_ids: ids } } );
+						if ( res.ok ) {
+							state.media.items = state.media.items.filter( ( m ) => ! ids.includes( m.id ) );
+							state.bulkSelectedIds = [];
+							const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkDeleted || 'Selected items deleted.' ) );
+							sharedUI.actions.showToast( msg.text, msg.type );
+						} else {
+							sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+						}
+					} catch {
+						sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+					}
+				}
+			);
+		},
+		/**
+		 * Move every selected item into an album.
+		 *
+		 * The endpoint has supported this since bulk actions shipped —
+		 * `move_to_album` has always been in the action enum and
+		 * `bulk_move_to_album()` has always been implemented. Only the control
+		 * was missing, which is why this is UI and not a new route.
+		 */
+		async bulkMoveToAlbum( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length || state.bulkBusy ) return;
+
+			if ( ! state.bulkAlbumValue ) {
+				sharedUI.actions.showToast( ( state.i18n?.bulkPickAlbum || 'Choose an album first.' ), 'error' );
+				return;
+			}
+
+			state.bulkBusy = true;
+			try {
+				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'move_to_album', media_ids: ids, album_id: state.bulkAlbumValue } } );
+				if ( res.ok ) {
+					state.bulkSelectedIds = [];
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkMovedToAlbum || 'Moved to album.' ) );
+					sharedUI.actions.showToast( msg.text, msg.type );
+				} else {
+					// The route's own reason beats ours — it knows about a
+					// missing album and about an album that is not the
+					// member's to add to.
+					sharedUI.actions.showToast( res.data?.message || ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+			}
+			state.bulkBusy = false;
+		},
+		/**
+		 * Add tags to every selected item, keeping the ones already there.
+		 *
+		 * Comma-separated, matching the upload form's tag field, so a member
+		 * only learns one convention.
+		 */
+		async bulkAddTags( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length || state.bulkBusy ) return;
+
+			const tags = state.bulkTagsValue.split( ',' ).map( ( t ) => t.trim() ).filter( Boolean );
+
+			if ( ! tags.length ) {
+				sharedUI.actions.showToast( ( state.i18n?.bulkTypeTags || 'Type at least one tag.' ), 'error' );
+				return;
+			}
+
+			state.bulkBusy = true;
+			try {
+				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'add_tags', media_ids: ids, tags } } );
+				if ( res.ok ) {
+					state.bulkSelectedIds = [];
+					state.bulkTagsValue = '';
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkTagsAdded || 'Tags added.' ) );
+					sharedUI.actions.showToast( msg.text, msg.type );
+					actions.loadMedia( ctx, state.media.page || 1 );
+				} else {
+					sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+			}
+			state.bulkBusy = false;
+		},
+		async applyBulkPrivacy( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			const ids = state.bulkSelectedIds.slice();
+			if ( ! ids.length ) return;
+			try {
+				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'change_privacy', media_ids: ids, privacy: state.bulkPrivacyValue } } );
+				if ( res.ok ) {
+					state.bulkSelectedIds = [];
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkPrivacyDone || 'Privacy updated.' ) );
+					sharedUI.actions.showToast( msg.text, msg.type );
+					actions.loadMedia( ctx, state.media.page || 1 );
+				} else {
+					sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( ( state.i18n?.bulkFailed || 'Bulk action failed.' ), 'error' );
+			}
+		},
+
+		/* =====================================================================
 		   Albums
 		   ===================================================================== */
-		async loadAlbums( ctxOrEvent ) {
+		async loadAlbums( ctxOrEvent, page = 1 ) {
 			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			state.albums.loading = true;
+			state.albums.page = page;
 			try {
-				const res = await apiFetch( ctx, 'albums?author=' + ctx.userId );
+				// per_page + page are REQUIRED, not optional tidiness. Without them
+				// the endpoint applies its own default of 20 and this panel showed
+				// a member's first 20 albums with no way to reach the rest — no
+				// Load More, no pagination, no indication anything was missing.
+				const res = await apiFetch( ctx, 'albums?author=' + ctx.userId + '&per_page=20&page=' + page + toolbarQuery( state.albums, 'albums' ) );
+				state.albums.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				state.albums.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
-				state.albums.items = data;
+
+				if ( page === 1 ) {
+					state.albums.items = data;
+				} else {
+					state.albums.items = [ ...state.albums.items, ...data ];
+				}
 			} catch {
 				// Ignore.
 			}
 			state.albums.loading = false;
+		},
+
+		loadMoreAlbums() {
+			const ctx = getContext();
+			actions.loadAlbums( ctx, state.albums.page + 1 );
+		},
+
+		/* =====================================================================
+		   Panel toolbar — search, sort, direction.
+
+		   One set of actions for all four panels. The control says which panel
+		   it belongs to via `data-panel`, so adding a fifth panel needs no new
+		   action, only a row in PANELS.
+		   ===================================================================== */
+
+		toolbarSearch( event ) {
+			const ctx = getContext();
+			const slug = event.target.dataset.panel;
+			if ( ! PANELS[ slug ] ) return;
+
+			state[ slug ].s = event.target.value;
+
+			// Debounced: a member typing "holiday" should cost one request, not
+			// seven, and the last keystroke is the one that matters.
+			window.clearTimeout( toolbarTimer );
+			toolbarTimer = window.setTimeout( () => {
+				actions.applyToolbar( ctx, slug );
+			}, 350 );
+		},
+
+		toolbarSort( event ) {
+			const slug = event.target.dataset.panel;
+			if ( ! PANELS[ slug ] ) return;
+			state[ slug ].orderby = event.target.value;
+			actions.applyToolbar( getContext(), slug );
+		},
+
+		toolbarOrder( event ) {
+			const slug = event.target.dataset.panel;
+			if ( ! PANELS[ slug ] ) return;
+			state[ slug ].order = event.target.value;
+			actions.applyToolbar( getContext(), slug );
+		},
+
+		/**
+		 * Re-run a panel's loader from page 1 and write the view into the URL.
+		 *
+		 * The URL is written for the same reason the drive's GET form writes
+		 * one: a filtered view a member cannot send to anybody, or return to
+		 * with the back button, is a view that only half exists.
+		 *
+		 * @param {Object} ctx  Interactivity context.
+		 * @param {string} slug Panel slug.
+		 */
+		applyToolbar( ctx, slug ) {
+			const panelState = state[ slug ];
+			const url = new URL( window.location.href );
+
+			// Only non-defaults are written, so a cleared search leaves a clean
+			// URL rather than `?s=&orderby=date&order=desc`.
+			const set = ( key, value, fallback ) => {
+				if ( value && value !== fallback ) {
+					url.searchParams.set( key, value );
+				} else {
+					url.searchParams.delete( key );
+				}
+			};
+
+			// The URL speaks `q` / `sort` / `order` — the document drive's
+			// vocabulary, so the two engines produce identical links. `s` is a
+			// RESERVED WordPress query var: `?s=Alpha` turns the request into a
+			// site search and the section 404s, which is exactly what happened
+			// the first time this wrote `s`.
+			set( 'q', ( panelState.s || '' ).trim(), '' );
+			set( 'sort', panelState.orderby, PANELS[ slug ].orderby );
+			set( 'order', panelState.order, 'desc' );
+
+			// replaceState, not pushState: typing in a search box must not bury
+			// the previous page under one history entry per keystroke.
+			window.history.replaceState( {}, '', url.toString() );
+
+			actions[ PANELS[ slug ].loader ]( ctx, 1 );
 		},
 
 		/* =====================================================================
@@ -1144,9 +1673,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.favorites.page = page;
 
 			try {
-				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page );
+				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page + toolbarQuery( state.favorites, 'favorites' ) );
 				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
 				state.favorites.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				state.favorites.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
@@ -1180,15 +1710,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Collections
 		   ===================================================================== */
-		async loadCollections( ctxOrEvent ) {
+		async loadCollections( ctxOrEvent, page = 1 ) {
 			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			state.collections.loading = true;
+			state.collections.page = page;
 			try {
-				const res = await apiFetch( ctx, 'collections' );
+				// See loadAlbums: without per_page + page this stopped at the
+				// endpoint's default of 20 and the rest were unreachable.
+				const res = await apiFetch( ctx, 'collections?per_page=20&page=' + page + toolbarQuery( state.collections, 'collections' ) );
+				state.collections.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
+				state.collections.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const data = res.data;
 				// Enrich with match counts for smart collections.
 				for ( const item of data ) {
-					item.link = '/?p=' + item.id;
+					// No `item.link = '/?p=' + item.id` here. The REST payload
+					// already carries the real permalink (CollectionController's
+					// get_permalink()), and overwriting it shipped every card as
+					// an ugly /?p=<id> that WordPress then 301'd — so the URL a
+					// member copied or bookmarked was never the canonical one
+					// (Basecamp 10249047170). loadAlbums never did this, which is
+					// why album cards were always right.
 					if ( item.type === 'smart' ) {
 						try {
 							const detail = await apiFetch( ctx, 'collections/' + item.id + '?per_page=1' );
@@ -1201,11 +1742,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 						item.matchCount = item.favorites ? item.favorites.length : 0;
 					}
 				}
-				state.collections.items = data;
+				if ( page === 1 ) {
+					state.collections.items = data;
+				} else {
+					state.collections.items = [ ...state.collections.items, ...data ];
+				}
 			} catch {
 				// Ignore.
 			}
 			state.collections.loading = false;
+		},
+
+		loadMoreCollections() {
+			const ctx = getContext();
+			actions.loadCollections( ctx, state.collections.page + 1 );
 		},
 
 		/* =====================================================================
@@ -1566,6 +2116,28 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( hashTab && validTabs.includes( hashTab ) ) {
 				state.activeTab = hashTab;
 			}
+			// Adopt any toolbar state carried in the URL BEFORE the first load,
+			// or a shared link like `?s=holiday&order=asc` would fetch the
+			// unfiltered page and then render a toolbar claiming otherwise.
+			const params = new URLSearchParams( window.location.search );
+			const active = PANELS[ state.activeTab ] ? state.activeTab : null;
+
+			if ( active ) {
+				const search = params.get( 'q' );
+				const orderby = params.get( 'sort' );
+				const order = params.get( 'order' );
+
+				if ( null !== search ) {
+					state[ active ].s = search;
+				}
+				if ( orderby ) {
+					state[ active ].orderby = orderby;
+				}
+				if ( 'asc' === order || 'desc' === order ) {
+					state[ active ].order = order;
+				}
+			}
+
 			// Load the active tab's data.
 			if ( state.activeTab === 'albums' ) {
 				actions.loadAlbums( ctx );

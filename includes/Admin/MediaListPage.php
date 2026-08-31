@@ -10,6 +10,8 @@
 
 namespace WPMediaVerse\Admin;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\Plugin;
@@ -101,10 +103,6 @@ class MediaListPage {
 			);
 		}
 
-		global $wpdb;
-
-		$table = $wpdb->prefix . 'mvs_media_index';
-
 		// Filters.
 		$search         = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		$type_filter    = isset( $_GET['media_type'] ) ? sanitize_text_field( wp_unslash( $_GET['media_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
@@ -116,58 +114,26 @@ class MediaListPage {
 		$paged    = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
 		$offset   = ( $paged - 1 ) * $per_page;
 
-		// Build WHERE clause.
-		$where  = array( '1=1' );
-		$params = array();
-
-		if ( $search ) {
-			$where[]  = '(title LIKE %s OR description LIKE %s)';
-			$like     = '%' . $wpdb->esc_like( $search ) . '%';
-			$params[] = $like;
-			$params[] = $like;
-		}
-
-		if ( $type_filter ) {
-			$where[]  = 'media_type = %s';
-			$params[] = $type_filter;
-		}
-
-		if ( $status_filter ) {
-			$where[]  = 'status = %s';
-			$params[] = $status_filter;
-		} else {
-			$where[] = "status != 'trash'";
-		}
-
-		if ( $privacy_filter ) {
-			$where[]  = 'privacy = %s';
-			$params[] = $privacy_filter;
-		}
-
-		$where_sql = implode( ' AND ', $where );
-
-		// Count total.
-		$count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $params ) {
-			$total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		} else {
-			$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		}
-
-		$total_pages = (int) ceil( $total / $per_page );
-
-		// Fetch rows.
-		$orderby    = 'created_at';
-		$order      = 'DESC';
-		$query      = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$all_params = array_merge( $params, array( $per_page, $offset ) );
-		$items      = $wpdb->get_results( $wpdb->prepare( $query, ...$all_params ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-
-		// Status counts for tabs.
-		$status_counts = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			"SELECT status, COUNT(*) AS cnt FROM {$table} GROUP BY status",
-			OBJECT_K
+		// The whole query — filters, page, total and the tab counts — lives in the
+		// repository (Rule 7). It is its own method rather than `query()` because
+		// this screen needs an exact `privacy` value and a "everything but trash"
+		// default, neither of which a member-facing listing expresses. See
+		// MediaRepository::admin_media_list().
+		$listing = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->admin_media_list(
+			array(
+				'search'   => $search,
+				'type'     => $type_filter,
+				'status'   => $status_filter,
+				'privacy'  => $privacy_filter,
+				'per_page' => $per_page,
+				'offset'   => $offset,
+			)
 		);
+
+		$items         = $listing['items'];
+		$total         = $listing['total'];
+		$status_counts = $listing['status_counts'];
+		$total_pages   = (int) ceil( $total / $per_page );
 
 		$base_url = admin_url( 'admin.php?page=mvs-media' );
 		?>
@@ -316,18 +282,18 @@ class MediaListPage {
 	 */
 	private static function render_status_tabs( $status_counts, string $current, string $base_url ): void {
 		$all_count = 0;
-		foreach ( $status_counts as $s ) {
-			if ( 'trash' !== $s->status ) {
-				$all_count += (int) $s->cnt;
+		foreach ( $status_counts as $mvs_status => $mvs_count ) {
+			if ( 'trash' !== $mvs_status ) {
+				$all_count += (int) $mvs_count;
 			}
 		}
 
 		$statuses = array(
 			''        => array( __( 'All', 'wpmediaverse' ), $all_count, 'mvs-stat-card--accent' ),
-			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish']->cnt ?? 0 ), 'mvs-stat-card--success' ),
-			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending']->cnt ?? 0 ), 'mvs-stat-card--warning' ),
-			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft']->cnt ?? 0 ), '' ),
-			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash']->cnt ?? 0 ), 'mvs-stat-card--danger' ),
+			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish'] ?? 0 ), 'mvs-stat-card--success' ),
+			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending'] ?? 0 ), 'mvs-stat-card--warning' ),
+			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft'] ?? 0 ), '' ),
+			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash'] ?? 0 ), 'mvs-stat-card--danger' ),
 		);
 		?>
 		<div class="mvs-admin-stats">
@@ -857,7 +823,10 @@ class MediaListPage {
 			return;
 		}
 
-		$table = $wpdb->prefix . 'mvs_media_index';
+		// Status writes go through the repository (Rule 7), which also invalidates
+		// the row's request cache — a raw UPDATE did not, so a trash and a re-read
+		// in the same request could disagree.
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		// Cap + nonce pair per case. The function entry already gates on
 		// manage_options, but the inline pair documents authorization at
@@ -868,7 +837,11 @@ class MediaListPage {
 					return;
 				}
 				check_admin_referer( 'mvs_trash_media_' . $media_id );
-				$wpdb->update( $table, array( 'status' => 'trash' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				// trash()/restore(), not set(): they are the funnel that fires
+				// mvs_media_trashed / mvs_media_restored. Writing the column
+				// directly here is why an admin trashing media left every
+				// integration's mirror in place (Basecamp 10252324048).
+				$mvs_repo->trash( $media_id );
 				break;
 
 			case 'restore':
@@ -876,7 +849,7 @@ class MediaListPage {
 					return;
 				}
 				check_admin_referer( 'mvs_restore_media_' . $media_id );
-				$wpdb->update( $table, array( 'status' => 'publish' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$mvs_repo->restore( $media_id );
 				break;
 
 			case 'delete':
@@ -1116,10 +1089,12 @@ class MediaListPage {
 		}
 
 		/**
-		 * Listeners (Pro's TranscodeService) flip this true when they can
-		 * regenerate a poster for the media — e.g. video media on a host
-		 * with FFmpeg installed. Only listeners that ALSO subscribe to
-		 * mvs_repair_media_thumb should claim true here.
+		 * A repair path exists for this media. True for images with a local file
+		 * (above); an integration may answer true for other types if it can
+		 * actually regenerate them, but it must also subscribe to
+		 * mvs_repair_media_thumb. MediaVerse itself no longer frame-grabs videos
+		 * (no ffmpeg — it embeds media, it does not process it), so a cover-less
+		 * video is not repairable by core and keeps its default poster.
 		 *
 		 * @since 1.2.3
 		 *
@@ -1153,7 +1128,9 @@ class MediaListPage {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
+
+		// Same repository path as the single-row actions above (Rule 7).
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		$count = 0;
 		foreach ( $ids as $media_id ) {
@@ -1164,14 +1141,15 @@ class MediaListPage {
 
 			switch ( $action ) {
 				case 'bulk_trash':
-					$ok = $wpdb->update( $table, array( 'status' => 'trash' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					// Same funnel as the row action above.
+					$ok = $mvs_repo->trash( $media_id );
 					if ( false !== $ok ) {
 						++$count;
 					}
 					break;
 
 				case 'bulk_restore':
-					$ok = $wpdb->update( $table, array( 'status' => 'publish' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$ok = $mvs_repo->restore( $media_id );
 					if ( false !== $ok ) {
 						++$count;
 					}
@@ -1372,9 +1350,10 @@ class MediaListPage {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$item = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE media_id = %d", $media_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$item = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get_batch( array( $media_id ) )[ $media_id ] ?? null;
 		if ( ! $item ) {
 			?>
 			<div class="wrap wpmediaverse-admin">
@@ -1397,9 +1376,9 @@ class MediaListPage {
 		// Display URL for the "Open WebP copy" link below. `$webp_orig` stays the
 		// raw meta because the badges around it only test existence.
 		$webp_orig_url = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
-		$width        = (int) $repo->get_raw( $media_id, 'width' );
-		$height       = (int) $repo->get_raw( $media_id, 'height' );
-		$saved_pct    = ( $bytes_before > 0 ) ? round( ( $bytes_before - $bytes_after ) / $bytes_before * 100, 2 ) : 0;
+		$width         = (int) $repo->get_raw( $media_id, 'width' );
+		$height        = (int) $repo->get_raw( $media_id, 'height' );
+		$saved_pct     = ( $bytes_before > 0 ) ? round( ( $bytes_before - $bytes_after ) / $bytes_before * 100, 2 ) : 0;
 
 		$optimize_url = wp_nonce_url(
 			add_query_arg(

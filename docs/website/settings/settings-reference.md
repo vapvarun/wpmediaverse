@@ -123,24 +123,11 @@ Registered by `Admin\ProSettings` and `Admin\GamificationSettings`. All Pro opti
 | `mvs_connectors_enabled` | Enable Connectors | string | `0` |
 | `mvs_streaks_enabled` | Enable Streaks | string | `0` |
 | `mvs_watermark_enabled` | Enable Watermark | boolean | `false` |
-| `mvs_pro_transcode_enabled` | Enable Transcoding | boolean | `false` |
 | `mvs_autopilot_enabled` | Enable Autopilot | string | `0` |
 
 Toggles stored as strings compare against `'1'`. When a feature is off its service is never constructed, so its REST routes are not registered and its scheduled actions do not run - which is why a disabled feature's endpoints return 404 rather than 403.
 
 The gamification toggles `mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled` and `mvs_boosts_enabled` follow the same pattern and are covered in [Gamification](../gamification/overview.md).
-
-### Video
-
-| Option key | Setting label | Type | Default |
-|---|---|---|---|
-| `mvs_pro_transcode_auto` | Auto-Transcode on Upload | boolean | `true` |
-| `mvs_pro_transcode_presets` | Quality Presets | array | `720p`, `480p` |
-| `mvs_pro_transcode_hls` | Generate HLS Stream | boolean | `false` |
-| `mvs_pro_transcode_thumbnail` | Generate Video Thumbnail | boolean | `true` |
-| `mvs_pro_ffmpeg_path` | FFmpeg Binary Path | string | *(empty)* |
-
-`mvs_pro_transcode_auto` only takes effect while `mvs_pro_transcode_enabled` is on. Leave `mvs_pro_ffmpeg_path` empty to use the binary on the system `PATH`.
 
 ### AI providers
 

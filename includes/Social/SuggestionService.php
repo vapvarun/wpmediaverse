@@ -8,6 +8,8 @@
 
 namespace WPMediaVerse\Social;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -119,19 +121,14 @@ class SuggestionService {
 			$pool[ (int) $row['uid'] ] = (int) $row['c'];
 		}
 
-		// 2. Supplement with prolific public creators (followers default 0).
-		// privacy = 'public' is intentional: "who to follow" is a discovery feed that
-		// ranks people by their PUBLIC output only — never their private/members media.
-		// Do NOT swap in the viewer-aware build_privacy_where() helper here.
-		$creators = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT post_author
-				FROM {$wpdb->prefix}mvs_media_index
-				WHERE status = 'publish' AND moderation_status = 'approved' AND privacy = 'public' AND post_author > 0
-				GROUP BY post_author ORDER BY COUNT(*) DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				self::POOL_SIZE
-			)
-		);
+		// 2. Supplement with prolific public creators (followers default 0),
+		// through the repository (P1.2). Why this ranks on PUBLIC output only,
+		// and why the type group is what keeps it honest, is documented on
+		// MediaRepository::top_author_ids().
+		$creators = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->top_author_ids( self::POOL_SIZE );
+
 		foreach ( (array) $creators as $uid ) {
 			$uid = (int) $uid;
 			if ( ! isset( $pool[ $uid ] ) ) {
@@ -172,7 +169,7 @@ class SuggestionService {
 
 		global $wpdb;
 		// term_id -> term_taxonomy_id for mvs_category.
-		$ti_ph = implode( ',', array_fill( 0, count( $interests ), '%d' ) );
+		$ti_ph  = implode( ',', array_fill( 0, count( $interests ), '%d' ) );
 		$tt_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'mvs_category' AND term_id IN ({$ti_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -184,19 +181,11 @@ class SuggestionService {
 			return array();
 		}
 
-		$cand_ph = implode( ',', array_fill( 0, count( $candidate_ids ), '%d' ) );
-		$tt_ph   = implode( ',', array_fill( 0, count( $tt_ids ), '%d' ) );
-		$rows    = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT DISTINCT i.post_author
-				FROM {$wpdb->prefix}mvs_media_index i
-				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id IN ({$tt_ph})
-				-- public-only by design: interest-affinity suggestions rank authors by their
-				-- PUBLIC media only; viewer-aware privacy must NOT be applied here.
-				WHERE i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...array_merge( array_values( $tt_ids ), array_map( 'intval', $candidate_ids ) )
-			)
-		);
+		// Through the repository (P1.2). tt_ids are already resolved above — the
+		// method takes term_taxonomy_ids, not term_ids, and says so in its name.
+		$rows = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->authors_with_term_taxonomy_ids( $candidate_ids, $tt_ids );
 
 		$map = array();
 		foreach ( (array) $rows as $uid ) {

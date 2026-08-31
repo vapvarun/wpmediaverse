@@ -9,6 +9,8 @@
 
 namespace WPMediaVerse\Services;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
@@ -68,29 +70,27 @@ class UploadService {
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
-		// Hard guard: PDF / document uploads are not supported (owner decision,
+		// Hard guard: PDF and unrecognised uploads are refused (owner decision,
 		// Basecamp #9962125462). This is the real enforcement — it fires even
 		// when a legacy site still has `application/pdf` in its stored
 		// `mvs_allowed_file_types` option (1.2.3 dropped it from the default but
 		// did not strip it from existing installs) or when the
 		// `mvs_allowed_file_types` filter re-adds it. The read/display side
-		// (pdf-viewer block, 'document' media_type, /serve content-type
+		// (pdf-viewer block, legacy_document rows, /serve content-type
 		// whitelist) is intentionally left intact so historical PDF media keeps
 		// rendering. We only block NEW uploads here.
-		if ( 'application/pdf' === $mime || 'document' === $this->get_media_type( $mime ) ) {
+		$mvs_refusal = $this->reject_unsupported_mime( $mime );
+		if ( $mvs_refusal ) {
 			LoggerService::error(
 				'upload',
-				'PDF/document upload rejected',
+				'Unsupported upload rejected',
 				array(
 					'mime'    => $mime,
+					'code'    => $mvs_refusal->get_error_code(),
 					'user_id' => $user_id,
 				)
 			);
-			return new WP_Error(
-				'mvs_document_not_supported',
-				__( 'PDF uploads are not supported.', 'wpmediaverse' ),
-				array( 'status' => 400 )
-			);
+			return $mvs_refusal;
 		}
 
 		if ( ! in_array( $mime, $allowed, true ) ) {
@@ -313,7 +313,7 @@ class UploadService {
 		// BEFORE store() because the destination driver depends on it: private
 		// and other restricted media must never leave the local server.
 		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
-		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
+		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		$requested_privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : '';
 
 		// 'dm' is conversation-scoped media (DM attachments) — a system-level
@@ -329,14 +329,55 @@ class UploadService {
 		} else {
 			$privacy = $default_privacy;
 		}
-		// Reject unknown privacy values so a typo or hostile input cannot slip through.
-		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom', 'dm' ), true ) ) {
+		// Reject unknown privacy values so a typo or hostile input cannot slip
+		// through. The vocabulary is PrivacyService's, not a second copy here —
+		// the copy was the bug on the update route, which had no list at all.
+		if ( ! in_array( $privacy, PrivacyService::supported_levels(), true ) ) {
 			$privacy = $default_privacy;
 		}
 
-		// Store file. Public media uses the active (possibly cloud) driver;
-		// restricted media stays on local disk.
-		$driver = $this->storage->get_driver_for_privacy( $privacy );
+		// WHICH DRIVE this lands on. Resolved BEFORE the file is stored so a
+		// refusal below costs nothing to undo.
+		list( $mvs_drive_type, $mvs_drive_id ) = PrivacyService::resolve_drive_for_user( $user_id, $args );
+
+		// `space` means "the members of the Space this lives on". On a personal
+		// drive there is no such Space, so the level cannot be honoured — and an
+		// accepted-then-ignored level is the defect this card exists for
+		// (Basecamp 10220491230). Say no instead of storing a value that will
+		// silently read as private forever.
+		if ( 'space' === $privacy && ( 'user' === $mvs_drive_type || $mvs_drive_id <= 0 ) ) {
+			return new WP_Error(
+				'mvs_privacy_space_requires_drive',
+				__( 'This media is not in a Space, so it cannot be limited to a Space\'s members.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Store LOCALLY first, always — the cloud copy is queued, not awaited.
+		//
+		// Pushing to the cloud on the request path cost the member ~7.7s and six
+		// extra HTTP round trips per upload (measured 2026-08-31 on a 2000x1500
+		// JPEG: 11.7s with a cloud driver vs 4.0s local). Uploads also run one
+		// after another, so five photos meant roughly a minute of staring at
+		// "Uploading 5 files...", with no way to tell a slow upload from a dead
+		// one. None of that work has to happen before the member sees their own
+		// photo: the bytes are on disk and servable the moment this returns.
+		//
+		// Nothing downstream needs to know the file is "not yet on cloud".
+		// get_driver_for_location() already resolves a media's driver from the
+		// host of its recorded file_url, so the URL IS the sync flag — when the
+		// queued job finishes and rewrites the URLs, serving flips to the CDN on
+		// its own. Until then (or forever, if the cloud is misconfigured or
+		// down) the local file serves correctly.
+		$target_driver = $this->storage->get_driver_for_privacy( $privacy );
+		$local_driver  = $this->storage->get_local_driver();
+
+		// get_local_driver() hands back a NEW instance each call, so compare by
+		// class rather than identity — `$a !== $b` is true even when both are
+		// local, which would queue a pointless local-to-local migration.
+		$defer_cloud = get_class( $target_driver ) !== get_class( $local_driver );
+
+		$driver = $local_driver;
 		$stored = $driver->store( $file['tmp_name'], $dest_path );
 
 		if ( ! $stored ) {
@@ -459,6 +500,8 @@ class UploadService {
 				'file_size'         => (int) $actual_size,
 				'file_hash'         => $hash,
 				'created_at'        => $created_at,
+				'drive_type'        => $mvs_drive_type,
+				'drive_id'          => $mvs_drive_id,
 			)
 		);
 
@@ -470,6 +513,15 @@ class UploadService {
 				__( 'Failed to create media record.', 'wpmediaverse' ),
 				array( 'status' => 500 )
 			);
+		}
+
+		// Hand the cloud copy to the queue now that the row exists. Deliberately
+		// fire-and-forget: a failure to ENQUEUE must never fail an upload that
+		// has already succeeded — the file is on disk and serving. If Action
+		// Scheduler is absent the media simply stays local, which is a working
+		// state, not a broken one.
+		if ( $defer_cloud ) {
+			self::queue_cloud_sync( $media_id );
 		}
 
 		// Store EXIF data in meta table (sparse data).
@@ -717,7 +769,19 @@ class UploadService {
 		$wpmv_base = trailingslashit( (string) ( wp_upload_dir()['basedir'] ?? '' ) ) . 'wpmediaverse/';
 		$privacy   = (string) $repo->get_raw( $media_id, 'privacy' );
 		$privacy   = '' !== $privacy ? $privacy : 'public';
-		$driver    = $this->storage->get_driver_for_privacy( $privacy );
+
+		// Thumbnails follow the ORIGINAL's current location, not the privacy
+		// level's eventual destination. Resolving by privacy pushed all six
+		// rungs to the cloud one blocking round trip at a time — measured at
+		// ~7.6s of the upload request — while the original they are derived
+		// from was still sitting on local disk, leaving one media split across
+		// two tiers until the deferred sync caught up.
+		//
+		// get_driver_for_location() reads the recorded file_url's host, so
+		// thumbnails land beside the original: local now, cloud after the
+		// queued CloudOps::migrate_one() moves the set and rewrites the URLs
+		// (it calls refresh_variant_urls(), so the rungs are carried too).
+		$driver = $this->storage->get_driver_for_location( $media_id );
 
 		// Reuse the existing relative location when the source already lives
 		// under wpmediaverse/ (e.g. a row whose file_path was stored absolute but
@@ -774,7 +838,7 @@ class UploadService {
 	 * @since 1.6.0
 	 *
 	 * @param string $mime MIME type.
-	 * @return string 'image' | 'video' | 'audio' | 'document'.
+	 * @return string 'image' | 'video' | 'audio', or '' when the MIME is unrecognised.
 	 */
 	public function get_media_type_public( string $mime ): string {
 		return $this->get_media_type( $mime );
@@ -839,16 +903,320 @@ class UploadService {
 	 * @return string image|video|audio|document.
 	 */
 	private function get_media_type( string $mime ): string {
+		$type = '';
+
 		if ( 0 === strpos( $mime, 'image/' ) ) {
-			return 'image';
+			$type = 'image';
+		} elseif ( 0 === strpos( $mime, 'video/' ) ) {
+			$type = 'video';
+		} elseif ( 0 === strpos( $mime, 'audio/' ) ) {
+			$type = 'audio';
 		}
-		if ( 0 === strpos( $mime, 'video/' ) ) {
-			return 'video';
+
+		/**
+		 * Resolve a MIME type to a media_type.
+		 *
+		 * Production Rule 3 escape hatch for the behaviour change in 2.4.0: this
+		 * used to return 'document' for anything unrecognised, so a site relying
+		 * on that can restore it with a one-line filter. A filter that returns a
+		 * value outside MediaTypes::ALL is ignored — an unknown string here would
+		 * defeat every positive type predicate downstream.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $type Resolved type, or '' when the MIME is unrecognised.
+		 * @param string $mime Detected MIME type.
+		 */
+		$filtered = (string) apply_filters( 'mvs_media_type_for_mime', $type, $mime );
+
+		return MediaTypes::is_known( $filtered ) ? $filtered : $type;
+	}
+
+	/**
+	 * Reject a MIME this plugin will not ingest.
+	 *
+	 * ONE guard, called by both ingest paths. There were two copies — `handle()`
+	 * and `MediaController::replace_file()` — and the second existed only because
+	 * a double-verifier caught replace_file bypassing the first (#9962125462).
+	 * Two copies of a security guard is the shape that produced that bypass, and
+	 * this change would have needed both edited in lockstep to stay correct.
+	 *
+	 * Until 2.4.0 the unsupported test was a NAME test: `'document' === type`,
+	 * which worked only because unknown MIMEs were *named* 'document' by
+	 * elimination. Now that unknown resolves to '', it is an UNKNOWN test. The
+	 * two had to change together or unrecognised files would have started being
+	 * accepted the moment the fallback changed.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $mime Detected MIME type.
+	 * @return \WP_Error|null Error when the file must be refused, null to proceed.
+	 */
+	public function reject_unsupported_mime( string $mime ): ?\WP_Error {
+		// PDF stays its own case: it is explicitly blocked by owner decision
+		// (#9962125462) and keeps its established error code, which clients
+		// already branch on.
+		if ( in_array( $mime, self::hard_refused_mimes(), true ) ) {
+			return new WP_Error(
+				'mvs_document_not_supported',
+				// Post-2.4.0 the old copy ("PDF uploads are not supported.") was
+				// simply untrue: the site DOES support PDF, through the document
+				// library, where it is the flagship type with a native inline
+				// preview. The member's goal was reasonable and they were one
+				// surface away, so the message points there instead of telling
+				// them to give up. The CODE is deliberately unchanged — clients
+				// branch on it, and changing it is a Production Rule 2 problem.
+				__( 'PDFs are uploaded to your Documents library rather than to media.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
 		}
-		if ( 0 === strpos( $mime, 'audio/' ) ) {
-			return 'audio';
+
+		if ( '' === $this->get_media_type( $mime ) ) {
+			return new WP_Error(
+				'mvs_unsupported_file_type',
+				__( 'This file type is not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
 		}
-		return 'document';
+
+		return null;
+	}
+
+	/**
+	 * MIME types the MEDIA path refuses no matter what the settings say.
+	 *
+	 * The single authority for "the server will never accept this here", so the
+	 * surfaces that must agree with it can ask instead of restating it:
+	 *
+	 * - the dashboard `accept` attribute (do not offer what we will refuse),
+	 * - `Sanitizers::sanitize_file_types()` (do not preserve it as a custom type),
+	 * - `Migrator` v27 (strip it from installs that stored it before 1.2.3).
+	 *
+	 * That agreement is the actual bug being fixed: this list said no while the
+	 * stored `mvs_allowed_file_types` still offered PDF in the picker, so members
+	 * on every pre-1.2.3 install were shown a type the server then refused — and
+	 * the owner could not stop it, because PDF is absent from the settings grid
+	 * and the sanitizer preserved it on every save (Basecamp 10190738445).
+	 *
+	 * NOT filterable, and deliberately so: a site that wants PDFs has the
+	 * document library, which accepts them properly.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function hard_refused_mimes(): array {
+		return array( 'application/pdf' );
+	}
+
+	/**
+	 * MIME type to file-extension(s) for the accepted media types.
+	 *
+	 * The ONE source for this mapping, so the dashboard input and the FAB modal
+	 * cannot advertise different extensions for the same type. Values are the
+	 * comma-separated extension list a file input's `accept` attribute expects
+	 * (with the leading dot).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return array<string,string>
+	 */
+	public static function mime_extension_map(): array {
+		return array(
+			'image/jpeg' => '.jpg,.jpeg',
+			'image/png'  => '.png',
+			'image/gif'  => '.gif',
+			'image/webp' => '.webp',
+			'video/mp4'  => '.mp4',
+			'video/webm' => '.webm',
+			'audio/mpeg' => '.mp3',
+			'audio/ogg'  => '.ogg',
+		);
+	}
+
+	/**
+	 * Build a file input's `accept` value from a list of allowed MIME types.
+	 *
+	 * Emits BOTH the MIME types and their file extensions. A MIME-only `accept`
+	 * greys out files the plugin actually accepts, because the OS file picker
+	 * matches on the extension it can see rather than on a MIME it may report
+	 * differently (or not at all) for the same file — so a `.jpg` the server
+	 * would take could be unselectable. Listing extensions alongside the MIMEs
+	 * lets the picker match either way. Callers pass the EFFECTIVE list (option
+	 * minus `hard_refused_mimes()`), so nothing is offered that the server
+	 * refuses.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $mimes Allowed MIME types.
+	 * @return string Comma-separated `accept` value (MIME types then extensions).
+	 */
+	public static function accept_attribute( array $mimes ): string {
+		$map  = self::mime_extension_map();
+		$exts = array();
+
+		foreach ( $mimes as $mime ) {
+			if ( isset( $map[ $mime ] ) ) {
+				$exts[] = $map[ $mime ];
+			}
+		}
+
+		return implode( ',', array_merge( $mimes, $exts ) );
+	}
+
+	/**
+	 * Compute and store the placeholder colour for one image from a local file.
+	 *
+	 * The public entry point behind `wp mvs backfill-placeholder-color`. Shares
+	 * the exact compute-then-store the upload path uses, so a backfilled colour
+	 * is identical to one written at upload time. Writes nothing when the image
+	 * cannot be decoded (returns '').
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int    $media_id   Media row id.
+	 * @param string $local_path Absolute path to a local copy of the image.
+	 * @return string The stored '#rrggbb', or '' when nothing was written.
+	 */
+	public function record_placeholder_color( int $media_id, string $local_path ): string {
+		$color = self::placeholder_color( $local_path );
+		if ( '' !== $color ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'placeholder_color', $color );
+		}
+		return $color;
+	}
+
+	/**
+	 * The dominant colour of an image, as '#rrggbb'.
+	 *
+	 * The cheap lazy-load placeholder alternative to a blurhash. It is the
+	 * DOMINANT colour, not the average: a two-tone image (say half red, half
+	 * blue) averages to a purple that appears nowhere in it (Basecamp
+	 * 9667082287), so we downscale, quantise into coarse colour buckets, and
+	 * return the most-populated bucket's own mean — a colour the image actually
+	 * contains. Tries Imagick first because a managed-WordPress host commonly
+	 * ships Imagick without GD; falls back to GD. Returns '' when neither editor
+	 * can decode the file — the placeholder is a nicety, never a hard dependency.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $path Absolute image path.
+	 * @return string '#rrggbb', or '' on failure.
+	 */
+	private static function placeholder_color( string $path ): string {
+		if ( class_exists( 'Imagick' ) ) {
+			$color = self::dominant_color_imagick( $path );
+			if ( '' !== $color ) {
+				return $color;
+			}
+		}
+		if ( function_exists( 'imagecreatefromstring' ) && function_exists( 'imagecreatetruecolor' ) ) {
+			return self::dominant_color_gd( $path );
+		}
+		return '';
+	}
+
+	/**
+	 * Dominant colour via Imagick's quantised histogram.
+	 *
+	 * @param string $path Absolute image path.
+	 * @return string '#rrggbb', or '' on failure.
+	 */
+	private static function dominant_color_imagick( string $path ): string {
+		try {
+			$img = new \Imagick( $path );
+			if ( ! $img->getImageWidth() ) {
+				$img->clear();
+				return '';
+			}
+			// Downscale so the histogram is cheap, then reduce to a handful of
+			// colours so near-identical shades collapse into one bucket; the
+			// most frequent of those is the dominant colour.
+			$img->setImageColorspace( \Imagick::COLORSPACE_SRGB );
+			$img->thumbnailImage( 64, 64, true );
+			$img->quantizeImage( 8, \Imagick::COLORSPACE_SRGB, 0, false, false );
+			$best      = null;
+			$best_seen = -1;
+			foreach ( $img->getImageHistogram() as $pixel ) {
+				$count = $pixel->getColorCount();
+				if ( $count > $best_seen ) {
+					$best_seen = $count;
+					$best      = $pixel;
+				}
+			}
+			if ( null === $best ) {
+				$img->clear();
+				return '';
+			}
+			// getColorValue returns 0..1 across bit depths, unlike getColor().
+			$r = (int) round( $best->getColorValue( \Imagick::COLOR_RED ) * 255 );
+			$g = (int) round( $best->getColorValue( \Imagick::COLOR_GREEN ) * 255 );
+			$b = (int) round( $best->getColorValue( \Imagick::COLOR_BLUE ) * 255 );
+			$img->clear();
+			return sprintf( '#%02x%02x%02x', $r & 0xFF, $g & 0xFF, $b & 0xFF );
+		} catch ( \Exception $e ) {
+			return '';
+		}
+	}
+
+	/**
+	 * Dominant colour via GD: downscale to a small grid, quantise into coarse
+	 * buckets, and return the most-populated bucket's mean.
+	 *
+	 * @param string $path Absolute image path.
+	 * @return string '#rrggbb', or '' on failure.
+	 */
+	private static function dominant_color_gd( string $path ): string {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged -- raw bytes for GD; WP_Filesystem returns a string too but adds no safety for a local read here.
+		$bytes = @file_get_contents( $path );
+		if ( false === $bytes || '' === $bytes ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- a corrupt/unsupported image returns false, handled below.
+		$src = @imagecreatefromstring( $bytes );
+		if ( false === $src ) {
+			return '';
+		}
+		// 16x16 = 256 samples is enough to find the dominant hue cheaply.
+		$grid  = 16;
+		$small = imagecreatetruecolor( $grid, $grid );
+		imagecopyresampled( $small, $src, 0, 0, 0, 0, $grid, $grid, imagesx( $src ), imagesy( $src ) );
+		// $src and $small are function-scoped GD handles, freed on return (and
+		// imagedestroy() is a no-op on PHP 8+), so no explicit free is needed.
+
+		$buckets = array();
+		for ( $y = 0; $y < $grid; $y++ ) {
+			for ( $x = 0; $x < $grid; $x++ ) {
+				$rgb = imagecolorat( $small, $x, $y );
+				$r   = ( $rgb >> 16 ) & 0xFF;
+				$g   = ( $rgb >> 8 ) & 0xFF;
+				$b   = $rgb & 0xFF;
+				// Quantise to 6 levels per channel (~43-wide buckets) so shades
+				// of one colour collapse together instead of splitting the vote.
+				$key = ( intdiv( $r, 43 ) << 8 ) | ( intdiv( $g, 43 ) << 4 ) | intdiv( $b, 43 );
+				if ( ! isset( $buckets[ $key ] ) ) {
+					$buckets[ $key ] = array( 0, 0, 0, 0 );
+				}
+				++$buckets[ $key ][0];
+				$buckets[ $key ][1] += $r;
+				$buckets[ $key ][2] += $g;
+				$buckets[ $key ][3] += $b;
+			}
+		}
+		// The 16x16 sample loop always populates at least one bucket, so no
+		// empty guard is needed here.
+		$best = null;
+		foreach ( $buckets as $bucket ) {
+			if ( null === $best || $bucket[0] > $best[0] ) {
+				$best = $bucket;
+			}
+		}
+		return sprintf(
+			'#%02x%02x%02x',
+			intdiv( $best[1], $best[0] ),
+			intdiv( $best[2], $best[0] ),
+			intdiv( $best[3], $best[0] )
+		);
 	}
 
 	/**
@@ -1247,6 +1615,25 @@ class UploadService {
 	/**
 	 * Generate thumbnail sizes for an image and store URLs in mvs_media_meta.
 	 *
+	 * THIS RUNS INLINE ON PURPOSE — do not "optimise" it onto the queue without
+	 * re-measuring first. Measured 2026-08-31 on a 12MP (4032x3024) photo, after
+	 * the cloud push moved to Action Scheduler:
+	 *
+	 *   whole upload request   705 ms
+	 *   this method            263 ms  (37%)
+	 *
+	 * Deferring it would buy about a quarter of a second and cost every member a
+	 * placeholder where their photo should be until the queue catches up. The
+	 * "uploads spend seconds making image sizes" figure that used to justify
+	 * deferring this was really the six blocking cloud round trips, which are
+	 * gone.
+	 *
+	 * There is also nothing wasteful to cut: exactly four rungs are produced
+	 * (full, large, medium, thumbnail, each with a WebP sibling) and all four
+	 * are used - `large` in 84 places, `medium` 47, `thumbnail` 29, `full` 14.
+	 * WordPress's medium_large / 1536x1536 / 2048x2048 and any theme sizes are
+	 * NOT generated here, because MediaVerse media are not WP attachments.
+	 *
 	 * @param int    $media_id  Media ID.
 	 * @param string $file_path Absolute path to the uploaded file.
 	 * @param string $mime      MIME type.
@@ -1306,6 +1693,16 @@ class UploadService {
 			);
 		}
 
+		// Dominant colour for the app's lazy-load placeholder — the cheap
+		// alternative to a blurhash. Computed once here (on upload and on
+		// explicit regeneration), stored as meta, and surfaced as
+		// `placeholder_color` in the media REST response. Backfill an existing
+		// library with `wp mvs backfill-placeholder-color` (Basecamp 9667082287).
+		$mvs_placeholder = self::placeholder_color( $file_path );
+		if ( '' !== $mvs_placeholder ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'placeholder_color', $mvs_placeholder );
+		}
+
 		$editor = wp_get_image_editor( $file_path );
 		if ( is_wp_error( $editor ) ) {
 			LoggerService::warning(
@@ -1360,7 +1757,24 @@ class UploadService {
 		$driver_slug  = (string) get_option( 'mvs_storage_driver', 'local' );
 		$is_public    = ( 'public' === (string) $repo->get_raw( $media_id, 'privacy' ) );
 		$cloud_driver = null;
-		if ( 'local' !== $driver_slug && $is_public ) {
+
+		// ...and only once the ORIGINAL is actually on that cloud.
+		//
+		// This block pushed every rung, plus the WebP and AVIF siblings, to the
+		// CDN inline — six blocking round trips, ~7s of the upload request,
+		// measured 2026-08-31. Uploads now write locally and queue the cloud
+		// copy (see handle()), so doing this here both slowed the member down
+		// and split a media across two tiers: thumbnails on the CDN while the
+		// original was still local.
+		//
+		// The queued CloudOps::migrate_one() carries the variants across via
+		// refresh_variant_urls(), so nothing is lost by waiting. When the
+		// original already lives on cloud — a re-generate, a backfill, a
+		// migrated library — the original's location says so and the push
+		// happens here exactly as before.
+		$original_on_cloud = ! ( $this->storage->get_driver_for_location( $media_id ) instanceof LocalDriver );
+
+		if ( 'local' !== $driver_slug && $is_public && $original_on_cloud ) {
 			$candidate = apply_filters( 'mvs_storage_driver', null, $driver_slug );
 			if ( $candidate instanceof StorageDriverInterface ) {
 				$cloud_driver = $candidate;
@@ -1675,17 +2089,11 @@ class UploadService {
 			}
 		}
 
-		// Path B — no embedded poster (synthetic test files, some screen
-		// recordings, certain webm encodes). Fall back to extracting the
-		// first useful frame via ffmpeg. Skipped silently when ffmpeg is not
-		// available on the server; admins on hosts without it keep the
-		// play-icon placeholder and can run the per-row Repair thumbs action
-		// later (which Pro hooks for ffmpeg-equipped backends).
-		$poster_path = $poster->extract_via_ffmpeg( $media_id, $file_path );
-		if ( $poster_path && file_exists( $poster_path ) ) {
-			return $this->generate_thumbnails( $media_id, $poster_path, 'image/jpeg' );
-		}
-
+		// No embedded cover atom. MediaVerse embeds media, it does not process it
+		// — there is no ffmpeg frame-grab (that shell-out was host-dependent and
+		// tripped security scanners). A cover-less video keeps the play-icon
+		// placeholder / default poster; the browser can also stage a first frame
+		// client-side via stage_client_frame(). (Basecamp 10232926505)
 		return false;
 	}
 
@@ -1703,12 +2111,9 @@ class UploadService {
 	private function find_by_hash( string $hash ): ?int {
 		global $wpdb;
 
-		$media_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$hash
-			)
-		);
+		$media_id = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->find_by_hash( (string) $hash );
 
 		return $media_id ? (int) $media_id : null;
 	}
@@ -1734,5 +2139,79 @@ class UploadService {
 			),
 			array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
 		);
+	}
+
+	/**
+	 * Queue the cloud copy of a freshly uploaded media.
+	 *
+	 * The upload itself always writes to local disk (see handle()), so this is
+	 * pure catch-up work: copy the original and its variants to the configured
+	 * cloud and rewrite the stored URLs. CloudOps::migrate_one() already does
+	 * exactly that, including refreshing every variant URL and refusing to push
+	 * non-public media to a public bucket, so this only has to schedule it.
+	 *
+	 * Falls back to running inline when Action Scheduler is absent, matching
+	 * how the AI pipeline degrades (Plugin::queue_ai_processing). Inline is the
+	 * old, slow behaviour rather than a broken one.
+	 *
+	 * @since 2.4.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function queue_cloud_sync( int $media_id ): void {
+		if ( $media_id <= 0 ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action(
+				'mvs_cloud_sync_media',
+				array( 'media_id' => $media_id ),
+				'wpmediaverse'
+			);
+			return;
+		}
+
+		self::run_cloud_sync( $media_id );
+	}
+
+	/**
+	 * Push one media's bytes to the configured cloud. The Action Scheduler
+	 * callback for `mvs_cloud_sync_media`.
+	 *
+	 * Silent on failure BY DESIGN: the local file is already serving, so a
+	 * cloud that is down, throttled or misconfigured costs the member nothing.
+	 * The outcome is logged so an owner can see why media is still local.
+	 *
+	 * @since 2.4.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function run_cloud_sync( int $media_id ): void {
+		$target = (string) get_option( 'mvs_storage_driver', 'local' );
+
+		// The owner may have switched back to local, or switched clouds, between
+		// the upload and this job running. Re-read rather than trusting the
+		// value captured at enqueue time.
+		if ( '' === $target || 'local' === $target ) {
+			return;
+		}
+
+		$result = CloudOps::migrate_one( (int) $media_id, 'local', $target, true );
+
+		if ( empty( $result['ok'] ) ) {
+			LoggerService::warning(
+				'storage',
+				'Deferred cloud sync did not complete; media stays on local disk and continues to serve.',
+				array(
+					'media_id' => (int) $media_id,
+					'target'   => $target,
+					'status'   => $result['status'] ?? 'unknown',
+					'error'    => $result['error'] ?? '',
+				)
+			);
+		}
 	}
 }

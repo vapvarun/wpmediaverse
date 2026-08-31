@@ -502,6 +502,76 @@ Every item must be browser-verified at desktop AND 390px mobile per the project 
 
 ---
 
+## 15.10. Journey 17 — Admin screens this runbook never covered (added 2026-08-30)
+
+A coverage diff on 2026-08-30 found three admin screens with no journey here at all. They ship, so
+they get walked.
+
+- [ ] **17.1 Documents** (`?page=mvs-documents`) — list renders with real rows and an empty state.
+      Row actions are **Edit | View on site | Download | Trash | Delete**; the Title opens the
+      single editor, not the front end. Single view (`&view=single&media_id=N`) saves title, slug,
+      description, tags and privacy. A photo id is REFUSED here — it is not a document.
+      **The slug is never regenerated from the title**: a member fixing a typo must not break every
+      link they shared. Deeper coverage lives in `runbooks/DOCUMENTS-QA.md`; this is the admin half.
+- [ ] **17.2 Integrations** (`?page=mvs-integrations`) — companion cards render, the "Part of the
+      Wbcom family" header link works and is keyboard reachable, and no card claims a plugin is
+      active when it is not.
+- [ ] **17.3 Import** (`?page=mvs-migration`) — importer picker renders for rtMedia / MediaPress /
+      BuddyBoss. With none of them installed the screen says so plainly rather than offering a
+      button that will fail. **A refusal must not arrive as a success message** (Coding Rule 20 —
+      the demo-importer bug: the button appeared to do nothing at all).
+
+**Heuristic score for J17:** __ / 15. Findings:
+
+---
+
+## 15.11. Journey 18 — Direct messages (added 2026-08-30)
+
+Messaging shipped and was never in this runbook. On a BuddyNext site the DM UI is replaced, so walk
+this on a site WITHOUT BuddyNext or the result says nothing.
+
+- [ ] **18.1** Open a conversation from the member dashboard; message list renders with an empty
+      state for a new thread.
+- [ ] **18.2** Send text → appears optimistically, then persists after reload.
+- [ ] **18.3** Attach an image → uploading chip appears, Send is DISABLED while the upload is in
+      flight (the send-without-attachment race), and cancelling mid-flight leaves no orphan.
+- [ ] **18.4** Attachment types are media-only — a PDF is refused with a typed message, not a
+      silent no-op.
+- [ ] **18.5** Conversation preview shows a TYPED label for an attachment-only message ("Photo",
+      "Video", "Audio", "File"), not an empty line.
+- [ ] **18.6** Delete the conversation on one side → the other member still sees the thread, and a
+      new message reuses it rather than creating a duplicate.
+- [ ] **18.7** Unread counts update without a reload, and reactions on a delivered message appear
+      live.
+
+**Heuristic score for J18:** __ / 35. Findings:
+
+---
+
+## 15.12. Journey 19 — The 2.4.0 integration seams (added 2026-08-30)
+
+These break silently: nothing in this plugin fails, a SIBLING plugin stops working, and the first
+report is from a customer running both. Executable versions live in `audit/journeys/`; walk these
+when a release touches privacy, uploads, trash or avatars.
+
+- [ ] **19.1** Trash a video from all four paths — member REST, admin row action, admin bulk, and
+      the Documents admin screens. Each fires its event with a non-empty permalink. A mirror that
+      survives a trash is the bug.
+- [ ] **19.2** `has_custom_avatar` is FALSE for a member with no avatar anywhere, and TRUE for one
+      whose avatar another plugin stores. Both halves matter — a flag that is true for everyone is
+      the same bug pointing the other way.
+- [ ] **19.3** With a drive bridge active: media placed on a space drive is READABLE by that
+      space's members. Placement succeeding while the read is refused means media stored where its
+      own members cannot open it.
+- [ ] **19.4** Anonymous document listing is refused with `mvs_pro_documents_anon_links` off, served
+      with it on, and still refused when the ladder says none. Writes 401 either way.
+- [ ] **19.5** `bash bin/coding-rules-check.sh` passes in BOTH plugins — zero exec-family calls.
+      This is what stops security plugins flagging us as a backdoor.
+
+**Heuristic score for J19:** __ / 25. Findings:
+
+---
+
 ## 16. Regression Hot-Spots (known-fragile, re-test every release)
 
 - [ ] **16.1** Black/empty tiles in Explore for video or private media served to anon — MUST show real thumbs or explicit lock overlay.

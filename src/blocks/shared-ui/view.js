@@ -5,7 +5,7 @@
  * - Toast notifications
  * - Confirm dialogs
  * - Tag autocomplete
- * - Upload modal (photo, gallery, album, video)
+ * - Upload modal (photo, gallery, video, audio)
  * - Media lightbox (view, react, comment without page navigation)
  *
  * Other stores import via: store( 'mvs/shared-ui' ).actions.showToast( msg, type )
@@ -23,6 +23,23 @@ let toastTimer = null;
 let tagSearchTimer = null;
 
 /**
+ * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s" with no zone)
+ * to epoch ms as UTC. new Date() would read the zone-less string as LOCAL time,
+ * so on a non-UTC browser a just-posted comment looked hours old and its edit
+ * window read as expired (Basecamp 10148635942).
+ *
+ * @param {string} s Date string.
+ * @return {number} Epoch ms (NaN-safe: returns Date.now() on an unparseable value).
+ */
+function gmtToMs( s ) {
+	s = String( s || '' );
+	const base = /[tT]/.test( s ) ? s : s.replace( ' ', 'T' );
+	const iso = /[zZ]|[+-]\d\d:?\d\d$/.test( base ) ? base : base + 'Z';
+	const ms = new Date( iso ).getTime();
+	return isNaN( ms ) ? Date.now() : ms;
+}
+
+/**
  * After lightbox data is set, tell <video>/<audio> to load the new src.
  * The Interactivity API updates `src` via data-wp-bind, but <video>/<audio>
  * elements require an explicit .load() call to fetch a dynamically changed src.
@@ -38,6 +55,159 @@ function loadLightboxMedia() {
 			audio.load();
 		}
 	} );
+}
+
+/**
+ * Whether a key event is destined for somewhere the member is typing.
+ *
+ * Document-level shortcuts must not steal keys from a field. Covers the three
+ * cases that exist in these surfaces: <input> (any text-ish type), <textarea>,
+ * and anything contenteditable. Non-text inputs (checkbox, radio, button) are
+ * NOT text entry — space and arrows are legitimate shortcuts there.
+ *
+ * @param {EventTarget} target Event target.
+ * @return {boolean} True when the target takes text input.
+ */
+function isTextEntry( target ) {
+	if ( ! target || ! target.tagName ) {
+		return false;
+	}
+
+	const tag = target.tagName.toLowerCase();
+
+	if ( 'textarea' === tag || target.isContentEditable ) {
+		return true;
+	}
+
+	if ( 'input' !== tag ) {
+		return false;
+	}
+
+	// Everything except the handful of inputs a keystroke cannot land text in.
+	return ! [ 'checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'range', 'color' ].includes(
+		( target.type || 'text' ).toLowerCase()
+	);
+}
+
+/**
+ * Focus management for the lightbox, which is a modal dialog in behaviour and
+ * was not one in fact.
+ *
+ * Three things were missing and they only work together: the dialog never took
+ * focus, never held it, and never gave it back. A member pressed Enter on a
+ * grid tile, the overlay covered the page, and their next Tab walked the 27
+ * controls BEHIND it — reachable, invisible, and with no way to tell they had
+ * left (Basecamp 10252222057).
+ *
+ * Kept as plain functions over the live DOM rather than store state: the
+ * lightbox markup is server-rendered once and shown by a `hidden` binding, so
+ * there is no per-open component instance to hang a ref on.
+ */
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** The element that had focus when the lightbox opened, so it can be handed back. */
+let lightboxReturnFocus = null;
+
+function lightboxFocusables() {
+	const box = document.querySelector( '.mvs-lightbox' );
+
+	if ( ! box ) {
+		return [];
+	}
+
+	return Array.from( box.querySelectorAll( FOCUSABLE ) ).filter( ( el ) => {
+		// Visible in practice — the fullscreen toggle hides the comment column,
+		// and tabbing into something nobody can see is the bug in miniature.
+		const r = el.getBoundingClientRect();
+		return r.width > 0 && r.height > 0 && el.offsetParent !== null;
+	} );
+}
+
+/**
+ * Remember who opened the lightbox. The focus MOVE itself happens in
+ * `callbacks.lightboxFocus`, not here.
+ *
+ * That split is deliberate. The overlay is revealed by a `hidden` binding, and
+ * an element inside a hidden ancestor cannot take focus — so this originally
+ * deferred with two requestAnimationFrames and still lost the race: the
+ * Interactivity API renders on its own schedule, and measuring showed focus
+ * still on the grid tile after the overlay was open. Guessing a frame count is
+ * how that becomes flaky on a slower machine. `data-wp-watch` runs AFTER the
+ * render that reveals the overlay, which is the only moment that is actually
+ * correct.
+ */
+function lightboxRememberTrigger() {
+	lightboxReturnFocus = document.activeElement;
+}
+
+/**
+ * Keep Tab inside the dialog.
+ *
+ * Without this the trap is only half-built: focus starts inside but the first
+ * Tab past the last control walks straight out into the page behind.
+ */
+function lightboxTrapTab( event ) {
+	const items = lightboxFocusables();
+
+	if ( ! items.length ) {
+		return;
+	}
+
+	const first = items[ 0 ];
+	const last = items[ items.length - 1 ];
+	const active = document.activeElement;
+
+	if ( event.shiftKey ) {
+		if ( active === first || ! document.querySelector( '.mvs-lightbox' ).contains( active ) ) {
+			event.preventDefault();
+			last.focus();
+		}
+		return;
+	}
+
+	if ( active === last ) {
+		event.preventDefault();
+		first.focus();
+	}
+}
+
+/**
+ * Shape one API comment for the lightbox.
+ *
+ * Identity, edit window and moderation rights all come from STATE, never from
+ * context: the loader runs in whichever grid item's context opened the lightbox
+ * (or a synthetic { restUrl, nonce, isLoggedIn } from openLightboxById), and
+ * neither carries them. Reading canModerate from a caller-supplied ctx made it
+ * silently false everywhere, so moderators lost Delete on other members'
+ * comments in the lightbox while the single page and the DELETE route still
+ * allowed it (Basecamp 10248799004; 10148635942 for the same lesson on
+ * currentUserId / commentEditWindow).
+ *
+ * canEdit is own-comment within the edit window; canDelete is own OR moderator
+ * with no time limit — matching the API.
+ *
+ * @param {Object} c Comment from the REST API.
+ * @return {Object} Comment shaped for the lightbox template.
+ */
+function mapLightboxComment( c ) {
+	const canModerate = !! state.canModerateComments;
+	const editWindow = ( state.commentEditWindow || 15 * 60 ) * 1000;
+	const age = Date.now() - gmtToMs( c.date );
+	const isOwn = state.currentUserId && c.author === state.currentUserId;
+	return {
+		id: c.id,
+		author: c.author,
+		author_name: c.author_name || 'Anonymous',
+		author_avatar: c.author_avatar || '',
+		author_url: c.author_url || '',
+		date: c.date,
+		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
+		content: c.content,
+		canEdit: !! ( isOwn && age < editWindow ),
+		canDelete: !! ( isOwn || canModerate ),
+		editing: false,
+		editText: '',
+	};
 }
 
 const { state, actions } = store( 'mvs/shared-ui', {
@@ -60,9 +230,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		tagResults: [],
 		tagVisible: false,
 
+		// --- FAB menu (only when the member also has a Documents drive) ---
+		fabMenuOpen: false,
+
 		// --- Upload Modal (flat) ---
 		uploadModalVisible: false,
-		uploadModalMode: 'photo', // photo | gallery | album | video
+		uploadModalMode: 'photo', // photo | gallery | video | audio (auto-detected from files)
 		uploadModalFiles: [],
 		uploadModalPreviews: [],
 		uploadModalUploading: false,
@@ -77,8 +250,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalDescription: '',
 		uploadModalTags: '',
 		uploadModalPrivacy: 'public',
-		uploadModalAlbumTitle: '',
-		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
 		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
 		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
@@ -93,10 +264,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// "Create new album" chosen in the "Add to album" select (value -1).
 			return state.uploadModalAlbum === -1;
 		},
-		get hideAlbumCoverHint() {
-			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
-		},
-
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
 			// while title empty".
@@ -107,7 +274,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const titles = {
 				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
 				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
-				album: ( state.i18n?.createAlbum || 'Create Album' ),
 				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
 				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
 			};
@@ -115,9 +281,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get uploadAccept() {
 			// Auto-detect flow: accept every supported type; the picked file(s)
-			// determine the mode (photo/gallery/video/audio).
-			const allowed = getContext().allowedTypes || '';
-			return allowed || 'image/*,video/*,audio/*';
+			// determine the mode (photo/gallery/video/audio). Prefer acceptAttr —
+			// MIME types AND extensions, so the OS picker does not grey out files
+			// the server accepts; fall back to the MIME-only list, then wildcards.
+			const ctx = getContext();
+			return ctx.acceptAttr || ctx.allowedTypes || 'image/*,video/*,audio/*';
 		},
 		get uploadMultiple() {
 			return true;
@@ -127,9 +295,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get isGalleryMode() {
 			return state.uploadModalMode === 'gallery';
-		},
-		get isAlbumMode() {
-			return state.uploadModalMode === 'album';
 		},
 		get isVideoMode() {
 			return state.uploadModalMode === 'video';
@@ -151,6 +316,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		// --- Lightbox (flat) ---
 		lightboxVisible: false,
+		lightboxFullscreen: false,
 		lightboxMediaId: null,
 		lightboxMediaData: null,
 		lightboxGroupItems: [],
@@ -199,7 +365,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return '';
 			}
 			// Prefer the admin-chosen lightbox_url (honors `mvs_lightbox_image_source`);
@@ -207,13 +373,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// open full-size images instead of the low-res grid thumbnail.
 			return d.lightbox_url || d.file_url || d.thumbnail_url || '';
 		},
+		get lightboxImageSrc() {
+			// Bound to the <img src>. When there is no image (document/video/audio)
+			// a bound empty string makes the browser resolve src="" to the page URL
+			// and fetch it — harmless (the <img> is hidden) but wasteful. A 1x1
+			// transparent GIF is inert. (Basecamp 10248528902)
+			return state.lightboxImageUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+		},
 		get lightboxImageWebpUrl() {
 			// WebP sibling of the lightbox image. Empty string when the upload
 			// pre-dates 1.2.2 optimization or the variant is not safe to embed
 			// directly (gated /serve route). Empty `srcset` makes the browser
 			// skip the `<source>` and use the JPEG `<img>` fallback.
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return '';
 			}
 			return d.lightbox_webp_url || '';
@@ -223,7 +396,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// showing a non-image item. `data-wp-bind--hidden` on a `<source>`
 			// element makes the browser ignore it during type negotiation.
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return true;
 			}
 			return ! d.lightbox_webp_url;
@@ -234,14 +407,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// FIRST in the template; AVIF-capable browsers (Chrome, Firefox,
 			// Safari 16.4+, Edge) pick it and skip the WebP/JPEG fallbacks.
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return '';
 			}
 			return d.lightbox_avif_url || '';
 		},
 		get lightboxHideImageAvif() {
 			const d = state.lightboxMediaData;
-			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+			if ( ! d || d.media_type !== 'image' ) {
 				return true;
 			}
 			return ! d.lightbox_avif_url;
@@ -252,9 +425,35 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxIsAudio() {
 			return state.lightboxMediaData?.media_type === 'audio';
 		},
+		get lightboxIsDocument() {
+			return state.lightboxMediaData?.media_type === 'document';
+		},
+		get lightboxHideDocument() {
+			return state.lightboxMediaData?.media_type !== 'document';
+		},
+		get lightboxDocGlyphClass() {
+			// Per-type glyph from the REST doc_icon (resolved server-side from the
+			// single DocumentTypes map), so a spreadsheet is not drawn as a text
+			// file. Falls back to the generic file glyph. (Basecamp 10248528902)
+			//
+			// MUST return the FULL class string, not just the `--<icon>` modifier:
+			// the template binds this with `data-wp-bind--class`, which REPLACES
+			// the element's whole class attribute. Drop the base classes here and
+			// the glyph loses `mvs-doc-glyph` and stops painting its mask.
+			const icon = state.lightboxMediaData?.doc_icon || 'file-text';
+			return 'mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--' + icon;
+		},
+		get lightboxDocLabel() {
+			// Friendly type label ("Excel · 12 KB") from the REST doc_label, never
+			// the raw MIME. Falls back to file_type only if the label is absent.
+			return state.lightboxMediaData?.doc_label || state.lightboxMediaData?.file_type || '';
+		},
 		get lightboxHideImage() {
-			const t = state.lightboxMediaData?.media_type;
-			return t === 'video' || t === 'audio';
+			// Show the <img> only when there is a real image URL. lightboxImageUrl
+			// now returns '' for every non-image type, so a document (or any item
+			// with no displayable image) never synthesises a broken <img> under
+			// the media chrome (Basecamp 10248528902).
+			return ! state.lightboxImageUrl;
 		},
 		get lightboxHideVideo() {
 			return state.lightboxMediaData?.media_type !== 'video';
@@ -339,6 +538,26 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxHasMoreComments() {
 			return state.lightboxTotalComments > state.lightboxComments.length;
+		},
+		// Per-comment action visibility (in the data-wp-each loop, item = comment).
+		get hideLightboxCommentActions() {
+			const item = getContext().item;
+			return ( ! item?.canEdit && ! item?.canDelete ) || item?.editing;
+		},
+		get hideLightboxEditComment() {
+			const item = getContext().item;
+			return ! item?.canEdit || item?.editing;
+		},
+		get hideLightboxDeleteComment() {
+			const item = getContext().item;
+			return ! item?.canDelete || item?.editing;
+		},
+		// The inline edit form shows only while editing this comment.
+		get hideLightboxCommentEditForm() {
+			return ! getContext().item?.editing;
+		},
+		get hideLightboxCommentContent() {
+			return !! getContext().item?.editing;
 		},
 		// Reaction count getters.
 		get lightboxReactionCount_like() { return state.lightboxReactions?.like || ''; },
@@ -445,6 +664,26 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.tagResults = [];
 		},
 
+		// --- FAB menu ---
+		toggleFabMenu() {
+			state.fabMenuOpen = ! state.fabMenuOpen;
+		},
+		fabUploadMedia() {
+			state.fabMenuOpen = false;
+			// Sibling actions are called through the captured `actions` proxy, not
+			// `this` — inside an Interactivity action `this` does not resolve the
+			// store's actions, so `this.openUploadModal()` was a silent no-op and
+			// the FAB menu's "Upload media" did nothing (Basecamp 10240363216).
+			actions.openUploadModal();
+		},
+		closeFabMenuOnOutside( event ) {
+			// data-wp-on-document--click fires for every click, including the FAB
+			// toggle itself — only close when the click landed OUTSIDE the FAB.
+			if ( state.fabMenuOpen && event.target && ! event.target.closest( '.mvs-fab-container' ) ) {
+				state.fabMenuOpen = false;
+			}
+		},
+
 		// --- Upload Modal ---
 		openUploadModal() {
 			const ctx = getContext();
@@ -463,8 +702,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
 			state.uploadModalPrivacy = ctx.defaultPrivacy || 'public';
-			state.uploadModalAlbumTitle = '';
-			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
 			state.uploadModalAlbum = 0;
 			state.uploadModalNewAlbumName = '';
@@ -480,8 +717,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
 			state.uploadModalPrivacy = 'public';
-			state.uploadModalAlbumTitle = '';
-			state.uploadModalAlbumDescription = '';
 			state.uploadModalUploading = false;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
@@ -648,12 +883,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalSaving = false;
 			}
 		},
-		setUploadMode() {
-			const ctx = getContext();
-			state.uploadModalMode = ctx.uploadMode || 'photo';
-			state.uploadModalFiles = [];
-			state.uploadModalPreviews = [];
-		},
 		handleUploadClick() {
 			const input = document.getElementById( 'mvs-modal-file-input' );
 			if ( input ) {
@@ -795,7 +1024,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		filterFilesByMode( files ) {
-			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
+			const prefixes = { photo: 'image/', gallery: 'image/', video: 'video/', audio: 'audio/' };
 			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
 			const valid = files.filter( ( f ) => f.type.startsWith( prefix ) );
 			const rejected = files.length - valid.length;
@@ -840,19 +1069,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.userAlbums = [];
 			}
 		},
-		updateAlbumTitle( event ) {
-			state.uploadModalAlbumTitle = event.target.value;
-		},
-		updateAlbumDescription( event ) {
-			state.uploadModalAlbumDescription = event.target.value;
-		},
 		async submitUpload() {
 			const ctx = getContext();
 			const restUrl = ctx.restUrl;
 			const nonce = ctx.nonce;
 			const files = state.uploadModalFiles;
 
-			if ( ! files.length && state.uploadModalMode !== 'album' ) {
+			if ( ! files.length ) {
 				actions.showToast( ( state.i18n?.selectFiles || 'Please select files to upload.' ), 'error' );
 				return;
 			}
@@ -863,36 +1086,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalFailed = 0;
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
-
-			// For album mode, create album first. Delegates to the single
-			// shared validate-name + POST path (window.mvsRest.createAlbum) so
-			// this surface and the BuddyPress albums tab share one create +
-			// message implementation (Basecamp 10069383195).
-			if ( state.uploadModalMode === 'album' ) {
-				const albumResult = await window.mvsRest.createAlbum(
-					state.uploadModalAlbumTitle,
-					{
-						description: state.uploadModalAlbumDescription,
-						privacy: state.uploadModalPrivacy,
-					}
-				);
-				if ( ! albumResult.ok ) {
-					actions.showToast( albumResult.message, 'error' );
-					state.uploadModalUploading = false;
-					return;
-				}
-				const albumData = albumResult.data;
-				state._pendingAlbumId = albumData.id;
-				actions.showToast( ( state.i18n?.albumCreated || 'Album "%s" created!' ).replace( '%s', albumData.title ) );
-				if ( ! files.length ) {
-					state.uploadModalUploading = false;
-					setTimeout( () => {
-						actions.closeUploadModal();
-						window.location.reload();
-					}, 800 );
-					return;
-				}
-			}
 
 			// "Create new album" chosen in the Add-to-album select: create it up
 			// front via the shared validate-name + POST helper so an invalid name
@@ -920,17 +1113,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				mediaGroup = 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 );
 			}
 
-			// Album mode doesn't carry per-file title/description/tags — the album
-			// owns those. Privacy still applies per-item so it's always sent.
-			const isAlbum = state.uploadModalMode === 'album';
-
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
 				const fd = new FormData();
 				fd.append( 'file', files[ i ] );
-				if ( ! isAlbum && state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
-				if ( ! isAlbum && state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
-				if ( ! isAlbum && state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
+				if ( state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
+				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
+				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
 				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );
 				if ( mediaGroup ) {
 					fd.append( 'media_group', mediaGroup );
@@ -951,14 +1140,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} catch { /* skip thumbnail */ }
 				}
 
-				// Album bulk-upload batch (≥2 files in one user action): tag the
-				// upload so flag_activity_upload sets the activity_upload skip
-				// flag. After the album link call below, the server emits ONE
-				// "uploaded N photos to album X" gallery activity instead of
-				// N "uploaded a new photo" per-file activities. Single-file
-				// album uploads keep the per-photo activity (no bundling needed).
-				const uploadUrl = restUrl + 'media' +
-					( isAlbum && files.length > 1 ? '?album_upload=1' : '' );
+				const uploadUrl = restUrl + 'media';
 
 				try {
 					const res = await window.mvsRest.restFetch( uploadUrl, {
@@ -1064,6 +1246,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.lightboxGroupItems = [];
 			state.lightboxCurrentIndex = 0;
 			document.body.style.overflow = 'hidden';
+			lightboxRememberTrigger();
 
 			try {
 				const res = await window.mvsRest.restFetch(
@@ -1098,6 +1281,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		async openLightboxById( mediaId ) {
 			if ( ! mediaId ) return;
+
+			// This is the path the Explore grid actually uses — the tiles carry
+			// no click directive of their own, so a delegated caller resolves
+			// the id and lands here. Missing this call was why focus was never
+			// handed back on close: openLightbox() had it and this did not, so
+			// the trigger was never captured for the one route members take.
+			lightboxRememberTrigger();
 
 			state.lightboxMediaId = mediaId;
 			state.lightboxVisible = true;
@@ -1178,8 +1368,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const c = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20' );
 				state.lightboxTotalComments = parseInt( ( c.headers && c.headers.get( 'X-WP-Total' ) ) || '0', 10 );
 				const cd = c.data;
-				state.lightboxComments = Array.isArray( cd ) ? cd : [];
-			} catch { state.lightboxComments = []; state.lightboxTotalComments = 0; }
+				state.lightboxComments = Array.isArray( cd )
+					? cd.map( ( x ) => mapLightboxComment( x ) )
+					: [];
+			} catch ( e ) {
+				// Log rather than fail silently. This catch used to turn a code
+				// error in the map above into an ordinary-looking "No comments
+				// yet" — the failure was indistinguishable from an empty thread,
+				// which is why it survived. A load failure still degrades to an
+				// empty list; it just says so.
+				state.lightboxComments = [];
+				state.lightboxTotalComments = 0;
+				// eslint-disable-next-line no-console
+				console.error( '[WPMediaVerse] lightbox comments failed to load', e );
+			}
 			// Stats.
 			try {
 				const s = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/stats' );
@@ -1310,7 +1512,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} );
 				const comment = r.data;
 				if ( comment && comment.id ) {
-					state.lightboxComments = [ ...state.lightboxComments, comment ];
+					// Map so the just-posted comment carries its own edit/delete flags.
+					state.lightboxComments = [ ...state.lightboxComments, mapLightboxComment( comment ) ];
 					state.lightboxCommentText = '';
 				}
 			} catch {
@@ -1319,6 +1522,67 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxCommentSubmitting = false;
 			}
 		},
+
+		/* --- Lightbox comment edit / delete (mirrors media-social) --- */
+		startEditLightboxComment() {
+			const item = getContext().item;
+			if ( ! item ) return;
+			item.editText = item.content;
+			item.editing = true;
+		},
+		updateLightboxEditText( event ) {
+			const item = getContext().item;
+			if ( item ) {
+				item.editText = event.target.value;
+			}
+		},
+		cancelEditLightboxComment() {
+			const item = getContext().item;
+			if ( item ) {
+				item.editing = false;
+				item.editText = '';
+			}
+		},
+		async saveEditLightboxComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item || ! item.editText || ! item.editText.trim() ) return;
+			try {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + item.id, {
+					method: 'PUT',
+					body: { content: item.editText.trim() },
+				} );
+				if ( res.ok && res.data ) {
+					item.content = res.data.content;
+					item.editing = false;
+					item.editText = '';
+					actions.showToast( ( state.i18n?.commentUpdated || 'Comment updated.' ), 'success' );
+				} else {
+					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+				}
+			} catch {
+				actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+			}
+		},
+		deleteLightboxComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return;
+			const id = item.id;
+			actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + id, {
+					method: 'DELETE',
+				} );
+				if ( res.ok ) {
+					state.lightboxComments = state.lightboxComments.filter( ( x ) => x.id !== id );
+					state.lightboxTotalComments = Math.max( 0, state.lightboxTotalComments - 1 );
+					actions.showToast( ( state.i18n?.commentDeleted || 'Comment deleted.' ), 'success' );
+				} else {
+					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
+				}
+			} );
+		},
+
 		/**
 		 * Open the edit modal for the item currently shown in the lightbox.
 		 *
@@ -1476,7 +1740,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.openLightboxById( gridIds[ currentIdx + 1 ] );
 			}
 		},
+		toggleLightboxFullscreen() {
+			state.lightboxFullscreen = ! state.lightboxFullscreen;
+		},
 		closeLightbox() {
+			state.lightboxFullscreen = false;
 			// Pause any playing video/audio before closing.
 			const video = document.querySelector( '.mvs-lightbox-video' );
 			if ( video ) {
@@ -1504,24 +1772,109 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			event.stopPropagation();
 		},
 		handleLightboxKeydown( event ) {
+			// Tab is trapped BEFORE the Escape branch and before the typing
+			// guard, because it applies whether or not the member is in a
+			// field — a text input inside the dialog is still inside it.
+			if ( event.key === 'Tab' && state.lightboxVisible ) {
+				lightboxTrapTab( event );
+				return;
+			}
+
 			if ( event.key === 'Escape' ) {
 				if ( state.editModalVisible ) {
 					actions.closeEditModal();
 				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();
 				} else if ( state.lightboxVisible ) {
-					actions.closeLightbox();
+					// Escape steps out of fullscreen first, then closes — so a
+					// single Escape does not both un-maximise and dismiss.
+					if ( state.lightboxFullscreen ) {
+						state.lightboxFullscreen = false;
+					} else {
+						actions.closeLightbox();
+					}
+				} else if ( state.fabMenuOpen ) {
+					state.fabMenuOpen = false;
 				}
 			} else if ( state.lightboxVisible ) {
+				// Not while the member is typing. This handler is bound with
+				// `data-wp-on-document--keydown`, so it sees every key in the
+				// document — including the ones going into the comment box and
+				// the "+ New collection" field inside the lightbox itself. The
+				// f/F shortcut ate the `f` of "Office" and jumped to fullscreen,
+				// and Arrow keys navigated the gallery instead of moving the
+				// caret (Basecamp 10249014961).
+				//
+				// Guards the SHORTCUT branch only, deliberately: Escape is
+				// handled above and must keep working from inside a field —
+				// that is how a member backs out of one.
+				if ( isTextEntry( event.target ) ) {
+					return;
+				}
+
 				if ( event.key === 'ArrowLeft' && state.lightboxHasPrev ) {
 					actions.lightboxPrev();
 				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {
 					actions.lightboxNext();
+				} else if ( event.key === 'f' || event.key === 'F' ) {
+					state.lightboxFullscreen = ! state.lightboxFullscreen;
 				}
 			}
 		},
 	},
 	callbacks: {
+		/**
+		 * Move focus into the dialog once it is genuinely on screen.
+		 *
+		 * Bound with `data-wp-watch` on the overlay, so it runs after the
+		 * render that removes `hidden` — the earliest point at which anything
+		 * inside can take focus at all. Runs on every change, so it checks
+		 * whether focus is already inside and does nothing if so; otherwise
+		 * navigating between gallery images would yank focus back to Close
+		 * mid-interaction.
+		 */
+		lightboxFocus() {
+			const box = document.querySelector( '.mvs-lightbox' );
+
+			if ( ! box ) {
+				return;
+			}
+
+			// CLOSING — hand focus back to whatever opened it.
+			//
+			// Restoring inside closeLightbox() looked right and did not work:
+			// it runs before the render, so focus landed on the trigger and was
+			// then dropped to <body> when the framework re-rendered the grid.
+			// Measured. Both directions therefore live here, after the render
+			// that actually changed what is on screen.
+			if ( ! state.lightboxVisible ) {
+				const back = lightboxReturnFocus;
+
+				lightboxReturnFocus = null;
+
+				if ( back && typeof back.focus === 'function' && document.contains( back ) ) {
+					back.focus();
+				}
+
+				return;
+			}
+
+			// OPENING — put focus inside, unless it is already there. That
+			// check matters: this runs on every state change, and without it
+			// navigating between gallery images would yank focus back to Close
+			// mid-interaction.
+			if ( box.contains( document.activeElement ) ) {
+				return;
+			}
+
+			// The close button first: it is the control a member most often
+			// wants, and landing there makes the dialog's boundary obvious.
+			const target = box.querySelector( '.mvs-lightbox-close' ) || lightboxFocusables()[ 0 ];
+
+			if ( target ) {
+				target.focus();
+			}
+		},
 		// Inject trusted badge HTML (verified-member, VIP, etc.) into the
 		// lightbox author sibling node. The Interactivity API has no built-in
 		// HTML directive — `data-wp-text` would render markup as literal text

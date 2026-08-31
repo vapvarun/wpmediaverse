@@ -120,7 +120,8 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 			<?php if ( ! empty( $items ) ) : ?>
 			<div class="mvs-explore-search mvs-collection-search">
 				<form class="mvs-collection-search-form">
-					<input type="text" class="mvs-collection-search-input" placeholder="<?php esc_attr_e( 'Search in this collection...', 'wpmediaverse' ); ?>" />
+					<label class="mvs-sr-only" for="mvs-collection-search-input"><?php esc_html_e( 'Search in this collection', 'wpmediaverse' ); ?></label>
+					<input type="text" id="mvs-collection-search-input" class="mvs-collection-search-input" placeholder="<?php esc_attr_e( 'Search in this collection...', 'wpmediaverse' ); ?>" />
 					<button type="button" class="mvs-collection-search-btn"><?php esc_html_e( 'Search', 'wpmediaverse' ); ?></button>
 				</form>
 			</div>

@@ -11,6 +11,8 @@
 
 namespace WPMediaVerse\Repository;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -48,6 +50,19 @@ class MediaRepository implements MediaRepositoryInterface {
 		'height',
 		'duration',
 		'album_id',
+		// Added by Migrator v27 for the document library. It MUST be listed here:
+		// without it `set( $id, 'folder_id', … )` writes to mvs_media_meta
+		// instead of the column, so the column stays 0, `KEY doc_listing`
+		// matches nothing, and every drive listing and privacy cascade silently
+		// finds no documents. Caught by the P3.8 cascade tests.
+		'folder_id',
+		// Added by Migrator v29 for Space drives (Phase 11 G1), and listed here
+		// for exactly the reason the comment above gives: without it,
+		// `set( $id, 'drive_id', … )` would write to mvs_media_meta instead of
+		// the column, `KEY drive_listing` would match nothing, and every
+		// drive-scoped listing would silently come back empty.
+		'drive_type',
+		'drive_id',
 		'view_count',
 		'reaction_count',
 		'comment_count',
@@ -100,6 +115,41 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @var array<int, true>
 	 */
 	private static array $meta_fully_loaded = array();
+
+	/**
+	 * Clear the in-process row/meta caches.
+	 *
+	 * WordPress's normal request lifecycle never needs this — one PHP process
+	 * serves one request, so a stale row is never possible. PHPUnit is
+	 * different: `WP_UnitTestCase` runs every test in a class in ONE process,
+	 * and several test classes `TRUNCATE TABLE mvs_media_index` in their own
+	 * `tear_down()` to reset state between tests. `TRUNCATE` resets
+	 * `AUTO_INCREMENT`, so a later test can legitimately get the SAME
+	 * `media_id` an earlier test used and already deleted — but `$row_cache`
+	 * and `$meta_fully_loaded` are keyed by that id and were never told the
+	 * row is gone, so the later test silently reads the EARLIER test's
+	 * cached data (wrong author, wrong media_type, etc.) instead of its own.
+	 *
+	 * Found 2026-08-11 chasing `ChallengeServiceTest` failures that looked
+	 * like real validation bugs (a valid submission refused as
+	 * `mvs_challenge_invalid_media`) but reproduced as correct in every
+	 * standalone repro — only failing inside the full test class, after an
+	 * earlier test (`test_submit_entry_with_others_media_returns_error`)
+	 * had already populated the cache for a media_id a later test's insert
+	 * went on to reuse. See plan/2026-08-11-pro-competitions-test-triage-plan.md.
+	 *
+	 * Call from a test class's `tear_down()`, after truncating
+	 * `mvs_media_index`, not before — order doesn't matter to the cache
+	 * itself, but calling it after keeps the two "reset everything" steps
+	 * adjacent and easy to read as one unit.
+	 *
+	 * @since 2.4.0
+	 * @return void
+	 */
+	public static function reset_test_cache(): void {
+		self::$row_cache         = array();
+		self::$meta_fully_loaded = array();
+	}
 
 	/**
 	 * Get a single field for a media item.
@@ -669,6 +719,63 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Per-request memo for is_cpt_id() so the guard costs at most one lookup per ID.
+	 *
+	 * @since 2.4.0
+	 * @var array<int,bool>
+	 */
+	private static $cpt_id_memo = array();
+
+	/**
+	 * Refuse a write keyed on a wp_posts ID.
+	 *
+	 * THE INVARIANT: mvs_media_index holds media, one row per media item, and an
+	 * album or collection ID must never appear in media_id. Albums are wp_posts rows
+	 * that media POINT AT via the album_id column; their own attributes (privacy,
+	 * type, import markers) belong in post meta.
+	 *
+	 * Before 2.4.0 albums stored privacy by calling set()/set_many() with their post
+	 * ID. media_id is AUTO_INCREMENT for media, so on any site where uploads have
+	 * outrun post IDs — most of them, since members upload far more than a site
+	 * publishes — that write landed on a real photo and overwrote its slug and
+	 * privacy. It is a silent corruption on every album creation, which is why the
+	 * refusal lives here at the choke point rather than at each caller.
+	 *
+	 * Refuses rather than throws: a fatal on a mis-keyed write would take a site
+	 * down, and the correct outcome is simply that the bad write does not happen.
+	 *
+	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int    $media_id Candidate row key.
+	 * @param string $context  Calling method, for the notice.
+	 * @return bool True when the write must be refused.
+	 */
+	private function refuses_cpt_id( int $media_id, string $context ): bool {
+		if ( $media_id <= 0 ) {
+			return false;
+		}
+
+		if ( ! isset( self::$cpt_id_memo[ $media_id ] ) ) {
+			$type                           = get_post_type( $media_id );
+			self::$cpt_id_memo[ $media_id ] = ( 'mvs_album' === $type || 'mvs_collection' === $type );
+		}
+
+		if ( ! self::$cpt_id_memo[ $media_id ] ) {
+			return false;
+		}
+
+		_doing_it_wrong(
+			esc_html( $context ),
+			'mvs_media_index is keyed on media IDs. Album and collection attributes belong in post meta — see AlbumService::set_privacy().',
+			'2.4.0'
+		);
+
+		return true;
+	}
+
+	/**
 	 * Set a single field for a media item.
 	 *
 	 * @param int    $media_id Media ID.
@@ -677,6 +784,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 */
 	public function set( int $media_id, string $key, $value ): void {
 		global $wpdb;
+
+		if ( $this->refuses_cpt_id( $media_id, __METHOD__ ) ) {
+			return;
+		}
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
 			$old_privacy = null;
@@ -754,6 +865,1527 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Privacy levels ordered from most open to most closed.
+	 *
+	 * Used to decide what "tightening" means. `dm` is absent deliberately — it is
+	 * a messaging scope, not a position on this scale.
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	public const PRIVACY_ORDER = array( 'public', 'members', 'loggedin', 'friends', 'space', 'group', 'private' );
+
+	/**
+	 * How closed a privacy value is. Higher is more restrictive.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return int -1 when unrecognised.
+	 */
+	public static function privacy_rank( string $privacy ): int {
+		$index = array_search( $privacy, self::PRIVACY_ORDER, true );
+
+		return false === $index ? -1 : (int) $index;
+	}
+
+	/**
+	 * Media carrying a set of meta conditions, paginated, with a total.
+	 *
+	 * DOMAIN-NEUTRAL ON PURPOSE. Pro's stories bar is the first caller and needs
+	 * "media whose `is_story` meta is 1 and whose `story_expires_at` is still in
+	 * the future" — but `mvs_media_index` is this class's to query (architecture
+	 * invariant 6) and Free has no business knowing what a story IS. So the
+	 * caller supplies the meta keys and this supplies the join, the privacy
+	 * scoping and the paging.
+	 *
+	 * Each condition is INNER JOINed, so they are ANDed: media missing any one
+	 * of them does not appear.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type array $meta      List of {key, compare, value, select_as}. `compare`
+	 *                            is allowlisted to = != > >= < <=; anything else
+	 *                            becomes `=`. `select_as` returns that condition's
+	 *                            meta_value in the row under the given name.
+	 *     @type int[] $authors   Restrict to these authors. Empty means any.
+	 *     @type int   $viewer_id Apply privacy for this viewer. 0 = public only.
+	 *     @type bool  $privacy   Whether to apply privacy at all. Default true.
+	 *     @type array $types     media_type allowlist. Default the media library.
+	 *     @type int   $per_page  1-100. Default 20.
+	 *     @type int   $page      1-based. Default 1.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int}
+	 */
+	public function media_with_meta( array $args = array() ): array {
+		global $wpdb;
+
+		$meta_args = isset( $args['meta'] ) && is_array( $args['meta'] ) ? $args['meta'] : array();
+
+		if ( empty( $meta_args ) ) {
+			return array(
+				'items' => array(),
+				'total' => 0,
+			);
+		}
+
+		$index    = $wpdb->prefix . 'mvs_media_index';
+		$meta_tbl = $wpdb->prefix . 'mvs_media_meta';
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		$allowed_compare = array( '=', '!=', '>', '>=', '<', '<=' );
+
+		$joins   = array();
+		$where   = array( "idx.status = 'publish'" );
+		$params  = array();
+		$selects = array( 'idx.media_id', 'idx.post_author', 'idx.title', 'idx.media_type', 'idx.privacy', 'idx.created_at' );
+
+		foreach ( array_values( $meta_args ) as $i => $condition ) {
+			$alias   = 'm' . (int) $i;
+			$key     = isset( $condition['key'] ) ? (string) $condition['key'] : '';
+			$compare = isset( $condition['compare'] ) && in_array( $condition['compare'], $allowed_compare, true )
+				? (string) $condition['compare']
+				: '=';
+
+			if ( '' === $key ) {
+				continue;
+			}
+
+			// The alias is ours, the key and value are the caller's and both are
+			// bound. The COMPARE cannot be bound — hence the allowlist above.
+			$joins[]  = $wpdb->prepare( "INNER JOIN {$meta_tbl} {$alias} ON {$alias}.media_id = idx.media_id AND {$alias}.meta_key = %s", $key ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$where[]  = "{$alias}.meta_value {$compare} %s";
+			$params[] = (string) ( $condition['value'] ?? '' );
+
+			if ( ! empty( $condition['select_as'] ) ) {
+				$as        = preg_replace( '/[^a-zA-Z0-9_]/', '', (string) $condition['select_as'] );
+				$selects[] = "{$alias}.meta_value AS {$as}";
+			}
+		}
+
+		if ( empty( $joins ) ) {
+			return array(
+				'items' => array(),
+				'total' => 0,
+			);
+		}
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
+		$where                          = array_merge( $where, array( $type_sql ) );
+		$params                         = array_merge( $params, $type_params );
+
+		$authors = isset( $args['authors'] ) && is_array( $args['authors'] ) ? array_map( 'intval', $args['authors'] ) : array();
+
+		if ( $authors ) {
+			$where[] = 'idx.post_author IN (' . implode( ',', array_fill( 0, count( $authors ), '%d' ) ) . ')';
+			$params  = array_merge( $params, $authors );
+		}
+
+		$apply_privacy = ! isset( $args['privacy'] ) || (bool) $args['privacy'];
+
+		if ( $apply_privacy ) {
+			$viewer_id = isset( $args['viewer_id'] ) ? (int) $args['viewer_id'] : 0;
+
+			if ( $viewer_id > 0 ) {
+				$where[]  = "( idx.post_author = %d OR idx.privacy = 'public' OR idx.privacy = 'members' )";
+				$params[] = $viewer_id;
+			} else {
+				$where[] = "idx.privacy = 'public'";
+			}
+		}
+
+		$from = "FROM {$index} idx " . implode( ' ', $joins ) . ' WHERE ' . implode( ' AND ', $where );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) {$from}", ...$params ) );
+
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d",
+				...array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * Distinct viewers per media since a per-media timestamp held in meta.
+	 *
+	 * The owner is never counted: a member refreshing their own upload would
+	 * otherwise inflate its view count, which is the number other people are
+	 * shown.
+	 *
+	 * The "since" bound is per media rather than global — it comes from each
+	 * row's own meta value, so items that started at different times are each
+	 * counted from their own start. Domain-neutral for the same reason as
+	 * `media_with_meta()`: Pro's stories bar passes `story_started_at`, and this
+	 * class does not need to know why.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $media_ids      Media to count.
+	 * @param string $since_meta_key Meta key holding each row's start timestamp.
+	 * @return array<int, int> media_id => distinct viewers. Absent means zero.
+	 */
+	public function viewer_counts_since_meta( array $media_ids, string $since_meta_key ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+
+		if ( empty( $ids ) || '' === $since_meta_key ) {
+			return array();
+		}
+
+		$views        = $wpdb->prefix . 'mvs_media_views';
+		$meta_tbl     = $wpdb->prefix . 'mvs_media_meta';
+		$index        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT v.media_id, COUNT(DISTINCT v.user_id) AS c
+				   FROM {$views} v
+			 INNER JOIN {$meta_tbl} sm ON sm.media_id = v.media_id AND sm.meta_key = %s
+			 INNER JOIN {$index} idx ON idx.media_id = v.media_id
+				  WHERE v.media_id IN ({$placeholders})
+				    AND v.event_type = 'view'
+				    AND v.user_id IS NOT NULL
+				    AND v.user_id > 0
+				    AND v.user_id != idx.post_author
+				    AND v.created_at >= sm.meta_value
+			   GROUP BY v.media_id",
+				...array_merge( array( $since_meta_key ), $ids )
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+
+		foreach ( $rows as $row ) {
+			$counts[ (int) $row['media_id'] ] = (int) $row['c'];
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * The condition every author-ranking query shares.
+	 *
+	 * Public, approved, published media with a real author, narrowed to the
+	 * MEDIA library and optionally to a recent window. Built once so the page
+	 * query, its total, and a single member's rank cannot drift apart — three
+	 * queries that must agree on what "ranked" means or the rank a member is
+	 * shown does not match the board they are looking at.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $window all|30d|7d.
+	 * @return string SQL condition against alias `i`.
+	 */
+	private function ranking_condition( string $window ): string {
+		global $wpdb;
+
+		$cond = "i.status = 'publish' AND i.moderation_status = 'approved' AND i.privacy = 'public' AND i.post_author > 0";
+
+		// The board ranks the MEDIA library. Documents are cheap to produce in
+		// bulk, so counting them would let a member top a public ranking by
+		// uploading a few hundred files nobody browses.
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'i.media_type' );
+
+		$cond .= ' AND ' . (string) $wpdb->prepare( $type_sql, $type_params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$days = array(
+			'30d' => 30,
+			'7d'  => 7,
+		);
+
+		if ( isset( $days[ $window ] ) ) {
+			$cond .= $wpdb->prepare( ' AND i.created_at >= DATE_SUB( NOW(), INTERVAL %d DAY )', $days[ $window ] );
+		}
+
+		return $cond;
+	}
+
+	/**
+	 * One page of the author leaderboard, plus how many members are ranked.
+	 *
+	 * `$metric` and `$window` are ALLOWLISTED here rather than interpolated:
+	 * both reach this method from a URL. Anything unrecognised falls back to the
+	 * safe default instead of being passed to SQL.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric   reactions|media_count.
+	 * @param string $window   all|30d|7d.
+	 * @param int    $per_page Rows per page (1-100).
+	 * @param int    $page     1-based page.
+	 * @return array{rows: array<int, array{user_id:int, score:int}>, total: int}
+	 */
+	public function author_leaderboard( string $metric, string $window, int $per_page = 20, int $page = 1 ): array {
+		global $wpdb;
+
+		$metric   = 'media_count' === $metric ? 'media_count' : 'reactions';
+		$window   = in_array( $window, array( 'all', '30d', '7d' ), true ) ? $window : 'all';
+		$per_page = max( 1, min( 100, $per_page ) );
+		$offset   = ( max( 1, $page ) - 1 ) * $per_page;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$cond  = $this->ranking_condition( $window );
+
+		if ( 'media_count' === $metric ) {
+			$score_expr = 'COUNT(*)';
+			$having     = '';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$total = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT i.post_author) FROM {$index} i WHERE {$cond}" );
+		} else {
+			$score_expr = 'SUM(i.reaction_count)';
+			// A member with zero reactions is not ON the board; without this they
+			// would appear at the bottom with a score of 0 and inflate the total.
+			$having = ' HAVING score > 0';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$total = (int) $wpdb->get_var(
+				"SELECT COUNT(*) FROM ( SELECT i.post_author FROM {$index} i WHERE {$cond} GROUP BY i.post_author HAVING SUM(i.reaction_count) > 0 ) t"
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT i.post_author AS user_id, {$score_expr} AS score
+				   FROM {$index} i
+				  WHERE {$cond}
+			   GROUP BY i.post_author{$having}
+			   ORDER BY score DESC, i.post_author ASC
+				  LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		$clean = array();
+
+		foreach ( $rows as $row ) {
+			$clean[] = array(
+				'user_id' => (int) ( $row['user_id'] ?? 0 ),
+				'score'   => (int) ( $row['score'] ?? 0 ),
+			);
+		}
+
+		return array(
+			'rows'  => $clean,
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * Where one member stands on that same board.
+	 *
+	 * Rank is "how many members score HIGHER, plus one" rather than a row offset,
+	 * so it does not require paging to the member to find them, and ties share a
+	 * rank instead of depending on which row the database returned first.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $metric  reactions|media_count.
+	 * @param string $window  all|30d|7d.
+	 * @param int    $user_id Member to locate.
+	 * @return array{rank: int|null, score: int} Rank is null when they are not ranked at all.
+	 */
+	public function author_leaderboard_rank( string $metric, string $window, int $user_id ): array {
+		global $wpdb;
+
+		$none = array(
+			'rank'  => null,
+			'score' => 0,
+		);
+
+		if ( $user_id <= 0 ) {
+			return $none;
+		}
+
+		$metric = 'media_count' === $metric ? 'media_count' : 'reactions';
+		$window = in_array( $window, array( 'all', '30d', '7d' ), true ) ? $window : 'all';
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$cond  = $this->ranking_condition( $window );
+
+		if ( 'media_count' === $metric ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$score = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT COUNT(*) FROM {$index} i WHERE {$cond} AND i.post_author = %d", $user_id )
+			);
+
+			if ( $score <= 0 ) {
+				return $none;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$higher = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM ( SELECT i.post_author, COUNT(*) c FROM {$index} i WHERE {$cond} GROUP BY i.post_author HAVING c > %d ) t",
+					$score
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$score = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT SUM(i.reaction_count) FROM {$index} i WHERE {$cond} AND i.post_author = %d", $user_id )
+			);
+
+			if ( $score <= 0 ) {
+				return $none;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$higher = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM ( SELECT i.post_author, SUM(i.reaction_count) s FROM {$index} i WHERE {$cond} GROUP BY i.post_author HAVING s > %d ) t",
+					$score
+				)
+			);
+		}
+
+		return array(
+			'rank'  => $higher + 1,
+			'score' => $score,
+		);
+	}
+
+	/**
+	 * Published document ids whose TITLE matches a phrase, in title order.
+	 *
+	 * For the names an extractor never sees. Document search runs FULLTEXT over
+	 * extracted text, and a file whose text is empty — a PDF, an image-only
+	 * scan, anything not yet extracted — is findable only by what it is called.
+	 *
+	 * A `LIKE '%term%'` cannot use an index and is deliberately bounded by
+	 * `$limit` for that reason: it is a candidate list feeding a ranked search,
+	 * not a listing anyone pages through.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $query Search phrase. Escaped for LIKE here, not by callers.
+	 * @param int    $limit Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_title_candidates( string $query, int $limit = 50 ): array {
+		global $wpdb;
+
+		$query = trim( $query );
+
+		if ( '' === $query ) {
+			return array();
+		}
+
+		$limit = max( 1, min( 500, $limit ) );
+		$like  = '%' . $wpdb->esc_like( $query ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id
+				   FROM {$wpdb->prefix}mvs_media_index
+				  WHERE media_type = 'document'
+				    AND status = 'publish'
+				    AND title LIKE %s
+				  ORDER BY title ASC
+				  LIMIT %d",
+				$like,
+				$limit
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * Document ids after a cursor, in id order.
+	 *
+	 * Keyset pagination for background sweeps: an `OFFSET` walk over a large
+	 * library re-reads everything it has already passed, and drifts when rows
+	 * are inserted mid-run. A cursor on the primary key does neither.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $cursor Exclusive lower bound on media_id.
+	 * @param int $limit  Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_ids_after( int $cursor, int $limit = 100 ): array {
+		global $wpdb;
+
+		$limit = max( 1, min( 1000, $limit ) );
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index  = $wpdb->prefix . 'mvs_media_index';
+		$params = array_merge( $type_params, array( $cursor, $limit ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$index}
+				  WHERE {$type_sql} AND media_id > %d
+				  ORDER BY media_id ASC
+				  LIMIT %d",
+				...$params
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * How many documents exist.
+	 *
+	 * A dedicated `COUNT(*)`, never `count()` of a listing — the number is used
+	 * to say how much of the library has been indexed, and a count taken from a
+	 * page would understate it on every site with more than one page.
+	 *
+	 * UNSCOPED BY DEFAULT, and that is right for its original caller: the
+	 * extraction health check asks how much of the SITE's library is indexed.
+	 * It is wrong for anything drawn beside a member's own name — the dashboard
+	 * rail read 6 next to "Media 0" for a member who owned three documents,
+	 * because one counter answered "on this site" and the one above it answered
+	 * "yours". Two numbers in one list have to answer the same question.
+	 *
+	 * @since 2.4.0
+	 * @since 2.4.0 `$args` adds author and status scoping.
+	 *
+	 * @param bool  $include_legacy Whether quarantined legacy documents count.
+	 * @param array $args {
+	 *     @type int    $author Owner to scope to, or 0 for the whole site.
+	 *     @type string $status publish|trash|any. Default publish.
+	 * }
+	 * @return int
+	 */
+	public function count_documents( bool $include_legacy = false, array $args = array() ): int {
+		global $wpdb;
+
+		$types = $include_legacy ? MediaTypes::DOCUMENT_LIBRARY : MediaTypes::DOCUMENTS;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types );
+
+		$where  = array( $type_sql );
+		$params = $type_params;
+
+		$author = isset( $args['author'] ) ? (int) $args['author'] : 0;
+
+		if ( $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		// `any` is the pre-existing behaviour — trashed rows included — kept as
+		// the default so the health check keeps counting what it always counted.
+		$status = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash', 'any' ), true ) )
+			? (string) $args['status']
+			: 'any';
+
+		if ( 'any' !== $status ) {
+			$where[]  = 'status = %s';
+			$params[] = $status;
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params )
+		);
+	}
+
+	/**
+	 * Fetch documents by id, preserving the order they were asked for.
+	 *
+	 * Search hands back ids ranked by relevance; re-sorting them by date here
+	 * would throw that ranking away, and a second query per id would be the N+1
+	 * the whole design avoids.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[] $ids Document ids.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function documents_by_ids( array $ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+
+		if ( ! $ids ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		$params       = array_merge( $type_params, $ids );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				// `drive_type` / `drive_id` for the same reason as
+				// `drive_documents()`: Pro's privacy ladder cannot place a
+				// document at a drive root without them, and search feeds that
+				// ladder directly.
+				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, folder_id, drive_type, drive_id, created_at
+				   FROM {$index}
+				  WHERE {$type_sql} AND media_id IN ( {$placeholders} )",
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$by_id = array();
+		foreach ( $rows as $row ) {
+			$by_id[ (int) $row['media_id'] ] = $row;
+		}
+
+		$ordered = array();
+		foreach ( $ids as $id ) {
+			if ( isset( $by_id[ $id ] ) ) {
+				$ordered[] = $by_id[ $id ];
+			}
+		}
+
+		return $ordered;
+	}
+
+	/**
+	 * Direct document counts for a set of folders, in ONE query.
+	 *
+	 * The display contract is specific about this: "counts are direct children —
+	 * one GROUP BY per page, never recursive". Both halves matter. A count per
+	 * folder row would be an N+1 on the one surface a member opens most, and a
+	 * RECURSIVE count would need the subtree on every row — which on a drive
+	 * with 30k documents is the whole table, to render a number.
+	 *
+	 * Folders absent from the result have no documents; the caller defaults to 0
+	 * rather than this padding the array with zeroes.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[] $folder_ids Folder ids.
+	 * @return array<int, int> folder_id => direct document count.
+	 */
+	public function count_documents_in_folders( array $folder_ids ): array {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ) ) ) );
+
+		if ( ! $folder_ids ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
+		$params       = array_merge( $type_params, $folder_ids, array( 'publish' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT folder_id, COUNT(*) AS total
+				   FROM {$index}
+				  WHERE {$type_sql} AND folder_id IN ( {$placeholders} ) AND status = %s
+				  GROUP BY folder_id",
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ (int) $row['folder_id'] ] = (int) $row['total'];
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Which document types are actually present, and how many of each.
+	 *
+	 * A filter row built from every type this plugin CAN store offers chips that
+	 * are guaranteed to return nothing — a site with three PDFs still showed
+	 * PowerPoint, ODF Slides and RTF, each one a dead end. The media tag cloud
+	 * has always worked the other way round: it lists the tags in use. This is
+	 * the same idea for documents.
+	 *
+	 * One grouped query. The MIME-to-type fold happens in PHP because the
+	 * mapping lives in `DocumentTypes` and duplicating it in SQL would give the
+	 * database its own opinion about what a Word file is.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type bool   $public_only Restrict to publicly visible documents.
+	 *     @type int    $author      Restrict to one uploader, 0 for all.
+	 *     @type bool   $legacy      Include quarantined legacy documents.
+	 * }
+	 * @return array<string, int> Named type => count, highest first, no zeroes.
+	 */
+	public function document_type_counts( array $args = array() ): array {
+		global $wpdb;
+
+		$public_only = ! empty( $args['public_only'] );
+		$author      = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$types       = ! empty( $args['legacy'] ) ? MediaTypes::DOCUMENT_LIBRARY : MediaTypes::DOCUMENTS;
+
+		list( $type_sql, $params ) = MediaTypes::in_clause( $types );
+
+		$where    = array( $type_sql, 'status = %s' );
+		$params[] = 'publish';
+
+		if ( $public_only ) {
+			$where[]  = 'privacy = %s';
+			$params[] = 'public';
+			$where[]  = 'moderation_status = %s';
+			$params[] = 'approved';
+		}
+
+		if ( $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT file_type, COUNT(*) AS total
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  GROUP BY file_type",
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+
+		foreach ( $rows as $row ) {
+			$group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $row['file_type'] );
+
+			if ( null === $group ) {
+				// A stored MIME this build does not name. Counting it under a
+				// chip nobody could click would be worse than leaving it out.
+				continue;
+			}
+
+			$counts[ $group ] = ( $counts[ $group ] ?? 0 ) + (int) $row['total'];
+		}
+
+		arsort( $counts );
+
+		return $counts;
+	}
+
+	/**
+	 * SQL clause narrowing a document listing to one named type.
+	 *
+	 * A `doc_type` is a display group, not a stored column — `file_type` holds
+	 * the validated MIME. So the filter expands to the MIME types that map to
+	 * that group, which keeps the clause a positive list on an indexed column
+	 * instead of a `LIKE` that no index can serve.
+	 *
+	 * An unknown type matches NOTHING rather than everything. Failing open would
+	 * show every document under a label the caller chose in order to narrow.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $doc_type Named document type.
+	 * @return array{0: string, 1: array<int, string>} Clause and its params.
+	 */
+	private function document_type_clause( string $doc_type ): array {
+		if ( ! class_exists( '\WPMediaVerse\Core\DocumentTypes' ) ) {
+			return array( '1 = 0', array() );
+		}
+
+		$mimes = array();
+		foreach ( \WPMediaVerse\Core\DocumentTypes::allowed_mimes() as $mime ) {
+			if ( \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mime ) === $doc_type ) {
+				$mimes[] = $mime;
+			}
+		}
+
+		if ( ! $mimes ) {
+			return array( '1 = 0', array() );
+		}
+
+		return array(
+			'file_type IN ( ' . implode( ', ', array_fill( 0, count( $mimes ), '%s' ) ) . ' )',
+			$mimes,
+		);
+	}
+
+	/**
+	 * Every document on the site, for the admin screen.
+	 *
+	 * The site owner's view, so it is NOT privacy-scoped — unlike every
+	 * member-facing document query. It is still paginated, still counted with a
+	 * dedicated `COUNT(*)`, and still filtered and sorted on indexed columns:
+	 * an admin screen is exactly where a site with 50,000 documents shows up.
+	 *
+	 * Sorting is restricted to a fixed allowlist because the column name cannot
+	 * be a prepared parameter — anything outside it falls back to recency rather
+	 * than being interpolated.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int    $per_page Rows per page. Default 20, max 100.
+	 *     @type int    $page     1-based page. Default 1.
+	 *     @type string $doc_type Optional named-type filter.
+	 *     @type string $privacy  Optional privacy filter.
+	 *     @type int    $author   Optional author filter.
+	 *     @type string $search   Optional title search.
+	 *     @type string $orderby  created_at|title|file_size. Default created_at.
+	 *     @type string $order    ASC|DESC. Default DESC.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function admin_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+		$doc_type = isset( $args['doc_type'] ) ? (string) $args['doc_type'] : '';
+		$privacy  = isset( $args['privacy'] ) ? (string) $args['privacy'] : '';
+		$author   = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$search   = isset( $args['search'] ) ? trim( (string) $args['search'] ) : '';
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
+
+		$where  = array( $type_sql );
+		$params = $type_params;
+
+		if ( '' !== $doc_type ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( $doc_type );
+
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
+		}
+
+		if ( '' !== $privacy ) {
+			$where[]  = 'privacy = %s';
+			$params[] = $privacy;
+		}
+
+		if ( $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		if ( '' !== $search ) {
+			$where[]  = 'title LIKE %s';
+			$params[] = '%' . $wpdb->esc_like( $search ) . '%';
+		}
+
+		// The column cannot be prepared, so it comes from a fixed allowlist.
+		$sortable = array( 'created_at', 'title', 'file_size' );
+		$orderby  = isset( $args['orderby'] ) && in_array( $args['orderby'], $sortable, true )
+			? (string) $args['orderby']
+			: 'created_at';
+		$order    = isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ? 'ASC' : 'DESC';
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at, folder_id, drive_type, drive_id
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY {$orderby} {$order}
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
+	 * Public documents, for the document listing page.
+	 *
+	 * Uses `MediaTypes::DOCUMENT_LIBRARY`, so quarantined `legacy_document` rows
+	 * appear here — this is the surface that renders them correctly, as a row with
+	 * a type chip rather than a picture that does not exist.
+	 *
+	 * PUBLIC ONLY. Private documents belong to a member's drive, which is a
+	 * different surface with a grants-first permission model; this page never
+	 * tries to answer "what may this viewer see", it lists what is already public.
+	 * That keeps it a simple indexed read and keeps the ACL in one place.
+	 *
+	 * Served by `KEY type_file` when filtered by type, and returns an honest total
+	 * from a dedicated COUNT(*) — never `count()` of the page, which would be
+	 * wrong past page 1.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int    $per_page Rows per page. Default 20.
+	 *     @type int    $page     1-based page. Default 1.
+	 *     @type string $doc_type Optional MIME-group filter, e.g. 'pdf'.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function public_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+		$doc_type = isset( $args['doc_type'] ) ? (string) $args['doc_type'] : '';
+
+		// SORT IS AN ALLOWLIST, never the caller's string. `orderby` is the one
+		// argument here that reaches SQL as an identifier rather than a bound
+		// value, so an unknown key falls back to the default instead of being
+		// escaped and hoped for.
+		$sortable = array(
+			'created_at' => 'created_at',
+			'title'      => 'title',
+			'file_size'  => 'file_size',
+		);
+		$orderby  = isset( $args['orderby'], $sortable[ $args['orderby'] ] ) ? $sortable[ $args['orderby'] ] : 'created_at';
+		$order    = ( isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
+
+		$where  = array( $type_sql, 'privacy = %s', 'status = %s', 'moderation_status = %s' );
+		$params = array_merge( $type_params, array( 'public', 'publish', 'approved' ) );
+
+		if ( '' !== $doc_type ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( $doc_type );
+
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
+		}
+
+		// Title search on the public listing. Deliberately NOT the full-text
+		// index: that one is permission-scoped and covers file CONTENTS, which
+		// is not something an anonymous visitor gets to search.
+		$search = isset( $args['search'] ) ? trim( (string) $args['search'] ) : '';
+
+		if ( '' !== $search ) {
+			$where[]  = '( title LIKE %s OR description LIKE %s )';
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, created_at
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY {$orderby} {$order}
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
+	 * Has Migrator v29's drive backfill finished stamping every row?
+	 *
+	 * The cursor option holds the highest stamped `media_id` while the backfill
+	 * runs, and `-1` once a pass finds nothing left to do. So `-1` — and only
+	 * `-1` — means every row carries a real drive, which is what lets
+	 * `drive_documents()` drop its legacy `post_author` branch and become an
+	 * index-shaped query.
+	 *
+	 * ABSENT IS NOT FINISHED. A site that has never run v29 has no option at
+	 * all, and reading that as "done" would scope its listings by a column
+	 * nothing has written — every drive would look empty. The default is
+	 * therefore 0, which reads as "still running", and that is the safe answer
+	 * for the never-migrated and the half-migrated case alike.
+	 *
+	 * Memoised per request: the drive query runs several times a page, and this
+	 * cannot change mid-request in a way any caller would want to see.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	private static function drive_backfill_finished(): bool {
+		static $finished = null;
+
+		if ( null === $finished ) {
+			$finished = -1 === (int) get_option( \WPMediaVerse\Core\Migrator::DRIVE_BACKFILL_OPTION, 0 );
+		}
+
+		return $finished;
+	}
+
+	/**
+	 * Documents in one drive, optionally inside one folder.
+	 *
+	 * The drive query from design §4, verbatim, so an index serves it left to
+	 * right in both of its shapes — `KEY doc_listing` inside a folder,
+	 * `KEY drive_listing` at the drive root. Which one, and why both are needed,
+	 * is worked through at the `INDEX REALITY` comment in the body.
+	 *
+	 * The DRIVE scopes the root listing, not the author (Phase 11 G1). Inside a
+	 * folder the scope is dropped, because the folder already scoped the drive —
+	 * carrying it would add columns the index cannot use at that position and
+	 * change nothing.
+	 *
+	 * Returns rows plus an honest total from a dedicated `COUNT(*)`. It does NOT
+	 * apply document permissions: the caller holds `PermissionService` and
+	 * resolves a whole page in two queries, which is the only way that stays
+	 * within budget. A repository that filtered per row would reintroduce the
+	 * N+1 this design exists to avoid.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int    $author    Drive owner. Required for a root listing.
+	 *     @type int    $folder_id Folder, or 0 for the drive root.
+	 *     @type int    $per_page  Default 50.
+	 *     @type int    $page      Default 1.
+	 *     @type string $status    publish|trash. Default publish.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function drive_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$author    = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$folder_id = isset( $args['folder_id'] ) ? (int) $args['folder_id'] : 0;
+
+		// `status` is an ALLOWLIST, not a passthrough — it lands in an indexed
+		// column of a query a member controls through the URL. The trash view is
+		// the only caller that asks for anything but `publish`, and it asks for a
+		// listing the member can restore from: without one, trashing is a one-way
+		// door and the row is simply gone from every surface they have.
+		$status   = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
+			? (string) $args['status']
+			: 'publish';
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		// `any_folder` spans the whole drive rather than one folder — what a
+		// "Recent" view needs, since recency is a property of the document and
+		// not of where it happens to be filed.
+		//
+		// INDEX REALITY, re-measured 2026-08-19 on a 30,000-document fixture
+		// after the soft spot this comment used to describe was closed.
+		//
+		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY.
+		//
+		// INSIDE A FOLDER there is no drive predicate — the folder already
+		// scoped the drive — so the query is `media_type`, `folder_id`,
+		// `status`, `created_at`, which is `KEY doc_listing` verbatim. That is
+		// why doc_listing is NOT redundant now that drive_listing exists, and
+		// must not be dropped: drive_listing has `drive_type`/`drive_id` at
+		// positions 2 and 3, so a folder listing that does not name a drive
+		// cannot use it past `media_type`.
+		//
+		// AT THE DRIVE ROOT the drive predicate makes the query `media_type`,
+		// `drive_type`, `drive_id`, `folder_id`, `status`, `created_at` —
+		// `KEY drive_listing` verbatim. Measured: 234 rows examined at 100%
+		// filtered, against 8,032 at 1.38% before.
+		//
+		// `any_folder` (the Recent view) drops `folder_id`, so it reads
+		// drive_listing's first three columns and then stops — indexed, but not
+		// the clean left-to-right read the other two get. That is the remaining
+		// soft spot and it is a much smaller one: the drive scope is applied by
+		// the index rather than by a post-filter over the whole document table.
+		$any_folder = ! empty( $args['any_folder'] );
+		$where      = $any_folder
+			? array( $type_sql, 'status = %s' )
+			: array( $type_sql, 'folder_id = %d', 'status = %s' );
+		$params     = $any_folder
+			? array_merge( $type_params, array( $status ) )
+			: array_merge( $type_params, array( $folder_id, $status ) );
+
+		// ROOT SCOPING IS THE DRIVE, NOT THE AUTHOR (Phase 11 G1).
+		//
+		// This used to read `post_author = %d`, which worked only because a
+		// personal drive's owner and its documents' uploader are the same person.
+		// That coincidence is exactly what made a Space-root upload impossible:
+		// filed by a member, it would list under THEM rather than under the
+		// Space. `post_author` goes back to meaning only "who uploaded this".
+		//
+		// `drive_id = 0` is carried alongside for rows Migrator v29's bounded
+		// backfill has not reached yet — on those the author IS the drive, so
+		// falling back to it is correct rather than merely tolerant, and a
+		// half-migrated site lists exactly what it listed before.
+		$drive_type = isset( $args['drive_type'] ) ? (string) $args['drive_type'] : 'user';
+		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
+
+		if ( ( $any_folder || 0 === $folder_id ) && $drive_id > 0 ) {
+			// THE `OR` IS TEMPORARY, AND IT COSTS THE INDEX WHILE IT LASTS.
+			//
+			// Measured 2026-08-19 on a 30,000-document fixture: with the OR in
+			// place the optimiser SEES `drive_listing` in `possible_keys` and
+			// refuses it, falling back to `doc_listing` — 8,032 rows examined
+			// at 1.38% filtered for one page at OFFSET 1000. An OR cannot
+			// satisfy positions 2 and 3 of a composite index, so the six-column
+			// index v29 added was paying write cost on the hottest table in the
+			// product and serving nothing.
+			//
+			// The second branch exists only for rows Migrator v29's bounded
+			// backfill has not stamped yet. Once the backfill reports finished
+			// there are none, so the predicate collapses to the drive alone and
+			// `drive_listing` matches left-to-right — which is what §12 has
+			// claimed all along.
+			//
+			// Rows the backfill SKIPS are not lost by this: it skips only
+			// `post_author <= 0`, and the legacy branch could never match those
+			// either (it needs `post_author = %d` with a real author). An
+			// ownerless row belongs to no personal drive, so listing it under
+			// one was never right.
+			if ( self::drive_backfill_finished() ) {
+				$where[]  = 'drive_type = %s';
+				$where[]  = 'drive_id = %d';
+				$params[] = $drive_type;
+				$params[] = $drive_id;
+			} else {
+				$where[]  = '( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )';
+				$params[] = $drive_id;
+				$params[] = $drive_type;
+				$params[] = $author > 0 ? $author : $drive_id;
+			}
+		}
+
+		// A drive with 2,000 documents is unusable without a way to narrow it and
+		// a way to reorder it — big-site checklist item 5. Both run on indexed
+		// columns, and the sort column comes from a fixed allowlist because a
+		// column name cannot be a prepared parameter.
+		if ( ! empty( $args['doc_type'] ) ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( (string) $args['doc_type'] );
+
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
+		}
+
+		$sortable = array( 'created_at', 'title', 'file_size' );
+		$orderby  = ( isset( $args['orderby'] ) && in_array( $args['orderby'], $sortable, true ) )
+			? (string) $args['orderby']
+			: 'created_at';
+		$order    = ( isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+
+		// `offset` OVERRIDES the page-derived offset when given.
+		//
+		// The drive root pages folders and documents as ONE ordered set, folders
+		// first. Once the folders on a page are placed, the documents that follow
+		// start at an offset that is not a multiple of per_page — page 2 of a
+		// 22-folder drive with 25 rows per page begins at document 3, not 25. A
+		// page number cannot express that, so the caller passes the offset it
+		// computed. Absent, behaviour is exactly as before.
+		$page_params[] = isset( $args['offset'] )
+			? max( 0, (int) $args['offset'] )
+			: ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				// `drive_type` / `drive_id` are selected because this method
+				// FILTERS on them (above) — a row set scoped by a column it does
+				// not return forces every consumer to re-derive the drive, and
+				// the one that did guessed "the folder it is in, else its
+				// author's drive". That guess is right for every foldered
+				// document and wrong for a document at a Space drive ROOT, which
+				// has no folder and is not its author's. Pro's privacy ladder
+				// reads them.
+				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY {$orderby} {$order}
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
+	 * The WHERE clause and bound params for "documents shared with this member".
+	 *
+	 * Extracted so the listing and its COUNT ask the same question. The
+	 * predicate is subtle — grantee type, role membership, revocation, expiry,
+	 * target type, and the owner exclusion — and two hand-written copies of it
+	 * would drift the moment one gained a clause. The count is the one that
+	 * would drift silently: a tab reading "12" beside a list of 8 is not an
+	 * obvious bug, it is just wrong.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int      $user_id Viewer.
+	 * @param string[] $roles   The viewer's roles.
+	 * @return array{0:string,1:array} WHERE fragment and its params, in placeholder order.
+	 */
+	private function shared_with_scope( int $user_id, array $roles ): array {
+		// Params are appended in PLACEHOLDER ORDER. Building them out of order and
+		// splicing one back into position works right up until somebody adds a
+		// clause, and a misaligned prepare() is a silent wrong-answer bug.
+		$grantee_sql = '( ( g.grantee_type = %s AND g.user_id = %d )';
+		$params      = array( 'user', $user_id );
+
+		if ( $roles ) {
+			$grantee_sql .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
+			$params[]     = 'role';
+			$params       = array_merge( $params, $roles );
+		}
+		$grantee_sql .= ' )';
+
+		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
+		// legitimately made to a role, and the uploader usually holds that role
+		// too — so sharing to "Subscriber" put your own document into your own
+		// Shared-with-me band (Basecamp 10190505530). The scope is what was
+		// missing, not the grant: `PermissionService::grant()` correctly refuses
+		// a DIRECT grant to the owner (`mvs_grant_redundant`) and must keep
+		// accepting the role grant, which is not redundant for its other holders.
+		$where = "{$grantee_sql}
+		           AND g.revoked_at IS NULL
+		           AND ( g.expires_at IS NULL OR g.expires_at > %s )
+		           AND g.target_type = %s
+		           AND m.media_type = %s
+		           AND m.status = %s
+		           AND m.post_author <> %d";
+
+		$params[] = current_time( 'mysql', true );
+		$params[] = 'media';
+		$params[] = 'document';
+		$params[] = 'publish';
+		$params[] = $user_id;
+
+		return array( $where, $params );
+	}
+
+	/**
+	 * How many documents are shared with this member.
+	 *
+	 * `COUNT(DISTINCT media_id)`, not `count()` of a page of rows — the drive's
+	 * "Shared with me" tab states the size of the set, and the set is larger
+	 * than any page of it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args { @type int $user_id, @type string[] $roles }.
+	 * @return int
+	 */
+	public function count_documents_shared_with( array $args = array() ): int {
+		global $wpdb;
+
+		$user_id = isset( $args['user_id'] ) ? (int) $args['user_id'] : 0;
+		$roles   = isset( $args['roles'] ) && is_array( $args['roles'] ) ? array_values( $args['roles'] ) : array();
+
+		if ( $user_id <= 0 ) {
+			return 0;
+		}
+
+		$grants = $wpdb->prefix . 'mvs_access_grants';
+		$index  = $wpdb->prefix . 'mvs_media_index';
+
+		list( $where, $params ) = $this->shared_with_scope( $user_id, $roles );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(DISTINCT m.media_id) FROM {$grants} g INNER JOIN {$index} m ON m.media_id = g.media_id WHERE {$where}", ...$params )
+		);
+	}
+
+	/**
+	 * Documents shared WITH a viewer, by direct grant.
+	 *
+	 * Here rather than in Pro because it JOINS `mvs_media_index`, and Free owns
+	 * that table. Pro's `/me/shared` route built this query itself at first —
+	 * assigning the table name to a variable and joining it, which is precisely
+	 * the shape the P1.1 audit records as a grep blind spot ("Pro assigns the
+	 * table to a variable and queries that"). It survived the architecture check
+	 * and the duplication gate, and was found only by a self-audit that went
+	 * looking for that exact pattern.
+	 *
+	 * Direct DOCUMENT grants only. A folder grant surfaces as the folder,
+	 * navigable in its owner's tree; flattening its contents here would list the
+	 * same document twice with no way to tell why (design §5).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int      $user_id  Viewer. Required.
+	 *     @type string[] $roles    Viewer's roles, for role grants.
+	 *     @type int      $per_page Default 50.
+	 *     @type int      $page     Default 1.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function documents_shared_with( array $args = array() ): array {
+		global $wpdb;
+
+		$user_id  = isset( $args['user_id'] ) ? (int) $args['user_id'] : 0;
+		$roles    = isset( $args['roles'] ) && is_array( $args['roles'] ) ? array_values( $args['roles'] ) : array();
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		$empty = array(
+			'items' => array(),
+			'total' => 0,
+			'pages' => 0,
+		);
+
+		if ( $user_id <= 0 ) {
+			return $empty;
+		}
+
+		$grants = $wpdb->prefix . 'mvs_access_grants';
+		$index  = $wpdb->prefix . 'mvs_media_index';
+
+		list( $where, $params ) = $this->shared_with_scope( $user_id, $roles );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(DISTINCT m.media_id) FROM {$grants} g INNER JOIN {$index} m ON m.media_id = g.media_id WHERE {$where}", ...$params )
+		);
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT m.media_id, m.title, m.slug, m.description, m.post_author, m.media_type,
+				        m.file_type, m.file_size, m.privacy, m.folder_id, m.created_at
+				   FROM {$grants} g
+				   INNER JOIN {$index} m ON m.media_id = g.media_id
+				  WHERE {$where}
+				  ORDER BY m.created_at DESC
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
+	 * How closed a privacy value is. Instance form, for the boundary interface.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return int
+	 */
+	public function privacy_level( string $privacy ): int {
+		return self::privacy_rank( $privacy );
+	}
+
+	/**
+	 * Every privacy value strictly looser than the given one.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return string[]
+	 */
+	public function privacy_levels_looser_than( string $privacy ): array {
+		$rank = self::privacy_rank( $privacy );
+
+		if ( $rank <= 0 ) {
+			return array();
+		}
+
+		return array_slice( self::PRIVACY_ORDER, 0, $rank );
+	}
+
+	/**
+	 * Tighten the privacy of every document sitting in the given folders.
+	 *
+	 * ONE indexed UPDATE, not a row-by-row walk: a Space drive folder can hold
+	 * tens of thousands of documents and this runs while somebody waits.
+	 *
+	 * TIGHTENING ONLY. Rows already at or beyond the target are left alone, so an
+	 * explicit `private` on a single file outranks its container and a later
+	 * loosening of the folder cannot silently re-expose it. That asymmetry is the
+	 * whole point of T2: the dangerous direction is blocked, the safe one is not.
+	 *
+	 * Lives in Free because Free owns this table — Pro calls it rather than
+	 * writing `mvs_media_index` directly (architecture invariant 6).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids whose direct documents are affected.
+	 * @param string $privacy    Target privacy.
+	 * @param int    $limit      0 for no limit; above 0 the update is capped so a
+	 *                           caller can batch a very large subtree.
+	 * @return int Rows changed.
+	 */
+	public function tighten_document_privacy_in_folders( array $folder_ids, string $privacy, int $limit = 0 ): int {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ), static fn( $id ) => $id >= 0 ) ) );
+		$target     = self::privacy_rank( $privacy );
+
+		if ( ! $folder_ids || $target < 0 ) {
+			return 0;
+		}
+
+		// Only values strictly LOOSER than the target move. `public` is the
+		// loosest level there is, so nothing can be looser than it and a
+		// "tightening" to public moves nothing by definition.
+		if ( 0 === $target ) {
+			return 0;
+		}
+
+		$looser = array_slice( self::PRIVACY_ORDER, 0, $target );
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		$folder_placeholders  = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
+		$privacy_placeholders = implode( ', ', array_fill( 0, count( $looser ), '%s' ) );
+
+		$params = array_merge(
+			array( $privacy ),
+			$folder_ids,
+			$looser,
+			array( 'document' )
+		);
+
+		$sql = "UPDATE {$index}
+		           SET privacy = %s
+		         WHERE folder_id IN ({$folder_placeholders})
+		           AND privacy IN ({$privacy_placeholders})
+		           AND media_type = %s";
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d';
+			$params[] = $limit;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$changed = (int) $wpdb->query( $wpdb->prepare( $sql, ...$params ) );
+
+		if ( $changed > 0 ) {
+			// A bulk UPDATE bypasses the per-id invalidation every other write
+			// goes through, so the whole request cache goes rather than guessing
+			// which ids moved — a stale `privacy` here is a stale ACCESS answer.
+			self::$row_cache         = array();
+			self::$meta_fully_loaded = array();
+		}
+
+		return $changed;
+	}
+
+	/**
+	 * How many documents a privacy tightening would change.
+	 *
+	 * Backs the confirmation copy — "47 documents inside will also become
+	 * private" — so the number the member is shown is the number that will move,
+	 * counted the same way the UPDATE selects.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids.
+	 * @param string $privacy    Target privacy.
+	 * @return int
+	 */
+	public function count_documents_to_tighten( array $folder_ids, string $privacy ): int {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ), static fn( $id ) => $id >= 0 ) ) );
+		$target     = self::privacy_rank( $privacy );
+
+		if ( ! $folder_ids || $target < 0 ) {
+			return 0;
+		}
+
+		// Nothing is looser than `public`, so counting a tightening to it is 0.
+		if ( 0 === $target ) {
+			return 0;
+		}
+
+		$looser = array_slice( self::PRIVACY_ORDER, 0, $target );
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		$folder_placeholders  = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
+		$privacy_placeholders = implode( ', ', array_fill( 0, count( $looser ), '%s' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$index}
+				  WHERE folder_id IN ({$folder_placeholders})
+				    AND privacy IN ({$privacy_placeholders})
+				    AND media_type = %s",
+				...array_merge( $folder_ids, $looser, array( 'document' ) )
+			)
+		);
+	}
+
+	/**
 	 * Set multiple fields at once for a media item.
 	 *
 	 * @param int   $media_id Media ID.
@@ -761,6 +2393,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 */
 	public function set_many( int $media_id, array $data ): void {
 		global $wpdb;
+
+		if ( $this->refuses_cpt_id( $media_id, __METHOD__ ) ) {
+			return;
+		}
 
 		$index_data = array();
 		$meta_data  = array();
@@ -1068,6 +2704,54 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Image rows that carry no value for a given meta key — the target set for
+	 * a backfill (e.g. `placeholder_color` on a library uploaded before it
+	 * existed). LEFT JOIN + NULL is the "meta absent" test.
+	 *
+	 * Keyset-paginated on `media_id` rather than OFFSET: as the caller writes
+	 * the meta on each processed row it leaves this set, so an OFFSET would skip
+	 * rows as the set shrinks, and a row that can never get a value (undecodable
+	 * image) would loop forever at OFFSET 0. Walking `media_id > $after` visits
+	 * each row once regardless of what the caller writes, and stays index-driven
+	 * on a 2000+ item library.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $meta_key Meta key to test for absence.
+	 * @param int    $limit    Max rows this page.
+	 * @param int    $after    Return rows with media_id greater than this.
+	 * @return array<int, array{media_id:int, file_path:string, file_type:string, privacy:string}>
+	 */
+	public function query_images_missing_meta( string $meta_key, int $limit, int $after = 0 ): array {
+		global $wpdb;
+
+		$limit = max( 1, $limit );
+		$after = max( 0, $after );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT mi.media_id, mi.file_path, mi.file_type, mi.privacy
+				FROM {$wpdb->prefix}mvs_media_index mi
+				LEFT JOIN {$wpdb->prefix}mvs_media_meta mm
+					ON mm.media_id = mi.media_id AND mm.meta_key = %s
+				WHERE mi.media_id > %d
+					AND mi.file_type LIKE %s
+					AND mi.status = 'publish'
+					AND mm.media_id IS NULL
+				ORDER BY mi.media_id ASC
+				LIMIT %d",
+				$meta_key,
+				$after,
+				$wpdb->esc_like( 'image/' ) . '%',
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Find public-privacy media rows for cloud operations (migrate / cleanup).
 	 *
 	 * Returns rows with the small set of columns CloudOps actually reads
@@ -1114,6 +2798,135 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * How many rows `query_public_cloud_candidates()` would return, unlimited.
+	 *
+	 * The sibling that should have existed from the start. `CloudOps::count_candidates()`
+	 * carried its own COUNT with the predicate copied out by hand, under a
+	 * comment reading "Must match query_public_cloud_candidates( $limit, true )
+	 * exactly" — which is a comment asking a human to keep two SQL strings in
+	 * step, and the admin panel's progress bar is what breaks when they drift.
+	 * It already had: the count kept a privacy filter the list did not, so the
+	 * backlog never reached zero and the migrate button never went quiet.
+	 *
+	 * `$local_url_only` means the same thing here as there: rows whose public URL
+	 * still points at the local uploads directory, i.e. the ones with work left.
+	 * Its inverse (`false` for the total, then subtract) is deliberately NOT how
+	 * the caller derives "already on cloud" — see the note in
+	 * `CloudOps::count_candidates()` about the subtraction that double-counted
+	 * private rows.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param bool $local_url_only Restrict to rows still pointing at local uploads.
+	 * @param bool $invert         Count rows NOT pointing at local uploads instead.
+	 * @return int
+	 */
+	public function count_public_cloud_candidates( bool $local_url_only = false, bool $invert = false ): int {
+		global $wpdb;
+
+		$where  = array( "status IN ('publish','draft')", 'file_path IS NOT NULL', "file_path != ''", 'privacy = %s' );
+		$params = array( 'public' );
+
+		if ( $local_url_only ) {
+			$where[]  = $invert ? 'file_url NOT LIKE %s' : 'file_url LIKE %s';
+			$params[] = 'http%/wp-content/uploads/%';
+		}
+
+		$sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE " . implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $wpdb->get_var( $wpdb->prepare( $sql, ...$params ) );
+	}
+
+	/**
+	 * Run the REST feed query — ids for one page, plus the total.
+	 *
+	 * THE ONE METHOD HERE THAT TAKES SQL FRAGMENTS, and it is worth saying why
+	 * rather than leaving it looking like a lapse. `MediaController` assembles
+	 * `$where` / `$params` and then hands them to the **public filter**
+	 * `mvs_feed_query_args`, documented since 1.1.0, which lets a site or Pro
+	 * add its own predicates. Those fragments ARE the published contract;
+	 * re-expressing the feed as named arguments would break every integration
+	 * using it, which Production Rules 1 and 3 do not allow.
+	 *
+	 * So the fragments stay with the caller and the EXECUTION moves here: the
+	 * table name, the stats join, the trending formula, the pagination and the
+	 * prepare. That is the part Rule 7 is actually protecting — the controller
+	 * no longer names `mvs_media_index`, and a change to how this table is read
+	 * happens in one file.
+	 *
+	 * `$orderby` is matched against fixed branches, never interpolated. Every
+	 * caller value is bound.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type string[] $where    WHERE fragments, already filtered.
+	 *     @type array    $params   Bound parameters for those fragments.
+	 *     @type string   $join     Extra JOIN fragments, or ''.
+	 *     @type string   $orderby  date|trending|popular.
+	 *     @type int      $per_page Page size.
+	 *     @type int      $offset   Page offset.
+	 * }
+	 * @return array{ids: int[], total: int}
+	 */
+	public function feed_page( array $args ): array {
+		global $wpdb;
+
+		$where    = isset( $args['where'] ) && is_array( $args['where'] ) ? $args['where'] : array( '1=1' );
+		$params   = isset( $args['params'] ) && is_array( $args['params'] ) ? $args['params'] : array();
+		$join     = isset( $args['join'] ) ? (string) $args['join'] : '';
+		$orderby  = isset( $args['orderby'] ) ? (string) $args['orderby'] : '';
+		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
+		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
+
+		$where_sql = $where ? implode( ' AND ', $where ) : '1=1';
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$stats     = $wpdb->prefix . 'mvs_media_stats';
+
+		// The COUNT deliberately does NOT join stats — it does not need them,
+		// and the join would change the row count if a media ever had more than
+		// one stats row.
+		$count_sql = "SELECT COUNT(*) FROM {$index} i{$join} WHERE {$where_sql}";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count_sql, ...$params ) : $count_sql );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = $offset;
+
+		if ( 'trending' === $orderby ) {
+			// (reactions * 3 + comments * 5 + views) / age_hours^1.5
+			$data_sql = "SELECT i.media_id,
+				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
+				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY trending_score DESC
+				LIMIT %d OFFSET %d";
+		} elseif ( 'popular' === $orderby ) {
+			$data_sql = "SELECT i.media_id
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY COALESCE(s.views, 0) DESC
+				LIMIT %d OFFSET %d";
+		} else {
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d";
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = (array) $wpdb->get_col( $wpdb->prepare( $data_sql, ...$page_params ) );
+
+		return array(
+			'ids'   => array_map( 'intval', $ids ),
+			'total' => $total,
+		);
 	}
 
 	/**
@@ -1324,7 +3137,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @var array<string>
 	 */
-	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title' );
+	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count' );
 
 	/**
 	 * General media-index listing query — the single place feed/profile/explore
@@ -1409,6 +3222,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
 	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
 	 *     @type bool   $exclude_empty_media_type Drop privacy-only stub rows (albums/collections). Default false.
+	 *     @type string[] $media_types              Library this listing is for. Default MediaTypes::MEDIA_LIBRARY.
 	 *     @type string $since                    created_at >= this datetime. Default ''.
 	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
 	 *     @type string $order                    'ASC'|'DESC'. Default 'DESC'.
@@ -1420,21 +3234,70 @@ class MediaRepository implements MediaRepositoryInterface {
 		return wp_parse_args(
 			$args,
 			array(
-				'status'                  => 'publish',
-				'moderation_status'       => '',
-				'author_id'               => 0,
-				'search'                  => '',
-				'tag_tt_id'               => 0,
-				'category_tt_id'          => 0,
-				'privacy'                 => 'any',
-				'viewer_id'               => 0,
-				'exclude_non_cover_group' => false,
+				'status'                   => 'publish',
+				'moderation_status'        => '',
+				'author_id'                => 0,
+				'search'                   => '',
+				'tag_tt_id'                => 0,
+				'category_tt_id'           => 0,
+				'privacy'                  => 'any',
+				'viewer_id'                => 0,
+				'exclude_non_cover_group'  => false,
 				'exclude_empty_media_type' => false,
-				'since'                   => '',
-				'orderby'                 => 'created_at',
-				'order'                   => 'DESC',
-				'limit'                   => 20,
-				'offset'                  => 0,
+				'media_types'              => MediaTypes::MEDIA_LIBRARY,
+				// ── Maintenance-walk args (2.4.0) ─────────────────────────────
+				//
+				// Added so the CLI and the storage services stop hand-writing
+				// `SELECT ... FROM mvs_media_index WHERE ...` (architecture
+				// invariant 6 / Rule 7). Eleven of those call sites were the same
+				// query with different columns: "walk the table in media_id order,
+				// optionally narrowed by type, status, privacy or whether the row
+				// has a file at all". Expressed here once, they become arguments
+				// rather than SQL, and every one of them inherits the type
+				// predicate, the privacy handling and the prepare discipline this
+				// builder already gets right.
+				//
+				// `id_after` is a KEYSET cursor, not an offset. A batch walk that
+				// pages with OFFSET re-scans everything it has already read and,
+				// worse, skips rows whenever the set shifts underneath it — which
+				// it does, because these commands are usually writing to the rows
+				// they are walking.
+				'id_after'                 => 0,
+				'media_ids'                => array(),
+				'status_in'                => array(),
+				// The NEGATION, and it exists rather than being expressed as a
+				// positive list on purpose. `relocalize-private` wants "every
+				// privacy level except public"; spelled positively that list has
+				// to track the privacy vocabulary forever, and the first value it
+				// fell behind on would be silently skipped rather than reported.
+				// `dm` is already such a value — deliberately absent from
+				// PRIVACY_ORDER because it is a messaging scope, not a position
+				// on the scale — so a positive list built from that constant
+				// would strand exactly the media nobody is watching.
+				'privacy_not_in'           => array(),
+				// EXACT mime match, ANDed with `mime_like_in` rather than
+				// replacing it. `optimize-bulk` narrows within images: the LIKE
+				// establishes "an image", the IN narrows to the mimes the
+				// operator named. Folding them into one arg would turn an AND
+				// into an OR, and `--mime=video/mp4` would start optimising
+				// videos through the image pipeline instead of correctly
+				// matching nothing.
+				'file_types_in'            => array(),
+				// null = do not care. TRUE = the row has a stored file, which is
+				// what every storage command means by "a row worth looking at";
+				// FALSE is accepted for symmetry and finds index rows whose file
+				// went missing.
+				'has_file'                 => null,
+				'authors_in'               => array(),
+				'privacy_in'               => array(),
+				'mime_like_in'             => array(),
+				'tax_terms'                => array(),
+				'since'                    => '',
+				'until'                    => '',
+				'orderby'                  => 'created_at',
+				'order'                    => 'DESC',
+				'limit'                    => 20,
+				'offset'                   => 0,
 			)
 		);
 	}
@@ -1449,15 +3312,58 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array $args Normalized args.
 	 * @return array{join:string,where:string,params:array,distinct:bool}
 	 */
+	/**
+	 * Build an OR-set predicate for one column: `(col op %x OR col op %x …)`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $column      Qualified column.
+	 * @param string $placeholder '%d' or '%s'.
+	 * @param mixed  $values      Values; non-arrays and empties yield no clause.
+	 * @param string $operator    Comparison operator, '=' or 'LIKE'.
+	 * @return array{0:string,1:array} Fragment (empty when nothing to add) and params.
+	 */
+	private function or_set( string $column, string $placeholder, $values, string $operator = '=' ): array {
+		$values = array_values(
+			array_filter(
+				(array) $values,
+				static function ( $v ) {
+					return '' !== $v && null !== $v;
+				}
+			)
+		);
+
+		if ( empty( $values ) ) {
+			return array( '', array() );
+		}
+
+		$operator = 'LIKE' === strtoupper( $operator ) ? 'LIKE' : '=';
+		$ors      = array_fill( 0, count( $values ), "{$column} {$operator} {$placeholder}" );
+
+		if ( '%d' === $placeholder ) {
+			$values = array_map( 'intval', $values );
+		}
+
+		return array( '(' . implode( ' OR ', $ors ) . ')', $values );
+	}
+
 	private function build_query_parts( array $args ): array {
 		global $wpdb;
 
-		$join     = '';
-		$where    = array();
-		$params   = array();
-		$distinct = false;
+		$join        = '';
+		$join_params = array();
+		$where       = array();
+		$params      = array();
+		$distinct    = false;
 
-		if ( '' !== (string) $args['status'] ) {
+		// `status_in` REPLACES `status` rather than joining it. `status` defaults
+		// to 'publish', so ANDing the two would turn a request for
+		// publish-or-draft into publish-only — the maintenance commands would
+		// silently skip every draft and report success having walked half the
+		// table. Asserted by MediaQueryWalkArgsTest.
+		$mvs_status_in = array_values( array_filter( array_map( 'strval', (array) $args['status_in'] ) ) );
+
+		if ( ! $mvs_status_in && '' !== (string) $args['status'] ) {
 			$where[]  = 'm.status = %s';
 			$params[] = (string) $args['status'];
 		}
@@ -1494,6 +3400,112 @@ class MediaRepository implements MediaRepositoryInterface {
 			$distinct = true;
 		}
 
+		// ── Multi-value (OR-within-key) filters ───────────────────────────────
+		//
+		// Smart collections group rule values by key and combine SAME-key values
+		// with OR, different keys with AND. A flat AND made same-key rules
+		// mutually exclusive — two media_type rules became `file_type LIKE
+		// '%image%' AND file_type LIKE '%video%'`, which no single file can
+		// satisfy, so the collection resolved to zero and rendered the broken
+		// placeholder cover (#9962118482). These args carry that semantic, so the
+		// collection service no longer needs SQL of its own to express it.
+		list( $or_where, $or_params ) = $this->or_set( 'm.post_author', '%d', $args['authors_in'] );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		// ── Maintenance-walk predicates ───────────────────────────────────────
+		if ( (int) $args['id_after'] > 0 ) {
+			$where[]  = 'm.media_id > %d';
+			$params[] = (int) $args['id_after'];
+		}
+
+		$mvs_ids = array_values( array_unique( array_filter( array_map( 'intval', (array) $args['media_ids'] ) ) ) );
+		if ( $mvs_ids ) {
+			$where[] = 'm.media_id IN (' . implode( ',', array_fill( 0, count( $mvs_ids ), '%d' ) ) . ')';
+			$params  = array_merge( $params, $mvs_ids );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.status', '%s', $mvs_status_in );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		if ( null !== $args['has_file'] ) {
+			// Both halves are needed and neither is redundant: the column is
+			// nullable AND legacy rows carry the empty string. Testing only NULL
+			// hands a caller rows with no file to act on, which for the storage
+			// commands means a migrate loop that reports work it did not do.
+			$where[] = $args['has_file']
+				? "( m.file_path IS NOT NULL AND m.file_path != '' )"
+				: "( m.file_path IS NULL OR m.file_path = '' )";
+		}
+
+		$mvs_privacy_not = array_values( array_filter( array_map( 'strval', (array) $args['privacy_not_in'] ) ) );
+		if ( $mvs_privacy_not ) {
+			$where[] = 'm.privacy NOT IN (' . implode( ', ', array_fill( 0, count( $mvs_privacy_not ), '%s' ) ) . ')';
+			$params  = array_merge( $params, $mvs_privacy_not );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.privacy', '%s', $args['privacy_in'] );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.file_type', '%s', $args['mime_like_in'], 'LIKE' );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.file_type', '%s', $args['file_types_in'] );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		// Taxonomy sets: TERM IDs within one taxonomy, OR'd. Each taxonomy gets its
+		// own aliased pair of joins so different taxonomies AND together.
+		//
+		// This joins term_taxonomy and matches `tt.term_id`, NOT
+		// `tr.term_taxonomy_id`. The two are different columns and are only equal
+		// by coincidence on simple installs — comparing a term_id against a
+		// term_taxonomy_id silently returns the wrong rows. The `tt.taxonomy`
+		// constraint matters for the same reason: without it a tag and a category
+		// that happen to share a term_id cross-match.
+		$tax_idx = 0;
+		foreach ( (array) $args['tax_terms'] as $set ) {
+			$taxonomy = isset( $set['taxonomy'] ) ? (string) $set['taxonomy'] : '';
+			$term_ids = array_values( array_unique( array_filter( array_map( 'intval', (array) ( $set['term_ids'] ?? array() ) ) ) ) );
+
+			if ( '' === $taxonomy || empty( $term_ids ) ) {
+				continue;
+			}
+
+			$tr_alias = 'trx' . $tax_idx;
+			$tt_alias = 'ttx' . $tax_idx;
+			$ph       = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
+
+			$join .= " INNER JOIN {$wpdb->term_relationships} AS {$tr_alias} ON {$tr_alias}.object_id = m.media_id";
+			$join .= " INNER JOIN {$wpdb->term_taxonomy} AS {$tt_alias} ON {$tt_alias}.term_taxonomy_id = {$tr_alias}.term_taxonomy_id AND {$tt_alias}.taxonomy = %s AND {$tt_alias}.term_id IN ({$ph})";
+
+			// Join params precede WHERE params in the final SQL, so they are held
+			// separately and merged join-first below.
+			$join_params[] = $taxonomy;
+			$join_params   = array_merge( $join_params, $term_ids );
+
+			$distinct = true;
+			++$tax_idx;
+		}
+
+		if ( '' !== (string) $args['until'] ) {
+			$where[]  = 'm.created_at <= %s';
+			$params[] = (string) $args['until'];
+		}
+
 		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'], (int) $args['author_id'] );
 		if ( '' !== $privacy_where ) {
 			$where[] = $privacy_where;
@@ -1509,21 +3521,58 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
 		}
 
-		// Drop the privacy-only stub rows that album/collection creation inserts
-		// into mvs_media_index (media_type left empty — see PrivacyService). These
-		// are containers, not media, and render as broken tiles on grids/explore.
-		if ( ! empty( $args['exclude_empty_media_type'] ) ) {
-			$where[] = "m.media_type != ''";
+		// Every listing this repository serves — explore, the BuddyPress profile
+		// and group tabs, the Pro layout feeds — states the library it is for.
+		// This is the one place that has to be right: query(), query_count() and
+		// query_by_author() all funnel through here, and only ONE caller
+		// (explore.php) ever passed the old exclude_empty_media_type flag, so
+		// every other listing ran with no type predicate at all.
+		//
+		// That flag was `m.media_type != ''`, an exclusion written to drop the
+		// privacy-only stub rows album creation used to insert. It is superseded
+		// twice over: those stubs no longer exist (2.4.0 stopped albums writing to
+		// the index and Migrator v26 removed the rows), and an exclusion passes
+		// every type added later — including documents — straight through.
+		//
+		// The arg is still accepted and still does what its name says, because it
+		// is public API on the repository interface (Production Rule 2). It is now
+		// simply redundant: a positive list already excludes the empty string.
+		// EXPLICIT null = no type predicate at all. Reserved for whole-table
+		// maintenance walks and deliberately not the same thing as an empty
+		// array, which still means "match nothing".
+		//
+		// This is not a reopening of the fail-open hole the comment above
+		// describes. That hole was an OMISSION — listings that passed no types
+		// and silently matched everything, so documents surfaced in photo grids.
+		// This has to be asked for by name, and the reason it exists is
+		// `wp mvs reindex`, whose entire job is to find rows that are wrong. A
+		// row whose `media_type` is corrupt or empty is precisely what it must
+		// see, and a positive IN-list is exactly what would hide it. An
+		// integrity command that skips the broken rows reports a clean table.
+		$mvs_types = $args['media_types'];
+
+		if ( null !== $mvs_types ) {
+			if ( ! is_array( $mvs_types ) ) {
+				$mvs_types = MediaTypes::MEDIA_LIBRARY;
+			}
+
+			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( $mvs_types, 'm.media_type' );
+			$where[]                                = $mvs_type_sql;
+			$params                                 = array_merge( $params, $mvs_type_params );
 		}
 
-		if ( empty( $where ) ) {
-			$where[] = '1 = 1';
-		}
-
+		// No `1 = 1` fallback below this point: the type clause above is
+		// unconditional, so $where can no longer be empty. in_clause() also
+		// guarantees a real predicate — an empty type set yields `1 = 0`, which
+		// matches nothing rather than everything.
+		// Join placeholders appear BEFORE where placeholders in the assembled SQL,
+		// so their params must lead. Getting this backwards misaligns every value
+		// after the first join param — the same class of bug the collection
+		// service's own comment records from when it built this by hand.
 		return array(
 			'join'     => $join,
 			'where'    => implode( ' AND ', $where ),
-			'params'   => $params,
+			'params'   => array_merge( $join_params, $params ),
 			'distinct' => $distinct,
 		);
 	}
@@ -1547,6 +3596,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		switch ( $mode ) {
 			case 'public':
 				return array( "m.privacy = 'public'", array() );
+			case 'explore':
+				// The explore/feed-layout rule, which is NOT the same as 'visible':
+				// it grants moderators everything, and it does not exclude the
+				// viewer's own `dm` attachments. Both differences are load-bearing,
+				// so the Pro layouts get this mode rather than being quietly
+				// remapped onto 'visible' and narrowing what a moderator sees.
+				return $this->explore_privacy_clause( 'm', $viewer_id );
 			case 'visible':
 				// Owner sees their own media EXCEPT conversation-scoped 'dm'
 				// attachments, which never belong in any library/grid listing.
@@ -1660,6 +3716,524 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int    $viewer_id Current viewer (0 = anonymous).
 	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
 	 */
+	/**
+	 * One page of the admin All-Media list, its total, and the status tab counts.
+	 *
+	 * Its own method because `query()` cannot express this screen, and forcing it
+	 * to would bend a member-facing listing into an admin one:
+	 *
+	 * - `query()`'s `privacy` argument is a MODE (`any`, `profile`, …), not a
+	 *   column filter, so it cannot answer "privacy = members".
+	 * - the screen's default is `status != 'trash'`, which is neither "any
+	 *   status" nor "one status".
+	 * - the tab counts are deliberately NOT narrowed by search, privacy or
+	 *   status — they are global per-status totals, the way WP's own post-list
+	 *   status links stay global while the table below them is filtered — but
+	 *   they ARE narrowed by type, because tabs that count a library the screen
+	 *   never renders would advertise "Published (100)" over a table that can
+	 *   only show 70.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type string $search   Title/description LIKE.
+	 *     @type string $type     One known media type; '' means the media library.
+	 *     @type string $status   Exact status; '' means everything except trash.
+	 *     @type string $privacy  Exact privacy level; '' means any.
+	 *     @type int    $per_page Page size.
+	 *     @type int    $offset   Offset.
+	 * }
+	 * @return array{items:array<int,array<string,mixed>>, total:int, status_counts:array<string,int>}
+	 */
+	public function admin_media_list( array $args ): array {
+		global $wpdb;
+
+		$search   = (string) ( $args['search'] ?? '' );
+		$type     = (string) ( $args['type'] ?? '' );
+		$status   = (string) ( $args['status'] ?? '' );
+		$privacy  = (string) ( $args['privacy'] ?? '' );
+		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
+		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
+
+		$table  = $wpdb->prefix . 'mvs_media_index';
+		$where  = array( '1=1' );
+		$params = array();
+
+		if ( '' !== $search ) {
+			$where[]  = '(title LIKE %s OR description LIKE %s)';
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		// An explicit type filter wins — that is how an owner asks this screen for
+		// one library. With no filter chosen it shows the MEDIA library, because
+		// that is what "All Media" means; documents get their own screen, where
+		// the columns suit them.
+		if ( '' !== $type && \WPMediaVerse\Core\MediaTypes::is_known( $type ) ) {
+			$type_sql    = 'media_type = %s';
+			$type_params = array( $type );
+		} else {
+			list( $type_sql, $type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA_LIBRARY );
+		}
+
+		$where[] = $type_sql;
+		$params  = array_merge( $params, $type_params );
+
+		if ( '' !== $status ) {
+			$where[]  = 'status = %s';
+			$params[] = $status;
+		} else {
+			$where[] = "status != 'trash'";
+		}
+
+		if ( '' !== $privacy ) {
+			$where[]  = 'privacy = %s';
+			$params[] = $privacy;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}";
+		$total     = $params
+			? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) )
+			: (int) $wpdb->get_var( $count_sql );
+
+		$items = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				...array_merge( $params, array( $per_page, $offset ) )
+			),
+			ARRAY_A
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT status, COUNT(*) AS cnt FROM {$table} WHERE {$type_sql} GROUP BY status", ...$type_params ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		$status_counts = array();
+		foreach ( (array) $rows as $row ) {
+			$status_counts[ (string) $row['status'] ] = (int) $row['cnt'];
+		}
+
+		return array(
+			'items'         => is_array( $items ) ? $items : array(),
+			'total'         => $total,
+			'status_counts' => $status_counts,
+		);
+	}
+
+	/**
+	 * One page of the moderation queue, plus its total.
+	 *
+	 * EVERY media type, EVERY privacy level, EVERY lifecycle status — a
+	 * moderation queue that hides rows is not a moderation queue.
+	 *
+	 * Its own method rather than `query()`/`query_count()` for a measured reason,
+	 * not a stylistic one: those default `media_types` to
+	 * `MediaTypes::MEDIA_LIBRARY`, which EXCLUDES documents. Asked for the
+	 * `approved` bucket on a site with both, `query_count()` answers 64 where the
+	 * table holds 161 — every document silently absent from the queue a moderator
+	 * is using to decide what has been reviewed. The same shape of trap as
+	 * `query_by_author()` on the compliance paths: a listing helper carries
+	 * listing defaults, and an admin surface needs none of them.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $moderation_status pending|approved|flagged|rejected.
+	 * @param int    $per_page          Page size.
+	 * @param int    $offset            Offset.
+	 * @return array{items:int[], total:int}
+	 */
+	public function moderation_queue( string $moderation_status, int $per_page, int $offset = 0 ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE moderation_status = %s", $moderation_status )
+		);
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$table}
+				  WHERE moderation_status = %s
+				  ORDER BY created_at DESC
+				  LIMIT %d OFFSET %d",
+				$moderation_status,
+				max( 1, $per_page ),
+				max( 0, $offset )
+			)
+		);
+
+		return array(
+			'items' => array_map( 'intval', (array) $ids ),
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * How many items sit in each moderation bucket.
+	 *
+	 * Same unfiltered scope as `moderation_queue()`, and the same reason.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $statuses Buckets to count.
+	 * @return array<string, int>
+	 */
+	public function moderation_counts( array $statuses ): array {
+		global $wpdb;
+
+		$statuses = array_values( array_filter( array_map( 'sanitize_key', $statuses ) ) );
+
+		if ( ! $statuses ) {
+			return array();
+		}
+
+		$table        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT moderation_status AS status, COUNT(*) AS count
+				   FROM {$table}
+				  WHERE moderation_status IN ({$placeholders})
+				  GROUP BY moderation_status",
+				...$statuses
+			)
+		);
+
+		$out = array_fill_keys( $statuses, 0 );
+
+		foreach ( (array) $rows as $row ) {
+			$out[ (string) $row->status ] = (int) $row->count;
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Find a media id by an exact match on one INDEX COLUMN.
+	 *
+	 * The column name cannot be a prepare placeholder, so the allowlist IS the
+	 * injection guard — and it belongs here, with the table, rather than in each
+	 * caller. `ActivityContentIntegration` was carrying its own copy of the same
+	 * list beside its own copy of the query.
+	 *
+	 * Deliberately NOT `find_by_url()`: that one refuses any URL outside the
+	 * gated uploads directory, which is right for its caller and wrong for a
+	 * cloud-hosted file, whose CDN URL contains no such path. Swapping the two
+	 * would have quietly stopped resolving media on every CDN-backed site — the
+	 * 2.3.1 bug class exactly.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $column Index column; anything outside the allowlist returns 0.
+	 * @param string $value  Value to match.
+	 * @return int Media id, or 0.
+	 */
+	public function find_by_indexed_column( string $column, string $value ): int {
+		global $wpdb;
+
+		if ( ! in_array( $column, self::$index_columns, true ) ) {
+			return 0;
+		}
+
+		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE `{$column}` = %s LIMIT 1",
+				$value
+			)
+		);
+
+		return $id ? (int) $id : 0;
+	}
+
+	/**
+	 * Every media id filed under an album.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $album_id Album id.
+	 * @return int[]
+	 */
+	public function media_ids_in_album( int $album_id ): array {
+		global $wpdb;
+
+		if ( $album_id <= 0 ) {
+			return array();
+		}
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE album_id = %d",
+				$album_id
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
+	 * Find a media id by its stored file hash.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $hash sha256 of the stored file.
+	 * @return int|null
+	 */
+	public function find_by_hash( string $hash ): ?int {
+		global $wpdb;
+
+		if ( '' === $hash ) {
+			return null;
+		}
+
+		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1",
+				$hash
+			)
+		);
+
+		return $id ? (int) $id : null;
+	}
+
+	/**
+	 * EVERY media row a member authored — no privacy filter, no status filter.
+	 *
+	 * FOR COMPLIANCE PATHS ONLY: the GDPR exporter, the GDPR eraser and account
+	 * deletion. Those must see everything the person authored, and
+	 * `query_by_author()` deliberately applies a viewer-aware privacy mode — using
+	 * it here would silently under-export and under-delete, which is precisely
+	 * the failure a data-subject request cannot have. The unfiltered scope is the
+	 * whole point of this method, and the reason it is named for the caller's
+	 * question rather than reusing the listing one.
+	 *
+	 * Ordered by `media_id` so a paginated caller sees a stable sequence while it
+	 * deletes rows underneath itself.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Author.
+	 * @param int $limit   0 for no limit.
+	 * @param int $offset  Offset.
+	 * @return int[] Media ids.
+	 */
+	public function author_media_ids( int $user_id, int $limit = 0, int $offset = 0 ): array {
+		global $wpdb;
+
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		$sql    = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d ORDER BY media_id ASC";
+		$params = array( $user_id );
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$params[] = $limit;
+			$params[] = max( 0, $offset );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = $wpdb->get_col( $wpdb->prepare( $sql, ...$params ) );
+
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
+	 * Every row a member authored that lives on somebody ELSE'S drive.
+	 *
+	 * The rows a departing member must NOT take with them (§15 T1). A document
+	 * uploaded into a Space belongs to that Space; the member is its author, not
+	 * its owner, and deleting the account has been taking the team's files with
+	 * it because the erasure cascade reads `post_author` alone.
+	 *
+	 * THE TEST IS THE DRIVE TYPE, not `drive_id > 0`. That was the first version
+	 * and it was exactly backwards: it read `drive_id = 0` as "personal", when
+	 * `0` actually means "Migrator v29 has not reached this row yet". A personal
+	 * document is stamped `drive_type = user, drive_id = <author id>` by both the
+	 * v29 backfill and `DocumentIngestService`, so the author id — always > 0 —
+	 * made every personal file look like a team file. Measured on a real drive:
+	 * 58 of 58 personal documents were classified as team, which on account
+	 * deletion would have handed the lot to an administrator instead of erasing
+	 * them. The inverse of T1, and a GDPR erasure failure.
+	 *
+	 * An unstamped row (`drive_id = 0`, or a `drive_type` this build does not
+	 * know) therefore stays PERSONAL and is purged with its author. That is the
+	 * safe direction: erasure stays complete, and nothing is silently retained
+	 * because a migration was mid-flight.
+	 *
+	 * Deliberately unfiltered, for the same reason as `author_media_ids()`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Author.
+	 * @return array<int, array<string, mixed>> Rows of media_id, drive_type, drive_id.
+	 */
+	public function author_team_drive_media( int $user_id ): array {
+		$rows = $this->author_scoped_rows(
+			array( 'media_id', 'drive_type', 'drive_id' ),
+			$user_id,
+			"AND drive_type <> '' AND drive_type <> 'user' AND drive_id > 0"
+		);
+
+		return array_map(
+			static function ( $row ) {
+				return array(
+					'media_id'   => (int) $row['media_id'],
+					'drive_type' => (string) $row['drive_type'],
+					'drive_id'   => (int) $row['drive_id'],
+				);
+			},
+			(array) $rows
+		);
+	}
+
+	/**
+	 * The exportable columns of every media row a member authored.
+	 *
+	 * Same unfiltered scope and the same reasoning as `author_media_ids()` — see
+	 * that docblock. Returns the columns a data export carries, not whole rows:
+	 * an export should be a deliberate list of what is disclosed rather than
+	 * whatever happens to be in the table.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id Author.
+	 * @param int $limit   Page size.
+	 * @param int $offset  Offset.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function author_media_export_rows( int $user_id, int $limit, int $offset = 0 ): array {
+		return $this->author_scoped_rows(
+			array( 'media_id', 'title', 'description', 'media_type', 'privacy', 'file_url', 'created_at' ),
+			$user_id,
+			'',
+			max( 1, $limit ),
+			$offset
+		);
+	}
+
+	/**
+	 * Rows a member authored, unfiltered, in a stable order.
+	 *
+	 * The shared body of the erasure and export reads. They ask for different
+	 * columns and different extra conditions but must never differ in SCOPE —
+	 * both exist precisely because the listing methods apply privacy and status
+	 * filters that a data-subject request must not inherit, and two hand-written
+	 * copies of that scope are two chances to quietly reintroduce one.
+	 *
+	 * `$columns` and `$where_extra` are code-supplied constants at every call
+	 * site, never request data; `$user_id`, `$limit` and `$offset` are bound.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string[] $columns     Columns to select.
+	 * @param int      $user_id     Author.
+	 * @param string   $where_extra Extra SQL appended to the WHERE, or ''.
+	 * @param int      $limit       0 for no limit.
+	 * @param int      $offset      Offset.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function author_scoped_rows( array $columns, int $user_id, string $where_extra = '', int $limit = 0, int $offset = 0 ): array {
+		global $wpdb;
+
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		// Guarded even though every caller is internal: a column list reaching
+		// SQL unchecked is the kind of thing a later caller turns into a hole.
+		$columns = array_values( array_intersect( $columns, self::selectable_columns() ) );
+
+		if ( empty( $columns ) ) {
+			return array();
+		}
+
+		$sql = 'SELECT ' . implode( ', ', $columns )
+			. " FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d "
+			. ( '' !== $where_extra ? $where_extra . ' ' : '' )
+			. 'ORDER BY media_id ASC';
+
+		$params = array( $user_id );
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d OFFSET %d';
+			$params[] = $limit;
+			$params[] = max( 0, $offset );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ), ARRAY_A );
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Columns `author_scoped_rows()` will select.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	private static function selectable_columns(): array {
+		return array_merge( array( 'media_id' ), self::$index_columns );
+	}
+
+	/**
+	 * Whether the FULLTEXT search index exists on the media table.
+	 *
+	 * Schema introspection rather than a data read, and it belongs here for the
+	 * same reason the data reads do: the table is this class's to know about.
+	 * Callers use it to decide between MATCH…AGAINST and a LIKE fallback, so a
+	 * wrong answer silently changes how every search behaves.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	public function has_fulltext_index(): bool {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (bool) $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+	}
+
+	/**
+	 * The media-index table name, for callers that JOIN to it from their own.
+	 *
+	 * NARROW ON PURPOSE, and not a way around Rule 7. It is for the case where
+	 * the DRIVING table belongs to somebody else — favourites, activity,
+	 * term_relationships — and the index is only the joined side. Pulling those
+	 * queries in here would move favourites, activity and taxonomy logic into
+	 * the media repository and make it the thing Rule 7 exists to prevent: one
+	 * class that knows everything.
+	 *
+	 * The same reasoning already produced `explore_privacy_clause()`, which hands
+	 * a SQL fragment to exactly these callers rather than swallowing their query.
+	 *
+	 * NOT for: reading, writing or counting media. Those have methods, and a
+	 * caller reaching for this to run `SELECT … FROM index WHERE media_id = …`
+	 * is working around the rule rather than within it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string Prefixed table name.
+	 */
+	public function index_table(): string {
+		global $wpdb;
+
+		return $wpdb->prefix . 'mvs_media_index';
+	}
+
 	public function explore_privacy_clause( string $alias, int $viewer_id ): array {
 		// Alias is caller-supplied code, never user input; still constrain it.
 		// Empty alias → bare column names (callers that query a single table
@@ -1730,6 +4304,78 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Find all media IDs matching a meta key/value, with optional author scope.
 	 *
+	 * Media that do NOT have a meta key set — the anti-join.
+	 *
+	 * The shape `query()` cannot express and should not learn to: every other
+	 * filter on that builder narrows a set of index rows, while this one asks
+	 * about the ABSENCE of a row in another table. A LEFT JOIN … IS NULL is a
+	 * different query, not another predicate.
+	 *
+	 * `NULL or empty` is one condition here, not two, and the distinction
+	 * matters to the caller that needed it: `backfill_ai` marks its work with
+	 * `ai_status`, and a media that completed with an empty description must not
+	 * be retried forever. Treating only NULL as "not done" would re-run the AI
+	 * over the same images on every invocation, which costs the site owner money
+	 * per run.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $meta_key Meta key whose absence is being tested.
+	 * @param array  $args     {
+	 *     @type array  $media_types Type allowlist. Default the media library.
+	 *     @type string $status      Index status. Default 'publish'.
+	 *     @type int    $limit       Row cap. 0 = unbounded.
+	 *     @type int    $after_id    Keyset cursor; only ids above this. Default 0.
+	 * }
+	 * @return int[] Media ids, ascending.
+	 */
+	public function media_ids_missing_meta( string $meta_key, array $args = array() ): array {
+		global $wpdb;
+
+		$types  = isset( $args['media_types'] ) && is_array( $args['media_types'] ) ? $args['media_types'] : MediaTypes::MEDIA_LIBRARY;
+		$status = isset( $args['status'] ) ? (string) $args['status'] : 'publish';
+		$limit  = isset( $args['limit'] ) ? max( 0, (int) $args['limit'] ) : 0;
+		$after  = isset( $args['after_id'] ) ? max( 0, (int) $args['after_id'] ) : 0;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+
+		$where  = array( $type_sql, "( s.meta_value IS NULL OR s.meta_value = '' )" );
+		$params = array_merge( array( $meta_key ), $type_params );
+
+		if ( '' !== $status ) {
+			$where[]  = 'm.status = %s';
+			$params[] = $status;
+		}
+
+		// A KEYSET CURSOR, and it is not optional for every caller. A walk that
+		// relies on rows LEAVING this set as it works — because the meta gets
+		// written — repeats forever the moment nothing is written, which is
+		// exactly what `--dry-run` does. Found by running the backfill twice.
+		if ( $after > 0 ) {
+			$where[]  = 'm.media_id > %d';
+			$params[] = $after;
+		}
+
+		$meta      = $wpdb->prefix . 'mvs_media_meta';
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+		$limit_sql = $limit > 0 ? ' LIMIT %d' : '';
+
+		if ( $limit > 0 ) {
+			$params[] = $limit;
+		}
+
+		$sql = "SELECT m.media_id
+		          FROM {$index} m
+		     LEFT JOIN {$meta} s ON s.media_id = m.media_id AND s.meta_key = %s
+		         WHERE {$where_sql}
+		      ORDER BY m.media_id ASC{$limit_sql}";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$params ) ) );
+	}
+
+	/**
 	 * Sister method to find_by_meta() which returns only the first match.
 	 * Use this for one-to-many meta keys (connector links, external IDs,
 	 * legacy multi-row meta) or when an author filter is needed.
@@ -2231,13 +4877,30 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int $media_id Media ID.
 	 * @return bool True on success.
 	 */
-	public function trash( int $media_id ): bool {
+	/**
+	 * Write a media row's status and drop its cached copy.
+	 *
+	 * The shared half of trash() and restore(), which are otherwise the same
+	 * statement twice. Each of those keeps its own `do_action` rather than
+	 * passing a hook name in here: a `do_action( $hook, … )` with a variable name
+	 * is invisible to every hook-documentation tool and to anyone grepping for
+	 * where an event is fired.
+	 *
+	 * 1.2.1 cache layer: row_cache holds the pre-write status, so without the
+	 * invalidation a following get_raw() returns the stale value — caught by
+	 * test_trash_then_restore_round_trip.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $status   New status.
+	 * @return bool True if the write succeeded.
+	 */
+	private function write_status( int $media_id, string $status ): bool {
 		global $wpdb;
 
 		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_index',
 			array(
-				'status'     => 'trash',
+				'status'     => $status,
 				'updated_at' => current_time( 'mysql', true ),
 			),
 			array( 'media_id' => $media_id ),
@@ -2245,12 +4908,42 @@ class MediaRepository implements MediaRepositoryInterface {
 			array( '%d' )
 		);
 
-		// 1.2.1 cache layer: row_cache holds the pre-trash status. Without
-		// this invalidation, subsequent get_raw() calls return the stale
-		// value — caught by test_trash_then_restore_round_trip.
 		self::invalidate_row_cache( $media_id );
 
 		return false !== $result;
+	}
+
+	public function trash( int $media_id ): bool {
+		if ( ! $this->write_status( $media_id, 'trash' ) ) {
+			return false;
+		}
+
+		/**
+		 * Fires after a media item has been moved to the trash.
+		 *
+		 * Trash is the ordinary delete a member performs; permanent delete is
+		 * the rare one. Until 2.4.0 only the permanent path had a hook, so an
+		 * integration mirroring media — a BuddyNext activity card — had nothing
+		 * to listen to and went on advertising a trashed item, linking to a URL
+		 * that now 404s. `mvs_document_trashed` already existed for the document
+		 * half of the same lifecycle; this is the missing twin.
+		 *
+		 * Same three arguments as `mvs_media_deleted`, deliberately: a listener
+		 * that withdraws a mirror keyed on the URL can handle both events with
+		 * one method rather than resolving the permalink itself for a row that
+		 * is now trashed.
+		 *
+		 * Paired with `mvs_media_restored`.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param int    $media_id  The trashed media ID.
+		 * @param int    $author_id The author user ID.
+		 * @param string $permalink The media's public permalink.
+		 */
+		do_action( 'mvs_media_trashed', $media_id, (int) $this->get_author( $media_id ), $this->get_permalink( $media_id ) );
+
+		return true;
 	}
 
 	/**
@@ -2260,23 +4953,26 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return bool True on success.
 	 */
 	public function restore( int $media_id ): bool {
-		global $wpdb;
+		if ( ! $this->write_status( $media_id, 'publish' ) ) {
+			return false;
+		}
 
-		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_media_index',
-			array(
-				'status'     => 'publish',
-				'updated_at' => current_time( 'mysql', true ),
-			),
-			array( 'media_id' => $media_id ),
-			array( '%s', '%s' ),
-			array( '%d' )
-		);
+		/**
+		 * Fires after a media item has been restored from the trash.
+		 *
+		 * Paired with `mvs_media_trashed` so an integration can re-add a
+		 * reference it withdrew — without this, trashing and restoring is a
+		 * one-way trip for every mirror.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param int    $media_id  The restored media ID.
+		 * @param int    $author_id The author user ID.
+		 * @param string $permalink The media's public permalink.
+		 */
+		do_action( 'mvs_media_restored', $media_id, (int) $this->get_author( $media_id ), $this->get_permalink( $media_id ) );
 
-		// Same cache-invalidation rationale as trash() above.
-		self::invalidate_row_cache( $media_id );
-
-		return false !== $result;
+		return true;
 	}
 
 	/**
@@ -2428,5 +5124,257 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		return array_values( array_unique( $paths ) );
+	}
+
+	/**
+	 * Build the shared album-items JOIN.
+	 *
+	 * `AlbumService` had four copies of this join — the item list, the count, and
+	 * the cover picker's image pass and its fallback. They had already drifted
+	 * once: the list and count excluded trash while the render path asserted
+	 * publish, so an album reported twelve items and rendered nine. One builder
+	 * means the count cannot disagree with the list again.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id Album post id.
+	 * @param array $args     status, types, mime_like.
+	 * @return array{0:string,1:array} WHERE fragment (after the JOIN) and its params.
+	 */
+	private function album_items_parts( int $album_id, array $args ): array {
+		global $wpdb;
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'status'    => 'publish',
+				'types'     => MediaTypes::MEDIA_LIBRARY,
+				'mime_like' => '',
+			)
+		);
+
+		$where  = array( 'ai.album_id = %d' );
+		$params = array( $album_id );
+
+		if ( '' !== (string) $args['status'] ) {
+			$where[]  = 'idx.status = %s';
+			$params[] = (string) $args['status'];
+		}
+
+		if ( '' !== (string) $args['mime_like'] ) {
+			$where[]  = 'idx.file_type LIKE %s';
+			$params[] = (string) $args['mime_like'];
+		}
+
+		$types                          = is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
+		$where[]                        = $type_sql;
+		$params                         = array_merge( $params, $type_params );
+
+		unset( $wpdb );
+
+		return array( implode( ' AND ', $where ), $params );
+	}
+
+	/**
+	 * A member's aggregate media totals.
+	 *
+	 * `total_media` counts MEDIA (Coding Rule 13). Documents get their own
+	 * counters; folding them in here would silently change every existing
+	 * member's headline number on upgrade.
+	 *
+	 * NOTE — deliberately no status filter, preserving the behaviour this
+	 * replaces: trashed items still count toward a member's totals. That is a
+	 * real discrepancy against every other count in the plugin, but correcting it
+	 * changes a number members already see, so it needs its own decision rather
+	 * than a quiet ride-along on a relocation.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $user_id Author user id.
+	 * @param array $args    types (default MediaTypes::MEDIA_LIBRARY).
+	 * @return array{total_media:int, total_views:int, total_downloads:int, total_reactions:int, total_comments:int, total_shares:int}
+	 */
+	public function user_media_totals( int $user_id, array $args = array() ): array {
+		global $wpdb;
+
+		$zero = array(
+			'total_media'     => 0,
+			'total_views'     => 0,
+			'total_downloads' => 0,
+			'total_reactions' => 0,
+			'total_comments'  => 0,
+			'total_shares'    => 0,
+		);
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'i.media_type' );
+
+		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT
+					COUNT(*) as total_media,
+					COALESCE(SUM(s.views), 0) as total_views,
+					COALESCE(SUM(s.downloads), 0) as total_downloads,
+					COALESCE(SUM(s.reactions), 0) as total_reactions,
+					COALESCE(SUM(s.comments), 0) as total_comments,
+					COALESCE(SUM(s.shares), 0) as total_shares
+				FROM {$wpdb->prefix}mvs_media_index i
+				INNER JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
+				WHERE i.post_author = %d AND {$type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				...$type_params
+			),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return $zero;
+		}
+
+		foreach ( $zero as $key => $unused ) {
+			$zero[ $key ] = isset( $row[ $key ] ) ? (int) $row[ $key ] : 0;
+		}
+
+		return $zero;
+	}
+
+	/**
+	 * Author ids ranked by how much public media they have.
+	 *
+	 * Feeds "who to follow". The type group is what keeps that honest: ranked by
+	 * COUNT(*), a member could otherwise earn a place in a discovery feed by
+	 * bulk-uploading documents, which are cheap to produce and are not what
+	 * anyone is browsing there.
+	 *
+	 * `privacy = 'public'` is intentional and must NOT become the viewer-aware
+	 * clause — this ranks people by their PUBLIC output only.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $limit Max authors.
+	 * @param array $args  types (default MediaTypes::MEDIA_LIBRARY).
+	 * @return int[]
+	 */
+	public function top_author_ids( int $limit, array $args = array() ): array {
+		global $wpdb;
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types );
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT post_author
+				FROM {$wpdb->prefix}mvs_media_index
+				WHERE status = 'publish' AND moderation_status = 'approved' AND privacy = 'public' AND post_author > 0 AND {$type_sql}
+				GROUP BY post_author ORDER BY COUNT(*) DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...array_merge( $type_params, array( max( 1, $limit ) ) )
+			)
+		);
+
+		return array_values( array_filter( array_map( 'intval', (array) $ids ) ) );
+	}
+
+	/**
+	 * Which of the given authors have public media in the given taxonomy terms.
+	 *
+	 * Takes term_taxonomy_ids, NOT term_ids — the caller resolves them, because
+	 * it already knows the taxonomy. The two columns are different and equal only
+	 * by coincidence, so the distinction is kept explicit in the method name.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[] $author_ids Candidate authors.
+	 * @param int[] $tt_ids     term_taxonomy_ids.
+	 * @param array $args       types (default MediaTypes::MEDIA_LIBRARY).
+	 * @return int[] Author ids with a match.
+	 */
+	public function authors_with_term_taxonomy_ids( array $author_ids, array $tt_ids, array $args = array() ): array {
+		global $wpdb;
+
+		$author_ids = array_values( array_filter( array_map( 'intval', $author_ids ) ) );
+		$tt_ids     = array_values( array_filter( array_map( 'intval', $tt_ids ) ) );
+
+		if ( empty( $author_ids ) || empty( $tt_ids ) ) {
+			return array();
+		}
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'i.media_type' );
+
+		$cand_ph = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
+		$tt_ph   = implode( ',', array_fill( 0, count( $tt_ids ), '%d' ) );
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT DISTINCT i.post_author
+				FROM {$wpdb->prefix}mvs_media_index i
+				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id IN ({$tt_ph})
+				WHERE i.status = 'publish' AND i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph}) AND {$type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...array_merge( $tt_ids, $author_ids, $type_params )
+			)
+		);
+
+		return array_values( array_filter( array_map( 'intval', (array) $rows ) ) );
+	}
+
+	/**
+	 * Media rows belonging to an album, in album order.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id Album post id.
+	 * @param array $args     status (default 'publish'), types (default
+	 *                        MediaTypes::MEDIA_LIBRARY), mime_like, limit.
+	 * @return array<int, array{media_id:int, position:int}>
+	 */
+	public function album_items( int $album_id, array $args = array() ): array {
+		global $wpdb;
+
+		list( $where, $params ) = $this->album_items_parts( $album_id, $args );
+
+		$limit = isset( $args['limit'] ) ? max( 0, (int) $args['limit'] ) : 0;
+		$sql   = "SELECT ai.media_id, ai.position
+			FROM {$wpdb->prefix}mvs_album_items ai
+			INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+			WHERE {$where}
+			ORDER BY ai.position ASC";
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d';
+			$params[] = $limit;
+		}
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Count of an album's media, using the SAME filter as {@see album_items()}.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id Album post id.
+	 * @param array $args     Same args as album_items(), minus limit.
+	 * @return int
+	 */
+	public function count_album_items( int $album_id, array $args = array() ): int {
+		global $wpdb;
+
+		list( $where, $params ) = $this->album_items_parts( $album_id, $args );
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*)
+				FROM {$wpdb->prefix}mvs_album_items ai
+				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+				WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			)
+		);
 	}
 }

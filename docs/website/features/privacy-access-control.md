@@ -16,6 +16,8 @@ WPMediaVerse provides 6 privacy levels for media items, albums, and collections.
 | Private | `private` | Only the media owner and users with `moderate_mvs_media` |
 | Custom | `custom` | A specific list of user IDs defined via access grants |
 
+Pro **documents** add one more level, **this space** (`space`) - visible to members of the Space the document's drive belongs to. It applies to documents; media items are not space-scoped by default, though a document (or media) can be bound to a Space drive with the `mvs_media_drive` filter.
+
 ## Owners and Moderators Always Have Access
 
 Media owners (the `post_author`) and users with the `moderate_mvs_media` capability bypass all privacy checks. They can view all media regardless of its privacy level.

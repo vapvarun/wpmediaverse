@@ -18,6 +18,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Core\MediaTypes;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\REST\RateLimiter;
 
@@ -37,6 +38,36 @@ class UserController extends WP_REST_Controller {
 	 * @since 1.1.0
 	 */
 	public function register_routes(): void {
+		// POST /me/dismiss — remember that this member closed a banner.
+		//
+		// SERVER-SIDE, because localStorage cannot stop a banner rendering. The
+		// profile prompt was painted on every dashboard load and then removed by
+		// JavaScript once it had read localStorage, which collapsed 70px and
+		// jumped the page under the member's cursor — measured as the largest
+		// layout shift on the dashboard, at 263ms. `dismissible.js` said as much
+		// in its own docblock: "the longer-term improvement is a REST-persisted
+		// dismiss flag checked server-side so the banner never renders dismissed
+		// in the first place."
+		//
+		// A dismissal is also a preference, not a browser fact: closing it on a
+		// laptop should close it on a phone.
+		register_rest_route(
+			$this->namespace,
+			'/me/dismiss',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'dismiss_notice' ),
+				'permission_callback' => array( $this, 'logged_in_check' ),
+				'args'                => array(
+					'key' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
 		// GET /users/{id} — public profile.
 		// PUBLIC_OK: returns display name, bio, avatar, follower/following/
 		// public-media counts to anonymous viewers. The `username`
@@ -172,12 +203,18 @@ class UserController extends WP_REST_Controller {
 		$counts     = $follows->get_counts( $user_id );
 		$current_id = get_current_user_id();
 
-		// Count public media.
-		global $wpdb;
-		$media_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND moderation_status = 'approved' AND privacy = 'public'",
-				$user_id
+		// Count public media through the repository (P1.2). The raw query this
+		// replaces had already needed two corrections that its sibling twenty
+		// lines down never needed — a missing status filter, then a missing type
+		// filter — which is the argument for one implementation rather than two.
+		// The MEDIA_LIBRARY default lives in the repository, so the count and the
+		// grid beneath it cannot disagree about what a profile contains.
+		$media_count = Plugin::container()->get( 'media_repository' )->query_count(
+			array(
+				'author_id'         => (int) $user_id,
+				'status'            => 'publish',
+				'moderation_status' => 'approved',
+				'privacy'           => 'public',
 			)
 		);
 
@@ -416,23 +453,101 @@ class UserController extends WP_REST_Controller {
 	 * @return string[]
 	 */
 	private function sample_media_thumbs( int $user_id, int $n, $tpl ): array {
-		global $wpdb;
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index
-				WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public'
-				ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id,
-				$n
+		// Thumbnails for a profile card, through the repository (P1.2). A document
+		// has no thumbnail, so an unfiltered sample would render blank tiles on
+		// the one surface meant to show a member at a glance — the MEDIA_LIBRARY
+		// default in the repository is what prevents that.
+		$rows = Plugin::container()->get( 'media_repository' )->query(
+			array(
+				'author_id'         => (int) $user_id,
+				'status'            => 'publish',
+				'moderation_status' => 'approved',
+				'privacy'           => 'public',
+				'orderby'           => 'created_at',
+				'order'             => 'DESC',
+				'limit'             => $n,
 			)
 		);
+
 		$thumbs = array();
-		foreach ( (array) $ids as $mid ) {
-			$url = $tpl ? (string) $tpl->get_thumb_url( (int) $mid, 'medium' ) : '';
+		foreach ( $rows as $row ) {
+			$mid = isset( $row['media_id'] ) ? (int) $row['media_id'] : 0;
+			$url = ( $mid && $tpl ) ? (string) $tpl->get_thumb_url( $mid, 'medium' ) : '';
 			if ( '' !== $url ) {
 				$thumbs[] = $url;
 			}
 		}
 		return $thumbs;
+	}
+
+	/**
+	 * The banners a member may dismiss, and the meta each one sets.
+	 *
+	 * An ALLOWLIST because the key arrives from the browser and ends up in a
+	 * meta key — an open map would let any caller write arbitrary user meta.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return array<string, string> Key => user meta key.
+	 */
+	public static function dismissible_notices(): array {
+		/**
+		 * Filter the dismissible banners.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array<string, string> $notices Key => user meta key.
+		 */
+		return (array) apply_filters(
+			'mvs_dismissible_notices',
+			array(
+				'profile_prompt' => '_mvs_profile_prompt_dismissed',
+			)
+		);
+	}
+
+	/**
+	 * Any logged-in member — a dismissal is their own state.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return true|WP_Error
+	 */
+	public function logged_in_check() {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error(
+				'mvs_unauthorized',
+				__( 'You must be logged in.', 'wpmediaverse' ),
+				array( 'status' => 401 )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * POST /me/dismiss — remember a closed banner for this member.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function dismiss_notice( WP_REST_Request $request ) {
+		$key     = (string) $request->get_param( 'key' );
+		$notices = self::dismissible_notices();
+
+		if ( ! isset( $notices[ $key ] ) ) {
+			// A refusal is never a success response (coding rule 20).
+			return new WP_Error(
+				'mvs_unknown_notice',
+				__( 'That is not a banner this site knows about.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		update_user_meta( get_current_user_id(), $notices[ $key ], 1 );
+
+		return rest_ensure_response( array( 'dismissed' => $key ) );
 	}
 }

@@ -1,7 +1,7 @@
 {
     "ok": true,
     "summary": {
-        "pass": 68,
+        "pass": 69,
         "fail": 0,
         "hole": 0
     },
@@ -147,6 +147,12 @@
         {
             "check": "boot",
             "entity": "/mvs/v1/albums/(?P<id>[\\d]+)",
+            "status": "pass",
+            "detail": "GET -> 404 (mvs_not_found)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/albums/(?P<id>[\\d]+)/items",
             "status": "pass",
             "detail": "GET -> 404 (mvs_not_found)"
         },

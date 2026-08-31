@@ -182,6 +182,33 @@ if [ -x vendor/bin/phpunit ] && [ -f tests/unit/SettingsContractTest.php ]; then
   fi
 fi
 
+# Full Free unit suite. Added 2026-08-11, mirroring the same gap closed on
+# the Pro side the same day (Basecamp #10184313297 / #10181028130): stage
+# 2.3 above only ever covered SettingsContractTest, so a red full suite was
+# indistinguishable from a green one to anyone watching CI output — exactly
+# how Pro's suite sat at 83 red without anyone noticing. Free's own full run
+# is not consistently green yet: CptIdCollisionTest.php showed 2 order-
+# dependent failures ("Linkage C") on 1 of 8 full-suite runs measured this
+# same day; the other 7 were fully green, and it did not reproduce in any
+# targeted attempt (isolated file, alphabetically-preceding files run
+# together). Confirmed NOT the same TRUNCATE-vs-static-cache pattern fixed
+# in Pro — no Free test file truncates mvs_media_index, so that mechanism
+# cannot apply here. No speculative fix has been applied: guessing at a fix
+# for a ~1-in-8 signal with no reliable repro would itself be dead code —
+# untested against the failure it claims to solve. Wiring the stage in
+# anyway, because red-and-visible-but-unexplained is strictly better than
+# red-and-invisible, which is the exact failure mode this stage exists to
+# end. See plan/2026-08-11-pro-competitions-test-triage-plan.md's closing
+# note for the pointer; the Free flake itself is its own open item, not
+# solved by that plan.
+if [ -x vendor/bin/phpunit ]; then
+  if [ -f /tmp/wordpress-tests-lib/includes/functions.php ]; then
+    run_stage "2.4" "Full Free unit suite (PHPUnit)" composer test:unit
+  else
+    warn "2.4 Free unit suite skipped — WP_TESTS_DIR (/tmp/wordpress-tests-lib) not installed"
+  fi
+fi
+
 # ─── 2.5 — ux-audit (ux-foundation drift detection) ──────────────────────────
 # Runs the ux-audit.sh script (vendored from ~/.claude/skills/ux-audit/) to
 # catch design-system drift on every push: inline <style>/<script> in PHP,

@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.3.2
+Stable tag: 2.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -45,7 +45,6 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * Photo Challenges, 1v1 Battles, Tournament Brackets
 * Points, Streaks, Boosts gamification engine
 * S3 and BunnyCDN cloud storage drivers
-* Video transcoding with HLS adaptive streaming
 * Auto-captions via Whisper AI
 * Per-user storage quotas (MemberPress, WooCommerce, PMPro integration)
 * Voice messages, read receipts, typing indicators in DMs
@@ -109,6 +108,41 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.4.0 - August 2026 =
+
+My Media becomes a set of real, linkable sections, and documents get a proper admin screen.
+
+* New      - Every section of My Media has its own address, so Albums, Documents and the rest can be linked, bookmarked and returned to.
+* New      - Editing your profile is a section of My Media rather than a card above it, which gives the library back the space the card used.
+* New      - Site owners can open a document from the Documents screen and correct its title, slug, description, tags and privacy.
+* New      - A Use Documents permission decides which roles get a document library, so a site can offer photos to everyone and documents to staff. Every role has it to begin with, including roles added by other plugins, so nothing changes until you take it away.
+* Improve  - The My Media sections are a grouped vertical rail with counts, which stays readable as the number of sections grows.
+* Improve  - Document rows in the admin now offer Edit and View on site alongside Trash and Delete permanently, so the screen is no longer only destructive.
+* Fix      - The Documents count beside your name counted every document on the site, including trashed ones, instead of the ones you own.
+* Fix      - The Documents panel was gated on a variable that was never set, which opened the gate anyway and logged a PHP warning on every dashboard load.
+* Fix      - Sections declared by an add-on linked to a page that did not exist, because section addresses were built from a fixed list rather than from the sections themselves.
+* Fix      - My Media navigation items rendered as underlined links on some themes because the plugin's own styling overrode the rail it had just been given.
+* Improve  - Settings fields now show the value they will actually use before you save. Unsaved fields rendered blank, and a setting that is on by default rendered as off, so the first Save could switch it off without anyone choosing to.
+* Dev      - New filters mvs_document_row_actions and mvs_document_admin_panels let an add-on contribute row actions and panels to the document admin screens.
+* Dev      - New filter mvs_user_can_use_documents decides per user whether the document library is available, so a membership plugin can put documents behind a paid tier without changing anyone's role.
+* Dev      - drive_documents() accepts a status, count_documents() accepts an author and status, and DashboardSections::slugs() reports the declared section vocabulary.
+* Improve  - Document drives stay fast as they grow. A drive listing now reads its index directly instead of scanning and filtering: on a 30,000-document library one page examined 234 rows where it previously examined 8,032.
+* Improve  - Panels, cards and controls no longer all draw the same outline. A text field used to be as visually loud as the panel containing it, and nesting produced three identical edges in a row, so screens read as boxes inside boxes. Containers now recede and only the things you can interact with keep a distinct edge.
+* Improve  - Buttons, form fields and rows across the member and admin screens now meet a minimum tap target, so they are reachable on a phone.
+* Improve  - Text, status badges and the active tag now meet a contrast floor the plugin sets itself instead of inheriting whatever the theme happened to supply.
+* Fix      - Muting a conversation for a set time kept the conversation out of your unread count after the mute had expired. The count now returns as soon as the timer runs out rather than waiting for the next message to arrive.
+* Fix      - The My Media tab strip could not be reached on screens between 769 and 860 pixels wide, which covers most tablets in portrait.
+* Fix      - At exactly 768 pixels the dashboard applied its phone layout and its tablet layout at the same time, so parts of the screen disagreed about which one they were on.
+* Fix      - A section that lives on its own page, such as Compete, answered its My Media address with a blank column instead of taking you to the page itself. Old links and bookmarks now arrive where they should.
+* Fix      - Viewing a member's media profile wrote two PHP warnings to the site error log on every visit. The pages looked correct, so the only sign was a growing log.
+* Fix      - Every settings control, upload field and collection search box now has a real label, so screen readers announce them and clicking the label focuses the field.
+* Dev      - Media moving to and from the trash now fires mvs_media_trashed and mvs_media_restored, so an integration can react without polling.
+* Dev      - New filter mvs_has_custom_avatar reports whether a member has set their own avatar, independent of where the file is stored.
+* Dev      - Documents and media can now be given different drive-access answers through mvs_document_drive_access and mvs_media_drive_access.
+* Dev      - DashboardSections::flush() clears the resolved-section cache, so a section declared late in a request is no longer ignored.
+* Dev      - The plugin's border tokens now have one job each: --mvs-border-light for structure, --mvs-border for controls, --mvs-border-strong for emphasis. A theme overriding these gets predictable results instead of changing every outline at once.
+* Compat   - Aligned with WPMediaVerse Pro 2.4.0. Install both updates together.
 
 = 2.3.2 - August 2026 =
 

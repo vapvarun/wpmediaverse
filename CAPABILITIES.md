@@ -1,9 +1,9 @@
 # WPMediaVerse — Capabilities
 
-What this plugin lets a site actually do, in buyer language. The manifest lists 114 REST
-endpoints and 22 tables; it never says what those add up to. This file does.
+What this plugin lets a site actually do, in buyer language. The plugin registers ~90 REST
+routes across 23 custom tables; that never says what they add up to. This file does.
 
-**Last verified against code:** 2026-08-05 (branch `main`, v2.3.1)
+**Last verified against code:** 2026-08-26 (branch `2.4.0`, v2.4.0)
 **Companion:** [WPMediaVerse Pro](../wpmediaverse-pro/) adds competitions, cloud storage,
 AI providers, quotas and video tooling — see its own `CAPABILITIES.md`.
 
@@ -20,7 +20,7 @@ Status key: **YES** shipped and code-verified · **PARTIAL** works with a named 
 | Accept documents (PDF, Office) | **NO** | Deliberately blocked at `UploadService::handle()`. Planned as a separate Pro module — see `docs/architecture/specs/2026-08-05-document-library.md` |
 | Generate thumbnails at multiple sizes | **YES** | `Services/MediaVariantWriter.php` + `VariantSpec` |
 | Serve modern formats (WebP / AVIF) | **YES** | `Services/ImageOptimizationService.php`; browser negotiation on the gated `/serve` route |
-| Produce video posters and audio artwork | **YES** | `Services/PosterService.php` — getID3 cover atom, ffmpeg fallback, generated waveform for cover-less audio |
+| Produce video posters and audio artwork | **YES** | `Services/PosterService.php` — getID3 embedded cover atom, staged client-supplied frame, and a generated waveform for cover-less audio. No ffmpeg/transcoding: MediaVerse embeds media, it does not process it; a cover-less video falls back to a default poster SVG |
 | Losslessly re-compress originals | **YES** | `ImageOptimizationService` with a temp-write-compare-commit guard so a file never grows |
 | Organise into albums | **YES** | `Services/AlbumService.php` + `mvs_album_items` |
 | Organise into rule-based collections | **YES** | `Services/CollectionService.php` — smart collections with saved rules |
@@ -65,8 +65,9 @@ Status key: **YES** shipped and code-verified · **PARTIAL** works with a named 
 | Watermark uploads | **YES** | `Services/WatermarkService.php` |
 | See usage statistics | **YES** | `Services/StatsService.php`, `Admin/StatsPage.php`, aggregates via `AdminAggregatesService` |
 | Send events to another system | **YES** | `Integrations/WebhookService.php` |
-| Diagnose a broken install | **YES** | `Services/HealthCheckService.php` — Site Health tests incl. missing ffmpeg |
+| Diagnose a broken install | **YES** | `Services/HealthCheckService.php` — Site Health tests for storage, variants and configuration |
 | Manage from the command line | **YES** | 20 `wp mvs` subcommands — optimise, migrate storage, backfill, repair, reindex, cert |
+| Register mobile devices for push | **YES** | `Social/PushService.php` + `POST`/`DELETE /mvs/v1/me/devices` (`REST/Controller/DeviceController.php`), `mvs_device_tokens` table. On a new notification, fires `mvs_push_send` with the recipient's tokens for a push service to deliver (gated by `mvs_push_should_send`) |
 
 ## Storage
 
@@ -85,7 +86,7 @@ Status key: **YES** shipped and code-verified · **PARTIAL** works with a named 
 | Give members a dashboard and profile | **YES** | `templates/partials/dashboard-content.php`, `profile-edit.php` |
 | Work inside BuddyPress | **YES** | `Integrations/BuddyPress/` — 7 focused classes: activity, profile tabs, group tabs, notifications |
 | Hand the frontend to another community plugin | **YES** | `mvs_buddynext_active` — MediaVerse stands down and BuddyNext owns the UX |
-| Drive everything from a native app | **YES** | Full `mvs/v1` REST surface + Application Passwords via `Auth/AppConnect.php`; `/app/config` for discovery |
+| Drive everything from a native app | **YES** | Full `mvs/v1` REST surface + Application Passwords via `Auth/AppConnect.php`; `/app/config` for discovery; `/me/devices` to register push tokens |
 | Attach media to another plugin's objects | **YES** | `Media/ObjectMediaLinkage.php` — provider-neutral `object_type` linkage |
 | Import from rtMedia / MediaPress / BuddyBoss | **PARTIAL** | Importers ship in Pro, not Free |
 
@@ -97,7 +98,7 @@ Recorded so a future audit treats them as decisions, not gaps.
 
 | Not supported | Why |
 |---|---|
-| Document / PDF uploads | Owner decision (Basecamp #9962125462). The read path survives for historical PDFs; new uploads are refused. A separate Drive-style module is specced for Pro 2.5.0 |
+| Document / PDF uploads **into the media library** | Owner decision (Basecamp #9962125462), enforced by `UploadService::hard_refused_mimes()`. The read path survives for historical PDFs. Documents are not absent from the product — they have their own home: Pro 2.4.0 ships a per-member document drive, and `use_mvs_documents` is a Free capability |
 | Storefront / checkout for paid media | The entitlement layer exists (`mvs_access_rules`, `mvs_transactions`); the selling UI is out of scope |
 | Cloud storage drivers in Free | Contract in Free, implementations in Pro — deliberate free/pro split |
 | Versioning of media files | `/replace` overwrites; no version history by design |
