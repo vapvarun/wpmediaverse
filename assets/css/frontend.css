@@ -7512,7 +7512,15 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 
 .mvs-documents__row {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+	/* The four metadata tracks are FIXED, not auto.
+	 *
+	 * With `auto auto auto auto` each track sized to its own row's content, so
+	 * every row laid out independently and the columns never lined up - the
+	 * date column started at 1147 / 1165 / 1171 / 1171 across four rows, 24px
+	 * of drift, and worse on a real site where usernames and file sizes vary
+	 * more than a demo's (Basecamp 10253006024). A column has to be the same
+	 * width in every row or it is not a column. */
+	grid-template-columns: auto minmax(0, 1fr) 4rem 6rem 4.5rem 7rem;
 	align-items: center;
 	gap: var(--mvs-space-md, 16px);
 	padding: var(--mvs-space-md, 16px);
@@ -7555,6 +7563,57 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 .mvs-documents__date {
 	color: var(--mvs-text-muted, #646970);
 	font-size: var(--mvs-font-sm, 0.875rem);
+}
+
+/* Reserve a slot per metadata field so the columns line up down the list.
+ *
+ * The row laid its metadata out as a bare flex run pushed right, so every row
+ * sized itself independently and each field started wherever the previous
+ * one happened to end. Measured across four rows at 1440px: the date column
+ * started at 1147 / 1165 / 1171 / 1171 - 24px of drift on a four-row list, and
+ * a row with no type chip shifted owner, size and date left into the wrong
+ * slots entirely (Basecamp 10253006024).
+ *
+ * Four rows is the BEST case: the drift is driven by the rendered width of the
+ * owner name and the size string, so a real site with mixed usernames and file
+ * sizes gets visibly worse. Fixed widths make a row's layout independent of its
+ * own content, which is the property a column needs.
+ *
+ * text-align differs per field on purpose: a size reads right-aligned because
+ * the eye compares magnitudes, a name reads left-aligned because it is a word. */
+/* Each cell is pinned to ITS OWN track.
+ *
+ * Without this, a row whose document has no type chip renders five children
+ * instead of six, and auto-placement slides owner, size and date one track to
+ * the left - so that row's metadata sat under the wrong headings entirely.
+ * Explicit placement leaves the chip track empty instead of collapsing it,
+ * which is the only way to keep a column stable when a cell is optional.
+ *
+ * (An earlier attempt used `flex: 0 0 <width>` here. Flex properties are
+ * ignored on grid items, so it changed nothing - the row has been display:grid
+ * all along.) */
+.mvs-documents__icon  { grid-column: 1; }
+.mvs-documents__main  { grid-column: 2; }
+.mvs-documents__chip  { grid-column: 3; }
+
+.mvs-documents__owner {
+	grid-column: 4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-documents__size {
+	grid-column: 5;
+	text-align: end;
+	/* Lining figures so sizes compare down the column. */
+	font-variant-numeric: tabular-nums;
+}
+
+.mvs-documents__date {
+	grid-column: 6;
+	text-align: end;
+	white-space: nowrap;
 }
 
 .mvs-documents__excerpt {
