@@ -1,5 +1,11 @@
 # WPMediaVerse — Frontend Interactivity Adoption: Per-Surface Audit
 
+> **STATUS: HISTORICAL AUDIT (2026-06-19, against 1.7.1). Its findings are stale.**
+> The headline claim "Zero `data-wp-router-region` anywhere" is no longer true -
+> `templates/partials/router-region-open.php` / `router-region-close.php` ship and
+> are included from every full-template view plus `Shortcodes::render_dashboard()`.
+> Re-audit before acting on anything below; every `file:line` is from 1.7.1.
+
 Companion to `interactivity-standard-adoption.md`. This is the detailed per-file
 audit promised in that brief, covering **every** frontend surface (Free + Pro)
 against the standard in `docs/standards/frontend-interactivity.md`. Produced by a

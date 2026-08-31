@@ -41,14 +41,18 @@ A storage driver handles the physical storage of uploaded files. Custom drivers 
 
 ### Interface contract
 
-Your driver must implement four methods:
+Your driver implements `\WPMediaVerse\Services\StorageDriverInterface` (`includes/Services/StorageDriverInterface.php`). All six methods are required - PHP fatals if any is missing:
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `upload` | `upload( string $local_path, string $remote_key ): string` | Store the file; return the canonical URL. |
-| `delete` | `delete( string $remote_key ): bool` | Remove the file. |
-| `get_url` | `get_url( string $remote_key ): string` | Return the public (or signed) URL. |
-| `exists` | `exists( string $remote_key ): bool` | Return `true` if the file exists. |
+| `store` | `store( string $source_path, string $dest_path ): bool` | Store the file at `$dest_path`. |
+| `delete` | `delete( string $path ): bool` | Remove the file. |
+| `url` | `url( string $path ): string` | Return the public (or signed) URL. |
+| `exists` | `exists( string $path ): bool` | Return `true` if the file exists. |
+| `get_full_path` | `get_full_path( string $path ): string` | Absolute local path, or `''` when not applicable. |
+| `download` | `download( string $path, string $local_dest ): bool` | Pull the remote file to a local path (added 1.2.2; used by `wp mvs migrate-storage`). |
+
+`LocalDriver` (`includes/Services/LocalDriver.php`) is the reference implementation.
 
 ### Registering via `mvs_storage_driver`
 
@@ -63,7 +67,7 @@ add_filter( 'mvs_storage_driver', function( $driver, string $driver_name ) {
 }, 10, 2 );
 ```
 
-Register the driver slug in the admin by adding it to the Storage settings dropdown via `mvs_settings_sections` or a direct settings field, then set the `mvs_storage_driver_name` option to `my-s3-driver`.
+Register the driver slug in the admin by adding it to the Storage settings dropdown via `mvs_settings_sections` or a direct settings field, then set the `mvs_storage_driver` option to `my-s3-driver` - that is the option `StorageService` reads to pick the active driver name before applying the filter.
 
 ---
 
@@ -73,21 +77,25 @@ AI providers power automatic moderation, content analysis, and tagging. You can 
 
 ### Interface contract
 
-Your provider must implement three methods:
+Your provider implements `\WPMediaVerse\Services\AIProviderInterface` (`includes/Services/AIProviderInterface.php`). All five methods are required:
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `analyze` | `analyze( int $media_id, string $file_path ): array` | Return analysis result array. |
-| `moderate` | `moderate( int $media_id, string $file_path ): array` | Return moderation flags array. |
-| `tag` | `tag( int $media_id, string $file_path ): array` | Return suggested tag strings. |
+| `analyze_image` | `analyze_image( string $image_url ): ?array` | Analysis result, or `null` on failure. |
+| `generate_tags` | `generate_tags( string $image_url, string $description = '' ): array` | Suggested tag strings. |
+| `moderate_content` | `moderate_content( string $image_url ): array` | Moderation flags array. |
+| `is_available` | `is_available(): bool` | Whether the provider is configured and usable. |
+| `get_id` | `get_id(): string` | Unique provider slug. |
+
+`OpenAIProvider` (`includes/Services/OpenAIProvider.php`) is the reference implementation.
 
 ### Registering via `mvs_ai_providers`
 
-`AIService` fires `mvs_ai_providers` and passes itself as the argument. Call `register_provider()` on the service.
+`AIService` fires `mvs_ai_providers` and passes itself as the argument. Call `register_provider()` on the service - it takes the provider instance only and keys it by `get_id()`.
 
 ```php
 add_action( 'mvs_ai_providers', function( \WPMediaVerse\Services\AIService $service ) {
-    $service->register_provider( 'my-vision-api', new MyVisionProvider() );
+    $service->register_provider( new MyVisionProvider() ); // get_id() returns 'my-vision-api'
 } );
 ```
 
@@ -150,7 +158,7 @@ add_action( 'rest_api_init', function() {
 } );
 ```
 
-> **Security:** Never set `permission_callback` to `__return_true` on endpoints that write data. Always check `current_user_can()` with an appropriate capability (`manage_mvs_media`, `moderate_mvs_media`, or a custom one).
+> **Security:** Never set `permission_callback` to `__return_true` on endpoints that write data. Always check `current_user_can()` with an appropriate capability. The plugin's own capabilities are registered in `includes/Capabilities/MediaCapabilities.php` - `upload_mvs_media`, `edit_mvs_media`, `delete_mvs_media`, `publish_mvs_media`, `read_mvs_media`, `moderate_mvs_media`, `manage_mvs_settings`, `manage_mvs_access`, `use_mvs_documents`, `manage_mvs_documents` - or use a custom one.
 
 ---
 
@@ -158,13 +166,13 @@ add_action( 'rest_api_init', function() {
 
 ### Moderation tabs - `mvs_moderation_tabs`
 
-The Moderation Queue page (`Admin\ModerationQueue`) renders its tabs through `apply_filters( 'mvs_moderation_tabs', $tabs )`. Each tab is an associative array with `id`, `label`, and `callback` keys.
+The Moderation Queue page (`Admin\ModerationQueue`) renders its tabs through `apply_filters( 'mvs_moderation_tabs', $tabs )`. `$tabs` is keyed by tab slug; each entry is an array with `label`, an optional `count`, and a `callback`. The slug is what `?tab=` matches, so add a key - do not append with `$tabs[]`.
 
 ```php
 add_filter( 'mvs_moderation_tabs', function( array $tabs ): array {
-    $tabs[] = array(
-        'id'       => 'my-reports',
+    $tabs['my-reports'] = array(
         'label'    => __( 'My Reports', 'my-plugin' ),
+        'count'    => 0,
         'callback' => 'my_plugin_render_reports_tab',
     );
     return $tabs;
@@ -179,12 +187,11 @@ function my_plugin_render_reports_tab(): void {
 
 ### Stats tabs - `mvs_stats_tabs`
 
-The Stats page (`Admin\StatsPage`) uses the same pattern.
+The Stats page (`Admin\StatsPage`) uses the same slug-keyed pattern (`label` + `callback`, no `count`).
 
 ```php
 add_filter( 'mvs_stats_tabs', function( array $tabs ): array {
-    $tabs[] = array(
-        'id'       => 'my-analytics',
+    $tabs['my-analytics'] = array(
         'label'    => __( 'My Analytics', 'my-plugin' ),
         'callback' => 'my_plugin_render_analytics_tab',
     );
@@ -282,7 +289,7 @@ add_action( 'mvs_favorite_toggled', function( int $media_id, int $user_id, strin
 | `mvs_comment_created` | action | `$media_id, $user_id, $comment_id, $content, $source` | A comment is posted |
 | `mvs_user_followed` | action | `$follower_id, $following_id` | A follow relationship is created |
 | `mvs_media_shared` | action | `$media_id, $user_id, $platform` | Media is shared to a platform |
-| `mvs_media_uploaded` | action | `$media_id` | A new media item is saved |
+| `mvs_media_uploaded` | action | `$media_id, $file_data, $user_id, $media_type` | A new media item is saved |
 | `mvs_moderation_changed` | action | `$media_id, $status, $old_status, $user_id` | Moderation status changes |
 
 ## Template overrides (child themes)

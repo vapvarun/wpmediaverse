@@ -520,6 +520,16 @@
       "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
+      "name": "mvs_explore_tag_cloud_limit",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $limit"
+      ],
+      "where": "templates/layouts/partials/explore-filters.php:50",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_feed_query_args",
       "type": "filter",
       "args_count": 2,
@@ -794,6 +804,14 @@
         "$window"
       ],
       "where": "includes/Leaderboard/LeaderboardService.php:79",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_loaded",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "wpmediaverse-pro.php:399",
       "consumed_by": []
     },
     {
@@ -1193,6 +1211,28 @@
         "AS hook mvs_pro_captions_reap_stale"
       ],
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
+    },
+    "refresh_2026_09_01": {
+      "scope": "targeted delta — hooks only, verified by grepping every apply_filters/do_action call in both plugins against this file, in BOTH directions",
+      "method": "agent enumeration + bidirectional diff. The write-manifest.mjs generator is NOT usable on this plugin (see CLAUDE.md) and was not run.",
+      "branch": "2.4.0",
+      "plugin_version": "2.4.0",
+      "hooks_fired_total": 120,
+      "added": 2,
+      "removed": [],
+      "known_exclusions": {
+        "mvs_settings_render_{renderer}": "dynamic hook, recorded under its braced documentation form rather than the literal prefix",
+        "action_scheduler_actions": [
+          "mvs_activate_scheduled_challenges",
+          "mvs_close_challenge_entries",
+          "mvs_finalize_expired_challenges",
+          "mvs_resolve_expired_matches",
+          "mvs_start_registered_tournaments"
+        ],
+        "action_scheduler_note": "scheduled in Pro Core/Plugin.php and fired by Action Scheduler, so they carry no literal do_action call site in our source. Real hooks, deliberately kept.",
+        "mvs_rest_public_namespaces": "asserted by Pro tests/unit/AnonymousLinkGuardsTest.php D4 as a guard against a FUTURE exemption. Nothing fires it today, so it is deliberately not listed as fired."
+      },
+      "verification": "0 hooks fired in code missing from a manifest; 0 hooks in a manifest fired nowhere."
     }
   }
 }

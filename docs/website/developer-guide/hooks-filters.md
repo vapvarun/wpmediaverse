@@ -6,6 +6,8 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 
 ## Quick Reference
 
+The most-reached-for hooks. This table is not the full list - [section 23](#23-additional-hooks-reference) carries every remaining hook fired by Free and Pro, including the 2.4.0 Documents, dashboard-section and privacy-vocabulary seams.
+
 | Hook Name | Type | Free/Pro | Since |
 |-----------|------|----------|-------|
 | `mvs_loaded` | action | Free | 1.0 |
@@ -27,7 +29,7 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_before_template_render` | action | Free | 1.1 |
 | `mvs_after_template_render` | action | Free | 1.1 |
 | `mvs_dashboard_before_content` | action | Free | 1.0 |
-| `mvs_dashboard_tabs` | action | Free | 1.0 |
+| `mvs_dashboard_tabs` | action | Free | 1.0 (deprecated 2.4.0 - use `mvs_dashboard_sections`) |
 | `mvs_dashboard_panels` | action | Free | 1.0 |
 | `mvs_dashboard_after_content` | action | Free | 1.0 |
 | `mvs_locate_template` | filter | Free | 1.0 |
@@ -145,7 +147,6 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_privacy_can_view` | filter | Free | 1.0 |
 | `mvs_buddynext_active` | filter | Free | 1.0 |
 | `mvs_pro_captions_generated` | action | Pro | 1.0 |
-| `mvs_pro_poster_frame` | filter | Pro | 1.1 |
 | `mvs_pro_analytics_recorded` | action | Pro | 1.1 |
 | `mvs_pro_analytics_event_data` | filter | Pro | 1.1 |
 | `mvs_pro_analytics_summary` | filter | Pro | 1.1 |
@@ -261,8 +262,12 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 17. [Layout System (Pro)](#17-layout-system-pro)
 18. [Quota System (Pro)](#18-quota-system-pro)
 19. [Competitions (Pro)](#19-competitions-pro)
-20. [Connectors (Pro)](#21-connectors-pro)
-21. [Common Recipes](#22-common-recipes)
+21. [Connectors (Pro)](#21-connectors-pro)
+22. [Common Recipes](#22-common-recipes)
+23. [Additional Hooks Reference](#23-additional-hooks-reference)
+
+> There is no section 20 — a retired section left the gap. Heading numbers are
+> kept as-is so existing deep links to sections 21-23 keep working.
 
 ---
 
@@ -521,9 +526,11 @@ add_filter( 'mvs_locate_template', function( string $template, string $template_
 
 ---
 
-### `mvs_dashboard_tabs`
+### `mvs_dashboard_tabs` **(Deprecated in 2.4.0)**
 
 Fires inside the dashboard shortcode to allow registering custom tabs.
+
+> **Deprecated in 2.4.0.** Declare a section through the [`mvs_dashboard_sections`](#dashboard-permissions-and-privacy-vocabulary-240) filter instead - a registry that carries availability, capability, count and URL, rather than an action that echoes a button. `mvs_dashboard_tabs` still fires, and will keep firing for at least two majors under Production Rule 1, but new integrations should use the registry.
 
 **Parameters:** none
 
@@ -2380,14 +2387,16 @@ add_filter( 'mvs_suppress_bp_comment_notification', '__return_false' );
 > Video transcoding was removed in 2.4.0 (MediaVerse embeds media, it does not
 > process it), so the `mvs_pro_transcode_*` hooks no longer exist. The player
 > uses the original file; posters come from the embedded cover atom or a
-> default SVG. The hooks below cover the video features that remain.
+> default SVG. `mvs_pro_poster_frame` went with the transcoding pipeline and no
+> longer exists either — filter the fallback poster with the Free
+> [`mvs_default_video_poster_url`](#mvs_default_video_poster_url) instead. The
+> hooks below cover the video features that remain.
 
 ### Additional Video Hooks
 
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
 | `mvs_pro_captions_generated` | action | Whisper transcription saved as WebVTT | `$media_id`, `$vtt_url` | 1.0 |
-| `mvs_pro_poster_frame` | filter | Filter video poster frame URL | `$poster_url`, `$media_id`, `$file_path` | 1.1 |
 
 ---
 
@@ -2906,22 +2915,27 @@ add_filter( 'mvs_pro_quota_source', function( $package, int $user_id ) {
 
 ### Recipe 6: Add custom fields to the media REST response
 
-Use `mvs_media_response` to append custom post meta or computed values to the media API response.
+Use `mvs_media_response` to append your own fields or computed values to the media API response.
+
+MediaVerse does not use `wp_postmeta` for media attributes - core fields live in `mvs_media_index` and sparse fields in `mvs_media_meta`, both read through `MediaRepository::get( $media_id, $key )`. `location`, `camera` and `focal_len` below are keys **your** plugin writes; MediaVerse ships none of them.
 
 ```php
 /**
- * Add location and EXIF data to the media REST response.
+ * Add your own fields to the media REST response.
  *
  * @since 1.0
  *
  * @param array $data     REST response data array.
- * @param int   $media_id Media post ID.
+ * @param int   $media_id Media ID.
  * @return array
  */
 add_filter( 'mvs_media_response', function( array $data, int $media_id ) {
-    $data['location']  = get_post_meta( $media_id, '_mvs_location', true );
-    $data['camera']    = get_post_meta( $media_id, '_mvs_exif_camera', true );
-    $data['focal_len'] = get_post_meta( $media_id, '_mvs_exif_focal_length', true );
+    $repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+    $data['location']  = $repo->get( $media_id, 'location' );
+    $data['camera']    = $repo->get( $media_id, 'camera' );
+    $data['focal_len'] = $repo->get( $media_id, 'focal_len' );
+
     return $data;
 }, 10, 2 );
 ```
@@ -3116,9 +3130,95 @@ Hooks marked **(Pro)** are fired by WPMediaVerse Pro and never run when only Fre
 | `mvs_pro_quota_revert_to_default_on_end` **(Pro)** | filter | `false, $user_id, $source ) ) { $default = $this->get_default_package(` | Filters whether a lapsed subscription reverts the user to the default package (pre-1.6.0 behaviour) instead of clearing the assignment. |
 | `mvs_pro_quota_widget_visible` **(Pro)** | filter | `$visible, $summary` | Filters whether the quota usage widget renders for the current user. |
 
+### Documents (2.4.0)
+
+Documents are a Free surface with a Pro engine: Free renders the page and asks
+these questions, Pro answers them. On a Free-only site the filters return their
+defaults and the document UI degrades honestly rather than showing empty slots.
+
+| Hook | Type | Arguments | Description |
+|------|------|-----------|-------------|
+| `mvs_documents_enabled` | filter | `false` | Whether the Documents feature is available at all on this site. Free defaults to false; Pro answers true when its Documents engine is loaded. |
+| `mvs_user_can_use_documents` | filter | `$can, $user_id` | Whether a member may use Documents. The seam a membership plugin hooks to sell document access. |
+| `mvs_document_drive_access` | filter | `'none', $drive_type, $drive_id, $user_id` | The member's access level on a drive: `none`, `read`, `write` or `own`. Fired through `DriveContract::FILTER_DRIVE_ACCESS`; this is the one filter a drive provider must answer. |
+| `mvs_document_drives_for_user` | filter | `array(), $user_id` | Extra drives a member can see beyond My Drive. Fired through `DriveContract::FILTER_DRIVES_FOR_USER`. |
+| `mvs_document_drive_visible` | filter | `$default, $drive_type, $drive_id, $user_id` | Whether a drive is listed for this member. Fired through `DriveContract::FILTER_DRIVE_VISIBLE`. |
+| `mvs_document_drive_label` | filter | `$label, $drive_type, $drive_id` | Display name for a drive. Fired through `DriveContract::FILTER_DRIVE_LABEL`. |
+| `mvs_document_drive_successor` | filter | `0, $drive_type, $drive_id, $user_id` | Who inherits a departing member's documents on a shared drive. Return 0 to decline, which falls through to a site administrator rather than to deletion. |
+| `mvs_document_owns_drive` | filter | `false, $drive_type, $drive_id, $user_id` | Whether the member owns the drive outright. |
+| `mvs_documents_drive_html` | filter | `'', $drive, $args` | Renders a drive listing. Free's dashboard and the `[mvs_documents]` shortcode ask; Pro answers. Empty means "no Documents engine here". |
+| `mvs_document_viewer_html` **(Pro)** | filter | `'', $media_id, $mime` | Viewer markup for a document. Markup must be fully escaped. Returning `''` keeps the honest download fallback. |
+| `mvs_document_location_label` | filter | `'', $media_id` | Human-readable folder location for a document. Folders are a Pro concept, so Free renders nothing when nobody answers. |
+| `mvs_document_privacy_labels` | filter | `$labels, $context` | Privacy value to label map, so the drive, the settings default and the admin editor cannot offer three different names for one setting. `$context` is `self` or `owner`. |
+| `mvs_document_admin_main_panels` | filter | `'', $media_id, $row` | Markup appended to the admin single-document screen's main column. Must be escaped. Companion slot to `mvs_document_admin_panels` (the facts column). |
+| `mvs_document_pdf_height` **(Pro)** | filter | `'', $media_id` | CSS height for the inline PDF viewer. `'auto'` fits the content; `''` keeps the stylesheet default (`min(80vh, 800px)`). |
+| `mvs_document_preview_bytes` **(Pro)** | filter | `self::PREVIEW_BYTES, $doc_type, $path` | How many bytes of a text-ish document are read for the preview. Default 64 KB, clamped to `MAX_BYTES` — the ceiling is a memory guard, not a display preference. |
+| `mvs_document_max_depth` **(Pro)** | filter | `12` | Maximum folder nesting depth. The default keeps the worst-case path inside the 150-byte `subtree` index prefix. |
+| `mvs_document_replaced_ttl` **(Pro)** | filter | `30 * DAY_IN_SECONDS` | How long a replaced document's previous file stays recoverable. |
+| `mvs_document_strip_metadata` **(Pro)** | filter | `true, $path` | Whether to strip metadata from an uploaded Office/ZIP document. Return false where the stored bytes must stay identical to what was uploaded (signed originals). |
+| `mvs_document_scan_file` **(Pro)** | filter | `null, $path, $context` | Malware-scan seam. Return true/false/`WP_Error`; returning null leaves the document marked `unscanned`, which is what every site without a scanner gets. `$context` carries `filename`, `mime`, `user_id`. |
+| `mvs_document_anon_links` | filter | `$default, $media_id` | Whether anonymous share links may be minted for this document. |
+| `mvs_document_can_grant` | filter | `$default, $drive_type, $drive_id, $user_id` | Whether this member may share documents on this drive with someone else. |
+| `mvs_pro_document_extraction_enabled` **(Pro)** | filter | `$enabled` | Whether document text extraction runs. |
+| `mvs_pro_document_quota_precheck` **(Pro)** | filter | `null, $user_id, $size` | Quota verdict before a document upload is accepted. Return a `WP_Error` to refuse. |
+| `mvs_pro_zip_reader_available` **(Pro)** | filter | `true` | Whether `ext-zip` is treated as present. Exists so the download-card fallback path is testable on a machine that has the extension. |
+| `mvs_redirect_documents` | filter | `false, $media_id, $redirect_url` | Whether a document permalink may be redirected away from its own page. Default false — a document renders its own page. True restores the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for documents too. |
+| `mvs_media_feed_allows_documents` | filter | `false` | Production Rule 3 escape hatch: `__return_true` restores the pre-2.4.0 behaviour where `GET /media?media_type=document` returned document rows. |
+| `mvs_media_library_types` | filter | `MediaTypes::MEDIA_LIBRARY` | The type group treated as "media library". Escape hatch for a site that ran pre-1.2.3 with PDFs enabled and would rather show those rows than hide them. |
+| `mvs_document_folder_created` **(Pro)** | action | `$folder_id, $args` | Fires after a folder is created. |
+| `mvs_document_folder_trashed` **(Pro)** | action | `$folder_id` | Fires after a folder is trashed. |
+| `mvs_document_folder_restored` **(Pro)** | action | `$folder_id` | Fires after a folder is restored from trash. |
+| `mvs_document_folder_privacy_cascaded` **(Pro)** | action | `$folder_id, $privacy, $cascaded` | Fires after a folder's privacy change has cascaded to its contents. |
+| `mvs_document_trashed` | action | `$media_id` | Fires after a document is trashed (admin list or Pro's document actions). |
+| `mvs_document_restored` | action | `$media_id` | Fires after a document is restored from trash. |
+| `mvs_document_replaced` **(Pro)** | action | `$media_id, $archived, $user_id` | Fires after a document's file is replaced. `$archived` is the retained previous file. |
+| `mvs_document_reassigned` | action | `$media_id, $successor, $user_id, $drive_type, $drive_id` | Fires when a departing member's document is reassigned to a successor. |
+| `mvs_document_shared` **(Pro)** | action | `$grant_id, $media_id, $user_id` | Fires after a document is shared with a member. |
+| `mvs_document_uploaded` **(Pro)** | action | `$media_id, $resolved, $folder_id` | Fires after a document has been ingested into a drive. |
+| `mvs_document_allowed_types` **(Pro)** | filter | `$default` | The named document types the library accepts. Intersected with the library's own vocabulary, so neither this filter nor a crafted settings POST can widen it. |
+| `mvs_document_max_size` **(Pro)** | filter | `$default, $user_id` | Maximum document size in bytes, per user. The seam for per-role or quota-driven limits. |
+| `mvs_document_default_privacy` **(Pro)** | filter | `$default, $context` | The privacy a new document defaults to. `$context` carries `drive_type`, `drive_id` and `folder_id` (may be empty). |
+| `mvs_document_row_actions` | filter | `'', $media_id, $trashed` | Extra row actions on the admin Documents list. Markup must be escaped. |
+| `mvs_profile_documents_html` | filter | `'', $owner_id, $viewer_id` | Renders the Documents tab on a BuddyPress profile. Free renders its empty state when nobody answers. |
+| `mvs_media_drive` | filter | `array( 'user', 0 ), $user_id, $args` | Which drive a new media item is bound to, as `array( $drive_type, $drive_id )`. Frozen contract, mirrored in Pro's `DriveContract::FILTER_MEDIA_DRIVE`. The binding is admitted only when the drive-access bridge grants `write` or `own` (the same gate documents use); anything else falls back to the personal drive. |
+
+### Dashboard, permissions and privacy vocabulary (2.4.0)
+
+| Hook | Type | Arguments | Description |
+|------|------|-----------|-------------|
+| `mvs_dashboard_sections` | filter | `DashboardSections::core_sections()` | The dashboard section registry, keyed by slug. Each section declares `available`, `enabled`, `capability`, `count`, `url` and `endpoints`. This replaced the render-time `mvs_dashboard_tabs` action as the way to add a dashboard area; `mvs_dashboard_tabs` still fires but is deprecated as of 2.4.0. |
+| `mvs_dashboard_before_panel_toolbar` | action | `$panel` | Fires immediately before a dashboard panel's search/filter toolbar. `$panel` is `media`, `albums`, `favorites` or `collections`. The escape hatch for adding content there without overriding the whole partial. |
+| `mvs_managed_caps` | filter | `$caps` | Capability to column-label map for the Permissions tab role matrix. Adding a cap here makes it grantable per role; the matrix already enumerates every role on the site. |
+| `mvs_privacy_levels` | filter | `array( 'public', 'members', 'loggedin', 'friends', 'group', 'space', 'private', 'dm', 'custom' )` | The accepted privacy vocabulary. An extension that adds a level must add it here too, or writes of that level are refused at the edge. |
+| `mvs_can_comment` | filter | `true, $media_id, $user_id` | Whether this member may comment on this item. Checked both by `CommentService` (which returns a 403) and by the single-media template (which hides the form). |
+| `mvs_media_type_for_mime` | filter | `$type, $mime` | The media type resolved for an uploaded MIME. |
+| `mvs_dismissible_notices` | filter | `$notices` | The dismissible in-app banners, as banner key => user-meta key. |
+| `mvs_has_custom_avatar` | filter | `$has, $user_id` | Whether a member has a real uploaded avatar. Do not read `bp_get_user_has_avatar()` instead — it answers true for everyone once any plugin generates avatars. |
+
+### Private community gate and app config
+
+| Hook | Type | Arguments | Description |
+|------|------|-----------|-------------|
+| `mvs_community_gated_page` | filter | `$is_gated_page` | Declare additional pages gated by the private community. Pro puts its compete pages behind the same gate through this filter. Since 2.3.2. |
+| `mvs_community_login_url` | filter | `wp_login_url( $current ), $current` | Where visitors turned away from a private community are sent. Defaults to `wp-login.php` with a return-to; a community layer with its own auth surface points this at that page. Since 2.3.2. |
+| `mvs_rest_gate_exempt_route_prefixes` | filter | `array( '/mvs/v1/serve', '/mvs/v1/app/config' ), $request` | Route prefixes the private-community REST gate never blocks. `/app/config` is exempt because a login screen needs branding, feature flags and legal URLs before anyone has logged in. Since 2.3.2. |
+| `mvs_app_config` | filter | `$config` | The whole `/app/config` payload after Free has assembled it. Pro adds its `documents` block here so the app never hardcodes the format list, the size ceiling or the preview tiers. Since 2.4.0. |
+
+### Watermarking and webhook signing (Pro)
+
+| Hook | Type | Arguments | Description |
+|------|------|-----------|-------------|
+| `mvs_watermark_text_position` **(Pro)** | filter | `self::opposite_corner( $position ), $config` | Where the text stamp goes when the watermark type is `both`. Defaults to the corner opposite the image stamp. |
+| `mvs_watermark_text_opacity` **(Pro)** | filter | `$opacity, $config` | Opacity of the text stamp when the watermark type is `both`. |
+| `mvs_pro_webhook_require_timestamp` **(Pro)** | filter | `false` | Demand a signed timestamp inside the webhook body. Default false, because senders integrated before this release omit it and Production Rule 3 forbids breaking them silently. |
+| `mvs_pro_webhook_timestamp_tolerance` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | How far a signed webhook timestamp may drift from now. |
+| `mvs_pro_webhook_replay_window` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | How long a delivered webhook event ID is refused as a replay. |
+| `mvs_pro_webhook_event_ttl` **(Pro)** | filter | `30 * DAY_IN_SECONDS` | How long seen webhook event IDs are retained. |
+
 ### Other
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
 | `mvs_media_privacy_clamped_by_album` | action | `$mid, $media_privacy, $effective, $album_id` | Fires when an item's privacy is tightened by its album. |
+| `mvs_default_privacy` | filter | `$privacy` | The privacy value a new item defaults to when the member has not chosen one. |
 

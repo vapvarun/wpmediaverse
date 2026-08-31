@@ -1191,7 +1191,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * skip the back link instead of rendering a broken one).
 	 *
 	 * Pro extensions can register their own contexts via the
-	 * `mvs_parent_url` filter.
+	 * `mvs_parent_route` filter, applied at the end of this method.
+	 * (This block used to name `mvs_parent_url`, a filter that has never
+	 * existed anywhere in either plugin; the docs copied the wrong name from
+	 * here, so it is corrected at the source.)
 	 *
 	 * @param string $context Page context — one of:
 	 *                        'single-media', 'album', 'edit-profile',

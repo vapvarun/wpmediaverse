@@ -8,12 +8,12 @@
 
 | Scenario | Status |
 |---|---|
-| Fresh upload via UploadService → S3 | ✅ ships file to S3, no local copy |
-| Fresh upload via UploadService → BunnyCDN | ✅ ships file to BunnyCDN, no local copy |
+| Fresh upload via UploadService → S3 | ✅ lands on local disk first, then queues `mvs_cloud_sync_media` to copy to S3 (see "Upload model") |
+| Fresh upload via UploadService → BunnyCDN | ✅ same deferred-sync path |
 | Public file access via CDN URL | ✅ via `StorageDriver::url()` (CDN-domain or direct S3/Bunny) |
 | Signed-URL access for private media | ✅ via `Services\SignedUrlService` (always uses our serve endpoint, then 302 to cloud URL) |
 | Delete media → cloud cleanup | ✅ `delete_cascade()` calls `$driver->delete()` |
-| **Multi-size thumbnail generation in cloud mode** | ❌ **Falls through to fallback** (uses original full-size URL for every size). Functional but inefficient. See "Known gap 1". |
+| **Multi-size thumbnail generation in cloud mode** | ✅ Fixed in 1.2.2. Thumbs are generated from the local original and pushed per size; pre-1.2.2 rows are repaired with `wp mvs cloud-thumbs-backfill`. See "Known gap 1 (resolved)". |
 | **Switching driver mid-life (local → s3, etc.)** | ⚠️ **No automatic migration before 1.2.2.** Use `wp mvs migrate-storage` (added 1.2.2). |
 | **Cloud upload retry / resume on partial network failure** | ⚠️ S3 driver has 3-retry exponential backoff; BunnyCDN has single-attempt. |
 | **Cloud download for migration / re-thumbnailing** | ✅ `StorageDriver::download()` added in 1.2.2 (Free interface + Pro implementations) |
@@ -30,13 +30,23 @@ Active driver is selected via the `mvs_storage_driver` option:
 local fallback if cloud fails. This is by design - multi-driver
 replication doubles storage cost + duplicates on every upload.
 
+## Upload model - local first, cloud deferred
+
+Even with a cloud driver active, an upload **always writes to local disk
+first** and then queues `mvs_cloud_sync_media` (Action Scheduler) to copy
+the original and its variants up. The member never waits on a CDN round
+trip to see their own photo. `UploadService::queue_cloud_sync()` schedules
+it; `UploadService::run_cloud_sync()` is the worker, wired in
+`Core\Plugin`. Expect a local copy to exist immediately after upload and
+to disappear only once the sync has run (or after `wp mvs cleanup-local`).
+
 ## Pre-flight before testing on real cloud credentials
 
 1. Active driver matches the credentials configured. Verify via:
    ```bash
    wp option get mvs_storage_driver
    ```
-2. Pro plugin active + EDD license valid for `s3` / `bunnycdn` drivers.
+2. Pro plugin active - `s3` / `bunnycdn` are Pro drivers. The EDD licence is **not** a gate here: it is updates-and-support only, and the single feature it gates anywhere is Documents *writes* (`DocumentLicense::can_write()`). An unlicensed Pro install still gets the cloud drivers.
 3. S3 bucket policy allows the configured access key to PUT, GET, DELETE.
 4. BunnyCDN storage zone API key is the **storage zone read+write password**, not the account dashboard password.
 5. Pro Settings → Cloud Storage → "Test connection" returns ✅.
@@ -54,9 +64,9 @@ For EACH of {`local`, `s3`, `bunnycdn`} as the active driver:
 | 1. Upload an image via REST `/mvs/v1/media` | 201 Created, response includes `file_url` pointing at the active driver's URL pattern |
 | 2. `mvs_media_index.file_path` row | populated with relative path (e.g. `2026/05/abc.jpg`) |
 | 3. Browser GET of the `file_url` | 200, returns the image bytes |
-| 4. `wp-content/uploads/wpmediaverse/{file_path}` exists locally? | YES for `local` driver, NO for `s3` / `bunnycdn` |
+| 4. `wp-content/uploads/wpmediaverse/{file_path}` exists locally? | YES for every driver immediately after upload (local-first model). For `s3` / `bunnycdn` it is removed once `mvs_cloud_sync_media` has run - run the queue before asserting absence |
 | 5. PHP $_FILES temp directory after upload | empty (PHP cleaned its own tmp file) |
-| 6. Multi-size thumbnails (`thumb_thumb`, `thumb_medium`, `thumb_large`) in `mvs_media_meta` | for `local`: 3 distinct URLs from `multi_resize`. For `s3` / `bunnycdn`: ALL THREE point to the original full-size `file_url` (Known gap 1) |
+| 6. Multi-size thumbnails (`thumb_thumb`, `thumb_medium`, `thumb_large`) in `mvs_media_meta` | 3 distinct URLs from `multi_resize` for every driver. For `s3` / `bunnycdn` they point at the cloud once the deferred sync has run |
 | 7. Activity created for the upload (BP active) | `bp_activity` row with the new `_mvs_activity_privacy_level` meta (1.2.1+) |
 
 ### Phase B - delete cleanup
@@ -101,35 +111,32 @@ For each:
 | Network timeout mid-download (migrate-storage) | The specific row marked Failed; partial local temp cleaned via `wp_delete_file` |
 | Cloud bucket policy changes from public-read to private | `download()` in 1.2.2 still uses public URL - would 403 on private-only buckets. Migration would Fail those rows. **Workaround for now: temporarily make bucket public-read for the migration window. Signed-GET fallback is on the 1.3.0 list.** |
 
-## Known gap 1 - multi-size thumbnails on cloud
+## Known gap 1 - multi-size thumbnails on cloud (RESOLVED in 1.2.2)
 
-`generate_thumbnails()` calls `wp_get_image_editor( $file_path )` where
-`$file_path` comes from `$driver->get_full_path()`. For S3 driver,
-`get_full_path()` returns `s3://bucket/wpmediaverse/path` - not a real
-filesystem path. PHP can't read it without a registered S3 stream
-wrapper, so `wp_get_image_editor()` fails and the function falls
-through to `ensure_fallback_thumbs()` which sets all three thumb
-meta keys to the original full-size `file_url`.
+Originally, `generate_thumbnails()` called `wp_get_image_editor( $file_path )`
+on a path from `$driver->get_full_path()`. For the S3 driver that is
+`s3://bucket/wpmediaverse/path` - not a real filesystem path - so the
+editor failed and the function fell through to `ensure_fallback_thumbs()`,
+which pointed all three thumb meta keys at the original full-size
+`file_url`. Cloud-mode sites served a full-size original as every
+"thumbnail."
 
-**Customer impact:**
-- Cloud-mode sites serve the original 4K (or whatever) image as
-  every "thumbnail." Page weight is significantly higher than local-mode
-  sites where multi_resize produced 150 / 600 / 1024 variants.
-- The CDN caches the original well, so per-image bandwidth cost is
-  low after first hit, but initial render + mobile data usage is poor.
+**Now:** uploads land on local disk first (see "Upload model"), so
+`multi_resize` always runs against a real local file, and the deferred
+cloud sync pushes each variant up at a predictable path. The size-aware
+read path `SignedUrlService::maybe_direct_cloud_thumbnail_url()` then
+returns a per-size cloud URL.
 
-**Fix path (1.3.0 candidate):**
-1. In cloud mode, `generate_thumbnails` downloads the source via
-   `$driver->download()` (now available in 1.2.2) to a temp dir.
-2. Runs `wp_get_image_editor` on the local temp.
-3. `multi_resize` writes thumbnails to the temp dir.
-4. Each thumbnail gets `$driver->store()`'d to cloud at predictable
-   relative paths (e.g. `{file_path}-{size}.jpg`).
-5. The `thumb_*` meta is populated with the cloud URLs of the new
-   variants.
-6. The local temp dir is cleaned up.
+**Media uploaded before 1.2.2** still carries local `thumb_<size>` URLs.
+Repair it with:
 
-Estimated effort: 1 working day with a S3 bucket for live testing.
+```bash
+wp mvs cloud-thumbs-backfill --dry-run
+wp mvs cloud-thumbs-backfill --limit=100
+```
+
+Pre-condition: the originals must already be on cloud - run
+`wp mvs migrate-storage` first if not.
 
 ## Known gap 2 - no signed-GET path for private S3 buckets
 

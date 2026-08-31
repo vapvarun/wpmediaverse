@@ -1,5 +1,10 @@
 # MediaVerse ↔ BuddyNext Integration Plan
 
+> **STATUS: PLAN (2026-07-07). Not verified against 2.4.0 code, and it describes a
+> second plugin (BuddyNext) that is not in this repo.** The one MediaVerse-side
+> seam that definitely ships is the `mvs_buddynext_active` filter. Everything else
+> here is intent.
+
 Date: 2026-07-07 · Context: BuddyNext free 1.0.5 installed on mediaverse.local. MV = MediaVerse, BN = BuddyNext.
 
 ## Principle — neither profile replaces the other

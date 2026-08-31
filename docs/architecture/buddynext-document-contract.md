@@ -8,7 +8,8 @@ overrides, no direct table reads. So everything BN needs has to be **discoverabl
 not merely enforced behind it. This document is the part BN can rely on not moving.
 
 The freeze lives in code as well as here: `WPMediaVersePro\Documents\DriveContract`, enforced by
-`bin/coding-rules-check.sh` **Rule 8** — a refusal code emitted by any document surface and not
+the **Pro** plugin's `bin/coding-rules-check.sh` **Rule 8** (Free's script numbers its own Rule 8
+differently — that one is the exec-family ban) — a refusal code emitted by any document surface and not
 declared in the contract fails the build. A frozen list that nothing asserts drifts the first time
 somebody adds a route in a hurry.
 
@@ -19,7 +20,7 @@ somebody adds a route in a hurry.
 | # | Layer | Question | Decided by | State |
 |---|---|---|---|---|
 | 1 | Feature access | May this account have a library at all? | `use_mvs_documents` → `mvs_user_can_use_documents` | **shipped** |
-| 2 | Drive authority | May they read / write / administer THIS drive? | `mvs_document_drive_access` | **PR3** |
+| 2 | Drive authority | May they read / write / administer THIS drive? | `mvs_document_drive_access` | **shipped** (fired at `Documents/PermissionService.php:1589` via `DriveContract::FILTER_DRIVE_ACCESS`) |
 | 3 | Privacy | May they read THIS document? | `PermissionService::can_view()` + grants | **shipped** |
 | 4 | Ownership | Whose upload is this, for quota and GDPR? | `post_author`, always a real person | **shipped** |
 

@@ -1,5 +1,14 @@
 # WPMediaVerse 1.7.1 — Adopt the Frontend Interactivity & Client-Side Nav Standard
 
+> **STATUS: HISTORICAL PLAN (1.7.1). Largely superseded by what shipped.** The
+> router region exists today via `templates/partials/router-region-open.php` /
+> `router-region-close.php`; read the code, not this plan, for current behaviour.
+> The "Current state (audited)" section describes 1.7.1 and is no longer true.
+> **The absolute paths below are dead** - this plugin lives under
+> `wp-content/plugins/wpmediaverse`, not `/Users/vapvarun/dev/repos/`, and the
+> Jetonomy reference repo is not checked out at the path given. The local copy of
+> the standard is `docs/standards/frontend-interactivity.md`.
+
 **Goal:** make WPMediaVerse's frontend views client-navigate uniformly (like
 Jetonomy, the reference implementation), so the BuddyNext suite has one UX feel.
 Today WPMediaVerse uses the Interactivity API (namespace `mvs/*`) but has **no

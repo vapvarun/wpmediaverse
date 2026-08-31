@@ -22,7 +22,7 @@ Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` hea
 - **Admin** — requires `manage_options` or `manage_mvs_settings` (noted per route).
 - **HMAC** — no WordPress auth; request body is verified against an HMAC-SHA256 signature header.
 
-Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_streaks_enabled`, `mvs_connectors_enabled`). When a feature is disabled its routes are not registered.
+Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_connectors_enabled`, `mvs_stories_enabled`). When one of those features is disabled its routes are not registered. Streaks is the exception: `POST /streaks/buy-freeze` registers regardless of `mvs_streaks_enabled` and refuses at call time instead.
 
 ---
 
@@ -438,11 +438,11 @@ Return the current user's point balance and the boost cost/limit settings.
 
 ## Streaks
 
-> Requires `mvs_streaks_enabled`.
+> Unlike the other gamification areas, this route registers whether or not `mvs_streaks_enabled` is on.
 
 ### POST /streaks/buy-freeze
 
-Purchase a streak-freeze token with gamification points. Fails with a `400` if the gamification plugin is inactive or the user lacks enough points.
+Purchase a streak-freeze token with gamification points. Returns `503 mvs_gamification_unavailable` when the points backend is absent, and `400 mvs_insufficient_points` when the user cannot afford the cost (`mvs_pro_streak_freeze_cost`, default 100).
 
 **Auth:** User
 
@@ -858,7 +858,7 @@ Run an incremental delta sync of recently changed items.
 
 ## Stories **(New in 1.9.0)**
 
-WhatsApp-style ephemeral stories. Story state is stored as free media meta (`is_story` / `story_expires_at`); per-viewer "seen by" receipts live in the Pro table `mvs_pro_story_views`. Replying to a story reuses the existing free DM routes — there is no separate reply endpoint here. Requires `mvs_stories_enabled`.
+WhatsApp-style ephemeral stories. Story state is stored as free media meta (`is_story` / `story_started_at` / `story_expires_at`). There is no separate story-views table: a story view **is** a media view, so receipts are written to the free `mvs_media_views` table and "seen by" is derived from those rows, window-scoped to the story's active period via `story_started_at` and excluding the author. Replying to a story reuses the existing free DM routes — there is no separate reply endpoint here. Requires `mvs_stories_enabled`.
 
 ### GET /stories
 
@@ -1060,6 +1060,306 @@ Dismiss the gamification first-run welcome banner (site-wide option).
 
 ---
 
+## Documents, Folders & Drives **(New in 2.4.0)**
+
+The document library. A **drive** is a library scope, addressed by a token of the form `type:id` - `user:12` for a member's personal drive, `space:7` for a Space drive. Omit the token and every route defaults to the caller's own personal drive.
+
+MediaVerse **embeds** documents; it does not convert them. `GET /documents/{id}/preview` streams a PDF inline, server-renders the text family as sanitised HTML, and returns a descriptive card for everything else.
+
+> **Licence note.** Documents are the one exception to Pro's licence model: the EDD licence buys updates, not features, everywhere else, but document **writes** are gated. On a site with an inactive licence, every write on this surface (upload, replace, rename, move, privacy, trash, restore, folder create, share) is refused with `403 mvs_documents_read_only`. Reads are never gated - listing, searching, opening, downloading and previewing all keep working, and a member never loses access to files they already put there. Routes still register (a gate that unregisters a route turns a readable refusal into an unexplained `404`). Two carve-outs: anyone with `manage_options` or `manage_mvs_documents` is exempt, and `DELETE /permissions/{grant_id}` stays open, because trapping a document in somebody else's hands is a safety failure rather than a commercial lever.
+
+### GET /documents
+
+List documents in a drive.
+
+**Auth:** Read access to the named drive. Usually a logged-in member, but a drive the permission ladder marks readable is listable without a session when the owner has switched anonymous links on. A drive the viewer may not know about answers `404`, not `403`.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `drive` | string | (your own drive) | Drive token, e.g. `space:7` |
+| `folder` | int | `0` | Folder to list; `0` is the drive root |
+| `status` | string | `publish` | `publish` or `trash`. `trash` lists the member's trashed documents |
+| `page` | int | `1` | Page number |
+| `per_page` | int | `50` | Items per page (max 100) |
+| `orderby` | string | `created_at` | One of `created_at`, `title`, `file_size` |
+| `order` | string | `desc` | `asc` or `desc` |
+
+Unknown `status` / `orderby` / `order` values return `400` rather than being silently ignored.
+
+---
+
+### GET /documents/search
+
+Full-text search across the documents the caller can see.
+
+**Auth:** User
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `q` | string | Yes | — | Search term |
+| `drive` | string | No | (all visible drives) | Scope to one drive, e.g. `space:7` |
+| `page` | int | No | `1` | Page number |
+| `per_page` | int | No | `20` | Results per page (max 50) |
+
+---
+
+### GET /documents/{id}
+
+Get a single document.
+
+**Auth:** User with read access to the document
+
+---
+
+### PUT /documents/{id}
+
+Update a document's metadata - rename, re-describe, change privacy, or move it to another folder.
+
+**Auth:** Owner/Admin. Write-gated.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | string | New title |
+| `description` | string | New description |
+| `privacy` | string | One of `private`, `space`, `members`, `public` |
+| `folder` | int | Destination folder ID; `0` for the drive root |
+
+---
+
+### DELETE /documents/{id}
+
+Trash a document. It is **not** destroyed - `POST /documents/{id}/restore` brings it back.
+
+**Auth:** Owner/Admin. Write-gated.
+
+---
+
+### POST /documents/upload
+
+Create a document. Send the file as `multipart/form-data`.
+
+**Auth:** User with write access to the target drive. Write-gated.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `doc_type` | string | No | — | The type the caller believes this is. A disagreement with the actual file is refused, never silently corrected. Omit it to make no claim |
+| `folder` | int | No | `0` | Folder to file into. A folder carries its own drive and wins over `drive` |
+| `drive` | string | No | (your own drive) | Drive to upload into at the root, as `type:id` - only consulted when `folder` is `0` |
+| `title` | string | No | (filename) | Document title |
+| `description` | string | No | `""` | Description |
+| `privacy` | string | No | (site setting) | One of `private`, `space`, `members`, `public` |
+
+---
+
+### POST /documents/{id}/replace
+
+Swap new bytes into an existing document. The document keeps its ID, slug, title, folder, privacy and grants, so every link already shared still resolves; the superseded file stays recoverable for 30 days.
+
+**Auth:** Owner/Admin - the same permission ladder as `PUT /documents/{id}`. Write-gated.
+
+Optional `doc_type` behaves exactly as on upload.
+
+---
+
+### POST /documents/{id}/restore
+
+Restore a trashed document.
+
+**Auth:** Owner/Admin. Write-gated.
+
+---
+
+### POST /documents/bulk
+
+Apply one action to a mixed selection of documents and folders in a single call. Reports what happened **per item**, so a client can mark the rows that failed rather than re-fetching to find out which.
+
+**Auth:** User. Authority over each item is proved per item, by the same service the drive form uses. Write-gated.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `action` | string | Yes | One of `move`, `trash`, `restore`. `share` / `unshare` are deliberately absent - they take a per-item grantee |
+| `items` | string[] | Yes | 1-100 entries, each `document:<id>` or `folder:<id>` |
+| `value` | string | No | Destination folder ID for `move`; `0` for the drive root. Ignored otherwise |
+
+---
+
+### GET /me/shared
+
+Documents shared **with** the current member. A different question from "my drive", and it has no folder to scope by, so it is its own route. Takes the same collection parameters as `GET /documents`.
+
+**Auth:** User. Unlike `GET /documents`, this route names no drive, so an anonymous caller is always refused.
+
+---
+
+### GET /drives
+
+The drives this viewer can see - how a client discovers a Space library at all, rather than being told a document's drive after the fact.
+
+**Auth:** User. Names no drive, so an anonymous caller is always refused.
+
+---
+
+### GET /documents/{id}/download
+
+Stream the document as an attachment.
+
+**Auth:** Read access to the document. Not write-gated - downloads keep working on an unlicensed site.
+
+Refused with `404 mvs_document_not_found` when the item is not a document, or when it has been trashed. Trash is the member's "take it back" action, so it withdraws the file from delivery for everyone including the owner; restore it first.
+
+---
+
+### GET /documents/{id}/preview
+
+Preview the document at whichever tier its type supports:
+
+1. **PDF** streams inline and the response is the file itself.
+2. **The text family** comes back as server-rendered, sanitised HTML in a JSON response - the client never receives the file.
+3. **Everything else** comes back as a card describing the file and where to download it.
+
+**Auth:** Read access to the document. Not write-gated. Same trashed/not-a-document refusals as `/download`.
+
+---
+
+### GET /folders
+
+List folders in a drive.
+
+**Auth:** User with read access to the drive
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `drive` | string | (your own drive) | Drive token, e.g. `user:12` |
+| `parent` | int | `0` | Parent folder; `0` is the drive root |
+| `status` | string | `active` | `active` or `trashed`. `trashed` is flat and ignores `parent` |
+| `page` | int | `1` | Page number |
+| `per_page` | int | `50` | Items per page (max 100) |
+| `orderby` | string | `name` | One of `name`, `created_at`, `updated_at` |
+| `order` | string | `ASC` | Sort direction |
+
+---
+
+### POST /folders
+
+Create a folder.
+
+**Auth:** User with write access to the drive. Write-gated.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Folder name |
+| `drive` | string | No | (your own drive) | Drive token |
+| `parent` | int | No | `0` | Parent folder ID |
+
+---
+
+### GET /folders/{id}
+
+Get a single folder.
+
+**Auth:** User with read access
+
+---
+
+### PUT /folders/{id}
+
+Rename, re-parent, or re-privacy a folder.
+
+**Auth:** Owner/Admin. Write-gated.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | New folder name |
+| `parent` | int | New parent folder ID |
+| `privacy` | string | One of `private`, `space`, `members`, `public` |
+
+---
+
+### DELETE /folders/{id}
+
+Trash a folder.
+
+**Auth:** Owner/Admin. Write-gated.
+
+---
+
+### POST /folders/{id}/restore
+
+Restore a trashed folder.
+
+**Auth:** Owner/Admin. Write-gated.
+
+---
+
+### GET /documents/{id}/permissions
+
+List the grants on a document.
+
+**Auth:** Whoever may manage sharing for the document.
+
+---
+
+### POST /documents/{id}/permissions
+
+Grant a user or a role access to a document.
+
+**Auth:** Whoever may manage sharing for the document. Write-gated.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `grantee_type` | string | `user` | `user` or `role` |
+| `user_id` | int | — | The member to grant to, when `grantee_type` is `user` |
+| `user_login` | string | — | Alternative to `user_id` - a person types a name, not a row ID |
+| `role` | string | — | The role to grant to, when `grantee_type` is `role` |
+| `permission` | string | `view` | One of `view`, `comment`, `edit` |
+| `expires_at` | string | — | Optional expiry |
+
+---
+
+### POST /documents/{id}/permissions/link
+
+Mint an anonymous share link for a document.
+
+**Auth:** Whoever may manage sharing for the document. Write-gated. Returns `403 mvs_link_sharing_disabled` when anonymous links are switched off site-wide.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `permission` | string | `view` | One of `view`, `comment`, `edit` |
+| `expires_at` | string | — | Optional expiry |
+
+---
+
+### DELETE /permissions/{grant_id}
+
+Revoke a grant.
+
+**Auth:** Whoever may revoke this grant. **Not** write-gated - see the licence note above.
+
+---
+
+### Document error codes
+
+These codes are frozen: a client may branch on them, and their meanings do not change without a coordinated release.
+
+| Code | Status | Means |
+|------|--------|-------|
+| `mvs_unauthorized` | 401 | Not signed in. Send the member to sign-in |
+| `mvs_documents_unavailable` | 403 | Signed in, but documents are not available to this account. Hide the tab; do not retry or offer sign-in |
+| `mvs_documents_read_only` | 403 | Documents are read-only across the whole site right now. Show the library, hide every write control everywhere |
+| `mvs_drive_not_found` | 404 | That drive is not visible to you, including a secret Space. Treat as no such drive |
+| `mvs_drive_forbidden` | 403 | The drive exists and you may know it exists, but its contents are not yours to read. Offer the way in, not the library |
+| `mvs_drive_read_only` | 403 | The drive is visible and readable, but you may not write to it. Show the library, hide upload |
+| `mvs_document_not_found` | 404 | Not readable by you, or gone. Treat as missing either way |
+| `mvs_document_forbidden` | 403 | Readable but not editable. Show it, hide edit |
+| `mvs_document_type_not_allowed` | 400 | This site refuses that type; `data.doc_type` carries it |
+| `mvs_document_too_large` | 400 | Over the limit |
+| `mvs_link_sharing_disabled` | 403 | Anonymous links are off on this site. Hide the option rather than offering it |
+| `mvs_document_scan_failed` | 400 | The site scanner rejected the file. Not a type problem - do not suggest another format |
+
+Any other document refusal should be treated as "the request was refused, show the message" rather than branched on.
+
+---
+
 ## Error Responses
 
 Pro endpoints use the same error envelope as the free API:
@@ -1079,7 +1379,7 @@ Common Pro error codes:
 | `mvs_pro_rest_forbidden` | 403 | Caller lacks the required Pro capability |
 | `mvs_pro_no_captions` | 404 | No captions exist for the requested media |
 | `mvs_pro_privacy_update_failed` | 400 | Privacy could not be updated (bad level or write failure) |
-| `mvs_gamification_unavailable` | 400 | Gamification plugin not active (streak freeze) |
+| `mvs_gamification_unavailable` | 503 | Points backend not available (streak freeze) |
 | `mvs_insufficient_points` | 400 | Not enough gamification points for the requested action |
 
 ---

@@ -3,7 +3,9 @@
 > **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
 
 
-WPMediaVerse provides 6 privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
+WPMediaVerse provides privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
+
+The six levels below are the ones the upload form offers. The full vocabulary a write is allowed to store is `PrivacyService::supported_levels()` - as of 2.4.0 `public`, `members`, `loggedin`, `friends`, `group`, `space`, `private`, `dm` and `custom`, filterable through `mvs_privacy_levels`. A level not in that list is refused at the edge rather than stored and silently ignored.
 
 ## Privacy Levels
 

@@ -17,7 +17,7 @@ Use this checklist on every pull request that touches PHP. All 19 checks must pa
 - [ ] Nonce verified on **all** form submissions (`check_admin_referer()`) and AJAX handlers (`check_ajax_referer()`).
 - [ ] `current_user_can()` checked before any write operation (insert, update, delete) - the nonce alone is not sufficient.
 - [ ] REST endpoints define a `permission_callback` that returns a `WP_Error` or `false` on failure. `__return_true` is **never** acceptable on write routes.
-- [ ] Custom capabilities used where appropriate: `manage_mvs_media` for owner-level actions, `moderate_mvs_media` for moderation actions. Do not fall back to `manage_options` for media-specific gates.
+- [ ] Custom capabilities used where appropriate, and routed through `Capabilities\MediaCapabilities` rather than hardcoded: `upload_mvs_media` / `edit_mvs_media` / `delete_mvs_media` / `publish_mvs_media` / `read_mvs_media` for media actions, `moderate_mvs_media` for moderation, `manage_mvs_settings` and `manage_mvs_access` for owner-level admin, `use_mvs_documents` / `manage_mvs_documents` for documents. Do not fall back to `manage_options` for media-specific gates.
 
 ---
 
@@ -39,7 +39,7 @@ Use this checklist on every pull request that touches PHP. All 19 checks must pa
 
 ## AJAX / REST
 
-- [ ] AJAX handlers call `check_ajax_referer( 'mvs_nonce', 'nonce' )` or `wp_verify_nonce()` before processing.
+- [ ] AJAX handlers call `check_ajax_referer()` with the action's own nonce name (e.g. `check_ajax_referer( 'mvs_import_demo', '_nonce' )`) or `wp_verify_nonce()` before processing. New code should be REST, not `admin-ajax` - see the allowlist rule in `docs/development/STRUCTURAL_GUIDELINE.md` §7.6.
 - [ ] REST responses do not expose sensitive data (password hashes, private keys, internal user emails, full server paths). Review the response schema in `get_item_schema()`.
 - [ ] Expensive or public REST endpoints (search, feed) are protected by the `RateLimiter` middleware or a manual transient-based throttle.
 
@@ -60,14 +60,18 @@ Run these tools before opening a PR. CI will also run them and block merge on fa
 **WPCS / PHPCS**
 
 ```bash
-composer run phpcs                        # Full ruleset scan
+composer run phpcs                        # errors only (blocks)
+composer run phpcs:full                   # errors + warnings (informational)
+composer run phpcs:fix                    # phpcbf auto-fix
 ```
 
-Or via MCP:
+**Everything at once**
 
-- `wppqa_run_code_checks` - full quality scan including WPCS
-- `wpcs_check_file` - single-file WPCS scan
-- `wpcs_phpstan_check` - PHPStan static analysis (detects SQL injection, type errors, undefined vars)
+```bash
+composer ci                               # the local-CI gate the pre-push hook runs
+```
+
+Optionally, the `wp-plugin-qa` MCP server's `wppqa_scan_plugin` / `wppqa_audit_plugin` tools give a broader WordPress-specific audit on top of the gate.
 
 **PHPStan**
 

@@ -307,6 +307,27 @@ if [ "$MODE" != "quick" ]; then
   fi
 fi
 
+# ─── 3.1b — Hook-manifest drift (correctness, not age) ───────────────────────
+# 3.1 above checks the manifest is valid JSON and not stale-dated. Age is not
+# correctness: `touch` satisfies it, and a freshly-dated manifest can still
+# describe hooks that do not exist. On 2026-09-01 this manifest was missing 20
+# hooks that ship and fire - two of which readme.txt already advertises to
+# developers - while still listing `mvs_ffmpeg_binary`, removed with video
+# transcoding in 2.4.0. Nothing caught it because nothing compared the two.
+# This does, in both directions. Mutation-tested against a planted phantom and
+# a planted undocumented hook.
+step "3.1b" "Hook-manifest drift (manifest vs code, both directions)"
+if [ -f bin/hook-manifest-drift.php ]; then
+  if DRIFT_OUT="$(php bin/hook-manifest-drift.php 2>/dev/null)"; then
+    pass "3.1b Hook manifests match the code"
+  else
+    printf '%s\n' "$DRIFT_OUT"
+    fail "3.1b Hook-manifest drift — a documented hook does not exist, or a shipped hook is undocumented"
+  fi
+else
+  warn "3.1b bin/hook-manifest-drift.php missing"
+fi
+
 # ─── 3.2 — Functional cert (behavioural gate; needs a live WP) ────────────────
 # Portable plugin-level gate: boot-smoke every REST route + dead-toggle oracles
 # + 100% toggle coverage. Runs identically on any machine that points

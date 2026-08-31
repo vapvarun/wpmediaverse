@@ -4,7 +4,9 @@
 
 
 
-WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video processing, AI providers, quota management, and granular privacy controls.
+WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video analytics, chapters and auto-captions, AI providers, quota management, and granular privacy controls.
+
+> Pro does not transcode video. The FFmpeg pipeline was removed in 2.4.0 - MediaVerse embeds media, it does not process it. The player uses the original file.
 
 ![WPMediaVerse Pro license key entry screen](../images/admin-overview.png)
 
@@ -26,7 +28,9 @@ WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud stora
 
 ![Media License settings page with activation status](../images/admin-overview.png)
 
-All Pro features run as soon as the plugin is activated. The license key is used only to unlock automatic updates - it does not gate any feature, so every Pro capability works regardless of license state.
+All Pro features run as soon as the plugin is activated. The license key unlocks automatic updates; it is not a feature switch.
+
+There is exactly one exception: **Documents writes**. On a site whose licence has lapsed, existing documents stay readable, downloadable and previewable, but uploading, replacing, moving, sharing and folder changes are refused until the licence is active again. Nothing is migrated, converted or lost. See [Documents](documents.md). Every other Pro capability works regardless of license state.
 
 ## Updating Pro
 

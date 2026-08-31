@@ -23,10 +23,11 @@ WordPress Interactivity API stores are loaded as **ES modules** (`type="module"`
 | `mvs/media-grid` | `src/blocks/media-grid/view.js` | Grid interactions | Block render |
 | `mvs/media-player` | `src/blocks/media-player/view.js` | Video/audio player controls | Block render |
 | `mvs/media-upload` | `src/blocks/media-upload/view.js` | Upload block interactions | Block render |
-| `mvs/media-stats` | `src/blocks/media-stats/view.js` | Stats display | Block render |
-| `mvs/story-viewer` | `src/blocks/story-viewer/view.js` | Stories carousel | Block render |
-| `mvs/album-viewer` | `src/blocks/album-viewer/view.js` | Album gallery view | Block render |
+| `mvs/media-social` | `src/blocks/media-social/view.js` | Reactions, favourite, comment actions | Block render |
+| `mvs/dashboard` | `src/blocks/dashboard-view/view.js` | Dashboard tabs and panels | Block render |
 | `mvs/lock-overlay` | `src/blocks/lock-overlay/view.js` | Pro feature lock overlay | Block render |
+
+`media-stats`, `album-viewer`, `member-photos` and `pdf-viewer` have no `view.js` and register no store - they render server-side only. There is no `story-viewer` block in Free; the stories carousel is Pro's `mvs/pro-stories` store in `wpmediaverse-pro/src/blocks/pro-stories/view.js`.
 
 ### How `shared-ui` Gets Loaded
 
@@ -93,6 +94,8 @@ These are regular scripts (not modules) loaded via `wp_enqueue_script()` with `s
 
 The pro plugin overrides the default explore/profile pages with layout-specific templates:
 
+Paths below are relative to `wpmediaverse-pro/templates/`.
+
 | Layout | Feed Template | Profile Template | Card Template |
 |---|---|---|---|
 | Instagram | `layouts/instagram/feed.php` | `layouts/instagram/profile.php` | `layouts/instagram/partials/feed-card.php` |
@@ -100,7 +103,7 @@ The pro plugin overrides the default explore/profile pages with layout-specific 
 | Pinterest | `layouts/pinterest/feed.php` | `layouts/pinterest/profile.php` | (inline) |
 | Dribbble | `layouts/dribbble/feed.php` | `layouts/dribbble/profile.php` | (inline) |
 
-Layout is set via `mvs_pro_feed_layout` option. The `LayoutManager.php` in the pro plugin routes to the correct template.
+Layout is set via the `mvs_pro_feed_layout` option. `includes/Frontend/Layouts/LayoutManager.php` in the pro plugin routes to the correct template.
 
 ## Common Pitfalls
 

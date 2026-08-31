@@ -66,9 +66,9 @@ chore(security): bump guzzlehttp/guzzle to 7.8.1
 ## PR Process
 
 1. **Cut a branch** from `develop`: `git checkout -b feature/my-feature develop`
-2. **Write code** following `docs/CODING_STANDARDS.md`. Max 500 lines per file, max 50 lines per method.
-3. **Self-review** against `docs/SECURITY_CHECKLIST.md` before opening the PR. All 19 checks must pass.
-4. **Run static analysis** locally: `composer run phpcs && composer run phpstan`
+2. **Write code** following `docs/development/CODING_STANDARDS.md`. Max 500 lines per file, max 50 lines per method.
+3. **Self-review** against `docs/security/SECURITY_CHECKLIST.md` before opening the PR. All 19 checks must pass.
+4. **Run the local-CI gate**: `composer ci` (or `composer ci:no-journeys` / `composer ci:quick` for tight loops). The pre-push git hook runs it for you once you have run `composer install-hooks`.
 5. **Run unit tests** locally: `./vendor/bin/phpunit`
 6. **Open a PR** targeting `develop`. Title must follow the commit message convention above.
 7. **Fill in the PR description** - include: what changed, why, how to test, and any migration notes.
@@ -76,12 +76,15 @@ chore(security): bump guzzlehttp/guzzle to 7.8.1
 9. **Address review comments** - push additional commits to the branch (do not force-push after review starts).
 10. **Squash-merge** once approved and CI is green. The squashed commit message must follow the convention. Delete the branch after merge.
 
-**CI checks that must pass before merge**
+**CI checks that must pass before merge** (GitHub Actions, `.github/workflows/tests.yml`)
 
-- WPCS (PHP coding standards)
-- PHPStan (static analysis, no new baseline entries)
-- PHPUnit (no regressions)
-- Grunt build (assets compile without error)
+- `php-lint` (every file in `includes/`, `templates/`, `src/` plus `wpmediaverse.php`)
+- `wpcs` (errors block, warnings pass)
+- `phpstan` (static analysis, no new baseline entries)
+- `phpunit` (PHP 8.1-8.4 x WP 6.7-6.9 matrix)
+- `plugin-check` (WordPress Plugin Check)
+
+The workflow runs on `main`/`master`, release branches, and version-named branches. It does not build assets - the Grunt build is a release-time step, not a merge gate.
 
 ---
 
@@ -99,8 +102,8 @@ WPMediaVerse follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PA
 
 1. `wpmediaverse.php` - `Version:` header and `MVS_VERSION` constant.
 2. `wpmediaverse-pro.php` (Pro repo) - same fields.
-3. `readme.txt` - `Stable tag:` line and changelog entry.
-4. `CHANGELOG.md` - add a new version section.
+3. `readme.txt` - `Stable tag:` line and changelog entry. This is the only changelog either plugin keeps; there is no `CHANGELOG.md`, and release history deliberately does not go in `CLAUDE.md`.
+4. `package.json` - `version` field.
 
 **Tagging**
 
@@ -109,4 +112,4 @@ git tag -a v1.3.0 -m "Release v1.3.0"
 git push origin v1.3.0
 ```
 
-Tags on `main` trigger the CI release pipeline (`npx grunt release`), which produces the distribution ZIP.
+Packaging is run locally, not by CI: `npx grunt release` (which is `ci-check` - it verifies the GitHub Actions run is green - followed by `dist`) produces `dist/wpmediaverse-{version}.zip`. `bin/build-release.sh` is the fuller path and additionally refuses to package without a fresh green smoke pass in `qa/.last-smoke-pass*.json`.

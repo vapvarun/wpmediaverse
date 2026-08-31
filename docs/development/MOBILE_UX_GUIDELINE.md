@@ -29,11 +29,10 @@ template.
 All sizing, color, and spacing decisions reference the existing token system.
 **Never inline a hex code or px value if a token exists.**
 
-### 2.1 CSS custom properties (already defined in `assets/css/frontend.css:15-67`)
+### 2.1 CSS custom properties (already defined in the `:root` block of `assets/css/frontend.css`)
 
 | Token | Value | Use for |
 |---|---|---|
-| `--mvs-bp-mobile` | 480px | media query reference |
 | `--mvs-bp-tablet` | 768px | media query reference |
 | `--mvs-bp-desktop` | 1024px | media query reference |
 | `--mvs-radius-sm` / `-md` / `-lg` / `-pill` | 6 / 8 / 12 / 100px | corners |
@@ -43,7 +42,7 @@ All sizing, color, and spacing decisions reference the existing token system.
 | `--mvs-primary` / `-primary-hover` / `-danger` / `-success` / `-warning` | brand colors | actions |
 | `--mvs-border` / `-border-light` | border colors | dividers |
 
-### 2.2 New tokens introduced by this guideline (add to `frontend.css`)
+### 2.2 Tokens introduced by this guideline (now shipped in `frontend.css`)
 
 ```css
 :root {
@@ -399,8 +398,11 @@ on mobile - users come from search results, deep links, push notifications.
 | `/media/battles/{id}/` | `/media/battles/` | "Battles" |
 | `/media/tournaments/{id}/` | `/media/tournaments/` | "Tournaments" |
 
-Templates must compute the parent URL server-side via a helper:
-`mvs_parent_url( $context )` - added in `Core/TemplateHelpers.php`.
+Templates must compute the parent URL server-side via the helper on
+`Core/TemplateHelpers.php`: `get_parent_route( string $context, array $args = [] )`
+returns `[ 'url' => …, 'label' => … ]` or `null`, and `render_back_link( $context, $args )`
+echoes the `.mvs-back-link` anchor (no-op when the parent can't be resolved).
+Pro registers extra contexts on the `mvs_parent_route` filter.
 
 ---
 

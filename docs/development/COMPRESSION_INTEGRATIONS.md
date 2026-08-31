@@ -12,8 +12,9 @@ This page ships four ready-to-paste mu-plugin snippets (one per major compressor
 /**
  * @param string $file_path Absolute path to the file on local disk.
  * @param array  $context   { media_id: int, variant: string, mime: string, user_id: int }
- *                          variant is one of: 'original', 'large', 'medium', 'thumb',
- *                          'original-webp', 'large-webp', 'medium-webp', 'thumb-webp'.
+ *                          variant is the size key ('original', 'large', 'medium',
+ *                          'thumb', …), optionally suffixed '-webp' or '-avif' for
+ *                          the sibling we generate from it.
  * @return string|WP_Error  Same path, replacement path, or WP_Error to abort the pass.
  */
 add_filter( 'mvs_optimize_image', function( $file_path, $context ) {
@@ -25,9 +26,9 @@ add_filter( 'mvs_optimize_image', function( $file_path, $context ) {
 The filter fires:
 - Once on the original temp file BEFORE `$driver->store()`. Cloud-storage installs benefit from this - the optimized bytes go straight to S3/Bunny.
 - Once per thumbnail variant after `multi_resize()` writes it.
-- Once per WebP sibling we generate (so you can optionally re-process those too).
+- Once per WebP sibling and once per AVIF sibling we generate (so you can optionally re-process those too).
 
-WPMediaVerse's own lossless pass and WebP generation run AFTER your filter. If you've already optimized the file in place, our pass is a no-op on the already-optimized bytes.
+WPMediaVerse's own lossless pass and WebP/AVIF generation run AFTER your filter. If you've already optimized the file in place, our pass is a no-op on the already-optimized bytes.
 
 ## EWWW Image Optimizer
 
@@ -133,10 +134,11 @@ if ( 'original' !== ( $context['variant'] ?? '' ) ) {
 
 ## Common patterns
 
-### Skip WebP siblings (your compressor handles WebP itself)
+### Skip the WebP / AVIF siblings (your compressor handles them itself)
 
 ```php
-if ( str_ends_with( (string) ( $context['variant'] ?? '' ), '-webp' ) ) {
+$variant = (string) ( $context['variant'] ?? '' );
+if ( str_ends_with( $variant, '-webp' ) || str_ends_with( $variant, '-avif' ) ) {
     return $file_path;
 }
 ```
@@ -176,4 +178,4 @@ Resume support is built in - the bulk command writes `_mvs_optimized_at` per row
 
 ## Disabling the built-in pass
 
-If you only want your compressor to run (no WPMediaVerse lossless pass, no WebP siblings), turn off both `Optimize originals` and `Generate WebP variants` on the admin Storage tab. The filter still fires, so your compressor still runs.
+If you only want your compressor to run (no WPMediaVerse lossless pass, no WebP/AVIF siblings), turn off the optimization toggles on the admin Storage tab - they are the `mvs_optimize_originals`, `mvs_generate_webp` and `mvs_generate_avif` options. The filter still fires, so your compressor still runs.

@@ -1,5 +1,11 @@
 # Video encoding — design plan
 
+> **STATUS: NOT BUILT. Zero lines of this exist in either plugin.** MediaVerse does
+> not transcode video: the FFmpeg path was removed in 2.4.0 and Coding Rule 21 bans
+> every exec-family call (`exec`, `shell_exec`, `proc_open`, `system`, `passthru`,
+> `popen`) from shipped source, enforced by `bin/coding-rules-check.sh` Rule 8 in
+> both plugins. Nothing below is a feature; nothing below may be cited as one.
+
 **Status:** PLAN ONLY. Nothing implemented, and nothing to implement until the questions in §12
 are answered.
 

@@ -1,5 +1,18 @@
 # MediaVerse Frontend UX Remediation — Implementation Plan
 
+> **STATUS: PARTIALLY BUILT as of 2.4.0. This is a task plan, not a description of
+> the code, and its checkboxes were never ticked - do not read an unchecked box as
+> "not done" or a written task as "done".** Confirmed shipped: Phase 1 Task 1.1 -
+> `templates/app-page.php` exists and `includes/Core/TemplateLoader.php` provides
+> `is_app_page()`, the `mvs_app_page_ids` filter and the `mvs_app_template` filter.
+> Confirmed NOT done: Phase 2 Task 2.1 - the indigo accent is still present
+> (`assets/css/admin.css` still hardcodes `#6366f1`). Phases 0, 3, 4, 5 and 6 were
+> not verified either way. Check the code before citing anything here. Two
+> artifacts this plan asks for do NOT exist: `audit/screens/INDEX.md` (Phase 0's
+> per-surface record) and `assets/css/mvs-ui.css` - the stylesheets that ship are
+> `frontend.css`, `admin.css`, `bp-integration.css`, `messaging.css`,
+> `mvs-confirm.css` and `shared-ui-frame.css`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Make every customer-facing MediaVerse surface read as one premium product — plugin-owned page templates, a real desktop grid, the existing component primitives actually consumed, and one accent authority.

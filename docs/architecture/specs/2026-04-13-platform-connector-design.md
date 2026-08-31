@@ -1,5 +1,13 @@
 # WPMediaVerse Platform Connector Framework - Design Spec
 
+> **STATUS: IMPLEMENTED (Pro, as of 2.4.0).** Verified in code:
+> `wpmediaverse-pro/includes/Connectors/` (`ConnectorInterface`, `ConnectorManager`,
+> `ConnectorRESTController`, `OAuthHelper`) plus `includes/Integrations/Flickr/`
+> (`Client`, `Connector`, `Mapper`). `ConnectorInterface::export_item()` and the
+> `export` capability exist, so the two-way direction is present. Later connectors
+> named below (Unsplash, 500px, Google Photos) are NOT built - Flickr is the only
+> shipped one.
+
 **Date:** 2026-04-13
 **Status:** Implemented
 **Scope:** Pro plugin only
@@ -37,10 +45,17 @@ Connectors/
 ├── ConnectorRESTController.php # REST endpoints for browser-side operations
 ├── OAuthHelper.php             # Shared OAuth 1.0a utilities
 └── Flickr/
-    ├── FlickrConnector.php     # Implements ConnectorInterface
-    ├── FlickrClient.php        # Low-level API wrapper
-    └── FlickrMapper.php        # Maps Flickr fields ↔ WPMediaVerse fields
+    ├── Connector.php           # Implements ConnectorInterface
+    ├── Client.php              # Low-level API wrapper
+    └── Mapper.php              # Maps Flickr fields ↔ WPMediaVerse fields
 ```
+
+As shipped, the Flickr classes dropped the redundant `Flickr` prefix (the namespace
+already carries it) and live at `includes/Integrations/Flickr/`, not
+`includes/Connectors/Flickr/`. `ConnectorSettingsPage.php` was never created; the
+Connected Accounts UI lives in `includes/Admin/ProSettings.php` +
+`templates/admin/connectors-settings.php`. Read every `FlickrConnector::` /
+`FlickrClient` / `FlickrMapper` below as `Connector::` / `Client` / `Mapper`.
 
 ### 3.2 ConnectorInterface
 
@@ -87,16 +102,21 @@ interface ConnectorInterface {
 ### 3.4 API Key Resolution
 
 ```
-Plugin-level (wp_options):
-  mvs_connector_flickr_app_key       → Built-in plugin API key (ships with Pro)
-  mvs_connector_flickr_app_secret    → Built-in plugin API secret
+Plugin-level (wp_options) — as SHIPPED the prefix is mvs_pro_connector_flickr_
+(Connector::OPTION_PREFIX); Migrator renames the legacy mvs_connector_flickr_*
+options to it:
+  mvs_pro_connector_flickr_app_key       → Built-in plugin API key (ships with Pro)
+  mvs_pro_connector_flickr_app_secret    → Built-in plugin API secret
 
 User-level override (wp_usermeta):
   mvs_connector_flickr_custom_key    → User's own Flickr API key (optional)
   mvs_connector_flickr_custom_secret → User's own Flickr API secret (optional)
 ```
 
-**Resolution order:** If user has `custom_key` set → use it. Otherwise → use plugin-level `app_key`. This is handled by `FlickrConnector::get_api_credentials( $user_id )`.
+**Resolution order:** If user has `custom_key` set → use it. Otherwise → use plugin-level `app_key`. This is handled by `Integrations\Flickr\Connector::get_api_credentials( $user_id )` — the class is
+named `Connector` inside the `Flickr` namespace, not `FlickrConnector`. The user-meta prefix is
+`Connector::META_PREFIX` = `mvs_connector_flickr_`, which is why user meta and site options do not
+share a prefix.
 
 ### 3.5 Token & Settings Storage (Per-User)
 

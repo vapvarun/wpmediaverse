@@ -1,5 +1,13 @@
 # Media delivery performance rework — plan (2026-06-14)
 
+> **STATUS: PHASE A IMPLEMENTED. PHASES B AND C NOT BUILT.** Phase A is verified in
+> code as of 2.4.0 - `MediaRepository::prefetch()` is called before the render loop
+> in `templates/explore.php`, `album.php` and `collection.php`, and
+> `AccessRulesService::prefetch_active_rules()` exists. Everything below the
+> "Phase A results" table is a proposal: no split public/private storage dir, no
+> `migrate-public-static` CLI command, no `srcset` re-introduction. Do not cite
+> Phase B or Phase C behaviour as shipped.
+
 Status: **Phase A SHIPPED (2026-06-14). Phase B scoped — "optimize /serve, keep one dir" (owner decision). Phase C deferred.**
 Owner: Varun. Target: 1.7.0 (Free; Pro inherits). Driver focus: **local / shared hosting**.
 

@@ -16,32 +16,33 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 86,
+    "rest_endpoints": 109,
     "ajax": 8,
-    "admin_pages": 30,
-    "settings": 0,
-    "tables": 10,
+    "admin_pages": 31,
+    "settings": 70,
+    "tables": 13,
     "subsystems": 19,
     "feature_toggles": 7,
     "free_services_consumed": 1,
     "free_filters_hooked": 22,
     "extension_patterns": 6,
-    "cron": 14,
-    "wp_cli": 6,
-    "storage_drivers": 2,
+    "cron": 22,
+    "wp_cli": 7,
+    "storage_drivers": 4,
     "templates": 16,
-    "blocks": 13,
-    "shortcodes": 12,
+    "blocks": 15,
+    "shortcodes": 13,
     "coding_rules": 12,
     "admin_pages_baseline": 28,
     "free_filters_hooked_baseline": 14,
     "free_actions_hooked_baseline": 25,
     "hooks_fired_baseline": 72,
-    "capabilities": 4,
+    "capabilities": 5,
     "services": 58,
     "post_types": 0,
     "taxonomies": 0,
-    "hooks_fired_unique": 81
+    "hooks_fired_unique": 81,
+    "migrator_version": 15
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -58,9 +59,9 @@
     "manifest_url": "../../wpmediaverse/audit/manifest.json"
   },
   "generated": {
-    "at": "2026-07-07T00:00:00Z",
-    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "2.0.0",
+    "at": "2026-09-01T00:00:00Z",
+    "from": "targeted delta 2026-09-01 (hand-verified; deterministic generator deliberately not run)",
+    "branch": "2.4.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -115,6 +116,35 @@
         "AS hook mvs_pro_captions_reap_stale"
       ],
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
+    },
+    "refresh_2026_09_01": {
+      "at": "2026-09-01T00:00:00Z",
+      "type": "targeted delta - hand-verified against ground-truth grep of the shipped source",
+      "generator_not_run": true,
+      "generator_note": "write-manifest.mjs was NOT run and its output was NOT committed. It cannot see this plugin's registration patterns (SettingsRegistrar, ServiceContainer::register(), MediaCapabilities, PostTypes\\Album::register(), CLI subcommands declared as methods) and running it zeroes out settings / services / wp_cli / capabilities / post_types / taxonomies.",
+      "branch": "2.4.0",
+      "plugin_version": "2.4.0",
+      "scope": "Same delta as Free: REST, tables, settings, wp_cli, blocks, admin pages/settings sections, ajax, capabilities, post types, taxonomies, shortcodes, cron, storage drivers. REST and table file:line stamps recomputed.",
+      "false_entries_removed": [
+        "storage_drivers: both entries were wrong. `Storage/S3Driver.php` and `Storage/BunnyCDNDriver.php` do not exist (the drivers live under includes/Integrations/<Vendor>/StorageDriver.php), and the BunnyCDN config_options named three keys that are never registered or read (mvs_pro_bunny_storage_zone, mvs_pro_bunny_access_key, mvs_pro_bunny_pull_zone). Replaced with the four drivers that actually ship (s3, bunnycdn, r2, dospaces) and their real option keys."
+      ],
+      "gaps_closed": [
+        "REST +23: the entire 2.4.0 document-library surface (/documents, /documents/search, /documents/{id} GET+EDITABLE+DELETE, /documents/upload, /documents/{id}/restore, /documents/{id}/replace, /documents/bulk, /documents/{id}/download, /documents/{id}/preview, /documents/{id}/permissions GET+POST, /documents/{id}/permissions/link, /permissions/{grant_id}, /drives, /me/shared, /folders GET+POST, /folders/{id} GET+EDITABLE+DELETE, /folders/{id}/restore) was absent from the manifest.",
+        "tables +2 in manifest.tables.json: mvs_pro_document_search, mvs_pro_folders (manifest.json already had them).",
+        "settings +7: the whole mvs_pro_documents_* group.",
+        "wp_cli +1: mvs seed-documents.",
+        "blocks +2: mvs/pro-document-embed, mvs/pro-document-list; plus an explicit `registered` flag on every entry.",
+        "shortcodes +1: [mvs_document].",
+        "admin_pages +1: the Documents settings section (ProSettings.php:1550).",
+        "cron +8: mvs_pro_transcribe_media, mvs_pro_push_send, mvs_pro_extract_documents, mvs_pro_extract_document, mvs_document_folder_subtree_rewrite, mvs_document_folder_privacy_cascade, mvs_pro_sweep_replaced_documents, mvs_connector_auto_export.",
+        "storage_drivers +2: r2, dospaces."
+      ],
+      "transcoding_check": "No live transcoding/FFmpeg entry remains. `mvs_pro_transcode_cleanup` is NOT declared as a cron - the only reference in source (wpmediaverse-pro.php:417) unschedules it on deactivation for sites that once had it. The one surviving 'transcode' string in this file is inside the historical generated.refresh_2026_07_07_v200 changelog block describing the 2.0.0 release.",
+      "not_verified_this_pass": [
+        "hooks_fired / manifest.hooks.json (owned by a separate pass this cycle)",
+        "services (58), subsystems, feature_toggles, templates, free_filters_hooked, free_services_consumed, extension_patterns, coding_rules, security, ci_guards, qa, static_analysis - carried forward untouched.",
+        "file:line stamps outside the REST and table entries."
+      ]
     }
   },
   "confirmed_against_free": {
@@ -160,6 +190,7 @@
     ],
     "notes": "Stories receipts reuse Free mvs_media_views (no parallel table); feed network-scoped + privacy-filtered + bounded for big sites"
   },
-  "refreshed_at": "2026-08-19",
-  "counts_delta_2026_08_19": "Targeted delta. NO COUNT IN `counts` WAS CHANGED — this cycle added no REST route, no hook, no setting, no capability, no table and no CLI command. What it added: `Documents\\DocumentLicense` (the write gate; consumes core hooks rather than firing its own) and one row in `DriveContract::FROZEN` — `mvs_documents_read_only`, 403, the site-wide read-only refusal a client branches on. `License::STATUS_OPTION` became public so the gate can hook the option that owns it. Deliberately NOT edited: `coding_rules` (12) and `rest_endpoints` (91), whose definitions could not be reconciled against the code at refresh time — bin/coding-rules-check.sh reports 9 rules and includes/REST/*.php carries 23 register_rest_route calls, so both numbers count something else. Guessing at them would replace a stale number with a wrong one."
+  "refreshed_at": "2026-09-01",
+  "counts_delta_2026_08_19": "Targeted delta. NO COUNT IN `counts` WAS CHANGED — this cycle added no REST route, no hook, no setting, no capability, no table and no CLI command. What it added: `Documents\\DocumentLicense` (the write gate; consumes core hooks rather than firing its own) and one row in `DriveContract::FROZEN` — `mvs_documents_read_only`, 403, the site-wide read-only refusal a client branches on. `License::STATUS_OPTION` became public so the gate can hook the option that owns it. Deliberately NOT edited: `coding_rules` (12) and `rest_endpoints` (91), whose definitions could not be reconciled against the code at refresh time — bin/coding-rules-check.sh reports 9 rules and includes/REST/*.php carries 23 register_rest_route calls, so both numbers count something else. Guessing at them would replace a stale number with a wrong one.",
+  "counts_note": "2026-09-01 targeted delta, code-verified. rest_endpoints=109 counted as one entry per register_rest_route() endpoint array across 84 call sites in mvs-pro/v1 (123 once WP_REST_Server::EDITABLE is expanded to POST+PUT+PATCH, which is this file's convention). settings=70 distinct register_setting() options (39 call sites; several are foreach loops over $fields / $toggles / $aws_fields) - the previous value of 0 was simply wrong, Pro registers its own settings in Admin\\ProSettings and Admin\\GamificationSettings. tables=13 = 11 inline CREATE TABLE + 2 through Migrator::create_table(), matching Migrator::tables(). blocks=15 registered in Blocks\\BlockRegistrar::BLOCKS out of 15 src/blocks/*/block.json dirs - unlike Free, Pro has no Interactivity-only blocks, so defined == registered. admin_pages=31 = 11 add_menu_page/add_submenu_page call sites + 20 settings sections. cron=22 includes Action Scheduler recurring/single/async actions. capabilities=5 = 4 Free/core caps that Pro only enforces + manage_mvs_documents which Pro registers in Migrator v13. `services` (58) and `subsystems`/`feature_toggles`/`free_filters_hooked`/`templates` were NOT re-enumerated - Pro has no ServiceContainer::register() call sites, so that list is a class inventory with different semantics. hooks_fired_unique / hooks_fired_baseline deliberately untouched (manifest.hooks.json is owned by a separate pass)."
 }

@@ -23,7 +23,7 @@ wp-content/themes/your-theme/
     ├── media-single.php       # Single media item page
     ├── album.php              # Single album page
     ├── collection.php         # Single collection page
-    ├── explore.php            # Media archive / explore page
+    ├── explore.php            # Explore feed / taxonomy archives
     └── profile-edit.php       # Profile edit page
 ```
 
@@ -34,18 +34,29 @@ wp-content/themes/your-theme/
 | `media-single.php` | Single `mvs_media` post page |
 | `album.php` | Single `mvs_album` post page |
 | `collection.php` | Single `mvs_collection` post page |
-| `explore.php` | `mvs_media` and `mvs_album` archive, taxonomy archives, and `/media/@username/` profile pages |
+| `cpt-archive.php` | `mvs_album` and `mvs_collection` post-type archives |
+| `explore.php` | The `/media/` explore feed, `mvs_tag` / `mvs_category` taxonomy archives, and `/media/@username/` profile pages when no `user-profile.php` resolves |
+| `user-profile.php` | `/media/@username/` profile pages. No plugin default ships - the lookup falls through to `explore.php` unless a theme (or a Pro layout) supplies this file |
 | `profile-edit.php` | `/media/edit-profile/` endpoint |
+| `documents.php` | The `[mvs_documents]` document-drive shortcode |
+| `messages.php` | The direct-messages page |
+| `app-page.php` | Plugin-created pages that host a WPMediaVerse shortcode/block surface |
+| `404.php` | The plugin's branded not-found page (unknown profile, missing media) |
 
 ## Available Partials
 
-Template partials are located in `templates/partials/` and loaded with `TemplateLoader::get_template()`:
+Template partials live in `templates/partials/` and are loaded with `TemplateLoader::get_template()` or `TemplateLoader::locate()`, passing `partials` as the second (subdirectory) argument:
 
 ```php
-WPMediaVerse\Core\TemplateLoader::get_template( 'partials/media-card.php', array(
-    'media_id' => $post->ID,
+WPMediaVerse\Core\TemplateLoader::get_template( 'partials/usage-history.php', array(
+    'user_id' => get_current_user_id(),
 ) );
+
+// Or, with the subdirectory as its own argument:
+$path = WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' );
 ```
+
+Override a partial at `wp-content/themes/your-theme/wpmediaverse/partials/<file>.php`. The partials shipped today include `dashboard-content.php`, `usage-history.php`, `shared-ui-frame.php`, `profile-actions.php`, `profile-edit-panel.php`, `follows-modal.php`, `blocked-members.php`, and the `chat-*.php` messaging set.
 
 ## Using TemplateLoader in Custom Code
 
@@ -204,11 +215,13 @@ WPMediaVerse adds the `mvs-page` and `no-sidebar` CSS body classes to all WPMedi
 Pages that receive these classes:
 
 - Single `mvs_media`, `mvs_album`, `mvs_collection` posts
-- `mvs_media` and `mvs_album` archives
+- `mvs_media`, `mvs_album` and `mvs_collection` archives
 - `mvs_tag` and `mvs_category` taxonomy pages
 - `/media/edit-profile/` endpoint
 - `/media/@username/` profile pages
 - Any page whose ID matches an `mvs_page_*` option (e.g., the page containing `[mvs_dashboard]`)
+
+The class list itself is filterable via `mvs_body_classes` (receives `array( 'mvs-page', 'no-sidebar' )`).
 
 ## Shortcode Context in Block Templates
 

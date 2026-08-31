@@ -1,5 +1,12 @@
 # WPMediaVerse — First-Session Activation Spec (cold-start / "30-second" plan)
 
+> **STATUS: PHASE A IMPLEMENTED (Free) as of 2.4.0; later phases not verified.**
+> Confirmed in code: `GET /mvs/v1/app/interests` + `GET/POST /mvs/v1/me/interests`
+> (`REST/Controller/InterestsController.php`, storing `mvs_interests` user meta),
+> and `GET /mvs/v1/users/suggested` (`REST/Controller/UserController.php` backed by
+> `Social/SuggestionService.php`, which reads the same meta). Treat anything beyond
+> that as plan, not code.
+
 Status: **Phase A in implementation** (Free plugin). Branch `1.8.1`.
 Goal: a brand-new user, within ~30 seconds and **before posting anything**, must (1) see great, relevant content, (2) find people to follow, (3) like something in one tap. The empty-network cold start is the #1 mass-adoption killer; this spec closes it.
 

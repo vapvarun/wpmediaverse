@@ -1,58 +1,69 @@
 {
   "tables": [
     {
-      "name": "{prefix}mvs_pro_collection_items",
-      "purpose": "Multi-collection memberships (media can live in many manual collections)",
-      "file": "includes/Core/Migrator.php:221"
-    },
-    {
-      "name": "{prefix}mvs_pro_push_devices",
-      "purpose": "Native push device registry (Expo tokens per user/device)",
-      "file": "includes/Core/Migrator.php:252"
-    },
-    {
-      "name": "{prefix}mvs_quota_packages",
-      "purpose": "Upload/storage quota package definitions",
-      "file": "includes/Core/Migrator.php:366"
-    },
-    {
-      "name": "{prefix}mvs_credit_log",
-      "purpose": "Credit/quota transaction ledger",
-      "file": "includes/Core/Migrator.php:383"
-    },
-    {
-      "name": "{prefix}mvs_play_events",
-      "purpose": "Video play + heatmap analytics events",
-      "file": "includes/Core/Migrator.php:402"
-    },
-    {
-      "name": "{prefix}mvs_competitions",
-      "purpose": "Competitions (battles/challenges/tournaments) master rows",
-      "file": "includes/Core/Migrator.php:498"
+      "name": "{prefix}mvs_boosts",
+      "purpose": "Media boosts (points-for-visibility)",
+      "file": "includes/Core/Migrator.php:783"
     },
     {
       "name": "{prefix}mvs_competition_entries",
       "purpose": "Per-competition media entries",
-      "file": "includes/Core/Migrator.php:524"
+      "file": "includes/Core/Migrator.php:719"
     },
     {
       "name": "{prefix}mvs_competition_matches",
       "purpose": "Tournament/battle match pairings",
-      "file": "includes/Core/Migrator.php:545"
+      "file": "includes/Core/Migrator.php:740"
     },
     {
       "name": "{prefix}mvs_competition_votes",
       "purpose": "Votes cast in competitions",
-      "file": "includes/Core/Migrator.php:572"
+      "file": "includes/Core/Migrator.php:767"
     },
     {
-      "name": "{prefix}mvs_boosts",
-      "purpose": "Media boosts (points-for-visibility)",
-      "file": "includes/Core/Migrator.php:588"
+      "name": "{prefix}mvs_competitions",
+      "purpose": "Competitions (battles/challenges/tournaments) master rows",
+      "file": "includes/Core/Migrator.php:692"
+    },
+    {
+      "name": "{prefix}mvs_credit_log",
+      "purpose": "Credit/quota transaction ledger",
+      "file": "includes/Core/Migrator.php:571"
+    },
+    {
+      "name": "{prefix}mvs_play_events",
+      "purpose": "Video play + heatmap analytics events",
+      "file": "includes/Core/Migrator.php:590"
+    },
+    {
+      "name": "{prefix}mvs_pro_collection_items",
+      "purpose": "Multi-collection memberships (media can live in many manual collections)",
+      "file": "includes/Core/Migrator.php:336"
+    },
+    {
+      "name": "{prefix}mvs_pro_document_search",
+      "purpose": "Extracted document text for in-drive search (2.4.0). Created through Migrator::create_table().",
+      "file": "includes/Core/Migrator.php:853"
+    },
+    {
+      "name": "{prefix}mvs_pro_folders",
+      "purpose": "Document-drive folders: member and space drives, soft-delete, privacy cascade (2.4.0). Created through Migrator::create_table().",
+      "file": "includes/Core/Migrator.php:893"
+    },
+    {
+      "name": "{prefix}mvs_pro_push_devices",
+      "purpose": "Native push device registry (Expo tokens per user/device)",
+      "file": "includes/Core/Migrator.php:367"
     },
     {
       "name": "{prefix}mvs_pro_webhook_events",
-      "note": "Pro-owned. CREATE at includes/Core/Migrator.php:399. Missing from the 2.2.0-branch generation."
+      "note": "Pro-owned. CREATE at includes/Core/Migrator.php:399. Missing from the 2.2.0-branch generation.",
+      "file": "includes/Core/Migrator.php:399"
+    },
+    {
+      "name": "{prefix}mvs_quota_packages",
+      "purpose": "Upload/storage quota package definitions",
+      "file": "includes/Core/Migrator.php:553"
     }
   ],
   "generated": {
@@ -103,6 +114,15 @@
       "namespace": "mvs-pro/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    },
+    "refresh_2026_09_01": {
+      "at": "2026-09-01T00:00:00Z",
+      "type": "targeted delta - hand-verified against ground-truth grep of the shipped source. The deterministic generator (write-manifest.mjs) was NOT run and its output was NOT committed: it cannot see this plugin's SettingsRegistrar / ServiceContainer::register() / MediaCapabilities / PostTypes\\Album::register() / CLI-method registration patterns and would zero out settings, services, wp_cli, capabilities, post_types and taxonomies.",
+      "scope": "Tables re-enumerated from Pro's includes/Core/Migrator.php: 11 inline CREATE TABLE statements plus 2 created through the Migrator::create_table() helper (2.4.0) = 13 tables, matching Migrator::tables(). Added the two missing document-library tables and corrected every file:line stamp. No table entry was false.",
+      "tables_added": [
+        "{prefix}mvs_pro_document_search",
+        "{prefix}mvs_pro_folders"
+      ]
     }
   }
 }

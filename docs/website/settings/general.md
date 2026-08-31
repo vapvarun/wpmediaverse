@@ -32,7 +32,8 @@ Assign existing WordPress pages to WPMediaVerse page roles. WPMediaVerse uses th
 | Dashboard Page | `mvs_page_dashboard` | The main logged-in user dashboard. Displays the follow feed, quick upload, and activity summary. |
 | Explore Page | `mvs_page_explore` | The public media browse archive. Used as the landing page for non-logged-in visitors. |
 | Upload Page | `mvs_page_upload` | The dedicated upload form page. Linked from the dashboard and the navigation bar. |
+| Explore Documents Page | `mvs_page_explore_documents` | The document listing. Created only when Pro can show documents, or when the site holds `legacy_document` rows from before 2.4.0 that no media grid lists. |
 
-Create a standard WordPress page for each role, then select it from the corresponding dropdown. Each page should contain only the matching WPMediaVerse shortcode (`[mvs_dashboard]`, `[mvs_explore]`, `[mvs_upload]`) with no other content.
+Create a standard WordPress page for each role, then select it from the corresponding dropdown. Each page should contain only the matching WPMediaVerse shortcode and no other content - `[mvs_dashboard]`, `[mvs_gallery columns="3" count="24"]` for Explore, `[mvs_upload]`, and `[mvs_documents]` for Explore Documents. These are the exact shortcodes `Core\Activator` writes when it creates the pages on activation. There is no `[mvs_explore]` shortcode; the explore *feed* block and shortcode are `[mvs_explore_feed]`, which is a different surface.
 
-> If a page assignment is empty, WPMediaVerse falls back to the site home URL for that link. Set all three pages to avoid broken navigation.
+> If a page assignment is empty, WPMediaVerse falls back to the site home URL for that link. Set every page you use to avoid broken navigation.

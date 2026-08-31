@@ -24,14 +24,14 @@ give/receive rule can award the right user.
 | `mvs_user_followed` | `( int $follower_id, int $following_id )` | actor = `$follower_id`; recipient = `$following_id`. |
 | `mvs_user_unfollowed` | `( int $follower_id, int $following_id )` | reversal. |
 | `mvs_media_shared` | `( int $media_id, int $user_id, string $platform )` | actor = sharer `$user_id`. |
-| `mvs_story_created` | `( int $media_id, int $user_id, string $expires_at )` | actor = `$user_id`. |
 | `mvs_album_items_added` | `( int $album_id, int $actor_id, array $media_ids, int $added )` | actor = `$actor_id`; `$added` = count actually added. |
 | `mvs_mentions_created` | `( int $media_id, array $mentioned_ids, string $context, int $comment_id )` | recipients = `$mentioned_ids`. |
 | `mvs_message_sent` | `( int $message_id, int $conversation_id, int $sender_id, array $recipient_ids )` | actor = `$sender_id`. |
 | `mvs_report_submitted` | `( int $report_id, int $reporter_id, string $target_type, int $target_id, string $reason )` | actor = `$reporter_id`. |
 | `mvs_media_privacy_changed` | `( int $media_id, string $new_privacy, string $old_privacy )` | lifecycle (e.g. revoke points if media goes private). |
 | `mvs_moderation_changed` | `( int $media_id, string $status, string $old_status, int $user_id )` | gate awards on `approved`. |
-| `mvs_media_deleted` | `( int $media_id, int $author_id )` | reversal - deduct upload points. |
+| `mvs_media_deleted` | `( int $media_id, int $author_id, string $permalink )` | reversal - deduct upload points. |
+| `mvs_media_trashed` / `mvs_media_restored` | `( int $media_id, int $author_id, string $permalink )` | soft-delete lifecycle (2.4.0) - pair them if you award/deduct on trash. |
 
 > Tip: for "recipient = media author", resolve via the published interface -
 > `\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id )`.
@@ -48,6 +48,7 @@ give/receive rule can award the right user.
 | `mvs_tournament_match_resolved` | `( int $match_id, int $winner_id )` | per-round award. |
 | `mvs_tournament_finalized` | `( int $tournament_id, int $winner_id )` | overall winner. |
 | `mvs_streak_milestone` | `( int $user_id, int $days, int $xp )` | streak rewards. |
+| `mvs_story_created` | `( int $media_id, int $user_id, string $expires_at )` | actor = `$user_id`. Fired by Pro's `Stories\StoryService`. |
 | `mvs_pro_credits_added` | `( int $user_id, string $media_type, int $amount, string $source )` | credit/quota economy. |
 | `mvs_media_imported` / `mvs_media_exported` | `( int $media_id, string $platform, mixed $remote_id )` | connector sync. |
 

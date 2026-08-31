@@ -1,5 +1,15 @@
 # AI Insights - Usability-First Refactor
 
+> **STATUS: PARTIALLY BUILT as of 2.4.0. Do not read this as a description of the
+> code.** What shipped: the AI Review admin surface
+> (`includes/Admin/MediaListPage.php` `view=ai-review` +
+> `templates/admin/ai-review.php`) and the `wp mvs backfill_ai` CLI re-run path.
+> What did NOT ship: the central refactor in "Refactor decisions" #1 -
+> `Services\AIProviderInterface` still declares the three narrow methods
+> (`analyze_image`, `generate_tags`, `moderate_content`), not the single rich
+> `analyze()`. Treat every "Current vs New" block below as a proposal, and grep
+> before assuming any named method exists.
+
 **Date:** 2026-05-13
 **Status:** Proposed
 **Target release:** 1.3.0

@@ -210,6 +210,40 @@ Shows the current member's own upload usage ledger. Useful on an account page be
 |-----------|---------|-------------|
 | `limit` | `20` | Number of ledger rows to show, most recent first. |
 
+## [mvs_documents]
+
+> Free shortcode, Pro engine. With the Documents master toggle off it renders nothing (an administrator sees a one-line notice saying why). Folder listings need Pro; without it an editor sees "Folder listings need WPMediaVerse Pro" and a visitor sees nothing.
+
+Lists the current member's documents. Paginates through the `doc_page` query parameter and accepts a `doc_type` query parameter that overrides the `type` attribute.
+
+```
+[mvs_documents]
+[mvs_documents per_page="50" type="pdf"]
+[mvs_documents folder="12"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `per_page` | `20` | Rows per page. Clamped to 1-100. |
+| `type` | (all) | Named document type to filter on. Overridden by a `doc_type` query parameter. |
+| `folder` | `0` | Scope the list to one folder. Requires Pro. |
+
+## Pro: [mvs_document]
+
+> Requires WPMediaVerse Pro.
+
+Embeds one document inline. A non-document media ID is refused, so the shortcode cannot become a second unguarded route to a photo.
+
+```
+[mvs_document id="123"]
+[mvs_document id="123" download_only="1"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `id` | `0` | Document media ID. Required. |
+| `download_only` | `0` | `1` renders a download card instead of the inline viewer. |
+
 ## Pro: Compete shortcodes
 
 > These require WPMediaVerse Pro, and each one needs its feature toggle enabled. With the toggle off the shortcode renders nothing rather than an error.

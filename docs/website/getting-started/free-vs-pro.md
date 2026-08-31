@@ -137,9 +137,9 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 
 Privacy is the one area where "Free vs Pro" is not a clean on/off split, so it is worth stating precisely:
 
-- **Free enforces all six privacy levels.** `PrivacyService` gates viewing for `public`, `members`, `friends`, `group`, `private` and `custom`. If a media item carries one of those levels - set by an import, the REST API, an album inheriting its privacy, or Pro before a licence lapsed - Free honours it. Your members' private media does not become visible because Pro is inactive.
-- **Free's upload form exposes three of them**, plus Friends Only when the BuddyPress Friends component is active: Public, Members, Friends (conditional) and Only Me. Group and Custom are enforced but have no picker in the stock Free upload form.
-- **Pro adds the interface, not the enforcement**: a picker for all six levels with plain-language descriptions, saved presets, and bulk privacy updates across many items at once.
+- **Free enforces every privacy level.** `PrivacyService::supported_levels()` is the one accepted vocabulary - `public`, `members`, `loggedin`, `friends`, `group`, `space`, `private`, `dm` and `custom` as of 2.4.0, filterable through `mvs_privacy_levels` - and `PrivacyService` gates viewing for all of them. If a media item carries one of those levels - set by an import, the REST API, an album inheriting its privacy, or Pro before a licence lapsed - Free honours it. Your members' private media does not become visible because Pro is inactive.
+- **Free's upload form exposes three of them**, plus Friends Only when the BuddyPress Friends component is active: Public, Members, Friends (conditional) and Only Me. The rest are enforced but have no picker in the stock Free upload form.
+- **Pro adds the interface, not the enforcement**: a picker with plain-language descriptions, saved presets, and bulk privacy updates across many items at once.
 - **Album-level privacy inheritance is Free.** When media is added to an album, `AlbumService` clamps each item to the more restrictive of the two, filterable via `mvs_album_inherit_privacy`.
 
 There is no "Followers Only" media privacy level in either plugin. `followers` appears only as a **direct-message access** setting (`mvs_dm_access`), which controls who may open a conversation with you - not who can see your media.

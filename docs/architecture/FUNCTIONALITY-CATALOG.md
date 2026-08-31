@@ -3,17 +3,13 @@
 Generated 2026-08-01 from the reconciled manifests (`audit/manifests/`,
 `audit/pro/manifests/`) and verified against source.
 
-**Version status.** Both plugins still ship `Version: 2.2.1` in their headers and
-constants. That is deliberate, not an oversight: the house convention bumps version
-strings as a late release step, not at branch creation (see the 2.2.1 history — "Bump
-package.json to 2.2.1 (version coherence gate)" landed near the end of that cycle). The
-branch is named `2.3.0` for the work it carries. **Free** has the 2.3.0 changes described
-here; **Pro** has an empty `2.3.0` branch at 2.2.1 and inherits Free-side fixes only.
-Version constants, readme stable tag and the website what's-new must all be bumped
-together before tagging — tracked on Basecamp 10156642310.
+**Version status.** Both plugins ship `Version: 2.4.0` in their headers and constants.
+(The 2.2.1 note that used to sit here described the 2.3.0 branch cycle and is history.)
 
-Every number below is derived from the manifest arrays, not hand-counted — see
-"Manifest reconciliation" at the end for why that distinction matters.
+Numbers below are derived from the manifest arrays, not hand-counted — see "Manifest
+reconciliation" at the end for why that distinction matters. They still rot between
+refreshes: the manifests under `audit/manifests/` and `audit/pro/manifests/` win over any
+figure written into prose here.
 
 ---
 
@@ -21,19 +17,17 @@ Every number below is derived from the manifest arrays, not hand-counted — see
 
 | Surface | Free | Pro |
 |---|---:|---:|
-| REST endpoints (`mvs/v1`, `mvs-pro/v1`) | 114 | 91 |
-| Hooks fired (actions + filters) | 220 (76 + 144) | 84 |
-| Custom tables | 22 | 10 |
-| Services (container) | 49 | — |
-| Admin pages | 20 | 10 |
-| Settings | 40 | — |
-| Shortcodes | 13 | — |
-| Blocks (registered / defined) | 9 / 13 | 12 |
-| Post types / taxonomies | 2 / 2 | — |
-| WP-CLI subcommands | 20 | 3 importers |
-| Cron jobs | 4 | 5 sweeps |
-| Capabilities | 10 | — |
-| Migrator schema version | 25 | — |
+| REST endpoints (`mvs/v1`, `mvs-pro/v1`) | 115 | 86 |
+| Hooks fired (actions + filters) | see `manifest.hooks.json` | see `audit/pro/manifests/manifest.hooks.json` |
+| Custom tables | 23 | 13 |
+| Services (container) | 53 | — |
+| Post types / taxonomies | 2 / 2 | 0 / 0 |
+| Migrator schema version | 30 | 15 |
+
+Admin pages, settings, shortcodes, blocks, WP-CLI subcommands, cron jobs and capabilities
+were all listed here with numbers that have rotted more than once. Read them off
+`audit/manifests/manifest.summary.json` (Free) and `audit/pro/manifests/manifest.summary.json`
+(Pro), or the grep commands in `CLAUDE.md`, rather than trusting a figure typed here.
 
 ---
 
@@ -154,16 +148,26 @@ locale blocks.
 | **Importers** | WP-CLI migrations from rtMedia, MediaPress and BuddyBoss, plus per-platform admin migration cards |
 | **Layouts** | Instagram, Pinterest, Flickr and Dribbble Explore feed layouts |
 | **Privacy** | Advanced privacy UI |
+| **Documents** | 2.4.0 — user/space/group drives, folder tree (`mvs_pro_folders`), text extraction + full-text search (`mvs_pro_document_search`), tiered previews, per-drive permissions |
 
 **Licensing note (unchanged):** the EDD licence gates **updates only**. Every Pro feature
 runs regardless of licence state; `License::is_valid()` drives the settings badge and the
 update channel, never feature registration.
 
+**The one exception: document WRITES.** `Documents\DocumentLicense` refuses upload,
+replace, rename, move, privacy change, trash, restore, folder create, share and revoke on
+a lapsed licence. Reads (open, list, search, download, preview) and route/service/hook
+registration are never gated, and `manage_options` / `manage_mvs_documents` holders are
+exempt. Allowed only because Documents shipped in 2.4.0 with no installed base to take it
+away from — not a precedent for a second feature.
+
 ---
 
 ## 4. Extension surface
 
-220 hooks in Free (76 actions, 144 filters). The clusters an integrator most often needs:
+Free fires several hundred `mvs_*` hooks; `audit/manifests/manifest.hooks.json` is the
+count that wins, and `bin/hook-manifest-drift.php` fails if it drifts from the code in
+either direction. The clusters an integrator most often needs:
 
 | Cluster | Examples |
 |---|---|
@@ -202,18 +206,23 @@ BuddyNext consumes this engine rather than duplicating it, so the contract matte
 
 ## 6. Data model
 
-**Free (22 tables):** `mvs_media_index`, `mvs_media_meta`, `mvs_media_views`,
+**Free (23 tables):** `mvs_media_index`, `mvs_media_meta`, `mvs_media_views`,
 `mvs_media_stats`, `mvs_reactions`, `mvs_favorites`, `mvs_follows`, `mvs_mentions`,
 `mvs_activity`, `mvs_notifications`, `mvs_reports`, `mvs_blocks`, `mvs_access_rules`,
 `mvs_access_grants`, `mvs_album_items`, `mvs_error_log`, `mvs_conversations`,
 `mvs_conversation_participants`, `mvs_messages`, `mvs_message_reactions`,
-`mvs_transactions`, `mvs_bp_activity_media`.
+`mvs_transactions`, `mvs_bp_activity_media`, `mvs_device_tokens`.
 
-**Pro:** 10 further `mvs_pro_*` tables (competitions, battles, tournaments, boosts,
-streaks, analytics, quota, captions, chapters, connectors).
+**Pro (13 tables):** `mvs_competitions`, `mvs_competition_entries`,
+`mvs_competition_matches`, `mvs_competition_votes`, `mvs_boosts`, `mvs_credit_log`,
+`mvs_play_events`, `mvs_quota_packages`, `mvs_pro_collection_items`,
+`mvs_pro_push_devices`, `mvs_pro_webhook_events`, `mvs_pro_folders`,
+`mvs_pro_document_search`. Note only four carry the `mvs_pro_` prefix; battles,
+challenges and tournaments all share the `mvs_competition*` tables rather than owning
+their own.
 
-Schema version 25. Recent migrations: v23 `mvs_messages.updated_at`, v24
-`participants.cleared_up_to`, v25 `KEY user_archived (user_id, is_archived, status)`.
+Free schema version 30 (`Migrator::CURRENT_VERSION`); Pro keeps its own counter in
+`wpmediaverse-pro/includes/Core/Migrator.php`.
 
 ---
 

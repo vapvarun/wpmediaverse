@@ -1,8 +1,12 @@
 # WPMediaVerse Master Plan
 
-> Where the product is now and what's next. **Forward-looking — completed work and historical context belong in git log / changelogs, not here.** Refresh every release cycle.
+> **Status: ROADMAP. Part 2 onwards is NOT BUILT.** Part 1 describes shipped 2.4.0
+> behaviour; everything under "Next 6 months" is intent, not code, and the version targets
+> in it predate 2.4.0. Nothing in Part 2 may be cited as an existing feature. Completed
+> work and historical context belong in git log / changelogs, not here. Refresh every
+> release cycle.
 
-**Baseline:** Free 2.3.1 + Pro 2.3.1 (paired, released 2026-08-05).
+**Baseline:** Free 2.4.0 + Pro 2.4.0 (paired).
 **Horizon:** next 6 months.
 **Owner:** Varun.
 
@@ -11,7 +15,7 @@
 ## Part 1 — What WPMediaVerse is today
 
 ### Free — core platform
-- Custom-table media storage. 22 `mvs_*` tables, no `wp_posts` dependency for media records.
+- Custom-table media storage. 23 `mvs_*` tables, no `wp_posts` dependency for media records.
 - 6 privacy levels: public, members, friends, private, group, custom (access rules).
 - Storage drivers: local. Cloud drivers (BunnyCDN, AWS S3, Cloudflare R2, DigitalOcean Spaces) shipped via Pro.
 - Image variant pipeline: large/medium/thumb generated at upload, with WebP + AVIF siblings.
@@ -19,8 +23,8 @@
 - Audio cover/waveform: ID3 art extraction → render-time SHA-1-seeded SVG waveform.
 - Signed-URL `/serve` endpoint with HMAC + expiry + per-request privacy re-check.
 - Direct-CDN bypass for public media on cloud drivers (filter `mvs_public_cloud_thumbnail_url`).
-- REST API: 114 endpoints across 23 controllers (`mvs/v1`), plus 37 in Pro (`mvs-pro/v1`).
-- Gutenberg blocks: 9 registered in Free (13 `block.json` dirs; 4 Interactivity-only) + 13 Pro.
+- REST API: 115 endpoints across 25 controllers (`mvs/v1`), plus 86 in Pro (`mvs-pro/v1`).
+- Gutenberg blocks: 9 registered in Free (13 `block.json` dirs; 4 Interactivity-only) + 15 Pro.
 - BuddyPress integration: activity composer, profile tabs, group tabs, notifications, member photos.
 - Albums (custom post type) + collections (smart auto-curation).
 - Social layer: reactions (6 types), threaded comments, favorites, follows, @mentions, sharing.
@@ -43,7 +47,8 @@
 - Connector framework: Flickr (OAuth 1.0a). Extension points for more platforms.
 - Feed layouts: Instagram, Flickr, Pinterest, Dribbble — for the 4 platform-feed blocks.
 - Privacy UI: advanced access-rules editor.
-- License + EDD Software Licensing.
+- Documents (2.4.0): user/space/group drives, folder tree, text extraction + full-text search, tiered previews, per-drive permissions. The only Pro surface whose WRITES are licence-gated (`Documents\DocumentLicense`); reads and registration never are.
+- License + EDD Software Licensing — **updates only**, not a feature gate (see Documents above for the single exception).
 
 ### Cross-cutting infrastructure
 - Single read-side facade: `Core\MediaUrl` (`thumb()`, `file()`).

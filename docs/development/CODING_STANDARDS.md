@@ -20,6 +20,19 @@ Target quality: WooCommerce / WordPress core level. Every rule here exists becau
 | 10 | i18n | Wrap all user-facing strings; text domain `wpmediaverse` | Required | WPCS `phpcs` |
 | 11 | Error handling | Return `WP_Error` or call `LoggerService`; no silent failures | Required | Code review |
 | 12 | Dependencies | Resolve services from the container; no direct `new` in class bodies | Required | Code review |
+| 21 | Shelled-out binaries | No exec-family call in shipped source: `exec`, `shell_exec`, `proc_open`, `system`, `passthru`, `popen` | Zero occurrences | `bin/coding-rules-check.sh` Rule 8 (both plugins) |
+
+The numbering above matches the canonical rule index in `CLAUDE.md`; rules 13-20 are enforced elsewhere and are not restated here.
+
+### Rule 21 - no exec-family call in shipped source
+
+Security plugins flag `exec()` / `proc_open()` and friends as a possible backdoor, and they match the **call site in the shipped file**, not the runtime path. Wrapping one in `if ( $binary_available )` changes nothing, and we cannot know which scanner a customer runs.
+
+The FFmpeg video-transcoding path was removed in 2.4.0 for exactly this reason. **WPMediaVerse does not transcode video.** It is an embedder and a storage/display layer, not a media processor - there is no FFmpeg dependency and no transcode worker anywhere in either plugin. Any doc, plan, or comment that describes one is describing something that was deleted.
+
+If a feature genuinely needs a binary, it runs somewhere else - a remote service, the browser, or the site owner's own mu-plugin. The three accepted shapes are written up in `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md` §0.
+
+`bin/coding-rules-check.sh` Rule 8 greps for the whole family in both plugins and is mutation-tested, so a planted call fails local CI.
 
 ---
 
@@ -42,7 +55,7 @@ class MediaService {
 ```
 
 **Why it's bad**  
-One class that owns everything is impossible to test, impossible to review in a PR, and forces every contributor to understand the whole system before changing one line. We already have this problem in `BuddyPressIntegration.php` (2,811 lines). The rule exists to stop it spreading.
+One class that owns everything is impossible to test, impossible to review in a PR, and forces every contributor to understand the whole system before changing one line. We had exactly this in `includes/Integrations/BuddyPressIntegration.php` (2,811 lines) before it was split into the focused classes now under `includes/Integrations/BuddyPress/`. The rule exists to stop it coming back.
 
 **Correct approach**  
 Split by responsibility. Each class does one thing.
@@ -104,8 +117,8 @@ When the logic changes (new field, different default), it changes in one place a
 Extract a private method that both callers use:
 ```php
 private function save_album_meta( int $post_id, WP_REST_Request $request ): void {
-    MediaMeta::set( $post_id, 'privacy', sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' ) );
-    MediaMeta::set( $post_id, 'album_type', sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' ) );
+    update_post_meta( $post_id, '_mvs_privacy', sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' ) );
+    update_post_meta( $post_id, '_mvs_album_type', sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' ) );
 }
 ```
 If the same logic appears in two places, it belongs in a shared method or service.

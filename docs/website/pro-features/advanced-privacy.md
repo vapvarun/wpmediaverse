@@ -4,7 +4,7 @@
 
 
 
-WPMediaVerse Pro extends the free plugin's 6 privacy levels with album-level inheritance, per-user presets, and bulk privacy updates.
+WPMediaVerse Pro extends the free plugin's privacy levels with album-level inheritance, per-user presets, and bulk privacy updates.
 
 ![Privacy selector on the upload page showing all six levels](../images/upload-page.png)
 
