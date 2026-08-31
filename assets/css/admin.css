@@ -573,7 +573,14 @@ a.mvs-stat-card:focus {
 
 .mvs-pro-badge {
 	display: inline-block;
-	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	/* One step darker on the same indigo->violet ramp. The 500 pair
+	   (#6366f1 -> #8b5cf6) measured 4.47:1 and 4.23:1 against white - both
+	   under the 4.5 floor - and at 9px/700 this is not WCAG "large text", so
+	   the large-text exemption does not apply (Basecamp 10253006745). The 600
+	   weights keep the brand gradient and clear the floor at both ends.
+	   .mvs-pro-cta below carries the same pair at 13px/600 and was fixed with
+	   it: the card named only the badge, but it is one defect on two surfaces. */
+	background: linear-gradient(135deg, #4f46e5, #7c3aed);
 	color: var(--mvs-surface);
 	font-size: 10px;
 	font-weight: 700;
@@ -624,7 +631,7 @@ a.mvs-stat-card:focus {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	background: linear-gradient(135deg, #4f46e5, #7c3aed);
 	color: var(--mvs-surface);
 	padding: 6px 16px;
 	border-radius: 4px;

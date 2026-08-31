@@ -1,34 +1,35 @@
 {
   "release_version": "2.4.0",
   "mode": "combo",
-  "ran_at": "2026-08-31T08:56:43Z",
+  "ran_at": "2026-08-31T20:22:42Z",
   "free_version": "2.4.0",
   "pro_version": "2.4.0",
+  "walked_by": "agent walk 2026-09-01, Chromium via Playwright + REST dispatch on mediaverse.local",
   "sections": {
     "A_fresh_install": {
-      "pass": 5,
+      "pass": 0,
       "fail": 0,
-      "skipped": 0
+      "skipped": 5
     },
     "B_upgrade": {
-      "pass": 3,
+      "pass": 0,
       "fail": 0,
-      "skipped": 0
+      "skipped": 3
     },
     "C_core_flows": {
-      "pass": 12,
+      "pass": 10,
       "fail": 0,
-      "skipped": 32
+      "skipped": 34
     },
     "D_regression_guards": {
-      "pass": 3,
+      "pass": 7,
       "fail": 0,
-      "skipped": 29
+      "skipped": 33
     },
     "E_pro_smoke": {
-      "pass": 9,
+      "pass": 0,
       "fail": 0,
-      "skipped": 15
+      "skipped": 24
     },
     "F_cross_browser": {
       "pass": 1,
@@ -36,80 +37,54 @@
       "skipped": 3
     }
   },
+  "passed_rows": {
+    "C": [
+      "C.anon.explore-feed",
+      "C.anon.search-empty-state",
+      "C.anon.tag",
+      "C.anon.single-media",
+      "C.anon.user-profile",
+      "C.anon.album-collection",
+      "C.anon.dashboard-gate",
+      "C.member.grid-thumbnail-size",
+      "C.member.video-poster-fallback",
+      "C.member.edit-categories-persist"
+    ],
+    "D": [
+      "D.bp-thumbnail-leak",
+      "D.dashboard-anon-gate",
+      "D.search-empty-state",
+      "D.grid-thumb-size-default",
+      "D.blank-video-poster",
+      "D.categories-cache-miss-drop",
+      "D.touch-floor-scoped-to-one-viewport"
+    ],
+    "F": [
+      "F.chromium"
+    ]
+  },
+  "evidence": {
+    "C.anon.explore-feed": "200; 23 tiles, 0 broken, 0 page-URL-as-src; Load More advanced 11 -> 21 unique media with 0 duplicated",
+    "C.anon.search-empty-state": "/media/?s=zzznoresults999 -> empty state + Browse all + 26 tag chips",
+    "C.anon.tag": "?mvs_tag=nature -> 24 tiles, active chip, clear-filter; unknown tag 200 with 0 tiles and no fatal",
+    "C.anon.single-media": "image loads; og:image + og:title + twitter:card all present",
+    "C.anon.user-profile": "/media/@varundubey/ 200, 21 tiles, no email/settings leak; page/2 ok; unknown user 404 no fatal",
+    "C.anon.album-collection": "album 200 renders; zero-match collection shows empty state; bad slug 404 no fatal",
+    "C.anon.dashboard-gate": "styled gate, 'Log in to continue', redirect_to round-trip present",
+    "C.member.grid-thumbnail-size": "thumbnail_url carries mvs_size=large (the 1.8.0 default rung)",
+    "C.member.video-poster-fallback": "videos 2389/2393 have no generated poster and return the bundled default-video-poster.svg, not ''",
+    "C.member.edit-categories-persist": "PUT {categories:[168]} 200 -> GET ['Architecture'], taxonomy relationship agrees; PUT [] -> GET []; OPTIONS lists all 7 editable args",
+    "D.touch-floor-scoped-to-one-viewport": "dashboard tabs 44px at 1440px and 46.7-55.2px at 390px, 0 of 7 under 40"
+  },
   "failures": [],
   "debug_log_issues": [],
+  "debug_log_note": "0 Fatal / 0 Warning / 0 Notice / 0 Deprecated across the walk. The only two new debug.log lines were 'Unknown column user_id' from the walker's OWN ad-hoc wp eval queries (stack ends in Eval_Command->__invoke), not from plugin code - classified 'for', not recorded as issues.",
   "manual_required": [
-    "Firefox Desktop: not run. Chromium desktop only.",
-    "Safari iOS 390px: not run.",
-    "E.streaks.daily-check-bounded: PARTIAL - DAILY_BATCH_SIZE=100 and DAILY_MAX_PER_RUN=2000 confirmed in code, but the >2000-user drain was not seeded.",
-    "C.member.grid-thumbnail-size: dashboard tiles observed at the large rung; the mvs_grid_thumb_size_key filter escape-hatch was NOT exercised.",
-    "E_pro_smoke: 15 of 24 rows still unwalked. E.boosts needs WB Gamification installed. video-intelligence, ai-providers and instagram-feed need third-party API credentials. cloud-storage needs a fully configured bucket. migration-importers needs a source plugin's data. The remaining journeys (battles/challenges/tournaments end to end, collections-lifecycle, group-dm, watermarking, privacy-pro-ui, streaks daily-check at 2000+ users) need seeded personas and are browser journeys rather than service checks."
+    "Firefox Desktop: full C walk on a second engine - Chromium only this run",
+    "Safari iOS 390px: touch targets and the rail",
+    "A_fresh_install (5 rows) and B_upgrade (3 rows): need a THROWAWAY site. mediaverse.local is the QA baseline and carries fixtures; deactivating to reactivate destroys them",
+    "E_pro_smoke (24 rows): competitions, cloud storage, AI providers, quota, watermarking, importers - most need seeded fixtures or live third-party credentials",
+    "RTL pass"
   ],
-  "environment_caveats": [
-    "Host runs BuddyNext + BuddyPress. BuddyNext owns several MediaVerse routes and suppresses the chat panel (mvs_buddynext_active === true). Most customers do not run BuddyNext, so this walk does NOT certify the native path for those surfaces.",
-    "A BunnyCDN cloud storage driver is active: public media is served from mediaverse1.b-cdn.net and bypasses /serve. Local-driver assertions were exercised against media that still serves locally.",
-    "Walk performed by an agent against HEAD (free 2.4.0 @ explore.php warning fix). Written AFTER the last source commit so the freshness gate compares correctly."
-  ],
-  "rows_walked": {
-    "C.anon.explore-feed": "21 tiles, Load More advanced 21 -> 44, 0 page-URL thumbnail srcs, login CTA present",
-    "C.anon.search-empty-state": "'No results for \"zzznoresults999\"' + Browse-all link + 29 tag chips",
-    "C.anon.tag": "known tag filters with an All-media affordance; unknown tag returns a clean empty state, no fatal",
-    "C.anon.single-media": "PASS on the clean Docker host: /media/<slug>/ returns 200 with NO redirect, MediaVerse's own Open Graph block renders, og:title and <h1> both carry the real media title. On mediaverse.local this row is un-walkable because BuddyNext's PageRouter redirects the route to its own activity permalink - that is BuddyNext owning the route, NOT a MediaVerse defect, which this host proves.",
-    "C.anon.user-profile": "200 with grid + h1; page/2/ 200 no fatal; no wp_capabilities or email leak",
-    "C.anon.album-collection": "album + collection both 200, no fatal",
-    "C.anon.dashboard-gate": "styled Log in link with redirect_to round-trip; 0 dashboard panels leaked Re-verified after the translators-comment fix to dashboard-content.php.",
-    "C.member.signed-url": "valid=200 image/jpeg, tampered=403, expired=403, no-token=400 rest_missing_callback_param",
-    "C.member.public-media-cacheable": "URL stable across 2 calls; public serve = 'public, max-age=604800' + far-future Expires; private = no-store; mvs_stable_public_urls=false reverts to rolling; mvs_public_media_max_age=123 honoured (verified via mu-plugin, since the filter must live in the SERVING process)",
-    "C.notifications.hook-contract": "all 6 TYPES fire with 7 args, non-empty message, valid link; a 5-arg listener fires 6 times with no warning",
-    "C.member.lightbox": "opens on thumbnail click; 6 reactions all with aria-pressed; 5 toolbar buttons all labelled; ESC closes and restores hidden",
-    "D.esc-close-lightbox": "ESC closed the lightbox and restored the hidden attribute",
-    "D.bp-thumbnail-leak": "0 of 21 explore thumbnails used a page URL as src",
-    "D.dashboard-anon-gate": "anonymous /my-media/ shows a styled login CTA, not an orphan sentence",
-    "A1": "Free 2.4.0 activated from the BUILT ZIP on clean WP 7.0.2/PHP 8.2.32: 23 wp_mvs_* tables, post types + taxonomies registered, mvs_db_version=30, NO debug.log created at all",
-    "A2": "Pro activated on top: versions match 2.4.0/2.4.0, 36 tables, 'Requires Plugins: wpmediaverse' header present. With Free deactivated the site still returns 200 with zero fatals - Pro guards itself",
-    "A3": "rewrite_rules option DELETED, then plugins activated: all 8 routes (/media/, /my-media/, /compete/, /media/battles|challenges|tournaments/, /upload-media/, /explore-media/) return 200 on first request with no manual permalink flush",
-    "A4": "compete, my-media, explore-media, upload-media each exist exactly once after a deactivate+reactivate cycle - no duplication",
-    "A5": "default_privacy=public; signed_url_ttl resolves to 3600 via SignedUrlService::DEFAULT_TTL (the option row is unset, which is correct); chat_panel_visibility defaults to everywhere",
-    "B1": "2.3.0 -> 2.4.0 with seeded data: db_version 25->30, tables 32->36, and an md5 checksum over (slug,title,privacy,view_count,reaction_count) is BYTE-IDENTICAL before and after. Favorites, album items and albums all preserved. No debug.log during the upgrade",
-    "B2": "Pro option-prefix migration: mvs_boost_cost_per_100='777' -> mvs_pro_boost_cost_per_100='777' with the old key deleted; forcing a second run (flag cleared) left both values unchanged. Idempotent",
-    "B3": "Columns added by 2.4.0 are back-filled on rows created at 2.3.0: folder_id=0, drive_type='user', drive_id=0 - none left NULL",
-    "E.competitions.cron-bounded": "FAILED, then FIXED. TournamentService::resolve_expired_matches() ran two queries with NO LIMIT and no ORDER BY while its four siblings were all capped at 50. Proven at runtime both directions: unbounded processed all 120 seeded matches in one tick; bounded processes 50 and drains (120 -> 70 -> 20). Fixed in Pro, CRON_BATCH_SIZE=50.",
-    "E.tournaments.sparse-bracket": "PASS - the case that previously fataled the whole feature. bracket_size=16 with 3 entries: no fatal, 2 matches, exactly 1 real, 1 bye, 0 both-null rows, status -> active. bracket_size=64 with 2 entries (max sparseness): no fatal, 1 match, 1 real, 0 both-null, status -> active.",
-    "E.streaks.freeze-proportional-cost": "PASS - 1 freeze over a 6-day gap (missed=5) RESETS the streak to 1 and does NOT consume the freeze, so a long lapse cannot be bridged cheaply. 3 freezes over a 4-day gap (missed=3) preserves the streak (10 -> 11) and consumes all 3.",
-    "E.compete-hub": "PASS - /compete/ returns 200 for an anonymous visitor with Battles, Challenges and Tournaments cards present and a log-in CTA, no fatal.",
-    "E.feature-toggle-degradation": "PASS - with battles/challenges/tournaments toggles set to 0, /compete/ and all three listing routes still return 200 with zero fatals rather than white-screening.",
-    "E.battles.win-xp-configured": "PASS - option default is 100; a battle created with the option at 250 reports xp_for_win 250; moving the option to 400 leaves that battle at 250 (per-battle snapshot, not retroactive) while a battle created after the change reports 400.",
-    "E.quota": "PASS - a member on a 2-image package is allowed at 1 of 2 and refused at 2 of 2 with WP_Error mvs_pro_quota_exceeded and an upgrade CTA ('Purchase additional credits to upload more'), not a generic 500.",
-    "C.member.upload-public": "PASS - walked for real through the activity composer on BuddyX + BuddyPress (no BuddyNext): five photos selected at once, all five uploaded, five preview tiles, no error state, 1,524 ms wall clock with peak concurrency 3. Order preserved under out-of-order completion - media IDs came back 14,13,12,15,16 (photo-3 finished first) while slot order stayed photo-1..photo-5.",
-    "E.gamification.configured-xp": "PASS both halves. Challenges: a challenge created with xp_1st/2nd/3rd/participation = 500/300/150/25 returns exactly those, and CompetePointsBridge::resolve_points() called with an engine default of 10 returns 500 - the configured value wins, which is the whole point of the row. Tournaments: xp_for_round_win 150 and xp_for_tournament_win 500 as configured.",
-    "E.gamification.winners-notified": "PASS. Finalizing a challenge with 3 entries fired mvs_challenge_winner_named exactly 3 times and mvs_challenge_finalized exactly once, and 3 notifications were created - one per top-3 member. None silently dropped.",
-    "E.boosts": "PARTIAL - not walkable on this stack. BoostService::create() refuses with mvs_boost_gamification_unavailable because WB Gamification is not installed. The refusal itself is correct (clear message, no fatal) and mvs_expire_boosts is hooked, but the purchase/feed-ranking/expiry flow needs WB Gamification present."
-  },
-  "found_and_fixed_during_walk": [
-    "PHP Warning: Undefined variable $mvs_filter_tag / $mvs_filter_cat in templates/explore.php:402-403 on EVERY profile route (/media/@user/). Assigned inside `if ( ! $mvs_profile )` but read unconditionally. Fixed by hoisting the initialisation above the branch; re-walked to 0 warnings. This is why the report shows debug_log_issues: [] - the warning is fixed in the code being packaged, not omitted.",
-    "Runbook A1 acceptance was wrong in two ways and would have failed a correct install: it said 21 tables (actual 23) and that mvs_db_version equals MVS_VERSION (it is a schema integer, 30). Corrected in AGENT_SMOKE_RUNBOOK.md.",
-    "TournamentService::resolve_expired_matches() ran two UNBOUNDED cron queries and resolved every expired match in a single tick, each resolution advancing a bracket and notifying players. A timeout part-way through would leave brackets half-advanced with no signal. Now capped at 50 like its four siblings; mutation-proven both directions.",
-    "Uploads pushed to cloud on the request path: 11,719 ms and 6 blocking round trips per image, so five photos took about a minute and looked stuck. Now local-first with an Action Scheduler job; 218 ms per image.",
-    "Activity composer uploaded files strictly sequentially and mvs-rest.js had NO timeout anywhere, so one stalled request hung the UI forever with no error. Now 3 at a time with order preserved, and every fetch is bounded.",
-    "Activity photo grids declared three fixed rows on phones, leaving 160px of blank space under 3- and 4-photo posts, and 2-photo posts kept the desktop 280px row and cropped landscapes to a third of their width (Basecamp 10253855410)."
-  ],
-  "hosts": {
-    "primary": "mediaverse.local (Local, BuddyX+BuddyNext+BuddyPress, BunnyCDN driver) \u2014 sections C, D, F",
-    "clean": "Docker: wordpress:php8.2-apache + WP 7.0.2 + PHP 8.2.32 + MariaDB 11, BuddyX theme + BuddyPress, NO BuddyNext, local storage driver \u2014 sections A, B and the single-media row"
-  },
-  "runbook_corrections": [
-    "E.quota names QuotaService::can_upload(); no such method exists. The real API is enforce_quota() (a filter callback) plus get_quota_summary().",
-    "E.competitions.cron-bounded names TournamentService::start_registration_closed(); the method is start_registered()."
-  ],
-  "performance_baseline": {
-    "measured": "2026-08-31, after the upload-pipeline work",
-    "one_image_upload_request": {
-      "2MP": "270 ms",
-      "12MP": "655-705 ms",
-      "24MP": "1153 ms"
-    },
-    "before": "11,719 ms per image with 6 blocking cloud round trips",
-    "five_photos_via_composer": "1,524 ms (was ~59s: sequential x ~11.7s each)",
-    "note": "Cloud push is now an Action Scheduler job. generate_thumbnails stays inline on purpose: 263 ms of a 705 ms request, and all four rungs it produces are used."
-  }
+  "scope_note": "This walk was run to re-establish freshness after the 2026-09-01 docs-truth pass and UI fixes, which touched includes/ and assets/ and invalidated the prior report. Only rows verified in THIS run are counted as passes; earlier runs' passes are deliberately not carried forward."
 }
