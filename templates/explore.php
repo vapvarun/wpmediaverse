@@ -55,18 +55,24 @@ $mvs_archive_url = home_url( '/media/' );
 	<?php
 	// Profile user detection (set by TemplateLoader).
 	$mvs_profile = isset( $GLOBALS['mvs_profile_user'] ) ? $GLOBALS['mvs_profile_user'] : null;
+
+	// Resolved BEFORE the header branch, not inside it. These were assigned only
+	// when `! $mvs_profile`, yet read unconditionally further down (the toolbar's
+	// hidden inputs), so every profile route — /media/@user/ — emitted two
+	// "Undefined variable" warnings per request. The scattered `?? ''` and
+	// `! empty()` guards at the other read sites were the symptom of exactly
+	// that. One initialisation here makes every consumer safe on both branches.
+	$mvs_filter_tag = get_query_var( 'mvs_tag', '' );
+	if ( ! $mvs_filter_tag && isset( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		$mvs_filter_tag = sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+	}
+	$mvs_filter_cat = get_query_var( 'mvs_category', '' );
 	?>
 
 	<?php if ( ! $mvs_profile ) : ?>
 	<header class="mvs-explore-header">
 		<h1>
 		<?php
-		// Check for tag/category filter via query vars.
-		$mvs_filter_tag = get_query_var( 'mvs_tag', '' );
-		if ( ! $mvs_filter_tag && isset( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$mvs_filter_tag = sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-		}
-		$mvs_filter_cat = get_query_var( 'mvs_category', '' );
 
 		if ( $mvs_filter_tag ) {
 			$tag_term = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
