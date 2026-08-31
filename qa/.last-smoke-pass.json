@@ -1,7 +1,7 @@
 {
   "release_version": "2.4.0",
   "mode": "combo",
-  "ran_at": "2026-08-31T08:11:32Z",
+  "ran_at": "2026-08-31T08:56:43Z",
   "free_version": "2.4.0",
   "pro_version": "2.4.0",
   "sections": {
@@ -57,7 +57,7 @@
     "C.anon.single-media": "PASS on the clean Docker host: /media/<slug>/ returns 200 with NO redirect, MediaVerse's own Open Graph block renders, og:title and <h1> both carry the real media title. On mediaverse.local this row is un-walkable because BuddyNext's PageRouter redirects the route to its own activity permalink - that is BuddyNext owning the route, NOT a MediaVerse defect, which this host proves.",
     "C.anon.user-profile": "200 with grid + h1; page/2/ 200 no fatal; no wp_capabilities or email leak",
     "C.anon.album-collection": "album + collection both 200, no fatal",
-    "C.anon.dashboard-gate": "styled Log in link with redirect_to round-trip; 0 dashboard panels leaked",
+    "C.anon.dashboard-gate": "styled Log in link with redirect_to round-trip; 0 dashboard panels leaked Re-verified after the translators-comment fix to dashboard-content.php.",
     "C.member.signed-url": "valid=200 image/jpeg, tampered=403, expired=403, no-token=400 rest_missing_callback_param",
     "C.member.public-media-cacheable": "URL stable across 2 calls; public serve = 'public, max-age=604800' + far-future Expires; private = no-store; mvs_stable_public_urls=false reverts to rolling; mvs_public_media_max_age=123 honoured (verified via mu-plugin, since the filter must live in the SERVING process)",
     "C.notifications.hook-contract": "all 6 TYPES fire with 7 args, non-empty message, valid link; a 5-arg listener fires 6 times with no warning",
