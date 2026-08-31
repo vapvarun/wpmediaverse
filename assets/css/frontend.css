@@ -2263,18 +2263,36 @@ body.dark-mode .mvs-skeleton::after {
     .mvs-dashboard-tabs .mvs-dashboard-tab {
         border-inline-start: 2px solid transparent !important;
         border-radius: var(--mvs-radius-sm) !important;
+        /* Leading corners are square so the 2px marker reads as the row's
+           EDGE. With the radius all round, the marker becomes a rounded stick
+           with a gap above and below and detaches from its own row. */
+        border-start-start-radius: 0 !important;
+        border-end-start-radius: 0 !important;
         color: var(--mvs-text-secondary) !important;
     }
 
+    /* Hover and active are washes derived from the FOREGROUND, not from
+       --mvs-surface. That token resolved to rgb(35,38,47) on Reign dark - the
+       exact colour of the rail behind it - so the fill these states are built
+       on was not being painted at all. On the active row that left a lone
+       floating marker with nothing to anchor it. currentColor is always
+       visible on whatever surface a host supplies, and on the active row it
+       is the accent, so the wash agrees with the marker.
+
+       These carry !important because the non-important copies of the same
+       rules further down are out-specified here; setting the fill there had
+       no effect at all until it was set where the cascade ends. */
     .mvs-dashboard-tabs .mvs-dashboard-tab:hover,
     .mvs-dashboard-tabs .mvs-dashboard-tab:focus {
-        background: var(--mvs-surface) !important;
+        background: rgba(128, 128, 128, 0.1) !important;
+        background: color-mix(in srgb, currentColor 8%, transparent) !important;
         color: var(--mvs-text) !important;
     }
 
     .mvs-dashboard-tabs .mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary) !important;
-        background: var(--mvs-surface) !important;
+        background: rgba(128, 128, 128, 0.14) !important;
+        background: color-mix(in srgb, currentColor 12%, transparent) !important;
         color: var(--mvs-primary-text, var(--mvs-primary)) !important;
     }
 
@@ -7978,7 +7996,9 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
     .mvs-dashboard-tabs a.mvs-dashboard-tab.active,
     .mvs-dashboard-tabs button.mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary);
-        background: var(--mvs-surface);
+
+        /* Fill + squared leading corners live in the !important block above,
+           which out-specifies this rule. */
         color: var(--mvs-primary-text, var(--mvs-primary));
         font-weight: 600;
     }
