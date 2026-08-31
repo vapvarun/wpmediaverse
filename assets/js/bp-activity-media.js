@@ -203,8 +203,25 @@
 		}
 	}
 
-	function uploadFile( file, btn ) {
-		if ( attachedMedia.length >= maxMedia ) { return Promise.resolve(); }
+	/**
+	 * Upload one file and record it in `slots[ index ]`.
+	 *
+	 * Writes by index rather than pushing because uploads now run three at a
+	 * time: push order would be completion order, which would silently reorder
+	 * the member's photos in the activity grid. The caller compacts the array
+	 * once everything has settled.
+	 *
+	 * @param {File}   file  File to upload.
+	 * @param {Object} btn   Attach-media button (for the disabled state).
+	 * @param {Array}  slots Result array, one entry per selected file.
+	 * @param {number} index This file's position in the member's selection.
+	 * @return {Promise}
+	 */
+	function uploadFile( file, btn, slots, index ) {
+		// The caller already trimmed the selection to the remaining allowance,
+		// so this no longer needs to re-check attachedMedia.length — and must
+		// not, because with concurrent uploads that count is still 0 for every
+		// in-flight file and the guard would either pass for all or none.
 
 		var isVideo = file.type.indexOf( 'video/' ) === 0;
 		var isAudio = file.type.indexOf( 'audio/' ) === 0;
@@ -254,11 +271,11 @@
 							: __( 'Upload failed. Please try again.', 'wpmediaverse' )
 					);
 				}
-				attachedMedia.push( {
+				slots[ index ] = {
 					id:        data.id,
 					thumbUrl:  localThumb || data.thumbnail_url || '',
 					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
-				} );
+				};
 			} );
 		} );
 	}
@@ -355,10 +372,44 @@
 		preview.style.display = 'block';
 		preview.className = 'mvs-activity-media-preview';
 
-		// Upload all files sequentially.
-		var chain = Promise.resolve();
-		files.forEach( function( file ) {
-			chain = chain.then( function() { return uploadFile( file, btn ); } );
+		// Upload with BOUNDED CONCURRENCY, not one at a time.
+		//
+		// This was a strict sequential chain, so each file waited for the whole
+		// of the previous one and the wall-clock cost was the sum of every
+		// upload. Five photos meant five full round trips back to back, and a
+		// single slow file stalled everything behind it. Three at a time keeps
+		// the connection busy without opening an unbounded number of parallel
+		// multipart POSTs, which is its own way to look broken on mobile data.
+		//
+		// ORDER IS PRESERVED DELIBERATELY. attachedMedia drives the hidden
+		// input, the preview and therefore the order the photos appear in the
+		// activity grid, so results are written back BY INDEX and compacted
+		// afterwards. Pushing them as they land would reorder a member's photos
+		// by whichever upload happened to finish first.
+		var CONCURRENCY = 3;
+		var slots       = new Array( files.length );
+		var nextIndex   = 0;
+
+		function runNext() {
+			if ( nextIndex >= files.length ) {
+				return Promise.resolve();
+			}
+			var index = nextIndex++;
+			return uploadFile( files[ index ], btn, slots, index ).then( runNext );
+		}
+
+		var workers = [];
+		for ( var w = 0; w < Math.min( CONCURRENCY, files.length ); w++ ) {
+			workers.push( runNext() );
+		}
+
+		var chain = Promise.all( workers ).then( function() {
+			// Append in the member's original order, skipping any that failed.
+			slots.forEach( function( item ) {
+				if ( item ) {
+					attachedMedia.push( item );
+				}
+			} );
 		} );
 
 		chain.then( function() {

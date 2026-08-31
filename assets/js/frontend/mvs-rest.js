@@ -31,6 +31,22 @@
 	'use strict';
 
 	/**
+	 * Hard ceilings on how long a request may hang.
+	 *
+	 * These are NOT latency targets — they are the point past which a request
+	 * is certainly dead rather than slow. fetch() has no timeout of its own, so
+	 * without them a stalled connection never settles and the calling UI waits
+	 * for a callback that will never run. Generous on purpose: a bounded wait
+	 * only has to beat "forever".
+	 *
+	 * Override per call with `mvsTimeoutMs` in the init object.
+	 *
+	 * @since 2.4.1
+	 */
+	var DEFAULT_TIMEOUT_MS = 60000;
+	var UPLOAD_TIMEOUT_MS  = 300000;
+
+	/**
 	 * Return the configured REST base URL, without trailing slash.
 	 *
 	 * @return {string}
@@ -158,7 +174,49 @@
 		if ( typeof init.signal === 'undefined' ) {
 			delete init.signal;
 		}
-		return fetch( url, init );
+
+		// A caller-supplied timeout wins; otherwise pick by body type below.
+		var timeoutMs = init.mvsTimeoutMs;
+		delete init.mvsTimeoutMs;
+
+		// A caller managing its own signal owns the cancellation story too, and
+		// very old browsers have no AbortController — both fall through to a
+		// plain fetch rather than being broken by this.
+		if ( init.signal || typeof AbortController === 'undefined' ) {
+			return fetch( url, init );
+		}
+
+		if ( ! timeoutMs ) {
+			// A multipart body is an upload: minutes are legitimate on a slow
+			// connection, so it gets a far longer leash than an ordinary call.
+			var isUpload = typeof FormData !== 'undefined' && init.body instanceof FormData;
+			timeoutMs    = isUpload ? UPLOAD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+		}
+
+		// fetch() has NO timeout of its own: a request the server accepts and
+		// then never answers hangs forever, and the caller's .then() simply
+		// never runs. That is what left the activity composer sitting on
+		// "Uploading 5 files..." with no error and no way out but a reload -
+		// there was no AbortController anywhere in this file. A bounded wait
+		// turns a silent hang into a normal rejection the caller already
+		// handles.
+		var controller = new AbortController();
+		var timer      = setTimeout( function () {
+			controller.abort();
+		}, timeoutMs );
+
+		init.signal = controller.signal;
+
+		return fetch( url, init ).then(
+			function ( response ) {
+				clearTimeout( timer );
+				return response;
+			},
+			function ( err ) {
+				clearTimeout( timer );
+				throw err;
+			}
+		);
 	}
 
 	/**
