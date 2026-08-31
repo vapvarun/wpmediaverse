@@ -353,9 +353,31 @@ class UploadService {
 			);
 		}
 
-		// Store file. Public media uses the active (possibly cloud) driver;
-		// restricted media stays on local disk.
-		$driver = $this->storage->get_driver_for_privacy( $privacy );
+		// Store LOCALLY first, always — the cloud copy is queued, not awaited.
+		//
+		// Pushing to the cloud on the request path cost the member ~7.7s and six
+		// extra HTTP round trips per upload (measured 2026-08-31 on a 2000x1500
+		// JPEG: 11.7s with a cloud driver vs 4.0s local). Uploads also run one
+		// after another, so five photos meant roughly a minute of staring at
+		// "Uploading 5 files...", with no way to tell a slow upload from a dead
+		// one. None of that work has to happen before the member sees their own
+		// photo: the bytes are on disk and servable the moment this returns.
+		//
+		// Nothing downstream needs to know the file is "not yet on cloud".
+		// get_driver_for_location() already resolves a media's driver from the
+		// host of its recorded file_url, so the URL IS the sync flag — when the
+		// queued job finishes and rewrites the URLs, serving flips to the CDN on
+		// its own. Until then (or forever, if the cloud is misconfigured or
+		// down) the local file serves correctly.
+		$target_driver = $this->storage->get_driver_for_privacy( $privacy );
+		$local_driver  = $this->storage->get_local_driver();
+
+		// get_local_driver() hands back a NEW instance each call, so compare by
+		// class rather than identity — `$a !== $b` is true even when both are
+		// local, which would queue a pointless local-to-local migration.
+		$defer_cloud = get_class( $target_driver ) !== get_class( $local_driver );
+
+		$driver = $local_driver;
 		$stored = $driver->store( $file['tmp_name'], $dest_path );
 
 		if ( ! $stored ) {
@@ -491,6 +513,15 @@ class UploadService {
 				__( 'Failed to create media record.', 'wpmediaverse' ),
 				array( 'status' => 500 )
 			);
+		}
+
+		// Hand the cloud copy to the queue now that the row exists. Deliberately
+		// fire-and-forget: a failure to ENQUEUE must never fail an upload that
+		// has already succeeded — the file is on disk and serving. If Action
+		// Scheduler is absent the media simply stays local, which is a working
+		// state, not a broken one.
+		if ( $defer_cloud ) {
+			self::queue_cloud_sync( $media_id );
 		}
 
 		// Store EXIF data in meta table (sparse data).
@@ -738,7 +769,19 @@ class UploadService {
 		$wpmv_base = trailingslashit( (string) ( wp_upload_dir()['basedir'] ?? '' ) ) . 'wpmediaverse/';
 		$privacy   = (string) $repo->get_raw( $media_id, 'privacy' );
 		$privacy   = '' !== $privacy ? $privacy : 'public';
-		$driver    = $this->storage->get_driver_for_privacy( $privacy );
+
+		// Thumbnails follow the ORIGINAL's current location, not the privacy
+		// level's eventual destination. Resolving by privacy pushed all six
+		// rungs to the cloud one blocking round trip at a time — measured at
+		// ~7.6s of the upload request — while the original they are derived
+		// from was still sitting on local disk, leaving one media split across
+		// two tiers until the deferred sync caught up.
+		//
+		// get_driver_for_location() reads the recorded file_url's host, so
+		// thumbnails land beside the original: local now, cloud after the
+		// queued CloudOps::migrate_one() moves the set and rewrites the URLs
+		// (it calls refresh_variant_urls(), so the rungs are carried too).
+		$driver = $this->storage->get_driver_for_location( $media_id );
 
 		// Reuse the existing relative location when the source already lives
 		// under wpmediaverse/ (e.g. a row whose file_path was stored absolute but
@@ -1695,7 +1738,24 @@ class UploadService {
 		$driver_slug  = (string) get_option( 'mvs_storage_driver', 'local' );
 		$is_public    = ( 'public' === (string) $repo->get_raw( $media_id, 'privacy' ) );
 		$cloud_driver = null;
-		if ( 'local' !== $driver_slug && $is_public ) {
+
+		// ...and only once the ORIGINAL is actually on that cloud.
+		//
+		// This block pushed every rung, plus the WebP and AVIF siblings, to the
+		// CDN inline — six blocking round trips, ~7s of the upload request,
+		// measured 2026-08-31. Uploads now write locally and queue the cloud
+		// copy (see handle()), so doing this here both slowed the member down
+		// and split a media across two tiers: thumbnails on the CDN while the
+		// original was still local.
+		//
+		// The queued CloudOps::migrate_one() carries the variants across via
+		// refresh_variant_urls(), so nothing is lost by waiting. When the
+		// original already lives on cloud — a re-generate, a backfill, a
+		// migrated library — the original's location says so and the push
+		// happens here exactly as before.
+		$original_on_cloud = ! ( $this->storage->get_driver_for_location( $media_id ) instanceof LocalDriver );
+
+		if ( 'local' !== $driver_slug && $is_public && $original_on_cloud ) {
 			$candidate = apply_filters( 'mvs_storage_driver', null, $driver_slug );
 			if ( $candidate instanceof StorageDriverInterface ) {
 				$cloud_driver = $candidate;
@@ -2060,5 +2120,79 @@ class UploadService {
 			),
 			array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
 		);
+	}
+
+	/**
+	 * Queue the cloud copy of a freshly uploaded media.
+	 *
+	 * The upload itself always writes to local disk (see handle()), so this is
+	 * pure catch-up work: copy the original and its variants to the configured
+	 * cloud and rewrite the stored URLs. CloudOps::migrate_one() already does
+	 * exactly that, including refreshing every variant URL and refusing to push
+	 * non-public media to a public bucket, so this only has to schedule it.
+	 *
+	 * Falls back to running inline when Action Scheduler is absent, matching
+	 * how the AI pipeline degrades (Plugin::queue_ai_processing). Inline is the
+	 * old, slow behaviour rather than a broken one.
+	 *
+	 * @since 2.4.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function queue_cloud_sync( int $media_id ): void {
+		if ( $media_id <= 0 ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action(
+				'mvs_cloud_sync_media',
+				array( 'media_id' => $media_id ),
+				'wpmediaverse'
+			);
+			return;
+		}
+
+		self::run_cloud_sync( $media_id );
+	}
+
+	/**
+	 * Push one media's bytes to the configured cloud. The Action Scheduler
+	 * callback for `mvs_cloud_sync_media`.
+	 *
+	 * Silent on failure BY DESIGN: the local file is already serving, so a
+	 * cloud that is down, throttled or misconfigured costs the member nothing.
+	 * The outcome is logged so an owner can see why media is still local.
+	 *
+	 * @since 2.4.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function run_cloud_sync( int $media_id ): void {
+		$target = (string) get_option( 'mvs_storage_driver', 'local' );
+
+		// The owner may have switched back to local, or switched clouds, between
+		// the upload and this job running. Re-read rather than trusting the
+		// value captured at enqueue time.
+		if ( '' === $target || 'local' === $target ) {
+			return;
+		}
+
+		$result = CloudOps::migrate_one( (int) $media_id, 'local', $target, true );
+
+		if ( empty( $result['ok'] ) ) {
+			LoggerService::warning(
+				'storage',
+				'Deferred cloud sync did not complete; media stays on local disk and continues to serve.',
+				array(
+					'media_id' => (int) $media_id,
+					'target'   => $target,
+					'status'   => $result['status'] ?? 'unknown',
+					'error'    => $result['error'] ?? '',
+				)
+			);
+		}
 	}
 }

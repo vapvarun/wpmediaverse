@@ -303,6 +303,19 @@ class Plugin {
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
 		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
 
+		// Deferred cloud sync. Uploads always land on local disk and queue the
+		// cloud copy, so the member never waits on a CDN round trip to see
+		// their own photo (UploadService::handle). This is the worker.
+		add_action(
+			'mvs_cloud_sync_media',
+			static function ( $args ) {
+				$media_id = is_array( $args ) ? (int) ( $args['media_id'] ?? 0 ) : (int) $args;
+				\WPMediaVerse\Services\UploadService::run_cloud_sync( $media_id );
+			},
+			10,
+			1
+		);
+
 		// Storage re-localization on privacy escalation. When a media row
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or

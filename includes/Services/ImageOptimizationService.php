@@ -810,7 +810,17 @@ class ImageOptimizationService {
 
 		// Route by the media's privacy: restricted media resolves to the local
 		// driver, so its variants never reach a public cloud bucket.
-		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_media( $media_id );
+		// A variant belongs WHERE THE ORIGINAL CURRENTLY IS, not where the
+		// media's privacy says it may eventually live. get_driver_for_media()
+		// answers by privacy, so a public media whose bytes are still on local
+		// disk had every variant pushed to the cloud one blocking request at a
+		// time — six round trips per upload, ~7.6s, while the original sat
+		// locally. That also split a single media across two tiers.
+		//
+		// get_driver_for_location() answers by the recorded file_url's host, so
+		// variants follow the original: local while it is local, cloud once the
+		// deferred sync has moved it and rewritten the URLs.
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id );
 		if ( ! $driver instanceof StorageDriverInterface ) {
 			return '';
 		}
