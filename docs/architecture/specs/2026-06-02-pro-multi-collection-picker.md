@@ -1,5 +1,13 @@
 # Pro Multi-Collection "Save to" Picker — Design Spec
 
+> **STATUS: IMPLEMENTED (Pro, as of 2.4.0).** Verified in code: the
+> `mvs_pro_collection_items` table exists in `wpmediaverse-pro/includes/Core/Migrator.php`,
+> served by `includes/Collections/CollectionItemsService.php` +
+> `CollectionItemsController.php` (`GET/POST /mvs-pro/v1/media/{id}/collections`),
+> with the Free-side seam in `wpmediaverse/src/blocks/shared-ui/view.js`
+> (`mvs-collections-click` cancelable event and the inline "+ New collection"
+> field). The "awaiting approval" line below is historical.
+
 **Date:** 2026-06-02 · **Status:** awaiting approval · **Basecamp:** #9937408893 (Free card; Free part = "works as is", Pro part = this spec)
 
 ## Goal

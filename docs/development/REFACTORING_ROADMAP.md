@@ -1,16 +1,26 @@
 # WPMediaVerse Refactoring Roadmap
 
-This is the prioritized structural refactoring backlog for the WPMediaVerse free and pro plugins. These are architectural changes - not style fixes - that reduce coupling, improve testability, and make the codebase maintainable as the feature set grows.
+> **THIS IS A PLAN, NOT A DESCRIPTION OF THE CODE.** Everything below that is not
+> explicitly marked ✅ DONE is **PLANNED / NOT BUILT** - the "Current state" and
+> "Target state" blocks describe an intention, not shipped behaviour, and the
+> class names, file paths, and line counts in them were written at planning time
+> and have not been kept in sync with the code. Do not cite this file as evidence
+> that anything exists.
+>
+> For what the plugin actually is right now: `CLAUDE.md` (current state + Known
+> Debt table) and `audit/manifests/manifest.summary.json` (code-verified counts).
+> Where a ✅ DONE item's target class names differ from what actually shipped,
+> the code wins - the split happened, the naming was decided during the work.
 
-P1 items must be completed before v1.2.0 ships. The API surface is still small; every week that passes makes these extractions harder.
+This is the prioritized structural refactoring backlog for the WPMediaVerse free and pro plugins. These are architectural changes - not style fixes - that reduce coupling, improve testability, and make the codebase maintainable as the feature set grows.
 
 ## Status
 
-P1 items are **all done** in 1.1.x. P2 + P3 items are scheduled inside the per-plugin `docs/superpowers/plans/2026-04-28-1.2.0-milestone.md` plans (Free + Pro) - that single plan file is the working source of truth for 1.2.0 task tracking. Per-item status is recorded inline below.
+P1 items are **all done** (in 1.1.x). P2 and P3 items are **not built** - they remain a backlog, not a commitment to a version. The 1.2.0 milestone plan they were originally scheduled against no longer exists; current per-topic plans live in `plan/` (plugin root) and `docs/plans/`. Per-item status is recorded inline below; anything without a ✅ has not shipped.
 
 ---
 
-## Priority 1 - Foundation (Complete Before v1.2.0)
+## Priority 1 - Foundation (all ✅ DONE)
 
 ### 1.1 Extract MediaRepository - ✅ DONE
 
@@ -20,12 +30,13 @@ P1 items are **all done** in 1.1.x. P2 + P3 items are scheduled inside the per-p
 **Target state**
 `includes/Repository/MediaRepository.php` - a single class that owns every media query.
 
-Required public methods:
-- `get_by_id( int $id ): ?array`
-- `get_by_slug( string $slug ): ?array`
-- `get_published_count( array $args = [] ): int`
-- `get_moderation_counts(): array`
-- `get_by_author( int $user_id, array $args = [] ): array`
+Method names proposed at planning time (some shipped under different names -
+read `includes/Repository/MediaRepositoryInterface.php` for the real surface):
+- `get_by_id( int $id ): ?array` → shipped as `get_all( int $media_id ): array` (plus `get()` / `get_raw()` for a single column)
+- `get_by_slug( string $slug ): ?array` → shipped
+- `get_published_count( array $args = [] ): int` → shipped as `count_published()` / `count_by_author()` / `count_by_group()`
+- `get_moderation_counts(): array` → shipped
+- `get_by_author( int $user_id, array $args = [] ): array` → the read side is `count_by_author()` / `count_visible_by_author()` plus the generic query methods
 
 All existing callers across free and pro must be updated to use the repository. No raw `$wpdb` calls for media data outside this class.
 
@@ -55,6 +66,8 @@ Untestable data access spread across 30+ files is the single biggest barrier to 
 
 Hook names and filter signatures must remain identical to avoid breaking third-party code.
 
+**What actually shipped** (names differ from the plan above): `includes/Integrations/BuddyPress/` now holds `BuddyPressManager`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ActivityFormIntegration`, `ActivityMediaLinkage`, `ActivityPrivacyFilter`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, plus the shared `BaseBPTabIntegration` and `MediaDisplayHelper`.
+
 **Definition of Done**
 Each class is under 500 lines; all existing hooks fire with identical signatures; no behavior regression; original file removed.
 
@@ -79,20 +92,22 @@ Three PHP classes and five template files:
 - `templates/admin/settings-ai.php`
 - `templates/admin/settings-webhooks.php`
 
+**What actually shipped** (names differ from the plan above): `includes/Admin/Settings/` now holds `SettingsPage`, `SettingsRegistrar`, `FieldRenderer`, `PermissionsManager` and `Sanitizers`, plus `AiSettingsRegistrar`. There is no `SettingsManager` or `SettingsRenderer`. `SettingsRegistrar` remains the one OPEN debt row in `CLAUDE.md`.
+
 **Definition of Done**
-No HTML in `SettingsManager`; all output routed through templates; rendering helpers in `SettingsRenderer` are reused by all five templates; pattern matches `AdminController` structure where it exists.
+No HTML in the registrar; all output routed through templates; rendering helpers are reused by all templates.
 
 **Why this matters**
 Inline HTML in logic classes makes settings untestable and prevents the design system from being applied consistently.
 
 ---
 
-## Priority 2 - Pro Stabilization
+## Priority 2 - Pro Stabilization (PLANNED - none of these have shipped)
 
-### 2.1 Split MigrationPage.php (Pro) - 1.2.0 Phase 5
+### 2.1 Split MigrationPage.php (Pro) - PARTLY OVERTAKEN BY EVENTS
 
-**Current state**
-`includes/Admin/MigrationPage.php` (Pro) - 1,776 lines. Detection logic, batch processing logic, and HTML are all in one class. Impossible to run detection without triggering rendering.
+**Current state (as written; stale)**
+`includes/Admin/MigrationPage.php` (Pro) was 1,776 lines with detection logic, batch processing logic, and HTML in one class. It is now well under the 500-line limit, and the batch/detect logic moved into `includes/Integrations/AbstractBatchImporter.php` and the per-platform importers (see 2.2) rather than into the `MigrationDetector` / `MigrationBatcher` classes proposed below. Those two class names were never created - do not go looking for them.
 
 **Target state**
 - `includes/Admin/MigrationDetector.php` - source detection, source counting, compatibility checks
@@ -107,19 +122,19 @@ Detection and batching need to be callable from WP-CLI without triggering admin 
 
 ---
 
-### 2.2 Extract AbstractBatchImporter (Pro) - 1.2.0 Phase 5
+### 2.2 Extract AbstractBatchImporter (Pro) - ✅ DONE
 
 **Current state**
-Three CLI importers - `ImportRtMedia`, `ImportMediaPress`, `ImportBuddyBoss` - each copy-paste the same batch loop, flag parsing, progress bar, state persistence, and duplicate detection logic. Changes to shared behavior require touching all three files.
+Three CLI importers each copy-pasted the same batch loop, flag parsing, progress bar, state persistence, and duplicate detection logic.
 
-**Target state**
-- `includes/CLI/AbstractBatchImporter.php` - base class with all shared logic
-  - Handles: flag parsing, batch loop, progress bar, state persistence, duplicate detection
-  - Declares abstract methods: `get_source_count()`, `fetch_batch( int $offset, int $limit )`, `import_item( array $row )`
-- `includes/CLI/ImportRtMedia.php` - extends base, implements platform-specific logic only
-- `includes/CLI/ImportMediaPress.php` - same
-- `includes/CLI/ImportBuddyBoss.php` - same
-- `ImportThumbnailTrait` remains shared across all three subclasses
+**Shipped**
+- `includes/Integrations/AbstractBatchImporter.php` - abstract base with the shared batch machinery
+- `includes/Integrations/RtMedia/Importer.php` (`wp mvs import-rtmedia`)
+- `includes/Integrations/MediaPress/Importer.php` (`wp mvs import-mediapress`)
+- `includes/Integrations/BuddyBoss/Importer.php` (`wp mvs import-buddyboss`)
+- `includes/CLI/ImportThumbnailTrait.php` remains shared across all three subclasses
+
+All three `extends AbstractBatchImporter`. Note the final location differs from the `includes/CLI/Import*.php` layout proposed at planning time.
 
 **Definition of Done**
 No batch loop logic duplicated across subclasses; each subclass under 300 lines; existing CLI command signatures unchanged; all three importers pass existing integration tests.
@@ -129,14 +144,14 @@ Duplicate batch logic has diverged across the three importers - bugs fixed in on
 
 ---
 
-### 2.3 Split MessagingService (Both Plugins) - 1.2.0 Phase 5
+### 2.3 Split MessagingService (Both Plugins) - PLANNED
 
-**Current state**
-`includes/Services/MessagingService.php` (Free) - 1,606 lines mixing access control, rate limiting, thread CRUD, and message delivery. Pro has a parallel file of similar size.
+**Current state (as written; stale)**
+`MessagingService.php` (Free) was 1,606 lines mixing access control, rate limiting, thread CRUD, and message delivery, and it has grown since. It now lives at `includes/Messaging/MessagingService.php`, not `includes/Services/`. Pro has no parallel messaging service - the engine is Free-only. Check the line count before quoting one.
 
 **Target state**
-- `includes/Services/MessagingPrivacy.php` - access control checks and rate limiting only
-- `includes/Services/MessagingService.php` - thread and message CRUD, stripped of all gate-keeping logic
+- `includes/Messaging/MessagingPrivacy.php` - access control checks and rate limiting only
+- `includes/Messaging/MessagingService.php` - thread and message CRUD, stripped of all gate-keeping logic
 
 `MessagingPrivacy` is called by `MessagingService` before any mutation. Both are registered as services in the container.
 
@@ -148,12 +163,18 @@ Rate limiting and privacy logic buried inside a CRUD service cannot be independe
 
 ---
 
-## Priority 3 - Quality Infrastructure
+## Priority 3 - Quality Infrastructure (PLANNED unless noted)
 
-### 3.1 Add Interfaces for the Free/Pro Boundary - 1.2.0 Phase 1
+### 3.1 Add Interfaces for the Free/Pro Boundary - PLANNED (partially superseded)
 
-**Current state**
-Pro imports Free classes directly. `MediaMeta` is used in 12+ Pro files via direct class reference. If Free refactors `MediaMeta`, Pro breaks. No contracts exist to stabilize this boundary.
+> Since this was written, `MediaRepositoryInterface`, `TemplateHelpersInterface`,
+> `StorageDriverInterface` and `AIProviderInterface` all ship, and Pro's
+> `bin/coding-rules-check.sh` Rule 3 mechanically blocks direct imports of Free
+> concrete classes. The `includes/Contracts/` directory below was never created -
+> interfaces live beside the classes they describe.
+
+**Current state (as written; stale)**
+Pro imported Free classes directly, via a `MediaMeta` class referenced in 12+ Pro files. That class no longer exists in either plugin, and Pro no longer imports Free concrete classes.
 
 **Target state**
 `includes/Contracts/` directory with interface files:
@@ -165,17 +186,17 @@ Pro imports Free classes directly. `MediaMeta` is used in 12+ Pro files via dire
 Free classes implement their interfaces. Pro uses interface type hints only - no direct imports of Free concrete classes.
 
 **Definition of Done**
-Zero `use WPMediaVerse\Includes\MediaMeta;` statements in Pro files; all replaced with interface type hints; Free classes declare `implements MediaMetaInterface`.
+Zero direct imports of Free concrete classes in Pro; all replaced with interface type hints or `Plugin::free_service()` lookups. This is now enforced by Pro's `bin/coding-rules-check.sh` Rule 3.
 
 **Why this matters**
 Direct class coupling between Free and Pro means a Free refactor can silently break Pro at runtime with no static analysis warning.
 
 ---
 
-### 3.2 Increase Test Coverage - 1.2.0 Phase 4 (Free)
+### 3.2 Increase Test Coverage - PLANNED (Free)
 
-**Current state**
-~10% coverage. 11 test files exist under `tests/unit/`. Core services - BP integration, messaging, settings, storage, AI moderation - have no unit tests.
+**Current state (as written; stale)**
+~10% coverage, 11 test files under `tests/unit/`. The file count has grown a long way past that since - count it with `ls tests/unit/*.php | wc -l` rather than trusting a number here - but coverage has never been measured in CI, so the 50% threshold below is still not enforced.
 
 **Target state**
 50%+ line coverage measured in CI on every push.
@@ -198,7 +219,7 @@ At 10% coverage, structural refactoring cannot be validated - regressions are on
 
 ---
 
-### 3.3 Admin Page Template Extraction - deferred to 1.3
+### 3.3 Admin Page Template Extraction - PLANNED
 
 **Current state**
 Admin pages across both plugins render HTML directly via `echo` and `sprintf` inside PHP controller classes. This pattern is inconsistent, untestable, and prevents global layout changes from being applied in one place.
@@ -216,7 +237,7 @@ Inline HTML in controllers blocks design system adoption and makes admin pages i
 
 ---
 
-### 3.4 Extract Plugin.php Feature Bootstrappers (Pro) - deferred to 1.3
+### 3.4 Extract Plugin.php Feature Bootstrappers (Pro) - PLANNED
 
 **Current state**
 Pro's `Plugin.php` has an `init()` method of ~822 lines. Route registration, admin page registration, cron scheduling, and feature flag checks for every Pro feature are all inlined in this one method.
@@ -225,9 +246,11 @@ Pro's `Plugin.php` has an `init()` method of ~822 lines. Route registration, adm
 `includes/Features/` directory. Each Pro feature becomes a self-contained bootstrapper:
 
 - `QuotaFeature.php` - quota routes, admin quota page, quota cron
-- `VideoFeature.php` - video processing routes, video admin page
 - `GamificationFeature.php` - gamification hooks, manifest registration
+- `DocumentsFeature.php` - document routes, drives admin page
 - Additional feature classes as Pro features are added
+
+(The original draft listed a `VideoFeature.php` for "video processing routes". There is no video-processing feature: the FFmpeg transcoding path was removed in 2.4.0 and Coding Rule 21 bans exec-family calls outright. WPMediaVerse stores and embeds video; it does not process it.)
 
 Each feature class implements a `register(): void` method. `Plugin::init()` iterates an array of feature class names and calls `register()` on each.
 
@@ -243,6 +266,4 @@ An 822-line init method makes it impossible to enable or disable Pro features co
 
 Work the items in priority order. P1 items share a dependency: once `MediaRepository` (1.1) exists, the `BuddyPressIntegration` split (1.2) and the `SettingsPage` split (1.3) become easier because they can delegate media queries to the repository rather than embedding them.
 
-P2 and P3 items are largely independent of each other and can be parallelized across contributors once P1 is complete.
-
-Do not ship v1.2.0 with P1 items incomplete. The larger the installed base, the more careful any future structural change to `BuddyPressIntegration` or `SettingsPage` must be.
+P2 and P3 items are largely independent of each other and can be parallelized across contributors. None of them are scheduled against a version - pick one up when the code it touches is already being opened, and check `CLAUDE.md`'s Known Debt table first, since it is the current-state view and this file is not.

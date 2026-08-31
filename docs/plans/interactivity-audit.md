@@ -1,5 +1,14 @@
 # WPMediaVerse — Frontend Interactivity & Client-Side Navigation Audit
 
+> **STATUS: HISTORICAL AUDIT (1.7.1, 2026-06-19) + PROPOSAL. Its "recommended fix"
+> blocks are NOT a description of shipped code.** The router region did ship, but
+> under different filenames than proposed here: the partials are
+> `templates/partials/router-region-open.php` and `router-region-close.php` (not
+> `region-open.php` / `region-close.php`), and there is no `templates/dashboard.php`
+> - the dashboard renders through `Shortcodes::render_dashboard()` and
+> `templates/partials/dashboard-content.php`. Every `file:line` below is from
+> 1.7.1 and has drifted; grep, do not trust the numbers.
+
 **Audited against:** `docs/standards/frontend-interactivity.md` (Wbcom Standard v1.0, 2026-06-18).
 **Reference implementation:** Jetonomy 1.5.0 (`includes/class-template-loader.php` + `assets/js/view.js`).
 **Repo / branch:** `wpmediaverse` @ `1.7.1`. **Mode:** READ-ONLY audit. No plugin code was modified.

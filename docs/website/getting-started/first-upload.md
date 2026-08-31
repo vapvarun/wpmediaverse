@@ -55,7 +55,7 @@ You can customize allowed file types in **Media > Settings > General**.
 
 ## Setting Privacy on Upload
 
-Each file can have one of 6 privacy levels:
+The upload form offers these privacy levels:
 
 | Level | Who Can See It |
 |-------|---------------|

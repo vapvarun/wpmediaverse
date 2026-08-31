@@ -1,5 +1,17 @@
 # WPMediaVerse — App-Readiness Spec (Plugin-side, Free + Pro)
 
+> **STATUS: HISTORICAL PLAN (1.8.1 era). Much of it has since shipped, and where it
+> did the names differ - do not use this document as an API reference.** As of
+> 2.4.0: Free exposes `GET /mvs/v1/config` (`REST/Controller/ConfigController.php`),
+> not `/app/config`; device registration is Free's `/mvs/v1/me/devices`
+> (`DeviceController`, `mvs_device_tokens` table) *and* Pro's
+> `/mvs-pro/v1/push/register-device` (`REST/PushController.php`), whose table is
+> `mvs_pro_push_devices`, **not** `mvs_push_devices`. Stories did move to Pro
+> (`wpmediaverse-pro/includes/Stories/StoryService.php`, `REST/StoryController.php`,
+> `Admin/StoriesPage.php`) - the Free path this doc names no longer exists. The
+> live route counts below were measured on a 1.8.x install; today Free's own
+> manifest lists 115 `mvs/v1` endpoints and Pro's lists 86.
+
 Status: **DRAFT for review — no code until approved.**
 Branch: `1.8.1` (both repos). Author pass: wbcom-mobile-app skill, Phase 1 readiness audit + API-completeness audit (live-probed against `mediaverse.local`).
 Supersedes/extends: [`MEDIAVERSE-1.8.1-MOBILE-API.md`](./MEDIAVERSE-1.8.1-MOBILE-API.md) (the original 4-delta contract is folded in below as Phases 1–3 + 6).
@@ -133,7 +145,7 @@ Production Rule #7/#8: a **patch** (`1.8.x`) is bug-fixes only; **new features/e
 **Model (WhatsApp Status, minimal):** ephemeral 24h media; stories bar grouped by author (self first, then followed); full-screen sequential viewer (tap fwd/back, progress segments); view receipts ("seen by" on own story); reply → DM (reuse messaging); **no likes/comments on stories**; privacy follows existing media privacy.
 
 **Engine relocation (Free → Pro), safe because Free has no Stories UX:**
-- **Move** `StoryService` (`wpmediaverse/includes/Services/StoryService.php`), the `story-viewer` block (`src/blocks/story-viewer/`), and the `mvs_story_created` hook firing into Pro.
+- **Move** `StoryService` (was `wpmediaverse/includes/Services/StoryService.php`; **this move has since happened - it now lives at `wpmediaverse-pro/includes/Stories/StoryService.php`**), the `story-viewer` block (shipped as Pro's `src/blocks/pro-stories/`), and the `mvs_story_created` hook firing into Pro.
 - **Remove** the hidden Free copies + the Free container key `'stories'` (`Plugin.php:315`).
 - **Safety gate (implementation-time):** grep both repos for `'stories'`, `StoryService`, `mvs_story_created`, `story-viewer`, `is_story`, `story_expires_at`. Expected: zero external consumers (it was never surfaced). If an unexpected reference exists → leave a `@deprecated` shim in Free instead of deleting. Storage stays media-meta (`is_story` / `story_expires_at` in `mvs_media_meta`) — **no DB schema change**, so existing meta keeps working.
 

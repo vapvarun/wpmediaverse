@@ -8,7 +8,7 @@
 
 ## 1. Plugin Lifecycle
 
-`Plugin::init()` (lines 78-429 of `includes/Core/Plugin.php`) runs on the main
+`Plugin::init()` (lines 105-1048 of `includes/Core/Plugin.php`) runs on the main
 plugin bootstrap. Every subsystem is instantiated in the order below. Items
 marked *conditional* are gated by a per-feature `get_option()` toggle.
 
@@ -34,8 +34,9 @@ marked *conditional* are gated by a per-feature `get_option()` toggle.
     + AS hook:               mvs_pro_transcribe_media
 15. CaptionController        - REST: /media/{id}/captions, /captions/generate,
                                /captions/status
-16. Storage driver filter    - mvs_storage_driver (S3, Backblaze B2, etc.)
-17. Watermark filter         - mvs_watermark_enabled + mvs_generate_watermark
+16. Storage driver filter    - mvs_storage_driver (AmazonS3, BunnyCDN,
+                               CloudflareR2, DigitalOceanSpaces)
+17. Watermark filters        - mvs_watermark_enabled + mvs_watermark_stamp_file
 18. AI providers action      - mvs_ai_providers
 19. ConnectionTester         - admin AJAX for testing S3/API connections
 20. AnalyticsService         - play event recording, heatmaps, retention curves
@@ -83,7 +84,12 @@ marked *conditional* are gated by a per-feature `get_option()` toggle.
 36. Explore banner action    - mvs_before_explore_grid (pinned competition card)
 37. Nav menu filter          - wp_nav_menu_items (injects Compete link)
 38. Dashboard tabs           - mvs_dashboard_tabs + mvs_dashboard_panels (My Media
-                               compete panels)
+                               compete panels), plus the mvs_dashboard_sections
+                               registry filter (Plugin.php:1624)
+39. Documents (2.4.0)        - init_document_surfaces() at Plugin.php:1619 and
+                               init_folder_jobs() at 1719: drives, folder tree,
+                               ingest, previews, search index, DeliveryController,
+                               and the DocumentLicense write gate
 ```
 
 ---
@@ -91,7 +97,8 @@ marked *conditional* are gated by a per-feature `get_option()` toggle.
 ## 2. Database Schema
 
 All tables created by `includes/Core/Migrator.php`.
-DB version option: `mvs_pro_db_version`, current version: **4**.
+DB version option: `mvs_pro_db_version`, current version: **15**
+(`Migrator::CURRENT_VERSION`).
 
 ### 2.1 `{prefix}mvs_quota_packages`
 
@@ -144,11 +151,15 @@ first migration.
 **Indexes:** `PRIMARY (id)`, `KEY idx_media_created (media_id, created_at)`,
 `KEY idx_session (session_id)`, `KEY idx_media_event (media_id, event_type)`
 
-### 2.4 Messaging Tables
+### 2.4 Messaging Tables -- FREE-OWNED, not created here
 
-These tables may also exist in the free plugin's Migrator (see note in
-`Plugin.php` line 189 -- messaging now handled by free plugin; Pro retains
-Group DM, read receipts, and WebSocket transport as future extensions).
+Pro does **not** create these. Its v2 migration used to, and the duplicate
+definition emitted a "Duplicate key name 'conv_id'" warning on every activation;
+ownership moved wholesale to Free's `Migrator` and Pro's copy was removed (see
+the comment at `includes/Core/Migrator.php:64`). The schema below is reproduced
+for reference only -- Free's `docs/architecture/ARCHITECTURE.md` §2.6 is
+authoritative. Pro retains Group DM, read receipts and a WebSocket transport as
+future extensions, none of which ship today.
 
 #### `{prefix}mvs_conversations`
 
@@ -322,11 +333,23 @@ set of tables. Legacy per-entity tables are dropped during migration.
 **Indexes:** `PRIMARY (id)`, `KEY user_id (user_id)`,
 `KEY media_status (media_id, status)`, `KEY status_expires (status, expires_at)`
 
+### 2.6 Pro tables not written up above
+
+Pro owns 13 tables. Beyond the ones detailed above it also creates
+`{prefix}mvs_pro_collection_items`, `{prefix}mvs_pro_push_devices`,
+`{prefix}mvs_pro_webhook_events`, `{prefix}mvs_pro_folders` (2.4.0 document
+folder tree) and `{prefix}mvs_pro_document_search` (2.4.0 full-text index).
+Read their column definitions off `includes/Core/Migrator.php`, which carries a
+written rationale per table. Note only four Pro tables carry the `mvs_pro_`
+prefix -- name is not a reliable ownership signal.
+
 ---
 
 ## 3. REST API Map
 
-All routes are under the `mvs-pro/v1` namespace.
+All routes are under the `mvs-pro/v1` namespace. This map is partial; the
+complete code-derived list is
+`wpmediaverse/audit/pro/manifests/manifest.rest.json`.
 
 ### 3.1 Quota
 
@@ -462,7 +485,10 @@ All routes are under the `mvs-pro/v1` namespace.
 
 ## 4. Hook Reference
 
-All hooks are within `includes/`. Organized by category.
+Organized by category. **Line numbers below are indicative and drift with every
+edit -- grep the hook name, do not trust the number.** Sections 4.1-4.3 and
+4.5-4.7 are hooks Pro *fires*; 4.4 and 4.9-4.11 are mostly Free hooks Pro
+*consumes*, which is called out per section.
 
 ### 4.1 Cron / Scheduled Hooks
 
@@ -491,14 +517,18 @@ All hooks are within `includes/`. Organized by category.
 
 | Hook | Type | File : Line |
 |---|---|---|
-| `mvs_pro_memberpress_package_assigned` | action | MemberPressAdapter.php:105 |
-| `mvs_pro_memberpress_package_reverted` | action | MemberPressAdapter.php:137 |
-| `mvs_pro_pmpro_package_assigned` | action | PaidMembershipsProAdapter.php:92 |
-| `mvs_pro_pmpro_package_reverted` | action | PaidMembershipsProAdapter.php:109 |
-| `mvs_pro_woo_package_assigned` | action | WooCommerceAdapter.php:114 |
-| `mvs_pro_woo_package_reverted` | action | WooCommerceAdapter.php:137 |
+| `mvs_pro_memberpress_package_assigned` | action | Integrations/MemberPress/QuotaAdapter.php |
+| `mvs_pro_memberpress_package_reverted` | action | Integrations/MemberPress/QuotaAdapter.php |
+| `mvs_pro_pmpro_package_assigned` | action | Integrations/PaidMembershipsPro/QuotaAdapter.php |
+| `mvs_pro_pmpro_package_reverted` | action | Integrations/PaidMembershipsPro/QuotaAdapter.php |
+| `mvs_pro_woo_package_assigned` | action | Integrations/WooCommerce/QuotaAdapter.php |
+| `mvs_pro_woo_package_reverted` | action | Integrations/WooCommerce/QuotaAdapter.php |
 
-### 4.4 Messaging Hooks
+### 4.4 Messaging Hooks -- FREE-FIRED, listed for reference
+
+Every hook in this section is fired by Free's `Messaging/MessagingService.php` /
+`MessagingController.php`, not by Pro. Pro ships no messaging code today; the
+paths below are relative to the **Free** plugin's `includes/`.
 
 | Hook | Type | File : Line |
 |---|---|---|
@@ -560,36 +590,48 @@ All hooks are within `includes/`. Organized by category.
 
 ### 4.9 Frontend / Layout Hooks
 
-| Hook | Type | File : Line |
+Pro fires the `mvs_layout_*` set; the rest are Free hooks Pro attaches to.
+
+| Hook | Type | Fired by | Pro call site |
+|---|---|---|---|
+| `mvs_layout_config` | filter | Pro | LayoutManager.php |
+| `mvs_active_layout` | filter | Pro | LayoutManager.php |
+| `mvs_layout_modes` | filter | Pro | LayoutManager.php |
+| `mvs_layout_template_map` | filter | Pro | LayoutManager.php |
+| `mvs_before_layout_render` | action | Pro | LayoutManager.php |
+| `mvs_layout_assets` | action | Pro | LayoutManager.php |
+| `mvs_user_display_name` | filter | Free | Plugin.php:784 (streak badge) |
+| `mvs_activity_types` | filter | Free | Plugin.php:803 (8 gamification types) |
+| `mvs_reserved_media_paths` | filter | Free | Plugin.php:970 |
+| `mvs_dashboard_tabs` | action | Free | Plugin.php:298, 1046 |
+| `mvs_dashboard_panels` | action | Free | Plugin.php:299, 1047 |
+
+`mvs_before_explore_grid` is fired by Free but Pro does not listen to it today;
+it was listed here in error.
+
+The dashboard registry hook is `mvs_dashboard_sections` (Free's
+`Core/DashboardSections.php`), which Pro filters at `Plugin.php:1624`. The name
+`mvs_dashboard_tab_registry` appears in older notes and does not exist.
+
+### 4.10 Admin UI Hooks (Free-fired, Pro-consumed)
+
+| Hook | Type | Pro call site |
 |---|---|---|
-| `mvs_layout_config` | filter | LayoutManager.php:93 |
-| `mvs_active_layout` | filter | LayoutManager.php:119 |
-| `mvs_layout_modes` | filter | LayoutManager.php:139 |
-| `mvs_layout_template_map` | filter | LayoutManager.php:162 |
-| `mvs_before_layout_render` | action | LayoutManager.php:178 |
-| `mvs_layout_assets` | action | LayoutManager.php:217 |
-| `mvs_user_display_name` | filter | Plugin.php:302 |
-| `mvs_activity_types` | filter | Plugin.php:318 |
-| `mvs_reserved_media_paths` | filter | Plugin.php:414 |
-| `mvs_before_explore_grid` | action | Plugin.php:421 |
-| `mvs_dashboard_tabs` | action | Plugin.php:427 |
-| `mvs_dashboard_panels` | action | Plugin.php:428 |
+| `mvs_moderation_tabs` | filter | Plugin.php:901 |
+| `mvs_stats_tabs` | filter | Plugin.php:915 |
 
-### 4.10 Admin UI Hooks
+### 4.11 Core Extension Points (Free-fired, Pro attaches in Plugin.php)
 
-| Hook | Type | File : Line |
+| Hook | Type | Pro call site |
 |---|---|---|
-| `mvs_moderation_tabs` | filter | Plugin.php:351 |
-| `mvs_stats_tabs` | filter | Plugin.php:365 |
+| `mvs_storage_driver` | filter | Plugin.php:467 |
+| `mvs_watermark_stamp_file` | filter | Plugin.php:471 -> `Core\Watermarker::stamp_file()` |
+| `mvs_ai_providers` | action | Plugin.php:474 |
 
-### 4.11 Core Extension Points (registered in Plugin.php)
-
-| Hook | Type | File : Line |
-|---|---|---|
-| `mvs_storage_driver` | filter | Plugin.php:165 |
-| `mvs_watermark_enabled` | filter | Plugin.php:168 |
-| `mvs_generate_watermark` | filter | Plugin.php:169 |
-| `mvs_ai_providers` | action | Plugin.php:172 |
+`mvs_watermark_enabled` is a Free filter Pro does not attach to; the settings UI
+reads and writes the `mvs_watermark_enabled` **option** (`Admin/ProSettings.php`).
+`mvs_generate_watermark` does not exist in either plugin -- there is no
+watermarked-preview-URL hook; Pro stamps bytes at ingest instead.
 
 ---
 
@@ -689,8 +731,10 @@ TranscriptionService::queue_transcription($media_id)
   |
   v
 TranscriptionService::transcribe($media_id)  [AS worker]
-  - extracts audio from source file
-  - sends to configured AI provider (OpenAI Whisper)
+  - resolves the local file path (resolve_file_path); NO audio extraction and no
+    FFmpeg -- the source file is posted as-is. Coding Rule 21 bans exec-family
+    calls in shipped source, so nothing here shells out.
+  - sends to configured AI provider (Integrations\Whisper\CaptionProvider)
   - generates WebVTT file
   - stores in {uploads}/mvs-captions/{media_id}.vtt
   - writes media meta: captions = {vtt_url, language, provider, word_count, duration, generated_at}
@@ -735,11 +779,15 @@ Usage counters are maintained via hooks:
 
 Three adapters auto-assign packages when a user's membership changes:
 
-| Adapter | Plugin | Option Key | Hooks |
+All three extend `Integrations\AbstractQuotaAdapter` and are each named
+`QuotaAdapter` inside their own vendor namespace -- there is no
+`MemberPressAdapter` class.
+
+| Adapter class | Plugin | Option Key | Hooks |
 |---|---|---|---|
-| `MemberPressAdapter` | MemberPress | `mvs_pro_quota_memberpress_map` | `mepr-txn-status-complete`, `mepr-txn-status-refunded`, etc. |
-| `PaidMembershipsProAdapter` | PMPro | `mvs_pro_quota_pmpro_map` | `pmpro_after_change_membership_level` |
-| `WooCommerceAdapter` | WooCommerce | `mvs_pro_quota_woo_map` | `woocommerce_order_status_completed`, etc. |
+| `Integrations\MemberPress\QuotaAdapter` | MemberPress | `mvs_pro_quota_memberpress_map` | `mepr-txn-status-complete`, `mepr-txn-status-refunded`, etc. |
+| `Integrations\PaidMembershipsPro\QuotaAdapter` | PMPro | `mvs_pro_quota_pmpro_map` | `pmpro_after_change_membership_level` |
+| `Integrations\WooCommerce\QuotaAdapter` | WooCommerce | `mvs_pro_quota_woo_map` | `woocommerce_order_status_completed`, etc. |
 
 Each adapter stores a mapping (membership/product ID -> package ID) in a WP
 option. When a transaction completes, the mapped package is assigned; when

@@ -3,6 +3,246 @@
     "namespace": "mvs/v1",
     "endpoints": [
       {
+        "route": "/mvs/v1/conversations",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::create_conversation",
+        "permission": "check_auth",
+        "purpose": "Create a conversation",
+        "file": "includes/Messaging/MessagingController.php:82"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::delete_conversation",
+        "permission": "check_auth",
+        "purpose": "Delete a conversation",
+        "file": "includes/Messaging/MessagingController.php:127"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::get_conversation",
+        "permission": "check_auth",
+        "purpose": "Get a conversation",
+        "file": "includes/Messaging/MessagingController.php:105"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
+        "methods": [
+          "PATCH"
+        ],
+        "handler": "MessagingController::update_conversation",
+        "permission": "check_auth",
+        "purpose": "Update a conversation",
+        "file": "includes/Messaging/MessagingController.php:116"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/accept",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::accept_request",
+        "permission": "check_auth",
+        "purpose": "Accept a message request",
+        "file": "includes/Messaging/MessagingController.php:332"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/decline",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::decline_request",
+        "permission": "check_auth",
+        "purpose": "Decline a message request",
+        "file": "includes/Messaging/MessagingController.php:343"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversation_media",
+        "permission": "check_auth",
+        "purpose": "List media shared in a conversation (full history, app parity)",
+        "file": "includes/Messaging/MessagingController.php:184"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_messages",
+        "permission": "check_auth",
+        "purpose": "List messages in a conversation",
+        "file": "includes/Messaging/MessagingController.php:138"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::send_message",
+        "permission": "check_auth",
+        "purpose": "Send a message",
+        "file": "includes/Messaging/MessagingController.php:203"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages/search",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::search_messages",
+        "permission": "check_auth",
+        "purpose": "Search messages in a conversation",
+        "file": "includes/Messaging/MessagingController.php:161"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/read",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::mark_read",
+        "permission": "check_auth",
+        "purpose": "Mark conversation as read",
+        "file": "includes/Messaging/MessagingController.php:250"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/typing",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::typing",
+        "permission": "check_auth",
+        "purpose": "Send typing indicator",
+        "file": "includes/Messaging/MessagingController.php:261"
+      },
+      {
+        "route": "/mvs/v1/me/conversations",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversations",
+        "permission": "check_auth",
+        "purpose": "List current user's conversations",
+        "file": "includes/Messaging/MessagingController.php:53"
+      },
+      {
+        "route": "/mvs/v1/me/messages/unread-count",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::unread_count",
+        "permission": "check_auth",
+        "purpose": "Get unread message count",
+        "file": "includes/Messaging/MessagingController.php:321"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::delete_message",
+        "permission": "check_auth",
+        "purpose": "Delete a message",
+        "file": "includes/Messaging/MessagingController.php:228"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)/reactions",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::remove_reaction",
+        "permission": "check_auth",
+        "purpose": "Remove reaction from a message",
+        "file": "includes/Messaging/MessagingController.php:289"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)/reactions",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::add_reaction",
+        "permission": "check_auth",
+        "purpose": "Add reaction to a message",
+        "file": "includes/Messaging/MessagingController.php:272"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)/unsend",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::unsend_message",
+        "permission": "check_auth",
+        "purpose": "Unsend a message",
+        "file": "includes/Messaging/MessagingController.php:239"
+      },
+      {
+        "route": "/mvs/v1/messages/poll",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::poll",
+        "permission": "check_auth",
+        "purpose": "Poll for new messages/events",
+        "file": "includes/Messaging/MessagingController.php:300"
+      },
+      {
+        "route": "/mvs/v1/messages/upload",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::upload_attachment",
+        "permission": "check_auth",
+        "purpose": "Upload a message attachment",
+        "file": "includes/Messaging/MessagingController.php:354"
+      },
+      {
+        "route": "/mvs/v1/access/options",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AccessController::get_options",
+        "permission": "authenticated_check",
+        "purpose": "Get access-control option choices",
+        "file": "includes/REST/Controller/AccessController.php:215"
+      },
+      {
+        "route": "/mvs/v1/me/grants",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AccessController::get_my_grants",
+        "permission": "authenticated_check",
+        "purpose": "List access grants for current user",
+        "file": "includes/REST/Controller/AccessController.php:180"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AccessController::grant_access",
+        "permission": "manage_permissions_check",
+        "purpose": "Grant a user access to media",
+        "file": "includes/REST/Controller/AccessController.php:125"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AccessController::revoke_access",
+        "permission": "manage_permissions_check",
+        "purpose": "Revoke a user's access to media",
+        "file": "includes/REST/Controller/AccessController.php:157"
+      },
+      {
         "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
         "methods": [
           "GET"
@@ -33,44 +273,34 @@
         "file": "includes/REST/Controller/AccessController.php:102"
       },
       {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant",
-        "methods": [
-          "POST"
-        ],
-        "handler": "AccessController::grant_access",
-        "permission": "manage_permissions_check",
-        "purpose": "Grant a user access to media",
-        "file": "includes/REST/Controller/AccessController.php:125"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)",
+        "route": "/mvs/v1/me",
         "methods": [
           "DELETE"
         ],
-        "handler": "AccessController::revoke_access",
-        "permission": "manage_permissions_check",
-        "purpose": "Revoke a user's access to media",
-        "file": "includes/REST/Controller/AccessController.php:157"
+        "handler": "AccountController::delete_account",
+        "permission": "auth_check",
+        "purpose": "Request deletion of the caller's own account (password + literal DELETE confirmation)",
+        "file": "includes/REST/Controller/AccountController.php:68"
       },
       {
-        "route": "/mvs/v1/me/grants",
+        "route": "/mvs/v1/me/deletion",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AccountController::cancel_deletion",
+        "permission": "auth_check",
+        "purpose": "Cancel a pending account-deletion request",
+        "file": "includes/REST/Controller/AccountController.php:91"
+      },
+      {
+        "route": "/mvs/v1/me/deletion",
         "methods": [
           "GET"
         ],
-        "handler": "AccessController::get_my_grants",
-        "permission": "authenticated_check",
-        "purpose": "List access grants for current user",
-        "file": "includes/REST/Controller/AccessController.php:180"
-      },
-      {
-        "route": "/mvs/v1/access/options",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AccessController::get_options",
-        "permission": "authenticated_check",
-        "purpose": "Get access-control option choices",
-        "file": "includes/REST/Controller/AccessController.php:215"
+        "handler": "AccountController::get_status",
+        "permission": "auth_check",
+        "purpose": "Status of a pending account-deletion request",
+        "file": "includes/REST/Controller/AccountController.php:91"
       },
       {
         "route": "/mvs/v1/feed",
@@ -125,6 +355,16 @@
       {
         "route": "/mvs/v1/albums/(?P<id>[\\d]+)",
         "methods": [
+          "DELETE"
+        ],
+        "handler": "AlbumController::delete_item",
+        "permission": "delete_item_permissions_check",
+        "purpose": "Delete an album",
+        "file": "includes/REST/Controller/AlbumController.php:93"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)",
+        "methods": [
           "GET"
         ],
         "handler": "AlbumController::get_item",
@@ -144,25 +384,25 @@
         "file": "includes/REST/Controller/AlbumController.php:93"
       },
       {
-        "route": "/mvs/v1/albums/(?P<id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "AlbumController::delete_item",
-        "permission": "delete_item_permissions_check",
-        "purpose": "Delete an album",
-        "file": "includes/REST/Controller/AlbumController.php:93"
-      },
-      {
-        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/reorder",
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/cover",
         "methods": [
           "PUT",
           "PATCH"
         ],
-        "handler": "AlbumController::reorder_items",
+        "handler": "AlbumController::set_cover",
         "permission": "update_item_permissions_check",
-        "purpose": "Reorder album items",
-        "file": "includes/REST/Controller/AlbumController.php:135"
+        "purpose": "Set album cover image",
+        "file": "includes/REST/Controller/AlbumController.php:231"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/items",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AlbumController::get_album_items",
+        "permission": "__return_true",
+        "purpose": "List the media items in an album (paginated)",
+        "file": "includes/REST/Controller/AlbumController.php:158"
       },
       {
         "route": "/mvs/v1/albums/(?P<id>[\\d]+)/items",
@@ -182,18 +422,28 @@
         "handler": "AlbumController::remove_item",
         "permission": "update_item_permissions_check",
         "purpose": "Remove item from album",
-        "file": "includes/REST/Controller/AlbumController.php:181"
+        "file": "includes/REST/Controller/AlbumController.php:208"
       },
       {
-        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/cover",
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/reorder",
         "methods": [
           "PUT",
           "PATCH"
         ],
-        "handler": "AlbumController::set_cover",
+        "handler": "AlbumController::reorder_items",
         "permission": "update_item_permissions_check",
-        "purpose": "Set album cover image",
-        "file": "includes/REST/Controller/AlbumController.php:204"
+        "purpose": "Reorder album items",
+        "file": "includes/REST/Controller/AlbumController.php:135"
+      },
+      {
+        "route": "/mvs/v1/auth/app-password",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AuthController::issue_app_password",
+        "permission": "__return_true (Rule-2 allowlisted first-credential exchange; guarded in Auth\\AppCredentials)",
+        "purpose": "Trade a WordPress username/password for an Application Password the app holds",
+        "file": "includes/REST/Controller/AuthController.php:66"
       },
       {
         "route": "/mvs/v1/auth/nonce",
@@ -203,7 +453,7 @@
         "handler": "AuthController::get_nonce",
         "permission": "closure (returns true)",
         "purpose": "Issue a REST nonce for authenticated requests",
-        "file": "includes/REST/Controller/AuthController.php:41"
+        "file": "includes/REST/Controller/AuthController.php:45"
       },
       {
         "route": "/mvs/v1/media/bulk",
@@ -238,6 +488,16 @@
       {
         "route": "/mvs/v1/collections/(?P<id>[\\d]+)",
         "methods": [
+          "DELETE"
+        ],
+        "handler": "CollectionController::delete_item",
+        "permission": "owner_permissions_check",
+        "purpose": "Delete a collection",
+        "file": "includes/REST/Controller/CollectionController.php:82"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)",
+        "methods": [
           "GET"
         ],
         "handler": "CollectionController::get_item",
@@ -254,16 +514,6 @@
         "handler": "CollectionController::update_item",
         "permission": "owner_permissions_check",
         "purpose": "Update a collection",
-        "file": "includes/REST/Controller/CollectionController.php:82"
-      },
-      {
-        "route": "/mvs/v1/collections/(?P<id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "CollectionController::delete_item",
-        "permission": "owner_permissions_check",
-        "purpose": "Delete a collection",
         "file": "includes/REST/Controller/CollectionController.php:82"
       },
       {
@@ -300,22 +550,22 @@
       {
         "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)",
         "methods": [
+          "DELETE"
+        ],
+        "handler": "CommentController::delete_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Delete a comment",
+        "file": "includes/REST/Controller/CommentController.php:123"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)",
+        "methods": [
           "PUT",
           "PATCH"
         ],
         "handler": "CommentController::update_item",
         "permission": "create_item_permissions_check",
         "purpose": "Update a comment",
-        "file": "includes/REST/Controller/CommentController.php:123"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "CommentController::delete_item",
-        "permission": "create_item_permissions_check",
-        "purpose": "Delete a comment",
         "file": "includes/REST/Controller/CommentController.php:123"
       },
       {
@@ -327,6 +577,46 @@
         "permission": "__return_true",
         "purpose": "Get frontend app configuration",
         "file": "includes/REST/Controller/ConfigController.php:52"
+      },
+      {
+        "route": "/mvs/v1/me/devices",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "DeviceController::unregister_device",
+        "permission": "closure: is_user_logged_in()",
+        "purpose": "Unregister a push device token",
+        "file": "includes/REST/Controller/DeviceController.php:57"
+      },
+      {
+        "route": "/mvs/v1/me/devices",
+        "methods": [
+          "POST"
+        ],
+        "handler": "DeviceController::register_device",
+        "permission": "closure: is_user_logged_in()",
+        "purpose": "Register a push device token (ios/android/web) for the caller",
+        "file": "includes/REST/Controller/DeviceController.php:57"
+      },
+      {
+        "route": "/mvs/v1/me/favorites",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FavoriteController::get_my_favorites",
+        "permission": "auth_check",
+        "purpose": "List current user's favorites",
+        "file": "includes/REST/Controller/FavoriteController.php:101"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "FavoriteController::toggle_favorite",
+        "permission": "auth_check",
+        "purpose": "Remove media from favorites",
+        "file": "includes/REST/Controller/FavoriteController.php:53"
       },
       {
         "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
@@ -349,34 +639,24 @@
         "file": "includes/REST/Controller/FavoriteController.php:53"
       },
       {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "FavoriteController::toggle_favorite",
-        "permission": "auth_check",
-        "purpose": "Remove media from favorites",
-        "file": "includes/REST/Controller/FavoriteController.php:53"
-      },
-      {
-        "route": "/mvs/v1/me/favorites",
+        "route": "/mvs/v1/me/followers",
         "methods": [
           "GET"
         ],
-        "handler": "FavoriteController::get_my_favorites",
-        "permission": "auth_check",
-        "purpose": "List current user's favorites",
-        "file": "includes/REST/Controller/FavoriteController.php:101"
+        "handler": "FollowController::get_my_followers",
+        "permission": "closure (logged-in check)",
+        "purpose": "List current user's followers",
+        "file": "includes/REST/Controller/FollowController.php:138"
       },
       {
-        "route": "/mvs/v1/users/(?P<id>[\\d]+)/follow",
+        "route": "/mvs/v1/me/following",
         "methods": [
-          "POST"
+          "GET"
         ],
-        "handler": "FollowController::follow_user",
+        "handler": "FollowController::get_my_following",
         "permission": "closure (logged-in check)",
-        "purpose": "Follow a user",
-        "file": "includes/REST/Controller/FollowController.php:54"
+        "purpose": "List who current user follows",
+        "file": "includes/REST/Controller/FollowController.php:124"
       },
       {
         "route": "/mvs/v1/users/(?P<id>[\\d]+)/follow",
@@ -386,6 +666,16 @@
         "handler": "FollowController::unfollow_user",
         "permission": "closure (logged-in check)",
         "purpose": "Unfollow a user",
+        "file": "includes/REST/Controller/FollowController.php:54"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/follow",
+        "methods": [
+          "POST"
+        ],
+        "handler": "FollowController::follow_user",
+        "permission": "closure (logged-in check)",
+        "purpose": "Follow a user",
         "file": "includes/REST/Controller/FollowController.php:54"
       },
       {
@@ -409,26 +699,6 @@
         "file": "includes/REST/Controller/FollowController.php:112"
       },
       {
-        "route": "/mvs/v1/me/following",
-        "methods": [
-          "GET"
-        ],
-        "handler": "FollowController::get_my_following",
-        "permission": "closure (logged-in check)",
-        "purpose": "List who current user follows",
-        "file": "includes/REST/Controller/FollowController.php:124"
-      },
-      {
-        "route": "/mvs/v1/me/followers",
-        "methods": [
-          "GET"
-        ],
-        "handler": "FollowController::get_my_followers",
-        "permission": "closure (logged-in check)",
-        "purpose": "List current user's followers",
-        "file": "includes/REST/Controller/FollowController.php:138"
-      },
-      {
         "route": "/mvs/v1/app/interests",
         "methods": [
           "GET"
@@ -436,7 +706,7 @@
         "handler": "InterestsController::get_interests",
         "permission": "__return_true",
         "purpose": "List available interests/topics",
-        "file": "includes/REST/Controller/InterestsController.php:50"
+        "file": "includes/REST/Controller/InterestsController.php:52"
       },
       {
         "route": "/mvs/v1/me/interests",
@@ -446,7 +716,7 @@
         "handler": "InterestsController::get_my_interests",
         "permission": "logged_in_check",
         "purpose": "Get current user's interests",
-        "file": "includes/REST/Controller/InterestsController.php:62"
+        "file": "includes/REST/Controller/InterestsController.php:64"
       },
       {
         "route": "/mvs/v1/me/interests",
@@ -456,7 +726,17 @@
         "handler": "InterestsController::save_my_interests",
         "permission": "logged_in_check",
         "purpose": "Save current user's interests",
-        "file": "includes/REST/Controller/InterestsController.php:62"
+        "file": "includes/REST/Controller/InterestsController.php:64"
+      },
+      {
+        "route": "/mvs/v1/me/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MediaController::get_my_items",
+        "permission": "closure (logged-in check)",
+        "purpose": "List current user's media",
+        "file": "includes/REST/Controller/MediaController.php:293"
       },
       {
         "route": "/mvs/v1/media",
@@ -466,7 +746,7 @@
         "handler": "MediaController::get_items",
         "permission": "__return_true",
         "purpose": "List/search media items",
-        "file": "includes/REST/Controller/MediaController.php:79"
+        "file": "includes/REST/Controller/MediaController.php:81"
       },
       {
         "route": "/mvs/v1/media",
@@ -476,7 +756,17 @@
         "handler": "MediaController::create_item",
         "permission": "create_item_permissions_check",
         "purpose": "Upload/create a media item",
-        "file": "includes/REST/Controller/MediaController.php:79"
+        "file": "includes/REST/Controller/MediaController.php:81"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MediaController::delete_item",
+        "permission": "delete_item_permissions_check",
+        "purpose": "Delete a media item",
+        "file": "includes/REST/Controller/MediaController.php:101"
       },
       {
         "route": "/mvs/v1/media/(?P<id>[\\d]+)",
@@ -486,7 +776,7 @@
         "handler": "MediaController::get_item",
         "permission": "get_item_permissions_check",
         "purpose": "Get a single media item",
-        "file": "includes/REST/Controller/MediaController.php:99"
+        "file": "includes/REST/Controller/MediaController.php:101"
       },
       {
         "route": "/mvs/v1/media/(?P<id>[\\d]+)",
@@ -497,57 +787,7 @@
         "handler": "MediaController::update_item",
         "permission": "update_item_permissions_check",
         "purpose": "Update a media item",
-        "file": "includes/REST/Controller/MediaController.php:99"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "MediaController::delete_item",
-        "permission": "delete_item_permissions_check",
-        "purpose": "Delete a media item",
-        "file": "includes/REST/Controller/MediaController.php:99"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<id>[\\d]+)/replace",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MediaController::replace_file",
-        "permission": "update_item_permissions_check",
-        "purpose": "Replace the media file",
-        "file": "includes/REST/Controller/MediaController.php:182"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<id>[\\d]+)/view",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MediaController::record_view",
-        "permission": "__return_true",
-        "purpose": "Record a media view",
-        "file": "includes/REST/Controller/MediaController.php:200"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<id>[\\d]+)/download",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MediaController::record_download",
-        "permission": "__return_true",
-        "purpose": "Record a media download",
-        "file": "includes/REST/Controller/MediaController.php:218"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<id>[\\d]+)/share",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MediaController::record_share",
-        "permission": "__return_true",
-        "purpose": "Record a media share",
-        "file": "includes/REST/Controller/MediaController.php:236"
+        "file": "includes/REST/Controller/MediaController.php:101"
       },
       {
         "route": "/mvs/v1/media/(?P<id>[\\d]+)/access",
@@ -557,7 +797,17 @@
         "handler": "MediaController::check_access",
         "permission": "__return_true",
         "purpose": "Check current user's access to media",
-        "file": "includes/REST/Controller/MediaController.php:254"
+        "file": "includes/REST/Controller/MediaController.php:257"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/download",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_download",
+        "permission": "__return_true",
+        "purpose": "Record a media download",
+        "file": "includes/REST/Controller/MediaController.php:221"
       },
       {
         "route": "/mvs/v1/media/(?P<id>[\\d]+)/group",
@@ -567,17 +817,47 @@
         "handler": "MediaController::get_group_items",
         "permission": "__return_true",
         "purpose": "Get grouped/related media items",
-        "file": "includes/REST/Controller/MediaController.php:272"
+        "file": "includes/REST/Controller/MediaController.php:275"
       },
       {
-        "route": "/mvs/v1/me/media",
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/replace",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::replace_file",
+        "permission": "update_item_permissions_check",
+        "purpose": "Replace the media file",
+        "file": "includes/REST/Controller/MediaController.php:185"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/share",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_share",
+        "permission": "__return_true",
+        "purpose": "Record a media share",
+        "file": "includes/REST/Controller/MediaController.php:239"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/view",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_view",
+        "permission": "__return_true",
+        "purpose": "Record a media view",
+        "file": "includes/REST/Controller/MediaController.php:203"
+      },
+      {
+        "route": "/mvs/v1/ai/usage",
         "methods": [
           "GET"
         ],
-        "handler": "MediaController::get_my_items",
-        "permission": "closure (logged-in check)",
-        "purpose": "List current user's media",
-        "file": "includes/REST/Controller/MediaController.php:290"
+        "handler": "ModerationController::get_ai_usage",
+        "permission": "moderate_permissions_check",
+        "purpose": "Get AI moderation usage stats",
+        "file": "includes/REST/Controller/ModerationController.php:152"
       },
       {
         "route": "/mvs/v1/moderation",
@@ -590,14 +870,14 @@
         "file": "includes/REST/Controller/ModerationController.php:68"
       },
       {
-        "route": "/mvs/v1/moderation/counts",
+        "route": "/mvs/v1/moderation/(?P<id>[\\d]+)/analyze",
         "methods": [
-          "GET"
+          "POST"
         ],
-        "handler": "ModerationController::get_counts",
+        "handler": "ModerationController::analyze_item",
         "permission": "moderate_permissions_check",
-        "purpose": "Get moderation queue counts",
-        "file": "includes/REST/Controller/ModerationController.php:81"
+        "purpose": "Run AI analysis on a moderation item",
+        "file": "includes/REST/Controller/ModerationController.php:134"
       },
       {
         "route": "/mvs/v1/moderation/(?P<id>[\\d]+)/approve",
@@ -620,24 +900,14 @@
         "file": "includes/REST/Controller/ModerationController.php:111"
       },
       {
-        "route": "/mvs/v1/moderation/(?P<id>[\\d]+)/analyze",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ModerationController::analyze_item",
-        "permission": "moderate_permissions_check",
-        "purpose": "Run AI analysis on a moderation item",
-        "file": "includes/REST/Controller/ModerationController.php:134"
-      },
-      {
-        "route": "/mvs/v1/ai/usage",
+        "route": "/mvs/v1/moderation/counts",
         "methods": [
           "GET"
         ],
-        "handler": "ModerationController::get_ai_usage",
+        "handler": "ModerationController::get_counts",
         "permission": "moderate_permissions_check",
-        "purpose": "Get AI moderation usage stats",
-        "file": "includes/REST/Controller/ModerationController.php:152"
+        "purpose": "Get moderation queue counts",
+        "file": "includes/REST/Controller/ModerationController.php:81"
       },
       {
         "route": "/mvs/v1/me/notifications",
@@ -650,6 +920,16 @@
         "file": "includes/REST/Controller/NotificationController.php:56"
       },
       {
+        "route": "/mvs/v1/me/notifications/count",
+        "methods": [
+          "GET"
+        ],
+        "handler": "NotificationController::get_count",
+        "permission": "logged-in check ($auth)",
+        "purpose": "Get unread notification count",
+        "file": "includes/REST/Controller/NotificationController.php:102"
+      },
+      {
         "route": "/mvs/v1/me/notifications/read",
         "methods": [
           "POST"
@@ -660,14 +940,34 @@
         "file": "includes/REST/Controller/NotificationController.php:84"
       },
       {
-        "route": "/mvs/v1/me/notifications/count",
+        "route": "/mvs/v1/me/avatar",
         "methods": [
-          "GET"
+          "DELETE"
         ],
-        "handler": "NotificationController::get_count",
-        "permission": "logged-in check ($auth)",
-        "purpose": "Get unread notification count",
-        "file": "includes/REST/Controller/NotificationController.php:102"
+        "handler": "ProfileController::delete_avatar",
+        "permission": "check_logged_in",
+        "purpose": "Delete profile avatar",
+        "file": "includes/REST/Controller/ProfileController.php:102"
+      },
+      {
+        "route": "/mvs/v1/me/avatar",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ProfileController::upload_avatar",
+        "permission": "check_logged_in",
+        "purpose": "Upload profile avatar",
+        "file": "includes/REST/Controller/ProfileController.php:102"
+      },
+      {
+        "route": "/mvs/v1/me/onboarding/complete",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ProfileController::complete_onboarding",
+        "permission": "check_logged_in",
+        "purpose": "Mark onboarding complete",
+        "file": "includes/REST/Controller/ProfileController.php:120"
       },
       {
         "route": "/mvs/v1/me/profile",
@@ -691,34 +991,14 @@
         "file": "includes/REST/Controller/ProfileController.php:56"
       },
       {
-        "route": "/mvs/v1/me/avatar",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ProfileController::upload_avatar",
-        "permission": "check_logged_in",
-        "purpose": "Upload profile avatar",
-        "file": "includes/REST/Controller/ProfileController.php:102"
-      },
-      {
-        "route": "/mvs/v1/me/avatar",
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
         "methods": [
           "DELETE"
         ],
-        "handler": "ProfileController::delete_avatar",
-        "permission": "check_logged_in",
-        "purpose": "Delete profile avatar",
-        "file": "includes/REST/Controller/ProfileController.php:102"
-      },
-      {
-        "route": "/mvs/v1/me/onboarding/complete",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ProfileController::complete_onboarding",
-        "permission": "check_logged_in",
-        "purpose": "Mark onboarding complete",
-        "file": "includes/REST/Controller/ProfileController.php:120"
+        "handler": "ReactionController::delete_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Remove a reaction from media",
+        "file": "includes/REST/Controller/ReactionController.php:66"
       },
       {
         "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
@@ -741,14 +1021,14 @@
         "file": "includes/REST/Controller/ReactionController.php:66"
       },
       {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
+        "route": "/mvs/v1/me/blocked",
         "methods": [
-          "DELETE"
+          "GET"
         ],
-        "handler": "ReactionController::delete_item",
-        "permission": "create_item_permissions_check",
-        "purpose": "Remove a reaction from media",
-        "file": "includes/REST/Controller/ReactionController.php:66"
+        "handler": "ReportController::get_blocked",
+        "permission": "logged-in check ($auth)",
+        "purpose": "List blocked users",
+        "file": "includes/REST/Controller/ReportController.php:144"
       },
       {
         "route": "/mvs/v1/media/(?P<id>[\\d]+)/report",
@@ -761,14 +1041,14 @@
         "file": "includes/REST/Controller/ReportController.php:57"
       },
       {
-        "route": "/mvs/v1/users/(?P<id>[\\d]+)/report",
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/block",
         "methods": [
-          "POST"
+          "DELETE"
         ],
-        "handler": "ReportController::report_user",
+        "handler": "ReportController::unblock_user",
         "permission": "logged-in check ($auth)",
-        "purpose": "Report a user",
-        "file": "includes/REST/Controller/ReportController.php:84"
+        "purpose": "Unblock a user",
+        "file": "includes/REST/Controller/ReportController.php:112"
       },
       {
         "route": "/mvs/v1/users/(?P<id>[\\d]+)/block",
@@ -781,24 +1061,14 @@
         "file": "includes/REST/Controller/ReportController.php:112"
       },
       {
-        "route": "/mvs/v1/users/(?P<id>[\\d]+)/block",
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/report",
         "methods": [
-          "DELETE"
+          "POST"
         ],
-        "handler": "ReportController::unblock_user",
+        "handler": "ReportController::report_user",
         "permission": "logged-in check ($auth)",
-        "purpose": "Unblock a user",
-        "file": "includes/REST/Controller/ReportController.php:112"
-      },
-      {
-        "route": "/mvs/v1/me/blocked",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ReportController::get_blocked",
-        "permission": "logged-in check ($auth)",
-        "purpose": "List blocked users",
-        "file": "includes/REST/Controller/ReportController.php:144"
+        "purpose": "Report a user",
+        "file": "includes/REST/Controller/ReportController.php:84"
       },
       {
         "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/signed-url",
@@ -821,16 +1091,6 @@
         "file": "includes/REST/Controller/SignedUrlController.php:96"
       },
       {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/stats",
-        "methods": [
-          "GET"
-        ],
-        "handler": "StatsController::get_media_stats",
-        "permission": "__return_true",
-        "purpose": "Get stats for a media item",
-        "file": "includes/REST/Controller/StatsController.php:67"
-      },
-      {
         "route": "/mvs/v1/me/stats",
         "methods": [
           "GET"
@@ -839,6 +1099,16 @@
         "permission": "closure (logged-in check)",
         "purpose": "Get current user's aggregate stats",
         "file": "includes/REST/Controller/StatsController.php:85"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_media_stats",
+        "permission": "__return_true",
+        "purpose": "Get stats for a media item",
+        "file": "includes/REST/Controller/StatsController.php:67"
       },
       {
         "route": "/mvs/v1/tags",
@@ -861,24 +1131,14 @@
         "file": "includes/REST/Controller/TagController.php:41"
       },
       {
-        "route": "/mvs/v1/tags/cloud",
+        "route": "/mvs/v1/tags/(?P<id>[\\d]+)",
         "methods": [
-          "GET"
+          "DELETE"
         ],
-        "handler": "TagController::get_cloud",
-        "permission": "__return_true",
-        "purpose": "Get tag cloud (weighted tags)",
-        "file": "includes/REST/Controller/TagController.php:88"
-      },
-      {
-        "route": "/mvs/v1/tags/merge",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TagController::merge_tags",
+        "handler": "TagController::delete_tag",
         "permission": "admin_check",
-        "purpose": "Merge tags",
-        "file": "includes/REST/Controller/TagController.php:108"
+        "purpose": "Delete a tag",
+        "file": "includes/REST/Controller/TagController.php:168"
       },
       {
         "route": "/mvs/v1/tags/(?P<id>[\\d]+)",
@@ -889,17 +1149,27 @@
         "handler": "TagController::rename_tag",
         "permission": "admin_check",
         "purpose": "Rename a tag",
-        "file": "includes/REST/Controller/TagController.php:131"
+        "file": "includes/REST/Controller/TagController.php:145"
       },
       {
-        "route": "/mvs/v1/tags/(?P<id>[\\d]+)",
+        "route": "/mvs/v1/tags/cloud",
         "methods": [
-          "DELETE"
+          "GET"
         ],
-        "handler": "TagController::delete_tag",
+        "handler": "TagController::get_cloud",
+        "permission": "__return_true",
+        "purpose": "Get tag cloud (weighted tags)",
+        "file": "includes/REST/Controller/TagController.php:102"
+      },
+      {
+        "route": "/mvs/v1/tags/merge",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TagController::merge_tags",
         "permission": "admin_check",
-        "purpose": "Delete a tag",
-        "file": "includes/REST/Controller/TagController.php:154"
+        "purpose": "Merge tags",
+        "file": "includes/REST/Controller/TagController.php:122"
       },
       {
         "route": "/mvs/v1/me/transactions",
@@ -912,6 +1182,16 @@
         "file": "includes/REST/Controller/TransactionController.php:52"
       },
       {
+        "route": "/mvs/v1/me/dismiss",
+        "methods": [
+          "POST"
+        ],
+        "handler": "UserController::dismiss_notice",
+        "permission": "logged_in_check",
+        "purpose": "Persist an admin/UI notice dismissal server-side (replaced the retired wp_ajax_mvs_dismiss_welcome handler)",
+        "file": "includes/REST/Controller/UserController.php:54"
+      },
+      {
         "route": "/mvs/v1/users/(?P<id>[\\d]+)",
         "methods": [
           "GET"
@@ -919,7 +1199,7 @@
         "handler": "UserController::get_profile",
         "permission": "__return_true",
         "purpose": "Get a user's public profile",
-        "file": "includes/REST/Controller/UserController.php:48"
+        "file": "includes/REST/Controller/UserController.php:79"
       },
       {
         "route": "/mvs/v1/users/(?P<id>[\\d]+)/media",
@@ -929,7 +1209,7 @@
         "handler": "UserController::get_user_media",
         "permission": "__return_true",
         "purpose": "List a user's media",
-        "file": "includes/REST/Controller/UserController.php:70"
+        "file": "includes/REST/Controller/UserController.php:101"
       },
       {
         "route": "/mvs/v1/users/search",
@@ -939,7 +1219,7 @@
         "handler": "UserController::search_users",
         "permission": "__return_true",
         "purpose": "Search users",
-        "file": "includes/REST/Controller/UserController.php:102"
+        "file": "includes/REST/Controller/UserController.php:133"
       },
       {
         "route": "/mvs/v1/users/suggested",
@@ -949,217 +1229,7 @@
         "handler": "UserController::get_suggested",
         "permission": "closure (logged-in check)",
         "purpose": "Get suggested users to follow",
-        "file": "includes/REST/Controller/UserController.php:125"
-      },
-      {
-        "route": "/mvs/v1/me/conversations",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::list_conversations",
-        "permission": "check_auth",
-        "purpose": "List current user's conversations",
-        "file": "includes/Messaging/MessagingController.php:53"
-      },
-      {
-        "route": "/mvs/v1/conversations",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::create_conversation",
-        "permission": "check_auth",
-        "purpose": "Create a conversation",
-        "file": "includes/Messaging/MessagingController.php:82"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::get_conversation",
-        "permission": "check_auth",
-        "purpose": "Get a conversation",
-        "file": "includes/Messaging/MessagingController.php:105"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
-        "methods": [
-          "PATCH"
-        ],
-        "handler": "MessagingController::update_conversation",
-        "permission": "check_auth",
-        "purpose": "Update a conversation",
-        "file": "includes/Messaging/MessagingController.php:116"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "MessagingController::delete_conversation",
-        "permission": "check_auth",
-        "purpose": "Delete a conversation",
-        "file": "includes/Messaging/MessagingController.php:127"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::list_messages",
-        "permission": "check_auth",
-        "purpose": "List messages in a conversation",
-        "file": "includes/Messaging/MessagingController.php:138"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages/search",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::search_messages",
-        "permission": "check_auth",
-        "purpose": "Search messages in a conversation",
-        "file": "includes/Messaging/MessagingController.php:161"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/media",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::list_conversation_media",
-        "permission": "check_auth",
-        "purpose": "List media shared in a conversation (full history, app parity)",
-        "file": "includes/Messaging/MessagingController.php:184"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::send_message",
-        "permission": "check_auth",
-        "purpose": "Send a message",
-        "file": "includes/Messaging/MessagingController.php:184"
-      },
-      {
-        "route": "/mvs/v1/messages/(?P<id>\\d+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "MessagingController::delete_message",
-        "permission": "check_auth",
-        "purpose": "Delete a message",
-        "file": "includes/Messaging/MessagingController.php:209"
-      },
-      {
-        "route": "/mvs/v1/messages/(?P<id>\\d+)/unsend",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "MessagingController::unsend_message",
-        "permission": "check_auth",
-        "purpose": "Unsend a message",
-        "file": "includes/Messaging/MessagingController.php:220"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/read",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::mark_read",
-        "permission": "check_auth",
-        "purpose": "Mark conversation as read",
-        "file": "includes/Messaging/MessagingController.php:231"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/typing",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::typing",
-        "permission": "check_auth",
-        "purpose": "Send typing indicator",
-        "file": "includes/Messaging/MessagingController.php:242"
-      },
-      {
-        "route": "/mvs/v1/messages/(?P<id>\\d+)/reactions",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::add_reaction",
-        "permission": "check_auth",
-        "purpose": "Add reaction to a message",
-        "file": "includes/Messaging/MessagingController.php:253"
-      },
-      {
-        "route": "/mvs/v1/messages/(?P<id>\\d+)/reactions",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "MessagingController::remove_reaction",
-        "permission": "check_auth",
-        "purpose": "Remove reaction from a message",
-        "file": "includes/Messaging/MessagingController.php:270"
-      },
-      {
-        "route": "/mvs/v1/messages/poll",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::poll",
-        "permission": "check_auth",
-        "purpose": "Poll for new messages/events",
-        "file": "includes/Messaging/MessagingController.php:281"
-      },
-      {
-        "route": "/mvs/v1/me/messages/unread-count",
-        "methods": [
-          "GET"
-        ],
-        "handler": "MessagingController::unread_count",
-        "permission": "check_auth",
-        "purpose": "Get unread message count",
-        "file": "includes/Messaging/MessagingController.php:302"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/accept",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::accept_request",
-        "permission": "check_auth",
-        "purpose": "Accept a message request",
-        "file": "includes/Messaging/MessagingController.php:313"
-      },
-      {
-        "route": "/mvs/v1/conversations/(?P<id>\\d+)/decline",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::decline_request",
-        "permission": "check_auth",
-        "purpose": "Decline a message request",
-        "file": "includes/Messaging/MessagingController.php:324"
-      },
-      {
-        "route": "/mvs/v1/messages/upload",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::upload_attachment",
-        "permission": "check_auth",
-        "purpose": "Upload a message attachment",
-        "file": "includes/Messaging/MessagingController.php:335"
-      },
-      {
-        "route": "/mvs/v1/auth/app-password",
-        "methods": [
-          "POST"
-        ],
-        "handler": "AuthController::issue_app_password",
-        "permission": "__return_true (Rule-2 allowlisted first-credential exchange; guarded in Auth\\AppCredentials)",
-        "purpose": "Trade a WordPress username/password for an Application Password the app holds",
-        "file": "includes/REST/Controller/AuthController.php:66"
+        "file": "includes/REST/Controller/UserController.php:156"
       }
     ]
   },
@@ -1332,6 +1402,14 @@
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
     },
-    "refresh_2026_08_01": "2.3.0 baseline: +POST /auth/app-password"
+    "refresh_2026_08_01": "2.3.0 baseline: +POST /auth/app-password",
+    "refresh_2026_09_01": {
+      "at": "2026-09-01T00:00:00Z",
+      "type": "targeted delta (hand-verified against ground-truth grep; generator NOT run)",
+      "scope": "REST surface re-enumerated from every register_rest_route() call site; file:line stamps refreshed; no endpoint was removed (none were false)",
+      "endpoints_added": 7,
+      "file_lines_corrected": 38,
+      "unmatched_after_pass": []
+    }
   }
 }

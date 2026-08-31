@@ -1,5 +1,12 @@
 # WPMediaVerse 1.8.1 — Mobile API Contract
 
+> **STATUS: HISTORICAL PLAN. Superseded by `MEDIAVERSE-APP-READINESS-SPEC.md` and
+> then by what actually shipped - do not use as an API reference.** The config
+> endpoint shipped as `GET /mvs/v1/config`, not `/app/config`; device registration
+> shipped twice (Free `/mvs/v1/me/devices` into `mvs_device_tokens`, Pro
+> `/mvs-pro/v1/push/register-device` into `mvs_pro_push_devices`). There is no
+> `mvs_push_devices` table.
+
 Status: **planned** (branch `1.8.1`, both free + pro). Derived from the `wbcom-mobile-app` skill's readiness audit of 1.8.0.
 Consumer: the WPMediaVerse mobile app (Expo/React Native, standalone) — and later a BuddyNext module. Built against `mvs/v1` (+ `mvs-pro/v1`) only. **No BuddyPress dependency.**
 

@@ -18,24 +18,24 @@ WPMediaVerse is a complete media platform for WordPress - built on custom databa
 
 **Why WPMediaVerse?**
 
-Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in wp_posts. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses three dedicated, indexed tables - media queries never touch your posts, pages, or products.
+Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in wp_posts. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses 23 dedicated, indexed tables of its own - media queries never touch your posts, pages, or products.
 
 **What You Get (Free)**
 
-* **Custom Table Architecture** - Three indexed tables keep media separate from WordPress core data
+* **Custom Table Architecture** - 23 indexed tables keep media, albums, social activity and messages out of WordPress core data
 * **Media Uploads** - Drag & drop with MIME validation, EXIF stripping, duplicate detection, thumbnail generation
 * **Albums & Collections** - Ordered albums with cover images, smart collections with auto-curation rules
 * **Social Layer** - Reactions (6 types), threaded comments, favorites, @mentions, follow/unfollow, sharing
-* **Direct Messaging** - Text and media messaging between members, no third-party service needed
-* **AI Moderation** - OpenAI Vision scans uploads automatically. Flag, quarantine, or reject before they go public
-* **Privacy Controls** - 6 levels per upload: public, members-only, friends-only, group, private, custom
+* **Direct Messaging** - Text, media and voice messaging between members, with read state and typing indicators, and no third-party service needed
+* **AI Moderation** - OpenAI scans uploads automatically. Flag, hide, reject, or delete before they go public
+* **Privacy Controls** - Public, logged-in, members-only, friends, group, space, private and custom-access levels, validated on every write
 * **Explore Feed** - Public media grid with filtering by tag, album, user, and media type
 * **Lightbox** - Full-screen with reactions, comments, favorites, share, gallery navigation - no page reload
 * **BuddyPress Integration** - Activity uploads (1-6 per post), profile/group media tabs, lightbox in feed
 * **9 Gutenberg Blocks** - Media grid, upload, player, album viewer, explore feed, member photos, and more
-* **80+ REST API Endpoints** - 23 controllers covering every operation for headless/decoupled builds
-* **18 WP-CLI Commands** - Bulk operations, migrations, cache management, moderation
-* **8 Shortcodes** - Drop media features into any page or widget
+* **122 REST API Endpoints** - 26 controllers covering every operation for headless/decoupled builds
+* **20 WP-CLI Commands** - Bulk operations, migrations, cache management, moderation
+* **14 Shortcodes** - Drop media features into any page or widget
 * **Webhooks** - Outbound event webhooks with HMAC-SHA256 signing via Action Scheduler
 * **GDPR** - Full data export and erasure via WordPress privacy tools
 
@@ -44,21 +44,24 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * 5 layout modes (Grid, Instagram, Pinterest, Flickr, Dribbble)
 * Photo Challenges, 1v1 Battles, Tournament Brackets
 * Points, Streaks, Boosts gamification engine
-* S3 and BunnyCDN cloud storage drivers
+* Member document drives with folders, sharing, search, trash and in-page previews
+* Amazon S3, BunnyCDN, Cloudflare R2 and DigitalOcean Spaces cloud storage drivers
 * Auto-captions via Whisper AI
 * Per-user storage quotas (MemberPress, WooCommerce, PMPro integration)
-* Voice messages, read receipts, typing indicators in DMs
-* Google Vision + AWS Rekognition moderation
+* Stories, leaderboards, and a Flickr import connector
+* Google Vision, AWS Rekognition, and Claude (Anthropic) moderation
 * Migration importers (rtMedia, MediaPress, BuddyBoss)
 
 **For Developers**
 
 * PSR-4 architecture with service container and lazy-loaded dependencies
-* 80+ action and filter hooks for extensibility
+* 230+ action and filter hooks for extensibility
 * Template override system - copy to your theme and customize
 * AI provider abstraction - bring your own provider
-* Storage driver pattern - local, S3, BunnyCDN, or custom
+* Storage driver pattern - local, or a cloud driver from Pro, or your own
 * WordPress Interactivity API - zero legacy JavaScript
+
+WPMediaVerse embeds and plays the file that was uploaded. It does not transcode, re-encode, or shell out to a video processor, and it ships no exec-family calls in either plugin, so a security scanner has nothing to flag.
 
 == Installation ==
 
@@ -75,7 +78,11 @@ No. WPMediaVerse works as a standalone plugin. BuddyPress integration (activity 
 
 = What AI providers are supported? =
 
-OpenAI Vision (GPT-4) is included. Additional providers can be registered via the `mvs_ai_providers` action hook.
+The free plugin includes OpenAI, on the gpt-4o-mini model by default. WPMediaVerse Pro adds Google Vision, AWS Rekognition, and Claude (Anthropic). Additional providers can be registered via the `mvs_ai_providers` action hook.
+
+= Does WPMediaVerse convert or transcode my videos? =
+
+No. It stores and plays the file that was uploaded, and it does not run FFmpeg or any other external binary. A video that will not play in a browser needs converting before you upload it.
 
 = Can I override the templates? =
 
@@ -83,7 +90,7 @@ Yes. Copy any template from `wpmediaverse/templates/` to `your-theme/wpmediavers
 
 = How do I import from rtMedia? =
 
-Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to preview.
+The importers ship in WPMediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Migration in the admin.
 
 = What are the shortcodes? =
 
@@ -95,6 +102,12 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * `[mvs_dashboard]` - User dashboard
 * `[mvs_collection]` - Collection display
 * `[mvs_profile_edit]` - Profile editor
+* `[mvs_documents]` - Document listing
+* `[mvs_explore_feed]` - Explore feed
+* `[mvs_member_photos]` - One member's photos
+* `[mvs_pdf_viewer id="789"]` - PDF viewer
+* `[mvs_lock_overlay]` - Locked-media overlay
+* `[mvs_usage_history]` - Member usage history
 
 == Screenshots ==
 
@@ -119,24 +132,31 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * New      - A Use Documents permission decides which roles get a document library, so a site can offer photos to everyone and documents to staff. Every role has it to begin with, including roles added by other plugins, so nothing changes until you take it away.
 * Improve  - The My Media sections are a grouped vertical rail with counts, which stays readable as the number of sections grows.
 * Improve  - Document rows in the admin now offer Edit and View on site alongside Trash and Delete permanently, so the screen is no longer only destructive.
+* Improve  - Settings fields now show the value they will actually use before you save. Unsaved fields rendered blank, and a setting that is on by default rendered as off, so the first Save could switch it off without anyone choosing to.
+* Improve  - Document drives stay fast as they grow. A drive listing now reads its index directly instead of scanning and filtering: on a 30,000-document library one page examined 234 rows where it previously examined 8,032.
+* Improve  - Panels, cards and controls no longer all draw the same outline. A text field used to be as visually loud as the panel containing it, and nesting produced three identical edges in a row, so screens read as boxes inside boxes. Containers now recede and only the things you can interact with keep a distinct edge.
+* Improve  - Buttons, form fields, rows, the My Media tab strip and the sign-in link shown to logged-out visitors all meet a minimum tap target, so they are reachable on a phone.
+* Improve  - Text, status badges and the active tag now meet a contrast floor the plugin sets itself instead of inheriting whatever the theme happened to supply.
+* Improve  - The brand colour is now darkened before it is used as text, so dashboard rail links and the active tab label stay readable on a light background. Fills and borders keep the colour you configured, through the separate --mvs-primary-text token.
+* Fix      - Deleting one photo from an update that carried several no longer removes the whole update from the feed or leaves a broken tile behind. The remaining photos and the member's own text stay exactly as they were.
+* Fix      - Members whose profile picture comes from BuddyPress are no longer asked to upload one they already have.
+* Fix      - Columns in the document list line up between rows. Each row previously sized its own columns, so the date and owner started at a different point on every line.
+* Fix      - The upload dropzone uses a real icon instead of an emoji, so it takes the theme's colour and the size the plugin asks for rather than whatever the browser draws.
+* Fix      - The comment box in the lightbox now has a name screen readers announce, instead of being read out as an unlabelled text field.
 * Fix      - The Documents count beside your name counted every document on the site, including trashed ones, instead of the ones you own.
 * Fix      - The Documents panel was gated on a variable that was never set, which opened the gate anyway and logged a PHP warning on every dashboard load.
 * Fix      - Sections declared by an add-on linked to a page that did not exist, because section addresses were built from a fixed list rather than from the sections themselves.
 * Fix      - My Media navigation items rendered as underlined links on some themes because the plugin's own styling overrode the rail it had just been given.
-* Improve  - Settings fields now show the value they will actually use before you save. Unsaved fields rendered blank, and a setting that is on by default rendered as off, so the first Save could switch it off without anyone choosing to.
-* Dev      - New filters mvs_document_row_actions and mvs_document_admin_panels let an add-on contribute row actions and panels to the document admin screens.
-* Dev      - New filter mvs_user_can_use_documents decides per user whether the document library is available, so a membership plugin can put documents behind a paid tier without changing anyone's role.
-* Dev      - drive_documents() accepts a status, count_documents() accepts an author and status, and DashboardSections::slugs() reports the declared section vocabulary.
-* Improve  - Document drives stay fast as they grow. A drive listing now reads its index directly instead of scanning and filtering: on a 30,000-document library one page examined 234 rows where it previously examined 8,032.
-* Improve  - Panels, cards and controls no longer all draw the same outline. A text field used to be as visually loud as the panel containing it, and nesting produced three identical edges in a row, so screens read as boxes inside boxes. Containers now recede and only the things you can interact with keep a distinct edge.
-* Improve  - Buttons, form fields and rows across the member and admin screens now meet a minimum tap target, so they are reachable on a phone.
-* Improve  - Text, status badges and the active tag now meet a contrast floor the plugin sets itself instead of inheriting whatever the theme happened to supply.
 * Fix      - Muting a conversation for a set time kept the conversation out of your unread count after the mute had expired. The count now returns as soon as the timer runs out rather than waiting for the next message to arrive.
 * Fix      - The My Media tab strip could not be reached on screens between 769 and 860 pixels wide, which covers most tablets in portrait.
 * Fix      - At exactly 768 pixels the dashboard applied its phone layout and its tablet layout at the same time, so parts of the screen disagreed about which one they were on.
 * Fix      - A section that lives on its own page, such as Compete, answered its My Media address with a blank column instead of taking you to the page itself. Old links and bookmarks now arrive where they should.
 * Fix      - Viewing a member's media profile wrote two PHP warnings to the site error log on every visit. The pages looked correct, so the only sign was a growing log.
 * Fix      - Every settings control, upload field and collection search box now has a real label, so screen readers announce them and clicking the label focuses the field.
+* Dev      - The video-poster path no longer shells out to FFmpeg, and neither plugin ships an exec-family call any more. A cover comes from the file's own embedded artwork or from a frame the browser captures at upload, so a security scanner has nothing to flag.
+* Dev      - New filters mvs_document_row_actions and mvs_document_admin_panels let an add-on contribute row actions and panels to the document admin screens.
+* Dev      - New filter mvs_user_can_use_documents decides per user whether the document library is available, so a membership plugin can put documents behind a paid tier without changing anyone's role.
+* Dev      - drive_documents() accepts a status, count_documents() accepts an author and status, and DashboardSections::slugs() reports the declared section vocabulary.
 * Dev      - Media moving to and from the trash now fires mvs_media_trashed and mvs_media_restored, so an integration can react without polling.
 * Dev      - New filter mvs_has_custom_avatar reports whether a member has set their own avatar, independent of where the file is stored.
 * Dev      - Documents and media can now be given different drive-access answers through mvs_document_drive_access and mvs_media_drive_access.

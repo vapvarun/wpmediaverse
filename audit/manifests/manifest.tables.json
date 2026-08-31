@@ -3,117 +3,122 @@
     {
       "name": "{prefix}mvs_reports",
       "purpose": "Content/user abuse reports",
-      "file": "includes/Core/Migrator.php:62"
+      "file": "includes/Core/Migrator.php:139"
     },
     {
       "name": "{prefix}mvs_blocks",
       "purpose": "User block list",
-      "file": "includes/Core/Migrator.php:80"
+      "file": "includes/Core/Migrator.php:157"
     },
     {
       "name": "{prefix}mvs_activity",
       "purpose": "Activity feed entries",
-      "file": "includes/Core/Migrator.php:93"
+      "file": "includes/Core/Migrator.php:170"
     },
     {
       "name": "{prefix}mvs_follows",
       "purpose": "User-to-user follow relationships",
-      "file": "includes/Core/Migrator.php:124"
+      "file": "includes/Core/Migrator.php:201"
     },
     {
       "name": "{prefix}mvs_notifications",
       "purpose": "User notification queue",
-      "file": "includes/Core/Migrator.php:139"
+      "file": "includes/Core/Migrator.php:216"
     },
     {
       "name": "{prefix}mvs_reactions",
       "purpose": "Emoji reactions on media",
-      "file": "includes/Core/Migrator.php:168"
+      "file": "includes/Core/Migrator.php:245"
     },
     {
       "name": "{prefix}mvs_favorites",
       "purpose": "User favorites/bookmarks",
-      "file": "includes/Core/Migrator.php:182"
+      "file": "includes/Core/Migrator.php:259"
     },
     {
       "name": "{prefix}mvs_media_views",
       "purpose": "Per-user view tracking",
-      "file": "includes/Core/Migrator.php:197"
+      "file": "includes/Core/Migrator.php:274"
     },
     {
       "name": "{prefix}mvs_media_stats",
       "purpose": "Aggregated media statistics",
-      "file": "includes/Core/Migrator.php:212"
+      "file": "includes/Core/Migrator.php:289"
     },
     {
       "name": "{prefix}mvs_access_rules",
       "purpose": "Per-media access control rules",
-      "file": "includes/Core/Migrator.php:226"
+      "file": "includes/Core/Migrator.php:303"
     },
     {
       "name": "{prefix}mvs_access_grants",
       "purpose": "Granted access tokens",
-      "file": "includes/Core/Migrator.php:242"
+      "file": "includes/Core/Migrator.php:319"
     },
     {
       "name": "{prefix}mvs_mentions",
       "purpose": "@mention records",
-      "file": "includes/Core/Migrator.php:258"
+      "file": "includes/Core/Migrator.php:335"
     },
     {
       "name": "{prefix}mvs_album_items",
       "purpose": "Album-to-media mapping",
-      "file": "includes/Core/Migrator.php:273"
+      "file": "includes/Core/Migrator.php:350"
     },
     {
       "name": "{prefix}mvs_media_index",
       "purpose": "Authoritative media record (no CPT dependency)",
-      "file": "includes/Core/Migrator.php:287"
+      "file": "includes/Core/Migrator.php:364"
     },
     {
       "name": "{prefix}mvs_error_log",
       "purpose": "Internal error/debug log",
-      "file": "includes/Core/Migrator.php:339"
+      "file": "includes/Core/Migrator.php:417"
     },
     {
       "name": "{prefix}mvs_conversations",
       "purpose": "DM conversation threads",
-      "file": "includes/Core/Migrator.php:427"
+      "file": "includes/Core/Migrator.php:505"
     },
     {
       "name": "{prefix}mvs_conversation_participants",
       "purpose": "Conversation membership",
-      "file": "includes/Core/Migrator.php:443"
+      "file": "includes/Core/Migrator.php:521"
     },
     {
       "name": "{prefix}mvs_messages",
       "purpose": "Individual DM messages",
-      "file": "includes/Core/Migrator.php:462"
+      "file": "includes/Core/Migrator.php:542"
     },
     {
       "name": "{prefix}mvs_message_reactions",
       "purpose": "Reactions on DM messages",
-      "file": "includes/Core/Migrator.php:483"
+      "file": "includes/Core/Migrator.php:565"
     },
     {
       "name": "{prefix}mvs_media_index",
       "purpose": "Heal/recreate of media_index with full schema (idempotent upgrade path)",
-      "file": "includes/Core/Migrator.php:534"
+      "file": "includes/Core/Migrator.php:616"
     },
     {
       "name": "{prefix}mvs_media_meta",
       "purpose": "Arbitrary key-value metadata for media",
-      "file": "includes/Core/Migrator.php:602"
+      "file": "includes/Core/Migrator.php:684"
     },
     {
       "name": "{prefix}mvs_transactions",
       "purpose": "Credit/monetization transactions",
-      "file": "includes/Core/Migrator.php:614"
+      "file": "includes/Core/Migrator.php:696"
     },
     {
       "name": "{prefix}mvs_bp_activity_media",
       "purpose": "BuddyPress activity <-> media linkage",
-      "file": "includes/Core/Migrator.php:716"
+      "file": "includes/Core/Migrator.php:798"
+    },
+    {
+      "name": "{prefix}mvs_device_tokens",
+      "purpose": "Push device tokens per user/platform (written through POST /mvs/v1/me/devices)",
+      "file": "includes/Core/Migrator.php:2148"
     }
   ],
   "generated": {
@@ -284,6 +289,14 @@
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    },
+    "refresh_2026_09_01": {
+      "at": "2026-09-01T00:00:00Z",
+      "type": "targeted delta - hand-verified against ground-truth grep of the shipped source. The deterministic generator (write-manifest.mjs) was NOT run and its output was NOT committed: it cannot see this plugin's SettingsRegistrar / ServiceContainer::register() / MediaCapabilities / PostTypes\\Album::register() / CLI-method registration patterns and would zero out settings, services, wp_cli, capabilities, post_types and taxonomies.",
+      "scope": "Tables re-enumerated from every CREATE TABLE in includes/Core/Migrator.php. 24 CREATE TABLE statements over 23 distinct table names (mvs_media_index is created twice: the original at :364 and the idempotent full-schema heal at :616). Added the missing mvs_device_tokens; corrected every file:line stamp. No table entry was false.",
+      "tables_added": [
+        "{prefix}mvs_device_tokens"
+      ]
     }
   }
 }

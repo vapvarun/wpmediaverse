@@ -257,15 +257,21 @@ See [WP-CLI Commands](../developer-guide/wp-cli.md).
 
 ### Gutenberg Blocks
 
-5 blocks for the block editor:
+Registered in `BlockRegistrar::BLOCKS`:
 
 | Block | Description |
 |-------|-------------|
-| Media Grid | Display a filtered grid of media items |
-| Explore Feed | Full explore page with search, tags, and pagination |
-| Album Viewer | Display an album's contents |
-| Lock Overlay | Restrict content visibility with a paywall-style overlay |
-| Profile Edit | Inline profile editing block |
+| Media Upload | A drag-and-drop media upload form |
+| Media Grid | Display a grid of media items |
+| Media Player | Video and audio player for media items |
+| Album Viewer | Display an album with its media items |
+| Media Stats | Display a media statistics dashboard |
+| Explore Feed | A discover/explore feed showing trending and recent media |
+| Lock Overlay | Paywall overlay on gated media, with blurred preview and unlock prompt |
+| Member Photos | A member's photos. Auto-detects the displayed BuddyPress member, the post author, or the current user |
+| PDF Viewer | Embed a PDF inline using the browser's native viewer, under the same privacy and access rules as other media |
+
+There is no Profile Edit block - profile editing ships as the `[mvs_profile_edit]` shortcode only.
 
 See [Gutenberg Blocks](../features/blocks.md).
 
@@ -273,11 +279,25 @@ See [Gutenberg Blocks](../features/blocks.md).
 
 For classic editor and page builders:
 
+All registered in `Shortcodes\Shortcodes` (Free):
+
 | Shortcode | Description |
 |-----------|-------------|
 | `[mvs_gallery]` | Media grid with filtering |
 | `[mvs_upload]` | Upload form |
+| `[mvs_album]` | An album with its media items |
+| `[mvs_player]` | Video/audio player for one media item |
+| `[mvs_stats]` | Media statistics |
 | `[mvs_dashboard]` | User's media dashboard |
+| `[mvs_collection]` | A collection's media items |
 | `[mvs_profile_edit]` | Inline profile editing form |
+| `[mvs_documents]` | A document drive listing (renders through Pro's Documents engine) |
+| `[mvs_explore_feed]` | Explore feed with search, tags and pagination |
+| `[mvs_lock_overlay]` | Paywall overlay on gated media |
+| `[mvs_member_photos]` | A member's photos |
+| `[mvs_pdf_viewer]` | Inline PDF viewer |
+| `[mvs_usage_history]` | The member's storage/usage history |
+
+Pro adds `[mvs_document]` plus its compete and connector-feed shortcodes.
 
 See [Shortcodes](../features/shortcodes.md).

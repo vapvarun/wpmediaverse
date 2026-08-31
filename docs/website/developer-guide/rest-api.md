@@ -969,6 +969,24 @@ Dismiss the admin welcome banner for the current user.
 
 ---
 
+## Dismissible notices
+
+### POST /me/dismiss
+
+**Auth:** Authenticated.
+
+Record that the current member has closed a dismissible frontend banner, so it never renders again for them on any device. Server-side rather than `localStorage`, because a banner painted and then removed by JavaScript collapses the layout under the reader's cursor.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `key` | Yes | Identifier of the banner being dismissed (sanitized with `sanitize_key`) |
+
+```json
+{ "key": "profile_prompt" }
+```
+
+---
+
 ## Activity Feed
 
 ### GET /feed

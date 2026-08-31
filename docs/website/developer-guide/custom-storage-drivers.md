@@ -141,13 +141,19 @@ If no filter returns a `StorageDriverInterface` instance, `StorageService` falls
 This is exactly how WPMediaVerse Pro registers its own drivers — its callback `switch`es on `$name` and returns the matching driver (`s3`, `bunnycdn`, `r2`, `dospaces`):
 
 ```php
-// Simplified from WPMediaVerse Pro.
+// Simplified from WPMediaVerse Pro. Each integration namespaces its own
+// class as `StorageDriver`, so the real FQCNs are
+// \WPMediaVersePro\Integrations\AmazonS3\StorageDriver,
+// \WPMediaVersePro\Integrations\BunnyCDN\StorageDriver,
+// \WPMediaVersePro\Integrations\CloudflareR2\StorageDriver and
+// \WPMediaVersePro\Integrations\DigitalOceanSpaces\StorageDriver
+// (the last two extend the AmazonS3 one).
 add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
     switch ( $name ) {
         case 's3':
-            return new S3StorageDriver();
+            return new \WPMediaVersePro\Integrations\AmazonS3\StorageDriver();
         case 'bunnycdn':
-            return new BunnyCDNStorageDriver();
+            return new \WPMediaVersePro\Integrations\BunnyCDN\StorageDriver();
         default:
             return $driver;
     }

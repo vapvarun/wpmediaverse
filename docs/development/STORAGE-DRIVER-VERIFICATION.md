@@ -8,7 +8,8 @@ portfolio.
 Three layers - pass all three:
 
 ## 1. Driver unit/integration tests (construction - no live account)
-`tests/unit/StorageDriverTest.php` (golden-master): assert each driver builds the
+`wpmediaverse-pro/tests/unit/StorageDriverTest.php` (golden-master; the S3-family
+drivers are Pro, so the test lives in Pro): assert each driver builds the
 right **host**, **request URI** (virtual-hosted vs path-style), **public URL**,
 and **signing region** for its provider. These run in CI without credentials.
 Add a block per new provider.
@@ -29,9 +30,10 @@ With creds set (prefer `wp-config.php` constants for secrets), run via WP-CLI
 - **Test Connection button** in Settings → Storage returns the success message
   (exercises the AJAX handler + round-trip + UI).
 - **Display**: enable the provider's public domain (R2 needs `r2.dev` or a custom
-  domain - the bare API endpoint is private), set `*_cdn_domain` + enable
-  `mvs_cloud_direct_public_urls`, upload a real **image, video, audio** through
-  the plugin, and verify each renders in the frontend FROM the provider:
+  domain - the bare API endpoint is private) and set `*_cdn_domain`. Nothing else
+  needs enabling: direct-from-CDN display for public cloud-hosted media is
+  automatic (see "Display model" below). Upload a real **image, video, audio**
+  through the plugin, and verify each renders in the frontend FROM the provider:
   - image `naturalWidth > 0` (rendered),
   - video `readyState >= 1` + poster loads,
   - audio `readyState >= 1`,
@@ -74,8 +76,9 @@ back-compat only; its checkbox was removed).
   `thumb_<size>`), so enabling a service never breaks un-migrated media. Local
   files serve through `/serve`; cloud files serve directly. Migrate with
   `wp mvs migrate-storage --from=<old> --to=<new>` (or the Storage Management
-  admin), which re-uploads and rewrites the stored URLs to the destination. See
-  the admin-control spec in `plan/2026-05-20-storage-service-management.md`.
+  admin), which re-uploads and rewrites the stored URLs to the destination.
+  `wp help mvs migrate-storage` documents the flags (`--dry-run`,
+  `--keep-source`, `--media-id`, `--limit`).
 - **`-dev`/pre-release version suffixes** sort below the release in
   `version_compare` - strip them before comparing (lockstep guard).
 

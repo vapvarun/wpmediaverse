@@ -1,7 +1,10 @@
 # WPMediaVerse Architecture Reference
 
 > Single source of truth for the plugin's technical architecture.
-> Migrator version: **9** | REST namespace: **mvs/v1** | Custom tables: **21**
+> Migrator version: **30** | REST namespace: **mvs/v1** | Custom tables: **23**
+>
+> Counts here rot. `audit/manifests/manifest.summary.json` and the commands in
+> `CLAUDE.md` are ground truth for endpoint/hook/table/service totals.
 
 ---
 
@@ -9,16 +12,16 @@
 
 ```
 wpmediaverse.php
-  define MVS_VERSION ('1.1.0')
+  define MVS_VERSION ('2.4.0')
   define MVS_PLUGIN_DIR, MVS_PLUGIN_URL, MVS_PLUGIN_FILE, MVS_PLUGIN_BASENAME
-  require vendor/autoload.php (PSR-4)
+  spl_autoload_register (hand-written PSR-4; runtime never loads Composer)
   register EDD SL SDK (auto-update with preset license)
   ─────────────────────────────────────────────────────
   Plugin::init()
     ├── load_plugin_textdomain('wpmediaverse')
     ├── MediaCapabilities::add_caps()          [version-gated via mvs_caps_version]
-    ├── Migrator::run()                        [CURRENT_VERSION = 9]
-    ├── ServiceContainer setup                 [33 lazy-loaded services]
+    ├── Migrator::run()                        [CURRENT_VERSION = 30]
+    ├── ServiceContainer setup                 [53 lazy-loaded services]
     │     └── register_services()              [storage → upload → admin → social → integrations]
     │     └── LoggerService::register_hooks()
     │     └── GDPRService::init()
@@ -30,16 +33,15 @@ wpmediaverse.php
     ├── TemplateLoader::init()
     ├── add_action('admin_init', maybe_redirect_after_activation)
     ├── [is_admin()] Admin pages boot          [overview, settings, moderation, stats, logs, wizard, metabox]
-    ├── add_action('rest_api_init', register_rest_routes)  [18 controllers]
-    ├── StoryService init                      [cleanup cron]
+    ├── add_action('rest_api_init', register_rest_routes)  [25 controllers in REST/Controller/]
     ├── ModerationService                      [deferred load - admin or upload]
     ├── AI hooks                               [mvs_media_uploaded → mvs_ai_process_media]
     ├── AccessRulesService filter              [mvs_privacy_can_view, priority 20]
     ├── mvs_media_response filter              [signed URL replacement]
-    ├── WatermarkService::init()               [preview_url filter, priority 30]
+    ├── WatermarkService                       [container service; stamps at ingest via mvs_watermark_stamp_file]
     ├── CacheService::init()                   [invalidation hooks]
     ├── ProfileService::init()                 [avatar filter hooks]
-    ├── BuddyPressIntegration::init()          [conditional - if BP active]
+    ├── BuddyPressManager::init()              [conditional - if BP active]
     ├── WebhookService::init()
     ├── add_action('mvs_deliver_webhook')      [Action Scheduler async delivery]
     ├── wp_enqueue_scripts                     [frontend CSS/JS]
@@ -430,11 +432,22 @@ Centralized error/debug log.
 | 8 | Cleanup | Drop attachment_id column from mvs_media_index |
 | 9 | Meta + Transactions | media_meta, transactions |
 
+This table covers v1-v9 only. `Migrator::CURRENT_VERSION` is **30**; read
+`includes/Core/Migrator.php` for v10 onwards (which adds, among others,
+`mvs_bp_activity_media` and `mvs_device_tokens`, and the `folder_id` column on
+`mvs_media_index` that Pro's folder tree points at).
+
 ---
 
 ## 3. REST API Map
 
 All routes are under namespace `mvs/v1`. Base URL: `/wp-json/mvs/v1/`.
+
+This map is partial. It covers the controllers below; `AccountController`,
+`AdminController`, `AuthController`, `ConfigController`, `DeviceController`,
+`InterestsController` and `TransactionController` also register routes and are
+not written up here. `audit/manifests/manifest.rest.json` is the complete,
+code-derived list.
 
 ### 3.1 Media (MediaController)
 
@@ -694,7 +707,7 @@ Registered via `init_messaging()` in Plugin.php. All routes require authenticati
 | `mvs_user_blocked` | action | `Social/ReportService.php:199` | Fires after a user blocks another. |
 | `mvs_user_profile_url` | filter | `Core/TemplateHelpers.php:130` | Override user profile URL. |
 | `mvs_user_display_name` | filter | `Core/TemplateHelpers.php:147` | Override user display name. |
-| `mvs_activity_max_media` | filter | `Integrations/BuddyPressIntegration.php:2112,2137` | Max media items in activity posts (default: 6). |
+| `mvs_activity_max_media` | filter | `Integrations/BuddyPress/ActivitySyncIntegration.php:557`, `ActivityFormIntegration.php:163,188` | Max media items in activity posts (default: 6). |
 
 ### 4.4 Messaging
 
@@ -731,18 +744,15 @@ Registered via `init_messaging()` in Plugin.php. All routes require authenticati
 | `mvs_album_response` | filter | `REST/Controller/AlbumController.php:593` | Filter album data in REST response. |
 | `mvs_collection_response` | filter | `REST/Controller/CollectionController.php:439` | Filter collection data in REST response. |
 | `mvs_tags_merged` | action | `REST/Controller/TagController.php:257` | Fires after two tags are merged. |
-| `mvs_story_created` | action | `Services/StoryService.php:64` | Fires after a story is created. |
-| `mvs_story_expired` | action | `Services/StoryService.php:204` | Fires when a story expires. |
+| `mvs_story_created` | action | Pro: `Stories/StoryService.php:124` | Fires after a story is created. Stories are a Pro feature; Free fires nothing here. |
+| `mvs_story_expired` | action | Pro: `Stories/StoryService.php:142,481` | Fires when a story expires. Pro-only, as above. |
 
 ### 4.7 Watermark
 
 | Hook | Type | Location | Description |
 |------|------|----------|-------------|
-| `mvs_watermark_enabled` | filter | `Services/WatermarkService.php:83` | Whether watermarking is enabled (default `false`). |
-| `mvs_watermark_config` | filter | `Services/WatermarkService.php:107` | Watermark configuration array. |
-| `mvs_generate_watermark` | filter | `Services/WatermarkService.php:158` | Generate watermarked preview URL. |
-| `mvs_watermark_invalidated` | action | `Services/WatermarkService.php:187` | Fires when a watermark cache is invalidated. |
-| `mvs_watermarks_invalidated_all` | action | `Services/WatermarkService.php:200` | Fires when all watermark caches are invalidated. |
+| `mvs_watermark_enabled` | filter | `Services/WatermarkService.php` | Whether watermarking is enabled (default `false`). |
+| `mvs_watermark_stamp_file` | filter | `Services/WatermarkService.php:132` | Stamp the stored file at ingest. Pro returns `true` once it has burned the mark in. This is the only other hook the service fires. |
 
 ### 4.8 Profile
 
@@ -760,16 +770,16 @@ Registered via `init_messaging()` in Plugin.php. All routes require authenticati
 
 | Hook | Type | Location | Description |
 |------|------|----------|-------------|
-| `mvs_dashboard_widgets` | action | `Admin/OverviewPage.php:494` | Render extra widgets on the admin overview page. |
-| `mvs_settings_before_save` | action | `Admin/SettingsPage.php:96` | Fires before settings are saved. |
-| `mvs_settings_sidebar_after` | action | `Admin/SettingsPage.php:1365` | Render extra content in settings sidebar. |
-| `mvs_settings_render_{renderer}` | action | `Admin/SettingsPage.php:1400` | Dynamic hook to render custom settings sections. |
-| `mvs_moderation_tabs` | filter | `Admin/ModerationQueue.php:185` | Register additional moderation tabs. |
-| `mvs_stats_tabs` | filter | `Admin/StatsPage.php:158` | Register additional stats tabs. |
-| `mvs_settings_sections` | filter | `Admin/SettingsPage.php:1235` | Register additional settings sections. |
-| `mvs_settings_group_labels` | filter | `Admin/SettingsPage.php:1270` | Customize settings group labels. |
-| `mvs_openai_api_key` | filter | `Services/OpenAIProvider.php:210` | Override OpenAI API key. |
-| `mvs_before_upload_form` | action | `Shortcodes/Shortcodes.php:104` | Fires before the upload form renders. |
+| `mvs_dashboard_widgets` | action | `Admin/OverviewPage.php:510` | Render extra widgets on the admin overview page. |
+| `mvs_settings_before_save` | action | `Admin/Settings/SettingsPage.php:118` | Fires before settings are saved. |
+| `mvs_settings_sidebar_after` | action | `Admin/Settings/SettingsPage.php:477` | Render extra content in settings sidebar. |
+| `mvs_settings_render_{renderer}` | action | `Admin/Settings/SettingsPage.php:509` | Dynamic hook to render custom settings sections. |
+| `mvs_moderation_tabs` | filter | `Admin/ModerationQueue.php:199` | Register additional moderation tabs. |
+| `mvs_stats_tabs` | filter | `Admin/StatsPage.php:149` | Register additional stats tabs. |
+| `mvs_settings_sections` | filter | `Admin/Settings/SettingsPage.php:331` | Register additional settings sections. |
+| `mvs_settings_group_labels` | filter | `Admin/Settings/SettingsPage.php:369` | Customize settings group labels. |
+| `mvs_openai_api_key` | filter | `Core/SettingsHelper.php:257` | Override the OpenAI API key resolved from the option. |
+| `mvs_before_upload_form` | action | `Shortcodes/Shortcodes.php:127` | Fires before the upload form renders. |
 
 ### 4.10 Template
 
@@ -829,7 +839,7 @@ To override a template, copy it from `wpmediaverse/templates/` to `your-theme/wp
 
 ```php
 // Load a template with data:
-TemplateLoader::get_template( 'partials/grid-item.php', [ 'media_id' => 42 ] );
+TemplateLoader::get_template( 'partials/dashboard-content.php', [ 'media_id' => 42 ] );
 
 // Locate without rendering:
 $path = TemplateLoader::locate( 'media-single.php' );
@@ -897,16 +907,15 @@ use WPMediaVerse\Services\StorageService;
 | Filter | Location | Purpose |
 |--------|----------|---------|
 | `mvs_storage_driver` | `StorageService.php:39` | Override default `LocalDriver` with S3, Cloudflare R2, etc. |
-| `mvs_watermark_enabled` | `WatermarkService.php:83` | Enable watermark feature (default `false` in free). |
-| `mvs_watermark_config` | `WatermarkService.php:107` | Configure watermark position, opacity, image. |
-| `mvs_generate_watermark` | `WatermarkService.php:158` | Provide watermarked preview URL. |
-| `mvs_ai_providers` | `Plugin.php:335` | Register additional AI providers (Claude, Gemini, etc.). |
-| `mvs_should_ai_analyze` | `AIService.php:209` | Control which media gets AI analysis. |
-| `mvs_openai_api_key` | `OpenAIProvider.php:210` | Override API key for AI services. |
-| `mvs_moderation_tabs` | `ModerationQueue.php:185` | Inject additional admin moderation tabs. |
-| `mvs_stats_tabs` | `StatsPage.php:158` | Inject additional admin stats tabs. |
-| `mvs_settings_sections` | `SettingsPage.php:1235` | Register Pro settings sections in the admin. |
-| `mvs_settings_group_labels` | `SettingsPage.php:1270` | Customize settings group names. |
+| `mvs_watermark_enabled` | `WatermarkService.php` | Enable watermark feature (default `false` in free). |
+| `mvs_watermark_stamp_file` | `WatermarkService.php:132` | Stamp the mark into the stored file at ingest. |
+| `mvs_ai_providers` | `Plugin.php` | Register additional AI providers (Claude, Gemini, etc.). |
+| `mvs_should_ai_analyze` | `AIService.php` | Control which media gets AI analysis. |
+| `mvs_openai_api_key` | `Core/SettingsHelper.php:257` | Override API key for AI services. |
+| `mvs_moderation_tabs` | `ModerationQueue.php:199` | Inject additional admin moderation tabs. |
+| `mvs_stats_tabs` | `StatsPage.php:149` | Inject additional admin stats tabs. |
+| `mvs_settings_sections` | `Admin/Settings/SettingsPage.php:331` | Register Pro settings sections in the admin. |
+| `mvs_settings_group_labels` | `Admin/Settings/SettingsPage.php:369` | Customize settings group names. |
 | `mvs_reserved_media_paths` | `TemplateLoader.php:101` | Reserve URL paths for Pro features (battles, tournaments). |
 | `mvs_buddynext_active` | `Plugin.php:1028+` | Signal BuddyNext integration is active. |
 | `mvs_messaging_transport` | `Plugin.php:980` | Override REST polling with WebSocket transport. |
@@ -944,5 +953,7 @@ add_filter( 'mvs_stats_tabs', function ( array $tabs ) {
 | Hook | Schedule | Description |
 |------|----------|-------------|
 | `mvs_prune_logs` | Daily | Prune old error log entries via `LoggerService::prune()` |
-| Story cleanup | Via `StoryService::init()` | Expire stories past their TTL |
+| `mvs_purge_old_views` | Daily | Drop expired rows from `mvs_media_views` via `ViewRetentionService::purge()` |
+| `mvs_process_account_deletions` | Daily | Run due self-service deletions via `AccountDeletionService::process_due()` |
 | `mvs_deliver_webhook` | Action Scheduler | Async webhook delivery with payload |
+| `mvs_ai_process_media` | Action Scheduler | Async AI analysis of a newly uploaded item |

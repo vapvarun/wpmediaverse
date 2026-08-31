@@ -1,9 +1,10 @@
 # WPMediaVerse Structural Guideline
 
 > Where each kind of file lives, what shape it has, and the seams it must respect.
-> Companion to `ARCHITECTURE.md` (lifecycle + schema), `CODING_STANDARDS.md`
-> (style), and Pro's `plan/wpmediaverse-architecture-contract.md` (cross-plugin
-> behavioral invariants). This file answers the structural question: **"I'm
+> Companion to `docs/architecture/ARCHITECTURE.md` (lifecycle + schema),
+> `CODING_STANDARDS.md` (style), and
+> `docs/architecture/architecture-contract.md` (the 11 Free ⇄ Pro behavioral
+> invariants). This file answers the structural question: **"I'm
 > adding a new feature - where does each piece go?"**
 
 > **Skill reference**: the generic Wbcom-wide layered architecture lives at
@@ -77,7 +78,7 @@ Services (4) do not echo HTML. Templates (6) do not run SQL.
 | An admin menu page | `Admin/<Name>Page.php` (one class per page) | Class implements `register_menu()` + `render_page()`. Forms submit to REST or `admin_post_*`. |
 | Background work | `Services/<Capability>Service.php` schedules via Action Scheduler | Cron callback registers in `Plugin::init`; handler in the service. |
 | A one-off install/seed/cleanup script | `Services/<Name>Service.php` exposing a public method that returns a structured result array | NOT an include-and-exit `*.php` at plugin root. The bootstrap script entry (if any) is a 5-line shim that calls the service. |
-| Hooks fired by Free for Pro | Documented in `audit/manifest.hooks.json` | Free fires `do_action('mvs_…')` with a stable signature. Pro listens. Free MUST NOT call Pro classes (Pro contract A1). |
+| Hooks fired by Free for Pro | Documented in `audit/manifests/manifest.hooks.json` | Free fires `do_action('mvs_…')` with a stable signature. Pro listens. Free MUST NOT call Pro classes (contract Invariant 1). |
 
 ---
 
@@ -142,7 +143,7 @@ WP-CLI, REST, admin_post, and unit tests.
 ```php
 <?php
 defined( 'ABSPATH' ) || exit;
-// … 1,541 lines of inline imperative code …
+// … well over a thousand lines of inline imperative code …
 if ( wp_doing_ajax() ) {
     wp_send_json_success( [ 'message' => $msg ] );   // ← can't be reused from REST/CLI
 }
@@ -201,8 +202,8 @@ class belongs to at a glance.
 
 ## 5. Cross-plugin seams (Free ⇄ Pro)
 
-Authoritative: Pro's `plan/wpmediaverse-architecture-contract.md` 11
-invariants. Structural summary:
+Authoritative: `docs/architecture/architecture-contract.md`, Part A - the 11
+invariants (enforced by Pro's `bin/architecture-checks.sh`). Structural summary:
 
 - **Free→Pro**: Free fires `do_action('mvs_*')` hooks at stable points.
   Free never imports `WPMediaVersePro\…`.
@@ -213,10 +214,10 @@ invariants. Structural summary:
   Rule 3). Interface-only imports allowed when Pro IMPLEMENTS the
   interface (`StorageDriverInterface`, `AIProviderInterface`).
 - **Settings**: Pro reads `mvs_*` options through Free service typed
-  accessors (Pro contract A4) - never raw `get_option()` for Free-owned
-  options.
+  accessors (contract Invariant 4) - never raw `get_option()` for
+  Free-owned options.
 - **DB writes**: Pro writes Free tables only through `MediaRepository`
-  (Pro contract A6).
+  (contract Invariant 6).
 
 ---
 
@@ -284,8 +285,9 @@ invariants. Structural summary:
    callback allowlist pattern). Phase 6 demonstrated this - Free
    migrated `mvs_dismiss_welcome` (1-line update_user_meta) and
    allowlisted `mvs_import_demo_data` + `mvs_cleanup_demo_data`
-   (admin manual triggers - refactoring 1,541 lines for zero
-   structural payoff is over-engineering).
+   (admin manual triggers - refactoring the whole seeder for zero
+   structural payoff is over-engineering). Those two are the only
+   `wp_ajax_mvs_*` actions the plugin registers.
 7. **`current_user_can('mvs/…')` for plugin-defined abilities** -
    route through `MediaCapabilities` / Pro's Permission_Engine.
 8. **A new top-level directory** that doesn't match the seven layers

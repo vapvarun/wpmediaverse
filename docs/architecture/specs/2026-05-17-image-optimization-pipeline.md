@@ -1,5 +1,13 @@
 # Image Optimization Pipeline
 
+> **STATUS: IMPLEMENTED (Free, as of 2.4.0).** Verified in code:
+> `includes/Services/ImageOptimizationService.php` fires the `mvs_optimize_image`
+> filter on both the original and the WebP path; sibling formats are modelled by
+> `Services/VariantSpec.php` (which also has an AVIF form, added after this spec)
+> and written by `Services/MediaVariantWriter.php`. The spec's meta-key naming
+> predates the 1.4.0 path-meta rework - `MediaVariantWriter`'s header is the
+> current key contract.
+
 **Status:** Accepted
 **Version target:** 1.2.2
 **Date:** 2026-05-17

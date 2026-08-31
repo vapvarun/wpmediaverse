@@ -4,10 +4,10 @@
 
 **Authority**: This contract is enforced by `bin/architecture-checks.sh` (Pro plugin) and consumed by both plugins' local-CI gate. Findings that violate the contract block release.
 
-**Companion data**:
-- `audit/manifest.json` (this plugin) - Pro's surface (REST, hooks, admin pages, free_filters_hooked, free_services_consumed)
-- `../wpmediaverse/audit/manifest.json` - Free's surface
-- `audit/derived/cross-plugin-coupling.json` - pre-computed firer/listener index for hooks_fired
+**Companion data** (both live in the Free plugin - Pro is deliberately doc-free):
+- `audit/pro/manifests/manifest.json` - Pro's surface (REST, hooks, admin pages, free_filters_hooked, free_services_consumed)
+- `audit/manifests/manifest.json` - Free's surface
+- `bin/hook-manifest-drift.php` - compares both manifests against the code in both directions (fired-but-undocumented, documented-but-never-fired)
 
 ---
 
@@ -37,15 +37,15 @@ Pro MUST NOT call `get_option('mvs_*')` directly except in three allow-listed ca
 
 **Enforcement**: `check_a4_no_direct_get_option_for_free_settings` - grep Pro's `includes/` for `get_option\s*\(\s*['"]mvs_[a-z_]+` and exclude the allow-list.
 
-### Invariant 5: REST route-path isolation (shared namespace OK)
+### Invariant 5: REST namespace isolation
 
-Both plugins register under namespace `mvs/v1`. They MUST NOT register the same `methods × path` tuple. Sharing the namespace is intentional - API consumers see one cohesive surface.
+Free registers under `mvs/v1`; Pro registers under `mvs-pro/v1`. Separate namespaces, so a `methods × path` collision is structurally impossible - the check exists to catch a Pro controller that reaches back into `mvs/v1`.
 
 **Enforcement**: `check_a5_no_route_collisions` - read both manifests' `rest.endpoints[].route`, normalize, assert pairwise disjoint per HTTP method.
 
 ### Invariant 6: DB boundary
 
-Free owns 21 `mvs_*` tables; Pro owns 8 `mvs_*` tables. Cross-plugin writes go through the owner's manager class (e.g., Pro uses `MediaRepository::insert_media()` to add media rows, never raw `INSERT INTO wp_mvs_media_index`). Pro tables are documented in `audit/manifest.json#/tables`.
+Free owns 23 `mvs_*` tables; Pro owns 13. Cross-plugin writes go through the owner's manager class (e.g., Pro uses `MediaRepository::insert_media()` to add media rows, never raw `INSERT INTO wp_mvs_media_index`). Pro tables are documented in `audit/pro/manifests/manifest.tables.json` - note that only four of them carry an `mvs_pro_` prefix, so name alone does not tell you the owner.
 
 **Enforcement**: `check_a6_pro_does_not_write_free_tables` - grep Pro's `includes/` for `INSERT INTO|UPDATE|DELETE FROM` against Free table names. Skip read queries - they're allowed.
 
@@ -75,7 +75,7 @@ Free's wp_enqueue_* handles use the prefix `mvs-`. Pro's use `mvs-pro-`. Shared 
 
 ### Invariant 11: Hook arg-signature compatibility
 
-For every Pro listener consuming a Free hook (per `audit/derived/cross-plugin-coupling.json`), Pro's `add_action`/`add_filter` `$accepted_args` and the listener function signature MUST match Free's firer's `args_signature` declared in Free's `hooks_fired[]`. Mismatch examples: Free fires `(int $post_id, WP_REST_Request $request)`, Pro listener registered with `$accepted_args=2` and treats arg 2 as `array` → fatal `TypeError`.
+For every Pro listener consuming a Free hook (cross-referenced from the two `manifest.hooks.json` files), Pro's `add_action`/`add_filter` `$accepted_args` and the listener function signature MUST match Free's firer's `args_signature` declared in Free's `hooks_fired[]`. Mismatch examples: Free fires `(int $post_id, WP_REST_Request $request)`, Pro listener registered with `$accepted_args=2` and treats arg 2 as `array` → fatal `TypeError`.
 
 **Enforcement**: `check_a11_hook_signatures_match` - read both manifests' hooks_fired and Pro's add_action/add_filter call sites; compare arg counts; flag drift to `static_analysis.hook_signature_drift[]`.
 
@@ -83,7 +83,8 @@ For every Pro listener consuming a Free hook (per `audit/derived/cross-plugin-co
 
 ## Part B - Security
 
-- License key validation lives in Pro only (`includes/Core/LicenseManager.php`); Free has no license logic.
+- License logic lives in Pro only - `includes/License/License.php` (read-only status wrapper over the EDD SL SDK options) and `includes/Core/LicenseManager.php` (the activate/deactivate form and settings tab). Free has none.
+- The licence is an **updates gate, not a feature gate**: `License::is_valid()` drives the settings badge and the update channel, never feature registration. The single exception is `Documents\DocumentLicense`, which refuses document WRITES on a lapsed licence while leaving reads, route registration and admin-capability holders untouched. Do not add a second one.
 - Signed-URL signing key MUST NOT be exposed to Pro - Pro requests signed URLs through Free's `SignedUrlService::sign($media_id)` API.
 - Nonces created in Pro with `wp_create_nonce('mvs_pro_*')` MUST be verified with the same action name; never share nonces across plugin boundaries.
 
@@ -112,7 +113,7 @@ For every Pro listener consuming a Free hook (per `audit/derived/cross-plugin-co
 Before merging a PR that touches the Free/Pro boundary:
 
 - [ ] `bin/architecture-checks.sh` exits 0
-- [ ] If a new Free hook is added: PR updates Free's `audit/manifest.json#/hooks_fired` with `args_signature`; Pro's `audit/derived/cross-plugin-coupling.json` cache will rebuild on next refresh
+- [ ] If a new Free hook is added: PR updates Free's `audit/manifests/manifest.hooks.json` with `args_signature`; `php bin/hook-manifest-drift.php` exits 0
 - [ ] If a new Pro listener is added against an existing Free hook: arg-count and shape match Free's firer
 - [ ] If a new shared asset (JS/CSS) is added: handle prefix verified (Pro = `mvs-pro-`); duplicate-register guard added
 - [ ] If a new REST route is added: `methods × path` doesn't collide with the other plugin's manifest entries

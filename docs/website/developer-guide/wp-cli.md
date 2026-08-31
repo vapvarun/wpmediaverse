@@ -3,7 +3,7 @@
 > Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
 
 
-WPMediaVerse registers all its commands under the `wp mvs` namespace.
+WPMediaVerse registers its commands under the `wp mvs` namespace. Pro adds its own subcommands to that same namespace (`import-*`, `competitions *`) plus one command of its own, `wp mvs-pro cert`.
 
 ## wp mvs stats
 
@@ -108,7 +108,7 @@ wp mvs cleanup-expired --batch-size=500
 
 ## wp mvs reindex
 
-Rebuild the `wp_mvs_media_index` table from all published `mvs_media` posts. Run this if the index becomes out of sync (e.g., after a direct database import or migration from another plugin).
+Walk every row in `wp_mvs_media_index` and create the matching `wp_mvs_media_stats` row wherever one is missing. Run this after a direct database import or a migration from another plugin, where index rows can land without their stats counterpart. It does **not** rebuild `wp_mvs_media_index` itself from posts - it verifies what is already there.
 
 ```bash
 # Reindex with default batch size.
@@ -122,9 +122,9 @@ wp mvs reindex --batch-size=50
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--batch-size=<size>` | `100` | Number of posts to process per batch |
+| `--batch-size=<size>` | `100` | Number of index rows to process per batch |
 
-The command outputs progress as it processes each batch and shows a final count of indexed items.
+The command outputs progress as it processes each batch and finishes with a count of rows checked and stats rows created.
 
 ---
 
@@ -187,6 +187,71 @@ wp mvs backfill-activity-thumbnails --dry-run
 |--------|---------|-------------|
 | `--source=<source>` | `all` | Only backfill activities from a specific migration source: `rtmedia`, `mediapress`, `buddyboss`, or `all` |
 | `--dry-run` | off | Count eligible records without updating them |
+
+---
+
+## wp mvs regenerate-thumbnails
+
+Rebuild thumbnail variants for images already in the library, so images uploaded before a size change pick up the new dimensions. Reads each original from its local path, so it is a local-disk operation - for cloud-only originals use `wp mvs cloud-thumbs-backfill` instead. Keyset-paginated over `media_id` and safe to re-run.
+
+```bash
+# Rebuild variants for every image.
+wp mvs regenerate-thumbnails
+
+# Only fill gaps - images with no thumb_large meta yet.
+wp mvs regenerate-thumbnails --only-missing
+
+# Preview without writing.
+wp mvs regenerate-thumbnails --dry-run
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--only-missing` | off | Only process images with no `thumb_large` meta; do not rebuild ones that already have variants |
+| `--dry-run` | off | List what would be processed without writing anything |
+| `--batch=<n>` | `200` | Rows to pull per query when walking the index |
+
+---
+
+## wp mvs backfill-placeholder-color
+
+Backfill the lazy-load placeholder colour for images uploaded before the feature existed. Walks the library in keyset batches. Reads the original from local disk; when the active driver is a cloud driver and the original lives only there, it downloads a copy to a temp file, reads it, and cleans up.
+
+```bash
+wp mvs backfill-placeholder-color
+wp mvs backfill-placeholder-color --limit=500
+wp mvs backfill-placeholder-color --media-id=1234
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--batch=<n>` | `200` | Rows fetched per page |
+| `--limit=<n>` | 0 (all) | Stop after processing this many rows |
+| `--media-id=<id>` | 0 (all) | Only this media ID, recomputed even if it already has a colour |
+| `--dry-run` | off | Report what would change; write nothing |
+
+---
+
+## wp mvs diagnose_cpt_ids
+
+Report album and collection IDs that collide with media IDs. Albums store their attributes against their `wp_posts` ID, while media IDs come from an `AUTO_INCREMENT` column, so the two sequences can coincide. **Read-only** - it never writes. Run it before upgrading to see what a site actually has.
+
+Added in 2.4.0.
+
+```bash
+wp mvs diagnose_cpt_ids
+wp mvs diagnose_cpt_ids --format=json
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--format=<format>` | `table` | Output format for the detail tables: `table`, `csv`, or `json` |
 
 ---
 

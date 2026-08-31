@@ -3,6 +3,156 @@
     "namespace": "mvs-pro/v1",
     "endpoints": [
       {
+        "route": "/mvs-pro/v1/analytics/overview",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AnalyticsController::get_overview",
+        "permission": "admin_check",
+        "purpose": "Get analytics overview",
+        "file": "includes/Analytics/AnalyticsController.php:157"
+      },
+      {
+        "route": "/mvs-pro/v1/analytics/top",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AnalyticsController::get_top_media",
+        "permission": "admin_check",
+        "purpose": "Get top media by analytics",
+        "file": "includes/Analytics/AnalyticsController.php:128"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/analytics",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AnalyticsController::get_media_analytics",
+        "permission": "can_view_media_analytics",
+        "purpose": "Get analytics for a media item",
+        "file": "includes/Analytics/AnalyticsController.php:104"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/events",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AnalyticsController::record_event",
+        "permission": "__return_true",
+        "purpose": "Record a media analytics event",
+        "file": "includes/Analytics/AnalyticsController.php:64"
+      },
+      {
+        "route": "/mvs-pro/v1/battles",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BattleController::get_items",
+        "permission": "__return_true",
+        "purpose": "List battles",
+        "file": "includes/Battles/BattleController.php:67"
+      },
+      {
+        "route": "/mvs-pro/v1/battles",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Create a battle",
+        "file": "includes/Battles/BattleController.php:67"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BattleController::get_item",
+        "permission": "__return_true",
+        "purpose": "Get a battle",
+        "file": "includes/Battles/BattleController.php:119"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/accept",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::accept_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Accept a battle challenge",
+        "file": "includes/Battles/BattleController.php:137"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/decline",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::decline_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Decline a battle challenge",
+        "file": "includes/Battles/BattleController.php:155"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/submit",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::submit_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Submit media to a battle",
+        "file": "includes/Battles/BattleController.php:173"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::vote_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Vote in a battle",
+        "file": "includes/Battles/BattleController.php:196"
+      },
+      {
+        "route": "/mvs-pro/v1/boosts",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BoostController::get_items",
+        "permission": "is_user_logged_in",
+        "purpose": "List boosts",
+        "file": "includes/Boosts/BoostController.php:37"
+      },
+      {
+        "route": "/mvs-pro/v1/boosts",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BoostController::create_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Create/apply a boost",
+        "file": "includes/Boosts/BoostController.php:37"
+      },
+      {
+        "route": "/mvs-pro/v1/boosts/balance",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BoostController::get_balance",
+        "permission": "is_user_logged_in",
+        "purpose": "Get boost balance",
+        "file": "includes/Boosts/BoostController.php:83"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "CaptionController::delete_captions",
+        "permission": "can_modify",
+        "purpose": "Delete caption tracks for a media item",
+        "file": "includes/Captions/CaptionController.php:62"
+      },
+      {
         "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
         "methods": [
           "GET"
@@ -10,7 +160,7 @@
         "handler": "CaptionController::get_captions",
         "permission": "can_read",
         "purpose": "Get caption tracks for a media item",
-        "file": "includes/Captions/CaptionController.php:64"
+        "file": "includes/Captions/CaptionController.php:62"
       },
       {
         "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
@@ -22,17 +172,7 @@
         "handler": "CaptionController::update_captions",
         "permission": "can_modify",
         "purpose": "Update caption tracks for a media item",
-        "file": "includes/Captions/CaptionController.php:73"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "CaptionController::delete_captions",
-        "permission": "can_modify",
-        "purpose": "Delete caption tracks for a media item",
-        "file": "includes/Captions/CaptionController.php:87"
+        "file": "includes/Captions/CaptionController.php:62"
       },
       {
         "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions/generate",
@@ -42,7 +182,7 @@
         "handler": "CaptionController::generate_captions",
         "permission": "can_modify",
         "purpose": "Trigger auto caption generation",
-        "file": "includes/Captions/CaptionController.php:98"
+        "file": "includes/Captions/CaptionController.php:96"
       },
       {
         "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions/status",
@@ -52,201 +192,7 @@
         "handler": "CaptionController::get_status",
         "permission": "can_read",
         "purpose": "Get caption generation job status",
-        "file": "includes/Captions/CaptionController.php:110"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ConnectorRESTController::list_connectors",
-        "permission": "check_logged_in",
-        "purpose": "List available/connected connectors",
-        "file": "includes/Connectors/ConnectorRESTController.php:96"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/connect",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ConnectorRESTController::start_connect",
-        "permission": "check_logged_in",
-        "purpose": "Start OAuth/connect flow for a connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:111"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/disconnect",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ConnectorRESTController::do_disconnect",
-        "permission": "check_connected",
-        "purpose": "Disconnect a connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:150"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/status",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ConnectorRESTController::get_status",
-        "permission": "check_connected",
-        "purpose": "Get connector connection status",
-        "file": "includes/Connectors/ConnectorRESTController.php:164"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/photos",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ConnectorRESTController::list_photos",
-        "permission": "check_connected",
-        "purpose": "List remote photos from connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:178"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/albums",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ConnectorRESTController::list_albums",
-        "permission": "check_connected",
-        "purpose": "List remote albums from connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:214"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/import",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ConnectorRESTController::import_photos",
-        "permission": "check_connected",
-        "purpose": "Import photos from connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:228"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/export",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ConnectorRESTController::export_media",
-        "permission": "check_connected",
-        "purpose": "Export media to connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:252"
-      },
-      {
-        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/sync",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ConnectorRESTController::delta_sync",
-        "permission": "check_connected",
-        "purpose": "Run delta sync with connector",
-        "file": "includes/Connectors/ConnectorRESTController.php:276"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
-        "methods": [
-          "GET"
-        ],
-        "handler": "VideoController::get_chapters",
-        "permission": "can_read_media",
-        "purpose": "Get video chapters",
-        "file": "includes/Video/VideoController.php:69"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
-        "methods": [
-          "POST",
-          "PUT",
-          "PATCH"
-        ],
-        "handler": "VideoController::set_chapters",
-        "permission": "can_edit_chapters",
-        "purpose": "Set video chapters",
-        "file": "includes/Video/VideoController.php:78"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
-        "methods": [
-          "GET"
-        ],
-        "handler": "VideoController::get_resume",
-        "permission": "require_logged_in",
-        "purpose": "Get playback resume position",
-        "file": "includes/Video/VideoController.php:117"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
-        "methods": [
-          "POST"
-        ],
-        "handler": "VideoController::save_resume",
-        "permission": "require_logged_in",
-        "purpose": "Save playback resume position",
-        "file": "includes/Video/VideoController.php:126"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "VideoController::clear_resume",
-        "permission": "require_logged_in",
-        "purpose": "Clear playback resume position",
-        "file": "includes/Video/VideoController.php:141"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/privacy",
-        "methods": [
-          "POST",
-          "PUT",
-          "PATCH"
-        ],
-        "handler": "PrivacyController::update_item_privacy",
-        "permission": "item_owner_or_admin",
-        "purpose": "Update privacy for a media item",
-        "file": "includes/Privacy/PrivacyController.php:63"
-      },
-      {
-        "route": "/mvs-pro/v1/media/bulk-privacy",
-        "methods": [
-          "POST"
-        ],
-        "handler": "PrivacyController::bulk_update_privacy",
-        "permission": "logged_in_check",
-        "purpose": "Bulk update privacy on media items",
-        "file": "includes/Privacy/PrivacyController.php:78"
-      },
-      {
-        "route": "/mvs-pro/v1/privacy/presets",
-        "methods": [
-          "GET"
-        ],
-        "handler": "PrivacyController::get_presets",
-        "permission": "logged_in_check",
-        "purpose": "List privacy presets",
-        "file": "includes/Privacy/PrivacyController.php:112"
-      },
-      {
-        "route": "/mvs-pro/v1/privacy/presets",
-        "methods": [
-          "POST"
-        ],
-        "handler": "PrivacyController::create_preset",
-        "permission": "logged_in_check",
-        "purpose": "Create a privacy preset",
-        "file": "includes/Privacy/PrivacyController.php:121"
-      },
-      {
-        "route": "/mvs-pro/v1/me/quota/check",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UsageWidget::rest_check_quota",
-        "permission": "is_user_logged_in (closure)",
-        "purpose": "Check current user quota for a media type",
-        "file": "includes/Frontend/UsageWidget.php:174"
+        "file": "includes/Captions/CaptionController.php:108"
       },
       {
         "route": "/mvs-pro/v1/challenges",
@@ -256,7 +202,7 @@
         "handler": "ChallengeController::get_items",
         "permission": "__return_true",
         "purpose": "List challenges",
-        "file": "includes/Challenges/ChallengeController.php:76"
+        "file": "includes/Challenges/ChallengeController.php:74"
       },
       {
         "route": "/mvs-pro/v1/challenges",
@@ -266,7 +212,7 @@
         "handler": "ChallengeController::create_item",
         "permission": "admin_permissions_check",
         "purpose": "Create a challenge",
-        "file": "includes/Challenges/ChallengeController.php:105"
+        "file": "includes/Challenges/ChallengeController.php:74"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)",
@@ -276,7 +222,7 @@
         "handler": "ChallengeController::get_item",
         "permission": "__return_true",
         "purpose": "Get a challenge",
-        "file": "includes/Challenges/ChallengeController.php:171"
+        "file": "includes/Challenges/ChallengeController.php:169"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)",
@@ -288,7 +234,7 @@
         "handler": "ChallengeController::update_item",
         "permission": "admin_permissions_check",
         "purpose": "Update a challenge",
-        "file": "includes/Challenges/ChallengeController.php:186"
+        "file": "includes/Challenges/ChallengeController.php:169"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/cancel",
@@ -298,7 +244,7 @@
         "handler": "ChallengeController::cancel_item",
         "permission": "admin_permissions_check",
         "purpose": "Cancel a challenge",
-        "file": "includes/Challenges/ChallengeController.php:203"
+        "file": "includes/Challenges/ChallengeController.php:201"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries",
@@ -308,7 +254,7 @@
         "handler": "ChallengeController::get_entries",
         "permission": "__return_true",
         "purpose": "List challenge entries",
-        "file": "includes/Challenges/ChallengeController.php:221"
+        "file": "includes/Challenges/ChallengeController.php:219"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries",
@@ -318,17 +264,7 @@
         "handler": "ChallengeController::submit_entry",
         "permission": "is_user_logged_in",
         "purpose": "Submit a challenge entry",
-        "file": "includes/Challenges/ChallengeController.php:255"
-      },
-      {
-        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries/(?P<entry_id>[\\d]+)/vote",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ChallengeController::vote_entry",
-        "permission": "is_user_logged_in",
-        "purpose": "Vote on a challenge entry",
-        "file": "includes/Challenges/ChallengeController.php:277"
+        "file": "includes/Challenges/ChallengeController.php:219"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries/(?P<entry_id>[\\d]+)/vote",
@@ -338,7 +274,17 @@
         "handler": "ChallengeController::unvote_entry",
         "permission": "is_user_logged_in",
         "purpose": "Remove vote on a challenge entry",
-        "file": "includes/Challenges/ChallengeController.php:297"
+        "file": "includes/Challenges/ChallengeController.php:275"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries/(?P<entry_id>[\\d]+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ChallengeController::vote_entry",
+        "permission": "is_user_logged_in",
+        "purpose": "Vote on a challenge entry",
+        "file": "includes/Challenges/ChallengeController.php:275"
       },
       {
         "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/results",
@@ -348,7 +294,147 @@
         "handler": "ChallengeController::get_results",
         "permission": "__return_true",
         "purpose": "Get challenge results",
-        "file": "includes/Challenges/ChallengeController.php:319"
+        "file": "includes/Challenges/ChallengeController.php:317"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<media_id>[\\d]+)/collections",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CollectionItemsController::get_status",
+        "permission": "auth_check",
+        "purpose": "Get collection membership status for media",
+        "file": "includes/Collections/CollectionItemsController.php:55"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<media_id>[\\d]+)/collections",
+        "methods": [
+          "POST"
+        ],
+        "handler": "CollectionItemsController::toggle_membership",
+        "permission": "auth_check",
+        "purpose": "Toggle media membership in a collection",
+        "file": "includes/Collections/CollectionItemsController.php:55"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::list_connectors",
+        "permission": "check_logged_in",
+        "purpose": "List available/connected connectors",
+        "file": "includes/Connectors/ConnectorRESTController.php:112"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/albums",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::list_albums",
+        "permission": "check_connected",
+        "purpose": "List remote albums from connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:230"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/connect",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::start_connect",
+        "permission": "check_logged_in",
+        "purpose": "Start OAuth/connect flow for a connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:127"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/disconnect",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::do_disconnect",
+        "permission": "check_connected",
+        "purpose": "Disconnect a connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:166"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/export",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::export_media",
+        "permission": "check_connected",
+        "purpose": "Export media to connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:268"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/import",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::import_photos",
+        "permission": "check_connected",
+        "purpose": "Import photos from connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:244"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/photos",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::list_photos",
+        "permission": "check_connected",
+        "purpose": "List remote photos from connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:194"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/status",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::get_status",
+        "permission": "check_connected",
+        "purpose": "Get connector connection status",
+        "file": "includes/Connectors/ConnectorRESTController.php:180"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/sync",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::delta_sync",
+        "permission": "check_connected",
+        "purpose": "Run delta sync with connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:292"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/download",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Documents\\DeliveryController::download",
+        "permission": "can_read",
+        "purpose": "Authenticated document download (2.4.0)",
+        "file": "includes/Documents/DeliveryController.php:107"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/preview",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Documents\\DeliveryController::preview",
+        "permission": "can_read",
+        "purpose": "Inline document preview stream (2.4.0)",
+        "file": "includes/Documents/DeliveryController.php:118"
+      },
+      {
+        "route": "/mvs-pro/v1/me/quota/check",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UsageWidget::rest_check_quota",
+        "permission": "is_user_logged_in (closure)",
+        "purpose": "Check current user quota for a media type",
+        "file": "includes/Frontend/UsageWidget.php:248"
       },
       {
         "route": "/mvs-pro/v1/groups",
@@ -358,7 +444,7 @@
         "handler": "GroupController::create_group",
         "permission": "logged_in_check",
         "purpose": "Create a group",
-        "file": "includes/Groups/GroupController.php:52"
+        "file": "includes/Groups/GroupController.php:50"
       },
       {
         "route": "/mvs-pro/v1/groups/(?P<id>\\d+)",
@@ -368,37 +454,7 @@
         "handler": "GroupController::rename_group",
         "permission": "admin_check",
         "purpose": "Rename a group",
-        "file": "includes/Groups/GroupController.php:76"
-      },
-      {
-        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants",
-        "methods": [
-          "POST"
-        ],
-        "handler": "GroupController::add_participant",
-        "permission": "admin_check",
-        "purpose": "Add participant to group",
-        "file": "includes/Groups/GroupController.php:93"
-      },
-      {
-        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants/(?P<user_id>\\d+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "GroupController::remove_participant",
-        "permission": "admin_check",
-        "purpose": "Remove participant from group",
-        "file": "includes/Groups/GroupController.php:114"
-      },
-      {
-        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants/(?P<user_id>\\d+)/role",
-        "methods": [
-          "PUT"
-        ],
-        "handler": "GroupController::set_role",
-        "permission": "admin_check",
-        "purpose": "Set participant role",
-        "file": "includes/Groups/GroupController.php:128"
+        "file": "includes/Groups/GroupController.php:74"
       },
       {
         "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/leave",
@@ -408,77 +464,99 @@
         "handler": "GroupController::leave_group",
         "permission": "participant_check",
         "purpose": "Leave a group",
-        "file": "includes/Groups/GroupController.php:147"
+        "file": "includes/Groups/GroupController.php:145"
       },
       {
-        "route": "/mvs-pro/v1/battles",
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants",
+        "methods": [
+          "POST"
+        ],
+        "handler": "GroupController::add_participant",
+        "permission": "admin_check",
+        "purpose": "Add participant to group",
+        "file": "includes/Groups/GroupController.php:91"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants/(?P<user_id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "GroupController::remove_participant",
+        "permission": "admin_check",
+        "purpose": "Remove participant from group",
+        "file": "includes/Groups/GroupController.php:112"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants/(?P<user_id>\\d+)/role",
+        "methods": [
+          "PUT"
+        ],
+        "handler": "GroupController::set_role",
+        "permission": "admin_check",
+        "purpose": "Set participant role",
+        "file": "includes/Groups/GroupController.php:126"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/privacy",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "PrivacyController::update_item_privacy",
+        "permission": "item_owner_or_admin",
+        "purpose": "Update privacy for a media item",
+        "file": "includes/Privacy/PrivacyController.php:61"
+      },
+      {
+        "route": "/mvs-pro/v1/media/bulk-privacy",
+        "methods": [
+          "POST"
+        ],
+        "handler": "PrivacyController::bulk_update_privacy",
+        "permission": "logged_in_check",
+        "purpose": "Bulk update privacy on media items",
+        "file": "includes/Privacy/PrivacyController.php:76"
+      },
+      {
+        "route": "/mvs-pro/v1/privacy/presets",
         "methods": [
           "GET"
         ],
-        "handler": "BattleController::get_items",
-        "permission": "__return_true",
-        "purpose": "List battles",
-        "file": "includes/Battles/BattleController.php:69"
+        "handler": "PrivacyController::get_presets",
+        "permission": "logged_in_check",
+        "purpose": "List privacy presets",
+        "file": "includes/Privacy/PrivacyController.php:110"
       },
       {
-        "route": "/mvs-pro/v1/battles",
+        "route": "/mvs-pro/v1/privacy/presets",
         "methods": [
           "POST"
         ],
-        "handler": "BattleController::create_item",
-        "permission": "create_item_permissions_check",
-        "purpose": "Create a battle",
-        "file": "includes/Battles/BattleController.php:99"
+        "handler": "PrivacyController::create_preset",
+        "permission": "logged_in_check",
+        "purpose": "Create a privacy preset",
+        "file": "includes/Privacy/PrivacyController.php:110"
       },
       {
-        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)",
+        "route": "/mvs-pro/v1/credits/webhook",
+        "methods": [
+          "POST"
+        ],
+        "handler": "QuotaController::handle_webhook",
+        "permission": "__return_true",
+        "purpose": "Payment/credits webhook receiver",
+        "file": "includes/Quota/QuotaController.php:206"
+      },
+      {
+        "route": "/mvs-pro/v1/me/credits/history",
         "methods": [
           "GET"
         ],
-        "handler": "BattleController::get_item",
-        "permission": "__return_true",
-        "purpose": "Get a battle",
-        "file": "includes/Battles/BattleController.php:121"
-      },
-      {
-        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/accept",
-        "methods": [
-          "POST"
-        ],
-        "handler": "BattleController::accept_item",
-        "permission": "is_user_logged_in",
-        "purpose": "Accept a battle challenge",
-        "file": "includes/Battles/BattleController.php:139"
-      },
-      {
-        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/decline",
-        "methods": [
-          "POST"
-        ],
-        "handler": "BattleController::decline_item",
-        "permission": "is_user_logged_in",
-        "purpose": "Decline a battle challenge",
-        "file": "includes/Battles/BattleController.php:157"
-      },
-      {
-        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/submit",
-        "methods": [
-          "POST"
-        ],
-        "handler": "BattleController::submit_item",
-        "permission": "is_user_logged_in",
-        "purpose": "Submit media to a battle",
-        "file": "includes/Battles/BattleController.php:175"
-      },
-      {
-        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/vote",
-        "methods": [
-          "POST"
-        ],
-        "handler": "BattleController::vote_item",
-        "permission": "is_user_logged_in",
-        "purpose": "Vote in a battle",
-        "file": "includes/Battles/BattleController.php:198"
+        "handler": "QuotaController::get_credit_history",
+        "permission": "logged_in_check",
+        "purpose": "Get current user credit history",
+        "file": "includes/Quota/QuotaController.php:217"
       },
       {
         "route": "/mvs-pro/v1/me/quota",
@@ -488,37 +566,7 @@
         "handler": "QuotaController::get_my_quota",
         "permission": "logged_in_check",
         "purpose": "Get current user quota",
-        "file": "includes/Quota/QuotaController.php:54"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_user_quota",
-        "permission": "admin_check",
-        "purpose": "Get a user's quota",
-        "file": "includes/Quota/QuotaController.php:65"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/package",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::assign_user_package",
-        "permission": "admin_check",
-        "purpose": "Assign package to a user",
-        "file": "includes/Quota/QuotaController.php:83"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/credits",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::add_user_credits",
-        "permission": "admin_check",
-        "purpose": "Add credits to a user",
-        "file": "includes/Quota/QuotaController.php:106"
+        "file": "includes/Quota/QuotaController.php:52"
       },
       {
         "route": "/mvs-pro/v1/packages",
@@ -528,7 +576,7 @@
         "handler": "QuotaController::list_packages",
         "permission": "admin_check",
         "purpose": "List quota packages",
-        "file": "includes/Quota/QuotaController.php:139"
+        "file": "includes/Quota/QuotaController.php:137"
       },
       {
         "route": "/mvs-pro/v1/packages",
@@ -538,7 +586,17 @@
         "handler": "QuotaController::create_package",
         "permission": "admin_check",
         "purpose": "Create a quota package",
-        "file": "includes/Quota/QuotaController.php:147"
+        "file": "includes/Quota/QuotaController.php:137"
+      },
+      {
+        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "QuotaController::delete_package",
+        "permission": "admin_check",
+        "purpose": "Delete a quota package",
+        "file": "includes/Quota/QuotaController.php:181"
       },
       {
         "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
@@ -550,187 +608,37 @@
         "handler": "QuotaController::update_package",
         "permission": "admin_check",
         "purpose": "Update a quota package",
-        "file": "includes/Quota/QuotaController.php:183"
+        "file": "includes/Quota/QuotaController.php:181"
       },
       {
-        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
+        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/credits",
         "methods": [
-          "DELETE"
+          "POST"
         ],
-        "handler": "QuotaController::delete_package",
+        "handler": "QuotaController::add_user_credits",
         "permission": "admin_check",
-        "purpose": "Delete a quota package",
-        "file": "includes/Quota/QuotaController.php:191"
+        "purpose": "Add credits to a user",
+        "file": "includes/Quota/QuotaController.php:104"
       },
       {
-        "route": "/mvs-pro/v1/credits/webhook",
+        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/package",
         "methods": [
           "POST"
         ],
-        "handler": "QuotaController::handle_webhook",
-        "permission": "__return_true",
-        "purpose": "Payment/credits webhook receiver",
-        "file": "includes/Quota/QuotaController.php:208"
+        "handler": "QuotaController::assign_user_package",
+        "permission": "admin_check",
+        "purpose": "Assign package to a user",
+        "file": "includes/Quota/QuotaController.php:81"
       },
       {
-        "route": "/mvs-pro/v1/me/credits/history",
+        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/quota",
         "methods": [
           "GET"
         ],
-        "handler": "QuotaController::get_credit_history",
-        "permission": "logged_in_check",
-        "purpose": "Get current user credit history",
-        "file": "includes/Quota/QuotaController.php:219"
-      },
-      {
-        "route": "/mvs-pro/v1/streaks/buy-freeze",
-        "methods": [
-          "POST"
-        ],
-        "handler": "StreakController::buy_freeze",
-        "permission": "is_user_logged_in",
-        "purpose": "Buy a streak freeze",
-        "file": "includes/Streaks/StreakController.php:30"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TournamentController::get_items",
-        "permission": "__return_true",
-        "purpose": "List tournaments",
-        "file": "includes/Tournaments/TournamentController.php:75"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TournamentController::create_item",
-        "permission": "admin_permissions_check",
-        "purpose": "Create a tournament",
-        "file": "includes/Tournaments/TournamentController.php:100"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TournamentController::get_item",
-        "permission": "__return_true",
-        "purpose": "Get a tournament",
-        "file": "includes/Tournaments/TournamentController.php:157"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/register",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TournamentController::register_participant",
-        "permission": "is_user_logged_in",
-        "purpose": "Register for a tournament",
-        "file": "includes/Tournaments/TournamentController.php:175"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/register",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "TournamentController::unregister_participant",
-        "permission": "is_user_logged_in",
-        "purpose": "Unregister from a tournament",
-        "file": "includes/Tournaments/TournamentController.php:190"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/bracket",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TournamentController::get_bracket",
-        "permission": "__return_true",
-        "purpose": "Get tournament bracket",
-        "file": "includes/Tournaments/TournamentController.php:207"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/participants",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TournamentController::get_participants",
-        "permission": "__return_true",
-        "purpose": "List tournament participants",
-        "file": "includes/Tournaments/TournamentController.php:225"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/matches/(?P<match_id>[\\d]+)/submit",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TournamentController::submit_media",
-        "permission": "is_user_logged_in",
-        "purpose": "Submit media to a tournament match",
-        "file": "includes/Tournaments/TournamentController.php:243"
-      },
-      {
-        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/matches/(?P<match_id>[\\d]+)/vote",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TournamentController::vote_match",
-        "permission": "is_user_logged_in",
-        "purpose": "Vote in a tournament match",
-        "file": "includes/Tournaments/TournamentController.php:271"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<media_id>[\\d]+)/collections",
-        "methods": [
-          "GET"
-        ],
-        "handler": "CollectionItemsController::get_status",
-        "permission": "auth_check",
-        "purpose": "Get collection membership status for media",
-        "file": "includes/Collections/CollectionItemsController.php:57"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<media_id>[\\d]+)/collections",
-        "methods": [
-          "POST"
-        ],
-        "handler": "CollectionItemsController::toggle_membership",
-        "permission": "auth_check",
-        "purpose": "Toggle media membership in a collection",
-        "file": "includes/Collections/CollectionItemsController.php:65"
-      },
-      {
-        "route": "/mvs-pro/v1/boosts",
-        "methods": [
-          "GET"
-        ],
-        "handler": "BoostController::get_items",
-        "permission": "is_user_logged_in",
-        "purpose": "List boosts",
-        "file": "includes/Boosts/BoostController.php:39"
-      },
-      {
-        "route": "/mvs-pro/v1/boosts",
-        "methods": [
-          "POST"
-        ],
-        "handler": "BoostController::create_item",
-        "permission": "is_user_logged_in",
-        "purpose": "Create/apply a boost",
-        "file": "includes/Boosts/BoostController.php:64"
-      },
-      {
-        "route": "/mvs-pro/v1/boosts/balance",
-        "methods": [
-          "GET"
-        ],
-        "handler": "BoostController::get_balance",
-        "permission": "is_user_logged_in",
-        "purpose": "Get boost balance",
-        "file": "includes/Boosts/BoostController.php:85"
+        "handler": "QuotaController::get_user_quota",
+        "permission": "admin_check",
+        "purpose": "Get a user's quota",
+        "file": "includes/Quota/QuotaController.php:63"
       },
       {
         "route": "/mvs-pro/v1/admin/gamification-welcome/dismiss",
@@ -740,7 +648,7 @@
         "handler": "AdminController::dismiss_gamification_welcome",
         "permission": "manage_settings_permissions_check",
         "purpose": "Dismiss gamification welcome notice",
-        "file": "includes/REST/AdminController.php:61"
+        "file": "includes/REST/AdminController.php:59"
       },
       {
         "route": "/mvs-pro/v1/competitions/active-summary",
@@ -750,117 +658,181 @@
         "handler": "CompeteSummaryController::get_items",
         "permission": "__return_true",
         "purpose": "Get active competitions summary",
-        "file": "includes/REST/CompeteSummaryController.php:61"
+        "file": "includes/REST/CompeteSummaryController.php:112"
       },
       {
-        "route": "/mvs-pro/v1/push/register-device",
+        "route": "/mvs-pro/v1/documents",
         "methods": [
-          "POST"
+          "GET"
         ],
-        "handler": "PushController::register_device",
-        "permission": "logged_in_check",
-        "purpose": "Register a device push token",
-        "file": "includes/REST/PushController.php:57"
+        "handler": "REST\\DocumentController::get_items",
+        "permission": "get_items_permissions_check",
+        "purpose": "List documents in the caller's drive (2.4.0)",
+        "file": "includes/REST/DocumentController.php:54"
       },
       {
-        "route": "/mvs-pro/v1/push/register-device",
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)",
         "methods": [
           "DELETE"
         ],
-        "handler": "PushController::unregister_device",
-        "permission": "logged_in_check",
-        "purpose": "Unregister a device push token",
-        "file": "includes/REST/PushController.php:80"
+        "handler": "REST\\DocumentController::delete_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Trash a document (2.4.0)",
+        "file": "includes/REST/DocumentController.php:106"
       },
       {
-        "route": "/mvs-pro/v1/stories",
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)",
         "methods": [
           "GET"
         ],
-        "handler": "StoryController::get_stories",
-        "permission": "__return_true",
-        "purpose": "List stories",
-        "file": "includes/REST/StoryController.php:59"
+        "handler": "REST\\DocumentController::get_item",
+        "permission": "get_item_permissions_check",
+        "purpose": "Fetch one document (2.4.0)",
+        "file": "includes/REST/DocumentController.php:106"
       },
       {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/story",
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "REST\\DocumentController::update_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Update document title/folder/privacy (2.4.0)",
+        "file": "includes/REST/DocumentController.php:106"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/replace",
         "methods": [
           "POST"
         ],
-        "handler": "StoryController::create_story",
-        "permission": "owner_permissions_check",
-        "purpose": "Create a story from media",
-        "file": "includes/REST/StoryController.php:90"
+        "handler": "REST\\DocumentController::replace_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Replace a document's file, keeping its id and shares (2.4.0)",
+        "file": "includes/REST/DocumentController.php:221"
       },
       {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/story",
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/restore",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST\\DocumentController::restore_item",
+        "permission": "restore_item_permissions_check",
+        "purpose": "Restore a trashed document (2.4.0)",
+        "file": "includes/REST/DocumentController.php:191"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/bulk",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST\\DocumentController::bulk_items",
+        "permission": "get_items_permissions_check",
+        "purpose": "Bulk move/trash/restore/delete documents (2.4.0)",
+        "file": "includes/REST/DocumentController.php:253"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/search",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST\\DocumentController::search_items",
+        "permission": "get_items_permissions_check",
+        "purpose": "Full-text document search over mvs_pro_document_search (2.4.0)",
+        "file": "includes/REST/DocumentController.php:68"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/upload",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST\\DocumentController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Upload a new document (2.4.0)",
+        "file": "includes/REST/DocumentController.php:133"
+      },
+      {
+        "route": "/mvs-pro/v1/drives",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST\\DocumentController::get_drives",
+        "permission": "get_items_permissions_check",
+        "purpose": "List the drives visible to the caller (member/space) (2.4.0)",
+        "file": "includes/REST/DocumentController.php:206"
+      },
+      {
+        "route": "/mvs-pro/v1/me/shared",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST\\DocumentController::get_shared",
+        "permission": "get_items_permissions_check",
+        "purpose": "Documents shared with the caller (2.4.0)",
+        "file": "includes/REST/DocumentController.php:272"
+      },
+      {
+        "route": "/mvs-pro/v1/folders",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST\\FolderController::get_items",
+        "permission": "get_items_permissions_check",
+        "purpose": "List folders in a drive (2.4.0)",
+        "file": "includes/REST/FolderController.php:53"
+      },
+      {
+        "route": "/mvs-pro/v1/folders",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST\\FolderController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Create a folder (2.4.0)",
+        "file": "includes/REST/FolderController.php:53"
+      },
+      {
+        "route": "/mvs-pro/v1/folders/(?P<id>\\d+)",
         "methods": [
           "DELETE"
         ],
-        "handler": "StoryController::delete_story",
-        "permission": "owner_permissions_check",
-        "purpose": "Delete a story",
-        "file": "includes/REST/StoryController.php:102"
+        "handler": "REST\\FolderController::delete_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Trash a folder (2.4.0)",
+        "file": "includes/REST/FolderController.php:85"
       },
       {
-        "route": "/mvs-pro/v1/stories/(?P<id>[\\d]+)/view",
+        "route": "/mvs-pro/v1/folders/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST\\FolderController::get_item",
+        "permission": "get_item_permissions_check",
+        "purpose": "Fetch one folder (2.4.0)",
+        "file": "includes/REST/FolderController.php:85"
+      },
+      {
+        "route": "/mvs-pro/v1/folders/(?P<id>\\d+)",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "REST\\FolderController::update_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Rename/move/re-privacy a folder (2.4.0)",
+        "file": "includes/REST/FolderController.php:85"
+      },
+      {
+        "route": "/mvs-pro/v1/folders/(?P<id>\\d+)/restore",
         "methods": [
           "POST"
         ],
-        "handler": "StoryController::record_view",
-        "permission": "viewer_permissions_check",
-        "purpose": "Record a story view",
-        "file": "includes/REST/StoryController.php:114"
-      },
-      {
-        "route": "/mvs-pro/v1/stories/(?P<id>[\\d]+)/viewers",
-        "methods": [
-          "GET"
-        ],
-        "handler": "StoryController::get_viewers",
-        "permission": "owner_permissions_check",
-        "purpose": "List story viewers",
-        "file": "includes/REST/StoryController.php:126"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/events",
-        "methods": [
-          "POST"
-        ],
-        "handler": "AnalyticsController::record_event",
-        "permission": "__return_true",
-        "purpose": "Record a media analytics event",
-        "file": "includes/Analytics/AnalyticsController.php:66"
-      },
-      {
-        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/analytics",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AnalyticsController::get_media_analytics",
-        "permission": "can_view_media_analytics",
-        "purpose": "Get analytics for a media item",
-        "file": "includes/Analytics/AnalyticsController.php:108"
-      },
-      {
-        "route": "/mvs-pro/v1/analytics/top",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AnalyticsController::get_top_media",
-        "permission": "admin_check",
-        "purpose": "Get top media by analytics",
-        "file": "includes/Analytics/AnalyticsController.php:132"
-      },
-      {
-        "route": "/mvs-pro/v1/analytics/overview",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AnalyticsController::get_overview",
-        "permission": "admin_check",
-        "purpose": "Get analytics overview",
-        "file": "includes/Analytics/AnalyticsController.php:161"
+        "handler": "REST\\FolderController::restore_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Restore a trashed folder (2.4.0)",
+        "file": "includes/REST/FolderController.php:73"
       },
       {
         "route": "/mvs-pro/v1/leaderboard",
@@ -871,6 +843,268 @@
         "permission": "__return_true",
         "purpose": "Get leaderboard rankings",
         "file": "includes/REST/LeaderboardController.php:62"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/permissions",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST\\PermissionController::list_grants",
+        "permission": "can_manage_sharing",
+        "purpose": "List share grants on a document (2.4.0)",
+        "file": "includes/REST/PermissionController.php:54"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/permissions",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST\\PermissionController::create_grant",
+        "permission": "can_manage_sharing",
+        "purpose": "Grant a user/role access to a document (2.4.0)",
+        "file": "includes/REST/PermissionController.php:54"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/permissions/link",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST\\PermissionController::create_link",
+        "permission": "can_manage_sharing",
+        "purpose": "Create a shareable link grant (2.4.0)",
+        "file": "includes/REST/PermissionController.php:100"
+      },
+      {
+        "route": "/mvs-pro/v1/permissions/(?P<grant_id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "REST\\PermissionController::revoke",
+        "permission": "can_revoke",
+        "purpose": "Revoke one share grant (2.4.0)",
+        "file": "includes/REST/PermissionController.php:120"
+      },
+      {
+        "route": "/mvs-pro/v1/push/register-device",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "PushController::unregister_device",
+        "permission": "logged_in_check",
+        "purpose": "Unregister a device push token",
+        "file": "includes/REST/PushController.php:52"
+      },
+      {
+        "route": "/mvs-pro/v1/push/register-device",
+        "methods": [
+          "POST"
+        ],
+        "handler": "PushController::register_device",
+        "permission": "logged_in_check",
+        "purpose": "Register a device push token",
+        "file": "includes/REST/PushController.php:52"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/story",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "StoryController::delete_story",
+        "permission": "owner_permissions_check",
+        "purpose": "Delete a story",
+        "file": "includes/REST/StoryController.php:85"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/story",
+        "methods": [
+          "POST"
+        ],
+        "handler": "StoryController::create_story",
+        "permission": "owner_permissions_check",
+        "purpose": "Create a story from media",
+        "file": "includes/REST/StoryController.php:85"
+      },
+      {
+        "route": "/mvs-pro/v1/stories",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StoryController::get_stories",
+        "permission": "__return_true",
+        "purpose": "List stories",
+        "file": "includes/REST/StoryController.php:57"
+      },
+      {
+        "route": "/mvs-pro/v1/stories/(?P<id>[\\d]+)/view",
+        "methods": [
+          "POST"
+        ],
+        "handler": "StoryController::record_view",
+        "permission": "viewer_permissions_check",
+        "purpose": "Record a story view",
+        "file": "includes/REST/StoryController.php:109"
+      },
+      {
+        "route": "/mvs-pro/v1/stories/(?P<id>[\\d]+)/viewers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StoryController::get_viewers",
+        "permission": "owner_permissions_check",
+        "purpose": "List story viewers",
+        "file": "includes/REST/StoryController.php:121"
+      },
+      {
+        "route": "/mvs-pro/v1/streaks/buy-freeze",
+        "methods": [
+          "POST"
+        ],
+        "handler": "StreakController::buy_freeze",
+        "permission": "is_user_logged_in",
+        "purpose": "Buy a streak freeze",
+        "file": "includes/Streaks/StreakController.php:28"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_items",
+        "permission": "__return_true",
+        "purpose": "List tournaments",
+        "file": "includes/Tournaments/TournamentController.php:73"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::create_item",
+        "permission": "admin_permissions_check",
+        "purpose": "Create a tournament",
+        "file": "includes/Tournaments/TournamentController.php:73"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_item",
+        "permission": "__return_true",
+        "purpose": "Get a tournament",
+        "file": "includes/Tournaments/TournamentController.php:155"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/bracket",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_bracket",
+        "permission": "__return_true",
+        "purpose": "Get tournament bracket",
+        "file": "includes/Tournaments/TournamentController.php:205"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/matches/(?P<match_id>[\\d]+)/submit",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::submit_media",
+        "permission": "is_user_logged_in",
+        "purpose": "Submit media to a tournament match",
+        "file": "includes/Tournaments/TournamentController.php:241"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/matches/(?P<match_id>[\\d]+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::vote_match",
+        "permission": "is_user_logged_in",
+        "purpose": "Vote in a tournament match",
+        "file": "includes/Tournaments/TournamentController.php:269"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/participants",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_participants",
+        "permission": "__return_true",
+        "purpose": "List tournament participants",
+        "file": "includes/Tournaments/TournamentController.php:223"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/register",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "TournamentController::unregister_participant",
+        "permission": "is_user_logged_in",
+        "purpose": "Unregister from a tournament",
+        "file": "includes/Tournaments/TournamentController.php:173"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/register",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::register_participant",
+        "permission": "is_user_logged_in",
+        "purpose": "Register for a tournament",
+        "file": "includes/Tournaments/TournamentController.php:173"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
+        "methods": [
+          "GET"
+        ],
+        "handler": "VideoController::get_chapters",
+        "permission": "can_read_media",
+        "purpose": "Get video chapters",
+        "file": "includes/Video/VideoController.php:67"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "VideoController::set_chapters",
+        "permission": "can_edit_chapters",
+        "purpose": "Set video chapters",
+        "file": "includes/Video/VideoController.php:67"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "VideoController::clear_resume",
+        "permission": "require_logged_in",
+        "purpose": "Clear playback resume position",
+        "file": "includes/Video/VideoController.php:115"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
+        "methods": [
+          "GET"
+        ],
+        "handler": "VideoController::get_resume",
+        "permission": "require_logged_in",
+        "purpose": "Get playback resume position",
+        "file": "includes/Video/VideoController.php:115"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
+        "methods": [
+          "POST"
+        ],
+        "handler": "VideoController::save_resume",
+        "permission": "require_logged_in",
+        "purpose": "Save playback resume position",
+        "file": "includes/Video/VideoController.php:115"
       }
     ]
   },
@@ -922,6 +1156,14 @@
       "namespace": "mvs-pro/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    },
+    "refresh_2026_09_01": {
+      "at": "2026-09-01T00:00:00Z",
+      "type": "targeted delta (hand-verified against ground-truth grep; generator NOT run)",
+      "scope": "REST surface re-enumerated from every register_rest_route() call site; file:line stamps refreshed; no endpoint was removed (none were false)",
+      "endpoints_added": 23,
+      "file_lines_corrected": 85,
+      "unmatched_after_pass": []
     }
   }
 }

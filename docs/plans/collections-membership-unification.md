@@ -1,5 +1,10 @@
 # Plan: Collections membership unification + journey completion
 
+> **STATUS: NOT BUILT.** No unification migration exists as of 2.4.0 - Free's
+> `Social/FavoriteService::toggle()` still accepts and writes a `collection_id`
+> alongside Pro's `mvs_pro_collection_items`, which is exactly the split this plan
+> proposes to end. Nothing below describes shipped behaviour.
+
 Status: PROPOSED (awaiting approval to implement). Owner decision needed on the canonical store (see Decision).
 
 ## Problem
@@ -64,7 +69,7 @@ that would also collide with the favorite row.
    bump; never destructive.
 
 ### QA (close the process gap that let this ship green)
-7. Add to `docs/qa/AGENT_SMOKE_RUNBOOK.md` a **Collections lifecycle** journey:
+7. Add to `qa/runbooks/AGENT_SMOKE_RUNBOOK.md` a **Collections lifecycle** journey:
    create manual collection → add a media from the lightbox Save picker → open My Media →
    Collections → assert it shows the right **count + cover** → remove → assert it updates.
 8. Add two cross-cutting runbook rules: **no silent action** (every toggle/submit shows

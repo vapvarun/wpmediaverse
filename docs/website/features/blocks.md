@@ -126,9 +126,9 @@ The Explore Feed block provides an infinite-scroll feed of all public media. It 
 
 The Lock Overlay block wraps any other block content and shows a restriction message to users who do not meet access criteria. Configure access rules via the **Access Control** REST API.
 
-## Internal blocks (not in the inserter)
+## Internal Interactivity modules (not blocks)
 
-Four registered blocks are deliberately hidden from the block inserter. They carry no markup of their own - each one registers an Interactivity API store that the plugin's templates bind to, which is how a page rendered by a shortcode still gets a fully reactive interface.
+Four directories under `src/blocks/` carry a `block.json` but are **not** registered as editor blocks - `BlockRegistrar::BLOCKS` lists the nine above and nothing else. Each is an Interactivity API store that the plugin's templates bind to (enqueued as a script module via `wp_enqueue_script_module()`), which is how a page rendered by a shortcode still gets a fully reactive interface.
 
 | Block | Purpose |
 |---|---|
@@ -137,6 +137,6 @@ Four registered blocks are deliberately hidden from the block inserter. They car
 | `mvs/media-social` | Social interactions store for single media and album pages |
 | `mvs/shared-ui` | Shared UI store - toasts, confirm dialogs, tag autocomplete |
 
-Each declares `"supports": { "inserter": false }` in its `block.json`, so it never appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a block audit of the site does not report them as stray registrations.
+Each declares `"supports": { "inserter": false }` in its `block.json`, and none of them is passed to `register_block_type()`, so none appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a `block.json` count of the source tree (13) is not mistaken for a registered-block count (9).
 
 > **Do not remove these from a custom build.** The dashboard, explore and single-media templates bind to these stores by name. Dropping one leaves the matching interface inert - buttons render but nothing responds.

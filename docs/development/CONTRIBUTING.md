@@ -52,7 +52,7 @@ class YourFeatureService {
 
 ### Step 2 - Register in the service container
 
-Open `includes/Core/Plugin.php` and find `register_services()` (around line 223). Add your service alongside the existing registrations - **do not add logic to this file, only registration calls**:
+Open `includes/Core/Plugin.php` and find the `register_services()` method. Add your service alongside the existing registrations - **do not add logic to this file, only registration calls**:
 
 ```php
 self::$container->register(
@@ -110,7 +110,7 @@ class YourFeatureController extends WP_REST_Controller {
 
 ### Step 4 - Register routes via `rest_api_init`
 
-Still in `includes/Core/Plugin.php`, find `register_rest_routes()` and add your controller. Look at how `MediaController` is wired (around line 986) and follow the same pattern:
+Still in `includes/Core/Plugin.php`, find the `register_rest_routes()` method and add your controller. Look at how `MediaController` is wired there and follow the same pattern:
 
 ```php
 $controller = new YourFeatureController(
@@ -131,10 +131,14 @@ includes/Admin/YourFeaturePage.php
 
 ```php
 public function render(): void {
-    // TemplateLoader resolves paths under templates/admin/.
-    \WPMediaVerse\Core\TemplateLoader::render( 'admin/your-feature', $data );
+    // Prepare + escape everything here, then hand off to the template.
+    // Admin templates are deliberately NOT theme-overridable, so require them
+    // directly rather than through TemplateLoader (which resolves theme-first).
+    require MVS_PLUGIN_DIR . 'templates/admin/your-feature.php';
 }
 ```
+
+(`TemplateLoader::get_template( $name, $args )` is the loader for *frontend* templates under `templates/`, which themes may override.)
 
 Create the matching template:
 
@@ -142,7 +146,7 @@ Create the matching template:
 templates/admin/your-feature.php
 ```
 
-Register the admin page in `includes/Core/Plugin.php` inside `register_services()` and resolve it via the container in the `is_admin()` block (around line 127–139), following the same pattern as `admin.overview`, `admin.stats`, etc.
+Register the admin page in `includes/Core/Plugin.php` inside `register_services()` and resolve it via the container in the `is_admin()` branch of `init()`, following the same pattern as `admin.overview`, `admin.stats`, etc.
 
 ### Step 6 - Add hooks with the `mvs_` prefix
 
@@ -174,9 +178,11 @@ Use the existing tests (`tests/unit/ReactionServiceTest.php`, `tests/unit/Favori
 
 New code must not reduce coverage - write at least one test for every public method.
 
-### Step 8 - Update the CLAUDE.md module map
+### Step 8 - Update CLAUDE.md and the manifest
 
-Open `CLAUDE.md` at the plugin root and add your class to the Module Map table and the Service Container Keys table. Update the "Recent Changes" table at the bottom with today's date and a one-line summary.
+Open `CLAUDE.md` at the plugin root and add your class to the Module Map table. Update `audit/manifests/manifest.json` (and the relevant detail file) with a targeted delta for any hook, REST route, setting, table, or CLI subcommand you added - never by committing generator output; see the manifest-refresh note at the top of `CLAUDE.md`.
+
+Do **not** add a changelog entry to `CLAUDE.md`. It describes what the plugin is right now; release history goes in `readme.txt` only.
 
 ---
 
@@ -319,7 +325,7 @@ Locate the failing behavior and map it to the correct module using the Module Ma
 - Upload failures → `includes/Services/UploadService.php` or `includes/Services/StorageService.php`
 - Admin UI issues → `includes/Admin/` + `templates/admin/` (or `templates/partials/`)
 - Social interactions → `includes/Social/`
-- BuddyPress-specific → `includes/Integrations/BuddyPressIntegration.php` (note: 2,811 lines - read carefully, do not add lines)
+- BuddyPress-specific → `includes/Integrations/BuddyPress/` (the old 2,811-line `BuddyPressIntegration.php` was split into focused classes: `BuddyPressManager`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, `ActivityFormIntegration`, plus `BaseBPTabIntegration` / `MediaDisplayHelper`)
 
 Enable `WP_DEBUG` and `WP_DEBUG_LOG` locally. Check `includes/Services/LoggerService.php` log output in `wp-content/debug.log`.
 
@@ -350,7 +356,7 @@ Run `./vendor/bin/phpunit` and confirm the new test fails.
 
 Make the targeted change in the source file. Keep the diff minimal - only change what is needed to fix the reported behavior. Do not reformat unrelated code or add features in the same commit.
 
-**Do not add lines to known-debt files** (`BuddyPressIntegration.php`, `SettingsPage.php`, `MessagingService.php`, `Plugin.php`, `MediaController.php`, `MessagingController.php`). Extract code out of them first if the fix requires touching those files.
+**Do not add lines to files in the Known Debt table in `CLAUDE.md`** - currently `includes/Admin/Settings/SettingsRegistrar.php`, `includes/Services/UploadService.php`, and `MediaController::replace_file`. Extract code out of them first if the fix requires touching them. `CLAUDE.md` is the live list; check it rather than this paragraph. Note that `MessagingService.php`, `Plugin.php`, `MediaController.php` and `MessagingController.php` are explicitly listed there as "large but NOT debt" - edit them normally.
 
 ### Step 5 - Run phpcs, phpstan, tests, and the activation smoke test
 
@@ -364,16 +370,18 @@ composer run phpstan    # static analysis (baseline: phpstan-baseline.neon)
 
 Fix any new violations introduced by your change. Do not suppress errors with `// phpcs:ignore` unless you add a comment explaining why it is unavoidable.
 
-**Then run the activation smoke test** - green static checks do not prove the plugin activates. See `docs/LOCAL_TESTING.md` §1 for the 30-second WP-CLI check that catches broken autoload, missing classes, and fatal activation hooks before they reach QA.
+**Then run the activation smoke test** - green static checks do not prove the plugin activates. See `docs/development/LOCAL_TESTING.md` §1 for the 30-second WP-CLI check that catches missing classes and fatal activation hooks before they reach QA.
 
-If your change touches `vendor/`, `composer.json`, or the main plugin file, also run the fresh-clone fatal check in `docs/LOCAL_TESTING.md` §2 - this is the check that would have caught Pro #9788342062 on 2026-04-15.
+If your change touches `wpmediaverse.php`, `libs/`, or a class loaded at boot, also run the fresh-clone fatal check in `docs/development/LOCAL_TESTING.md` §2 - this is the check that would have caught Pro #9788342062 on 2026-04-15.
 
-### Step 6 - Run WP Plugin QA MCP check
+### Step 6 - Run the local-CI gate
 
-After local checks pass, run the WP Plugin QA MCP audit on the changed file(s) to catch WordPress-specific issues (escaping, nonces, direct DB queries) before pushing:
+Before pushing, run the full gate. It is what the pre-push hook runs, and it covers the plugin-specific rules that WPCS cannot see:
 
-```
-wppqa_check_code_quality - target the modified file(s)
+```bash
+composer ci                # full pipeline
+composer ci:no-journeys    # everything except browser journeys
+composer ci:quick          # PHP lint + coding rules only
 ```
 
 Address any findings before opening a PR.
@@ -450,15 +458,15 @@ add_action( 'mvs_loaded', function( $container ) {
 
 ### Step 6 - Add gamification hooks
 
-Fire the appropriate gamification actions so the `wb-gamification` engine awards points. Use the `mvs_` prefix for the action names:
+Fire event actions so gamification engines and other consumers can award points. Use the `mvs_` prefix and follow the naming and argument order of the competition hooks Pro already fires (documented in `docs/development/INTEGRATION-EVENT-HOOKS.md`):
 
 ```php
-do_action( 'mvs_competition_entered',   $user_id, $competition_id );
-do_action( 'mvs_competition_won',       $user_id, $competition_id );
-do_action( 'mvs_competition_submitted', $user_id, $media_id, $competition_id );
+do_action( 'mvs_challenge_entry_submitted', $challenge_id, $user_id, $media_id );
+do_action( 'mvs_challenge_winner_named',    $challenge_id, $winner_user_id, $rank );
+do_action( 'mvs_battle_resolved',           $battle_id, $winner_id, $loser_id );
 ```
 
-Verify the manifest in the gamification plugin includes (or can accept) these action keys.
+Add your new hooks to `INTEGRATION-EVENT-HOOKS.md` and to `audit/manifests/manifest.hooks.json` in the same PR. WPMediaVerse owns no integration manifest for any specific consumer - consumers hook the actions.
 
 ### Step 7 - Add to `CompetitionsDashboard` stat cards
 
@@ -505,12 +513,16 @@ class YourDriver implements \WPMediaVerse\Services\StorageDriverInterface {
     public function get_full_path( string $path ): string {
         // Return an absolute local path, or empty string if not applicable.
     }
+
+    public function download( string $path, string $local_dest ): bool {
+        // Pull the remote file down to $local_dest. Used by migrate-storage.
+    }
 }
 ```
 
-### Step 2 - Implement all five interface methods
+### Step 2 - Implement all six interface methods
 
-The interface (`includes/Services/StorageDriverInterface.php`) defines exactly five methods: `store`, `delete`, `url`, `exists`, and `get_full_path`. PHP will throw a fatal error if any is missing. Review the `LocalDriver` implementation for reference on expected behavior.
+The interface (`includes/Services/StorageDriverInterface.php`) defines six methods: `store`, `delete`, `url`, `exists`, `get_full_path`, and `download` (added 1.2.2 for `wp mvs migrate-storage`). PHP will throw a fatal error if any is missing. Review the `LocalDriver` implementation for reference on expected behavior.
 
 ### Step 3 - Register via the `mvs_storage_driver` filter
 
@@ -533,7 +545,7 @@ add_action( 'mvs_loaded', function() {
 
 ### Step 4 - Add a settings section in `ProSettings.php`
 
-Register the API key, bucket, and region options your driver requires. Add a settings section that is only shown when the admin has selected your driver name in the driver dropdown. Follow the conditional display pattern already used in `includes/Admin/SettingsPage.php` (the `mvs_storage_driver` select control around line 352).
+Register the API key, bucket, and region options your driver requires. Add a settings section that is only shown when the admin has selected your driver name in the driver dropdown. Follow the conditional display pattern already used in Free's `includes/Admin/Settings/` classes for the `mvs_storage_driver` select control.
 
 ### Step 5 - Test with `wp mvs` CLI commands
 
@@ -544,13 +556,13 @@ wp mvs stats          # confirms the plugin is running
 wp mvs migrate        # verify schema is intact after activation
 ```
 
-For a connection smoke-test, write a quick CLI subcommand in `includes/CLI/Commands.php` (add it as a new `@subcommand test-connection`) that uploads a small test file, retrieves its URL, and deletes it. Run it against your local environment before writing automated tests.
+Once media exists on the old driver, `wp mvs migrate-storage --from=<old> --to=<new> --dry-run` exercises `download()` / `store()` / `exists()` / `delete()` end to end. The full runbook for a new driver is `docs/development/STORAGE-DRIVER-VERIFICATION.md`.
 
 ---
 
 ## 6. How to Add an AI Provider (Pro)
 
-AI analysis, tagging, and moderation are routed through `includes/Services/AIService.php`, which collects providers via the `mvs_ai_providers` action (fired in `includes/Core/Plugin.php`, around line 335).
+AI analysis, tagging, and moderation are routed through `includes/Services/AIService.php`, which collects providers via the `mvs_ai_providers` action (fired in `includes/Core/Plugin.php`, inside the `ai` container factory).
 
 ### Step 1 - Create the provider class
 
@@ -597,7 +609,7 @@ class YourProvider implements \WPMediaVerse\Services\AIProviderInterface {
 }
 ```
 
-### Step 2 - Implement all four operational methods
+### Step 2 - Implement all five interface methods
 
 The interface requires `analyze_image`, `generate_tags`, `moderate_content`, `is_available`, and `get_id`. See `includes/Services/OpenAIProvider.php` for the canonical implementation to follow. `analyze_image` should return `null` (not `WP_Error`) on API failure so the caller can degrade gracefully.
 
@@ -614,7 +626,7 @@ add_action( 'mvs_loaded', function() {
 } );
 ```
 
-`AIService` fires `mvs_ai_providers` and passes itself as the argument (see `includes/Core/Plugin.php`, around line 335). Call `register_provider()` on the service instance to make your provider available for selection.
+`AIService` fires `mvs_ai_providers` and passes itself as the argument (see the `ai` container factory in `includes/Core/Plugin.php`). Call `register_provider( $provider )` on the service instance - it takes the instance only and keys it by `get_id()`.
 
 ### Step 4 - Add API key settings
 

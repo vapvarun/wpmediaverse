@@ -19,20 +19,30 @@ docs/
 │
 ├── development/
 │   ├── CODING_STANDARDS.md             # WPCS + PHPStan + plugin-specific rules
+│   ├── COMPRESSION_INTEGRATIONS.md     # mvs_optimize_image bridges (EWWW, Imagify, …)
 │   ├── CONTRIBUTING.md                 # How to contribute
 │   ├── EXTENSION_GUIDE.md              # Building extensions on top of mvs_loaded
 │   ├── GIT_WORKFLOW.md                 # Branching, PR flow, release branches
+│   ├── INTEGRATION-EVENT-HOOKS.md      # Event hooks for gamification / activity bridges
 │   ├── LOCAL_TESTING.md                # Local-by-Flywheel + wp-env setup
 │   ├── LOCAL_TESTING-pro.md            # Pro-specific testing notes
 │   ├── MOBILE_UX_GUIDELINE.md          # 390px breakpoints, touch targets
-│   ├── REFACTORING_ROADMAP.md          # Known debt + sequencing
+│   ├── REFACTORING_ROADMAP.md          # PLANNED structural backlog - not shipped state
+│   ├── STORAGE-DRIVER-VERIFICATION.md  # Reusable runbook for a new storage driver
 │   └── STRUCTURAL_GUIDELINE.md         # File-system organization rules
+│
+├── standards/                          # Portfolio-wide normative standards (synced copies)
+│   ├── community-os-design.md
+│   ├── frontend-interactivity.md
+│   └── i18n.md
+│
+├── plans/                              # Per-topic working plans (dated / topical)
 │
 ├── security/
 │   └── SECURITY_CHECKLIST.md           # Per-PR security checklist + threat model
 │
 ├── verification/                        # Ad-hoc verification reports
-│   └── cloud-storage-verification.md   # 1.2.1 - full QA matrix for cloud storage
+│   └── cloud-storage-verification.md   # Full QA matrix for cloud storage
 │
 ├── website/                            # Public docs site source (published to wbcomdesigns.com)
 │   ├── getting-started/

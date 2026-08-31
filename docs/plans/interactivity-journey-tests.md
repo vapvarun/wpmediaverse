@@ -1,5 +1,9 @@
 # WPMediaVerse Client-Nav — Browser Journey Test Plan
 
+> **STATUS: TEST PLAN, not a record of results.** Companion to
+> `interactivity-standard-adoption.md` (1.7.1). Nothing here asserts current
+> behaviour; the executable regression suite is `audit/journeys/`.
+
 Executed in Task 7 (and re-run after any fix). Method per the standard
 `docs/standards/frontend-interactivity.md` Section 6: for every interactive surface,
 test the CLIENT-SIDE path, not just full load — full-load a different page, click a

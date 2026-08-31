@@ -2,7 +2,7 @@
 
 Every change that touches PHP, composer, or the build pipeline must pass the checks below before it is pushed. `phpcs`, `phpstan`, and `phpunit` being green **does not** prove the plugin activates - Pro #9788342062 on 2026-04-15 was a fatal-on-activation bug that shipped past all three green gates.
 
-The Free plugin has the canonical version of this document at `../wpmediaverse/docs/LOCAL_TESTING.md`. Read that first. This file only covers the Pro-specific additions.
+The Free plugin has the canonical version of this document at `docs/development/LOCAL_TESTING.md` (this same `docs/` tree - Pro is intentionally doc-free). Read that first. This file only covers the Pro-specific additions.
 
 ---
 
@@ -24,25 +24,30 @@ If you don't have WP-CLI, use the admin **Plugins** page in the same order: deac
 
 ---
 
-## 2. Fresh-clone fatal check (required if the change touches `vendor/`, `composer.json`, `wpmediaverse-pro.php`, or any class the autoloader references)
+## 2. Fresh-clone fatal check (required if the change touches `wpmediaverse-pro.php`, `libs/`, or any class the autoloader references)
 
 ```bash
 cd /tmp
 rm -rf mvs-pro-verify
 git clone -b <your-branch> <repo-url> mvs-pro-verify
 cd mvs-pro-verify
-php -r 'require "vendor/autoload.php"; echo "autoload OK\n";'
+php -l wpmediaverse-pro.php
+find includes/ templates/ -name '*.php' -exec php -l {} +
 ```
 
-This is the check that would have caught #9788342062 in five seconds. Run it before marking any PR ready.
+Then activate that clone alongside Free and confirm no fatal. A clean clone has no `vendor/` at all, which is exactly the state a customer ZIP is in. This is the check that would have caught #9788342062. Run it before marking any PR ready.
 
 ---
 
 ## 3. Pro-specific vendor rules
 
-Pro's `vendor/` directory is **much smaller** than Free's because Pro does **not** commit dev-dependency files. Only `vendor/composer/*`, `vendor/easy-digital-downloads/edd-sl-sdk/`, and `vendor/woocommerce/action-scheduler/` are tracked in git.
+Pro follows the same rule as Free, and for the same reason: **the runtime never loads Composer.**
 
-This means a Pro dev worktree always needs `composer install` to populate dev deps (phpunit, phpcs, phpstan) after a fresh clone, but those files are gitignored so they cannot be committed by accident.
+- `wpmediaverse-pro.php` registers a hand-written `spl_autoload_register` for `WPMediaVersePro\`.
+- Runtime dependencies (Action Scheduler, the EDD SL SDK) are committed under `libs/` and `require_once`d directly.
+- `/vendor/` is gitignored and excluded from the release ZIP (`/vendor` in `.distignore`). It carries dev and build tooling only.
+
+So a Pro dev worktree needs `composer install` after a fresh clone to get phpunit/phpcs/phpstan, and nothing under `vendor/` is ever committed.
 
 ### The 2026-04-15 fatal - cautionary tale
 
@@ -50,27 +55,13 @@ The fatal happened because the committed `vendor/composer/autoload_static.php` s
 
 Root cause: at some point in Pro history, someone ran `composer install` (dev + prod), composer regenerated `autoload_static.php` with dev refs, and that file got committed. Every fresh clone after that hit a fatal.
 
-**The fix (commit `c20a6c7`) ran `composer dump-autoload --no-dev --classmap-authoritative`** and committed only the regenerated autoload files - dropping dev refs from 441 to 0.
+The immediate fix regenerated the autoload files with `--no-dev`. The **structural** fix, which is the state of the code now, was to stop shipping a Composer autoloader at all: `vendor/` was gitignored, the runtime deps moved to `libs/`, and the boot path switched to the hand-written autoloader. That removed the failure mode rather than re-tuning it, so the steps below are the current rule, not the 2026-04 workaround.
 
-### Rule: for any composer/autoload change in Pro
+### Rule: adding or bumping a dependency in Pro
 
-1. Make the change (e.g. bump a prod dep in `composer.json`).
-2. Run `composer update <vendor/package>` (with dev deps installed - the default).
-3. **Before staging**, run:
-   ```bash
-   composer dump-autoload --no-dev --classmap-authoritative
-   ```
-   This regenerates `autoload_static.php` / `autoload_classmap.php` / etc. without any dev-dep references, matching Pro's committed vendor layout.
-4. `git diff vendor/composer/` - the diff should only add/remove references to files that exist under the tracked `vendor/` subdirectories (`easy-digital-downloads`, `woocommerce`). If you see any reference to `myclabs`, `phpunit`, `phpstan`, `sebastian`, `yoast`, `phar-io`, `doctrine`, `theseer`, or `nikic` - stop, that file is dev-only.
-5. Run the fresh-clone fatal check in §2.
-6. Commit `composer.json`, `composer.lock`, and only the regenerated `vendor/composer/*.php` files.
-7. Restore dev deps via plain `composer install` so your local worktree stays usable.
-
-### Never run these in a Pro dev worktree without the §2 check afterward
-- `composer install --no-dev` - wipes dev deps, leaves you unable to run phpunit/phpcs/phpstan
-- `composer dump-autoload` (without `--no-dev`) - regenerates autoload with dev refs, which if committed will fatal on fresh clones because Pro's `vendor/` does not ship dev files
-
-Pro's workflow differs from Free's here because Free commits all dev-dep files (~15 MB bloat in the git repo). Pro stays lean by gitignoring them, which is the right call - but it means the autoload files must be regenerated with `--no-dev` whenever they change.
+- **Runtime dependency** (needed on a customer site): it goes in `libs/`, committed, and is `require_once`d explicitly from `wpmediaverse-pro.php`. It must not rely on Composer's autoloader, which is not present in the ZIP.
+- **Dev/build dependency** (phpunit, phpcs, phpstan): `composer require --dev`, commit `composer.json` + `composer.lock` only. Never stage anything under `vendor/`.
+- Run the fresh-clone check in §2 either way.
 
 ---
 
@@ -83,15 +74,15 @@ cd wp-content/plugins/wpmediaverse-pro
 npx grunt dist
 ```
 
-This runs `composer-prod` (which runs `composer install --no-dev`), builds assets, copies files, compresses to `dist/wpmediaverse-pro-{version}.zip`, then runs `composer-restore` to put your worktree back.
+This builds assets, copies files, and compresses to `dist/wpmediaverse-pro-{version}.zip`. `vendor/`, `docs/`, `tests/`, and `bin/` are excluded; `libs/` ships.
 
-Test the resulting ZIP by extracting it outside the plugin directory and copy-installing into a fresh WordPress install - it should activate clean with Free already active. If `composer-restore` fails partway through `grunt dist`, run `composer install` manually to recover your dev worktree.
+Test the resulting ZIP by extracting it outside the plugin directory and copy-installing into a fresh WordPress install - it should activate clean with Free already active.
 
 ---
 
 ## 5. Pro-specific activation testing
 
-Pro extends Free via the `mvs_loaded` action (see section 2 of `CLAUDE.md`). This introduces three failure modes that are unique to Pro and must be tested whenever you touch `wpmediaverse-pro.php`, `includes/Core/Plugin.php`, or any service container registration:
+Pro extends Free via the `mvs_loaded` action (see `docs/architecture/architecture-contract.md`, Invariant 2). This introduces three failure modes that are unique to Pro and must be tested whenever you touch `wpmediaverse-pro.php`, `includes/Core/Plugin.php`, or any service container registration:
 
 | Scenario | Expected behavior |
 |---|---|
@@ -119,8 +110,8 @@ Copy this into your PR description:
 
 ```
 - [ ] Pre-push smoke test passed (§1): deactivate/reactivate in correct order, debug.log clean
-- [ ] Fresh-clone fatal check passed (§2): `php -r 'require vendor/autoload.php'` OK on clean clone
-- [ ] Any vendor/composer/ changes regenerated with `composer dump-autoload --no-dev` (§3)
+- [ ] Fresh-clone fatal check passed (§2): clean clone lints and activates with no `vendor/` present
+- [ ] No `vendor/` changes staged - it is gitignored; runtime deps belong in `libs/` (§3)
 - [ ] Pro-specific activation sequence tested (§5) - all four Pro/Free state transitions clean
 - [ ] `composer run phpcs` clean (or existing baseline unchanged)
 - [ ] `composer run phpstan` clean (or existing baseline unchanged)

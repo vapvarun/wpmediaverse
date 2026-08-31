@@ -9,7 +9,8 @@ this document — say so and it gets fixed here.
 - **Verified against running code:** 2026-08-14 (filters and the `space` level both exercised
   live against a simulated Space bridge — section 4 lists what was run)
 - **Requires:** WPMediaVerse Pro 2.4.0 (drive filters land in 2.4.0)
-- **Where your code goes:** `buddynext/includes/Integrations/WPMediaVerseBridge.php`
+- **Where your code goes:** `includes/Integrations/WPMediaVerseBridge.php` **in the BuddyNext
+  plugin** — that file is not in this repo and was not verified here
 - **Full design:** `wpmediaverse/plan/document-library.md` §22 (REST contract), §23 (gap
   analysis), §18 (the four questions below)
 
@@ -22,10 +23,13 @@ is, cannot enumerate them, and must never learn to. Four filters, all live:
 
 | Filter | Fired at | You return |
 |---|---|---|
-| `mvs_document_drives_for_user` | `REST/DocumentController.php:367` | The drives this member can see |
-| `mvs_document_drive_access` | `Documents/PermissionService.php:1320` | `none` \| `read` \| `write` \| `own` |
-| `mvs_document_drive_label` | `REST/DocumentController.php:406` | A human name for a drive |
-| `mvs_document_drive_visible` | `REST/AbstractDocumentController.php:243` | Whether they may be *told it exists* |
+| `mvs_document_drives_for_user` | `REST/DocumentController.php:391` | The drives this member can see |
+| `mvs_document_drive_access` | `Documents/PermissionService.php:1589` | `none` \| `read` \| `write` \| `own` |
+| `mvs_document_drive_label` | `REST/DocumentController.php:430` | A human name for a drive |
+| `mvs_document_drive_visible` | `REST/AbstractDocumentController.php:291` | Whether they may be *told it exists* |
+
+All four fire through `DriveContract` constants rather than string literals, so grep
+the constant name (`FILTER_DRIVE_ACCESS`, …) as well as the hook name.
 
 They are frozen. `WPMediaVersePro\Documents\DriveContract` holds the constants, and its
 docblocks are the normative description if this file and the code ever disagree.

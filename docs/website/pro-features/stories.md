@@ -41,7 +41,7 @@ Story flags are stored as free plugin media meta, not a separate Pro copy of the
 | `story_started_at` | UTC datetime the story was created |
 | `story_expires_at` | UTC datetime the story disappears |
 
-View receipts live in the Pro table `mvs_pro_story_views`, scoped to `story_started_at` so a re-shared story doesn't inherit an earlier run's viewers.
+There is no separate story-views table. View receipts reuse Free's `mvs_media_views`, and "seen by" is derived by windowing on `story_started_at` so a re-shared story doesn't inherit an earlier run's viewers.
 
 ## REST API
 

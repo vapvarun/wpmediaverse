@@ -54,7 +54,7 @@ Blocks built on the Interactivity API, block theme support, `theme.json` styling
 
 **A REST API you can actually build on**
 
-Over 90 REST routes covering everything the built-in screens do - not a read-only subset. Build a custom front end, a companion app, or an integration, without forking the plugin. 292 hooks and filters for everything else.
+Over 90 REST routes covering everything the built-in screens do - not a read-only subset. Build a custom front end, a companion app, or an integration, without forking the plugin. Over 250 hooks and filters in the free plugin for everything else.
 
 **GDPR ready**
 
@@ -86,7 +86,7 @@ No. WPMediaVerse works on a standalone WordPress site. If BuddyPress is active i
 In your uploads directory, under `wp-content/uploads/wpmediaverse/`. Pro can move them to S3, BunnyCDN, Cloudflare R2, or DigitalOcean Spaces.
 
 **Is the free version limited?**
-No. Uploads, albums, collections, the social layer, direct messages, AI moderation, BuddyPress integration, GDPR tools, and the REST API are all free. Pro adds cloud storage, video processing, monetization, gamification, and layout modes.
+No. Uploads, albums, collections, the social layer, direct messages, AI moderation, BuddyPress integration, GDPR tools, and the REST API are all free. Pro adds cloud storage, video analytics and auto-captions, monetization, gamification, and layout modes.
 
 **Can members control who sees their uploads?**
 Yes - six privacy levels, enforced at the query. Site owners can also set a default and turn off member-chosen privacy.

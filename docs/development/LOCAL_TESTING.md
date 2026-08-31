@@ -8,7 +8,7 @@ Every change that touches PHP, composer, or the build pipeline must pass the che
 
 ## 1. Pre-push smoke test (mandatory, ~30 seconds)
 
-Run this on every branch before `git push`. It is the single check that catches a broken `vendor/autoload.php`, missing class, or bad activation hook.
+Run this on every branch before `git push`. It is the single check that catches a class the autoloader can't resolve, a missing `libs/` require, or a bad activation hook.
 
 ```bash
 # From the WordPress install root (the directory containing wp-config.php):
@@ -35,9 +35,9 @@ Watch for any white-screen or error banner.
 
 ---
 
-## 2. Fresh-clone fatal check (required before PR merge if the change touches `vendor/`, `composer.json`, `wpmediaverse.php`, or any class the autoloader references)
+## 2. Fresh-clone fatal check (required before PR merge if the change touches `wpmediaverse.php`, `libs/`, or any class the autoloader references)
 
-The smoke test in §1 runs against your already-populated working directory. It will not catch a committed `autoload_static.php` that points to files that do not exist in the repo - the exact bug that caused Pro #9788342062 on 2026-04-15.
+The smoke test in §1 runs against your already-populated working directory. It will not catch a class the plugin requires at boot but never committed - the shape of bug that caused Pro #9788342062 on 2026-04-15.
 
 Run this once before merging:
 
@@ -46,55 +46,46 @@ cd /tmp
 rm -rf mvs-verify
 git clone -b <your-branch> <repo-url> mvs-verify
 cd mvs-verify
-php -r 'require "vendor/autoload.php"; echo "autoload OK\n";'
+php -l wpmediaverse.php
+find includes/ templates/ src/ -name '*.php' -exec php -l {} +
 ```
 
-If it prints anything other than `autoload OK`, you have shipped a broken autoload. **Do not merge.**
+Then symlink or copy that clone into a WordPress install and run the §1 activation smoke test against it. A clean clone has **no `vendor/` at all** (see §3), so anything that only boots with dev dependencies present is a fatal waiting to ship. **Do not merge** if activation errors.
 
 ---
 
-## 3. Hard rules for `vendor/` and composer
+## 3. Hard rules for `vendor/`, `libs/`, and composer
 
-Follow these or you will reintroduce the 2026-04-15 fatal.
+**The runtime never loads Composer.** This is the single most important fact about this plugin's boot path, and it is what the 2026-04-15 class of fatal was fixed by:
 
-### Never run these in a dev worktree
-- `composer install --no-dev` - deletes dev-dep files from `vendor/` but leaves the committed autoload intact, instantly breaking your own checkout.
-- `composer dump-autoload --no-dev` - strips dev-dep class refs from `autoload_static.php`. Safe in isolation, but if you then accidentally commit the regenerated file without also rebuilding `vendor/`, you ship a fatal.
+- `wpmediaverse.php` registers a **hand-written PSR-4 `spl_autoload_register`** (`WPMediaVerse\` → `includes/`). There is no `require 'vendor/autoload.php'`.
+- Bundled runtime dependencies (Action Scheduler, the EDD SL SDK) are **committed under `libs/`** and `require_once`d directly from `wpmediaverse.php`. See `libs/README.md`.
+- `/vendor/` is **gitignored** and excluded from the release ZIP (`/vendor` in `.distignore`). It holds dev and build tooling only - phpunit, phpstan, phpcs.
 
-Both commands are release-time operations. The `Gruntfile.js` `dist` task handles them automatically inside a `composer-prod` → `compress:dist` → `composer-restore` sequence that never leaves your worktree in an inconsistent state.
+### Consequences
 
-### Never `git add vendor/` by hand
-Vendor changes only flow through the release build. If `git status` shows modified files under `vendor/` after a normal workflow, something is wrong - investigate before staging. Common causes:
-
-- Ran `composer update` - that is fine locally but the resulting autoload changes must not be committed outside a release branch
-- Ran `composer install --no-dev` by mistake - run plain `composer install` to restore
-- Ran `composer dump-autoload --no-dev` - run plain `composer dump-autoload` to restore
-
-### Legitimate vendor changes go through the Gruntfile
-When you bump a real prod dependency in `composer.json`:
-
-1. `composer update <vendor/package>` (keeps dev deps installed)
-2. Run the smoke test in §1
-3. Commit `composer.json`, `composer.lock`, and only the specific `vendor/<new-package>/` subtree
-4. Do **not** stage unrelated changes under `vendor/composer/` - if composer rewrote autoload files because of your dep bump, that's fine, but verify those files still reference files that exist in the repo before staging them
+- **Never commit anything under `vendor/`.** It is ignored; if `git status` shows it, something is misconfigured. `composer install` repopulates it on any machine.
+- **Don't run `composer install --no-dev` in a dev worktree.** Since `vendor/` no longer ships, there is nothing to gain: it just leaves you unable to run phpunit/phpcs/phpstan until you `composer install` again. (`Gruntfile.js` still defines `composer-prod` / `composer-restore` tasks from the old layout, but the `dist` chain - `clean:dist` → `build` → `copy:dist` → `compress:dist` → `dist-summary` - no longer calls them.)
+- **A new runtime dependency goes in `libs/`, not `vendor/`.** If it is needed at runtime on a customer site it must be committed and required explicitly, because the release ZIP has no autoloader for `vendor/`.
 
 ---
 
 ## 4. Dist ZIP vs. git repo - the distinction that matters
 
-The release ZIP shipped to customers is **not** the same thing as what's in the git repo. They come from different composer states and a bug in one does not necessarily imply a bug in the other.
+The release ZIP shipped to customers is **not** the same thing as what's in the git repo.
 
 | | Git repo | Dist ZIP (`dist/wpmediaverse-{version}.zip`) |
 |---|---|---|
-| Composer state | `composer install` (dev + prod deps) | `composer install --no-dev` (prod only) |
-| `vendor/` size | ~15 MB (includes phpunit, phpstan, phpcs, sebastian, etc.) | ~1 MB (edd-sl-sdk + action-scheduler only) |
-| `vendor/composer/autoload_files.php` | Generated (references 5 dev-dep bootstraps) | Not generated (no dev files to load) |
+| `vendor/` | Present after `composer install`, gitignored, dev+build tooling | **Absent** - excluded by `.distignore` / the Gruntfile copy task |
+| Runtime deps | `libs/` (committed) | `libs/` (shipped) |
+| Autoloader | Hand-written in `wpmediaverse.php` | Same hand-written autoloader |
+| `docs/`, `qa/`, `audit/`, `plan/`, `tests/`, `bin/` | Present | Excluded |
 | Used by | Developers working on the plugin | End users installing from store.wbcomdesigns.com |
-| Built by | `composer install` | `npx grunt dist` |
+| Built by | `composer install` | `npx grunt dist` or `bin/build-release.sh` |
 
-**The 2026-04-15 Pro fatal was only ever in the git repo - the released `1.1.1` ZIP was fine.** A developer pulling the repo for local work hit the fatal because the committed autoload referenced dev files that were never committed. End users never saw it because the ZIP is built with `--no-dev` and does not generate `autoload_files.php` at all.
+**The 2026-04-15 Pro fatal was a Composer-autoload problem**: a committed `autoload_static.php` referenced dev-dependency files that were never committed, so a fresh clone died on boot. Moving the runtime dependencies to `libs/` and dropping the Composer autoloader from the boot path removed that whole failure mode - the two build paths can no longer disagree about whether the ZIP contains an autoloader.
 
-When someone reports a fatal, your first question is: **are they running a git clone or an installed ZIP?** The fix path is different.
+When someone reports a fatal, your first question is still: **are they running a git clone or an installed ZIP?** The fix path is different.
 
 ---
 
@@ -114,7 +105,7 @@ npx grunt dist
 # - Load every page in the §1 browser checklist
 ```
 
-The Gruntfile wraps the `--no-dev` composer run in a `composer-restore` step so your worktree comes back to full dev state after `grunt dist` finishes. If that restore fails for any reason, you are mid-release with a broken worktree - run `composer install` manually to recover.
+`grunt dist` does not touch Composer state - it cleans `dist/`, builds assets, copies the shipping file set (no `vendor/`, no `docs/`, no `tests/`, no `bin/`), and compresses. Your dev worktree is unchanged when it finishes.
 
 ---
 
@@ -130,7 +121,7 @@ composer run phpstan   # static analysis against phpstan-baseline.neon
 
 Rule of thumb: if you touched a file, run `phpcs` and `phpstan` on it. If you touched PHP at all, run the full PHPUnit suite.
 
-**Note on PHPUnit and activation:** PHPUnit bootstraps the plugin through the WordPress test framework, which short-circuits normal activation. A plugin with a broken `vendor/autoload.php` can still produce green PHPUnit output because PHPUnit loads its own polyfills before the plugin autoload runs. This is why §1 exists.
+**Note on PHPUnit and activation:** PHPUnit bootstraps the plugin through the WordPress test framework, which short-circuits normal activation, and it runs with `vendor/` fully populated - a state no customer install is ever in. Green PHPUnit output therefore proves nothing about whether the plugin activates from the shipped ZIP. This is why §1 exists.
 
 ---
 
@@ -140,8 +131,8 @@ Copy this into your PR description:
 
 ```
 - [ ] Pre-push smoke test passed (§1): deactivate/reactivate both plugins, debug.log clean
-- [ ] Fresh-clone fatal check passed (§2): clone branch to /tmp, `php -r 'require vendor/autoload.php'` OK
-- [ ] Did not stage any vendor/ changes outside a release commit (§3)
+- [ ] Fresh-clone fatal check passed (§2): clone branch to /tmp, lint clean, activates with no `vendor/` present
+- [ ] No `vendor/` changes staged - it is gitignored; runtime deps belong in `libs/` (§3)
 - [ ] `composer run phpcs` clean (or existing baseline unchanged)
 - [ ] `composer run phpstan` clean (or existing baseline unchanged)
 - [ ] `./vendor/bin/phpunit` green
