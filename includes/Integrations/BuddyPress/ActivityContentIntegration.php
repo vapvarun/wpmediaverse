@@ -316,15 +316,22 @@ class ActivityContentIntegration {
 			if ( $ids ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
 			}
-			$grid_html = '';
+			$grid_html   = '';
+			$rendered    = 0;
 			foreach ( $ids as $mid ) {
 				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $mid ) ) {
 					continue;
 				}
 				$grid_html .= MediaDisplayHelper::get_media_thumbnail_html( $mid, 'large' );
+				++$rendered;
 			}
 			if ( $grid_html ) {
-				$count      = count( $ids );
+				// Count what actually RENDERED, not what the meta lists. The
+				// loop above skips media that no longer exist, so counting $ids
+				// picked a grid class for more tiles than are present - a
+				// 6-photo post with one deleted photo asked for the 6-up layout
+				// and drew five tiles into it, leaving a visible hole.
+				$count      = $rendered;
 				$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 6 );
 				return $content . '<div class="' . esc_attr( $grid_class ) . '">' . $grid_html . '</div>';
 			}

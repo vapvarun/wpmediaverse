@@ -827,6 +827,39 @@ class ActivitySyncIntegration {
 			// Keep the activity but update the attached-media list so the
 			// template helper renders only the surviving tiles.
 			bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $remaining ) );
+
+			// ...and drop the grid the COMPOSER BAKED INTO `content` at post
+			// time, because that markup wins over the meta.
+			//
+			// Updating the meta alone was not enough: ActivityContentIntegration
+			// only rebuilds the grid from `_mvs_media_ids` when the saved content
+			// has NO media markup. A normal composer post does have it, so the
+			// stored HTML rendered unchanged and the deleted photo stayed in the
+			// feed as a broken-image tile with its filename underneath
+			// (Basecamp 10254566611).
+			//
+			// Removing the baked grid hands rendering back to that rebuild path,
+			// which already checks exists() per media - so this one deletion is
+			// fixed, and so is every future one, without duplicating the tile
+			// markup here.
+			$activity = new \BP_Activity_Activity( $activity_id );
+
+			if ( ! empty( $activity->content ) ) {
+				// Anchored to the END of the string on purpose. The grid is the
+				// last thing the composer appends, and its tiles are themselves
+				// <div>s - a lazy `.*?</div>` would stop at the first tile's
+				// closing tag and leave a mangled fragment behind.
+				$stripped = preg_replace(
+					'#<div class="mvs-activity-media-grid[^"]*">.*$#s',
+					'',
+					$activity->content
+				);
+
+				if ( null !== $stripped && $stripped !== $activity->content ) {
+					$activity->content = $stripped;
+					$activity->save();
+				}
+			}
 		}
 	}
 
