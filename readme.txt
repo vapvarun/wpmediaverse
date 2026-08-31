@@ -128,7 +128,20 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * Dev      - New filter mvs_user_can_use_documents decides per user whether the document library is available, so a membership plugin can put documents behind a paid tier without changing anyone's role.
 * Dev      - drive_documents() accepts a status, count_documents() accepts an author and status, and DashboardSections::slugs() reports the declared section vocabulary.
 * Improve  - Document drives stay fast as they grow. A drive listing now reads its index directly instead of scanning and filtering: on a 30,000-document library one page examined 234 rows where it previously examined 8,032.
-* Fix      - An upgrade could leave the document index in a state no later upgrade would repair. Adding a database index checked only its name, so an index left incomplete by an earlier operation was accepted as correct and never rebuilt, and the site kept running the slower query with nothing to indicate it.
+* Improve  - Panels, cards and controls no longer all draw the same outline. A text field used to be as visually loud as the panel containing it, and nesting produced three identical edges in a row, so screens read as boxes inside boxes. Containers now recede and only the things you can interact with keep a distinct edge.
+* Improve  - Buttons, form fields and rows across the member and admin screens now meet a minimum tap target, so they are reachable on a phone.
+* Improve  - Text, status badges and the active tag now meet a contrast floor the plugin sets itself instead of inheriting whatever the theme happened to supply.
+* Fix      - Muting a conversation for a set time kept the conversation out of your unread count after the mute had expired. The count now returns as soon as the timer runs out rather than waiting for the next message to arrive.
+* Fix      - The My Media tab strip could not be reached on screens between 769 and 860 pixels wide, which covers most tablets in portrait.
+* Fix      - At exactly 768 pixels the dashboard applied its phone layout and its tablet layout at the same time, so parts of the screen disagreed about which one they were on.
+* Fix      - A section that lives on its own page, such as Compete, answered its My Media address with a blank column instead of taking you to the page itself. Old links and bookmarks now arrive where they should.
+* Fix      - Viewing a member's media profile wrote two PHP warnings to the site error log on every visit. The pages looked correct, so the only sign was a growing log.
+* Fix      - Every settings control, upload field and collection search box now has a real label, so screen readers announce them and clicking the label focuses the field.
+* Dev      - Media moving to and from the trash now fires mvs_media_trashed and mvs_media_restored, so an integration can react without polling.
+* Dev      - New filter mvs_has_custom_avatar reports whether a member has set their own avatar, independent of where the file is stored.
+* Dev      - Documents and media can now be given different drive-access answers through mvs_document_drive_access and mvs_media_drive_access.
+* Dev      - DashboardSections::flush() clears the resolved-section cache, so a section declared late in a request is no longer ignored.
+* Dev      - The plugin's border tokens now have one job each: --mvs-border-light for structure, --mvs-border for controls, --mvs-border-strong for emphasis. A theme overriding these gets predictable results instead of changing every outline at once.
 * Compat   - Aligned with WPMediaVerse Pro 2.4.0. Install both updates together.
 
 = 2.3.2 - August 2026 =
