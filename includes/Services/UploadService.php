@@ -1615,6 +1615,25 @@ class UploadService {
 	/**
 	 * Generate thumbnail sizes for an image and store URLs in mvs_media_meta.
 	 *
+	 * THIS RUNS INLINE ON PURPOSE — do not "optimise" it onto the queue without
+	 * re-measuring first. Measured 2026-08-31 on a 12MP (4032x3024) photo, after
+	 * the cloud push moved to Action Scheduler:
+	 *
+	 *   whole upload request   705 ms
+	 *   this method            263 ms  (37%)
+	 *
+	 * Deferring it would buy about a quarter of a second and cost every member a
+	 * placeholder where their photo should be until the queue catches up. The
+	 * "uploads spend seconds making image sizes" figure that used to justify
+	 * deferring this was really the six blocking cloud round trips, which are
+	 * gone.
+	 *
+	 * There is also nothing wasteful to cut: exactly four rungs are produced
+	 * (full, large, medium, thumbnail, each with a WebP sibling) and all four
+	 * are used - `large` in 84 places, `medium` 47, `thumbnail` 29, `full` 14.
+	 * WordPress's medium_large / 1536x1536 / 2048x2048 and any theme sizes are
+	 * NOT generated here, because MediaVerse media are not WP attachments.
+	 *
 	 * @param int    $media_id  Media ID.
 	 * @param string $file_path Absolute path to the uploaded file.
 	 * @param string $mime      MIME type.
