@@ -205,6 +205,7 @@ wp_interactivity_state(
 			// allows; locales with more than two plural forms are still served
 			// approximately, and fixing that properly means moving the count
 			// server-side, not adding a third string here.
+			/* translators: %d: number of media items. */
 			'itemCount'               => __( '%d item', 'wpmediaverse' ),
 			// Upload flow.
 			/* translators: 1: rejected file names, 2: supported extensions. */
