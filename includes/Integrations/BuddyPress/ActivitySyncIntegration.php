@@ -742,6 +742,41 @@ class ActivitySyncIntegration {
 	}
 
 	/**
+	 * Whether an activity is about ONLY this media.
+	 *
+	 * Reads the activity's `_mvs_media_ids` list, which the composer writes for
+	 * every multi-image post. Any surviving id other than this one means the
+	 * activity is a shared post and must NOT be deleted just because one of its
+	 * photos is going away.
+	 *
+	 * Absent or empty meta means a standalone upload activity (the
+	 * `mvs_media_upload` type never carries the list), so the answer is true and
+	 * the historical behaviour is preserved for that case.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $activity_id Activity to inspect.
+	 * @param int $media_id    Media being deleted.
+	 * @return bool True when nothing else is attached.
+	 */
+	private function activity_has_no_other_media( int $activity_id, int $media_id ): bool {
+		if ( ! function_exists( 'bp_activity_get_meta' ) ) {
+			return true;
+		}
+
+		$raw = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+
+		if ( '' === (string) $raw ) {
+			return true;
+		}
+
+		$ids   = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
+		$other = array_diff( $ids, array( $media_id ) );
+
+		return empty( $other );
+	}
+
+	/**
 	 * Remove BP activities that reference a deleted media item.
 	 *
 	 * Two kinds of activity entries can end up pointing at a media row:
@@ -773,9 +808,22 @@ class ActivitySyncIntegration {
 			return;
 		}
 
-		// 1. Standalone upload activity via back-reference.
+		// 1. STANDALONE upload activity via back-reference.
+		//
+		// "Standalone" is the load-bearing word. ActivityFormIntegration stamps
+		// the SAME bp_activity_id on every media in a composer post, so this
+		// back-reference does not distinguish "the activity that exists for this
+		// media" from "the multi-photo post this media happens to be in".
+		// Deleting on it unconditionally meant removing one photo from a 5-photo
+		// update destroyed the whole update - and it returned before step 3
+		// could strip that photo's tile, so the fix down there never ran
+		// (Basecamp 10254566611, QA re-verify on activities 106 and 110).
+		//
+		// So: only delete when this media is the ONLY thing the activity is
+		// about. When other media still point at it, fall through to step 3,
+		// which drops this one from the list and rewrites the grid.
 		$stored_activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
-		if ( $stored_activity_id > 0 ) {
+		if ( $stored_activity_id > 0 && $this->activity_has_no_other_media( $stored_activity_id, $media_id ) ) {
 			bp_activity_delete( array( 'id' => $stored_activity_id ) );
 		}
 

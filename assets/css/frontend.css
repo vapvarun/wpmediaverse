@@ -82,6 +82,23 @@
      */
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
 
+    /* The brand colour AS TEXT, dark enough to pass AA.
+     *
+     * --mvs-primary is tuned to be a button BACKGROUND, where white sits on it
+     * and passes easily. The same value used as text on a light page does not:
+     * measured 4.36:1 on the dashboard rail link and the active tab label,
+     * under the 4.5 floor for normal text (Basecamp 10253005724).
+     *
+     * Clamping lightness keeps the theme's hue - a site's brand still reads as
+     * its brand - while guaranteeing the contrast. Text only; the button
+     * background keeps the unmodified colour, which is why this is a separate
+     * token rather than a change to --mvs-primary.
+     *
+     * The dark block below sets it back to --mvs-primary: a theme lightens its
+     * brand for dark mode already (measured 7.98:1 there), so darkening again
+     * would make it worse in exactly the mode that was fine. */
+    --mvs-primary-text: oklch(from var(--mvs-primary) min(l, 0.48) c h);
+
     /*
      * The primary button's colours, resolved ONCE.
      *
@@ -304,6 +321,10 @@ body.dark-mode {
     --mvs-text-muted: var(--reign-site-alternate-text-color, #888888);
     --mvs-border: var(--reign-site-border-color, #363636);
     --mvs-border-light: #2e2e2e;
+    /* Dark mode: a theme already lightens its brand here (measured 7.98:1 on
+       the same rail link that fails at 4.36:1 in light), so the light-mode
+       darkening must NOT apply or it would break the mode that was correct. */
+    --mvs-primary-text: var(--mvs-primary);
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
     --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
@@ -2080,6 +2101,15 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-tab {
+    /* 12px padding on a 0.95em label lands at ~37px, under the 40px contract.
+       The earlier tap-target sweep missed these because it measured buttons and
+       .mvs-btn, and a tab is neither - it is an <a class="mvs-dashboard-tab">
+       (QA re-verify, Basecamp 10252222115: 7 tabs measured 36.6-37.6px).
+       min-height enforces the floor without changing the visual padding on
+       surfaces where the label already pushes it past 40px. */
+    min-height: var(--mvs-touch-min, 40px);
+    display: inline-flex;
+    align-items: center;
     padding: 12px 24px;
     background: none;
     border: none;
@@ -2102,7 +2132,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-dashboard-tab:hover,
 .mvs-dashboard-tab:focus {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     background: none;
     border: none;
     border-bottom: 2px solid var(--mvs-primary);
@@ -2114,7 +2144,9 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-tab.active {
-    color: var(--mvs-primary);
+    /* Label is text -> AA-safe variant. The underline is not text, so it keeps
+       the unmodified brand colour and stays visually true to the theme. */
+    color: var(--mvs-primary-text, var(--mvs-primary));
     border-bottom-color: var(--mvs-primary);
 }
 
@@ -2158,7 +2190,10 @@ body.dark-mode .mvs-skeleton::after {
     .mvs-dashboard-tabs .mvs-dashboard-tab:focus,
     .mvs-dashboard-tabs .mvs-dashboard-tab.active {
         border-bottom-color: var(--mvs-primary) !important;
-        color: var(--mvs-primary) !important;
+        /* Text -> AA-safe variant. These theme-defense rules carry !important,
+           so they are where the tab label's colour is actually decided; setting
+           the token on the non-important rules alone left it at 4.36:1. */
+        color: var(--mvs-primary-text, var(--mvs-primary)) !important;
     }
 }
 
@@ -2240,7 +2275,7 @@ body.dark-mode .mvs-skeleton::after {
     .mvs-dashboard-tabs .mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary) !important;
         background: var(--mvs-surface) !important;
-        color: var(--mvs-primary) !important;
+        color: var(--mvs-primary-text, var(--mvs-primary)) !important;
     }
 
     /* A group with no heading still shows its break. */
@@ -7118,7 +7153,16 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-auth-gate__secondary {
     font-size: 14px;
-    color: var(--mvs-text-secondary, #646970);
+    /* --mvs-text-secondary measured 3.52:1 on the gate's own background, under
+       the 4.5 floor for text, and the link was 18.2px tall against a 40px
+       contract - the earlier pass fixed the PRIMARY call to action on this gate
+       and stopped there (QA re-verify, Basecamp 10252222150).
+       Body text colour carries the contrast; inline-flex + min-height give the
+       control a real hit area without turning it into a button. */
+    color: var(--mvs-text, #1e1e1e);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--mvs-touch-min, 40px);
     text-decoration: none;
     transition: color 150ms ease;
 }
@@ -7486,7 +7530,15 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 
 .mvs-documents__row {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+	/* The four metadata tracks are FIXED, not auto.
+	 *
+	 * With `auto auto auto auto` each track sized to its own row's content, so
+	 * every row laid out independently and the columns never lined up - the
+	 * date column started at 1147 / 1165 / 1171 / 1171 across four rows, 24px
+	 * of drift, and worse on a real site where usernames and file sizes vary
+	 * more than a demo's (Basecamp 10253006024). A column has to be the same
+	 * width in every row or it is not a column. */
+	grid-template-columns: auto minmax(0, 1fr) 4rem 6rem 4.5rem 7rem;
 	align-items: center;
 	gap: var(--mvs-space-md, 16px);
 	padding: var(--mvs-space-md, 16px);
@@ -7529,6 +7581,57 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 .mvs-documents__date {
 	color: var(--mvs-text-muted, #646970);
 	font-size: var(--mvs-font-sm, 0.875rem);
+}
+
+/* Reserve a slot per metadata field so the columns line up down the list.
+ *
+ * The row laid its metadata out as a bare flex run pushed right, so every row
+ * sized itself independently and each field started wherever the previous
+ * one happened to end. Measured across four rows at 1440px: the date column
+ * started at 1147 / 1165 / 1171 / 1171 - 24px of drift on a four-row list, and
+ * a row with no type chip shifted owner, size and date left into the wrong
+ * slots entirely (Basecamp 10253006024).
+ *
+ * Four rows is the BEST case: the drift is driven by the rendered width of the
+ * owner name and the size string, so a real site with mixed usernames and file
+ * sizes gets visibly worse. Fixed widths make a row's layout independent of its
+ * own content, which is the property a column needs.
+ *
+ * text-align differs per field on purpose: a size reads right-aligned because
+ * the eye compares magnitudes, a name reads left-aligned because it is a word. */
+/* Each cell is pinned to ITS OWN track.
+ *
+ * Without this, a row whose document has no type chip renders five children
+ * instead of six, and auto-placement slides owner, size and date one track to
+ * the left - so that row's metadata sat under the wrong headings entirely.
+ * Explicit placement leaves the chip track empty instead of collapsing it,
+ * which is the only way to keep a column stable when a cell is optional.
+ *
+ * (An earlier attempt used `flex: 0 0 <width>` here. Flex properties are
+ * ignored on grid items, so it changed nothing - the row has been display:grid
+ * all along.) */
+.mvs-documents__icon  { grid-column: 1; }
+.mvs-documents__main  { grid-column: 2; }
+.mvs-documents__chip  { grid-column: 3; }
+
+.mvs-documents__owner {
+	grid-column: 4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-documents__size {
+	grid-column: 5;
+	text-align: end;
+	/* Lining figures so sizes compare down the column. */
+	font-variant-numeric: tabular-nums;
+}
+
+.mvs-documents__date {
+	grid-column: 6;
+	text-align: end;
+	white-space: nowrap;
 }
 
 .mvs-documents__excerpt {
@@ -7848,7 +7951,10 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
         border-inline-start: 2px solid transparent;
         border-radius: var(--mvs-radius-sm);
         padding: var(--mvs-space-2) var(--mvs-space-3);
-        min-height: 0;
+        /* No min-height reset here. The rail's padding alone lands a row at
+           ~37px, and this selector outranks the base tab rule - which is why
+           the 40px floor added there was inert on desktop (QA re-verify,
+           Basecamp 10252222115). The base rule's --mvs-touch-min now applies. */
         color: var(--mvs-text-secondary);
         font-size: var(--mvs-font-sm);
         font-weight: 500;
@@ -7873,7 +7979,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
     .mvs-dashboard-tabs button.mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary);
         background: var(--mvs-surface);
-        color: var(--mvs-primary);
+        color: var(--mvs-primary-text, var(--mvs-primary));
         font-weight: 600;
     }
 }
@@ -7979,7 +8085,10 @@ a.mvs-dashboard-tab:focus-visible {
     border-block-end: 0;
     border-inline-start-color: var(--mvs-primary);
     background: var(--mvs-surface);
-    color: var(--mvs-primary);
+    /* Text -> AA-safe variant. These theme-defense rules out-specify the base
+       .mvs-dashboard-tab.active rule, so setting the token there alone left the
+       label at 4.36:1 - the fix has to land where the cascade actually ends. */
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-weight: 600;
 }
 
@@ -8065,7 +8174,8 @@ a.mvs-dashboard-tab:focus-visible {
     border: 0;
     background: none;
     box-shadow: none;
-    color: var(--mvs-primary);
+    /* Text, so it takes the AA-safe variant - the raw brand measured 4.36:1. */
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-size: var(--mvs-font-xs);
     text-decoration: none;
 }

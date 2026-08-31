@@ -699,7 +699,16 @@ wp_interactivity_state(
 				data-wp-on--drop="actions.handleUploadDrop"
 				role="button" tabindex="0"
 				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>">
-				<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
+				<?php
+				// A Lucide glyph, not the U+2B06 emoji this used to render.
+				// Emoji are drawn by the OS font, so they ignore currentColor
+				// and the plugin's own sizing - the arrow stayed a coloured
+				// system glyph in dark mode and at every text size, while every
+				// other icon in the product followed the theme. The wrapper is
+				// aria-hidden because the dropzone itself already carries the
+				// accessible name ("Upload media files").
+				?>
+				<span class="mvs-dashboard-dropzone-icon" aria-hidden="true"><i data-lucide="upload-cloud"></i></span>
 				<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				<input type="file" multiple accept="<?php echo esc_attr( \WPMediaVerse\Services\UploadService::accept_attribute( $mvs_allowed_mimes ) ); ?>" class="mvs-upload-file-input" style="display:none"
 					data-wp-on--change="actions.handleUploadFileSelect" />
