@@ -967,8 +967,8 @@ class MediaListPage {
 	 * Repair a single media item's thumbnail.
 	 *
 	 * Non-destructive — only writes new meta when a regeneration succeeds.
-	 * If no repair path is available for this media (e.g. video without
-	 * Pro/ffmpeg, or an image whose original is cloud-only), the existing
+	 * If no repair path is available for this media (e.g. a video with no
+	 * embedded cover, or an image whose original is cloud-only), the existing
 	 * meta is left untouched and the action returns ok=false so the user
 	 * sees a clear "no repair path" message instead of silently losing a
 	 * working thumbnail.
@@ -978,8 +978,9 @@ class MediaListPage {
 	 *      from the local original. Each successful save overwrites the
 	 *      thumb_<size> meta key.
 	 *   2. Fire mvs_repair_media_thumb so Pro / third parties can do
-	 *      type-specific work (Pro hooks in to extract a video poster
-	 *      via ffmpeg).
+	 *      type-specific work. Nothing in the suite shells out to FFmpeg -
+	 *      that path was removed in 2.4.0 (Coding Rule 21); a video poster
+	 *      comes from the file's own embedded cover atom, or not at all.
 	 *   3. Report to the user. Never wipe meta as a side-effect — the
 	 *      previous "clear meta then hope" approach killed working thumbs
 	 *      on systems where the cloud URL was actually reachable.
@@ -1018,10 +1019,11 @@ class MediaListPage {
 		}
 
 		/**
-		 * Allow Pro / external code to do extra repair work (e.g. extract a
-		 * fresh video poster via ffmpeg and write the resulting local URLs
-		 * into thumb_* meta). Listeners MUST be non-destructive — only
-		 * write when they have a working replacement.
+		 * Allow Pro / external code to do extra repair work (e.g. re-read a
+		 * video's embedded cover and write the resulting local URLs into
+		 * thumb_* meta). Listeners MUST be non-destructive - only write when
+		 * they have a working replacement, and must not shell out to a binary
+		 * (Coding Rule 21).
 		 *
 		 * @since 1.2.3
 		 *
@@ -1060,7 +1062,7 @@ class MediaListPage {
 			'ok'      => false,
 			'message' => sprintf(
 				/* translators: %d: media id */
-				__( 'Media #%d — no repair path available. Image needs the original on local disk; video needs WPMediaVerse Pro with FFmpeg.', 'wpmediaverse' ),
+				__( 'Media #%d - no repair path available. An image needs its original file on local disk; a video needs a cover image embedded in the file.', 'wpmediaverse' ),
 				$media_id
 			),
 		);
@@ -1071,8 +1073,8 @@ class MediaListPage {
 	 *
 	 * Returns true only when there's a real repair path for this media's
 	 * type, so users never see a button that does nothing. Free votes yes
-	 * for images on local disk; Pro hooks in to vote yes for videos when
-	 * FFmpeg is available.
+	 * for images on local disk, and for videos only when the file carries an
+	 * embedded cover image - there is no frame extraction in either plugin.
 	 *
 	 * @param int    $media_id  Media ID.
 	 * @param string $file_type MIME type.
