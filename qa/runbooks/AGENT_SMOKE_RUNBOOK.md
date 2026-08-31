@@ -166,7 +166,9 @@ Run on a clean WordPress install with no prior MVS data.
 ### A1 — Free activates without fatal
 **What to verify:** activating WPMediaVerse on a fresh WP install completes with no PHP fatal, creates every expected table, registers expected post types / taxonomies / capabilities, and the admin landing page renders.
 **Why it matters:** activation fatals trash customer sites and require a manual SFTP rescue.
-**Acceptance:** all 21 `wp_mvs_*` tables exist; `mvs_db_version` option equals `MVS_VERSION`; admin "WPMediaVerse" menu renders; `/wp-admin/admin.php?page=wpmediaverse` returns 200 with no fatal.
+**Acceptance:** all 23 `wp_mvs_*` tables exist (36 with Pro active); `mvs_db_version` is the SCHEMA version integer — 30 at 2.4.0, NOT the plugin version string; admin "WPMediaVerse" menu renders; `/wp-admin/admin.php?page=wpmediaverse` returns 200 with no fatal **when authenticated** (an unauthenticated request correctly 302s to login, which is not a failure).
+
+> Corrected 2026-08-31 by a Docker fresh-install walk. This line said "21 tables" and "`mvs_db_version` equals `MVS_VERSION`". Both were wrong and both would fail a correct install: the count is 23, and `mvs_db_version` has always been an integer (25 at 2.3.0 → 30 at 2.4.0). Re-derive the count from `Migrator` rather than trusting this number after a release that adds a table.
 
 ### A2 — Pro activates cleanly on top of Free (combo only)
 **What to verify:** activating WPMediaVerse Pro on top of an already-active Free does not fatal, creates Pro-only tables (8 expected, prefixed `mvs_pro_*` or feature-named per Pro CLAUDE.md), registers Pro admin pages, and `MVS_PRO_VERSION` matches `MVS_VERSION`.

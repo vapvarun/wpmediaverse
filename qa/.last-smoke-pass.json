@@ -1,24 +1,24 @@
 {
   "release_version": "2.4.0",
   "mode": "combo",
-  "ran_at": "2026-08-31T03:51:04Z",
+  "ran_at": "2026-08-31T06:08:17Z",
   "free_version": "2.4.0",
   "pro_version": "2.4.0",
   "sections": {
     "A_fresh_install": {
-      "pass": 0,
+      "pass": 5,
       "fail": 0,
-      "skipped": 5
+      "skipped": 0
     },
     "B_upgrade": {
-      "pass": 0,
+      "pass": 3,
       "fail": 0,
-      "skipped": 3
+      "skipped": 0
     },
     "C_core_flows": {
-      "pass": 10,
+      "pass": 11,
       "fail": 0,
-      "skipped": 34
+      "skipped": 33
     },
     "D_regression_guards": {
       "pass": 3,
@@ -39,13 +39,10 @@
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "A_fresh_install (5 rows): needs a THROWAWAY site. mediaverse.local is the QA baseline and carries fixtures; deactivate/reactivate destroys them.",
-    "B_upgrade (3 rows): needs a prior-version site. ~/Local Sites/buddyx runs 2.3.0 and is the natural candidate for a real 2.3.0 -> 2.4.0 migration walk.",
     "Firefox Desktop: not run. Chromium desktop only.",
     "Safari iOS 390px: not run.",
-    "C.anon.single-media: NOT CERTIFIABLE on this host. BuddyNext's PageRouter::dispatch_hub_template redirects /media/<slug>/ to its own activity permalink (/p/<id>/), so the MediaVerse single-media template, its <h1> and its Open Graph block never render. Documents do not redirect and render correctly. Needs a non-BuddyNext host.",
     "E_pro_smoke (24 rows): not walked this session.",
-    "C.member.grid-thumbnail-size: partially observed (dashboard tiles = large rung; cloud tiles bypass /serve by design) but the mvs_grid_thumb_size_key filter escape-hatch was NOT exercised, so it is recorded as skipped rather than passed."
+    "C.member.grid-thumbnail-size: dashboard tiles observed at the large rung and cloud tiles bypass /serve by design, but the mvs_grid_thumb_size_key filter escape-hatch was NOT exercised. Recorded as skipped, not passed."
   ],
   "environment_caveats": [
     "Host runs BuddyNext + BuddyPress. BuddyNext owns several MediaVerse routes and suppresses the chat panel (mvs_buddynext_active === true). Most customers do not run BuddyNext, so this walk does NOT certify the native path for those surfaces.",
@@ -56,7 +53,7 @@
     "C.anon.explore-feed": "21 tiles, Load More advanced 21 -> 44, 0 page-URL thumbnail srcs, login CTA present",
     "C.anon.search-empty-state": "'No results for \"zzznoresults999\"' + Browse-all link + 29 tag chips",
     "C.anon.tag": "known tag filters with an All-media affordance; unknown tag returns a clean empty state, no fatal",
-    "C.anon.single-media": "BLOCKED - see manual_required",
+    "C.anon.single-media": "PASS on the clean Docker host: /media/<slug>/ returns 200 with NO redirect, MediaVerse's own Open Graph block renders, og:title and <h1> both carry the real media title. On mediaverse.local this row is un-walkable because BuddyNext's PageRouter redirects the route to its own activity permalink - that is BuddyNext owning the route, NOT a MediaVerse defect, which this host proves.",
     "C.anon.user-profile": "200 with grid + h1; page/2/ 200 no fatal; no wp_capabilities or email leak",
     "C.anon.album-collection": "album + collection both 200, no fatal",
     "C.anon.dashboard-gate": "styled Log in link with redirect_to round-trip; 0 dashboard panels leaked",
@@ -66,9 +63,22 @@
     "C.member.lightbox": "opens on thumbnail click; 6 reactions all with aria-pressed; 5 toolbar buttons all labelled; ESC closes and restores hidden",
     "D.esc-close-lightbox": "ESC closed the lightbox and restored the hidden attribute",
     "D.bp-thumbnail-leak": "0 of 21 explore thumbnails used a page URL as src",
-    "D.dashboard-anon-gate": "anonymous /my-media/ shows a styled login CTA, not an orphan sentence"
+    "D.dashboard-anon-gate": "anonymous /my-media/ shows a styled login CTA, not an orphan sentence",
+    "A1": "Free 2.4.0 activated from the BUILT ZIP on clean WP 7.0.2/PHP 8.2.32: 23 wp_mvs_* tables, post types + taxonomies registered, mvs_db_version=30, NO debug.log created at all",
+    "A2": "Pro activated on top: versions match 2.4.0/2.4.0, 36 tables, 'Requires Plugins: wpmediaverse' header present. With Free deactivated the site still returns 200 with zero fatals - Pro guards itself",
+    "A3": "rewrite_rules option DELETED, then plugins activated: all 8 routes (/media/, /my-media/, /compete/, /media/battles|challenges|tournaments/, /upload-media/, /explore-media/) return 200 on first request with no manual permalink flush",
+    "A4": "compete, my-media, explore-media, upload-media each exist exactly once after a deactivate+reactivate cycle - no duplication",
+    "A5": "default_privacy=public; signed_url_ttl resolves to 3600 via SignedUrlService::DEFAULT_TTL (the option row is unset, which is correct); chat_panel_visibility defaults to everywhere",
+    "B1": "2.3.0 -> 2.4.0 with seeded data: db_version 25->30, tables 32->36, and an md5 checksum over (slug,title,privacy,view_count,reaction_count) is BYTE-IDENTICAL before and after. Favorites, album items and albums all preserved. No debug.log during the upgrade",
+    "B2": "Pro option-prefix migration: mvs_boost_cost_per_100='777' -> mvs_pro_boost_cost_per_100='777' with the old key deleted; forcing a second run (flag cleared) left both values unchanged. Idempotent",
+    "B3": "Columns added by 2.4.0 are back-filled on rows created at 2.3.0: folder_id=0, drive_type='user', drive_id=0 - none left NULL"
   },
   "found_and_fixed_during_walk": [
-    "PHP Warning: Undefined variable $mvs_filter_tag / $mvs_filter_cat in templates/explore.php:402-403 on EVERY profile route (/media/@user/). Assigned inside `if ( ! $mvs_profile )` but read unconditionally. Fixed by hoisting the initialisation above the branch; re-walked to 0 warnings. This is why the report shows debug_log_issues: [] - the warning is fixed in the code being packaged, not omitted."
-  ]
+    "PHP Warning: Undefined variable $mvs_filter_tag / $mvs_filter_cat in templates/explore.php:402-403 on EVERY profile route (/media/@user/). Assigned inside `if ( ! $mvs_profile )` but read unconditionally. Fixed by hoisting the initialisation above the branch; re-walked to 0 warnings. This is why the report shows debug_log_issues: [] - the warning is fixed in the code being packaged, not omitted.",
+    "Runbook A1 acceptance was wrong in two ways and would have failed a correct install: it said 21 tables (actual 23) and that mvs_db_version equals MVS_VERSION (it is a schema integer, 30). Corrected in AGENT_SMOKE_RUNBOOK.md."
+  ],
+  "hosts": {
+    "primary": "mediaverse.local (Local, BuddyX+BuddyNext+BuddyPress, BunnyCDN driver) \u2014 sections C, D, F",
+    "clean": "Docker: wordpress:php8.2-apache + WP 7.0.2 + PHP 8.2.32 + MariaDB 11, BuddyX theme + BuddyPress, NO BuddyNext, local storage driver \u2014 sections A, B and the single-media row"
+  }
 }
