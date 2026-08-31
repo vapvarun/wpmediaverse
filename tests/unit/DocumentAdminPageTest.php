@@ -56,14 +56,31 @@ class DocumentAdminPageTest extends WP_UnitTestCase {
 	 * @param string $privacy    Privacy.
 	 * @return int Media id.
 	 */
+	/**
+	 * Monotonic counter for slug uniqueness.
+	 *
+	 * The slug column is UNIQUE, and this helper used to build one from
+	 * wp_rand( 1000, 9999 ) - 9,000 possibilities shared by every row this
+	 * suite creates. Collisions were therefore a matter of when, not if: CI
+	 * failed on "Duplicate entry 'row-2330' for key 'slug'" on ONE matrix cell
+	 * (PHP 8.3 / WP 6.8) while the same code passed on 8.3/6.7 and 8.3/6.9,
+	 * which is the signature of a birthday collision rather than a real bug.
+	 * A counter cannot collide, so the flake cannot come back.
+	 *
+	 * @var int
+	 */
+	private static $slug_seq = 0;
+
 	private function row( string $media_type, string $mime, string $title = 'Row', string $privacy = 'public' ): int {
 		global $wpdb;
+
+		++self::$slug_seq;
 
 		$wpdb->insert(
 			$wpdb->prefix . 'mvs_media_index',
 			array(
 				'title'             => $title,
-				'slug'              => sanitize_title( $title ) . '-' . wp_rand( 1000, 9999 ),
+				'slug'              => sanitize_title( $title ) . '-' . self::$slug_seq . '-' . wp_rand( 1000, 9999 ),
 				'post_author'       => $this->author,
 				'media_type'        => $media_type,
 				'file_type'         => $mime,
