@@ -387,18 +387,6 @@
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
-      "name": "mvs_document_can_grant_to_role",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $can",
-        "int $user_id"
-      ],
-      "where": "includes/Documents/PermissionService.php:1479",
-      "consumed_by": [],
-      "note": "Whether a user may share a document with an entire ROLE. Defaults to whoever administers documents; the escape hatch for a workspace that wants contributing members to share by role."
-    },
-    {
       "name": "mvs_document_default_privacy",
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:579",
