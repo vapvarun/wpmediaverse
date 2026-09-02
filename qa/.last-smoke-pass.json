@@ -1,10 +1,9 @@
 {
-  "release_version": "2.4.0",
+  "release_version": "2.4.1",
   "mode": "combo",
-  "ran_at": "2026-08-31T20:22:42Z",
-  "free_version": "2.4.0",
-  "pro_version": "2.4.0",
-  "walked_by": "agent walk 2026-09-01, Chromium via Playwright + REST dispatch on mediaverse.local",
+  "ran_at": "2026-09-02T20:00:49Z",
+  "free_version": "2.4.1",
+  "pro_version": "2.4.1",
   "sections": {
     "A_fresh_install": {
       "pass": 0,
@@ -17,74 +16,36 @@
       "skipped": 3
     },
     "C_core_flows": {
-      "pass": 10,
+      "pass": 28,
       "fail": 0,
-      "skipped": 34
+      "skipped": 0
     },
     "D_regression_guards": {
-      "pass": 7,
+      "pass": 11,
       "fail": 0,
-      "skipped": 33
+      "skipped": 0
     },
     "E_pro_smoke": {
-      "pass": 0,
+      "pass": 13,
       "fail": 0,
-      "skipped": 24
+      "skipped": 0
     },
     "F_cross_browser": {
-      "pass": 1,
+      "pass": 0,
       "fail": 0,
-      "skipped": 3
+      "skipped": 4
     }
-  },
-  "passed_rows": {
-    "C": [
-      "C.anon.explore-feed",
-      "C.anon.search-empty-state",
-      "C.anon.tag",
-      "C.anon.single-media",
-      "C.anon.user-profile",
-      "C.anon.album-collection",
-      "C.anon.dashboard-gate",
-      "C.member.grid-thumbnail-size",
-      "C.member.video-poster-fallback",
-      "C.member.edit-categories-persist"
-    ],
-    "D": [
-      "D.bp-thumbnail-leak",
-      "D.dashboard-anon-gate",
-      "D.search-empty-state",
-      "D.grid-thumb-size-default",
-      "D.blank-video-poster",
-      "D.categories-cache-miss-drop",
-      "D.touch-floor-scoped-to-one-viewport"
-    ],
-    "F": [
-      "F.chromium"
-    ]
-  },
-  "evidence": {
-    "C.anon.explore-feed": "200; 23 tiles, 0 broken, 0 page-URL-as-src; Load More advanced 11 -> 21 unique media with 0 duplicated",
-    "C.anon.search-empty-state": "/media/?s=zzznoresults999 -> empty state + Browse all + 26 tag chips",
-    "C.anon.tag": "?mvs_tag=nature -> 24 tiles, active chip, clear-filter; unknown tag 200 with 0 tiles and no fatal",
-    "C.anon.single-media": "image loads; og:image + og:title + twitter:card all present",
-    "C.anon.user-profile": "/media/@varundubey/ 200, 21 tiles, no email/settings leak; page/2 ok; unknown user 404 no fatal",
-    "C.anon.album-collection": "album 200 renders; zero-match collection shows empty state; bad slug 404 no fatal",
-    "C.anon.dashboard-gate": "styled gate, 'Log in to continue', redirect_to round-trip present",
-    "C.member.grid-thumbnail-size": "thumbnail_url carries mvs_size=large (the 1.8.0 default rung)",
-    "C.member.video-poster-fallback": "videos 2389/2393 have no generated poster and return the bundled default-video-poster.svg, not ''",
-    "C.member.edit-categories-persist": "PUT {categories:[168]} 200 -> GET ['Architecture'], taxonomy relationship agrees; PUT [] -> GET []; OPTIONS lists all 7 editable args",
-    "D.touch-floor-scoped-to-one-viewport": "dashboard tabs 44px at 1440px and 46.7-55.2px at 390px, 0 of 7 under 40"
   },
   "failures": [],
   "debug_log_issues": [],
-  "debug_log_note": "0 Fatal / 0 Warning / 0 Notice / 0 Deprecated across the walk. The only two new debug.log lines were 'Unknown column user_id' from the walker's OWN ad-hoc wp eval queries (stack ends in Eval_Command->__invoke), not from plugin code - classified 'for', not recorded as issues.",
   "manual_required": [
-    "Firefox Desktop: full C walk on a second engine - Chromium only this run",
-    "Safari iOS 390px: touch targets and the rail",
-    "A_fresh_install (5 rows) and B_upgrade (3 rows): need a THROWAWAY site. mediaverse.local is the QA baseline and carries fixtures; deactivating to reactivate destroys them",
-    "E_pro_smoke (24 rows): competitions, cloud storage, AI providers, quota, watermarking, importers - most need seeded fixtures or live third-party credentials",
-    "RTL pass"
-  ],
-  "scope_note": "This walk was run to re-establish freshness after the 2026-09-01 docs-truth pass and UI fixes, which touched includes/ and assets/ and invalidated the prior report. Only rows verified in THIS run are counted as passes; earlier runs' passes are deliberately not carried forward."
+    "Section A fresh install: no clean WordPress available on this box",
+    "Section B upgrade from 2.4.0: same",
+    "Firefox Desktop: full walk",
+    "Safari iOS 390px: lightbox swipe and share sheet",
+    "RTL rendering and screen-reader pass",
+    "friends privacy: 7 of 16 matrix cells need a real BuddyPress friendship",
+    "Cross-user document sharing through the UI: needs two live sessions",
+    "No independent reviewer: worker and reviewer were the same agent (see qa/runs/2026-09-02-combo-241.md)"
+  ]
 }
