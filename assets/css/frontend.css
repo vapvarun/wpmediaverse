@@ -1062,6 +1062,28 @@ body.dark-mode .mvs-skeleton::after {
     font-weight: 600;
 }
 
+/* Sits beside the privacy chip and borrows its shape. Deliberately NOT the
+   privacy chip's colour: this is not a restriction, it is a fact about reach,
+   and colouring it like a lock would read as a second privacy state. */
+.mvs-media-meta__shared {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+    border-radius: var(--mvs-radius-pill, 999px);
+    padding: 2px var(--mvs-space-sm, 8px);
+    font-size: 0.8125rem;
+}
+
+.mvs-media-meta__shared svg,
+.mvs-media-meta__shared [data-lucide] {
+    width: 14px;
+    height: 14px;
+    color: inherit;
+    flex-shrink: 0;
+}
+
 .mvs-media-meta__privacy i,
 .mvs-media-meta__privacy svg {
     color: var(--mvs-warning);
