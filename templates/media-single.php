@@ -255,6 +255,36 @@ $mvs_archive_url = home_url( '/media/' );
 						</span>
 					<?php endif; ?>
 
+					<?php
+					/**
+					 * A short summary of who this item is shared WITH, beside the privacy chip.
+					 *
+					 * The chip states the privacy SETTING. Once anything is shared, that is no
+					 * longer the same question as "who can open this" — `privacy` is a column
+					 * and grants are rows, so a Private document with an active grant kept
+					 * reading "Private" while other people could read it. The share dialog knew
+					 * the truth all along; the page did not (Basecamp 10263273931).
+					 *
+					 * Free owns the badge but not document sharing, so this is a seam rather
+					 * than a query: Pro answers it for documents, and anything else that starts
+					 * granting access can answer it too. Empty string renders nothing, so an
+					 * unshared item looks exactly as it did.
+					 *
+					 * @since 2.4.1
+					 *
+					 * @param string $summary  Human-readable summary. Default '' (render nothing).
+					 * @param int    $media_id Media id.
+					 */
+					$mvs_shared_summary = (string) apply_filters( 'mvs_media_shared_summary', '', (int) $mvs_media_id );
+
+					if ( '' !== $mvs_shared_summary ) :
+						?>
+						<span class="mvs-media-meta__shared">
+							<i data-lucide="users" aria-hidden="true"></i>
+							<?php echo esc_html( $mvs_shared_summary ); ?>
+						</span>
+					<?php endif; ?>
+
 					<?php if ( '' !== $mvs_doc_location ) : ?>
 						<span class="mvs-media-meta__item">
 							<?php

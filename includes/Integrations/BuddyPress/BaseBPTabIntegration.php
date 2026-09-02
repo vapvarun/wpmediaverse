@@ -541,7 +541,12 @@ abstract class BaseBPTabIntegration {
 				echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"><span class="mvs-grid-album-icon">&#128193;</span></div>';
 			}
 			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
-			echo '<span class="mvs-grid-stat">&#x1F5BC;&#xFE0F; ' . esc_html( (string) $item_count ) . '</span>';
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
+			/* translators: %s: number of items in the album. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s item', '%s items', (int) $item_count, 'wpmediaverse' ), number_format_i18n( $item_count ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( (string) $item_count ) . '</span>';
+			echo '</span>';
 			echo '</div></div>';
 			echo '</a>';
 			echo '<div class="mvs-grid-item-info"><span class="mvs-grid-item-title">' . esc_html( get_the_title() ) . '</span></div>';

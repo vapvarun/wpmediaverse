@@ -212,7 +212,8 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 					</span>
 
 					<?php if ( $mvs_doc_group ) : ?>
-						<span class="mvs-documents__chip"><?php echo esc_html( strtoupper( str_replace( 'odf_', '', $mvs_doc_group ) ) ); ?></span>
+						<?php // Same type, same colour, wherever it is listed — the modifier is what lets Explore match My Drive (Basecamp 10263186054). ?>
+						<span class="mvs-documents__chip mvs-documents__chip--<?php echo esc_attr( $mvs_doc_group ); ?>"><?php echo esc_html( strtoupper( str_replace( 'odf_', '', $mvs_doc_group ) ) ); ?></span>
 					<?php endif; ?>
 
 					<span class="mvs-documents__owner">

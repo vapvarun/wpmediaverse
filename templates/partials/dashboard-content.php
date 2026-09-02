@@ -297,7 +297,7 @@ wp_interactivity_state(
 	if ( $mvs_profile_incomplete && ! $mvs_prompt_dismissed ) :
 		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
-		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
+		<span class="mvs-profile-prompt-icon"><i data-lucide="user-round" aria-hidden="true"></i></span>
 		<span class="mvs-profile-prompt-text">
 			<?php esc_html_e( 'Complete your profile. Add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
 			<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
