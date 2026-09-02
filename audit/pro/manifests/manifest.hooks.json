@@ -370,154 +370,166 @@
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:528",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_anon_links",
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:606",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_can_grant",
       "type": "filter",
       "where": "includes/Documents/PermissionService.php:1409",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_can_grant_to_role",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $can",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/PermissionService.php:1479",
+      "consumed_by": [],
+      "note": "Whether a user may share a document with an entire ROLE. Defaults to whoever administers documents; the escape hatch for a workspace that wants contributing members to share by role."
     },
     {
       "name": "mvs_document_default_privacy",
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:579",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_folder_created",
       "type": "action",
       "where": "includes/Documents/FolderService.php:352",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_folder_privacy_cascaded",
       "type": "action",
       "where": "includes/Documents/FolderService.php:1300",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_folder_restored",
       "type": "action",
       "where": "includes/Documents/FolderService.php:1416",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_folder_trashed",
       "type": "action",
       "where": "includes/Documents/FolderService.php:1471",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_max_depth",
       "type": "filter",
       "where": "includes/Documents/FolderService.php:129",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_max_size",
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:487",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_owns_drive",
       "type": "filter",
       "where": "includes/Documents/PermissionService.php:1666",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_pdf_height",
       "type": "filter",
       "where": "includes/Documents/DocumentViewer.php:359",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_preview_bytes",
       "type": "filter",
       "where": "includes/Documents/PreviewRenderer.php:127",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_replaced",
       "type": "action",
       "where": "includes/Documents/DocumentIngestService.php:515",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_replaced_ttl",
       "type": "filter",
       "where": "includes/Documents/DocumentIngestService.php:543",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_restored",
       "type": "action",
       "where": "includes/Documents/DocumentActionService.php:194",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_scan_file",
       "type": "filter",
       "where": "includes/",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_shared",
       "type": "action",
       "where": "includes/Documents/PermissionService.php:1054",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_strip_metadata",
       "type": "filter",
       "where": "includes/Documents/MetadataStripper.php:131",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_trashed",
       "type": "action",
       "where": "includes/Documents/DocumentActionService.php:165",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_uploaded",
       "type": "action",
       "where": "includes/Documents/DocumentIngestService.php:355",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_document_viewer_html",
       "type": "filter",
       "where": "includes/Documents/AdminDocumentPanels.php:199",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_explore_tag_cloud_limit",
@@ -596,7 +608,7 @@
       "type": "filter",
       "where": "includes/Documents/DriveContract.php:258",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_media_exported",
@@ -627,7 +639,7 @@
       "type": "filter",
       "where": "includes/",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_openai_api_key",
@@ -745,7 +757,7 @@
       "type": "filter",
       "where": "includes/REST/CompeteSummaryController.php:153",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_credits_added",
@@ -765,14 +777,14 @@
       "type": "filter",
       "where": "includes/Documents/ExtractionService.php:200",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_document_quota_precheck",
       "type": "filter",
       "where": "includes/Documents/DocumentIngestService.php:238",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_inject_compete_nav",
@@ -910,35 +922,35 @@
       "type": "filter",
       "where": "includes/Frontend/UsageWidget.php:118",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_webhook_event_ttl",
       "type": "filter",
       "where": "includes/Quota/QuotaController.php:610",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_webhook_replay_window",
       "type": "filter",
       "where": "includes/Quota/QuotaController.php:531",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_webhook_require_timestamp",
       "type": "filter",
       "where": "includes/Quota/QuotaController.php:469",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_webhook_timestamp_tolerance",
       "type": "filter",
       "where": "includes/Quota/QuotaController.php:459",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_pro_woo_package_assigned",
@@ -970,7 +982,7 @@
       "type": "filter",
       "where": "includes/Documents/ZipEntryReader.php:83",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_quota_render_mapping_fields",
@@ -1011,7 +1023,7 @@
       "type": "filter",
       "where": "includes/Documents/AppConfig.php:258",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_start_registered_tournaments",
@@ -1125,7 +1137,7 @@
       "type": "filter",
       "where": "includes/",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_watermark_font_path",
@@ -1143,14 +1155,14 @@
       "type": "filter",
       "where": "includes/Core/Watermarker.php:97",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
       "name": "mvs_watermark_text_position",
       "type": "filter",
       "where": "includes/Core/Watermarker.php:94",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     }
   ],
   "generated": {
@@ -1175,32 +1187,32 @@
           "mvs_pro_cloud_ops_notice (60s, success/error message between admin-post redirect and notice render)"
         ],
         "free_services_consumed_added": [
-          "WPMediaVerse\\Services\\CloudOps — per-row migrate / cleanup-local helpers shared with Free CLI"
+          "WPMediaVerse\\Services\\CloudOps \u2014 per-row migrate / cleanup-local helpers shared with Free CLI"
         ],
         "drivers_changed": [
-          "Integrations\\AmazonS3\\StorageDriver — encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
-          "Integrations\\AmazonS3\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
-          "Integrations\\BunnyCDN\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
-          "Integrations\\BunnyCDN\\StorageDriver::exists() — switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
+          "Integrations\\AmazonS3\\StorageDriver \u2014 encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
+          "Integrations\\AmazonS3\\StorageDriver::download() \u2014 implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::download() \u2014 implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::exists() \u2014 switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
         ],
         "settings_ui_changes": [
           "BunnyCDN: Storage Zone Password / Pull Zone Hostname / Storage Zone Region label rewording",
           "AWS: Bucket Name / Region label rewording",
           "Both: 2-step setup walkthrough in section header; per-field help trimmed to keep form scannable",
-          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain — fixes secret-wipe on Save Changes)"
+          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain \u2014 fixes secret-wipe on Save Changes)"
         ]
       },
-      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today — code-review only per user direction."
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today \u2014 code-review only per user direction."
     },
     "phase_2_rescan_skipped": true,
-    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
+    "phase_2_rescan_skip_reason": "Targeted refresh \u2014 only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables \u2014 manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
-      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
+      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs-pro/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Pro: CompetitionVotes::record shared vote guard (new includes/Competitions/CompetitionVotes.php); transcode RUNNING lock; 4 ghost crons cleared on deactivation; bounded StoryService cleanup; connector delta-sync AS continuation (mvs_pro_connector_delta_sync_continue); captions stale-job reaper (mvs_pro_captions_reap_stale + mvs_pro_captions_reaped); feed scope wired to 3 layouts; compete blocks self-enqueue via enqueue_store(); user_login->nicename in layout templates; boost refund.",
@@ -1213,7 +1225,7 @@
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
     },
     "refresh_2026_09_01": {
-      "scope": "targeted delta — hooks only, verified by grepping every apply_filters/do_action call in both plugins against this file, in BOTH directions",
+      "scope": "targeted delta \u2014 hooks only, verified by grepping every apply_filters/do_action call in both plugins against this file, in BOTH directions",
       "method": "agent enumeration + bidirectional diff. The write-manifest.mjs generator is NOT usable on this plugin (see CLAUDE.md) and was not run.",
       "branch": "2.4.0",
       "plugin_version": "2.4.0",
