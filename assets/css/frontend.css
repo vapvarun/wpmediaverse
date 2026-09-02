@@ -6956,6 +6956,39 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-surface);
 }
 
+/*
+ * The logged-OUT half of the composer slot.
+ *
+ * `.mvs-lightbox-comment-form` above and this prompt are the two branches of
+ * the same row — one renders for a member, one for a visitor — but only the
+ * member branch had a rule. The visitor got a bare `<p>`: no padding, so the
+ * text sat flush against the sidebar edge while every other section was inset
+ * 16px, and the theme's paragraph font-size, so it rendered larger than the
+ * heading it sat under.
+ *
+ * Same box as the composer, deliberately: padding, divider and surface are
+ * copied so the slot occupies identical space whichever branch renders and the
+ * sidebar does not reflow between logged-in and logged-out.
+ */
+.mvs-lightbox-login-prompt {
+    margin: 0;
+    padding: 12px 16px;
+    border-block-end: 1px solid var(--mvs-border-light, #e5e7eb);
+    background: var(--mvs-surface);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.mvs-lightbox-login-prompt a {
+    color: var(--mvs-primary, #0073aa);
+    text-decoration: none;
+}
+
+.mvs-lightbox-login-prompt a:hover,
+.mvs-lightbox-login-prompt a:focus-visible {
+    text-decoration: underline;
+}
+
 .mvs-lightbox-comment-input {
     flex: 1;
     /* Explicit surface + text tokens (not the theme's input styling) so the
