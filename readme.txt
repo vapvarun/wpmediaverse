@@ -140,7 +140,7 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * Improve  - The brand colour is now darkened before it is used as text, so dashboard rail links and the active tab label stay readable on a light background. Fills and borders keep the colour you configured, through the separate --mvs-primary-text token.
 * Improve  - The privacy chip on a document now says when it is shared, so a file marked Private no longer reads as private-only while other people can open it.
 * Improve  - Explore Documents colours its type chips the way My Drive does, so a PDF looks like a PDF wherever it is listed.
-* Improve  - Sharing a document with an entire role is now something only a site administrator can do. Members share with a person, which is what the option was for.
+* Improve  - Sharing a document with an entire role has been removed. It did the same thing as setting the document's privacy to members only, in a word that did not say so, and it left the privacy badge unchanged. Share with a person, or set the privacy. Roles already shared with keep their access until the owner removes them.
 * Security - You can no longer give somebody more access to a document than you hold yourself. Sharing was authorised on drive access alone, so on a shared space a member with comment access could hand out edit access.
 * Fix      - Hovering a tag on Explore no longer makes the tag row jump. The hovered tag collapsed and the row reflowed, so the tags appeared to overlap and shake.
 * Fix      - Tags that only documents carry are no longer offered on Explore Media, where they could never return anything. Filtering by a tag with no matching media now says so instead of claiming the site is empty.
