@@ -33,7 +33,7 @@
 
 | Key | Value |
 |-----|-------|
-| Version | 2.4.0 |
+| Version | 2.4.1 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |

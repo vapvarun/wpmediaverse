@@ -3,7 +3,7 @@
  * Plugin Name: WPMediaVerse
  * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     2.4.0
+ * Version:     2.4.1
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '2.4.0' );
+define( 'MVS_VERSION', '2.4.1' );
 // Kept in step with the `Requires PHP` header above by `BootGuardTest`. WordPress
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
