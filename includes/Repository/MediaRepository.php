@@ -4292,7 +4292,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * Callers that want the document tags ask for `MediaTypes::DOCUMENTS`.
 	 *
-	 * @since 2.4.1
+	 * @since 2.4.0
 	 *
 	 * @param int      $limit Maximum terms to return. Clamped to 1..200.
 	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.

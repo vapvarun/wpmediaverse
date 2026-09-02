@@ -138,6 +138,19 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * Improve  - Buttons, form fields, rows, the My Media tab strip and the sign-in link shown to logged-out visitors all meet a minimum tap target, so they are reachable on a phone.
 * Improve  - Text, status badges and the active tag now meet a contrast floor the plugin sets itself instead of inheriting whatever the theme happened to supply.
 * Improve  - The brand colour is now darkened before it is used as text, so dashboard rail links and the active tab label stay readable on a light background. Fills and borders keep the colour you configured, through the separate --mvs-primary-text token.
+* Improve  - The privacy chip on a document now says when it is shared, so a file marked Private no longer reads as private-only while other people can open it.
+* Improve  - Explore Documents colours its type chips the way My Drive does, so a PDF looks like a PDF wherever it is listed.
+* Improve  - Sharing a document with an entire role is now something only a site administrator can do. Members share with a person, which is what the option was for.
+* Security - You can no longer give somebody more access to a document than you hold yourself. Sharing was authorised on drive access alone, so on a shared space a member with comment access could hand out edit access.
+* Fix      - Hovering a tag on Explore no longer makes the tag row jump. The hovered tag collapsed and the row reflowed, so the tags appeared to overlap and shake.
+* Fix      - Tags that only documents carry are no longer offered on Explore Media, where they could never return anything. Filtering by a tag with no matching media now says so instead of claiming the site is empty.
+* Fix      - The Instagram feed layout shows one card per upload again. A gallery of four photos was rendering as four separate posts and counted four times.
+* Fix      - Add Media on an album and Save on a collection now follow the plugin's colours, so they stay readable in dark mode instead of falling back to the browser's own button styling.
+* Fix      - View, reaction and comment counts on a thumbnail use real icons instead of emoji, so they take the theme's colour and no longer read out as picture characters to screen readers.
+* Fix      - Empty states across Explore, the dashboard and the Pro feed layouts use real icons instead of emoji.
+* Fix      - Log in to comment in the lightbox is aligned with everything else in the panel instead of sitting flush against the edge at the wrong size.
+* Fix      - Type chips on a document drive stay readable in dark mode. The PDF chip in particular sat well under the contrast floor.
+* Fix      - Media added by a route that did not name a drive is now filed on its owner's drive rather than left unassigned.
 * Fix      - Deleting one photo from an update that carried several no longer removes the whole update from the feed or leaves a broken tile behind. The remaining photos and the member's own text stay exactly as they were.
 * Fix      - Members whose profile picture comes from BuddyPress are no longer asked to upload one they already have.
 * Fix      - Columns in the document list line up between rows. Each row previously sized its own columns, so the date and owner started at a different point on every line.

@@ -2277,7 +2277,7 @@ class Migrator {
 	 * is never the author, so a zero there is a different problem and guessing
 	 * would put a document on the wrong drive — those are left for a human.
 	 *
-	 * @since 2.4.1
+	 * @since 2.4.0
 	 */
 	private function migrate_to_31(): void {
 		global $wpdb;
