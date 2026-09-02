@@ -1111,12 +1111,40 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		if ( $show_overlay ) {
+			/*
+			 * Lucide, not emoji. These three were `&#x1F441;&#xFE0F;` /
+			 * `&#x2764;&#xFE0F;` / `&#x1F4AC;` — entity-encoded, which is why a
+			 * grep for literal emoji reported this file clean and the card was
+			 * closed while they were still rendering (Basecamp 10253006229).
+			 *
+			 * They are chrome, not content: labels for a count, unlike the
+			 * lightbox reactions where the emoji IS the thing being counted.
+			 * As emoji they ignored the token palette and dark mode, and they
+			 * were inside the permalink <a>, so every grid link announced
+			 * itself as "title 👁️ 1 ❤️ 0 💬 0". Icons are aria-hidden and each
+			 * stat carries a real label instead.
+			 */
 			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
 			if ( $views ) {
-				echo '<span class="mvs-grid-stat">&#x1F441;&#xFE0F; ' . esc_html( number_format_i18n( $views ) ) . '</span>';
+				echo '<span class="mvs-grid-stat">';
+				echo '<i data-lucide="eye" aria-hidden="true"></i>';
+				/* translators: %s: number of views. */
+				echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s view', '%s views', (int) $views, 'wpmediaverse' ), number_format_i18n( $views ) ) ) . '</span>';
+				echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $views ) ) . '</span>';
+				echo '</span>';
 			}
-			echo '<span class="mvs-grid-stat">&#x2764;&#xFE0F; ' . esc_html( number_format_i18n( $reactions ) ) . '</span>';
-			echo '<span class="mvs-grid-stat">&#x1F4AC; ' . esc_html( number_format_i18n( $comments ) ) . '</span>';
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="heart" aria-hidden="true"></i>';
+			/* translators: %s: number of reactions. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s reaction', '%s reactions', (int) $reactions, 'wpmediaverse' ), number_format_i18n( $reactions ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $reactions ) ) . '</span>';
+			echo '</span>';
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="message-circle" aria-hidden="true"></i>';
+			/* translators: %s: number of comments. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s comment', '%s comments', (int) $comments, 'wpmediaverse' ), number_format_i18n( $comments ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $comments ) ) . '</span>';
+			echo '</span>';
 			echo '</div></div>';
 		}
 

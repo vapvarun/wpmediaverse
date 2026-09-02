@@ -1467,6 +1467,19 @@ body.dark-mode .mvs-skeleton::after {
     gap: 4px;
 }
 
+/* Lucide's default <svg> is 24x24, which towers over a two-digit count in the
+   thumbnail overlay. Same cap the button rule applies, at the smaller size this
+   context wants. `currentColor` is what makes these follow the token palette —
+   the thing the emoji they replaced could never do. */
+.mvs-grid-stat svg,
+.mvs-grid-stat [data-lucide] {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+    flex-shrink: 0;
+    color: inherit;
+}
+
 .mvs-grid-item-title {
     display: block;
     white-space: nowrap;
