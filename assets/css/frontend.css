@@ -5706,6 +5706,20 @@ a.mvs-dashboard-card-title:hover {
     opacity: 0.7;
 }
 
+/* These were emoji sized by `font-size`. A Lucide <svg> ignores that and ships
+   at 24x24, so it needs explicit dimensions to keep the 48px presence the empty
+   state was designed around. `currentColor` is the point of the swap: the glyph
+   now takes the text colour and follows dark mode, which an emoji never could
+   (Basecamp 10253006229). */
+.mvs-empty-state-icon svg,
+.mvs-empty-state-icon [data-lucide] {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
+    color: inherit;
+    margin-inline: auto;
+}
+
 .mvs-empty-state-frontend h3 {
     margin: 0 0 8px;
     font-size: 1.125rem;

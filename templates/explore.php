@@ -634,7 +634,7 @@ $mvs_archive_url = home_url( '/media/' );
 			$mvs_invalid_kind = ! empty( $mvs_invalid_filter_tag ) ? 'tag' : 'category';
 			?>
 			<div class="mvs-empty-state-frontend">
-				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<span class="mvs-empty-state-icon"><i data-lucide="search-x" aria-hidden="true"></i></span>
 				<h3>
 					<?php
 					if ( 'tag' === $mvs_invalid_kind ) {
@@ -677,7 +677,7 @@ $mvs_archive_url = home_url( '/media/' );
 			</div>
 		<?php elseif ( $mvs_search ) : ?>
 			<div class="mvs-empty-state-frontend">
-				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<span class="mvs-empty-state-icon"><i data-lucide="search-x" aria-hidden="true"></i></span>
 				<h3>
 					<?php
 					printf(
@@ -726,7 +726,7 @@ $mvs_archive_url = home_url( '/media/' );
 				: get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
 			?>
 			<div class="mvs-empty-state-frontend">
-				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<span class="mvs-empty-state-icon"><i data-lucide="search-x" aria-hidden="true"></i></span>
 				<h3>
 					<?php
 					printf(
@@ -745,7 +745,7 @@ $mvs_archive_url = home_url( '/media/' );
 			</div>
 		<?php else : ?>
 			<div class="mvs-empty-state-frontend">
-				<span class="mvs-empty-state-icon">&#x1F4F7;</span>
+				<span class="mvs-empty-state-icon"><i data-lucide="image-off" aria-hidden="true"></i></span>
 				<h3><?php esc_html_e( 'No media has been shared yet', 'wpmediaverse' ); ?></h3>
 				<p><?php esc_html_e( 'Be the first to share something with the community!', 'wpmediaverse' ); ?></p>
 				<?php
