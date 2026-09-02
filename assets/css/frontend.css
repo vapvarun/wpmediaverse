@@ -1521,6 +1521,19 @@ body.dark-mode .mvs-skeleton::after {
    thumbnail overlay. Same cap the button rule applies, at the smaller size this
    context wants. `currentColor` is what makes these follow the token palette —
    the thing the emoji they replaced could never do. */
+/* Cover placeholders for albums and collections. Same reason as the grid stats:
+   a Lucide <svg> ignores the `font-size` these were sized by, so it needs real
+   dimensions to keep the presence the placeholder was laid out around. */
+.mvs-grid-collection-icon svg,
+.mvs-grid-collection-icon [data-lucide],
+.mvs-grid-album-icon svg,
+.mvs-grid-album-icon [data-lucide] {
+    width: 40px;
+    height: 40px;
+    stroke-width: 1.5;
+    color: inherit;
+}
+
 .mvs-grid-stat svg,
 .mvs-grid-stat [data-lucide] {
     width: 14px;

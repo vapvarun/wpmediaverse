@@ -143,7 +143,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 							loading="lazy" />
 					<?php else : ?>
 						<div class="mvs-grid-item-placeholder <?php echo $mvs_is_albums ? 'mvs-grid-item-placeholder--album' : 'mvs-grid-item-placeholder--collection'; ?>">
-							<span class="mvs-grid-album-icon"><?php echo $mvs_is_albums ? '&#128193;' : '&#128216;'; ?></span>
+							<span class="mvs-grid-album-icon"><i data-lucide="<?php echo $mvs_is_albums ? 'folder' : 'library'; ?>" aria-hidden="true"></i></span>
 						</div>
 					<?php endif; ?>
 					<span class="mvs-album-badge"
