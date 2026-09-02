@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.4.0
+Stable tag: 2.4.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -121,6 +121,16 @@ The importers ship in WPMediaVerse Pro. With Pro active, run `wp mvs import-rtme
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.4.1 - September 2026 =
+
+A privacy fix for sites on nginx, plus interface fixes that only showed on themes other than ours.
+
+* Security - Stored media could be downloaded by anyone with the address on servers that ignore .htaccess, which nginx does. Site Health now checks this by asking the server instead of trusting the deny file, and prints the exact rule to add when it finds a problem. Media set to Only me, Members or Friends was affected, and so was anything made private after being shared, because the older address kept working.
+* Fix      - A bulk actions bar with a Delete button, and a Loading indicator, no longer stay on screen on themes that do not reset the HTML hidden attribute. Both appeared permanently on the media library and every dashboard section.
+* Fix      - An Apply button meant only for browsers without JavaScript no longer shows alongside the filters that already apply themselves.
+* Fix      - Buttons in the chat panel header, the chat filter tabs, the grid selection control and Load More now meet the minimum tap target on a phone.
+* Fix      - The sort and filter controls on Explore and My Media no longer stretch to the full width of the page on themes that style select fields that way.
 
 = 2.4.0 - August 2026 =
 
@@ -715,6 +725,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.4.1 =
+Contains a security fix. If your site runs nginx, stored media may be downloadable by anyone with the address; after updating, open Tools > Site Health and follow the Media privacy item.
 
 = 1.3.0 =
 Major release. Automatic image optimization, WebP and AVIF support, cloud storage migration tools, FULLTEXT search at scale, and a security fix for BuddyPress activity privacy. Strongly recommended for all sites.
