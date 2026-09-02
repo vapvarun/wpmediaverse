@@ -1330,11 +1330,24 @@ body.dark-mode {
 		max-width: 85%;
 	}
 
+	/* Every control in the widget clears --mvs-touch-min on touch, not just the
+	   composer. The header buttons sat at 32x32 (24px icon + 4px padding) and
+	   the filter tabs at 37.5px tall, which is under the floor the plugin sets
+	   for itself in frontend.css. Listed together so the next control added to
+	   the header or the tab row inherits the size instead of being remembered. */
 	.mvs-chat-composer__btn,
 	.mvs-chat-composer__send,
-	.mvs-chat-msg__voice-play {
-		min-width: 44px;
-		min-height: 44px;
+	.mvs-chat-msg__voice-play,
+	.mvs-chat-header__new,
+	.mvs-chat-header__close {
+		min-width: var(--mvs-touch-min, 44px);
+		min-height: var(--mvs-touch-min, 44px);
+	}
+
+	/* Tabs stretch to fill the row, so only the height needs a floor —
+	   forcing min-width here would overflow the panel on a narrow phone. */
+	.mvs-chat-tabs__tab {
+		min-height: var(--mvs-touch-min, 44px);
 	}
 
 	.mvs-messages-page {

@@ -519,12 +519,19 @@ body.mvs-page {
     .mvs-page .mvs-back-link,
     .mvs-page .mvs-tag-pill,
     .mvs-page .mvs-tag-cloud-item,
+    .mvs-page .mvs-bulk-check,
     .mvs-single-media .mvs-btn,
     .mvs-single-album .mvs-btn,
     .mvs-profile-edit .mvs-btn,
     .mvs-dashboard .mvs-btn {
         min-height: var(--mvs-touch-min);
         min-width: var(--mvs-touch-min);
+    }
+    /* Load More is a full-width-ish button whose own padding left it at 40px
+       tall. Height only — its width is already well past the floor and forcing
+       min-width would fight the centred layout. */
+    .mvs-page .mvs-load-more-btn {
+        min-height: var(--mvs-touch-min);
     }
     /* Small chips/tags expand their hit area via padding instead of growing
        the visible bubble. Tag-cloud filter chips were 36px before this floor. */
@@ -2716,6 +2723,14 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-panel-toolbar__select {
     min-height: var(--mvs-touch-min);
+    /* Width is ours to decide, not the theme's. Left unconstrained, a theme
+       that styles `select { width: 100% }` — Astra does — stretched these to
+       the full content column (1160px each) and stacked them, while on Reign
+       they sat at ~110px. Anything we leave to the theme is only correct by
+       luck on the themes we happen to test. */
+    width: auto;
+    min-width: 9rem;
+    max-width: 100%;
     padding: 0 var(--mvs-space-3);
     border: 1px solid var(--mvs-border);
     border-radius: var(--mvs-radius-md);
@@ -3141,16 +3156,21 @@ a.mvs-dashboard-card-title:hover {
    data-wp-bind--hidden toggles the HTML hidden attribute.
    ========================================================================== */
 
-.mvs-modal-overlay[hidden],
-.mvs-confirm-overlay[hidden],
-.mvs-lightbox-overlay[hidden], /* display:flex on .mvs-lightbox-overlay beats HTML [hidden] */
-.mvs-toast[hidden],
-.mvs-inline-edit[hidden],
-.mvs-dashboard-upload-fields[hidden],
-.mvs-dashboard-upload-status[hidden],
-.mvs-tag-autocomplete[hidden],
-.mvs-load-more-wrap[hidden],
-.mvs-no-media[hidden] {
+/* Any MediaVerse element the Interactivity API hides with the HTML `hidden`
+   attribute stays hidden, whatever display value its own rule sets.
+
+   This replaces a hand-maintained allowlist of ten selectors. The allowlist
+   missed `.mvs-bulk-bar` and `.mvs-dashboard-loading`, so on any theme that
+   does not ship a `[hidden]` reset — Astra, for one — members saw a bulk
+   Delete bar reading "0 selected" and a permanent "Loading…" under a finished
+   grid. It looked correct on Reign only by luck: Reign ships
+   `[hidden]{display:none}` and enqueues after us, and at equal specificity
+   source order decided it. An enumerated list guarantees the next control
+   added is missed the same way.
+
+   Matched on our own namespace, so no theme element is touched. */
+[class*="mvs-"][hidden],
+[class*="mvs-"] [hidden] {
     display: none !important;
 }
 
