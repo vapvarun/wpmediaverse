@@ -2154,7 +2154,7 @@ class UploadService {
 	 * how the AI pipeline degrades (Plugin::queue_ai_processing). Inline is the
 	 * old, slow behaviour rather than a broken one.
 	 *
-	 * @since 2.4.1
+	 * @since 2.4.0
 	 *
 	 * @param int $media_id Media ID.
 	 * @return void
@@ -2184,7 +2184,7 @@ class UploadService {
 	 * cloud that is down, throttled or misconfigured costs the member nothing.
 	 * The outcome is logged so an owner can see why media is still local.
 	 *
-	 * @since 2.4.1
+	 * @since 2.4.0
 	 *
 	 * @param int $media_id Media ID.
 	 * @return void

@@ -270,7 +270,7 @@ $mvs_archive_url = home_url( '/media/' );
 					 * granting access can answer it too. Empty string renders nothing, so an
 					 * unshared item looks exactly as it did.
 					 *
-					 * @since 2.4.1
+					 * @since 2.4.0
 					 *
 					 * @param string $summary  Human-readable summary. Default '' (render nothing).
 					 * @param int    $media_id Media id.
