@@ -150,7 +150,6 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * Fix      - Empty states across Explore, the dashboard and the Pro feed layouts use real icons instead of emoji.
 * Fix      - Log in to comment in the lightbox is aligned with everything else in the panel instead of sitting flush against the edge at the wrong size.
 * Fix      - Type chips on a document drive stay readable in dark mode. The PDF chip in particular sat well under the contrast floor.
-* Fix      - Media added by a route that did not name a drive is now filed on its owner's drive rather than left unassigned.
 * Fix      - Deleting one photo from an update that carried several no longer removes the whole update from the feed or leaves a broken tile behind. The remaining photos and the member's own text stay exactly as they were.
 * Fix      - Members whose profile picture comes from BuddyPress are no longer asked to upload one they already have.
 * Fix      - Columns in the document list line up between rows. Each row previously sized its own columns, so the date and owner started at a different point on every line.

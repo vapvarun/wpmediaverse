@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 31;
+	const CURRENT_VERSION = 30;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -2257,40 +2257,5 @@ class Migrator {
 		}
 
 		update_option( 'mvs_allowed_file_types', implode( ',', $closed ) );
-	}
-
-	/**
-	 * Migration v31 — write the drive onto rows that were inserted without one.
-	 *
-	 * `MediaRepository::insert()` defaulted status, privacy, moderation and
-	 * created_at but not the drive, so any caller that did not pass it landed on
-	 * the column default `drive_id = 0`. The default is fixed at the write side;
-	 * this settles the rows already stored (Basecamp 10259007636).
-	 *
-	 * Safe because it writes the value the read side ALREADY returns:
-	 * `PermissionService::drive_of()` falls back to `post_author` when
-	 * `drive_id` is 0, so every one of these rows already behaves as if it were
-	 * on its author's personal drive. This makes the stored data agree with the
-	 * computed answer — no behaviour changes, the mask just stops being needed.
-	 *
-	 * Scoped to `drive_type = 'user'` on purpose. A non-personal drive (a Space)
-	 * is never the author, so a zero there is a different problem and guessing
-	 * would put a document on the wrong drive — those are left for a human.
-	 *
-	 * @since 2.4.0
-	 */
-	private function migrate_to_31(): void {
-		global $wpdb;
-
-		$index = $wpdb->prefix . 'mvs_media_index';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query(
-			"UPDATE {$index}
-			SET drive_id = post_author
-			WHERE drive_id = 0
-			AND drive_type = 'user'
-			AND post_author > 0"
-		);
 	}
 }
