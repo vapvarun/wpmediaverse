@@ -7783,6 +7783,43 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 	letter-spacing: 0.02em;
 }
 
+/*
+ * Document type colours, owned by Free.
+ *
+ * They lived only in Pro's document-drive.css, so My Drive showed a red PDF and
+ * a blue folder while Explore Documents — a FREE template — rendered every type
+ * in the same neutral. Free cannot read a Pro stylesheet, so the palette moves
+ * down here beside `DocumentTypes`, which is Free's vocabulary too, and Pro's
+ * drive chips consume the same tokens (Basecamp 10263186054).
+ *
+ * Text variants, not the base semantic colours: these are labels on a tint, and
+ * `--mvs-danger` / `--mvs-success` are tuned for use as a fill (10253005724).
+ */
+.mvs-documents__chip--folder,
+.mvs-documents__chip--word,
+.mvs-documents__chip--odf_text {
+	background: var(--mvs-info-bg);
+	color: var(--mvs-primary-text, var(--mvs-primary));
+}
+
+.mvs-documents__chip--pdf {
+	background: var(--mvs-danger-bg);
+	color: var(--mvs-danger-text, var(--mvs-danger));
+}
+
+.mvs-documents__chip--excel,
+.mvs-documents__chip--csv,
+.mvs-documents__chip--odf_sheet {
+	background: var(--mvs-success-bg);
+	color: var(--mvs-success-text, var(--mvs-success));
+}
+
+.mvs-documents__chip--powerpoint,
+.mvs-documents__chip--odf_presentation {
+	background: var(--mvs-warning-bg);
+	color: var(--mvs-warning);
+}
+
 .mvs-documents__pagination {
 	display: flex;
 	align-items: center;
