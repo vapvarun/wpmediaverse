@@ -135,6 +135,28 @@
     --mvs-warning: #b58105;
     --mvs-warning-rgb: 181, 129, 5;
 
+    /*
+     * Text-only variants of the semantic colours, same split as
+     * --mvs-primary-text above and for the same reason: each is used BOTH as a
+     * fill (light text on top) and as text on its own tint, and those two jobs
+     * want opposite adjustments.
+     *
+     * Measured on the drive chips against the COMPOSITED tint — the number that
+     * matters, since the fill is an alpha over the row, not an opaque colour:
+     *
+     *   before      light    dark
+     *   PDF         3.94     2.78
+     *   DIR/word    3.90     6.82
+     *
+     * So light needed darkening and dark needed lightening; the dark block
+     * below does the second half. Changing --mvs-danger itself was the tempting
+     * one-liner and is wrong in both directions: it fills the Delete button,
+     * where white sits on it at 4.73:1, and moving it either way breaks that.
+     * (Basecamp 10253005724.)
+     */
+    --mvs-danger-text: oklch(from var(--mvs-danger) min(l, 0.45) c h);
+    --mvs-success-text: oklch(from var(--mvs-success) min(l, 0.45) c h);
+
     /* Semantic backgrounds — derived tints (work in light + dark via alpha) */
     --mvs-info-bg: rgba(var(--mvs-primary-rgb), 0.08);
     --mvs-info-bg-light: rgba(var(--mvs-primary-rgb), 0.04);
@@ -329,6 +351,12 @@ body.dark-mode {
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
     --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
     --mvs-warning: #f0b73a;
+    /* Danger and success were never lightened for dark mode the way warning
+       was, so a PDF chip painted --mvs-danger on a --mvs-danger-bg tint scored
+       2.78:1 against the dark surface. The fill tokens stay put; only the text
+       variants lift. */
+    --mvs-danger-text: oklch(from var(--mvs-danger) max(l, 0.72) c h);
+    --mvs-success-text: oklch(from var(--mvs-success) max(l, 0.72) c h);
     --mvs-info-bg: rgba(var(--mvs-primary-rgb), 0.18);
     --mvs-info-bg-light: rgba(var(--mvs-primary-rgb), 0.10);
     --mvs-success-bg: rgba(var(--mvs-success-rgb), 0.18);
