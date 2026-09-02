@@ -440,4 +440,82 @@ class MediaRepositoryQueryTest extends WP_UnitTestCase {
 
 		$this->assertSame( $this->ids( $legacy ), $this->ids( $engine ) );
 	}
+
+	/*
+	------------------------------------------------------------------
+	 * Drive defaults on insert() — Basecamp 10259007636
+	 * ----------------------------------------------------------------*/
+
+	public function test_insert_defaults_drive_to_the_author(): void {
+		$id = $this->make_media( array( 'post_author' => $this->author_b ) );
+
+		$this->assertSame( 'user', $this->repo()->get( $id, 'drive_type' ) );
+		$this->assertSame(
+			$this->author_b,
+			(int) $this->repo()->get( $id, 'drive_id' ),
+			'A row inserted without a drive must land on its author, not on the column default 0.'
+		);
+	}
+
+	public function test_insert_keeps_an_explicit_drive(): void {
+		$id = $this->repo()->insert(
+			array(
+				'title'       => 'Space doc',
+				'post_author' => $this->author_a,
+				'media_type'  => 'document',
+				'drive_type'  => 'group',
+				'drive_id'    => 4242,
+			)
+		);
+
+		$this->assertSame( 'group', $this->repo()->get( $id, 'drive_type' ) );
+		$this->assertSame( 4242, (int) $this->repo()->get( $id, 'drive_id' ) );
+	}
+
+	/*
+	------------------------------------------------------------------
+	 * tag_cloud() counts only what the listing can render — 10259632183
+	 * ----------------------------------------------------------------*/
+
+	public function test_tag_cloud_omits_tags_carried_only_by_documents(): void {
+		$image = $this->make_media( array( 'media_type' => 'image' ) );
+		$doc   = $this->make_media( array( 'media_type' => 'document' ) );
+
+		wp_set_object_terms( $image, array( 'shared-tag' ), 'mvs_tag' );
+		wp_set_object_terms( $doc, array( 'doc-only-tag' ), 'mvs_tag' );
+
+		$slugs = wp_list_pluck( $this->repo()->tag_cloud( 50 ), 'slug' );
+
+		$this->assertContains( 'shared-tag', $slugs );
+		$this->assertNotContains(
+			'doc-only-tag',
+			$slugs,
+			'A document-only tag renders a chip the media feed can never match.'
+		);
+	}
+
+	public function test_tag_cloud_returns_document_tags_when_asked_for_them(): void {
+		$doc = $this->make_media( array( 'media_type' => 'document' ) );
+		wp_set_object_terms( $doc, array( 'contracts' ), 'mvs_tag' );
+
+		$slugs = wp_list_pluck(
+			$this->repo()->tag_cloud( 50, \WPMediaVerse\Core\MediaTypes::DOCUMENTS ),
+			'slug'
+		);
+
+		$this->assertContains( 'contracts', $slugs );
+	}
+
+	public function test_tag_cloud_skips_unpublished_and_unapproved_media(): void {
+		$hidden = $this->make_media( array( 'status' => 'draft' ) );
+		$queued = $this->make_media( array( 'moderation_status' => 'pending' ) );
+
+		wp_set_object_terms( $hidden, array( 'draft-tag' ), 'mvs_tag' );
+		wp_set_object_terms( $queued, array( 'pending-tag' ), 'mvs_tag' );
+
+		$slugs = wp_list_pluck( $this->repo()->tag_cloud( 50 ), 'slug' );
+
+		$this->assertNotContains( 'draft-tag', $slugs );
+		$this->assertNotContains( 'pending-tag', $slugs );
+	}
 }

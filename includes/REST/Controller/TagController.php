@@ -226,23 +226,20 @@ class TagController extends WP_REST_Controller {
 	public function get_cloud( $request ) {
 		$limit = (int) $request->get_param( 'limit' );
 
-		$terms = get_terms(
-			array(
-				'taxonomy'   => 'mvs_tag',
-				'hide_empty' => true,
-				'number'     => $limit,
-				'orderby'    => 'count',
-				'order'      => 'DESC',
-			)
-		);
-
-		if ( is_wp_error( $terms ) ) {
-			return rest_ensure_response( array() );
-		}
+		// Counted against the media index, not `wp_term_taxonomy.count`. The
+		// taxonomy count includes documents, which the media feeds this cloud
+		// filters exclude by design — so document-only tags were rendered as
+		// chips that always returned zero items (Basecamp 10259632183).
+		$terms = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud( $limit );
 
 		$data = array();
 		foreach ( $terms as $term ) {
-			$data[] = $this->format_term( $term );
+			$data[] = array(
+				'id'    => (int) $term->term_id,
+				'name'  => $term->name,
+				'slug'  => $term->slug,
+				'count' => (int) $term->media_count,
+			);
 		}
 
 		return rest_ensure_response( $data );
