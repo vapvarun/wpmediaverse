@@ -652,16 +652,10 @@ $mvs_archive_url = home_url( '/media/' );
 					</a>
 				</div>
 				<?php
-				$mvs_popular_tags = get_terms(
-					array(
-						'taxonomy'   => 'mvs_tag',
-						'hide_empty' => true,
-						'number'     => 5,
-						'orderby'    => 'count',
-						'order'      => 'DESC',
-					)
-				);
-				if ( ! is_wp_error( $mvs_popular_tags ) && ! empty( $mvs_popular_tags ) ) :
+				// Same source as the cloud at the top of the page: counted against
+				// the media index so a suggested tag always has media behind it.
+				$mvs_popular_tags = $mvs_repo->tag_cloud( 5 );
+				if ( ! empty( $mvs_popular_tags ) ) :
 					?>
 					<div class="mvs-tag-cloud mvs-empty-state-tags">
 						<?php foreach ( $mvs_popular_tags as $mvs_popular_tag ) : ?>
@@ -693,17 +687,10 @@ $mvs_archive_url = home_url( '/media/' );
 					</a>
 				</div>
 				<?php
-				// Popular tags from Taxonomies\MediaTag — top 5 by count.
-				$mvs_popular_tags = get_terms(
-					array(
-						'taxonomy'   => 'mvs_tag',
-						'hide_empty' => true,
-						'number'     => 5,
-						'orderby'    => 'count',
-						'order'      => 'DESC',
-					)
-				);
-				if ( ! is_wp_error( $mvs_popular_tags ) && ! empty( $mvs_popular_tags ) ) :
+				// Same source as the cloud at the top of the page: counted against
+				// the media index so a suggested tag always has media behind it.
+				$mvs_popular_tags = $mvs_repo->tag_cloud( 5 );
+				if ( ! empty( $mvs_popular_tags ) ) :
 					?>
 					<div class="mvs-tag-cloud mvs-empty-state-tags">
 						<?php foreach ( $mvs_popular_tags as $mvs_popular_tag ) : ?>
@@ -715,6 +702,39 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php
 				endif;
 				?>
+			</div>
+		<?php elseif ( '' !== $mvs_filter_tag || '' !== $mvs_filter_cat ) : ?>
+			<?php
+			/*
+			 * A filter that RESOLVED but matched nothing. Without this branch it
+			 * fell through to "No media has been shared yet / Be the first to
+			 * share something with the community!" — telling a member the site is
+			 * empty when they are two clicks into a filtered view of a site with
+			 * thousands of items (Basecamp 10259632183). Say what actually
+			 * happened and offer the way back out.
+			 */
+			$mvs_empty_term = '' !== $mvs_filter_tag ? $mvs_filter_tag : $mvs_filter_cat;
+			$mvs_empty_obj  = '' !== $mvs_filter_tag
+				? get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' )
+				: get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
+			?>
+			<div class="mvs-empty-state-frontend">
+				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<h3>
+					<?php
+					printf(
+						/* translators: %s: tag or category name being filtered on. */
+						esc_html__( 'No media tagged "%s" yet', 'wpmediaverse' ),
+						esc_html( $mvs_empty_obj ? $mvs_empty_obj->name : $mvs_empty_term )
+					);
+					?>
+				</h3>
+				<p><?php esc_html_e( 'Nothing matches this filter right now. Browse everything, or pick another tag.', 'wpmediaverse' ); ?></p>
+				<div class="mvs-empty-state-actions">
+					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
+						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
+					</a>
+				</div>
 			</div>
 		<?php else : ?>
 			<div class="mvs-empty-state-frontend">

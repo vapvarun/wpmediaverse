@@ -4275,6 +4275,59 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Tag terms that actually have media a listing can render.
+	 *
+	 * `get_terms( 'mvs_tag' )` orders by `wp_term_taxonomy.count`, which counts
+	 * EVERY object on the term — documents included. The Explore feed queries
+	 * `MediaTypes::MEDIA_LIBRARY` (image/video/audio) and excludes documents by
+	 * design, so a tag carried only by documents was rendered as a chip that can
+	 * never match: click it, get zero items (Basecamp 10259632183). A filter
+	 * control that offers a value with no results is worse than not offering it.
+	 *
+	 * So the cloud is counted against the same table and the same type group the
+	 * feed reads, plus the status/moderation gates the feed requires. Privacy is
+	 * deliberately NOT applied: the previous cloud applied none either, and the
+	 * public/members split is per-viewer — narrowing it belongs with a change to
+	 * the privacy model, not with this fix.
+	 *
+	 * Callers that want the document tags ask for `MediaTypes::DOCUMENTS`.
+	 *
+	 * @since 2.4.1
+	 *
+	 * @param int      $limit Maximum terms to return. Clamped to 1..200.
+	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
+	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
+	 */
+	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
+		global $wpdb;
+
+		$limit = max( 1, min( 200, $limit ) );
+		$types = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+
+		$sql = "SELECT t.term_id, t.name, t.slug, COUNT(*) AS media_count
+			FROM {$wpdb->term_relationships} tr
+			INNER JOIN {$wpdb->term_taxonomy} tt
+				ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = 'mvs_tag'
+			INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+			INNER JOIN {$wpdb->prefix}mvs_media_index m ON m.media_id = tr.object_id
+			WHERE {$type_sql}
+			AND m.status = 'publish'
+			AND m.moderation_status = 'approved'
+			GROUP BY t.term_id, t.name, t.slug
+			ORDER BY media_count DESC, t.name ASC
+			LIMIT %d";
+
+		$params   = $type_params;
+		$params[] = $limit;
+
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Read every meta_value for a media_id + meta_key (multi-value meta).
 	 *
 	 * The repository's `get()` / `get_raw()` collapse repeated rows to the
@@ -4783,6 +4836,28 @@ class MediaRepository implements MediaRepositoryInterface {
 		);
 
 		$data = array_merge( $defaults, $data );
+
+		// Drive ownership belongs with the other defaults, not with each caller.
+		// It was left to callers, so anything inserting without it landed on the
+		// column default `drive_id = 0` — 13 rows on the QA baseline (11 images,
+		// 1 document, 1 junk row), every one created AFTER the drive backfill had
+		// finished, i.e. a live path and not legacy drift (Basecamp 10259007636).
+		//
+		// Nothing looked broken because `PermissionService::drive_of()` falls back
+		// to `post_author` when `drive_id` is 0. That fallback is a mask: it holds
+		// only while a row's author and its drive are the same person, which is
+		// exactly what stops being true on a Space drive.
+		//
+		// A personal drive IS its owner, so the author is the correct default. A
+		// caller placing a document on a Space passes both keys explicitly and is
+		// untouched by this.
+		if ( ! isset( $data['drive_type'] ) ) {
+			$data['drive_type'] = 'user';
+		}
+
+		if ( ! isset( $data['drive_id'] ) && isset( $data['post_author'] ) ) {
+			$data['drive_id'] = (int) $data['post_author'];
+		}
 
 		// Generate slug if not provided.
 		if ( empty( $data['slug'] ) && ! empty( $data['title'] ) ) {
