@@ -1157,7 +1157,7 @@ wp_interactivity_state(
 							loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--collection"
 							data-wp-bind--hidden="state.hasCollectionCover">
-							<span class="mvs-grid-collection-icon">&#128218;</span>
+							<span class="mvs-grid-collection-icon"><i data-lucide="library" aria-hidden="true"></i></span>
 						</div>
 						<span class="mvs-collection-type-badge" data-wp-text="context.item.type"></span>
 					</a>
