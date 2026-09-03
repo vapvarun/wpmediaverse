@@ -1,7 +1,7 @@
 {
   "release_version": "2.4.1",
   "mode": "combo",
-  "ran_at": "2026-09-02T20:00:49Z",
+  "ran_at": "2026-09-03T05:01:11Z",
   "free_version": "2.4.1",
   "pro_version": "2.4.1",
   "sections": {
@@ -21,7 +21,7 @@
       "skipped": 0
     },
     "D_regression_guards": {
-      "pass": 11,
+      "pass": 13,
       "fail": 0,
       "skipped": 0
     },
