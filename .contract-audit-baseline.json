@@ -1,78 +1,126 @@
 {
-    "generated": "2026-06-21",
-    "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.",
-    "suppressions": [
-        {
-            "id": "ajax-action-no-handler:mvs_media_upload",
-            "reason": "False positive. 'mvs_media_upload' is a BuddyPress ACTIVITY TYPE string (bp_activity_set_action / activity 'type' + 'action' args in ActivitySyncIntegration), not an admin-ajax action. There is no JS posting it as an AJAX action; no wp_ajax_ handler is required."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_cleanup_media_files",
-            "reason": "False positive. Fired via Action Scheduler using the class constant StorageCleanupService::CLEANUP_HOOK (as_enqueue_async_action(self::CLEANUP_HOOK,...)). Static scan only resolves the literal at the add_action site, not the constant at the enqueue site."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_repair_storage_paths",
-            "reason": "False positive. Fired via Action Scheduler using StorageRepairService::REPAIR_HOOK (as_enqueue_async_action(self::REPAIR_HOOK, array($cursor), self::AS_GROUP) at StorageRepairService.php:422). Scanner cannot resolve the constant at the enqueue site to the literal at the add_action site. Same pattern as the other AS-fired hooks baselined here; added for the 1.9.0 gate (StorageRepairService merged from main after the 1.8.0 baseline)."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_daily_streak_check",
-            "reason": "False positive. Fired via Action Scheduler / wp_schedule_single_event using StreakService::AS_DAILY_HOOK (as_schedule_cron_action / as_enqueue_async_action with the constant). Scanner cannot resolve self::AS_DAILY_HOOK to the literal."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_autopilot_create_weekly_challenge",
-            "reason": "False positive. Fired via Action Scheduler recurring action using AutopilotService::AS_HOOK (as_schedule_recurring_action(...self::AS_HOOK...)). Scanner cannot resolve the constant at the schedule site."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_pro_transcode_video",
-            "reason": "False positive. Scheduled via as_schedule_single_action using TranscodeService::AS_HOOK and bound in Plugin.php with add_action(TranscodeService::AS_HOOK, ...). Scanner cannot resolve the constant to the literal."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_pro_transcribe_media",
-            "reason": "False positive. Scheduled via Action Scheduler using TranscriptionService::AS_HOOK and bound in Plugin.php with add_action(TranscriptionService::AS_HOOK, ...). Scanner cannot resolve the constant."
-        },
-        {
-            "id": "user_meta-read-never-written:_mvs_extra_image_credits",
-            "reason": "False positive. Written in QuotaService::add_credits()/deduct_credit() via the interpolated key $meta_key = '_mvs_extra_' . $media_type . '_credits'; update_user_meta($user_id, $meta_key, ...). Scanner matches only literal reads, not the interpolated write."
-        },
-        {
-            "id": "user_meta-read-never-written:_mvs_extra_video_credits",
-            "reason": "False positive. Written via the interpolated key '_mvs_extra_' . $media_type . '_credits' in QuotaService::add_credits()/deduct_credit(). Scanner matches only literal reads."
-        },
-        {
-            "id": "user_meta-read-never-written:_mvs_extra_audio_credits",
-            "reason": "False positive. Written via the interpolated key '_mvs_extra_' . $media_type . '_credits' in QuotaService::add_credits()/deduct_credit(). Scanner matches only literal reads."
-        },
-        {
-            "id": "option-read-never-written:mvs_autopilot_xp_1st",
-            "reason": "Graceful gap (enhancement, not a break). AutopilotService reads with default 200 and the autopilot weekly-challenge feature works on defaults; there is no admin field to override it yet. Tracked as a 'add Autopilot XP settings' enhancement for a later release."
-        },
-        {
-            "id": "option-read-never-written:mvs_autopilot_xp_2nd",
-            "reason": "Graceful gap (enhancement, not a break). Read with default 100; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
-        },
-        {
-            "id": "option-read-never-written:mvs_autopilot_xp_3rd",
-            "reason": "Graceful gap (enhancement, not a break). Read with default 50; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
-        },
-        {
-            "id": "option-read-never-written:mvs_autopilot_xp_participation",
-            "reason": "Graceful gap (enhancement, not a break). Read with default 10; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
-        },
-        {
-            "id": "option-read-never-written:mvs_pro_quota_woo_map",
-            "reason": "Graceful gap (enhancement, not a break). WooCommerce/MemberPress/PMP QuotaAdapters read get_option(self::OPTION_KEY, array()) and degrade to 'no mapping' when unset; the Woo product->quota-package mapping admin writer is not wired yet. Tracked as a 'wire Woo quota-map admin UI' enhancement."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_pro_captions_reap_stale",
-            "reason": "False positive. Fired via Action Scheduler using TranscriptionService::AS_REAPER_HOOK (as_enqueue_async_action(self::AS_REAPER_HOOK, ...) at TranscriptionService.php:371 and as_schedule_* at :143). Scanner cannot resolve the constant at the enqueue site to the literal at the add_action site. Verified for the 2.2.0 gate."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_pro_connector_delta_sync_continue",
-            "reason": "False positive. Fired via Action Scheduler / WP-Cron using ConnectorRESTController::AS_DELTA_SYNC_HOOK (as_enqueue_async_action at ConnectorRESTController.php:812/:861 with wp_schedule_single_event fallback at :814). Scanner cannot resolve the constant. Verified for the 2.2.0 gate."
-        },
-        {
-            "id": "hook-consumed-never-fired:mvs_process_account_deletions",
-            "reason": "False positive. WP-Cron daily event scheduled with AccountDeletionService::CRON_HOOK (wp_schedule_event(time()+HOUR_IN_SECONDS,'daily',self::CRON_HOOK) at AccountDeletionService.php:76, bound at :73). Scanner cannot resolve the constant. Verified for the 2.2.0 gate."
-        }
-    ]
+  "generated": "2026-09-03",
+  "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.\n\n2026-09-03 (2.4.1 retag): 12 further errors triaged individually, none bulk-baselined. ELEVEN were verified false positives and are suppressed below with the mechanism that hides them from the audit — in every case the write or the fire happens through a class constant, a dynamically-built key, or a scheduler (wp_schedule_event / as_enqueue_async_action) rather than a string literal in a do_action/update_option call. The TWELFTH was a REAL BUG and was fixed, not suppressed: 'user_meta-read-never-written:_mvs_extra_document_credits' was correct — QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which deliberately excludes documents) instead of SUMMARY_TYPES (the metered list, which includes them), so document credits could never be granted while deduct_credit() had no such guard and would spend them. See the comment at that guard.",
+  "suppressions": [
+    {
+      "id": "ajax-action-no-handler:mvs_media_upload",
+      "reason": "False positive. 'mvs_media_upload' is a BuddyPress ACTIVITY TYPE string (bp_activity_set_action / activity 'type' + 'action' args in ActivitySyncIntegration), not an admin-ajax action. There is no JS posting it as an AJAX action; no wp_ajax_ handler is required."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_cleanup_media_files",
+      "reason": "False positive. Fired via Action Scheduler using the class constant StorageCleanupService::CLEANUP_HOOK (as_enqueue_async_action(self::CLEANUP_HOOK,...)). Static scan only resolves the literal at the add_action site, not the constant at the enqueue site."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_repair_storage_paths",
+      "reason": "False positive. Fired via Action Scheduler using StorageRepairService::REPAIR_HOOK (as_enqueue_async_action(self::REPAIR_HOOK, array($cursor), self::AS_GROUP) at StorageRepairService.php:422). Scanner cannot resolve the constant at the enqueue site to the literal at the add_action site. Same pattern as the other AS-fired hooks baselined here; added for the 1.9.0 gate (StorageRepairService merged from main after the 1.8.0 baseline)."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_daily_streak_check",
+      "reason": "False positive. Fired via Action Scheduler / wp_schedule_single_event using StreakService::AS_DAILY_HOOK (as_schedule_cron_action / as_enqueue_async_action with the constant). Scanner cannot resolve self::AS_DAILY_HOOK to the literal."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_autopilot_create_weekly_challenge",
+      "reason": "False positive. Fired via Action Scheduler recurring action using AutopilotService::AS_HOOK (as_schedule_recurring_action(...self::AS_HOOK...)). Scanner cannot resolve the constant at the schedule site."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_pro_transcode_video",
+      "reason": "False positive. Scheduled via as_schedule_single_action using TranscodeService::AS_HOOK and bound in Plugin.php with add_action(TranscodeService::AS_HOOK, ...). Scanner cannot resolve the constant to the literal."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_pro_transcribe_media",
+      "reason": "False positive. Scheduled via Action Scheduler using TranscriptionService::AS_HOOK and bound in Plugin.php with add_action(TranscriptionService::AS_HOOK, ...). Scanner cannot resolve the constant."
+    },
+    {
+      "id": "user_meta-read-never-written:_mvs_extra_image_credits",
+      "reason": "False positive. Written in QuotaService::add_credits()/deduct_credit() via the interpolated key $meta_key = '_mvs_extra_' . $media_type . '_credits'; update_user_meta($user_id, $meta_key, ...). Scanner matches only literal reads, not the interpolated write."
+    },
+    {
+      "id": "user_meta-read-never-written:_mvs_extra_video_credits",
+      "reason": "False positive. Written via the interpolated key '_mvs_extra_' . $media_type . '_credits' in QuotaService::add_credits()/deduct_credit(). Scanner matches only literal reads."
+    },
+    {
+      "id": "user_meta-read-never-written:_mvs_extra_audio_credits",
+      "reason": "False positive. Written via the interpolated key '_mvs_extra_' . $media_type . '_credits' in QuotaService::add_credits()/deduct_credit(). Scanner matches only literal reads."
+    },
+    {
+      "id": "option-read-never-written:mvs_autopilot_xp_1st",
+      "reason": "Graceful gap (enhancement, not a break). AutopilotService reads with default 200 and the autopilot weekly-challenge feature works on defaults; there is no admin field to override it yet. Tracked as a 'add Autopilot XP settings' enhancement for a later release."
+    },
+    {
+      "id": "option-read-never-written:mvs_autopilot_xp_2nd",
+      "reason": "Graceful gap (enhancement, not a break). Read with default 100; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
+    },
+    {
+      "id": "option-read-never-written:mvs_autopilot_xp_3rd",
+      "reason": "Graceful gap (enhancement, not a break). Read with default 50; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
+    },
+    {
+      "id": "option-read-never-written:mvs_autopilot_xp_participation",
+      "reason": "Graceful gap (enhancement, not a break). Read with default 10; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_quota_woo_map",
+      "reason": "Graceful gap (enhancement, not a break). WooCommerce/MemberPress/PMP QuotaAdapters read get_option(self::OPTION_KEY, array()) and degrade to 'no mapping' when unset; the Woo product->quota-package mapping admin writer is not wired yet. Tracked as a 'wire Woo quota-map admin UI' enhancement."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_pro_captions_reap_stale",
+      "reason": "False positive. Fired via Action Scheduler using TranscriptionService::AS_REAPER_HOOK (as_enqueue_async_action(self::AS_REAPER_HOOK, ...) at TranscriptionService.php:371 and as_schedule_* at :143). Scanner cannot resolve the constant at the enqueue site to the literal at the add_action site. Verified for the 2.2.0 gate."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_pro_connector_delta_sync_continue",
+      "reason": "False positive. Fired via Action Scheduler / WP-Cron using ConnectorRESTController::AS_DELTA_SYNC_HOOK (as_enqueue_async_action at ConnectorRESTController.php:812/:861 with wp_schedule_single_event fallback at :814). Scanner cannot resolve the constant. Verified for the 2.2.0 gate."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_process_account_deletions",
+      "reason": "False positive. WP-Cron daily event scheduled with AccountDeletionService::CRON_HOOK (wp_schedule_event(time()+HOUR_IN_SECONDS,'daily',self::CRON_HOOK) at AccountDeletionService.php:76, bound at :73). Scanner cannot resolve the constant. Verified for the 2.2.0 gate."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_backfill_drive_columns",
+      "reason": "False positive, verified 2026-09-03. Fired by WP Cron, not do_action: Migrator::migrate_to_29() and the batch continuation both call wp_schedule_single_event( ..., self::DRIVE_BACKFILL_HOOK ) at Migrator.php:2126 and :2239. The audit matches do_action/apply_filters with STRING LITERALS, so it misses both the scheduler and the class constant."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_document_folder_privacy_cascade",
+      "reason": "False positive, verified 2026-09-03. Fired via as_enqueue_async_action( self::CASCADE_HOOK, ... ) in Documents\\FolderService at :1281 and :1330, when a privacy cascade is too large to run inside the request. Action Scheduler dispatch + class constant, invisible to a literal do_action scan."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_document_folder_subtree_rewrite",
+      "reason": "False positive, verified 2026-09-03. Fired via as_enqueue_async_action( self::SUBTREE_HOOK, ... ) in Documents\\FolderService:514, taken when a folder move exceeds BATCH_THRESHOLD descendants. Same scheduler + constant blind spot."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_pro_sweep_replaced_documents",
+      "reason": "False positive, verified 2026-09-03. Documents\\ReplacedFileSweep::init() registers the handler AND schedules it: wp_schedule_event( ..., 'daily', self::HOOK ) at :61, unscheduled at :75 on teardown. WP Cron fires it."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_documents_allowed_types",
+      "reason": "False positive, verified 2026-09-03. Written through register_setting()/the settings form in Admin\\ProSettings, which references the key as a CLASS CONSTANT ($documents::{const}) rather than a literal — see ProSettings.php around :1628-:1790. The audit matches literals only. Confirmed live: saving the Documents settings section round-trips every one of these options."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_documents_anon_links",
+      "reason": "False positive, verified 2026-09-03. Written through register_setting()/the settings form in Admin\\ProSettings, which references the key as a CLASS CONSTANT ($documents::{const}) rather than a literal — see ProSettings.php around :1628-:1790. The audit matches literals only. Confirmed live: saving the Documents settings section round-trips every one of these options."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_documents_bucket",
+      "reason": "False positive, verified 2026-09-03. Written through register_setting()/the settings form in Admin\\ProSettings, which references the key as a CLASS CONSTANT ($documents::{const}) rather than a literal — see ProSettings.php around :1628-:1790. The audit matches literals only. Confirmed live: saving the Documents settings section round-trips every one of these options."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_documents_cloud_enabled",
+      "reason": "False positive, verified 2026-09-03. Written through register_setting()/the settings form in Admin\\ProSettings, which references the key as a CLASS CONSTANT ($documents::{const}) rather than a literal — see ProSettings.php around :1628-:1790. The audit matches literals only. Confirmed live: saving the Documents settings section round-trips every one of these options."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_documents_extraction",
+      "reason": "False positive, verified 2026-09-03. Written through register_setting()/the settings form in Admin\\ProSettings, which references the key as a CLASS CONSTANT ($documents::{const}) rather than a literal — see ProSettings.php around :1628-:1790. The audit matches literals only. Confirmed live: saving the Documents settings section round-trips every one of these options."
+    },
+    {
+      "id": "option-read-never-written:mvs_pro_documents_max_size",
+      "reason": "False positive, verified 2026-09-03. Written through register_setting()/the settings form in Admin\\ProSettings, which references the key as a CLASS CONSTANT ($documents::{const}) rather than a literal — see ProSettings.php around :1628-:1790. The audit matches literals only. Confirmed live: saving the Documents settings section round-trips every one of these options."
+    },
+    {
+      "id": "user_meta-read-never-written:_mvs_document_count",
+      "reason": "False positive, verified 2026-09-03 AT RUNTIME. Written by Quota\\QuotaService::increment_usage(), which builds the key dynamically as '_mvs_' . $media_type . '_count' and explicitly maps a document by its media_type rather than its MIME. Proven by calling increment_usage() on a real document: the meta went from '' to '1'. DocumentIngestService fires mvs_media_uploaded, which is what invokes it."
+    },
+    {
+      "id": "user_meta-read-never-written:_mvs_extra_document_credits",
+      "reason": "Suppressed ONLY because the bug it reported has been FIXED — this entry is not a 'verified exception', it is a scar. The audit was RIGHT: Quota\\QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which excludes documents by design) instead of SUMMARY_TYPES (the metered list, which includes them), so add_credits( $user, 'document', N ) returned false and wrote nothing. Document credits could never be granted, while deduct_credit() has no such guard and increment_usage() calls it for documents over the package limit. Fixed 2026-09-03; proven at runtime — add_credits() now takes the key from '' to '3'. The finding persists only because the write builds the key dynamically as '_mvs_extra_' . $media_type . '_credits', which a literal scan cannot see. If this ever fires again after a refactor, re-verify at RUNTIME before assuming it is noise."
+    }
+  ]
 }
