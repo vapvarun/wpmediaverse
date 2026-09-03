@@ -90,6 +90,38 @@ in PHP or JS; JS strings localized via `wp_set_script_translations()` /
 The right role sees the surface; the wrong role / anonymous does not. Private
 media never appears to others and is never emitted as a public cloud URL.
 
+**A privacy assertion must request the dangerous URL, not merely read it.** Asking
+the API and getting 403 proves the API. It does not prove the file. If a journey
+captures a stored path, it must fetch that path, unauthenticated, and require a
+non-200 — see `security/05-private-media-local-and-gated.md` steps 5b and 5c, which
+were added after a `priority: critical` journey claiming `privacy-gate` passed for
+months while every private file on an nginx host was downloadable by anyone.
+
+### 5. Theme independence (every frontend render journey)
+Most installs are not on BuddyX, BuddyX Pro or Reign. A journey that only ever runs
+on a theme we ship cannot see anything we left to the theme to decide.
+
+Assert on a theme the project does **not** ship (Astra, or a Twenty* default):
+
+- Nothing carrying the HTML `hidden` attribute is visible. Our themes ship a
+  `[hidden]{display:none}` reset that loads after us and silently rescues any
+  `.mvs-*` rule setting `display`; other themes do not.
+- Our controls are sized by us. A control with no width constraint inherits the
+  theme's `select{width:100%}` and spans the content column.
+- Measure on the **live page** (`offsetParent !== null`), never on markup injected
+  into a detached container — an element inside a correctly hidden ancestor computes
+  its own `display` in isolation and reports a false positive.
+
+Covered by `customer/38-theme-independence.md`.
+
+### 6. Thresholds come from the code, never restated
+If a journey polices a standard the plugin defines — a touch-target floor, a
+contrast ratio, a page-size cap — it must **read the value at runtime** and compare
+against that. A number retyped into a journey drifts from the token it is policing
+and quietly licenses the thing it was written to catch: `customer/08` asserted
+"controls >= 40px" against a plugin whose own `--mvs-touch-min` is 44px, and seven
+controls sat in the gap.
+
 ## Site-owner expectation map (what the suite must cover)
 
 | Area | Owner expectation | Journey dir |

@@ -533,6 +533,18 @@ body.mvs-page {
     .mvs-page .mvs-load-more-btn {
         min-height: var(--mvs-touch-min);
     }
+    /* Icon-only link wrapping a 40px avatar. Grow the HIT AREA to the floor and
+       centre the avatar inside it, rather than scaling the image up — the
+       picture should stay 40px, the target should not. Same technique as the
+       chips above. Found by the tap-target assertion in
+       audit/journeys/customer/08-explore-browse-mobile.md. */
+    .mvs-page .mvs-dashboard-rail-head__avatar-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--mvs-touch-min);
+        min-width: var(--mvs-touch-min);
+    }
     /* Small chips/tags expand their hit area via padding instead of growing
        the visible bubble. Tag-cloud filter chips were 36px before this floor. */
     .mvs-page .mvs-tag-pill,

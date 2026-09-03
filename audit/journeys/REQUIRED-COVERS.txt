@@ -64,3 +64,27 @@ media-drive-access-seam
 anonymous-document-reads
 media-trash-lifecycle
 avatar-flag-truthfulness
+
+# 2.4.1 — the five defects from the 2026-09-02 owner-perspective walk. Each of
+# these shipped past a green journey suite, so each now has an executable
+# assertion that fails if the defect returns.
+#
+# raw-storage-path-gated / privacy-change-revokes: security/05 already claimed
+# `privacy-gate` while private media was downloadable on every nginx host — it
+# captured the raw file_url and never fetched it. The gate now names the two
+# assertions that were missing, so the claim cannot go hollow the same way again.
+raw-storage-path-gated
+privacy-change-revokes
+
+# theme-independence: three of the five defects only appeared on a theme we do
+# not ship. Testing exclusively on Reign/BuddyX is how they survived.
+theme-independence
+hidden-attribute-honoured
+control-sizing-owned
+
+# touch-target-floor: the mobile journey policed ">= 40px", a number that appears
+# nowhere in the plugin, while the plugin's own token is 44px.
+touch-target-floor
+
+# departed-member-labelling: Recent Results showed members "Unknown VS Unknown".
+departed-member-labelling

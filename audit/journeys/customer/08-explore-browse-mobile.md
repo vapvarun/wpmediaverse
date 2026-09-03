@@ -3,7 +3,7 @@ journey: explore-browse-mobile
 plugin: wpmediaverse
 priority: critical
 roles: [subscriber, anonymous]
-covers: [explore-grid, search-filter, single-media, lightbox, mobile-responsive, i18n]
+covers: [explore-grid, search-filter, single-media, lightbox, mobile-responsive, i18n, touch-target-floor]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "At least 6 public media items exist (mixed image / video / audio)"
@@ -46,8 +46,41 @@ estimated_runtime_minutes: 8
 
 ### 5. Responsive check — mobile 390px (REQUIRED)
 - **Action**: `playwright_resize 390 844`, reload Explore, screenshot; open search, a single item, and the lightbox at 390px, screenshot each.
-- **Expect**: `document.documentElement.scrollWidth - window.innerWidth <= 1` on Explore, single view, and lightbox; grid reflows to 1-2 columns; search box + filter tabs reachable without horizontal scroll; lightbox controls >= 40px and not clipped; cards' author/tap targets usable.
-- **On fail**: `assets/css/frontend.css` / block `style.css` missing `@media (max-width:640px)` rules.
+- **Expect**: `document.documentElement.scrollWidth - window.innerWidth <= 1` on Explore, single view, and lightbox; grid reflows to 1-2 columns; search box + filter tabs reachable without horizontal scroll; nothing clipped.
+- **Expect (tap targets)**: **zero** MediaVerse-owned interactive elements measure under the plugin's own floor. Read the floor from the page rather than hardcoding it, and scope to our namespace so a theme's or the admin bar's controls are not counted:
+
+      const floor = parseInt(getComputedStyle(document.documentElement)
+        .getPropertyValue('--mvs-touch-min')) || 44;
+      const targets = [...document.querySelectorAll('button, [role=button], a[href]')]
+        .filter(e => e.offsetParent && !e.classList.contains('screen-reader-text'))
+        .filter(e => /(^|\s)mvs-/.test(e.className) || e.closest('[class*="mvs-"]'))
+        .filter(e => !e.closest('#wpadminbar, header, .site-header, footer'))
+        // Inline text links are exempt (WCAG 2.5.8): an <a> whose accessible name
+        // IS its own visible text sits in a text flow and must not be padded to
+        // 44px. Icon-only links (empty text, aria-label) are real pointer targets.
+        .filter(e => e.tagName !== 'A' || e.textContent.trim() === '');
+      const bad = targets.filter(e => { const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && (r.height < floor || r.width < floor); });
+      // bad.length must be 0
+
+  Open the chat panel before measuring — its header buttons and filter tabs live in a
+  dialog that is not in the initial layout, and they were the controls this step missed.
+- **On fail**: `assets/css/frontend.css` / `assets/css/messaging.css` / block `style.css` missing `@media` rules, or the control not listed in the mobile touch-target block.
+
+  > **Why this step is written this way (2026-09-02).** It used to say "controls
+  > >= 40px" — a number that appears nowhere in the plugin. The plugin's own token
+  > is `--mvs-touch-min: 44px`, so seven controls (the chat header buttons at 32x32,
+  > the four chat filter tabs at 37.5px, `.mvs-bulk-check` at 40x40 and
+  > `.mvs-load-more-btn` at 40px tall) sat under the real floor while this journey
+  > passed. A threshold hardcoded looser than the standard it is policing is not a
+  > check. Read the token; never restate it.
+  >
+  > The exemption matters as much as the floor. A first cut of this assertion had
+  > no inline-text-link filter and flagged four `.mvs-dashboard-card-title` links
+  > (257x20) on the FIXED code — a check that fails on correct code gets muted,
+  > and a muted check is worse than none. Refining it left exactly one true
+  > offender, the 40x40 icon-only profile avatar link, which was fixed in the same
+  > pass by growing its hit area rather than scaling the avatar.
 
 ### 6. Translation-readiness
 - **Action**: grep `templates/explore.php`, `templates/media-single.php`, and the explore/lightbox JS for visible strings.
@@ -64,7 +97,7 @@ ALL of the following hold:
 1. Explore grid renders public media with no broken images and no console errors.
 2. Search and at least one filter narrow the grid; clearing restores it.
 3. Single-media view and lightbox open and display the full asset.
-4. No horizontal scroll at 390x844 on Explore, single view, and lightbox; controls reachable and >= 40px.
+4. No horizontal scroll at 390x844 on Explore, single view, and lightbox; **zero** MediaVerse-owned controls under `--mvs-touch-min` read from the page (chat panel opened before measuring).
 5. All visible strings are translation-ready (`wpmediaverse` domain); JS localized.
 6. Anonymous visitors see public media only, at both viewports.
 
