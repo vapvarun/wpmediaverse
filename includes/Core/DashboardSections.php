@@ -257,6 +257,36 @@ final class DashboardSections {
 	}
 
 	/**
+	 * Whether a section lives on its own page rather than in a dashboard panel.
+	 *
+	 * A section that declares its own `url` is rendered somewhere else — Pro's
+	 * Compete hub is the case that exposed this — so there is no panel in the
+	 * dashboard document to swap to. Two places need the same answer:
+	 *
+	 * - `TemplateLoader::redirect_offsite_section()`, for a direct hit on
+	 *   /my-media/<slug>/, which redirects to the real page.
+	 * - the rail link, which must be allowed to NAVIGATE instead of being
+	 *   intercepted by `switchTab`.
+	 *
+	 * Before this existed, only the first was handled. Clicking Compete in the
+	 * rail was intercepted client-side, pushState'd the URL and set an activeTab
+	 * with no panel behind it, so every panel hid and the content area went
+	 * blank (Basecamp 10264172058). `documents` had a hardcoded bypass in the
+	 * JS for the same reason; asking the section declaration instead means the
+	 * next section Pro registers cannot reintroduce the bug.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $slug Section slug.
+	 * @return bool
+	 */
+	public static function is_offsite( string $slug ): bool {
+		$section = self::all()[ $slug ] ?? null;
+
+		return (bool) $section && '' !== (string) $section['url'];
+	}
+
+	/**
 	 * A section's item count, or null when it does not report one.
 	 *
 	 * Null and zero are different answers: null is "this section does not count
