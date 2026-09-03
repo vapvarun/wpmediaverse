@@ -1163,7 +1163,23 @@
 					var resolved = Array.isArray( data ) ? data[0] : data;
 					if ( resolved && resolved.id ) {
 						openWithMediaId( resolved.id, target );
+						return;
 					}
+
+					// RESOLVED TO NOTHING IS A FAILURE, NOT A NO-OP. The click was
+					// already preventDefault'ed, so returning here left the member
+					// clicking a photo and getting absolutely nothing — no
+					// lightbox, no navigation, no message (Coding Rule 20).
+					//
+					// It happens for real: an activity entry outlives the media it
+					// embeds, so the slug lookup 200s with an empty array. Every
+					// media item in the feed on the reference install was in this
+					// state, which is what made the whole feed look dead.
+					//
+					// Same answer as the .catch below — let the link do what it
+					// says. The single-media page then gives the member a real
+					// answer, including "this is gone", instead of silence.
+					window.location.href = href;
 				} ).catch( function() {
 					// Fallback: navigate to single page.
 					window.location.href = href;
@@ -1217,6 +1233,36 @@
 				var overlay = getOverlay();
 				if ( overlay ) { loadSharedReactions( overlay, suiState.mediaId ); }
 			} );
+		} );
+
+		// ── Fullscreen (event delegation) ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+
+			// Target the fullscreen button via its STABLE class, for the same
+			// reason as the favorite and share handlers below: createBPLightbox()
+			// clones the overlay and strips every data-wp-* attribute, so the
+			// Interactivity directive `data-wp-on--click="actions.toggleLightboxFullscreen"`
+			// is gone by the time the clone is in the DOM. The button rendered,
+			// looked live and did nothing on the Activity page while working on
+			// Explore, where the original IA overlay is used (Basecamp 10264236711).
+			//
+			// The favorite button had this exact defect and was fixed the same way
+			// (#10077932144); fullscreen was simply never swept with it.
+			var btn = e.target.closest( '.mvs-lightbox-fullscreen' );
+			if ( ! btn ) { return; }
+
+			var overlay = btn.closest( '.mvs-lightbox-overlay' );
+			if ( ! overlay ) { return; }
+
+			e.preventDefault();
+
+			// Mirror what actions.toggleLightboxFullscreen does on the IA side:
+			// flip the class the stylesheet keys off, and keep aria-pressed
+			// truthful for anyone not looking at the screen.
+			var isFull = overlay.classList.toggle( 'mvs-lightbox--fullscreen' );
+			btn.setAttribute( 'aria-pressed', isFull ? 'true' : 'false' );
 		} );
 
 		// ── Favorites (event delegation) ──
