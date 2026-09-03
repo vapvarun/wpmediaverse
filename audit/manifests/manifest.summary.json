@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -31,7 +31,7 @@
     "hooks_no_call_site": 0,
     "cron": 9,
     "wp_cli": 22,
-    "journeys": 34,
+    "journeys": 38,
     "migrator_version": 30,
     "storage_drivers": 1
   },
@@ -279,7 +279,7 @@
       ]
     }
   },
-  "refreshed_at": "2026-09-01",
+  "refreshed_at": "2026-09-02",
   "refresh_2026_05_28": {
     "trigger": "1.5.0 release shipped — upload + serve pipeline unification",
     "scope": "counts + plugin.version only; detail files (manifest.rest.json, manifest.hooks.json, manifest.tables.json) NOT re-enumerated",
@@ -430,5 +430,6 @@
   },
   "counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.4.0 in development). migrator_version 25->26->27 (v27 = P2.2: legacy_document quarantine, folder_id column, KEY doc_listing, KEY type_file on mvs_media_index; no new table -- the search side table is P8.1). New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). New option mvs_legacy_documents_quarantined (internal migration record, not a setting, so the settings count is unchanged). hooks_fired_unique 223->225: two Production Rule 3 filters for the document library -- mvs_media_type_for_mime (P2.1, recorded late) and mvs_media_feed_allows_documents (P1.5). See generated.delta_2026_08_09 in manifest.json.",
   "counts_delta_2026_08_09_phase34": "Phases 3-4 (document library). FREE: +1 shortcode [mvs_documents]; +1 page option mvs_page_explore_documents (Explore Documents page); new Core\\DocumentTypes; MediaRepository gains drive_documents/public_documents/documents_shared_with/tighten_document_privacy_in_folders/count_documents_to_tighten/privacy_level/privacy_levels_looser_than, all on MediaRepositoryInterface; SettingsHelper gains get_max_upload_size; ConfigController gains an ETag and the mvs_app_config filter; hooks_fired_unique 225->234. PRO (see audit/pro/): new table mvs_pro_folders (Migrator v11) + 5 columns and 3 indexes on mvs_access_grants; new namespace mvs-pro/v1 with 10 routes (folders CRUD, documents CRUD, me/shared, permissions, permissions/link, documents/{id}/download|preview); new services Documents\\{FolderService, PermissionService, StorageResolver, HealthCheck, DocumentIngestService, AppConfig}; new WP-CLI `wp mvs seed-documents`. Recorded 2026-08-09 after a self-audit found these unrecorded — the first two hooks were delta'd with their change and the habit lapsed through Phases 3-4.",
-  "counts_delta_2026_08_19": "Targeted delta, verified against the code (never generator output — see generated.refresh_2026_08_05). migrator_version 27 -> 29: Migrator::CURRENT_VERSION is 29 (v28 clears hard-refused MIME types, v29 adds drive_type/drive_id + KEY drive_listing and the bounded backfill); the summary had been stale since v28 landed. tables 22 -> 23 (CREATE TABLE count). journeys 12 -> 34 (audit/journeys/*/*.md). No new REST routes, hooks, settings, capabilities or CLI commands this cycle: the licence gate consumes core hooks rather than firing its own, and the cert-runner 'license'/'as_role' oracle kinds are test infrastructure, not a plugin surface."
+  "counts_delta_2026_08_19": "Targeted delta, verified against the code (never generator output — see generated.refresh_2026_08_05). migrator_version 27 -> 29: Migrator::CURRENT_VERSION is 29 (v28 clears hard-refused MIME types, v29 adds drive_type/drive_id + KEY drive_listing and the bounded backfill); the summary had been stale since v28 landed. tables 22 -> 23 (CREATE TABLE count). journeys 12 -> 34 (audit/journeys/*/*.md). No new REST routes, hooks, settings, capabilities or CLI commands this cycle: the licence gate consumes core hooks rather than firing its own, and the cert-runner 'license'/'as_role' oracle kinds are test infrastructure, not a plugin surface.",
+  "counts_delta_2026_09_02": "Targeted delta for 2.4.1, code-verified (never generator output - see generated.refresh_2026_08_05). version 2.4.0 -> 2.4.1. NEW SURFACE is one item only: a fourth Site Health test, 'wpmediaverse_media_privacy', registered by Services\\HealthCheckService::register_tests() alongside the existing tables/uploads/pages tests. It reports critical when the media directory is publicly readable and prints an nginx rule; the probe (probe_public_access) asks the server over HTTP rather than trusting the .htaccess deny file, which nginx ignores. HealthCheckService also gains two public constants (PROBE_TRANSIENT, CANARY) and three public methods (probe_public_access, nginx_rule, test_media_privacy). It is instantiated directly in Core\\Plugin, not container-registered, so services is unchanged at 54. NO change to: rest_endpoints, settings, hooks_fired_unique, capabilities, tables, migrator_version (still 30 - a patch must not touch schema, Production Rule 4), wp_cli, cron, blocks, shortcodes, post_types, taxonomies, admin_pages, ajax, storage_drivers. Verified by diffing includes/ since the 2026-09-01 manifest commit: no register_rest_route, register_setting, do_action or apply_filters added. Repository\\MediaRepository gained tag_cloud() but it is deliberately NOT on MediaRepositoryInterface (49 methods, unchanged), so the Free/Pro boundary is untouched. journeys 34 -> 38: the count had been stale since the 2026-08-19 delta, and 2.4.1 adds customer/38-theme-independence (runs the frontend on a theme the project does not ship) plus, on the Pro side, customer/05-compete-results-departed-members. security/05 and customer/08 were amended rather than added - both claimed coverage they did not assert."
 }

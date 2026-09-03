@@ -131,6 +131,8 @@ A privacy fix for sites on nginx, plus interface fixes that only showed on theme
 * Fix      - An Apply button meant only for browsers without JavaScript no longer shows alongside the filters that already apply themselves.
 * Fix      - Buttons in the chat panel header, the chat filter tabs, the grid selection control and Load More now meet the minimum tap target on a phone.
 * Fix      - The sort and filter controls on Explore and My Media no longer stretch to the full width of the page on themes that style select fields that way.
+* Fix      - The profile picture link in the My Media sidebar now meets the minimum tap target on a phone. The picture stays the same size; only the area you can tap grew.
+* Dev      - Journey coverage now asserts what these fixes changed: stored files are fetched directly and must not be readable, a privacy change is checked to actually revoke an address already in circulation, tap targets are measured against the plugin's own token rather than a restated number, and a new journey runs the frontend on a theme the project does not ship.
 
 = 2.4.0 - August 2026 =
 

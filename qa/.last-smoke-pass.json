@@ -1,14 +1,14 @@
 {
   "release_version": "2.4.1",
   "mode": "combo",
-  "ran_at": "2026-09-02T20:00:49Z",
+  "ran_at": "2026-09-03T05:06:27Z",
   "free_version": "2.4.1",
   "pro_version": "2.4.1",
   "sections": {
     "A_fresh_install": {
-      "pass": 0,
+      "pass": 6,
       "fail": 0,
-      "skipped": 5
+      "skipped": 0
     },
     "B_upgrade": {
       "pass": 0,
@@ -21,7 +21,7 @@
       "skipped": 0
     },
     "D_regression_guards": {
-      "pass": 11,
+      "pass": 13,
       "fail": 0,
       "skipped": 0
     },
@@ -39,7 +39,6 @@
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "Section A fresh install: no clean WordPress available on this box",
     "Section B upgrade from 2.4.0: same",
     "Firefox Desktop: full walk",
     "Safari iOS 390px: lightbox swipe and share sheet",

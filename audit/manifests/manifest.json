@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -6021,7 +6021,8 @@
       "generator_note": "write-manifest.mjs was NOT run and its output was NOT committed. It cannot see this plugin's registration patterns (SettingsRegistrar, ServiceContainer::register(), MediaCapabilities, PostTypes\\Album::register(), CLI subcommands declared as methods) and running it zeroes out settings / services / wp_cli / capabilities / post_types / taxonomies.",
       "see": "manifest.summary.json -> generated.refresh_2026_09_01 for the full per-surface delta, the false entries removed and the gaps closed.",
       "hooks_excluded": "hooks_fired and manifest.hooks.json were deliberately NOT touched - a separate pass owns them this cycle. Every hook-derived count is carried forward unverified."
-    }
+    },
+    "delta_2026_09_02": "version 2.4.0 -> 2.4.1. Targeted delta, code-verified. Only new surface: the fourth Site Health test 'wpmediaverse_media_privacy' (Services\\HealthCheckService). No new REST routes, settings, hooks, tables, capabilities, CLI or services; migrator_version stays 30 (Production Rule 4 forbids schema change in a patch). See counts_delta_2026_09_02 in manifest.summary.json."
   },
   "category_sources": {
     "rest": [
