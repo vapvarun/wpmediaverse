@@ -134,6 +134,8 @@ A privacy fix for sites on nginx, plus interface fixes that only showed on theme
 * Fix      - The profile picture link in the My Media sidebar now meets the minimum tap target on a phone. The picture stays the same size; only the area you can tap grew.
 * Fix      - Clicking Compete in the My Media sidebar now opens the Compete page instead of leaving the content area blank. Any section that lives on its own page navigates properly, so a section added later cannot bring the problem back.
 * Fix      - A favorited document now shows a file icon in My Media instead of an empty tile, using the icon for its file type.
+* Fix      - The fullscreen button in the lightbox now works on the Activity page. It rendered and looked live but did nothing, while working everywhere else.
+* Fix      - Clicking a photo in the activity feed whose media has since been removed now opens its page and says so, instead of doing nothing at all.
 * Dev      - Journey coverage now asserts what these fixes changed: stored files are fetched directly and must not be readable, a privacy change is checked to actually revoke an address already in circulation, tap targets are measured against the plugin's own token rather than a restated number, and a new journey runs the frontend on a theme the project does not ship.
 
 = 2.4.0 - August 2026 =
