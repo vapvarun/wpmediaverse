@@ -544,11 +544,40 @@ wp_interactivity_state(
 				// knows. One it does not know still highlights server-side; it
 				// simply will not re-highlight without a page load.
 				$mvs_dash_binding = 'state.is' . ucfirst( $mvs_dash_slug ) . 'Tab';
+
+				// DOES THIS DOCUMENT CONTAIN A PANEL FOR THIS SECTION?
+				//
+				// If it does not, the link must NAVIGATE — there is nothing here
+				// to swap to. `switchTab` reads this marker and steps aside.
+				// Without it the click is intercepted, the URL is pushState'd and
+				// an activeTab is set with no panel behind it, so every panel
+				// hides and the content area goes blank.
+				//
+				// Two different things produce a missing panel, and both were
+				// found the hard way:
+				//
+				// - The section lives on its own page (`url` declared). Pro's
+				//   Compete hub — Basecamp 10264172058.
+				// - The section's panel is server-rendered on demand and only
+				//   emitted when it IS the active section. The drive, below:
+				//   rendering it on every tab cost ~53 queries for a member with
+				//   a real drive, so it is emitted only for itself.
+				//
+				// The JS used to name `documents` directly. That was a name-check
+				// standing in for a rule, so when Compete arrived it was not
+				// covered — and when the rule was first written as "off-site
+				// only" it dropped Documents and reproduced the same blank panel
+				// there. Ask the render, not the slug.
+				$mvs_dash_url = (string) \WPMediaVerse\Core\DashboardSections::url( $mvs_dash_slug );
+
+				$mvs_dash_has_panel = ! \WPMediaVerse\Core\DashboardSections::is_offsite( $mvs_dash_slug )
+					&& ( 'documents' !== $mvs_dash_slug || 'documents' === $mvs_dash_active );
 				?>
 				<a class="mvs-dashboard-tab<?php echo $mvs_dash_slug === $mvs_dash_active ? ' active' : ''; ?><?php echo $mvs_dash_starts_group ? ' mvs-dashboard-tab--group-start' : ''; ?>"
 					data-tab="<?php echo esc_attr( $mvs_dash_slug ); ?>"
 					role="tab"
-					href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( $mvs_dash_slug ) ); ?>"
+					href="<?php echo esc_url( $mvs_dash_url ); ?>"
+					<?php echo $mvs_dash_has_panel ? '' : ' data-mvs-navigate="1"'; ?>
 					data-wp-class--active="<?php echo esc_attr( $mvs_dash_binding ); ?>"
 					data-wp-on--click="actions.switchTab">
 					<span class="mvs-dashboard-tab__label"><?php echo esc_html( $mvs_dash_section['label'] ); ?></span>
@@ -1057,6 +1086,19 @@ wp_interactivity_state(
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showFavAudioPlaceholder">
 							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input. ?></span>
+						</div>
+						<?php
+						// A favorited DOCUMENT has no thumbnail and is not an image,
+						// so every branch above is false and the thumb rendered as a
+						// blank rectangle (Basecamp 10268223103). Reuses the same
+						// .mvs-doc-glyph the lightbox and drive already use, with the
+						// per-type icon from REST so a spreadsheet is not drawn as a
+						// text file.
+						?>
+						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--document"
+							data-wp-bind--hidden="!state.showFavDocPlaceholder">
+							<span class="mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--file-text"
+								data-wp-bind--class="state.favDocGlyphClass" aria-hidden="true"></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">

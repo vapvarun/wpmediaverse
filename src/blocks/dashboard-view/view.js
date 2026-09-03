@@ -436,6 +436,21 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get showFavAudioPlaceholder() {
 			return ! state.favThumbUrl && getContext().item?.media_type === 'audio';
 		},
+		// A document has no thumbnail_url and is not an image, so favThumbUrl is
+		// '' and every other branch above is false for it — the card thumb
+		// rendered completely empty (Basecamp 10268223103). Audio already had a
+		// placeholder; documents did not.
+		get showFavDocPlaceholder() {
+			return ! state.favThumbUrl && getContext().item?.media_type === 'document';
+		},
+		// Per-type glyph from the REST doc_icon, so a spreadsheet is not drawn as
+		// a text file. Same contract as lightboxDocGlyphClass in shared-ui:
+		// data-wp-bind--class REPLACES the whole class attribute, so the base
+		// classes must be returned too or the glyph stops painting its mask.
+		get favDocGlyphClass() {
+			const icon = getContext().item?.doc_icon || 'file-text';
+			return 'mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--' + icon;
+		},
 		get showFavPlayIcon() {
 			return state.showFavVideoPreview;
 		},
@@ -604,18 +619,27 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// is how a link stops behaving like a link.
 			const plainClick = ! event.metaKey && ! event.ctrlKey && ! event.shiftKey && ! event.altKey && 0 === ( event.button || 0 );
 
-			// DOCUMENTS NAVIGATES. Every other panel fetches its contents over
-			// REST when first opened, so swapping to it client-side is honest —
-			// the markup is already here and the data arrives after. The drive
-			// is not like that: it is rendered server-side, with its folders,
-			// its per-row controls and its own pagination, and it is no longer
-			// emitted on sections that are not it (that render cost ~53 queries
-			// on every other tab for a member with a real drive). There is
-			// nothing in the page to swap to, so the link does what it says.
+			// A SECTION WITH NO PANEL IN THIS PAGE NAVIGATES. Every panel that is
+			// here fetches its contents over REST when first opened, so swapping
+			// to it client-side is honest — the markup is already present and the
+			// data arrives after. A section rendered on its own page is not like
+			// that: there is nothing here to swap to, so the link does what it
+			// says.
 			//
-			// Its state already lives in the URL — folder path and page number —
-			// which is why this is the tab that loses least by navigating.
-			if ( 'documents' === tab ) {
+			// The server marks these with data-mvs-navigate, because the server is
+			// the side that knows which panels it emitted. Two things produce a
+			// missing panel: a section that lives on its own page (Pro's Compete
+			// hub, via `mvs_dashboard_sections`), and a panel that is
+			// server-rendered on demand and only emitted when it is the active
+			// section (the drive).
+			//
+			// This used to be `if ( 'documents' === tab )` — a name-check standing
+			// in for a rule. Compete was not covered by it and went blank
+			// (Basecamp 10264172058); and writing the rule as "off-site only"
+			// then dropped Documents and reproduced the same blank panel there.
+			// Asking whether a panel was rendered covers both, and covers the
+			// next section without anyone remembering to add it.
+			if ( tabBtn.dataset.mvsNavigate ) {
 				return;
 			}
 
