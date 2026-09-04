@@ -216,3 +216,46 @@ Templates, block `render.php`, and HTML-echoing PHP (`includes/**`) must NOT car
 **Admin warning callouts** with no dark-mode variant (e.g. amber FFmpeg-missing box) may use literal hex in the `.css` file with a comment, but never inline in markup.
 
 **Enforcement:** `bin/template-style-check.sh`, wired as local-CI **stage 1.7** (Free and Pro) + `composer template-styles`. It flags static cosmetic inline styles and bare hex, allowing the four cases above. Add the same gate to any sibling plugin.
+
+## `[hidden]` and the Interactivity API
+
+The Interactivity API hides elements by toggling the HTML `hidden` attribute.
+`hidden` is a *presentation hint* with the specificity of a UA style, so **any**
+rule of yours that sets `display` beats it. An element declared `display:flex`
+and hidden by `data-wp-bind--hidden` will render.
+
+**One rule, on our namespace:**
+
+```css
+[class*="mvs-"][hidden],
+[class*="mvs-"] [hidden] {
+    display: none !important;
+}
+```
+
+Do NOT add a per-selector `[hidden]` exception. That is what the file used to
+do — twelve selectors, maintained by hand, under a comment describing the exact
+bug — and `.mvs-bulk-bar` and `.mvs-dashboard-loading` were simply never added.
+See Coding Rule 22.
+
+**Why it looked fine for months:** Reign ships `[hidden]{display:none}` in
+`critical.min.css` and enqueues *after* us. Equal specificity, so source order
+decided it and our themes silently rescued the bug. Astra ships no such reset.
+Anything you leave to the theme is correct only by luck on the themes you look at.
+
+**Measure on the live page.** An element inside a correctly hidden ancestor
+computes its own `display` in isolation, so checking markup injected into a
+detached container reports false positives. `offsetParent !== null` is what
+separates "on screen" from "styled but masked".
+
+## Deriving a fill from a token that may equal its background
+
+`--mvs-surface-*` frequently resolves to the same colour as the thing behind it,
+and a `color-mix()` from `currentColor` can land in the same place. A tint that
+matches its container paints nothing while looking deliberate in the source.
+
+**Measure the rendered pixel before keeping a fill.** The document placeholder
+added in 2.4.1 was given a background twice — a surface token and a currentColor
+mix — and both computed to `rgb(250,251,253)`, exactly the card behind them. The
+fill was dropped and the glyph carries the tile. If you cannot show the computed
+value differs from its parent, do not ship the declaration.
