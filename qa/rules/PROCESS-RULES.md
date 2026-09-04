@@ -233,3 +233,66 @@ An idiomatic developer journey:
 - **`CLAUDE.md` Coding Rules** — this doc's §1 and §7 describe how that list is maintained.
 - **`qa/CSS-ORGANIZATION-RULES.md`**, **`qa/PHP-ORGANIZATION-RULES.md`**, **`qa/NAMING-RULES.md`**, **`qa/RENDER-STATE-RULES.md`** — the detailed specs this doc references. Together they form the complete rulebook.
 - **`qa/WHAT-TO-CHECK.md`** — where rules become concrete regression-lock rows with specific commits.
+
+## 5. Verify at the right tier
+
+CLAUDE.md already says this; it is repeated here because it was violated
+repeatedly during the 2.4.1 cycle and the cost was visible.
+
+| When | Run |
+|---|---|
+| Per fix | the pre-push hook (it already runs local-CI), the tests covering what you touched, and **browser verification of every UI change, including 390px** |
+| Per release | the full battery — certs, combo smoke, manifest refresh, contract audit, pristine install of the built zip |
+
+During 2.4.1 the full battery was run after **every card** — roughly six times
+where one was needed, plus a PR cycle per fix. Most of it re-proved what the hook
+had just proved. The browser check is the part that earns its keep on a bug fix:
+it is what caught a regression introduced *while* fixing another card (the
+Documents tab, broken by the first cut of the Compete fix).
+
+The failure mode this protects against is not slowness. It is that a gate which
+costs more than it catches teaches people to skip gates.
+
+## 6. "Cannot reproduce" is a claim about your fixtures first
+
+A card that will not reproduce is a finding — but only after the environment has
+been ruled out.
+
+Card 10264236711 (lightbox fullscreen dead on Activity) was reported here as
+"does not reproduce", with evidence: no clone was ever created, every
+interception condition matched, the click did nothing. All true, and all
+irrelevant — **every media item in that feed pointed at deleted media**, so the
+handler bailed out long before the code under test. Seeding one live upload
+reproduced the card exactly as written, in seconds.
+
+Before writing "cannot reproduce":
+
+- Confirm the fixtures the repro depends on actually exist and resolve. A row in
+  `mvs_media_index`, a live slug, a real BuddyPress friendship.
+- Prefer creating the state the card describes over hunting for it. Seeding an
+  upload is cheaper than an hour of tracing.
+- If the symptom you see differs from the reported one, you have probably found a
+  *second* bug rather than disproved the first. Report both.
+
+## 7. Triaging a contract-audit finding
+
+"Read but never written" has three meanings and the category name suggests only
+two:
+
+1. the scanner cannot see the write — class constant, dynamically built key, or a
+   scheduler (`wp_schedule_event`, `as_enqueue_async_action`) instead of a literal
+   `do_action`/`update_option`. **Noise.**
+2. the write genuinely does not exist. **Real.**
+3. the write exists but nothing can reach it. **Real, and it reads exactly like
+   noise.**
+
+Case 3 is why `_mvs_extra_document_credits` sat in the report for months:
+`QuotaService::add_credits()` validated against `MEDIA_TYPES` (the MIME-detectable
+list, which excludes documents by design) instead of `SUMMARY_TYPES`, so document
+credits could never be granted while `deduct_credit()` spent them. Reading the
+code shows a write site and looks fine. Only running it shows the write never
+happens.
+
+**So: verify case 3 at runtime, not by reading.** And when suppressing, record the
+mechanism that hides the finding — never a bare "known good". A suppression for a
+bug that was FIXED is a scar, not an exception, and should say so.

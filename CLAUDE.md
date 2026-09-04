@@ -230,6 +230,54 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
     `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md` §0. Enforced by
     `bin/coding-rules-check.sh` Rule 8 in BOTH plugins, mutation-tested. (2026-08-30.)
 
+22. **Apply a standard by RULE, never by enumerating the things it applies to.**
+    When a decision holds for a whole class — "elements hidden by the Interactivity
+    API stay hidden", "interactive controls clear the touch floor", "a section with
+    no panel here must navigate" — express it as one rule keyed on what makes it
+    true. A hand-maintained list of selectors, slugs or class names is not a
+    standard; it is a standard plus a memory test, and the memory always loses.
+
+    This is the most expensive recurring defect class in this plugin. Four separate
+    2.4.1 bugs were ONE mistake wearing four hats:
+
+    - `frontend.css` kept a twelve-selector allowlist of `[hidden]` guards, under a
+      comment describing the exact bug. `.mvs-bulk-bar` and `.mvs-dashboard-loading`
+      were not on it, so a bulk **Delete** bar and a permanent "Loading…" rendered on
+      every dashboard on any theme without its own `[hidden]` reset. Replaced with
+      `[class*="mvs-"][hidden]`, which then also fixed twelve elements nobody had
+      reported.
+    - `--mvs-touch-min: 44px` was applied by listing selectors, so the chat header
+      buttons (32px), the chat tabs (37.5px), `.mvs-bulk-check` and
+      `.mvs-load-more-btn` sat under the plugin's own floor.
+    - `switchTab` said `if ( 'documents' === tab )`. Documents was the only off-site
+      section anyone had hit, so it got a name-check instead of a rule; when Pro's
+      Compete hub arrived it was intercepted and the content area went blank
+      (Basecamp 10264172058).
+    - The BP lightbox clone strips every `data-wp-*`, so each cloned button needs a
+      delegated handler on a stable class. The favourite button got one
+      (#10077932144). Fullscreen did not, and stayed dead for months
+      (Basecamp 10264236711).
+
+    **The tell:** if adding a feature requires remembering to add it to a list
+    somewhere else, the list is the bug. Ask the thing that makes the rule true —
+    the rendered DOM, the section declaration, the design token — rather than
+    restating its members.
+
+    **Corollary — a threshold is read, never retyped.** A journey asserting
+    "controls >= 40px" against a plugin whose token is 44px licenses exactly the gap
+    it was written to catch. Read `--mvs-touch-min` at runtime. Same for any
+    contrast floor, page-size cap or timeout the plugin defines. (2026-09-03.)
+
+23. **When you fix a bug, sweep the class before you close it.** CLAUDE.md has said
+    "fix the class, sweep every surface" for a while; rules 22's four cases are what
+    happens when that is skipped. Two of them were *identical* to a defect already
+    fixed elsewhere in the same file, months apart — the favourite button and the
+    fullscreen button, the `.mvs-share__section[hidden]` fix and `.mvs-bulk-bar`.
+
+    Concretely: after fixing, grep for the shape (not the symptom) across BOTH
+    plugins, and say in the commit what the sweep covered and what it did not. A fix
+    with no sweep note is half a fix. (2026-09-03.)
+
 **Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
 
 ---
@@ -436,7 +484,9 @@ What the gate runs (in order, see `bin/local-ci.sh`):
 
 ## Customer journeys
 
-37 Free + 12 Pro as of 2026-09-01, and `audit/journeys/REQUIRED-COVERS.txt` names the 23 features that must never ship without one (gate 1.6 fails the build otherwise; gate 4.1 runs them). Counts rot — `ls audit/journeys/*/*.md audit/pro/journeys/*/*.md | wc -l`.
+38 Free + 13 Pro as of 2026-09-03, and `audit/journeys/REQUIRED-COVERS.txt` names the 30 features that must never ship without one (gate 1.6 fails the build otherwise; gate 4.1 runs them). Counts rot — `ls audit/journeys/*/*.md audit/pro/journeys/*/*.md | wc -l`.
 
 
 Bug fixes that survive a refactor are journey-covered. See `audit/journeys/README.md` for the schema and the executor contract. When a new bug is fixed, add or update the journey that would have caught it. The journey IS the regression test.
+
+**And prove it fails.** A journey added alongside a fix must be run against the PRE-fix code and required to FAIL. Two `priority: critical` journeys passed for months while the bugs they named were live: `security/05` captured a private file's URL and never fetched it, and `customer/08` policed a 40px touch floor against a 44px token. Both claimed coverage they did not assert. Skipping the revert-check is how that happens.
