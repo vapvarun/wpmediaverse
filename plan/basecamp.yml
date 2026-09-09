@@ -15,7 +15,8 @@ project_url: https://3.basecamp.com/5798509/projects/46336461
 columns:
   bugs: 9667036607
   ready_for_testing: 9637173253
-  ui_issues: 9700680417
+  possible_bugs: 10263105158
+  ready_for_development: 10206298339
   in_progress: 9637170837
   done: 9637170838
 
