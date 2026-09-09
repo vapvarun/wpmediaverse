@@ -1200,6 +1200,20 @@ class TemplateLoader {
 			return $template;
 		}
 
+		// Somebody upstream already substituted a template. A page builder's
+		// global header/footer layout arrives exactly this way — Elementor Pro
+		// Theme Builder, Divi, Beaver Themer, Bricks and Oxygen all filter
+		// template_include at a lower priority than ours, so by the time we run
+		// $template is theirs rather than the one WordPress resolved.
+		//
+		// Overwriting it costs the owner twice: the builder's chrome disappears,
+		// and so does its CSS/JS, because a builder enqueues those only when its
+		// own template or location actually renders. Nothing fails to load; it is
+		// never requested. They own the page, so stand down.
+		if ( ! self::is_untouched_by_upstream( $template ) ) {
+			return $template;
+		}
+
 		// No usable no-sidebar page template on this theme, and not Reign — fall
 		// back to the plugin's own sidebar-free shell so the sidebar never leaks
 		// through on a non-Wbcom theme.
@@ -1217,6 +1231,35 @@ class TemplateLoader {
 		 * @param int    $post_id  The app page being rendered.
 		 */
 		return (string) apply_filters( 'mvs_app_template', $resolved, $post_id );
+	}
+
+	/**
+	 * Whether WordPress resolved this template on its own, with no other
+	 * `template_include` filter substituting one first.
+	 *
+	 * The two theme kinds need different baselines. A block theme routes every
+	 * singular view through `wp-includes/template-canvas.php` and ships no
+	 * `page.php`, so `locate_template()` answers nothing there; a classic theme
+	 * resolves down the page/singular/index chain.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $template Template path as handed to `template_include`.
+	 * @return bool True when untouched, false when something upstream replaced it.
+	 */
+	private static function is_untouched_by_upstream( string $template ): bool {
+		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+			// Core hands every unsubstituted singular view the block canvas.
+			// Matched by basename so this needs no ABSPATH/WPINC constants —
+			// nothing else in a request is named template-canvas.php.
+			return 'template-canvas.php' === basename( $template );
+		}
+
+		$default = locate_template( array( 'page.php', 'singular.php', 'index.php' ) );
+
+		// A classic theme carrying none of the three gives us nothing to compare
+		// against. Assume untouched rather than silently dropping our own layout.
+		return '' === $default || $template === $default;
 	}
 
 	/**

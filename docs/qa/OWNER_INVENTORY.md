@@ -6,7 +6,7 @@
 |---|---|---|
 | Options / settings | 64 (+9 foreign) | O-* — does each do what it says, is the default right |
 | Admin pages | 16 | O-* / A-* — can the owner find it |
-| Templates | 31 shipped, 0 via locate_template, theme-override loader: NO | T-* — looks right on their theme, can they override |
+| Templates | 31 shipped, 1 named literally, 4 locate_template call(s), theme-override loader: yes | T-* — looks right on their theme, can they override |
 | Emails | 0 `wp_mail` sites | E-* — what fires, when, editable |
 | Hooks | 119 actions, 234 filters (255 own, 256 documented) | D-* — developer-friendly |
 
@@ -140,7 +140,7 @@ Shipped:
 
 Overridable via `locate_template` (theme can replace):
 
-- (none — nothing is theme-overridable; that is a T-finding)
+- `page.php`
 
 ## Emails & notifications
 
