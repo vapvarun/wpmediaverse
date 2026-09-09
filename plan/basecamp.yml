@@ -1,0 +1,29 @@
+# Basecamp ledger config for WPMediaVerse.
+#
+# Read by wppqa_learn_from_basecamp, which writes plan/basecamp/ledger.md +
+# ledger.json + a per-card cache. The ledger is what stops a card being
+# re-researched from zero: fix SHAs, reopen patterns, module hot-spots and
+# title-similarity duplicate detection all persist across sessions.
+#
+# The tool does NOT talk to Basecamp. Fetch the listings named in its `needsFetch`
+# reply via basecamp-mcp, then call it again with them.
+project_id: 46336461
+project_url: https://3.basecamp.com/5798509/projects/46336461
+
+# Column name -> Basecamp column id. Names are free-form but must stay stable:
+# they key the cache and the ledger's per-column history.
+columns:
+  bugs: 9667036607
+  ready_for_testing: 9637173253
+  ui_issues: 9700680417
+  in_progress: 9637170837
+  done: 9637170838
+
+# Where new cards go. Suggestions and scope-reference columns are deliberately
+# NOT listed as bug sources — the ledger tracks defects, not backlog.
+intake: bugs
+verdict_targets:
+  PASS: done
+  BOUNCE: bugs
+  BLOCKED: null      # stays put; the comment says what is needed
+  REFUTED: done

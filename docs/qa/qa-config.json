@@ -24,13 +24,78 @@
     "bugs_column_id": 9667036607,
     "ready_for_testing_column_id": 9637173253
   },
-  "modes": ["free", "combo"],
+  "modes": [
+    "free",
+    "combo"
+  ],
   "report_path": "qa/.last-smoke-pass.json",
   "supplements_path": null,
-
   "_notes": "MediaVerse predates the docs/qa/ convention: its QA tree lives at the plugin root (qa/), not docs/qa/. The paths below are the authoritative ones and match what bin/build-release.sh reads as its release gate (lines 242-245). Keep report_path_free in sync with that script.",
   "runbook_path": "qa/runbooks/AGENT_SMOKE_RUNBOOK.md",
   "pro_runbook_path": "qa/runbooks/MANUAL-UX-QA-pro.md",
   "report_path_free": "qa/.last-smoke-pass-free.json",
-  "qa_root": "qa"
+  "qa_root": "qa",
+  "personas": [
+    {
+      "login": "journey_subscriber",
+      "role": "subscriber",
+      "ladder": "member-owner",
+      "note": "default member; 22 journey refs"
+    },
+    {
+      "login": "journey_owner",
+      "role": "subscriber",
+      "ladder": "member-owner",
+      "note": "privacy journeys: the item owner"
+    },
+    {
+      "login": "journey_other",
+      "role": "subscriber",
+      "ladder": "member-other",
+      "note": "same role, NOT the owner \u2014 the two-member rule"
+    },
+    {
+      "login": "journey_author",
+      "role": "author",
+      "ladder": "member-owner",
+      "note": "author-role journeys"
+    },
+    {
+      "login": "journey_editor",
+      "role": "editor",
+      "ladder": "elevated",
+      "note": "moderator: moderate_mvs_media, *_others_*, manage_mvs_access"
+    },
+    {
+      "login": "journey_avatar",
+      "role": "subscriber",
+      "ladder": "member-owner",
+      "note": "avatar/profile journeys"
+    },
+    {
+      "login": "journey_reporter",
+      "role": "subscriber",
+      "ladder": "member-other",
+      "note": "files reports against others' media"
+    },
+    {
+      "login": "journey_bystander",
+      "role": "subscriber",
+      "ladder": "member-other",
+      "note": "uninvolved third member"
+    },
+    {
+      "login": "journey_blocker",
+      "role": "subscriber",
+      "ladder": "member-owner",
+      "note": "block journeys: the one who blocks"
+    },
+    {
+      "login": "journey_blocked",
+      "role": "subscriber",
+      "ladder": "member-other",
+      "note": "block journeys: the one who is blocked"
+    }
+  ],
+  "_personas_notes": "anonymous = no login. admin = ?autologin=1 (user ID 1), last rung of the ladder, never the first. Bootstrap: bash bin/qa-fixtures.sh. Oracle: audit/ROLE_MATRIX.md."
 }
