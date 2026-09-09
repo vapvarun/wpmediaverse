@@ -6022,6 +6022,38 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* ==========================================================================
+   34b. Touch target floor — one rule, not a list
+   ========================================================================== */
+
+/* Every interactive plugin control clears --mvs-touch-min on a touch viewport.
+   This replaces per-surface selector lists: messaging.css raised five chat
+   controls by name, reported "0 under the floor", and the profile-prompt close
+   still shipped at 17x22 because it renders only for a member with no profile
+   and so was never on screen during that sweep (card 10285849953).
+
+   Same reasoning as the [hidden] rule above: an allowlist guarantees the next
+   control added is missed too.
+
+   min-height only. A blanket min-width overflows controls that are meant to
+   stretch or sit inline — the chat tab row is the documented case — so width
+   floors stay with the icon-only controls that need them. Height is the
+   dimension these misses actually fail on. */
+@media (max-width: 640px) {
+
+	[class*="mvs-"] button,
+	button[class*="mvs-"],
+	[class*="mvs-"] [role="button"],
+	a[class*="mvs-btn"] {
+		min-height: var(--mvs-touch-min, 44px);
+	}
+
+	/* Icon-only controls have no text to give them width. */
+	.mvs-profile-prompt-close {
+		min-width: var(--mvs-touch-min, 44px);
+	}
+}
+
+/* ==========================================================================
    35. Accessibility — Focus & Reduced Motion
    ========================================================================== */
 

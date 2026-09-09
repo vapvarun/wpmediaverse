@@ -367,12 +367,6 @@ $mvs_archive_url = home_url( '/media/' );
 		$media_items = $per_page > 0 ? $mvs_repo->query( $mvs_query_args ) : array();
 	}
 
-	// Also count albums (albums are still a CPT).
-	$album_count = 0;
-	if ( ! $mvs_profile && ! $mvs_search && ! $mvs_filter_tag && ! $mvs_filter_cat ) {
-		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
-	}
-
 	$max_pages = $per_page > 0 ? (int) ceil( $total_items / $per_page ) : 1;
 
 	// Explore feed is media-only, recent-upload-first. Albums are static
@@ -383,7 +377,6 @@ $mvs_archive_url = home_url( '/media/' );
 	// purely on the media stream. Search / profile / tag / category filters
 	// already worked this way; this just removes the album-on-top exception
 	// from page 1.
-	$albums = array(); // no albums in this feed.
 
 	$has_items = ! empty( $media_items );
 	?>
@@ -513,69 +506,6 @@ $mvs_archive_url = home_url( '/media/' );
 		endif;
 		?>
 		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style() ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
-			<?php
-			// Render albums first.
-			foreach ( $albums as $album_post ) :
-				$album_svc      = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-				$item_count     = $album_svc->get_item_count( $album_post->ID );
-				$cover_media_id = $album_svc->get_resolved_cover_media_id( $album_post->ID );
-				// Route album cover through the read-side facade — bypasses
-				// the .htaccess deny-all and uses the unified signed-URL flow.
-				$cover_url = $cover_media_id
-					? \WPMediaVerse\Core\MediaUrl::thumb( $cover_media_id )
-					: $album_svc->get_cover_url( $album_post->ID );
-				?>
-				<div class="mvs-grid-item mvs-grid-item--album">
-					<a href="<?php echo esc_url( get_permalink( $album_post->ID ) ); ?>" class="mvs-grid-item-link">
-						<?php if ( $cover_url ) : ?>
-							<img src="<?php echo esc_url( $cover_url ); ?>"
-								alt="<?php echo esc_attr( $album_post->post_title ); ?>"
-								loading="lazy" />
-						<?php else : ?>
-							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album">
-								<span class="mvs-grid-album-icon">&#128193;</span>
-							</div>
-						<?php endif; ?>
-						<span class="mvs-album-badge" title="<?php echo esc_attr( sprintf( '%d items', $item_count ) ); ?>">
-							<span class="dashicons dashicons-images-alt2"></span>
-						</span>
-						<div class="mvs-grid-item-overlay">
-							<div class="mvs-grid-item-stats">
-								<span class="mvs-grid-stat">
-									<i data-lucide="images" aria-hidden="true"></i>
-									<span class="mvs-sr-only"><?php
-										/* translators: %s: number of items in the album. */
-										echo esc_html( sprintf( _n( '%s item', '%s items', (int) $item_count, 'wpmediaverse' ), number_format_i18n( $item_count ) ) );
-									?></span>
-									<span aria-hidden="true"><?php echo esc_html( $item_count ); ?></span>
-								</span>
-							</div>
-						</div>
-					</a>
-					<?php
-					// Plain name only — keep badge decoration for the
-					// single-media / lightbox surfaces, not on every grid
-					// thumbnail. Avatar + name link to the album owner's
-					// profile, matching the media grid (card #9962508646).
-					$mvs_album_author_id  = (int) $album_post->post_author;
-					$mvs_tpl_helpers      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
-					$mvs_album_author_url = $mvs_tpl_helpers->get_user_profile_url( $mvs_album_author_id );
-					$mvs_album_author     = $mvs_tpl_helpers->get_display_name_plain( $mvs_album_author_id );
-					?>
-					<div class="mvs-grid-item-info">
-						<?php if ( '' !== $mvs_album_author_url ) : ?>
-							<a class="mvs-grid-item-author-link" href="<?php echo esc_url( $mvs_album_author_url ); ?>">
-								<?php echo get_avatar( $mvs_album_author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-								<span class="mvs-grid-item-author"><?php echo esc_html( $mvs_album_author ); ?></span>
-							</a>
-						<?php else : ?>
-							<?php echo get_avatar( $mvs_album_author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-							<span class="mvs-grid-item-author"><?php echo esc_html( $mvs_album_author ); ?></span>
-						<?php endif; ?>
-					</div>
-				</div>
-			<?php endforeach; ?>
-
 			<?php
 			// Render media items from index table.
 			$media_ids_for_stats = array_map( 'intval', array_column( $media_items, 'media_id' ) );
