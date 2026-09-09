@@ -21,7 +21,8 @@ columns:
 
 # Where new cards go. Suggestions and scope-reference columns are deliberately
 # NOT listed as bug sources — the ledger tracks defects, not backlog.
-intake: bugs
+intake: bugs   # every QA finding lands here, cleanup and tech-debt included
+suggestions: 10024110576   # ideas/plans only — work nobody has found broken
 verdict_targets:
   PASS: done
   BOUNCE: bugs
