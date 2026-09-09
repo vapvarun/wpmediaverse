@@ -762,6 +762,21 @@ class ActivityContentIntegration {
 					return $m[0];
 				}
 
+				// The media this tile points at may be gone. ActivitySyncIntegration
+				// strips baked grids on delete, but only for deletions that fire
+				// `mvs_media_deleted`, and only since that hardening landed —
+				// anything removed before it, or by a path that bypasses the hook,
+				// still has its tile sitting in saved activity content. Refreshing
+				// the URL then just re-signs a link to nothing and the member gets
+				// a broken image where a photo used to be.
+				//
+				// Drop the tile instead, exactly as the rebuild path at the top of
+				// this class already does for the no-baked-markup case. Both render
+				// paths now agree that a missing media renders nothing.
+				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+					return '';
+				}
+
 				$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );
 				$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_thumbnail_url( $media_id, 'large' );
 
