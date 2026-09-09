@@ -516,11 +516,21 @@ BuddyPress notifications: 2 · WooCommerce emails: 0 · mail filters: 5
 
 </details>
 
+## Promise candidates (M-1)
+
+Lines in the readme that make a claim the smoke must prove. Confirm the real ones into `promises[]` in `qa-config.json`; each becomes a hard row.
+
+- `readme.txt:77` — No. WPMediaVerse works as a standalone plugin. BuddyPress integration (activity feed, profile tabs, friend-based privacy) activates automatically when BuddyPress is detected.
+- `readme.txt:463` — Non-public uploads now render their own thumbnails. Upload and serve pipeline unified so the bug pattern cannot recur. Legacy broken video posters heal automatically on update.
+
 ## What activation creates
 
 | Thing | Found |
 |---|---|
 | activation hook | 1 |
+| deactivation hook | 1 |
+| uninstall | uninstall.php |
+| textdomain load | 1 |
 | pages inserted | 9 |
 | post types | mvs_album, mvs_collection |
 | taxonomies | mvs_category, mvs_tag |

@@ -390,6 +390,17 @@ For a card in **Bugs** (a report, not a fix) the question is *"is this real?"*, 
 | **CANNOT-REPRO** | Walked the ladder on the named surface and config; did not reproduce. Say exactly what was tried — this is a finding, not a dismissal. |
 | **NEEDS-INFO** | The card does not say who saw it, where, or on what config. Ask the specific question; do not guess. |
 
+### The finding bar - what a BOUNCE or a new card must carry
+
+A finding without all four is a lead, and a lead is a **comment**, not a card. Soft opinions dressed as bugs are how the Bugs column fills with noise.
+
+| Field | Means |
+|---|---|
+| **Where** | Surface + role + config + a URL. "Explore, as member-other, Astra, 390px" |
+| **Why wrong** | The contract it breaks: the label, the setting, the doc line, the promise id, the standard (WCAG 2.1 AA 1.4.3, the 44px token) |
+| **Who it costs** | The role that hits it and what they cannot do. "A member cannot open a document shared with them" |
+| **Fix pointer** | Where the same problem was already solved in this codebase - the sibling to copy. `PermissionController::can_manage_sharing()` when `the_share_button()` hand-rolled it |
+
 **`Not covered` is mandatory and must not be empty-by-default.** A verdict that
 claims total coverage is the least trustworthy kind.
 

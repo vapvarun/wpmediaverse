@@ -126,3 +126,22 @@ When a card is bounced, reopened, or a customer finds what QA did not:
 3. Put the check in the "as the owner" column — if the check needs code, it is
    the wrong question; find the owner-visible symptom instead.
 4. Sync the copy in every plugin's `docs/standards/` at its next release.
+
+## Added 2026-09-09 — from the WPMediaVerse 2.4.x cycle
+
+| id | Question | Check as the owner | Evidence |
+|---|---|---|---|
+| T-8 | Is anything meant to be hidden still visible on a theme that ships **no** `[hidden]` reset? *(card 10266317652 — Reign/BuddyX silently rescued it; Astra did not)* | On Astra or Twenty Twenty-Five, every element with `hidden` must have `offsetParent === null` | List of hidden-but-visible elements, per theme |
+| O-9 | If a setting holds a value that used to be legal and no longer is, does the feature fall back **visibly**, or fail silent? *(card P6 — `feed_layout='default'` disabled the feed with no message)* | Set each enum option to a retired value, reload | Fallback shown, or an admin notice |
+| P-5 | To a role that is denied an item, does it look **identical** to an item that does not exist — same status, same page? *(2026-08-11 F2 — a denied document returned a 403 login page, confirming it existed)* | Request a denied id and a nonexistent id as `member-other` and as anonymous | Same status code, same body |
+| C-5 | Before writing CANNOT-REPRO, does every fixture the repro depends on actually resolve? *(card 10264236711 — "cannot reproduce" was a deleted-media fixture)* | Confirm the row exists, the slug is live, the user is the stated role | Fixture check listed in the verdict, or BLOCKED |
+
+## Added 2026-09-09 — admin state contract and promises (from external QA feedback)
+
+| id | Question | Check as the owner | Evidence |
+|---|---|---|---|
+| O-10 | Does every settings screen with nothing configured say what to do **next**, rather than showing an empty shell? | Fresh install, open each admin page | A next action (button or link) on every empty screen |
+| O-11 | Is every field label a real label - not a placeholder that vanishes on focus, not the option key? | Tab through each form | Labels persist; none read like `mvs_foo_bar` |
+| O-12 | When a save fails, is the error on the **field** that failed, not a page-level banner? | Submit an invalid value | Inline field error, focus moved to it |
+| M-1 | Does every promise the readme or marketing makes ("reversible", "never leaves your server", "owner can always get back in") hold as a walked row? | `owner-inventory.py` lists promise candidates; confirm each into `promises[]` in qa-config | One row per promise, PASS with evidence |
+| M-2 | Is every artefact that exists in code alive on the site - shortcode renders, block renders, route answers, admin page loads? | `owner-inventory.py --json`, then walk | `coverage.code_to_live` with no `missing-from-live` left unexplained |
