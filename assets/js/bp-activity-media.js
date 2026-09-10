@@ -741,14 +741,34 @@
 			clone.classList.add( 'mvs-bp-lightbox-clone' );
 
 			// Strip ALL data-wp-* attributes to fully disconnect from IA.
+			//
+			// And hand over every element IA was controlling in a KNOWN state.
+			// data-wp-bind--hidden makes IA stamp a real hidden attribute at
+			// boot; stripping the directive leaves that attribute frozen, and
+			// this vanilla driver only ever un-hides the handful of elements it
+			// knows by name. The <picture> wrapper around the lightbox image was
+			// one it did not know, and `.mvs-lightbox-media picture[hidden]`
+			// made the stale attribute authoritative — so the media area opened
+			// solid black (Basecamp 10264071147). The comments heading was
+			// another, silently.
+			//
+			// Clearing by "did IA control this?" rather than by a list of
+			// elements means the next data-wp-bind--hidden added to the template
+			// cannot reopen this (Coding Rule 22). Safe because openSharedLightbox()
+			// re-asserts loading/media/sidebar immediately after this returns,
+			// and everything else sits inside those still-hidden containers.
 			var allEls = clone.querySelectorAll( '*' );
 			allEls.forEach( function( el ) {
+				var wasIaHidden = el.hasAttribute( 'data-wp-bind--hidden' );
 				var attrs = Array.from( el.attributes );
 				attrs.forEach( function( attr ) {
 					if ( attr.name.indexOf( 'data-wp-' ) === 0 ) {
 						el.removeAttribute( attr.name );
 					}
 				} );
+				if ( wasIaHidden ) {
+					el.removeAttribute( 'hidden' );
+				}
 			} );
 			// Also strip from the clone root.
 			var rootAttrs = Array.from( clone.attributes );
@@ -1053,12 +1073,25 @@
 				var existing = list.querySelectorAll( '.mvs-lightbox-comment--vanilla' );
 				existing.forEach( function( el ) { el.remove(); } );
 
-				var noComments = list.querySelector( '.mvs-lightbox-no-comments' );
+				// Scoped to the overlay, not the list: the placeholder and the
+				// heading are SIBLINGS of <ul class="mvs-lightbox-comment-list">,
+				// so list.querySelector() always returned null and this whole
+				// branch was dead — the placeholder sat there next to real
+				// comments (Basecamp 10264121252).
+				var noComments = overlay.querySelector( '.mvs-lightbox-no-comments' );
+				var heading    = overlay.querySelector( '.mvs-lightbox-comments-heading' );
 				if ( noComments ) {
 					if ( comments.length ) {
 						noComments.setAttribute( 'hidden', '' );
 					} else {
 						noComments.removeAttribute( 'hidden' );
+					}
+				}
+				if ( heading ) {
+					if ( comments.length ) {
+						heading.removeAttribute( 'hidden' );
+					} else {
+						heading.setAttribute( 'hidden', '' );
 					}
 				}
 
@@ -1106,18 +1139,38 @@
 			} );
 		}
 
+		// Label the favourite button WITHOUT destroying it.
+		//
+		// The template ships <i data-lucide="heart"> + <span> inside the button,
+		// and Lucide has already swapped the <i> for an SVG by the time the clone
+		// is taken. Assigning textContent wiped both and substituted a U+2665
+		// dingbat, so the clone lost its icon and the longer "Favorited" string
+		// hit the button's overflow:hidden and clipped (Basecamp 10264108133).
+		// Write only the <span>; leave the icon alone.
+		function setSharedFavState( btn, isFav ) {
+			if ( ! btn ) { return; }
+			btn.classList.toggle( 'active', isFav );
+			btn.setAttribute( 'aria-pressed', isFav ? 'true' : 'false' );
+			var label = btn.querySelector( 'span' );
+			var text  = isFav ? __( 'Favorited', 'wpmediaverse' ) : __( 'Favorite', 'wpmediaverse' );
+			if ( label ) {
+				label.textContent = text;
+			} else {
+				// Older markup with no <span>: append one rather than clobbering the icon.
+				label = document.createElement( 'span' );
+				label.textContent = text;
+				btn.appendChild( label );
+			}
+		}
+
 		function loadSharedFavorite( overlay, mediaId ) {
 			apiGet( 'media/' + mediaId + '/favorite' ).then( function( data ) {
-				var favBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lightbox-action' );
+				// .mvs-lb-fav, not the first .mvs-lightbox-action in the bar: the
+				// first-match selector rewrites whatever button happens to lead
+				// the row, which is not the favourite one once Save/Edit render.
+				var favBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lb-fav' );
 				if ( ! favBtn ) { return; }
-				var isFav = !! ( data && data.favorited );
-				if ( isFav ) {
-					favBtn.classList.add( 'active' );
-					favBtn.textContent = '\u2665 ' + __( 'Favorited', 'wpmediaverse' );
-				} else {
-					favBtn.classList.remove( 'active' );
-					favBtn.textContent = '\u2661 ' + __( 'Favorite', 'wpmediaverse' );
-				}
+				setSharedFavState( favBtn, !! ( data && data.favorited ) );
 			} ).catch( function() { /* silent */ } );
 		}
 
@@ -1284,14 +1337,7 @@
 				: apiPost( 'media/' + suiState.mediaId + '/favorite', {} );
 
 			promise.then( function() {
-				var newFav = ! isFav;
-				if ( newFav ) {
-					btn.classList.add( 'active' );
-					btn.textContent = '\u2665 ' + __( 'Favorited', 'wpmediaverse' );
-				} else {
-					btn.classList.remove( 'active' );
-					btn.textContent = '\u2661 ' + __( 'Favorite', 'wpmediaverse' );
-				}
+				setSharedFavState( btn, ! isFav );
 			} );
 		} );
 
