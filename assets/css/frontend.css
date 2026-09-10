@@ -6679,14 +6679,37 @@ a.mvs-dashboard-card-title:hover {
     border: none;
     cursor: pointer;
     font-size: 13px;
-    padding: 6px 4px;
+    padding: 6px 2px;
     text-align: center;
     border-radius: 6px;
     text-decoration: none;
     color: var(--mvs-text);
-    white-space: nowrap;
+    /* Overflow is handled on .mvs-lightbox-action__label, not here. A bare text
+       node in a display:flex button becomes an anonymous flex item, which
+       text-overflow cannot reach - so the nowrap/overflow/text-overflow trio
+       that used to live on this rule silently did nothing and "Download" was
+       hard-cut at 56px. Basecamp 10286532431. */
+    line-height: 1.15;
+}
+
+/* The label owns its own truncation. display:block (not a flex item) is what
+   makes text-overflow work at all; max-width keeps it inside the 56px column
+   the fixed 6-7 button track allows. Degrades to "Herunterl..." rather than a
+   mid-word break or an invisible word, which matters more for translations
+   than for English - "Download" only overruns by 1.8px, "Herunterladen" by 30. */
+.mvs-lightbox-action__label {
+    display: block;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    /* 11px is what actually fits. Measured in the 380px sidebar: the 6-7 button
+       track gives each label a 52px content box, and "Download" - the longest
+       English label - needs 57.8px at 13px, 53.4px at 12px, 48.9px at 11px.
+       13px was never wide enough; it only looked fine because the clip was
+       1.8px. The ellipsis above is the safety net for translations, not for
+       English. */
+    font-size: 11px;
 }
 
 .mvs-lightbox-action:hover,
