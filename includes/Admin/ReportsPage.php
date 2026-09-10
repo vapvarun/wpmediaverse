@@ -85,7 +85,7 @@ class ReportsPage {
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Reports', 'wpmediaverse' ),
 			$menu_title,
-			'manage_options',
+			'mvs_moderation_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);

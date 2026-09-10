@@ -52,7 +52,7 @@ wp_interactivity_state(
 			'mvs_comment_edit_window',
 			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 		),
-		'canModerateComments' => current_user_can( 'moderate_comments' ),
+		'canModerateComments' => current_user_can( 'moderate_mvs_media' ),
 		'i18n'                => array(
 			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
 			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),

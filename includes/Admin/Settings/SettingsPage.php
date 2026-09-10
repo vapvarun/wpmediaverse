@@ -201,7 +201,7 @@ class SettingsPage {
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'WPMediaVerse Settings', 'wpmediaverse' ),
 			__( 'Settings', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);

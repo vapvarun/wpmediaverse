@@ -1869,8 +1869,21 @@ class MediaController extends WP_REST_Controller {
 
 		$author_id_raw = ! empty( $all['post_author'] ) ? (int) $all['post_author'] : 0;
 		$viewer_id     = get_current_user_id();
-		$can_edit      = $viewer_id > 0
-			&& ( $viewer_id === $author_id_raw || user_can( $viewer_id, 'manage_options' ) );
+		$is_own        = $viewer_id > 0 && $viewer_id === $author_id_raw;
+
+		// Mirror update_item_permissions_check() / delete_item_permissions_check()
+		// exactly: own item needs edit_mvs_medias, someone else's needs
+		// edit_others_mvs_medias. The old test was ownership-or-manage_options,
+		// which ignored the permission matrix entirely — so revoking "Edit" left
+		// the button on screen and a member clicking it got a 403 from the API
+		// (Basecamp 10285497657), while a delegated "Edit Others" role had no
+		// affordance at all (10285691473).
+		$can_edit = $is_own
+			? user_can( $viewer_id, 'edit_mvs_medias' )
+			: ( $viewer_id > 0 && user_can( $viewer_id, 'edit_others_mvs_medias' ) );
+		$can_delete = $is_own
+			? user_can( $viewer_id, 'delete_mvs_medias' )
+			: ( $viewer_id > 0 && user_can( $viewer_id, 'delete_others_mvs_medias' ) );
 
 		// allow_download: per-media flag. Absent meta = default true.
 		// '0' string = explicit opt-out by the owner. The lightbox button
@@ -1952,6 +1965,7 @@ class MediaController extends WP_REST_Controller {
 			// media predates it or is not an image).
 			'placeholder_color' => ! empty( $all['placeholder_color'] ) ? (string) $all['placeholder_color'] : '',
 			'can_edit'          => $can_edit,
+			'can_delete'        => $can_delete,
 			'is_favorited'      => $is_favorited,
 			'viewer_reaction'   => $viewer_reaction,
 		);

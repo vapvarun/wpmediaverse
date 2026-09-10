@@ -40,7 +40,7 @@ class SetupWizard {
 			'wpmediaverse',
 			__( 'WPMediaVerse Setup', 'wpmediaverse' ),
 			__( 'Setup', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_wizard' )
 		);

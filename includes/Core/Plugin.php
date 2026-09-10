@@ -1042,7 +1042,7 @@ class Plugin {
 		add_menu_page(
 			__( 'WPMediaVerse', 'wpmediaverse' ),
 			__( 'WPMediaVerse', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' ),
 			'dashicons-format-gallery',
@@ -1054,7 +1054,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'Overview', 'wpmediaverse' ),
 			__( 'Overview', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' )
 		);
@@ -1067,7 +1067,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'All Media', 'wpmediaverse' ),
 			__( 'All Media', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_moderation_screen',
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);
@@ -1099,7 +1099,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'Tags', 'wpmediaverse' ),
 			__( 'Tags', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_moderation_screen',
 			'mvs-tags',
 			array( self::$container->get( 'admin.tags' ), 'render' )
 		);
@@ -1905,14 +1905,38 @@ class Plugin {
 	 * @return string[]
 	 */
 	public static function map_document_screen_cap( $caps, $cap, $user_id ): array {
-		if ( \WPMediaVerse\Admin\DocumentListPage::CAP !== $cap ) {
+		$primitive = self::SCREEN_CAPS[ $cap ] ?? '';
+
+		if ( '' === $primitive ) {
 			return (array) $caps;
 		}
 
-		return user_can( (int) $user_id, 'manage_mvs_documents' )
-			? array( 'manage_mvs_documents' )
+		return user_can( (int) $user_id, $primitive )
+			? array( $primitive )
 			: array( 'manage_options' );
 	}
+
+	/**
+	 * Meta capability => the plugin primitive that satisfies it.
+	 *
+	 * add_submenu_page()'s $capability governs BOTH menu visibility and
+	 * user_can_access_admin_page(), so registering a screen with
+	 * 'manage_options' locks out a delegated role before the render callback's
+	 * own "manage_options || <primitive>" check ever runs — which is why those
+	 * checks sat dead in seven callbacks. Registering the META cap instead lets
+	 * this filter answer "administrator, OR a role the owner delegated this to".
+	 *
+	 * A map, not a per-screen method: adding a screen must not require
+	 * remembering to add a matching filter somewhere else (Coding Rule 22).
+	 *
+	 * @since 2.4.2
+	 * @var array<string,string>
+	 */
+	public const SCREEN_CAPS = array(
+		'mvs_manage_documents_screen' => 'manage_mvs_documents',
+		'mvs_settings_screen'         => 'manage_mvs_settings',
+		'mvs_moderation_screen'       => 'moderate_mvs_media',
+	);
 
 	/**
 	 * Whether anything on this site can actually show a document.
