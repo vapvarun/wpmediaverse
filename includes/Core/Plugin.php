@@ -1919,10 +1919,10 @@ class Plugin {
 	/**
 	 * Meta capability => the plugin primitive that satisfies it.
 	 *
-	 * add_submenu_page()'s $capability governs BOTH menu visibility and
-	 * user_can_access_admin_page(), so registering a screen with
+	 * The $capability passed to add_submenu_page() governs BOTH menu visibility
+	 * and user_can_access_admin_page(), so registering a screen with
 	 * 'manage_options' locks out a delegated role before the render callback's
-	 * own "manage_options || <primitive>" check ever runs — which is why those
+	 * own "manage_options || <primitive>" check ever runs - which is why those
 	 * checks sat dead in seven callbacks. Registering the META cap instead lets
 	 * this filter answer "administrator, OR a role the owner delegated this to".
 	 *

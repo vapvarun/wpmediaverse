@@ -83,7 +83,12 @@
 		// #mvs-app[data-wp-on--click="actions.navigate"] (client-nav), so matching
 		// that ancestor bailed on every click and the lightbox never opened.
 		// (Bugs #10014549774; regression guard #10019404777.)
-		if ( e.target.closest( 'button' ) ) {
+		// Form controls too, not just buttons: Pro's Instagram layout puts a
+		// comment <input> inside the [data-media-id] card, so typing in it opened
+		// the lightbox instead (Basecamp 10281485098). Asking "is this an
+		// interactive control" beats listing the layouts that have one — the next
+		// layout with a field would have reintroduced it (Coding Rule 22).
+		if ( e.target.closest( 'button, input, textarea, select, label, [contenteditable]' ) ) {
 			return;
 		}
 
