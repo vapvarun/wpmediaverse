@@ -187,7 +187,61 @@ class ActivityContentIntegration {
 	 * @param object|null $activity BP activity object (passed by ref from BP).
 	 * @return string Enhanced content.
 	 */
+	/**
+	 * Remove <img> tags pointing at files in our own uploads folder that no
+	 * longer exist, along with the anchor wrapping them.
+	 *
+	 * Scoped to wp-content/uploads/wpmediaverse/ on this site so it can never
+	 * touch an image another plugin, the theme, or the member put there. Only
+	 * touches content that actually contains that path, so the common case is
+	 * one strpos and no work.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $content Activity content.
+	 * @return string
+	 */
+	private function drop_missing_upload_images( string $content ): string {
+		$uploads = wp_get_upload_dir();
+		$base_url = trailingslashit( $uploads['baseurl'] ) . 'wpmediaverse/';
+		$base_dir = trailingslashit( $uploads['basedir'] ) . 'wpmediaverse/';
+
+		if ( false === strpos( $content, $base_url ) ) {
+			return $content;
+		}
+
+		return (string) preg_replace_callback(
+			'#(?:<a\b[^>]*>\s*)?<img\b[^>]*\bsrc=["\']([^"\']+)["\'][^>]*>(?:\s*</a>)?#i',
+			static function ( $m ) use ( $base_url, $base_dir ) {
+				if ( 0 !== strpos( $m[1], $base_url ) ) {
+					return $m[0];
+				}
+
+				$relative = substr( $m[1], strlen( $base_url ) );
+				$relative = explode( '?', $relative )[0];
+				$path     = $base_dir . ltrim( $relative, '/' );
+
+				// Containment: a traversal in stored content must never let this
+				// stat outside the plugin's own upload folder.
+				if ( false !== strpos( $relative, '..' ) ) {
+					return '';
+				}
+
+				return file_exists( $path ) ? $m[0] : '';
+			},
+			$content
+		);
+	}
+
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
+		// Drop <img> tags whose file is gone. Activities saved before media was
+		// referenced by id carry literal <img src="...uploads/wpmediaverse/...">
+		// with no media id anywhere, so every id-keyed guard we have - the
+		// linkage renderer, the _mvs_media_ids rebuild, refresh_broadcast_urls -
+		// correctly finds nothing to check and the member sees broken-image
+		// boxes on their own timeline forever. Basecamp 10290384337.
+		$content = $this->drop_missing_upload_images( $content );
+
 		// Activity already has MVS media markup baked into content
 		// (BP composer flow saves content with `mvs-activity-media-grid`
 		// inline). Refresh the URLs in place before returning — saved markup
