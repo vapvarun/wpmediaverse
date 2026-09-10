@@ -45,7 +45,7 @@
 	border: 1px solid var(--mvs-primary);
 	border-radius: 4px;
 	background: transparent;
-	color: var(--mvs-primary);
+	color: var(--mvs-primary-text, var(--mvs-primary));
 	cursor: pointer;
 	font-size: 14px;
 }

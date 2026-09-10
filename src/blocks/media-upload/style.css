@@ -219,6 +219,6 @@
 }
 
 .mvs-upload-docs-pointer a {
-	color: var(--mvs-primary);
+	color: var(--mvs-primary-text, var(--mvs-primary));
 	text-decoration: underline;
 }

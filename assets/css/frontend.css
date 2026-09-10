@@ -577,7 +577,7 @@ body.mvs-page {
 
 .mvs-back-link:hover,
 .mvs-back-link:focus-visible {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     background: var(--mvs-info-bg-light);
 }
 
@@ -995,7 +995,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-media-author-name:hover {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-media-date {
@@ -1143,7 +1143,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-btn.mvs-follow-btn--quiet:hover,
 .mvs-btn.mvs-follow-btn--quiet:focus-visible {
     border-color: var(--mvs-primary);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* Media Content */
@@ -1230,7 +1230,7 @@ body.dark-mode .mvs-skeleton::after {
     background: var(--mvs-info-bg);
     border-radius: 16px;
     font-size: 0.8125rem;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     text-decoration: none;
     transition: all 0.2s;
 }
@@ -1638,7 +1638,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-grid-item-author-link:hover .mvs-grid-item-author,
 .mvs-grid-item-author-link:focus-visible .mvs-grid-item-author {
-    color: var(--mvs-primary, var(--mvs-text));
+    color: var(--mvs-primary-text, var(--mvs-text));
     text-decoration: underline;
 }
 
@@ -1843,7 +1843,7 @@ body.dark-mode .mvs-skeleton::after {
     display: block;
     font-size: 2em;
     font-weight: 700;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     line-height: 1.2;
 }
 
@@ -1888,7 +1888,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-lock-icon {
     font-size: 36px;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     margin-bottom: 12px;
 }
 
@@ -1951,7 +1951,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar button:hover {
     background: none;
     border: 1px solid var(--mvs-primary);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-social-bar__actions {
@@ -2016,7 +2016,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-actions button:hover,
 .mvs-social-actions button:focus {
     background: none;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     border: 1px solid var(--mvs-primary);
 }
 
@@ -2650,7 +2650,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 a.mvs-dashboard-card-title:hover {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-dashboard-card-meta {
@@ -3057,7 +3057,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-tag-autocomplete-item:hover {
     background: var(--mvs-info-bg);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* ==========================================================================
@@ -3406,7 +3406,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-cloud-item:hover,
 .mvs-tag-cloud-item:focus-visible {
     background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /*
@@ -3561,7 +3561,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-upload-status {
     margin-top: 12px;
     font-size: 0.9em;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-weight: 600;
 }
 
@@ -3806,7 +3806,7 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 6px;
     font-size: 13px;
     background: var(--mvs-info-bg);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-bp-upload-status--success {
@@ -4220,7 +4220,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-playlist-track--active .mvs-playlist-track-num {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-weight: 700;
 }
 
@@ -4258,7 +4258,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-playlist-track-link:hover {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* ==========================================================================
@@ -4410,7 +4410,7 @@ a.mvs-dashboard-card-title:hover {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     background: var(--mvs-info-bg);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-collection-count {
@@ -4431,7 +4431,7 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 4px;
     font-size: 0.75em;
     background: rgba(var(--mvs-primary-rgb), 0.15);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     border: 1px solid rgba(var(--mvs-primary-rgb), 0.30);
 }
 
@@ -5103,7 +5103,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-share-btn:hover {
     border-color: var(--mvs-primary);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-view-count {
@@ -5557,7 +5557,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-search-mode-btn.active {
     background: var(--mvs-bg);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
@@ -5662,14 +5662,18 @@ a.mvs-dashboard-card-title:hover {
     text-decoration: none;
 }
 
-.mvs-login-to-comment {
+.mvs-login-to-comment,
+.mvs-comment-denied {
     text-align: center;
     padding: 12px;
     color: var(--mvs-text-secondary);
 }
 
+/* --mvs-primary is a FILL colour; as text it measures 4.36:1, under the 4.5:1
+   AA floor. --mvs-primary-text is the same hue darkened to pass (Basecamp
+   10253005724). */
 .mvs-login-to-comment a {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* ==========================================================================
@@ -5865,7 +5869,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 0 auto 20px;
     border-radius: 50%;
     background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     z-index: 1;
 }
 
@@ -5933,7 +5937,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-empty-state-frontend--404 .mvs-tag-cloud-item:hover,
 .mvs-empty-state-frontend--404 .mvs-tag-cloud-item:focus-visible {
     background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 @media (max-width: 640px) {
@@ -5998,7 +6002,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn:hover,
 .mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn:focus {
     background: transparent;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     border: 0;
     padding: 0;
     box-shadow: none;
@@ -6016,7 +6020,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-profile-prompt-close:hover,
 .mvs-profile-prompt-close:focus {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     background: none;
     border: none;
 }
@@ -6644,7 +6648,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-reaction.active {
     background: var(--mvs-info-bg);
     border-color: var(--mvs-primary);
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* Action toolbar — 5 buttons (Favorite / Share / Download / Open / Report)
@@ -7105,7 +7109,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 12px 16px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--mvs-primary, #E35656);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     text-decoration: none;
     border-top: 1px solid var(--mvs-border-light, #e5e7eb);
 }
@@ -7152,7 +7156,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-login-prompt a {
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     text-decoration: none;
 }
 
@@ -7283,7 +7287,7 @@ a.mvs-dashboard-card-title:hover {
         0 18px 48px -12px rgba(15, 23, 42, 0.18);
     text-align: center;
     overflow: hidden;
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     box-sizing: border-box;
 }
 
@@ -7322,7 +7326,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 0 auto 20px;
     border-radius: 50%;
     background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     z-index: 1;
 }
 
@@ -7385,7 +7389,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     background: var(--mvs-surface, #fff);
     border-radius: 50%;
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     line-height: 1;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
@@ -7431,11 +7435,11 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-auth-gate__secondary:hover,
 .mvs-auth-gate__secondary:focus-visible {
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-auth-gate__secondary strong {
-    color: var(--mvs-primary, #0073aa);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -7497,7 +7501,7 @@ body.dark-mode .mvs-auth-gate__card {
 .mvs-modal-album-cover-hint[hidden] { display: none; }
 .mvs-modal-album-cover-hint svg {
     flex-shrink: 0;
-    color: var(--mvs-primary, #2271b1);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 @media (max-width: 640px) {
     .mvs-modal-album-cover-hint { font-size: 12px; padding: 6px 10px; }
@@ -8171,7 +8175,7 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 
 .mvs-documents__tab.is-active {
 	border-bottom-color: var(--mvs-primary);
-	color: var(--mvs-primary);
+	color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 
@@ -8330,7 +8334,7 @@ a.mvs-dashboard-tab:focus-visible {
 }
 
 .mvs-dashboard-tab.active .mvs-dashboard-tab__count {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 .mvs-dashboard-tabs__group:first-child {
@@ -8483,7 +8487,7 @@ a.mvs-dashboard-tab:focus-visible {
 
 .mvs-dashboard-rail-head__link:hover,
 .mvs-dashboard-rail-head__link:focus-visible {
-    color: var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
     text-decoration: underline;
 }
 

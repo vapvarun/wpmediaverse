@@ -82,7 +82,7 @@
 .mvs-fab-menu-item:hover,
 .mvs-fab-menu-item:focus-visible {
 	background: var(--mvs-bg-subtle);
-	color: var(--mvs-primary);
+	color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* ─── Modal Overlay ─── */
@@ -183,7 +183,7 @@
 }
 
 .mvs-modal-tab.active {
-	color: var(--mvs-primary);
+	color: var(--mvs-primary-text, var(--mvs-primary));
 	border-bottom-color: var(--mvs-primary);
 }
 
@@ -203,7 +203,7 @@
 .mvs-modal-tabs .mvs-modal-tab:hover,
 .mvs-modal-tabs .mvs-modal-tab:focus,
 .mvs-modal-tabs .mvs-modal-tab.active {
-	color: var(--mvs-primary) !important;
+	color: var(--mvs-primary-text, var(--mvs-primary)) !important;
 	border-bottom-color: var(--mvs-primary) !important;
 }
 
