@@ -493,7 +493,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return getContext().item?.title || ( state.i18n?.untitled || '(Untitled)' );
 		},
 		get itemPrivacy() {
-			return getContext().item?.privacy || 'public';
+			// Label, never the stored slug. The badge used to print `loggedin`
+			// straight from the database, lowercase and untranslated, directly
+			// above a picker calling the same state "Members: logged-in users
+			// only". Basecamp 10290748981.
+			const slug = getContext().item?.privacy || 'public';
+			const map = state.i18n?.privacyLabels || {};
+			return map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' );
 		},
 		get albumItemCount() {
 			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );

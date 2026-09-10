@@ -1969,6 +1969,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_privacy_choices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $choices"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:694",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_privacy_labels",
       "type": "filter",
       "args_count": 1,

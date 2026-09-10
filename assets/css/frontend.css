@@ -7935,13 +7935,13 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 .mvs-documents__chip {
 	display: inline-flex;
 	align-items: center;
-	/* The clip is the non-negotiable half: without it any translation
-	   reintroduces the overlap silently, however wide the track is. */
+	/* Containment only. The ellipsis lives on the inner span: this element is
+	   display:inline-flex, and text-overflow does not apply to the anonymous
+	   flex item a bare text node becomes - so declaring it here did nothing but
+	   look reassuring. Same trap as .mvs-lightbox-action. Basecamp 10290723291. */
 	min-width: 0;
 	max-width: 100%;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 	padding: 2px var(--mvs-space-sm, 8px);
 	border-radius: var(--mvs-radius-pill, 999px);
 	background: var(--mvs-surface-2, #f0f0f1);
@@ -7949,6 +7949,15 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 	font-size: var(--mvs-font-xs, 0.75rem);
 	font-weight: 600;
 	letter-spacing: 0.02em;
+}
+
+/* The label owns the truncation - a block box is what text-overflow needs. */
+.mvs-documents__chip-label {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /*

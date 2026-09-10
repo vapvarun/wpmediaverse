@@ -191,6 +191,9 @@ wp_interactivity_state(
 			'optPublic'               => __( 'Public', 'wpmediaverse' ),
 			'optMembers'              => __( 'Members: logged-in users only', 'wpmediaverse' ),
 			'optPrivate'              => __( 'Private', 'wpmediaverse' ),
+			// Every privacy level the plugin can store, so a badge never paints the
+			// raw database slug at a member. Basecamp 10290748981.
+			'privacyLabels'           => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
 			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),

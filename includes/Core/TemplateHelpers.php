@@ -617,18 +617,17 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 */
 	public static function privacy_labels(): array {
 		$labels = array(
-			'public'  => __( 'Public: anyone can see', 'wpmediaverse' ),
-			'members' => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
+			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'loggedin' => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'friends'  => __( 'Friends: BuddyPress friends only', 'wpmediaverse' ),
+			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
+			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
+			'private'  => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
 		);
 
-		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
-			$labels['friends'] = __( 'Friends: BuddyPress friends only', 'wpmediaverse' );
-		}
-
-		$labels['private'] = __( 'Only me: hidden from everyone else', 'wpmediaverse' );
-
 		/**
-		 * Filter the privacy labels shown in every picker.
+		 * Filter the display label for every privacy level.
 		 *
 		 * @since 2.4.2
 		 *
@@ -638,15 +637,80 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Render <option> tags for a privacy picker.
+	 * Read a single privacy level's label.
+	 *
+	 * Never returns a raw slug: an unknown level is title-cased so a badge shows
+	 * something a member can read rather than database vocabulary.
 	 *
 	 * @since 2.4.2
 	 *
-	 * @param string $selected Currently selected privacy slug, '' for none.
-	 * @return void
+	 * @param string $privacy Privacy slug.
+	 * @return string
 	 */
+	public static function privacy_label( string $privacy ): string {
+		$labels = self::privacy_labels();
+
+		if ( isset( $labels[ $privacy ] ) ) {
+			return $labels[ $privacy ];
+		}
+
+		return ucfirst( str_replace( '_', ' ', $privacy ) );
+	}
+
+	/**
+	 * The levels a member may CHOOSE, as opposed to the levels that can be shown.
+	 *
+	 * Not the same list. `space` and `group` are context-bound - they mean
+	 * something only for media inside a space or a group, and offering them as
+	 * free choices would let a member pick a level with no context to satisfy.
+	 * `loggedin` is a stored synonym of `members`, kept readable but not offered
+	 * twice. `friends` needs BuddyPress' friends component, or it has no
+	 * semantics distinct from members.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return array<string,string> Privacy slug => label, in display order.
+	 */
+	public static function privacy_choices(): array {
+		$labels  = self::privacy_labels();
+		$choices = array(
+			'public'  => $labels['public'],
+			'members' => $labels['members'],
+		);
+
+		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
+			$choices['friends'] = $labels['friends'];
+		}
+
+		$choices['private'] = $labels['private'];
+
+		/**
+		 * Filter the privacy levels offered in a picker.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param array<string,string> $choices Privacy slug => label.
+		 */
+		return (array) apply_filters( 'mvs_privacy_choices', $choices );
+	}
+
 	public static function privacy_options( string $selected = '' ): void {
-		foreach ( self::privacy_labels() as $mvs_slug => $mvs_label ) {
+		$choices = self::privacy_choices();
+
+		// A stored level the picker does not offer (loggedin, space, group, or
+		// anything an import or the REST write set) is shown as a disabled
+		// option rather than leaving the select blank. Before this, an owner
+		// opening their own item saw an empty privacy field with no way to read
+		// what it was currently set to. Basecamp 10290748981.
+		if ( '' !== $selected && ! isset( $choices[ $selected ] ) ) {
+			printf(
+				'<option value="%s" selected disabled>%s</option>',
+				esc_attr( $selected ),
+				esc_html( self::privacy_label( $selected ) )
+			);
+		}
+
+		foreach ( $choices as $mvs_slug => $mvs_label ) {
 			printf(
 				'<option value="%s"%s>%s</option>',
 				esc_attr( $mvs_slug ),
