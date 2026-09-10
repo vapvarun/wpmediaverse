@@ -54,11 +54,13 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<?php
-		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'privacy' );
-		if ( ! $album_privacy ) {
-			$album_privacy = 'public';
-		}
-		$album_type         = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'album_type' );
+		// Post meta is authoritative for both. Reading the mvs_media_index row keyed
+		// on the album's post ID returns whatever media item happens to share that
+		// ID, which defaulted a private album to 'public' — and, because this value
+		// seeds editPrivacy below, republished it on the next title edit.
+		$mvs_albums    = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$album_privacy = $mvs_albums->get_privacy( $mvs_album_id );
+		$album_type    = $mvs_albums->get_album_type( $mvs_album_id );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
@@ -226,7 +228,6 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php endif; ?>
 
 			<?php
-			$album_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'album_type' );
 			$is_playlist = 'playlist' === $album_type;
 			?>
 
