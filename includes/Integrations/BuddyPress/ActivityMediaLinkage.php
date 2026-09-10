@@ -133,10 +133,29 @@ class ActivityMediaLinkage {
 			return '';
 		}
 
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
 		$pieces = array();
 		foreach ( $rows as $row ) {
+			$mvs_media_id = (int) $row->media_id;
+
+			// Skip media that can no longer be served. An activity entry outlives
+			// the media it embeds: the row can be trashed (reversible, so the
+			// activity must NOT be deleted for it) or gone entirely with a
+			// linkage row left behind, and either way the tile rendered a signed
+			// URL that answered 403 - neither hidden nor honest. Guarding the
+			// renderer covers trash, hard delete and legacy orphans in one place;
+			// deleting activities on trash would destroy a post that restoring
+			// the media should bring back. Basecamp 10285850126.
+			if ( ! $mvs_repo->exists( $mvs_media_id ) ) {
+				continue;
+			}
+			if ( 'publish' !== (string) $mvs_repo->get( $mvs_media_id, 'status' ) ) {
+				continue;
+			}
+
 			$pieces[] = $this->tpl->media_thumbnail(
-				(int) $row->media_id,
+				$mvs_media_id,
 				array(
 					'size'      => 'large',
 					// Long-lived broadcast TTL — activity content lives in
@@ -148,9 +167,16 @@ class ActivityMediaLinkage {
 				)
 			);
 		}
+
+		// Every linked media is gone or unpublished: render nothing rather than
+		// an empty grid wrapper.
+		if ( empty( $pieces ) ) {
+			return '';
+		}
+
 		// One wrapper around the per-media blocks so the existing
 		// `.mvs-activity-media` CSS picks them up unchanged.
-		$count_class = 'mvs-activity-media-group--count-' . count( $rows );
+		$count_class = 'mvs-activity-media-group--count-' . count( $pieces );
 		return '<div class="mvs-activity-media-group ' . esc_attr( $count_class ) . '"'
 			. ' data-mvs-activity-id="' . esc_attr( (string) $activity_id ) . '">'
 			. implode( '', $pieces )
