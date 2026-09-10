@@ -297,6 +297,19 @@ class PrivacyService {
 			return true;
 		}
 
+		// Moderation outranks privacy for everyone else. This belongs here, not in
+		// each caller's query: moderation_status is an opt-in argument on
+		// MediaRepository::query(), so before this guard only the Explore listing
+		// passed it and the permalink, serve endpoint, thumbnail and REST single-item
+		// all served flagged AND moderator-rejected media to anonymous visitors.
+		// Owners/moderators returned above, so a takedown stays reviewable.
+		if ( ! in_array( $post_type, $allowed_types, true ) ) {
+			$moderation = (string) $repo->get( $media_id, 'moderation_status' );
+			if ( in_array( $moderation, array( 'flagged', 'rejected', 'pending' ), true ) ) {
+				return false;
+			}
+		}
+
 		// Same split for the privacy value itself: an album's lives in post meta,
 		// a media item's in its index row.
 		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {

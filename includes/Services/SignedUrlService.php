@@ -339,7 +339,11 @@ class SignedUrlService {
 			}
 		}
 
-		if ( 'public' !== $privacy && ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
+		// No 'public' short-circuit: can_view() now also enforces moderation, and a
+		// flagged or rejected item is public right up until it is taken down. For
+		// approved public media check_access() still returns true, so this costs one
+		// repo read rather than a behaviour change.
+		if ( ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
 			status_header( 403 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Access denied.' );
