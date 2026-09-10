@@ -249,21 +249,42 @@ $mvs_archive_url = home_url( '/media/' );
 		'loaded'     => false,
 	);
 	?>
-	<div class="mvs-tag-cloud"
-		data-wp-interactive="mvs/explore"
-		<?php echo wp_interactivity_data_wp_context( $mvs_explore_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-		data-wp-init="callbacks.init">
-		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
+	<?php
+	// Server-rendered, like the identical chip row in documents.php.
+	//
+	// These chips used to be a data-wp-each template whose `active` flag was
+	// computed once in callbacks.init() by comparing against context.activeTag.
+	// activeTag is written by PHP and read by JS exactly once, and a router
+	// navigation does not refresh the live context proxy - so after clicking a
+	// chip the row kept rendering with the OLD active flag and no chip ever
+	// showed as selected (Basecamp 10277976087). A derived getter would not have
+	// helped: it would read the same stale context value.
+	//
+	// Rendering on the server makes it correct on every navigation by
+	// construction, and removes a REST round-trip from every Explore load.
+	$mvs_tag_chips = \WPMediaVerse\Core\Plugin::container()
+		->get( 'media_repository' )
+		->tag_cloud( $mvs_tag_limit );
+	$mvs_active_tag = (string) $mvs_explore_ctx['activeTag'];
+	?>
+	<div class="mvs-tag-cloud">
+		<a class="mvs-tag-cloud-item <?php echo '' === $mvs_active_tag && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
 			href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
-		<?php // The each-template must be the sole child of its parent or iAPI logs a hydration mismatch; display:contents keeps the flat flex row. ?>
 		<span class="mvs-tag-cloud-items">
-			<template data-wp-each="context.tags">
-				<a class="mvs-tag-cloud-item" href="#"
-					data-wp-bind--href="context.item.href"
-					data-wp-text="context.item.name"
-					data-wp-class--active="context.item.active"
-					role="link"></a>
-			</template>
+			<?php
+			// tag_cloud() returns stdClass rows (get_results default), not arrays.
+			foreach ( $mvs_tag_chips as $mvs_chip ) :
+				$mvs_chip_slug = (string) ( is_object( $mvs_chip ) ? ( $mvs_chip->slug ?? '' ) : ( $mvs_chip['slug'] ?? '' ) );
+				$mvs_chip_name = (string) ( is_object( $mvs_chip ) ? ( $mvs_chip->name ?? '' ) : ( $mvs_chip['name'] ?? '' ) );
+				if ( '' === $mvs_chip_slug ) {
+					continue;
+				}
+				?>
+				<a class="mvs-tag-cloud-item <?php echo $mvs_active_tag === $mvs_chip_slug ? 'active' : ''; ?>"
+					href="<?php echo esc_url( add_query_arg( 'mvs_tag', $mvs_chip_slug, $mvs_archive_url ) ); ?>">
+					<?php echo esc_html( $mvs_chip_name ); ?>
+				</a>
+			<?php endforeach; ?>
 		</span>
 	</div>
 

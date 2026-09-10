@@ -1355,6 +1355,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		noop() {},
 		async lightboxLoadSocial( ctx, mediaId ) {
+			// Record the view. Fire-and-forget, exactly as media-social does on the
+			// single-media page. The view POST was wired into that page and into
+			// the BP activity driver, but never into the IA lightbox - so opening
+			// media in the lightbox counted nothing, and the same item viewed two
+			// ways gave two different answers (Basecamp 10280453489).
+			// This is the single funnel for all four lightbox openers
+			// (openLightbox, openLightboxById, and the two dashboard ones), so one
+			// line covers them. record_view() is already rate-limited and
+			// deduplicated server-side, so no guard is needed here.
+			window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/view', { method: 'POST' } );
+
 			// Reactions.
 			try {
 				const r = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/reactions' );
