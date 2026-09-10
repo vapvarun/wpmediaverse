@@ -4298,6 +4298,43 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
+	/**
+	 * How many tags WOULD qualify for the cloud, ignoring its limit.
+	 *
+	 * The cloud is capped deliberately - core's own wp_tag_cloud() caps at 45,
+	 * and 121 chips above the grid buries the media. But a cap with no way to
+	 * reach past it reads as "tags are missing", which is exactly how it was
+	 * reported. The caller uses this to decide whether to offer a route to the
+	 * rest. Basecamp 10278224214.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param array|null $types Media types to count against, null for the library default.
+	 * @return int
+	 */
+	public function tag_cloud_total( ?array $types = null ): int {
+		global $wpdb;
+
+		$types = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+
+		$sql = "SELECT COUNT(*) FROM (
+				SELECT t.term_id
+				FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+				INNER JOIN {$wpdb->prefix}mvs_media_index m ON m.media_id = tr.object_id
+				WHERE {$type_sql}
+				  AND tt.taxonomy = 'mvs_tag'
+				  AND m.status = 'publish'
+				  AND m.moderation_status = 'approved'
+				GROUP BY t.term_id
+			) AS qualifying";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+		return (int) $wpdb->get_var( $type_params ? $wpdb->prepare( $sql, $type_params ) : $sql );
+	}
+
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
 		global $wpdb;
 
@@ -4316,7 +4353,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			AND m.status = 'publish'
 			AND m.moderation_status = 'approved'
 			GROUP BY t.term_id, t.name, t.slug
-			ORDER BY media_count DESC, t.name ASC
+			ORDER BY media_count DESC, MAX(m.created_at) DESC, t.name ASC
 			LIMIT %d";
 
 		$params   = $type_params;

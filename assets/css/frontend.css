@@ -94,9 +94,9 @@
      * background keeps the unmodified colour, which is why this is a separate
      * token rather than a change to --mvs-primary.
      *
-     * The dark block below sets it back to --mvs-primary: a theme lightens its
-     * brand for dark mode already (measured 7.98:1 there), so darkening again
-     * would make it worse in exactly the mode that was fine. */
+     * The dark block below clamps in the opposite direction (max(l, 0.72)):
+     * against a dark surface the accent must be LIGHTENED to clear the floor,
+     * just as it is darkened against a light one. Same shape, opposite bound. */
     --mvs-primary-text: oklch(from var(--mvs-primary) min(l, 0.48) c h);
 
     /*
@@ -343,10 +343,15 @@ body.dark-mode {
     --mvs-text-muted: var(--reign-site-alternate-text-color, #888888);
     --mvs-border: var(--reign-site-border-color, #363636);
     --mvs-border-light: #2e2e2e;
-    /* Dark mode: a theme already lightens its brand here (measured 7.98:1 on
-       the same rail link that fails at 4.36:1 in light), so the light-mode
-       darkening must NOT apply or it would break the mode that was correct. */
-    --mvs-primary-text: var(--mvs-primary);
+    /* Dark mode clamps the OTHER WAY - it does not skip the clamp.
+       This used to be `var(--mvs-primary)` on the reasoning that "a theme
+       already lightens its brand here (measured 7.98:1)". That was true of the
+       accent it was measured against and false of the next one: BuddyX hands
+       dark mode #e94560 unchanged and it scores 3.75:1 on --mvs-bg-muted, worse
+       than anything the original report found in light mode. Not clamping is
+       the same bug as clamping wrongly - it only works for the accents that
+       happen to pass. Basecamp 10253005724. */
+    --mvs-primary-text: oklch(from var(--mvs-primary) max(l, 0.72) c h);
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
     --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);

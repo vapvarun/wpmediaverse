@@ -277,7 +277,7 @@ class MediaListPage {
 					</div>
 
 					<div class="mvs-widget-footer">
-						<?php self::render_pagination( $total, $total_pages, $paged ); ?>
+						<?php self::render_pagination( $total, $total_pages, $paged, 'bottom' ); ?>
 					</div>
 				</div>
 			</form>
@@ -764,12 +764,12 @@ class MediaListPage {
 	 * @param int $total_pages Total pages.
 	 * @param int $paged       Current page.
 	 */
-	private static function render_pagination( int $total, int $total_pages, int $paged ): void {
+	private static function render_pagination( int $total, int $total_pages, int $paged, string $which = 'top' ): void {
 		if ( $total_pages <= 1 ) {
 			// Wrapped in .tablenav: core's list-tables.css scopes every
 			// .tablenav-pages rule to that ancestor, so without it this screen
 			// rendered raw unstyled links. Basecamp 10280400207.
-			echo '<div class="tablenav top"><div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
+			echo '<div class="tablenav ' . esc_attr( $which ) . '"><div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
 				sprintf(
 				/* translators: %s: number of items */
 					_n( '%s item', '%s items', $total, 'wpmediaverse' ),
@@ -791,7 +791,7 @@ class MediaListPage {
 			)
 		);
 
-		echo '<div class="tablenav top"><div class="tablenav-pages">';
+		echo '<div class="tablenav ' . esc_attr( $which ) . '"><div class="tablenav-pages">';
 		echo '<span class="displaying-num">' . esc_html(
 			sprintf(
 			/* translators: %s: number of items */
@@ -799,6 +799,34 @@ class MediaListPage {
 				number_format_i18n( $total )
 			)
 		) . '</span>';
+		// Core styles .button and .tablenav-pages-navspan (list-tables.css:716),
+		// never .page-numbers - which is why WP_List_Table::pagination() builds
+		// its links by hand rather than calling paginate_links(). Without this
+		// the wrapper alone left 6px text links where core draws 32x32 controls.
+		// Basecamp 10280400207.
+		$page_links = array_map(
+			static function ( $link ) {
+				$extra = ( false !== strpos( $link, '<a' ) )
+					? 'button '
+					// The current page and the ellipsis are <span>s; core's
+					// non-link equivalent is .tablenav-pages-navspan.
+					: 'tablenav-pages-navspan button disabled ';
+
+				// Insert right after the opening quote rather than before the
+				// literal "page-numbers": prev/next links are class="next
+				// page-numbers", so anchoring on that token missed them and the
+				// arrows stayed 9px while the numbers became 32px. Quote style
+				// is matched either way rather than assumed.
+				return (string) preg_replace(
+					'/\bclass=(["\'])/',
+					'class=$1' . $extra,
+					$link,
+					1
+				);
+			},
+			$page_links
+		);
+
 		echo '<span class="pagination-links">' . implode( "\n", $page_links ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links returns safe HTML
 		echo '</div></div>';
 	}
