@@ -189,7 +189,7 @@ wp_interactivity_state(
 			'optAudio'                => __( 'Audio', 'wpmediaverse' ),
 			'optDocument'             => __( 'Document', 'wpmediaverse' ),
 			'optPublic'               => __( 'Public', 'wpmediaverse' ),
-			'optMembers'              => __( 'Members', 'wpmediaverse' ),
+			'optMembers'              => __( 'Members: logged-in users only', 'wpmediaverse' ),
 			'optPrivate'              => __( 'Private', 'wpmediaverse' ),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
@@ -769,12 +769,7 @@ wp_interactivity_state(
 					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 					<label class="mvs-sr-only" for="mvs-upload-meta-privacy"><?php esc_html_e( 'Who can see this', 'wpmediaverse' ); ?></label>
 					<select id="mvs-upload-meta-privacy" class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
-						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-						<option value="friends" <?php selected( $mvs_def_priv, 'friends' ); ?>><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-						<?php endif; ?>
-						<option value="private" <?php selected( $mvs_def_priv, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( $mvs_def_priv ); ?>
 					</select>
 					<?php endif; ?>
 				</div>
@@ -807,9 +802,10 @@ wp_interactivity_state(
 			<label class="mvs-bulk-privacy-label">
 				<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-privacy" data-wp-on--change="actions.setBulkPrivacy">
-					<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-					<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-					<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+					<?php // Bulk deliberately offers only the three unambiguous levels; friends is per-item. ?>
+					<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
+					<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 				</select>
 			</label>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
@@ -1397,13 +1393,8 @@ wp_interactivity_state(
 				<div class="mvs-field-row">
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select data-wp-on--change="actions.setEditPrivacy">
-							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-							<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-							<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-							<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-							<?php endif; ?>
-							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
+							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( '' ); ?>
 						</select>
 					</div>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
@@ -1485,13 +1476,8 @@ wp_interactivity_state(
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-on--change="actions.setAlbumPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-						<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-						<?php endif; ?>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+					<select data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
+						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( '' ); ?>
 					</select>
 				</div>
 				<div class="mvs-field">

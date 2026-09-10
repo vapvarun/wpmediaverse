@@ -598,6 +598,65 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Privacy level labels, in display order.
+	 *
+	 * One source for every privacy picker. Before this there were four different
+	 * wordings across eight render sites - "Members", "Members Only",
+	 * "Members Only - logged-in users" and "Members: logged-in users only" - and
+	 * the bare "Members" reads as "followers only" to a member choosing it,
+	 * which has already produced a false bug report (Basecamp 10286023341).
+	 * The explicit wording came from the upload picker, which was the only
+	 * surface that had it.
+	 *
+	 * Friends is omitted unless BuddyPress' friends component is active: without
+	 * it the level has no semantics distinct from Members.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return array<string,string> Privacy slug => human label.
+	 */
+	public static function privacy_labels(): array {
+		$labels = array(
+			'public'  => __( 'Public: anyone can see', 'wpmediaverse' ),
+			'members' => __( 'Members: logged-in users only', 'wpmediaverse' ),
+		);
+
+		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
+			$labels['friends'] = __( 'Friends: BuddyPress friends only', 'wpmediaverse' );
+		}
+
+		$labels['private'] = __( 'Only me: hidden from everyone else', 'wpmediaverse' );
+
+		/**
+		 * Filter the privacy labels shown in every picker.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param array<string,string> $labels Privacy slug => label.
+		 */
+		return (array) apply_filters( 'mvs_privacy_labels', $labels );
+	}
+
+	/**
+	 * Render <option> tags for a privacy picker.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $selected Currently selected privacy slug, '' for none.
+	 * @return void
+	 */
+	public static function privacy_options( string $selected = '' ): void {
+		foreach ( self::privacy_labels() as $mvs_slug => $mvs_label ) {
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $mvs_slug ),
+				selected( $selected, $mvs_slug, false ),
+				esc_html( $mvs_label )
+			);
+		}
+	}
+
+	/**
 	 * BuddyNext-aware login URL.
 	 *
 	 * Identity in this stack lives in BuddyNext (login/register/reset/2FA/social),

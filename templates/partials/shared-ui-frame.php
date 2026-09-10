@@ -245,12 +245,7 @@ wp_interactivity_state(
 						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 						<div class="mvs-modal-field-row">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
-								<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-								<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
-								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-								<option value="friends"><?php esc_html_e( 'Friends Only', 'wpmediaverse' ); ?></option>
-								<?php endif; ?>
-								<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
 						<?php endif; ?>
@@ -347,12 +342,7 @@ wp_interactivity_state(
 							<select id="mvs-edit-privacy"
 								data-wp-on--change="actions.updateEditPrivacy"
 								data-wp-bind--value="state.editModalPrivacy">
-								<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
-								<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
-								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-								<option value="friends"><?php esc_html_e( 'Friends Only — BuddyPress friends', 'wpmediaverse' ); ?></option>
-								<?php endif; ?>
-								<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
+								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
 						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
