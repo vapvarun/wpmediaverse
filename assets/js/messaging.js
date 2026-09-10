@@ -975,9 +975,16 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			try {
 				yield apiFetch( '/messages/' + msgId, { method: 'DELETE' } );
-				// Remove the message entirely from the thread — no greyed tombstone
-				// for a delete-for-me. (Unsend keeps its own "message deleted" state.)
-				state.messages = state.messages.filter( m => String( m.id ) !== String( msgId ) );
+				// Leave the same tombstone the server now serves to BOTH
+				// participants. Filtering the row out instead meant one action had
+				// two different outcomes depending on whether you reloaded: the
+				// bubble vanished, then came back as "This message was deleted".
+				// Basecamp 10263770236.
+				state.messages = state.messages.map( m =>
+					String( m.id ) === String( msgId )
+						? enrichMessage( { ...m, is_deleted: 1, content: '', message_type: 'text' } )
+						: m
+				);
 
 				// Recompute the conversation's last-message preview so the sidebar
 				// stops showing the now-deleted message. Frontend state only — the

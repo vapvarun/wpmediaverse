@@ -1833,8 +1833,16 @@ class MessagingService {
 		$msg_table   = $wpdb->prefix . 'mvs_messages';
 		$react_table = $wpdb->prefix . 'mvs_message_reactions';
 
-		$where  = 'm.conversation_id = %d AND (m.is_deleted = 0 OR m.sender_id = %d)';
-		$params = array( $conversation_id, $user_id );
+		// Deleted rows are returned to BOTH participants and blanked to a
+		// tombstone below. The old clause ("OR m.sender_id = %d") returned the
+		// row to the SENDER and filtered it out for the recipient - so the
+		// control labelled "Delete for me" removed the message from the other
+		// person's thread without a trace, while the deleter kept a tombstone.
+		// Exactly backwards from the label, with no time limit on it.
+		// Members already have a real per-user hide: the cleared_up_to
+		// watermark applied just below. Basecamp 10263770236.
+		$where  = 'm.conversation_id = %d';
+		$params = array( $conversation_id );
 
 		// History this user deleted stays deleted (per-user clear watermark).
 		$cleared_up_to = $this->get_cleared_up_to( $conversation_id, $user_id );
@@ -1861,8 +1869,7 @@ class MessagingService {
 		foreach ( $messages as &$msg ) {
 			// Hide content for deleted messages (unsent for everyone, or
 			// soft-deleted rows still served to their sender).
-			$is_hidden = $msg->deleted_for_all
-				|| ( $msg->is_deleted && (int) $msg->sender_id === $user_id );
+			$is_hidden = $msg->deleted_for_all || $msg->is_deleted;
 
 			if ( $is_hidden ) {
 				$msg->content  = '';
