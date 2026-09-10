@@ -895,7 +895,7 @@ class MediaController extends WP_REST_Controller {
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
-			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+			$cat_terms = wp_get_object_terms( $media_id, 'mvs_category' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
 			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
 			}

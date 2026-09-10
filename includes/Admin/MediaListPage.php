@@ -175,7 +175,19 @@ class MediaListPage {
 						<div class="alignleft actions">
 							<select name="media_type">
 								<option value=""><?php esc_html_e( 'All Types', 'wpmediaverse' ); ?></option>
-								<?php foreach ( array( 'image', 'video', 'audio', 'document' ) as $t ) : ?>
+								<?php
+								// Document is offered only when something can actually show
+								// one, OR when orphaned document rows still exist so the owner
+								// can find and manage them. Free deliberately 404s the document
+								// permalink (TemplateLoader::serve_single_media), so listing the
+								// filter unconditionally handed the owner a dead end.
+								// Basecamp 10280356655.
+								$mvs_types = array( 'image', 'video', 'audio' );
+								if ( \WPMediaVerse\Core\Plugin::documents_enabled() || 'document' === $type_filter ) {
+									$mvs_types[] = 'document';
+								}
+								?>
+								<?php foreach ( $mvs_types as $t ) : ?>
 									<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $type_filter, $t ); ?>><?php echo esc_html( ucfirst( $t ) ); ?></option>
 								<?php endforeach; ?>
 							</select>
@@ -359,7 +371,15 @@ class MediaListPage {
 			<td class="column-primary">
 				<strong><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php echo esc_html( $title ); ?></a></strong>
 				<div class="row-actions">
+					<?php
+					// No View link for a document Free cannot render - the permalink
+					// returns a branded 404 by design. Basecamp 10280356655.
+					$mvs_is_doc      = in_array( (string) $type, array( 'document', 'legacy_document' ), true );
+					$mvs_can_view_it = ! $mvs_is_doc || \WPMediaVerse\Core\Plugin::documents_enabled();
+					?>
+					<?php if ( $mvs_can_view_it ) : ?>
 					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span>
+					<?php endif; ?>
 					<?php
 					$details_url = add_query_arg(
 						array(
@@ -746,13 +766,16 @@ class MediaListPage {
 	 */
 	private static function render_pagination( int $total, int $total_pages, int $paged ): void {
 		if ( $total_pages <= 1 ) {
-			echo '<div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
+			// Wrapped in .tablenav: core's list-tables.css scopes every
+			// .tablenav-pages rule to that ancestor, so without it this screen
+			// rendered raw unstyled links. Basecamp 10280400207.
+			echo '<div class="tablenav top"><div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
 				sprintf(
 				/* translators: %s: number of items */
 					_n( '%s item', '%s items', $total, 'wpmediaverse' ),
 					number_format_i18n( $total )
 				)
-			) . '</span></div>';
+			) . '</span></div></div>';
 			return;
 		}
 
@@ -768,7 +791,7 @@ class MediaListPage {
 			)
 		);
 
-		echo '<div class="tablenav-pages">';
+		echo '<div class="tablenav top"><div class="tablenav-pages">';
 		echo '<span class="displaying-num">' . esc_html(
 			sprintf(
 			/* translators: %s: number of items */
@@ -777,7 +800,7 @@ class MediaListPage {
 			)
 		) . '</span>';
 		echo '<span class="pagination-links">' . implode( "\n", $page_links ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links returns safe HTML
-		echo '</div>';
+		echo '</div></div>';
 	}
 
 	/**
@@ -1216,7 +1239,11 @@ class MediaListPage {
 		// Apply tags to the taxonomy and mirror onto the media's tags field.
 		if ( ! empty( $tags ) ) {
 			wp_set_object_terms( $media_id, $tags, 'mvs_tag', true );
-			$all_terms = get_the_terms( $media_id, 'mvs_tag' );
+			// wp_get_object_terms, not get_the_terms: media rows live in
+			// mvs_media_index, not wp_posts, and get_the_terms() opens with
+			// get_post() and bails on a non-post. The write path uses the
+			// post-agnostic wp_set_object_terms(). Basecamp 10278224214.
+			$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' );
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 				$repo->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 			}

@@ -533,7 +533,7 @@ $mvs_archive_url = home_url( '/media/' );
 			}
 			// Final fallback: WP term relationships (legacy).
 			if ( empty( $mvs_tag_names ) ) {
-				$mvs_tags_list = get_the_terms( $mvs_media_id, 'mvs_tag' );
+				$mvs_tags_list = wp_get_object_terms( $mvs_media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
 				if ( $mvs_tags_list && ! is_wp_error( $mvs_tags_list ) ) {
 					foreach ( $mvs_tags_list as $mvs_t ) {
 						$mvs_tag_names[] = $mvs_t->name;

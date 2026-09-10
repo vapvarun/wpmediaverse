@@ -7827,7 +7827,10 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 	 * of drift, and worse on a real site where usernames and file sizes vary
 	 * more than a demo's (Basecamp 10253006024). A column has to be the same
 	 * width in every row or it is not a column. */
-	grid-template-columns: auto minmax(0, 1fr) 4rem 6rem 4.5rem 7rem;
+	/* Chip column widened 4rem -> 6.5rem: the longest type labels (PowerPoint,
+	   Markdown, ODF Slides/Sheet/Text - 5 of the 11 in DocumentTypes) overran
+	   4rem and overlapped the next column. Basecamp 10268100818. */
+	grid-template-columns: auto minmax(0, 1fr) 6.5rem 6rem 4.5rem 7rem;
 	align-items: center;
 	gap: var(--mvs-space-md, 16px);
 	padding: var(--mvs-space-md, 16px);
@@ -7932,6 +7935,13 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 .mvs-documents__chip {
 	display: inline-flex;
 	align-items: center;
+	/* The clip is the non-negotiable half: without it any translation
+	   reintroduces the overlap silently, however wide the track is. */
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	padding: 2px var(--mvs-space-sm, 8px);
 	border-radius: var(--mvs-radius-pill, 999px);
 	background: var(--mvs-surface-2, #f0f0f1);

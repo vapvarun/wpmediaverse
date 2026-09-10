@@ -304,7 +304,7 @@ class TagController extends WP_REST_Controller {
 
 		// Sync MediaRepository tags for each affected media item.
 		foreach ( $posts as $mid ) {
-			$all_terms = get_the_terms( $mid, 'mvs_tag' );
+			$all_terms = wp_get_object_terms( $mid, 'mvs_tag' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $mid, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 			}
