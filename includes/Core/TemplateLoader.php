@@ -75,6 +75,9 @@ class TemplateLoader {
 		// Fallback only: a theme with no no-sidebar page template and not Reign.
 		add_filter( 'template_include', array( $this, 'use_app_template' ), 99 );
 
+		// Render whatever load_media_templates() resolved at priority 5.
+		add_filter( 'template_include', array( $this, 'use_resolved_template' ), 100 );
+
 		// Reign removes the sidebar via post-meta, not a page template. Force its
 		// full-width layout for our app pages the same way Reign forces it for
 		// FluentCart pages (inc/fluentcart-support.php). No-op off Reign.
@@ -524,6 +527,14 @@ class TemplateLoader {
 	 *
 	 * @param string $template Absolute path to the located template file.
 	 */
+	/**
+	 * Template resolved on template_redirect, rendered later via template_include.
+	 *
+	 * @since 2.4.2
+	 * @var string
+	 */
+	private $resolved_template = '';
+
 	private function render_template( string $template ): void {
 		// Heal WP's soft-404 default to 200 for our virtual pages — EXCEPT when
 		// the caller already set an explicit error status (e.g. the members-only
@@ -536,8 +547,37 @@ class TemplateLoader {
 		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
 			$GLOBALS['wp_query']->is_404 = false;
 		}
-		include $template;
-		exit;
+		// Hold it for template_include instead of `include $template; exit;`.
+		//
+		// exit here ended the request inside template_redirect at priority 5, so
+		// every callback other plugins had legitimately registered at a later
+		// priority simply never ran. Elementor registers Frontend::init() at the
+		// default 10, and that is what adds the Google-Fonts printer, the
+		// body_class filter, and the wp_footer chain Elementor Pro hangs its
+		// widget handlers on - so on our own routes a Pro header lost its fonts,
+		// its Menu Cart toggle and its Search widget. Basecamp 10285448527.
+		//
+		// Returning through template_include - the hook that exists to choose a
+		// template - fixes it for every builder rather than for Elementor
+		// specifically. The privacy gates stay exactly where they are, early on
+		// template_redirect@5; only the rendering moves later.
+		$this->resolved_template = $template;
+	}
+
+	/**
+	 * Return the template resolved on template_redirect, if any.
+	 *
+	 * Priority 100 so it wins over use_app_template() at 99, which is the
+	 * fallback for WP pages using one of our page templates - a different path
+	 * from our own virtual routes.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $template Template WordPress chose.
+	 * @return string
+	 */
+	public function use_resolved_template( $template ) {
+		return '' !== $this->resolved_template ? $this->resolved_template : $template;
 	}
 
 	/**
