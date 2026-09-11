@@ -2449,6 +2449,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_shared_ui_frame",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Core/Plugin.php:2914",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Documents/DocumentViewer.php"
+      ]
+    },
+    {
       "name": "mvs_should_ai_analyze",
       "type": "filter",
       "args_count": 2,

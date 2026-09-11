@@ -429,7 +429,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return state.lightboxMediaData?.media_type === 'document';
 		},
 		get lightboxHideDocument() {
-			return state.lightboxMediaData?.media_type !== 'document';
+			// The download card is for documents we cannot preview. When Pro
+			// returned viewer HTML the card would duplicate it, so it steps aside.
+			// Basecamp 10268223516.
+			return state.lightboxMediaData?.media_type !== 'document'
+				|| !! state.lightboxMediaData?.doc_viewer_html;
+		},
+		get lightboxHideDocViewer() {
+			return ! ( state.lightboxMediaData?.media_type === 'document'
+				&& state.lightboxMediaData?.doc_viewer_html );
 		},
 		get lightboxDocGlyphClass() {
 			// Per-type glyph from the REST doc_icon (resolved server-side from the
@@ -1834,6 +1842,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 	},
 	callbacks: {
+		// Pro sanitises this server-side (wp_kses on the rendered document), and
+		// it only ever contains the text/markdown/csv tier - no script tier
+		// reaches a REST response. Written with innerHTML rather than data-wp-text
+		// because it is markup, not text.
+		lightboxDocViewer() {
+			const el = getElement()?.ref;
+			if ( ! el ) {
+				return;
+			}
+			const html = state.lightboxMediaData?.doc_viewer_html || '';
+			if ( el.innerHTML !== html ) {
+				el.innerHTML = html;
+			}
+		},
 		/**
 		 * Move focus into the dialog once it is genuinely on screen.
 		 *

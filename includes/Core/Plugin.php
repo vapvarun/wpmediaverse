@@ -2901,6 +2901,18 @@ JS;
 		}
 		if ( file_exists( $template ) ) {
 			$rendered = true;
+
+			/**
+			 * Fires when the shared UI frame - and with it the lightbox - is printed.
+			 *
+			 * The lightbox loads its content over REST, where wp_enqueue_style() is
+			 * a no-op, so anything that renders INTO it must have its stylesheet on
+			 * the page already. Pro hangs the document viewer's sheet here.
+			 *
+			 * @since 2.4.2
+			 */
+			do_action( 'mvs_shared_ui_frame' );
+
 			include $template;
 		}
 	}

@@ -1912,8 +1912,9 @@ class MediaController extends WP_REST_Controller {
 		// of re-deriving an icon and a label from the raw MIME — the lightbox used
 		// to hardcode the file-text glyph and print the raw MIME (Basecamp
 		// 10248528902). Empty for non-documents.
-		$mvs_doc_icon  = '';
-		$mvs_doc_label = '';
+		$mvs_doc_icon   = '';
+		$mvs_doc_label  = '';
+		$mvs_doc_viewer = '';
 		if ( 'document' === $media_type_value ) {
 			$mvs_doc_mime  = (string) ( $all['file_type'] ?? '' );
 			$mvs_doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
@@ -1923,6 +1924,19 @@ class MediaController extends WP_REST_Controller {
 			if ( $mvs_doc_bytes > 0 ) {
 				$mvs_doc_label = trim( $mvs_doc_label . ( '' !== $mvs_doc_label ? ' · ' : '' ) . size_format( $mvs_doc_bytes ) );
 			}
+
+			// The same viewer the single-media page renders, so the two surfaces
+			// stop disagreeing about the same file: favourite a text document,
+			// open it in the lightbox, and you got less than by opening its page.
+			// Basecamp 10268223516.
+			//
+			// Free asks; whoever answers decides what it can safely return here.
+			// Which document types have a script-free preview is Pro's knowledge,
+			// and duplicating that list in Free would be two lists to keep in
+			// step. Pro returns '' for anything it cannot render inside a REST
+			// request, and the lightbox falls back to the doc card - which is the
+			// correct rendering for a binary anyway.
+			$mvs_doc_viewer = (string) apply_filters( 'mvs_document_viewer_html', '', $media_id, $mvs_doc_mime );
 		}
 
 		$data = array(
@@ -1964,6 +1978,7 @@ class MediaController extends WP_REST_Controller {
 			// alternative to a blurhash, computed once at upload (empty when the
 			// media predates it or is not an image).
 			'placeholder_color' => ! empty( $all['placeholder_color'] ) ? (string) $all['placeholder_color'] : '',
+			'doc_viewer_html'   => $mvs_doc_viewer,
 			'can_edit'          => $can_edit,
 			'can_delete'        => $can_delete,
 			'is_favorited'      => $is_favorited,
