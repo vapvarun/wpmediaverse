@@ -16,7 +16,7 @@
 	--mvs-chat-surface: var(--color-theme-white-box, #f8f9fa);
 	--mvs-chat-border: var(--global-border-color, #dbdbdb);
 	--mvs-chat-text: var(--global-title-color, #262626);
-	--mvs-chat-text-secondary: var(--global-font-color, #8e8e8e);
+	--mvs-chat-text-secondary: var(--global-font-color, #6e6e6e);
 	--mvs-chat-bubble-sent: #0095f6;
 	--mvs-chat-bubble-sent-text: #fff;
 	--mvs-chat-bubble-received: #efefef;

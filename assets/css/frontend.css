@@ -1241,8 +1241,8 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-tag:hover {
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
 }
 
 /* ==========================================================================
@@ -1732,8 +1732,8 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-pagination .page-numbers.current,
 .mvs-pagination .page-numbers:hover {
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
 }
 
 /* ==========================================================================
@@ -1913,8 +1913,8 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-lock-button {
     display: inline-block;
     padding: 10px 24px;
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
     border: none;
     border-radius: 6px;
     font-size: 1em;
@@ -1967,9 +1967,9 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-social-bar button.active {
-    background: var(--mvs-primary);
+    background: var(--mvs-btn-primary-bg);
     border-color: var(--mvs-primary);
-    color: var(--mvs-bg);
+    color: var(--mvs-btn-primary-fg);
 }
 
 .mvs-social-bar .mvs-count {
@@ -2026,9 +2026,9 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-social-actions button.active {
-    background: var(--mvs-primary);
+    background: var(--mvs-btn-primary-bg);
     border-color: var(--mvs-primary);
-    color: var(--mvs-bg);
+    color: var(--mvs-btn-primary-fg);
 }
 
 @media (max-width: 767px) /* below --mvs-bp-tablet */ {
@@ -2998,8 +2998,8 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 4px;
     padding: 2px 8px;
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
     border-radius: 12px;
     font-size: 0.8em;
 }
@@ -3248,8 +3248,8 @@ a.mvs-dashboard-card-title:hover {
     right: 4px;
     width: 22px;
     height: 22px;
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
     border-radius: 50%;
     display: none;
     align-items: center;
@@ -4384,8 +4384,8 @@ a.mvs-dashboard-card-title:hover {
     border: 1px solid var(--mvs-primary);
     border-left: 0;
     border-radius: 0 8px 8px 0;
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
     font-size: 0.95em;
     font-weight: 500;
     cursor: pointer;
@@ -4465,8 +4465,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-toggle-btn.active {
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
 }
 
 .mvs-field-hint {
@@ -4871,8 +4871,8 @@ a.mvs-dashboard-card-title:hover {
     position: absolute;
     top: 4px;
     left: 4px;
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
     border-radius: 4px;
     padding: 2px 8px;
     font-size: 11px;
@@ -4934,8 +4934,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-grid-pagination-links .current {
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    background: var(--mvs-btn-primary-bg);
+    color: var(--mvs-btn-primary-fg);
     border-color: var(--mvs-primary);
     font-weight: 600;
 }

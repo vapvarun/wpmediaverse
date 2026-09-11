@@ -57,6 +57,22 @@
 	--mvs-accent-hover:  #135e96;
 	--mvs-primary:       #2271b1;
 	--mvs-primary-hover: #135e96;
+
+	/*
+	 * The accent-fill pair, mirrored from frontend.css so that a control styled
+	 * for the frontend dashboard keeps working when the same stylesheet is
+	 * enqueued in admin (Pro's connector-import.css is loaded in both). Without
+	 * these, `background: var(--mvs-btn-primary-bg)` resolves to nothing here and
+	 * the declaration is dropped, leaving the control transparent.
+	 *
+	 * --mvs-btn-primary-fg is the auto-contrast token: it flips between black and
+	 * white by the fill's lightness, so a control never has to guess whether the
+	 * accent behind its label is dark. Admin's accent is a fixed WP blue, but the
+	 * SAME rule has to hold on the frontend where the accent is the site owner's
+	 * brand colour and may be light.
+	 */
+	--mvs-btn-primary-bg: var(--mvs-primary);
+	--mvs-btn-primary-fg: oklch(from var(--mvs-primary) clamp(0, (0.62 - l) * 1000, 1) 0 0);
 	--mvs-success:       #00a32a;
 	--mvs-warning:       #dba617;
 	--mvs-warn:          #dba617;
