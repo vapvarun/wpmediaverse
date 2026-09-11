@@ -368,17 +368,24 @@ class MediaListPage {
 					<span class="mvs-thumb-placeholder"><i data-lucide="<?php echo esc_attr( $icon ); ?>"></i></span>
 				<?php endif; ?>
 			</td>
+			<?php
+			// No link to a document Free cannot render - the permalink returns a
+			// branded 404 by design. Computed before the title, because the BOLD
+			// TITLE is the primary click target in every WP list table; guarding
+			// only the row-actions "View" span removed the link almost nobody
+			// clicks and kept the one everybody does. Basecamp 10280356655.
+			$mvs_is_doc      = in_array( (string) $type, array( 'document', 'legacy_document' ), true );
+			$mvs_can_view_it = ! $mvs_is_doc || \WPMediaVerse\Core\Plugin::documents_enabled();
+			?>
 			<td class="column-primary">
+				<?php if ( $mvs_can_view_it ) : ?>
 				<strong><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php echo esc_html( $title ); ?></a></strong>
+				<?php else : ?>
+				<strong><?php echo esc_html( $title ); ?></strong>
+				<?php endif; ?>
 				<div class="row-actions">
-					<?php
-					// No View link for a document Free cannot render - the permalink
-					// returns a branded 404 by design. Basecamp 10280356655.
-					$mvs_is_doc      = in_array( (string) $type, array( 'document', 'legacy_document' ), true );
-					$mvs_can_view_it = ! $mvs_is_doc || \WPMediaVerse\Core\Plugin::documents_enabled();
-					?>
 					<?php if ( $mvs_can_view_it ) : ?>
-					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span>
+					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span> |
 					<?php endif; ?>
 					<?php
 					$details_url = add_query_arg(
@@ -390,7 +397,7 @@ class MediaListPage {
 						admin_url( 'admin.php' )
 					);
 					?>
-					| <span class="details"><a href="<?php echo esc_url( $details_url ); ?>"><?php esc_html_e( 'Details', 'wpmediaverse' ); ?></a></span>
+					<span class="details"><a href="<?php echo esc_url( $details_url ); ?>"><?php esc_html_e( 'Details', 'wpmediaverse' ); ?></a></span>
 					<?php
 					$ai_review_url = add_query_arg(
 						array(
