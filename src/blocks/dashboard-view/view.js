@@ -792,6 +792,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// sync emits ONE carousel item instead of one feed row per file.
 			// Same key shape as the upload modal (shared-ui), which has always
 			// sent this.
+			let duplicates = 0;
+			let lastDuplicateId = 0;
 			const mediaGroup =
 				total > 1
 					? 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 )
@@ -829,6 +831,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 					} );
 					if ( res.ok ) {
 						uploaded++;
+						// The server flags a re-upload of identical content. The
+						// upload block and the shared modal both surface this;
+						// the dashboard panel read res.data only on failure, so
+						// a member uploading a duplicate here was told
+						// "1 file(s) uploaded!" and nothing else.
+						const mediaData = res.data;
+						if ( mediaData && mediaData.duplicate_warning ) {
+							duplicates++;
+							lastDuplicateId = mediaData.existing_media_id || 0;
+						}
 					} else {
 						const errData = res.data || {};
 						lastError = errData.message || ( state.i18n?.uploadFailed || 'Upload failed.' );
@@ -840,19 +852,27 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			state.upload.uploading = false;
 			state.upload.status = '';
+			const duplicateNote = duplicates > 0
+				? ' ' + (
+					state.i18n?.duplicatesDetected ||
+						'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+				)
+					.replace( '%1$d', duplicates )
+					.replace( '%2$d', lastDuplicateId )
+				: '';
 			if ( uploaded === 0 ) {
 				sharedUI.actions.showToast( lastError || ( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ), 'error' );
 			} else if ( uploaded < total ) {
 				sharedUI.actions.showToast(
 					( state.i18n?.filesUploadedPartial || '%1$d of %2$d file(s) uploaded.' )
 						.replace( '%1$d', uploaded )
-						.replace( '%2$d', total ),
+						.replace( '%2$d', total ) + duplicateNote,
 					'error'
 				);
 			} else {
 				sharedUI.actions.showToast(
-					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ),
-					'success'
+					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ) + duplicateNote,
+					duplicates > 0 ? 'warning' : 'success'
 				);
 			}
 			if ( uploaded > 0 ) {

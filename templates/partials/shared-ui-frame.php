@@ -64,6 +64,13 @@ wp_interactivity_state(
 			'savedRedirecting' => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
 			'settingsSaved'    => __( 'Media settings saved.', 'wpmediaverse' ),
 			'selectFiles'      => __( 'Please select files to upload.', 'wpmediaverse' ),
+			/* translators: %d: number of files uploaded. */
+			'filesUploaded'    => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			/* translators: 1: uploaded count, 2: failed count. */
+			'uploadedFailed'   => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
+			'uploadFailedRetry' => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+			/* translators: 1: number of duplicate files, 2: existing media ID. */
+			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
 			'albumCreated'     => __( 'Album "%s" created!', 'wpmediaverse' ),
 			'failedLoad'       => __( 'Failed to load media.', 'wpmediaverse' ),
@@ -681,8 +688,7 @@ wp_interactivity_state(
 
 	<!-- Toast -->
 	<div class="mvs-toast" hidden data-wp-bind--hidden="!state.toastVisible"
-		data-wp-class--mvs-toast--success="state.isToastSuccess"
-		data-wp-class--mvs-toast--error="state.isToastError">
+		data-wp-bind--class="state.toastClass">
 		<span data-wp-text="state.toastMessage"></span>
 		<button class="mvs-toast-close" data-wp-on--click="actions.hideToast" aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

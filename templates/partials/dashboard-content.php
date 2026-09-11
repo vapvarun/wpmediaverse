@@ -221,6 +221,8 @@ wp_interactivity_state(
 			'filesUploadedPartial'    => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
 			/* translators: %d: number of files uploaded. */
 			'filesUploaded'           => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			/* translators: 1: number of duplicate files, 2: existing media ID. */
+			'duplicatesDetected'      => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
 			'fileReplaced'            => __( 'File replaced!', 'wpmediaverse' ),
 			'replaceFailed'           => __( 'Replace failed.', 'wpmediaverse' ),
 			// Edit media.

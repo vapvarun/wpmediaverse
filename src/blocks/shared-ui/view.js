@@ -216,8 +216,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		toastMessage: '',
 		toastType: 'success',
 		toastVisible: false,
-		get isToastSuccess() { return state.toastType === 'success'; },
-		get isToastError() { return state.toastType === 'error'; },
+		// Derived from the type, not enumerated per type. assets/js/admin/toast.js
+		// already builds the class this way; the frontend template listed the
+		// modifiers by hand, so showToast( msg, 'warning' ) - which the upload
+		// duplicate path passes - produced a bare, unstyled toast (Coding Rule 22).
+		get toastClass() { return 'mvs-toast mvs-toast--' + ( state.toastType || 'success' ); },
 
 		// --- Confirm (flat) ---
 		confirmMessage: '',
@@ -1220,14 +1223,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( uploaded > 0 ) {
 				let msg;
 				let toastType;
+				const uploadedMsg = ( state.i18n?.filesUploaded || '%d file(s) uploaded!' )
+					.replace( '%d', uploaded );
 				if ( state.uploadModalFailed > 0 ) {
-					msg = uploaded + ' uploaded, ' + state.uploadModalFailed + ' failed.';
+					msg = ( state.i18n?.uploadedFailed || '%1$d uploaded, %2$d failed.' )
+						.replace( '%1$d', uploaded )
+						.replace( '%2$d', state.uploadModalFailed );
 					toastType = 'error';
 				} else if ( state.uploadModalDuplicates > 0 ) {
-					msg = uploaded + ' uploaded — ' + state.uploadModalDuplicates + ' duplicate(s) detected (existing media #' + state.uploadModalLastDuplicateId + ').';
+					msg = uploadedMsg + ' ' + (
+						state.i18n?.duplicatesDetected ||
+							'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+					)
+						.replace( '%1$d', state.uploadModalDuplicates )
+						.replace( '%2$d', state.uploadModalLastDuplicateId );
 					toastType = 'warning';
 				} else {
-					msg = uploaded + ' file(s) uploaded!';
+					msg = uploadedMsg;
 					toastType = 'success';
 				}
 				actions.showToast( msg, toastType );
@@ -1236,7 +1248,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					window.location.reload();
 				}, state.uploadModalDuplicates > 0 ? 2500 : 800 );
 			} else {
-				actions.showToast( state.uploadModalLastError || 'Upload failed. Please try again.', 'error' );
+				actions.showToast(
+					state.uploadModalLastError ||
+						( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ),
+					'error'
+				);
 			}
 		},
 
