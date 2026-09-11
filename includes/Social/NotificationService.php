@@ -442,13 +442,14 @@ class NotificationService {
 	 * center) always show identical wording + destination.
 	 *
 	 * @since 1.7.0
+	 * @since 2.4.2 Public, so the BuddyPress mirror renders the same words and link.
 	 *
 	 * @param string $type     Notification type.
 	 * @param int    $actor_id User who triggered it.
 	 * @param int    $media_id Related media ID (0 if none).
 	 * @return array{message:string,link:string}
 	 */
-	private function build_message_and_link( string $type, int $actor_id, int $media_id ): array {
+	public function build_message_and_link( string $type, int $actor_id, int $media_id ): array {
 		$actor       = get_userdata( $actor_id );
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';

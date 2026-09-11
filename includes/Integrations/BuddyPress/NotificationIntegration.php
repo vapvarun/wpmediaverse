@@ -22,14 +22,51 @@ defined( 'ABSPATH' ) || exit;
 class NotificationIntegration {
 
 	/**
-	 * Map of NotificationService types to BP component_action values.
-	 * Types not in this map are in-app only (e.g. new_message, new_follower).
+	 * BP component_action names these three types have always used. Existing
+	 * bp_notifications rows carry them, so they stay; every other type is
+	 * mirrored as `mvs_<type>` (see bp_action()).
 	 */
 	private const TYPE_TO_BP_ACTION = array(
 		'media_reaction' => 'mvs_new_reaction',
 		'media_comment'  => 'mvs_new_comment',
 		'media_mention'  => 'mvs_new_mention',
 	);
+
+	/**
+	 * Types BuddyPress does not carry. Direct messages have their own unread
+	 * badge on the chat button; everything else reaches the one BP bell.
+	 */
+	private const IN_APP_ONLY = array( 'new_message' );
+
+	/**
+	 * BP component_action for a notification type.
+	 *
+	 * By rule, not by list: a new type (including every Pro type registered
+	 * through `mvs_notification_types`) reaches BuddyPress without anyone
+	 * remembering to add it here. With BP notifications on, the MediaVerse
+	 * bell is hidden, so an unmirrored type is a notification nobody sees
+	 * (follows and favorites were, Basecamp 10296867984).
+	 *
+	 * @param string $type Notification type.
+	 * @return string
+	 */
+	private static function bp_action( string $type ): string {
+		return self::TYPE_TO_BP_ACTION[ $type ] ?? 'mvs_' . $type;
+	}
+
+	/**
+	 * Notification type for a stored BP component_action (inverse of bp_action()).
+	 *
+	 * @param string $action BP component_action.
+	 * @return string Type, or '' when the action is not ours.
+	 */
+	private static function type_from_action( string $action ): string {
+		$legacy = array_search( $action, self::TYPE_TO_BP_ACTION, true );
+		if ( false !== $legacy ) {
+			return (string) $legacy;
+		}
+		return 0 === strpos( $action, 'mvs_' ) ? substr( $action, 4 ) : '';
+	}
 
 	/**
 	 * Register all notification hooks.
@@ -66,11 +103,13 @@ class NotificationIntegration {
 			return;
 		}
 
-		if ( ! isset( self::TYPE_TO_BP_ACTION[ $type ] ) ) {
+		if ( in_array( $type, self::IN_APP_ONLY, true ) ) {
 			return;
 		}
 
-		if ( $user_id <= 0 || $actor_id <= 0 || $media_id <= 0 || $user_id === $actor_id ) {
+		// No media-id or self check: a follow has no media, and create() only
+		// writes a self-notification when the type asks for it (Pro results).
+		if ( $user_id <= 0 || $actor_id <= 0 ) {
 			return;
 		}
 
@@ -104,7 +143,7 @@ class NotificationIntegration {
 				'item_id'           => $media_id,
 				'secondary_item_id' => $actor_id,
 				'component_name'    => 'wpmediaverse',
-				'component_action'  => self::TYPE_TO_BP_ACTION[ $type ],
+				'component_action'  => self::bp_action( $type ),
 			)
 		);
 	}
@@ -218,27 +257,18 @@ class NotificationIntegration {
 			return $content;
 		}
 
-		$user_name = bp_core_get_user_displayname( $secondary_item_id );
-		$link      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $item_id )
-			? \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id )
-			: bp_get_notifications_permalink();
-
-		switch ( $component_action ) {
-			case 'mvs_new_reaction':
-				/* translators: %s: user display name */
-				$text = sprintf( __( '%s reacted to your media', 'wpmediaverse' ), $user_name );
-				break;
-			case 'mvs_new_comment':
-				/* translators: %s: user display name */
-				$text = sprintf( __( '%s commented on your media', 'wpmediaverse' ), $user_name );
-				break;
-			case 'mvs_new_mention':
-				/* translators: %s: user display name */
-				$text = sprintf( __( '%s mentioned you', 'wpmediaverse' ), $user_name );
-				break;
-			default:
-				return $content;
+		$type = self::type_from_action( (string) $component_action );
+		if ( '' === $type ) {
+			return $content;
 		}
+
+		// Same words and link as MediaVerse's own notification list.
+		$media_id = (int) $item_id;
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$rendered = \WPMediaVerse\Core\Plugin::container()->get( 'notifications' )
+			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0 );
+		$text     = $rendered['message'];
+		$link     = '' !== $rendered['link'] ? $rendered['link'] : bp_get_notifications_permalink();
 
 		if ( 'string' === $format ) {
 			return '<a href="' . esc_url( $link ) . '">' . esc_html( $text ) . '</a>';
