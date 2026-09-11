@@ -160,53 +160,47 @@ class PermissionsManager {
 				</p>
 
 				<?php
-				// Scroll container: this matrix has one column per capability and
-				// one ROW PER ROLE ON THE SITE - BuddyPress, WooCommerce and custom
-				// roles all appear - so it outgrows the settings card on any real
-				// community install. Without this the rightmost columns (Use
-				// Documents, Manage Documents) rendered past the card edge with no
-				// way to reach them: the owner could neither see nor tick them.
+				// One card per role, capabilities as a wrapping grid inside it -
+				// not a wide table.
+				//
+				// The table form put one column per capability and one row per role,
+				// and every site role appears here (BuddyPress, WooCommerce, custom).
+				// With Documents active that is 11 columns needing 871px of header
+				// text in a 731px card, so the last columns rendered past the edge
+				// with no way to reach them. Narrowing did not rescue it: the shared
+				// table style adds 24px of padding per column and uppercases the
+				// labels, and no column width makes ten of those fit.
+				//
+				// A grid cannot have that problem. It wraps instead of overflowing,
+				// so it holds at any number of capabilities (the mvs_managed_caps
+				// filter can add more) and any number of roles, and it reads the way
+				// an owner actually asks the question: "what can Subscribers do?"
+				// Basecamp 10285712647.
 				?>
-				<div class="mvs-caps-table-scroll">
-				<table class="mvs-recent-table mvs-caps-table">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Role', 'wpmediaverse' ); ?></th>
-							<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
-								<th class="mvs-caps-table__check"><?php echo esc_html( $cap_label ); ?></th>
-							<?php endforeach; ?>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $roles as $role_slug => $role_label ) : ?>
-							<?php $role_obj = get_role( $role_slug ); ?>
-							<tr>
-								<td><strong><?php echo esc_html( $role_label ); ?></strong></td>
+				<div class="mvs-caps-roles">
+					<?php foreach ( $roles as $role_slug => $role_label ) : ?>
+						<?php $role_obj = get_role( $role_slug ); ?>
+						<fieldset class="mvs-caps-role">
+							<legend class="mvs-caps-role__name"><?php echo esc_html( $role_label ); ?></legend>
+							<div class="mvs-caps-role__grid">
 								<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
-									<td class="mvs-caps-table__check">
-										<?php
-										$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
-										printf(
-											'<input type="checkbox" name="mvs_role_caps[%s][%s]" value="1" %s aria-label="%s" />',
-											esc_attr( $role_slug ),
-											esc_attr( $cap_key ),
-											checked( $has_cap, true, false ),
-											esc_attr(
-												sprintf(
-													/* translators: 1: capability label, 2: role label */
-													__( '%1$s for %2$s', 'wpmediaverse' ),
-													$cap_label,
-													$role_label
-												)
-											)
-										);
-										?>
-									</td>
+									<?php
+									$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
+									$field_id = 'mvs-cap-' . sanitize_html_class( $role_slug . '-' . $cap_key );
+									?>
+									<label class="mvs-caps-role__item" for="<?php echo esc_attr( $field_id ); ?>">
+										<input
+											type="checkbox"
+											id="<?php echo esc_attr( $field_id ); ?>"
+											name="mvs_role_caps[<?php echo esc_attr( $role_slug ); ?>][<?php echo esc_attr( $cap_key ); ?>]"
+											value="1"
+											<?php checked( $has_cap ); ?> />
+										<span><?php echo esc_html( $cap_label ); ?></span>
+									</label>
 								<?php endforeach; ?>
-							</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
+							</div>
+						</fieldset>
+					<?php endforeach; ?>
 				</div>
 				</div>
 
