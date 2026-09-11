@@ -536,8 +536,9 @@ wp_interactivity_state(
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
+						<?php // One icon per feature on every surface: star = Favorite, heart = Like, bookmark = Save (Basecamp 10277695437). ?>
 						<button class="mvs-lightbox-action mvs-lb-fav" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
-							<i data-lucide="heart" aria-hidden="true"></i>
+							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>

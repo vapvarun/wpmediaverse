@@ -1141,7 +1141,7 @@
 
 		// Label the favourite button WITHOUT destroying it.
 		//
-		// The template ships <i data-lucide="heart"> + <span> inside the button,
+		// The template ships <i data-lucide="star"> + <span> inside the button,
 		// and Lucide has already swapped the <i> for an SVG by the time the clone
 		// is taken. Assigning textContent wiped both and substituted a U+2665
 		// dingbat, so the clone lost its icon and the longer "Favorited" string

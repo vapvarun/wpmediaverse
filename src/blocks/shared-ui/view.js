@@ -541,7 +541,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return text;
 		},
 		get lightboxFavoriteLabel() {
-			// Icon is rendered separately via Lucide (data-lucide="heart"); label is plain text.
+			// Icon is rendered separately via Lucide (data-lucide="star"); label is plain text.
 			return state.lightboxIsFavorited ? 'Favorited' : 'Favorite';
 		},
 		get lightboxHasComments() {

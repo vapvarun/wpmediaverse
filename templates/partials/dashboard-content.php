@@ -1125,7 +1125,7 @@ wp_interactivity_state(
 			// interface with no dashboard caller.
 			echo $mvs_tpl->render_block_empty_state(
 				array(
-					'icon'    => 'heart',
+					'icon'    => 'star',
 					'title'   => __( 'No favourites yet', 'wpmediaverse' ),
 					'message' => __( 'Media you favourite appears here so you can find it again.', 'wpmediaverse' ),
 				)
@@ -1290,12 +1290,22 @@ wp_interactivity_state(
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></label>
+					<?php
+					// Manual collections are filled from the "Save" button on a media
+					// item, and that button exists only when a collections backend
+					// (Pro) turns it on. Offer the type under the same switch as the
+					// button, so a site never offers a collection type it cannot fill
+					// (Basecamp 10281257827).
+					$mvs_can_fill_manual = (bool) apply_filters( 'mvs_collections_enabled', false );
+					?>
 					<div class="mvs-collection-type-toggle">
+						<?php if ( $mvs_can_fill_manual ) : ?>
 						<button type="button" class="mvs-toggle-btn"
 							data-wp-class--active="state.isManualType"
 							data-wp-on--click="actions.setCollectionTypeManual">
 							<?php esc_html_e( 'Manual', 'wpmediaverse' ); ?>
 						</button>
+						<?php endif; ?>
 						<button type="button" class="mvs-toggle-btn"
 							data-wp-class--active="state.isSmartType"
 							data-wp-on--click="actions.setCollectionTypeSmart">
@@ -1303,7 +1313,7 @@ wp_interactivity_state(
 						</button>
 					</div>
 					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isManualType">
-						<?php esc_html_e( 'Add media to this collection manually via the Favorites button.', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Add media with the Save button on any media item.', 'wpmediaverse' ); ?>
 					</p>
 					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isSmartType">
 						<?php esc_html_e( 'Define rules and media matching all conditions will appear automatically.', 'wpmediaverse' ); ?>

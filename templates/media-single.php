@@ -652,7 +652,7 @@ $mvs_archive_url = home_url( '/media/' );
 							data-wp-on--click="actions.toggleFavorite"
 							data-mvs-tooltip="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">
-							<i data-lucide="heart" aria-hidden="true"></i>
+							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( ! is_user_logged_in() ) : ?>
@@ -660,7 +660,7 @@ $mvs_archive_url = home_url( '/media/' );
 							data-mvs-tooltip="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">
-							<i data-lucide="heart" aria-hidden="true"></i>
+							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
 						</a>
 					<?php endif; ?>
