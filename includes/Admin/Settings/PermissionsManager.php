@@ -87,7 +87,14 @@ class PermissionsManager {
 			'delete_mvs_media'        => __( 'Delete Own', 'wpmediaverse' ),
 			'delete_others_mvs_media' => __( 'Delete Others', 'wpmediaverse' ),
 			'moderate_mvs_media'      => __( 'Moderate', 'wpmediaverse' ),
-			'manage_mvs_access'       => __( 'Manage Access', 'wpmediaverse' ),
+			// 'manage_mvs_access' is NOT listed either, for a different reason
+			// from View: it is genuinely enforced (AccessController's REST
+			// route), it simply has no screen. Per-media access grants are a
+			// rare, developer-shaped need on a community site whose normal case
+			// is "members upload freely" - so it stays a capability with a
+			// filter seam rather than becoming a tenth column every owner has
+			// to reason about. Grant it in code, or re-add the column with
+			// mvs_managed_caps; the REST gate honours it either way.
 			'manage_mvs_settings'     => __( 'Manage Settings', 'wpmediaverse' ),
 		);
 
@@ -95,6 +102,15 @@ class PermissionsManager {
 		 * The capabilities shown as columns in the role matrix.
 		 *
 		 * Adding a cap here makes it grantable per role on the Permissions tab.
+		 * This is the supported way to surface a capability the plugin keeps out
+		 * of the default matrix - read_mvs_media and manage_mvs_access are both
+		 * still granted and still work, they are simply not columns:
+		 *
+		 *     add_filter( 'mvs_managed_caps', function ( $caps ) {
+		 *         $caps['manage_mvs_access'] = 'Manage Access';
+		 *         return $caps;
+		 *     } );
+		 *
 		 * The matrix already enumerates every role registered on the site, so a
 		 * new column appears for custom, BuddyPress and WooCommerce roles with
 		 * no further work.
