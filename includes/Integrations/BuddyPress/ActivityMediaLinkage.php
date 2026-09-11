@@ -55,7 +55,17 @@ class ActivityMediaLinkage {
 		add_action( 'bp_activity_after_save', array( $this, 'on_activity_save' ), 20 );
 
 		// On activity delete, drop the linkage rows.
-		add_action( 'bp_before_activity_delete', array( $this, 'on_activity_delete' ) );
+		//
+		// `bp_activity_deleted_activities` and not `bp_before_activity_delete`:
+		// the "before" action carries the delete QUERY, so it only has an ['id']
+		// when the caller happened to delete by id. BuddyPress deletes by
+		// user_id / item_id / component / type all the time (user deletion,
+		// group deletion, comment cascades) and those left every linkage row
+		// behind - measured 18 of 26 rows orphaned on the QA site. BuddyPress's
+		// own docblock on bp_activity_delete() says to use this one when you
+		// want the IDs. It also fires AFTER the delete succeeded, so a failed
+		// delete no longer drops links.
+		add_action( 'bp_activity_deleted_activities', array( $this, 'on_activity_delete' ) );
 	}
 
 	/**
@@ -102,15 +112,22 @@ class ActivityMediaLinkage {
 	/**
 	 * Drop linkage rows when the parent activity is deleted.
 	 *
-	 * @param array $args BP activity delete args (ids, query).
+	 * Accepts either shape: the deleted-id list from
+	 * `bp_activity_deleted_activities` (an int or an int[]), or the legacy
+	 * `$args` array this used to be wired to, so anything still calling it
+	 * directly keeps working.
+	 *
+	 * @param array|int $activity_ids Deleted activity id(s), or legacy delete args.
 	 */
-	public function on_activity_delete( $args ): void {
-		$ids = array();
-		if ( is_array( $args ) && ! empty( $args['id'] ) ) {
-			$ids = (array) $args['id'];
+	public function on_activity_delete( $activity_ids ): void {
+		if ( is_array( $activity_ids ) && isset( $activity_ids['id'] ) ) {
+			$activity_ids = $activity_ids['id'];
 		}
-		foreach ( $ids as $activity_id ) {
-			$this->delete_links( (int) $activity_id );
+		foreach ( (array) $activity_ids as $activity_id ) {
+			$activity_id = (int) $activity_id;
+			if ( $activity_id > 0 ) {
+				$this->delete_links( $activity_id );
+			}
 		}
 	}
 

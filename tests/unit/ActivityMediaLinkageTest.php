@@ -182,6 +182,50 @@ class ActivityMediaLinkageTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The hook actually wired up is `bp_activity_deleted_activities`, which passes
+	 * the deleted ID(s) directly - NOT an args array with an 'id' key.
+	 *
+	 * The test above asserted only the legacy `array( 'id' => ... )` shape, which
+	 * is why the leak survived: BuddyPress deletes by user_id / item_id /
+	 * component all the time and those args carry no 'id' at all, so every such
+	 * delete left its linkage rows behind. Fails against the pre-fix handler,
+	 * which read `$args['id']` and silently deleted nothing.
+	 *
+	 * @dataProvider provide_deleted_id_shapes
+	 *
+	 * @param callable $shape Builds the payload from an activity id.
+	 */
+	public function test_on_activity_delete_accepts_the_hook_payload( callable $shape ): void {
+		$a           = $this->insert_image( 'Hook payload A' );
+		$b           = $this->insert_image( 'Hook payload B' );
+		$activity_id = 1008;
+
+		add_filter( 'mvs_activity_media_ids', fn() => array( $a, $b ) );
+		$this->linkage->on_activity_save( $this->fake_activity( $activity_id ) );
+		remove_all_filters( 'mvs_activity_media_ids' );
+
+		$this->assertSame( 2, $this->count_links( $activity_id ) );
+
+		$this->linkage->on_activity_delete( $shape( $activity_id ) );
+
+		$this->assertSame( 0, $this->count_links( $activity_id ) );
+	}
+
+	/**
+	 * Every payload shape `bp_activity_deleted_activities` is documented to pass,
+	 * plus the legacy args array so the back-compat path stays asserted.
+	 *
+	 * @return array<string, array{0: callable}>
+	 */
+	public function provide_deleted_id_shapes(): array {
+		return array(
+			'id list (what BuddyPress passes)' => array( fn( $id ) => array( $id ) ),
+			'single id'                        => array( fn( $id ) => $id ),
+			'legacy args array'                => array( fn( $id ) => array( 'id' => $id ) ),
+		);
+	}
+
+	/**
 	 * Linkage rows for non-existent media are silently skipped — caller
 	 * supplied a stale ID, the table never accumulates orphans.
 	 */

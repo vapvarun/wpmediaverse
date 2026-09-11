@@ -367,6 +367,10 @@ class Plugin {
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.bp_activity_linkage' );
+
+		// Provider-neutral linkage cleanup. Booted unconditionally because the
+		// linkage table is shared with non-BuddyPress object types.
+		self::$container->get( 'object_media' );
 		self::$container->get( 'integration.bp_verified_member' );
 		self::$container->get( 'integration.webhooks' );
 
@@ -929,7 +933,9 @@ class Plugin {
 		self::$container->register(
 			'object_media',
 			function () {
-				return new \WPMediaVerse\Media\ObjectMediaLinkage();
+				$object_media = new \WPMediaVerse\Media\ObjectMediaLinkage();
+				$object_media->init();
+				return $object_media;
 			}
 		);
 
