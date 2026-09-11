@@ -73,8 +73,15 @@ class PermissionsManager {
 	private function get_managed_caps(): array {
 		$caps = array(
 			'upload_mvs_media'        => __( 'Upload', 'wpmediaverse' ),
-			'read_mvs_media'          => __( 'View', 'wpmediaverse' ),
-			'publish_mvs_media'       => __( 'Publish', 'wpmediaverse' ),
+			// 'read_mvs_media' ("View") is NOT listed, deliberately. Nothing in
+			// either plugin ever calls current_user_can() on it - reading is
+			// decided by PrivacyService, which never consults it - so the column
+			// did nothing whichever way the owner set it. A control that cannot
+			// affect anything is worse than no control: it invites the owner to
+			// believe they have closed something. The capability itself is still
+			// granted for back-compat; only the misleading column is gone.
+			// Re-add it through the mvs_managed_caps filter if a site needs it.
+			'publish_mvs_media'       => __( 'Publish (uploads go live immediately)', 'wpmediaverse' ),
 			'edit_mvs_media'          => __( 'Edit Own', 'wpmediaverse' ),
 			'edit_others_mvs_media'   => __( 'Edit Others', 'wpmediaverse' ),
 			'delete_mvs_media'        => __( 'Delete Own', 'wpmediaverse' ),

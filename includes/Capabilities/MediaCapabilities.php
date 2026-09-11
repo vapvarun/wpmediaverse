@@ -139,6 +139,14 @@ class MediaCapabilities {
 				// Community platform, not a blog: contributor publishes too
 				// (no WP submit-for-review semantics here). See subscriber note.
 				'publish_mvs_media',
+				// Singular AND plural. The Permissions matrix displays the
+				// singular; every gate checks the plural. Granting only the
+				// plural here made "Edit Own" and "Delete Own" render UNCHECKED
+				// for Subscriber while subscribers could in fact edit and delete
+				// their own media - the matrix telling the owner the opposite of
+				// what was true. Every other role already had both.
+				'edit_mvs_media',
+				'delete_mvs_media',
 				'edit_mvs_medias',
 				'delete_mvs_medias',
 				'publish_mvs_medias',
@@ -156,6 +164,14 @@ class MediaCapabilities {
 				// there is no upload-can-but-publish-cannot mismatch
 				// (Basecamp #9962830813).
 				'publish_mvs_media',
+				// Singular AND plural. The Permissions matrix displays the
+				// singular; every gate checks the plural. Granting only the
+				// plural here made "Edit Own" and "Delete Own" render UNCHECKED
+				// for Subscriber while subscribers could in fact edit and delete
+				// their own media - the matrix telling the owner the opposite of
+				// what was true. Every other role already had both.
+				'edit_mvs_media',
+				'delete_mvs_media',
 				'edit_mvs_medias',
 				'delete_mvs_medias',
 				'publish_mvs_medias',
