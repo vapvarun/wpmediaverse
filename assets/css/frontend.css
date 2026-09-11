@@ -81,6 +81,36 @@
      * over. Old browsers therefore keep exactly today's behaviour for free.
      */
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+}
+
+/*
+ * Lightness is not luminance, and the line above can only read lightness.
+ * At high chroma the two disagree: #ff2d8f reads as "dark" in OKLCH (below the
+ * 0.62 threshold, so the rule picks white) while its actual WCAG luminance is
+ * 0.202, where black is the better partner. Measured: white 4.16, black 5.04.
+ * A saturated brand accent is exactly where a threshold on `l` mispredicts.
+ *
+ * No amount of retuning 0.62 fixes that, because the error is the axis, not the
+ * number. `contrast-color()` does the real luminance comparison, so where the
+ * browser has it, hand the decision over. Sweeping 24 hues x 4 chromas x 12
+ * lightnesses, choosing the better of black/white never fell below 4.62:1 --
+ * so this is not a tradeoff worth exposing as a setting, it is just the
+ * calculation done right.
+ *
+ * Unguarded above, guarded here, and the asymmetry is deliberate: an unparsable
+ * custom property is guaranteed-invalid and falls through to each consumer's
+ * own var() fallback, but an unparsable VALUE inside a supported property would
+ * simply lose. Verified in-browser that this at-rule reaches the CSSOM, since
+ * the note above records Chrome discarding a similar @supports for relative
+ * colour while CSS.supports() claimed it was fine.
+ */
+@supports (color: contrast-color(red)) {
+    :root {
+        --mvs-on-primary-auto: contrast-color(var(--mvs-primary-fill));
+    }
+}
+
+:root {
 
     /* The brand colour AS TEXT, dark enough to pass AA.
      *

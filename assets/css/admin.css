@@ -73,6 +73,19 @@
 	 */
 	--mvs-btn-primary-bg: var(--mvs-primary);
 	--mvs-btn-primary-fg: oklch(from var(--mvs-primary) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+}
+
+/* See frontend.css: lightness is not luminance, so let the browser do the real
+   comparison where it can. Admin's accent is a fixed WP blue, but this
+   stylesheet also backs controls that render on the frontend dashboard, where
+   the accent is the site owner's brand and may be saturated. */
+@supports (color: contrast-color(red)) {
+	:root {
+		--mvs-btn-primary-fg: contrast-color(var(--mvs-primary));
+	}
+}
+
+:root {
 	--mvs-success:       #00a32a;
 	--mvs-warning:       #dba617;
 	--mvs-warn:          #dba617;
