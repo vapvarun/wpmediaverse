@@ -507,7 +507,10 @@ $mvs_archive_url = home_url( '/media/' );
 					data-tag="<?php echo esc_attr( get_query_var( 'mvs_tag', '' ) ); ?>"
 					data-category="<?php echo esc_attr( get_query_var( 'mvs_category', '' ) ); ?>"
 					data-search="<?php echo esc_attr( get_query_var( 's', '' ) ); ?>"
-					data-scope="public"
+					<?php // No scope: REST then applies the same viewer privacy as page 1 (public + members + own). ?>
+					<?php if ( $mvs_profile ) : ?>
+					data-author="<?php echo absint( $mvs_profile->ID ); ?>"
+					<?php endif; ?>
 					data-group-covers="true">
 					<span class="mvs-load-more-label"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
 					<span class="mvs-load-more-spinner"></span>
