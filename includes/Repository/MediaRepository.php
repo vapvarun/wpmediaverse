@@ -28,6 +28,31 @@ defined( 'ABSPATH' ) || exit;
 class MediaRepository implements MediaRepositoryInterface {
 
 	/**
+	 * Tables holding rows keyed by `media_id` that die with the media.
+	 *
+	 * Every delete purges these through delete_cascade(), and Migrator v32 uses
+	 * the same list to clear rows left behind before the cascade covered them -
+	 * one list, so the two cannot drift. `mvs_messages` is deliberately absent: a
+	 * conversation keeps its message when the shared file goes, and the chat
+	 * shows it as no longer available.
+	 *
+	 * @var string[]
+	 */
+	public const MEDIA_CHILD_TABLES = array(
+		'mvs_media_stats',
+		'mvs_media_views',
+		'mvs_media_meta',
+		'mvs_reactions',
+		'mvs_favorites',
+		'mvs_mentions',
+		'mvs_album_items',
+		'mvs_notifications',
+		'mvs_activity',
+		'mvs_access_rules',
+		'mvs_access_grants',
+	);
+
+	/**
 	 * Columns that live in mvs_media_index (core, queried frequently).
 	 *
 	 * @var string[]
@@ -5088,9 +5113,49 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Delete rows in a media-keyed table whose media no longer exists.
+	 *
+	 * The one orphan rule, shared by Free's Migrator v32 and Pro's v16 so the
+	 * two cannot disagree. Album and collection ids share the numeric space with
+	 * media ids, and their stats/activity rows are keyed by post id in the same
+	 * `media_id` column, so an id that is a live album or collection is NOT an
+	 * orphan. Runs in bounded chunks so a large table is never held under one
+	 * long lock.
+	 *
+	 * @param string $table Unprefixed table with a `media_id` column, e.g. 'mvs_play_events'.
+	 * @return int Rows deleted.
+	 */
+	public function delete_rows_without_media( string $table ): int {
+		global $wpdb;
+
+		// The name is interpolated into SQL, so only a plugin table shape is accepted.
+		if ( ! preg_match( '/^mvs_[a-z_]+$/', $table ) ) {
+			return 0;
+		}
+
+		$t     = $wpdb->prefix . $table;
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$total = 0;
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$deleted = (int) $wpdb->query(
+				"DELETE FROM {$t} WHERE {$t}.media_id > 0
+				AND NOT EXISTS ( SELECT 1 FROM {$index} m WHERE m.media_id = {$t}.media_id )
+				AND NOT EXISTS ( SELECT 1 FROM {$wpdb->posts} p WHERE p.ID = {$t}.media_id AND p.post_type IN ( 'mvs_album', 'mvs_collection' ) )
+				LIMIT 5000"
+			);
+			$total  += $deleted;
+		} while ( 5000 === $deleted );
+
+		return $total;
+	}
+
+	/**
 	 * Permanently delete a media item and all related data.
 	 *
-	 * Removes rows from stats, views, meta, and index tables (in that order).
+	 * Removes the media's rows from every MEDIA_CHILD_TABLES table, then its
+	 * comments, term relationships and finally the index row.
 	 *
 	 * @param int $media_id Media ID.
 	 * @return bool Always true.
@@ -5130,17 +5195,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		$where  = array( 'media_id' => $media_id );
 		$format = array( '%d' );
 
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_views', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', $where, $format );  // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', $where, $format );   // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', $where, $format );   // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_mentions', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_notifications', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_activity', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_access_rules', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_access_grants', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		foreach ( self::MEDIA_CHILD_TABLES as $child_table ) {
+			$wpdb->delete( $wpdb->prefix . $child_table, $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		}
 		// Media comments are detached from the post-ID space (comment_post_ID = 0)
 		// and linked to the media via comment meta; delete each + its meta.
 		$mvs_comment_ids = get_comments(

@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 31;
+	const CURRENT_VERSION = 32;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -2292,5 +2292,45 @@ class Migrator {
 			AND drive_type = 'user'
 			AND post_author > 0"
 		);
+	}
+
+	/**
+	 * Migration v32 - clear rows that outlived their media.
+	 *
+	 * Rows written before delete_cascade() purged every MEDIA_CHILD_TABLES
+	 * table, and before the linkage table had delete-time listeners, still point
+	 * at nothing. Invisible to members, dead weight in the database. The
+	 * cascade's own list drives this, so it clears exactly what a delete would
+	 * have. The orphan rule itself, including the album/collection exemption,
+	 * is MediaRepository::delete_rows_without_media(), shared with Pro's v16.
+	 *
+	 * Messages are excluded - see MEDIA_CHILD_TABLES.
+	 *
+	 * @since 2.4.2
+	 */
+	private function migrate_to_32(): void {
+		global $wpdb;
+
+		$repo   = new \WPMediaVerse\Repository\MediaRepository();
+		$tables = \WPMediaVerse\Repository\MediaRepository::MEDIA_CHILD_TABLES;
+
+		$tables[] = 'mvs_bp_activity_media';
+		foreach ( $tables as $table ) {
+			$repo->delete_rows_without_media( $table );
+		}
+
+		// Links to BuddyPress activities deleted without an id in the delete
+		// args, which the pre-2.4.2 hook missed. Only `bp_activity`-typed rows:
+		// a BuddyNext `bn_post` id is not a BP activity id.
+		$activity = $wpdb->prefix . 'bp_activity';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( $activity === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $activity ) ) ) ) {
+			$links = $wpdb->prefix . 'mvs_bp_activity_media';
+			// ponytail: one unbounded DELETE; the linkage table is small next to the
+			// media tables. Batch it like delete_rows_without_media() if a site
+			// ever proves otherwise.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "DELETE FROM {$links} WHERE object_type = 'bp_activity' AND NOT EXISTS ( SELECT 1 FROM {$activity} a WHERE a.id = {$links}.activity_id )" );
+		}
 	}
 }
