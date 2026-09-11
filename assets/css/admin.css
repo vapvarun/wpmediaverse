@@ -1758,32 +1758,14 @@ a.mvs-stat-card:focus {
 	width: 130px;
 }
 
-/* Narrow fixed widths for badge-only columns so the Title column gets the
-   leftover horizontal room. Without this, WP's auto-table layout gives the
-   ID column 10%+ of the table width and the Title column wraps long
-   filenames to three lines. */
-.mvs-admin-widget .wp-list-table thead th:nth-child(5),
-.mvs-admin-widget .wp-list-table tfoot th:nth-child(5) {
-	width: 110px;
-}
-
-.mvs-admin-widget .wp-list-table thead th:nth-child(6),
-.mvs-admin-widget .wp-list-table tfoot th:nth-child(6) {
-	width: 110px;
-}
-
-.mvs-admin-widget .wp-list-table thead th:nth-child(7),
-.mvs-admin-widget .wp-list-table tfoot th:nth-child(7) {
-	width: 110px;
-}
-
-.mvs-admin-widget .wp-list-table thead th:last-child,
-.mvs-admin-widget .wp-list-table tfoot th:last-child {
-	width: 110px;
-}
-
+/* The Title column claims its share by width, not by pinning the others.
+   The previous rules sized columns by position (nth-child 5/6/7), written
+   when those positions held badge columns. Optimization and AI were added
+   later, so the same positions landed on Author, Type and Privacy, and
+   Title was squeezed to 70px - a filename wrapped onto several lines.
+   Keyed on the column's own class, it survives a column being added. */
 .mvs-admin-widget .wp-list-table .column-primary {
-	min-width: 220px;
+	width: 26%;
 }
 
 .mvs-admin-widget .wp-list-table td.mvs-col-id {
