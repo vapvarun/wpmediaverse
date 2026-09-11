@@ -638,6 +638,7 @@ class MediaController extends WP_REST_Controller {
 				'where'    => $where,
 				'params'   => $params,
 				'orderby'  => $request->get_param( 'orderby' ),
+				'order'    => $request->get_param( 'order' ),
 				'per_page' => $per_page,
 				'offset'   => $offset,
 			),
@@ -659,6 +660,7 @@ class MediaController extends WP_REST_Controller {
 				'params'   => $params,
 				'join'     => ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '',
 				'orderby'  => $request->get_param( 'orderby' ),
+				'order'    => $feed_args['order'] ?? $request->get_param( 'order' ),
 				'per_page' => $per_page,
 				'offset'   => $offset,
 			)
@@ -2272,8 +2274,16 @@ class MediaController extends WP_REST_Controller {
 				 *
 				 * @param string[] $options Sort option slugs.
 				 */
-				'enum'              => apply_filters( 'mvs_feed_sort_options', array( 'date', 'trending', 'popular' ) ),
+				// created_at / title / views match the Explore toolbar, so Load More
+				// continues whatever order the visitor chose.
+				'enum'              => apply_filters( 'mvs_feed_sort_options', array( 'date', 'trending', 'popular', 'created_at', 'title', 'views' ) ),
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'order'        => array(
+				'type'              => 'string',
+				'enum'              => array( 'asc', 'desc' ),
+				'default'           => 'desc',
+				'sanitize_callback' => 'sanitize_key',
 			),
 			'tag'          => array(
 				'type'              => 'string',

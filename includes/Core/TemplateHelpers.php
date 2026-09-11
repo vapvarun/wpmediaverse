@@ -1615,6 +1615,90 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Sort and direction for a media listing, read from the URL.
+	 *
+	 * The ONE reader for `?sort=` / `?order=` on Explore, profiles and every
+	 * Pro layout, so the Grid and the Pro layouts offer the same sort and
+	 * Load More (which reads the same URL) continues the same order. An
+	 * allowlist, never the caller's string: `orderby` reaches SQL as an
+	 * identifier, so an unknown value falls back to newest first.
+	 *
+	 * @since 2.4.2
+	 * @return array{orderby: string, order: string} orderby created_at|title|views; order ASC|DESC.
+	 */
+	public function explore_sort(): array {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view controls on a GET page.
+		$sort  = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+		$order = isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		return array(
+			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views' ), true ) ? $sort : 'created_at',
+			'order'   => 'asc' === $order ? 'ASC' : 'DESC',
+		);
+	}
+
+	/**
+	 * The Explore toolbar: item count, sort and direction, as a GET form.
+	 *
+	 * Rendered by the Grid layout and every Pro layout (feeds and profiles), so
+	 * a visitor gets the same controls whichever layout the owner picked.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int        $total_items Items in the listing.
+	 * @param array|null $hidden      [ name => value ] carried on submit. Null =
+	 *                                the current search, tag and category.
+	 * @return string Escaped HTML.
+	 */
+	public function render_explore_sort_toolbar( int $total_items, ?array $hidden = null ): string {
+		if ( null === $hidden ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
+			$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+			$hidden = array(
+				's'            => $search,
+				'mvs_tag'      => (string) get_query_var( 'mvs_tag', '' ),
+				'mvs_category' => (string) get_query_var( 'mvs_category', '' ),
+			);
+		}
+		$sort = $this->explore_sort();
+
+		return $this->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-explore',
+				'form'   => true,
+				'class'  => 'mvs-explore__controls',
+				'hidden' => array_filter( $hidden ),
+				'count'  => sprintf(
+					/* translators: %s: number of media items. */
+					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
+					number_format_i18n( $total_items )
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $sort['orderby'],
+					'options' => array(
+						'created_at' => __( 'Date added', 'wpmediaverse' ),
+						'title'      => __( 'Title', 'wpmediaverse' ),
+						'views'      => __( 'Views', 'wpmediaverse' ),
+					),
+				),
+				'order'  => array(
+					'name'    => 'order',
+					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'value'   => strtolower( $sort['order'] ),
+					'options' => array(
+						'desc' => __( 'Newest first', 'wpmediaverse' ),
+						'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+					),
+				),
+				'submit' => __( 'Apply', 'wpmediaverse' ),
+			)
+		);
+	}
+
+	/**
 	 * Render the toolbar that sits above a panel's list or grid.
 	 *
 	 * ONE shape for every list surface: search, count, filters, sort, direction.

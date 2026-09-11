@@ -2892,7 +2892,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string[] $where    WHERE fragments, already filtered.
 	 *     @type array    $params   Bound parameters for those fragments.
 	 *     @type string   $join     Extra JOIN fragments, or ''.
-	 *     @type string   $orderby  date|trending|popular.
+	 *     @type string   $orderby  date|trending|popular|created_at|title|views.
+	 *     @type string   $order    asc|desc (created_at/title/views). Default desc.
 	 *     @type int      $per_page Page size.
 	 *     @type int      $offset   Page offset.
 	 * }
@@ -2905,6 +2906,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params   = isset( $args['params'] ) && is_array( $args['params'] ) ? $args['params'] : array();
 		$join     = isset( $args['join'] ) ? (string) $args['join'] : '';
 		$orderby  = isset( $args['orderby'] ) ? (string) $args['orderby'] : '';
+		$order    = ( isset( $args['order'] ) && 'asc' === strtolower( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
 		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
 		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
 
@@ -2941,8 +2943,18 @@ class MediaRepository implements MediaRepositoryInterface {
 				WHERE {$where_sql}
 				ORDER BY COALESCE(s.views, 0) DESC
 				LIMIT %d OFFSET %d";
+		} elseif ( 'views' === $orderby ) {
+			$data_sql = "SELECT i.media_id
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY COALESCE(s.views, 0) {$order}, i.media_id {$order}
+				LIMIT %d OFFSET %d";
+		} elseif ( 'title' === $orderby ) {
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.title {$order}, i.media_id {$order} LIMIT %d OFFSET %d";
 		} else {
-			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d";
+			// date (the default) and created_at: newest first unless asc is asked for.
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at {$order}, i.media_id {$order} LIMIT %d OFFSET %d";
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -3076,6 +3088,8 @@ class MediaRepository implements MediaRepositoryInterface {
 				'moderation_status' => '',
 				'limit'             => 20,
 				'offset'            => 0,
+				'orderby'           => 'created_at',
+				'order'             => 'DESC',
 				'viewer_id'         => null,  // null => get_current_user_id()
 				'include_private'   => false, // owner/admin opt-in to see ALL
 			)
@@ -3101,10 +3115,32 @@ class MediaRepository implements MediaRepositoryInterface {
 				'moderation_status' => (string) $args['moderation_status'],
 				'limit'             => (int) $args['limit'],
 				'offset'            => (int) $args['offset'],
+				'orderby'           => (string) $args['orderby'],
+				'order'             => (string) $args['order'],
 				'privacy'           => $privacy,
 				'viewer_id'         => $viewer,
 			)
 		);
+	}
+
+	/**
+	 * Privacy mode for listing an author's media to the current (or given)
+	 * viewer: 'any' for the owner or a moderator, the viewer-aware 'profile'
+	 * gate for everyone else.
+	 *
+	 * Public so templates that build their own query() args (the Pro Flickr /
+	 * Dribbble profiles, which also need exclude_non_cover_group) apply the
+	 * same gate as query_by_author(). Without it query() defaults to 'any',
+	 * and those profiles listed the author's private items to everyone.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int      $author_id Listing author.
+	 * @param int|null $viewer_id Viewer. Null = current user.
+	 * @return string Privacy mode for query()/query_count().
+	 */
+	public function profile_privacy_mode( int $author_id, ?int $viewer_id = null ): string {
+		return $this->resolve_profile_privacy_mode( $author_id, null === $viewer_id ? get_current_user_id() : (int) $viewer_id );
 	}
 
 	/**
@@ -3162,7 +3198,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @var array<string>
 	 */
-	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count' );
+	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count', 'views' );
 
 	/**
 	 * General media-index listing query — the single place feed/profile/explore
@@ -3191,9 +3227,22 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params[] = max( 1, (int) $args['limit'] );
 		$params[] = max( 0, (int) $args['offset'] );
 
+		// Views live in mvs_media_stats; mvs_media_index.view_count is not kept
+		// up to date (0 on every row here), so a views sort must join the stats.
+		// It used to fall back to created_at silently, which made the Grid's
+		// "Views" option sort by date.
+		$sort_join = '';
+		$sort_sql  = "m.{$orderby} {$order}";
+		if ( 'views' === $orderby ) {
+			$sort_join = " LEFT JOIN {$wpdb->prefix}mvs_media_stats mvs_sort_st ON mvs_sort_st.media_id = m.media_id";
+			$sort_sql  = "COALESCE(mvs_sort_st.views, 0) {$order}";
+		}
+
 		// $parts['join']/['where'] and $orderby/$order are built from internal
 		// allowlists + fixed fragments; all caller values flow through $params.
-		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']} ORDER BY m.{$orderby} {$order} LIMIT %d OFFSET %d";
+		// media_id breaks ties so equal titles / view counts never repeat or
+		// skip an item between pages.
+		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']}{$sort_join} WHERE {$parts['where']} ORDER BY {$sort_sql}, m.media_id {$order} LIMIT %d OFFSET %d";
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared

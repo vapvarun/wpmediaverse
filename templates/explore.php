@@ -247,16 +247,11 @@ $mvs_archive_url = home_url( '/media/' );
 		$mvs_viewer_id = 0;
 	}
 
-	// SORT FROM THE URL, allowlisted. Explore has always been newest-first with
-	// no way to say otherwise, while the member's own library next door offers
-	// a field and a direction — the same feed, two different products depending
-	// which page you reached it from. An unknown value falls back rather than
-	// reaching the query, because `orderby` goes into SQL.
-	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view controls on a GET page.
-	$mvs_sort_request = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
-	$mvs_sort         = in_array( $mvs_sort_request, array( 'created_at', 'title', 'views' ), true ) ? $mvs_sort_request : 'created_at';
-	$mvs_order        = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
-	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	// Sort and direction come from the URL through the one shared reader, so
+	// the Grid, every Pro layout and Load More agree on the order.
+	$mvs_sort_args = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_sort();
+	$mvs_sort      = $mvs_sort_args['orderby'];
+	$mvs_order     = $mvs_sort_args['order'];
 
 	$mvs_query_args = array(
 		'status'                  => 'publish',
@@ -349,43 +344,12 @@ $mvs_archive_url = home_url( '/media/' );
 	// Search is not passed: Explore has its own search bar above, with the
 	// people/media mode switch attached to it. Sort, direction and the count are
 	// what was missing.
-	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_panel_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_explore_sort_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+		(int) $total_items,
 		array(
-			'id'     => 'mvs-explore',
-			'form'   => true,
-			'class'  => 'mvs-explore__controls',
-			'hidden' => array_filter(
-				array(
-					's'            => $mvs_search,
-					'mvs_tag'      => $mvs_filter_tag,
-					'mvs_category' => $mvs_filter_cat,
-				)
-			),
-			'count'  => sprintf(
-				/* translators: %s: number of media items. */
-				_n( '%s item', '%s items', (int) $total_items, 'wpmediaverse' ),
-				number_format_i18n( (int) $total_items )
-			),
-			'sort'   => array(
-				'name'    => 'sort',
-				'label'   => __( 'Sort by', 'wpmediaverse' ),
-				'value'   => $mvs_sort,
-				'options' => array(
-					'created_at' => __( 'Date added', 'wpmediaverse' ),
-					'title'      => __( 'Title', 'wpmediaverse' ),
-					'views'      => __( 'Views', 'wpmediaverse' ),
-				),
-			),
-			'order'  => array(
-				'name'    => 'order',
-				'label'   => __( 'Direction', 'wpmediaverse' ),
-				'value'   => strtolower( $mvs_order ),
-				'options' => array(
-					'desc' => __( 'Newest first', 'wpmediaverse' ),
-					'asc'  => __( 'Oldest first', 'wpmediaverse' ),
-				),
-			),
-			'submit' => __( 'Apply', 'wpmediaverse' ),
+			's'            => $mvs_search,
+			'mvs_tag'      => $mvs_filter_tag,
+			'mvs_category' => $mvs_filter_cat,
 		)
 	);
 	?>

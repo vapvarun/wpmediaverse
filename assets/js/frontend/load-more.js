@@ -179,6 +179,16 @@
 		if ( config.author ) url.searchParams.set( 'author', config.author );
 		if ( config.groupCovers ) url.searchParams.set( 'group_covers', '1' );
 
+		// Keep the order the visitor chose. The Explore / profile toolbar on
+		// every layout writes ?sort= & ?order= into the page URL and page 1 is
+		// rendered in that order, so pages 2+ must ask for the same one.
+		var pageQuery = new URLSearchParams( window.location.search );
+		var sortKey   = pageQuery.get( 'sort' );
+		if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views' ].indexOf( sortKey ) !== -1 ) {
+			url.searchParams.set( 'orderby', sortKey );
+			url.searchParams.set( 'order', 'asc' === pageQuery.get( 'order' ) ? 'asc' : 'desc' );
+		}
+
 		window.mvsRest.restFetch( url.toString() )
 			.then( function ( response ) {
 				if ( ! response.ok ) {
