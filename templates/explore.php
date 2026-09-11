@@ -146,12 +146,10 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php
 					// Link to the profile EDIT section, not the dashboard root —
 					// "Edit Profile" that lands on /my-media/ takes the member to a
-					// media grid, not a form (Basecamp 10226445842). The dashboard
-					// base is the fallback if the profile section has no URL.
+					// media grid, not a form (Basecamp 10226445842).
+					// url() always returns a URL (it builds one from the dashboard
+					// page when the section declares none), so no fallback is needed.
 					$mvs_edit_profile_url = \WPMediaVerse\Core\DashboardSections::url( 'profile' );
-					if ( '' === $mvs_edit_profile_url ) {
-						$mvs_edit_profile_url = $mvs_dashboard_link;
-					}
 					?>
 					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_edit_profile_url ); ?>">
 						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
