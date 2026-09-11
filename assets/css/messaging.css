@@ -830,6 +830,12 @@ body.dark-mode {
 	white-space: nowrap;
 }
 
+.mvs-chat-msg__gone {
+	/* Colour inherited on purpose: a sent bubble is accent-filled, where a muted
+	   grey would fail contrast. Italic alone marks it, like "message deleted". */
+	font-style: italic;
+}
+
 .mvs-chat-msg__file-size {
 	font-size: 11px;
 	color: var(--mvs-chat-text-secondary);

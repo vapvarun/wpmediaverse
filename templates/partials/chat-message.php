@@ -130,6 +130,9 @@ defined( 'ABSPATH' ) || exit;
 		<div data-wp-bind--hidden="context.item.notMediaShare">
 			<?php require __DIR__ . '/chat-media-card.php'; ?>
 		</div>
+
+		<!-- The file this message carried no longer exists -->
+		<span class="mvs-chat-msg__gone" data-wp-bind--hidden="context.item.noFileGone"><?php esc_html_e( 'Attachment no longer available', 'wpmediaverse' ); ?></span>
 	</div>
 
 	<!-- Timestamp + send status / read receipt -->

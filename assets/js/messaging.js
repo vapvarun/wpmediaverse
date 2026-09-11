@@ -205,6 +205,17 @@ function enrichMessage( msg ) {
 		msg.message_type = 'text';
 		msg.metadata     = null;
 	}
+	// A message can outlive the file it carried: the media was deleted, or the
+	// attachment was removed. The server then sends no attachment/media_share
+	// payload and the bubble rendered an empty image or a blank file link. Show
+	// it as removed instead, the way chat apps do. An optimistic send carries no
+	// attachment_id yet, so it never trips this.
+	const refersToFile = Number( msg.attachment_id ) > 0 || Number( msg.media_id ) > 0;
+	msg.fileGone   = ! msg.isDeleted && refersToFile && ! ( msg.attachment && msg.attachment.url ) && ! msg.media_share;
+	msg.noFileGone = ! msg.fileGone;
+	if ( msg.fileGone ) {
+		msg.message_type = 'text';
+	}
 	msg.showMenu   = false;
 	msg.noMenu     = true;
 	msg.hasReply   = !! msg.parent_id && msg.parent_id !== '0';
