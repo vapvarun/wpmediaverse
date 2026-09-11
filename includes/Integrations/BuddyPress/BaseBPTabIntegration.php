@@ -397,6 +397,9 @@ abstract class BaseBPTabIntegration {
 					'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
 					/* translators: %d: number of files. */
 					'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
+					'uploadFailed'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+					/* translators: 1: files uploaded, 2: files that failed */
+					'someFailed'    => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
 				),
 			)
 		);

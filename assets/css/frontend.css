@@ -3804,6 +3804,11 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-success);
 }
 
+.mvs-bp-upload-status--error {
+    background: var(--mvs-danger-bg);
+    color: var(--mvs-danger-text);
+}
+
 /* Used only by templates/album.php (single-album view, Add Media panel). */
 .mvs-album-upload-section {
     margin: 16px 0;

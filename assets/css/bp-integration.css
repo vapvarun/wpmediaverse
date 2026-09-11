@@ -166,6 +166,11 @@
     color: var(--mvs-text-secondary);
 }
 
+/* The scoped rule above sets the colour, so the error state must be scoped too. */
+#buddypress .mvs-bp-screen .mvs-bp-upload-status--error {
+    color: var(--mvs-danger-text);
+}
+
 /* =============================================================================
  *  Inline album create form
  * ============================================================================= */
