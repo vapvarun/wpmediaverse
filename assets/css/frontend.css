@@ -7734,11 +7734,26 @@ body.dark-mode .mvs-auth-gate__card {
 .mvs-follows-state { text-align: center; color: var(--mvs-text-secondary, #6b7280); padding: var(--mvs-space-xl, 24px) 0; }
 
 /* Clickable follower/following counts in the profile header. */
-.mvs-profile-header-stats__link { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
+.mvs-profile-header-stats__link { background: none; border: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
 .mvs-profile-header-stats__link:hover, .mvs-profile-header-stats__link:focus-visible { text-decoration: underline; }
 
-/* Stat buttons (clickable follower/following counts) reset to look like text. */
-button.mvs-follows-open { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+/* Stat buttons (clickable follower/following counts) reset to look like text.
+   They still have to be hittable: padding:0 left them 25px tall against the
+   plugin's own --mvs-touch-min of 44px, which is a plausible reason a tester
+   reported them as "not clickable" - the control works, it is just a small
+   target. Vertical padding rather than a min-height so the text stays inline
+   with the rest of the stat row. Basecamp 10277961221. */
+button.mvs-follows-open,
+.mvs-profile-header-stats__link {
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    padding-block: calc( ( var(--mvs-touch-min, 44px) - 1.5em ) / 2 );
+    padding-inline: var(--mvs-space-xs, 6px);
+    margin: 0;
+}
 
 /* Tag-cloud dynamic items wrapper — display:contents keeps the flat flex row while
    making the data-wp-each <template> the sole child of its parent (avoids an
