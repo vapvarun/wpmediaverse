@@ -1824,6 +1824,46 @@ a.mvs-stat-card:focus {
 }
 
 /* Permissions capability matrix */
+/* The permissions matrix is as wide as the site has capabilities and as tall as
+   it has roles, so it must be allowed to scroll inside its card rather than
+   spill out of it. Basecamp 10285712647. */
+.mvs-caps-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Keep a horizontal gesture inside the table instead of triggering the
+       browser's back-navigation swipe. */
+    overscroll-behavior-x: contain;
+    /* The scrollbar is the only cue that there is more to the right, and macOS
+       hides overlay scrollbars until you scroll - so an owner could never
+       discover the last columns. Styling the track forces it to stay visible.
+       The headers need 871px of text at this card's 731px, so the table cannot
+       simply be tightened to fit. */
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+}
+
+.mvs-caps-table-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.mvs-caps-table-scroll::-webkit-scrollbar-track {
+    background: var(--mvs-surface-2, #f0f0f1);
+    border-radius: 4px;
+}
+
+.mvs-caps-table-scroll::-webkit-scrollbar-thumb {
+    background: var(--mvs-border, #c3c4c7);
+    border-radius: 4px;
+}
+
+.mvs-caps-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--mvs-text-muted, #8c8f94);
+}
+
+.mvs-caps-table-scroll .mvs-caps-table {
+    min-width: max-content;
+}
+
 .mvs-caps-table__check {
 	text-align: center;
 }

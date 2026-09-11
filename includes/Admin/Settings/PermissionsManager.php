@@ -81,7 +81,7 @@ class PermissionsManager {
 			// believe they have closed something. The capability itself is still
 			// granted for back-compat; only the misleading column is gone.
 			// Re-add it through the mvs_managed_caps filter if a site needs it.
-			'publish_mvs_media'       => __( 'Publish (uploads go live immediately)', 'wpmediaverse' ),
+			'publish_mvs_media'       => __( 'Publish', 'wpmediaverse' ),
 			'edit_mvs_media'          => __( 'Edit Own', 'wpmediaverse' ),
 			'edit_others_mvs_media'   => __( 'Edit Others', 'wpmediaverse' ),
 			'delete_mvs_media'        => __( 'Delete Own', 'wpmediaverse' ),
@@ -149,8 +149,25 @@ class PermissionsManager {
 
 				<p class="description">
 					<?php esc_html_e( 'Control which user roles can perform each media action. Uncheck to revoke a capability. Your choices persist across plugin updates.', 'wpmediaverse' ); ?>
+					<br />
+					<?php
+					// The one column whose meaning is not self-evident. It belongs here
+					// rather than in the header: a column label that wraps to three
+					// lines drags every other header down with it, and this table is
+					// read by scanning across a row.
+					esc_html_e( 'Publish means an upload goes live immediately - this platform has no submit-for-review step.', 'wpmediaverse' );
+					?>
 				</p>
 
+				<?php
+				// Scroll container: this matrix has one column per capability and
+				// one ROW PER ROLE ON THE SITE - BuddyPress, WooCommerce and custom
+				// roles all appear - so it outgrows the settings card on any real
+				// community install. Without this the rightmost columns (Use
+				// Documents, Manage Documents) rendered past the card edge with no
+				// way to reach them: the owner could neither see nor tick them.
+				?>
+				<div class="mvs-caps-table-scroll">
 				<table class="mvs-recent-table mvs-caps-table">
 					<thead>
 						<tr>
@@ -190,6 +207,8 @@ class PermissionsManager {
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+				</div>
+				</div>
 
 				<?php submit_button( __( 'Save Permissions', 'wpmediaverse' ) ); ?>
 			</form>
