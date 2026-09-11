@@ -3148,71 +3148,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* ==========================================================================
-   18. Toast Notification
+   18. Toast Notification - owned by shared-ui-frame.css, which styles the
+   toast element that shared-ui-frame.php renders.
    ========================================================================== */
-
-.mvs-toast {
-    position: fixed;
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    right: 24px;
-    padding: 12px 24px;
-    background: var(--mvs-text);
-    color: var(--mvs-bg);
-    border-radius: var(--mvs-radius-md);
-    font-size: 0.9em;
-    z-index: var(--mvs-z-toast);
-    box-shadow: var(--mvs-shadow-md);
-    animation: mvsToastIn var(--mvs-duration-base) var(--mvs-easing);
-    /* Honor the FAB safe area so toasts never collide with the upload button. */
-}
-
-@media (max-width: 767px) /* below --mvs-bp-tablet */ {
-    .mvs-toast {
-        /* On mobile, sit above both the FAB safe area and the home indicator. */
-        bottom: calc(var(--mvs-fab-safe) + 8px + env(safe-area-inset-bottom, 0px));
-        right: 16px;
-        left: 16px;
-        max-width: none;
-        text-align: center;
-    }
-}
-
-.mvs-toast--success {
-    background: var(--mvs-success);
-}
-
-.mvs-toast--error {
-    background: var(--mvs-danger);
-}
-
-.mvs-toast--warning {
-    background: var(--mvs-warning);
-}
-
-/*
- * Toast text is painted on the variant's own fill, so it cannot assume white
- * works. Measured on this palette, white-on-fill: success 2.53, warning 3.32,
- * danger 4.56 - the "uploaded!" confirmation was the least legible message in
- * the plugin. contrast-color() picks per fill (8.02 / 6.11 / 4.73).
- * Base rules above are unchanged, so browsers without it keep today's look.
- */
-@supports (color: contrast-color(red)) {
-    .mvs-toast--success { color: contrast-color(var(--mvs-success)); }
-    .mvs-toast--error { color: contrast-color(var(--mvs-danger)); }
-    .mvs-toast--warning { color: contrast-color(var(--mvs-warning)); }
-}
-
-@keyframes mvsToastIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
 /* ==========================================================================
    Interactivity API [hidden] overrides

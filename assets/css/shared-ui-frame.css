@@ -5,16 +5,30 @@
  */
 
 /* ─── Floating Action Button ─── */
+/*
+ * The + button's placement, as tokens, because two things depend on it: the
+ * button itself, and the toast, which must sit above it (Material's snackbar
+ * rule). The toast used to hardcode 96px while the button sat at 100px + 56px
+ * (desktop) and 80px + 48px (phone), so a success message landed on top of the
+ * upload button - and, one z-index higher, covered it. Reading the same tokens,
+ * the two cannot drift apart again. The phone breakpoint redefines the tokens
+ * rather than retyping pixels.
+ */
+:root {
+	--mvs-fab-bottom: 100px;
+	--mvs-fab-diameter: 56px;
+}
+
 .mvs-fab-container {
 	position: fixed;
-	bottom: 100px;
+	bottom: var(--mvs-fab-bottom);
 	right: 24px;
 	z-index: 99999;
 }
 
 .mvs-fab {
-	width: 56px;
-	height: 56px;
+	width: var(--mvs-fab-diameter);
+	height: var(--mvs-fab-diameter);
 	padding: 0;
 	border-radius: 50%;
 	background: var(--mvs-primary);
@@ -608,7 +622,8 @@
 /* ─── Toast ─── */
 .mvs-toast {
 	position: fixed;
-	bottom: 96px;
+	/* Above the + button, never on it - see the FAB tokens at the top. */
+	bottom: calc(var(--mvs-fab-bottom) + var(--mvs-fab-diameter) + 12px + env(safe-area-inset-bottom, 0px));
 	right: 24px;
 	padding: 12px 20px;
 	border-radius: 8px;
@@ -617,8 +632,23 @@
 	display: flex;
 	align-items: center;
 	gap: 12px;
+	/* Neutral fill for a toast with no variant. Was only in frontend.css. */
+	background: var(--mvs-text);
+	color: var(--mvs-bg);
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 	animation: mvs-slide-up 0.3s ease;
+}
+
+/* Phones: span the width with an even gutter. frontend.css used to carry this,
+   but the rule above overrode its `bottom`/`right`, so only its `left` applied
+   and the toast sat 16px from one edge and 24px from the other. */
+@media (max-width: 767px) {
+	.mvs-toast {
+		right: 16px;
+		left: 16px;
+		justify-content: center;
+		text-align: center;
+	}
 }
 
 .mvs-toast[hidden] {
@@ -713,13 +743,9 @@
 		flex-direction: column;
 	}
 
-	.mvs-fab-container {
-		bottom: 80px;
-	}
-
-	.mvs-fab {
-		width: 48px;
-		height: 48px;
+	:root {
+		--mvs-fab-bottom: 80px;
+		--mvs-fab-diameter: 48px;
 	}
 
 	.mvs-fab svg {
