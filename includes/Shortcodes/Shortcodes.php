@@ -853,7 +853,7 @@ class Shortcodes {
 		// than an explanation of a setting that is none of their business.
 		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
 			return current_user_can( 'manage_options' )
-				? '<p class="mvs-documents__notice">' . esc_html__( 'Documents are switched off in WPMediaVerse settings, so this page has nothing to list.', 'wpmediaverse' ) . '</p>'
+				? '<p class="mvs-documents__notice">' . esc_html__( 'Documents are switched off in MediaVerse settings, so this page has nothing to list.', 'wpmediaverse' ) . '</p>'
 				: '';
 		}
 
@@ -888,7 +888,7 @@ class Shortcodes {
 			// so to an editor beats printing nothing and looking broken.
 			if ( '' === $mvs_doc_folder_html ) {
 				return current_user_can( 'edit_posts' )
-					? '<p class="mvs-documents__notice">' . esc_html__( 'Folder listings need WPMediaVerse Pro.', 'wpmediaverse' ) . '</p>'
+					? '<p class="mvs-documents__notice">' . esc_html__( 'Folder listings need MediaVerse Pro.', 'wpmediaverse' ) . '</p>'
 					: '';
 			}
 
@@ -938,7 +938,7 @@ class Shortcodes {
 
 			if ( '' === $mvs_doc_root_html ) {
 				return current_user_can( 'edit_posts' )
-					? '<p class="mvs-documents__notice">' . esc_html__( 'This drive view needs WPMediaVerse Pro.', 'wpmediaverse' ) . '</p>'
+					? '<p class="mvs-documents__notice">' . esc_html__( 'This drive view needs MediaVerse Pro.', 'wpmediaverse' ) . '</p>'
 					: '';
 			}
 

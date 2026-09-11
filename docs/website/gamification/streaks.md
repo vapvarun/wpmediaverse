@@ -1,6 +1,6 @@
 # Upload Streaks
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -54,7 +54,7 @@ Once your streak reaches 1 day, a badge showing your streak count appears:
 
 ## For Site Owners
 
-1. Go to **WPMediaVerse > Settings > Gamification** and enable **Upload Streaks**
+1. Go to **MediaVerse > Settings > Gamification** and enable **Upload Streaks**
 2. Streaks run automatically - no manual management needed
 3. Grant freeze tokens to specific users from **Users > Edit User > Streak Tokens** in wp-admin
 4. The daily streak check runs at 2 AM site timezone via Action Scheduler - confirm Action Scheduler is processing jobs

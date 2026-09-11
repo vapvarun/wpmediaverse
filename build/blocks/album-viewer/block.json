@@ -6,7 +6,7 @@
   "title": "Album Viewer",
   "category": "media",
   "icon": "images-alt2",
-  "description": "Display a WPMediaVerse album with its media items.",
+  "description": "Display a MediaVerse album with its media items.",
   "keywords": [
     "album",
     "gallery",

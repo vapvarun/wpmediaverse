@@ -1,6 +1,6 @@
 # Media Boosts
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -32,7 +32,7 @@ Boosted photos appear throughout the Explore feed at regular intervals mixed in 
 
 ## For Site Owners
 
-1. Go to **WPMediaVerse > Settings > Gamification** and enable **Media Boosts**
+1. Go to **MediaVerse > Settings > Gamification** and enable **Media Boosts**
 2. Set the **Max Impressions Per Boost** (default: 5,000) to control how large a boost can be
 3. Set the **Cost Per 100 Impressions** (default: 50 points) to match your community's point economy
 4. Users must earn points through other gamification activities (uploads, challenges, streaks) before they can boost
@@ -117,7 +117,7 @@ Returns `{ "balance": 0 }` when the wb-gamification backend is not active.
 
 ## Explore Feed Injection
 
-Boosted media is injected into the Explore feed by a filter on the WPMediaVerse explore query. The injected items appear at regular intervals (every N organic items) rather than clustering at the top. The injection interval is not currently user-configurable.
+Boosted media is injected into the Explore feed by a filter on the MediaVerse explore query. The injected items appear at regular intervals (every N organic items) rather than clustering at the top. The injection interval is not currently user-configurable.
 
 Impression counts increment server-side when a boosted item is rendered in the feed. Impressions are tracked per page load, not per unique user.
 

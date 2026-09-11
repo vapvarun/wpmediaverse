@@ -6,7 +6,7 @@ Upload your first photo in two minutes - drag, drop, set privacy, done. Here is 
 
 Add the upload form to any page using either the Gutenberg block or shortcode.
 
-**In the Block Editor:** Add the **WPMediaVerse: Media Upload** block to your page.
+**In the Block Editor:** Add the **MediaVerse: Media Upload** block to your page.
 
 **In the Classic Editor or any text area:**
 ```
@@ -29,7 +29,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/media \
 
 ## The Upload Process
 
-When you upload a file, WPMediaVerse:
+When you upload a file, MediaVerse:
 
 1. **Validates** the MIME type against your allowed file types list.
 2. **Checks the file size** against your configured maximum (default: 100 MB).
@@ -43,7 +43,7 @@ When you upload a file, WPMediaVerse:
 
 ## Supported File Types
 
-By default, WPMediaVerse accepts:
+By default, MediaVerse accepts:
 
 | Type | Formats |
 |------|---------|

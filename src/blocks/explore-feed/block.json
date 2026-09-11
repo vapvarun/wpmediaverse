@@ -6,7 +6,7 @@
 	"title": "Explore Feed",
 	"category": "media",
 	"icon": "screenoptions",
-	"description": "A discover/explore feed showing trending and recent WPMediaVerse media.",
+	"description": "A discover/explore feed showing trending and recent MediaVerse media.",
 	"keywords": [ "explore", "discover", "feed", "trending" ],
 	"supports": {
 		"html": false,

@@ -1,14 +1,14 @@
 # BuddyPress Integration Overview
 
-> **Included in Free** - WPMediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
+> **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 
-WPMediaVerse integrates with BuddyPress to add media features directly into the BuddyPress social layer. The integration is automatic - no configuration needed. It activates when BuddyPress is active and gracefully skips all BP-specific code when BuddyPress is not installed.
+MediaVerse integrates with BuddyPress to add media features directly into the BuddyPress social layer. The integration is automatic - no configuration needed. It activates when BuddyPress is active and gracefully skips all BP-specific code when BuddyPress is not installed.
 
 ## Requirements
 
 - BuddyPress 12.0+
-- WPMediaVerse 1.0.0+
+- MediaVerse 1.0.0+
 
 ## What the Integration Adds
 

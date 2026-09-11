@@ -1046,8 +1046,8 @@ class Plugin {
 	public static function register_admin_menu(): void {
 		// Top-level menu — renders overview page.
 		add_menu_page(
-			__( 'WPMediaVerse', 'wpmediaverse' ),
-			__( 'WPMediaVerse', 'wpmediaverse' ),
+			__( 'MediaVerse', 'wpmediaverse' ),
+			__( 'MediaVerse', 'wpmediaverse' ),
 			'mvs_settings_screen',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' ),

@@ -775,7 +775,7 @@ class TemplateLoader {
 					$is_video  = 'video' === $mvs_media_type;
 					$is_audio  = 'audio' === $mvs_media_type;
 
-					echo "\n<!-- WPMediaVerse Open Graph -->\n";
+					echo "\n<!-- MediaVerse Open Graph -->\n";
 					echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
 					echo '<meta property="og:type" content="' . esc_attr( $is_video ? 'video.other' : ( $is_audio ? 'music.song' : 'article' ) ) . '" />' . "\n";
 					echo '<meta property="og:url" content="' . esc_url( $permalink ) . '" />' . "\n";
@@ -796,7 +796,7 @@ class TemplateLoader {
 					if ( $thumb_url ) {
 						echo '<meta name="twitter:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
 					}
-					echo "<!-- /WPMediaVerse Open Graph -->\n";
+					echo "<!-- /MediaVerse Open Graph -->\n";
 				},
 				5 // run early so themes / SEO plugins can override below.
 			);

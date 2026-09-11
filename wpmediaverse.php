@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: WPMediaVerse
+ * Plugin Name: MediaVerse
  * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
  * Version:     2.4.2
@@ -61,12 +61,12 @@ function mvs_boot_failure( $reason ) {
 			if ( 'php' === $reason ) {
 				$message = sprintf(
 					/* translators: 1: required PHP version, 2: PHP version this site runs. */
-					esc_html__( 'WPMediaVerse needs PHP %1$s or later, and this site is running PHP %2$s. The plugin has stopped itself rather than take the site down. Ask your host to update PHP — your media and settings are untouched.', 'wpmediaverse' ),
+					esc_html__( 'MediaVerse needs PHP %1$s or later, and this site is running PHP %2$s. The plugin has stopped itself rather than take the site down. Ask your host to update PHP — your media and settings are untouched.', 'wpmediaverse' ),
 					esc_html( MVS_MIN_PHP ),
 					esc_html( PHP_VERSION )
 				);
 			} else {
-				$message = esc_html__( 'WPMediaVerse could not load: part of the plugin is missing, which usually means an upload or update did not finish. Re-install the plugin from a complete copy. Nothing has been deleted — your media, settings and members are untouched.', 'wpmediaverse' );
+				$message = esc_html__( 'MediaVerse could not load: part of the plugin is missing, which usually means an upload or update did not finish. Re-install the plugin from a complete copy. Nothing has been deleted — your media, settings and members are untouched.', 'wpmediaverse' );
 			}
 
 			printf(
@@ -201,7 +201,7 @@ add_action(
 			'<div class="notice notice-warning"><p>%s</p></div>',
 			sprintf(
 				/* translators: 1: free version, 2: Pro version present, 3: required Pro version. */
-				esc_html__( 'WPMediaVerse %1$s works best with WPMediaVerse Pro %3$s or later (you have Pro %2$s). Please update WPMediaVerse Pro for full compatibility.', 'wpmediaverse' ),
+				esc_html__( 'MediaVerse %1$s works best with MediaVerse Pro %3$s or later (you have Pro %2$s). Please update MediaVerse Pro for full compatibility.', 'wpmediaverse' ),
 				esc_html( MVS_VERSION ),
 				esc_html( MVS_PRO_VERSION ),
 				esc_html( MVS_MIN_PRO )

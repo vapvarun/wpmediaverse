@@ -506,7 +506,7 @@ class SettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
-			__( 'Help improve WPMediaVerse', 'wpmediaverse' ),
+			__( 'Help improve MediaVerse', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
 			SettingsPage::PAGE_SLUG . '-storage',
 			'mvs_storage',
@@ -1097,7 +1097,7 @@ class SettingsRegistrar {
 				'option'      => 'mvs_chat_panel_visibility',
 				'choices'     => array(
 					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
-					'mvs_pages'  => __( 'WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
+					'mvs_pages'  => __( 'MediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
 					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
 					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
 				),

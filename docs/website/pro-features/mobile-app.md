@@ -1,8 +1,8 @@
 # Mobile App (White-Label & Push)
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-WPMediaVerse Pro powers a native mobile app for your community. Pro supplies the app's branding, feature flags, feed layout, push notifications, and leaderboard through the REST API - the same data your site already manages, delivered in the shape a native client needs.
+MediaVerse Pro powers a native mobile app for your community. Pro supplies the app's branding, feature flags, feed layout, push notifications, and leaderboard through the REST API - the same data your site already manages, delivered in the shape a native client needs.
 
 ![Mobile App Branding section on the Display settings tab](../images/admin-settings-display.png)
 
@@ -48,5 +48,5 @@ Both require a logged-in user. See the [Pro REST API Reference](../developer-gui
 
 ## Requirements
 
-- WPMediaVerse Pro 1.9.0 or higher.
+- MediaVerse Pro 1.9.0 or higher.
 - A native or headless client (e.g. the official MediaVerse app) that calls `/app/config`, the push routes, and the leaderboard route.

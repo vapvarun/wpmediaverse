@@ -1,12 +1,12 @@
 # What's New in 2.0.0
 
-WPMediaVerse 2.0.0 is a major release: upload watermarking, a full pass to make the entire frontend translation-ready, privacy hardening across albums, collections, and protected media, and a batch of activity, moderation, and image-pipeline fixes.
+MediaVerse 2.0.0 is a major release: upload watermarking, a full pass to make the entire frontend translation-ready, privacy hardening across albums, collections, and protected media, and a batch of activity, moderation, and image-pipeline fixes.
 
-> **Included in Free.** Every item on this page applies to the free version. Paired with WPMediaVerse Pro 2.0.0 - install and test both together.
+> **Included in Free.** Every item on this page applies to the free version. Paired with MediaVerse Pro 2.0.0 - install and test both together.
 
 ## Upload watermarking engine
 
-Every upload now flows through a single, consistent watermark stamp point - at upload time and at file-replace time, so there's no way to bypass it by replacing a file after the fact. WPMediaVerse Free ships the engine and the option schema; **WPMediaVerse Pro** adds the Settings UI (Watermark Type, Logo, Position, Opacity) and the renderer that actually draws the mark. See [Watermarking: Free vs Pro](../settings/display.md#watermarking-free-vs-pro). Watermark stamping now fails closed - if the renderer can't draw the mark, the upload is logged as an error instead of silently serving an un-watermarked original.
+Every upload now flows through a single, consistent watermark stamp point - at upload time and at file-replace time, so there's no way to bypass it by replacing a file after the fact. MediaVerse Free ships the engine and the option schema; **MediaVerse Pro** adds the Settings UI (Watermark Type, Logo, Position, Opacity) and the renderer that actually draws the mark. See [Watermarking: Free vs Pro](../settings/display.md#watermarking-free-vs-pro). Watermark stamping now fails closed - if the renderer can't draw the mark, the upload is logged as an error instead of silently serving an un-watermarked original.
 
 ## Full frontend translation readiness
 
@@ -61,7 +61,7 @@ New filter `mvs_suppress_bp_comment_notification` controls the BuddyPress commen
 
 ## Upgrade notes
 
-- Pairs with WPMediaVerse Pro 2.0.0 - install and test both together.
+- Pairs with MediaVerse Pro 2.0.0 - install and test both together.
 - No manual action needed for the privacy or watermark changes - they apply automatically on update.
 - If you relied on the 1.9.0 access-rules admin screen, switch to managing access rules via the [Privacy & Access Control REST API](../features/privacy-access-control.md).
 - If your site prefers standalone media pages under BuddyNext, use BuddyNext's settings toggle after updating (the new default sends media links to the activity feed).

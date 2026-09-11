@@ -1,6 +1,6 @@
 {
   "product_slug": "wpmediaverse",
-  "product_name": "WPMediaVerse",
+  "product_name": "MediaVerse",
   "product_type": "plugin",
   "version": "2.4.0",
   "description": "Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.",
@@ -18,7 +18,7 @@
       "title": "Getting Started",
       "icon": "rocket",
       "pages": [
-        { "slug": "why-wpmediaverse", "title": "Why WPMediaVerse" },
+        { "slug": "why-wpmediaverse", "title": "Why MediaVerse" },
         { "slug": "installation", "title": "Installation" },
         { "slug": "setup-wizard", "title": "Setup Wizard" },
         { "slug": "whats-new-2-3-0", "title": "What's New in 2.3.0" },

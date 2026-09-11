@@ -1,6 +1,6 @@
 # Gamification Admin Dashboard
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -104,7 +104,7 @@ The Battle Monitor table includes every battle that is not in a terminal state (
 
 ## Gamification Settings Page
 
-Go to **WPMediaVerse > Settings > Gamification** to configure all gamification features.
+Go to **MediaVerse > Settings > Gamification** to configure all gamification features.
 
 ![Gamification settings page showing feature toggles](../images/admin-settings-gamification.png)
 

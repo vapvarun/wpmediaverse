@@ -37,7 +37,7 @@ class Abilities {
 		wp_register_ability_category(
 			'wpmediaverse',
 			array(
-				'label'       => __( 'WPMediaVerse', 'wpmediaverse' ),
+				'label'       => __( 'MediaVerse', 'wpmediaverse' ),
 				'description' => __( 'Media management, social, and content abilities.', 'wpmediaverse' ),
 			)
 		);

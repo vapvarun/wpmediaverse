@@ -1,6 +1,6 @@
 # Hooks & Filters Reference
 
-All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVerse Pro to be active and are labeled **(Pro)**. Hooks introduced in version 1.1 are labeled **(New in 1.1)**.
+All MediaVerse hooks use the `mvs_` prefix. Pro-only hooks require MediaVerse Pro to be active and are labeled **(Pro)**. Hooks introduced in version 1.1 are labeled **(New in 1.1)**.
 
 ---
 
@@ -275,7 +275,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 
 ### `mvs_loaded`
 
-Fires after the free plugin is fully initialized and the DI container is ready. Use this instead of `plugins_loaded` when you need access to WPMediaVerse services.
+Fires after the free plugin is fully initialized and the DI container is ready. Use this instead of `plugins_loaded` when you need access to MediaVerse services.
 
 **Parameters:** none
 
@@ -294,7 +294,7 @@ add_action( 'mvs_loaded', function() {
 
 ### `mvs_pro_loaded` **(Pro)**
 
-Fires after WPMediaVerse Pro is fully initialized.
+Fires after MediaVerse Pro is fully initialized.
 
 **Parameters:** none
 
@@ -381,7 +381,7 @@ add_action( 'mvs_media_uploaded', function( int $media_id, array $file_data, int
 }, 10, 4 );
 ```
 
-> **Gamification note:** XP for uploads is **not** awarded by calling a function inside this hook. The separate WB Gamification plugin already consumes `mvs_media_uploaded` (and other `mvs_*` actions) through its WPMediaVerse integration, and the per-action point value is resolved through the `wb_gam_points_for_action` filter. To change upload XP, filter `wb_gam_points_for_action` rather than calling an award function here.
+> **Gamification note:** XP for uploads is **not** awarded by calling a function inside this hook. The separate WB Gamification plugin already consumes `mvs_media_uploaded` (and other `mvs_*` actions) through its MediaVerse integration, and the per-action point value is resolved through the `wb_gam_points_for_action` filter. To change upload XP, filter `wb_gam_points_for_action` rather than calling an award function here.
 
 ---
 
@@ -944,7 +944,7 @@ add_action( 'mvs_user_followed', function( int $follower_id, int $following_id )
 
 ### `mvs_collections_enabled` **(New in 1.8.0)**
 
-Gates whether the lightbox and single-media page render a separate "Save to collection" control next to the favorite heart. Favoriting (a one-tap like) and saving to a named collection are deliberately separate actions in the UI; there is no bundled Free collections-management backend, so this defaults to `false` and stays hidden until a collections backend (e.g. WPMediaVerse Pro) enables it.
+Gates whether the lightbox and single-media page render a separate "Save to collection" control next to the favorite heart. Favoriting (a one-tap like) and saving to a named collection are deliberately separate actions in the UI; there is no bundled Free collections-management backend, so this defaults to `false` and stays hidden until a collections backend (e.g. MediaVerse Pro) enables it.
 
 **Parameters:**
 
@@ -1539,7 +1539,7 @@ add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
 
 ### `mvs_watermark_stamp_file`
 
-Stamps a watermark onto a file in place, replacing the built-in pass entirely. Return `true` to tell WPMediaVerse the file has already been watermarked and it should not run its own compositor.
+Stamps a watermark onto a file in place, replacing the built-in pass entirely. Return `true` to tell MediaVerse the file has already been watermarked and it should not run its own compositor.
 
 This is the extension point for sites that watermark with an external library or a service.
 
@@ -2297,7 +2297,7 @@ add_filter( 'mvs_buddynext_active', function( bool $active ) {
 
 ### `mvs_strip_dead_bp_links` **(New in 1.7.1)**
 
-Opt-in gate for cleaning up dead BuddyPress component links (`/members/`, `/groups/`, `/activity/`) from the site's nav menus when BuddyPress is inactive. **Off by default** — per Coding Rule #17, WPMediaVerse never edits a site owner's authored navigation on its own. Only enable this on a site where you specifically want the plugin to drop menu items that would 404 once BuddyPress is gone. The cleanup never removes an item that resolves to a real published page, and it fully bails when a sibling community plugin (detected via `mvs_buddynext_active`) owns those routes as live pages.
+Opt-in gate for cleaning up dead BuddyPress component links (`/members/`, `/groups/`, `/activity/`) from the site's nav menus when BuddyPress is inactive. **Off by default** — per Coding Rule #17, MediaVerse never edits a site owner's authored navigation on its own. Only enable this on a site where you specifically want the plugin to drop menu items that would 404 once BuddyPress is gone. The cleanup never removes an item that resolves to a real published page, and it fully bails when a sibling community plugin (detected via `mvs_buddynext_active`) owns those routes as live pages.
 
 **Parameters:**
 
@@ -3006,7 +3006,7 @@ add_filter( 'mvs_user_profile_url', function( string $url, int $user_id ) {
 
 Every remaining hook fired by Free and Pro, grouped by area. Descriptions come from each hook's own docblock at the call site.
 
-Hooks marked **(Pro)** are fired by WPMediaVerse Pro and never run when only Free is active.
+Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free is active.
 
 ### Account deletion and member data
 

@@ -1,9 +1,9 @@
 # Profile Media Tab
 
-> **Included in Free** - WPMediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
+> **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 
-When BuddyPress is active, WPMediaVerse adds a **Media** tab to every user's BuddyPress profile page.
+When BuddyPress is active, MediaVerse adds a **Media** tab to every user's BuddyPress profile page.
 
 ![BuddyPress member profile with Media tab active](../images/bp-profile-media.jpg)
 
@@ -47,11 +47,11 @@ The Documents sub-tab lists the profile owner's documents, filtered by what the 
 - A **logged-in member** sees members-level and public documents, plus anything shared directly with them.
 - A **logged-out visitor** sees only public documents.
 
-Free registers the sub-tab and emits the filter `mvs_profile_documents_html( string $html, int $owner_id, int $viewer_id )`; WPMediaVerse Pro answers it (`Documents/ProfileDocuments.php`) with the privacy-filtered document list. It works on both BuddyPress and BuddyBoss (BuddyPress-compatible). This is BuddyPress-only - there is no standalone `/author` Documents tab.
+Free registers the sub-tab and emits the filter `mvs_profile_documents_html( string $html, int $owner_id, int $viewer_id )`; MediaVerse Pro answers it (`Documents/ProfileDocuments.php`) with the privacy-filtered document list. It works on both BuddyPress and BuddyBoss (BuddyPress-compatible). This is BuddyPress-only - there is no standalone `/author` Documents tab.
 
 ## Profile URL Pattern
 
-WPMediaVerse also registers a standalone media profile URL:
+MediaVerse also registers a standalone media profile URL:
 
 ```
 /media/@{username}/
@@ -82,7 +82,7 @@ Since `$integration` is not easily accessible externally, the cleaner approach i
 
 ```php
 add_action( 'bp_setup_nav', function() {
-    // Remove the WPMediaVerse media nav item from BP.
+    // Remove the MediaVerse media nav item from BP.
     bp_core_remove_nav_item( 'media' );
 }, 200 );
 ```

@@ -278,7 +278,7 @@ class SettingsPage {
 	public function add_menu_page(): void {
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
-			__( 'WPMediaVerse Settings', 'wpmediaverse' ),
+			__( 'MediaVerse Settings', 'wpmediaverse' ),
 			__( 'Settings', 'wpmediaverse' ),
 			'mvs_settings_screen',
 			self::PAGE_SLUG,
@@ -506,7 +506,7 @@ class SettingsPage {
 			<div class="mvs-settings-page-header">
 				<div class="mvs-settings-page-header__left">
 					<h1 class="mvs-settings-page-header__title">
-						<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?>
 						<span class="mvs-settings-page-header__version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
 					</h1>
 					<p class="mvs-settings-page-header__desc">
@@ -527,7 +527,7 @@ class SettingsPage {
 				<div class="mvs-settings-sidebar__brand">
 					<span class="mvs-settings-sidebar__logo"><i data-lucide="images"></i></span>
 					<div>
-						<strong><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></strong>
+						<strong><?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?></strong>
 						<span><?php esc_html_e( 'SETTINGS', 'wpmediaverse' ); ?></span>
 					</div>
 				</div>
@@ -771,7 +771,7 @@ class SettingsPage {
 		?>
 		<div class="mvs-pro-section">
 			<h3>
-				<?php esc_html_e( 'Get more with WPMediaVerse Pro', 'wpmediaverse' ); ?>
+				<?php esc_html_e( 'Get more with MediaVerse Pro', 'wpmediaverse' ); ?>
 				<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 			</h3>
 			<ul>

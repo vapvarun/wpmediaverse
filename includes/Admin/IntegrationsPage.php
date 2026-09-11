@@ -92,7 +92,7 @@ class IntegrationsPage {
 						<?php esc_html_e( 'Integrations', 'wpmediaverse' ); ?>
 					</h1>
 					<p class="mvs-page-header__desc">
-						<?php esc_html_e( 'Extend WPMediaVerse with the Wbcom stack. Each plugin works on its own - installing one here does not tie it to WPMediaVerse.', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Extend MediaVerse with the Wbcom stack. Each plugin works on its own - installing one here does not tie it to MediaVerse.', 'wpmediaverse' ); ?>
 					</p>
 				</div>
 			</div>
@@ -225,7 +225,7 @@ class IntegrationsPage {
 			</div>
 
 			<p class="description mvs-integrations-footnote">
-				<?php esc_html_e( 'These are standalone Wbcom products. WPMediaVerse detects them and lights up the matching features when present.', 'wpmediaverse' ); ?>
+				<?php esc_html_e( 'These are standalone Wbcom products. MediaVerse detects them and lights up the matching features when present.', 'wpmediaverse' ); ?>
 			</p>
 		</div>
 		<?php

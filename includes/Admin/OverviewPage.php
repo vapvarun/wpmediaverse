@@ -179,7 +179,7 @@ class OverviewPage {
 				<div class="mvs-page-header__left">
 					<h1 class="mvs-page-header__title">
 						<i data-lucide="images"></i>
-						<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?>
 						<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
 					</h1>
 					<p class="mvs-page-header__desc"><?php esc_html_e( 'Your media sharing platform at a glance.', 'wpmediaverse' ); ?></p>
@@ -531,7 +531,7 @@ class OverviewPage {
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
 			<div class="mvs-welcome-banner__content">
-				<h3><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h3>
+				<h3><?php esc_html_e( 'Welcome to MediaVerse!', 'wpmediaverse' ); ?></h3>
 				<p><?php esc_html_e( 'Your media sharing platform is ready. Follow these steps to get started:', 'wpmediaverse' ); ?></p>
 				<div class="mvs-welcome-steps">
 					<a href="<?php echo esc_url( $settings_url ); ?>" class="mvs-welcome-step">

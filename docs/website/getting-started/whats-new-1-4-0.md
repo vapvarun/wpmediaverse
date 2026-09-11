@@ -1,6 +1,6 @@
 # What's New in 1.4.0
 
-WPMediaVerse 1.4.0 is a robustness release that hardens cloud storage, gives site owners precise control over AI spend, and finishes a full mobile and translation pass. This page also folds in the headline additions from 1.3.0 (the image optimization pipeline) so you have a single place to catch up.
+MediaVerse 1.4.0 is a robustness release that hardens cloud storage, gives site owners precise control over AI spend, and finishes a full mobile and translation pass. This page also folds in the headline additions from 1.3.0 (the image optimization pipeline) so you have a single place to catch up.
 
 > **Included in Free.** Every item on this page applies to the free version unless marked **Pro**. Pro picks up these improvements automatically because Pro builds on top of free.
 
@@ -14,7 +14,7 @@ Only public media is eligible for the cloud. Private and restricted uploads, inc
 
 ## Tighter access checks on private media
 
-The delivery route re-verifies the viewer's permission on every request for non-public media, so a shared link cannot be used to leak a private item. If a Cloudflare R2 bucket has no public domain configured, WPMediaVerse will not emit a raw bucket URL (those are never public) and falls back to serving locally.
+The delivery route re-verifies the viewer's permission on every request for non-public media, so a shared link cannot be used to leak a private item. If a Cloudflare R2 bucket has no public domain configured, MediaVerse will not emit a raw bucket URL (those are never public) and falls back to serving locally.
 
 ## Per-feature control over AI
 

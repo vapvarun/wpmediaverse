@@ -1,13 +1,13 @@
 # Activity Stream Media
 
-> **Included in Free** - WPMediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
+> **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 
-WPMediaVerse records media events as BuddyPress activity items and enhances existing activity with media thumbnails and inline video players.
+MediaVerse records media events as BuddyPress activity items and enhances existing activity with media thumbnails and inline video players.
 
 ## Activity Types Registered
 
-WPMediaVerse registers two custom activity action types:
+MediaVerse registers two custom activity action types:
 
 | Action Type | Component | Label |
 |-------------|-----------|-------|
@@ -29,7 +29,7 @@ These appear in the BuddyPress activity filter dropdown.
 
 ### Bulk album upload activity grouping (1.2.0)
 
-When a user uploads multiple files at once via the album upload modal, WPMediaVerse emits **one** grouped activity entry for the whole batch instead of one entry per file:
+When a user uploads multiple files at once via the album upload modal, MediaVerse emits **one** grouped activity entry for the whole batch instead of one entry per file:
 
 > **Username uploaded 3 photos to album _Portrait Series_** - with a 3-thumbnail grid
 
@@ -50,7 +50,7 @@ For group uploads:
 
 ## Thumbnail Injection
 
-WPMediaVerse injects media thumbnails into activity items in two ways:
+MediaVerse injects media thumbnails into activity items in two ways:
 
 1. `bp_get_activity_content_body` filter (priority 0) - transforms activity content to include an image tag.
 2. `bp_activity_entry_content` action - injects thumbnails for activities with empty content (common for imported media).
@@ -67,23 +67,23 @@ Users select previously uploaded media or upload new files inline. The media IDs
 
 ## BuddyNext: Media Links Open Their Activity Post (2.0.0)
 
-When the BuddyNext theme is active, WPMediaVerse media stops behaving like a separate public page by default. Clicking a media item, or visiting its `/media/{slug}/` URL directly, redirects (HTTP 301) to the BuddyPress activity entry the media was originally posted in - so a photo lives in the community feed, not as a standalone URL alongside it.
+When the BuddyNext theme is active, MediaVerse media stops behaving like a separate public page by default. Clicking a media item, or visiting its `/media/{slug}/` URL directly, redirects (HTTP 301) to the BuddyPress activity entry the media was originally posted in - so a photo lives in the community feed, not as a standalone URL alongside it.
 
-This is implemented through a single filter WPMediaVerse exposes for any host to use:
+This is implemented through a single filter MediaVerse exposes for any host to use:
 
 ```php
 apply_filters( 'mvs_single_media_redirect', '', $media_id, $slug );
 ```
 
-Return a URL to redirect `/media/{slug}/` there instead of rendering the native single-media page; return `''` (the default) to render the native page. Standalone WPMediaVerse installs (no BuddyNext) always return `''`, so this only changes behavior when BuddyNext is active and hooks the filter.
+Return a URL to redirect `/media/{slug}/` there instead of rendering the native single-media page; return `''` (the default) to render the native page. Standalone MediaVerse installs (no BuddyNext) always return `''`, so this only changes behavior when BuddyNext is active and hooks the filter.
 
-If you prefer a dedicated, standalone page per media item even with BuddyNext active, BuddyNext ships its own settings toggle to switch back to that mode - check BuddyNext's own settings screen for the exact option, since it lives in the theme, not in WPMediaVerse.
+If you prefer a dedicated, standalone page per media item even with BuddyNext active, BuddyNext ships its own settings toggle to switch back to that mode - check BuddyNext's own settings screen for the exact option, since it lives in the theme, not in MediaVerse.
 
-WPMediaVerse also exposes filterable seams so BuddyNext (or any profile system) can point member links and avatars at its own profile/avatar URLs instead of WPMediaVerse's standalone `/media/@handle/` profile:
+MediaVerse also exposes filterable seams so BuddyNext (or any profile system) can point member links and avatars at its own profile/avatar URLs instead of MediaVerse's standalone `/media/@handle/` profile:
 
 - `mvs_user_profile_url` (`$url`, `$user_id`) - overrides the profile link used across grids, cards, notifications, and share text.
 - `mvs_user_avatar_url` (`$url`, `$user_id`, `$size`) - overrides the avatar image URL.
 
 ## Allowed HTML Tags in Activity
 
-WPMediaVerse extends the `bp_activity_allowed_tags` filter to allow its custom HTML attributes (`data-mvs-*`, `data-wp-*`) to pass through BP's kses filter without being stripped.
+MediaVerse extends the `bp_activity_allowed_tags` filter to allow its custom HTML attributes (`data-mvs-*`, `data-wp-*`) to pass through BP's kses filter without being stripped.

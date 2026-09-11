@@ -1,12 +1,12 @@
 # Setup Wizard
 
-After you activate WPMediaVerse, a short wizard guides you through the only settings you need to make your first upload possible. The whole thing takes about two minutes.
+After you activate MediaVerse, a short wizard guides you through the only settings you need to make your first upload possible. The whole thing takes about two minutes.
 
 ![Setup wizard welcome screen](../images/admin-overview.png)
 
 ## Step 1: Welcome
 
-A quick overview of what WPMediaVerse does - uploads and albums, the social layer (reactions, comments, favorites, follows), AI moderation and privacy controls, and optional BuddyPress integration. Click **Let's Get Started** to continue, or **Skip setup** to jump straight to the dashboard.
+A quick overview of what MediaVerse does - uploads and albums, the social layer (reactions, comments, favorites, follows), AI moderation and privacy controls, and optional BuddyPress integration. Click **Let's Get Started** to continue, or **Skip setup** to jump straight to the dashboard.
 
 ## Step 2: Pages
 
@@ -45,7 +45,7 @@ From here you can:
 
 ## Role Capabilities
 
-The wizard itself does not configure roles. On activation, WPMediaVerse adds default media capabilities to the Administrator, Editor, Author, Contributor, and Subscriber roles. You can review and change these at any time in **Media > Settings**.
+The wizard itself does not configure roles. On activation, MediaVerse adds default media capabilities to the Administrator, Editor, Author, Contributor, and Subscriber roles. You can review and change these at any time in **Media > Settings**.
 
 ## Skipping the Wizard
 

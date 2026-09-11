@@ -1,9 +1,9 @@
 # Template Overrides
 
-> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+> Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
 
 
-WPMediaVerse uses a template loading system that checks your active theme before falling back to plugin templates. This lets you fully customize media page layouts without modifying the plugin.
+MediaVerse uses a template loading system that checks your active theme before falling back to plugin templates. This lets you fully customize media page layouts without modifying the plugin.
 
 ## How It Works
 
@@ -40,7 +40,7 @@ wp-content/themes/your-theme/
 | `profile-edit.php` | `/media/edit-profile/` endpoint |
 | `documents.php` | The `[mvs_documents]` document-drive shortcode |
 | `messages.php` | The direct-messages page |
-| `app-page.php` | Plugin-created pages that host a WPMediaVerse shortcode/block surface |
+| `app-page.php` | Plugin-created pages that host a MediaVerse shortcode/block surface |
 | `404.php` | The plugin's branded not-found page (unknown profile, missing media) |
 
 ## Available Partials
@@ -202,7 +202,7 @@ You can override any template path using the `mvs_locate_template` filter:
 
 ```php
 add_filter( 'mvs_locate_template', function( string $template, string $name, string $path ) {
-    // Use a completely different directory for all WPMediaVerse templates.
+    // Use a completely different directory for all MediaVerse templates.
     $override = WP_CONTENT_DIR . '/my-media-templates/' . $name;
     return file_exists( $override ) ? $override : $template;
 }, 10, 3 );
@@ -210,7 +210,7 @@ add_filter( 'mvs_locate_template', function( string $template, string $name, str
 
 ## BuddyX Theme Integration
 
-WPMediaVerse adds the `mvs-page` and `no-sidebar` CSS body classes to all WPMediaVerse pages. The BuddyX theme (and any theme that handles these classes) renders these pages full-width without a sidebar.
+MediaVerse adds the `mvs-page` and `no-sidebar` CSS body classes to all MediaVerse pages. The BuddyX theme (and any theme that handles these classes) renders these pages full-width without a sidebar.
 
 Pages that receive these classes:
 

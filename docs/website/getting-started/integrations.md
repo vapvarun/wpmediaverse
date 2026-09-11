@@ -1,14 +1,14 @@
 # Integrations
 
-WPMediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware - configure credentials in settings and the integration activates.
+MediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware - configure credentials in settings and the integration activates.
 
 ## Integrations Admin Page (1.8.0)
 
-Go to **WPMediaVerse > Integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside WPMediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
+Go to **MediaVerse > Integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
 
 - **Install free** - installs and activates the companion plugin's free version in one click, without leaving the page.
 - **Learn more** - links out to the product's page on the Wbcom store.
-- Every companion plugin works standalone - installing one from this page does not tie it to WPMediaVerse, and WPMediaVerse simply lights up the matching integration when it detects the companion is active.
+- Every companion plugin works standalone - installing one from this page does not tie it to MediaVerse, and MediaVerse simply lights up the matching integration when it detects the companion is active.
 
 This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom products); it's separate from the third-party service integrations (AI providers, cloud storage) documented below, which are configured under **Settings**.
 
@@ -34,7 +34,7 @@ This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom p
 
 ### BuddyPress
 
-WPMediaVerse is the most complete media solution for BuddyPress communities. The integration activates automatically when BuddyPress is detected - no configuration needed.
+MediaVerse is the most complete media solution for BuddyPress communities. The integration activates automatically when BuddyPress is detected - no configuration needed.
 
 **What users get:**
 - A **Media** tab on every member profile showing their uploads in a grid
@@ -53,13 +53,13 @@ See [BuddyPress Integration](../buddypress/overview.md) for full details.
 
 ### BuddyNext
 
-If you use the BuddyNext theme, WPMediaVerse detects it automatically and enhances the member directory with media counts and the profile layout with media grid blocks. As of 2.0.0, BuddyNext also changes how individual media links behave - see [Activity Stream Media](../buddypress/activity-media.md#buddynext-media-links-open-their-activity-post-200) for details.
+If you use the BuddyNext theme, MediaVerse detects it automatically and enhances the member directory with media counts and the profile layout with media grid blocks. As of 2.0.0, BuddyNext also changes how individual media links behave - see [Activity Stream Media](../buddypress/activity-media.md#buddynext-media-links-open-their-activity-post-200) for details.
 
 ### wb-gamification **(Pro)**
 
 **This integration requires the separate, free WB Gamification plugin.** Points (XP) are only earned or spent when WB Gamification is installed and active. Without it, the competition features still run fully - members can create and enter Challenges, Battles, and Tournaments, vote, and see winners - but no points are awarded for wins or streaks, and the point-spending controls (such as Media Boosts) stay hidden. Every MediaVerse award/spend path is guarded, so Pro works correctly whether or not WB Gamification is present.
 
-When WB Gamification is active, WPMediaVerse Pro feeds it points for these competition outcomes via the `wb_gam_points_for_action` filter:
+When WB Gamification is active, MediaVerse Pro feeds it points for these competition outcomes via the `wb_gam_points_for_action` filter:
 
 | Action | When | Default XP |
 |--------|------|-----------|
@@ -71,7 +71,7 @@ When WB Gamification is active, WPMediaVerse Pro feeds it points for these compe
 | Win a tournament | Tournament champion | configurable |
 | Reach a streak milestone | Hit a daily-upload streak threshold | configurable |
 
-Challenge XP values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - WPMediaVerse Pro only tells it which competition outcome occurred.
+Challenge XP values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - MediaVerse Pro only tells it which competition outcome occurred.
 
 Get the free plugin: [WB Gamification](https://wbcomdesigns.com/downloads/wordpress-gamification-plugin/).
 
@@ -112,7 +112,7 @@ Store and deliver media through BunnyCDN's global edge network.
 
 ### Custom Storage Drivers
 
-WPMediaVerse uses a `StorageDriverInterface` that any developer can implement. Build drivers for Google Cloud Storage, DigitalOcean Spaces, Wasabi, Backblaze B2, or any S3-compatible service.
+MediaVerse uses a `StorageDriverInterface` that any developer can implement. Build drivers for Google Cloud Storage, DigitalOcean Spaces, Wasabi, Backblaze B2, or any S3-compatible service.
 
 See [Custom Storage Drivers](../developer-guide/custom-storage-drivers.md) for the interface spec.
 
@@ -192,7 +192,7 @@ This lets you sell storage tiers directly from your WooCommerce store.
 
 ## Webhooks
 
-WPMediaVerse can send real-time HTTP POST notifications to external services when events occur:
+MediaVerse can send real-time HTTP POST notifications to external services when events occur:
 
 | Event | Payload |
 |-------|---------|
@@ -217,7 +217,7 @@ See [Webhooks](../settings/webhooks.md) for payload formats and authentication.
 
 ### Site Health
 
-WPMediaVerse registers 3 custom tests in **Tools > Site Health**:
+MediaVerse registers 3 custom tests in **Tools > Site Health**:
 
 - **Database tables** - Verifies all custom tables exist and have the expected schema
 - **Upload directory** - Checks that the wpmediaverse upload directory is writable
@@ -233,7 +233,7 @@ See [GDPR & Privacy Compliance](../features/gdpr-privacy.md).
 
 ### REST API
 
-WPMediaVerse exposes 50+ REST endpoints in the free plugin and 30+ additional endpoints in Pro, all under the `mvs/v1` and `mvs-pro/v1` namespaces. Any external application, mobile app, or headless frontend can consume the full API.
+MediaVerse exposes 50+ REST endpoints in the free plugin and 30+ additional endpoints in Pro, all under the `mvs/v1` and `mvs-pro/v1` namespaces. Any external application, mobile app, or headless frontend can consume the full API.
 
 See [REST API Reference](../developer-guide/rest-api.md) and [Pro REST API Reference](../developer-guide/pro-rest-api.md).
 

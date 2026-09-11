@@ -78,7 +78,7 @@ class BlockRegistrar {
 			$categories,
 			array(
 				'slug'  => 'wpmediaverse',
-				'title' => __( 'WPMediaVerse', 'wpmediaverse' ),
+				'title' => __( 'MediaVerse', 'wpmediaverse' ),
 				'icon'  => 'format-gallery',
 			)
 		);

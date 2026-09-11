@@ -1,9 +1,9 @@
 # Group Media Tab
 
-> **Included in Free** - WPMediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
+> **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 
-When BuddyPress Groups is active, WPMediaVerse adds a **Media** tab to every BuddyPress group.
+When BuddyPress Groups is active, MediaVerse adds a **Media** tab to every BuddyPress group.
 
 ![BuddyPress group page with Media tab](../images/bp-group-media.jpg)
 
@@ -37,7 +37,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/media \
   -F "group_id=42"
 ```
 
-This sets the media row's `privacy` to `group` (a column in `mvs_media_index`) and stores `group_id=42` (in `mvs_media_meta`). Media is tracked in WPMediaVerse's custom tables, not as a WordPress post.
+This sets the media row's `privacy` to `group` (a column in `mvs_media_index`) and stores `group_id=42` (in `mvs_media_meta`). Media is tracked in MediaVerse's custom tables, not as a WordPress post.
 
 ## Group Activity Integration
 
@@ -53,4 +53,4 @@ The BuddyPress integration listens to this action and re-scopes the upload's act
 
 ## Group Activity in the Activity Post Form
 
-When a group member uses the BP activity post form inside a group, the **Attach Media** button (added by WPMediaVerse) automatically assigns uploaded media to that group.
+When a group member uses the BP activity post form inside a group, the **Attach Media** button (added by MediaVerse) automatically assigns uploaded media to that group.

@@ -1,16 +1,16 @@
 # GDPR & Privacy Compliance
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-WPMediaVerse integrates with the WordPress privacy tools built into **Tools > Export Personal Data** and **Tools > Erase Personal Data**. No configuration is required. The integration is active whenever the plugin is active.
+MediaVerse integrates with the WordPress privacy tools built into **Tools > Export Personal Data** and **Tools > Erase Personal Data**. No configuration is required. The integration is active whenever the plugin is active.
 
 The privacy functionality lives in `GDPRService.php`.
 
 
 ## What Gets Exported
 
-When an administrator runs a personal data export for a user, WPMediaVerse adds the following data groups to the export ZIP:
+When an administrator runs a personal data export for a user, MediaVerse adds the following data groups to the export ZIP:
 
 | Data Group | What Is Included |
 |------------|-----------------|
@@ -25,7 +25,7 @@ The export respects the WordPress standard format. Each group appears as a named
 
 ## What Gets Erased
 
-When an administrator runs a personal data erasure for a user, WPMediaVerse removes:
+When an administrator runs a personal data erasure for a user, MediaVerse removes:
 
 - All media items uploaded by that user (files and database records)
 - All comments posted by that user on media items
@@ -35,11 +35,11 @@ When an administrator runs a personal data erasure for a user, WPMediaVerse remo
 
 Erasure is permanent and cannot be undone. Media items that belong to BuddyPress groups are also removed.
 
-> Before erasing, WordPress asks the user to confirm the request via email. WPMediaVerse erasure only runs after that confirmation is received.
+> Before erasing, WordPress asks the user to confirm the request via email. MediaVerse erasure only runs after that confirmation is received.
 
 ## Privacy Policy Text
 
-WPMediaVerse registers suggested privacy policy text via `wp_add_privacy_policy_content()`. The suggestion appears in the **Privacy Policy Guide** at **Settings > Privacy > Privacy Policy Guide**.
+MediaVerse registers suggested privacy policy text via `wp_add_privacy_policy_content()`. The suggestion appears in the **Privacy Policy Guide** at **Settings > Privacy > Privacy Policy Guide**.
 
 The suggested text describes:
 
@@ -53,7 +53,7 @@ You are not required to use the suggested text verbatim. Review it and incorpora
 
 ## Developer Notes
 
-WPMediaVerse registers its exporters and erasers through the standard WordPress privacy hooks. It does not add its own wrapper filters - extend the export/erase flow with the WordPress-core filters directly.
+MediaVerse registers its exporters and erasers through the standard WordPress privacy hooks. It does not add its own wrapper filters - extend the export/erase flow with the WordPress-core filters directly.
 
 ### Adding Custom Data to the Export
 

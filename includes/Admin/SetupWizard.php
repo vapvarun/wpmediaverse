@@ -38,7 +38,7 @@ class SetupWizard {
 	public function add_hidden_page(): void {
 		add_submenu_page(
 			'wpmediaverse',
-			__( 'WPMediaVerse Setup', 'wpmediaverse' ),
+			__( 'MediaVerse Setup', 'wpmediaverse' ),
 			__( 'Setup', 'wpmediaverse' ),
 			'mvs_settings_screen',
 			self::PAGE_SLUG,
@@ -169,7 +169,7 @@ class SetupWizard {
 		?>
 		<div class="mvs-setup-wizard">
 			<div class="mvs-setup-header">
-				<h1><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></h1>
+				<h1><?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?></h1>
 				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
 			</div>
 
@@ -220,7 +220,7 @@ class SetupWizard {
 	private function render_step_welcome(): void {
 		?>
 		<div class="mvs-setup-step">
-			<h2><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h2>
+			<h2><?php esc_html_e( 'Welcome to MediaVerse!', 'wpmediaverse' ); ?></h2>
 			<p><?php esc_html_e( 'Transform your WordPress site into a media sharing platform. Upload, organize, and share images, videos, and audio with your community.', 'wpmediaverse' ); ?></p>
 			<ul class="mvs-setup-features">
 				<li><i data-lucide="image"></i> <?php esc_html_e( 'Upload and organize media in albums and collections', 'wpmediaverse' ); ?></li>
@@ -381,7 +381,7 @@ class SetupWizard {
 				<i data-lucide="check-circle"></i>
 			</div>
 			<h2><?php esc_html_e( 'Your Media Hub is Ready!', 'wpmediaverse' ); ?></h2>
-			<p><?php esc_html_e( 'WPMediaVerse is configured and ready to use. Here are some next steps:', 'wpmediaverse' ); ?></p>
+			<p><?php esc_html_e( 'MediaVerse is configured and ready to use. Here are some next steps:', 'wpmediaverse' ); ?></p>
 
 			<div class="mvs-setup-done-links">
 				<?php if ( $explore_id ) : ?>

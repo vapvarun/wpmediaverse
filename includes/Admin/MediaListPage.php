@@ -1652,7 +1652,7 @@ class MediaListPage {
 						</table>
 
 						<h2><?php esc_html_e( 'Thumbnail sizes', 'wpmediaverse' ); ?></h2>
-						<p class="description"><?php esc_html_e( 'WPMediaVerse keeps three smaller versions of every image so pages load fast.', 'wpmediaverse' ); ?></p>
+						<p class="description"><?php esc_html_e( 'MediaVerse keeps three smaller versions of every image so pages load fast.', 'wpmediaverse' ); ?></p>
 						<table class="widefat striped">
 							<thead><tr>
 								<th><?php esc_html_e( 'Size', 'wpmediaverse' ); ?></th>
