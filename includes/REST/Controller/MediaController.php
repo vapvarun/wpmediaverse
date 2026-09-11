@@ -1461,6 +1461,59 @@ class MediaController extends WP_REST_Controller {
 
 		$ip_hash = hash( 'sha256', self::get_client_ip() . wp_salt() );
 
+		/**
+		 * How long the same visitor's repeat views of one item are ignored.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param int $window Seconds. Default 30 minutes.
+		 */
+		$mvs_view_window = (int) apply_filters( 'mvs_view_dedup_window', 30 * MINUTE_IN_SECONDS );
+
+		// Count a visitor once per window, not once per page load. There was no
+		// dedup at all: every reload of a media page inserted another row and
+		// incremented the counter, so a member refreshing their own item inflated
+		// it at will. The RateLimiter above only caps abuse volume at 60/min - far
+		// above normal reloading - so it never stood in for this.
+		//
+		// Keyed on the logged-in user when there is one, else the salted IP hash,
+		// and it uses the media_user_date index the table already carries for
+		// exactly this lookup. Basecamp 10278289615.
+		if ( $mvs_view_window > 0 ) {
+			$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $mvs_view_window );
+			$mvs_seen  = $user_id
+				? $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$user_id,
+						$mvs_since
+					)
+				)
+				: $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$ip_hash,
+						$mvs_since
+					)
+				);
+
+			if ( $mvs_seen ) {
+				// Already counted. Return the current total so the client still
+				// renders a number rather than treating this as a failure.
+				return rest_ensure_response(
+					array(
+						'success' => true,
+						'counted' => false,
+						'views'   => (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+							$wpdb->prepare( "SELECT views FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", $media_id )
+						),
+					)
+				);
+			}
+		}
+
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_views',
 			array(
@@ -1534,6 +1587,59 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		$ip_hash = hash( 'sha256', self::get_client_ip() . wp_salt() );
+
+		/**
+		 * How long the same visitor's repeat views of one item are ignored.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param int $window Seconds. Default 30 minutes.
+		 */
+		$mvs_view_window = (int) apply_filters( 'mvs_view_dedup_window', 30 * MINUTE_IN_SECONDS );
+
+		// Count a visitor once per window, not once per page load. There was no
+		// dedup at all: every reload of a media page inserted another row and
+		// incremented the counter, so a member refreshing their own item inflated
+		// it at will. The RateLimiter above only caps abuse volume at 60/min - far
+		// above normal reloading - so it never stood in for this.
+		//
+		// Keyed on the logged-in user when there is one, else the salted IP hash,
+		// and it uses the media_user_date index the table already carries for
+		// exactly this lookup. Basecamp 10278289615.
+		if ( $mvs_view_window > 0 ) {
+			$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $mvs_view_window );
+			$mvs_seen  = $user_id
+				? $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$user_id,
+						$mvs_since
+					)
+				)
+				: $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$ip_hash,
+						$mvs_since
+					)
+				);
+
+			if ( $mvs_seen ) {
+				// Already counted. Return the current total so the client still
+				// renders a number rather than treating this as a failure.
+				return rest_ensure_response(
+					array(
+						'success' => true,
+						'counted' => false,
+						'views'   => (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+							$wpdb->prepare( "SELECT views FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", $media_id )
+						),
+					)
+				);
+			}
+		}
 
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_views',

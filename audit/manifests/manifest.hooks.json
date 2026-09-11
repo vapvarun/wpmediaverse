@@ -2792,6 +2792,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_view_dedup_window",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $window"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1471",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_viewer_thumbnail_ttl",
       "type": "filter",
       "args_count": 4,
