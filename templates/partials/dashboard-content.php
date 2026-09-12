@@ -473,6 +473,17 @@ wp_interactivity_state(
 	// before the nav, in the same rail column.
 	$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
 	?>
+	<?php
+	// ONE column, not two stacked cards. The identity and the sections were
+	// separate grid items, each drawing its own border, radius and fill, with a
+	// --mvs-space-5 row gap between them - so the rail read as two boxes that
+	// happened to line up. This wrapper is the grid item now: it carries the
+	// card and the sticky, and both children sit inside it borderless.
+	//
+	// It cannot close any later than </nav>: everything after that is a PANEL,
+	// and a panel inside this element would land in the rail column.
+	?>
+	<div class="mvs-dashboard-rail">
 	<div class="mvs-dashboard-rail-head">
 		<?php if ( $mvs_dash_profile_url ) : ?>
 			<?php
@@ -610,6 +621,7 @@ wp_interactivity_state(
 		do_action( 'mvs_dashboard_tabs' );
 		?>
 	</nav>
+	</div><!-- /.mvs-dashboard-rail -->
 
 	<?php
 	// Profile edit, as a panel among panels. Same markup as the card carried,
