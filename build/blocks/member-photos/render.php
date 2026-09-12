@@ -110,7 +110,10 @@ $mvs_member_stats = array(
 if ( $mvs_member_user_obj ) {
 	$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 	if ( $repo ) {
-		$mvs_member_stats['media'] = (int) $repo->count_by_author( $mvs_member_resolved_user_id );
+		// Viewer-scoped. count_by_author() applies no audience filter, so this
+		// card advertised a media total that included the member's private and
+		// members-only items to anyone who could see the block.
+		$mvs_member_stats['media'] = (int) $repo->count_visible_by_author( $mvs_member_resolved_user_id );
 	}
 	$follows = \WPMediaVerse\Core\Plugin::container()->get( 'follows' );
 	if ( $follows ) {

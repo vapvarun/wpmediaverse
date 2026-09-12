@@ -98,9 +98,13 @@ $mvs_archive_url = home_url( '/media/' );
 
 	<?php
 	if ( $mvs_profile ) :
+		// Viewer-scoped: count_by_author() applies no audience filter, so this
+		// header stat used to count private and members-only media that the
+		// visitor could not open. count_visible_by_author() applies the same
+		// per-viewer profile rule the grid below uses.
 		$mvs_profile_post_count = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
-			->count_by_author( (int) $mvs_profile->ID, 'publish' );
+			->count_visible_by_author( (int) $mvs_profile->ID );
 		$mvs_follow_counts      = array(
 			'followers' => 0,
 			'following' => 0,
@@ -245,6 +249,19 @@ $mvs_archive_url = home_url( '/media/' );
 	} else {
 		$mvs_privacy   = 'any';
 		$mvs_viewer_id = 0;
+	}
+
+	// A profile route is a single-author listing, so it takes the purpose-built
+	// 'profile' mode - the same rule count_visible_by_author() and every Pro
+	// profile layout already use. Without this the Free profile ran 'visible'
+	// while Pro ran 'profile': two privacy rules for one surface, and a header
+	// count that could not agree with its own grid. Sites can restore the old
+	// scope through the mvs_explore_query_args filter below.
+	if ( $mvs_profile ) {
+		$mvs_viewer_id = get_current_user_id();
+		$mvs_privacy   = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->profile_privacy_mode( (int) $mvs_profile->ID, $mvs_viewer_id );
 	}
 
 	// Sort and direction come from the URL through the one shared reader, so
