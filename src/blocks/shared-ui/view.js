@@ -257,6 +257,33 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
 		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
 		userAlbums: [], // [{ id, title }] for the "Add to album" select
+		get uploadModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.uploadModalPrivacy );
+		},
+		get uploadModalPrivacyLabel() {
+			return state.privacyLabelFor( state.uploadModalPrivacy );
+		},
+		get editModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.editModalPrivacy );
+		},
+		get editModalPrivacyLabel() {
+			return state.privacyLabelFor( state.editModalPrivacy );
+		},
+		/**
+		 * Is the stored level one the picker does not offer?
+		 *
+		 * privacy_options() renders the offered levels server-side; this only
+		 * decides whether the extra disabled option is shown. The offered set
+		 * comes from privacy_choices() via PHP - filterable, and BP-conditional
+		 * - so it is never restated here. Basecamp 10290748981.
+		 */
+		privacyUnlisted( stored ) {
+			const offered = state.i18n?.privacyChoices || [];
+			return !! stored && ! offered.includes( stored );
+		},
+		privacyLabelFor( stored ) {
+			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
+		},
 		get hideUploadMetaFields() {
 			return state.uploadModalUploading;
 		},

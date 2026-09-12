@@ -492,6 +492,34 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get itemTitle() {
 			return getContext().item?.title || ( state.i18n?.untitled || '(Untitled)' );
 		},
+		get editModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.editModal.privacy );
+		},
+		get editModalPrivacyLabel() {
+			return state.privacyLabelFor( state.editModal.privacy );
+		},
+		get albumModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.albumModal.privacy );
+		},
+		get albumModalPrivacyLabel() {
+			return state.privacyLabelFor( state.albumModal.privacy );
+		},
+		/**
+		 * Is the stored level one the picker does not offer?
+		 *
+		 * privacy_options() renders the offered levels server-side; this only
+		 * decides whether the extra disabled option appears. The offered set
+		 * comes from privacy_choices() via PHP - filterable, BP-conditional -
+		 * so it is never restated here. Basecamp 10290748981.
+		 */
+		privacyUnlisted( stored ) {
+			const offered = state.i18n?.privacyChoices || [];
+			return !! stored && ! offered.includes( stored );
+		},
+		privacyLabelFor( stored ) {
+			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
+		},
+
 		get itemPrivacy() {
 			// Label, never the stored slug. The badge used to print `loggedin`
 			// straight from the database, lowercase and untranslated, directly

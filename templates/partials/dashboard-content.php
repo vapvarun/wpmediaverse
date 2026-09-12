@@ -194,6 +194,9 @@ wp_interactivity_state(
 			// Every privacy level the plugin can store, so a badge never paints the
 			// raw database slug at a member. Basecamp 10290748981.
 			'privacyLabels'           => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			// Which levels the picker OFFERS - filterable, and BP-conditional.
+			// The store must not restate this vocabulary. Basecamp 10290748981.
+			'privacyChoices'          => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
 			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),
@@ -1433,7 +1436,26 @@ wp_interactivity_state(
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
-							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( '' ); ?>
+							<?php
+							// Options come from STATE, not from privacy_options().
+							//
+							// The server-rendered version passed '' as the selected
+							// level, so its disabled-fallback for an unlisted level
+							// (loggedin, space, group) could never fire - the value is
+							// bound client-side and the server never knows it. A member
+							// whose item was stored at one of those levels opened Edit
+							// and got an empty select: no selection, no way to read the
+							// current setting. Basecamp 10290748981, three bounces.
+							//
+							// state.i18n.privacyLabels already carries every level (it
+							// was added for the badge half of the same card), and the
+							// server renders the offered levels with privacy_options(); the one
+							// extra option below names a stored level it does not offer.
+							// NOT data-wp-each - that is SSR-expanded by PHP, and these
+							// options are derived client-side, so hydration mismatches.
+							?>
+							<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModal.privacy" data-wp-text="state.editModalPrivacyLabel"></option>
+							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 						</select>
 					</div>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
@@ -1516,7 +1538,26 @@ wp_interactivity_state(
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 					<select data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
-						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( '' ); ?>
+						<?php
+						// Options come from STATE, not from privacy_options().
+						//
+						// The server-rendered version passed '' as the selected
+						// level, so its disabled-fallback for an unlisted level
+						// (loggedin, space, group) could never fire - the value is
+						// bound client-side and the server never knows it. A member
+						// whose item was stored at one of those levels opened Edit
+						// and got an empty select: no selection, no way to read the
+						// current setting. Basecamp 10290748981, three bounces.
+						//
+						// state.i18n.privacyLabels already carries every level (it
+						// was added for the badge half of the same card), and the
+						// server renders the offered levels with privacy_options(); the one
+						// extra option below names a stored level it does not offer.
+						// NOT data-wp-each - that is SSR-expanded by PHP, and these
+						// options are derived client-side, so hydration mismatches.
+						?>
+						<option data-wp-bind--hidden="!state.albumModalPrivacyUnlisted" data-wp-bind--selected="state.albumModalPrivacyUnlisted" data-wp-bind--value="state.albumModal.privacy" data-wp-text="state.albumModalPrivacyLabel"></option>
+						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 					</select>
 				</div>
 				<div class="mvs-field">

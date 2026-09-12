@@ -78,6 +78,11 @@ wp_interactivity_state(
 			'linkCopied'       => __( 'Link copied!', 'wpmediaverse' ),
 			'copyFailed'       => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
 			'notDownloadable'  => __( 'This media is not available for download.', 'wpmediaverse' ),
+			// Read by the store to name a stored level the picker does not
+			// offer. privacyChoices is what privacy_choices() offers, so the
+			// vocabulary is never restated client-side. Basecamp 10290748981.
+			'privacyLabels'    => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			'privacyChoices'   => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 		),
 	)
 );
@@ -252,6 +257,15 @@ wp_interactivity_state(
 						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 						<div class="mvs-modal-field-row">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
+								<?php
+								// A level the picker does not offer (loggedin, space, group,
+								// or anything an import set) shows here as a readable,
+								// disabled option, so the owner can see what their item is
+								// set to. data-wp-each cannot serve this: it is SSR-expanded
+								// by PHP and these options are derived client-side.
+								// Basecamp 10290748981.
+								?>
+								<option data-wp-bind--hidden="!state.uploadModalPrivacyUnlisted" data-wp-bind--selected="state.uploadModalPrivacyUnlisted" data-wp-bind--value="state.uploadModalPrivacy" data-wp-text="state.uploadModalPrivacyLabel"></option>
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
@@ -349,6 +363,15 @@ wp_interactivity_state(
 							<select id="mvs-edit-privacy"
 								data-wp-on--change="actions.updateEditPrivacy"
 								data-wp-bind--value="state.editModalPrivacy">
+								<?php
+								// A level the picker does not offer (loggedin, space, group,
+								// or anything an import set) shows here as a readable,
+								// disabled option, so the owner can see what their item is
+								// set to. data-wp-each cannot serve this: it is SSR-expanded
+								// by PHP and these options are derived client-side.
+								// Basecamp 10290748981.
+								?>
+								<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModalPrivacy" data-wp-text="state.editModalPrivacyLabel"></option>
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>

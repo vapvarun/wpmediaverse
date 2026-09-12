@@ -3194,8 +3194,12 @@ class MediaRepository implements MediaRepositoryInterface {
 		// PrivacyService::can_view() already refuses the item. That is the item;
 		// this is the list that advertises it (Basecamp 10296867415).
 		if ( $viewer > 0 && $author_id > 0 ) {
-			$mvs_reports = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
-			if ( $mvs_reports && $mvs_reports->is_blocked( $author_id, $viewer ) ) {
+			$mvs_container = \WPMediaVerse\Core\Plugin::container();
+			// has() before get(): the container throws on an unregistered key,
+			// and it never returns null - so a null check here would be dead.
+			// Same shape as the item-level guard in PrivacyService.php:326.
+			if ( $mvs_container->has( 'reports' )
+				&& $mvs_container->get( 'reports' )->is_blocked( $author_id, $viewer ) ) {
 				return 'none';
 			}
 		}

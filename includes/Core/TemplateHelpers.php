@@ -619,7 +619,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$labels = array(
 			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
 			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
-			'loggedin' => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			/* translators: shown for items stored at the legacy 'loggedin' level, which behaves exactly like Members. */
+			'loggedin' => __( 'Members: logged-in users only (legacy)', 'wpmediaverse' ),
 			'friends'  => __( 'Friends: BuddyPress friends only', 'wpmediaverse' ),
 			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
 			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
