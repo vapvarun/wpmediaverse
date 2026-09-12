@@ -2454,6 +2454,13 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-dashboard-panel {
     min-height: 200px;
     padding: var(--mvs-space-4);
+    /* Same card as the rail. The panel already carried the fill and the radius
+       but no edge, so beside a bordered rail it read as unframed content rather
+       than the other half of the layout - most visible on Profile and Documents,
+       which have no toolbar of their own to give them a top edge. One border per
+       column, and it lands on the shared panel class so every section gets it,
+       including any a future release adds. */
+    border: 1px solid var(--mvs-border-light);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-bg-subtle);
 }
