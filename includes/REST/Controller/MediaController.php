@@ -1180,6 +1180,46 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
+		// The SAME quota gate as a fresh upload, for the same reason as the MIME
+		// guard above: this endpoint used to run neither, so a member who was out
+		// of quota could not upload but could still push new bytes in through
+		// Replace. A package limit an owner sells has to hold on every write path.
+		//
+		// Runs BEFORE anything touches disk - store(), the watermark stamp and the
+		// EXIF pass are all below - so a refusal leaves the existing file intact.
+
+		/*
+		 * Two deliberate differences from handle():
+		 *
+		 * context 'replace' - a replacement creates no new item, so the per-type
+		 * ITEM cap must not apply. Without this a member at "5 of 5 images" could
+		 * never fix a bad photo, which reads as a bug and is not what a quota is
+		 * for. Pro's QuotaService skips that branch on this context.
+		 *
+		 * the byte DELTA, not the file size - the old bytes are about to be
+		 * freed, so only growth counts against the storage limit. A same-size
+		 * replacement consumes nothing; a smaller one is always allowed.
+		 */
+		$mvs_new_size = (int) ( filesize( $file['tmp_name'] ) ?: 0 );
+		$mvs_old_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
+
+		/** This filter is documented in includes/Services/UploadService.php */
+		$mvs_replace_args = apply_filters(
+			'mvs_upload_args',
+			array(
+				'mime'       => $mime,
+				'media_type' => $upload_service->get_media_type_public( $mime ),
+				'file_size'  => max( 0, $mvs_new_size - $mvs_old_size ),
+				'file_name'  => $file['name'],
+				'context'    => 'replace',
+			),
+			get_current_user_id()
+		);
+
+		if ( is_wp_error( $mvs_replace_args ) ) {
+			return $mvs_replace_args;
+		}
+
 		// Store new file.
 		$storage  = Plugin::container()->get( 'storage' );
 		$driver   = $storage->get_driver();

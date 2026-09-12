@@ -223,6 +223,11 @@ class UploadService {
 		 *     @type string $media_type High-level type (image|video|audio|document).
 		 *     @type int    $file_size  File size in bytes.
 		 *     @type string $file_name  Original file name.
+		 *     @type string $context    Optional. 'replace' when an existing item's
+		 *                              file is being swapped, in which case
+		 *                              `file_size` is the byte DELTA and no new
+		 *                              item is created - consumers must not apply
+		 *                              per-item caps. Absent on a fresh upload.
 		 * }
 		 * @param int $user_id Uploading user ID.
 		 */

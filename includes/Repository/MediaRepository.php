@@ -131,7 +131,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Blocked-author ids per viewer, for this request only.
 	 *
-	 * query() and query_count() both build through build_query_parts(), so a
+	 * Both query() and query_count() build through build_query_parts(), so a
 	 * single listing asked ReportService for the same block list twice. It is
 	 * an indexed lookup and cheap, but it is also the same answer both times.
 	 *
