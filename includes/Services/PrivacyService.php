@@ -297,6 +297,40 @@ class PrivacyService {
 			return true;
 		}
 
+		// A block removes access to the blocked member's media, in BOTH
+		// directions. It belongs here rather than in each caller: every read
+		// path - the permalink, the REST single item, the profile grid, the
+		// lightbox, thumbnails and downloads - resolves through can_view(), so
+		// one guard covers them all. Before this the only block handling was a
+		// list filter in MediaController, which hid a blocked member from the
+		// blocker's LISTS while leaving every direct URL open: a blocked member
+		// could still open the blocker's media page, see it on their profile
+		// and fetch it from the API. docs/website/features/user-blocking.md
+		// promises the opposite.
+		//
+		// ONE-DIRECTIONAL, and that is the documented contract, not a
+		// simplification: docs/website/features/user-blocking.md says
+		// "Blocking is one-directional. You can still view the blocked user's
+		// public media unless you also choose to hide it." So the person who
+		// was blocked loses access to the blocker's media; the blocker keeps
+		// access to theirs. is_blocked( author, viewer ) asks exactly that,
+		// and reusing ReportService avoids a third hand-rolled mvs_blocks
+		// query - which is how FollowService and MediaController already
+		// ended up with two different ones.
+		//
+		// Above the mvs_privacy_can_view filter deliberately: a safety decision
+		// must not be re-granted by a filter that only knows about privacy.
+		if ( $user_id > 0 && $author_id > 0 && $author_id !== $user_id ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			if ( $container->has( 'reports' ) ) {
+				$reports = $container->get( 'reports' );
+				if ( method_exists( $reports, 'is_blocked' )
+					&& $reports->is_blocked( $author_id, $user_id ) ) {
+					return false;
+				}
+			}
+		}
+
 		// Moderation outranks privacy for everyone else. This belongs here, not in
 		// each caller's query: moderation_status is an opt-in argument on
 		// MediaRepository::query(), so before this guard only the Explore listing
