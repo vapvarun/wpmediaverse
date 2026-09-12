@@ -3062,11 +3062,48 @@ JS;
 	}
 
 	/**
+	 * The slug of the standalone messages page.
+	 *
+	 * ONE source for a path that three call sites used to spell out
+	 * independently: this rewrite, the client-navigation deny-list, and the
+	 * direct-message notification link. They agreed only by coincidence. The
+	 * deny-list already resolves MAPPED pages through their permalink for
+	 * exactly this reason - "so admin-renamed slugs stay correct without
+	 * touching the deny-list" - and messages, being a virtual route rather
+	 * than a mapped page, had no equivalent and got a hard-coded literal in
+	 * each place instead.
+	 *
+	 * Filtering this moves the route; flush permalinks afterwards, since the
+	 * rewrite rule is stored.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return string Slug, no surrounding slashes.
+	 */
+	public static function messages_slug(): string {
+		return trim( (string) apply_filters( 'mvs_messages_slug', 'messages' ), '/' );
+	}
+
+	/**
+	 * The absolute URL of the standalone messages page.
+	 *
+	 * Anything linking a member to their messages reads this, so the link
+	 * follows the route instead of restating it.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return string
+	 */
+	public static function messages_url(): string {
+		return (string) apply_filters( 'mvs_messages_url', home_url( '/' . self::messages_slug() . '/' ) );
+	}
+
+	/**
 	 * Register the /messages/ page rewrite rule.
 	 */
 	public static function register_messages_page(): void {
 		add_rewrite_rule(
-			'^messages/?$',
+			'^' . preg_quote( self::messages_slug() ) . '/?$',
 			'index.php?mvs_messages_page=1',
 			'top'
 		);

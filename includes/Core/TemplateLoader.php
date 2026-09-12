@@ -109,7 +109,7 @@ class TemplateLoader {
 	public function add_deny_paths( array $paths ): array {
 		// Fixed rewrite-based routes that must always full-load.
 		$fixed = array(
-			'/messages/',       // Messaging: polling, typeahead, file-upload.
+			'/' . Plugin::messages_slug() . '/', // Messaging: polling, typeahead, file-upload.
 			'/media/edit-profile/', // Profile-edit composer form.
 			'/album/',          // Album CPT single (rewrite slug = 'album').
 		);

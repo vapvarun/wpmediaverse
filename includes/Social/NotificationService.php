@@ -471,7 +471,7 @@ class NotificationService {
 			$tpl  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
 			$link = ( $actor_id > 0 ) ? $tpl->get_user_profile_url( $actor_id ) : '';
 		} elseif ( 'new_message' === $type ) {
-			$link = home_url( '/messages/' );
+			$link = \WPMediaVerse\Core\Plugin::messages_url();
 		}
 
 		return array(
