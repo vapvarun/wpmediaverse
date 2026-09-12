@@ -108,7 +108,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 			} elseif ( ! $mvs_is_albums && $mvs_collection_svc ) {
 				$mvs_ctype = get_post_meta( $mvs_post_id, '_mvs_collection_type', true ) ?: 'manual';
 				if ( 'smart' === $mvs_ctype ) {
-					$mvs_resolved   = $mvs_collection_svc->resolve( $mvs_post_id, 1, 1 );
+					$mvs_resolved   = $mvs_collection_svc->resolve( $mvs_post_id, 1, 1, get_current_user_id() );
 					$mvs_item_count = $mvs_resolved['total'];
 					$mvs_first_ids  = array_column( $mvs_resolved['items'], 'media_id' );
 				} else {

@@ -562,7 +562,7 @@ class Shortcodes {
 		$media_ids = array();
 
 		if ( 'smart' === $type ) {
-			$resolved  = $service->resolve( $collection_id, (int) $atts['per_page'], 1 );
+			$resolved  = $service->resolve( $collection_id, (int) $atts['per_page'], 1, get_current_user_id() );
 			$media_ids = array_column( $resolved['items'], 'media_id' );
 		} else {
 			global $wpdb;

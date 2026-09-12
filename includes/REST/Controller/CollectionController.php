@@ -408,7 +408,7 @@ class CollectionController extends WP_REST_Controller {
 		// beside a populated cover.
 		$smart_items = array();
 		if ( 'smart' === $collection_type ) {
-			$resolved    = $this->collections->resolve( $post->ID, $include_items ? $per_page : 5, $page );
+			$resolved    = $this->collections->resolve( $post->ID, $include_items ? $per_page : 5, $page, $viewer );
 			$smart_items = $resolved['items'];
 			$total       = (int) $resolved['total'];
 			$cover_ids   = wp_list_pluck( $smart_items, 'media_id' );

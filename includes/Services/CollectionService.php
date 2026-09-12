@@ -137,12 +137,16 @@ class CollectionService {
 	 * - date_before: string (Y-m-d)
 	 * - privacy: string (public, members, private, etc.)
 	 *
-	 * @param int $collection_id Collection post ID.
-	 * @param int $per_page      Items per page.
-	 * @param int $page          Page number.
+	 * @param int      $collection_id Collection post ID.
+	 * @param int      $per_page      Items per page.
+	 * @param int      $page          Page number.
+	 * @param int|null $viewer_id     Scope the result to what this viewer may see.
+	 *                                Null (default) counts every match regardless
+	 *                                of privacy - correct for wp-admin, wrong for
+	 *                                anything a member or visitor reads.
 	 * @return array{items: array, total: int}
 	 */
-	public function resolve( int $collection_id, int $per_page = 20, int $page = 1 ): array {
+	public function resolve( int $collection_id, int $per_page = 20, int $page = 1, ?int $viewer_id = null ): array {
 		$rules = $this->get_rules( $collection_id );
 
 		$empty = array(
@@ -172,9 +176,21 @@ class CollectionService {
 		// the OR-within-key semantic lives in MediaRepository::or_set(), and the
 		// MEDIA_LIBRARY type default lives in build_query_parts(), so a collection
 		// cannot resolve to a document however its rules are written.
+		//
+		// Privacy scope. 'any' counts every match and is right for wp-admin, where
+		// the owner is administering the collection. It is wrong everywhere a
+		// member or visitor reads it: the same smart collection reported an
+		// identical `total` to its owner and to an anonymous visitor, so the
+		// number told a stranger how much they were not allowed to open, and the
+		// count disagreed with the list they got.
+		//
+		// 'explore' is the mode the feed already uses (MediaRepository) - public
+		// plus members plus your own, and everything for a moderator - so this
+		// reuses the one privacy vocabulary rather than adding a second.
 		$args = array(
-			'status'  => 'publish',
-			'privacy' => 'any',
+			'status'    => 'publish',
+			'privacy'   => null === $viewer_id ? 'any' : 'explore',
+			'viewer_id' => (int) $viewer_id,
 			'orderby' => 'created_at',
 			'order'   => 'DESC',
 			'limit'     => $per_page,

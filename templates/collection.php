@@ -46,7 +46,7 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		$items     = array();
 
 		if ( 'smart' === $collection_type ) {
-			$resolved = $service->resolve( $collection_id, 100, 1 );
+			$resolved = $service->resolve( $collection_id, 100, 1, get_current_user_id() );
 			$items    = array_column( $resolved['items'], 'media_id' );
 		} else {
 			$items = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, 100 );

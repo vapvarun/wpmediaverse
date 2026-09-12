@@ -66,6 +66,18 @@ class UploadService {
 		// Reset the duplicate warning flag at the start of every call.
 		$this->last_duplicate_warning = 0;
 
+		// An empty file has no detectable MIME, so without this it is refused as
+		// "This file type is not supported" - untrue, and unactionable for the
+		// usual cause: an interrupted or failed file selection. `false` (missing
+		// temp file) deliberately falls through to the existing handling.
+		if ( 0 === @filesize( $file['tmp_name'] ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			return new WP_Error(
+				'mvs_empty_file',
+				__( 'That file is empty. Try selecting it again.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		// Validate MIME type.
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
