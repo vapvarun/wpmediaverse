@@ -73,25 +73,21 @@ foreach ( $mvs_post_types as $mvs_post_type ) {
 }
 
 // Remove capabilities from roles.
-$mvs_caps = array(
-	'upload_mvs_media',
-	'edit_mvs_media',
-	'edit_others_mvs_media',
-	'delete_mvs_media',
-	'delete_others_mvs_media',
-	'moderate_mvs_media',
-	'manage_mvs_settings',
-	'read_mvs_media',
-	'publish_mvs_media',
-);
+//
+// MediaCapabilities::remove_caps() is the one list. It already removes the full
+// set - including manage_mvs_access and the ten plural caps - from EVERY role.
+// This file used to carry its own list of nine caps against the five core roles,
+// so eleven caps survived an uninstall-with-delete-data, and a custom role kept
+// all of its grants. Two lists that have to agree are one list waiting to drift.
+//
+// Required directly rather than through an autoloader, for the same reason the
+// Migrator is above: the release zip has no vendor/autoload.php.
+$mvs_caps_file = __DIR__ . '/includes/Capabilities/MediaCapabilities.php';
+if ( file_exists( $mvs_caps_file ) ) {
+	require_once $mvs_caps_file;
 
-$mvs_roles = array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' );
-foreach ( $mvs_roles as $mvs_role_name ) {
-	$mvs_role = get_role( $mvs_role_name );
-	if ( $mvs_role ) {
-		foreach ( $mvs_caps as $mvs_cap ) {
-			$mvs_role->remove_cap( $mvs_cap );
-		}
+	if ( method_exists( '\WPMediaVerse\Capabilities\MediaCapabilities', 'remove_caps' ) ) {
+		\WPMediaVerse\Capabilities\MediaCapabilities::remove_caps();
 	}
 }
 

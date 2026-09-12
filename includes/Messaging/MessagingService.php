@@ -2368,8 +2368,58 @@ class MessagingService {
 	 * @param string $emoji      Emoji character.
 	 * @return bool
 	 */
+	/**
+	 * Whether a user may react to a message.
+	 *
+	 * Resolves the message and requires the actor to be a participant of its
+	 * conversation. Both reaction writers go through this, so the REST handlers
+	 * inherit it and a third writer cannot be added that forgets it.
+	 *
+	 * A non-participant and a message that does not exist get the SAME answer.
+	 * That is deliberate: the previous code accepted a reaction on message id
+	 * 999999 and returned 200, so message ids could be probed, and reactions
+	 * from strangers appeared inside private threads attributed to them.
+	 *
+	 * Participant status is not filtered. Someone who has left a conversation
+	 * keeps their history, and narrowing this to `active` would silently break
+	 * reacting in threads a member is still shown - the hole being closed is
+	 * people who were NEVER in the conversation.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int $message_id Message ID.
+	 * @param int $user_id    Acting user ID.
+	 * @return bool
+	 */
+	private function can_react_to_message( int $message_id, int $user_id ): bool {
+		global $wpdb;
+
+		if ( $message_id <= 0 || $user_id <= 0 ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (bool) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT p.user_id
+				   FROM {$wpdb->prefix}mvs_messages AS m
+			 INNER JOIN {$wpdb->prefix}mvs_conversation_participants AS p
+				     ON p.conversation_id = m.conversation_id
+				  WHERE m.id = %d
+				    AND p.user_id = %d
+				  LIMIT 1",
+				$message_id,
+				$user_id
+			)
+		);
+	}
+
 	public function add_reaction( int $message_id, int $user_id, string $emoji ): bool {
 		global $wpdb;
+
+		if ( ! $this->can_react_to_message( $message_id, $user_id ) ) {
+			return false;
+		}
 
 		$react_table = $wpdb->prefix . 'mvs_message_reactions';
 
@@ -2439,6 +2489,10 @@ class MessagingService {
 	 */
 	public function remove_reaction( int $message_id, int $user_id ): bool {
 		global $wpdb;
+
+		if ( ! $this->can_react_to_message( $message_id, $user_id ) ) {
+			return false;
+		}
 
 		$react_table = $wpdb->prefix . 'mvs_message_reactions';
 

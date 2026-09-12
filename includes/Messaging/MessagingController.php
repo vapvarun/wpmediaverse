@@ -793,9 +793,11 @@ class MessagingController extends WP_REST_Controller {
 			$request->get_param( 'emoji' )
 		);
 
+		// 404, not 400: a member who is not in this conversation must get the
+		// same answer as for a message that does not exist, or ids are probeable.
 		return new WP_REST_Response(
-			$result ? array( 'success' => true ) : array( 'error' => 'reaction_failed' ),
-			$result ? 200 : 400
+			$result ? array( 'success' => true ) : array( 'error' => 'not_found' ),
+			$result ? 200 : 404
 		);
 	}
 
@@ -805,9 +807,10 @@ class MessagingController extends WP_REST_Controller {
 	public function remove_reaction( WP_REST_Request $request ): WP_REST_Response {
 		$result = $this->service->remove_reaction( (int) $request['id'], get_current_user_id() );
 
+		// 404 for the same reason as add_reaction() above.
 		return new WP_REST_Response(
-			$result ? array( 'success' => true ) : array( 'error' => 'remove_failed' ),
-			$result ? 200 : 400
+			$result ? array( 'success' => true ) : array( 'error' => 'not_found' ),
+			$result ? 200 : 404
 		);
 	}
 
