@@ -39,11 +39,6 @@ $mvs_toolbar_orderby = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET[
 $mvs_toolbar_order   = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'asc' : 'desc';
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$mvs_order_options = array(
-	'desc' => __( 'Newest first', 'wpmediaverse' ),
-	'asc'  => __( 'Oldest first', 'wpmediaverse' ),
-);
-
 // Resolved here rather than reusing the copy made further down for the rail:
 // the toolbars are rendered before that point, and capturing a variable that
 // does not exist yet is a null comparison that silently matches nothing.
@@ -728,7 +723,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_media['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'media',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -975,7 +969,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_albums['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'albums',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -1084,7 +1077,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_favorites['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'favorites',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -1201,7 +1193,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_collections['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'collections',
 						'data-wp-on--change' => 'actions.toolbarOrder',

@@ -146,10 +146,6 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 				'name'    => 'order',
 				'label'   => __( 'Direction', 'wpmediaverse' ),
 				'value'   => isset( $mvs_doc_order ) ? strtolower( (string) $mvs_doc_order ) : 'desc',
-				'options' => array(
-					'desc' => __( 'Newest first', 'wpmediaverse' ),
-					'asc'  => __( 'Oldest first', 'wpmediaverse' ),
-				),
 			),
 			'submit' => __( 'Apply', 'wpmediaverse' ),
 		)

@@ -1688,11 +1688,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				'order'  => array(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
+					// No 'options': render_panel_toolbar() derives them from the
+					// sort field. Basecamp 10297765808.
 					'value'   => strtolower( $sort['order'] ),
-					'options' => array(
-						'desc' => __( 'Newest first', 'wpmediaverse' ),
-						'asc'  => __( 'Oldest first', 'wpmediaverse' ),
-					),
 				),
 				'submit' => __( 'Apply', 'wpmediaverse' ),
 			)
@@ -1785,6 +1783,20 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			}
 		}
 
+		// The direction labels depend on the SORT field, and this is the one
+		// place both are in scope, so every caller gets them right without
+		// restating them.
+		//
+		// This OVERRIDES whatever options the caller passed. Deferring to them
+		// was the first version of this fix and it changed nothing: all seven
+		// call sites hand over the same hard-coded Newest/Oldest pair, which is
+		// precisely the defect. A caller that genuinely needs its own wording
+		// uses the mvs_direction_labels filter, which knows the field.
+		// Basecamp 10297765808.
+		if ( ! empty( $args['order'] ) && is_array( $args['order'] ) && ! empty( $args['sort']['value'] ) ) {
+			$args['order']['options'] = $this->direction_labels( (string) $args['sort']['value'] );
+		}
+
 		foreach ( array( 'sort', 'order' ) as $key ) {
 			if ( ! empty( $args[ $key ] ) && is_array( $args[ $key ] ) ) {
 				$selects[] = $args[ $key ];
@@ -1841,6 +1853,64 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @param array  $select Select config.
 	 * @return string
 	 */
+	/**
+	 * Direction labels that match the field being sorted.
+	 *
+	 * Every toolbar offered "Newest first / Oldest first" whatever the sort
+	 * was, so Explore sorted by Title labelled A-Z as "Newest first", the drive
+	 * sorted by Size called largest-first "Newest", and Trending had an
+	 * "Oldest first" that means nothing at all. Seven call sites shared one
+	 * hard-coded pair. Basecamp 10297765808.
+	 *
+	 * Derived from what the field IS, not from a list of field names: anything
+	 * unrecognised falls back to the ascending/descending pair, which is true
+	 * of every sort. Add a sort field anywhere and it gets a sane label without
+	 * being registered here.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $sort_field The current `sort`/`orderby` value.
+	 * @return array<string,string> desc => label, asc => label.
+	 */
+	public function direction_labels( string $sort_field ): array {
+		$field = strtolower( trim( $sort_field ) );
+
+		// Chronological: the only family where "newest" is the honest word.
+		$chronological = array( 'date', 'created_at', 'favorited', 'updated_at', 'published' );
+
+		// Alphabetical.
+		$alphabetical = array( 'title', 'name', 'filename', 'author' );
+
+		if ( in_array( $field, $chronological, true ) ) {
+			$labels = array(
+				'desc' => __( 'Newest first', 'wpmediaverse' ),
+				'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+			);
+		} elseif ( in_array( $field, $alphabetical, true ) ) {
+			$labels = array(
+				'desc' => __( 'Z to A', 'wpmediaverse' ),
+				'asc'  => __( 'A to Z', 'wpmediaverse' ),
+			);
+		} else {
+			// Quantitative - views, size, trending, popular, and anything a
+			// filter adds later. "Most first" reads correctly for all of them.
+			$labels = array(
+				'desc' => __( 'Most first', 'wpmediaverse' ),
+				'asc'  => __( 'Fewest first', 'wpmediaverse' ),
+			);
+		}
+
+		/**
+		 * Filter the direction labels for a sort field.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param array<string,string> $labels     desc/asc labels.
+		 * @param string               $sort_field The field being sorted.
+		 */
+		return (array) apply_filters( 'mvs_direction_labels', $labels, $field );
+	}
+
 	private function toolbar_select( string $id, array $select ): string {
 		$name    = isset( $select['name'] ) ? (string) $select['name'] : '';
 		$label   = isset( $select['label'] ) ? (string) $select['label'] : '';
