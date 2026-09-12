@@ -932,10 +932,6 @@ wp_interactivity_state(
 
 	<!-- My Albums Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'albums' ) ); ?>>
-		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
-		</div>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -985,6 +981,16 @@ wp_interactivity_state(
 			)
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
+		<?php
+		// Toolbar first, then the create action - the order Media and Favorites
+		// already use. Search and filter are the first thing every panel offers,
+		// and the create button sits directly above the grid it adds to, so every
+		// library panel opens the same way.
+		?>
+		<div class="mvs-dashboard-actions">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
+		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.albums.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-album-id="context.item.id">
@@ -1152,10 +1158,6 @@ wp_interactivity_state(
 
 	<!-- My Collections Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'collections' ) ); ?>>
-		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
-		</div>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -1205,6 +1207,16 @@ wp_interactivity_state(
 			)
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
+		<?php
+		// Toolbar first, then the create action - the order Media and Favorites
+		// already use. Search and filter are the first thing every panel offers,
+		// and the create button sits directly above the grid it adds to, so every
+		// library panel opens the same way.
+		?>
+		<div class="mvs-dashboard-actions">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
+		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.collections.items">
 				<div class="mvs-dashboard-card mvs-collection-card" data-wp-bind--data-collection-id="context.item.id">
