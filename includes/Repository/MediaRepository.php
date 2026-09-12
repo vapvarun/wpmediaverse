@@ -129,6 +129,19 @@ class MediaRepository implements MediaRepositoryInterface {
 	private static array $row_cache = array();
 
 	/**
+	 * Blocked-author ids per viewer, for this request only.
+	 *
+	 * query() and query_count() both build through build_query_parts(), so a
+	 * single listing asked ReportService for the same block list twice. It is
+	 * an indexed lookup and cheap, but it is also the same answer both times.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @var array<int, int[]>
+	 */
+	private static array $blocked_cache = array();
+
+	/**
 	 * Tracks media_ids that have had ALL their meta loaded via prefetch.
 	 * Without this, a meta-miss in `$row_cache` could mean either "not
 	 * loaded yet" or "loaded and confirmed absent." Indexed columns are
@@ -174,6 +187,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public static function reset_test_cache(): void {
 		self::$row_cache         = array();
 		self::$meta_fully_loaded = array();
+		self::$blocked_cache     = array();
 	}
 
 	/**
@@ -3584,6 +3598,34 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( '' !== $privacy_where ) {
 			$where[] = $privacy_where;
 			$params  = array_merge( $params, $privacy_params );
+		}
+
+		// Blocked members are excluded from every multi-author listing, here
+		// rather than in each caller. The exclusion used to live only in
+		// MediaController's feed query, which serves page 2 onward - so Explore
+		// page 1 (rendered server-side through this builder) still showed media
+		// from people the viewer had blocked, and page 2 did not. Same viewer,
+		// same feed, two different answers.
+		//
+		// query() and query_count() both build from these parts, so the list and
+		// the count can never disagree - which is the other half of that bug.
+		//
+		// Gated on viewer_id > 0, and that is sufficient rather than lucky:
+		// explore.php passes viewer_id 0 for anonymous visitors (public-only
+		// anyway) AND for moderators, who are meant to see everything. Single
+		// author listings never need this - profile_privacy_mode() resolves to
+		// 'profile'/'any' for one author, and PrivacyService::can_view() already
+		// governs the item itself.
+		$mvs_viewer = (int) $args['viewer_id'];
+		if ( $mvs_viewer > 0 ) {
+			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
+				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_ids( $mvs_viewer );
+			}
+			$mvs_blocked = self::$blocked_cache[ $mvs_viewer ];
+			if ( $mvs_blocked ) {
+				$where[] = 'm.post_author NOT IN (' . implode( ',', array_fill( 0, count( $mvs_blocked ), '%d' ) ) . ')';
+				$params  = array_merge( $params, array_map( 'intval', $mvs_blocked ) );
+			}
 		}
 
 		if ( '' !== (string) $args['since'] ) {
