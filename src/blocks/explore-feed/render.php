@@ -82,6 +82,11 @@ wp_interactivity_state(
 	echo wp_json_encode(
 		array(
 			'restUrl'             => $rest_url,
+			// The block's Layout control writes this attribute and view.js reads
+			// `getContext().layout` for state.isMasonry - but the key was never
+			// put into the context, so two of the three choices (Masonry, List)
+			// silently rendered as Grid on every site.
+			'layout'              => $layout,
 			'page'                => 1,
 			'perPage'             => $mvs_per_page,
 			'filter'              => '',
