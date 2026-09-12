@@ -3173,7 +3173,34 @@ class MediaRepository implements MediaRepositoryInterface {
 		$is_owner_self = ( $author_id === $viewer ) && $viewer > 0;
 		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
 
-		return ( $is_owner_self || $include_private || $is_admin ) ? 'any' : 'profile';
+		if ( $is_owner_self || $include_private || $is_admin ) {
+			return 'any';
+		}
+
+		// HAS THE AUTHOR BLOCKED THIS VIEWER?
+		//
+		// build_query_parts() already drops authors the VIEWER blocked, and
+		// that clause is shared, so a profile listing gets it too. What it
+		// cannot cover is this pair. Blocking is one-directional
+		// (docs/website/features/user-blocking.md): here the AUTHOR blocked the
+		// viewer, so get_blocked_ids($viewer) is empty and only this check
+		// fires.
+		//
+		// It lives in this method because it is the ONE place query_by_author()
+		// and count_visible_by_author() both consult, so the grid and the "14
+		// items" above it can never disagree - and the count is itself
+		// information about content the viewer is barred from.
+		//
+		// PrivacyService::can_view() already refuses the item. That is the item;
+		// this is the list that advertises it (Basecamp 10296867415).
+		if ( $viewer > 0 && $author_id > 0 ) {
+			$mvs_reports = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
+			if ( $mvs_reports && $mvs_reports->is_blocked( $author_id, $viewer ) ) {
+				return 'none';
+			}
+		}
+
+		return 'profile';
 	}
 
 	/**
@@ -3613,9 +3640,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		// Gated on viewer_id > 0, and that is sufficient rather than lucky:
 		// explore.php passes viewer_id 0 for anonymous visitors (public-only
 		// anyway) AND for moderators, who are meant to see everything. Single
-		// author listings never need this - profile_privacy_mode() resolves to
-		// 'profile'/'any' for one author, and PrivacyService::can_view() already
-		// governs the item itself.
+		// author listings DO reach this clause and depend on it: it is what
+		// empties the profile of an author the viewer themselves blocked, list
+		// and count alike (ProfileBlockListingTest). The reverse pair - the
+		// author blocked the viewer - is handled in
+		// resolve_profile_privacy_mode(), which this cannot see.
 		$mvs_viewer = (int) $args['viewer_id'];
 		if ( $mvs_viewer > 0 ) {
 			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
@@ -3781,6 +3810,13 @@ class MediaRepository implements MediaRepositoryInterface {
 					"((m.privacy != 'private' OR m.post_author = %d) AND m.privacy != 'dm')",
 					array( $viewer_id ),
 				);
+			case 'none':
+				// Yields nothing, for a viewer who must not see this author's
+				// listing at all. Distinct from every other mode here: the rest
+				// narrow WHICH rows are visible, this one answers "none of
+				// them" without the caller having to skip the query and keep a
+				// separate count in step.
+				return array( '1 = 0', array() );
 			case 'any':
 			default:
 				// 'any' applies no audience filter (owner-self profile, admin /
