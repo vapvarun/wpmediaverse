@@ -41,8 +41,25 @@ class MediaRepositoryFoldInTest extends WP_UnitTestCase {
 		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 	}
 
+	/**
+	 * Seed one row with a DISTINCT created_at.
+	 *
+	 * Every assertion in this file compares raw SQL ordered by created_at DESC
+	 * against the repository's own ordering. Rows seeded in the same second tie,
+	 * MySQL does not promise an order for ties, and the two sides broke the tie
+	 * differently - so the file failed roughly half the time on a clean tree and
+	 * blocked pushes that had nothing to do with it. Basecamp 10298195956.
+	 *
+	 * insert() merges caller data over its defaults, so an explicit created_at
+	 * wins. One second apart per row, descending, makes both sides deterministic
+	 * without either query having to state a tiebreak.
+	 */
 	private function make_media( array $overrides = array() ): int {
+		static $seq = 0;
+		++$seq;
+
 		$defaults = array(
+			'created_at'        => gmdate( 'Y-m-d H:i:s', strtotime( '2026-01-01 00:00:00' ) - $seq ),
 			'title'             => 'Item ' . wp_generate_password( 6, false ),
 			'post_author'       => $this->author_a,
 			'media_type'        => 'image',

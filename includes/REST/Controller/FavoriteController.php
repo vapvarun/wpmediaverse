@@ -237,9 +237,24 @@ class FavoriteController extends WP_REST_Controller {
 		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$page_ids    = array();
 		$created_map = array();
+		// EXISTS IS NOT VISIBLE. This gated on existence alone, so a member who
+		// had favourited an item that later went private kept seeing its title,
+		// its thumbnail slot and an Unfavorite button - the image 403'd, the card
+		// around it did not. Privacy was half-applied: the member could not see
+		// the photo but could see what it was called and that it still existed.
+		// can_view() is the same gate this controller already applies to a single
+		// favourite (see the POST path). Basecamp 10297947358.
+		$mvs_privacy  = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		$mvs_viewer   = get_current_user_id();
+		$mvs_filtered = 0;
+
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];
 			if ( ! $repo->exists( $media_id ) ) {
+				continue;
+			}
+			if ( ! $mvs_privacy->can_view( $media_id, $mvs_viewer ) ) {
+				++$mvs_filtered;
 				continue;
 			}
 			$page_ids[]               = $media_id;
@@ -269,9 +284,15 @@ class FavoriteController extends WP_REST_Controller {
 			$enriched[]          = $media;
 		}
 
+		// The total drops with the rows. Leaving it whole would advertise a page
+		// the viewer cannot be shown and paginate against a number that can never
+		// be filled - the count-and-list disagreement this plugin keeps producing.
+		// It is a per-viewer figure now, which is what the list has always been.
+		$mvs_total = max( 0, (int) $result['total'] - $mvs_filtered );
+
 		$response = rest_ensure_response( $enriched );
-		$response->header( 'X-WP-Total', $result['total'] );
-		$response->header( 'X-WP-TotalPages', (int) ceil( $result['total'] / $per_page ) );
+		$response->header( 'X-WP-Total', $mvs_total );
+		$response->header( 'X-WP-TotalPages', $per_page > 0 ? (int) ceil( $mvs_total / $per_page ) : 0 );
 
 		return $response;
 	}

@@ -647,10 +647,21 @@ $mvs_archive_url = home_url( '/media/' );
 				</div>
 				<div class="mvs-social-bar__actions">
 					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
+						<?php
+						// aria-pressed, and a label that changes with the state. Only the
+						// CSS class moved before, so a screen-reader user could not tell
+						// whether the item was already a favourite and the button kept
+						// saying "Add to favorites" after it had been added. The lightbox
+						// star has always done this correctly (shared-ui-frame.php:531);
+						// this is the same shape. Basecamp 10297839293.
+						?>
 						<button class="mvs-favorite-btn mvs-btn--icon-collapse" type="button"
 							data-wp-class--active="context.isFavorite"
+							data-wp-bind--aria-pressed="context.isFavorite"
+							data-wp-bind--aria-label="state.favoriteLabel"
 							data-wp-on--click="actions.toggleFavorite"
 							data-mvs-tooltip="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>"
+							aria-pressed="false"
 							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">
 							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>

@@ -2031,6 +2031,12 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// Favorites.
 					'loginToFavorite'      => __( 'Please log in to favorite.', 'wpmediaverse' ),
 					'favoriteUpdateFailed' => __( 'Could not update favorite.', 'wpmediaverse' ),
+					// The favourite button's accessible name, which has to change
+					// with the state. Only its CSS class moved before, so a screen
+					// reader heard "Add to favorites" whether or not the item was
+					// already a favourite. Basecamp 10297839293.
+					'addToFavorites'       => __( 'Add to favorites', 'wpmediaverse' ),
+					'removeFromFavorites'  => __( 'Remove from favorites', 'wpmediaverse' ),
 					// Comments.
 					'loginToComment'       => __( 'Please log in to comment.', 'wpmediaverse' ),
 					'commentPostFailed'    => __( 'Could not post comment.', 'wpmediaverse' ),
