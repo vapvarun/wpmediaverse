@@ -38,10 +38,12 @@ class CollectionService {
 	/**
 	 * May this media item be put into a collection by this curator?
 	 *
-	 * PUBLIC, OR THEIRS. A collection is a curated, shareable surface, and the
-	 * curator is usually an admin assembling members' work - so the rule the
-	 * owner set (2026-09-13) is that they may use anyone's PUBLIC media, or
-	 * anything they uploaded themselves, and nothing else.
+	 * MEDIA, and PUBLIC OR THEIRS. A collection is a curated, shareable surface
+	 * of images, video and audio, and the curator is usually an admin assembling
+	 * members' work - so the rule the owner set (2026-09-13) is that they may
+	 * use anyone's PUBLIC media, or anything they uploaded themselves, and
+	 * nothing else. Documents are excluded outright: they have their own menu
+	 * and their own categorisation, and files are not mixed with media.
 	 *
 	 * Deliberately NOT `PrivacyService::can_view()`. That answers "may this
 	 * person look at it", which admits members-only media to any logged-in
@@ -71,18 +73,35 @@ class CollectionService {
 			return false;
 		}
 
-		if ( (int) $repo->get_author( $media_id ) === $curator_id ) {
-			return true;
-		}
+		// MEDIA ONLY, and this is checked BEFORE ownership on purpose: a
+		// document is not collectable even when the curator uploaded it, because
+		// this is a rule about what a collection is FOR, not about who owns the
+		// file. Owner, 2026-09-13: "no documents in collections, only media."
+		// Documents have their own menu and their own categorisation.
+		//
+		// library_types() supplies the vocabulary (image/video/audio) rather
+		// than three hardcoded strings, so a site that widens the media library
+		// widens this with it. Smart collections already behaved this way -
+		// MediaSurfaceTypeScopeTest pins it - and manual membership was the
+		// half that disagreed.
+		$is_media = in_array(
+			(string) $repo->get( $media_id, 'media_type' ),
+			MediaTypes::library_types(),
+			true
+		);
 
-		$allowed = 'public' === (string) $repo->get( $media_id, 'privacy' );
+		$is_own    = (int) $repo->get_author( $media_id ) === $curator_id;
+		$is_public = 'public' === (string) $repo->get( $media_id, 'privacy' );
+
+		$allowed = $is_media && ( $is_own || $is_public );
 
 		/**
 		 * Filters whether a media item may join a collection.
 		 *
 		 * The escape hatch for a site that curates differently - a moderator
-		 * team assembling members' members-only work, say. Default is public
-		 * or the curator's own.
+		 * team assembling members' members-only work, or a site that genuinely
+		 * wants document collections. Default is media (image/video/audio) that
+		 * is public or the curator's own.
 		 *
 		 * @since 2.4.2
 		 *

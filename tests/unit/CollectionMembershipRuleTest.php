@@ -30,14 +30,14 @@ class CollectionMembershipRuleTest extends WP_UnitTestCase {
 		$this->someone_else = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 	}
 
-	private function seed( int $author, string $privacy ): int {
+	private function seed( int $author, string $privacy, string $type = 'image' ): int {
 		$id = (int) Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Fixture ' . wp_generate_password( 8, false ),
 				'slug'        => 'rule-' . strtolower( wp_generate_password( 10, false ) ),
 				'post_author' => $author,
 				'status'      => 'publish',
-				'media_type'  => 'image',
+				'media_type'  => $type,
 				'privacy'     => $privacy,
 			)
 		);
@@ -86,6 +86,55 @@ class CollectionMembershipRuleTest extends WP_UnitTestCase {
 			$this->collections()->may_contain( $id, $this->curator ),
 			'...but must not be able to collect it.'
 		);
+	}
+
+	/**
+	 * A collection is a MEDIA collection. Owner, 2026-09-13: "no documents in
+	 * collections, only media."
+	 */
+	public function test_a_public_document_may_not_be_collected(): void {
+		$id = $this->seed( $this->someone_else, 'public', 'document' );
+
+		$this->assertFalse(
+			$this->collections()->may_contain( $id, $this->curator ),
+			'A public document reached a collection.'
+		);
+	}
+
+	/**
+	 * The type rule beats ownership - which is why it is checked first.
+	 */
+	public function test_your_own_document_may_not_be_collected(): void {
+		$id = $this->seed( $this->curator, 'public', 'document' );
+
+		$this->assertFalse(
+			$this->collections()->may_contain( $id, $this->curator ),
+			"A curator's own document reached a collection."
+		);
+	}
+
+	/**
+	 * The quarantined pre-1.2.3 type is a file too, and is not in
+	 * library_types() - so it is excluded without naming it.
+	 */
+	public function test_a_legacy_document_may_not_be_collected(): void {
+		$id = $this->seed( $this->someone_else, 'public', 'legacy_document' );
+
+		$this->assertFalse( $this->collections()->may_contain( $id, $this->curator ) );
+	}
+
+	/**
+	 * Video and audio are media, and must not be collateral damage.
+	 */
+	public function test_video_and_audio_are_still_collectable(): void {
+		foreach ( array( 'video', 'audio' ) as $type ) {
+			$id = $this->seed( $this->someone_else, 'public', $type );
+
+			$this->assertTrue(
+				$this->collections()->may_contain( $id, $this->curator ),
+				"Public {$type} must remain collectable."
+			);
+		}
 	}
 
 	public function test_media_that_does_not_exist_may_not(): void {
