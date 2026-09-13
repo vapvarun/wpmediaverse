@@ -2051,6 +2051,20 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_profile_documents_count",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $count",
+        "int $owner_id",
+        "int $viewer_id"
+      ],
+      "where": "includes/Integrations/BuddyPress/ProfileTabIntegration.php:220",
+      "consumed_by": [
+        "wpmediaverse-pro: Documents\\ProfileDocuments::count_visible()"
+      ]
+    },
+    {
       "name": "mvs_profile_documents_html",
       "type": "filter",
       "args_count": 3,

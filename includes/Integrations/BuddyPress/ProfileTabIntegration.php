@@ -187,6 +187,50 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 			);
 			buddypress()->members->nav->edit_nav( array( 'name' => $nav_name ), 'media' );
 		}
+
+		// Documents gets the same badge, for the same reason Media has one: two
+		// sibling tabs where only one advertises how much is behind it left a
+		// visitor unable to tell a full Documents tab from an empty one. Worse
+		// at zero media, where the Media badge is suppressed entirely and a
+		// profile with 40 documents showed no numbers at all.
+		//
+		// Free cannot count them. Documents are Pro's - rows, folders, grants
+		// and the privacy resolution all live there, and a raw index count here
+		// would advertise documents the viewer may not open, which is the
+		// defect 10296867415 was filed for. So this asks, exactly the way the
+		// LIST already asks via `mvs_profile_documents_html`, and renders
+		// nothing when Pro is absent. Basecamp 10298471056.
+		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
+			return;
+		}
+
+		/**
+		 * Viewer-scoped count of the profile owner's documents.
+		 *
+		 * Answered by Pro. Free has no way to count documents the viewer is
+		 * allowed to see and must not guess.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param int $count     Document count. Default 0 (no badge).
+		 * @param int $owner_id  The profile owner.
+		 * @param int $viewer_id The current viewer (0 when logged out).
+		 */
+		$doc_count = (int) apply_filters(
+			'mvs_profile_documents_count',
+			0,
+			(int) $displayed_user_id,
+			get_current_user_id()
+		);
+
+		if ( $doc_count > 0 ) {
+			$doc_nav_name = sprintf(
+				/* translators: %s: document count */
+				__( 'Documents', 'wpmediaverse' ) . ' <span class="count">%s</span>',
+				$doc_count
+			);
+			buddypress()->members->nav->edit_nav( array( 'name' => $doc_nav_name ), 'documents', 'media' );
+		}
 	}
 
 	/**
