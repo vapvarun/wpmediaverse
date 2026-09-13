@@ -481,7 +481,7 @@ class TemplateLoader {
 		// that. The in-template gates stay as defense-in-depth. Basecamp 10073499554.
 		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
 			$mvs_cpt_id = get_queried_object_id();
-			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id() ) ) {
+			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				$mvs_ctx = ( 'mvs_collection' === get_post_type( $mvs_cpt_id ) ) ? 'collection' : 'album';
 				self::render_branded_404( $mvs_ctx, (string) get_post_field( 'post_name', $mvs_cpt_id ) );
 				return; // render_branded_404() exits; return keeps control flow explicit.

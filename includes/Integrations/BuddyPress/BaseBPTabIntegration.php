@@ -232,7 +232,7 @@ abstract class BaseBPTabIntegration {
 		// No null-guard on the service: a missing privacy service must fail
 		// CLOSED (fatal), not skip the gate and leak.
 		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
-		if ( ! $privacy->can_view( (int) $album->ID, get_current_user_id() ) ) {
+		if ( ! $privacy->can_view( (int) $album->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';
 			return;
@@ -513,10 +513,12 @@ abstract class BaseBPTabIntegration {
 			// Privacy gate: never render an album the current viewer cannot see.
 			// The album list query is not privacy-filtered, so a private /
 			// members-only album would otherwise leak to logged-out users and
-			// non-members. Album privacy lives in mvs_media_index keyed by the
-			// album post ID (same id space PrivacyService::can_view expects).
+			// non-members. Album privacy lives on the album POST (_mvs_privacy)
+			// since 2.4.0, NOT in mvs_media_index - an index row at this ID is an
+			// unrelated media item that happens to share the integer, which is
+			// why the call declares SPACE_CPT. Basecamp 10298525085.
 			// No null-guard on the service — fail closed, never skip the gate.
-			if ( ! $privacy->can_view( $album_id, $viewer_id ) ) {
+			if ( ! $privacy->can_view( $album_id, $viewer_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				continue;
 			}
 

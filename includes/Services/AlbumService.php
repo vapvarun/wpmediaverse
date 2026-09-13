@@ -64,9 +64,18 @@ class AlbumService {
 		}
 
 		// @deprecated 2.4.0 Legacy read. Remove in 3.0.0 once every install has run v26.
-		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
-			->get( 'media_repository' )
-			->get( $album_id, 'privacy' );
+		//
+		// Only a PRIVACY-ONLY stub row may answer here. A row carrying a
+		// media_type is a real media item that merely shares this album's
+		// integer, and its privacy is not the album's - reading it is the
+		// collision this docblock warns about. Basecamp 10298525085.
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( '' !== (string) $repo->get( $album_id, 'media_type' ) ) {
+			return 'public';
+		}
+
+		$legacy = (string) $repo->get( $album_id, 'privacy' );
 
 		return '' !== $legacy ? $legacy : 'public';
 	}

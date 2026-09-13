@@ -33,7 +33,7 @@ $mvs_archive_url = home_url( '/media/' );
 		// (audit 2026-06-04). Mirror the single-media behaviour: a viewer who
 		// can't see the album gets the branded 404, nothing else.
 		$mvs_album_id = (int) get_the_ID();
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_album_id, get_current_user_id() ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_album_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			status_header( 404 );
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';

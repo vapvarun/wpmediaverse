@@ -657,7 +657,8 @@ class AccessRulesService {
 		// AUTO_INCREMENT space and can collide with an unrelated wp_posts.ID, so
 		// calling get_post($media_id) first would read the wrong entity's author
 		// for an access decision (Basecamp 10073499758). Mirror
-		// PrivacyService::check_access(): a real media item (in the index with a
+		// PrivacyService::check_access() (which diverged from this and had to be
+		// brought back in line for 10298525085): a real media item (in the index with a
 		// concrete media_type) resolves from the index; only album/collection CPTs
 		// (privacy-only index rows / not indexed) fall back to wp_posts, with a
 		// post_type check.

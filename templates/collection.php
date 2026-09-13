@@ -30,7 +30,7 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		// anyone (individual thumbnails still sign per-viewer, but the structure
 		// leaked). A viewer who can't see the collection gets the branded 404,
 		// nothing else. Basecamp 10073499554.
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $collection_id, get_current_user_id() ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $collection_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			status_header( 404 );
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';

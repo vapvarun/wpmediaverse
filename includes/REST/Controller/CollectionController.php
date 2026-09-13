@@ -192,7 +192,7 @@ class CollectionController extends WP_REST_Controller {
 		// Privacy gate — mirror AlbumController::get_item(). A members/private
 		// collection's title, structure and item list must not be readable by
 		// non-owners (Basecamp 10073499554).
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $post->ID, get_current_user_id() ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $post->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this collection.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
