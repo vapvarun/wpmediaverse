@@ -35,6 +35,64 @@ class CollectionService {
 	 * @param int   $collection_id Collection post ID.
 	 * @param array $rules         Array of rule definitions.
 	 */
+	/**
+	 * May this media item be put into a collection by this curator?
+	 *
+	 * PUBLIC, OR THEIRS. A collection is a curated, shareable surface, and the
+	 * curator is usually an admin assembling members' work - so the rule the
+	 * owner set (2026-09-13) is that they may use anyone's PUBLIC media, or
+	 * anything they uploaded themselves, and nothing else.
+	 *
+	 * Deliberately NOT `PrivacyService::can_view()`. That answers "may this
+	 * person look at it", which admits members-only media to any logged-in
+	 * curator - and a members-only photo pulled into a public collection is
+	 * exactly the exposure this prevents. Viewing and collecting are different
+	 * questions, so they get different predicates.
+	 *
+	 * Lives here rather than on FavoriteService because both membership stores
+	 * need the same answer: Free keeps manual membership in `mvs_favorites`,
+	 * Pro keeps it in `mvs_pro_collection_items`. One rule, asked twice, so a
+	 * later change cannot drift between them. Basecamp 10298612348.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int $media_id   Media item being added.
+	 * @param int $curator_id The user doing the adding.
+	 * @return bool
+	 */
+	public function may_contain( int $media_id, int $curator_id ): bool {
+		if ( $media_id <= 0 || $curator_id <= 0 ) {
+			return false;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( ! $repo->exists( $media_id ) ) {
+			return false;
+		}
+
+		if ( (int) $repo->get_author( $media_id ) === $curator_id ) {
+			return true;
+		}
+
+		$allowed = 'public' === (string) $repo->get( $media_id, 'privacy' );
+
+		/**
+		 * Filters whether a media item may join a collection.
+		 *
+		 * The escape hatch for a site that curates differently - a moderator
+		 * team assembling members' members-only work, say. Default is public
+		 * or the curator's own.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param bool $allowed    Whether the item may be added.
+		 * @param int  $media_id   Media item being added.
+		 * @param int  $curator_id The user doing the adding.
+		 */
+		return (bool) apply_filters( 'mvs_media_may_join_collection', $allowed, $media_id, $curator_id );
+	}
+
 	public function save_rules( int $collection_id, array $rules ): void {
 		$clean = array();
 

@@ -190,7 +190,24 @@ class FavoriteController extends WP_REST_Controller {
 		}
 
 		$collection_id = $request->get_param( 'collection_id' );
-		$result        = $this->favorites->toggle( $media_id, get_current_user_id(), $collection_id ? (int) $collection_id : null );
+
+		// Favouriting and collecting are different questions. can_view() above
+		// is the right gate for a favourite - anything you may look at, you may
+		// bookmark. A COLLECTION is curated and shareable, so it takes the
+		// narrower rule: public, or your own. Without this, a members-only
+		// photo could be pulled into a collection by any logged-in curator,
+		// because can_view() admits members-level to everyone signed in.
+		// Basecamp 10298612348.
+		if ( $collection_id
+			&& ! \WPMediaVerse\Core\Plugin::container()->get( 'collections' )->may_contain( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error(
+				'mvs_not_collectable',
+				__( 'Only public media, or your own uploads, can go in a collection.', 'wpmediaverse' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$result = $this->favorites->toggle( $media_id, get_current_user_id(), $collection_id ? (int) $collection_id : null );
 
 		/**
 		 * Fires after a favorite is toggled.
