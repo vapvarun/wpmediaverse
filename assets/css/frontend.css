@@ -1349,7 +1349,12 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-media-grid {
     display: grid;
-    gap: 16px;
+    /* The token, with the long-standing 16px as its fallback. The media-grid
+       block emits --mvs-grid-gap per instance from its Gap control; that only
+       worked while the block shipped its own duplicate .mvs-media-grid rule.
+       Reading it here keeps the control working once that duplicate is gone,
+       and every surface that sets nothing still gets 16px. */
+    gap: var(--mvs-grid-gap, 16px);
     max-width: 100%;
     overflow: hidden;
     box-sizing: border-box;
@@ -1500,6 +1505,59 @@ body.dark-mode .mvs-skeleton::after {
 
     .mvs-grid--original.mvs-cols-5 {
         column-count: 4;
+    }
+}
+
+/* List mode: one row per item, thumbnail beside the title. Overrides
+   .mvs-media-grid's columns and .mvs-grid-item's square aspect-ratio.
+   The title comes OUT of the hover overlay deliberately: a row that reveals
+   its title on hover is unreadable on touch, where there is no hover. */
+.mvs-media-grid.mvs-grid--list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mvs-grid--list .mvs-grid-item {
+    aspect-ratio: auto;
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+}
+
+/* The square wrapper is wanted here - it keeps the row thumbnails aligned -
+   but it must size to the column, not to the row. */
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-link,
+.mvs-media-grid.mvs-grid--list .mvs-grid-item a {
+    aspect-ratio: 1;
+    height: auto;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.mvs-grid--list .mvs-grid-item-overlay {
+    position: static;
+    inset: auto;
+    background: none;
+    color: inherit;
+    opacity: 1;
+    justify-content: flex-start;
+    /* start, not left: the row reads right-to-left in an RTL locale. */
+    text-align: start;
+    padding: 0;
+}
+
+.mvs-grid--list .mvs-grid-item-title {
+    white-space: normal;
+    font-weight: 600;
+}
+
+@media (max-width: 480px) {
+
+    .mvs-grid--list .mvs-grid-item {
+        grid-template-columns: 72px 1fr;
     }
 }
 

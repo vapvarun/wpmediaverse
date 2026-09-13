@@ -627,17 +627,21 @@ class SettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			'mvs_thumbnail_style',
-			__( 'Thumbnail Style', 'wpmediaverse' ),
+			// Named "Thumbnail Style" when it only chose square-vs-original. It
+			// now picks the grid layout, list included, so the label says so.
+			// The OPTION KEY is unchanged - it is on every install.
+			__( 'Default Layout', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
 			SettingsPage::PAGE_SLUG . '-display',
 			'mvs_display',
 			array(
 				'option'      => 'mvs_thumbnail_style',
 				'choices'     => array(
-					'square'   => __( 'Square (cropped)', 'wpmediaverse' ),
-					'original' => __( 'Original proportions', 'wpmediaverse' ),
+					'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
+					'original' => __( 'Masonry - original proportions', 'wpmediaverse' ),
+					'list'     => __( 'List - one row per item', 'wpmediaverse' ),
 				),
-				'description' => __( 'Square crops images uniformly. Original preserves aspect ratios.', 'wpmediaverse' ),
+				'description' => __( 'The default layout for every media grid. A block or shortcode can override it for one grid.', 'wpmediaverse' ),
 			)
 		);
 

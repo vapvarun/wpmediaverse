@@ -19,7 +19,10 @@ defined( 'ABSPATH' ) || exit;
 // help text, which the frontend previously never honored.
 $mvs_grid_columns_attr = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 0;
 $columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : absint( get_option( 'mvs_grid_columns', 3 ) );
-$thumb_style    = \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style();
+// The site's Default Layout, resolved through the one emitter every grid
+// uses. This block has no layout attribute of its own, so it always
+// follows the site setting. Basecamp 10297763824.
+$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
 $category       = isset( $attributes['category'] ) ? sanitize_text_field( $attributes['category'] ) : '';
@@ -179,7 +182,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( ! empty( $media_items ) ) : ?>
-		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo 'original' === $thumb_style ? ' mvs-grid--original' : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
+		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
 			<?php
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];

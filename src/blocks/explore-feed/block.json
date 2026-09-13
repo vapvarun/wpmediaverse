@@ -15,7 +15,7 @@
 	"attributes": {
 		"layout": {
 			"type": "string",
-			"default": "grid"
+			"default": ""
 		},
 		"perPage": {
 			"type": "number",

@@ -446,7 +446,12 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php
 		endif;
 		?>
-		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style() ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
+		<?php
+		// One emitter for every grid's layout class, so a new layout cannot
+		// reach some surfaces and miss others. Basecamp 10297763824.
+		$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+		?>
+		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container>
 			<?php
 			// Render media items from index table.
 			$media_ids_for_stats = array_map( 'intval', array_column( $media_items, 'media_id' ) );

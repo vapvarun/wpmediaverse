@@ -345,15 +345,19 @@ class SetupWizard {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Thumbnail Style', 'wpmediaverse' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Default Layout', 'wpmediaverse' ); ?></th>
 						<td>
 							<label>
 								<input type="radio" name="mvs_thumbnail_style" value="square" <?php checked( $style, 'square' ); ?> />
-								<?php esc_html_e( 'Square (cropped)', 'wpmediaverse' ); ?>
+								<?php esc_html_e( 'Grid - square crops', 'wpmediaverse' ); ?>
 							</label><br>
 							<label>
 								<input type="radio" name="mvs_thumbnail_style" value="original" <?php checked( $style, 'original' ); ?> />
-								<?php esc_html_e( 'Original aspect ratio', 'wpmediaverse' ); ?>
+								<?php esc_html_e( 'Masonry - original proportions', 'wpmediaverse' ); ?>
+							</label><br>
+							<label>
+								<input type="radio" name="mvs_thumbnail_style" value="list" <?php checked( $style, 'list' ); ?> />
+								<?php esc_html_e( 'List - one row per item', 'wpmediaverse' ); ?>
 							</label>
 						</td>
 					</tr>

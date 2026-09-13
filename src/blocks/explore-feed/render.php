@@ -13,7 +13,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$layout       = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : 'grid';
+// '' means inherit the site's Default Layout setting. It used to default
+// to 'grid', which made "not set" indistinguishable from "deliberately
+// grid" and left no way to follow the site setting. Basecamp 10297763824.
+$layout       = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : '';
 $mvs_per_page = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : 12;
 $show_filters = ! empty( $attributes['showFilters'] );
 $show_search  = ! empty( $attributes['showSearch'] );
@@ -86,7 +89,6 @@ wp_interactivity_state(
 			// `getContext().layout` for state.isMasonry - but the key was never
 			// put into the context, so two of the three choices (Masonry, List)
 			// silently rendered as Grid on every site.
-			'layout'              => $layout,
 			'page'                => 1,
 			'perPage'             => $mvs_per_page,
 			'filter'              => '',
@@ -159,7 +161,14 @@ wp_interactivity_state(
 	<?php endif; ?>
 
 	<?php if ( ! empty( $media_items ) ) : ?>
-		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>" data-wp-class--mvs-layout-masonry="state.isMasonry">
+		<?php
+		// Layout is known at render time, so the class is emitted here rather
+		// than bound client-side. The old data-wp-class--mvs-layout-masonry
+		// pointed at a class with NO CSS anywhere, so Masonry and List both
+		// rendered as Grid. One emitter now serves every grid.
+		$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class( $layout );
+		?>
+		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
 			<?php
 			foreach ( $media_items as $item ) :
 				$item_id    = (int) $item['media_id'];

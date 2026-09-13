@@ -234,7 +234,10 @@ class Shortcodes {
 	public function render_explore_feed( $atts ): string {
 		$atts = shortcode_atts(
 			array(
-				'layout'   => 'grid',
+				// '' inherits the site's Default Layout, matching the block's
+				// own default. 'grid' here would have forced one layout on
+				// every shortcode and left no way to follow the setting.
+				'layout'   => '',
 				'columns'  => 3,
 				'per_page' => 12,
 				'filters'  => 'true',

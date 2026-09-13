@@ -71,7 +71,7 @@ class Sanitizers {
 		'mvs_default_privacy'        => array( 'public', 'members', 'private' ),
 		'mvs_duplicate_action'       => array( 'warn', 'skip', 'allow' ),
 		'mvs_storage_driver'         => array( 'local', 's3', 'bunnycdn', 'r2', 'dospaces' ),
-		'mvs_thumbnail_style'        => array( 'square', 'original' ),
+		'mvs_thumbnail_style'        => array( 'square', 'original', 'list' ),
 		'mvs_thumbnail_size'         => array( 'medium', 'large', 'full' ),
 		'mvs_lightbox_image_source'  => array( 'original', 'large', 'medium', 'auto' ),
 		'mvs_grid_columns'           => array( 2, 3, 4, 5 ),

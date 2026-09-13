@@ -94,9 +94,6 @@ const searchAborters = new WeakMap();
 
 const { state } = store( 'mvs/explore-feed', {
 	state: {
-		get isMasonry() {
-			return getContext().layout === 'masonry';
-		},
 		get isActiveFilter() {
 			const itemCtx = getContext();
 			return itemCtx.filterValue === getContext().filter;

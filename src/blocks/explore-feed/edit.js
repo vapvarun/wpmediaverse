@@ -17,6 +17,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						label={ __( 'Layout', 'wpmediaverse' ) }
 						value={ layout }
 						options={ [
+							{ label: __( 'Site default', 'wpmediaverse' ), value: '' },
 							{ label: __( 'Grid', 'wpmediaverse' ), value: 'grid' },
 							{ label: __( 'Masonry', 'wpmediaverse' ), value: 'masonry' },
 							{ label: __( 'List', 'wpmediaverse' ), value: 'list' },
