@@ -1043,7 +1043,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$rows = (array) $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d",
+				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC, idx.media_id DESC LIMIT %d OFFSET %d",
 				...array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) )
 			),
 			ARRAY_A
@@ -1759,7 +1759,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at, folder_id, drive_type, drive_id
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -1857,7 +1857,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -2089,7 +2089,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -4019,7 +4019,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$items = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC, media_id DESC LIMIT %d OFFSET %d",
 				...array_merge( $params, array( $per_page, $offset ) )
 			),
 			ARRAY_A

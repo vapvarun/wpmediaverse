@@ -155,7 +155,7 @@ class FavoriteService {
 
 		$items = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT f.media_id, f.collection_id, f.created_at FROM {$table} f{$join} WHERE {$where} ORDER BY {$columns[ $orderby ]} {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT f.media_id, f.collection_id, f.created_at FROM {$table} f{$join} WHERE {$where} ORDER BY {$columns[ $orderby ]} {$order}, f.id {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...$params
 			),
 			ARRAY_A

@@ -201,8 +201,23 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * gets a token-bearing URL that flows through the gated uploads serve
 	 * endpoint, OR an empty string. Never the raw varchar.
 	 */
+	/**
+	 * This site's own uploads base.
+	 *
+	 * The signing guards below assert a stored URL is never handed back raw.
+	 * That only means anything when the URL IS this site's uploads folder:
+	 * `is_cloud_hosted_url()` compares against `wp_upload_dir()['baseurl']`, so
+	 * a hardcoded host reads as local only where WP_TESTS_DOMAIN matches it,
+	 * and as an external CDN everywhere else - where returning it unsigned is
+	 * correct behaviour and the guard fails against working code.
+	 * Basecamp 10298570514.
+	 */
+	private function uploads_url(): string {
+		return trailingslashit( wp_upload_dir()['baseurl'] ) . 'wpmediaverse/';
+	}
+
 	public function test_get_file_url_returns_signed_or_empty_never_raw(): void {
-		$raw_url  = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/raw.jpg';
+		$raw_url  = $this->uploads_url() . '2026/05/raw.jpg';
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Signed-URL Contract',
@@ -238,7 +253,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * endpoint, OR an empty string. Never the raw varchar.
 	 */
 	public function test_get_thumb_keys_return_signed_or_empty_never_raw(): void {
-		$raw_thumb = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/thumb-large.jpg';
+		$raw_thumb = $this->uploads_url() . '2026/05/thumb-large.jpg';
 		$media_id  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Thumb-URL Contract',
@@ -351,7 +366,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 				'title'       => 'broadcast contract',
 				'post_author' => $this->admin_id,
 				'media_type'  => 'image',
-				'file_url'    => 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/broadcast.jpg',
+				'file_url'    => $this->uploads_url() . '2026/05/broadcast.jpg',
 			)
 		);
 

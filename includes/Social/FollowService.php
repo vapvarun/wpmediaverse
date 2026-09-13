@@ -165,7 +165,7 @@ class FollowService {
 
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT follower_id FROM {$wpdb->prefix}mvs_follows WHERE following_id = %d AND status = 'active' ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				"SELECT follower_id FROM {$wpdb->prefix}mvs_follows WHERE following_id = %d AND status = 'active' ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d",
 				$user_id,
 				$per_page,
 				$offset
@@ -202,7 +202,7 @@ class FollowService {
 
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				"SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d",
 				$user_id,
 				$per_page,
 				$offset
