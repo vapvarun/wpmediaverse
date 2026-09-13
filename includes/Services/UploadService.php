@@ -339,6 +339,15 @@ class UploadService {
 		// uploads would be forced to the public default and become viewable by
 		// anyone. It is the most restrictive level (participants + owner only),
 		// so honouring it can never widen access.
+		// The SITE default is not user input and must never break an upload. It
+		// comes from an option plus the mvs_default_privacy filter, neither of
+		// which is validated, so a bogus stored value or a filter typo would
+		// otherwise 400 every upload on the site. It falls back to the tightest
+		// level instead - the same call Pro's document sanitizer makes.
+		if ( ! in_array( $default_privacy, PrivacyService::supported_levels(), true ) ) {
+			$default_privacy = 'private';
+		}
+
 		if ( 'dm' === $requested_privacy ) {
 			$privacy = 'dm';
 		} elseif ( $allow_user_privacy && '' !== $requested_privacy ) {
@@ -349,8 +358,27 @@ class UploadService {
 		// Reject unknown privacy values so a typo or hostile input cannot slip
 		// through. The vocabulary is PrivacyService's, not a second copy here —
 		// the copy was the bug on the update route, which had no list at all.
+		//
+		// FAIL CLOSED, not to the site default. Substituting the default meant an
+		// unrecognised level was stored as whatever the site publishes with -
+		// usually 'public' - so a safety field guessed toward the most open
+		// setting and said nothing. Pro already states the principle for exactly
+		// this decision, in Sanitizers::sanitize_documents_default_privacy():
+		// "Falls back to the tightest value, not the nearest one: guessing wrong
+		// here publishes a file somebody expected to be private."
+		//
+		// The update route (MediaController::update_item) has always answered a
+		// bad level with a 400 rather than guessing. Create now matches it: a
+		// client sending a level this site does not support has a bug, and the
+		// honest answer is to say so, not to publish. Basecamp 10297839180.
 		if ( ! in_array( $privacy, PrivacyService::supported_levels(), true ) ) {
-			$privacy = $default_privacy;
+			// Only ever reached for a level the CLIENT sent - the site default is
+			// already sanitised above - so answering 400 blames the right party.
+			return new \WP_Error(
+				'mvs_privacy_unsupported',
+				__( 'That privacy level is not available on this site.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
 		}
 
 		// WHICH DRIVE this lands on. Resolved BEFORE the file is stored so a

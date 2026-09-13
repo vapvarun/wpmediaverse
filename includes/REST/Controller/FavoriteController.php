@@ -291,8 +291,11 @@ class FavoriteController extends WP_REST_Controller {
 		$mvs_total = max( 0, (int) $result['total'] - $mvs_filtered );
 
 		$response = rest_ensure_response( $enriched );
-		$response->header( 'X-WP-Total', $mvs_total );
-		$response->header( 'X-WP-TotalPages', $per_page > 0 ? (int) ceil( $mvs_total / $per_page ) : 0 );
+		// Cast at the call site: header() takes a string, and both values are
+		// computed ints. Two baselined int-given errors lived here; casting
+		// removes them rather than carrying the ignore forward.
+		$response->header( 'X-WP-Total', (string) $mvs_total );
+		$response->header( 'X-WP-TotalPages', (string) ( $per_page > 0 ? (int) ceil( $mvs_total / $per_page ) : 0 ) );
 
 		return $response;
 	}

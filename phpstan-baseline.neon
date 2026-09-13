@@ -371,11 +371,6 @@ parameters:
 			path: includes/REST/Controller/CommentController.php
 
 		-
-			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
-			count: 2
-			path: includes/REST/Controller/FavoriteController.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:unfollow_user\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
 			count: 1
 			path: includes/REST/Controller/FollowController.php

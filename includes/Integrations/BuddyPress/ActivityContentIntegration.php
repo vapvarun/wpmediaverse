@@ -188,7 +188,9 @@ class ActivityContentIntegration {
 	 * @return string Enhanced content.
 	 */
 	/**
-	 * Remove <img> tags pointing at files in our own uploads folder that no
+	 * Remove <img> tags pointing directly at our own uploads folder.
+	 *
+	 * Was: only tags whose file no
 	 * longer exist, along with the anchor wrapping them.
 	 *
 	 * Scoped to wp-content/uploads/wpmediaverse/ on this site so it can never
@@ -202,9 +204,8 @@ class ActivityContentIntegration {
 	 * @return string
 	 */
 	private function drop_missing_upload_images( string $content ): string {
-		$uploads = wp_get_upload_dir();
+		$uploads  = wp_get_upload_dir();
 		$base_url = trailingslashit( $uploads['baseurl'] ) . 'wpmediaverse/';
-		$base_dir = trailingslashit( $uploads['basedir'] ) . 'wpmediaverse/';
 
 		if ( false === strpos( $content, $base_url ) ) {
 			return $content;
@@ -212,22 +213,38 @@ class ActivityContentIntegration {
 
 		return (string) preg_replace_callback(
 			'#(?:<a\b[^>]*>\s*)?<img\b[^>]*\bsrc=["\']([^"\']+)["\'][^>]*>(?:\s*</a>)?#i',
-			static function ( $m ) use ( $base_url, $base_dir ) {
+			static function ( $m ) use ( $base_url ) {
 				if ( 0 !== strpos( $m[1], $base_url ) ) {
 					return $m[0];
 				}
 
 				$relative = substr( $m[1], strlen( $base_url ) );
 				$relative = explode( '?', $relative )[0];
-				$path     = $base_dir . ltrim( $relative, '/' );
 
 				// Containment: a traversal in stored content must never let this
-				// stat outside the plugin's own upload folder.
+				// reach outside the plugin's own upload folder.
 				if ( false !== strpos( $relative, '..' ) ) {
 					return '';
 				}
 
-				return file_exists( $path ) ? $m[0] : '';
+				// EXISTENCE IS THE WRONG QUESTION, and it is why the first fix
+				// bounced: the file being on disk says nothing about whether a
+				// browser can fetch it. Activator::create_upload_protection()
+				// writes "Deny from all" over the whole wpmediaverse upload dir,
+				// so EVERY direct URL into it 403s - present or not. The member
+				// still saw a broken image; the guard just kept the tag.
+				//
+				// Nor can these be rewritten to a working URL. Both
+				// SignedUrlService::generate() and ::generate_thumbnail() take a
+				// media_id, and the whole premise of these legacy activities is
+				// that no id exists anywhere in the markup - which is why every
+				// id-keyed guard the plugin has finds nothing to check.
+				//
+				// So the tag goes, whatever the filesystem says. Anything the
+				// viewer CAN see is rendered by the id-keyed path below, which
+				// routes through MediaUrl and gets a signed URL.
+				// Basecamp 10290384337.
+				return '';
 			},
 			$content
 		);
