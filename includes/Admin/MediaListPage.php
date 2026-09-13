@@ -176,14 +176,20 @@ class MediaListPage {
 							<select name="media_type">
 								<option value=""><?php esc_html_e( 'All Types', 'wpmediaverse' ); ?></option>
 								<?php
-								// Document is offered only when something can actually show
-								// one, OR when orphaned document rows still exist so the owner
-								// can find and manage them. Free deliberately 404s the document
-								// permalink (TemplateLoader::serve_single_media), so listing the
-								// filter unconditionally handed the owner a dead end.
-								// Basecamp 10280356655.
+								// Documents are NOT offered here. They have their own menu
+								// (page=mvs-documents), their own categorisation, and their own
+								// listing that renders them as rows with a type chip - a media
+								// grid draws pictures and a PDF has none. Owner, 2026-09-13:
+								// "Documents categorization is different as we already have
+								// different menu for it, do not mix files with media." Same
+								// call as Activator's "documents get their OWN listing page,
+								// not a corner of Explore" (2026-08-09). Basecamp 10280356655.
+								//
+								// The one exception is an owner who ALREADY has the filter
+								// applied: leaving it out of the list then would blank their
+								// current view with no way back to it.
 								$mvs_types = array( 'image', 'video', 'audio' );
-								if ( \WPMediaVerse\Core\Plugin::documents_enabled() || 'document' === $type_filter ) {
+								if ( 'document' === $type_filter ) {
 									$mvs_types[] = 'document';
 								}
 								?>
