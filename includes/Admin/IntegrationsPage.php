@@ -48,7 +48,7 @@ class IntegrationsPage {
 			'mvs-admin-integrations',
 			MVS_PLUGIN_URL . 'assets/css/admin/integrations.css',
 			array( 'mvs-admin' ),
-			MVS_VERSION
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/admin/integrations.css' )
 		);
 	}
 

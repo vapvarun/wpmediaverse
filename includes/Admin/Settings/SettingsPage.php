@@ -481,7 +481,7 @@ class SettingsPage {
 			'mvs-settings-nav',
 			MVS_PLUGIN_URL . 'assets/js/settings-nav.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/settings-nav.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -494,7 +494,7 @@ class SettingsPage {
 			'mvs-ai-provider-fields',
 			MVS_PLUGIN_URL . 'assets/js/admin/ai-provider-fields.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/ai-provider-fields.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',

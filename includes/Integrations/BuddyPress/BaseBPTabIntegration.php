@@ -379,7 +379,7 @@ abstract class BaseBPTabIntegration {
 			'mvs-bp-tab-upload',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-tab-upload.js',
 			array( 'mvs-rest', 'mvs-dropzone' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/frontend/bp-tab-upload.js' ),
 			array( 'in_footer' => true )
 		);
 		wp_localize_script(

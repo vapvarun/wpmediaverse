@@ -407,14 +407,25 @@ class CollectionController extends WP_REST_Controller {
 		// so the list endpoint the app + dashboard consume reported "0 items"
 		// beside a populated cover.
 		$smart_items = array();
+		$manual_ids  = array();
 		if ( 'smart' === $collection_type ) {
 			$resolved    = $this->collections->resolve( $post->ID, $include_items ? $per_page : 5, $page, $viewer );
 			$smart_items = $resolved['items'];
 			$total       = (int) $resolved['total'];
 			$cover_ids   = wp_list_pluck( $smart_items, 'media_id' );
 		} else {
-			$cover_ids = $this->manual_cover_ids( $post->ID );
-			$total     = $this->count_manual_items( $post->ID );
+			// One gated pass feeds the cover, the count AND the item list, so
+			// all three agree. This ran three separate queries - two of them
+			// raw SQL that skipped both the viewer gate and the
+			// mvs_collection_media_ids filter - so a collection could report
+			// more items than it would show, and draw its cover from media the
+			// viewer cannot open. Basecamp 10298492555.
+			// ponytail: linear scan, one privacy check per row (request-cached).
+			// Fine at the sizes this endpoint serves; needs a batched gate if
+			// manual collections ever run to thousands.
+			$manual_ids = $this->manual_visible_ids( $post->ID );
+			$cover_ids  = array_slice( $manual_ids, 0, 5 );
+			$total      = count( $manual_ids );
 		}
 
 		$data = array(
@@ -441,12 +452,24 @@ class CollectionController extends WP_REST_Controller {
 				$data['items'] = $smart_items;
 			} else {
 				global $wpdb;
-				$data['favorites'] = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$mvs_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prepare(
 						"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC",
 						$post->ID
 					),
 					ARRAY_A
+				);
+
+				// Keep created_at (the gated helper returns ids only) but show
+				// only the rows $total counted, so the list matches the number.
+				$mvs_visible       = array_flip( $manual_ids );
+				$data['favorites'] = array_values(
+					array_filter(
+						(array) $mvs_rows,
+						static function ( $mvs_row ) use ( $mvs_visible ) {
+							return isset( $mvs_visible[ (int) $mvs_row['media_id'] ] );
+						}
+					)
 				);
 			}
 		}
@@ -504,41 +527,21 @@ class CollectionController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Newest manual-collection member media IDs, for cover selection.
+	 * Manual-collection member media IDs this viewer may see, newest first.
 	 *
 	 * @param int $collection_id Collection post ID.
-	 * @return int[] Up to five media IDs, most recent first.
+	 * @return int[] Visible media IDs, most recent first.
 	 */
-	private function manual_cover_ids( int $collection_id ): array {
-		global $wpdb;
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT 5", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$collection_id
-			)
-		);
+	private function manual_visible_ids( int $collection_id ): array {
+		// has() before get(): the container throws on an unregistered key and
+		// never returns null, so a null check here would be dead code.
+		$mvs_container = \WPMediaVerse\Core\Plugin::container();
 
-		/** This filter is documented in includes/Social/FavoriteService.php */
-		return apply_filters( 'mvs_collection_media_ids', array_map( 'intval', $ids ), $collection_id, 5 );
-	}
+		if ( ! $mvs_container->has( 'favorites' ) ) {
+			return array();
+		}
 
-	/**
-	 * Count the members of a manual collection.
-	 *
-	 * Free-side source of truth; the Pro `mvs_collection_response` filter merges
-	 * its own table and overrides this for combo installs.
-	 *
-	 * @param int $collection_id Collection post ID.
-	 * @return int Distinct member count.
-	 */
-	private function count_manual_items( int $collection_id ): int {
-		global $wpdb;
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT media_id) FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$collection_id
-			)
-		);
+		return $mvs_container->get( 'favorites' )->get_collection_media_ids( $collection_id, 0 );
 	}
 
 	/**

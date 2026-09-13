@@ -126,7 +126,7 @@ class SetupWizard {
 			'mvs-admin',
 			MVS_PLUGIN_URL . 'assets/css/admin.css',
 			array(),
-			MVS_VERSION
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/admin.css' )
 		);
 
 		wp_enqueue_script(
@@ -144,7 +144,7 @@ class SetupWizard {
 			'mvs-icons',
 			MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
 			array( 'lucide' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/icons.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',

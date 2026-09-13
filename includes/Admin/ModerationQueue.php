@@ -166,7 +166,7 @@ class ModerationQueue {
 			'mvs-admin-moderation-queue',
 			MVS_PLUGIN_URL . 'assets/js/admin/moderation-queue.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/moderation-queue.js' ),
 			array( 'in_footer' => true )
 		);
 

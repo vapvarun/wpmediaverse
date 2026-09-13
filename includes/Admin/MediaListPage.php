@@ -33,7 +33,7 @@ class MediaListPage {
 			'mvs-admin-media-list',
 			MVS_PLUGIN_URL . 'assets/js/admin/media-list.js',
 			array( 'mvs-admin-confirm', 'mvs-toast' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/media-list.js' ),
 			array( 'in_footer' => true )
 		);
 		wp_localize_script(

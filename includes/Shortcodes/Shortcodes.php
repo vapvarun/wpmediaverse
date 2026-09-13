@@ -492,7 +492,7 @@ class Shortcodes {
 				'mvs-block-' . $block_name,
 				MVS_PLUGIN_URL . 'build/blocks/' . $block_name . '/style-index.css',
 				array(),
-				filemtime( $block_style )
+				\WPMediaVerse\Core\Plugin::asset_version( 'build/blocks/' . $block_name . '/style-index.css' )
 			);
 		}
 		// Enqueue the block's view script (Interactivity API store).
@@ -501,7 +501,7 @@ class Shortcodes {
 			$asset_file = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/view.asset.php';
 			$asset      = file_exists( $asset_file ) ? require $asset_file : array(
 				'dependencies' => array(),
-				'version'      => filemtime( $block_view ),
+				'version'      => \WPMediaVerse\Core\Plugin::asset_version( 'build/blocks/' . $block_name . '/view.js' ),
 			);
 			wp_enqueue_script_module(
 				'mvs-block-' . $block_name . '-view',

@@ -60,7 +60,7 @@ class OverviewPage {
 				'mvs-admin',
 				MVS_PLUGIN_URL . 'assets/css/admin.css',
 				array(),
-				MVS_VERSION
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/admin.css' )
 			);
 
 			wp_enqueue_script(
@@ -78,7 +78,7 @@ class OverviewPage {
 				'mvs-icons',
 				MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
 				array( 'lucide' ),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/icons.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -89,7 +89,7 @@ class OverviewPage {
 				'mvs-toast',
 				MVS_PLUGIN_URL . 'assets/js/admin/toast.js',
 				array(),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/toast.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -103,7 +103,7 @@ class OverviewPage {
 				'mvs-admin-confirm',
 				MVS_PLUGIN_URL . 'assets/js/frontend/mvs-confirm.js',
 				array(),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/frontend/mvs-confirm.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -113,7 +113,7 @@ class OverviewPage {
 				'mvs-admin-confirm-links',
 				MVS_PLUGIN_URL . 'assets/js/admin/confirm-links.js',
 				array( 'mvs-admin-confirm' ),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/confirm-links.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -134,7 +134,7 @@ class OverviewPage {
 			'mvs-admin-overview',
 			MVS_PLUGIN_URL . 'assets/js/admin/overview.js',
 			array( 'mvs-admin-confirm', 'wp-api-fetch' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/overview.js' ),
 			array( 'in_footer' => true )
 		);
 

@@ -77,13 +77,13 @@ class CollectionMetaBox {
 			'mvs-admin-collection-metabox',
 			MVS_PLUGIN_URL . 'assets/css/collection-metabox.css',
 			array(),
-			MVS_VERSION
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/collection-metabox.css' )
 		);
 		wp_enqueue_script(
 			'mvs-admin-collection-metabox',
 			MVS_PLUGIN_URL . 'assets/js/admin/collection-metabox.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/collection-metabox.js' ),
 			array( 'in_footer' => true )
 		);
 		wp_localize_script(
