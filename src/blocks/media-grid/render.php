@@ -19,10 +19,16 @@ defined( 'ABSPATH' ) || exit;
 // help text, which the frontend previously never honored.
 $mvs_grid_columns_attr = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 0;
 $columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : absint( get_option( 'mvs_grid_columns', 3 ) );
-// The site's Default Layout, resolved through the one emitter every grid
-// uses. This block has no layout attribute of its own, so it always
-// follows the site setting. Basecamp 10297763824.
-$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+// Per-instance layout override; '' inherits the site's Default Layout, which
+// is why the attribute's default is '' and not 'grid' - "not set" and
+// "deliberately grid" have to stay distinguishable. Assigned BEFORE the line
+// below that consumes it: defined after, it was always null, so the override
+// silently did nothing and every render emitted a warning.
+// Basecamp 10297764235.
+$mvs_layout_override = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : '';
+
+// Resolved through the one emitter every grid uses. Basecamp 10297763824.
+$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class( $mvs_layout_override );
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
 $category       = isset( $attributes['category'] ) ? sanitize_text_field( $attributes['category'] ) : '';

@@ -20,6 +20,10 @@
 		}
 	},
 	"attributes": {
+		"layout": {
+			"type": "string",
+			"default": ""
+		},
 		"columns": {
 			"type": "number"
 		},

@@ -1291,6 +1291,23 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_gallery_layout_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "string $layout",
+        "array $args"
+      ],
+      "where": "includes/Shortcodes/Shortcodes.php:126",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Frontend/Layouts/LayoutManager.php"
+        }
+      ]
+    },
+    {
       "name": "mvs_grid_thumb_size_key",
       "type": "filter",
       "args_count": 2,

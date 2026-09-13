@@ -55,6 +55,10 @@ class Shortcodes {
 				'orderby'  => 'date',
 				'order'    => 'desc',
 				'user_id'  => 0,
+				// '' inherits the site's Default Layout. NOT 'grid': "not set"
+				// and "deliberately grid" have to stay distinguishable, the
+				// same reason the explore-feed block's default is empty.
+				'layout'   => '',
 			),
 			$atts,
 			'mvs_gallery'
@@ -89,7 +93,68 @@ class Shortcodes {
 			'userId'        => $mvs_resolved_user_id,
 		);
 
+		$mvs_layout = sanitize_text_field( $atts['layout'] );
+
+		// A LAYOUT THIS GRID CANNOT DRAW ITSELF gets offered to whoever can.
+		//
+		// Free knows five layout spellings - resolve_grid_layout() maps
+		// grid/masonry/list/square/original - and draws those itself. Pro's
+		// platform layouts (pinterest, flickr, dribbble, instagram) live behind
+		// a private MODES map that Free cannot read, so this does not look up
+		// which slugs exist; it offers the slug and treats markup coming back
+		// as "handled". An unknown slug simply falls through to the grid rather
+		// than erroring, which is what an owner who typos one should get.
+		//
+		// This closes the gap in Basecamp 10297764235: the grid path could
+		// filter by tag but not choose a layout, and the layout paths could not
+		// filter. Pro's render_feed() already accepts filterTag/filterCategory,
+		// so nothing new had to be built there - it was only unreachable.
+		if ( '' !== $mvs_layout && ! self::is_core_grid_layout( $mvs_layout ) ) {
+			/**
+			 * Render a gallery in a layout Free does not provide.
+			 *
+			 * Answered by Pro. Default '' means "not mine" and Free falls back
+			 * to its own grid below.
+			 *
+			 * @since 2.4.2
+			 *
+			 * @param string $html   Rendered markup. Default ''.
+			 * @param string $layout Requested layout slug.
+			 * @param array  $args   Resolved query args: tag, category, type,
+			 *                       userId, perPage, orderBy, order.
+			 */
+			$mvs_html = (string) apply_filters( 'mvs_gallery_layout_html', '', $mvs_layout, $block_attrs );
+
+			if ( '' !== trim( $mvs_html ) ) {
+				// Pro escapes each field as it builds the markup.
+				return $mvs_html;
+			}
+		}
+
+		// Free's own layouts ride along on the block, which already resolves
+		// them through the one emitter every grid uses.
+		$block_attrs['layout'] = $mvs_layout;
+
 		return $this->render_block_template( 'media-grid', $block_attrs );
+	}
+
+	/**
+	 * Is this a layout Free draws itself?
+	 *
+	 * The five spellings resolve_grid_layout() understands. Anything else is
+	 * offered to an extension before falling back.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $layout Requested slug.
+	 * @return bool
+	 */
+	private static function is_core_grid_layout( string $layout ): bool {
+		return in_array(
+			strtolower( trim( $layout ) ),
+			array( 'grid', 'masonry', 'list', 'square', 'original' ),
+			true
+		);
 	}
 
 	/**
