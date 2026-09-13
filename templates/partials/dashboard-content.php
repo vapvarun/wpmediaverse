@@ -1307,6 +1307,30 @@ wp_interactivity_state(
 						data-wp-on--input="actions.setCollectionDesc" rows="2"></textarea>
 				</div>
 				<div class="mvs-field">
+					<label><?php esc_html_e( 'Visibility', 'wpmediaverse' ); ?></label>
+					<select data-wp-bind--value="state.collectionModal.privacy"
+						data-wp-on--change="actions.setCollectionPrivacy">
+						<?php
+						// Two static options, rendered server-side. NOT
+						// privacy_options() - that emits all four levels
+						// privacy_choices() offers, and a collection has two.
+						//
+						// No unlisted-value fallback either, unlike the edit
+						// modal: get_privacy() coerces anything that is not
+						// public or members back to public, so a level the
+						// picker cannot show is not reachable. Copying that
+						// machinery here would be solving a problem this field
+						// does not have. Basecamp 10298612348.
+						?>
+						<option value="public"><?php esc_html_e( 'Public: anyone can see it', 'wpmediaverse' ); ?></option>
+						<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+					</select>
+					<p class="mvs-field-hint">
+						<?php esc_html_e( 'Controls who can open the collection itself. Each item inside keeps its own privacy.', 'wpmediaverse' ); ?>
+					</p>
+				</div>
+
+				<div class="mvs-field">
 					<label><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></label>
 					<?php
 					// Manual collections are filled from the "Save" button on a media

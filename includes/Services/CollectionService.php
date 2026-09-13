@@ -62,6 +62,75 @@ class CollectionService {
 	 * @param int $curator_id The user doing the adding.
 	 * @return bool
 	 */
+	/**
+	 * Post-meta key holding a collection's privacy.
+	 *
+	 * Deliberately the SAME key albums use, referenced rather than retyped so
+	 * the two cannot drift. PrivacyService::check_access() resolves both
+	 * mvs_album and mvs_collection through one accessor, so a collection that
+	 * writes this key is gated by machinery that already exists - there is no
+	 * second read path to build. Basecamp 10298612348.
+	 *
+	 * @since 2.4.2
+	 * @var string
+	 */
+	public const PRIVACY_META = AlbumService::PRIVACY_META;
+
+	/**
+	 * The only two levels a collection may hold.
+	 *
+	 * NOT TemplateHelpers::privacy_choices(), which offers four (public,
+	 * members, friends when BuddyPress is active, private). Owner, 2026-09-13:
+	 * "all collection are meant to be public or login user specific, we should
+	 * not need too many privacy options." A collection is a shareable, curated
+	 * surface; friends-only and only-me are levels for a personal item, not for
+	 * something assembled to be shown.
+	 *
+	 * @since 2.4.2
+	 * @var string[]
+	 */
+	public const PRIVACY_LEVELS = array( 'public', 'members' );
+
+	/**
+	 * A collection's privacy level.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int $collection_id Collection post ID.
+	 * @return string 'public' or 'members'; 'public' when nothing is stored.
+	 */
+	public function get_privacy( int $collection_id ): string {
+		$stored = (string) get_post_meta( $collection_id, self::PRIVACY_META, true );
+
+		return in_array( $stored, self::PRIVACY_LEVELS, true ) ? $stored : 'public';
+	}
+
+	/**
+	 * Store a collection's privacy.
+	 *
+	 * NO CASCADE, and that is the difference from AlbumService::set_privacy().
+	 * An album clamps the privacy of the items inside it, because those items
+	 * are the owner's own uploads and #10149366902 showed an album turned
+	 * private was leaving its contents public. A collection is the opposite
+	 * case: it is a curated view of OTHER people's public media, so cascading
+	 * would rewrite a stranger's photo because a curator changed a collection
+	 * they happen to own. The collection's own visibility is the only thing
+	 * this touches. Basecamp 10298612348.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int    $collection_id Collection post ID.
+	 * @param string $privacy       Desired level; anything else becomes 'public'.
+	 * @return string The level actually stored.
+	 */
+	public function set_privacy( int $collection_id, string $privacy ): string {
+		$privacy = in_array( $privacy, self::PRIVACY_LEVELS, true ) ? $privacy : 'public';
+
+		update_post_meta( $collection_id, self::PRIVACY_META, $privacy );
+
+		return $privacy;
+	}
+
 	public function may_contain( int $media_id, int $curator_id ): bool {
 		if ( $media_id <= 0 || $curator_id <= 0 ) {
 			return false;

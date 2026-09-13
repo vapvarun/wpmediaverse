@@ -75,6 +75,13 @@ class CollectionController extends WP_REST_Controller {
 					'permission_callback' => function () {
 						return is_user_logged_in();
 					},
+					'args'                => array(
+						'privacy' => array(
+							'type'    => 'string',
+							'enum'    => CollectionService::PRIVACY_LEVELS,
+							'default' => 'public',
+						),
+					),
 				),
 			)
 		);
@@ -99,6 +106,14 @@ class CollectionController extends WP_REST_Controller {
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
 					'permission_callback' => array( $this, 'owner_permissions_check' ),
+					'args'                => array(
+						// No default: an edit that does not mention privacy must
+						// leave it alone, which a default would silently undo.
+						'privacy' => array(
+							'type' => 'string',
+							'enum' => CollectionService::PRIVACY_LEVELS,
+						),
+					),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
@@ -236,6 +251,9 @@ class CollectionController extends WP_REST_Controller {
 			return $post_id;
 		}
 
+		// Visibility. Two levels only - see CollectionService::PRIVACY_LEVELS.
+		$this->collections->set_privacy( $post_id, (string) ( $request->get_param( 'privacy' ) ?? 'public' ) );
+
 		// Set smart collection rules if provided.
 		$rules = $request->get_param( 'rules' );
 		if ( is_array( $rules ) && ! empty( $rules ) ) {
@@ -271,6 +289,13 @@ class CollectionController extends WP_REST_Controller {
 		$description = $request->get_param( 'description' );
 		if ( null !== $description ) {
 			$update_data['post_content'] = wp_kses_post( $description );
+		}
+
+		// Only when the caller actually sent it, so an edit of the title alone
+		// does not reset visibility to the default.
+		$privacy = $request->get_param( 'privacy' );
+		if ( null !== $privacy ) {
+			$this->collections->set_privacy( (int) $collection_id, (string) $privacy );
 		}
 
 		if ( count( $update_data ) > 1 ) {
@@ -439,6 +464,7 @@ class CollectionController extends WP_REST_Controller {
 			'cover_url'   => $this->cover_from_media_ids( $cover_ids ),
 			'is_owner'    => $is_owner,
 			'can_edit'    => $can_edit,
+			'privacy'     => $this->collections->get_privacy( $post->ID ),
 			'total'       => $total,
 		);
 

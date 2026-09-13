@@ -268,6 +268,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			collectionId: 0,
 			title: '',
 			description: '',
+			// Two levels only. The vocabulary lives in PHP
+			// (CollectionService::PRIVACY_LEVELS) and the picker renders both
+			// options server-side, so the store just carries the chosen value.
+			privacy: 'public',
 			collectionType: 'smart',
 			rules: [],
 			saving: false,
@@ -1890,6 +1894,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collectionModal.collectionId = 0;
 			state.collectionModal.title = '';
 			state.collectionModal.description = '';
+			state.collectionModal.privacy = 'public';
 			state.collectionModal.collectionType = 'smart';
 			state.collectionModal.rules = [ { key: '', value: '', index: 0 } ];
 			state.collectionModal.saving = false;
@@ -1907,6 +1912,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collectionModal.collectionId = id;
 			state.collectionModal.title = item.title || '';
 			state.collectionModal.description = item.description || '';
+			state.collectionModal.privacy = item.privacy || 'public';
 			state.collectionModal.collectionType = item.type || 'manual';
 			state.collectionModal.rules = ( item.rules || [] ).map( ( r, i ) => ( { ...r, index: i } ) );
 			if ( state.collectionModal.rules.length === 0 && item.type === 'smart' ) {
@@ -1923,6 +1929,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		setCollectionTitle( event ) { state.collectionModal.title = event.target.value; },
 		setCollectionDesc( event ) { state.collectionModal.description = event.target.value; },
+		setCollectionPrivacy( event ) { state.collectionModal.privacy = event.target.value; },
 		setCollectionTypeManual() { state.collectionModal.collectionType = 'manual'; },
 		setCollectionTypeSmart() { state.collectionModal.collectionType = 'smart'; },
 
@@ -2025,6 +2032,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const payload = {
 				title: state.collectionModal.title,
 				description: state.collectionModal.description,
+				privacy: state.collectionModal.privacy,
 			};
 
 			const validRules = state.collectionModal.rules
