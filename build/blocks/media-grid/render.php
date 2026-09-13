@@ -47,14 +47,40 @@ $index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )
 $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 // Build WHERE/JOIN clauses.
-// media_type != '' excludes the privacy-only stub rows that albums/collections
-// (mvs_album / mvs_collection CPTs) leave in mvs_media_index — those rows carry
-// only a privacy value with media_type left empty (see PrivacyService), and
-// without this filter they surfaced as broken/empty tiles in the gallery grid.
-// Real media always has an image/video/audio/document type.
-$where  = "WHERE m.status = 'publish' AND m.media_type != ''";
+// A POSITIVE list, not `media_type != ''`.
+//
+// The exclusion kept out the privacy-only stub rows albums/collections leave in
+// mvs_media_index, but it let every OTHER type through - so an unfiltered
+// gallery served documents beside photos. On the QA baseline that is 136
+// documents and 1 legacy_document against 80 images, 3 videos and 1 audio: the
+// files would dominate a grid built for thumbnails, each rendering as a tile
+// with no picture in it.
+//
+// Owner, 2026-09-13: "Documents categorization is different as we already have
+// different menu for it, do not mix files with media." Same call as
+// Activator's "documents get their OWN listing page, not a corner of Explore".
+//
+// MediaTypes::in_clause() exists for exactly this and says so: an exclusion
+// answers "what do I not want today", an inclusion answers "what is this
+// surface for" - the question that stays right when a type is added. An
+// explicit type= (including document) still overrides below, so a deliberate
+// file grid is still possible. Escape hatch: mvs_media_library_types.
+// Basecamp 10298650705.
+if ( $media_type ) {
+	// An explicit type REPLACES the default - type="document" is still a
+	// document grid - so it is decided here rather than narrowed afterwards.
+	$mvs_type_sql    = 'm.media_type = %s';
+	$mvs_type_params = array( $media_type );
+} else {
+	list( $mvs_type_sql, $mvs_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause(
+		\WPMediaVerse\Core\MediaTypes::library_types(),
+		'm.media_type'
+	);
+}
+
+$where  = "WHERE m.status = 'publish' AND {$mvs_type_sql}";
 $joins  = '';
-$params = array();
+$params = $mvs_type_params;
 
 // Viewer-scoped privacy gate (anon: public only; member: public + members +
 // own; moderator: all). Without this the grid rendered every private/members
@@ -67,11 +93,6 @@ $params  = array_merge( $params, $mvs_priv_params );
 if ( $mvs_user_id > 0 ) {
 	$where   .= ' AND m.post_author = %d';
 	$params[] = $mvs_user_id;
-}
-
-if ( $media_type ) {
-	$where   .= ' AND m.media_type = %s';
-	$params[] = $media_type;
 }
 
 // Category filter via term_relationships.
