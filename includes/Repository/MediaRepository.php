@@ -3091,6 +3091,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *                                     hide flagged/pending items.
 	 *     @type int    $limit             Max rows. Default 20.
 	 *     @type int    $offset            Pagination offset. Default 0.
+	 *     @type array  $media_types       Which library. Default null, meaning
+	 *                                     query()'s own default. Pass
+	 *                                     MediaTypes::DOCUMENTS for a document
+	 *                                     listing.
 	 * }
 	 * @return array<int, array> Numerically-indexed list of media rows.
 	 */
@@ -3106,6 +3110,13 @@ class MediaRepository implements MediaRepositoryInterface {
 				'order'             => 'DESC',
 				'viewer_id'         => null,  // null => get_current_user_id()
 				'include_private'   => false, // owner/admin opt-in to see ALL
+				// null => let query() apply its own default (MEDIA_LIBRARY).
+				// This used to be absent entirely, so a caller asking for
+				// documents was handed images instead - silently, because an
+				// unknown key was dropped on the way to query(). Measured:
+				// query_by_author( media_types => ['document'] ) returned one
+				// row, of type image. Basecamp 10297845497.
+				'media_types'       => null,
 			)
 		);
 
@@ -3122,19 +3133,26 @@ class MediaRepository implements MediaRepositoryInterface {
 		// old discoverability via the `mvs_profile_privacy_levels` filter.
 		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
 
-		return $this->query(
-			array(
-				'author_id'         => $user_id,
-				'status'            => (string) $args['status'],
-				'moderation_status' => (string) $args['moderation_status'],
-				'limit'             => (int) $args['limit'],
-				'offset'            => (int) $args['offset'],
-				'orderby'           => (string) $args['orderby'],
-				'order'             => (string) $args['order'],
-				'privacy'           => $privacy,
-				'viewer_id'         => $viewer,
-			)
+		$query_args = array(
+			'author_id'         => $user_id,
+			'status'            => (string) $args['status'],
+			'moderation_status' => (string) $args['moderation_status'],
+			'limit'             => (int) $args['limit'],
+			'offset'            => (int) $args['offset'],
+			'orderby'           => (string) $args['orderby'],
+			'order'             => (string) $args['order'],
+			'privacy'           => $privacy,
+			'viewer_id'         => $viewer,
 		);
+
+		// Only when asked, so a caller that says nothing lists exactly what it
+		// listed before. count_visible_by_author() forwards it on the same
+		// terms - that is what keeps the two agreeing.
+		if ( null !== $args['media_types'] ) {
+			$query_args['media_types'] = (array) $args['media_types'];
+		}
+
+		return $this->query( $query_args );
 	}
 
 	/**
@@ -3208,30 +3226,73 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Count media visible to a viewer on an author's profile listing.
+	 * Count what a viewer is shown on an uploader's listing.
+	 *
+	 * "author" here is the MEMBER WHO UPLOADED, not a WP post author - the
+	 * whole index is keyed on post_author for storage reasons, and the name
+	 * follows the column. Renaming it is a public-surface change and belongs
+	 * in its own pass.
 	 *
 	 * Mirrors query_by_author()'s privacy-mode selection so profile tabs
 	 * count exactly the rows they list (Basecamp #9941246549 — the BP
 	 * profile media tab previously counted/listed members-only items for
 	 * logged-out visitors via its own raw SQL).
 	 *
-	 * @since 1.6.0
+	 * PRIVACY WAS THE ONLY THING IT MIRRORED. Every other filter the caller
+	 * gave its list - moderation above all - was absent here, so the number
+	 * above a grid counted rows the grid then dropped. Measured with two rows
+	 * held for moderation: count 23, list 21. It reads $args now, applies the
+	 * same defaults through the same parse as query_by_author(), and hands
+	 * them to the same query_count(). Pass the list's args and the two agree
+	 * by construction rather than by everyone remembering.
+	 * Basecamp 10297845497.
 	 *
-	 * @param int      $user_id   Author user ID.
+	 * @since 1.6.0
+	 * @since 2.4.2 Accepts $args, mirroring query_by_author().
+	 *
+	 * @param int      $user_id   Uploader user ID.
 	 * @param int|null $viewer_id Viewer user ID. Null = current user.
+	 * @param array    $args      Same shape as query_by_author()'s $args; the
+	 *                            filters that narrow WHICH rows are counted
+	 *                            (status, moderation_status, media_types,
+	 *                            include_private) are honoured. Paging and
+	 *                            ordering are meaningless for a count and are
+	 *                            ignored.
 	 * @return int
 	 */
-	public function count_visible_by_author( int $user_id, ?int $viewer_id = null ): int {
+	public function count_visible_by_author( int $user_id, ?int $viewer_id = null, array $args = array() ): int {
 		$viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 
-		return $this->query_count(
+		$args = wp_parse_args(
+			$args,
 			array(
-				'author_id' => $user_id,
-				'status'    => 'publish',
-				'privacy'   => $this->resolve_profile_privacy_mode( $user_id, $viewer ),
-				'viewer_id' => $viewer,
+				'status'            => 'publish',
+				'moderation_status' => '',
+				'media_types'       => null,
+				'include_private'   => false,
 			)
 		);
+
+		$count_args = array(
+			'author_id'         => $user_id,
+			'status'            => (string) $args['status'],
+			'moderation_status' => (string) $args['moderation_status'],
+			'privacy'           => $this->resolve_profile_privacy_mode(
+				$user_id,
+				$viewer,
+				! empty( $args['include_private'] )
+			),
+			'viewer_id'         => $viewer,
+		);
+
+		// Only when asked. Omitted, query_count() applies its own default, so
+		// a caller that says nothing keeps counting exactly what it counted
+		// before this parameter existed.
+		if ( null !== $args['media_types'] ) {
+			$count_args['media_types'] = (array) $args['media_types'];
+		}
+
+		return $this->query_count( $count_args );
 	}
 
 	/**
