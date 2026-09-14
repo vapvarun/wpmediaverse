@@ -1499,7 +1499,24 @@ body.dark-mode .mvs-skeleton::after {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: var(--mvs-grid-gap, 16px);
+    /* 4px, not the 16px the square grid uses, and the difference is not
+       cosmetic - it decides how many tiles fit a row.
+
+       A tile's flex-basis is `ratio * row-height`, so three landscape tiles
+       want 3 x 360 = 1080px. At a 1100px container the 16px gap made that
+       1080 + 32 = 1112 and the row wrapped to TWO tiles, which then stretched
+       to fill 1100 - displaying at aspect 2.13 against a natural 1.50 and
+       cropping 32% of each image's height. Missing by 12px cost a third of
+       the picture. At 4px it is 1080 + 8 = 1088, three tiles fit, and the
+       stretch is 1100/1080 - about 2%. Measured, not estimated.
+
+       Same value Pro's Flickr layout uses (--mvs-fl-gap), which is the same
+       technique and has the same arithmetic.
+
+       Still `var(--mvs-grid-gap, ...)`: the media-grid block emits that
+       property per instance from its Gap control, so an owner who sets a gap
+       deliberately still wins - only the DEFAULT changed. */
+    gap: var(--mvs-grid-gap, 4px);
 }
 
 .mvs-grid--original .mvs-grid-item {
