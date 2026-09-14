@@ -449,10 +449,10 @@ body.dark-mode {
 [data-bn-theme="dark"] .mvs-album-badge,
 [data-bx-mode="dark"] .mvs-album-badge,
 .dark-mode .mvs-album-badge,
-[data-theme="dark"] .mvs-album-badge .dashicons,
-[data-bn-theme="dark"] .mvs-album-badge .dashicons,
-[data-bx-mode="dark"] .mvs-album-badge .dashicons,
-.dark-mode .mvs-album-badge .dashicons,
+[data-theme="dark"] .mvs-album-badge .mvs-icon svg,
+[data-bn-theme="dark"] .mvs-album-badge .mvs-icon svg,
+[data-bx-mode="dark"] .mvs-album-badge .mvs-icon svg,
+.dark-mode .mvs-album-badge .mvs-icon svg,
 [data-theme="dark"] .mvs-grid-item-overlay,
 [data-bn-theme="dark"] .mvs-grid-item-overlay,
 [data-bx-mode="dark"] .mvs-grid-item-overlay,
@@ -460,10 +460,10 @@ body.dark-mode {
     color: var(--mvs-text);
 }
 
-[data-theme="dark"] .mvs-empty-state .dashicons,
-[data-bn-theme="dark"] .mvs-empty-state .dashicons,
-[data-bx-mode="dark"] .mvs-empty-state .dashicons,
-.dark-mode .mvs-empty-state .dashicons {
+[data-theme="dark"] .mvs-empty-state .mvs-icon svg,
+[data-bn-theme="dark"] .mvs-empty-state .mvs-icon svg,
+[data-bx-mode="dark"] .mvs-empty-state .mvs-icon svg,
+.dark-mode .mvs-empty-state .mvs-icon svg {
     color: var(--mvs-text-muted, #6c7781);
 }
 
@@ -1685,8 +1685,8 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-text-muted);
 }
 
-.mvs-grid-item-placeholder .dashicons {
-    font-size: 48px;
+.mvs-grid-item-placeholder .mvs-icon [data-lucide],
+.mvs-grid-item-placeholder .mvs-icon svg {
     width: 48px;
     height: 48px;
 }
@@ -1855,8 +1855,8 @@ body.dark-mode .mvs-skeleton::after {
     z-index: 2;
 }
 
-.mvs-album-badge .dashicons {
-    font-size: 16px;
+.mvs-album-badge .mvs-icon [data-lucide],
+.mvs-album-badge .mvs-icon svg {
     width: 16px;
     height: 16px;
     color: var(--mvs-bg);
@@ -1880,8 +1880,8 @@ body.dark-mode .mvs-skeleton::after {
     z-index: 2;
 }
 
-.mvs-gallery-badge .dashicons {
-    font-size: 16px;
+.mvs-gallery-badge .mvs-icon [data-lucide],
+.mvs-gallery-badge .mvs-icon svg {
     width: 16px;
     height: 16px;
     color: var(--mvs-surface);
@@ -3791,8 +3791,8 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-secondary);
 }
 
-.mvs-empty-state .dashicons {
-    font-size: 48px;
+.mvs-empty-state .mvs-icon [data-lucide],
+.mvs-empty-state .mvs-icon svg {
     width: 48px;
     height: 48px;
     color: var(--mvs-border-light);
@@ -7771,10 +7771,10 @@ body.dark-mode .mvs-auth-gate__card {
     cursor: progress;
 }
 
-.mvs-album-set-cover .dashicons {
+.mvs-album-set-cover .mvs-icon [data-lucide],
+.mvs-album-set-cover .mvs-icon svg {
     width: 14px;
     height: 14px;
-    font-size: 14px;
     line-height: 1;
 }
 

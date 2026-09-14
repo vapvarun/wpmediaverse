@@ -148,7 +148,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 					<?php endif; ?>
 					<span class="mvs-album-badge"
 						title="<?php echo esc_attr( sprintf( /* translators: %d: item count */ _n( '%d item', '%d items', $mvs_item_count, 'wpmediaverse' ), $mvs_item_count ) ); ?>">
-						<span class="dashicons dashicons-images-alt2" aria-hidden="true"></span>
+						<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span>
 					</span>
 					<div class="mvs-grid-item-overlay">
 						<div class="mvs-grid-item-stats">

@@ -1274,7 +1274,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// Gallery badge showing item count.
 		if ( $is_gallery && $group_count > 1 ) {
 			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
-			echo '<span class="dashicons dashicons-images-alt2"></span> ' . esc_html( $group_count );
+			echo '<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> ' . esc_html( $group_count );
 			echo '</span>';
 		}
 

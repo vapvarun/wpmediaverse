@@ -206,7 +206,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php if ( $mvs_is_album_owner ) : ?>
 				<div class="mvs-album-upload-section">
 					<button type="button" id="mvs-album-upload-btn" class="mvs-btn">
-						<span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
+						<span class="mvs-icon"><i data-lucide="plus" aria-hidden="true"></i></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 					</button>
 					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;"
 						data-album-id="<?php echo esc_attr( (string) get_the_ID() ); ?>">
@@ -215,7 +215,7 @@ $mvs_archive_url = home_url( '/media/' );
 						?>
 						<input type="file" multiple accept="<?php echo esc_attr( $mvs_album_mimes ); ?>" id="mvs-album-file-input" style="display:none" />
 						<div class="mvs-bp-dropzone" id="mvs-album-dropzone">
-							<span class="dashicons dashicons-cloud-upload"></span>
+							<span class="mvs-icon"><i data-lucide="upload-cloud" aria-hidden="true"></i></span>
 							<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload into this album', 'wpmediaverse' ); ?></span>
 						</div>
 						<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>
@@ -327,7 +327,7 @@ $mvs_archive_url = home_url( '/media/' );
 							} else {
 								?>
 								<button type="button" class="mvs-album-set-cover" data-media-id="<?php echo esc_attr( (string) $media_id ); ?>">
-									<span class="dashicons dashicons-star-filled" aria-hidden="true"></span>
+									<span class="mvs-icon"><i data-lucide="star" aria-hidden="true"></i></span>
 									<span class="mvs-album-set-cover__label"><?php esc_html_e( 'Set as cover', 'wpmediaverse' ); ?></span>
 								</button>
 								<?php

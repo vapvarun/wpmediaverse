@@ -13,6 +13,17 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// LUCIDE, from the block itself. These icons are <i data-lucide> and need the
+// library to hydrate them into SVG. Plugin::enqueue_frontend_assets() only
+// enqueues it behind `$is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl ||
+// $is_mvs_page` (Plugin.php:1343) - and a block dropped on an ORDINARY post
+// matches none of those, so the icons stayed unhydrated there.
+//
+// register_lucide_script() is idempotent (wp_script_is guard) and attaches the
+// MutationObserver that re-hydrates icons after an Interactivity region swap.
+\WPMediaVerse\Core\Plugin::register_lucide_script();
+wp_enqueue_script( 'mvs-lucide' );
+
 // Block attribute is the source of truth when the merchant has explicitly
 // set it in the sidebar; falls back to the admin default (Settings →
 // Display) when unset/absent/0. Matches edit.js's own "Using admin default"
@@ -281,7 +292,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
-							<span class="dashicons dashicons-images-alt2"></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
+							<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
 						</span>
 					<?php endif; ?>
 					<div class="mvs-grid-item-overlay">
