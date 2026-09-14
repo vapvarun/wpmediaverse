@@ -19,12 +19,37 @@ $blur_amount     = isset( $attributes['blurAmount'] ) ? absint( $attributes['blu
 $unlock_label    = ! empty( $attributes['unlockLabel'] ) ? sanitize_text_field( $attributes['unlockLabel'] ) : __( 'Restricted Content', 'wpmediaverse' );
 $overlay_opacity = isset( $attributes['overlayOpacity'] ) ? absint( $attributes['overlayOpacity'] ) : 60;
 
+// Misconfiguration - nothing chosen. Tell the editor rather than rendering
+// nothing (Coding Rule 11). Visitors get nothing: a configuration notice on a
+// live page is noise to them.
 if ( ! $media_id ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'lock',
+				'title'   => __( 'Lock Overlay', 'wpmediaverse' ),
+				'message' => __( 'Select a media item to protect in the block settings.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 
 // Verify media exists in the index table.
 if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'lock',
+				'title'   => __( 'Lock Overlay', 'wpmediaverse' ),
+				'message' => __( 'The referenced media no longer exists. Pick another item in the block settings.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 
