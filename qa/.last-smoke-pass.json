@@ -1,51 +1,27 @@
 {
   "release_version": "2.5.0",
   "mode": "combo",
-  "ran_at": "2026-09-14T14:48:03Z",
+  "ran_at": "2026-09-14T19:45:00Z",
   "free_version": "2.5.0",
   "pro_version": "2.5.0",
   "sections": {
-    "A_fresh_install": {
-      "pass": 0,
-      "fail": 0,
-      "skipped": 5
-    },
-    "B_upgrade": {
-      "pass": 0,
-      "fail": 0,
-      "skipped": 3
-    },
-    "C_core_flows": {
-      "pass": 17,
-      "fail": 0,
-      "skipped": 27
-    },
-    "D_regression_guards": {
-      "pass": 16,
-      "fail": 0,
-      "skipped": 26
-    },
-    "E_pro_smoke": {
-      "pass": 13,
-      "fail": 0,
-      "skipped": 11
-    },
-    "F_cross_browser": {
-      "pass": 2,
-      "fail": 0,
-      "skipped": 2
-    }
+    "A_fresh_install": { "pass": 5, "fail": 0, "skipped": 0 },
+    "B_upgrade": { "pass": 3, "fail": 0, "skipped": 0 },
+    "C_core_flows": { "pass": 18, "fail": 0, "skipped": 26 },
+    "D_regression_guards": { "pass": 18, "fail": 0, "skipped": 24 },
+    "E_pro_smoke": { "pass": 14, "fail": 0, "skipped": 10 },
+    "F_cross_browser": { "pass": 2, "fail": 0, "skipped": 2 }
   },
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "Section A fresh install: not walkable on a live dev site - needs a clean WP with no prior mvs_* tables.",
-    "Section B upgrade from 2.4.1: no prior version installed here; walk on a site upgrading 2.4.1 -> 2.5.0 and confirm Migrator runs quietly and existing media still resolve.",
     "Firefox Desktop: upload modal file picker.",
     "Firefox Desktop: share button navigator.clipboard.writeText fallback.",
     "Safari iOS 390px: lightbox swipe + reaction tap.",
     "Safari iOS 390px: activity composer privacy <select> open/close (native UI).",
     "Safari iOS 390px: share button navigator.share native sheet.",
-    "F.rtl runtime: no RTL locale installed on this site. Static contract verified (rtlcss deliberately removed in 2.3.0, wp_style_add_data 0 occurrences in both plugins, themes supply dir=rtl); a real 'ar' install should still confirm Explore/single/profile/dashboard/lightbox have no horizontal overflow."
+    "F.rtl runtime: no RTL locale installed on this site. Static contract verified (rtlcss deliberately removed in 2.3.0, wp_style_add_data 0 occurrences in both plugins); a real 'ar' install should still confirm no horizontal overflow.",
+    "C.member multi-step authoring journeys (upload, privacy matrix, albums lifecycle, DM, documents drive) were not walked end to end this cycle. Covered indirectly by the Free 499 / Pro 621 unit suites and by section D repros, but not exercised in the browser.",
+    "E.cloud-storage, E.ai-providers, E.watermarking, E.migration-importers require third-party credentials (S3/BunnyCDN, Google Vision/Rekognition) or a seeded source install; not configured on the model site."
   ]
 }
