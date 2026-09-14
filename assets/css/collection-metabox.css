@@ -1,10 +1,25 @@
+/*
+ * Collection metabox styles for the native WP post-edit screen.
+ *
+ * TOKENS CARRY A LITERAL FALLBACK, ALWAYS. This file is enqueued from
+ * CollectionMetaBox::render() with an EMPTY style-dependency array, so nothing
+ * guarantees admin.css - which defines every --mvs-* token - has loaded first.
+ * A bare `var(--mvs-border)` would resolve to nothing on a screen where it has
+ * not. Measured today: admin.css does happen to load on the Collection edit
+ * screen and --mvs-border computes to #dcdcde, but the enqueue gives no such
+ * promise and a refactor could change it silently.
+ *
+ * So every value below is `var(--token, #original-literal)`: identical rendering
+ * today, and it picks up theming/dark-mode the moment the token resolves.
+ * Basecamp 10300423475.
+ */
 /**
  * Collection metabox (smart-rules builder) admin styles.
  * Extracted from the inline <style> in CollectionMetaBox::render().
  */
-.mvs-metabox-type-toggle { display: flex; gap: 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; width: fit-content; margin-bottom: 16px; }
-.mvs-metabox-type-toggle label { padding: 8px 20px; cursor: pointer; background: #fff; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-.mvs-metabox-type-toggle label:not(:last-child) { border-right: 1px solid #ddd; }
+.mvs-metabox-type-toggle { display: flex; gap: 0; border: 1px solid var(--mvs-border, #ddd); border-radius: 4px; overflow: hidden; width: fit-content; margin-bottom: 16px; }
+.mvs-metabox-type-toggle label { padding: 8px 20px; cursor: pointer; background: var(--mvs-surface, #fff); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.mvs-metabox-type-toggle label:not(:last-child) { border-right: 1px solid var(--mvs-border, #ddd); }
 .mvs-metabox-type-toggle input:checked + span { font-weight: 600; }
 .mvs-metabox-type-toggle input { margin: 0; }
 .mvs-metabox-rules-wrap { margin-top: 12px; }
@@ -12,8 +27,8 @@
 .mvs-metabox-rule-row select, .mvs-metabox-rule-row input[type="text"], .mvs-metabox-rule-row input[type="date"], .mvs-metabox-rule-row input[type="number"] { padding: 6px 8px; }
 .mvs-metabox-rule-key { min-width: 140px; }
 .mvs-metabox-rule-value { min-width: 160px; flex: 1; }
-.mvs-metabox-remove-rule { color: #cc0000; border: 1px solid #ddd; background: #fff; padding: 4px 10px; cursor: pointer; border-radius: 3px; }
-.mvs-metabox-remove-rule:hover { background: #fee; }
+.mvs-metabox-remove-rule { color: var(--mvs-danger, #cc0000); border: 1px solid var(--mvs-border, #ddd); background: var(--mvs-surface, #fff); padding: 4px 10px; cursor: pointer; border-radius: 3px; }
+.mvs-metabox-remove-rule:hover { background: var(--mvs-danger-bg, #fee); }
 .mvs-metabox-add-rule { margin-top: 4px; }
-.mvs-metabox-preview { margin-top: 12px; padding: 8px 12px; background: #e8f5e9; border-radius: 4px; font-size: 13px; color: #2e7d32; }
-.mvs-metabox-hint { color: #888; font-size: 12px; font-style: italic; margin-top: 4px; }
+.mvs-metabox-preview { margin-top: 12px; padding: 8px 12px; background: var(--mvs-success-bg, #e8f5e9); border-radius: 4px; font-size: 13px; color: #2e7d32; }
+.mvs-metabox-hint { color: var(--mvs-text-muted, #888); font-size: 12px; font-style: italic; margin-top: 4px; }
