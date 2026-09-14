@@ -109,8 +109,33 @@
      * 4.47:1 failure being fixed. Verified by injecting a late declaration in the
      * browser: it flipped the computed value, confirming order was the cause.
      *
-     * Where contrast-color() is unsupported this oklch line applies and returns
-     * white, i.e. today's behaviour - no worse than before, but not fixed either.
+     * KNOWN DEFECT IN THE FALLBACK BELOW, deliberately left for now - Basecamp
+     * 10300601366. Its operands are REVERSED relative to --mvs-on-primary-auto
+     * at :101:
+     *
+     *     :101  clamp(0, (0.62 - l) * 1000, 1)   white on dark, black on light
+     *     :115  clamp(0, (l - 0.62) * 1000, 1)   the opposite - WRONG
+     *
+     * An earlier version of this comment claimed the two used "the same
+     * relative-colour trick". They do not. The flip happened while chasing a
+     * measurement: the correct form returns white for this indigo, which is the
+     * 4.47:1 failure being fixed, so the operands were swapped to make the
+     * number look right instead of recognising that the @supports override at
+     * :145 is what actually does the work.
+     *
+     * Not corrected in isolation, because it would make things worse today:
+     * #6366f1 sits just under the 0.62 threshold, so the inverted form happens
+     * to pick black (4.70, passes) where the correct form picks white (4.47,
+     * fails). Fixing the direction alone regresses the metric this token was
+     * added for.
+     *
+     * The real fix travels with --mvs-accent itself, which is the one colour
+     * token still a bare literal (:254) while --mvs-primary (:57) has a full
+     * host fallback chain. Bridge accent to the theme and the threshold stops
+     * being a coin-flip on one hardcoded mid-tone.
+     *
+     * Scope of the defect: only browsers without contrast-color(). Where it is
+     * supported, :145 wins and the token is correct.
      */
     --mvs-on-accent: oklch(from var(--mvs-accent) clamp(0, (l - 0.62) * 1000, 1) 0 0);
 }
