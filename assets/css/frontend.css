@@ -99,6 +99,20 @@
      * over. Old browsers therefore keep exactly today's behaviour for free.
      */
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+    /*
+     * Text on --mvs-accent, same mechanism and the same ordering requirement.
+     * It MUST be declared here, before the @supports block below, not with the
+     * other accent tokens further down: custom properties are same-specificity,
+     * so a later plain declaration beats the earlier conditional one. Declared
+     * after it, the @supports override never applied and the token resolved to
+     * the oklch form - which measures as WHITE for this indigo, i.e. exactly the
+     * 4.47:1 failure being fixed. Verified by injecting a late declaration in the
+     * browser: it flipped the computed value, confirming order was the cause.
+     *
+     * Where contrast-color() is unsupported this oklch line applies and returns
+     * white, i.e. today's behaviour - no worse than before, but not fixed either.
+     */
+    --mvs-on-accent: oklch(from var(--mvs-accent) clamp(0, (l - 0.62) * 1000, 1) 0 0);
 }
 
 /*
@@ -125,6 +139,10 @@
 @supports (color: contrast-color(red)) {
     :root {
         --mvs-on-primary-auto: contrast-color(var(--mvs-primary-fill));
+        /* Same treatment for the accent fill. --mvs-accent is NOT redefined in
+           the dark block (verified: 0 occurrences in the dark :root), so this
+           one declaration serves both modes. */
+        --mvs-on-accent: contrast-color(var(--mvs-accent));
     }
 }
 
@@ -219,6 +237,16 @@
        source of truth, dark-mode-safe. */
     --mvs-bg-subtle: var(--mvs-surface-2);     /* subtle panel fill */
     --mvs-on-danger: #ffffff;                  /* text on danger (red both modes) */
+    /* Text on the warning and accent fills. These existed nowhere, so every
+       badge and chip painted on them froze `color: #fff` inline and inherited
+       whatever contrast the fill happened to give. Measured on this theme:
+       white on --mvs-warning #b58105 = 3.44:1 and on --mvs-accent #6366f1 =
+       4.47:1 - both under the 4.5 AA floor, the accent by a hair.
+       Warning takes DARK text: it is a light-ish amber in light mode and
+       lifts further to #f0b73a in dark, so white loses in both. Accent uses
+       the same relative-colour trick as --mvs-on-primary-auto so it flips
+       with the fill instead of being frozen at a value that just fails. */
+    --mvs-on-warning: #1f1500;                 /* dark text on amber, both modes */
     /* Emphasis tier — see the border contract below. Mixing toward --mvs-text
        means this strengthens in BOTH modes off one declaration: dark redefines
        --mvs-border and --mvs-text, so the mix re-resolves lighter there. */
@@ -2231,7 +2259,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-comment-form button {
     padding: 10px 16px;
     background: var(--mvs-primary);
-    color: #fff;
+    color: var(--mvs-btn-primary-fg, #fff);
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -7357,7 +7385,7 @@ a.mvs-dashboard-card-title:hover {
     min-block-size: var(--mvs-touch-min, 44px);
     background: var(--mvs-primary, #E35656);
     border: none;
-    color: #ffffff;
+    color: var(--mvs-btn-primary-fg, #ffffff);
     font-weight: 600;
     padding: 9px 18px;
     border-radius: 999px;
@@ -7384,7 +7412,11 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-post:not(:disabled):hover {
     filter: brightness(0.92);
-    color: #ffffff;
+    /* Must track the base state's token, not a frozen white: the base rule
+       reads --mvs-btn-primary-fg (auto-contrast), so a hardcoded #ffffff here
+       made the label flip to white on hover on a light brand colour that had
+       correctly resolved to dark text at rest. */
+    color: var(--mvs-btn-primary-fg, #ffffff);
 }
 
 @media (max-width: 767px) /* below --mvs-bp-tablet */ {
