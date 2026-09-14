@@ -1903,13 +1903,13 @@ add_filter( 'mvs_cloudops_allow_non_public_to_cloud', function( bool $allow, int
 
 #### `mvs_default_thumbnail_style`
 
-Filters the default grid thumbnail style for sites that have not explicitly saved the `mvs_thumbnail_style` option. The default flipped from `square` to `original` (masonry) in 1.8.0 so Explore and the media-grid show every image at its native aspect ratio instead of a center-cropped square. Use this filter to restore the old uniform-crop default without touching the site's saved option — an explicitly saved option always wins over the filtered default, since `register_setting()` only runs on `admin_init` and the frontend relies on this resolved default.
+Filters the default grid thumbnail style for sites that have not explicitly saved the `mvs_thumbnail_style` option. The default flipped from `square` to `original` (justified rows) in 1.8.0 so Explore and the media-grid show every image at its native aspect ratio instead of a center-cropped square. Use this filter to restore the old uniform-crop default without touching the site's saved option — an explicitly saved option always wins over the filtered default, since `register_setting()` only runs on `admin_init` and the frontend relies on this resolved default.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$default` | string | `'original'` (masonry) or `'square'` (uniform crop). Default `'original'` |
+| `$default` | string | `'original'` (justified rows) or `'square'` (uniform crop). Default `'original'` |
 
 **Returns:** `string`
 
@@ -1929,7 +1929,7 @@ add_filter( 'mvs_default_thumbnail_style', static fn() => 'square' );
 
 #### `mvs_grid_thumb_size_key`
 
-Filters the thumbnail size rung (`medium` or `large`) served for grid/masonry tiles. 1.8.0 raised the grid's default from `medium` to `large` so tiles stay sharp on HiDPI/retina screens (the `medium` rung visibly upscaled inside larger masonry tiles). Byte-conscious sites can drop back to `medium` with this filter instead of changing the `mvs_thumbnail_size` setting site-wide.
+Filters the thumbnail size rung (`medium` or `large`) served for grid/justified-row tiles. 1.8.0 raised the grid's default from `medium` to `large` so tiles stay sharp on HiDPI/retina screens (the `medium` rung visibly upscaled inside larger justified-row tiles). Byte-conscious sites can drop back to `medium` with this filter instead of changing the `mvs_thumbnail_size` setting site-wide.
 
 **Parameters:**
 
