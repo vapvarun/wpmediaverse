@@ -31,6 +31,11 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 		}
 
 		add_action( 'bp_setup_nav', array( $this, 'add_group_tab' ), 100 );
+
+		// Keep this tab's assets alive on a BuddyNext site. This class never
+		// registered the filter at all, so the group Media tab lost every
+		// mvs-* handle - stylesheets included - to the suppression sweep.
+		$this->register_shared_hooks();
 	}
 
 	/**

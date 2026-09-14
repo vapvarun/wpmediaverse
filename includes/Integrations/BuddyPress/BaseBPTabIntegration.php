@@ -36,6 +36,104 @@ defined( 'ABSPATH' ) || exit;
  */
 abstract class BaseBPTabIntegration {
 
+	/**
+	 * Every `mvs-*` handle a BP tab screen needs alive, including deps.
+	 *
+	 * ONE list, read by BOTH sides. `enqueue_assets()` puts these on the page and
+	 * `keep_tab_handles()` exempts them from the BuddyNext suppression sweep, so
+	 * the two cannot drift. They did drift, and that was the bug: the sweep in
+	 * `Plugin::enforce_frontend_presence()` deregisters every enqueued `mvs-*`
+	 * handle except what `mvs_frontend_presence_keep_handles` protects, and the
+	 * old callback protected TWO handles while this class enqueued FIVE. Load
+	 * More rendered with its script stripped (Basecamp 10300002499).
+	 *
+	 * THE DEPENDENCIES ARE IN THE LIST ON PURPOSE. Deregistering a dependency
+	 * does not just remove it: the dependent still reports `enqueued`, and then
+	 * prints NOTHING. Measured - registering `main` with dep `dep`, enqueuing
+	 * `main`, deregistering `dep`: `wp_script_is( 'main', 'enqueued' )` stays
+	 * true and `do_items()` emits 0 bytes. So protecting `mvs-load-more` without
+	 * `mvs-card-builders`, or `mvs-bp-actions` without `mvs-confirm`, protects
+	 * nothing. `bp-actions.js` fails CLOSED when `window.mvsConfirm` is absent
+	 * (admin-ux-rulebook Rule 10 bans native confirm), so a stripped
+	 * `mvs-confirm` silently disables every delete rather than erroring.
+	 *
+	 * Adding an enqueue to this class means adding its handle here. That is the
+	 * whole contract - one edit, both sides.
+	 *
+	 * @since 2.5.0
+	 * @var string[]
+	 */
+	protected const TAB_ASSET_HANDLES = array(
+		// Enqueued directly by enqueue_assets() / enqueue_upload_assets().
+		'mvs-frontend',
+		'mvs-bp-integration',
+		'mvs-load-more',
+		'mvs-bp-actions',
+		'mvs-lucide',
+		'mvs-bp-tab-upload',
+		// Declared deps of the above. Without these the dependents print nothing.
+		'mvs-card-builders', // dep of mvs-load-more   (Plugin.php:1299)
+		'mvs-confirm',       // dep of mvs-bp-actions  (Plugin.php:1728)
+		'mvs-dropzone',      // dep of mvs-bp-tab-upload (BaseBPTabIntegration:381)
+	);
+
+	/**
+	 * Register the hooks both tab subclasses need.
+	 *
+	 * Lives here rather than in each `init()` because GroupTabIntegration never
+	 * registered the keep-handles filter at all - so on a BuddyNext site the
+	 * group Media tab lost ALL its assets, stylesheets included, which is worse
+	 * than the reported profile symptom and had not been filed.
+	 *
+	 * @since 2.5.0
+	 */
+	protected function register_shared_hooks(): void {
+		add_filter( 'mvs_frontend_presence_keep_handles', array( $this, 'keep_tab_handles' ) );
+	}
+
+	/**
+	 * Is the current request one of MediaVerse's own BuddyPress screens?
+	 *
+	 * Member Media tab (any sub-tab: all / albums / documents) or a group's
+	 * Media tab. Mirrors the predicate `Plugin.php:1744` and `Plugin.php:3077`
+	 * already compute - a fourth copy is exactly the enumeration Coding Rule 22
+	 * warns about, so subclasses and callers should use THIS one.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @return bool
+	 */
+	protected function is_mvs_bp_screen(): bool {
+		$is_member_media = function_exists( 'bp_is_user' ) && bp_is_user()
+			&& function_exists( 'bp_current_component' ) && 'media' === bp_current_component();
+
+		$is_group_media = function_exists( 'bp_is_group' ) && bp_is_group()
+			&& function_exists( 'bp_current_action' ) && 'media' === bp_current_action();
+
+		return $is_member_media || $is_group_media;
+	}
+
+	/**
+	 * Exempt this tab's assets from the BuddyNext frontend-suppression sweep.
+	 *
+	 * Runs inside `enforce_frontend_presence()` at `wp_enqueue_scripts@PHP_INT_MAX`,
+	 * by which point BuddyPress has resolved the component, so the check is
+	 * reliable. Only the handles this class owns are exempted; the rest of the
+	 * suppression is left alone.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @param string[] $handles Handles the sweep must not strip.
+	 * @return string[]
+	 */
+	public function keep_tab_handles( array $handles ): array {
+		if ( ! $this->is_mvs_bp_screen() ) {
+			return $handles;
+		}
+
+		return array_values( array_unique( array_merge( $handles, self::TAB_ASSET_HANDLES ) ) );
+	}
+
 	// ============================================================
 	// Subclass contract — context-specific bits only.
 	// ============================================================
@@ -274,6 +372,9 @@ abstract class BaseBPTabIntegration {
 		wp_enqueue_style( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-bp-actions' );
+		// Every handle enqueued here is listed in self::TAB_ASSET_HANDLES, which
+		// keep_tab_handles() returns to the suppression sweep. Add an enqueue,
+		// add it there - the constant is the single source both sides read.
 		// Lucide, for the SAME reason as mvs-load-more above: it is registered
 		// globally by Plugin but only ENQUEUED on MVS-native pages, and a BP
 		// profile or group screen is not one. Without it every `data-lucide`

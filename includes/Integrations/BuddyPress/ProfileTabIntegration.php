@@ -42,7 +42,7 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		// sibling of the Explore-Documents page fix 10194672141). This exempts
 		// only the two stylesheets the tab content needs; the rest of the UI
 		// suppression is left untouched.
-		add_filter( 'mvs_frontend_presence_keep_handles', array( $this, 'keep_media_tab_styles' ) );
+		$this->register_shared_hooks();
 
 		// Resolve member profile URLs to the BP member page. Lives here so core
 		// (TemplateHelpers::get_user_profile_url) stays standalone — it defaults
@@ -51,26 +51,6 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		add_filter( 'mvs_user_profile_url', array( $this, 'filter_user_profile_url' ), 10, 2 );
 	}
 
-	/**
-	 * Exempt the Media-tab stylesheets from the BuddyNext frontend-suppression
-	 * sweep while a member's Media tab (any sub-tab) is being viewed.
-	 *
-	 * Runs inside enforce_frontend_presence() at wp_enqueue_scripts@PHP_INT_MAX;
-	 * BuddyPress has resolved the current component by then, so the check is
-	 * reliable. Adds only the two stylesheets the tab content renders with.
-	 *
-	 * @param string[] $handles Handles the sweep must not strip.
-	 * @return string[]
-	 */
-	public function keep_media_tab_styles( array $handles ): array {
-		if ( function_exists( 'bp_is_user' ) && bp_is_user()
-			&& function_exists( 'bp_is_current_component' ) && bp_is_current_component( 'media' ) ) {
-			$handles[] = 'mvs-frontend';
-			$handles[] = 'mvs-bp-integration';
-		}
-
-		return $handles;
-	}
 
 	/**
 	 * Resolve a member's profile URL to their BuddyPress member page.
