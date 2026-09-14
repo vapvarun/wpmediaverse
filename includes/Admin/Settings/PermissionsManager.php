@@ -202,7 +202,6 @@ class PermissionsManager {
 						</fieldset>
 					<?php endforeach; ?>
 				</div>
-				</div>
 
 				<?php submit_button( __( 'Save Permissions', 'wpmediaverse' ) ); ?>
 			</form>
