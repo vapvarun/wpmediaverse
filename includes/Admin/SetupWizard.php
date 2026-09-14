@@ -353,7 +353,7 @@ class SetupWizard {
 							</label><br>
 							<label>
 								<input type="radio" name="mvs_thumbnail_style" value="original" <?php checked( $style, 'original' ); ?> />
-								<?php esc_html_e( 'Masonry - original proportions', 'wpmediaverse' ); ?>
+								<?php esc_html_e( 'Justified rows - original proportions', 'wpmediaverse' ); ?>
 							</label><br>
 							<label>
 								<input type="radio" name="mvs_thumbnail_style" value="list" <?php checked( $style, 'list' ); ?> />

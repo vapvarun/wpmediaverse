@@ -638,7 +638,7 @@ class SettingsRegistrar {
 				'option'      => 'mvs_thumbnail_style',
 				'choices'     => array(
 					'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
-					'original' => __( 'Masonry - original proportions', 'wpmediaverse' ),
+					'original' => __( 'Justified rows - original proportions', 'wpmediaverse' ),
 					'list'     => __( 'List - one row per item', 'wpmediaverse' ),
 				),
 				'description' => __( 'The default layout for media grids in blocks, shortcodes, albums and collections. A block or shortcode can override it for one grid. With MediaVerse Pro, the Explore page and member profiles instead follow the Pro platform layout, which defines its own display.', 'wpmediaverse' ),

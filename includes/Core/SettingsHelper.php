@@ -197,7 +197,7 @@ class SettingsHelper {
 	 * Resolve the explore/grid thumbnail style.
 	 *
 	 * The default flipped square -> original in 1.8.0 so the explore + media-grid
-	 * feed shows every image at its native aspect ratio (Pinterest-style masonry)
+	 * feed shows every image at its native aspect ratio (justified rows)
 	 * instead of a center-cropped square. A site that prefers the old uniform
 	 * square crop can restore it in one line, without touching the setting:
 	 *

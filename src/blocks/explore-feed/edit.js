@@ -19,7 +19,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						options={ [
 							{ label: __( 'Site default', 'wpmediaverse' ), value: '' },
 							{ label: __( 'Grid', 'wpmediaverse' ), value: 'grid' },
-							{ label: __( 'Masonry', 'wpmediaverse' ), value: 'masonry' },
+							{ label: __( 'Justified rows', 'wpmediaverse' ), value: 'masonry' },
 							{ label: __( 'List', 'wpmediaverse' ), value: 'list' },
 						] }
 						onChange={ ( val ) => setAttributes( { layout: val } ) }
