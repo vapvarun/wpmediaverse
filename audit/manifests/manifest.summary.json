@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.4.1",
+    "version": "2.5.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -26,7 +26,7 @@
     "capabilities": 11,
     "services": 54,
     "services_registered": 53,
-    "hooks_fired_unique": 239,
+    "hooks_fired_unique": 274,
     "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 9,
@@ -35,7 +35,7 @@
     "migrator_version": 30,
     "storage_drivers": 1
   },
-  "counts_note": "2026-09-01 targeted delta, code-verified. rest_endpoints=122 counted as one entry per register_rest_route() endpoint array across 97 call sites in mvs/v1 (122 route+method-constant entries; 131 once WP_REST_Server::EDITABLE is expanded to PUT+PATCH). Both prior claims were wrong: CLAUDE.md's 114 and CAPABILITIES.md's ~90. tables=23 distinct mvs_ names from 24 CREATE TABLE statements in includes/Core/Migrator.php (mvs_media_index is created twice: original at :364, idempotent full-schema heal at :616); manifest.tables.json lists both statements, manifest.json lists the 23 distinct names. settings=52 distinct register_setting() options (47 call sites; two are foreach loops - $legal_fields x3 and $pages x4). services=54 manifest entries = 53 ServiceContainer::register() keys + 1 documented non-container-registered analyser (CptIdCollisionService). blocks=9 registered in Blocks\\BlockRegistrar::BLOCKS out of blocks_defined=13 src/blocks/*/block.json dirs; the 4 extras (dashboard-view, explore-view, media-social, shared-ui) are Interactivity-only - supports.inserter=false, no render, viewScriptModule only - and each block entry in manifest.json now carries an explicit `registered` flag. wp_cli=22 = 1 base registration + 20 subcommand methods on CLI\\Commands + `wp mvs cert`. admin_pages=22 = 12 add_menu_page/add_submenu_page call sites + 2 CPT show_in_menu entries + 8 settings tabs. capabilities=11 registered in Capabilities\\MediaCapabilities. cron=9 includes Action Scheduler async/single actions, matching the existing convention. hooks_fired_unique was deliberately NOT re-enumerated - manifest.hooks.json is owned by a separate pass this cycle.",
+  "counts_note": "2026-09-01 targeted delta, code-verified. rest_endpoints=122 counted as one entry per register_rest_route() endpoint array across 97 call sites in mvs/v1 (122 route+method-constant entries; 131 once WP_REST_Server::EDITABLE is expanded to PUT+PATCH). Both prior claims were wrong: CLAUDE.md's 114 and CAPABILITIES.md's ~90. tables=23 distinct mvs_ names from 24 CREATE TABLE statements in includes/Core/Migrator.php (mvs_media_index is created twice: original at :364, idempotent full-schema heal at :616); manifest.tables.json lists both statements, manifest.json lists the 23 distinct names. settings=52 distinct register_setting() options (47 call sites; two are foreach loops - $legal_fields x3 and $pages x4). services=54 manifest entries = 53 ServiceContainer::register() keys + 1 documented non-container-registered analyser (CptIdCollisionService). blocks=9 registered in Blocks\\BlockRegistrar::BLOCKS out of blocks_defined=13 src/blocks/*/block.json dirs; the 4 extras (dashboard-view, explore-view, media-social, shared-ui) are Interactivity-only - supports.inserter=false, no render, viewScriptModule only - and each block entry in manifest.json now carries an explicit `registered` flag. wp_cli=22 = 1 base registration + 20 subcommand methods on CLI\\Commands + `wp mvs cert`. admin_pages=22 = 12 add_menu_page/add_submenu_page call sites + 2 CPT show_in_menu entries + 8 settings tabs. capabilities=11 registered in Capabilities\\MediaCapabilities. cron=9 includes Action Scheduler async/single actions, matching the existing convention. hooks_fired_unique was deliberately NOT re-enumerated - manifest.hooks.json is owned by a separate pass this cycle. 2026-09-15 (2.5.0): plugin.version 2.4.1->2.5.0 in both files; manifest.json hooks_fired re-synced from manifest.hooks.json (the drift-checked authority) 223->274 entries - this added 53 hooks documented only in the detail file, dropped the phantom mvs_ffmpeg_binary (FFmpeg removed in 2.4.0, Coding Rule 21, 0 call sites), and fixed one entry carrying a legacy hook/file/since/args/purpose shape with a null name. hooks_fired_unique re-enumerated to 274. rest_endpoints/settings/services/wp_cli deliberately NOT touched: the 2.5.0 diff added no register_rest_route, register_setting or container->register call.",
   "detail_files": {
     "rest": "manifest.rest.json",
     "hooks": "manifest.hooks.json",

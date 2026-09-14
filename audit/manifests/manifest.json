@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.4.1",
+    "version": "2.5.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -3102,6 +3102,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_app_config",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $config"
+      ],
+      "where": "includes/REST/Controller/ConfigController.php:189",
+      "consumed_by": [],
+      "note": "Extension point Pro fills with the `documents` block, so a client never hardcodes the format list, size ceiling or preview tiers. P4.4."
+    },
+    {
       "name": "mvs_app_config_branding",
       "type": "filter",
       "args_signature": [],
@@ -3365,6 +3376,18 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_can_comment",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $can",
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Social/CommentService.php:199",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_can_repair_thumb",
       "type": "filter",
       "args_count": 4,
@@ -3498,6 +3521,33 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_community_gated_page",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $is_gated_page"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:146",
+      "consumed_by": [
+        "wpmediaverse-pro (adds compete/battles/challenges/tournaments pages)"
+      ],
+      "added": "2.3.2"
+    },
+    {
+      "name": "mvs_community_login_url",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $login_url = wp_login_url($current)",
+        "string $current"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:92",
+      "consumed_by": [
+        "buddynext (points it at PageRouter::auth_url())"
+      ],
+      "added": "2.3.2"
+    },
+    {
       "name": "mvs_conversation_created",
       "type": "action",
       "args_count": 3,
@@ -3537,11 +3587,31 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_dashboard_before_panel_toolbar",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$panel"
+      ],
+      "where": "templates/partials/dashboard-content.php:685",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_dashboard_panels",
       "type": "action",
       "args_count": 0,
       "args_signature": [],
       "where": "templates/partials/dashboard-content.php:622",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_sections",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $sections"
+      ],
+      "where": "includes/Core/DashboardSections.php:95",
       "consumed_by": []
     },
     {
@@ -3575,9 +3645,8 @@
       "args_signature": [
         "string $privacy"
       ],
-      "where": "includes/Core/SettingsHelper.php",
-      "consumed_by": [],
-      "note": "Privacy a new media upload lands on. Separate from mvs_document_default_privacy on purpose."
+      "where": "includes/Core/SettingsHelper.php:319",
+      "consumed_by": []
     },
     {
       "name": "mvs_default_thumbnail_style",
@@ -3597,6 +3666,27 @@
         "string $default"
       ],
       "where": "includes/Core/TemplateHelpers.php:535",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_direction_labels",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array<string,string> $labels",
+        "string $sort_field"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:1911",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dismissible_notices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array<string,string> $notices"
+      ],
+      "where": "includes/REST/Controller/UserController.php:501",
       "consumed_by": []
     },
     {
@@ -3685,6 +3775,226 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_document_admin_main_panels",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "array $row"
+      ],
+      "where": "templates/admin/document-single.php:145",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_admin_panels",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "array $row"
+      ],
+      "where": "includes/Admin/DocumentListPage.php"
+    },
+    {
+      "name": "mvs_document_can_grant",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $can",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:can_grant()",
+      "consumed_by": [],
+      "note": "D1 seam for non-personal drives. DEFAULTS FALSE so an unanswered filter denies rather than opening sharing to every member of a space."
+    },
+    {
+      "name": "mvs_document_drive_access",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $level",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/PrivacyService.php:133",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_drive_successor",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "int $successor",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/UserDeletionService.php:73",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_folder_created",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $folder_id",
+        "array $args"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:create()",
+      "consumed_by": [],
+      "note": "Fires after a document folder is created."
+    },
+    {
+      "name": "mvs_document_folder_privacy_cascaded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $folder_id",
+        "string $privacy",
+        "int $cascaded"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:set_privacy()",
+      "consumed_by": [],
+      "note": "T2. Fires after a tightening has swept the subtree. Loosening never cascades, so it does not fire."
+    },
+    {
+      "name": "mvs_document_folder_trashed",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $folder_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:trash()",
+      "consumed_by": [],
+      "note": "Fires after a folder and its subtree are trashed."
+    },
+    {
+      "name": "mvs_document_location_label",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $label",
+        "int $media_id"
+      ],
+      "where": "templates/media-single.php:232",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_max_depth",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $depth"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:max_depth()",
+      "consumed_by": [],
+      "note": "Folder nesting cap, default 12. Raising past 16 pushes `path` beyond KEY subtree's 150-byte prefix, so deep trees silently stop using the index."
+    },
+    {
+      "name": "mvs_document_owns_drive",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $owns",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:owns_drive()",
+      "consumed_by": [],
+      "note": "Space-drive ownership seam, resolved once per drive per request. Defaults false."
+    },
+    {
+      "name": "mvs_document_privacy_labels",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $labels",
+        "string $context"
+      ],
+      "where": "includes/Core/Plugin.php:2011",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_reassigned",
+      "type": "action",
+      "args_count": 5,
+      "args_signature": [
+        "int $media_id",
+        "int $successor",
+        "int $user_id",
+        "string $drive_type",
+        "int $drive_id"
+      ],
+      "where": "includes/Services/UserDeletionService.php:125",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_row_actions",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "bool $trashed"
+      ],
+      "where": "templates/admin/documents.php"
+    },
+    {
+      "name": "mvs_document_uploaded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "string $doc_type",
+        "int $folder_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/DocumentIngestService.php:handle()",
+      "consumed_by": [],
+      "note": "Fires after a document is ingested. Quota rides the existing mvs_media_uploaded instead, which is why D2 needs no fourth counter."
+    },
+    {
+      "name": "mvs_document_viewer_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "string $mime"
+      ],
+      "where": "templates/media-single.php:334",
+      "consumed_by": [
+        "wpmediaverse-pro: includes/Documents/DocumentViewer.php::render"
+      ]
+    },
+    {
+      "name": "mvs_documents_drive_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "string $drive_type",
+        "array $args"
+      ],
+      "where": "includes/Shortcodes/Shortcodes.php:877",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_documents_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php:1943",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_explore_query_args",
       "type": "filter",
       "args_count": 2,
@@ -3693,6 +4003,16 @@
         "mixed $profile"
       ],
       "where": "templates/explore.php:268",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_explore_tag_cloud_limit",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $limit"
+      ],
+      "where": "templates/explore.php:240",
       "consumed_by": []
     },
     {
@@ -3748,16 +4068,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_ffmpeg_binary",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "string $binary"
-      ],
-      "where": "includes/Services/PosterService.php:120",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_filename_strategy",
       "type": "filter",
       "args_count": 2,
@@ -3789,6 +4099,35 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_gallery_layout_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "string $layout",
+        "array $args"
+      ],
+      "where": "includes/Shortcodes/Shortcodes.php:126",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Frontend/Layouts/LayoutManager.php"
+        }
+      ]
+    },
+    {
+      "name": "mvs_grid_columns_scope_note",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $note"
+      ],
+      "where": "includes/Admin/Settings/SettingsRegistrar.php:586",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Core/Plugin.php::grid_columns_scope_note"
+      ]
+    },
+    {
       "name": "mvs_grid_thumb_size_key",
       "type": "filter",
       "args_count": 2,
@@ -3811,6 +4150,19 @@
       ],
       "where": "includes/Messaging/MessagingService.php:798",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_has_custom_avatar",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $has",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Seam for other avatar providers. Nothing in the avatar chain distinguishes a photograph from a generated placeholder (core found_avatar is set by both), so the owner of the avatar answers. Basecamp 10252323883."
     },
     {
       "name": "mvs_hide_submenu_slugs",
@@ -3870,9 +4222,8 @@
       "args_signature": [
         "array<string,string> $caps"
       ],
-      "where": "includes/Admin/Settings/PermissionsManager.php",
-      "consumed_by": [],
-      "note": "Role-matrix columns. Used for BOTH render and save, so a cap added here is grantable and one absent can never be granted by a crafted POST."
+      "where": "includes/Admin/Settings/PermissionsManager.php:99",
+      "consumed_by": []
     },
     {
       "name": "mvs_max_upload_size",
@@ -3924,6 +4275,32 @@
       ]
     },
     {
+      "name": "mvs_media_drive_access",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $level",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/PrivacyService.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Media-specific twin of mvs_document_drive_access, whose answer is its default so the seam is additive. Governs BOTH the placement gate and the space read gate, deliberately: if the two disagreed, media would be stored scoped to a drive its members could not read. Basecamp 10252314484."
+    },
+    {
+      "name": "mvs_media_feed_allows_documents",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $allowed"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:334",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for P1.5. GET /media?media_type=document (and /me/media, which delegates to the same handler) returned document rows until 2.4.0 and the parameter has advertised 'document' in its enum since the first release. The route now answers 400 mvs_document_route; this filter restores the old behaviour for at least two majors. Default false."
+    },
+    {
       "name": "mvs_media_files_orphaned",
       "type": "action",
       "args_count": 2,
@@ -3954,6 +4331,29 @@
         "int $group_id"
       ],
       "where": "includes/REST/Controller/MediaController.php:803",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_library_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string[] $types"
+      ],
+      "where": "includes/Core/MediaTypes.php:library_types()",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for narrowing MEDIA_LIBRARY to media only (owner, 2026-08-09: documents never render in a media grid). Restoring legacy_document re-accepts the broken tile."
+    },
+    {
+      "name": "mvs_media_may_join_collection",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $allowed",
+        "int $media_id",
+        "int $curator_id"
+      ],
+      "where": "includes/Services/CollectionService.php:93",
       "consumed_by": []
     },
     {
@@ -4024,6 +4424,20 @@
       ]
     },
     {
+      "name": "mvs_media_restored",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "string $permalink"
+      ],
+      "where": "includes/Repository/MediaRepository.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
+    },
+    {
       "name": "mvs_media_shared",
       "type": "action",
       "args_count": 3,
@@ -4034,6 +4448,20 @@
       ],
       "where": "includes/Social/ShareService.php:48",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_shared_summary",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $summary",
+        "int $media_id"
+      ],
+      "where": "templates/media-single.php:278",
+      "consumed_by": [
+        "wpmediaverse-pro: Documents\\DocumentViewer::shared_summary"
+      ],
+      "note": "Short 'shared with N' note beside the privacy chip. Free owns the badge, not document sharing, so Pro answers this. Empty string renders nothing."
     },
     {
       "name": "mvs_media_single_actions",
@@ -4049,6 +4477,32 @@
         "wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
       ],
       "added": "2.1.0"
+    },
+    {
+      "name": "mvs_media_trashed",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "string $permalink"
+      ],
+      "where": "includes/Repository/MediaRepository.php",
+      "consumed_by": [],
+      "since": "2.4.0",
+      "note": "Soft-delete lifecycle twin of mvs_media_deleted; same signature so a URL-keyed listener handles both. Basecamp 10252324048."
+    },
+    {
+      "name": "mvs_media_type_for_mime",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $type",
+        "string $mime"
+      ],
+      "where": "includes/Services/UploadService.php:866",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for P2.1. get_media_type() used to return 'document' for any unrecognised MIME; it now returns ''. A filter value outside MediaTypes::ALL is ignored, so an unknown string cannot defeat the positive type predicates downstream. Added to the manifest 2026-08-09 -- it shipped in the P2.1 commit without a manifest delta."
     },
     {
       "name": "mvs_media_uploaded",
@@ -4186,6 +4640,26 @@
       "args_signature": [],
       "args_count": 0,
       "where": "includes/Messaging/MessagingService.php:1409",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_messages_slug",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $slug"
+      ],
+      "where": "includes/Core/Plugin.php:3084",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_messages_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $url"
+      ],
+      "where": "includes/Core/Plugin.php:3098",
       "consumed_by": []
     },
     {
@@ -4375,6 +4849,46 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_privacy_choices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $choices"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:694",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_labels",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $labels"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:637",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_levels",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array<int,string> $levels"
+      ],
+      "where": "includes/Services/PrivacyService.php:52",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_document_extraction_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "wpmediaverse-pro: includes/Documents/ExtractionService.php::is_enabled",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_profile_data",
       "type": "filter",
       "args_count": 2,
@@ -4383,6 +4897,32 @@
         "int $user_id"
       ],
       "where": "includes/Services/ProfileService.php:119",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_profile_documents_count",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $count",
+        "int $owner_id",
+        "int $viewer_id"
+      ],
+      "where": "includes/Integrations/BuddyPress/ProfileTabIntegration.php:220",
+      "consumed_by": [
+        "wpmediaverse-pro: Documents\\ProfileDocuments::count_visible()"
+      ]
+    },
+    {
+      "name": "mvs_profile_documents_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $owner_id",
+        "int $viewer_id"
+      ],
+      "where": "includes/Integrations/BuddyPress/ProfileTabIntegration.php:262",
       "consumed_by": []
     },
     {
@@ -4480,6 +5020,30 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_push_send",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "array $tokens",
+        "array $payload"
+      ],
+      "where": "includes/Social/PushService.php:243",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_push_should_send",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $should_send",
+        "int $user_id",
+        "string $type"
+      ],
+      "where": "includes/Social/PushService.php:213",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_reaction_added",
       "type": "action",
       "args_count": 3,
@@ -4513,6 +5077,18 @@
         "string $action"
       ],
       "where": "includes/REST/Controller/ReactionController.php:191",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_redirect_documents",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $redirect",
+        "int $media_id",
+        "string $redirect_url"
+      ],
+      "where": "includes/Core/TemplateLoader.php:643",
       "consumed_by": []
     },
     {
@@ -4592,6 +5168,20 @@
       "args_signature": [],
       "where": "includes/REST/RestGate.php:333",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_gate_exempt_route_prefixes",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string[] $exempt = array('/mvs/v1/serve')",
+        "\\WP_REST_Request $request"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:224",
+      "consumed_by": [
+        "wpmediaverse-pro (exempts /mvs-pro/v1/credits/webhook, HMAC-authenticated)"
+      ],
+      "added": "2.3.2"
     },
     {
       "name": "mvs_rest_gate_map",
@@ -4751,6 +5341,16 @@
       ],
       "where": "includes/REST/Controller/MediaController.php:1390",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_shared_ui_frame",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Core/Plugin.php:2914",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Documents/DocumentViewer.php"
+      ]
     },
     {
       "name": "mvs_should_ai_analyze",
@@ -5013,6 +5613,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_user_can_use_documents",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $can",
+        "int $user_id"
+      ],
+      "where": "includes/Core/Plugin.php:2085",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_user_data_purged",
       "type": "action",
       "args_count": 1,
@@ -5072,6 +5683,16 @@
         "int $following_id"
       ],
       "where": "includes/Social/FollowService.php:115",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_view_dedup_window",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $window"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1471",
       "consumed_by": []
     },
     {
@@ -5174,17 +5795,6 @@
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
       "consumed_by": []
-    },
-    {
-      "hook": "mvs_user_can_use_documents",
-      "type": "filter",
-      "file": "includes/Core/Plugin.php:1936",
-      "since": "2.4.0",
-      "args": [
-        "bool $can",
-        "int $user_id"
-      ],
-      "purpose": "Per-user override of the document-library gate. The membership seam: BuddyNext answers per user so documents can sit behind a paid tier without touching WordPress roles. Runs last, so it can widen as well as narrow. Never reached when the site-wide toggle is off."
     }
   ],
   "buddypress_integration": {
