@@ -6,13 +6,25 @@ import { useUniqueId } from '../../shared/hooks';
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	useUniqueId( clientId, attributes.uniqueId, setAttributes );
-	const { columns, perPage, mediaType, category, tag, orderBy, order, showLightbox, showReactions, gap, userId } = attributes;
+	const { layout, columns, perPage, mediaType, category, tag, orderBy, order, showLightbox, showReactions, gap, userId } = attributes;
 	const blockProps = useBlockProps();
 
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Grid Settings', 'wpmediaverse' ) }>
+					<SelectControl
+						label={ __( 'Layout', 'wpmediaverse' ) }
+						value={ layout }
+						options={ [
+							{ label: __( 'Site default', 'wpmediaverse' ), value: '' },
+							{ label: __( 'Grid', 'wpmediaverse' ), value: 'grid' },
+							{ label: __( 'Justified rows', 'wpmediaverse' ), value: 'masonry' },
+							{ label: __( 'List', 'wpmediaverse' ), value: 'list' },
+						] }
+						onChange={ ( val ) => setAttributes( { layout: val } ) }
+						help={ ! layout ? __( 'Using admin default from Settings → Display.', 'wpmediaverse' ) : '' }
+					/>
 					<RangeControl
 						label={ __( 'Columns', 'wpmediaverse' ) }
 						value={ columns || undefined }
