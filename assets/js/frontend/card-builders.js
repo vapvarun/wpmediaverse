@@ -361,6 +361,17 @@
 			'data-media-type': mediaType,
 		} );
 
+		// Aspect ratio for `original` (justified-rows) mode — the JS twin of
+		// TemplateHelpers::grid_item_ar_style(). Without it an appended card
+		// falls back to 1.5 and a portrait photo takes a landscape share of the
+		// row, so page 2 would not match page 1. Same clamp as PHP, and inert
+		// in square/list mode, which never reads --mvs-ar.
+		var arW = item.width || 0;
+		var arH = item.height || 0;
+		var ar  = ( arW > 0 && arH > 0 ) ? ( arW / arH ) : 1.5;
+		ar = Math.max( 0.3, Math.min( 4, ar ) );
+		root.style.setProperty( '--mvs-ar', ar.toFixed( 4 ) );
+
 		// Owner-only per-item actions (delete). Gated by TWO conditions:
 		//   1. Server says the viewer can edit this item (`can_edit`).
 		//   2. The grid container opts in via `data-show-actions="1"`. Only

@@ -175,7 +175,7 @@ wp_interactivity_state(
 				$item_title = $item['title'] ?? '';
 				$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				?>
-				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id ) ); ?>">
+				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id ) ); ?>"<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( $item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the ratio. ?>>
 					<a href="<?php echo esc_url( $permalink ); ?>">
 						<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					</a>

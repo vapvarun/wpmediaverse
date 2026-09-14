@@ -135,7 +135,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 			$mvs_card_class = $mvs_is_albums ? 'mvs-grid-item--album' : 'mvs-grid-item--collection';
 			?>
 
-			<div class="mvs-grid-item <?php echo esc_attr( $mvs_card_class ); ?>">
+			<div class="mvs-grid-item <?php echo esc_attr( $mvs_card_class ); ?>"<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- covers carry no stored dimensions; helper returns its escaped 3:2 fallback. ?>>
 				<a href="<?php echo esc_url( $mvs_permalink ); ?>" class="mvs-grid-item-link">
 					<?php if ( $mvs_cover_url ) : ?>
 						<img src="<?php echo esc_url( $mvs_cover_url ); ?>"

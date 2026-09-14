@@ -275,6 +275,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					data-media-id="<?php echo absint( $item_id ); ?>"
 					data-media-type="<?php echo esc_attr( $mvs_grid_media_type ); ?>"
 					data-media-json="<?php echo esc_attr( wp_json_encode( $mvs_grid_lightbox ) ); ?>"
+					<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( $item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the ratio. ?>
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
 					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>

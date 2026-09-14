@@ -1106,6 +1106,49 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
 	 *                        - 'size' (string) Image size. Default 'medium'.
 	 */
+	/**
+	 * The aspect-ratio style a justified grid item carries.
+	 *
+	 * `original` mode lays media out as justified rows (Flickr-style): each
+	 * row is stretched to the full width and every tile takes the share its
+	 * own aspect ratio earns. The ratio has to reach CSS per item, and it is
+	 * emitted as an INSTANCE CUSTOM PROPERTY, which Coding Rule 19 permits -
+	 * it is data, not a cosmetic declaration.
+	 *
+	 * One emitter, so a surface cannot honour the layout and forget the ratio:
+	 * every tile that lands in a `.mvs-media-grid` calls this. A row with no
+	 * stored dimensions (an album or collection cover) falls back to 3:2, the
+	 * same default Pro's Flickr layout uses.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param array<string, mixed>|int $row Media row (from MediaRepository, which
+	 *                                      SELECTs *), or a media id to look up.
+	 * @return string ` style="--mvs-ar:1.5"`, ready to concatenate into a tag.
+	 */
+	public function grid_item_ar_style( $row ): string {
+		$width  = 0.0;
+		$height = 0.0;
+
+		if ( is_array( $row ) ) {
+			$width  = isset( $row['width'] ) ? (float) $row['width'] : 0.0;
+			$height = isset( $row['height'] ) ? (float) $row['height'] : 0.0;
+		} elseif ( (int) $row > 0 ) {
+			$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$width  = (float) $repo->get( (int) $row, 'width' );
+			$height = (float) $repo->get( (int) $row, 'height' );
+		}
+
+		$ratio = ( $width > 0.0 && $height > 0.0 ) ? round( $width / $height, 4 ) : 1.5;
+
+		// Clamped so one panorama cannot swallow a whole row, and a 1px-wide
+		// thumbnail cannot collapse to a sliver. The CSS min-width is the
+		// second half of the same guard.
+		$ratio = max( 0.3, min( 4.0, $ratio ) );
+
+		return ' style="--mvs-ar:' . esc_attr( (string) $ratio ) . '"';
+	}
+
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
@@ -1174,6 +1217,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		);
 
 		echo '<div class="' . esc_attr( $item_class ) . '"' . $data_str // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $data_str is assembled from esc_attr()-wrapped key/value pairs above; the leading space + pre-escaped attrs are safe.
+			. $this->grid_item_ar_style( $media_row ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the only value it interpolates.
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() output (encoded + escaped JSON for the data-wp-context attribute).
 			. '>';

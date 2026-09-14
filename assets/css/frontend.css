@@ -24,6 +24,24 @@
     --mvs-font-md: 16px;
     --mvs-font-lg: 18px;
 
+    /* Justified-row height for the `original` grid layout. Mirrors Pro's
+       --mvs-fl-row-height (Flickr), whose justified-rows technique this layout
+       now shares - see the .mvs-grid--original block for why. */
+    --mvs-grid-row-height: 240px;
+
+    /* Per-item aspect ratio for those justified rows. Every tile overrides
+       this inline (TemplateHelpers::grid_item_ar_style() server-side,
+       card-builders.js for appended cards); the value here is the 3:2
+       fallback for an item with no stored dimensions.
+
+       Declared in :root deliberately. The CSS token-contract gate reads a
+       var() with no definition as a phantom token, and it is right to - it
+       cannot tell an instance property from a typo, and the typo is the
+       common case. Giving it a real definition satisfies the contract
+       honestly instead of adding an allowlist entry that would blind the
+       gate to the next real one. */
+    --mvs-ar: 1.5;
+
     /* Brand — prefer theme BUTTON tokens first so the plugin's primary
        buttons (Follow / Post / Add Media (+) / .mvs-btn--primary / .mvs-fab)
        match the theme's own button palette. Fall back to the theme's
@@ -1440,12 +1458,12 @@ body.dark-mode .mvs-skeleton::after {
     pointer-events: none;
 }
 
-.mvs-grid--original .mvs-grid-item {
-    aspect-ratio: auto;
-}
-
 .mvs-grid--original .mvs-grid-item img {
-    height: auto;
+    /* Fills the fixed-height link. The justified row already gives the tile the
+       width its aspect ratio earns, so `cover` crops nothing visible. */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .mvs-grid--original .mvs-dashboard-card-thumb {
@@ -1457,55 +1475,75 @@ body.dark-mode .mvs-skeleton::after {
     object-fit: contain;
 }
 
-/* Original mode = true masonry (Pinterest / Unsplash): every image keeps its
-   native aspect ratio (no square crop) and tiles pack with no gaps. CSS
-   multi-column is a no-JS masonry — it works with Load More (appended cards
-   flow into the columns) and preserves DOM order so the lightbox prev/next
-   stays correct. This overrides .mvs-media-grid's `display:grid`, whose uniform
-   rows left large gaps under short/wide images. (Aspect-ratio request.) */
+/* Original mode = JUSTIFIED ROWS (Flickr / Google Photos): every image keeps
+   its native aspect ratio, each row is stretched to the full width, and rows
+   read LEFT TO RIGHT.
+
+   This replaced CSS multi-column, which packed tightly but filled column-major:
+   with "Newest first" the visible top row was items #1, #5 and #9, so scanning
+   the page the way people actually scan it did not give newest-first. The sort
+   control, the REST order and the DOM were all correct and only the layout
+   disagreed (Basecamp 10298798668).
+
+   The technique is Pro's Flickr layout, which already solved this: each item
+   carries its aspect ratio as the `--mvs-ar` instance custom property, and
+   flex-grow distributes each row's width in proportion to it. flex-basis is
+   derived from the same ratio so a row WRAPS at the right point - with
+   flex-basis 0 every tile would land on one line and never wrap.
+
+   Why not CSS grid + `grid-row: span N`: a grid row cannot be sized as a
+   function of column width, so a server-computed span is only correct at one
+   column count and this layout goes 3 -> 2 -> 1 columns. That needs a JS
+   measure pass; this does not. */
 .mvs-media-grid.mvs-grid--original {
-    display: block;
-    column-gap: 16px;
-}
-
-.mvs-grid--original.mvs-cols-2 {
-    column-count: 2;
-}
-
-.mvs-grid--original.mvs-cols-3 {
-    column-count: 3;
-}
-
-.mvs-grid--original.mvs-cols-4 {
-    column-count: 4;
-}
-
-.mvs-grid--original.mvs-cols-5 {
-    column-count: 5;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--mvs-grid-gap, 16px);
 }
 
 .mvs-grid--original .mvs-grid-item {
-    -webkit-column-break-inside: avoid;
-    break-inside: avoid;
-    margin-bottom: 16px;
-    width: 100%;
+    /* --mvs-ar is emitted per item by TemplateHelpers::grid_item_ar_style()
+       (PHP) and window.mvsCardBuilders (JS). The 1.5 fallback is the same
+       landscape default Flickr uses when an item has no stored dimensions -
+       album and collection covers, for instance. */
+    flex-grow: var(--mvs-ar, 1.5);
+    flex-shrink: 1;
+    flex-basis: calc(var(--mvs-ar, 1.5) * var(--mvs-grid-row-height));
+    min-width: 120px;
+    max-width: 100%;
+    aspect-ratio: auto;
+}
+
+/* A lone orphan on the last row would otherwise stretch the full width. */
+.mvs-grid--original .mvs-grid-item:last-child {
+    max-width: min(100%, calc(var(--mvs-ar, 1.5) * var(--mvs-grid-row-height)));
 }
 
 /* The card's <a> wrapper is forced square by `.mvs-feed .mvs-grid-item-link`
-   (a later, equal-specificity rule). In masonry that square wrapper re-introduces
-   the gap even though the <img> is natural height. Beat it with a compound
-   selector so the link hugs the image and the card hugs the link. */
+   (a later, equal-specificity rule); beat it with a compound selector so the
+   link hugs the image.
+
+   DIRECT CHILD only, never `.mvs-grid-item a`. That descendant form also
+   matched the author profile link inside .mvs-grid-item-info, which then took
+   the full row height: every card rendered 496px tall around a 240px image.
+   It was harmless while this rule said `height: auto` and became a bug the
+   moment it carried a real height. */
 .mvs-media-grid.mvs-grid--original .mvs-grid-item-link,
-.mvs-media-grid.mvs-grid--original .mvs-grid-item a {
+.mvs-media-grid.mvs-grid--original .mvs-grid-item > a {
     aspect-ratio: auto;
-    height: auto;
+    /* The ROW height lands here, not on .mvs-grid-item: render_grid_item()
+       adds a .mvs-grid-item-info author row below this link on some surfaces
+       and not others. Fixing the image area keeps every card in a row the same
+       height either way; fixing the whole card would clip that row. */
+    height: var(--mvs-grid-row-height);
+    display: block;
 }
 
-@media (max-width: 1024px) {
-
-    .mvs-grid--original.mvs-cols-5 {
-        column-count: 4;
-    }
+/* The author row keeps its natural height - it is a sibling of the media link,
+   not part of the image area. */
+.mvs-media-grid.mvs-grid--original .mvs-grid-item-info a {
+    height: auto;
 }
 
 /* List mode: one row per item, thumbnail beside the title. Overrides
@@ -1518,7 +1556,15 @@ body.dark-mode .mvs-skeleton::after {
     gap: 12px;
 }
 
-.mvs-grid--list .mvs-grid-item {
+/* COMPOUND selector deliberately. `.mvs-feed .mvs-grid-item` (display:flex,
+   ~150 lines below) has the same 0-2-0 specificity and wins on order, so the
+   plain `.mvs-grid--list .mvs-grid-item` form lost every time: display stayed
+   flex, grid-template-columns was computed but inert, and the thumbnail filled
+   the row at 1084px square instead of sitting 96px beside the title. Explore
+   carries `mvs-feed` on its container (explore.php), so that was every Explore
+   surface - the List option a site owner can pick has never rendered as a list.
+   Basecamp 10299239470. */
+.mvs-media-grid.mvs-grid--list .mvs-grid-item {
     aspect-ratio: auto;
     display: grid;
     grid-template-columns: 96px 1fr;
@@ -1528,9 +1574,16 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 /* The square wrapper is wanted here - it keeps the row thumbnails aligned -
-   but it must size to the column, not to the row. */
+   but it must size to the column, not to the row.
+
+   DIRECT CHILD only, never `.mvs-grid-item a`. The descendant form also matched
+   the author profile link inside .mvs-grid-item-info, which sits in the 1fr
+   column: at ~956px wide, `aspect-ratio: 1` made it ~956px TALL and dragged the
+   whole list row to 988px. Same over-broad selector, same author link, same
+   symptom as the one fixed in `--original` above - the two were written apart
+   and only one was hardened (Basecamp 10299239470). */
 .mvs-media-grid.mvs-grid--list .mvs-grid-item-link,
-.mvs-media-grid.mvs-grid--list .mvs-grid-item a {
+.mvs-media-grid.mvs-grid--list .mvs-grid-item > a {
     aspect-ratio: 1;
     height: auto;
     border-radius: 6px;
@@ -1561,22 +1614,20 @@ body.dark-mode .mvs-skeleton::after {
     }
 }
 
-@media (max-width: 767px) /* below --mvs-bp-tablet */ {
+/* Justified rows need no column-count breakpoints - the row height is the
+   only knob, and fewer/taller items land per row as the screen narrows.
+   Same ladder as Pro's Flickr layout. */
+@media (max-width: 1024px) {
 
-    .mvs-grid--original.mvs-cols-3,
-    .mvs-grid--original.mvs-cols-4,
-    .mvs-grid--original.mvs-cols-5 {
-        column-count: 2;
+    :root {
+        --mvs-grid-row-height: 180px;
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
 
-    .mvs-grid--original.mvs-cols-2,
-    .mvs-grid--original.mvs-cols-3,
-    .mvs-grid--original.mvs-cols-4,
-    .mvs-grid--original.mvs-cols-5 {
-        column-count: 1;
+    :root {
+        --mvs-grid-row-height: 140px;
     }
 }
 
