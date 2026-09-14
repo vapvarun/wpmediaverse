@@ -202,6 +202,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			tagInput: '',
 			tagResults: [],
 			tagDropdownVisible: false,
+			// Off by default - a title edit leaves the URL alone. Held in state so
+			// re-opening the panel shows what the member actually chose.
+			regenerateSlug: false,
 			saving: false,
 		},
 		// Albums
@@ -1020,6 +1023,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.tagInput = '';
 			state.editModal.tagResults = [];
 			state.editModal.tagDropdownVisible = false;
+			state.editModal.regenerateSlug = false;
 		},
 
 		closeEditModal() {
@@ -1027,6 +1031,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		setEditTitle( event ) { state.editModal.title = event.target.value; },
+		setEditRegenerateSlug( event ) { state.editModal.regenerateSlug = !! event.target.checked; },
 		setEditDesc( event ) { state.editModal.description = event.target.value; },
 		setEditPrivacy( event ) { state.editModal.privacy = event.target.value; },
 

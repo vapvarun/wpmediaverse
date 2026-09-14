@@ -791,7 +791,9 @@ $mvs_archive_url = home_url( '/media/' );
 					</div>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<input type="checkbox" class="mvs-edit-regenerate-slug"
+								data-wp-on--change="actions.updateEditRegenerateSlug"
+								data-wp-bind--checked="context.editRegenerateSlug" />
 							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
 						</label>
 					</div>

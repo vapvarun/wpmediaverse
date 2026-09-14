@@ -1475,7 +1475,9 @@ wp_interactivity_state(
 					</div>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<input type="checkbox" class="mvs-edit-regenerate-slug"
+							data-wp-on--change="actions.setEditRegenerateSlug"
+							data-wp-bind--checked="state.editModal.regenerateSlug" />
 							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
 						</label>
 					</div>
