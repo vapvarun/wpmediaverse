@@ -163,15 +163,43 @@ At walk end, archive the diff window to `qa/runs/.debug-log-<release_version>-<r
 
 Run on a clean WordPress install with no prior MVS data.
 
+> **A and B ARE walkable — use the docker-smoke stack, not the model site.**
+> Both sections sat at `0 pass` for releases with a `manual_required` note
+> saying "not walkable on a live dev site". That was true of mediaverse.local
+> and false of the project: `~/Documents/work-artifacts/docker-smoke/` gives a
+> throwaway WP in about a minute.
+>
+> ```bash
+> cd ~/Documents/work-artifacts/docker-smoke
+> docker compose down -v && docker compose up -d      # wipes to pristine
+> C=docker-smoke-wpcli-1
+> docker exec $C wp core install --url=http://localhost:8899 \
+>   --title=Smoke --admin_user=admin --admin_password=admin \
+>   --admin_email=a@b.test --skip-email --allow-root
+> docker exec $C wp plugin install /zips/wpmediaverse-<v>.zip --activate --allow-root
+> ```
+>
+> Port 8899 may be held by the long-running wp-env QA stack; stop only its
+> `wordpress` container (volumes persist) rather than tearing that env down.
+> Compose MERGES `ports` lists, so an override file adding a second port does
+> not replace the first - it binds both and fails on the taken one.
+>
+> **Seeding a row for B1:** `mvs_media_index` has NO `user_id` and NO `id`
+> column. It is `post_author` and `media_id`, and `slug` is NOT NULL UNIQUE.
+> An insert with the wrong column names fails silently through `$wpdb->insert`
+> and the survival check then reports LOST when nothing was ever seeded -
+> a false data-loss alarm. Always assert `$wpdb->insert_id` and print
+> `$wpdb->last_error` before trusting the result.
+
 ### A1 — Free activates without fatal
 **What to verify:** activating WPMediaVerse on a fresh WP install completes with no PHP fatal, creates every expected table, registers expected post types / taxonomies / capabilities, and the admin landing page renders.
 **Why it matters:** activation fatals trash customer sites and require a manual SFTP rescue.
-**Acceptance:** all 23 `wp_mvs_*` tables exist (36 with Pro active); `mvs_db_version` is the SCHEMA version integer — 30 at 2.4.0, NOT the plugin version string; admin "WPMediaVerse" menu renders; `/wp-admin/admin.php?page=wpmediaverse` returns 200 with no fatal **when authenticated** (an unauthenticated request correctly 302s to login, which is not a failure).
+**Acceptance:** all 23 `wp_mvs_*` tables exist (36 with Pro active); `mvs_db_version` is the SCHEMA version integer — **32 at 2.5.0** (30 at 2.4.0/2.4.1, verified by an upgrade walk), NOT the plugin version string; admin "WPMediaVerse" menu renders; `/wp-admin/admin.php?page=wpmediaverse` returns 200 with no fatal **when authenticated** (an unauthenticated request correctly 302s to login, which is not a failure).
 
 > Corrected 2026-08-31 by a Docker fresh-install walk. This line said "21 tables" and "`mvs_db_version` equals `MVS_VERSION`". Both were wrong and both would fail a correct install: the count is 23, and `mvs_db_version` has always been an integer (25 at 2.3.0 → 30 at 2.4.0). Re-derive the count from `Migrator` rather than trusting this number after a release that adds a table.
 
 ### A2 — Pro activates cleanly on top of Free (combo only)
-**What to verify:** activating WPMediaVerse Pro on top of an already-active Free does not fatal, creates Pro-only tables (8 expected, prefixed `mvs_pro_*` or feature-named per Pro CLAUDE.md), registers Pro admin pages, and `MVS_PRO_VERSION` matches `MVS_VERSION`.
+**What to verify:** activating WPMediaVerse Pro on top of an already-active Free does not fatal, creates Pro-only tables (**13 expected**, taking the combo total to **36** — verified by a Docker fresh-install walk 2026-09-15. All 13 come from Pro's `Migrator`: 11 declare their name inline, and `mvs_pro_folders` / `mvs_pro_document_search` route through `Migrator::create_table()` (`:857`), which interpolates the name into `CREATE TABLE {$table}` — so a grep for `CREATE TABLE.*mvs_` misses them. Count the tables, not the CREATE statements; prefixed `mvs_pro_*` or feature-named per Pro CLAUDE.md), registers Pro admin pages, and `MVS_PRO_VERSION` matches `MVS_VERSION`.
 **Acceptance:** Pro main file's `Requires Plugins: wpmediaverse` header is honored — deactivating Free leaves Pro disabled with a clear admin notice; reactivating Free re-enables Pro without intervention. No `from`-origin entry in debug.log during either activation.
 
 ### A3 — First-request routing works without manual flush
