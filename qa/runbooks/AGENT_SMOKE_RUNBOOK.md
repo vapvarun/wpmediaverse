@@ -231,6 +231,21 @@ Run on a clean WordPress install with no prior MVS data.
 
 ## C — Core customer flows
 
+> **Pick fixtures that can actually satisfy the check.** Two anon checks
+> reported false empty states in the 2026-09-15 walk because the fixture was
+> wrong, not the code: `bn_demo_alex_rivera` has 0 PUBLIC media (4 private), and
+> tag `2026` has 1 object. Both rendered a correct empty state that read as a
+> missing grid. Query first:
+>
+> ```sql
+> SELECT post_author, COUNT(*) FROM wp_mvs_media_index
+>  WHERE privacy='public' AND status='publish' GROUP BY post_author ORDER BY 2 DESC;
+> ```
+>
+> On this site that gives `mina_aoki` (12 public) and tag `nature` (11 public).
+> Also note grid thumbnails may be served from the CDN (`*.b-cdn.net`), so an
+> assertion that only accepts `/wp-content/uploads/` under-reports.
+
 Persona ladder: **Anonymous > Member > Admin**. Pick a real test user from each persona — admin is user 1, create a subscriber-role member with login `e2e_member` if absent, and a moderator-capable user `e2e_mod` if Free's moderation queue requires one. Cover both desktop 1280px and mobile 390px where relevant.
 
 Each step is a contract, not a script. When you verify it, exercise the UI as a user would AND confirm the server-side effect (DB row, REST response, signed URL valid, queued side-effect) to rule out a "looks right, didn't actually save" bug.
@@ -247,7 +262,7 @@ Each step is a contract, not a script. When you verify it, exercise the UI as a 
 **What to verify:** `/media/?mvs_tag=<known-tag>` returns the filtered feed with a clear-filter affordance, OR a clean empty state with the same affordances as zero-results search. Unknown tag slug does not fatal — produces a clean empty state.
 
 ### C.anon.single-media
-**What to verify:** `/media/<slug>/` renders the single-media template — image (signed URL streams 200 `image/jpeg|webp|png|gif`), title, description, tags, owner, social meta in `<head>` (`og:image` + `og:title` + `twitter:card`). Auth-gated actions (favorite, react, comment, follow) cleanly redirect a logged-out visitor to login rather than failing silently with 403.
+**What to verify:** the canonical single-media URL is **`/p/<media_id>/`**, not `/media/<slug>/` — the slug form 301-redirects to it (verified 2026-09-15: `/media/editing-desk/` -> `/p/1915/`, `/media/audio-posting-from-mediaverse-end/` -> `/p/1919/`). Probe `/p/<id>/`; a walker testing the slug form sees a 301 and can mistake it for a broken share target. It renders the single-media template — image (signed URL streams 200 `image/jpeg|webp|png|gif`), title, description, tags, owner, social meta in `<head>` (`og:image` + `og:title` + `twitter:card`). Auth-gated actions (favorite, react, comment, follow) cleanly redirect a logged-out visitor to login rather than failing silently with 403.
 **Why it matters:** this is the canonical share target.
 
 ### C.anon.user-profile
