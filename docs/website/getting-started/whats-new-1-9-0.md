@@ -1,6 +1,6 @@
 # What's New in 1.9.0
 
-WPMediaVerse 1.9.0 adds interests-based onboarding, a big native-app readiness push across the REST API, and several messaging and profile improvements, alongside a batch of QA-driven fixes.
+MediaVerse 1.9.0 adds interests-based onboarding, a big native-app readiness push across the REST API, and several messaging and profile improvements, alongside a batch of QA-driven fixes.
 
 > **Included in Free.** Every item on this page applies to the free version. Pro picks up these improvements automatically because Pro builds on top of free.
 
@@ -66,5 +66,5 @@ New `wp mvs cert` functional certification engine - a boot smoke test across eve
 
 ## Upgrade notes
 
-- Pairs with WPMediaVerse Pro 1.9.0 - install both updates together.
+- Pairs with MediaVerse Pro 1.9.0 - install both updates together.
 - If you use the 1.9.0 access-rules admin screen, plan to move to the REST API workflow before or during your 2.0.0 update.

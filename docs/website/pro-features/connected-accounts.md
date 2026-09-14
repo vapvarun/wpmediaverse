@@ -1,8 +1,8 @@
 # Connected Accounts
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-Connect an external photo platform to WPMediaVerse and move media in both directions - **import** existing photos and albums into your media library, and **auto-push** new uploads back out to that platform. In 1.5.0 the only built-in connector is **Flickr**, with full import, export, album browsing, and metadata sync support.
+Connect an external photo platform to MediaVerse and move media in both directions - **import** existing photos and albums into your media library, and **auto-push** new uploads back out to that platform. In 1.5.0 the only built-in connector is **Flickr**, with full import, export, album browsing, and metadata sync support.
 
 The connector framework is pluggable, so additional platforms can be added by developers in the future. This page covers the Flickr connector as it ships today.
 
@@ -10,12 +10,12 @@ The connector framework is pluggable, so additional platforms can be added by de
 
 Once a member connects their Flickr account, they can:
 
-- **Import** photos and videos from their Flickr photostream or from a specific album (set) into WPMediaVerse.
-- **Export** (auto-push) - automatically copy every new WPMediaVerse upload to their Flickr account.
+- **Import** photos and videos from their Flickr photostream or from a specific album (set) into MediaVerse.
+- **Export** (auto-push) - automatically copy every new MediaVerse upload to their Flickr account.
 - **Browse albums** - pick a Flickr album to import from or push exports into.
 - **Sync metadata** - pull the latest title, description, tags, and privacy from Flickr back into the local media record (delta sync).
 
-Privacy is mapped both ways. A Flickr "public/friends/family/private" visibility maps to the matching WPMediaVerse privacy level on import, and the member can choose how WPMediaVerse privacy maps back to Flickr on export.
+Privacy is mapped both ways. A Flickr "public/friends/family/private" visibility maps to the matching MediaVerse privacy level on import, and the member can choose how MediaVerse privacy maps back to Flickr on export.
 
 ---
 
@@ -50,7 +50,7 @@ Providing a built-in Flickr API key/secret lets your members connect with a sing
 3. Give the app a name and description, agree to the API terms, and submit.
 4. Flickr shows you a **Key** and a **Secret** - copy both.
 
-### Enter the credentials in WPMediaVerse
+### Enter the credentials in MediaVerse
 
 1. Back in **MediaVerse > Settings > Connected Accounts**.
 2. Paste the key into **Flickr Plugin API Key**.
@@ -71,7 +71,7 @@ The connect flow runs on the same **Connected Accounts** settings tab. Each regi
 
 1. On the Flickr card, click **Connect with Flickr**.
 2. You are redirected to Flickr's authorization page. Sign in if needed and click **OK, I'll authorize it**.
-3. Flickr redirects back to WPMediaVerse. The card now shows **Connected as @yourusername**.
+3. Flickr redirects back to MediaVerse. The card now shows **Connected as @yourusername**.
 
 ### Members using their own key
 
@@ -99,11 +99,11 @@ After connecting, the member can browse and import their Flickr media.
 3. Select the photos to import.
 4. Confirm the import.
 
-For each photo, WPMediaVerse:
+For each photo, MediaVerse:
 
 - Downloads the best available image size from Flickr.
 - Creates a media item in your library through the standard upload pipeline (so quotas, watermarking, and AI features all apply).
-- Copies the title, description, tags, and Flickr privacy (mapped to WPMediaVerse privacy).
+- Copies the title, description, tags, and Flickr privacy (mapped to MediaVerse privacy).
 - Records the Flickr photo ID so the same photo is **never imported twice** - re-importing an already-imported photo is reported as "skipped".
 
 The import result reports per-item outcomes: **imported**, **skipped** (already present), or **failed** (with an error message).
@@ -112,11 +112,11 @@ The import result reports per-item outcomes: **imported**, **skipped** (already 
 
 ## Step 5 - Export and Auto-Push New Uploads
 
-Exporting copies a WPMediaVerse media item up to the member's Flickr account.
+Exporting copies a MediaVerse media item up to the member's Flickr account.
 
 ### Auto-push
 
-On a connected Flickr card, the member can toggle **Auto-push new uploads > Enable**. With this on, every new WPMediaVerse upload by that member is automatically exported to Flickr. When Action Scheduler is available the export runs in the background; otherwise it runs inline at upload time.
+On a connected Flickr card, the member can toggle **Auto-push new uploads > Enable**. With this on, every new MediaVerse upload by that member is automatically exported to Flickr. When Action Scheduler is available the export runs in the background; otherwise it runs inline at upload time.
 
 ### Default privacy on Flickr
 
@@ -124,7 +124,7 @@ The card has a **Default privacy on Flickr** selector that controls how exported
 
 | Option | Effect on Flickr |
 |--------|------------------|
-| Match WPMediaVerse | Use the media item's own privacy, mapped to Flickr |
+| Match MediaVerse | Use the media item's own privacy, mapped to Flickr |
 | Public | Always public on Flickr |
 | Friends | Visible to Flickr friends |
 | Friends + Family | Visible to Flickr friends and family |
@@ -136,7 +136,7 @@ If a member set a **default album**, exported photos are also added to that Flic
 
 ## Step 6 - Sync Metadata (Delta Sync)
 
-The Flickr connector supports **delta sync**: pulling the latest title, description, tags, and privacy from Flickr back into the matching local media records. This is useful when a member edits photo metadata on Flickr and wants WPMediaVerse to reflect those edits. Sync only touches media that originated from (or was exported to) Flickr for that member, and records a "last synced" timestamp.
+The Flickr connector supports **delta sync**: pulling the latest title, description, tags, and privacy from Flickr back into the matching local media records. This is useful when a member edits photo metadata on Flickr and wants MediaVerse to reflect those edits. Sync only touches media that originated from (or was exported to) Flickr for that member, and records a "last synced" timestamp.
 
 ---
 
@@ -148,7 +148,7 @@ A connected card has a **Test Connection** button. It runs a live check against 
 
 ## Disconnecting
 
-Click **Disconnect** on a connected card to remove the local connection. This clears the encrypted tokens, the cached account identity, the auto-push and default-privacy preferences, and the validation cache. Because Flickr has no remote revoke endpoint, you may also want to revoke WPMediaVerse from your [Flickr account's connected apps](https://www.flickr.com/services/auth/list.gne) page if you want Flickr's side cleared too.
+Click **Disconnect** on a connected card to remove the local connection. This clears the encrypted tokens, the cached account identity, the auto-push and default-privacy preferences, and the validation cache. Because Flickr has no remote revoke endpoint, you may also want to revoke MediaVerse from your [Flickr account's connected apps](https://www.flickr.com/services/auth/list.gne) page if you want Flickr's side cleared too.
 
 ---
 
@@ -178,7 +178,7 @@ The feature is off. Enable **Platform Connectors feature** and save (Step 1).
 The connect flow took longer than the 5-minute request-token window, or it was started in one browser tab and finished in another. Start the connect again from the Flickr card.
 
 **Imported photos look low-resolution.**
-WPMediaVerse imports the best size Flickr exposes for that photo. Photos uploaded to Flickr at small sizes, or with download restrictions, may not offer a high-resolution original.
+MediaVerse imports the best size Flickr exposes for that photo. Photos uploaded to Flickr at small sizes, or with download restrictions, may not offer a high-resolution original.
 
 **Test Connection still shows a stale result after reconnecting.**
 The validation result is cached for 15 minutes. Disconnecting clears that cache; after a fresh connect the next Test Connection reflects the new token.

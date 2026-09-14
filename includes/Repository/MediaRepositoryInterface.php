@@ -344,6 +344,16 @@ interface MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool;
 
 	/**
+	 * Delete rows in a media-keyed table whose media no longer exists.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $table Unprefixed table with a `media_id` column.
+	 * @return int Rows deleted.
+	 */
+	public function delete_rows_without_media( string $table ): int;
+
+	/**
 	 * Purge the mvs_media_index + mvs_media_meta rows for an id and drop its row
 	 * cache. Targeted row/meta cleanup for album/collection privacy rows on
 	 * delete (they never touch the downstream tables delete_cascade() clears).

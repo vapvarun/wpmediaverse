@@ -1,6 +1,6 @@
-# Why WPMediaVerse
+# Why MediaVerse
 
-WPMediaVerse is a purpose-built media platform for WordPress. Unlike plugins that bolt media features onto WordPress posts or attachments, WPMediaVerse uses its own high-performance database architecture designed from the ground up for media-heavy communities.
+MediaVerse is a purpose-built media platform for WordPress. Unlike plugins that bolt media features onto WordPress posts or attachments, MediaVerse uses its own high-performance database architecture designed from the ground up for media-heavy communities.
 
 ## The Problem with WordPress Attachments
 
@@ -11,9 +11,9 @@ Most WordPress media plugins store user uploads as `wp_posts` with `post_type = 
 - **No native stats** - WordPress attachments have no built-in view counting, reaction tracking, or engagement metrics. Plugins that add these use postmeta, compounding the bloat.
 - **Mixed concerns** - Admin queries for pages and posts compete with media queries. There is no way to independently optimize media storage.
 
-## How WPMediaVerse Is Different
+## How MediaVerse Is Different
 
-WPMediaVerse stores all media in dedicated custom tables, completely separate from `wp_posts`:
+MediaVerse stores all media in dedicated custom tables, completely separate from `wp_posts`:
 
 | Table | Purpose |
 |-------|---------|
@@ -36,7 +36,7 @@ WPMediaVerse stores all media in dedicated custom tables, completely separate fr
 
 ### Performance at Scale
 
-| Metric | Attachment-based plugins | WPMediaVerse |
+| Metric | Attachment-based plugins | MediaVerse |
 |--------|------------------------|-------------|
 | 10K media: wp_posts rows added | 10,000 | 0 |
 | 10K media: wp_postmeta rows added | 100,000-200,000 | 0 |
@@ -46,7 +46,7 @@ WPMediaVerse stores all media in dedicated custom tables, completely separate fr
 
 ## Files Are Still in wp-content
 
-WPMediaVerse stores **database records** in custom tables. The actual **files** (images, videos, audio) are stored in the standard WordPress uploads directory:
+MediaVerse stores **database records** in custom tables. The actual **files** (images, videos, audio) are stored in the standard WordPress uploads directory:
 
 ```
 wp-content/uploads/wpmediaverse/2026/03/photo-name.jpg
@@ -59,7 +59,7 @@ With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN whil
 
 ## How It Compares
 
-| Feature | rtMedia | BuddyBoss Media | MediaPress | WPMediaVerse |
+| Feature | rtMedia | BuddyBoss Media | MediaPress | MediaVerse |
 |---------|---------|-----------------|------------|-------------|
 | Storage | wp_posts + postmeta | wp_posts + postmeta | wp_posts + postmeta | Custom tables |
 | Requires BuddyPress | Yes | Yes (BuddyBoss) | Yes | No (optional) |
@@ -78,7 +78,7 @@ With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN whil
 A social network for photographers to share, discover, and compete. Users upload photos, follow each other, enter weekly challenges, and battle head-to-head. The Pinterest or Instagram layout creates a visual-first experience.
 
 ### Portfolio Showcase
-Designers, artists, and photographers use WPMediaVerse as their portfolio. The Dribbble layout presents work in a professional shot grid. Clients can view galleries, leave comments, and message directly.
+Designers, artists, and photographers use MediaVerse as their portfolio. The Dribbble layout presents work in a professional shot grid. Clients can view galleries, leave comments, and message directly.
 
 ### School or University
 Students submit media projects through the upload system. Teachers use collections to curate work. Privacy controls ensure only enrolled members see content. Quotas limit storage per student.
@@ -92,19 +92,19 @@ Add a rich media layer to any BuddyPress social network. Members get media tabs 
 ## Frequently Asked Questions
 
 ### Will my media appear in the WordPress Media Library?
-No. WPMediaVerse media is managed through its own admin pages (**Media > All Media**) and frontend dashboard (**My Media**). This is intentional - it keeps the WordPress Media Library clean for your theme images, post attachments, and other site assets.
+No. MediaVerse media is managed through its own admin pages (**Media > All Media**) and frontend dashboard (**My Media**). This is intentional - it keeps the WordPress Media Library clean for your theme images, post attachments, and other site assets.
 
-### Can I use WPMediaVerse without BuddyPress?
-Yes. WPMediaVerse is a standalone plugin. It creates its own pages (/explore-media/, /my-media/, /upload-media/) and works on any WordPress site. BuddyPress integration activates automatically when BuddyPress is installed but is completely optional.
+### Can I use MediaVerse without BuddyPress?
+Yes. MediaVerse is a standalone plugin. It creates its own pages (/explore-media/, /my-media/, /upload-media/) and works on any WordPress site. BuddyPress integration activates automatically when BuddyPress is installed but is completely optional.
 
 ### What happens to my data if I deactivate the plugin?
 Deactivation stops all plugin functionality but your data stays intact in the database. Reactivating restores everything. Deleting the plugin (uninstall) removes all custom tables and data permanently.
 
 ### Can I migrate from rtMedia / MediaPress / BuddyBoss?
-Yes. WPMediaVerse Pro includes WP-CLI migration tools that import media records, preserving original upload dates, author attribution, and file URLs. See [Migration Tools](../developer-guide/migration-tools.md).
+Yes. MediaVerse Pro includes WP-CLI migration tools that import media records, preserving original upload dates, author attribution, and file URLs. See [Migration Tools](../developer-guide/migration-tools.md).
 
 ### How does search work?
-WPMediaVerse has its own search system that queries the `mvs_media_index` table directly. It searches titles and descriptions. Tags and categories use WordPress taxonomies for filtering.
+MediaVerse has its own search system that queries the `mvs_media_index` table directly. It searches titles and descriptions. Tags and categories use WordPress taxonomies for filtering.
 
 ### Does it work with page builders?
-Yes. WPMediaVerse provides Gutenberg blocks (Media Grid, Explore Feed, Album Viewer) and shortcodes for Elementor, Beaver Builder, and other builders. The blocks use the WordPress Interactivity API for dynamic behavior.
+Yes. MediaVerse provides Gutenberg blocks (Media Grid, Explore Feed, Album Viewer) and shortcodes for Elementor, Beaver Builder, and other builders. The blocks use the WordPress Interactivity API for dynamic behavior.

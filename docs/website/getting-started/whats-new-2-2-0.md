@@ -1,8 +1,8 @@
 # What's New in 2.2.0
 
-WPMediaVerse 2.2.0 is a polish and privacy release: the whole REST surface can now follow your community's privacy setting, chat gets live reactions and a cleaner attachment experience, and a batch of visible UX fixes across profiles, the lightbox, Explore layouts, and admin settings.
+MediaVerse 2.2.0 is a polish and privacy release: the whole REST surface can now follow your community's privacy setting, chat gets live reactions and a cleaner attachment experience, and a batch of visible UX fixes across profiles, the lightbox, Explore layouts, and admin settings.
 
-> **Included in Free.** Every item on this page applies to the free version unless marked Pro. Paired with WPMediaVerse Pro 2.2.0 - install and test both together.
+> **Included in Free.** Every item on this page applies to the free version unless marked Pro. Paired with MediaVerse Pro 2.2.0 - install and test both together.
 
 ## Private-community REST gate
 
@@ -30,4 +30,4 @@ The Flickr, Pinterest, and Dribbble Explore layouts now show a proper empty stat
 ## Compatibility
 
 - **BuddyBoss and older BuddyPress** - fixed a fatal error where `bp_get_group_url()` does not exist.
-- Requires and pairs with WPMediaVerse Pro 2.2.0 (Pro is a lockstep release: shared competition-media formatting internals, no Pro-only feature changes).
+- Requires and pairs with MediaVerse Pro 2.2.0 (Pro is a lockstep release: shared competition-media formatting internals, no Pro-only feature changes).

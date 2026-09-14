@@ -6,9 +6,9 @@ tier: free
 
 # Image Optimization
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
-WPMediaVerse automatically reduces image file sizes at upload time. No extra plugin is required. Originals are never made larger: if re-encoding produces no gain, the original file is kept untouched.
+MediaVerse automatically reduces image file sizes at upload time. No extra plugin is required. Originals are never made larger: if re-encoding produces no gain, the original file is kept untouched.
 
 ## What It Does
 
@@ -23,7 +23,7 @@ Animated GIFs are detected and skipped from the lossless re-encode step. Their f
 
 ## How Browsers Receive Images
 
-WPMediaVerse uses a `<picture>` element with progressive fallback. Browsers receive the most efficient format they support:
+MediaVerse uses a `<picture>` element with progressive fallback. Browsers receive the most efficient format they support:
 
 1. AVIF (if enabled and available)
 2. WebP (if enabled and available)

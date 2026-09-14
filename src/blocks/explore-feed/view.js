@@ -94,9 +94,6 @@ const searchAborters = new WeakMap();
 
 const { state } = store( 'mvs/explore-feed', {
 	state: {
-		get isMasonry() {
-			return getContext().layout === 'masonry';
-		},
 		get isActiveFilter() {
 			const itemCtx = getContext();
 			return itemCtx.filterValue === getContext().filter;
@@ -262,6 +259,17 @@ const { state } = store( 'mvs/explore-feed', {
 						if ( item.media_type ) {
 							div.setAttribute( 'data-media-type', item.media_type );
 						}
+
+						// Aspect ratio for `original` (justified-rows) mode — the
+						// same contract as TemplateHelpers::grid_item_ar_style()
+						// and card-builders.js. Without it an appended tile takes
+						// a landscape share of the row whatever its real shape,
+						// so page 2 would not match page 1.
+						const arW = item.width || 0;
+						const arH = item.height || 0;
+						let ar = arW > 0 && arH > 0 ? arW / arH : 1.5;
+						ar = Math.max( 0.3, Math.min( 4, ar ) );
+						div.style.setProperty( '--mvs-ar', ar.toFixed( 4 ) );
 
 						const anchor = document.createElement( 'a' );
 						anchor.href = item.link || '#';

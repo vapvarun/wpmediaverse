@@ -6,7 +6,7 @@
   "title": "Explore Feed",
   "category": "media",
   "icon": "screenoptions",
-  "description": "A discover/explore feed showing trending and recent WPMediaVerse media.",
+  "description": "A discover/explore feed showing trending and recent MediaVerse media.",
   "keywords": [
     "explore",
     "discover",
@@ -23,7 +23,7 @@
   "attributes": {
     "layout": {
       "type": "string",
-      "default": "grid"
+      "default": ""
     },
     "perPage": {
       "type": "number",
@@ -44,6 +44,7 @@
   },
   "textdomain": "wpmediaverse",
   "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
   "render": "file:./render.php",
   "viewScriptModule": "file:./view.js",
   "style": "file:./style-index.css"

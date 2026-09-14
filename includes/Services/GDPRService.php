@@ -37,17 +37,17 @@ class GDPRService {
 		// every Pro table). Article 15 is not satisfied by exporting the parts of
 		// someone we happened to remember.
 		$exporters['wpmediaverse-all'] = array(
-			'exporter_friendly_name' => __( 'WPMediaVerse (all data)', 'wpmediaverse' ),
+			'exporter_friendly_name' => __( 'MediaVerse (all data)', 'wpmediaverse' ),
 			'callback'               => array( $this, 'export_mapped' ),
 		);
 
 		$exporters['wpmediaverse-media'] = array(
-			'exporter_friendly_name' => __( 'WPMediaVerse Media', 'wpmediaverse' ),
+			'exporter_friendly_name' => __( 'MediaVerse Media', 'wpmediaverse' ),
 			'callback'               => array( $this, 'export_media' ),
 		);
 
 		$exporters['wpmediaverse-social'] = array(
-			'exporter_friendly_name' => __( 'WPMediaVerse Social Data', 'wpmediaverse' ),
+			'exporter_friendly_name' => __( 'MediaVerse Social Data', 'wpmediaverse' ),
 			'callback'               => array( $this, 'export_social' ),
 		);
 
@@ -72,7 +72,7 @@ class GDPRService {
 		// gone — so a request could be reported complete while the member's push
 		// tokens were still live. `done` is now earned by counting what is left.
 		$erasers['wpmediaverse'] = array(
-			'eraser_friendly_name' => __( 'WPMediaVerse', 'wpmediaverse' ),
+			'eraser_friendly_name' => __( 'MediaVerse', 'wpmediaverse' ),
 			'callback'             => array( $this, 'erase_member' ),
 		);
 
@@ -463,8 +463,8 @@ class GDPRService {
 
 		$content = sprintf(
 			'<h2>%s</h2><p>%s</p><p>%s</p><p>%s</p>',
-			__( 'WPMediaVerse', 'wpmediaverse' ),
-			__( 'When you upload media to this site using WPMediaVerse, we store the file and associated metadata (title, description, tags, privacy settings). Images may be processed for EXIF data removal.', 'wpmediaverse' ),
+			__( 'MediaVerse', 'wpmediaverse' ),
+			__( 'When you upload media to this site using MediaVerse, we store the file and associated metadata (title, description, tags, privacy settings). Images may be processed for EXIF data removal.', 'wpmediaverse' ),
 			__( 'Social interactions (reactions, comments, follows, favorites) are stored in our database and linked to your user account. You can manage these through your profile settings.', 'wpmediaverse' ),
 			__( 'When you request deletion of your personal data, all media files, social interactions, and associated metadata will be permanently removed from our systems.', 'wpmediaverse' )
 		);

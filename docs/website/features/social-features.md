@@ -1,9 +1,9 @@
 # Social Features
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-React, comment, follow, and share - WPMediaVerse turns your media site into a living community where every photo starts a conversation.
+React, comment, follow, and share - MediaVerse turns your media site into a living community where every photo starts a conversation.
 
 ## What You Can Do
 
@@ -77,7 +77,7 @@ The media listing REST endpoint accepts a `scope` parameter that narrows results
 
 ## Reactions
 
-WPMediaVerse uses a custom reactions system stored in a dedicated database table, separate from WordPress post meta.
+MediaVerse uses a custom reactions system stored in a dedicated database table, separate from WordPress post meta.
 
 ### REST API
 
@@ -97,7 +97,7 @@ do_action( 'mvs_reaction_added', $media_id, $user_id, $reaction_type );
 
 ## Comments
 
-WPMediaVerse uses a custom comments system stored in a dedicated table, separate from WordPress's `wp_comments`.
+MediaVerse uses a custom comments system stored in a dedicated table, separate from WordPress's `wp_comments`.
 
 ![Comment section below a media item](../images/single-media.jpg)
 

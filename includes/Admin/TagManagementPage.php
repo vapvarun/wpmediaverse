@@ -46,7 +46,7 @@ class TagManagementPage {
 			'mvs-admin-tag-management',
 			MVS_PLUGIN_URL . 'assets/js/admin/tag-management.js',
 			array( 'jquery' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/tag-management.js' ),
 			array( 'in_footer' => true )
 		);
 

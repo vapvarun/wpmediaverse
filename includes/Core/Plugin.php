@@ -367,6 +367,10 @@ class Plugin {
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.bp_activity_linkage' );
+
+		// Provider-neutral linkage cleanup. Booted unconditionally because the
+		// linkage table is shared with non-BuddyPress object types.
+		self::$container->get( 'object_media' );
 		self::$container->get( 'integration.bp_verified_member' );
 		self::$container->get( 'integration.webhooks' );
 
@@ -929,7 +933,9 @@ class Plugin {
 		self::$container->register(
 			'object_media',
 			function () {
-				return new \WPMediaVerse\Media\ObjectMediaLinkage();
+				$object_media = new \WPMediaVerse\Media\ObjectMediaLinkage();
+				$object_media->init();
+				return $object_media;
 			}
 		);
 
@@ -1019,6 +1025,38 @@ class Plugin {
 	const ADMIN_SLUG = 'wpmediaverse';
 
 	/**
+	 * Cache-busting version for a bundled asset.
+	 *
+	 * MVS_VERSION alone means a file that changes WITHOUT a version bump keeps
+	 * its old URL, so browsers and CDNs serve the previous body indefinitely -
+	 * on any hotfix applied over an existing install, any staging deploy, and
+	 * for every tester during a release cycle. The plugin was already
+	 * inconsistent about it: mvs-rest.js and the block assets used filemtime(),
+	 * gamification.css used version-plus-timestamp, and 29 other registrations
+	 * used the bare version. Three patterns for one job.
+	 *
+	 * Version first so the value stays human-readable in the page source, then
+	 * the file's mtime. filemtime() emits a warning and returns false on a
+	 * missing file, so the version alone is the fallback.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $relative Path under the plugin root, e.g. 'assets/css/frontend.css'.
+	 * @return string Version string for wp_register_style/script().
+	 */
+	public static function asset_version( string $relative ): string {
+		$path = MVS_PLUGIN_DIR . ltrim( $relative, '/' );
+
+		if ( ! is_readable( $path ) ) {
+			return MVS_VERSION;
+		}
+
+		$mtime = filemtime( $path );
+
+		return $mtime ? MVS_VERSION . '.' . $mtime : MVS_VERSION;
+	}
+
+	/**
 	 * Build admin URL for a WPMediaVerse page.
 	 *
 	 * @param string $page Page slug (e.g., 'mvs-settings'). Empty = overview.
@@ -1040,9 +1078,9 @@ class Plugin {
 	public static function register_admin_menu(): void {
 		// Top-level menu — renders overview page.
 		add_menu_page(
-			__( 'WPMediaVerse', 'wpmediaverse' ),
-			__( 'WPMediaVerse', 'wpmediaverse' ),
-			'manage_options',
+			__( 'MediaVerse', 'wpmediaverse' ),
+			__( 'MediaVerse', 'wpmediaverse' ),
+			'mvs_settings_screen',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' ),
 			'dashicons-format-gallery',
@@ -1054,7 +1092,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'Overview', 'wpmediaverse' ),
 			__( 'Overview', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' )
 		);
@@ -1067,7 +1105,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'All Media', 'wpmediaverse' ),
 			__( 'All Media', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_moderation_screen',
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);
@@ -1099,7 +1137,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'Tags', 'wpmediaverse' ),
 			__( 'Tags', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_moderation_screen',
 			'mvs-tags',
 			array( self::$container->get( 'admin.tags' ), 'render' )
 		);
@@ -1203,7 +1241,7 @@ class Plugin {
 			'mvs-rest',
 			MVS_PLUGIN_URL . 'assets/js/frontend/mvs-rest.js',
 			array(),
-			filemtime( MVS_PLUGIN_DIR . 'assets/js/frontend/mvs-rest.js' ),
+			self::asset_version( 'assets/js/frontend/mvs-rest.js' ),
 			array(
 				'in_footer' => false,
 			)
@@ -1237,7 +1275,7 @@ class Plugin {
 			'mvs-card-builders',
 			MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/card-builders.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1259,7 +1297,7 @@ class Plugin {
 			'mvs-load-more',
 			MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
 			array( 'mvs-rest', 'mvs-card-builders' ),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/load-more.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1272,7 +1310,7 @@ class Plugin {
 			'mvs-load-more',
 			MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
 			array(),
-			MVS_VERSION
+			self::asset_version( 'assets/css/frontend/load-more.css' )
 		);
 
 		$post_type  = get_post_type();
@@ -1330,7 +1368,7 @@ class Plugin {
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
 				array(),
-				MVS_VERSION
+				self::asset_version( 'assets/css/frontend.css' )
 			);
 
 			wp_enqueue_style( 'mvs-load-more' );
@@ -1360,21 +1398,21 @@ class Plugin {
 			// register_shared_ui_module() owns the canonical dep list (includes the
 			// interactivity-router dynamic dep); src/ is passed explicitly so the
 			// first-registration wins with the ESM entry point on MVS pages.
-			self::register_shared_ui_module( true, MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js', MVS_VERSION );
+			self::register_shared_ui_module( true, MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js', self::asset_version( 'src/blocks/shared-ui/view.js' ) );
 
 			// Media social store — reactions, comments, favorites, follow, report on single media/album pages.
 			wp_enqueue_script_module(
 				'@mvs/media-social',
 				MVS_PLUGIN_URL . 'src/blocks/media-social/view.js',
 				array( array( 'id' => '@wordpress/interactivity' ) ),
-				MVS_VERSION
+				self::asset_version( 'src/blocks/media-social/view.js' )
 			);
 
 			wp_enqueue_style(
 				'mvs-shared-ui-frame',
 				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 				array(),
-				MVS_VERSION
+				self::asset_version( 'assets/css/shared-ui-frame.css' )
 			);
 
 			// Lightbox is handled by shared-ui Interactivity API module — no legacy JS needed.
@@ -1384,7 +1422,7 @@ class Plugin {
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
 				array(),
-				MVS_VERSION
+				self::asset_version( 'assets/css/frontend.css' )
 			);
 
 			// Lightbox store — registered globally (shared-handle contract,
@@ -1417,7 +1455,7 @@ class Plugin {
 				'mvs-shared-ui-frame',
 				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 				array(),
-				MVS_VERSION
+				self::asset_version( 'assets/css/shared-ui-frame.css' )
 			);
 		}
 
@@ -1431,7 +1469,7 @@ class Plugin {
 			'mvs-bp-integration',
 			MVS_PLUGIN_URL . 'assets/css/bp-integration.css',
 			array( 'mvs-frontend' ),
-			MVS_VERSION
+			self::asset_version( 'assets/css/bp-integration.css' )
 		);
 
 		// Lucide is registered globally via the `wp_enqueue_scripts@1` hook
@@ -1448,7 +1486,7 @@ class Plugin {
 			'mvs-confirm',
 			MVS_PLUGIN_URL . 'assets/js/frontend/mvs-confirm.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/mvs-confirm.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1468,7 +1506,7 @@ class Plugin {
 			'mvs-confirm',
 			MVS_PLUGIN_URL . 'assets/css/mvs-confirm.css',
 			array(),
-			MVS_VERSION
+			self::asset_version( 'assets/css/mvs-confirm.css' )
 		);
 
 		// Explore search (media/users tab switch + debounced user search).
@@ -1479,7 +1517,7 @@ class Plugin {
 			'mvs-explore-search',
 			MVS_PLUGIN_URL . 'assets/js/frontend/explore-search.js',
 			array( 'mvs-rest' ),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/explore-search.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1508,7 +1546,7 @@ class Plugin {
 			'mvs-profile-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/profile-actions.js',
 			array( 'mvs-rest' ),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/profile-actions.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1540,7 +1578,7 @@ class Plugin {
 			'mvs-dropzone',
 			MVS_PLUGIN_URL . 'assets/js/frontend/dropzone.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/dropzone.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1559,7 +1597,7 @@ class Plugin {
 			'mvs-album-upload',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
 			array( 'mvs-rest', 'mvs-dropzone' ),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/album-upload.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1577,6 +1615,9 @@ class Plugin {
 					'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
 					/* translators: %d: number of files added */
 					'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
+					'uploadFailed'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+					/* translators: 1: files uploaded, 2: files that failed */
+					'someFailed'    => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
 				),
 			)
 		);
@@ -1592,7 +1633,7 @@ class Plugin {
 			'mvs-panel-toolbar',
 			MVS_PLUGIN_URL . 'assets/js/frontend/panel-toolbar.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/panel-toolbar.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1603,7 +1644,7 @@ class Plugin {
 			'mvs-dismissible',
 			MVS_PLUGIN_URL . 'assets/js/frontend/dismissible.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/dismissible.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1616,7 +1657,7 @@ class Plugin {
 			'mvs-messages-scroll',
 			MVS_PLUGIN_URL . 'assets/js/frontend/messages-scroll.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/messages-scroll.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1626,7 +1667,7 @@ class Plugin {
 			'mvs-collection-filter',
 			MVS_PLUGIN_URL . 'assets/js/frontend/collection-filter.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/collection-filter.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1640,7 +1681,7 @@ class Plugin {
 			'mvs-album-playlist',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-playlist.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/album-playlist.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1654,7 +1695,7 @@ class Plugin {
 			'mvs-album-cover',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-cover.js',
 			array( 'mvs-rest' ),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/album-cover.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1685,7 +1726,7 @@ class Plugin {
 			'mvs-bp-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
 			array( 'mvs-rest', 'mvs-lucide', 'mvs-confirm' ),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/frontend/bp-actions.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -1905,14 +1946,38 @@ class Plugin {
 	 * @return string[]
 	 */
 	public static function map_document_screen_cap( $caps, $cap, $user_id ): array {
-		if ( \WPMediaVerse\Admin\DocumentListPage::CAP !== $cap ) {
+		$primitive = self::SCREEN_CAPS[ $cap ] ?? '';
+
+		if ( '' === $primitive ) {
 			return (array) $caps;
 		}
 
-		return user_can( (int) $user_id, 'manage_mvs_documents' )
-			? array( 'manage_mvs_documents' )
+		return user_can( (int) $user_id, $primitive )
+			? array( $primitive )
 			: array( 'manage_options' );
 	}
+
+	/**
+	 * Meta capability => the plugin primitive that satisfies it.
+	 *
+	 * The $capability passed to add_submenu_page() governs BOTH menu visibility
+	 * and user_can_access_admin_page(), so registering a screen with
+	 * 'manage_options' locks out a delegated role before the render callback's
+	 * own "manage_options || <primitive>" check ever runs - which is why those
+	 * checks sat dead in seven callbacks. Registering the META cap instead lets
+	 * this filter answer "administrator, OR a role the owner delegated this to".
+	 *
+	 * A map, not a per-screen method: adding a screen must not require
+	 * remembering to add a matching filter somewhere else (Coding Rule 22).
+	 *
+	 * @since 2.4.2
+	 * @var array<string,string>
+	 */
+	public const SCREEN_CAPS = array(
+		'mvs_manage_documents_screen' => 'manage_mvs_documents',
+		'mvs_settings_screen'         => 'manage_mvs_settings',
+		'mvs_moderation_screen'       => 'moderate_mvs_media',
+	);
 
 	/**
 	 * Whether anything on this site can actually show a document.
@@ -2372,7 +2437,7 @@ class Plugin {
 			'mvs-messaging',
 			MVS_PLUGIN_URL . 'assets/css/messaging.css',
 			array(),
-			MVS_VERSION
+			self::asset_version( 'assets/css/messaging.css' )
 		);
 
 		wp_register_script_module(
@@ -2384,7 +2449,7 @@ class Plugin {
 					'import' => 'static',
 				),
 			),
-			MVS_VERSION
+			self::asset_version( 'assets/js/messaging.js' )
 		);
 		// NOTE: messaging.js reads its translated strings from
 		// mvsMessagingConfig.i18n (seeded in print_messaging_config()), not from
@@ -2523,7 +2588,7 @@ class Plugin {
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
 				array(),
-				MVS_VERSION
+				self::asset_version( 'assets/css/frontend.css' )
 			);
 		}
 
@@ -2532,7 +2597,7 @@ class Plugin {
 				'mvs-bp-integration',
 				MVS_PLUGIN_URL . 'assets/css/bp-integration.css',
 				array( 'mvs-frontend' ),
-				MVS_VERSION
+				self::asset_version( 'assets/css/bp-integration.css' )
 			);
 		}
 	}
@@ -2546,7 +2611,7 @@ class Plugin {
 			'mvs-lucide',
 			MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
 			array(),
-			MVS_VERSION,
+			self::asset_version( 'assets/js/vendor/lucide.min.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -2790,7 +2855,7 @@ JS;
 			'mvs-shared-ui-frame',
 			MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 			array(),
-			MVS_VERSION
+			self::asset_version( 'assets/css/shared-ui-frame.css' )
 		);
 
 		// Deprecation shim: third-party callers using the legacy
@@ -2805,7 +2870,7 @@ JS;
 			'mvs-shared-ui-shell',
 			MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 			array( 'mvs-shared-ui-frame' ),
-			MVS_VERSION
+			self::asset_version( 'assets/css/shared-ui-frame.css' )
 		);
 
 		// Lucide is already registered on `wp_enqueue_scripts@1` globally.
@@ -2877,6 +2942,18 @@ JS;
 		}
 		if ( file_exists( $template ) ) {
 			$rendered = true;
+
+			/**
+			 * Fires when the shared UI frame - and with it the lightbox - is printed.
+			 *
+			 * The lightbox loads its content over REST, where wp_enqueue_style() is
+			 * a no-op, so anything that renders INTO it must have its stylesheet on
+			 * the page already. Pro hangs the document viewer's sheet here.
+			 *
+			 * @since 2.4.2
+			 */
+			do_action( 'mvs_shared_ui_frame' );
+
 			include $template;
 		}
 	}
@@ -3017,11 +3094,48 @@ JS;
 	}
 
 	/**
+	 * The slug of the standalone messages page.
+	 *
+	 * ONE source for a path that three call sites used to spell out
+	 * independently: this rewrite, the client-navigation deny-list, and the
+	 * direct-message notification link. They agreed only by coincidence. The
+	 * deny-list already resolves MAPPED pages through their permalink for
+	 * exactly this reason - "so admin-renamed slugs stay correct without
+	 * touching the deny-list" - and messages, being a virtual route rather
+	 * than a mapped page, had no equivalent and got a hard-coded literal in
+	 * each place instead.
+	 *
+	 * Filtering this moves the route; flush permalinks afterwards, since the
+	 * rewrite rule is stored.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return string Slug, no surrounding slashes.
+	 */
+	public static function messages_slug(): string {
+		return trim( (string) apply_filters( 'mvs_messages_slug', 'messages' ), '/' );
+	}
+
+	/**
+	 * The absolute URL of the standalone messages page.
+	 *
+	 * Anything linking a member to their messages reads this, so the link
+	 * follows the route instead of restating it.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return string
+	 */
+	public static function messages_url(): string {
+		return (string) apply_filters( 'mvs_messages_url', home_url( '/' . self::messages_slug() . '/' ) );
+	}
+
+	/**
 	 * Register the /messages/ page rewrite rule.
 	 */
 	public static function register_messages_page(): void {
 		add_rewrite_rule(
-			'^messages/?$',
+			'^' . preg_quote( self::messages_slug() ) . '/?$',
 			'index.php?mvs_messages_page=1',
 			'top'
 		);

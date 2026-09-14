@@ -1,6 +1,6 @@
 # Media Upload
 
-> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require MediaVerse Pro.
 
 
 Share photos, videos, and audio with your community - no admin access needed, straight from any page on your site.
@@ -29,7 +29,7 @@ Share photos, videos, and audio with your community - no admin access needed, st
 ## For Site Owners
 
 1. Go to **Media > Settings > General** and confirm the allowed file types match what your community needs
-2. Add the upload form to any page: in the block editor, insert the **WPMediaVerse: Media Upload** block; in the classic editor, add `[mvs_upload]`
+2. Add the upload form to any page: in the block editor, insert the **MediaVerse: Media Upload** block; in the classic editor, add `[mvs_upload]`
 3. Set the default privacy level and maximum file size for your site
 4. Enable **Strip EXIF Data** (on by default) to automatically remove GPS coordinates from photos before storage
 5. Users see the upload form immediately on that page when logged in
@@ -46,13 +46,13 @@ Customize allowed types in **Media > Settings > General**.
 
 ## Upload Modal (1.9.0, 2.0.0)
 
-The upload modal no longer asks you to pick a media type tab first - drop in an image, video, or audio file and WPMediaVerse auto-detects the type (1.9.0).
+The upload modal no longer asks you to pick a media type tab first - drop in an image, video, or audio file and MediaVerse auto-detects the type (1.9.0).
 
 When uploading into an album, you can create a brand-new album right from the upload modal instead of leaving to create one first, then switching back to upload into it (2.0.0).
 
 ## Bulk Album Upload (1.2.0)
 
-When uploading multiple files at once into an album, WPMediaVerse now creates **one** activity entry for the whole batch ("Varun uploaded 3 photos to album Portrait Series") with a thumbnail grid, instead of one separate activity per file. Single-file uploads and ad-hoc photo posts retain their existing per-post behaviour.
+When uploading multiple files at once into an album, MediaVerse now creates **one** activity entry for the whole batch ("Varun uploaded 3 photos to album Portrait Series") with a thumbnail grid, instead of one separate activity per file. Single-file uploads and ad-hoc photo posts retain their existing per-post behaviour.
 
 ## Per-Media Edit Modal (1.2.0)
 
@@ -70,7 +70,7 @@ When you change the title, the URL slug stays stable by default. Tick the new **
 
 ## Adding the Upload Form
 
-**Gutenberg Block:** Add the **WPMediaVerse: Media Upload** block to any page or post.
+**Gutenberg Block:** Add the **MediaVerse: Media Upload** block to any page or post.
 
 **Shortcode:**
 ```
@@ -139,7 +139,7 @@ if ( is_wp_error( $result ) ) {
 
 ## Media Metadata
 
-Media metadata is stored in WPMediaVerse's own `mvs_media_meta` table (keyed by media ID), not in WordPress post meta. Access it through the `MediaRepository` (`->get( $media_id, $key )`). Common keys:
+Media metadata is stored in MediaVerse's own `mvs_media_meta` table (keyed by media ID), not in WordPress post meta. Access it through the `MediaRepository` (`->get( $media_id, $key )`). Common keys:
 
 | Meta Key | Type | Description |
 |----------|------|-------------|

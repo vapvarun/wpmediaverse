@@ -1,11 +1,11 @@
 # Gutenberg Blocks
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-WPMediaVerse registers **9** Gutenberg blocks under the **WPMediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
+MediaVerse registers **9** Gutenberg blocks under the **MediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
 
-![Gutenberg block inserter showing the WPMediaVerse block category](../images/admin-overview.png)
+![Gutenberg block inserter showing the MediaVerse block category](../images/admin-overview.png)
 
 ## Block List
 

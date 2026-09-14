@@ -55,7 +55,13 @@ estimated_runtime_minutes: 2
   wp post get $(wp option get mvs_page_upload)    --field=post_content
   ```
 - **Expect**:
-  - Explore content contains `[mvs_gallery columns="3" count="24"]`
+  - Explore content contains `[mvs_gallery`
+    - A clean 2.4.2+ install writes exactly `[mvs_gallery]`. An older site keeps
+      `[mvs_gallery columns="3" count="24"]`: reactivation does NOT rewrite an
+      existing page (Activator falls through to the slug lookup), and both extra
+      attributes are stripped by `shortcode_atts` anyway, so the two render the
+      same. Assert the shortcode is present, not the attributes it never had.
+      Basecamp 10297763946.
   - Dashboard content contains `[mvs_dashboard]`
   - Upload content contains `[mvs_upload]`
 

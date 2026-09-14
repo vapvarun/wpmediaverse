@@ -75,6 +75,9 @@ class TemplateLoader {
 		// Fallback only: a theme with no no-sidebar page template and not Reign.
 		add_filter( 'template_include', array( $this, 'use_app_template' ), 99 );
 
+		// Render whatever load_media_templates() resolved at priority 5.
+		add_filter( 'template_include', array( $this, 'use_resolved_template' ), 100 );
+
 		// Reign removes the sidebar via post-meta, not a page template. Force its
 		// full-width layout for our app pages the same way Reign forces it for
 		// FluentCart pages (inc/fluentcart-support.php). No-op off Reign.
@@ -106,7 +109,7 @@ class TemplateLoader {
 	public function add_deny_paths( array $paths ): array {
 		// Fixed rewrite-based routes that must always full-load.
 		$fixed = array(
-			'/messages/',       // Messaging: polling, typeahead, file-upload.
+			'/' . Plugin::messages_slug() . '/', // Messaging: polling, typeahead, file-upload.
 			'/media/edit-profile/', // Profile-edit composer form.
 			'/album/',          // Album CPT single (rewrite slug = 'album').
 		);
@@ -478,7 +481,7 @@ class TemplateLoader {
 		// that. The in-template gates stay as defense-in-depth. Basecamp 10073499554.
 		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
 			$mvs_cpt_id = get_queried_object_id();
-			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id() ) ) {
+			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				$mvs_ctx = ( 'mvs_collection' === get_post_type( $mvs_cpt_id ) ) ? 'collection' : 'album';
 				self::render_branded_404( $mvs_ctx, (string) get_post_field( 'post_name', $mvs_cpt_id ) );
 				return; // render_branded_404() exits; return keeps control flow explicit.
@@ -524,6 +527,14 @@ class TemplateLoader {
 	 *
 	 * @param string $template Absolute path to the located template file.
 	 */
+	/**
+	 * Template resolved on template_redirect, rendered later via template_include.
+	 *
+	 * @since 2.4.2
+	 * @var string
+	 */
+	private $resolved_template = '';
+
 	private function render_template( string $template ): void {
 		// Heal WP's soft-404 default to 200 for our virtual pages — EXCEPT when
 		// the caller already set an explicit error status (e.g. the members-only
@@ -536,8 +547,37 @@ class TemplateLoader {
 		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
 			$GLOBALS['wp_query']->is_404 = false;
 		}
-		include $template;
-		exit;
+		// Hold it for template_include instead of `include $template; exit;`.
+		//
+		// exit here ended the request inside template_redirect at priority 5, so
+		// every callback other plugins had legitimately registered at a later
+		// priority simply never ran. Elementor registers Frontend::init() at the
+		// default 10, and that is what adds the Google-Fonts printer, the
+		// body_class filter, and the wp_footer chain Elementor Pro hangs its
+		// widget handlers on - so on our own routes a Pro header lost its fonts,
+		// its Menu Cart toggle and its Search widget. Basecamp 10285448527.
+		//
+		// Returning through template_include - the hook that exists to choose a
+		// template - fixes it for every builder rather than for Elementor
+		// specifically. The privacy gates stay exactly where they are, early on
+		// template_redirect@5; only the rendering moves later.
+		$this->resolved_template = $template;
+	}
+
+	/**
+	 * Return the template resolved on template_redirect, if any.
+	 *
+	 * Priority 100 so it wins over use_app_template() at 99, which is the
+	 * fallback for WP pages using one of our page templates - a different path
+	 * from our own virtual routes.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $template Template WordPress chose.
+	 * @return string
+	 */
+	public function use_resolved_template( $template ) {
+		return '' !== $this->resolved_template ? $this->resolved_template : $template;
 	}
 
 	/**
@@ -735,7 +775,7 @@ class TemplateLoader {
 					$is_video  = 'video' === $mvs_media_type;
 					$is_audio  = 'audio' === $mvs_media_type;
 
-					echo "\n<!-- WPMediaVerse Open Graph -->\n";
+					echo "\n<!-- MediaVerse Open Graph -->\n";
 					echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
 					echo '<meta property="og:type" content="' . esc_attr( $is_video ? 'video.other' : ( $is_audio ? 'music.song' : 'article' ) ) . '" />' . "\n";
 					echo '<meta property="og:url" content="' . esc_url( $permalink ) . '" />' . "\n";
@@ -756,7 +796,7 @@ class TemplateLoader {
 					if ( $thumb_url ) {
 						echo '<meta name="twitter:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
 					}
-					echo "<!-- /WPMediaVerse Open Graph -->\n";
+					echo "<!-- /MediaVerse Open Graph -->\n";
 				},
 				5 // run early so themes / SEO plugins can override below.
 			);
@@ -1200,6 +1240,20 @@ class TemplateLoader {
 			return $template;
 		}
 
+		// Somebody upstream already substituted a template. A page builder's
+		// global header/footer layout arrives exactly this way — Elementor Pro
+		// Theme Builder, Divi, Beaver Themer, Bricks and Oxygen all filter
+		// template_include at a lower priority than ours, so by the time we run
+		// $template is theirs rather than the one WordPress resolved.
+		//
+		// Overwriting it costs the owner twice: the builder's chrome disappears,
+		// and so does its CSS/JS, because a builder enqueues those only when its
+		// own template or location actually renders. Nothing fails to load; it is
+		// never requested. They own the page, so stand down.
+		if ( ! self::is_untouched_by_upstream( $template ) ) {
+			return $template;
+		}
+
 		// No usable no-sidebar page template on this theme, and not Reign — fall
 		// back to the plugin's own sidebar-free shell so the sidebar never leaks
 		// through on a non-Wbcom theme.
@@ -1217,6 +1271,35 @@ class TemplateLoader {
 		 * @param int    $post_id  The app page being rendered.
 		 */
 		return (string) apply_filters( 'mvs_app_template', $resolved, $post_id );
+	}
+
+	/**
+	 * Whether WordPress resolved this template on its own, with no other
+	 * `template_include` filter substituting one first.
+	 *
+	 * The two theme kinds need different baselines. A block theme routes every
+	 * singular view through `wp-includes/template-canvas.php` and ships no
+	 * `page.php`, so `locate_template()` answers nothing there; a classic theme
+	 * resolves down the page/singular/index chain.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $template Template path as handed to `template_include`.
+	 * @return bool True when untouched, false when something upstream replaced it.
+	 */
+	private static function is_untouched_by_upstream( string $template ): bool {
+		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+			// Core hands every unsubstituted singular view the block canvas.
+			// Matched by basename so this needs no ABSPATH/WPINC constants —
+			// nothing else in a request is named template-canvas.php.
+			return 'template-canvas.php' === basename( $template );
+		}
+
+		$default = locate_template( array( 'page.php', 'singular.php', 'index.php' ) );
+
+		// A classic theme carrying none of the three gives us nothing to compare
+		// against. Assume untouched rather than silently dropping our own layout.
+		return '' === $default || $template === $default;
 	}
 
 	/**

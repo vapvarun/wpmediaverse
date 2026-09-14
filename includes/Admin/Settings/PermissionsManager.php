@@ -73,14 +73,28 @@ class PermissionsManager {
 	private function get_managed_caps(): array {
 		$caps = array(
 			'upload_mvs_media'        => __( 'Upload', 'wpmediaverse' ),
-			'read_mvs_media'          => __( 'View', 'wpmediaverse' ),
+			// 'read_mvs_media' ("View") is NOT listed, deliberately. Nothing in
+			// either plugin ever calls current_user_can() on it - reading is
+			// decided by PrivacyService, which never consults it - so the column
+			// did nothing whichever way the owner set it. A control that cannot
+			// affect anything is worse than no control: it invites the owner to
+			// believe they have closed something. The capability itself is still
+			// granted for back-compat; only the misleading column is gone.
+			// Re-add it through the mvs_managed_caps filter if a site needs it.
 			'publish_mvs_media'       => __( 'Publish', 'wpmediaverse' ),
 			'edit_mvs_media'          => __( 'Edit Own', 'wpmediaverse' ),
 			'edit_others_mvs_media'   => __( 'Edit Others', 'wpmediaverse' ),
 			'delete_mvs_media'        => __( 'Delete Own', 'wpmediaverse' ),
 			'delete_others_mvs_media' => __( 'Delete Others', 'wpmediaverse' ),
 			'moderate_mvs_media'      => __( 'Moderate', 'wpmediaverse' ),
-			'manage_mvs_access'       => __( 'Manage Access', 'wpmediaverse' ),
+			// 'manage_mvs_access' is NOT listed either, for a different reason
+			// from View: it is genuinely enforced (AccessController's REST
+			// route), it simply has no screen. Per-media access grants are a
+			// rare, developer-shaped need on a community site whose normal case
+			// is "members upload freely" - so it stays a capability with a
+			// filter seam rather than becoming a tenth column every owner has
+			// to reason about. Grant it in code, or re-add the column with
+			// mvs_managed_caps; the REST gate honours it either way.
 			'manage_mvs_settings'     => __( 'Manage Settings', 'wpmediaverse' ),
 		);
 
@@ -88,6 +102,15 @@ class PermissionsManager {
 		 * The capabilities shown as columns in the role matrix.
 		 *
 		 * Adding a cap here makes it grantable per role on the Permissions tab.
+		 * This is the supported way to surface a capability the plugin keeps out
+		 * of the default matrix - read_mvs_media and manage_mvs_access are both
+		 * still granted and still work, they are simply not columns:
+		 *
+		 *     add_filter( 'mvs_managed_caps', function ( $caps ) {
+		 *         $caps['manage_mvs_access'] = 'Manage Access';
+		 *         return $caps;
+		 *     } );
+		 *
 		 * The matrix already enumerates every role registered on the site, so a
 		 * new column appears for custom, BuddyPress and WooCommerce roles with
 		 * no further work.
@@ -126,47 +149,59 @@ class PermissionsManager {
 
 				<p class="description">
 					<?php esc_html_e( 'Control which user roles can perform each media action. Uncheck to revoke a capability. Your choices persist across plugin updates.', 'wpmediaverse' ); ?>
+					<br />
+					<?php
+					// The one column whose meaning is not self-evident. It belongs here
+					// rather than in the header: a column label that wraps to three
+					// lines drags every other header down with it, and this table is
+					// read by scanning across a row.
+					esc_html_e( 'Publish means an upload goes live immediately - this platform has no submit-for-review step.', 'wpmediaverse' );
+					?>
 				</p>
 
-				<table class="mvs-recent-table mvs-caps-table">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Role', 'wpmediaverse' ); ?></th>
-							<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
-								<th class="mvs-caps-table__check"><?php echo esc_html( $cap_label ); ?></th>
-							<?php endforeach; ?>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $roles as $role_slug => $role_label ) : ?>
-							<?php $role_obj = get_role( $role_slug ); ?>
-							<tr>
-								<td><strong><?php echo esc_html( $role_label ); ?></strong></td>
+				<?php
+				// One card per role, capabilities as a wrapping grid inside it -
+				// not a wide table.
+				//
+				// The table form put one column per capability and one row per role,
+				// and every site role appears here (BuddyPress, WooCommerce, custom).
+				// With Documents active that is 11 columns needing 871px of header
+				// text in a 731px card, so the last columns rendered past the edge
+				// with no way to reach them. Narrowing did not rescue it: the shared
+				// table style adds 24px of padding per column and uppercases the
+				// labels, and no column width makes ten of those fit.
+				//
+				// A grid cannot have that problem. It wraps instead of overflowing,
+				// so it holds at any number of capabilities (the mvs_managed_caps
+				// filter can add more) and any number of roles, and it reads the way
+				// an owner actually asks the question: "what can Subscribers do?"
+				// Basecamp 10285712647.
+				?>
+				<div class="mvs-caps-roles">
+					<?php foreach ( $roles as $role_slug => $role_label ) : ?>
+						<?php $role_obj = get_role( $role_slug ); ?>
+						<fieldset class="mvs-caps-role">
+							<legend class="mvs-caps-role__name"><?php echo esc_html( $role_label ); ?></legend>
+							<div class="mvs-caps-role__grid">
 								<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
-									<td class="mvs-caps-table__check">
-										<?php
-										$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
-										printf(
-											'<input type="checkbox" name="mvs_role_caps[%s][%s]" value="1" %s aria-label="%s" />',
-											esc_attr( $role_slug ),
-											esc_attr( $cap_key ),
-											checked( $has_cap, true, false ),
-											esc_attr(
-												sprintf(
-													/* translators: 1: capability label, 2: role label */
-													__( '%1$s for %2$s', 'wpmediaverse' ),
-													$cap_label,
-													$role_label
-												)
-											)
-										);
-										?>
-									</td>
+									<?php
+									$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
+									$field_id = 'mvs-cap-' . sanitize_html_class( $role_slug . '-' . $cap_key );
+									?>
+									<label class="mvs-caps-role__item" for="<?php echo esc_attr( $field_id ); ?>">
+										<input
+											type="checkbox"
+											id="<?php echo esc_attr( $field_id ); ?>"
+											name="mvs_role_caps[<?php echo esc_attr( $role_slug ); ?>][<?php echo esc_attr( $cap_key ); ?>]"
+											value="1"
+											<?php checked( $has_cap ); ?> />
+										<span><?php echo esc_html( $cap_label ); ?></span>
+									</label>
 								<?php endforeach; ?>
-							</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
+							</div>
+						</fieldset>
+					<?php endforeach; ?>
+				</div>
 
 				<?php submit_button( __( 'Save Permissions', 'wpmediaverse' ) ); ?>
 			</form>

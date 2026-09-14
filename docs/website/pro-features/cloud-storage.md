@@ -1,12 +1,12 @@
 # Cloud Storage
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 Stop storing media on your web server - offload every photo and video to Amazon S3 or BunnyCDN for faster delivery, lower server load, and global CDN performance.
 
 ## Pluggable Storage Architecture
 
-WPMediaVerse separates **where media records live** (always in your WordPress database) from **where files are stored** (local, S3, or BunnyCDN). Every upload goes through a `StorageDriverInterface` - a clean abstraction that means:
+MediaVerse separates **where media records live** (always in your WordPress database) from **where files are stored** (local, S3, or BunnyCDN). Every upload goes through a `StorageDriverInterface` - a clean abstraction that means:
 
 - **Switch drivers anytime** - Change from local to S3 in one setting. Existing files continue to serve from their original location; new uploads go to the new driver.
 - **Build your own driver** - Developers can register custom drivers (Google Cloud Storage, DigitalOcean Spaces, Wasabi) by implementing the `StorageDriverInterface`. See [Custom Storage Drivers](../developer-guide/custom-storage-drivers.md).
@@ -46,7 +46,7 @@ Every request to the `/serve` route for non-public media re-verifies the request
 
 ### Cloudflare R2 requires a public domain
 
-If you use Cloudflare R2 and have **not** configured a public domain (r2.dev subdomain or custom domain) on your bucket, WPMediaVerse will not emit the raw `*.r2.cloudflarestorage.com` API URL. That endpoint is never publicly readable. Instead, the plugin falls back to serving the file from the local copy via `/serve`.
+If you use Cloudflare R2 and have **not** configured a public domain (r2.dev subdomain or custom domain) on your bucket, MediaVerse will not emit the raw `*.r2.cloudflarestorage.com` API URL. That endpoint is never publicly readable. Instead, the plugin falls back to serving the file from the local copy via `/serve`.
 
 To enable true CDN serving from R2, configure a public domain for your bucket in the Cloudflare R2 dashboard (either the r2.dev subdomain or your own custom domain), then enter that hostname in the **CDN Domain** field in Storage settings.
 
@@ -66,7 +66,7 @@ If you had this checkbox enabled before upgrading, no action is needed - behavio
 4. Set **Storage Driver** to **Amazon S3**
 5. Enter your bucket name, region, access key ID, and secret access key
 6. If you use CloudFront or a custom domain, enter the hostname in the **CDN Domain** field
-7. Click **Test Connection** - WPMediaVerse Pro uploads a small test file and reads it back to confirm everything works
+7. Click **Test Connection** - MediaVerse Pro uploads a small test file and reads it back to confirm everything works
 8. Click **Save Settings** - all new uploads now go directly to S3
 
 ![S3 configuration fields in Storage settings](../images/admin-settings-storage.png)
@@ -122,7 +122,7 @@ define( 'MVS_PRO_AWS_ACCESS_KEY', 'AKIAIOSFODNN7EXAMPLE' );
 define( 'MVS_PRO_AWS_SECRET_KEY', 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY' );
 ```
 
-When these constants are defined, WPMediaVerse Pro uses them instead of the database values. The admin fields show a placeholder indicating constants are in use.
+When these constants are defined, MediaVerse Pro uses them instead of the database values. The admin fields show a placeholder indicating constants are in use.
 
 ### Required IAM Policy
 
@@ -146,7 +146,7 @@ Your IAM user needs at minimum:
 
 ### CDN Domain
 
-If you serve your bucket through CloudFront or a custom domain, enter the hostname (without trailing slash) in the **CDN Domain** field. WPMediaVerse Pro replaces the default S3 URL with this domain for all generated file URLs.
+If you serve your bucket through CloudFront or a custom domain, enter the hostname (without trailing slash) in the **CDN Domain** field. MediaVerse Pro replaces the default S3 URL with this domain for all generated file URLs.
 
 ---
 
@@ -177,7 +177,7 @@ If you serve your bucket through CloudFront or a custom domain, enter the hostna
 
 ## Testing the Connection
 
-After saving settings, click **Test Connection** in the Storage settings panel. WPMediaVerse Pro uploads a small test file, reads it back, then deletes it. The result (success or error message) appears inline without a page reload.
+After saving settings, click **Test Connection** in the Storage settings panel. MediaVerse Pro uploads a small test file, reads it back, then deletes it. The result (success or error message) appears inline without a page reload.
 
 ![Storage settings panel showing connection test result](../images/admin-settings-storage.png)
 
@@ -197,7 +197,7 @@ For S3 this becomes `s3://your-bucket/wpmediaverse/YYYY/MM/filename.ext`. For Bu
 
 ## Signed URLs with Cloud Storage
 
-When media privacy is not `public`, WPMediaVerse Pro generates signed URLs through the `/serve` proxy route. The proxy re-verifies view permission on every request - signed URLs for non-public media do not grant transferable access. S3 presigned URLs and BunnyCDN token authentication are used for migration and admin operations, not for end-user delivery of private media.
+When media privacy is not `public`, MediaVerse Pro generates signed URLs through the `/serve` proxy route. The proxy re-verifies view permission on every request - signed URLs for non-public media do not grant transferable access. S3 presigned URLs and BunnyCDN token authentication are used for migration and admin operations, not for end-user delivery of private media.
 
 ---
 

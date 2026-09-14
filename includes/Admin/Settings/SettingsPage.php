@@ -44,6 +44,9 @@ class SettingsPage {
 		$this->permissions = new PermissionsManager();
 
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
+		// Must run before options.php resolves its gate, which happens on
+		// admin_init, so register these early rather than on admin_menu.
+		add_action( 'admin_init', array( $this, 'register_option_page_capabilities' ), 1 );
 		add_action( 'admin_menu', array( $this, 'cleanup_admin_menu' ), 999 );
 		add_action( 'admin_init', array( $this->registrar, 'register_all' ) );
 		add_action( 'admin_init', array( $this, 'track_settings_changes' ) );
@@ -143,10 +146,33 @@ class SettingsPage {
 			return;
 		}
 
-		// Suppress WP's duplicate "Settings saved." notices.
-		delete_transient( 'settings_errors' );
+		// Suppress WP's duplicate "Settings saved." notices - one per option
+		// group, and this page has many - but KEEP anything a sanitize callback
+		// actually rejected. Clearing the whole array discarded every
+		// add_settings_error() raised anywhere on this screen, Free's or Pro's,
+		// so a refused value was silently reverted under a green "Settings
+		// saved." The watermark type/image dependency was the first fix to
+		// depend on this channel, which is how it surfaced. Basecamp 10281548802.
 		global $wp_settings_errors;
-		$wp_settings_errors = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$mvs_persisted = get_transient( 'settings_errors' );
+		if ( is_array( $mvs_persisted ) ) {
+			$wp_settings_errors = array_merge( (array) $wp_settings_errors, $mvs_persisted ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+		delete_transient( 'settings_errors' );
+
+		$wp_settings_errors = array_values( // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			array_filter(
+				(array) $wp_settings_errors,
+				static function ( $mvs_notice ) {
+					// 'updated' / 'success' are WP's own save confirmations; the
+					// page prints its own. Everything else is a real message.
+					return ! in_array( $mvs_notice['type'] ?? '', array( 'updated', 'success' ), true );
+				}
+			)
+		);
+
+		self::$has_settings_error = (bool) $wp_settings_errors;
 
 		// Storage driver change notice.
 		$user_id    = get_current_user_id();
@@ -196,12 +222,65 @@ class SettingsPage {
 	/**
 	 * Add settings page as submenu under WPMediaVerse (mvs_media CPT menu).
 	 */
+	/**
+	 * Whether a sanitize callback rejected part of the last submission.
+	 *
+	 * @since 2.4.2
+	 * @var bool
+	 */
+	private static $has_settings_error = false;
+
+	/**
+	 * Guard so the error block renders once, not once per section form.
+	 *
+	 * @since 2.4.2
+	 * @var bool
+	 */
+	private static $printed_settings_errors = false;
+
+	/**
+	 * Let a delegated role actually SAVE the settings screens it can open.
+	 *
+	 * The capability passed to add_submenu_page() governs opening a screen;
+	 * core's options.php resolves its own gate as
+	 * `option_page_capability_{$option_page}`, defaulting to manage_options.
+	 * The plugin registered no such filter, so a role granted
+	 * manage_mvs_settings got a screen it could read and fill in but not
+	 * submit - the failure arriving as a bare "You need a higher level of
+	 * permission" page after they had typed everything. That is worse than the
+	 * 403 it replaced: the screen was honestly closed before, and is now open
+	 * and misleading. Basecamp 10285712647.
+	 *
+	 * Driven from get_registered_sections(), the same list that declares the
+	 * groups, so a new section cannot forget to add itself here.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return void
+	 */
+	public function register_option_page_capabilities(): void {
+		foreach ( $this->get_registered_sections() as $mvs_section ) {
+			if ( empty( $mvs_section['option_group'] ) ) {
+				continue;
+			}
+
+			add_filter(
+				'option_page_capability_' . $mvs_section['option_group'],
+				static function () {
+					// The same meta cap the screens are registered with, so the
+					// two can never drift apart.
+					return 'mvs_settings_screen';
+				}
+			);
+		}
+	}
+
 	public function add_menu_page(): void {
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
-			__( 'WPMediaVerse Settings', 'wpmediaverse' ),
+			__( 'MediaVerse Settings', 'wpmediaverse' ),
 			__( 'Settings', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
@@ -402,7 +481,7 @@ class SettingsPage {
 			'mvs-settings-nav',
 			MVS_PLUGIN_URL . 'assets/js/settings-nav.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/settings-nav.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -415,7 +494,7 @@ class SettingsPage {
 			'mvs-ai-provider-fields',
 			MVS_PLUGIN_URL . 'assets/js/admin/ai-provider-fields.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/ai-provider-fields.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -427,7 +506,7 @@ class SettingsPage {
 			<div class="mvs-settings-page-header">
 				<div class="mvs-settings-page-header__left">
 					<h1 class="mvs-settings-page-header__title">
-						<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?>
 						<span class="mvs-settings-page-header__version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
 					</h1>
 					<p class="mvs-settings-page-header__desc">
@@ -448,7 +527,7 @@ class SettingsPage {
 				<div class="mvs-settings-sidebar__brand">
 					<span class="mvs-settings-sidebar__logo"><i data-lucide="images"></i></span>
 					<div>
-						<strong><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></strong>
+						<strong><?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?></strong>
 						<span><?php esc_html_e( 'SETTINGS', 'wpmediaverse' ); ?></span>
 					</div>
 				</div>
@@ -513,11 +592,26 @@ class SettingsPage {
 							</div>
 						<?php elseif ( ! empty( $section['page_slug'] ) ) : ?>
 							<form action="options.php" method="post">
+								<?php
+								// Show what a sanitize callback rejected. Once, not once per
+								// section - this block sits inside the section loop and every
+								// section renders its own form.
+								if ( self::$has_settings_error && ! self::$printed_settings_errors ) {
+									self::$printed_settings_errors = true;
+									settings_errors();
+								}
+								?>
 								<?php settings_fields( $section['option_group'] ); ?>
 								<?php $this->render_section_cards( $section, $section_id ); ?>
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
-									<?php if ( isset( $_GET['settings-updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
+									<?php
+									// Never claim success when part of the submission was
+									// rejected - the owner pressed Save, the value reverted,
+									// and a green "Settings saved." is the opposite of what
+									// happened. Basecamp 10281548802.
+									if ( isset( $_GET['settings-updated'] ) && ! self::$has_settings_error ) : // phpcs:ignore WordPress.Security.NonceVerification
+										?>
 										<div class="mvs-save-notice">
 											<p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p>
 											<button type="button" class="mvs-save-notice__dismiss" aria-label="<?php esc_attr_e( 'Dismiss this notice', 'wpmediaverse' ); ?>">&times;</button>
@@ -677,7 +771,7 @@ class SettingsPage {
 		?>
 		<div class="mvs-pro-section">
 			<h3>
-				<?php esc_html_e( 'Get more with WPMediaVerse Pro', 'wpmediaverse' ); ?>
+				<?php esc_html_e( 'Get more with MediaVerse Pro', 'wpmediaverse' ); ?>
 				<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 			</h3>
 			<ul>

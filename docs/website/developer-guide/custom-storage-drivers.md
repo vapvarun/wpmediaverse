@@ -1,9 +1,9 @@
 # Custom Storage Drivers
 
-> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+> Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
 
 
-WPMediaVerse uses a pluggable storage driver system. The free plugin ships with a **Local** driver (stores files in the WordPress uploads directory). WPMediaVerse Pro adds Amazon S3 and BunnyCDN drivers. You can implement your own driver by implementing the `StorageDriverInterface`.
+MediaVerse uses a pluggable storage driver system. The free plugin ships with a **Local** driver (stores files in the WordPress uploads directory). MediaVerse Pro adds Amazon S3 and BunnyCDN drivers. You can implement your own driver by implementing the `StorageDriverInterface`.
 
 ## StorageDriverInterface
 
@@ -138,10 +138,10 @@ add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
 
 If no filter returns a `StorageDriverInterface` instance, `StorageService` falls back to the built-in `LocalDriver`.
 
-This is exactly how WPMediaVerse Pro registers its own drivers — its callback `switch`es on `$name` and returns the matching driver (`s3`, `bunnycdn`, `r2`, `dospaces`):
+This is exactly how MediaVerse Pro registers its own drivers — its callback `switch`es on `$name` and returns the matching driver (`s3`, `bunnycdn`, `r2`, `dospaces`):
 
 ```php
-// Simplified from WPMediaVerse Pro. Each integration namespaces its own
+// Simplified from MediaVerse Pro. Each integration namespaces its own
 // class as `StorageDriver`, so the real FQCNs are
 // \WPMediaVersePro\Integrations\AmazonS3\StorageDriver,
 // \WPMediaVersePro\Integrations\BunnyCDN\StorageDriver,

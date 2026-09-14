@@ -6,7 +6,7 @@
 	"title": "Media Player",
 	"category": "media",
 	"icon": "controls-play",
-	"description": "Video and audio player for WPMediaVerse media items.",
+	"description": "Video and audio player for MediaVerse media items.",
 	"keywords": [ "video", "audio", "player", "media" ],
 	"supports": {
 		"html": false,

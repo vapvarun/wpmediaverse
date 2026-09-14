@@ -1,25 +1,25 @@
-# WPMediaVerse Pro
+# MediaVerse Pro
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video analytics, chapters and auto-captions, AI providers, quota management, and granular privacy controls.
+MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video analytics, chapters and auto-captions, AI providers, quota management, and granular privacy controls.
 
 > Pro does not transcode video. The FFmpeg pipeline was removed in 2.4.0 - MediaVerse embeds media, it does not process it. The player uses the original file.
 
-![WPMediaVerse Pro license key entry screen](../images/admin-overview.png)
+![MediaVerse Pro license key entry screen](../images/admin-overview.png)
 
 ## Requirements
 
-- WPMediaVerse (free) 2.0.0 or higher installed and activated (Pro halts with an admin notice on older Free)
+- MediaVerse (free) 2.0.0 or higher installed and activated (Pro halts with an admin notice on older Free)
 - WordPress 6.5+
 - PHP 7.4+
 - MySQL 5.7+ or MariaDB 10.4+
 
 ## Installation
 
-1. Install and activate the free **WPMediaVerse** plugin first.
+1. Install and activate the free **MediaVerse** plugin first.
 2. Go to **Plugins > Add New Plugin > Upload Plugin**.
 3. Upload the `wpmediaverse-pro.zip` file and click **Install Now**.
 4. Click **Activate Plugin**.

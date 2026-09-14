@@ -159,11 +159,14 @@ WPMediaVerse Pro adds 12 more blocks: the four layout feeds plus tournament, cha
 
 ### Shortcodes
 
-8 shortcodes — drop media features into any page or widget:
+8 shortcodes — drop media features into any page or widget.
+`columns` and per-page are NOT shortcode attributes: they come from
+Settings → Display (Grid Columns, Items Per Page) so a shortcode cannot
+silently override an admin setting.
 
 ```
 [mvs_gallery]                    Filterable media grid
-[mvs_gallery columns="4" count="12" type="image" category="nature"]
+[mvs_gallery type="image" category="nature" tag="summer" orderby="date"]
 
 [mvs_upload]                     Upload form
 [mvs_upload max_files="10" show_privacy="true"]
@@ -175,7 +178,7 @@ WPMediaVerse Pro adds 12 more blocks: the four layout feeds plus tournament, cha
 [mvs_player id="456" autoplay="false" loop="true"]
 
 [mvs_stats]                      Stats dashboard
-[mvs_stats views="true" downloads="true" reactions="true" top_media="5"]
+[mvs_stats views="true" downloads="true" reactions="true" top="true" top_count="5"]
 
 [mvs_dashboard]                  User dashboard (My Media / Albums / Favorites)
 

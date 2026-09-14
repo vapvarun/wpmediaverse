@@ -230,34 +230,9 @@ const { state, actions } = store( 'mvs/explore', {
 			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Moved to album.' );
 		},
 	},
-	callbacks: {
-		async init() {
-			const ctx = getContext();
-			if ( ! ctx.restUrl ) {
-				return;
-			}
-			try {
-				// Server-provided, filterable via mvs_explore_tag_cloud_limit.
-				// Falls back to 20 for a context rendered before 2.3.0.
-				const tagLimit = parseInt( ctx.tagLimit, 10 ) || 20;
-				const res = await window.mvsRest.restFetch(
-					ctx.restUrl + 'tags/cloud?limit=' + tagLimit
-				);
-				const data = res.data;
-				if ( Array.isArray( data ) ) {
-					ctx.tags = data.map( ( tag ) => ( {
-						name: tag.name || '',
-						slug: tag.slug || '',
-						href: ctx.archiveUrl +
-							( ctx.archiveUrl.indexOf( '?' ) !== -1 ? '&' : '?' ) +
-							'mvs_tag=' + encodeURIComponent( tag.slug || '' ),
-						active: ctx.activeTag === ( tag.slug || '' ),
-					} ) );
-				}
-			} catch {
-				// Silently fail.
-			}
-			ctx.loaded = true;
-		},
-	},
+	// callbacks.init() used to fetch tags/cloud and build the chip row client
+	// side. explore.php now renders those chips on the server, which is what
+	// makes the active state survive a router navigation (Basecamp 10277976087),
+	// so the fetch is gone rather than left running for a row nothing reads.
+	// The tags/cloud REST route stays - it is public API and the app uses it.
 } );

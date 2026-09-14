@@ -1,8 +1,8 @@
 # Save to Collections (Pro Picker)
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-WPMediaVerse Pro gives members a dedicated **Save** control for adding a media item to any number of their named [collections](../features/collections.md), separate from the favorite (heart) button. Favoriting stays a one-tap like; saving to a collection is a deliberate, multi-select action with its own picker.
+MediaVerse Pro gives members a dedicated **Save** control for adding a media item to any number of their named [collections](../features/collections.md), separate from the favorite (heart) button. Favoriting stays a one-tap like; saving to a collection is a deliberate, multi-select action with its own picker.
 
 ![Media item with Save button and collection picker](../images/single-media.jpg)
 
@@ -76,4 +76,4 @@ Returns `404` (`mvs_pro_invalid_collection`) if the collection does not exist or
 
 ## Requirements
 
-- WPMediaVerse Pro 1.8.0 or higher.
+- MediaVerse Pro 1.8.0 or higher.

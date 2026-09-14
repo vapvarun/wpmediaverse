@@ -1,8 +1,8 @@
 # What's New in 2.3.0
 
-WPMediaVerse 2.3.0 is a correctness release. Photos taken on a phone stop landing sideways, media added to a private album stops being publicly visible, the archived-conversations tab arrives in chat, and members can sign in to the mobile app with the password they already have.
+MediaVerse 2.3.0 is a correctness release. Photos taken on a phone stop landing sideways, media added to a private album stops being publicly visible, the archived-conversations tab arrives in chat, and members can sign in to the mobile app with the password they already have.
 
-> **Included in Free.** Every item on this page applies to the free version unless marked Pro. Paired with WPMediaVerse Pro 2.3.0 - install and test both together.
+> **Included in Free.** Every item on this page applies to the free version unless marked Pro. Paired with MediaVerse Pro 2.3.0 - install and test both together.
 
 ## Phone photos keep their orientation
 
@@ -29,7 +29,7 @@ Alongside it, two long-standing chat annoyances are fixed:
 
 ## Sign in to the app with your existing password
 
-Members can now sign in to a native WPMediaVerse client with their normal WordPress password, and the site issues an Application Password behind the scenes - no more copying a generated credential by hand.
+Members can now sign in to a native MediaVerse client with their normal WordPress password, and the site issues an Application Password behind the scenes - no more copying a generated credential by hand.
 
 The exchange endpoint is public by necessity (there is nothing to authenticate with before you have a credential) and is guarded accordingly: a site-owner switch, a TLS requirement, uniform failure responses, the suspension gate, rate limiting applied before any credential is read, and a `409` rather than a silent two-factor bypass. See [POST /auth/app-password](../developer-guide/rest-api.md#post-authapp-password).
 
@@ -60,6 +60,6 @@ The exchange endpoint is public by necessity (there is nothing to authenticate w
 
 ## Compatibility
 
-Free and Pro release in lockstep. Install WPMediaVerse 2.3.0 and WPMediaVerse Pro 2.3.0 together - Pro 2.3.0 expects the Free 2.3.0 service surface.
+Free and Pro release in lockstep. Install MediaVerse 2.3.0 and MediaVerse Pro 2.3.0 together - Pro 2.3.0 expects the Free 2.3.0 service surface.
 
 No database migration is required beyond the automatic Migrator run on activation, and no settings are lost on upgrade.

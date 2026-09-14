@@ -1,6 +1,6 @@
 # Quotas
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -33,7 +33,7 @@ Repeat to create as many packages as your membership tiers require.
 
 ## Membership Integrations
 
-WPMediaVerse Pro detects active membership plugins and maps their levels to quota packages automatically.
+MediaVerse Pro detects active membership plugins and maps their levels to quota packages automatically.
 
 | Plugin | How to Map |
 |--------|-----------|
@@ -41,13 +41,13 @@ WPMediaVerse Pro detects active membership plugins and maps their levels to quot
 | Paid Memberships Pro | Media > Quota Packages > Assignments > PMPro tab |
 | WooCommerce Memberships | Media > Quota Packages > Assignments > WooCommerce tab |
 
-When a user holds multiple memberships, WPMediaVerse Pro applies the highest limits across each dimension independently.
+When a user holds multiple memberships, MediaVerse Pro applies the highest limits across each dimension independently.
 
 ---
 
 ## How Quotas Work (Technical)
 
-When a user uploads a file, WPMediaVerse Pro checks the user's active quota package before accepting the upload. If the upload would exceed any limit in the package, the upload is rejected.
+When a user uploads a file, MediaVerse Pro checks the user's active quota package before accepting the upload. If the upload would exceed any limit in the package, the upload is rejected.
 
 Users with the `manage_mvs_settings` capability bypass quotas entirely. Quotas are a soft tool: a user with no assigned package is treated as unlimited.
 

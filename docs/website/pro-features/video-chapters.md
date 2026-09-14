@@ -1,10 +1,10 @@
 # Video Chapters
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-WPMediaVerse Pro lets you add chapter markers to video files and tracks each viewer's resume position so they can pick up where they left off.
+MediaVerse Pro lets you add chapter markers to video files and tracks each viewer's resume position so they can pick up where they left off.
 
 ![Video player showing chapter markers on the progress bar](../images/lightbox.png)
 
@@ -62,7 +62,7 @@ Sending an empty array (`"chapters": []`) removes all chapters from the media it
 
 ## Resume Playback
 
-WPMediaVerse Pro tracks the furthest playback position reached by each authenticated user. When a user returns to a video they have partially watched, the player offers a **Resume from X:XX** prompt.
+MediaVerse Pro tracks the furthest playback position reached by each authenticated user. When a user returns to a video they have partially watched, the player offers a **Resume from X:XX** prompt.
 
 Resume positions are stored server-side, not in browser storage, so they persist across devices.
 

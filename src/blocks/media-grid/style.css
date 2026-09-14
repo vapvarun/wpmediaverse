@@ -1,56 +1,35 @@
-.mvs-media-grid {
-	display: grid;
-	gap: var(--mvs-grid-gap, 8px);
-}
+/*
+ * media-grid block styles.
+ *
+ * THE SHARED GRID COMPONENT LIVES IN assets/css/frontend.css. This file used to
+ * redefine all of it - .mvs-media-grid, the .mvs-cols-* columns, .mvs-grid-item,
+ * the caption overlay and its hover - with DIFFERENT values, so the same markup
+ * rendered differently depending on which sheet won the cascade. It also beat
+ * the shared sheet's .mvs-grid--list rules, which is how the defect surfaced:
+ * List rendered as a square grid because this file re-asserted aspect-ratio: 1.
+ *
+ * What was dropped and why it is safe:
+ *   .mvs-media-grid + .mvs-cols-*    frontend.css:1350-1372 defines both, and
+ *                                    its breakpoints (767px -> 2 cols,
+ *                                    480px -> 1) are earlier and finer than the
+ *                                    single 600px rule that lived here.
+ *   .mvs-grid-item                   frontend.css:1400, which also sets the
+ *                                    background/colour pair its comment says
+ *                                    fixed a measured 1.07-1.38:1 dark-mode
+ *                                    contrast failure.
+ *   .mvs-grid-item img + :hover      frontend.css:1419 covers both, and also
+ *                                    handles .mvs-grid-video-preview.
+ *   .mvs-grid-item-overlay + hover   frontend.css:1540.
+ *   .mvs-no-media                    frontend.css already defines it.
+ *
+ * The Gap control still works: frontend.css:1352 now reads
+ * var(--mvs-grid-gap, 16px), which render.php emits per instance.
+ *
+ * Basecamp 10298483829.
+ */
 
-.mvs-media-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
-.mvs-media-grid.mvs-cols-3 { grid-template-columns: repeat(3, 1fr); }
-.mvs-media-grid.mvs-cols-4 { grid-template-columns: repeat(4, 1fr); }
-.mvs-media-grid.mvs-cols-5 { grid-template-columns: repeat(5, 1fr); }
-
-.mvs-grid-item {
-	position: relative;
-	overflow: hidden;
-	border-radius: 4px;
-	aspect-ratio: 1;
-	cursor: pointer;
-}
-
-.mvs-grid-item img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	transition: transform 0.2s ease;
-}
-
-.mvs-grid-item:hover img {
-	transform: scale(1.05);
-}
-
-.mvs-grid-item-overlay {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	padding: 8px;
-	background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
-	color: #fff; /* caption on a dark thumbnail gradient in both modes */
-	font-size: 12px;
-	opacity: 0;
-	transition: opacity 0.2s ease;
-}
-
-.mvs-grid-item:hover .mvs-grid-item-overlay {
-	opacity: 1;
-}
-
-.mvs-grid-pagination {
-	display: flex;
-	justify-content: center;
-	gap: 8px;
-	margin-top: 16px;
-}
-
+/* Pagination is genuinely this block's own - frontend.css has .mvs-grid-pagination
+   but not its buttons. */
 .mvs-grid-pagination button {
 	padding: 8px 16px;
 	border: 1px solid var(--mvs-border);
@@ -62,18 +41,4 @@
 .mvs-grid-pagination button:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
-}
-
-.mvs-no-media {
-	text-align: center;
-	padding: 40px;
-	color: var(--mvs-text-muted);
-}
-
-@media (max-width: 600px) {
-	.mvs-media-grid.mvs-cols-3,
-	.mvs-media-grid.mvs-cols-4,
-	.mvs-media-grid.mvs-cols-5 {
-		grid-template-columns: repeat(2, 1fr);
-	}
 }

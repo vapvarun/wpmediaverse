@@ -1,8 +1,8 @@
 {
   "product_slug": "wpmediaverse",
-  "product_name": "WPMediaVerse",
+  "product_name": "MediaVerse",
   "product_type": "plugin",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.",
   "author": "Wbcom Designs",
   "author_url": "https://wbcomdesigns.com/",
@@ -18,9 +18,10 @@
       "title": "Getting Started",
       "icon": "rocket",
       "pages": [
-        { "slug": "why-wpmediaverse", "title": "Why WPMediaVerse" },
+        { "slug": "why-wpmediaverse", "title": "Why MediaVerse" },
         { "slug": "installation", "title": "Installation" },
         { "slug": "setup-wizard", "title": "Setup Wizard" },
+        { "slug": "whats-new-2-5-0", "title": "What's New in 2.5.0" },
         { "slug": "whats-new-2-3-0", "title": "What's New in 2.3.0" },
         { "slug": "whats-new-2-2-0", "title": "What's New in 2.2.0" },
         { "slug": "whats-new-2-0-0", "title": "What's New in 2.0.0" },
@@ -67,6 +68,18 @@
         { "slug": "blocks", "title": "Gutenberg Blocks" },
         { "slug": "gdpr-privacy", "title": "GDPR & Privacy Compliance" },
         { "slug": "user-blocking", "title": "User Blocking & Reporting" }
+      ]
+    },
+    {
+      "slug": "buddynext",
+      "title": "BuddyNext Integration",
+      "icon": "users",
+      "pages": [
+        { "slug": "overview", "title": "Overview" },
+        { "slug": "profile-tabs", "title": "Profile Media" },
+        { "slug": "space-tabs", "title": "Space Media" },
+        { "slug": "feed-media", "title": "Feed Media" },
+        { "slug": "notifications", "title": "Notifications" }
       ]
     },
     {

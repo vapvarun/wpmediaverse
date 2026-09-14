@@ -1,6 +1,6 @@
 # Tournaments
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -44,7 +44,7 @@ Enter a single-elimination bracket competition - submit your best photo, survive
 
 ## For Site Owners
 
-1. Go to **WPMediaVerse > Settings > Gamification** and enable **Tournaments**
+1. Go to **MediaVerse > Settings > Gamification** and enable **Tournaments**
 2. Go to **Competitions > Tournament Manager** and click **Add Tournament**
 3. Set the title, bracket size (4, 8, 16, 32, or 64 participants), registration window, and match vote duration
 4. Set XP prizes for the winner, runner-up, and each round win

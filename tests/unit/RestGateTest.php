@@ -177,11 +177,41 @@ class RestGateTest extends WP_UnitTestCase {
 		remove_filter( 'mvs_rest_gate_enabled', '__return_false' );
 	}
 
+	/**
+	 * The gate does not touch reads.
+	 *
+	 * This asserts the GATE's scope, by calling it directly. It used to assert
+	 * the scope indirectly - "a blocked member gets a non-403 on GET
+	 * /media/{id}" through rest_do_request() - which runs the whole stack, so
+	 * the assertion also silently locked in READ authorization, which the gate
+	 * does not own and never did.
+	 *
+	 * That became wrong when blocking started hiding media from the blocked
+	 * member on direct URLs, which is the documented contract:
+	 * docs/website/features/user-blocking.md says a blocked member "cannot view
+	 * your media items ... their direct URLs return a 403". PrivacyService
+	 * enforces that. The gate still ignores reads, exactly as before - so the
+	 * guarantee is unchanged and is now asserted where it actually lives.
+	 */
 	public function test_gate_ignores_reads(): void {
-		$this->assertNotSame(
+		wp_set_current_user( $this->blocked );
+		RestGuards::flush_cache();
+
+		$sentinel = new \WP_REST_Response( null, 200 );
+		$request  = new WP_REST_Request( 'GET', "/mvs/v1/media/{$this->media}" );
+
+		$this->assertSame(
+			$sentinel,
+			RestGate::gate( $sentinel, array(), $request ),
+			'The gate governs writes: a read must pass through it untouched.'
+		);
+
+		// And the same route as a WRITE is gated, so this is not passing simply
+		// because the gate is inert for this member or this media.
+		$this->assertSame(
 			403,
-			$this->status_as( $this->blocked, 'GET', "/mvs/v1/media/{$this->media}" ),
-			'The gate governs writes. A blocked member may still read public content.'
+			$this->status_as( $this->blocked, 'POST', "/mvs/v1/media/{$this->media}/favorite" ),
+			'Control: the gate does still block this member writing to this media.'
 		);
 	}
 

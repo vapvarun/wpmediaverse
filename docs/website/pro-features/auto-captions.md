@@ -1,10 +1,10 @@
 # Auto-Captions
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-WPMediaVerse Pro transcribes video and audio files using the OpenAI Whisper API and attaches the result as a WebVTT caption file. Captions are served with the media player and can be edited via the REST API.
+MediaVerse Pro transcribes video and audio files using the OpenAI Whisper API and attaches the result as a WebVTT caption file. Captions are served with the media player and can be edited via the REST API.
 
 ![Video player with captions visible and CC button](../images/lightbox.png)
 
@@ -27,7 +27,7 @@ The OpenAI API key is read from the free plugin's existing **OpenAI API Key** se
 
 ![Auto-captions settings section with API key field](../images/admin-settings-video.png)
 
-When **Auto-Generate Captions** is on, WPMediaVerse Pro queues a transcription job via Action Scheduler immediately after a file is stored. The caption file is saved once the Whisper API responds.
+When **Auto-Generate Captions** is on, MediaVerse Pro queues a transcription job via Action Scheduler immediately after a file is stored. The caption file is saved once the Whisper API responds.
 
 ## Caption File Storage
 
@@ -100,7 +100,7 @@ Remove the caption file and reset the caption status to `none`.
 
 ## WebVTT Format
 
-WPMediaVerse Pro always stores captions in WebVTT format. Caption content you submit through the API must begin with the `WEBVTT` header - content that does not start with that header is rejected. There is no automatic SRT-to-VTT conversion; convert SRT to WebVTT before uploading.
+MediaVerse Pro always stores captions in WebVTT format. Caption content you submit through the API must begin with the `WEBVTT` header - content that does not start with that header is rejected. There is no automatic SRT-to-VTT conversion; convert SRT to WebVTT before uploading.
 
 Example VTT file:
 

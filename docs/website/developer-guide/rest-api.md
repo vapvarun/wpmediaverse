@@ -1,6 +1,6 @@
 # REST API Reference
 
-> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro. Everything documented below ships in the free plugin.
+> Endpoints and hooks marked **(Pro)** require MediaVerse Pro. Everything documented below ships in the free plugin.
 
 **Base URL:** `/wp-json/mvs/v1/`
 

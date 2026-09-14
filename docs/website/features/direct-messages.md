@@ -1,6 +1,6 @@
 # Direct Messages
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
 Send private messages, share photos, record voice notes, and have real conversations - all without leaving your media community.
@@ -99,7 +99,7 @@ There are three ways to start or open a conversation:
 |---------|-------------|
 | Text messages | Plain text with @mention support |
 | Media attachments | Attach images, video, or audio. MediaVerse is a media platform, so documents (PDF, DOC, ZIP) are not accepted in chat as of 2.2.0 - a developer can extend the list with the `mvs_dm_allowed_file_types` filter. While a file uploads, the composer shows an "Uploading..." chip and Send waits for the upload to finish |
-| Media sharing | Share a WPMediaVerse media item directly into a conversation |
+| Media sharing | Share a MediaVerse media item directly into a conversation |
 | Voice messages | Record and send short audio clips |
 | Emoji reactions | React to individual messages with any emoji |
 | Typing indicators | Shows a live indicator when the other user is typing |
@@ -131,7 +131,7 @@ When `mvs_dm_access` is set to `nobody`, the **Message** button is hidden on tha
 
 ## Content Moderation (1.9.0)
 
-Every outgoing DM passes through the `mvs_message_content_check` filter before it is stored, the same seam other content types on the site already use to reject disallowed words. On its own, WPMediaVerse Free doesn't ship a word-blocklist for messages - the filter is what lets a host (a full community stack like BuddyNext, or your own mu-plugin) block a message the moment it's sent, so a member can't route banned words through a DM that would otherwise be caught in a comment or activity post. A blocked send returns an error instead of saving the message.
+Every outgoing DM passes through the `mvs_message_content_check` filter before it is stored, the same seam other content types on the site already use to reject disallowed words. On its own, MediaVerse Free doesn't ship a word-blocklist for messages - the filter is what lets a host (a full community stack like BuddyNext, or your own mu-plugin) block a message the moment it's sent, so a member can't route banned words through a DM that would otherwise be caught in a comment or activity post. A blocked send returns an error instead of saving the message.
 
 ```php
 add_filter( 'mvs_message_content_check', function( $result, $content, $sender_id, $conversation_id ) {
@@ -212,7 +212,7 @@ Send a message. The current user must be a participant and must satisfy the reci
 |-------|----------|-------------|
 | `content` | No | Text content. Defaults to empty string. |
 | `message_type` | No | Message type: `text` (default), `media_share`, `image`, `video`, `audio`, `voice`, `file`, `system`. Unknown values fall back to `text`. |
-| `media_id` | No | WPMediaVerse media ID when `message_type=media_share` |
+| `media_id` | No | MediaVerse media ID when `message_type=media_share` |
 | `attachment_id` | No | WordPress attachment ID from a prior `POST /messages/upload`, used for `image`/`video`/`audio`/`voice`/`file` messages |
 | `parent_id` | No | Message ID to reply to. Creates a threaded reply visible under the parent message. |
 | `metadata` | No | Object of extra data (e.g. `{ "duration": 12 }` for voice messages). |

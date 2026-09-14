@@ -21,7 +21,9 @@
 		document.querySelectorAll( SECTION_SELECTOR ).forEach( ( el ) => el.classList.remove( ACTIVE_CLASS ) );
 
 		// Activate target nav item and section.
-		const navItem = document.querySelector( `${ NAV_SELECTOR }[data-section="${ sectionId }"]` );
+		// Escaped: the id now also comes from the URL, and a stray quote would
+		// throw inside querySelector and leave no section showing at all.
+		const navItem = document.querySelector( `${ NAV_SELECTOR }[data-section="${ CSS.escape( sectionId ) }"]` );
 		const section = document.getElementById( 'section-' + sectionId );
 
 		if ( navItem && section ) {
@@ -43,6 +45,19 @@
 	function getHashSection() {
 		const hash = window.location.hash.replace( '#', '' );
 		return hash || '';
+	}
+
+	/**
+	 * `?section=display` is how notices, docs and support replies link to a
+	 * section; the hash is what the sidebar writes as you click. Honour both,
+	 * hash first. An unknown name falls back to the first section, as before.
+	 */
+	function getQuerySection() {
+		try {
+			return new URL( window.location.href ).searchParams.get( 'section' ) || '';
+		} catch ( err ) {
+			return '';
+		}
 	}
 
 	/**
@@ -136,7 +151,7 @@
 		} );
 
 		// On load, activate section from hash or default to first.
-		const hashSection = getHashSection();
+		const hashSection = getHashSection() || getQuerySection();
 		if ( hashSection ) {
 			activateSection( hashSection );
 		} else {

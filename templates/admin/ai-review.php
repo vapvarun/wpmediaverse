@@ -106,7 +106,7 @@ defined( 'ABSPATH' ) || exit;
 
 			<?php if ( '' === $description && '' === $tags_text ) : ?>
 				<div class="notice notice-warning inline">
-					<p><?php esc_html_e( 'No AI description or tags are stored for this media yet. If you expected results, make sure an AI provider is configured under WPMediaVerse settings, then use Re-run AI below.', 'wpmediaverse' ); ?></p>
+					<p><?php esc_html_e( 'No AI description or tags are stored for this media yet. If you expected results, make sure an AI provider is configured under MediaVerse settings, then use Re-run AI below.', 'wpmediaverse' ); ?></p>
 				</div>
 			<?php endif; ?>
 

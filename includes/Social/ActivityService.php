@@ -166,7 +166,7 @@ class ActivityService {
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT a.* FROM {$wpdb->prefix}mvs_activity a{$privacy_join} WHERE {$where}{$privacy_where} ORDER BY a.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT a.* FROM {$wpdb->prefix}mvs_activity a{$privacy_join} WHERE {$where}{$privacy_where} ORDER BY a.created_at DESC, a.id DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...$params
 			)
 		);

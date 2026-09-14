@@ -1,6 +1,6 @@
 # Free vs Pro Comparison
 
-WPMediaVerse Free is a full-featured media platform. WPMediaVerse Pro unlocks advanced tools for professional communities, monetization, and engagement.
+MediaVerse Free is a full-featured media platform. MediaVerse Pro unlocks advanced tools for professional communities, monetization, and engagement.
 
 Free and Pro release in lockstep and share the same version number. See the [changelog](https://github.com/vapvarun/wpmediaverse/blob/main/readme.txt) for what shipped in each release, or [Pro feature overview](../pro-features/overview.md) for the current Pro feature set.
 
@@ -146,7 +146,7 @@ There is no "Followers Only" media privacy level in either plugin. `followers` a
 
 ## What You Get Free
 
-WPMediaVerse Free is not a stripped-down trial. It is a complete media platform with:
+MediaVerse Free is not a stripped-down trial. It is a complete media platform with:
 
 - Full upload system with drag & drop, bulk upload, and duplicate detection
 - Albums, collections, and gallery groups
@@ -161,7 +161,7 @@ WPMediaVerse Free is not a stripped-down trial. It is a complete media platform 
 
 ## What Pro Adds
 
-WPMediaVerse Pro is for sites that need professional-grade features:
+MediaVerse Pro is for sites that need professional-grade features:
 
 - **Visual identity** - Choose from Instagram, Pinterest, Flickr, or Dribbble layouts to match your community's style
 - **Scale** - Offload media to S3 or BunnyCDN for global CDN delivery and unlimited storage

@@ -748,6 +748,16 @@
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
+      "name": "mvs_pro_competitions_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_credits_added",
       "type": "action",
       "args_count": 4,

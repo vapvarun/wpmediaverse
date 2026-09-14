@@ -216,8 +216,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		toastMessage: '',
 		toastType: 'success',
 		toastVisible: false,
-		get isToastSuccess() { return state.toastType === 'success'; },
-		get isToastError() { return state.toastType === 'error'; },
+		// Derived from the type, not enumerated per type. assets/js/admin/toast.js
+		// already builds the class this way; the frontend template listed the
+		// modifiers by hand, so showToast( msg, 'warning' ) - which the upload
+		// duplicate path passes - produced a bare, unstyled toast (Coding Rule 22).
+		get toastClass() { return 'mvs-toast mvs-toast--' + ( state.toastType || 'success' ); },
 
 		// --- Confirm (flat) ---
 		confirmMessage: '',
@@ -254,6 +257,33 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
 		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
 		userAlbums: [], // [{ id, title }] for the "Add to album" select
+		get uploadModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.uploadModalPrivacy );
+		},
+		get uploadModalPrivacyLabel() {
+			return state.privacyLabelFor( state.uploadModalPrivacy );
+		},
+		get editModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.editModalPrivacy );
+		},
+		get editModalPrivacyLabel() {
+			return state.privacyLabelFor( state.editModalPrivacy );
+		},
+		/**
+		 * Is the stored level one the picker does not offer?
+		 *
+		 * privacy_options() renders the offered levels server-side; this only
+		 * decides whether the extra disabled option is shown. The offered set
+		 * comes from privacy_choices() via PHP - filterable, and BP-conditional
+		 * - so it is never restated here. Basecamp 10290748981.
+		 */
+		privacyUnlisted( stored ) {
+			const offered = state.i18n?.privacyChoices || [];
+			return !! stored && ! offered.includes( stored );
+		},
+		privacyLabelFor( stored ) {
+			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
+		},
 		get hideUploadMetaFields() {
 			return state.uploadModalUploading;
 		},
@@ -429,7 +459,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return state.lightboxMediaData?.media_type === 'document';
 		},
 		get lightboxHideDocument() {
-			return state.lightboxMediaData?.media_type !== 'document';
+			// The download card is for documents we cannot preview. When Pro
+			// returned viewer HTML the card would duplicate it, so it steps aside.
+			// Basecamp 10268223516.
+			return state.lightboxMediaData?.media_type !== 'document'
+				|| !! state.lightboxMediaData?.doc_viewer_html;
+		},
+		get lightboxHideDocViewer() {
+			return ! ( state.lightboxMediaData?.media_type === 'document'
+				&& state.lightboxMediaData?.doc_viewer_html );
 		},
 		get lightboxDocGlyphClass() {
 			// Per-type glyph from the REST doc_icon (resolved server-side from the
@@ -530,7 +568,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return text;
 		},
 		get lightboxFavoriteLabel() {
-			// Icon is rendered separately via Lucide (data-lucide="heart"); label is plain text.
+			// Icon is rendered separately via Lucide (data-lucide="star"); label is plain text.
 			return state.lightboxIsFavorited ? 'Favorited' : 'Favorite';
 		},
 		get lightboxHasComments() {
@@ -1212,14 +1250,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( uploaded > 0 ) {
 				let msg;
 				let toastType;
+				const uploadedMsg = ( state.i18n?.filesUploaded || '%d file(s) uploaded!' )
+					.replace( '%d', uploaded );
 				if ( state.uploadModalFailed > 0 ) {
-					msg = uploaded + ' uploaded, ' + state.uploadModalFailed + ' failed.';
+					msg = ( state.i18n?.uploadedFailed || '%1$d uploaded, %2$d failed.' )
+						.replace( '%1$d', uploaded )
+						.replace( '%2$d', state.uploadModalFailed );
 					toastType = 'error';
 				} else if ( state.uploadModalDuplicates > 0 ) {
-					msg = uploaded + ' uploaded — ' + state.uploadModalDuplicates + ' duplicate(s) detected (existing media #' + state.uploadModalLastDuplicateId + ').';
+					msg = uploadedMsg + ' ' + (
+						state.i18n?.duplicatesDetected ||
+							'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+					)
+						.replace( '%1$d', state.uploadModalDuplicates )
+						.replace( '%2$d', state.uploadModalLastDuplicateId );
 					toastType = 'warning';
 				} else {
-					msg = uploaded + ' file(s) uploaded!';
+					msg = uploadedMsg;
 					toastType = 'success';
 				}
 				actions.showToast( msg, toastType );
@@ -1228,7 +1275,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					window.location.reload();
 				}, state.uploadModalDuplicates > 0 ? 2500 : 800 );
 			} else {
-				actions.showToast( state.uploadModalLastError || 'Upload failed. Please try again.', 'error' );
+				actions.showToast(
+					state.uploadModalLastError ||
+						( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ),
+					'error'
+				);
 			}
 		},
 
@@ -1355,6 +1406,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		noop() {},
 		async lightboxLoadSocial( ctx, mediaId ) {
+			// Record the view. Fire-and-forget, exactly as media-social does on the
+			// single-media page. The view POST was wired into that page and into
+			// the BP activity driver, but never into the IA lightbox - so opening
+			// media in the lightbox counted nothing, and the same item viewed two
+			// ways gave two different answers (Basecamp 10280453489).
+			// This is the single funnel for all four lightbox openers
+			// (openLightbox, openLightboxById, and the two dashboard ones), so one
+			// line covers them. record_view() is already rate-limited and
+			// deduplicated server-side, so no guard is needed here.
+			window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/view', { method: 'POST' } );
+
 			// Reactions.
 			try {
 				const r = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/reactions' );
@@ -1823,6 +1885,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 	},
 	callbacks: {
+		// Pro sanitises this server-side (wp_kses on the rendered document), and
+		// it only ever contains the text/markdown/csv tier - no script tier
+		// reaches a REST response. Written with innerHTML rather than data-wp-text
+		// because it is markup, not text.
+		lightboxDocViewer() {
+			const el = getElement()?.ref;
+			if ( ! el ) {
+				return;
+			}
+			const html = state.lightboxMediaData?.doc_viewer_html || '';
+			if ( el.innerHTML !== html ) {
+				el.innerHTML = html;
+			}
+		},
 		/**
 		 * Move focus into the dialog once it is genuinely on screen.
 		 *

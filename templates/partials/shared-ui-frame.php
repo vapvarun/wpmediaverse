@@ -52,7 +52,7 @@ wp_interactivity_state(
 			'mvs_comment_edit_window',
 			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 		),
-		'canModerateComments' => current_user_can( 'moderate_comments' ),
+		'canModerateComments' => current_user_can( 'moderate_mvs_media' ),
 		'i18n'                => array(
 			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
 			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
@@ -64,6 +64,13 @@ wp_interactivity_state(
 			'savedRedirecting' => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
 			'settingsSaved'    => __( 'Media settings saved.', 'wpmediaverse' ),
 			'selectFiles'      => __( 'Please select files to upload.', 'wpmediaverse' ),
+			/* translators: %d: number of files uploaded. */
+			'filesUploaded'    => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			/* translators: 1: uploaded count, 2: failed count. */
+			'uploadedFailed'   => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
+			'uploadFailedRetry' => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+			/* translators: 1: number of duplicate files, 2: existing media ID. */
+			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
 			'albumCreated'     => __( 'Album "%s" created!', 'wpmediaverse' ),
 			'failedLoad'       => __( 'Failed to load media.', 'wpmediaverse' ),
@@ -71,6 +78,11 @@ wp_interactivity_state(
 			'linkCopied'       => __( 'Link copied!', 'wpmediaverse' ),
 			'copyFailed'       => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
 			'notDownloadable'  => __( 'This media is not available for download.', 'wpmediaverse' ),
+			// Read by the store to name a stored level the picker does not
+			// offer. privacyChoices is what privacy_choices() offers, so the
+			// vocabulary is never restated client-side. Basecamp 10290748981.
+			'privacyLabels'    => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			'privacyChoices'   => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 		),
 	)
 );
@@ -245,12 +257,16 @@ wp_interactivity_state(
 						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 						<div class="mvs-modal-field-row">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
-								<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-								<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
-								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-								<option value="friends"><?php esc_html_e( 'Friends Only', 'wpmediaverse' ); ?></option>
-								<?php endif; ?>
-								<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+								<?php
+								// A level the picker does not offer (loggedin, space, group,
+								// or anything an import set) shows here as a readable,
+								// disabled option, so the owner can see what their item is
+								// set to. data-wp-each cannot serve this: it is SSR-expanded
+								// by PHP and these options are derived client-side.
+								// Basecamp 10290748981.
+								?>
+								<option data-wp-bind--hidden="!state.uploadModalPrivacyUnlisted" data-wp-bind--selected="state.uploadModalPrivacyUnlisted" data-wp-bind--value="state.uploadModalPrivacy" data-wp-text="state.uploadModalPrivacyLabel"></option>
+								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
 						<?php endif; ?>
@@ -347,12 +363,16 @@ wp_interactivity_state(
 							<select id="mvs-edit-privacy"
 								data-wp-on--change="actions.updateEditPrivacy"
 								data-wp-bind--value="state.editModalPrivacy">
-								<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
-								<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
-								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-								<option value="friends"><?php esc_html_e( 'Friends Only — BuddyPress friends', 'wpmediaverse' ); ?></option>
-								<?php endif; ?>
-								<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
+								<?php
+								// A level the picker does not offer (loggedin, space, group,
+								// or anything an import set) shows here as a readable,
+								// disabled option, so the owner can see what their item is
+								// set to. data-wp-each cannot serve this: it is SSR-expanded
+								// by PHP and these options are derived client-side.
+								// Basecamp 10290748981.
+								?>
+								<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModalPrivacy" data-wp-text="state.editModalPrivacyLabel"></option>
+								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
 						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
@@ -456,6 +476,9 @@ wp_interactivity_state(
 				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 				<?php // A document has no displayable image, so instead of synthesising a broken <img> from its file URL the lightbox shows a doc card (glyph + title + type); the chrome below (Open / Download) still reaches the file. (Basecamp 10248528902) ?>
+				<?php // Pro's viewer when it can render the type, the download card otherwise. Basecamp 10268223516. ?>
+				<div class="mvs-lightbox-doc-viewer" data-wp-bind--hidden="state.lightboxHideDocViewer" data-wp-watch="callbacks.lightboxDocViewer" hidden></div>
+
 				<div class="mvs-lightbox-document mvs-doc-card" data-wp-bind--hidden="state.lightboxHideDocument" hidden>
 					<span class="mvs-doc-card__glyph mvs-doc-glyph mvs-doc-glyph--file-text" data-wp-bind--class="state.lightboxDocGlyphClass" aria-hidden="true"></span>
 					<span class="mvs-doc-card__title" data-wp-text="state.lightboxTitle"></span>
@@ -536,16 +559,17 @@ wp_interactivity_state(
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
+						<?php // One icon per feature on every surface: star = Favorite, heart = Like, bookmark = Save (Basecamp 10277695437). ?>
 						<button class="mvs-lightbox-action mvs-lb-fav" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
-							<i data-lucide="heart" aria-hidden="true"></i>
-							<span data-wp-text="state.lightboxFavoriteLabel"></span>
+							<i data-lucide="star" aria-hidden="true"></i>
+							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
 					<?php // "Save to collection" is separate from the heart; shown only when a collections backend (Pro) enables it. ?>
 					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_collections_enabled', false ) ) : ?>
 						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
-							<?php esc_html_e( 'Save', 'wpmediaverse' ); ?>
+							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
 					<?php
@@ -567,22 +591,22 @@ wp_interactivity_state(
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<button class="mvs-lightbox-action mvs-lb-edit" data-wp-on--click="actions.lightboxEdit" data-wp-bind--hidden="!state.lightboxIsOwner" aria-label="<?php esc_attr_e( 'Edit this media', 'wpmediaverse' ); ?>">
 							<i data-lucide="pencil" aria-hidden="true"></i>
-							<?php esc_html_e( 'Edit', 'wpmediaverse' ); ?>
+							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
 					<button class="mvs-lightbox-action mvs-lb-share" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
 						<i data-lucide="share-2" aria-hidden="true"></i>
-						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
+						<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Share', 'wpmediaverse' ); ?></span>
 					</button>
 					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
 					<button class="mvs-lightbox-action mvs-lb-download" data-wp-on--click="actions.lightboxDownload" data-wp-bind--hidden="state.lightboxHideDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
 						<i data-lucide="download" aria-hidden="true"></i>
-						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
+						<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Download', 'wpmediaverse' ); ?></span>
 					</button>
 					<?php endif; ?>
 					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank" aria-label="<?php esc_attr_e( 'Open this media in a new tab', 'wpmediaverse' ); ?>">
 						<i data-lucide="external-link" aria-hidden="true"></i>
-						<?php esc_html_e( 'Open', 'wpmediaverse' ); ?>
+						<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Open', 'wpmediaverse' ); ?></span>
 					</a>
 					<?php // Reporting is a Pro feature: Free has no queue/UI to read or resolve reports. ?>
 					<?php // Shown by default; site owners opt out in Settings -> Moderation. ?>
@@ -590,7 +614,7 @@ wp_interactivity_state(
 						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
 							data-wp-bind--hidden="state.lightboxIsOwner" aria-label="<?php esc_attr_e( 'Report this media for review', 'wpmediaverse' ); ?>">
 							<i data-lucide="flag" aria-hidden="true"></i>
-							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
+							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
 				</div>
@@ -688,8 +712,7 @@ wp_interactivity_state(
 
 	<!-- Toast -->
 	<div class="mvs-toast" hidden data-wp-bind--hidden="!state.toastVisible"
-		data-wp-class--mvs-toast--success="state.isToastSuccess"
-		data-wp-class--mvs-toast--error="state.isToastError">
+		data-wp-bind--class="state.toastClass">
 		<span data-wp-text="state.toastMessage"></span>
 		<button class="mvs-toast-close" data-wp-on--click="actions.hideToast" aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

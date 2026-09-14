@@ -39,11 +39,6 @@ $mvs_toolbar_orderby = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET[
 $mvs_toolbar_order   = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'asc' : 'desc';
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-$mvs_order_options = array(
-	'desc' => __( 'Newest first', 'wpmediaverse' ),
-	'asc'  => __( 'Oldest first', 'wpmediaverse' ),
-);
-
 // Resolved here rather than reusing the copy made further down for the rail:
 // the toolbars are rendered before that point, and capturing a variable that
 // does not exist yet is a null comparison that silently matches nothing.
@@ -189,8 +184,14 @@ wp_interactivity_state(
 			'optAudio'                => __( 'Audio', 'wpmediaverse' ),
 			'optDocument'             => __( 'Document', 'wpmediaverse' ),
 			'optPublic'               => __( 'Public', 'wpmediaverse' ),
-			'optMembers'              => __( 'Members', 'wpmediaverse' ),
+			'optMembers'              => __( 'Members: logged-in users only', 'wpmediaverse' ),
 			'optPrivate'              => __( 'Private', 'wpmediaverse' ),
+			// Every privacy level the plugin can store, so a badge never paints the
+			// raw database slug at a member. Basecamp 10290748981.
+			'privacyLabels'           => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			// Which levels the picker OFFERS - filterable, and BP-conditional.
+			// The store must not restate this vocabulary. Basecamp 10290748981.
+			'privacyChoices'          => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
 			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),
@@ -218,6 +219,8 @@ wp_interactivity_state(
 			'filesUploadedPartial'    => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
 			/* translators: %d: number of files uploaded. */
 			'filesUploaded'           => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			/* translators: 1: number of duplicate files, 2: existing media ID. */
+			'duplicatesDetected'      => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
 			'fileReplaced'            => __( 'File replaced!', 'wpmediaverse' ),
 			'replaceFailed'           => __( 'Replace failed.', 'wpmediaverse' ),
 			// Edit media.
@@ -468,6 +471,17 @@ wp_interactivity_state(
 	// before the nav, in the same rail column.
 	$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
 	?>
+	<?php
+	// ONE column, not two stacked cards. The identity and the sections were
+	// separate grid items, each drawing its own border, radius and fill, with a
+	// --mvs-space-5 row gap between them - so the rail read as two boxes that
+	// happened to line up. This wrapper is the grid item now: it carries the
+	// card and the sticky, and both children sit inside it borderless.
+	//
+	// It cannot close any later than </nav>: everything after that is a PANEL,
+	// and a panel inside this element would land in the rail column.
+	?>
+	<div class="mvs-dashboard-rail">
 	<div class="mvs-dashboard-rail-head">
 		<?php if ( $mvs_dash_profile_url ) : ?>
 			<?php
@@ -605,6 +619,7 @@ wp_interactivity_state(
 		do_action( 'mvs_dashboard_tabs' );
 		?>
 	</nav>
+	</div><!-- /.mvs-dashboard-rail -->
 
 	<?php
 	// Profile edit, as a panel among panels. Same markup as the card carried,
@@ -708,7 +723,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_media['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'media',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -769,12 +783,7 @@ wp_interactivity_state(
 					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 					<label class="mvs-sr-only" for="mvs-upload-meta-privacy"><?php esc_html_e( 'Who can see this', 'wpmediaverse' ); ?></label>
 					<select id="mvs-upload-meta-privacy" class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
-						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-						<option value="friends" <?php selected( $mvs_def_priv, 'friends' ); ?>><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-						<?php endif; ?>
-						<option value="private" <?php selected( $mvs_def_priv, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( $mvs_def_priv ); ?>
 					</select>
 					<?php endif; ?>
 				</div>
@@ -807,9 +816,10 @@ wp_interactivity_state(
 			<label class="mvs-bulk-privacy-label">
 				<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-privacy" data-wp-on--change="actions.setBulkPrivacy">
-					<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-					<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-					<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+					<?php // Bulk deliberately offers only the three unambiguous levels; friends is per-item. ?>
+					<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
+					<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 				</select>
 			</label>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
@@ -879,10 +889,13 @@ wp_interactivity_state(
 						<div class="mvs-dashboard-card-meta">
 							<span class="mvs-privacy-badge" data-wp-text="state.itemPrivacy"></span>
 						</div>
+						<?php // can_edit / can_delete come from MediaController and mirror what the REST write gates enforce, so a revoked permission removes the control instead of handing out a button that 403s. ?>
 						<div class="mvs-dashboard-card-actions">
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+								data-wp-bind--hidden="!context.item.can_edit"
 								data-wp-on--click="actions.openEditModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
 							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+								data-wp-bind--hidden="!context.item.can_delete"
 								data-wp-on--click="actions.confirmDeleteMedia"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
 						</div>
 					</div>
@@ -916,10 +929,6 @@ wp_interactivity_state(
 
 	<!-- My Albums Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'albums' ) ); ?>>
-		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
-		</div>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -960,7 +969,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_albums['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'albums',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -969,6 +977,16 @@ wp_interactivity_state(
 			)
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
+		<?php
+		// Toolbar first, then the create action - the order Media and Favorites
+		// already use. Search and filter are the first thing every panel offers,
+		// and the create button sits directly above the grid it adds to, so every
+		// library panel opens the same way.
+		?>
+		<div class="mvs-dashboard-actions">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
+		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.albums.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-album-id="context.item.id">
@@ -1059,7 +1077,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_favorites['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'favorites',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -1121,7 +1138,7 @@ wp_interactivity_state(
 			// interface with no dashboard caller.
 			echo $mvs_tpl->render_block_empty_state(
 				array(
-					'icon'    => 'heart',
+					'icon'    => 'star',
 					'title'   => __( 'No favourites yet', 'wpmediaverse' ),
 					'message' => __( 'Media you favourite appears here so you can find it again.', 'wpmediaverse' ),
 				)
@@ -1136,10 +1153,6 @@ wp_interactivity_state(
 
 	<!-- My Collections Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'collections' ) ); ?>>
-		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
-		</div>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -1180,7 +1193,6 @@ wp_interactivity_state(
 					'name'    => 'order',
 					'label'   => __( 'Direction', 'wpmediaverse' ),
 					'value'   => $mvs_tb_collections['order'],
-					'options' => $mvs_order_options,
 					'attrs'   => array(
 						'data-panel'         => 'collections',
 						'data-wp-on--change' => 'actions.toolbarOrder',
@@ -1189,6 +1201,16 @@ wp_interactivity_state(
 			)
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
+		<?php
+		// Toolbar first, then the create action - the order Media and Favorites
+		// already use. Search and filter are the first thing every panel offers,
+		// and the create button sits directly above the grid it adds to, so every
+		// library panel opens the same way.
+		?>
+		<div class="mvs-dashboard-actions">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
+		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.collections.items">
 				<div class="mvs-dashboard-card mvs-collection-card" data-wp-bind--data-collection-id="context.item.id">
@@ -1285,13 +1307,47 @@ wp_interactivity_state(
 						data-wp-on--input="actions.setCollectionDesc" rows="2"></textarea>
 				</div>
 				<div class="mvs-field">
+					<label><?php esc_html_e( 'Visibility', 'wpmediaverse' ); ?></label>
+					<select data-wp-bind--value="state.collectionModal.privacy"
+						data-wp-on--change="actions.setCollectionPrivacy">
+						<?php
+						// Two static options, rendered server-side. NOT
+						// privacy_options() - that emits all four levels
+						// privacy_choices() offers, and a collection has two.
+						//
+						// No unlisted-value fallback either, unlike the edit
+						// modal: get_privacy() coerces anything that is not
+						// public or members back to public, so a level the
+						// picker cannot show is not reachable. Copying that
+						// machinery here would be solving a problem this field
+						// does not have. Basecamp 10298612348.
+						?>
+						<option value="public"><?php esc_html_e( 'Public: anyone can see it', 'wpmediaverse' ); ?></option>
+						<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+					</select>
+					<p class="mvs-field-hint">
+						<?php esc_html_e( 'Controls who can open the collection itself. Each item inside keeps its own privacy.', 'wpmediaverse' ); ?>
+					</p>
+				</div>
+
+				<div class="mvs-field">
 					<label><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></label>
+					<?php
+					// Manual collections are filled from the "Save" button on a media
+					// item, and that button exists only when a collections backend
+					// (Pro) turns it on. Offer the type under the same switch as the
+					// button, so a site never offers a collection type it cannot fill
+					// (Basecamp 10281257827).
+					$mvs_can_fill_manual = (bool) apply_filters( 'mvs_collections_enabled', false );
+					?>
 					<div class="mvs-collection-type-toggle">
+						<?php if ( $mvs_can_fill_manual ) : ?>
 						<button type="button" class="mvs-toggle-btn"
 							data-wp-class--active="state.isManualType"
 							data-wp-on--click="actions.setCollectionTypeManual">
 							<?php esc_html_e( 'Manual', 'wpmediaverse' ); ?>
 						</button>
+						<?php endif; ?>
 						<button type="button" class="mvs-toggle-btn"
 							data-wp-class--active="state.isSmartType"
 							data-wp-on--click="actions.setCollectionTypeSmart">
@@ -1299,7 +1355,7 @@ wp_interactivity_state(
 						</button>
 					</div>
 					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isManualType">
-						<?php esc_html_e( 'Add media to this collection manually via the Favorites button.', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Add media with the Save button on any media item.', 'wpmediaverse' ); ?>
 					</p>
 					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isSmartType">
 						<?php esc_html_e( 'Define rules and media matching all conditions will appear automatically.', 'wpmediaverse' ); ?>
@@ -1394,18 +1450,34 @@ wp_interactivity_state(
 				<div class="mvs-field-row">
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select data-wp-on--change="actions.setEditPrivacy">
-							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-							<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-							<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-							<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-							<?php endif; ?>
-							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
+							<?php
+							// Options come from STATE, not from privacy_options().
+							//
+							// The server-rendered version passed '' as the selected
+							// level, so its disabled-fallback for an unlisted level
+							// (loggedin, space, group) could never fire - the value is
+							// bound client-side and the server never knows it. A member
+							// whose item was stored at one of those levels opened Edit
+							// and got an empty select: no selection, no way to read the
+							// current setting. Basecamp 10290748981, three bounces.
+							//
+							// state.i18n.privacyLabels already carries every level (it
+							// was added for the badge half of the same card), and the
+							// server renders the offered levels with privacy_options(); the one
+							// extra option below names a stored level it does not offer.
+							// NOT data-wp-each - that is SSR-expanded by PHP, and these
+							// options are derived client-side, so hydration mismatches.
+							?>
+							<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModal.privacy" data-wp-text="state.editModalPrivacyLabel"></option>
+							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 						</select>
 					</div>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<input type="checkbox" class="mvs-edit-regenerate-slug"
+							data-wp-on--change="actions.setEditRegenerateSlug"
+							data-wp-bind--checked="state.editModal.regenerateSlug" />
 							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
 						</label>
 					</div>
@@ -1482,13 +1554,27 @@ wp_interactivity_state(
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-on--change="actions.setAlbumPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-						<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-						<?php endif; ?>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+					<select data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
+						<?php
+						// Options come from STATE, not from privacy_options().
+						//
+						// The server-rendered version passed '' as the selected
+						// level, so its disabled-fallback for an unlisted level
+						// (loggedin, space, group) could never fire - the value is
+						// bound client-side and the server never knows it. A member
+						// whose item was stored at one of those levels opened Edit
+						// and got an empty select: no selection, no way to read the
+						// current setting. Basecamp 10290748981, three bounces.
+						//
+						// state.i18n.privacyLabels already carries every level (it
+						// was added for the badge half of the same card), and the
+						// server renders the offered levels with privacy_options(); the one
+						// extra option below names a stored level it does not offer.
+						// NOT data-wp-each - that is SSR-expanded by PHP, and these
+						// options are derived client-side, so hydration mismatches.
+						?>
+						<option data-wp-bind--hidden="!state.albumModalPrivacyUnlisted" data-wp-bind--selected="state.albumModalPrivacyUnlisted" data-wp-bind--value="state.albumModal.privacy" data-wp-text="state.albumModalPrivacyLabel"></option>
+						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 					</select>
 				</div>
 				<div class="mvs-field">

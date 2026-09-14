@@ -77,6 +77,13 @@ $mvs_can_view = ! isset( $GLOBALS['mvs_media_can_view'] ) || (bool) $GLOBALS['mv
 // Format duration for display.
 $mvs_is_owner = is_user_logged_in() && $mvs_author_id === get_current_user_id();
 
+// Who may drive the edit affordance. Ownership alone hid it from a role the
+// owner delegated "Edit Others" to — REST honoured the capability, the template
+// never asked (Basecamp 10285691473). Mirrors update_item_permissions_check().
+$mvs_can_edit = $mvs_is_owner
+	? current_user_can( 'edit_mvs_medias' )
+	: current_user_can( 'edit_others_mvs_medias' );
+
 $duration_display = '';
 if ( $mvs_duration ) {
 	$dur_float = (float) $mvs_duration;
@@ -526,7 +533,7 @@ $mvs_archive_url = home_url( '/media/' );
 			}
 			// Final fallback: WP term relationships (legacy).
 			if ( empty( $mvs_tag_names ) ) {
-				$mvs_tags_list = get_the_terms( $mvs_media_id, 'mvs_tag' );
+				$mvs_tags_list = wp_get_object_terms( $mvs_media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
 				if ( $mvs_tags_list && ! is_wp_error( $mvs_tags_list ) ) {
 					foreach ( $mvs_tags_list as $mvs_t ) {
 						$mvs_tag_names[] = $mvs_t->name;
@@ -571,7 +578,7 @@ $mvs_archive_url = home_url( '/media/' );
 				),
 				// A moderator may delete anyone's comment (the DELETE route allows it),
 				// so the Delete control shows on others' comments too — matching the API.
-				'canModerateComments' => current_user_can( 'moderate_comments' ),
+				'canModerateComments' => current_user_can( 'moderate_mvs_media' ),
 				'isOwner'            => $mvs_is_owner,
 				'authorId'           => $mvs_author_id,
 				'isFollowing'        => false,
@@ -640,12 +647,23 @@ $mvs_archive_url = home_url( '/media/' );
 				</div>
 				<div class="mvs-social-bar__actions">
 					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
+						<?php
+						// aria-pressed, and a label that changes with the state. Only the
+						// CSS class moved before, so a screen-reader user could not tell
+						// whether the item was already a favourite and the button kept
+						// saying "Add to favorites" after it had been added. The lightbox
+						// star has always done this correctly (shared-ui-frame.php:531);
+						// this is the same shape. Basecamp 10297839293.
+						?>
 						<button class="mvs-favorite-btn mvs-btn--icon-collapse" type="button"
 							data-wp-class--active="context.isFavorite"
+							data-wp-bind--aria-pressed="context.isFavorite"
+							data-wp-bind--aria-label="state.favoriteLabel"
 							data-wp-on--click="actions.toggleFavorite"
 							data-mvs-tooltip="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>"
+							aria-pressed="false"
 							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">
-							<i data-lucide="heart" aria-hidden="true"></i>
+							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( ! is_user_logged_in() ) : ?>
@@ -653,7 +671,7 @@ $mvs_archive_url = home_url( '/media/' );
 							data-mvs-tooltip="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">
-							<i data-lucide="heart" aria-hidden="true"></i>
+							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
 						</a>
 					<?php endif; ?>
@@ -716,7 +734,7 @@ $mvs_archive_url = home_url( '/media/' );
 					 */
 					$mvs_reports_enabled = \WPMediaVerse\Social\ReportService::reports_enabled();
 					?>
-					<?php if ( $mvs_is_owner ) : ?>
+					<?php if ( $mvs_can_edit ) : ?>
 						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.toggleEdit"
 							data-mvs-tooltip="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>"
@@ -745,7 +763,7 @@ $mvs_archive_url = home_url( '/media/' );
 				</div>
 			</div>
 
-			<?php if ( $mvs_is_owner ) : ?>
+			<?php if ( $mvs_can_edit ) : ?>
 			<!-- Inline Edit Form -->
 			<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
 				<div class="mvs-field">
@@ -773,7 +791,9 @@ $mvs_archive_url = home_url( '/media/' );
 					</div>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<input type="checkbox" class="mvs-edit-regenerate-slug"
+								data-wp-on--change="actions.updateEditRegenerateSlug"
+								data-wp-bind--checked="context.editRegenerateSlug" />
 							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
 						</label>
 					</div>
@@ -830,11 +850,16 @@ $mvs_archive_url = home_url( '/media/' );
 							data-wp-on--input="actions.updateCommentText"></textarea>
 						<button type="submit" aria-label="<?php esc_attr_e( 'Post comment', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Post', 'wpmediaverse' ); ?></button>
 					</form>
-				<?php else : ?>
+				<?php elseif ( ! is_user_logged_in() ) : ?>
 					<p class="mvs-login-to-comment">
 						<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
 							<?php esc_html_e( 'Log in to leave a comment', 'wpmediaverse' ); ?>
 						</a>
+					</p>
+				<?php else : ?>
+					<?php // Logged in, but mvs_can_comment said no — telling them to log in is a dead end (Basecamp 10286450815). ?>
+					<p class="mvs-comment-denied">
+						<?php esc_html_e( 'You do not have permission to comment on this item.', 'wpmediaverse' ); ?>
 					</p>
 				<?php endif; ?>
 				<ul class="mvs-comment-list">

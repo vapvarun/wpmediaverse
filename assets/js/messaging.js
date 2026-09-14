@@ -63,15 +63,31 @@ async function apiFetch( path, options = {} ) {
 	return data;
 }
 
+// MySQL DATETIME ("2026-09-09 13:47:10") is UTC, but `new Date()` parses that
+// shape as LOCAL time — so every comparison below was wrong by the viewer's
+// offset, and the 15-minute unsend window was already spent on load for every
+// user east of UTC. Stamp the Z; leave ISO-8601 strings (which carry their own
+// zone) untouched. Not `created_at_gmt`: Core\Dates only adds that sibling for
+// whitelisted keys, and `last_active` is not one of them.
+function parseServerDate( value ) {
+	if ( ! value ) return NaN;
+	const s = String( value );
+	return new Date(
+		/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test( s )
+			? s.replace( ' ', 'T' ) + 'Z'
+			: s
+	).getTime();
+}
+
 // Helper: format relative time.
 function relativeTime( dateStr ) {
 	if ( ! dateStr ) return '';
-	const diff = ( Date.now() - new Date( dateStr ).getTime() ) / 1000;
+	const diff = ( Date.now() - parseServerDate( dateStr ) ) / 1000;
 	if ( diff < 60 ) return 'now';
 	if ( diff < 3600 ) return Math.floor( diff / 60 ) + 'm';
 	if ( diff < 86400 ) return Math.floor( diff / 3600 ) + 'h';
 	if ( diff < 604800 ) return Math.floor( diff / 86400 ) + 'd';
-	return new Date( dateStr ).toLocaleDateString();
+	return new Date( parseServerDate( dateStr ) ).toLocaleDateString();
 }
 
 // Helper: format duration.
@@ -84,7 +100,7 @@ function formatDuration( seconds ) {
 // Calendar-day key in the viewer's timezone. Used only to detect day
 // boundaries between adjacent messages.
 function dayKey( dateStr ) {
-	const d = new Date( dateStr );
+	const d = new Date( parseServerDate( dateStr ) );
 	if ( isNaN( d.getTime() ) ) return '';
 	return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
 }
@@ -92,7 +108,7 @@ function dayKey( dateStr ) {
 // "Today" / "Yesterday" / weekday within the last week / full date beyond that,
 // matching how WhatsApp, Messenger and Telegram label day separators.
 function dayLabel( dateStr ) {
-	const d = new Date( dateStr );
+	const d = new Date( parseServerDate( dateStr ) );
 	if ( isNaN( d.getTime() ) ) return '';
 	const now = new Date();
 	if ( dayKey( d ) === dayKey( now ) ) return __( 'Today', 'wpmediaverse' );
@@ -106,7 +122,7 @@ function dayLabel( dateStr ) {
 
 // Time-only label for a message bubble.
 function messageTimeLabel( dateStr ) {
-	const d = new Date( dateStr );
+	const d = new Date( parseServerDate( dateStr ) );
 	if ( isNaN( d.getTime() ) ) return '';
 	return d.toLocaleTimeString( undefined, { hour: 'numeric', minute: '2-digit' } );
 }
@@ -188,6 +204,17 @@ function enrichMessage( msg ) {
 		msg.content      = '';
 		msg.message_type = 'text';
 		msg.metadata     = null;
+	}
+	// A message can outlive the file it carried: the media was deleted, or the
+	// attachment was removed. The server then sends no attachment/media_share
+	// payload and the bubble rendered an empty image or a blank file link. Show
+	// it as removed instead, the way chat apps do. An optimistic send carries no
+	// attachment_id yet, so it never trips this.
+	const refersToFile = Number( msg.attachment_id ) > 0 || Number( msg.media_id ) > 0;
+	msg.fileGone   = ! msg.isDeleted && refersToFile && ! ( msg.attachment && msg.attachment.url ) && ! msg.media_share;
+	msg.noFileGone = ! msg.fileGone;
+	if ( msg.fileGone ) {
+		msg.message_type = 'text';
 	}
 	msg.showMenu   = false;
 	msg.noMenu     = true;
@@ -434,7 +461,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			const msg = ctx.item;
 			if ( ! msg || ! msg.isSent ) return true;
 			// Only allow unsend within 15 minutes.
-			const created = new Date( msg.created_at ).getTime();
+			const created = parseServerDate( msg.created_at );
 			const fifteenMin = 15 * 60 * 1000;
 			return ( Date.now() - created ) > fifteenMin;
 		},
@@ -959,9 +986,16 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			try {
 				yield apiFetch( '/messages/' + msgId, { method: 'DELETE' } );
-				// Remove the message entirely from the thread — no greyed tombstone
-				// for a delete-for-me. (Unsend keeps its own "message deleted" state.)
-				state.messages = state.messages.filter( m => String( m.id ) !== String( msgId ) );
+				// Leave the same tombstone the server now serves to BOTH
+				// participants. Filtering the row out instead meant one action had
+				// two different outcomes depending on whether you reloaded: the
+				// bubble vanished, then came back as "This message was deleted".
+				// Basecamp 10263770236.
+				state.messages = state.messages.map( m =>
+					String( m.id ) === String( msgId )
+						? enrichMessage( { ...m, is_deleted: 1, content: '', message_type: 'text' } )
+						: m
+				);
 
 				// Recompute the conversation's last-message preview so the sidebar
 				// stops showing the now-deleted message. Frontend state only — the
@@ -1712,7 +1746,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// Format time for display (used in templates via derived state).
 		formatMessageTime( dateStr ) {
 			if ( ! dateStr ) return '';
-			const d = new Date( dateStr );
+			const d = new Date( parseServerDate( dateStr ) );
 			return d.toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } );
 		},
 

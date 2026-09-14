@@ -153,6 +153,19 @@ const { state } = store( 'mvs/media-social', {
 		tagDropdownVisible: false,
 		saving: false,
 		shareLabel: 'Share',
+		/**
+		 * Accessible name for the favourite button, following the state.
+		 *
+		 * isFavorite is per-item CONTEXT, not store state - one page can carry
+		 * many of these buttons - so this reads getContext(). The visual state
+		 * was already handled by data-wp-class--active; this is the half a
+		 * screen reader gets. Basecamp 10297839293.
+		 */
+		get favoriteLabel() {
+			return getContext().isFavorite
+				? ( state.i18n?.removeFromFavorites || 'Remove from favorites' )
+				: ( state.i18n?.addToFavorites || 'Add to favorites' );
+		},
 		get hideCommentActions() {
 			const item = getContext().item;
 			// Show the row while EITHER control is available (never while editing).

@@ -167,6 +167,34 @@
 
 	window.mvsDropzone = {
 		/**
+		 * The refusal a server gave for one upload: its own message, else fallback.
+		 * Every vanilla uploader reports a refused file the same way, so a member
+		 * is told why ("This file type is not supported.", "Storage limit
+		 * reached ...") instead of watching "Uploading 1 of 1..." forever.
+		 *
+		 * @param {Object} r        mvsRest.restFetch() result ({ ok, data }).
+		 * @param {string} fallback Text when the server sent no message.
+		 * @return {string} Message.
+		 */
+		failureMessage: function ( r, fallback ) {
+			return ( r && r.data && 'string' === typeof r.data.message && r.data.message ) || fallback || '';
+		},
+
+		/**
+		 * Put a status line into its failed state: error style, announced, and
+		 * left on screen (no reload) so the member can read it and retry.
+		 *
+		 * @param {HTMLElement} statusEl Status element.
+		 * @param {string}      text     Message.
+		 */
+		showFailure: function ( statusEl, text ) {
+			statusEl.style.display = 'block';
+			statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--error';
+			statusEl.setAttribute( 'role', 'alert' );
+			statusEl.textContent = text;
+		},
+
+		/**
 		 * Register a dropzone.
 		 *
 		 * @param {Object}   opts           Element ids + callback.

@@ -197,7 +197,7 @@ class SettingsHelper {
 	 * Resolve the explore/grid thumbnail style.
 	 *
 	 * The default flipped square -> original in 1.8.0 so the explore + media-grid
-	 * feed shows every image at its native aspect ratio (Pinterest-style masonry)
+	 * feed shows every image at its native aspect ratio (justified rows)
 	 * instead of a center-cropped square. A site that prefers the old uniform
 	 * square crop can restore it in one line, without touching the setting:
 	 *
@@ -212,14 +212,15 @@ class SettingsHelper {
 	 * @return string 'square' or 'original'.
 	 */
 	public static function get_thumbnail_style(): string {
-		$allowed = array( 'square', 'original' );
+		$allowed = self::GRID_LAYOUTS;
 
 		/**
-		 * Filter the default grid thumbnail style for sites that have not chosen one.
+		 * Filter the default grid layout for sites that have not chosen one.
 		 *
 		 * @since 1.8.0
 		 *
-		 * @param string $default 'original' (masonry) or 'square' (uniform crop).
+		 * @param string $default 'original' (masonry), 'square' (uniform crop)
+		 *                        or 'list' (one row per item).
 		 */
 		$default = (string) apply_filters( 'mvs_default_thumbnail_style', 'original' );
 		if ( ! in_array( $default, $allowed, true ) ) {
@@ -228,6 +229,80 @@ class SettingsHelper {
 
 		$style = (string) get_option( 'mvs_thumbnail_style', $default );
 		return in_array( $style, $allowed, true ) ? $style : $default;
+	}
+
+	/**
+	 * The grid layouts a site may choose.
+	 *
+	 * 'list' joined the pair in 2.4.2 when the Explore Feed block's dead List
+	 * option was made real. An unknown stored value still falls back, so a site
+	 * that downgrades keeps working.
+	 *
+	 * @since 2.4.2
+	 * @var string[]
+	 */
+	public const GRID_LAYOUTS = array( 'square', 'original', 'list' );
+
+	/**
+	 * Resolve the layout for one grid, site default plus optional override.
+	 *
+	 * TWO VOCABULARIES, ONE MAPPING, IN ONE PLACE. The site setting has always
+	 * stored 'square' / 'original'; the Explore Feed block's editor control has
+	 * always saved 'grid' / 'masonry' / 'list'. Both spellings are in the wild -
+	 * the option on every install, the attribute in every saved post - so
+	 * neither can be renamed (production rule 2). What can be fixed is having
+	 * only one place that knows they are the same three states.
+	 *
+	 * The site setting is the DEFAULT; a block that sets its own layout
+	 * overrides it for that block only. An empty override means inherit, which
+	 * is why the block attribute's default had to stop being 'grid': "not set"
+	 * and "deliberately grid" must be distinguishable.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $override Block-level layout: '', 'grid', 'masonry', 'list',
+	 *                         or the stored spellings 'square' / 'original'.
+	 * @return string One of GRID_LAYOUTS.
+	 */
+	public static function resolve_grid_layout( string $override = '' ): string {
+		$map = array(
+			'grid'     => 'square',
+			'masonry'  => 'original',
+			'list'     => 'list',
+			'square'   => 'square',
+			'original' => 'original',
+		);
+
+		$override = strtolower( trim( $override ) );
+
+		if ( '' !== $override && isset( $map[ $override ] ) ) {
+			return $map[ $override ];
+		}
+
+		return self::get_thumbnail_style();
+	}
+
+	/**
+	 * The CSS modifier for a resolved layout, or '' for the default grid.
+	 *
+	 * One emitter, so a new layout cannot reach some grids and miss others -
+	 * which is exactly what happened to the block's 'masonry', whose class was
+	 * bound in one template and styled nowhere.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $override Block-level layout override, if any.
+	 * @return string '', 'mvs-grid--original' or 'mvs-grid--list'.
+	 */
+	public static function grid_layout_class( string $override = '' ): string {
+		switch ( self::resolve_grid_layout( $override ) ) {
+			case 'original':
+				return 'mvs-grid--original';
+			case 'list':
+				return 'mvs-grid--list';
+			default:
+				return '';
+		}
 	}
 
 	/**

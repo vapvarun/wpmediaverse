@@ -145,8 +145,10 @@
 			return;
 		}
 		statusEl.style.display = 'block';
-		var total = files.length, done = 0;
+		var total = files.length, done = 0, failed = 0;
 		var uploadedIds = [];
+		var lastError = '';
+		var dz = window.mvsDropzone;
 		// Mirror the shared-ui modal flag (src/blocks/shared-ui/view.js:878):
 		// for ≥2-file album batches, tag each per-file POST so the server
 		// suppresses per-media BP activities and emits ONE "uploaded N photos
@@ -158,19 +160,27 @@
 
 		function next() {
 			if ( done >= total ) {
-				if ( uploadedIds.length ) {
-					statusEl.textContent = i18n.addingToAlbum || '';
-					window.mvsRest.restFetch( cfg.restUrl + 'albums/' + album + '/items', {
-						method: 'POST',
-						body: { media_ids: uploadedIds },
-					} ).then( function () {
+				if ( ! uploadedIds.length ) {
+					// Nothing got in: say why and stay, never a silent "Uploading...".
+					dz.showFailure( statusEl, lastError || i18n.uploadFailed || '' );
+					return;
+				}
+				statusEl.textContent = i18n.addingToAlbum || '';
+				window.mvsRest.restFetch( cfg.restUrl + 'albums/' + album + '/items', {
+					method: 'POST',
+					body: { media_ids: uploadedIds },
+				} ).then( function () {
+					if ( failed ) {
+						// Some got in: keep the reason on screen long enough to read.
+						dz.showFailure( statusEl, ( i18n.someFailed || '' ).replace( '%1$d', uploadedIds.length ).replace( '%2$d', failed ) + ' ' + lastError );
+					} else {
 						statusEl.textContent = ( i18n.addedToAlbum || '' ).replace( '%d', uploadedIds.length );
 						statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
-						setTimeout( function () {
-							window.location.reload();
-						}, 800 );
-					} );
-				}
+					}
+					setTimeout( function () {
+						window.location.reload();
+					}, failed ? 2500 : 800 );
+				} );
 				return;
 			}
 			var file = files[ done ];
@@ -193,8 +203,11 @@
 				} );
 			} ).then( function ( r ) {
 				var data = r.data;
-				if ( data && data.id ) {
+				if ( r.ok && data && data.id ) {
 					uploadedIds.push( data.id );
+				} else {
+					failed++;
+					lastError = dz.failureMessage( r, i18n.uploadFailed );
 				}
 				done++;
 				if ( done < total ) {
@@ -202,6 +215,8 @@
 				}
 				next();
 			} ).catch( function () {
+				failed++;
+				lastError = i18n.uploadFailed || '';
 				done++;
 				next();
 			} );

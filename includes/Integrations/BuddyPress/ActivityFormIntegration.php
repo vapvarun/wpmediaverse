@@ -146,7 +146,7 @@ class ActivityFormIntegration {
 			'mvs-bp-activity-media',
 			MVS_PLUGIN_URL . 'assets/js/bp-activity-media.js',
 			array( 'mvs-rest', 'jquery', 'mvs-lucide', 'wp-i18n' ),
-			filemtime( $js_path ),
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/bp-activity-media.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',

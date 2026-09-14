@@ -1,6 +1,6 @@
 # What's New in 1.5.0
 
-WPMediaVerse 1.5.0 closes two privacy and access bugs around non-public media, heals video posters that were stored with the wrong path before this version, and unifies the upload-and-serve pipeline so the underlying bug pattern cannot recur. There are no new customer-facing features; this is a correctness and robustness release.
+MediaVerse 1.5.0 closes two privacy and access bugs around non-public media, heals video posters that were stored with the wrong path before this version, and unifies the upload-and-serve pipeline so the underlying bug pattern cannot recur. There are no new customer-facing features; this is a correctness and robustness release.
 
 > **Included in Free.** Every item on this page applies to the free version. Pro picks up these fixes automatically because Pro builds on top of free — Pro 1.5.0 itself ships no code changes, it is a lockstep version bump. Install both updates together when running Pro.
 

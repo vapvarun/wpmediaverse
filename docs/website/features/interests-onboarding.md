@@ -1,6 +1,6 @@
 # Interests & Personalized Onboarding
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
 New members pick a handful of interests, get a ranked list of creators to follow, and see a feed that leans toward what they picked - instead of landing on an empty explore page with nobody to follow and nothing personalized to see.

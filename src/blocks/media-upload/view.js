@@ -415,6 +415,26 @@ const { state, actions } = store( 'mvs/media-upload', {
 					.replace( '%2$d', lastDuplicateId );
 			}
 
+			// Bring the notice to the member. The error box sits at the bottom of
+			// the form, and on this page that is BELOW the fold - measured 123px
+			// past a 840px viewport with the page still at scrollY 0. The warning
+			// rendered correctly and was simply never seen, which reads as "the
+			// duplicate warning is not displayed". Basecamp 10280477806.
+			if ( ctx.uploadError ) {
+				// Deferred twice: setting ctx.uploadError only QUEUES the render
+				// that removes the box's `hidden` attribute, and an element with
+				// no layout box cannot be scrolled to - calling scrollIntoView
+				// synchronously here does nothing at all.
+				requestAnimationFrame( () => {
+					requestAnimationFrame( () => {
+						const el = document.querySelector( '.mvs-upload-error' );
+						if ( el && ! el.hasAttribute( 'hidden' ) && typeof el.scrollIntoView === 'function' ) {
+							el.scrollIntoView( { block: 'center', behavior: 'smooth' } );
+						}
+					} );
+				} );
+			}
+
 			// Reset form fields after upload.
 			if ( successCount > 0 ) {
 				ctx.uploadTitle = '';

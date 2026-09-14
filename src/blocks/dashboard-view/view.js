@@ -202,6 +202,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			tagInput: '',
 			tagResults: [],
 			tagDropdownVisible: false,
+			// Off by default - a title edit leaves the URL alone. Held in state so
+			// re-opening the panel shows what the member actually chose.
+			regenerateSlug: false,
 			saving: false,
 		},
 		// Albums
@@ -268,6 +271,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			collectionId: 0,
 			title: '',
 			description: '',
+			// Two levels only. The vocabulary lives in PHP
+			// (CollectionService::PRIVACY_LEVELS) and the picker renders both
+			// options server-side, so the store just carries the chosen value.
+			privacy: 'public',
 			collectionType: 'smart',
 			rules: [],
 			saving: false,
@@ -492,8 +499,42 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get itemTitle() {
 			return getContext().item?.title || ( state.i18n?.untitled || '(Untitled)' );
 		},
+		get editModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.editModal.privacy );
+		},
+		get editModalPrivacyLabel() {
+			return state.privacyLabelFor( state.editModal.privacy );
+		},
+		get albumModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.albumModal.privacy );
+		},
+		get albumModalPrivacyLabel() {
+			return state.privacyLabelFor( state.albumModal.privacy );
+		},
+		/**
+		 * Is the stored level one the picker does not offer?
+		 *
+		 * privacy_options() renders the offered levels server-side; this only
+		 * decides whether the extra disabled option appears. The offered set
+		 * comes from privacy_choices() via PHP - filterable, BP-conditional -
+		 * so it is never restated here. Basecamp 10290748981.
+		 */
+		privacyUnlisted( stored ) {
+			const offered = state.i18n?.privacyChoices || [];
+			return !! stored && ! offered.includes( stored );
+		},
+		privacyLabelFor( stored ) {
+			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
+		},
+
 		get itemPrivacy() {
-			return getContext().item?.privacy || 'public';
+			// Label, never the stored slug. The badge used to print `loggedin`
+			// straight from the database, lowercase and untranslated, directly
+			// above a picker calling the same state "Members: logged-in users
+			// only". Basecamp 10290748981.
+			const slug = getContext().item?.privacy || 'public';
+			const map = state.i18n?.privacyLabels || {};
+			return map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' );
 		},
 		get albumItemCount() {
 			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );
@@ -786,6 +827,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// sync emits ONE carousel item instead of one feed row per file.
 			// Same key shape as the upload modal (shared-ui), which has always
 			// sent this.
+			let duplicates = 0;
+			let lastDuplicateId = 0;
 			const mediaGroup =
 				total > 1
 					? 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 )
@@ -823,6 +866,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 					} );
 					if ( res.ok ) {
 						uploaded++;
+						// The server flags a re-upload of identical content. The
+						// upload block and the shared modal both surface this;
+						// the dashboard panel read res.data only on failure, so
+						// a member uploading a duplicate here was told
+						// "1 file(s) uploaded!" and nothing else.
+						const mediaData = res.data;
+						if ( mediaData && mediaData.duplicate_warning ) {
+							duplicates++;
+							lastDuplicateId = mediaData.existing_media_id || 0;
+						}
 					} else {
 						const errData = res.data || {};
 						lastError = errData.message || ( state.i18n?.uploadFailed || 'Upload failed.' );
@@ -834,19 +887,27 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			state.upload.uploading = false;
 			state.upload.status = '';
+			const duplicateNote = duplicates > 0
+				? ' ' + (
+					state.i18n?.duplicatesDetected ||
+						'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+				)
+					.replace( '%1$d', duplicates )
+					.replace( '%2$d', lastDuplicateId )
+				: '';
 			if ( uploaded === 0 ) {
 				sharedUI.actions.showToast( lastError || ( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ), 'error' );
 			} else if ( uploaded < total ) {
 				sharedUI.actions.showToast(
 					( state.i18n?.filesUploadedPartial || '%1$d of %2$d file(s) uploaded.' )
 						.replace( '%1$d', uploaded )
-						.replace( '%2$d', total ),
+						.replace( '%2$d', total ) + duplicateNote,
 					'error'
 				);
 			} else {
 				sharedUI.actions.showToast(
-					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ),
-					'success'
+					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ) + duplicateNote,
+					duplicates > 0 ? 'warning' : 'success'
 				);
 			}
 			if ( uploaded > 0 ) {
@@ -962,6 +1023,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.tagInput = '';
 			state.editModal.tagResults = [];
 			state.editModal.tagDropdownVisible = false;
+			state.editModal.regenerateSlug = false;
 		},
 
 		closeEditModal() {
@@ -969,6 +1031,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		setEditTitle( event ) { state.editModal.title = event.target.value; },
+		setEditRegenerateSlug( event ) { state.editModal.regenerateSlug = !! event.target.checked; },
 		setEditDesc( event ) { state.editModal.description = event.target.value; },
 		setEditPrivacy( event ) { state.editModal.privacy = event.target.value; },
 
@@ -1836,6 +1899,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collectionModal.collectionId = 0;
 			state.collectionModal.title = '';
 			state.collectionModal.description = '';
+			state.collectionModal.privacy = 'public';
 			state.collectionModal.collectionType = 'smart';
 			state.collectionModal.rules = [ { key: '', value: '', index: 0 } ];
 			state.collectionModal.saving = false;
@@ -1853,6 +1917,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collectionModal.collectionId = id;
 			state.collectionModal.title = item.title || '';
 			state.collectionModal.description = item.description || '';
+			state.collectionModal.privacy = item.privacy || 'public';
 			state.collectionModal.collectionType = item.type || 'manual';
 			state.collectionModal.rules = ( item.rules || [] ).map( ( r, i ) => ( { ...r, index: i } ) );
 			if ( state.collectionModal.rules.length === 0 && item.type === 'smart' ) {
@@ -1869,6 +1934,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		setCollectionTitle( event ) { state.collectionModal.title = event.target.value; },
 		setCollectionDesc( event ) { state.collectionModal.description = event.target.value; },
+		setCollectionPrivacy( event ) { state.collectionModal.privacy = event.target.value; },
 		setCollectionTypeManual() { state.collectionModal.collectionType = 'manual'; },
 		setCollectionTypeSmart() { state.collectionModal.collectionType = 'smart'; },
 
@@ -1971,6 +2037,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const payload = {
 				title: state.collectionModal.title,
 				description: state.collectionModal.description,
+				privacy: state.collectionModal.privacy,
 			};
 
 			const validRules = state.collectionModal.rules

@@ -1,8 +1,8 @@
 # Watermarking
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-WPMediaVerse Pro stamps a text, logo, or combined watermark onto uploaded images using PHP's GD library, so your brand or credit travels with every photo members share.
+MediaVerse Pro stamps a text, logo, or combined watermark onto uploaded images using PHP's GD library, so your brand or credit travels with every photo members share.
 
 ![Watermark settings panel showing text and logo options](../images/admin-settings-display.png)
 
@@ -62,7 +62,7 @@ Watermarking is controlled by **Apply to**, not by a photo's privacy level:
 
 ## Text watermarks
 
-When **Watermark Type** is `text`, WPMediaVerse Pro renders the string in **Watermark Text**. Two tokens are supported:
+When **Watermark Type** is `text`, MediaVerse Pro renders the string in **Watermark Text**. Two tokens are supported:
 
 - `{site}` - your site name.
 - `{username}` - the uploader's public handle (their `user_nicename`, e.g. `@jane`). It never uses the WordPress login name.
@@ -77,11 +77,11 @@ add_filter( 'mvs_watermark_font_path', function ( $path, $config ) {
 
 ## Logo watermarks
 
-When **Watermark Type** is `image`, select an image from your WordPress Media Library using the **Watermark Image** field (its attachment ID is stored in `mvs_watermark_image_id`). WPMediaVerse Pro scales the logo to roughly 20% of the base image width before compositing. A PNG with a transparent background is recommended.
+When **Watermark Type** is `image`, select an image from your WordPress Media Library using the **Watermark Image** field (its attachment ID is stored in `mvs_watermark_image_id`). MediaVerse Pro scales the logo to roughly 20% of the base image width before compositing. A PNG with a transparent background is recommended.
 
 ## Both (logo and text)
 
-When **Watermark Type** is `both`, WPMediaVerse Pro stamps the logo watermark and the `@username` text watermark together, placed in opposite corners so they do not overlap. Both draws use the same opacity, font, and image settings described above.
+When **Watermark Type** is `both`, MediaVerse Pro stamps the logo watermark and the `@username` text watermark together, placed in opposite corners so they do not overlap. Both draws use the same opacity, font, and image settings described above.
 
 ## For developers
 

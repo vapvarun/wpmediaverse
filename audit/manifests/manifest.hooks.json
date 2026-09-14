@@ -861,6 +861,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_direction_labels",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array<string,string> $labels",
+        "string $sort_field"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:1911",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_dismissible_notices",
       "type": "filter",
       "args_count": 1,
@@ -1280,6 +1291,35 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_gallery_layout_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "string $layout",
+        "array $args"
+      ],
+      "where": "includes/Shortcodes/Shortcodes.php:126",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Frontend/Layouts/LayoutManager.php"
+        }
+      ]
+    },
+    {
+      "name": "mvs_grid_columns_scope_note",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $note"
+      ],
+      "where": "includes/Admin/Settings/SettingsRegistrar.php:586",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Core/Plugin.php::grid_columns_scope_note"
+      ]
+    },
+    {
       "name": "mvs_grid_thumb_size_key",
       "type": "filter",
       "args_count": 2,
@@ -1497,6 +1537,18 @@
       "note": "Production Rule 3 escape hatch for narrowing MEDIA_LIBRARY to media only (owner, 2026-08-09: documents never render in a media grid). Restoring legacy_document re-accepts the broken tile."
     },
     {
+      "name": "mvs_media_may_join_collection",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $allowed",
+        "int $media_id",
+        "int $curator_id"
+      ],
+      "where": "includes/Services/CollectionService.php:93",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_media_metadata",
       "type": "filter",
       "args_count": 3,
@@ -1614,7 +1666,7 @@
       ],
       "where": "templates/media-single.php:479",
       "consumed_by": [
-        "wpmediaverse-pro (Frontend\\BoostAffordance \u2014 boost store/modal + owner button on the canonical single-media page, all layouts)"
+        "wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
       ],
       "added": "2.1.0"
     },
@@ -1780,6 +1832,26 @@
       "args_signature": [],
       "args_count": 0,
       "where": "includes/Messaging/MessagingService.php:1409",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_messages_slug",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $slug"
+      ],
+      "where": "includes/Core/Plugin.php:3084",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_messages_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $url"
+      ],
+      "where": "includes/Core/Plugin.php:3098",
       "consumed_by": []
     },
     {
@@ -1969,6 +2041,26 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_privacy_choices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $choices"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:694",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_labels",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $labels"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:637",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_privacy_levels",
       "type": "filter",
       "args_count": 1,
@@ -1998,6 +2090,20 @@
       ],
       "where": "includes/Services/ProfileService.php:119",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_profile_documents_count",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $count",
+        "int $owner_id",
+        "int $viewer_id"
+      ],
+      "where": "includes/Integrations/BuddyPress/ProfileTabIntegration.php:220",
+      "consumed_by": [
+        "wpmediaverse-pro: Documents\\ProfileDocuments::count_visible()"
+      ]
     },
     {
       "name": "mvs_profile_documents_html",
@@ -2429,6 +2535,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_shared_ui_frame",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Core/Plugin.php:2914",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Documents/DocumentViewer.php"
+      ]
+    },
+    {
       "name": "mvs_should_ai_analyze",
       "type": "filter",
       "args_count": 2,
@@ -2762,6 +2878,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_view_dedup_window",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $window"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1471",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_viewer_thumbnail_ttl",
       "type": "filter",
       "args_count": 4,
@@ -2878,7 +3004,7 @@
           "WPMediaVerse\\Services\\CloudOps"
         ],
         "interface_changes": [
-          "StorageDriverInterface::download(string $path, string $local_dest): bool \u2014 new contract method"
+          "StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
         ],
         "cli_subcommands_added": [
           "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
@@ -2889,14 +3015,14 @@
           "mvs_cloud_direct_public_urls (boolean, default false)"
         ],
         "filters_added": [
-          "mvs_cloud_thumbnail_url($url, $size, $media_id) \u2014 delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
-          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) \u2014 opt-in for private-bucket setups"
+          "mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
         ],
         "options_added": [
-          "mvs_cloud_ops_status \u2014 last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+          "mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
         ],
         "i18n_strings_wrapped": 98,
-        "pot_entries": "1 \u2192 1,179",
+        "pot_entries": "1 → 1,179",
         "wp_localize_script_handles": [
           "mvsConfirmI18n",
           "mvsCardBuildersI18n"
@@ -3024,13 +3150,13 @@
         "Admin bulk-optimize progress UI"
       ]
     },
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only \u2014 inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired \u2014 manifest category counts unchanged. Full re-scan deferred to next structural change.",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
-      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",
@@ -3044,15 +3170,15 @@
     },
     "refresh_2026_08_01": "2.3.0 baseline: +4 Auth-module hooks (see manifest.json .generated.refresh_2026_08_01_v230_baseline)",
     "refresh_2026_09_01": {
-      "scope": "targeted delta \u2014 hooks only, verified by grepping every apply_filters/do_action call in both plugins against this file, in BOTH directions",
+      "scope": "targeted delta — hooks only, verified by grepping every apply_filters/do_action call in both plugins against this file, in BOTH directions",
       "method": "agent enumeration + bidirectional diff. The write-manifest.mjs generator is NOT usable on this plugin (see CLAUDE.md) and was not run.",
       "branch": "2.4.0",
       "plugin_version": "2.4.0",
       "hooks_fired_total": 262,
       "added": 20,
       "removed": [
-        "mvs_ffmpeg_binary \u2014 the FFmpeg transcoding path was removed in 2.4.0 (commit c96415ba); the filter no longer exists and advertising it was false",
-        "mvs_dashboard_tab_registry \u2014 renamed to mvs_dashboard_sections in the 2.4.0 My Media sections rework; the old name fires nowhere"
+        "mvs_ffmpeg_binary — the FFmpeg transcoding path was removed in 2.4.0 (commit c96415ba); the filter no longer exists and advertising it was false",
+        "mvs_dashboard_tab_registry — renamed to mvs_dashboard_sections in the 2.4.0 My Media sections rework; the old name fires nowhere"
       ],
       "known_exclusions": {
         "mvs_settings_render_{renderer}": "dynamic hook, recorded under its braced documentation form rather than the literal prefix",

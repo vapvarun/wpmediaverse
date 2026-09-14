@@ -506,7 +506,7 @@ class SettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
-			__( 'Help improve WPMediaVerse', 'wpmediaverse' ),
+			__( 'Help improve MediaVerse', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
 			SettingsPage::PAGE_SLUG . '-storage',
 			'mvs_storage',
@@ -583,7 +583,7 @@ class SettingsRegistrar {
 					4 => __( '4 columns', 'wpmediaverse' ),
 					5 => __( '5 columns', 'wpmediaverse' ),
 				),
-				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids.', 'wpmediaverse' ),
+				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids. Applies when Default Layout below is set to <strong>Grid - square crops</strong>. Justified rows sizes each row to fit and list shows one item per row, so neither uses a fixed column count.', 'wpmediaverse' ) . apply_filters( 'mvs_grid_columns_scope_note', '' ),
 			)
 		);
 
@@ -627,17 +627,21 @@ class SettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			'mvs_thumbnail_style',
-			__( 'Thumbnail Style', 'wpmediaverse' ),
+			// Named "Thumbnail Style" when it only chose square-vs-original. It
+			// now picks the grid layout, list included, so the label says so.
+			// The OPTION KEY is unchanged - it is on every install.
+			__( 'Default Layout', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
 			SettingsPage::PAGE_SLUG . '-display',
 			'mvs_display',
 			array(
 				'option'      => 'mvs_thumbnail_style',
 				'choices'     => array(
-					'square'   => __( 'Square (cropped)', 'wpmediaverse' ),
-					'original' => __( 'Original proportions', 'wpmediaverse' ),
+					'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
+					'original' => __( 'Justified rows - original proportions', 'wpmediaverse' ),
+					'list'     => __( 'List - one row per item', 'wpmediaverse' ),
 				),
-				'description' => __( 'Square crops images uniformly. Original preserves aspect ratios.', 'wpmediaverse' ),
+				'description' => __( 'The default layout for media grids in blocks, shortcodes, albums and collections. A block or shortcode can override it for one grid. With MediaVerse Pro, the Explore page and member profiles instead follow the Pro platform layout, which defines its own display.', 'wpmediaverse' ),
 			)
 		);
 
@@ -1097,7 +1101,7 @@ class SettingsRegistrar {
 				'option'      => 'mvs_chat_panel_visibility',
 				'choices'     => array(
 					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
-					'mvs_pages'  => __( 'WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
+					'mvs_pages'  => __( 'MediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
 					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
 					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
 				),

@@ -26,27 +26,51 @@ function run_admin_tests(): array {
 
 	// Pro settings.
 	$pro_settings = array(
-		'mvs_challenges_enabled'  => 'Challenges Enabled',
-		'mvs_battles_enabled'     => 'Battles Enabled',
-		'mvs_tournaments_enabled' => 'Tournaments Enabled',
-		'mvs_boosts_enabled'      => 'Boosts Enabled',
-		'mvs_streaks_enabled'     => 'Streaks Enabled',
+		'mvs_competitions_enabled' => 'Competitions Enabled (master)',
+		'mvs_challenges_enabled'   => 'Challenges Enabled',
+		'mvs_battles_enabled'      => 'Battles Enabled',
+		'mvs_tournaments_enabled'  => 'Tournaments Enabled',
+		'mvs_boosts_enabled'       => 'Boosts Enabled',
+		'mvs_streaks_enabled'      => 'Streaks Enabled',
 	);
+	// Absent is a VALID state, and the common one. Activation used to force
+	// every one of these to '1'; competitions are opt-in now, so a site that
+	// never enabled them has no row at all and every runtime gate reads the
+	// '0' default. Asserting the row exists would be asserting the behaviour
+	// we deliberately removed. What must hold is that the value is a legal
+	// on/off, never something else.
 	foreach ( $pro_settings as $key => $label ) {
-		$val = get_option( $key, '__UNSET__' );
-		assert_test( "Pro Setting: $label", $val !== '__UNSET__', "value: $val" ) ? $p++ : $f++;
+		$val   = get_option( $key, '__UNSET__' );
+		$legal = ( '__UNSET__' === $val ) || in_array( (string) $val, array( '0', '1' ), true );
+		assert_test( "Pro Setting: $label", $legal, '__UNSET__' === $val ? 'unset (off, opt-in)' : "value: $val" ) ? $p++ : $f++;
 	}
 
 	section( 'PAGES' );
 	$pages = array(
 		'mvs_page_dashboard' => 'Dashboard Page',
 		'mvs_page_explore'   => 'Explore Page',
-		'mvs_page_compete'   => 'Compete Page',
 	);
 	foreach ( $pages as $key => $label ) {
 		$page_id = (int) get_option( $key, 0 );
 		$exists  = $page_id > 0 && get_post_status( $page_id ) === 'publish';
 		assert_test( "Page: $label", $exists, "id: $page_id" ) ? $p++ : $f++;
+	}
+
+	// Compete is NOT in the list above. Pro activation used to insert a
+	// published /compete/ page on every site; competitions are opt-in now, so
+	// the page is absent until an owner turns them on and it must not be
+	// asserted into existence. When it does exist it still has to be a real
+	// published page - a stale id pointing at a trashed post is a broken menu
+	// item, which is what this row is actually for.
+	$compete_id = (int) get_option( 'mvs_page_compete', 0 );
+	if ( $compete_id > 0 ) {
+		assert_test(
+			'Page: Compete Page',
+			'publish' === get_post_status( $compete_id ),
+			"id: $compete_id"
+		) ? $p++ : $f++;
+	} else {
+		echo '  ⏭️  Page: Compete Page — not set (competitions are opt-in)' . PHP_EOL;
 	}
 
 	section( 'PERMISSIONS' );

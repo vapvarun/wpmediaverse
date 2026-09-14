@@ -60,7 +60,7 @@ class OverviewPage {
 				'mvs-admin',
 				MVS_PLUGIN_URL . 'assets/css/admin.css',
 				array(),
-				MVS_VERSION
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/admin.css' )
 			);
 
 			wp_enqueue_script(
@@ -78,7 +78,7 @@ class OverviewPage {
 				'mvs-icons',
 				MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
 				array( 'lucide' ),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/icons.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -89,7 +89,7 @@ class OverviewPage {
 				'mvs-toast',
 				MVS_PLUGIN_URL . 'assets/js/admin/toast.js',
 				array(),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/toast.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -103,7 +103,7 @@ class OverviewPage {
 				'mvs-admin-confirm',
 				MVS_PLUGIN_URL . 'assets/js/frontend/mvs-confirm.js',
 				array(),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/frontend/mvs-confirm.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -113,7 +113,7 @@ class OverviewPage {
 				'mvs-admin-confirm-links',
 				MVS_PLUGIN_URL . 'assets/js/admin/confirm-links.js',
 				array( 'mvs-admin-confirm' ),
-				MVS_VERSION,
+				\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/confirm-links.js' ),
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
@@ -134,7 +134,7 @@ class OverviewPage {
 			'mvs-admin-overview',
 			MVS_PLUGIN_URL . 'assets/js/admin/overview.js',
 			array( 'mvs-admin-confirm', 'wp-api-fetch' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/overview.js' ),
 			array( 'in_footer' => true )
 		);
 
@@ -179,7 +179,7 @@ class OverviewPage {
 				<div class="mvs-page-header__left">
 					<h1 class="mvs-page-header__title">
 						<i data-lucide="images"></i>
-						<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?>
 						<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
 					</h1>
 					<p class="mvs-page-header__desc"><?php esc_html_e( 'Your media sharing platform at a glance.', 'wpmediaverse' ); ?></p>
@@ -531,7 +531,7 @@ class OverviewPage {
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
 			<div class="mvs-welcome-banner__content">
-				<h3><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h3>
+				<h3><?php esc_html_e( 'Welcome to MediaVerse!', 'wpmediaverse' ); ?></h3>
 				<p><?php esc_html_e( 'Your media sharing platform is ready. Follow these steps to get started:', 'wpmediaverse' ); ?></p>
 				<div class="mvs-welcome-steps">
 					<a href="<?php echo esc_url( $settings_url ); ?>" class="mvs-welcome-step">

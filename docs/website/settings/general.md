@@ -1,6 +1,6 @@
 # General Settings
 
-Access these settings at **WPMediaVerse > Settings > General**.
+Access these settings at **MediaVerse > Settings > General**.
 
 ![General settings tab](../images/admin-settings-general.png)
 
@@ -18,14 +18,14 @@ Access these settings at **WPMediaVerse > Settings > General**.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Storage Driver | Local (WordPress uploads) | Where uploaded files are stored. Local stores files in `wp-content/uploads/wpmediaverse/YYYY/MM/`. Amazon S3 and BunnyCDN require WPMediaVerse Pro. |
+| Storage Driver | Local (WordPress uploads) | Where uploaded files are stored. Local stores files in `wp-content/uploads/wpmediaverse/YYYY/MM/`. Amazon S3 and BunnyCDN require MediaVerse Pro. |
 | Signed URL Expiry | 3600 (1 hour) | How long temporary signed URLs remain valid for private media files. Set in seconds. |
 
 > **Changing the storage driver** only affects new uploads. Existing files remain in their original storage location. A notice appears after saving if the driver is changed.
 
 ## Pages Section
 
-Assign existing WordPress pages to WPMediaVerse page roles. WPMediaVerse uses these assignments to generate links in the navigation, chat panel, and notification emails.
+Assign existing WordPress pages to MediaVerse page roles. MediaVerse uses these assignments to generate links in the navigation, chat panel, and notification emails.
 
 | Option | Option Key | Description |
 |--------|-----------|-------------|
@@ -34,6 +34,6 @@ Assign existing WordPress pages to WPMediaVerse page roles. WPMediaVerse uses th
 | Upload Page | `mvs_page_upload` | The dedicated upload form page. Linked from the dashboard and the navigation bar. |
 | Explore Documents Page | `mvs_page_explore_documents` | The document listing. Created only when Pro can show documents, or when the site holds `legacy_document` rows from before 2.4.0 that no media grid lists. |
 
-Create a standard WordPress page for each role, then select it from the corresponding dropdown. Each page should contain only the matching WPMediaVerse shortcode and no other content - `[mvs_dashboard]`, `[mvs_gallery columns="3" count="24"]` for Explore, `[mvs_upload]`, and `[mvs_documents]` for Explore Documents. These are the exact shortcodes `Core\Activator` writes when it creates the pages on activation. There is no `[mvs_explore]` shortcode; the explore *feed* block and shortcode are `[mvs_explore_feed]`, which is a different surface.
+Create a standard WordPress page for each role, then select it from the corresponding dropdown. Each page should contain only the matching MediaVerse shortcode and no other content - `[mvs_dashboard]`, `[mvs_gallery]` for Explore, `[mvs_upload]`, and `[mvs_documents]` for Explore Documents. These are the exact shortcodes `Core\Activator` writes when it creates the pages on activation. There is no `[mvs_explore]` shortcode; the explore *feed* block and shortcode are `[mvs_explore_feed]`, which is a different surface.
 
-> If a page assignment is empty, WPMediaVerse falls back to the site home URL for that link. Set every page you use to avoid broken navigation.
+> If a page assignment is empty, MediaVerse falls back to the site home URL for that link. Set every page you use to avoid broken navigation.

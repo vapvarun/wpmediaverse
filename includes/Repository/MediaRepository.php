@@ -28,6 +28,31 @@ defined( 'ABSPATH' ) || exit;
 class MediaRepository implements MediaRepositoryInterface {
 
 	/**
+	 * Tables holding rows keyed by `media_id` that die with the media.
+	 *
+	 * Every delete purges these through delete_cascade(), and Migrator v32 uses
+	 * the same list to clear rows left behind before the cascade covered them -
+	 * one list, so the two cannot drift. `mvs_messages` is deliberately absent: a
+	 * conversation keeps its message when the shared file goes, and the chat
+	 * shows it as no longer available.
+	 *
+	 * @var string[]
+	 */
+	public const MEDIA_CHILD_TABLES = array(
+		'mvs_media_stats',
+		'mvs_media_views',
+		'mvs_media_meta',
+		'mvs_reactions',
+		'mvs_favorites',
+		'mvs_mentions',
+		'mvs_album_items',
+		'mvs_notifications',
+		'mvs_activity',
+		'mvs_access_rules',
+		'mvs_access_grants',
+	);
+
+	/**
 	 * Columns that live in mvs_media_index (core, queried frequently).
 	 *
 	 * @var string[]
@@ -104,6 +129,19 @@ class MediaRepository implements MediaRepositoryInterface {
 	private static array $row_cache = array();
 
 	/**
+	 * Blocked-author ids per viewer, for this request only.
+	 *
+	 * Both query() and query_count() build through build_query_parts(), so a
+	 * single listing asked ReportService for the same block list twice. It is
+	 * an indexed lookup and cheap, but it is also the same answer both times.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @var array<int, int[]>
+	 */
+	private static array $blocked_cache = array();
+
+	/**
 	 * Tracks media_ids that have had ALL their meta loaded via prefetch.
 	 * Without this, a meta-miss in `$row_cache` could mean either "not
 	 * loaded yet" or "loaded and confirmed absent." Indexed columns are
@@ -149,6 +187,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public static function reset_test_cache(): void {
 		self::$row_cache         = array();
 		self::$meta_fully_loaded = array();
+		self::$blocked_cache     = array();
 	}
 
 	/**
@@ -1004,7 +1043,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$rows = (array) $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d",
+				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC, idx.media_id DESC LIMIT %d OFFSET %d",
 				...array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) )
 			),
 			ARRAY_A
@@ -1720,7 +1759,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at, folder_id, drive_type, drive_id
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -1818,7 +1857,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -2050,7 +2089,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -2867,7 +2906,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string[] $where    WHERE fragments, already filtered.
 	 *     @type array    $params   Bound parameters for those fragments.
 	 *     @type string   $join     Extra JOIN fragments, or ''.
-	 *     @type string   $orderby  date|trending|popular.
+	 *     @type string   $orderby  date|trending|popular|created_at|title|views.
+	 *     @type string   $order    asc|desc (created_at/title/views). Default desc.
 	 *     @type int      $per_page Page size.
 	 *     @type int      $offset   Page offset.
 	 * }
@@ -2880,6 +2920,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params   = isset( $args['params'] ) && is_array( $args['params'] ) ? $args['params'] : array();
 		$join     = isset( $args['join'] ) ? (string) $args['join'] : '';
 		$orderby  = isset( $args['orderby'] ) ? (string) $args['orderby'] : '';
+		$order    = ( isset( $args['order'] ) && 'asc' === strtolower( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
 		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
 		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
 
@@ -2916,8 +2957,18 @@ class MediaRepository implements MediaRepositoryInterface {
 				WHERE {$where_sql}
 				ORDER BY COALESCE(s.views, 0) DESC
 				LIMIT %d OFFSET %d";
+		} elseif ( 'views' === $orderby ) {
+			$data_sql = "SELECT i.media_id
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY COALESCE(s.views, 0) {$order}, i.media_id {$order}
+				LIMIT %d OFFSET %d";
+		} elseif ( 'title' === $orderby ) {
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.title {$order}, i.media_id {$order} LIMIT %d OFFSET %d";
 		} else {
-			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d";
+			// date (the default) and created_at: newest first unless asc is asked for.
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at {$order}, i.media_id {$order} LIMIT %d OFFSET %d";
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -3040,6 +3091,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *                                     hide flagged/pending items.
 	 *     @type int    $limit             Max rows. Default 20.
 	 *     @type int    $offset            Pagination offset. Default 0.
+	 *     @type array  $media_types       Which library. Default null, meaning
+	 *                                     query()'s own default. Pass
+	 *                                     MediaTypes::DOCUMENTS for a document
+	 *                                     listing.
 	 * }
 	 * @return array<int, array> Numerically-indexed list of media rows.
 	 */
@@ -3051,8 +3106,17 @@ class MediaRepository implements MediaRepositoryInterface {
 				'moderation_status' => '',
 				'limit'             => 20,
 				'offset'            => 0,
+				'orderby'           => 'created_at',
+				'order'             => 'DESC',
 				'viewer_id'         => null,  // null => get_current_user_id()
 				'include_private'   => false, // owner/admin opt-in to see ALL
+				// null => let query() apply its own default (MEDIA_LIBRARY).
+				// This used to be absent entirely, so a caller asking for
+				// documents was handed images instead - silently, because an
+				// unknown key was dropped on the way to query(). Measured:
+				// query_by_author( media_types => ['document'] ) returned one
+				// row, of type image. Basecamp 10297845497.
+				'media_types'       => null,
 			)
 		);
 
@@ -3069,17 +3133,46 @@ class MediaRepository implements MediaRepositoryInterface {
 		// old discoverability via the `mvs_profile_privacy_levels` filter.
 		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
 
-		return $this->query(
-			array(
-				'author_id'         => $user_id,
-				'status'            => (string) $args['status'],
-				'moderation_status' => (string) $args['moderation_status'],
-				'limit'             => (int) $args['limit'],
-				'offset'            => (int) $args['offset'],
-				'privacy'           => $privacy,
-				'viewer_id'         => $viewer,
-			)
+		$query_args = array(
+			'author_id'         => $user_id,
+			'status'            => (string) $args['status'],
+			'moderation_status' => (string) $args['moderation_status'],
+			'limit'             => (int) $args['limit'],
+			'offset'            => (int) $args['offset'],
+			'orderby'           => (string) $args['orderby'],
+			'order'             => (string) $args['order'],
+			'privacy'           => $privacy,
+			'viewer_id'         => $viewer,
 		);
+
+		// Only when asked, so a caller that says nothing lists exactly what it
+		// listed before. count_visible_by_author() forwards it on the same
+		// terms - that is what keeps the two agreeing.
+		if ( null !== $args['media_types'] ) {
+			$query_args['media_types'] = (array) $args['media_types'];
+		}
+
+		return $this->query( $query_args );
+	}
+
+	/**
+	 * Privacy mode for listing an author's media to the current (or given)
+	 * viewer: 'any' for the owner or a moderator, the viewer-aware 'profile'
+	 * gate for everyone else.
+	 *
+	 * Public so templates that build their own query() args (the Pro Flickr /
+	 * Dribbble profiles, which also need exclude_non_cover_group) apply the
+	 * same gate as query_by_author(). Without it query() defaults to 'any',
+	 * and those profiles listed the author's private items to everyone.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int      $author_id Listing author.
+	 * @param int|null $viewer_id Viewer. Null = current user.
+	 * @return string Privacy mode for query()/query_count().
+	 */
+	public function profile_privacy_mode( int $author_id, ?int $viewer_id = null ): string {
+		return $this->resolve_profile_privacy_mode( $author_id, null === $viewer_id ? get_current_user_id() : (int) $viewer_id );
 	}
 
 	/**
@@ -3098,34 +3191,108 @@ class MediaRepository implements MediaRepositoryInterface {
 		$is_owner_self = ( $author_id === $viewer ) && $viewer > 0;
 		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
 
-		return ( $is_owner_self || $include_private || $is_admin ) ? 'any' : 'profile';
+		if ( $is_owner_self || $include_private || $is_admin ) {
+			return 'any';
+		}
+
+		// HAS THE AUTHOR BLOCKED THIS VIEWER?
+		//
+		// build_query_parts() already drops authors the VIEWER blocked, and
+		// that clause is shared, so a profile listing gets it too. What it
+		// cannot cover is this pair. Blocking is one-directional
+		// (docs/website/features/user-blocking.md): here the AUTHOR blocked the
+		// viewer, so get_blocked_ids($viewer) is empty and only this check
+		// fires.
+		//
+		// It lives in this method because it is the ONE place query_by_author()
+		// and count_visible_by_author() both consult, so the grid and the "14
+		// items" above it can never disagree - and the count is itself
+		// information about content the viewer is barred from.
+		//
+		// PrivacyService::can_view() already refuses the item. That is the item;
+		// this is the list that advertises it (Basecamp 10296867415).
+		if ( $viewer > 0 && $author_id > 0 ) {
+			$mvs_container = \WPMediaVerse\Core\Plugin::container();
+			// has() before get(): the container throws on an unregistered key,
+			// and it never returns null - so a null check here would be dead.
+			// Same shape as the item-level guard in PrivacyService.php:326.
+			if ( $mvs_container->has( 'reports' )
+				&& $mvs_container->get( 'reports' )->is_blocked( $author_id, $viewer ) ) {
+				return 'none';
+			}
+		}
+
+		return 'profile';
 	}
 
 	/**
-	 * Count media visible to a viewer on an author's profile listing.
+	 * Count what a viewer is shown on an uploader's listing.
+	 *
+	 * "author" here is the MEMBER WHO UPLOADED, not a WP post author - the
+	 * whole index is keyed on post_author for storage reasons, and the name
+	 * follows the column. Renaming it is a public-surface change and belongs
+	 * in its own pass.
 	 *
 	 * Mirrors query_by_author()'s privacy-mode selection so profile tabs
 	 * count exactly the rows they list (Basecamp #9941246549 — the BP
 	 * profile media tab previously counted/listed members-only items for
 	 * logged-out visitors via its own raw SQL).
 	 *
-	 * @since 1.6.0
+	 * PRIVACY WAS THE ONLY THING IT MIRRORED. Every other filter the caller
+	 * gave its list - moderation above all - was absent here, so the number
+	 * above a grid counted rows the grid then dropped. Measured with two rows
+	 * held for moderation: count 23, list 21. It reads $args now, applies the
+	 * same defaults through the same parse as query_by_author(), and hands
+	 * them to the same query_count(). Pass the list's args and the two agree
+	 * by construction rather than by everyone remembering.
+	 * Basecamp 10297845497.
 	 *
-	 * @param int      $user_id   Author user ID.
+	 * @since 1.6.0
+	 * @since 2.4.2 Accepts $args, mirroring query_by_author().
+	 *
+	 * @param int      $user_id   Uploader user ID.
 	 * @param int|null $viewer_id Viewer user ID. Null = current user.
+	 * @param array    $args      Same shape as query_by_author()'s $args; the
+	 *                            filters that narrow WHICH rows are counted
+	 *                            (status, moderation_status, media_types,
+	 *                            include_private) are honoured. Paging and
+	 *                            ordering are meaningless for a count and are
+	 *                            ignored.
 	 * @return int
 	 */
-	public function count_visible_by_author( int $user_id, ?int $viewer_id = null ): int {
+	public function count_visible_by_author( int $user_id, ?int $viewer_id = null, array $args = array() ): int {
 		$viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 
-		return $this->query_count(
+		$args = wp_parse_args(
+			$args,
 			array(
-				'author_id' => $user_id,
-				'status'    => 'publish',
-				'privacy'   => $this->resolve_profile_privacy_mode( $user_id, $viewer ),
-				'viewer_id' => $viewer,
+				'status'            => 'publish',
+				'moderation_status' => '',
+				'media_types'       => null,
+				'include_private'   => false,
 			)
 		);
+
+		$count_args = array(
+			'author_id'         => $user_id,
+			'status'            => (string) $args['status'],
+			'moderation_status' => (string) $args['moderation_status'],
+			'privacy'           => $this->resolve_profile_privacy_mode(
+				$user_id,
+				$viewer,
+				! empty( $args['include_private'] )
+			),
+			'viewer_id'         => $viewer,
+		);
+
+		// Only when asked. Omitted, query_count() applies its own default, so
+		// a caller that says nothing keeps counting exactly what it counted
+		// before this parameter existed.
+		if ( null !== $args['media_types'] ) {
+			$count_args['media_types'] = (array) $args['media_types'];
+		}
+
+		return $this->query_count( $count_args );
 	}
 
 	/**
@@ -3137,7 +3304,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @var array<string>
 	 */
-	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count' );
+	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count', 'views' );
 
 	/**
 	 * General media-index listing query — the single place feed/profile/explore
@@ -3166,9 +3333,22 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params[] = max( 1, (int) $args['limit'] );
 		$params[] = max( 0, (int) $args['offset'] );
 
+		// Views live in mvs_media_stats; mvs_media_index.view_count is not kept
+		// up to date (0 on every row here), so a views sort must join the stats.
+		// It used to fall back to created_at silently, which made the Grid's
+		// "Views" option sort by date.
+		$sort_join = '';
+		$sort_sql  = "m.{$orderby} {$order}";
+		if ( 'views' === $orderby ) {
+			$sort_join = " LEFT JOIN {$wpdb->prefix}mvs_media_stats mvs_sort_st ON mvs_sort_st.media_id = m.media_id";
+			$sort_sql  = "COALESCE(mvs_sort_st.views, 0) {$order}";
+		}
+
 		// $parts['join']/['where'] and $orderby/$order are built from internal
 		// allowlists + fixed fragments; all caller values flow through $params.
-		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']} ORDER BY m.{$orderby} {$order} LIMIT %d OFFSET %d";
+		// media_id breaks ties so equal titles / view counts never repeat or
+		// skip an item between pages.
+		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']}{$sort_join} WHERE {$parts['where']} ORDER BY {$sort_sql}, m.media_id {$order} LIMIT %d OFFSET %d";
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
@@ -3512,6 +3692,36 @@ class MediaRepository implements MediaRepositoryInterface {
 			$params  = array_merge( $params, $privacy_params );
 		}
 
+		// Blocked members are excluded from every multi-author listing, here
+		// rather than in each caller. The exclusion used to live only in
+		// MediaController's feed query, which serves page 2 onward - so Explore
+		// page 1 (rendered server-side through this builder) still showed media
+		// from people the viewer had blocked, and page 2 did not. Same viewer,
+		// same feed, two different answers.
+		//
+		// query() and query_count() both build from these parts, so the list and
+		// the count can never disagree - which is the other half of that bug.
+		//
+		// Gated on viewer_id > 0, and that is sufficient rather than lucky:
+		// explore.php passes viewer_id 0 for anonymous visitors (public-only
+		// anyway) AND for moderators, who are meant to see everything. Single
+		// author listings DO reach this clause and depend on it: it is what
+		// empties the profile of an author the viewer themselves blocked, list
+		// and count alike (ProfileBlockListingTest). The reverse pair - the
+		// author blocked the viewer - is handled in
+		// resolve_profile_privacy_mode(), which this cannot see.
+		$mvs_viewer = (int) $args['viewer_id'];
+		if ( $mvs_viewer > 0 ) {
+			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
+				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_ids( $mvs_viewer );
+			}
+			$mvs_blocked = self::$blocked_cache[ $mvs_viewer ];
+			if ( $mvs_blocked ) {
+				$where[] = 'm.post_author NOT IN (' . implode( ',', array_fill( 0, count( $mvs_blocked ), '%d' ) ) . ')';
+				$params  = array_merge( $params, array_map( 'intval', $mvs_blocked ) );
+			}
+		}
+
 		if ( '' !== (string) $args['since'] ) {
 			$where[]  = 'm.created_at >= %s';
 			$params[] = (string) $args['since'];
@@ -3665,6 +3875,13 @@ class MediaRepository implements MediaRepositoryInterface {
 					"((m.privacy != 'private' OR m.post_author = %d) AND m.privacy != 'dm')",
 					array( $viewer_id ),
 				);
+			case 'none':
+				// Yields nothing, for a viewer who must not see this author's
+				// listing at all. Distinct from every other mode here: the rest
+				// narrow WHICH rows are visible, this one answers "none of
+				// them" without the caller having to skip the query and keep a
+				// separate count in step.
+				return array( '1 = 0', array() );
 			case 'any':
 			default:
 				// 'any' applies no audience filter (owner-self profile, admin /
@@ -3802,7 +4019,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$items = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC, media_id DESC LIMIT %d OFFSET %d",
 				...array_merge( $params, array( $per_page, $offset ) )
 			),
 			ARRAY_A
@@ -4298,6 +4515,43 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
+	/**
+	 * How many tags WOULD qualify for the cloud, ignoring its limit.
+	 *
+	 * The cloud is capped deliberately - core's own wp_tag_cloud() caps at 45,
+	 * and 121 chips above the grid buries the media. But a cap with no way to
+	 * reach past it reads as "tags are missing", which is exactly how it was
+	 * reported. The caller uses this to decide whether to offer a route to the
+	 * rest. Basecamp 10278224214.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param array|null $types Media types to count against, null for the library default.
+	 * @return int
+	 */
+	public function tag_cloud_total( ?array $types = null ): int {
+		global $wpdb;
+
+		$types = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+
+		$sql = "SELECT COUNT(*) FROM (
+				SELECT t.term_id
+				FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+				INNER JOIN {$wpdb->prefix}mvs_media_index m ON m.media_id = tr.object_id
+				WHERE {$type_sql}
+				  AND tt.taxonomy = 'mvs_tag'
+				  AND m.status = 'publish'
+				  AND m.moderation_status = 'approved'
+				GROUP BY t.term_id
+			) AS qualifying";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+		return (int) $wpdb->get_var( $type_params ? $wpdb->prepare( $sql, $type_params ) : $sql );
+	}
+
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
 		global $wpdb;
 
@@ -4316,7 +4570,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			AND m.status = 'publish'
 			AND m.moderation_status = 'approved'
 			GROUP BY t.term_id, t.name, t.slug
-			ORDER BY media_count DESC, t.name ASC
+			ORDER BY media_count DESC, MAX(m.created_at) DESC, t.name ASC
 			LIMIT %d";
 
 		$params   = $type_params;
@@ -5051,9 +5305,49 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Delete rows in a media-keyed table whose media no longer exists.
+	 *
+	 * The one orphan rule, shared by Free's Migrator v32 and Pro's v16 so the
+	 * two cannot disagree. Album and collection ids share the numeric space with
+	 * media ids, and their stats/activity rows are keyed by post id in the same
+	 * `media_id` column, so an id that is a live album or collection is NOT an
+	 * orphan. Runs in bounded chunks so a large table is never held under one
+	 * long lock.
+	 *
+	 * @param string $table Unprefixed table with a `media_id` column, e.g. 'mvs_play_events'.
+	 * @return int Rows deleted.
+	 */
+	public function delete_rows_without_media( string $table ): int {
+		global $wpdb;
+
+		// The name is interpolated into SQL, so only a plugin table shape is accepted.
+		if ( ! preg_match( '/^mvs_[a-z_]+$/', $table ) ) {
+			return 0;
+		}
+
+		$t     = $wpdb->prefix . $table;
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$total = 0;
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$deleted = (int) $wpdb->query(
+				"DELETE FROM {$t} WHERE {$t}.media_id > 0
+				AND NOT EXISTS ( SELECT 1 FROM {$index} m WHERE m.media_id = {$t}.media_id )
+				AND NOT EXISTS ( SELECT 1 FROM {$wpdb->posts} p WHERE p.ID = {$t}.media_id AND p.post_type IN ( 'mvs_album', 'mvs_collection' ) )
+				LIMIT 5000"
+			);
+			$total  += $deleted;
+		} while ( 5000 === $deleted );
+
+		return $total;
+	}
+
+	/**
 	 * Permanently delete a media item and all related data.
 	 *
-	 * Removes rows from stats, views, meta, and index tables (in that order).
+	 * Removes the media's rows from every MEDIA_CHILD_TABLES table, then its
+	 * comments, term relationships and finally the index row.
 	 *
 	 * @param int $media_id Media ID.
 	 * @return bool Always true.
@@ -5093,17 +5387,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		$where  = array( 'media_id' => $media_id );
 		$format = array( '%d' );
 
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_views', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', $where, $format );  // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', $where, $format );   // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', $where, $format );   // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_mentions', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_notifications', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_activity', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_access_rules', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_access_grants', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		foreach ( self::MEDIA_CHILD_TABLES as $child_table ) {
+			$wpdb->delete( $wpdb->prefix . $child_table, $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		}
 		// Media comments are detached from the post-ID space (comment_post_ID = 0)
 		// and linked to the media via comment meta; delete each + its meta.
 		$mvs_comment_ids = get_comments(

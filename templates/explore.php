@@ -98,9 +98,13 @@ $mvs_archive_url = home_url( '/media/' );
 
 	<?php
 	if ( $mvs_profile ) :
+		// Viewer-scoped: count_by_author() applies no audience filter, so this
+		// header stat used to count private and members-only media that the
+		// visitor could not open. count_visible_by_author() applies the same
+		// per-viewer profile rule the grid below uses.
 		$mvs_profile_post_count = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
-			->count_by_author( (int) $mvs_profile->ID, 'publish' );
+			->count_visible_by_author( (int) $mvs_profile->ID );
 		$mvs_follow_counts      = array(
 			'followers' => 0,
 			'following' => 0,
@@ -146,12 +150,10 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php
 					// Link to the profile EDIT section, not the dashboard root —
 					// "Edit Profile" that lands on /my-media/ takes the member to a
-					// media grid, not a form (Basecamp 10226445842). The dashboard
-					// base is the fallback if the profile section has no URL.
+					// media grid, not a form (Basecamp 10226445842).
+					// url() always returns a URL (it builds one from the dashboard
+					// page when the section declares none), so no fallback is needed.
 					$mvs_edit_profile_url = \WPMediaVerse\Core\DashboardSections::url( 'profile' );
-					if ( '' === $mvs_edit_profile_url ) {
-						$mvs_edit_profile_url = $mvs_dashboard_link;
-					}
 					?>
 					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_edit_profile_url ); ?>">
 						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
@@ -222,50 +224,11 @@ $mvs_archive_url = home_url( '/media/' );
 ?>
 <?php wp_enqueue_script( 'mvs-explore-search' ); ?>
 
-	<!-- Tag Cloud (Interactivity API) -->
 	<?php
-	/**
-	 * Filters how many tags the Explore tag cloud requests.
-	 *
-	 * The client used to hardcode 20, which left site owners no way to widen
-	 * or narrow the cloud for their own community — a photo site with a
-	 * handful of curated tags and one with hundreds want different numbers.
-	 * Clamped to the range the /tags/cloud endpoint itself accepts, so a
-	 * filter returning something wild cannot produce an unbounded query.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param int $limit Number of tags to show. Default 20, max 200.
-	 */
-	$mvs_tag_limit = (int) apply_filters( 'mvs_explore_tag_cloud_limit', 20 );
-	$mvs_tag_limit = max( 1, min( 200, $mvs_tag_limit ) );
-
-	$mvs_explore_ctx = array(
-		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-		'archiveUrl' => esc_url( $mvs_archive_url ),
-		'activeTag'  => $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ), // phpcs:ignore WordPress.Security.NonceVerification
-		'tags'       => array(),
-		'tagLimit'   => $mvs_tag_limit,
-		'loaded'     => false,
-	);
+	// One tag cloud for every Explore layout: Free's grid and all Pro feed layouts
+	// render this same partial, so the chips cannot drift apart again.
+	include \WPMediaVerse\Core\TemplateLoader::locate( 'explore-tag-cloud.php', 'partials' );
 	?>
-	<div class="mvs-tag-cloud"
-		data-wp-interactive="mvs/explore"
-		<?php echo wp_interactivity_data_wp_context( $mvs_explore_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-		data-wp-init="callbacks.init">
-		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
-			href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
-		<?php // The each-template must be the sole child of its parent or iAPI logs a hydration mismatch; display:contents keeps the flat flex row. ?>
-		<span class="mvs-tag-cloud-items">
-			<template data-wp-each="context.tags">
-				<a class="mvs-tag-cloud-item" href="#"
-					data-wp-bind--href="context.item.href"
-					data-wp-text="context.item.name"
-					data-wp-class--active="context.item.active"
-					role="link"></a>
-			</template>
-		</span>
-	</div>
 
 	<?php
 	// --- Query media via MediaRepository (TIER-D query engine) ---
@@ -288,16 +251,24 @@ $mvs_archive_url = home_url( '/media/' );
 		$mvs_viewer_id = 0;
 	}
 
-	// SORT FROM THE URL, allowlisted. Explore has always been newest-first with
-	// no way to say otherwise, while the member's own library next door offers
-	// a field and a direction — the same feed, two different products depending
-	// which page you reached it from. An unknown value falls back rather than
-	// reaching the query, because `orderby` goes into SQL.
-	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view controls on a GET page.
-	$mvs_sort_request = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
-	$mvs_sort         = in_array( $mvs_sort_request, array( 'created_at', 'title', 'views' ), true ) ? $mvs_sort_request : 'created_at';
-	$mvs_order        = ( isset( $_GET['order'] ) && 'asc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ) ? 'ASC' : 'DESC';
-	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	// A profile route is a single-author listing, so it takes the purpose-built
+	// 'profile' mode - the same rule count_visible_by_author() and every Pro
+	// profile layout already use. Without this the Free profile ran 'visible'
+	// while Pro ran 'profile': two privacy rules for one surface, and a header
+	// count that could not agree with its own grid. Sites can restore the old
+	// scope through the mvs_explore_query_args filter below.
+	if ( $mvs_profile ) {
+		$mvs_viewer_id = get_current_user_id();
+		$mvs_privacy   = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->profile_privacy_mode( (int) $mvs_profile->ID, $mvs_viewer_id );
+	}
+
+	// Sort and direction come from the URL through the one shared reader, so
+	// the Grid, every Pro layout and Load More agree on the order.
+	$mvs_sort_args = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_sort();
+	$mvs_sort      = $mvs_sort_args['orderby'];
+	$mvs_order     = $mvs_sort_args['order'];
 
 	$mvs_query_args = array(
 		'status'                  => 'publish',
@@ -367,12 +338,6 @@ $mvs_archive_url = home_url( '/media/' );
 		$media_items = $per_page > 0 ? $mvs_repo->query( $mvs_query_args ) : array();
 	}
 
-	// Also count albums (albums are still a CPT).
-	$album_count = 0;
-	if ( ! $mvs_profile && ! $mvs_search && ! $mvs_filter_tag && ! $mvs_filter_cat ) {
-		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
-	}
-
 	$max_pages = $per_page > 0 ? (int) ceil( $total_items / $per_page ) : 1;
 
 	// Explore feed is media-only, recent-upload-first. Albums are static
@@ -383,7 +348,6 @@ $mvs_archive_url = home_url( '/media/' );
 	// purely on the media stream. Search / profile / tag / category filters
 	// already worked this way; this just removes the album-on-top exception
 	// from page 1.
-	$albums = array(); // no albums in this feed.
 
 	$has_items = ! empty( $media_items );
 	?>
@@ -397,43 +361,12 @@ $mvs_archive_url = home_url( '/media/' );
 	// Search is not passed: Explore has its own search bar above, with the
 	// people/media mode switch attached to it. Sort, direction and the count are
 	// what was missing.
-	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_panel_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_explore_sort_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
+		(int) $total_items,
 		array(
-			'id'     => 'mvs-explore',
-			'form'   => true,
-			'class'  => 'mvs-explore__controls',
-			'hidden' => array_filter(
-				array(
-					's'            => $mvs_search,
-					'mvs_tag'      => $mvs_filter_tag,
-					'mvs_category' => $mvs_filter_cat,
-				)
-			),
-			'count'  => sprintf(
-				/* translators: %s: number of media items. */
-				_n( '%s item', '%s items', (int) $total_items, 'wpmediaverse' ),
-				number_format_i18n( (int) $total_items )
-			),
-			'sort'   => array(
-				'name'    => 'sort',
-				'label'   => __( 'Sort by', 'wpmediaverse' ),
-				'value'   => $mvs_sort,
-				'options' => array(
-					'created_at' => __( 'Date added', 'wpmediaverse' ),
-					'title'      => __( 'Title', 'wpmediaverse' ),
-					'views'      => __( 'Views', 'wpmediaverse' ),
-				),
-			),
-			'order'  => array(
-				'name'    => 'order',
-				'label'   => __( 'Direction', 'wpmediaverse' ),
-				'value'   => strtolower( $mvs_order ),
-				'options' => array(
-					'desc' => __( 'Newest first', 'wpmediaverse' ),
-					'asc'  => __( 'Oldest first', 'wpmediaverse' ),
-				),
-			),
-			'submit' => __( 'Apply', 'wpmediaverse' ),
+			's'            => $mvs_search,
+			'mvs_tag'      => $mvs_filter_tag,
+			'mvs_category' => $mvs_filter_cat,
 		)
 	);
 	?>
@@ -480,9 +413,10 @@ $mvs_archive_url = home_url( '/media/' );
 				<label class="mvs-bulk-privacy-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 					<select class="mvs-bulk-privacy" data-wp-on--change="actions.setExploreBulkPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<?php // Bulk deliberately offers only the three unambiguous levels; friends is per-item. ?>
+						<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
+						<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+						<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 					</select>
 				</label>
 				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkPrivacy" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
@@ -512,70 +446,12 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php
 		endif;
 		?>
-		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style() ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
-			<?php
-			// Render albums first.
-			foreach ( $albums as $album_post ) :
-				$album_svc      = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-				$item_count     = $album_svc->get_item_count( $album_post->ID );
-				$cover_media_id = $album_svc->get_resolved_cover_media_id( $album_post->ID );
-				// Route album cover through the read-side facade — bypasses
-				// the .htaccess deny-all and uses the unified signed-URL flow.
-				$cover_url = $cover_media_id
-					? \WPMediaVerse\Core\MediaUrl::thumb( $cover_media_id )
-					: $album_svc->get_cover_url( $album_post->ID );
-				?>
-				<div class="mvs-grid-item mvs-grid-item--album">
-					<a href="<?php echo esc_url( get_permalink( $album_post->ID ) ); ?>" class="mvs-grid-item-link">
-						<?php if ( $cover_url ) : ?>
-							<img src="<?php echo esc_url( $cover_url ); ?>"
-								alt="<?php echo esc_attr( $album_post->post_title ); ?>"
-								loading="lazy" />
-						<?php else : ?>
-							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album">
-								<span class="mvs-grid-album-icon">&#128193;</span>
-							</div>
-						<?php endif; ?>
-						<span class="mvs-album-badge" title="<?php echo esc_attr( sprintf( '%d items', $item_count ) ); ?>">
-							<span class="dashicons dashicons-images-alt2"></span>
-						</span>
-						<div class="mvs-grid-item-overlay">
-							<div class="mvs-grid-item-stats">
-								<span class="mvs-grid-stat">
-									<i data-lucide="images" aria-hidden="true"></i>
-									<span class="mvs-sr-only"><?php
-										/* translators: %s: number of items in the album. */
-										echo esc_html( sprintf( _n( '%s item', '%s items', (int) $item_count, 'wpmediaverse' ), number_format_i18n( $item_count ) ) );
-									?></span>
-									<span aria-hidden="true"><?php echo esc_html( $item_count ); ?></span>
-								</span>
-							</div>
-						</div>
-					</a>
-					<?php
-					// Plain name only — keep badge decoration for the
-					// single-media / lightbox surfaces, not on every grid
-					// thumbnail. Avatar + name link to the album owner's
-					// profile, matching the media grid (card #9962508646).
-					$mvs_album_author_id  = (int) $album_post->post_author;
-					$mvs_tpl_helpers      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
-					$mvs_album_author_url = $mvs_tpl_helpers->get_user_profile_url( $mvs_album_author_id );
-					$mvs_album_author     = $mvs_tpl_helpers->get_display_name_plain( $mvs_album_author_id );
-					?>
-					<div class="mvs-grid-item-info">
-						<?php if ( '' !== $mvs_album_author_url ) : ?>
-							<a class="mvs-grid-item-author-link" href="<?php echo esc_url( $mvs_album_author_url ); ?>">
-								<?php echo get_avatar( $mvs_album_author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-								<span class="mvs-grid-item-author"><?php echo esc_html( $mvs_album_author ); ?></span>
-							</a>
-						<?php else : ?>
-							<?php echo get_avatar( $mvs_album_author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-							<span class="mvs-grid-item-author"><?php echo esc_html( $mvs_album_author ); ?></span>
-						<?php endif; ?>
-					</div>
-				</div>
-			<?php endforeach; ?>
-
+		<?php
+		// One emitter for every grid's layout class, so a new layout cannot
+		// reach some surfaces and miss others. Basecamp 10297763824.
+		$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+		?>
+		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container>
 			<?php
 			// Render media items from index table.
 			$media_ids_for_stats = array_map( 'intval', array_column( $media_items, 'media_id' ) );
@@ -617,7 +493,10 @@ $mvs_archive_url = home_url( '/media/' );
 					data-tag="<?php echo esc_attr( get_query_var( 'mvs_tag', '' ) ); ?>"
 					data-category="<?php echo esc_attr( get_query_var( 'mvs_category', '' ) ); ?>"
 					data-search="<?php echo esc_attr( get_query_var( 's', '' ) ); ?>"
-					data-scope="public"
+					<?php // No scope: REST then applies the same viewer privacy as page 1 (public + members + own). ?>
+					<?php if ( $mvs_profile ) : ?>
+					data-author="<?php echo absint( $mvs_profile->ID ); ?>"
+					<?php endif; ?>
 					data-group-covers="true">
 					<span class="mvs-load-more-label"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
 					<span class="mvs-load-more-spinner"></span>

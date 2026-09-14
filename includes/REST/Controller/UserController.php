@@ -268,7 +268,13 @@ class UserController extends WP_REST_Controller {
 		// anon = public; logged-in viewer = public + members + friends-of-author;
 		// owner/admin = own media (dm excluded); group/custom need per-item checks.
 		$repo  = Plugin::container()->get( 'media_repository' );
-		$total = $repo->count_visible_by_author( $user_id, $viewer_id );
+		// Same filters as the list below, or the total describes a different
+		// set than the rows. Basecamp 10297845497.
+		$total = $repo->count_visible_by_author(
+			$user_id,
+			$viewer_id,
+			array( 'moderation_status' => 'approved' )
+		);
 		$rows  = $repo->query_by_author(
 			$user_id,
 			array(

@@ -45,8 +45,8 @@
 	align-items: center;
 	gap: 6px;
 	padding: 6px 14px;
-	background: var(--mvs-primary);
-	color: var(--mvs-surface);
+	background: var(--mvs-btn-primary-bg);
+	color: var(--mvs-btn-primary-fg);
 	border: none;
 	border-radius: 4px;
 	font-size: 0.85em;
