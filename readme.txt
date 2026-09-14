@@ -122,6 +122,43 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 
 == Changelog ==
 
+= 2.4.2 - September 2026 =
+
+Privacy fixes around blocking and collections, a real justified-row grid, and permissions you can read at a glance.
+
+* New      - Documents preview inside the lightbox instead of only offering a download.
+* New      - A collection can be public or members only, and the visibility gate now denies people it should.
+* New      - The Documents profile tab carries a count badge.
+* Improve  - The original grid draws true justified rows, so a row fills the width instead of stretching two tiles.
+* Improve  - Layout names say what they draw. The free grid is Justified rows, not Masonry.
+* Improve  - List layout renders as a list, and one setting decides both it and the grid.
+* Improve  - Permissions are presented as role cards, so nothing scrolls off the right edge and nothing is hidden.
+* Improve  - Every library panel opens the same way, toolbar first and then the create action.
+* Improve  - User facing strings say MediaVerse rather than WPMediaVerse.
+* Improve  - Rows that outlived their media are cleaned up on update, with no button to press.
+* Security - Blocking someone now stops them viewing your media, your profile listing and its counts.
+* Security - Strangers can no longer react inside private conversations, or on messages that do not exist.
+* Security - Moderation is enforced in the shared visibility gate.
+* Security - Explore no longer showed media from members you had blocked on its first page.
+* Security - A favourited private item no longer leaks its title.
+* Security - Only public media, or your own, can be added to a collection.
+* Security - A private photo keeps its own privacy when an album happens to share its ID.
+* Security - An upload with an unknown privacy level is no longer published.
+* Fix      - Documents leave the All Media type filter and the media grid, and have their own menu.
+* Fix      - Smart collections counted media the viewer cannot see, and profile counts advertised media they could not open.
+* Fix      - The count above a listing now counts the rows the listing shows.
+* Fix      - Paginated listings stop repeating and dropping rows.
+* Fix      - Replacing a file no longer skips the upload quota.
+* Fix      - A view is counted once with proper deduplication, instead of on every page load.
+* Fix      - One sort applies to every layout and survives Load More, and the Views sort actually sorts.
+* Fix      - Profile Load More no longer pulls other members media into the profile.
+* Fix      - Settings links such as ?section=display open the section they name.
+* Fix      - A refused upload now tells the member why, on every uploader.
+* Fix      - Direction labels say what the sort actually does.
+* Fix      - The Explore Feed block's grid layout engages instead of silently doing nothing.
+* Dev      - The 2.4.2 functional cert records 69 passes, 0 failures and 0 holes.
+* Compat   - Aligned with MediaVerse Pro 2.4.2. Install both updates together.
+
 = 2.4.1 - September 2026 =
 
 A privacy fix for sites on nginx, plus interface fixes that only showed on themes other than ours.
