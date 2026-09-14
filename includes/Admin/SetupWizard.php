@@ -331,7 +331,11 @@ class SetupWizard {
 								<option value="2" <?php selected( $columns, 2 ); ?>><?php esc_html_e( '2 columns', 'wpmediaverse' ); ?></option>
 								<option value="3" <?php selected( $columns, 3 ); ?>><?php esc_html_e( '3 columns', 'wpmediaverse' ); ?></option>
 								<option value="4" <?php selected( $columns, 4 ); ?>><?php esc_html_e( '4 columns', 'wpmediaverse' ); ?></option>
+								<option value="5" <?php selected( $columns, 5 ); ?>><?php esc_html_e( '5 columns', 'wpmediaverse' ); ?></option>
 							</select>
+							<p class="description">
+								<?php esc_html_e( 'Applies to the grid layout only. Justified rows sizes each row to fit, and list shows one item per row - see Default Layout below.', 'wpmediaverse' ); ?>
+							</p>
 						</td>
 					</tr>
 					<tr>

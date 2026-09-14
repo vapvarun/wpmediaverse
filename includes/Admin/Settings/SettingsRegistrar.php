@@ -583,7 +583,7 @@ class SettingsRegistrar {
 					4 => __( '4 columns', 'wpmediaverse' ),
 					5 => __( '5 columns', 'wpmediaverse' ),
 				),
-				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids.', 'wpmediaverse' ),
+				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids. Applies when Default Layout below is set to <strong>Grid - square crops</strong>. Justified rows sizes each row to fit and list shows one item per row, so neither uses a fixed column count.', 'wpmediaverse' ),
 			)
 		);
 
