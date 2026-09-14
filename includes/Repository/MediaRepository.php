@@ -5091,6 +5091,25 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$data = array_merge( $defaults, $data );
 
+		// A row with no author is not a media item anybody owns. It renders as a
+		// blank tile nobody can attribute, filter by type or moderate, and because
+		// `drive_id` is derived from `post_author` below it also lands on drive 0.
+		// One such row reached this site's index - published, public, approved,
+		// with no author, no title and no media_type (Basecamp 10299340577) - and
+		// `wp mvs reindex` reports rows like it without repairing them.
+		//
+		// A NOTICE, not a refusal: BuddyBoss/MigrationAdmin passes 0 when its
+		// source row carries no user_id, and refusing there would drop real media
+		// from a migration rather than import it unattributed. The caller is named
+		// so the offending path is identifiable in the log.
+		if ( empty( $data['post_author'] ) ) {
+			_doing_it_wrong(
+				__METHOD__,
+				'mvs_media_index rows need an author. An ownerless row cannot be attributed, type-filtered or moderated, and derives drive_id 0.',
+				'2.5.0'
+			);
+		}
+
 		// Drive ownership belongs with the other defaults, not with each caller.
 		// It was left to callers, so anything inserting without it landed on the
 		// column default `drive_id = 0` — 13 rows on the QA baseline (11 images,
