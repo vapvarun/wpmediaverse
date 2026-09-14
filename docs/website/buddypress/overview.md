@@ -1,5 +1,11 @@
 # BuddyPress Integration Overview
 
+> **BuddyPress and BuddyNext are alternatives, not a stack.** Run one or the other - they cannot be
+> active at the same time. If your site uses BuddyNext instead, see
+> [BuddyNext Integration](../buddynext/overview.md), which covers the same MediaVerse features
+> through that path.
+
+
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 

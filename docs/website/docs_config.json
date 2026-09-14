@@ -71,6 +71,18 @@
       ]
     },
     {
+      "slug": "buddynext",
+      "title": "BuddyNext Integration",
+      "icon": "users",
+      "pages": [
+        { "slug": "overview", "title": "Overview" },
+        { "slug": "profile-tabs", "title": "Profile Media" },
+        { "slug": "space-tabs", "title": "Space Media" },
+        { "slug": "feed-media", "title": "Feed Media" },
+        { "slug": "notifications", "title": "Notifications" }
+      ]
+    },
+    {
       "slug": "buddypress",
       "title": "BuddyPress Integration",
       "icon": "groups",
