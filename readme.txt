@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.4.2
+Stable tag: 2.5.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -122,7 +122,7 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 
 == Changelog ==
 
-= 2.4.2 - September 2026 =
+= 2.5.0 - September 2026 =
 
 Privacy fixes around blocking and collections, a real justified-row grid, and permissions you can read at a glance.
 
@@ -156,8 +156,8 @@ Privacy fixes around blocking and collections, a real justified-row grid, and pe
 * Fix      - A refused upload now tells the member why, on every uploader.
 * Fix      - Direction labels say what the sort actually does.
 * Fix      - The Explore Feed block's grid layout engages instead of silently doing nothing.
-* Dev      - The 2.4.2 functional cert records 69 passes, 0 failures and 0 holes.
-* Compat   - Aligned with MediaVerse Pro 2.4.2. Install both updates together.
+* Dev      - The 2.5.0 functional cert records 69 passes, 0 failures and 0 holes.
+* Compat   - Aligned with MediaVerse Pro 2.5.0. Install both updates together.
 
 = 2.4.1 - September 2026 =
 

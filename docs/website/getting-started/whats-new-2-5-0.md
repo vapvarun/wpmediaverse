@@ -1,8 +1,8 @@
-# What's New in 2.4.0
+# What's New in 2.5.0
 
-MediaVerse 2.4.0 turns My Media into a set of real, linkable sections and gives documents a proper admin screen. The 2.4.1 and 2.4.2 patches that followed are covered at the end of this page.
+MediaVerse 2.5.0 gathers the whole 2.4 line into one release. My Media became a set of real, linkable sections, documents got a proper admin screen, and the work that followed closed a set of privacy holes around blocking and collections, made the justified-row grid draw what its name says, and gave the Media Grid block the layout control its markup already supported.
 
-> **Included in Free.** Every item on this page applies to the free version unless marked Pro. Paired with MediaVerse Pro 2.4.0 - install and test both together.
+> **Included in Free.** Every item on this page applies to the free version unless marked Pro. Paired with MediaVerse Pro 2.5.0 - install and test both together.
 
 ## Every section of My Media has its own address
 
@@ -24,13 +24,13 @@ A drive listing now reads its index directly instead of scanning and filtering. 
 
 Panels, cards and controls no longer all draw the same outline, so screens stop reading as boxes inside boxes. Buttons, form fields, rows and the sign-in link shown to logged-out visitors all meet a minimum tap target. Text, status badges and the active tag meet a contrast floor the plugin sets for itself rather than inheriting whatever the theme supplied, and the brand colour is darkened before it is used as text so rail links stay readable on a light background.
 
-## 2.4.1 - privacy on nginx, and theme-dependent interface fixes
+## Privacy on nginx, and theme-dependent interface fixes
 
 Stored media could be downloaded by anyone holding the address on servers that ignore `.htaccess`, which nginx does. Site Health now checks this by asking the server instead of trusting the deny file, and prints the exact rule to add when it finds a problem. Media set to Only me, Members or Friends was affected, and so was anything made private after being shared, because the older address kept working.
 
 Alongside it, a bulk actions bar with a Delete button and a permanent Loading indicator no longer appear on themes that do not reset the HTML `hidden` attribute, and several controls that fell under the tap-target floor on a phone were corrected.
 
-## 2.4.2 - blocking, collections, and a real justified-row grid
+## Blocking, collections, and a real justified-row grid
 
 The privacy fixes are the important part. Blocking someone now stops them viewing your media, your profile listing and its counts; Explore no longer showed blocked members' media on its first page; strangers can no longer react inside private conversations; moderation is enforced in the shared visibility gate; and a favourited private item no longer leaks its title.
 
