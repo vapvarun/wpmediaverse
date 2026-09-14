@@ -72,7 +72,11 @@
 	 * brand colour and may be light.
 	 */
 	--mvs-btn-primary-bg: var(--mvs-primary);
-	--mvs-btn-primary-fg: oklch(from var(--mvs-primary) clamp(0, (0.62 - l) * 1000, 1) 0 0);
+	/* The black/white crossover lightness. Own copy because admin.css and
+	   frontend.css do not reliably load together; frontend.css:101 carries the
+	   derivation and the measurements. Keep the two in step. */
+	--mvs-contrast-flip-l: 0.5624;
+	--mvs-btn-primary-fg: oklch(from var(--mvs-primary) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
 }
 
 /* See frontend.css: lightness is not luminance, so let the browser do the real
