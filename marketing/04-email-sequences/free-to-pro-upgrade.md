@@ -164,7 +164,7 @@ Here is the straightforward summary of what Pro adds on top of what you are alre
 
 If none of those match a real need on your site right now, the free version is the right version for you. It is not crippled — it is a complete media platform for communities that do not need the Pro additions.
 
-If one or more of those is a real pain point, Pro is [price]/year for a single site with a 14-day refund if it does not work out.
+If one or more of those is a real pain point, Pro is [price]/year for a single site with a 30-day money-back guarantee if it does not work out.
 
 [Upgrade to Pro — link]
 

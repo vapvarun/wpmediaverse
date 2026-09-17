@@ -246,7 +246,7 @@ Yes, in Pro. WPMediaVerse integrates with MemberPress, WooCommerce Memberships, 
 Pro includes photo challenges (community submissions with voting), 1v1 photo battles, tournament brackets, and a boost system where members spend earned points to increase their media's visibility. Points are awarded for 14 tracked actions: uploads, comments, likes, follows, challenge wins, battle wins, tournament victories, and more.
 
 **Do you offer refunds?**
-Yes. If Pro does not work for your use case within 14 days, contact support for a full refund.
+Yes. If Pro does not work for your use case within 30 days, contact support for a full refund.
 
 ---
 
