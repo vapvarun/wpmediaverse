@@ -79,7 +79,6 @@ qa/
 │
 ├── runs/                     # append-only run evidence
 │   ├── FINDINGS-HISTORY.md          # past findings + cleared-FN status
-│   ├── drafts/                      # worker-agent drafts (Sonnet) before reviewer gate
 │   └── {date}-{mode}.md             # dated run reports
 │
 ├── .last-smoke-pass.json     # green-light signal — combo mode (Free + Pro)

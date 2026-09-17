@@ -418,7 +418,7 @@ All QA lives in `qa/` — single home for Free + Pro. Pro has no `qa/` directory
 | `qa/rules/` | Organization rules — CSS, NAMING, PHP, PROCESS, RENDER-STATE |
 | `qa/inventory/WHAT-TO-CHECK.md` | Flat list — surfaces, actions, settings, data stores, contracts |
 | `qa/audits/` | Dated audits (a11y, doc-drift, etc.) |
-| `qa/runs/` | Append-only run evidence + `FINDINGS-HISTORY.md` + `drafts/` |
+| `qa/runs/` | Append-only final run reports + `FINDINGS-HISTORY.md`. Drafts, raw debug logs and screenshots go to `app/qa-artifacts/`, never the repo |
 | `qa/.last-smoke-pass.json` | Release-gate green-light signal (combo mode) |
 | `qa/.last-smoke-pass-free.json` | Release-gate green-light signal (free mode) |
 

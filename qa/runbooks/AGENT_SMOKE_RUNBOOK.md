@@ -155,7 +155,7 @@ BASELINE_SIZE=$(wc -c < "$WP_PATH/wp-content/debug.log" 2>/dev/null || echo 0)
 tail -c +$((BASELINE_SIZE + 1)) "$WP_PATH/wp-content/debug.log" 2>/dev/null | grep -vE "^\s*$|^\[cli\]"
 ```
 
-At walk end, archive the diff window to `qa/runs/.debug-log-<release_version>-<ran_at>.txt`.
+At walk end, archive the diff window to `$WP_PATH/../qa-artifacts/debug-log-<release_version>-<ran_at>.txt` (outside the repo, not web-served). Only the triaged `debug_log_issues[]` rows go into the JSON and the run report. Raw logs, drafts and screenshots are never committed; `bin/local-ci.sh` stage 1.0 fails the push if one is tracked.
 
 ---
 
