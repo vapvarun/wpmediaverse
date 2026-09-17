@@ -50,6 +50,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		'mvs_activity',
 		'mvs_access_rules',
 		'mvs_access_grants',
+		'mvs_media_spaces',
 	);
 
 	/**
@@ -2024,7 +2025,29 @@ class MediaRepository implements MediaRepositoryInterface {
 			// either (it needs `post_author = %d` with a real author). An
 			// ownerless row belongs to no personal drive, so listing it under
 			// one was never right.
-			if ( self::drive_backfill_finished() ) {
+			if ( 'space' === $drive_type ) {
+				// A SPACE DRIVE LISTS TWO SETS AS ONE: the documents whose HOME is
+				// this space, plus documents linked in from another home drive via
+				// mvs_media_spaces (a member adding an existing file to this space).
+				// The link is what lets one file appear in several spaces without a
+				// copy — see Migrator v33 / MediaSpaceRepository.
+				//
+				// The subquery costs the drive index the same way the legacy OR
+				// above does, and for the same reason (an OR/IN can't satisfy the
+				// composite left-to-right). Accepted here: a space drive is a
+				// bounded, human-sized library (one community's files), not the
+				// whole-site personal-drive hot path the index comment agonises
+				// over. mvs_media_spaces.space_id is indexed, so the inner lookup
+				// is a key read.
+				// ponytail: correlated subquery per space-root listing; denormalise
+				// a space_id column onto the index if a single space ever grows past
+				// what this comfortably scans.
+				$spaces_tbl = $wpdb->prefix . 'mvs_media_spaces';
+				$where[]    = "( ( drive_type = %s AND drive_id = %d ) OR media_id IN ( SELECT media_id FROM {$spaces_tbl} WHERE space_id = %d ) )";
+				$params[]   = $drive_type;
+				$params[]   = $drive_id;
+				$params[]   = $drive_id;
+			} elseif ( self::drive_backfill_finished() ) {
 				$where[]  = 'drive_type = %s';
 				$where[]  = 'drive_id = %d';
 				$params[] = $drive_type;

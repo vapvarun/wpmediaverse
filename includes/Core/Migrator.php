@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 32;
+	const CURRENT_VERSION = 33;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -82,6 +82,7 @@ class Migrator {
 			'mvs_follows',
 			'mvs_media_index',
 			'mvs_media_meta',
+			'mvs_media_spaces',
 			'mvs_media_stats',
 			'mvs_media_views',
 			'mvs_mentions',
@@ -2332,5 +2333,43 @@ class Migrator {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "DELETE FROM {$links} WHERE object_type = 'bp_activity' AND NOT EXISTS ( SELECT 1 FROM {$activity} a WHERE a.id = {$links}.activity_id )" );
 		}
+	}
+
+	/**
+	 * Migration v33 - the document<->space link table.
+	 *
+	 * A document has ONE home drive (mvs_media_index.drive_type/drive_id). This
+	 * join lets the same document appear in additional Spaces without a second
+	 * copy, mirroring Eventonomy's event<->space model: the space Files tab
+	 * unions its native rows with the rows linked here, and the link itself
+	 * grants that space's members view access (PermissionService honours it).
+	 *
+	 * PRIMARY KEY (media_id, space_id) makes a link idempotent - re-linking is a
+	 * no-op, not a duplicate. KEY space_id serves the listing union
+	 * (WHERE space_id = X). `added_by`/`added_at` are for the "linked by" line
+	 * and moderation. Cleanup is free: the table is in
+	 * MediaRepository::MEDIA_CHILD_TABLES, so delete_cascade() and the orphan
+	 * sweep (migrate_to_32 / Pro v16) already cover it.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_33(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_media_spaces (
+				media_id bigint(20) unsigned NOT NULL,
+				space_id bigint(20) unsigned NOT NULL,
+				added_by bigint(20) unsigned NOT NULL DEFAULT 0,
+				added_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (media_id, space_id),
+				KEY space_id (space_id)
+			) {$charset_collate};"
+		);
 	}
 }
