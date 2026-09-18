@@ -416,9 +416,13 @@ class SettingsRegistrar {
 		// Default OFF: on a photo platform, silently re-encoding every upload from
 		// (typically) q95 down to q92 loses ~18% of the file's data on the good
 		// photos and can never improve one, so it is opt-in, not opt-out
-		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE, always-on,
-		// lossless segment-removal path (mvs_strip_exif) — turning this off does
-		// not weaken privacy.
+		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE lossless
+		// segment-removal path — turning THIS off does not weaken privacy.
+		// "always-on" was the wrong word in both this comment and the customer
+		// description: that path is independent of this setting, but it is still
+		// gated on mvs_strip_exif (UploadService::handle()), so an owner who
+		// unticks Strip EXIF Data keeps GPS in the file while a description on
+		// another tab told them removal happens always.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
@@ -436,7 +440,7 @@ class SettingsRegistrar {
 			'mvs_storage',
 			array(
 				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
-				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data happens separately and always, with no quality loss. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
+				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data is a separate, lossless step controlled by Strip EXIF Data under General - it does not depend on this setting. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
 			)
 		);
 
