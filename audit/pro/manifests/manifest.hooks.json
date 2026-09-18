@@ -387,6 +387,18 @@
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
+      "name": "mvs_document_can_moderate_space",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $can",
+        "int $space_id",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/SpaceLinkService.php:212",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_document_default_privacy",
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:579",
@@ -420,6 +432,18 @@
       "where": "includes/Documents/FolderService.php:1471",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_linked_to_space",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $space_id",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/SpaceLinkService.php:114",
+      "consumed_by": []
     },
     {
       "name": "mvs_document_max_depth",
@@ -504,6 +528,18 @@
       "where": "includes/Documents/DocumentActionService.php:165",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_unlinked_from_space",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $space_id",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/SpaceLinkService.php:156",
+      "consumed_by": []
     },
     {
       "name": "mvs_document_uploaded",

@@ -92,18 +92,7 @@ class MediaSpaceRepository {
 	 * @return int[] Media ids linked to the space.
 	 */
 	public function media_ids_for_space( int $space_id ): array {
-		global $wpdb;
-
-		if ( $space_id <= 0 ) {
-			return array();
-		}
-
-		$table = $wpdb->prefix . 'mvs_media_spaces';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT media_id FROM {$table} WHERE space_id = %d", $space_id ) );
-
-		return array_map( 'intval', (array) $ids );
+		return $this->linked_ids( 'media_id', 'space_id', $space_id );
 	}
 
 	/**
@@ -113,16 +102,33 @@ class MediaSpaceRepository {
 	 * @return int[] Space ids.
 	 */
 	public function spaces_for_media( int $media_id ): array {
+		return $this->linked_ids( 'space_id', 'media_id', $media_id );
+	}
+
+	/**
+	 * One side of the link table, looked up by the other.
+	 *
+	 * Both columns are literals supplied by this class and re-checked against
+	 * the allow-list below, because they cannot be bound as parameters.
+	 *
+	 * @param string $select Column to return: media_id|space_id.
+	 * @param string $where  Column to filter on: media_id|space_id.
+	 * @param int    $id     Value for the filter column.
+	 * @return int[] Ids, empty when the id is not positive.
+	 */
+	private function linked_ids( string $select, string $where, int $id ): array {
 		global $wpdb;
 
-		if ( $media_id <= 0 ) {
+		$allowed = array( 'media_id', 'space_id' );
+
+		if ( $id <= 0 || ! in_array( $select, $allowed, true ) || ! in_array( $where, $allowed, true ) ) {
 			return array();
 		}
 
 		$table = $wpdb->prefix . 'mvs_media_spaces';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT space_id FROM {$table} WHERE media_id = %d", $media_id ) );
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT {$select} FROM {$table} WHERE {$where} = %d", $id ) );
 
 		return array_map( 'intval', (array) $ids );
 	}
