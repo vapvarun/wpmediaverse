@@ -106,6 +106,40 @@ class MediaSpaceRepository {
 	}
 
 	/**
+	 * Spaces for many documents at once, keyed by media id.
+	 *
+	 * One query for a whole page. Resolving links per row is the N+1 shape the
+	 * document listing's prefetch budget exists to prevent.
+	 *
+	 * @param int[] $media_ids Document media ids.
+	 * @return array<int,int[]> media_id => space ids (only ids that have links).
+	 */
+	public function spaces_for_media_many( array $media_ids ): array {
+		global $wpdb;
+
+		$media_ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+
+		if ( ! $media_ids ) {
+			return array();
+		}
+
+		$table        = $wpdb->prefix . 'mvs_media_spaces';
+		$placeholders = implode( ', ', array_fill( 0, count( $media_ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare( "SELECT media_id, space_id FROM {$table} WHERE media_id IN ({$placeholders})", ...$media_ids )
+		);
+
+		$out = array();
+		foreach ( $rows as $row ) {
+			$out[ (int) $row->media_id ][] = (int) $row->space_id;
+		}
+
+		return $out;
+	}
+
+	/**
 	 * One side of the link table, looked up by the other.
 	 *
 	 * Both columns are literals supplied by this class and re-checked against

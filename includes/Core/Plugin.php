@@ -927,6 +927,16 @@ class Plugin {
 			}
 		);
 
+		// document<->space link table. Registered so Pro reaches it through the
+		// container rather than importing the concrete class (architecture
+		// rule 3).
+		self::$container->register(
+			'media_space_repository',
+			function () {
+				return new \WPMediaVerse\Repository\MediaSpaceRepository();
+			}
+		);
+
 		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
 		// consumers (e.g. BuddyNext) to attach/read media on their own objects
 		// (bn_post, bn_space, …) without the BuddyPress save path.

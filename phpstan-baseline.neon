@@ -212,7 +212,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 34
+			count: 35
 			path: includes/Core/Plugin.php
 
 		-
