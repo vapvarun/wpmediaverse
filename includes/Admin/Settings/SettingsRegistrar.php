@@ -656,11 +656,15 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_size' ),
-				// Default 'medium' (300px): grid/feed tiles render at ~150-300px,
-				// so shipping the 1024px 'large' on every tile was 5-10x the bytes
-				// for no visible gain. Owners who want retina-crisp grids can pick
-				// 'large'/'full'; the lightbox always uses the original. (1.7.0)
-				'default'           => 'medium',
+				// Default 'large', which is what grids have actually served since
+				// 1.8.0. 1.7.0 defaulted this to 'medium' for bytes; 1.8.0 then
+				// forced every grid to 'large' because a 300px rung upscales and
+				// looks soft on HiDPI - and left the default saying 'medium'. The
+				// result was a control that could not change anything: all three
+				// choices resolved to 'large'. The forcing is gone, so the setting
+				// decides again, and the default now states the rung that has been
+				// served all along, so no existing site's rendering changes.
+				'default'           => 'large',
 			)
 		);
 		FieldRenderer::add_field(
@@ -676,7 +680,7 @@ class SettingsRegistrar {
 					'large'  => __( 'Large (1024px, retina crisp)', 'wpmediaverse' ),
 					'full'   => __( 'Full (original, highest quality)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Controls image quality on grids and feeds. Larger sizes look sharper on retina displays but load slower.', 'wpmediaverse' ),
+				'description' => __( 'Image size served in grids and feeds. Large keeps tiles crisp on high-density screens and is the default. Medium is roughly a third of the bytes and is worth trying if page weight matters more than sharpness - on a retina screen those tiles will look softer. The lightbox and single media page are unaffected; they follow Lightbox Image Size.', 'wpmediaverse' ),
 			)
 		);
 
