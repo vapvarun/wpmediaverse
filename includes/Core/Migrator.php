@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 33;
+	const CURRENT_VERSION = 34;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -2371,5 +2371,31 @@ class Migrator {
 				KEY space_id (space_id)
 			) {$charset_collate};"
 		);
+	}
+
+	/**
+	 * Migration v34 — drop the `exif_raw` meta nobody ever read.
+	 *
+	 * Every upload wrote the extracted EXIF block to meta (GPS and MakerNote
+	 * already removed), and no template, REST field, admin screen or Pro surface
+	 * ever read it back: dead weight on every row, and camera metadata retained
+	 * for no purpose. 2.5.1 stops writing it; this clears what is already there.
+	 *
+	 * Deleted in batches keyed on the indexed `meta_key` column so a library with
+	 * a large upload history does not hold one long-running DELETE.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_34(): void {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_meta';
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$deleted = $wpdb->query(
+				$wpdb->prepare( "DELETE FROM {$table} WHERE meta_key = %s LIMIT 1000", 'exif_raw' )
+			);
+		} while ( 1000 === (int) $deleted );
 	}
 }

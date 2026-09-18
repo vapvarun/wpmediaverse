@@ -188,10 +188,12 @@ class UploadService {
 		// the rotation in differently.
 		$this->apply_exif_orientation( $file['tmp_name'], $mime );
 
-		// Strip EXIF GPS data from images.
-		$exif_raw = array();
+		// Strip EXIF GPS data from images. Nothing is kept: the extracted block
+		// used to be written to meta as `exif_raw` and was never read by any
+		// template, REST field, admin screen or Pro surface - dead weight plus a
+		// privacy surface with no payoff. Basecamp 10316771960.
 		if ( get_option( 'mvs_strip_exif', true ) && $this->is_image( $mime ) ) {
-			$exif_raw = $this->extract_and_strip_exif( $file['tmp_name'] );
+			$this->strip_exif( $file['tmp_name'] );
 		}
 
 		// Determine media type from MIME.
@@ -567,11 +569,6 @@ class UploadService {
 		// state, not a broken one.
 		if ( $defer_cloud ) {
 			self::queue_cloud_sync( $media_id );
-		}
-
-		// Store EXIF data in meta table (sparse data).
-		if ( ! empty( $exif_raw ) ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'exif_raw', $exif_raw );
 		}
 
 		// Persist optimization outcome on the media row. Done here (after the
@@ -1271,7 +1268,7 @@ class UploadService {
 	 * pixels. Browsers honour that tag, so an iPhone portrait looks correct
 	 * until something re-encodes the file without applying it — at which point
 	 * the raw landscape pixels are all that is left and every portrait lands
-	 * sideways. That is exactly what this pipeline did: extract_and_strip_exif()
+	 * sideways. That is exactly what this pipeline did: strip_exif()
 	 * removes the JPEG APP1 segment (where Orientation lives), the watermarker
 	 * uses raw GD, and the optimiser, the WebP/AVIF siblings and
 	 * generate_thumbnails() all save through WP_Image_Editor without rotating.
@@ -1375,30 +1372,27 @@ class UploadService {
 	}
 
 	/**
-	 * Extract EXIF data and strip GPS from JPEG images.
+	 * Strip GPS and other sensitive EXIF from an image file.
+	 *
+	 * Nothing is returned to the caller for storage: the extracted block used to
+	 * be kept as `exif_raw` meta that no surface ever read. Basecamp 10316771960.
 	 *
 	 * @param string $file_path File path.
-	 * @return array Raw EXIF data (before stripping).
+	 * @return bool True when the file carried GPS and was rewritten.
 	 */
-	private function extract_and_strip_exif( string $file_path ): array {
+	private function strip_exif( string $file_path ): bool {
 		if ( ! function_exists( 'exif_read_data' ) ) {
-			return array();
+			return false;
 		}
 
 		$exif = @exif_read_data( $file_path, 'ANY_TAG', true ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
 		if ( ! is_array( $exif ) ) {
-			return array();
+			return false;
 		}
 
-		// Check for GPS presence before stripping.
+		// The only thing still read out of the block: whether the FILE needs
+		// rewriting to drop its GPS tags.
 		$has_gps = isset( $exif['GPS'] );
-
-		// Strip sensitive EXIF sections before storing in meta.
-		$sensitive_sections = array( 'GPS', 'MakerNote', 'UndefinedTag:0xEA1C', 'MAKERNOTE' );
-		foreach ( $sensitive_sections as $section ) {
-			unset( $exif[ $section ] );
-		}
-		$raw = $exif;
 
 		// Strip GPS/EXIF from the stored file.
 		//
@@ -1434,7 +1428,7 @@ class UploadService {
 			}
 		}
 
-		return $raw;
+		return $has_gps;
 	}
 
 	/**
