@@ -645,7 +645,12 @@
 	padding: 12px 20px;
 	border-radius: 8px;
 	font-size: 14px;
-	z-index: 100000;
+	/* One above the chat panel (messaging.css, also 100000). Both are fixed
+	   children of the root stacking context and both print on wp_footer, so at
+	   equal z-index the panel -- registered second -- painted over every toast
+	   it raised: mic denied, wrong file type, API errors. Full occlusion below
+	   767px, where the panel is 100% wide. Basecamp 10313271935. */
+	z-index: 100001;
 	display: flex;
 	align-items: center;
 	gap: 12px;
