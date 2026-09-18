@@ -695,6 +695,52 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return (array) apply_filters( 'mvs_privacy_choices', $choices );
 	}
 
+	/**
+	 * The "Also share as a story" checkbox, for every upload surface.
+	 *
+	 * One emitter rather than per-surface copies: the toggle shipped only on the
+	 * Upload page, so the dashboard popup, the FAB modal and the BuddyPress tab
+	 * silently could not create a story. The Pro + setting guard lives here too,
+	 * so a surface cannot forget it. Basecamp 10313107097.
+	 *
+	 * Surfaces driven by the Interactivity API pass their own store action in
+	 * $on_change; classic-JS surfaces (the BuddyPress tab) pass '' and read the
+	 * checkbox by its class.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $on_change Interactivity action for data-wp-on--change, or '' for a plain checkbox.
+	 * @param bool   $checked   Whether the box starts ticked.
+	 * @return void
+	 */
+	public static function story_toggle( string $on_change = '', bool $checked = false ): void {
+		if ( ! self::stories_available() ) {
+			return;
+		}
+
+		printf(
+			'<label class="mvs-upload-story-toggle"><input type="checkbox" class="mvs-upload-story-input"%s%s /><span>%s</span></label>',
+			'' !== $on_change ? ' data-wp-on--change="' . esc_attr( $on_change ) . '"' : '',
+			checked( $checked, true, false ),
+			esc_html__( 'Also share as a story (visible for 24 hours)', 'wpmediaverse' )
+		);
+	}
+
+	/**
+	 * Can this site create stories at all?
+	 *
+	 * Pro owns stories, so a Free-only site must not be offered the checkbox:
+	 * the upload succeeds and no story is ever created, which reads as broken
+	 * rather than absent. Basecamp #10156642726.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return bool
+	 */
+	public static function stories_available(): bool {
+		return defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stories_enabled', '0' );
+	}
+
 	public static function privacy_options( string $selected = '' ): void {
 		$choices = self::privacy_choices();
 

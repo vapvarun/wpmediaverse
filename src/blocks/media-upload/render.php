@@ -69,7 +69,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 // where nothing consumes it — the upload succeeds but no story is ever created,
 // which reads as a broken feature rather than an absent one. Basecamp
 // #10156642726.
-$mvs_stories_on = defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stories_enabled', '0' );
+$mvs_stories_on = \WPMediaVerse\Core\TemplateHelpers::stories_available();
 // Pre-check the toggle when arriving from the "Your story" tile (?mvs_story=1). Display-only, no action.
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $mvs_prefill_story = $mvs_stories_on && isset( $_GET['mvs_story'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['mvs_story'] ) );
@@ -208,12 +208,7 @@ wp_interactivity_state(
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
-		<?php if ( $mvs_stories_on ) : ?>
-			<label class="mvs-upload-story-toggle">
-				<input type="checkbox" data-wp-on--change="actions.toggleStory" <?php checked( $mvs_prefill_story ); ?> />
-				<span><?php esc_html_e( 'Also share as a story (visible for 24 hours)', 'wpmediaverse' ); ?></span>
-			</label>
-		<?php endif; ?>
+		<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle( 'actions.toggleStory', $mvs_prefill_story ); ?>
 	</div>
 	<!-- Review step: shown after files are selected so the user can fill the
 	     details above before the upload starts. -->

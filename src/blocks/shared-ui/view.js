@@ -253,6 +253,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalDescription: '',
 		uploadModalTags: '',
 		uploadModalPrivacy: 'public',
+		uploadModalStory: false,
 		uploadModalMediaGroup: null,
 		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
 		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
@@ -1083,6 +1084,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateUploadPrivacy( event ) {
 			state.uploadModalPrivacy = event.target.value;
 		},
+		toggleUploadStory( event ) {
+			state.uploadModalStory = !! event.target.checked;
+		},
 		updateUploadAlbum( event ) {
 			// -1 = "Create new album", 0 = none, >0 = existing album id.
 			const val = parseInt( event.target.value, 10 );
@@ -1191,6 +1195,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						if ( mediaData && mediaData.duplicate_warning ) {
 							state.uploadModalDuplicates++;
 							state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
+						}
+						// "Also share as a story" (Pro). Non-fatal: the media is
+						// uploaded either way. Basecamp 10313107097.
+						if ( state.uploadModalStory && mediaData && mediaData.id ) {
+							await window.mvsRest.markAsStory( mediaData.id );
 						}
 					} else {
 						state.uploadModalFailed++;

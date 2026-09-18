@@ -787,6 +787,7 @@ wp_interactivity_state(
 					</select>
 					<?php endif; ?>
 				</div>
+				<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle( 'actions.setUploadStory' ); ?>
 			</div>
 			<div class="mvs-dashboard-upload-review" data-wp-bind--hidden="!state.upload.hasPending" hidden>
 				<span class="mvs-dashboard-upload-review-label">

@@ -300,6 +300,9 @@ wp_interactivity_state(
 									<button type="button" class="mvs-tag-pill" data-wp-on--click="actions.addUploadTag" data-wp-bind--data-mvs-tag-name="context.item.name"><span data-wp-text="context.item.name"></span></button>
 								</template>
 							</div>
+							<div class="mvs-modal-field mvs-modal-field--checkbox">
+								<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle( 'actions.toggleUploadStory' ); ?>
+							</div>
 						</details>
 					</div>
 

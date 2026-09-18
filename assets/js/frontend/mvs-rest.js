@@ -455,8 +455,46 @@
 		} );
 	}
 
+	/**
+	 * Flag a freshly uploaded media item as a 24h story (Pro).
+	 *
+	 * Every upload surface that offers the "Also share as a story" checkbox
+	 * calls this after the media POST succeeds. It lives here because the four
+	 * uploaders are four separate bundles with no other shared module, and the
+	 * failure mode must be identical everywhere: the media IS uploaded, so a
+	 * story that could not be created is reported, never fatal.
+	 *
+	 * @param {number} mediaId Newly created media id.
+	 * @return {Promise<boolean>} True when the story was created.
+	 */
+	async function markAsStory( mediaId ) {
+		const id = parseInt( mediaId, 10 );
+
+		if ( ! id ) {
+			return false;
+		}
+
+		// mvsRestConfig.restBase is `.../mvs/v1`; stories are a Pro route.
+		const base = ( window.mvsRestConfig && window.mvsRestConfig.restBase ) ? window.mvsRestConfig.restBase : '';
+
+		if ( ! base ) {
+			return false;
+		}
+
+		const url = base.replace( '/mvs/v1', '/mvs-pro/v1' ) + '/media/' + id + '/story';
+
+		try {
+			const resp = await restFetch( url, { method: 'POST', body: {} } );
+			return !! ( resp && resp.ok );
+		} catch ( e ) {
+			// Non-fatal: the media uploaded even if the story flag did not stick.
+			return false;
+		}
+	}
+
 	window.mvsRest = {
 		restFetch: restFetch,
-		createAlbum: createAlbum
+		createAlbum: createAlbum,
+		markAsStory: markAsStory
 	};
 } )();

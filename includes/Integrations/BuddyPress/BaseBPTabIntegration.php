@@ -460,6 +460,7 @@ abstract class BaseBPTabIntegration {
 					<?php endif; ?>
 					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 				</select>
+				<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle(); ?>
 			</div>
 
 			<div class="mvs-bp-upload-status" id="mvs-bp-upload-status" style="display:none;"></div>

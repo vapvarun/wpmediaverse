@@ -187,6 +187,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			description: '',
 			tags: '',
 			privacy: '',
+			story: false,
 			pendingFiles: [],
 			pendingCount: 0,
 			hasPending: false,
@@ -785,6 +786,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		setUploadTags( event ) { state.upload.tags = event.target.value; },
 		setUploadPrivacy( event ) { state.upload.privacy = event.target.value; },
 
+		setUploadStory( event ) { state.upload.story = !! event.target.checked; },
+
 		async uploadFiles( files ) {
 			const ctx = getContext();
 
@@ -875,6 +878,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 						if ( mediaData && mediaData.duplicate_warning ) {
 							duplicates++;
 							lastDuplicateId = mediaData.existing_media_id || 0;
+						}
+						// "Also share as a story" (Pro). Non-fatal: the media is
+						// uploaded either way. Basecamp 10313107097.
+						if ( state.upload.story && mediaData && mediaData.id ) {
+							await window.mvsRest.markAsStory( mediaData.id );
 						}
 					} else {
 						const errData = res.data || {};
