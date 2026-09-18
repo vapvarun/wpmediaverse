@@ -1377,10 +1377,14 @@ class UploadService {
 	 * Nothing is returned to the caller for storage: the extracted block used to
 	 * be kept as `exif_raw` meta that no surface ever read. Basecamp 10316771960.
 	 *
+	 * Public for the same reason apply_exif_orientation() is: the REST
+	 * replace-file path runs its own ingest and must reuse this seam rather
+	 * than grow a second copy - or, as it did until 2.5.1, skip it entirely.
+	 *
 	 * @param string $file_path File path.
 	 * @return bool True when the file carried GPS and was rewritten.
 	 */
-	private function strip_exif( string $file_path ): bool {
+	public function strip_exif( string $file_path ): bool {
 		if ( ! function_exists( 'exif_read_data' ) ) {
 			return false;
 		}

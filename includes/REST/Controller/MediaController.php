@@ -1254,6 +1254,14 @@ class MediaController extends WP_REST_Controller {
 		// two copies of a rotation is how the paths drift apart again.
 		$upload_service->apply_exif_orientation( $file['tmp_name'], $mime );
 
+		// Then strip, on the same owner switch as a fresh upload. Replace ran
+		// orientation, filename strategy, watermark, optimize and the WebP/AVIF
+		// siblings - everything except this - so replacing a photo kept the GPS
+		// coordinates a normal upload would have removed. Basecamp 10316771960.
+		if ( get_option( 'mvs_strip_exif', true ) && 0 === strpos( (string) $mime, 'image/' ) ) {
+			$upload_service->strip_exif( $file['tmp_name'] );
+		}
+
 		// A replacement is new member bytes entering the library, so it stamps —
 		// the same rule as a fresh upload. This MUST run before store() below:
 		// store() persists the temp file, and the WebP/AVIF siblings are cut from

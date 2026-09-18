@@ -1185,9 +1185,10 @@ class Plugin {
 	 */
 	public static function maybe_queue_ai( int $media_id ): void {
 		// Queue AI processing when EITHER auto-analyze (describe/tag) OR
-		// auto-moderate is enabled. process() gates each feature internally, so
-		// an owner who turns on only moderation must still get the job queued —
-		// gating solely on auto-analyze silently disabled moderation-only setups.
+		// auto-moderate is enabled. process( $id, true ) then applies each
+		// switch: moderation-only stays queued, and describe/tag run only when
+		// auto-analyze is on, so a moderation-only owner pays for one call
+		// rather than three.
 		if ( ! get_option( 'mvs_ai_auto_analyze', false ) && ! get_option( 'mvs_ai_auto_moderate', false ) ) {
 			return;
 		}
@@ -1205,7 +1206,7 @@ class Plugin {
 				'wpmediaverse'
 			);
 		} else {
-			$ai->process( $media_id );
+			$ai->process( $media_id, true );
 		}
 	}
 
@@ -1216,7 +1217,8 @@ class Plugin {
 	 */
 	public static function handle_ai_process( int $media_id ): void {
 		$ai = self::$container->get( 'ai' );
-		$ai->process( $media_id );
+		// true = automatic path: honour the Auto-Analyze switch for describe/tag.
+		$ai->process( $media_id, true );
 	}
 
 	/**
