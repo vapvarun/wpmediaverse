@@ -208,7 +208,7 @@ Yes, within the license limit. A single-site license covers one production insta
 
 ### Do you offer refunds?
 
-Yes. If Pro does not work for your use case, contact support within 14 days of purchase for a full refund. No questions asked. If you run into a technical problem and need help resolving it before deciding, reach out to support first — we can usually fix it faster than you expect.
+Yes. If Pro does not work for your use case, contact support within 30 days of purchase for a full refund. If you run into a technical problem and need help resolving it before deciding, reach out to support first — we can usually fix it faster than you expect.
 
 ---
 
