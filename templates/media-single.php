@@ -381,7 +381,9 @@ $mvs_archive_url = home_url( '/media/' );
 						<?php endif; ?>
 						<?php echo $poster_url ? 'poster="' . esc_url( $poster_url ) . '"' : ''; ?>
 						data-wp-on--play="actions.onPlay"
-						data-wp-on--pause="actions.onPause">
+						data-wp-on--pause="actions.onPause"
+						data-wp-on--seeked="actions.onSeek"
+						data-wp-on--ended="actions.onComplete">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</video>
 				</div>
@@ -425,7 +427,9 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php endif; ?>
 					<audio controls preload="metadata"
 						data-wp-on--play="actions.onPlay"
-						data-wp-on--pause="actions.onPause">
+						data-wp-on--pause="actions.onPause"
+						data-wp-on--seeked="actions.onSeek"
+						data-wp-on--ended="actions.onComplete">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</audio>
 				</div>

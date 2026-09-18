@@ -1408,6 +1408,18 @@ class Plugin {
 				self::asset_version( 'src/blocks/media-social/view.js' )
 			);
 
+			// Media player store — playback analytics (play/pause/seek/complete).
+			// templates/media-single.php renders its own <video>/<audio> bound to
+			// this store, but the store used to ship only as the media-player
+			// block's viewScriptModule, so the template path bound to nothing and
+			// mvs_play_events stayed empty. Basecamp 10309795254.
+			wp_enqueue_script_module(
+				'@mvs/media-player',
+				MVS_PLUGIN_URL . 'src/blocks/media-player/view.js',
+				array( array( 'id' => '@wordpress/interactivity' ) ),
+				self::asset_version( 'src/blocks/media-player/view.js' )
+			);
+
 			wp_enqueue_style(
 				'mvs-shared-ui-frame',
 				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
@@ -2830,7 +2842,7 @@ JS;
 		// ids; registration is idempotent and dequeue of an unqueued id is a
 		// no-op, so listing the engine's modules here is safe and complete.
 		if ( function_exists( 'wp_dequeue_script_module' ) ) {
-			foreach ( array( '@mvs/shared-ui', '@mvs/media-social', 'mvs-messaging' ) as $module_id ) {
+			foreach ( array( '@mvs/shared-ui', '@mvs/media-social', '@mvs/media-player', 'mvs-messaging' ) as $module_id ) {
 				wp_dequeue_script_module( $module_id );
 			}
 		}
