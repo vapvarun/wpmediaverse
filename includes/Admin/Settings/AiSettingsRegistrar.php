@@ -260,20 +260,20 @@ class AiSettingsRegistrar {
 			)
 		);
 
-		// Per-call cost is a technical estimate used only for budget tracking —
-		// the plugin defaults it (and devs can override via the
-		// `mvs_ai_cost_per_call` filter), so it is intentionally NOT a settings
-		// field. Site owners only set the monthly budget cap above; they should
-		// not have to know or enter a per-call price.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_cost_per_call',
-			array(
-				'type'              => 'number',
-				'sanitize_callback' => 'floatval',
-				'default'           => 0.01,
-			)
-		);
+		// `mvs_ai_cost_per_call` is deliberately NOT registered here.
+		//
+		// It is a technical estimate for budget tracking with no settings field,
+		// and registering an option in a group WITHOUT a field is what broke the
+		// budget cap: wp-admin/options.php walks every option registered in the
+		// posted group and calls update_option( $option, null ) for any the form
+		// did not submit. floatval( null ) is 0.0, so the owner's first Save on
+		// this tab stored a per-call cost of zero, track_usage() then added zero
+		// to the month's spend, check_budget() never tripped, and the Stats page
+		// showed $0.00 spent forever. The cap the description promises stopped
+		// existing at the moment the owner turned AI on.
+		//
+		// The default lives at the read site (AIService::track_usage()) and stays
+		// overridable through the `mvs_ai_cost_per_call` filter.
 	}
 
 	/**

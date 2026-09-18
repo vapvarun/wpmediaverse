@@ -408,7 +408,12 @@ class AIService {
 	 * @return bool
 	 */
 	private function check_budget(): bool {
-		$budget = (float) get_option( 'mvs_ai_monthly_budget', 0 );
+		// Fallback 10, matching the registered default and what activation writes.
+		// This read used to fall back to 0, and 0 means "no cap" two lines down -
+		// so any install missing the row (restored backup, copy-in-place deploy,
+		// an activation hook that never ran) span the cap off silently, in the
+		// expensive direction.
+		$budget = (float) get_option( 'mvs_ai_monthly_budget', 10 );
 		if ( $budget <= 0 ) {
 			return true; // No budget limit set.
 		}
@@ -479,7 +484,7 @@ class AIService {
 	public function get_usage_stats(): array {
 		$usage  = get_option( 'mvs_ai_usage', array() );
 		$month  = gmdate( 'Y-m' );
-		$budget = (float) get_option( 'mvs_ai_monthly_budget', 0 );
+		$budget = (float) get_option( 'mvs_ai_monthly_budget', 10 );
 
 		$current = isset( $usage[ $month ] ) ? $usage[ $month ] : array(
 			'calls'   => 0,

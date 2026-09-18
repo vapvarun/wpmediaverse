@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 34;
+	const CURRENT_VERSION = 35;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -2397,5 +2397,29 @@ class Migrator {
 				$wpdb->prepare( "DELETE FROM {$table} WHERE meta_key = %s LIMIT 1000", 'exif_raw' )
 			);
 		} while ( 1000 === (int) $deleted );
+	}
+
+	/**
+	 * Migration v35 — repair an AI budget cap that saving the settings zeroed.
+	 *
+	 * `mvs_ai_cost_per_call` was registered in the AI settings group with no
+	 * field, so WordPress wrote null -> 0 for it on the owner's first Save of
+	 * that tab. Every AI call was then costed at zero, the monthly budget could
+	 * never be reached, and the Stats page reported $0.00 spent no matter how
+	 * much the provider actually billed.
+	 *
+	 * 2.5.1 stops registering it. This clears the zero it left behind, so the
+	 * read falls back to the real estimate again. A stored cost of zero is never
+	 * a legitimate setting - it is exactly the corruption - so only that case is
+	 * removed, and a value someone set deliberately is left alone.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_35(): void {
+		$stored = get_option( 'mvs_ai_cost_per_call', null );
+
+		if ( null !== $stored && (float) $stored <= 0 ) {
+			delete_option( 'mvs_ai_cost_per_call' );
+		}
 	}
 }
