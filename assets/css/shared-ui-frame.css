@@ -4,6 +4,23 @@
  * @package WPMediaVerse
  */
 
+/* Form controls do not inherit font-family from an ancestor, and this shell is
+   printed on wp_footer outside every .mvs-* wrapper -- on an ordinary page only
+   this stylesheet loads, so frontend.css's body.mvs-page reset cannot reach it.
+   Without this the lightbox, FAB and toast controls render in the UA default
+   (Arial) next to theme-font text. Basecamp 10309690361. */
+.mvs-app-shell button,
+.mvs-app-shell input,
+.mvs-app-shell select,
+.mvs-app-shell textarea,
+.mvs-lightbox-overlay button,
+.mvs-lightbox-overlay input,
+.mvs-lightbox-overlay textarea,
+.mvs-toast button {
+	font-family: inherit;
+	font-size: inherit;
+}
+
 /* ─── Floating Action Button ─── */
 /*
  * The + button's placement, as tokens, because two things depend on it: the

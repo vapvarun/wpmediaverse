@@ -516,7 +516,8 @@ body.mvs-page {
 .mvs-single-media,
 .mvs-single-album,
 .mvs-single-collection,
-.mvs-explore,
+.mvs-explore-page,
+.mvs-documents,
 .mvs-dashboard,
 .mvs-profile-edit {
     font-family: var(--mvs-font);
@@ -539,7 +540,8 @@ body.mvs-page {
 .mvs-single-media h1,
 .mvs-single-album h1,
 .mvs-single-collection h1,
-.mvs-explore h1,
+.mvs-explore-page h1,
+.mvs-documents h1,
 .mvs-dashboard h1,
 .mvs-profile-edit h1 {
     font-family: var(--mvs-font-heading);
@@ -552,7 +554,8 @@ body.mvs-page {
 .mvs-single-media h2,
 .mvs-single-album h2,
 .mvs-single-collection h2,
-.mvs-explore h2,
+.mvs-explore-page h2,
+.mvs-documents h2,
 .mvs-dashboard h2,
 .mvs-profile-edit h2 {
     font-family: var(--mvs-font-heading);
@@ -565,7 +568,8 @@ body.mvs-page {
 .mvs-single-media h3,
 .mvs-single-album h3,
 .mvs-single-collection h3,
-.mvs-explore h3,
+.mvs-explore-page h3,
+.mvs-documents h3,
 .mvs-dashboard h3,
 .mvs-profile-edit h3 {
     font-family: var(--mvs-font-heading);
@@ -578,7 +582,8 @@ body.mvs-page {
 .mvs-single-media h4,
 .mvs-single-album h4,
 .mvs-single-collection h4,
-.mvs-explore h4,
+.mvs-explore-page h4,
+.mvs-documents h4,
 .mvs-dashboard h4,
 .mvs-profile-edit h4 {
     font-size: 0.875rem;
@@ -586,19 +591,19 @@ body.mvs-page {
     margin: 0 0 0.5em;
 }
 
-/* Form elements inherit font from wrapper */
-.mvs-single-media button,
-.mvs-single-media input,
-.mvs-single-media select,
-.mvs-single-media textarea,
-.mvs-dashboard button,
-.mvs-dashboard input,
-.mvs-dashboard select,
-.mvs-dashboard textarea,
-.mvs-profile-edit button,
-.mvs-profile-edit input,
-.mvs-profile-edit select,
-.mvs-profile-edit textarea {
+/* Form controls do not inherit font-family from an ancestor -- the UA sheet
+   gives them its own default -- so MediaVerse buttons/inputs rendered in the
+   theme's page fell back to Arial while every div around them used the theme
+   font. This used to be scoped to a hand-maintained wrapper list that missed
+   .mvs-explore-page, .mvs-documents, .mvs-single-album and
+   .mvs-single-collection. body.mvs-page (TemplateLoader::body_class) covers
+   every MVS template at once; the footer-portalled shell (lightbox, FAB,
+   toast) carries its own copy in shared-ui-frame.css because it renders
+   outside these wrappers. Basecamp 10309690361, 10309616378. */
+body.mvs-page button,
+body.mvs-page input,
+body.mvs-page select,
+body.mvs-page textarea {
     font-family: inherit;
     font-size: inherit;
 }
@@ -725,7 +730,8 @@ body.mvs-page {
 .mvs-single-album,
 .mvs-single-collection,
 .mvs-profile-edit,
-.mvs-explore,
+.mvs-explore-page,
+.mvs-documents,
 .mvs-dashboard {
     padding-bottom: calc(var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
 }
@@ -990,8 +996,12 @@ body.dark-mode .mvs-skeleton::after {
     transition: background 0.15s;
 }
 
+/* align-items: the follower/following buttons carry padding-block for the 44px
+   tap target while the "N media" span does not, so under the default stretch
+   the span's content sat ~14px higher than the buttons'. Basecamp 10313672574. */
 .mvs-profile-header-stats {
     display: flex;
+    align-items: center;
     gap: 28px;
     font-size: 0.9375rem;
     color: var(--mvs-text-secondary);
@@ -1491,7 +1501,7 @@ body.dark-mode .mvs-skeleton::after {
     min-width: 0;
 }
 
-.mvs-grid-item a {
+.mvs-grid-item > a {
     display: block;
     width: 100%;
     height: 100%;
@@ -3189,8 +3199,11 @@ a.mvs-dashboard-card-title:hover {
     min-height: 80px;
 }
 
+/* Same clipping as .mvs-dashboard-upload-row: 200px leaves ~156px of text
+   room, under the 207px/239px the longest privacy labels need. The modal is
+   560px wide, so 100% is safe. Basecamp 10309750901. */
 .mvs-field select {
-    max-width: 200px;
+    max-width: 100%;
 }
 
 /* ==========================================================================
@@ -3734,8 +3747,13 @@ a.mvs-dashboard-card-title:hover {
     flex: 1;
 }
 
+/* Privacy labels are sentences ("Only me: hidden from everyone else" measures
+   239px). A closed <select> clips rather than wraps or ellipsizes, so any fixed
+   cap truncates the selected option -- size to content instead, bounded by the
+   row. Basecamp 10313754840. */
 .mvs-dashboard-upload-row select {
-    max-width: 160px;
+    width: auto;
+    max-width: 100%;
 }
 
 .mvs-dashboard-upload-status {
@@ -4062,7 +4080,11 @@ a.mvs-dashboard-card-title:hover {
     position: relative;
 }
 
-.mvs-grid-item a {
+/* Direct child only: the media permalink. A descendant selector here also hit
+   .mvs-grid-item-author-link, overriding its display:flex (specificity 0,1,1
+   vs 0,1,0) so the avatar and name stacked and the name never ellipsized.
+   Same trap as the two cases documented above. Basecamp 10312738180. */
+.mvs-grid-item > a {
     display: block;
     position: relative;
     text-decoration: none;
@@ -5180,7 +5202,12 @@ a.mvs-dashboard-card-title:hover {
     gap: 8px;
 }
 
-.mvs-upload-fields input,
+/* Text fields only -- a bare `input` here also caught the "share as story"
+   checkbox and stretched it to the full row width. This block duplicates the
+   .mvs-upload-fields rules at ~3644 with different values; the two should be
+   consolidated, but that is a wider cleanup than this fix.
+   Basecamp 10313183837. */
+.mvs-upload-fields input[type="text"],
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
