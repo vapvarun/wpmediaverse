@@ -1415,6 +1415,17 @@ class UploadService {
 			$type = is_array( $info ) ? $info['mime'] : '';
 
 			if ( 'image/jpeg' === $type ) {
+				// Try the surgical removal first: drop the GPS IFD and leave the
+				// rest of the EXIF alone. Taking the whole APP1 segment also took
+				// the camera, lens and exposure a photographer wants kept, and
+				// the XMP/IPTC block where copyright and credit live - on a photo
+				// platform, destroying an author's byline to hide their location
+				// is a bad trade when only one of the two is a privacy problem.
+				// Basecamp 10252326888 follow-up.
+				if ( $this->strip_gps_ifd( $file_path ) ) {
+					return true;
+				}
+
 				if ( ! $this->strip_jpeg_app1_segments( $file_path ) && extension_loaded( 'gd' ) ) {
 					// PHP 8.4+ deprecated imagedestroy — GdImage instances are
 					// first-class objects and GC'd when $img goes out of scope.
@@ -1433,6 +1444,188 @@ class UploadService {
 		}
 
 		return $has_gps;
+	}
+
+	/**
+	 * Remove ONLY the GPS block from a JPEG's EXIF, in place.
+	 *
+	 * Unlinks the GPS IFD pointer (tag 0x8825) from IFD0 and zeroes the GPS
+	 * directory it pointed at, so neither `exif_read_data()` nor a raw scan of
+	 * the bytes finds coordinates. Everything else in the segment - camera make
+	 * and model, lens, exposure, orientation, the thumbnail IFD - is untouched,
+	 * and so is every other segment, including the XMP/IPTC block that carries
+	 * copyright.
+	 *
+	 * The IFD is rewritten in place at its original offset and padded back to
+	 * its original length, because every other value in a TIFF header is an
+	 * absolute offset from the start of the header: shrinking the directory
+	 * would silently invalidate all of them.
+	 *
+	 * FAILS CLOSED. Any structure this does not understand returns false, and
+	 * the caller then removes the whole APP1 segment as before. A privacy
+	 * control must never fail open and leave the coordinates in place.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $file_path Absolute path to a JPEG file.
+	 * @return bool True when GPS was removed and the file rewritten.
+	 */
+	private function strip_gps_ifd( string $file_path ): bool {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+		$bytes = @file_get_contents( $file_path );
+
+		if ( ! is_string( $bytes ) || strlen( $bytes ) < 4 || "\xFF\xD8" !== substr( $bytes, 0, 2 ) ) {
+			return false;
+		}
+
+		// XMP can carry its own GPS copy; this routine only understands the
+		// EXIF one, so hand those files to the whole-segment path.
+		if ( false !== strpos( $bytes, 'http://ns.adobe.com/xap/1.0/' ) && false !== stripos( $bytes, 'GPS' ) ) {
+			return false;
+		}
+
+		// Locate the EXIF APP1 segment by walking the marker chain.
+		$pos     = 2;
+		$len     = strlen( $bytes );
+		$tiff_at = 0;
+
+		while ( $pos + 4 <= $len && "\xFF" === $bytes[ $pos ] ) {
+			$marker = ord( $bytes[ $pos + 1 ] );
+			$size   = unpack( 'n', substr( $bytes, $pos + 2, 2 ) )[1];
+
+			if ( 0xDA === $marker || $size < 2 ) {
+				break; // Start of scan: no metadata beyond here.
+			}
+
+			if ( 0xE1 === $marker && "Exif\x00\x00" === substr( $bytes, $pos + 4, 6 ) ) {
+				$tiff_at = $pos + 10;
+				break;
+			}
+
+			$pos += 2 + $size;
+		}
+
+		if ( ! $tiff_at || $tiff_at + 8 > $len ) {
+			return false;
+		}
+
+		$order = substr( $bytes, $tiff_at, 2 );
+
+		if ( 'II' === $order ) {
+			$u16 = 'v';
+			$u32 = 'V';
+		} elseif ( 'MM' === $order ) {
+			$u16 = 'n';
+			$u32 = 'N';
+		} else {
+			return false;
+		}
+
+		$read16 = static function ( $at ) use ( $bytes, $u16, $len ) {
+			return ( $at + 2 <= $len ) ? unpack( $u16, substr( $bytes, $at, 2 ) )[1] : null;
+		};
+		$read32 = static function ( $at ) use ( $bytes, $u32, $len ) {
+			return ( $at + 4 <= $len ) ? unpack( $u32, substr( $bytes, $at, 4 ) )[1] : null;
+		};
+
+		$ifd0_at = $tiff_at + $read32( $tiff_at + 4 );
+		$count   = $read16( $ifd0_at );
+
+		if ( null === $count || $count < 1 || $ifd0_at + 2 + ( $count * 12 ) + 4 > $len ) {
+			return false;
+		}
+
+		// Find the GPS pointer among IFD0's entries.
+		$gps_entry_at = 0;
+		$gps_ifd_at   = 0;
+
+		for ( $i = 0; $i < $count; $i++ ) {
+			$entry_at = $ifd0_at + 2 + ( $i * 12 );
+
+			if ( 0x8825 === $read16( $entry_at ) ) {
+				$gps_entry_at = $entry_at;
+				$gps_ifd_at   = $tiff_at + $read32( $entry_at + 8 );
+				break;
+			}
+		}
+
+		if ( ! $gps_entry_at || $gps_ifd_at + 2 > $len ) {
+			return false;
+		}
+
+		// Zero the GPS directory itself, so the coordinates are not merely
+		// unreferenced but gone from the bytes. Value data living outside the
+		// entry (rationals, which is what coordinates are) is zeroed too.
+		$gps_count = $read16( $gps_ifd_at );
+
+		if ( null === $gps_count || $gps_ifd_at + 2 + ( $gps_count * 12 ) + 4 > $len ) {
+			return false;
+		}
+
+		$sizes = array(
+			1  => 1,
+			2  => 1,
+			3  => 2,
+			4  => 4,
+			5  => 8,
+			7  => 1,
+			9  => 4,
+			10 => 8,
+		);
+
+		for ( $i = 0; $i < $gps_count; $i++ ) {
+			$entry_at = $gps_ifd_at + 2 + ( $i * 12 );
+			$type     = $read16( $entry_at + 2 );
+			$n        = $read32( $entry_at + 4 );
+			$width    = isset( $sizes[ $type ] ) ? $sizes[ $type ] * $n : 0;
+
+			if ( $width > 4 ) {
+				$data_at = $tiff_at + $read32( $entry_at + 8 );
+
+				if ( $data_at > 0 && $data_at + $width <= $len ) {
+					$bytes = substr_replace( $bytes, str_repeat( "\x00", $width ), $data_at, $width );
+				}
+			}
+		}
+
+		$gps_block = 2 + ( $gps_count * 12 ) + 4;
+		$bytes     = substr_replace( $bytes, str_repeat( "\x00", $gps_block ), $gps_ifd_at, $gps_block );
+
+		// Rewrite IFD0 without the pointer, padded back to its original length
+		// so every absolute offset in the header stays valid.
+		$entries = '';
+
+		for ( $i = 0; $i < $count; $i++ ) {
+			$entry_at = $ifd0_at + 2 + ( $i * 12 );
+
+			if ( $entry_at !== $gps_entry_at ) {
+				$entries .= substr( $bytes, $entry_at, 12 );
+			}
+		}
+
+		$next_ifd = substr( $bytes, $ifd0_at + 2 + ( $count * 12 ), 4 );
+		$new_ifd0 = pack( $u16, $count - 1 ) . $entries . $next_ifd . str_repeat( "\x00", 12 );
+		$old_len  = 2 + ( $count * 12 ) + 4;
+
+		// The 12 bytes of padding replace the entry that was removed, so the
+		// directory occupies exactly the space it did before and nothing after
+		// it moves. Never write a different length.
+		if ( strlen( $new_ifd0 ) !== $old_len ) {
+			return false;
+		}
+
+		$bytes = substr_replace( $bytes, $new_ifd0, $ifd0_at, $old_len );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_put_contents_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( false === @file_put_contents( $file_path, $bytes ) ) {
+			return false;
+		}
+
+		// Trust nothing: confirm the coordinates are actually gone before
+		// reporting success, or the caller will not fall back.
+		$check = @exif_read_data( $file_path, 'ANY_TAG', true ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+
+		return is_array( $check ) && ! isset( $check['GPS'] );
 	}
 
 	/**

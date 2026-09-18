@@ -260,8 +260,9 @@ class SettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option' => 'mvs_strip_exif',
-				'label'  => __( 'Remove GPS and device data from uploaded images.', 'wpmediaverse' ),
+				'option'      => 'mvs_strip_exif',
+				'label'       => __( 'Remove GPS location from uploaded photos.', 'wpmediaverse' ),
+				'description' => __( 'On by default. Only the coordinates are removed - camera, lens, exposure and the copyright/credit fields stay on the photo, so a photographer keeps their metadata and their byline. Applies to new uploads and to replaced files; photos already in the library are not changed.', 'wpmediaverse' ),
 			)
 		);
 
