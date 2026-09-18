@@ -1350,6 +1350,67 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Documents of ONE owner whose mvs_tag matches, for in-drive search.
+	 *
+	 * Tags are set in wp-admin and, until 2.5.1, read nowhere: an admin could
+	 * tag a contract "signed" and no search on the site would find it.
+	 *
+	 * Deliberately owner-scoped, and the caller must pass the searching member's
+	 * own id. A tag is an organiser's label, often internal ("contracts",
+	 * "signed", a client name); matching it in a site-wide or public search would
+	 * turn those labels into terms anyone could guess to surface documents.
+	 * Inside your own drive there is no such exposure - you set them.
+	 *
+	 * Matches the term NAME or SLUG, so "contract" finds the "contracts" tag.
+	 * Bounded like `document_title_candidates()` for the same reason: this feeds
+	 * a ranked candidate list, not a listing anyone pages through.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $query     Search phrase. Escaped for LIKE here, not by callers.
+	 * @param int    $author_id Owner whose documents may match. Required.
+	 * @param int    $limit     Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_tag_candidates( string $query, int $author_id, int $limit = 50 ): array {
+		global $wpdb;
+
+		$query     = trim( $query );
+		$author_id = (int) $author_id;
+
+		if ( '' === $query || $author_id <= 0 ) {
+			return array();
+		}
+
+		$limit = max( 1, min( 500, $limit ) );
+		$like  = '%' . $wpdb->esc_like( $query ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT m.media_id
+				   FROM {$wpdb->term_relationships} tr
+				   INNER JOIN {$wpdb->term_taxonomy} tt
+				           ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = 'mvs_tag'
+				   INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+				   INNER JOIN {$wpdb->prefix}mvs_media_index m ON m.media_id = tr.object_id
+				  WHERE m.media_type = 'document'
+				    AND m.status = 'publish'
+				    AND m.post_author = %d
+				    AND ( t.name LIKE %s OR t.slug LIKE %s )
+				  ORDER BY m.created_at DESC
+				  LIMIT %d",
+				$author_id,
+				$like,
+				$like,
+				$limit
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
 	 * Document ids after a cursor, in id order.
 	 *
 	 * Keyset pagination for background sweeps: an `OFFSET` walk over a large
