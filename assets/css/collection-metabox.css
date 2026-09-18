@@ -11,6 +11,11 @@
  *
  * So every value below is `var(--token, #original-literal)`: identical rendering
  * today, and it picks up theming/dark-mode the moment the token resolves.
+ *
+ * The two tint backgrounds (#fee, #e8f5e9) stay literal on purpose: the tokens
+ * that would carry them, --mvs-danger-bg and --mvs-success-bg, are defined only
+ * in frontend.css, which never loads on an admin screen. Referencing them would
+ * read as coverage to a token audit while always falling through to the literal.
  * Basecamp 10300423475.
  */
 /**
@@ -28,7 +33,7 @@
 .mvs-metabox-rule-key { min-width: 140px; }
 .mvs-metabox-rule-value { min-width: 160px; flex: 1; }
 .mvs-metabox-remove-rule { color: var(--mvs-danger, #cc0000); border: 1px solid var(--mvs-border, #ddd); background: var(--mvs-surface, #fff); padding: 4px 10px; cursor: pointer; border-radius: 3px; }
-.mvs-metabox-remove-rule:hover { background: var(--mvs-danger-bg, #fee); }
+.mvs-metabox-remove-rule:hover { background: #fee; }
 .mvs-metabox-add-rule { margin-top: 4px; }
-.mvs-metabox-preview { margin-top: 12px; padding: 8px 12px; background: var(--mvs-success-bg, #e8f5e9); border-radius: 4px; font-size: 13px; color: #2e7d32; }
+.mvs-metabox-preview { margin-top: 12px; padding: 8px 12px; background: #e8f5e9; border-radius: 4px; font-size: 13px; color: #2e7d32; }
 .mvs-metabox-hint { color: var(--mvs-text-muted, #888); font-size: 12px; font-style: italic; margin-top: 4px; }
