@@ -29,6 +29,15 @@
        now shares - see the .mvs-grid--original block for why. */
     --mvs-grid-row-height: 240px;
 
+    /* Page width for every MediaVerse surface. The same 1200px used to be
+       hardcoded on four wrappers and a banner, so a site owner on a wide theme
+       had to override five rules in Additional CSS and would still drift the
+       moment a sixth surface was added. One token, one override:
+       :root { --mvs-content-width: 1600px; } in a child theme widens the lot,
+       and the surfaces stay consistent with each other by construction.
+       Basecamp 10313587813. */
+    --mvs-content-width: 1200px;
+
     /* Per-item aspect ratio for those justified rows. Every tile overrides
        this inline (TemplateHelpers::grid_item_ar_style() server-side,
        card-builders.js for appended cards); the value here is the 3:2
@@ -1366,7 +1375,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-single-album {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 20px;
 }
@@ -1408,7 +1417,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-explore-page {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 20px;
     box-sizing: border-box;
@@ -1800,7 +1809,7 @@ body.dark-mode .mvs-skeleton::after {
 
 /* Instagram-like feed: author row below each card */
 .mvs-feed {
-    gap: 6px;
+    gap: var(--mvs-grid-gap, 6px);
 }
 
 .mvs-feed .mvs-grid-item {
@@ -2407,7 +2416,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-dashboard {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 20px;
 }
@@ -2714,7 +2723,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    gap: var(--mvs-grid-gap, 16px);
 }
 
 .mvs-dashboard-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
@@ -4484,7 +4493,7 @@ a.mvs-dashboard-card-title:hover {
 /* --- Collection Single Page --- */
 
 .mvs-single-collection {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 24px 16px 0;
 }
@@ -5918,7 +5927,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 14px 24px;
     border-radius: 8px;
     margin: 0 auto 20px;
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     position: relative;
 }
 
