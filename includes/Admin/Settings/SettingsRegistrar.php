@@ -761,7 +761,7 @@ class SettingsRegistrar {
 			'mvs_display',
 			array(
 				'option'      => 'mvs_allow_downloads',
-				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, customers can still view media but the download button is hidden everywhere.', 'wpmediaverse' ),
+				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, members can still view media, and the button is hidden on every media surface - the lightbox, the single media page and a media-library document card - while the REST download route refuses with a 403. Members can also switch it off for one item of their own. The Documents library is separate and keeps its own sharing rules: this does not close a drive.', 'wpmediaverse' ),
 			)
 		);
 	}

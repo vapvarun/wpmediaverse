@@ -486,7 +486,21 @@ $mvs_archive_url = home_url( '/media/' );
 									?>
 								</span>
 							</div>
-							<?php if ( '' !== $mvs_file_url ) : ?>
+							<?php
+							// Same two-part rule the REST download endpoint enforces
+							// (MediaController::record_download): the site-wide switch,
+							// then the per-item opt-out, absent meta meaning allow.
+							//
+							// This link had neither. "Allow Downloads" promises the
+							// button is hidden everywhere, and an owner who turned it
+							// off still shipped a working Download on every document -
+							// pointing at the file directly, so it also walked past the
+							// 403 that endpoint returns. Basecamp 10316771960 follow-up.
+							$mvs_dl_allowed = (bool) get_option( 'mvs_allow_downloads', true )
+								&& '0' !== (string) \WPMediaVerse\Core\Plugin::container()
+									->get( 'media_repository' )->get( $mvs_media_id, 'allow_download' );
+							?>
+							<?php if ( '' !== $mvs_file_url && $mvs_dl_allowed ) : ?>
 								<a class="mvs-doc-download" href="<?php echo esc_url( $mvs_file_url ); ?>" download>
 									<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 								</a>
