@@ -1282,7 +1282,7 @@ body.dark-mode {
 	min-height: 480px;
 	max-height: 820px;
 	background: var(--mvs-chat-bg);
-	max-width: 1200px;
+	max-width: var(--mvs-content-width, 1200px); /* the owner width token; Basecamp 10320619449 */
 	margin: 0 auto;
 	border: 1px solid var(--mvs-chat-border);
 	border-radius: 4px;
