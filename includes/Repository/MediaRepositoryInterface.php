@@ -432,10 +432,26 @@ interface MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param array $args author, folder_id, per_page, page.
+	 * The one exception is `visible_to` (since 2.5.1): a plain-array viewer spec
+	 * Pro's PermissionService builds, applied in SQL so a listing of someone
+	 * else's drive counts and pages what the viewer can see in two queries.
+	 *
+	 * @param array $args author, folder_id, per_page, page, visible_to.
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function drive_documents( array $args = array() ): array;
+
+	/**
+	 * Distinct drives (of `space`-privacy rows), folders and linked spaces in a
+	 * drive listing — the bounded inputs Pro resolves to build `visible_to`.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array    $args drive_documents() args.
+	 * @param string[] $want Any of `drives`, `folders`, `spaces`.
+	 * @return array{drives: array[], folders: int[], spaces: int[]}
+	 */
+	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ) ): array;
 
 	/**
 	 * Published document ids whose TITLE matches a phrase, in title order.

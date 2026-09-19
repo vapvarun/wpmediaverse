@@ -1992,10 +1992,95 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type int    $per_page  Default 50.
 	 *     @type int    $page      Default 1.
 	 *     @type string $status    publish|trash. Default publish.
+	 *     @type array  $visible_to Optional viewer spec from Pro's PermissionService
+	 *                              (see document_visibility_clause()). When given,
+	 *                              rows AND total are limited to what that viewer
+	 *                              may see, in the same two queries.
 	 * }
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function drive_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		list( $where, $params ) = $this->drive_documents_scope( $args );
+
+		if ( isset( $args['visible_to'] ) && is_array( $args['visible_to'] ) ) {
+			list( $visible_sql, $visible_params ) = $this->document_visibility_clause( $args['visible_to'] );
+
+			$where[] = $visible_sql;
+			$params  = array_merge( $params, $visible_params );
+		}
+
+		$sortable = array( 'created_at', 'title', 'file_size' );
+		$orderby  = ( isset( $args['orderby'] ) && in_array( $args['orderby'], $sortable, true ) )
+			? (string) $args['orderby']
+			: 'created_at';
+		$order    = ( isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+
+		// `offset` OVERRIDES the page-derived offset when given.
+		//
+		// The drive root pages folders and documents as ONE ordered set, folders
+		// first. Once the folders on a page are placed, the documents that follow
+		// start at an offset that is not a multiple of per_page — page 2 of a
+		// 22-folder drive with 25 rows per page begins at document 3, not 25. A
+		// page number cannot express that, so the caller passes the offset it
+		// computed. Absent, behaviour is exactly as before.
+		$page_params[] = isset( $args['offset'] )
+			? max( 0, (int) $args['offset'] )
+			: ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				// `drive_type` / `drive_id` are selected because this method
+				// FILTERS on them (above) — a row set scoped by a column it does
+				// not return forces every consumer to re-derive the drive, and
+				// the one that did guessed "the folder it is in, else its
+				// author's drive". That guess is right for every foldered
+				// document and wrong for a document at a Space drive ROOT, which
+				// has no folder and is not its author's. Pro's privacy ladder
+				// reads them.
+				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
+	 * The WHERE parts that pick a drive listing's rows, before any viewer filter.
+	 *
+	 * Shared by drive_documents() and drive_document_facets() so the facets are
+	 * computed over exactly the rows the listing pages through.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array $args drive_documents() args.
+	 * @return array{0: string[], 1: array} WHERE parts and their params, in placeholder order.
+	 */
+	private function drive_documents_scope( array $args ): array {
 		global $wpdb;
 
 		$author    = isset( $args['author'] ) ? (int) $args['author'] : 0;
@@ -2006,11 +2091,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		// the only caller that asks for anything but `publish`, and it asks for a
 		// listing the member can restore from: without one, trashing is a one-way
 		// door and the row is simply gone from every surface they have.
-		$status   = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
+		$status = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
 			? (string) $args['status']
 			: 'publish';
-		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
-		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
 
@@ -2155,59 +2238,179 @@ class MediaRepository implements MediaRepositoryInterface {
 			$params  = array_merge( $params, $mime_params );
 		}
 
-		$sortable = array( 'created_at', 'title', 'file_size' );
-		$orderby  = ( isset( $args['orderby'] ) && in_array( $args['orderby'], $sortable, true ) )
-			? (string) $args['orderby']
-			: 'created_at';
-		$order    = ( isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
+		return array( $where, $params );
+	}
 
-		$index     = $wpdb->prefix . 'mvs_media_index';
-		$where_sql = implode( ' AND ', $where );
+	/**
+	 * SQL for "the drive a row's `space` privacy is judged against".
+	 *
+	 * Mirrors Pro's PermissionService::drive_from_row(): the row's own drive
+	 * columns when both are set, else (folder_id, post_author) so the caller can
+	 * resolve the folder's drive, or the author's personal drive when the folder
+	 * is gone. Four columns so the caller's answer is matched as a tuple.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return string Comma-separated select list / row-constructor body.
+	 */
+	private static function space_drive_tuple_sql(): string {
+		$has = "( drive_type <> '' AND drive_id > 0 )";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+		return "CASE WHEN {$has} THEN drive_type ELSE '' END, CASE WHEN {$has} THEN drive_id ELSE 0 END, CASE WHEN {$has} THEN 0 ELSE folder_id END, CASE WHEN {$has} THEN 0 ELSE post_author END";
+	}
 
-		$page_params   = $params;
-		$page_params[] = $per_page;
+	/**
+	 * Viewer-visibility WHERE clause for drive_documents().
+	 *
+	 * Free applies it; Pro decides it. Every input is a plain value Pro's
+	 * PermissionService computed for ONE viewer on ONE listing, so the privacy
+	 * ladder stays in Pro and this only turns its answer into an OR of indexed
+	 * or bounded predicates. A row matches when ANY of these holds:
+	 *
+	 * - `author`   the viewer uploaded it;
+	 * - `privacy`  its privacy value is open to this viewer on its own;
+	 * - `drives`   its privacy is `space` and the drive it is judged against
+	 *              (space_drive_tuple_sql()) is one of these tuples;
+	 * - `grantee`  the viewer, or one of their roles, holds a live document grant;
+	 * - `folders`  it sits in a folder whose ancestor chain carries a grant;
+	 * - `spaces`   it is linked into a space the viewer is a member of;
+	 * - `media`    it is one of these ids (a presented share link).
+	 *
+	 * An empty spec matches nothing: fail closed.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array $spec {
+	 *     @type int      $author  Viewer id, 0 for none.
+	 *     @type string[] $privacy Privacy values visible without anything else.
+	 *     @type array[]  $drives  [drive_type, drive_id, folder_id, author] tuples.
+	 *     @type array    $grantee { @type int $user_id, @type string[] $roles }.
+	 *     @type int[]    $folders Folder ids.
+	 *     @type int[]    $spaces  Space ids.
+	 *     @type int[]    $media   Media ids.
+	 * }
+	 * @return array{0: string, 1: array} SQL fragment and params.
+	 */
+	private function document_visibility_clause( array $spec ): array {
+		global $wpdb;
 
-		// `offset` OVERRIDES the page-derived offset when given.
-		//
-		// The drive root pages folders and documents as ONE ordered set, folders
-		// first. Once the folders on a page are placed, the documents that follow
-		// start at an offset that is not a multiple of per_page — page 2 of a
-		// 22-folder drive with 25 rows per page begins at document 3, not 25. A
-		// page number cannot express that, so the caller passes the offset it
-		// computed. Absent, behaviour is exactly as before.
-		$page_params[] = isset( $args['offset'] )
-			? max( 0, (int) $args['offset'] )
-			: ( $page - 1 ) * $per_page;
+		$index  = $wpdb->prefix . 'mvs_media_index';
+		$or     = array();
+		$params = array();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$rows = (array) $wpdb->get_results(
-			$wpdb->prepare(
-				// `drive_type` / `drive_id` are selected because this method
-				// FILTERS on them (above) — a row set scoped by a column it does
-				// not return forces every consumer to re-derive the drive, and
-				// the one that did guessed "the folder it is in, else its
-				// author's drive". That guess is right for every foldered
-				// document and wrong for a document at a Space drive ROOT, which
-				// has no folder and is not its author's. Pro's privacy ladder
-				// reads them.
-				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
-				   FROM {$index}
-				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}, media_id {$order}
-				  LIMIT %d OFFSET %d",
-				...$page_params
-			),
-			ARRAY_A
+		$in = static function ( array $values, string $format ): string {
+			return implode( ', ', array_fill( 0, count( $values ), $format ) );
+		};
+
+		if ( ! empty( $spec['author'] ) ) {
+			$or[]     = 'post_author = %d';
+			$params[] = (int) $spec['author'];
+		}
+
+		$privacy = array_values( array_filter( array_map( 'strval', (array) ( $spec['privacy'] ?? array() ) ) ) );
+		if ( $privacy ) {
+			$or[]   = 'privacy IN ( ' . $in( $privacy, '%s' ) . ' )';
+			$params = array_merge( $params, $privacy );
+		}
+
+		$drives = array_values( (array) ( $spec['drives'] ?? array() ) );
+		if ( $drives ) {
+			$or[] = "( privacy = 'space' AND ( " . self::space_drive_tuple_sql() . ' ) IN ( ' . $in( $drives, '( %s, %d, %d, %d )' ) . ' ) )';
+			foreach ( $drives as $drive ) {
+				$drive    = array_values( (array) $drive );
+				$params[] = (string) ( $drive[0] ?? '' );
+				$params[] = (int) ( $drive[1] ?? 0 );
+				$params[] = (int) ( $drive[2] ?? 0 );
+				$params[] = (int) ( $drive[3] ?? 0 );
+			}
+		}
+
+		$grantee_id = (int) ( $spec['grantee']['user_id'] ?? 0 );
+		if ( $grantee_id > 0 ) {
+			$grants = $wpdb->prefix . 'mvs_access_grants';
+
+			list( $grantee_sql, $grantee_params ) = $this->grantee_clause( $grantee_id, (array) ( $spec['grantee']['roles'] ?? array() ) );
+
+			// `target` (target_type, media_id) serves the correlated lookup.
+			$or[]   = "EXISTS ( SELECT 1 FROM {$grants} g WHERE g.target_type = 'media' AND g.media_id = {$index}.media_id AND {$grantee_sql} AND g.revoked_at IS NULL AND ( g.expires_at IS NULL OR g.expires_at > %s ) )";
+			$params = array_merge( $params, $grantee_params, array( current_time( 'mysql', true ) ) );
+		}
+
+		$folders = array_values( array_filter( array_map( 'intval', (array) ( $spec['folders'] ?? array() ) ) ) );
+		if ( $folders ) {
+			$or[]   = 'folder_id IN ( ' . $in( $folders, '%d' ) . ' )';
+			$params = array_merge( $params, $folders );
+		}
+
+		$spaces = array_values( array_filter( array_map( 'intval', (array) ( $spec['spaces'] ?? array() ) ) ) );
+		if ( $spaces ) {
+			$links  = $wpdb->prefix . 'mvs_media_spaces';
+			$or[]   = "{$index}.media_id IN ( SELECT l.media_id FROM {$links} l WHERE l.space_id IN ( " . $in( $spaces, '%d' ) . ' ) )';
+			$params = array_merge( $params, $spaces );
+		}
+
+		$media = array_values( array_filter( array_map( 'intval', (array) ( $spec['media'] ?? array() ) ) ) );
+		if ( $media ) {
+			$or[]   = "{$index}.media_id IN ( " . $in( $media, '%d' ) . ' )';
+			$params = array_merge( $params, $media );
+		}
+
+		return array( $or ? '( ' . implode( ' OR ', $or ) . ' )' : '1 = 0', $params );
+	}
+
+	/**
+	 * What a viewer's permission on a drive listing depends on, in bounded form.
+	 *
+	 * Pro cannot decide `space` privacy or a space link in SQL: both ask the
+	 * BuddyNext bridge per drive. So it asks per DISTINCT drive, folder and
+	 * linked space among the listing's rows — a handful however large the drive
+	 * is — and hands the answers back to drive_documents() as `visible_to`.
+	 * One DISTINCT query per facet asked for, over the same scope the listing uses.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array    $args drive_documents() args.
+	 * @param string[] $want Any of `drives`, `folders`, `spaces`.
+	 * @return array{drives: array[], folders: int[], spaces: int[]}
+	 */
+	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ) ): array {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$out   = array(
+			'drives'  => array(),
+			'folders' => array(),
+			'spaces'  => array(),
 		);
 
-		return array(
-			'items' => $rows,
-			'total' => $total,
-			'pages' => (int) ceil( $total / $per_page ),
-		);
+		list( $where, $params ) = $this->drive_documents_scope( $args );
+		$where_sql              = implode( ' AND ', $where );
+
+		if ( in_array( 'drives', $want, true ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$rows = (array) $wpdb->get_results(
+				$wpdb->prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . " FROM {$index} WHERE {$where_sql} AND privacy = 'space'", ...$params ),
+				ARRAY_N
+			);
+
+			foreach ( $rows as $row ) {
+				$out['drives'][] = array( (string) $row[0], (int) $row[1], (int) $row[2], (int) $row[3] );
+			}
+		}
+
+		if ( in_array( 'folders', $want, true ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$out['folders'] = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT folder_id FROM {$index} WHERE {$where_sql} AND folder_id > 0", ...$params ) ) );
+		}
+
+		if ( in_array( 'spaces', $want, true ) ) {
+			$links = $wpdb->prefix . 'mvs_media_spaces';
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$out['spaces'] = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT space_id FROM {$links} WHERE media_id IN ( SELECT media_id FROM {$index} WHERE {$where_sql} )", ...$params ) ) );
+		}
+
+		return $out;
 	}
 
 	/**
@@ -2230,15 +2433,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// Params are appended in PLACEHOLDER ORDER. Building them out of order and
 		// splicing one back into position works right up until somebody adds a
 		// clause, and a misaligned prepare() is a silent wrong-answer bug.
-		$grantee_sql = '( ( g.grantee_type = %s AND g.user_id = %d )';
-		$params      = array( 'user', $user_id );
-
-		if ( $roles ) {
-			$grantee_sql .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
-			$params[]     = 'role';
-			$params       = array_merge( $params, $roles );
-		}
-		$grantee_sql .= ' )';
+		list( $grantee_sql, $params ) = $this->grantee_clause( $user_id, $roles );
 
 		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
 		// legitimately made to a role, and the uploader usually holds that role
@@ -2262,6 +2457,31 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params[] = $user_id;
 
 		return array( $where, $params );
+	}
+
+	/**
+	 * "This grant row is held by this viewer": the user directly, or a role they hold.
+	 *
+	 * Grants table alias `g`. Shared by "shared with me" and the drive listing's
+	 * visibility clause so the two cannot disagree about who a grant belongs to.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int      $user_id Viewer.
+	 * @param string[] $roles   The viewer's roles.
+	 * @return array{0: string, 1: array} SQL fragment and params.
+	 */
+	private function grantee_clause( int $user_id, array $roles ): array {
+		$roles  = array_values( array_map( 'strval', $roles ) );
+		$sql    = '( ( g.grantee_type = %s AND g.user_id = %d )';
+		$params = array( 'user', $user_id );
+
+		if ( $roles ) {
+			$sql   .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
+			$params = array_merge( $params, array( 'role' ), $roles );
+		}
+
+		return array( $sql . ' )', $params );
 	}
 
 	/**
