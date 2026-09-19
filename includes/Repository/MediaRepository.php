@@ -5711,6 +5711,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		$index = $wpdb->prefix . 'mvs_media_index';
 		$total = 0;
 
+		// A migration that runs before the table it names exists is not an
+		// error: the cascade list grows with the schema, so v32 sweeps a table
+		// v33 creates, and a fresh install logs a database error on activation
+		// for a sweep that has nothing to do anyway (2.5.1).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $t ) ) !== $t ) {
+			return 0;
+		}
+
 		do {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$deleted = (int) $wpdb->query(
