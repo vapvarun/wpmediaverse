@@ -149,8 +149,13 @@ const { state, actions } = store( 'mvs/explore', {
 		 * reports the result — including the partial-success one, which is the
 		 * message the member most needs to read.
 		 */
-		async exploreBulk( action, body, doneKey, doneFallback ) {
-			const ctx = getContext();
+		async exploreBulk( action, body, doneKey, doneFallback, ctxOverride ) {
+			// The confirm overlay is printed in wp_footer, outside this block, so
+			// a callback handed to showConfirm() runs with no mvs/explore context
+			// and getContext() comes back undefined. Delete therefore always
+			// failed. Callers that cross the overlay pass their context in, the
+			// same way the dashboard's bulkDelete does.
+			const ctx = typeof ctxOverride?.restUrl === 'string' ? ctxOverride : getContext();
 			const ids = state.bulkIds.slice();
 
 			if ( ! ids.length || state.bulkBusy ) {
@@ -209,11 +214,12 @@ const { state, actions } = store( 'mvs/explore', {
 			// Through the shared confirm overlay, never a native confirm()
 			// (Pro/Free coding rule), and the same copy the dashboard uses.
 			const shared = store( 'mvs/shared-ui' );
+			const ctx = getContext();
 
 			shared?.actions?.showConfirm?.(
 				state.i18n?.deleteConfirm || 'Delete the selected items? This cannot be undone.',
 				() => {
-					actions.exploreBulk( 'delete', {}, 'deleted', 'Selected items deleted.' );
+					actions.exploreBulk( 'delete', {}, 'deleted', 'Selected items deleted.', ctx );
 				}
 			);
 		},

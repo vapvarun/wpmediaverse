@@ -697,27 +697,36 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 
 		// --- Tag Autocomplete ---
+		// Resolves once state.tagResults holds this query's answer, so a caller
+		// can await it instead of guessing a delay. The callers that guessed
+		// (350ms, against a 300ms debounce plus a round trip) always read the
+		// previous keystroke's results, which is why their dropdowns never
+		// opened. A superseded call never resolves: its newer replacement does.
 		searchTags( query, restUrl ) {
 			state.tagQuery = query;
 			if ( query.length < 2 ) {
 				state.tagResults = [];
 				state.tagVisible = false;
-				return;
+				return Promise.resolve();
 			}
 			clearTimeout( tagSearchTimer );
-			tagSearchTimer = setTimeout( async () => {
-				try {
-					const res = await window.mvsRest.restFetch(
-						restUrl + 'tags?search=' + encodeURIComponent( query ) + '&per_page=8'
-					);
-					const data = res.data;
-					state.tagResults = data.map( ( t ) => t.name || t );
-					state.tagVisible = state.tagResults.length > 0;
-				} catch {
-					state.tagResults = [];
-					state.tagVisible = false;
-				}
-			}, 300 );
+
+			return new Promise( ( resolve ) => {
+				tagSearchTimer = setTimeout( async () => {
+					try {
+						const res = await window.mvsRest.restFetch(
+							restUrl + 'tags?search=' + encodeURIComponent( query ) + '&per_page=8'
+						);
+						const data = res.data;
+						state.tagResults = data.map( ( t ) => t.name || t );
+						state.tagVisible = state.tagResults.length > 0;
+					} catch {
+						state.tagResults = [];
+						state.tagVisible = false;
+					}
+					resolve();
+				}, 300 );
+			} );
 		},
 		hideTagAutocomplete() {
 			state.tagVisible = false;

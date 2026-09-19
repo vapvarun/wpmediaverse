@@ -1101,16 +1101,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 		setEditDesc( event ) { state.editModal.description = event.target.value; },
 		setEditPrivacy( event ) { state.editModal.privacy = event.target.value; },
 
-		updateEditTagInput( event ) {
+		async updateEditTagInput( event ) {
 			const ctx = getContext();
 			state.editModal.tagInput = event.target.value;
-			sharedUI.actions.searchTags( state.editModal.tagInput, ctx.restUrl );
-			setTimeout( () => {
-				const uiState = store( 'mvs/shared-ui' ).state;
-				state.editModal.tagResults = ( uiState.tagAutocomplete?.results || [] )
-					.filter( ( t ) => ! state.editModal.tags.includes( t ) );
-				state.editModal.tagDropdownVisible = state.editModal.tagResults.length > 0;
-			}, 350 );
+			await sharedUI.actions.searchTags( state.editModal.tagInput, ctx.restUrl );
+			const uiState = store( 'mvs/shared-ui' ).state;
+			state.editModal.tagResults = ( uiState.tagResults || [] )
+				.filter( ( t ) => ! state.editModal.tags.includes( t ) );
+			state.editModal.tagDropdownVisible = state.editModal.tagResults.length > 0;
 		},
 
 		addEditTag( event ) {
@@ -1322,7 +1320,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.bulkTagsValue = event.target.value;
 		},
 		/**
-		 * Fill the Move-to-album picker the first time it is needed.
+		 * Fill the Add-to-album picker the first time it is needed.
 		 *
 		 * Reuses loadAlbums() rather than adding a second album fetch: the panel
 		 * loader already handles paging, sort and the empty case, and two loaders

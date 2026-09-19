@@ -474,16 +474,14 @@ const { state } = store( 'mvs/media-social', {
 		},
 
 		/* --- Owner Tag Input --- */
-		updateTagInput( event ) {
+		async updateTagInput( event ) {
 			const ctx = getContext();
 			ctx.tagInput = event.target.value;
-			sharedUI.actions.searchTags( ctx.tagInput, ctx.restUrl );
-			setTimeout( () => {
-				const uiState = store( 'mvs/shared-ui' ).state;
-				ctx.tagResults = ( uiState.tagAutocomplete?.results || [] )
-					.filter( ( t ) => ! ctx.editTags.includes( t ) );
-				ctx.tagDropdownVisible = ctx.tagResults.length > 0;
-			}, 350 );
+			await sharedUI.actions.searchTags( ctx.tagInput, ctx.restUrl );
+			const uiState = store( 'mvs/shared-ui' ).state;
+			ctx.tagResults = ( uiState.tagResults || [] )
+				.filter( ( t ) => ! ctx.editTags.includes( t ) );
+			ctx.tagDropdownVisible = ctx.tagResults.length > 0;
 		},
 
 		addTagFromInput( event ) {

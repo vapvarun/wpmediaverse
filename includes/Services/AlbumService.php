@@ -482,8 +482,10 @@ class AlbumService {
 				}
 			}
 
-			// Accepted even when already in the album (the insert below then fails
-			// on the unique key): its album_id is still repointed here.
+			// Accepted, but an item already in the album fails the unique key
+			// below and so is NOT counted in $added - and the repoint/clamp
+			// block runs only when $added > 0. Re-adding therefore does not
+			// heal a legacy album_id of 0; only a fresh insert writes it.
 			$accepted[] = $media_id;
 
 			++$max_pos;
