@@ -1,27 +1,83 @@
 {
-  "release_version": "2.5.0",
+  "release_version": "2.5.1",
   "mode": "combo",
-  "ran_at": "2026-09-14T19:45:00Z",
-  "free_version": "2.5.0",
-  "pro_version": "2.5.0",
+  "ran_at": "2026-09-19T18:13:19Z",
+  "free_version": "2.5.1",
+  "pro_version": "2.5.1",
   "sections": {
-    "A_fresh_install": { "pass": 5, "fail": 0, "skipped": 0 },
-    "B_upgrade": { "pass": 3, "fail": 0, "skipped": 0 },
-    "C_core_flows": { "pass": 18, "fail": 0, "skipped": 26 },
-    "D_regression_guards": { "pass": 18, "fail": 0, "skipped": 24 },
-    "E_pro_smoke": { "pass": 14, "fail": 0, "skipped": 10 },
-    "F_cross_browser": { "pass": 2, "fail": 0, "skipped": 2 }
+    "A_fresh_install": { "pass": 0, "fail": 0, "skipped": 5 },
+    "B_upgrade": { "pass": 0, "fail": 0, "skipped": 3 },
+    "C_core_flows": { "pass": 30, "fail": 2, "skipped": 12 },
+    "D_regression_guards": { "pass": 24, "fail": 1, "skipped": 17 },
+    "E_pro_smoke": { "pass": 5, "fail": 0, "skipped": 19 },
+    "F_cross_browser": { "pass": 1, "fail": 1, "skipped": 3 }
   },
-  "failures": [],
+  "failures": [
+    {
+      "id": "C.member.grid-render-query-budget",
+      "origin": "from",
+      "triage_note": "Measured inside our own block render with no theme/BuddyNext chrome, so the per-tile cost is ours. Structural guard holds (all 5 paths call both prefetchers) and the ~170-query 1.7.0 regression is definitively absent - this is the numeric budget, not a functional break.",
+      "expected": "A server-rendered grid of 12+ public media costs <=6 DB queries per page; prefetch+render-loop delta <=12.",
+      "actual": "do_blocks('<!-- wp:mvs/media-grid {\"perPage\":12} /-->') = 35 queries; perPage:1 = 8 queries. Marginal cost ~2.45 queries per tile. Real page: /media/ (12 tiles) 117 total queries vs /media/?mvs_tag=<1 tile> 92, delta 25 for 11 extra tiles.",
+      "url": "http://mediaverse.local/media/",
+      "screenshot": "C.anon.explore-feed.png"
+    },
+    {
+      "id": "C.blocks.pro-document-embed-silent",
+      "origin": "from",
+      "triage_note": "Sibling sweep of D.block-empty-state-silent. wpmediaverse-pro/src/blocks/pro-document-embed/render.php line 20-22 is a bare `return;` when documentId <= 0, with no editor-only notice. The SECOND return at line 30-33 is correctly silent and documented (must not confirm a document exists); only the unconfigured-block return is wrong. Every sibling (lock-overlay, media-player, pdf-viewer, album-viewer, pro-tournament, pro-challenge, pro-battle) shows an editor notice.",
+      "expected": "Rendered as a user WITH edit_posts and no documentId, the block emits a non-empty editor-only hint (as lock-overlay emits 'Select a media item to protect'). Anonymous output stays 0 bytes.",
+      "actual": "As user 1 (edit_posts = true), `<!-- wp:mvs/pro-document-embed /-->` renders 0 bytes. The block vanishes from the page with no explanation. The other 23 mvs/* blocks all render non-empty for an editor. Anonymous output is correctly 0 bytes.",
+      "url": "wp-admin block editor / any page using mvs/pro-document-embed",
+      "screenshot": null
+    },
+    {
+      "id": "F.a11y.load-more-focus-ring",
+      "origin": "from",
+      "triage_note": "Not a theme suppression - the sibling .mvs-btn on the same page gets a correct 2px ring, so Reign is not overriding. frontend.css section 35 lists .mvs-btn, .mvs-reaction-btn, .mvs-favorite-btn, .mvs-share-btn, .mvs-follow-btn, .mvs-dashboard-tab, .mvs-tag-cloud-item, .mvs-notification-bell, .mvs-modal-close, .mvs-dashboard-dropzone - but not .mvs-load-more-btn, and that button does not carry the .mvs-btn class.",
+      "expected": "Main interactive surfaces show a visible keyboard focus ring at :focus-visible. Load More is the primary pagination control on the Explore feed.",
+      "actual": ".mvs-load-more-btn matches :focus-visible but computes outline-width 0px and box-shadow none. Same page, .mvs-btn--primary computes outline 'rgb(29,118,218) solid 2px'. A keyboard user tabbing to Load More gets no focus indicator.",
+      "url": "http://mediaverse.local/media/",
+      "screenshot": "F.mobile-390-explore.png"
+    },
+    {
+      "id": "C.member.reactions-favorites-comments.comment-count-dead-column",
+      "origin": "from",
+      "triage_note": "Contract-audit class finding (read-never-written), recorded per the runbook's C.admin.settings-readers rule that dead weight is flagged as a from-origin observation. NO customer-visible symptom today: grepping includes/, templates/ and src/ found no render path that prints comment_count, so nothing displays a wrong number. Low severity - either wire the counter or drop the column.",
+      "expected": "mvs_media_index.comment_count stays in sync with approved comments (the counter-sync contract B1 states for favorites/views/reactions).",
+      "actual": "Posted one approved comment on media 67569 via the lightbox. wp_comments row created with mvs_media_id meta, reaction_count correctly incremented to 1, but comment_count stayed 0. The column is declared in Migrator, exposed by MediaRepository, and written by nothing except the Pro RtMedia importer.",
+      "url": "http://mediaverse.local/my-media/media/",
+      "screenshot": "C.member.reactions-favorites.png"
+    }
+  ],
   "debug_log_issues": [],
   "manual_required": [
-    "Firefox Desktop: upload modal file picker.",
-    "Firefox Desktop: share button navigator.clipboard.writeText fallback.",
+    "Firefox Desktop: upload modal file picker (Playwright MCP is Chromium-only).",
+    "Firefox Desktop: share button navigator.clipboard.writeText fallback. Note the Chromium run on http:// already exercised the no-clipboard, no-navigator.share path and window.prompt was never called.",
     "Safari iOS 390px: lightbox swipe + reaction tap.",
     "Safari iOS 390px: activity composer privacy <select> open/close (native UI).",
     "Safari iOS 390px: share button navigator.share native sheet.",
-    "F.rtl runtime: no RTL locale installed on this site. Static contract verified (rtlcss deliberately removed in 2.3.0, wp_style_add_data 0 occurrences in both plugins); a real 'ar' install should still confirm no horizontal overflow.",
-    "C.member multi-step authoring journeys (upload, privacy matrix, albums lifecycle, DM, documents drive) were not walked end to end this cycle. Covered indirectly by the Free 499 / Pro 621 unit suites and by section D repros, but not exercised in the browser.",
-    "E.cloud-storage, E.ai-providers, E.watermarking, E.migration-importers require third-party credentials (S3/BunnyCDN, Google Vision/Rekognition) or a seeded source install; not configured on the model site."
+    "F.rtl runtime: no RTL locale installed on this site. Not verified this cycle; a real 'ar' install should confirm no horizontal overflow on Explore, single-media, profile, dashboard and lightbox.",
+    "C.member.upload-rejections, size half: the disallowed-MIME leg was verified (400 mvs_unsupported_file_type, no DB row). The over-mvs_max_upload_size leg was NOT run - the cap is 104857600 bytes and building a 100MB fixture was out of scope for this walk.",
+    "C.member.edit-categories-persist / D.categories-cache-miss-drop, persistent-cache leg: this site has no persistent object cache (wp_using_ext_object_cache() = false). The bug being guarded was a persistent-cache miss taking a destructive else-branch, so the leg that matters most is unproven here. Re-run on a Redis/Memcached site.",
+    "C.member.albums-lifecycle: the full create -> add items -> reorder -> set cover -> remove -> delete journey was NOT walked. Only the M41 privacy leg was exercised (album 238 flipped to private, anon got a branded 404 with no items, restored to public).",
+    "C.member.documents-privacy-and-sharing: sharing with a member or role, Shared-with-me grant visibility, revoke, and the grantee-with-edit-cannot-reshare rule were NOT walked. Default-privacy and vocabulary legs passed.",
+    "C.member.documents-role-gate and D.documents-role-gate-hides-not-deletes: the use_mvs_documents role toggle, the 403 mvs_documents_unavailable on /documents, /folders and /me/shared, and the document-count-identical-before-and-after check were NOT run.",
+    "C.member.documents-single-and-public: per-tier preview rendering (PDF inline, text/markdown/csv server-rendered, word/excel client-side), the missing-file message, and the /explore-document/ public listing were NOT walked.",
+    "C.admin.documents-settings: the seven-control render and the unsaved-default-ON check were NOT walked. Two of the five config-vs-enforcement directions WERE proven under D.documents-config-matches-enforcement (anonymous_links and default_privacy both moved /app/config and enforcement together); size, types and extraction were not.",
+    "C.admin.settings-readers: the full WHAT-TO-CHECK.md section 3 reader audit was not run. Sampled settings (mvs_default_privacy, mvs_allow_user_privacy, mvs_allowed_file_types, mvs_pro_feed_layout, mvs_pro_documents_anon_links, mvs_pro_documents_default_privacy, mvs_grid_thumb_size_key filter) all had real readers.",
+    "C.admin.bulk-and-cli: the MVS_CLI_COMMANDS registry, wp mvs migrate-storage and wp mvs cleanup-local were NOT exercised, so D.cloud-privacy-gate is unproven this cycle.",
+    "C.notifications.email: no Mailpit / mail trap verified on this site; instant-vs-digest and unsubscribe links not checked.",
+    "C.member.reactions-favorites-comments: the edit-within-mvs_comment_edit_window leg was not exercised. Reaction toggle/replace, favorite toggle and comment post were verified.",
+    "BuddyPress-dependent rows are not walkable: BuddyPress is NOT installed on this site (BuddyNext 1.2.0 is, which is a different plugin). Skipped for that reason: C.member.activity-composer-attach, C.member.activity-preview, C.bp-integration, D.bp-thumbnail-leak, D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression, D.privacy-fix-2026-05-07, D.bp-tab-asset-sweep, and the 'friends' row of the C.member.upload-privacy-matrix (12 of 16 cells were walked and all passed).",
+    "C.member.public-media-cacheable / D.public-media-cacheable-local: this site runs the bunnycdn storage driver, and the runbook exempts cloud drivers (public media is served by direct CDN URL and bypasses /serve). The private half WAS verified: /serve returns Cache-Control 'no-store, no-cache, private' for a private item, and SignedUrlService::generate($id,0) twice for a public item returned identical URLs. Re-run the public local-driver half on a local-storage site.",
+    "C.notifications.hook-contract, new_message leg: not reproducible on this site by design. Messaging/NotificationListener::on_message_sent() returns early when the mvs_buddynext_active filter is true (BuddyNext owns DM notification routing), and that filter returns true here. Verified instead: media_reaction, media_comment, new_follower and media_mention all fire the 7-arg hook with a non-empty message and a valid URL, and the legacy 5-arg listener still fires with no PHP warning.",
+    "Third-party-credential Pro rows, all skipped: E.cloud-storage, E.ai-providers, E.watermarking, E.video-intelligence, E.migration-importers, D.cloud-existence-head-vs-range, D.s3-key-encoding (need S3/BunnyCDN/Google Vision/Rekognition/Whisper credentials, an ffmpeg binary or a seeded source install).",
+    "Scale-seeded Pro rows, all skipped: E.streaks.daily-check-bounded (needs 2000+ users with _mvs_last_upload_date) and E.competitions.cron-bounded (needs 200 seeded mvs_competitions rows per status).",
+    "Competition lifecycle rows not walked: E.battles, E.challenges, E.tournaments, E.tournaments.sparse-bracket, E.boosts, E.quota, E.privacy-pro-ui, E.gamification.configured-xp, E.gamification.winners-notified, E.battles.win-xp-configured, E.streaks.freeze-proportional-cost, E.feature-toggle-degradation. The /compete/ hub itself and all four Pro competition admin screens render clean.",
+    "D.frontend-asset-bleed, D.pro-block-layout-enqueue, D.script-module-i18n, D.i18n-textdomain-too-early, D.drive-access-media-vs-doc and D.avatar-flag-contradiction were not run. D.i18n-textdomain-too-early needs a fresh activation (sections A and B are skipped on this site); D.drive-access-media-vs-doc and D.anon-doc-read-void's 200 leg need a host bridge answering the drive-access filters; D.avatar-flag-contradiction needs a second avatar provider active.",
+    "D.blank-video-poster, Site Health leg: the wpmediaverse_video_posters Site Health test was not checked. The customer-facing half passed - media 2389 and 2393 (videos with no thumb_large) both return the bundled default-video-poster.svg from GET /mvs/v1/media/{id}, and TemplateHelpers::default_video_poster_url() is non-empty.",
+    "RUNBOOK CORRECTIONS the next editor should apply (verified against 2.5.1 code, not defects): (1) C.anon.single-media claims /p/<media_id>/ is the canonical MVS URL - it is not. /p/([0-9]+) is BuddyNext's route (buddynext/includes/Core/PageRouter.php:2358, -> bn_hub=post), so /p/<mvs media id>/ correctly 404s. MVS's own route is /media/<slug>/ -> mvs_media_slug, and on this site BuddyNext redirects it via the documented mvs_single_media_redirect filter. The native MVS single page was verified by neutralising that filter for one request and returns 200 with h1, og:image, og:title, twitter:card, a 200 image/webp asset and 6 reaction buttons. (2) E.group-dm cites POST/GET /mvs-pro/v1/groups/{id}/messages - that route does not exist; group creation is /mvs-pro/v1/groups (a group IS a conversation) and messaging goes through Free's /mvs/v1/conversations/{id}/messages, which works end to end. A non-member gets 404, not the 403 the row states. (3) The Fixture cleanup block deletes mvs_reports WHERE reason LIKE 'smoke-%', but reason is an enum (spam|harassment|nudity|violence|copyright|misinformation|other) so that clause can never match - the free-text marker belongs in the details column. (4) C.member.video-poster-fallback names PosterService::is_ffmpeg_available() - PosterService has only dir(), stage_bytes() and stage_client_frame(), and no ffmpeg helper exists in Free at all. (5) D.documents-privacy-vocabulary asserts PRIVACY_VALUES is exactly private/members/public - it is now private/space/members/public, with space added for space drives. The bug the row guards is gone: nothing offers 'unlisted', and POST with unlisted or restricted both answer 400 mvs_document_privacy_invalid. (6) C.member.lightbox-edit-modal says the Edit cog appears ONLY on /my-media/ cards - in 2.5.1 an owner also sees it in the Explore lightbox for their own media. That is not a leak: for a non-owner the action computes display:none, and PUT and DELETE both answer 403 mvs_forbidden. The row's wording should be owner-scoped, not surface-scoped. (7) C.member.bulk-trash-restore-delete describes bulk Move to Trash plus a Trashed filter on /my-media/ - the member dashboard bulk bar offers only Set privacy, Add to album and Delete. Trash/Restore/Delete-permanently live on admin All Media, which is the surface this walk used.",
+    "UX gaps observed but not recorded as gate failures, for the maintainer's judgement: (a) admin Documents single view accepts a save with an empty title and reports 'Document updated.' while silently discarding the change - data is safe (the DB kept the previous title) but the feedback is wrong; (b) an admin All Media bulk submit with zero rows selected produces no notice at all - not destructive, but the runbook asks for a friendly error; (c) the lightbox edit modal exposes title, description, privacy and 'Update URL slug' but no allow_download control, although OPTIONS on /mvs/v1/media/{id} declares allow_download as editable; (d) POST /mvs/v1/media returns 201 after silently downgrading a requested privacy to the site default when mvs_allow_user_privacy is off, while PUT on the same resource returns mvs_privacy_locked - the create path should be as loud as the update path; (e) the collections picker's per-row 'Saving.../Saved' feedback could not be observed at 600ms or 3100ms after ticking, though the write landed and the Collections tab correctly showed '1 item' with a real cover thumbnail."
   ]
 }

@@ -6388,7 +6388,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-cloud-item:focus-visible,
 .mvs-notification-bell:focus-visible,
 .mvs-modal-close:focus-visible,
-.mvs-dashboard-dropzone:focus-visible {
+.mvs-dashboard-dropzone:focus-visible,
+.mvs-load-more-btn:focus-visible {
     outline: 2px solid var(--mvs-primary);
     outline-offset: 2px;
 }
