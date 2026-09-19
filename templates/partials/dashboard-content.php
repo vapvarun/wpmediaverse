@@ -253,7 +253,7 @@ wp_interactivity_state(
 			'bulkDeleted'             => __( 'Selected items deleted.', 'wpmediaverse' ),
 			'bulkPrivacyDone'         => __( 'Privacy updated.', 'wpmediaverse' ),
 			'bulkFailed'              => __( 'Bulk action failed.', 'wpmediaverse' ),
-			'bulkMovedToAlbum'        => __( 'Moved to album.', 'wpmediaverse' ),
+			'bulkMovedToAlbum'        => __( 'Added to album.', 'wpmediaverse' ),
 			'bulkPickAlbum'           => __( 'Choose an album first.', 'wpmediaverse' ),
 			'bulkTagsAdded'           => __( 'Tags added.', 'wpmediaverse' ),
 			'bulkTypeTags'            => __( 'Type at least one tag.', 'wpmediaverse' ),
@@ -838,21 +838,21 @@ wp_interactivity_state(
 			<?php endif; ?>
 
 			<?php
-			// Move to album. The REST action has existed since bulk shipped —
+			// Add to album. The REST action has existed since bulk shipped —
 			// only the control was missing. The picker fills on first focus
 			// from the SAME loader the Albums panel uses, so there is never a
 			// second album list to drift.
 			?>
 			<label class="mvs-bulk-album-label">
-				<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Add selected to album', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-album" data-wp-on--change="actions.setBulkAlbum" data-wp-on--focus="actions.ensureBulkAlbums">
-					<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+					<option value="0"><?php esc_html_e( 'Add to album…', 'wpmediaverse' ); ?></option>
 					<template data-wp-each="state.albums.items">
 						<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
 					</template>
 				</select>
 			</label>
-			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.bulkMoveToAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.bulkMoveToAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add', 'wpmediaverse' ); ?></button>
 
 			<?php
 			// Add tags. Comma-separated, matching the upload form, so there is

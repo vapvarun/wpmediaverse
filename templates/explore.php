@@ -395,7 +395,7 @@ $mvs_archive_url = home_url( '/media/' );
 						'deleted'       => __( 'Selected items deleted.', 'wpmediaverse' ),
 						'privacyDone'   => __( 'Privacy updated.', 'wpmediaverse' ),
 						'tagsAdded'     => __( 'Tags added.', 'wpmediaverse' ),
-						'movedToAlbum'  => __( 'Moved to album.', 'wpmediaverse' ),
+						'movedToAlbum'  => __( 'Added to album.', 'wpmediaverse' ),
 						'failed'        => __( 'Bulk action failed.', 'wpmediaverse' ),
 						/* translators: 1: number changed. 2: number selected. 3: number skipped. */
 						'partial'       => __( '%1$d of %2$d updated. %3$d were not yours to change.', 'wpmediaverse' ),
@@ -424,15 +424,15 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php endif; ?>
 
 				<label class="mvs-bulk-album-label">
-					<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+					<span class="screen-reader-text"><?php esc_html_e( 'Add selected to album', 'wpmediaverse' ); ?></span>
 					<select class="mvs-bulk-album" data-wp-on--change="actions.setExploreBulkAlbum" data-wp-on--focus="actions.ensureExploreAlbums">
-						<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+						<option value="0"><?php esc_html_e( 'Add to album…', 'wpmediaverse' ); ?></option>
 						<template data-wp-each="state.bulkAlbums">
 							<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
 						</template>
 					</select>
 				</label>
-				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add', 'wpmediaverse' ); ?></button>
 
 				<label class="mvs-bulk-tags-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Tags to add to selected', 'wpmediaverse' ); ?></span>

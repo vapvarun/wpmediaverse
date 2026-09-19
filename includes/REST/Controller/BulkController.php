@@ -303,7 +303,7 @@ class BulkController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Bulk move items to album.
+	 * Bulk add items to an album (items stay in any other album).
 	 *
 	 * @param int[] $media_ids Media IDs.
 	 * @param int   $album_id  Target album ID.
@@ -321,32 +321,10 @@ class BulkController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to add items to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
-		global $wpdb;
-
-		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT MAX(position) FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d",
-				$album_id
-			)
-		);
-
-		$added = 0;
-		foreach ( $media_ids as $media_id ) {
-			++$max_pos;
-			$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_album_items',
-				array(
-					'album_id' => $album_id,
-					'media_id' => $media_id,
-					'position' => $max_pos,
-					'added_at' => current_time( 'mysql', true ),
-				),
-				array( '%d', '%d', '%d', '%s' )
-			);
-			if ( false !== $result ) {
-				++$added;
-			}
-		}
+		// The same write as adding one item: album_id pointer, privacy clamp,
+		// playlist type check and mvs_album_items_added. A raw insert here
+		// skipped all four.
+		$added = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->add_items( $album_id, $media_ids );
 
 		return rest_ensure_response(
 			array(

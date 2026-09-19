@@ -1445,7 +1445,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'move_to_album', media_ids: ids, album_id: state.bulkAlbumValue } } );
 				if ( res.ok ) {
 					state.bulkSelectedIds = [];
-					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkMovedToAlbum || 'Moved to album.' ) );
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkMovedToAlbum || 'Added to album.' ) );
 					sharedUI.actions.showToast( msg.text, msg.type );
 				} else {
 					// The route's own reason beats ours — it knows about a

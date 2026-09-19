@@ -301,4 +301,57 @@ class PrivacyLockTest extends WP_UnitTestCase {
 			$this->assertSame( $expected, \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::should_hide_for_batch( array( $item ) ), "batch, album {$album_privacy}" );
 		}
 	}
+
+	private function bulk_add_to_album( int $album, array $ids ) {
+		$req = new WP_REST_Request( 'POST', '/mvs/v1/media/bulk' );
+		$req->set_param( 'action', 'move_to_album' );
+		$req->set_param( 'album_id', $album );
+		$req->set_param( 'media_ids', $ids );
+
+		return rest_do_request( $req );
+	}
+
+	public function test_bulk_add_to_album_is_the_same_write_as_adding_one(): void {
+		update_option( 'mvs_allow_user_privacy', '1' );
+		$id = $this->make_media( $this->member );
+		wp_set_current_user( $this->member );
+
+		$album = (int) $this->albums()->create(
+			$this->member,
+			array(
+				'title'   => 'Bulk private',
+				'privacy' => 'private',
+			)
+		);
+
+		$response = $this->bulk_add_to_album( $album, array( $id ) );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 1, (int) $response->get_data()['processed'] );
+		$this->assertSame( $album, (int) $this->repo()->get( $id, 'album_id' ) );
+		$this->assertSame( 'private', (string) $this->repo()->get( $id, 'privacy' ) );
+	}
+
+	public function test_bulk_add_to_album_holds_the_lock(): void {
+		$id    = $this->make_media( $this->member );
+		$album = $this->private_album_made_before_the_lock( $this->member );
+		wp_set_current_user( $this->member );
+
+		$this->assertSame( 1, (int) $this->bulk_add_to_album( $album, array( $id ) )->get_data()['processed'] );
+		$this->assertSame( $album, (int) $this->repo()->get( $id, 'album_id' ) );
+		$this->assertSame( 'public', (string) $this->repo()->get( $id, 'privacy' ) );
+	}
+
+	public function test_bulk_add_to_a_playlist_skips_non_audio(): void {
+		$id = $this->make_media( $this->member );
+		wp_set_current_user( $this->member );
+
+		$album = (int) $this->albums()->create( $this->member, array( 'title' => 'Tracks' ) );
+		$this->albums()->set_album_type( $album, 'playlist' );
+
+		$data = $this->bulk_add_to_album( $album, array( $id ) )->get_data();
+
+		$this->assertSame( 0, (int) $data['processed'] );
+		$this->assertSame( 0, (int) $this->repo()->get( $id, 'album_id' ) );
+	}
 }

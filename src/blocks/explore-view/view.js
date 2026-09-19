@@ -227,7 +227,7 @@ const { state, actions } = store( 'mvs/explore', {
 		},
 		async exploreBulkAlbum() {
 			if ( ! state.bulkAlbum ) return;
-			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Moved to album.' );
+			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Added to album.' );
 		},
 	},
 	// callbacks.init() used to fetch tags/cloud and build the chip row client
