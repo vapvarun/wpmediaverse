@@ -13,8 +13,17 @@
    ========================================================================== */
 
 :root {
-    /* Typography — BuddyNext first, then system stack fallback */
-    --mvs-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    /* Typography — BuddyNext first, then the THEME, via inherit.
+       --font-body / --font-display are defined by BuddyNext and by nothing
+       else, so on every other theme these tokens fell through to a hardcoded
+       Apple system stack, and the plugin imposed that stack on top of whatever
+       the theme had set. MediaVerse pages read in a different typeface from the
+       site around them.
+       `inherit` is the fix rather than a chain of --wp--preset--font-family--*
+       names: a preset list only covers the themes someone thought to name, and
+       silently misses the next one. Inheriting takes the theme's own font on
+       ANY theme, block or classic, with nothing to maintain. */
+    --mvs-font: var(--font-body, inherit);
     --mvs-font-heading: var(--font-display, var(--mvs-font));
     /* Font-size scale — single source of truth for every font-xs/sm/md/lg
        callsite (137 of them, Free + Pro + admin). Was only in the never-enqueued
@@ -517,7 +526,9 @@ body.dark-mode {
    (--font-size-regular) if available, falling back to 1rem. This ensures consistent
    typography regardless of stylesheet load order. */
 body.mvs-page {
-    font-size: var(--font-size-regular, 1rem);
+    /* Same dead hop: --font-size-regular is BuddyNext-only, so this pinned
+       every MVS page to 1rem on other themes. Inherit the theme's size. */
+    font-size: var(--font-size-regular, inherit);
 }
 
 /* Scope: all MVS template wrappers use these classes.
