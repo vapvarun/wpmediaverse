@@ -2398,11 +2398,12 @@ class MediaRepository implements MediaRepositoryInterface {
 		$where_sql = implode( ' AND ', $where );
 
 		if ( in_array( 'drives', $want, true ) ) {
+			// The values are bound; only the table name and the placeholder
+			// fragment built above are interpolated.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$mvs_drive_sql = $wpdb->prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . " FROM {$index} WHERE {$where_sql} AND privacy = 'space'", ...$params );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$rows = (array) $wpdb->get_results(
-				$wpdb->prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . " FROM {$index} WHERE {$where_sql} AND privacy = 'space'", ...$params ),
-				ARRAY_N
-			);
+			$rows          = (array) $wpdb->get_results( $mvs_drive_sql, ARRAY_N );
 
 			foreach ( $rows as $row ) {
 				$out['drives'][] = array( (string) $row[0], (int) $row[1], (int) $row[2], (int) $row[3] );
