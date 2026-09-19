@@ -758,7 +758,16 @@ wp_interactivity_state(
 			</div>
 			<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.toggleUploadFields">
-				<span data-wp-bind--hidden="state.upload.showFields"><?php esc_html_e( 'Add title, tags & privacy', 'wpmediaverse' ); ?></span>
+				<?php // Promise only what the panel holds: the privacy picker below is absent while the owner has locked privacy. Basecamp 10320619418. ?>
+				<span data-wp-bind--hidden="state.upload.showFields">
+					<?php
+					if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
+						esc_html_e( 'Add title, tags & privacy', 'wpmediaverse' );
+					} else {
+						esc_html_e( 'Add title & tags', 'wpmediaverse' );
+					}
+					?>
+				</span>
 				<span data-wp-bind--hidden="!state.upload.showFields"><?php esc_html_e( 'Hide fields', 'wpmediaverse' ); ?></span>
 			</button>
 			<?php
@@ -1564,6 +1573,13 @@ wp_interactivity_state(
 					<textarea data-wp-bind--value="state.albumModal.description"
 						data-wp-on--input="actions.setAlbumDesc"></textarea>
 				</div>
+				<?php
+				// Hidden while the owner has locked privacy: an album's privacy is
+				// carried down onto its items, so it is a media privacy picker too.
+				// Create then takes the site default and Edit re-sends the album's
+				// current level, both of which the REST side accepts. Basecamp 10320619418.
+				if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) :
+					?>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 					<select data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
@@ -1589,6 +1605,7 @@ wp_interactivity_state(
 						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 					</select>
 				</div>
+				<?php endif; ?>
 				<div class="mvs-field">
 					<label>
 						<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Select Media', 'wpmediaverse' ); ?></span>

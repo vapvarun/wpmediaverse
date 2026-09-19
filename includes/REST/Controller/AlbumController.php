@@ -500,6 +500,22 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Owner's privacy lock: album privacy cascades onto the album's items
+		// (AlbumService::set_privacy()), so changing it is changing theirs. Same
+		// contract as PATCH /media/{id}: the edit screens hide the picker but still
+		// send the current level, so only a CHANGE is refused, out loud (Rule 20),
+		// and before any other field is written. Basecamp 10320619418.
+		$privacy = $request->get_param( 'privacy' );
+		if ( $privacy
+			&& ! PrivacyService::user_may_choose_privacy()
+			&& sanitize_text_field( $privacy ) !== $this->albums->get_privacy( (int) $album_id ) ) {
+			return new WP_Error(
+				'mvs_privacy_locked',
+				__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+				array( 'status' => 403 )
+			);
+		}
+
 		// Post fields go through AlbumService::update() rather than being assembled
 		// here, so the album -> post-field mapping (description => post_content)
 		// lives in one place and any other caller gets the same contract.
@@ -522,7 +538,6 @@ class AlbumController extends WP_REST_Controller {
 			}
 		}
 
-		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy ) {
 			$this->albums->set_privacy( $album_id, sanitize_text_field( $privacy ) );
 		}
@@ -565,7 +580,9 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$this->albums->delete_all_items( $album_id );
+		// Album items (and each item's album_id pointer) are released by
+		// Album::on_before_delete(), which wp_delete_post() fires below - the one
+		// path admin deletes and user deletion share with this route.
 
 		// No taxonomy cleanup here. Albums no longer carry categories (2.4.0), and this
 		// call was itself a data-loss vector: an album's post ID can equal a real

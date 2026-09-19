@@ -70,8 +70,12 @@ class Album {
 			return;
 		}
 
-		global $wpdb;
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'album_id' => $post_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// Through the service, not a raw DELETE: delete_all_items() also releases
+		// each item's mvs_media_index.album_id pointer, which the raw delete left
+		// naming a deleted album (admin delete, user deletion). It only deletes
+		// rows and repoints items - it never calls wp_delete_post(), so this hook
+		// cannot re-enter. Basecamp 10320619418.
+		\WPMediaVerse\Core\Plugin::container()->get( 'albums' )->delete_all_items( $post_id );
 
 		// NO index purge here — removed in 2.4.0, and it must not come back.
 		//

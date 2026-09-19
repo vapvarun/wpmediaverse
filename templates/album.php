@@ -176,6 +176,8 @@ $mvs_archive_url = home_url( '/media/' );
 								<textarea data-wp-on--input="actions.updateEditDesc"
 									data-wp-bind--value="context.editDesc"></textarea>
 							</div>
+							<?php // Hidden while the owner has locked privacy; Save re-sends the current level (context.editPrivacy), which the REST update accepts. Basecamp 10320619418. ?>
+							<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 							<div class="mvs-field">
 								<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 								<select data-wp-on--change="actions.updateEditPrivacy">
@@ -186,6 +188,7 @@ $mvs_archive_url = home_url( '/media/' );
 									<?php endforeach; ?>
 								</select>
 							</div>
+							<?php endif; ?>
 							<div class="mvs-inline-edit-actions">
 								<button class="mvs-btn" type="button"
 									data-wp-on--click="actions.saveEdit"
