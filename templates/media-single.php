@@ -797,16 +797,19 @@ $mvs_archive_url = home_url( '/media/' );
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
 					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
+					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 						<select data-wp-on--change="actions.updateEditPrivacy">
-							<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
-								<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $current_privacy, $opt ); ?>>
-									<?php echo esc_html( ucfirst( $opt ) ); ?>
-								</option>
-							<?php endforeach; ?>
+							<?php
+							// The shared labels, not bare "Public / Members / Private":
+							// "Members" alone reads as followers-only (Basecamp
+							// 10286023341), and this was the last picker on its own list.
+							\WPMediaVerse\Core\TemplateHelpers::privacy_options( (string) $current_privacy );
+							?>
 						</select>
 					</div>
+					<?php endif; ?>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
 							<input type="checkbox" class="mvs-edit-regenerate-slug"

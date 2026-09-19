@@ -780,7 +780,7 @@ wp_interactivity_state(
 					<input type="text" id="mvs-upload-meta-tags" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
 						data-wp-on--input="actions.setUploadTags" />
 					<?php $mvs_def_priv = get_option( 'mvs_default_privacy', 'public' ); ?>
-					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
+					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 					<label class="mvs-sr-only" for="mvs-upload-meta-privacy"><?php esc_html_e( 'Who can see this', 'wpmediaverse' ); ?></label>
 					<select id="mvs-upload-meta-privacy" class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
 						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( $mvs_def_priv ); ?>
@@ -814,6 +814,7 @@ wp_interactivity_state(
 		<div class="mvs-bulk-bar" data-wp-bind--hidden="!state.hasBulkSelection" hidden
 			role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
 			<span class="mvs-bulk-count" data-wp-text="state.bulkCountLabel"></span>
+			<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 			<label class="mvs-bulk-privacy-label">
 				<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-privacy" data-wp-on--change="actions.setBulkPrivacy">
@@ -824,6 +825,7 @@ wp_interactivity_state(
 				</select>
 			</label>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+			<?php endif; ?>
 
 			<?php
 			// Move to album. The REST action has existed since bulk shipped —
@@ -1449,6 +1451,8 @@ wp_interactivity_state(
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
 					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
+					<?php // Hidden when the owner has locked privacy; the save still sends the current level, which the REST update accepts. Basecamp 10320619418. ?>
+					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
@@ -1474,6 +1478,7 @@ wp_interactivity_state(
 							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 						</select>
 					</div>
+					<?php endif; ?>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
 							<input type="checkbox" class="mvs-edit-regenerate-slug"

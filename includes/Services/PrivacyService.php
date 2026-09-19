@@ -44,6 +44,33 @@ class PrivacyService {
 	private $cache = array();
 
 	/**
+	 * May this user choose a media item's privacy level?
+	 *
+	 * One answer for every picker and every write path. Settings > General >
+	 * "Allow Users to Set Privacy" promises that, when off, "all uploads use the
+	 * Default Privacy Level" and "the privacy selector is hidden from users" -
+	 * but only the upload surfaces read it, so a member could upload at the
+	 * default and change the level one click later in Edit, in bulk, or through
+	 * the REST update. Anyone who can manage MediaVerse settings keeps the
+	 * control: moderating privacy is part of running the site.
+	 * Basecamp 10320619418.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $user_id User, or 0 for the current one.
+	 * @return bool
+	 */
+	public static function user_may_choose_privacy( int $user_id = 0 ): bool {
+		if ( (bool) get_option( 'mvs_allow_user_privacy', true ) ) {
+			return true;
+		}
+
+		$user_id = $user_id > 0 ? $user_id : get_current_user_id();
+
+		return $user_id > 0 && user_can( $user_id, 'manage_mvs_settings' );
+	}
+
+	/**
 	 * The privacy levels this site will ACCEPT on a write.
 	 *
 	 * One list, asked by every write path. It used to be an inline array in

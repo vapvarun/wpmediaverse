@@ -1019,6 +1019,19 @@ class MediaController extends WP_REST_Controller {
 		if ( $privacy ) {
 			$clean_privacy = sanitize_text_field( $privacy );
 
+			// The owner may have locked privacy (Settings > General > Allow Users
+			// to Set Privacy). The edit screens hide the picker then, but still
+			// send the item's CURRENT level with every save, so only a change is
+			// refused - and refused out loud, never silently dropped (Rule 20).
+			if ( ! PrivacyService::user_may_choose_privacy()
+				&& $clean_privacy !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
+				return new WP_Error(
+					'mvs_privacy_locked',
+					__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+					array( 'status' => 403 )
+				);
+			}
+
 			if ( ! in_array( $clean_privacy, PrivacyService::supported_levels(), true ) ) {
 				return new WP_Error(
 					'mvs_privacy_unsupported',

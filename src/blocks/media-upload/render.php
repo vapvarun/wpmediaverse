@@ -40,7 +40,7 @@ if ( ! current_user_can( 'upload_mvs_media' ) ) {
 $max_files     = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFiles'] ) : 10;
 // Admin setting "Allow users to set privacy for their content" can force-hide
 // the dropdown regardless of the block attribute (matches Dashboard + FAB modal behaviour).
-$show_privacy  = ! empty( $attributes['showPrivacy'] ) && (bool) get_option( 'mvs_allow_user_privacy', true );
+$show_privacy  = ! empty( $attributes['showPrivacy'] ) && \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy();
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 if ( empty( $mvs_shortcode_context ) ) {
 	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );

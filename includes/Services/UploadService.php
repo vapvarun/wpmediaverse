@@ -331,7 +331,7 @@ class UploadService {
 		// sending a crafted privacy field directly to the REST API. Resolved
 		// BEFORE store() because the destination driver depends on it: private
 		// and other restricted media must never leave the local server.
-		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$allow_user_privacy = PrivacyService::user_may_choose_privacy( $user_id );
 		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		$requested_privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : '';
 

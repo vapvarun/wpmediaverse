@@ -254,7 +254,7 @@ wp_interactivity_state(
 
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
 					<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
-						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
+						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 						<div class="mvs-modal-field-row">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 								<?php
@@ -361,6 +361,7 @@ wp_interactivity_state(
 					<!-- Privacy + slug-regenerate sit on the same row to save
 						vertical space — pure presentation, no functional pairing. -->
 					<div class="mvs-modal-row">
+						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
 						<div class="mvs-modal-field mvs-modal-field--inline">
 							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 							<select id="mvs-edit-privacy"
@@ -378,6 +379,7 @@ wp_interactivity_state(
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
+						<?php endif; ?>
 						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
 							<label for="mvs-edit-regenerate-slug" title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
 								<input type="checkbox" id="mvs-edit-regenerate-slug"

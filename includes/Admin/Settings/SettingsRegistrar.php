@@ -213,8 +213,8 @@ class SettingsRegistrar {
 			'mvs_general',
 			array(
 				'option'      => 'mvs_allow_user_privacy',
-				'label'       => __( 'Allow users to choose privacy level when uploading media.', 'wpmediaverse' ),
-				'description' => __( 'When disabled, all uploads use the Default Privacy Level above. The privacy selector is hidden from users.', 'wpmediaverse' ),
+				'label'       => __( 'Allow users to choose the privacy level of their media.', 'wpmediaverse' ),
+				'description' => __( 'When disabled, all uploads use the Default Privacy Level above and members cannot change it afterwards: the privacy selector is hidden when uploading, editing and in bulk actions. Users who can manage MediaVerse settings keep the control.', 'wpmediaverse' ),
 			)
 		);
 
