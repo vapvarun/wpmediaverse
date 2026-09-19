@@ -383,7 +383,11 @@ class Migrator {
 				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
-				comment_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				-- No comment_count: it was written by the rtMedia importer and
+				-- read by nothing, so it could only ever go stale. Comment
+				-- totals are counted from wp_comments at read time. Existing
+				-- installs keep the column (dbDelta never drops one, and an
+				-- ALTER on a large index table is not worth a dead column).
 				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT NULL,
@@ -635,7 +639,6 @@ class Migrator {
 				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
-				comment_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT NULL,

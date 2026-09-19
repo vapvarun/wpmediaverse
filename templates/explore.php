@@ -404,7 +404,18 @@ $mvs_archive_url = home_url( '/media/' );
 			);
 			?>
 			<div class="mvs-bulk-bar" data-wp-interactive="mvs/explore"
-				<?php echo wp_interactivity_data_wp_context( array( 'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php
+				// userId scopes the album picker's request to the member's own
+				// albums, exactly as the dashboard picker does. Without it the
+				// picker listed every album on the site and every foreign choice
+				// died with 403 mvs_forbidden. Basecamp 10320911477.
+				echo wp_interactivity_data_wp_context( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					array(
+						'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+						'userId'  => get_current_user_id(),
+					)
+				);
+				?>
 				data-wp-on-document--keydown="actions.exploreBulkKeydown"
 				data-wp-bind--hidden="!state.hasBulk" hidden
 				role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">

@@ -131,8 +131,22 @@ const { state, actions } = store( 'mvs/explore', {
 				return;
 			}
 			const ctx = getContext();
+
+			// Own albums only, the same request the dashboard picker makes.
+			// bulk_move_to_album refuses a foreign album with 403
+			// mvs_forbidden, so an unfiltered list offered choices that could
+			// only fail — and shipped other members' album titles to the
+			// browser, which is the half of the bug a client-side filter would
+			// not have fixed. Fails closed: no user id, no list.
+			const userId = parseInt( ctx.userId, 10 ) || 0;
+
+			if ( ! userId ) {
+				state.bulkAlbums = [];
+				return;
+			}
+
 			try {
-				const res = await window.mvsRest.restFetch( ctx.restUrl + 'albums?per_page=100' );
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'albums?author=' + userId + '&per_page=100' );
 				const data = res.data;
 				const items = Array.isArray( data ) ? data : ( data?.items || [] );
 				state.bulkAlbums = items.map( ( a ) => ( { id: a.id, title: a.title || '' } ) );

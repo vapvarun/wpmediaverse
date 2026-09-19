@@ -91,7 +91,6 @@ class MediaRepository implements MediaRepositoryInterface {
 		'drive_id',
 		'view_count',
 		'reaction_count',
-		'comment_count',
 		'is_featured',
 		'created_at',
 		'updated_at',
@@ -847,25 +846,26 @@ class MediaRepository implements MediaRepositoryInterface {
 				)
 			);
 
-			if ( $exists ) {
-				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prefix . 'mvs_media_index',
-					array(
-						$key         => $value,
-						'updated_at' => current_time( 'mysql', true ),
-					),
-					array( 'media_id' => $media_id )
-				);
-			} else {
-				$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prefix . 'mvs_media_index',
-					array(
-						'media_id'   => $media_id,
-						$key         => $value,
-						'created_at' => current_time( 'mysql', true ),
-					)
-				);
+			// A write for a row that is gone is a write-after-delete, not a
+			// row to create: a queued cloud-upload job finishing after the
+			// member deleted the media called set( $id, 'file_url', ... ).
+			// This used to INSERT a stub carrying one column, which left a
+			// ghost with an empty slug, title, author and media_type - and
+			// because `slug` is NOT NULL UNIQUE, the SECOND such ghost failed
+			// on a duplicate-key database error instead. Rows are created by
+			// insert(), which supplies the whole shape. (2.5.1)
+			if ( ! $exists ) {
+				return;
 			}
+
+			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_media_index',
+				array(
+					$key         => $value,
+					'updated_at' => current_time( 'mysql', true ),
+				),
+				array( 'media_id' => $media_id )
+			);
 
 			// Fire only on UPDATE (old value existed) and when value actually changes.
 			// Inserts skip — uploaders set privacy at activity-creation time directly.

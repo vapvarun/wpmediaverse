@@ -164,11 +164,15 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Fix      - Delete confirmations on BuddyPress media tabs show their message.
 * Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
 * Improve  - A grid of 12 items costs 12 database queries instead of 35. The per-item author, gallery-count and post-type reads are gone.
+* Fix      - A cloud upload that finishes after the member deleted the media no longer recreates the item as a broken, empty entry.
+* Fix      - Bulk action controls stay clickable when the bar sticks under a theme's fixed header.
+* Fix      - The album picker on a profile or Explore lists only albums you can add to. It offered everyone's albums, and choosing another member's failed.
 * Fix      - Bulk Delete on Explore deletes the selected items. It reported a failure and deleted nothing.
 * Fix      - Tag suggestions appear while typing, in the dashboard edit box and on a media page.
 * Security - A member can no longer change the privacy of another member's media by adding it to their own album.
 * Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 * Dev      - The page width token --mvs-content-width is documented in the developer guide.
+* Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
 
 = 2.5.0 - September 2026 =
 

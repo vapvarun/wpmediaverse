@@ -1394,6 +1394,7 @@ class Plugin {
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
 			wp_enqueue_script( 'mvs-dismissible' );
+			wp_enqueue_script( 'mvs-sticky-top' );
 			wp_enqueue_script( 'mvs-panel-toolbar' );
 			wp_enqueue_script( 'mvs-collection-filter' );
 			wp_enqueue_script( 'mvs-messages-scroll' );
@@ -1682,6 +1683,21 @@ class Plugin {
 			MVS_PLUGIN_URL . 'assets/js/frontend/panel-toolbar.js',
 			array(),
 			self::asset_version( 'assets/js/frontend/panel-toolbar.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		// Publishes --mvs-sticky-top (height of the WP admin bar + whatever
+		// header the THEME pins at the top) so sticky MVS surfaces park below
+		// that chrome instead of under it. Config-free and self-gating: it does
+		// nothing on a page with no .mvs-bulk-bar. Basecamp 10320911387.
+		wp_register_script(
+			'mvs-sticky-top',
+			MVS_PLUGIN_URL . 'assets/js/frontend/sticky-top.js',
+			array(),
+			self::asset_version( 'assets/js/frontend/sticky-top.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',

@@ -402,6 +402,30 @@
     --mvs-space-6: 3rem;     /* 48px */
     --mvs-space-7: 4rem;     /* 64px */
 
+    /* What the page pins at the top of the viewport. Every sticky MVS surface
+       adds one of these to its own offset so it parks BELOW that chrome
+       instead of under it. A plugin cannot hardcode a theme's header height,
+       so the numbers come from measurement —
+       assets/js/frontend/sticky-top.js rewrites them on load/resize/scroll.
+       0 is the honest default and the value that STAYS on a theme with no
+       sticky header, so those themes keep the original offsets exactly.
+
+       Two of them, because our own sticky surfaces stack on each other:
+
+       --mvs-sticky-top    CHROME ONLY — the WP admin bar and the THEME's
+                           header. Nothing of ours counts toward it.
+                           Read by .mvs-dashboard-tabs and .mvs-dashboard-rail.
+       --mvs-sticky-stack  Chrome PLUS our own pinned surfaces sitting above
+                           the bulk bar (at <=860px the dashboard tab strip is
+                           one). Read by .mvs-bulk-bar.
+
+       The split is what stops a surface chasing itself: a single variable that
+       the tab strip both read and contributed to would creep down the page one
+       frame at a time. Each variable is measured with its own consumer
+       excluded. Basecamp 10320911387. */
+    --mvs-sticky-top: 0px;
+    --mvs-sticky-stack: 0px;
+
     /* Z-index layers — never use bare integers in plugin CSS.
        The overlay-and-above band sits in the 9990s: theme sticky headers run
        high (Reign #masthead is 999/1000, BuddyBoss ~991), and at the old
@@ -2606,7 +2630,15 @@ body.dark-mode .mvs-skeleton::after {
 @media (max-width: 860px) {
     .mvs-dashboard-tabs {
         position: sticky;
-        top: 0;
+        /* Below the theme's chrome, not under it. At `top: 0` this strip pinned
+           at 0-70 while Reign's header held 0-81 at z-index 999 against our 50,
+           so the whole strip was invisible and every tab hit-tested to the site
+           logo — the same defect as the bulk bar, on the control that navigates
+           between dashboard sections.
+           --mvs-sticky-top is CHROME ONLY and deliberately excludes this strip;
+           reading a variable this element also contributed to would walk it
+           down the page a frame at a time. Basecamp 10320911387. */
+        top: var(--mvs-sticky-top, 0px);
         z-index: var(--mvs-z-sticky);
         background: var(--mvs-bg);
         padding: 8px 0;
@@ -2865,7 +2897,18 @@ body.dark-mode .mvs-skeleton::after {
 /* Sticky action bar shown while ≥1 card is selected. */
 .mvs-bulk-bar {
     position: sticky;
-    top: var(--mvs-space-2);
+    /* Clears everything already pinned above it, then the usual gap. A flat
+       var(--mvs-space-2) parked the bar at ~8px, which on any theme with a
+       sticky header (Reign, the theme we ship with, pins 0-90 at 1440 and 0-81
+       at 390) is UNDERNEATH it: the count, the album picker and the Add button
+       were all covered, and elementFromPoint at each control returned the
+       theme's header link. A member could not click the very controls the bar
+       exists for.
+       The --stack variable, not --top: at <=860px the dashboard tab strip is
+       pinned between the theme header and this bar, and the bar has to clear
+       BOTH. --mvs-sticky-stack is 0 when nothing is pinned, so a theme without
+       a sticky header keeps the old offset exactly. Basecamp 10320911387. */
+    top: calc(var(--mvs-sticky-stack, 0px) + var(--mvs-space-2));
     z-index: 5;
     display: flex;
     flex-wrap: wrap;
@@ -8596,7 +8639,12 @@ button.mvs-follows-open,
        and torn the card in half on scroll). */
     .mvs-dashboard-rail {
         position: sticky;
-        top: var(--mvs-space-4);
+        /* Chrome offset + the original gap. The rail is tall, so a sticky
+           header only ever buried its top ~66px rather than the whole card —
+           less visible than the bulk bar's failure, the same cause.
+           --mvs-sticky-top (chrome only): the rail is ours, so it must not
+           count toward the value it reads. Basecamp 10320911387. */
+        top: calc(var(--mvs-sticky-top, 0px) + var(--mvs-space-4));
         grid-column: 1;
         grid-row: 1 / span 2;
         display: flex;
