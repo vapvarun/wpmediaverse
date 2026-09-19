@@ -266,3 +266,27 @@ Two rules the plugin follows internally, worth keeping if you extend it:
 
 `bin/ux-audit.sh` reports an advisory row when a container selector draws a
 border with the control token, which is the drift these rules exist to prevent.
+
+## Page Width: `--mvs-content-width`
+
+One token sets the page width of every MediaVerse surface. It defaults to
+`1200px`, declared on `:root` in `assets/css/frontend.css`. To widen or narrow
+all of them at once, override it in your theme or in **Appearance → Customize →
+Additional CSS**:
+
+```css
+:root {
+	--mvs-content-width: 1600px;
+}
+```
+
+Surfaces that follow it: Explore, the member dashboard, single media and album
+pages, the album viewer, messaging, and in Pro the Pinterest, Dribbble and
+Flickr layouts (token + 80px), analytics, battles and the Competitions pages.
+Layouts that are wider or narrower by design keep that offset, so they stay
+proportional to one another. The Compete hub stays at a fixed 800px reading
+width.
+
+Your theme's own content container still applies: if the theme caps its content
+area below the token (Reign caps it at 1140px by default), widen the theme's
+container too.
