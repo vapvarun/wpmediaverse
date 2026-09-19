@@ -2042,10 +2042,19 @@ class MediaRepository implements MediaRepositoryInterface {
 		// soft spot and it is a much smaller one: the drive scope is applied by
 		// the index rather than by a post-filter over the whole document table.
 		$any_folder = ! empty( $args['any_folder'] );
-		$where      = $any_folder
+		$drive_type = isset( $args['drive_type'] ) ? (string) $args['drive_type'] : 'user';
+		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
+
+		// A SPACE ROOT carries its folder predicate INSIDE the drive clause below,
+		// not here: a document LINKED into the space keeps the `folder_id` of its
+		// HOME drive, so a global `folder_id = 0` dropped every linked file that
+		// happens to be filed in a folder at home — listed nowhere in the space,
+		// yet openable there by id.
+		$space_root = ! $any_folder && 0 === $folder_id && 'space' === $drive_type && $drive_id > 0;
+		$where      = ( $any_folder || $space_root )
 			? array( $type_sql, 'status = %s' )
 			: array( $type_sql, 'folder_id = %d', 'status = %s' );
-		$params     = $any_folder
+		$params     = ( $any_folder || $space_root )
 			? array_merge( $type_params, array( $status ) )
 			: array_merge( $type_params, array( $folder_id, $status ) );
 
@@ -2061,9 +2070,6 @@ class MediaRepository implements MediaRepositoryInterface {
 		// backfill has not reached yet — on those the author IS the drive, so
 		// falling back to it is correct rather than merely tolerant, and a
 		// half-migrated site lists exactly what it listed before.
-		$drive_type = isset( $args['drive_type'] ) ? (string) $args['drive_type'] : 'user';
-		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
-
 		if ( ( $any_folder || 0 === $folder_id ) && $drive_id > 0 ) {
 			// THE `OR` IS TEMPORARY, AND IT COSTS THE INDEX WHILE IT LASTS.
 			//
@@ -2103,11 +2109,28 @@ class MediaRepository implements MediaRepositoryInterface {
 				// ponytail: correlated subquery per space-root listing; denormalise
 				// a space_id column onto the index if a single space ever grows past
 				// what this comfortably scans.
-				$spaces_tbl = $wpdb->prefix . 'mvs_media_spaces';
-				$where[]    = "( ( drive_type = %s AND drive_id = %d ) OR media_id IN ( SELECT media_id FROM {$spaces_tbl} WHERE space_id = %d ) )";
-				$params[]   = $drive_type;
-				$params[]   = $drive_id;
-				$params[]   = $drive_id;
+				//
+				// The folder predicate applies to the NATIVE set only (see
+				// $space_root above): a linked file sits at the space root
+				// whatever folder it is filed in at home.
+				//
+				// Linked files join the LIVE listing only. `status` above already
+				// keeps a linked file its owner trashed out of the live view; the
+				// trash view is the space's OWN bin, and a file trashed on its
+				// owner's drive is theirs to restore there, not the space's.
+				$native   = $space_root
+					? '( drive_type = %s AND drive_id = %d AND folder_id = 0 )'
+					: '( drive_type = %s AND drive_id = %d )';
+				$params[] = $drive_type;
+				$params[] = $drive_id;
+
+				if ( 'publish' === $status ) {
+					$spaces_tbl = $wpdb->prefix . 'mvs_media_spaces';
+					$where[]    = "( {$native} OR media_id IN ( SELECT media_id FROM {$spaces_tbl} WHERE space_id = %d ) )";
+					$params[]   = $drive_id;
+				} else {
+					$where[] = $native;
+				}
 			} elseif ( self::drive_backfill_finished() ) {
 				$where[]  = 'drive_type = %s';
 				$where[]  = 'drive_id = %d';
