@@ -1729,12 +1729,17 @@ const { state, actions } = store( 'mvs/messaging', {
 			}, 50 );
 		},
 
-		showToast( message ) {
+		// Every messaging toast today reports a failure (a caught API error, a
+		// refused file type, a denied or unavailable microphone), so the default
+		// is 'error'. It used to pass no type, and the shared store defaults to
+		// 'success', so every failure rendered in success green. Pass a type
+		// for anything that is not an error. Basecamp 10320619304.
+		showToast( message, type = 'error' ) {
 			// Use shared UI toast if available.
 			try {
 				const sharedStore = store( 'mvs/shared-ui' );
 				if ( sharedStore && sharedStore.actions.showToast ) {
-					sharedStore.actions.showToast( message );
+					sharedStore.actions.showToast( message, type );
 					return;
 				}
 			} catch ( e ) {
