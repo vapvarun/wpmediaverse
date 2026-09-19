@@ -316,6 +316,18 @@ class Plugin {
 			1
 		);
 
+		// The reverse worker: bring a demoted media's bytes home and delete the
+		// cloud copy. Queued by the privacy-change listener below.
+		add_action(
+			'mvs_cloud_repatriate_media',
+			static function ( $args ) {
+				$media_id = is_array( $args ) ? (int) ( $args['media_id'] ?? 0 ) : (int) $args;
+				\WPMediaVerse\Services\UploadService::run_cloud_repatriation( $media_id );
+			},
+			10,
+			1
+		);
+
 		// Storage re-localization on privacy escalation. When a media row
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or
@@ -326,6 +338,25 @@ class Plugin {
 			'mvs_media_privacy_changed',
 			array( self::$container->get( 'storage' ), 'sync_urls_on_privacy_change' ),
 			5,
+			3
+		);
+
+		// …and then actually remove the cloud copy. Localizing the URLs stopped
+		// US serving the CDN; it did not stop anyone holding the old URL. The
+		// comment above promised "Pro listeners (Bunny purge, S3 delete)" that
+		// were never written, so a photo made private stayed fetchable in the
+		// bucket indefinitely. Priority 6: after localization, so the local
+		// copies are the ones on the row before the remote bytes go.
+		add_action(
+			'mvs_media_privacy_changed',
+			static function ( $media_id, $new_privacy, $old_privacy ) {
+				if ( 'public' !== (string) $old_privacy || 'public' === (string) $new_privacy ) {
+					return;
+				}
+
+				\WPMediaVerse\Services\UploadService::queue_cloud_repatriation( (int) $media_id );
+			},
+			6,
 			3
 		);
 

@@ -491,7 +491,19 @@ class SettingsRegistrar {
 			'mvs_storage',
 			array(
 				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
-				'description' => __( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. Requires a host with AVIF-capable Imagick or GD; the option will silently no-op if the server cannot encode AVIF.', 'wpmediaverse' ),
+				// Answer the host question instead of warning about it. The
+				// encoder returns null and logs nothing when the server cannot
+				// encode AVIF, so a ticked box was the owner's only evidence -
+				// and on most shared hosts it was wrong. One call to the same
+				// check the encoder uses turns "requires a capable host" into
+				// "this host can" or "this host cannot".
+				'description' => sprintf(
+					/* translators: %s: a sentence stating whether this server can encode AVIF. */
+					__( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. %s', 'wpmediaverse' ),
+					\WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' )->is_avif_supported()
+						? __( 'This server can encode AVIF.', 'wpmediaverse' )
+						: __( 'This server CANNOT encode AVIF - its image library was built without it, so turning this on will produce no AVIF files. Ask your host for Imagick or GD with AVIF support.', 'wpmediaverse' )
+				),
 			)
 		);
 

@@ -2413,6 +2413,76 @@ class UploadService {
 	}
 
 	/**
+	 * Queue the reverse trip: pull a demoted media's bytes back from cloud.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function queue_cloud_repatriation( int $media_id ): void {
+		if ( $media_id <= 0 ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action(
+				'mvs_cloud_repatriate_media',
+				array( 'media_id' => $media_id ),
+				'wpmediaverse'
+			);
+			return;
+		}
+
+		self::run_cloud_repatriation( $media_id );
+	}
+
+	/**
+	 * Bring a no-longer-public media home and delete the cloud copy.
+	 *
+	 * Public media lives on the CDN; everything else is local-only
+	 * (StorageService::get_driver_for_privacy()). A media that was public and
+	 * is made private had only half of that enforced: its URLs were re-pointed
+	 * at the local copies, so the plugin stopped serving the CDN - but the
+	 * object stayed in the bucket, readable by anyone still holding its URL.
+	 * Free's listener comment described "Pro listeners (Bunny purge, S3 delete)"
+	 * that were never written, so nothing deleted it. Revoking access left the
+	 * old link working.
+	 *
+	 * Reuses the same seam as the forward trip rather than growing per-driver
+	 * cleanup: migrate_one() moves the original and every recorded variant, and
+	 * with $keep_source false it deletes them from the cloud once the local
+	 * copies verify. Cloud to local is explicitly allowed by its privacy gate.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function run_cloud_repatriation( int $media_id ): void {
+		$source = (string) get_option( 'mvs_storage_driver', 'local' );
+
+		if ( '' === $source || 'local' === $source ) {
+			return;
+		}
+
+		$result = CloudOps::migrate_one( (int) $media_id, $source, 'local', false );
+
+		if ( empty( $result['ok'] ) ) {
+			LoggerService::warning(
+				'storage',
+				'Could not bring a now-private media back from cloud; its bytes may still be reachable at the old CDN URL.',
+				array(
+					'media_id' => (int) $media_id,
+					'source'   => $source,
+					'status'   => $result['status'] ?? 'unknown',
+					'error'    => $result['error'] ?? '',
+				)
+			);
+		}
+	}
+
+	/**
 	 * Push one media's bytes to the configured cloud. The Action Scheduler
 	 * callback for `mvs_cloud_sync_media`.
 	 *

@@ -312,7 +312,12 @@ class SetupWizard {
 	 */
 	private function render_step_display(): void {
 		$columns  = (int) get_option( 'mvs_grid_columns', 3 );
-		$per_page = (int) get_option( 'mvs_items_per_page', 24 );
+		// 12, matching the registered default and every other read site. This
+		// was 24, and a passed default suppresses the registered one, so the
+		// wizard preselected 24 on a fresh install and Continue wrote a value
+		// the owner never chose - the Display tab then disagreed with the
+		// documented default for the life of the site.
+		$per_page = (int) get_option( 'mvs_items_per_page', 12 );
 		$style    = \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style();
 		?>
 		<div class="mvs-setup-step">
