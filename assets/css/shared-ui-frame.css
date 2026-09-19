@@ -18,7 +18,26 @@
 .mvs-lightbox-overlay textarea,
 .mvs-toast button {
 	font-family: inherit;
+}
+
+/* Size at zero specificity, for the reason given beside the matching rule in
+   frontend.css: a component's own font-size must win. Basecamp 10309690361. */
+:where(.mvs-app-shell, .mvs-lightbox-overlay, .mvs-toast) :where(button, input, select, textarea) {
 	font-size: inherit;
+}
+
+/* Same select rule as frontend.css body.mvs-page select, for the shell that
+   prints outside every MVS wrapper. Basecamp 10313754840. */
+.mvs-app-shell select {
+	padding-inline-end: 2.25rem;
+	text-overflow: ellipsis;
+}
+
+/* Visible keyboard focus for shell form controls; see the matching rule in
+   frontend.css. Basecamp 10320619382. */
+:where(.mvs-app-shell) :is(input, select, textarea):focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
 }
 
 /* ─── Floating Action Button ─── */
