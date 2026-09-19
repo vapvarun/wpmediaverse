@@ -741,6 +741,30 @@
 	opacity: 1;
 }
 
+/* 44px hit area (was 16px). The negative margins give back most of what the
+   min size adds, so the toast grows only ~6px. Basecamp 10320657245. */
+.mvs-toast-close {
+	justify-content: center;
+	min-inline-size: var(--mvs-touch-min, 44px);
+	min-block-size: var(--mvs-touch-min, 44px);
+	margin-block: -12px;
+	margin-inline-end: -12px;
+}
+
+/* Visually hidden, still read out. Local on purpose: this stylesheet loads on
+   ordinary pages where frontend.css (and its .mvs-sr-only) does not. */
+.mvs-toast-live {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
 /* ─── Animations ─── */
 @keyframes mvs-fade-in {
 	from { opacity: 0; }
