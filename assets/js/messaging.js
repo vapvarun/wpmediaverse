@@ -446,8 +446,13 @@ const { state, actions } = store( 'mvs/messaging', {
 		get otherLastActive() {
 			const p = state.otherParticipant;
 			if ( ! p || ! p.last_active ) return '';
-			if ( p.is_online ) return 'Online';
-			return 'Active ' + relativeTime( p.last_active ) + ' ago';
+			if ( p.is_online ) return __( 'Online' );
+			// relativeTime() answers 'now', a short span ('5m', '3h', '2d') or a
+			// full date; each needs its own whole, translatable phrase.
+			// Basecamp 10320657271.
+			const rel = relativeTime( p.last_active );
+			if ( 'now' === rel ) return __( 'Active now' );
+			return ( /^\d+[mhd]$/.test( rel ) ? __( 'Active %s ago' ) : __( 'Active on %s' ) ).replace( '%s', rel );
 		},
 
 		get voiceDurationFormatted() {
