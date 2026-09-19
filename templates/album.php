@@ -301,7 +301,15 @@ $mvs_archive_url = home_url( '/media/' );
 					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
 					\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 				?>
-				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
+				<?php
+				// Same emitter Explore and the media-grid block use, so Default
+				// Layout reaches every grid instead of three of five. Its own
+				// description has always named albums and collections; they were
+				// the surfaces the 1.8.0 layout work missed.
+				// Basecamp 10297763824.
+				$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+				?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
 					<?php
 					foreach ( $items as $item_row ) :
 						$media_id = (int) $item_row['media_id'];
