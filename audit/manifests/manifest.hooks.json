@@ -1388,6 +1388,22 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_local_only_path_prefixes",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string[] $prefixes"
+      ],
+      "where": "includes/Services/LocalDriver.php:114",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Documents/StorageResolver.php:135",
+          "kind": "add_filter_listener"
+        }
+      ]
+    },
+    {
       "name": "mvs_locate_template",
       "type": "filter",
       "args_count": 3,

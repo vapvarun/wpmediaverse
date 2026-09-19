@@ -82,6 +82,14 @@ class StorageService {
 
 		$ok = $this->get_local_driver()->delete( $rel_path );
 
+		// Local-only trees (Pro documents) never reach a cloud bucket, so asking
+		// the cloud driver is a wasted HTTP call that sends the private per-install
+		// path segment to the provider — and an unconfigured driver's false would
+		// retry the batch five times over nothing.
+		if ( '' !== LocalDriver::local_only_prefix( $rel_path ) ) {
+			return $ok;
+		}
+
 		$active = $this->get_driver();
 		if ( ! $active instanceof LocalDriver ) {
 			$ok = $active->delete( $rel_path ) && $ok;

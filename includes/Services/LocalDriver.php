@@ -67,12 +67,138 @@ class LocalDriver implements StorageDriverInterface {
 	 * @return bool
 	 */
 	public function delete( string $path ): bool {
-		$full_path = $this->base_dir . $path;
+		$full_path = $this->resolve( $path );
+		if ( null === $full_path ) {
+			LoggerService::warning( 'storage', 'Refused to delete a path outside the MediaVerse storage bases.', array( 'path' => $path ) );
+			return false;
+		}
+
 		if ( file_exists( $full_path ) ) {
 			wp_delete_file( $full_path );
 			return ! file_exists( $full_path );
 		}
+
+		// Absent at the CORRECT base means already gone, or the bytes live on the
+		// cloud tier — delete_everywhere() asks every tier and relies on each
+		// no-opping when it holds nothing, so this must stay true. What used to
+		// make it a lie was resolving a document path against the wrong base
+		// (uploads/wpmediaverse/wpmediaverse-documents/…); resolve() now picks the
+		// base by prefix, so "not here" means "not anywhere on this disk".
 		return true;
+	}
+
+	/**
+	 * Path prefixes stored relative to the uploads base directory — NOT under
+	 * uploads/wpmediaverse/ — and never on a cloud driver.
+	 *
+	 * Pro's documents live at `uploads/wpmediaverse-documents/<segment>/…` and
+	 * store that uploads-relative path in `file_path`. Free cannot know that
+	 * directory (it is Pro's), so Pro declares it here. A declaration rather
+	 * than "fall back to uploads/ when the file is missing": media paths are
+	 * `YYYY/MM/<file>`, the same shape as WordPress attachments, so a blind
+	 * fallback would let a media delete unlink a core attachment.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return string[] Prefixes without surrounding slashes.
+	 */
+	public static function local_only_prefixes(): array {
+		/**
+		 * Filter the path prefixes that resolve against the uploads base and
+		 * never live on a cloud driver.
+		 *
+		 * @since 2.5.1
+		 *
+		 * @param string[] $prefixes e.g. array( 'wpmediaverse-documents' ).
+		 */
+		$prefixes = (array) apply_filters( 'mvs_local_only_path_prefixes', array() );
+
+		// An empty prefix would reroute EVERY media path to the uploads root.
+		return array_values(
+			array_filter(
+				array_map(
+					static function ( $prefix ) {
+						return trim( str_replace( '\\', '/', (string) $prefix ), '/' );
+					},
+					$prefixes
+				),
+				static function ( $prefix ) {
+					return self::is_safe_relative( $prefix );
+				}
+			)
+		);
+	}
+
+	/**
+	 * The local-only prefix a relative path sits under, '' when none.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $path Relative path.
+	 * @return string
+	 */
+	public static function local_only_prefix( string $path ): string {
+		$path = ltrim( str_replace( '\\', '/', $path ), '/' );
+		foreach ( self::local_only_prefixes() as $prefix ) {
+			if ( 0 === strpos( $path, $prefix . '/' ) ) {
+				return $prefix;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Whether a path is a plain relative path: no `.`/`..` segment, no leading
+	 * slash, no drive letter, no NUL byte.
+	 *
+	 * Not WordPress's validate_file(): that allows a trailing `../` (it guards
+	 * template names, not deletes).
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $path Candidate path.
+	 * @return bool
+	 */
+	private static function is_safe_relative( string $path ): bool {
+		return '' !== $path
+			&& ! preg_match( '#(^|/)\.{1,2}(/|$)|^/|^[A-Za-z]:|\x00#', str_replace( '\\', '/', $path ) );
+	}
+
+	/**
+	 * Resolve a relative path to an absolute one under its allowed root.
+	 *
+	 * This feeds a delete primitive, so it is a trust boundary: the path comes
+	 * from a database row, and a `../` in a stored row must not reach unlink().
+	 * Rejects traversal, absolute paths and NUL bytes, then — for a file that
+	 * exists — requires its real location to sit inside the real root, so a
+	 * symlink cannot carry the delete out of the tree either.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $path Relative path.
+	 * @return string|null Absolute path, or null when the path is refused.
+	 */
+	private function resolve( string $path ): ?string {
+		if ( ! self::is_safe_relative( $path ) ) {
+			return null;
+		}
+
+		// A local-only path is uploads-relative and must stay inside ITS prefix
+		// directory; anything else stays inside uploads/wpmediaverse/.
+		$prefix  = self::local_only_prefix( $path );
+		$uploads = trailingslashit( wp_upload_dir()['basedir'] );
+		$root    = '' === $prefix ? $this->base_dir : $uploads . $prefix;
+		$full    = ( '' === $prefix ? $this->base_dir : $uploads ) . $path;
+
+		if ( file_exists( $full ) ) {
+			$real      = realpath( $full );
+			$real_base = realpath( $root );
+			if ( false === $real || false === $real_base || 0 !== strpos( $real, trailingslashit( $real_base ) ) ) {
+				return null;
+			}
+		}
+
+		return $full;
 	}
 
 	/**
