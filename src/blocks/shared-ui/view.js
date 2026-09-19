@@ -223,6 +223,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
 		// --- Toast (flat) ---
 		toastMessage: '',
+		// The role=status region's text. Set when a toast shows, emptied when
+		// it hides, so the region is blank between toasts and every toast -
+		// the same message again included - is a change to announce.
+		toastLive: '',
 		toastType: 'success',
 		toastVisible: false,
 		// Derived from the type, not enumerated per type. assets/js/admin/toast.js
@@ -652,22 +656,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 	actions: {
 		// --- Toast ---
 		showToast( msg, type = 'success' ) {
-			// The live region only speaks when its text changes, so the same
-			// message twice was silent the second time. Blank it, then write
-			// the message on the next tick. Basecamp 10320784236.
-			state.toastMessage = '';
+			// The live region only speaks when its text changes. It is emptied
+			// whenever a toast hides, and blanked here too so a toast replacing
+			// one still on screen is announced. Basecamp 10320784236.
+			state.toastLive = '';
 			state.toastVisible = false;
 			clearTimeout( toastTimer );
 			toastTimer = setTimeout( () => {
 				state.toastMessage = msg;
+				state.toastLive = msg;
 				state.toastType = type;
 				state.toastVisible = true;
-				toastTimer = setTimeout( () => {
-					state.toastVisible = false;
-				}, 3000 );
+				toastTimer = setTimeout( actions.hideToast, 3000 );
 			}, 100 );
 		},
 		hideToast() {
+			clearTimeout( toastTimer );
+			state.toastLive = '';
 			state.toastVisible = false;
 		},
 

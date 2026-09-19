@@ -2577,6 +2577,8 @@ class Plugin {
 				'Active %s'                    => __( 'Active %s', 'wpmediaverse' ),
 				/* translators: %s: a date, formatted for the viewer's locale. */
 				'Active on %s'                 => __( 'Active on %s', 'wpmediaverse' ),
+				/* translators: conversation list time for a message under a minute old. */
+				'now'                          => __( 'now', 'wpmediaverse' ),
 			),
 		);
 

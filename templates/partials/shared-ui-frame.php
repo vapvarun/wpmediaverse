@@ -724,7 +724,7 @@ wp_interactivity_state(
 	// its text changes or screen readers say nothing - which is what happened
 	// to every toast, errors included. Basecamp 10320657245.
 	?>
-	<div class="mvs-toast-live" role="status" aria-live="polite" aria-atomic="true" data-wp-text="state.toastMessage"></div>
+	<div class="mvs-toast-live" role="status" aria-live="polite" aria-atomic="true" data-wp-text="state.toastLive"></div>
 	<div class="mvs-toast" hidden data-wp-bind--hidden="!state.toastVisible"
 		data-wp-bind--class="state.toastClass">
 		<span data-wp-text="state.toastMessage"></span>
