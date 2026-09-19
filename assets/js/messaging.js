@@ -79,22 +79,6 @@ function parseServerDate( value ) {
 	).getTime();
 }
 
-// Helper: compact relative time for the conversation list ("5m", "3h").
-// The units come from Intl in the page language, not hard-coded English
-// letters, so a French site reads "5 min" (Basecamp 10320784236).
-function relativeTime( dateStr ) {
-	if ( ! dateStr ) return '';
-	const lang = document.documentElement.lang || undefined;
-	const ts   = parseServerDate( dateStr );
-	const diff = ( Date.now() - ts ) / 1000;
-	const unit = ( value, name ) => new Intl.NumberFormat( lang, { style: 'unit', unit: name, unitDisplay: 'narrow' } ).format( value );
-	if ( diff < 60 ) return __( 'now' );
-	if ( diff < 3600 ) return unit( Math.floor( diff / 60 ), 'minute' );
-	if ( diff < 86400 ) return unit( Math.floor( diff / 3600 ), 'hour' );
-	if ( diff < 604800 ) return unit( Math.floor( diff / 86400 ), 'day' );
-	return new Date( ts ).toLocaleDateString( lang );
-}
-
 // Helper: format duration.
 function formatDuration( seconds ) {
 	const m = Math.floor( seconds / 60 );
@@ -1773,10 +1757,6 @@ const { state, actions } = store( 'mvs/messaging', {
 			if ( ! dateStr ) return '';
 			const d = new Date( parseServerDate( dateStr ) );
 			return d.toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } );
-		},
-
-		formatConvTime( dateStr ) {
-			return relativeTime( dateStr );
 		},
 	},
 

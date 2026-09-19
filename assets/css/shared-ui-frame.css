@@ -709,6 +709,12 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 		justify-content: center;
 		text-align: center;
 	}
+
+	/* The message takes the free width, so Dismiss sits at the inline end of
+	   the full-width toast instead of trailing the centred text. */
+	.mvs-toast > span {
+		flex: 1;
+	}
 }
 
 .mvs-toast[hidden] {
