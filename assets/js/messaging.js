@@ -446,13 +446,23 @@ const { state, actions } = store( 'mvs/messaging', {
 		get otherLastActive() {
 			const p = state.otherParticipant;
 			if ( ! p || ! p.last_active ) return '';
+			// is_online covers the last 120s, so an offline user was last seen
+			// at least a minute ago - there is no "Active now" case.
 			if ( p.is_online ) return __( 'Online' );
-			// relativeTime() answers 'now', a short span ('5m', '3h', '2d') or a
-			// full date; each needs its own whole, translatable phrase.
-			// Basecamp 10320657271.
-			const rel = relativeTime( p.last_active );
-			if ( 'now' === rel ) return __( 'Active now' );
-			return ( /^\d+[mhd]$/.test( rel ) ? __( 'Active %s ago' ) : __( 'Active on %s' ) ).replace( '%s', rel );
+			// No _n() in this module, so the plural "5 minutes ago" comes from
+			// Intl in the page language, inside one translatable phrase.
+			// Basecamp 10320657271, 10320784236.
+			const lang = document.documentElement.lang || undefined;
+			const ts   = parseServerDate( p.last_active );
+			const mins = Math.max( 1, Math.floor( ( Date.now() - ts ) / 60000 ) );
+			if ( mins >= 10080 ) {
+				return __( 'Active on %s' ).replace( '%s', new Date( ts ).toLocaleDateString( lang ) );
+			}
+			const rtf = new Intl.RelativeTimeFormat( lang );
+			const ago = mins < 60
+				? rtf.format( -mins, 'minute' )
+				: ( mins < 1440 ? rtf.format( -Math.floor( mins / 60 ), 'hour' ) : rtf.format( -Math.floor( mins / 1440 ), 'day' ) );
+			return __( 'Active %s' ).replace( '%s', ago );
 		},
 
 		get voiceDurationFormatted() {

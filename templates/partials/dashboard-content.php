@@ -737,6 +737,7 @@ wp_interactivity_state(
 			<div class="mvs-dashboard-dropzone"
 				data-wp-class--mvs-drag-active="state.upload.dragOver"
 				data-wp-on--click="actions.handleUploadClick"
+				data-wp-on--keydown="actions.handleUploadKeydown"
 				data-wp-on--dragover="actions.handleUploadDragOver"
 				data-wp-on--dragleave="actions.handleUploadDragLeave"
 				data-wp-on--drop="actions.handleUploadDrop"
@@ -1300,10 +1301,10 @@ wp_interactivity_state(
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.collectionModal.visible"
 		data-wp-on--click="actions.closeOverlay">
 		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation"
-			role="dialog" aria-modal="true" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			role="dialog" aria-modal="true" aria-labelledby="mvs-collection-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
 			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'collectionModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
-				<h2>
+				<h2 id="mvs-collection-modal-title">
 					<span data-wp-bind--hidden="state.collectionModal.isEdit"><?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.collectionModal.isEdit"><?php esc_html_e( 'Edit Collection', 'wpmediaverse' ); ?></span>
 				</h2>
@@ -1423,7 +1424,7 @@ wp_interactivity_state(
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeCollectionModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn" type="button"
+				<button class="mvs-btn mvs-btn--primary" type="button"
 					data-wp-on--click="actions.saveCollection"
 					data-wp-bind--disabled="state.collectionModal.saving">
 					<span data-wp-bind--hidden="state.collectionModal.saving">
@@ -1440,10 +1441,10 @@ wp_interactivity_state(
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.editModal.visible"
 		data-wp-on--click="actions.closeOverlay">
 		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
-			role="dialog" aria-modal="true" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			role="dialog" aria-modal="true" aria-labelledby="mvs-dashboard-edit-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
 			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'editModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
-				<h2><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
+				<h2 id="mvs-dashboard-edit-modal-title"><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
 				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
 			</div>
 			<div class="mvs-modal-body">
@@ -1539,7 +1540,7 @@ wp_interactivity_state(
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeEditModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn" type="button"
+				<button class="mvs-btn mvs-btn--primary" type="button"
 					data-wp-on--click="actions.saveEdit"
 					data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModal.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
@@ -1553,10 +1554,10 @@ wp_interactivity_state(
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.albumModal.visible"
 		data-wp-on--click="actions.closeOverlay">
 		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
-			role="dialog" aria-modal="true" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			role="dialog" aria-modal="true" aria-labelledby="mvs-album-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
 			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'albumModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
-				<h2>
+				<h2 id="mvs-album-modal-title">
 					<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.albumModal.isEdit"><?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?></span>
 				</h2>
@@ -1652,7 +1653,7 @@ wp_interactivity_state(
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeAlbumModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn" type="button"
+				<button class="mvs-btn mvs-btn--primary" type="button"
 					data-wp-on--click="actions.saveAlbum"
 					data-wp-bind--disabled="state.albumModal.saving">
 					<span data-wp-bind--hidden="state.albumModal.saving">

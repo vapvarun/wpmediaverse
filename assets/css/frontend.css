@@ -5136,13 +5136,25 @@ a.mvs-dashboard-card-title:hover {
    hint directly above the picker instructs the member to click it. On a coarse
    pointer the button is simply always visible (Basecamp 10190678139). */
 @media (hover: none), (pointer: coarse) {
-    .mvs-media-picker-cover-btn {
+    /* Two classes to outrank the global `[class*="mvs-"] button` 44px touch
+       floor, which otherwise grew the chip back to 44px. */
+    .mvs-media-picker-item .mvs-media-picker-cover-btn {
         opacity: 1;
-        /* Revealing it is only half the fix — at 28px tall it was still under
-           the 40px touch floor, so it would have been visible and awkward to
-           hit. Padding rather than height so the label stays centred. */
-        min-height: var(--mvs-touch-min, 44px);
-        padding-block: 8px;
+        min-height: 24px;
+    }
+
+    /* The touch floor is met by the HIT AREA, not the chip. Growing the chip
+       itself to 44px covered about 40% of a small tile (Basecamp 10320784172),
+       so the chip keeps its 24px corner size and this invisible layer extends
+       what a finger can hit. It grows upward, toward the tile's centre, and
+       only 4px (the chip's own offset) at the edges, so it never spills past
+       the tile into its neighbour. */
+    .mvs-media-picker-cover-btn::before {
+        content: "";
+        position: absolute;
+        inset-block: calc(24px - var(--mvs-touch-min, 44px)) -4px;
+        inset-inline: -4px;
+        min-inline-size: var(--mvs-touch-min, 44px);
     }
 }
 

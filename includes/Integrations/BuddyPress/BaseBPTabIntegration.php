@@ -397,6 +397,13 @@ abstract class BaseBPTabIntegration {
 			array(
 				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					'confirmMedia' => __( 'Delete this media? This cannot be undone.', 'wpmediaverse' ),
+					'confirmAlbum' => __( 'Delete this album? Media items inside it will remain in your library.', 'wpmediaverse' ),
+					'mediaDeleted' => __( 'Media deleted.', 'wpmediaverse' ),
+					'albumDeleted' => __( 'Album deleted.', 'wpmediaverse' ),
+					'deleteFailed' => __( 'Delete failed.', 'wpmediaverse' ),
+				),
 			)
 		);
 	}

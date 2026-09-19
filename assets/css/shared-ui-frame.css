@@ -92,6 +92,19 @@
 	pointer-events: none;
 }
 
+/* While any MediaVerse dialog is open the FAB steps out. It sits later in the
+ * DOM at the same z-index as the overlay, so it floated over the modal (over
+ * the footer buttons at 390px) and was reachable outside the dialog's focus
+ * trap. Free's dialogs are shown by removing their `hidden` attribute, so the
+ * open state is readable here without any JS. The Pro connector import modal
+ * (printed in the dashboard footer) toggles an inline display instead, hence
+ * the two style exclusions — without them the FAB would vanish for good on
+ * that page. visibility also drops the FAB from the tab order and the
+ * accessibility tree. Basecamp 10320784115. */
+body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container {
+	visibility: hidden;
+}
+
 /* FAB menu — shown above the button when the member also has a Documents drive. */
 .mvs-fab-menu {
 	position: absolute;
@@ -295,6 +308,12 @@
 .mvs-modal-dropzone:hover {
 	border-color: var(--mvs-primary);
 	background: var(--mvs-info-bg-light);
+}
+
+.mvs-modal-dropzone-placeholder:focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+	border-radius: var(--mvs-radius-sm, 6px);
 }
 
 .mvs-modal-dropzone[hidden] {

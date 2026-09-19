@@ -2573,9 +2573,8 @@ class Plugin {
 				// fragments: "Active " + date + " ago" produced "Active
 				// 12/09/2026 ago" and could not be translated. Basecamp 10320657271.
 				'Online'                       => __( 'Online', 'wpmediaverse' ),
-				'Active now'                   => __( 'Active now', 'wpmediaverse' ),
-				/* translators: %s: a short elapsed time such as "5m", "3h" or "2d". */
-				'Active %s ago'                => __( 'Active %s ago', 'wpmediaverse' ),
+				/* translators: %s: a relative time in the page language, such as "5 minutes ago". */
+				'Active %s'                    => __( 'Active %s', 'wpmediaverse' ),
 				/* translators: %s: a date, formatted for the viewer's locale. */
 				'Active on %s'                 => __( 'Active on %s', 'wpmediaverse' ),
 			),

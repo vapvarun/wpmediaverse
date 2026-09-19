@@ -166,12 +166,13 @@ wp_interactivity_state(
 		<?php endif; ?>
 	</div>
 
-	<!-- Upload Modal Overlay -->
-	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal">
+	<!-- Upload Modal Overlay. Dialog semantics, focus in/out (callbacks.uploadModalFocus), Tab trap and Escape (actions.handleLightboxKeydown). Basecamp 10320784059. -->
+	<div class="mvs-modal-overlay mvs-upload-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal"
+		role="dialog" aria-modal="true" aria-labelledby="mvs-upload-modal-title" data-wp-watch="callbacks.uploadModalFocus">
 		<div class="mvs-modal" data-wp-on--click="actions.handleModalClick">
 			<!-- Modal Header -->
 			<div class="mvs-modal-header">
-				<h3 class="mvs-modal-title" data-wp-text="state.uploadModalHeading"></h3>
+				<h3 class="mvs-modal-title" id="mvs-upload-modal-title" data-wp-text="state.uploadModalHeading"></h3>
 				<button class="mvs-modal-close" data-wp-on--click="actions.closeUploadModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
@@ -233,7 +234,8 @@ wp_interactivity_state(
 					</div>
 
 					<!-- Dropzone placeholder -->
-					<div class="mvs-modal-dropzone-placeholder" data-wp-bind--hidden="state.hasFiles">
+					<div class="mvs-modal-dropzone-placeholder" data-wp-bind--hidden="state.hasFiles"
+						role="button" tabindex="0" data-wp-on--keydown="actions.handleUploadKeydown">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" aria-hidden="true">
 							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 							<polyline points="17 8 12 3 7 8"></polyline>

@@ -780,6 +780,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( input ) input.click();
 		},
 
+		// role="button" gives the dropzone a Tab stop, not Enter/Space.
+		handleUploadKeydown( event ) {
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.handleUploadClick( event );
+			}
+		},
+
 		handleUploadDragOver( event ) {
 			event.preventDefault();
 			state.upload.dragOver = true;
