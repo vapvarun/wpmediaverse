@@ -90,10 +90,10 @@ class MediaDisplayHelper {
 		// gated /serve endpoint exists to stop. With no permalink the card
 		// renders unlinked rather than handing out a bypass.
 		if ( 'document' === $media_type ) {
-			$doc_mime = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
-			$doc_icon = \WPMediaVerse\Core\DocumentTypes::icon_for_mime( $doc_mime );
+			$doc_mime  = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
+			$doc_icon  = \WPMediaVerse\Core\DocumentTypes::icon_for_mime( $doc_mime );
 			$doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $doc_mime );
-			$doc_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
+			$doc_size  = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
 
 			$doc_meta = $doc_group ? \WPMediaVerse\Core\DocumentTypes::label( $doc_group ) : '';
 			if ( $doc_size > 0 ) {

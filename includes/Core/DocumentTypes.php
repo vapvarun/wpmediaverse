@@ -40,21 +40,21 @@ final class DocumentTypes {
 	 * @var array<string, string>
 	 */
 	private const BY_MIME = array(
-		'application/pdf'                                                           => 'pdf',
-		'application/msword'                                                        => 'word',
-		'application/vnd.openxmlformats-officedocument.wordprocessingml.document'   => 'word',
-		'application/vnd.ms-excel'                                                  => 'excel',
-		'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'         => 'excel',
-		'application/vnd.ms-powerpoint'                                             => 'powerpoint',
+		'application/pdf'                                 => 'pdf',
+		'application/msword'                              => 'word',
+		'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'word',
+		'application/vnd.ms-excel'                        => 'excel',
+		'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'excel',
+		'application/vnd.ms-powerpoint'                   => 'powerpoint',
 		'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'powerpoint',
-		'application/vnd.oasis.opendocument.text'                                   => 'odf_text',
-		'application/vnd.oasis.opendocument.spreadsheet'                            => 'odf_sheet',
-		'application/vnd.oasis.opendocument.presentation'                           => 'odf_presentation',
-		'text/plain'                                                                => 'text',
-		'text/markdown'                                                             => 'markdown',
-		'text/csv'                                                                  => 'csv',
-		'application/rtf'                                                           => 'rtf',
-		'text/rtf'                                                                  => 'rtf',
+		'application/vnd.oasis.opendocument.text'         => 'odf_text',
+		'application/vnd.oasis.opendocument.spreadsheet'  => 'odf_sheet',
+		'application/vnd.oasis.opendocument.presentation' => 'odf_presentation',
+		'text/plain'                                      => 'text',
+		'text/markdown'                                   => 'markdown',
+		'text/csv'                                        => 'csv',
+		'application/rtf'                                 => 'rtf',
+		'text/rtf'                                        => 'rtf',
 	);
 
 	/**

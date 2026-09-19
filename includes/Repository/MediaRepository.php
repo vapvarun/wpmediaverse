@@ -4616,7 +4616,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function tag_cloud_total( ?array $types = null ): int {
 		global $wpdb;
 
-		$types = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
+		$types                          = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
 
 		$sql = "SELECT COUNT(*) FROM (

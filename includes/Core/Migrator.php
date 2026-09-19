@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 35;
+	const CURRENT_VERSION = 36;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -2421,5 +2421,22 @@ class Migrator {
 		if ( null !== $stored && (float) $stored <= 0 ) {
 			delete_option( 'mvs_ai_cost_per_call' );
 		}
+	}
+
+	/**
+	 * Migration v36 — drop the telemetry options with the feature.
+	 *
+	 * The counter service was never instrumented: `capture()` had no callers,
+	 * and nothing could read the counters back, so ticking "Help improve
+	 * MediaVerse" recorded nothing and the report its description asked owners
+	 * to share could not be produced. 2.5.1 removes the setting and the
+	 * service; these rows are what it left in wp_options.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_36(): void {
+		delete_option( 'mvs_telemetry_enabled' );
+		delete_option( 'mvs_telemetry_counters' );
+		delete_option( 'mvs_telemetry_since' );
 	}
 }

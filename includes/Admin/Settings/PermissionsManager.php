@@ -185,7 +185,7 @@ class PermissionsManager {
 							<div class="mvs-caps-role__grid">
 								<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
 									<?php
-									$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
+									$has_cap  = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
 									$field_id = 'mvs-cap-' . sanitize_html_class( $role_slug . '-' . $cap_key );
 									?>
 									<label class="mvs-caps-role__item" for="<?php echo esc_attr( $field_id ); ?>">

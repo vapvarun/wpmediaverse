@@ -2034,7 +2034,7 @@ class MediaController extends WP_REST_Controller {
 		// the button on screen and a member clicking it got a 403 from the API
 		// (Basecamp 10285497657), while a delegated "Edit Others" role had no
 		// affordance at all (10285691473).
-		$can_edit = $is_own
+		$can_edit   = $is_own
 			? user_can( $viewer_id, 'edit_mvs_medias' )
 			: ( $viewer_id > 0 && user_can( $viewer_id, 'edit_others_mvs_medias' ) );
 		$can_delete = $is_own

@@ -1776,11 +1776,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					),
 				),
 				'order'  => array(
-					'name'    => 'order',
-					'label'   => __( 'Direction', 'wpmediaverse' ),
+					'name'  => 'order',
+					'label' => __( 'Direction', 'wpmediaverse' ),
 					// No 'options': render_panel_toolbar() derives them from the
 					// sort field. Basecamp 10297765808.
-					'value'   => strtolower( $sort['order'] ),
+					'value' => strtolower( $sort['order'] ),
 				),
 				'submit' => __( 'Apply', 'wpmediaverse' ),
 			)
