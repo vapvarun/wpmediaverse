@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.5.0
+Stable tag: 2.5.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -121,6 +121,34 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.5.1 - September 2026 =
+
+A settings pass from the owner's seat: every switch on the screen was checked against what the code actually does, and the ones that were lying or doing nothing were fixed.
+
+* New      - The share as a story option appears on every upload screen, not only the Upload page.
+* New      - Searching your own drive now matches document tags, so a file tagged in the admin can be found by that tag.
+* Improve  - Strip EXIF Data removes only the location. Camera, lens, exposure and the copyright and credit fields stay on the photo.
+* Improve  - Thumbnail Quality changes the image size grids actually serve. Medium is roughly a third of the bytes of Large, which remains the default.
+* Improve  - Default Layout now applies to albums and collections, which its description has always named.
+* Improve  - Page width and grid gap read design tokens, so one line in a child theme adjusts every MediaVerse surface together.
+* Improve  - The confirmation dialog follows the site palette instead of a fixed one, in light and dark mode.
+* Improve  - The AVIF setting states whether this server can encode AVIF instead of warning that it might not.
+* Improve  - Setup wizard offers the documented 12 items per page rather than silently saving 24.
+* Improve  - Camera metadata is no longer copied into the database on every upload, where nothing ever read it.
+* Fix      - Playback events are recorded on single media pages. The player analytics tab was empty for anyone not using the block.
+* Fix      - The monthly AI budget cap works. Saving the AI settings once was enough to disable it silently, and spending then showed as zero.
+* Fix      - Turning on only AI moderation no longer also buys a description and a tag for every upload.
+* Fix      - Replacing a photo's file strips its location, as a first upload always did.
+* Fix      - Allow Downloads hides the download button on a document card too, and the description says which surfaces it covers.
+* Fix      - Buttons, selects and inputs inherit the theme font instead of falling back to the browser default.
+* Fix      - An uploader's avatar and name sit on one line in the grid, and a long name truncates instead of wrapping under it.
+* Fix      - Privacy menus show their full label. The longest option was cut off mid-sentence.
+* Fix      - The media count lines up with the followers and following buttons on a profile.
+* Fix      - The share as a story checkbox renders as a checkbox rather than stretching across the row.
+* Fix      - A toast appears above the chat panel instead of behind it.
+* Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
+* Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 
 = 2.5.0 - September 2026 =
 
