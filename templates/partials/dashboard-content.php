@@ -1290,7 +1290,9 @@ wp_interactivity_state(
 	<!-- Collection Modal (Create/Edit with Rule Builder) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.collectionModal.visible"
 		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation">
+		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation"
+			role="dialog" aria-modal="true" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'collectionModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
 				<h2>
 					<span data-wp-bind--hidden="state.collectionModal.isEdit"><?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></span>
@@ -1428,7 +1430,9 @@ wp_interactivity_state(
 	<!-- Edit Media Modal -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.editModal.visible"
 		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
+		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
+			role="dialog" aria-modal="true" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'editModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
 				<h2><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
 				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
@@ -1539,7 +1543,9 @@ wp_interactivity_state(
 	<!-- Album Modal (Create/Edit) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.albumModal.visible"
 		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
+		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
+			role="dialog" aria-modal="true" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'albumModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
 				<h2>
 					<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></span>

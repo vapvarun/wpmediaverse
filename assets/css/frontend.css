@@ -5103,13 +5103,14 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-media-picker-cover-btn {
     position: absolute;
-    bottom: 4px;
-    left: 4px;
+    inset-block-end: 4px;
+    inset-inline-start: 4px;
     background: rgba(0, 0, 0, 0.7);
     color: var(--mvs-bg);
     border: none;
     border-radius: 4px;
     padding: 2px 8px;
+    min-block-size: 24px; /* WCAG 2.2 target-size floor on fine pointers; 44px on touch below. */
     font-size: 11px;
     cursor: pointer;
     opacity: 0;
@@ -5122,6 +5123,14 @@ a.mvs-dashboard-card-title:hover {
     opacity: 1;
 }
 
+/* Revealed on keyboard focus but drew no ring (the theme strips button
+   outlines), so a keyboard user could not see which thumbnail's button was
+   active. Basecamp 10320657228. */
+.mvs-media-picker-cover-btn:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
 /* A hover-only reveal is unreachable on touch: there is no hover on a phone or
    tablet, so "Set Cover" was invisible and effectively untappable — while the
    hint directly above the picker instructs the member to click it. On a coarse
@@ -5132,7 +5141,7 @@ a.mvs-dashboard-card-title:hover {
         /* Revealing it is only half the fix — at 28px tall it was still under
            the 40px touch floor, so it would have been visible and awkward to
            hit. Padding rather than height so the label stays centred. */
-        min-height: 40px;
+        min-height: var(--mvs-touch-min, 44px);
         padding-block: 8px;
     }
 }

@@ -6,7 +6,24 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
+
+/**
+ * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
+ * with focus left on the page behind them, so Tab walked the dashboard cards
+ * under the overlay before reaching the form (WCAG 2.4.3). One behaviour for
+ * all three: focus moves to the first field on open, Tab stays inside, and
+ * focus returns to whatever opened the modal on close. Basecamp 10320657228.
+ */
+const MODAL_FOCUSABLE =
+	'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const modalOpeners = {};
+
+function modalFocusables( root ) {
+	return Array.from( root.querySelectorAll( MODAL_FOCUSABLE ) ).filter(
+		( el ) => el.offsetParent !== null || el === document.activeElement
+	);
+}
 
 /**
  * Which loader owns each panel, and what its default sort is.
@@ -643,6 +660,39 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 	},
 	actions: {
+		/**
+		 * Keep Tab inside the open modal and close it on Escape
+		 * (data-wp-on--keydown on .mvs-modal).
+		 */
+		trapModalFocus( event ) {
+			// Escape closes like the overlay click does; the focus watch then
+			// returns focus to the opener.
+			if ( 'Escape' === event.key ) {
+				const key = getContext().modalKey;
+				if ( key && state[ key ] ) {
+					event.preventDefault();
+					state[ key ].visible = false;
+				}
+				return;
+			}
+			if ( 'Tab' !== event.key ) {
+				return;
+			}
+			const els = modalFocusables( getElement().ref );
+			if ( ! els.length ) {
+				return;
+			}
+			const first = els[ 0 ];
+			const last = els[ els.length - 1 ];
+			if ( event.shiftKey && document.activeElement === first ) {
+				event.preventDefault();
+				last.focus();
+			} else if ( ! event.shiftKey && document.activeElement === last ) {
+				event.preventDefault();
+				first.focus();
+			}
+		},
+
 		/* =====================================================================
 		   Tabs
 		   ===================================================================== */
@@ -2204,6 +2254,37 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 	},
 	callbacks: {
+		/**
+		 * data-wp-watch on each .mvs-modal; its context names the state key
+		 * (albumModal / collectionModal / editModal) so one callback serves all.
+		 */
+		manageModalFocus() {
+			const key = getContext().modalKey;
+			const { ref } = getElement();
+			if ( ! key || ! ref ) {
+				return;
+			}
+			if ( state[ key ]?.visible ) {
+				if ( ref.contains( document.activeElement ) ) {
+					return;
+				}
+				modalOpeners[ key ] = document.activeElement;
+				// After the overlay's `hidden` binding has flushed.
+				window.requestAnimationFrame( () => {
+					const els = modalFocusables( ref );
+					const first = els.find( ( el ) => ! el.classList.contains( 'mvs-modal-close' ) ) || els[ 0 ];
+					if ( first ) {
+						first.focus();
+					}
+				} );
+			} else if ( modalOpeners[ key ] ) {
+				const opener = modalOpeners[ key ];
+				modalOpeners[ key ] = null;
+				if ( document.contains( opener ) && typeof opener.focus === 'function' ) {
+					opener.focus();
+				}
+			}
+		},
 		init() {
 			const ctx = getContext();
 			// Apply admin default privacy to upload state.
