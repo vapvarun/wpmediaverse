@@ -447,11 +447,13 @@ interface MediaRepositoryInterface {
 	 *
 	 * @since 2.5.1
 	 *
-	 * @param array    $args drive_documents() args.
-	 * @param string[] $want Any of `drives`, `folders`, `spaces`.
+	 * @param array    $args        drive_documents() args.
+	 * @param string[] $want        Any of `drives`, `folders`, `spaces`.
+	 * @param int      $skip_author Viewer whose own rows need no facet (the spec's
+	 *                              `author` rung admits them); 0 for none.
 	 * @return array{drives: array[], folders: int[], spaces: int[]}
 	 */
-	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ) ): array;
+	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ), int $skip_author = 0 ): array;
 
 	/**
 	 * Published document ids whose TITLE matches a phrase, in title order.

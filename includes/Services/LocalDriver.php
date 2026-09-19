@@ -47,8 +47,11 @@ class LocalDriver implements StorageDriverInterface {
 	 * @return bool
 	 */
 	public function store( string $source_path, string $dest_path ): bool {
-		$full_path = $this->base_dir . $dest_path;
-		$dir       = dirname( $full_path );
+		$full_path = $this->resolve( $dest_path );
+		if ( null === $full_path ) {
+			return false;
+		}
+		$dir = dirname( $full_path );
 
 		if ( ! wp_mkdir_p( $dir ) ) {
 			return false;
@@ -167,6 +170,11 @@ class LocalDriver implements StorageDriverInterface {
 	/**
 	 * Resolve a relative path to an absolute one under its allowed root.
 	 *
+	 * Every method that touches the disk (store, exists, download, delete,
+	 * get_full_path) goes through here, so a local-only path is found at the
+	 * same place by all of them. Before 2.5.1 only delete() did, and a cloud
+	 * migration read "missing" from exists() then deleted the real file.
+	 *
 	 * This feeds a delete primitive, so it is a trust boundary: the path comes
 	 * from a database row, and a `../` in a stored row must not reach unlink().
 	 * Rejects traversal, absolute paths and NUL bytes, then — for a file that
@@ -204,10 +212,18 @@ class LocalDriver implements StorageDriverInterface {
 	/**
 	 * Get the public URL for a file.
 	 *
+	 * A local-only path has no direct URL: those trees (Pro documents) are
+	 * deny-protected and only ever served through their own gated routes, so
+	 * '' is the honest answer rather than a link into
+	 * uploads/wpmediaverse/ where the file does not live.
+	 *
 	 * @param string $path Relative file path.
 	 * @return string
 	 */
 	public function url( string $path ): string {
+		if ( '' !== self::local_only_prefix( $path ) ) {
+			return '';
+		}
 		return $this->base_url . $path;
 	}
 
@@ -218,7 +234,8 @@ class LocalDriver implements StorageDriverInterface {
 	 * @return bool
 	 */
 	public function exists( string $path ): bool {
-		return file_exists( $this->base_dir . $path );
+		$full_path = $this->resolve( $path );
+		return null !== $full_path && file_exists( $full_path );
 	}
 
 	/**
@@ -227,17 +244,17 @@ class LocalDriver implements StorageDriverInterface {
 	 * @since 1.1.0
 	 *
 	 * @param string $path Relative path.
-	 * @return string Absolute file path.
+	 * @return string Absolute file path, or '' when the path is refused.
 	 */
 	public function get_full_path( string $path ): string {
-		return $this->base_dir . $path;
+		return (string) $this->resolve( $path );
 	}
 
 	/**
 	 * Download a stored file to a local destination path.
 	 *
 	 * For the local driver this is a copy from the canonical local path
-	 * (`base_dir + $path`) to the requested `$local_dest`. Same-file
+	 * (resolve( $path )) to the requested `$local_dest`. Same-file
 	 * short-circuits as a no-op so callers don't need to know they're on
 	 * the local driver.
 	 *
@@ -248,8 +265,8 @@ class LocalDriver implements StorageDriverInterface {
 	 * @return bool
 	 */
 	public function download( string $path, string $local_dest ): bool {
-		$source = $this->base_dir . $path;
-		if ( ! file_exists( $source ) ) {
+		$source = $this->resolve( $path );
+		if ( null === $source || ! file_exists( $source ) ) {
 			return false;
 		}
 		// Same-file no-op (when caller is unaware of driver).

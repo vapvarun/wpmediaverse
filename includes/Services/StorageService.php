@@ -252,7 +252,10 @@ class StorageService {
 	public function relocalize_media_urls( int $media_id ): bool {
 		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$file_path = (string) $repo->get_raw( $media_id, 'file_path' );
-		if ( '' === $file_path ) {
+		// Local-only trees (Pro documents) never reach a cloud driver, so there
+		// is no cloud URL to bring home — and rewriting file_url to a
+		// uploads/wpmediaverse/ link would point at a file that is not there.
+		if ( '' === $file_path || '' !== LocalDriver::local_only_prefix( $file_path ) ) {
 			return false;
 		}
 

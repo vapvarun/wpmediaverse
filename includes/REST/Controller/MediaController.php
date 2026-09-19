@@ -1165,6 +1165,20 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Documents are replaced through the Pro document route, which keeps
+		// the old version (`_mvs_replaced_from`) and checks folder grants. Here
+		// the new bytes would be stored in the MEDIA tree on the active driver
+		// (a public cloud bucket), the row re-typed from its MIME, and the old
+		// file deleted through the cloud driver while the local copy stayed on
+		// disk. Same refusal as the media feed.
+		if ( in_array( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'media_type' ), MediaTypes::DOCUMENTS, true ) ) {
+			return new \WP_Error(
+				'mvs_document_route',
+				__( 'Documents are replaced through the document routes, not the media routes.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		$files = $request->get_file_params();
 		if ( empty( $files['file'] ) ) {
 			return new \WP_Error( 'mvs_no_file', __( 'No file provided.', 'wpmediaverse' ), array( 'status' => 400 ) );
@@ -1290,10 +1304,15 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
 
-		// Delete old file.
-		$old_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-		if ( $old_path ) {
-			$driver->delete( $old_path );
+		// Delete the old file from every tier it may live on. Not the active
+		// driver alone: uploads land on local disk and are copied to the cloud
+		// afterwards, so a cloud-only delete left the local copy behind, and a
+		// local-only path (Pro documents) must never be sent to a cloud driver.
+		// delete_everywhere() handles both. The equality guard keeps a
+		// same-named replacement from deleting the file just stored.
+		$old_path = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
+		if ( '' !== $old_path && $old_path !== $dest_path ) {
+			$storage->delete_everywhere( $old_path );
 		}
 
 		// Update media index with new file data.

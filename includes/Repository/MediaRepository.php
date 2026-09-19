@@ -2369,11 +2369,16 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.5.1
 	 *
-	 * @param array    $args drive_documents() args.
-	 * @param string[] $want Any of `drives`, `folders`, `spaces`.
+	 * `$skip_author` leaves out the viewer's own rows: the spec's `author` rung
+	 * already admits them, so they widen nothing, and on the viewer's own drive
+	 * (all theirs, the common case) every facet then comes back empty.
+	 *
+	 * @param array    $args        drive_documents() args.
+	 * @param string[] $want        Any of `drives`, `folders`, `spaces`.
+	 * @param int      $skip_author Viewer whose own rows need no facet; 0 for none.
 	 * @return array{drives: array[], folders: int[], spaces: int[]}
 	 */
-	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ) ): array {
+	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ), int $skip_author = 0 ): array {
 		global $wpdb;
 
 		$index = $wpdb->prefix . 'mvs_media_index';
@@ -2384,7 +2389,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		);
 
 		list( $where, $params ) = $this->drive_documents_scope( $args );
-		$where_sql              = implode( ' AND ', $where );
+
+		if ( $skip_author > 0 ) {
+			$where[]  = 'post_author <> %d';
+			$params[] = $skip_author;
+		}
+
+		$where_sql = implode( ' AND ', $where );
 
 		if ( in_array( 'drives', $want, true ) ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
@@ -3138,32 +3149,70 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function query_public_cloud_candidates( int $limit, bool $local_url_only = false ): array {
 		global $wpdb;
 
-		$limit = max( 1, $limit );
+		list( $where, $params ) = $this->public_cloud_candidate_where( $local_url_only, false );
+		$params[]               = max( 1, $limit );
 
-		if ( $local_url_only ) {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index
-					WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url LIKE %s
-					ORDER BY media_id ASC LIMIT %d",
-					'http%/wp-content/uploads/%',
-					$limit
-				),
-				ARRAY_A
-			);
-		} else {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index
-					WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public'
-					ORDER BY media_id ASC LIMIT %d",
-					$limit
-				),
-				ARRAY_A
-			);
-		}
+		$sql = "SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index WHERE " . implode( ' AND ', $where ) . ' ORDER BY media_id ASC LIMIT %d';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ), ARRAY_A );
 
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * The one predicate behind the cloud-candidate list and its count.
+	 *
+	 * Excludes local-only trees (`mvs_local_only_path_prefixes`, e.g. Pro
+	 * documents): they never go to a media cloud driver, and listing them made
+	 * "Migrate all" hand a public document to CloudOps, which rewrote its URL
+	 * to the CDN and deleted its only copy (2.5.1). A prefix NOT LIKE is a
+	 * residual filter on rows the status/privacy predicate already selected,
+	 * so the keyed walk stays index-driven.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param bool $local_url_only Restrict to rows still pointing at local uploads.
+	 * @param bool $invert         With $local_url_only, rows NOT pointing there.
+	 * @return array{0:string[],1:array} WHERE fragments and bound params.
+	 */
+	private function public_cloud_candidate_where( bool $local_url_only, bool $invert ): array {
+		$where  = array( "status IN ('publish','draft')", 'file_path IS NOT NULL', "file_path != ''", 'privacy = %s' );
+		$params = array( 'public' );
+
+		foreach ( self::local_only_like_patterns() as $pattern ) {
+			$where[]  = 'file_path NOT LIKE %s';
+			$params[] = $pattern;
+		}
+
+		if ( $local_url_only ) {
+			$where[]  = $invert ? 'file_url NOT LIKE %s' : 'file_url LIKE %s';
+			$params[] = 'http%/wp-content/uploads/%';
+		}
+
+		return array( $where, $params );
+	}
+
+	/**
+	 * LIKE patterns matching every local-only tree, one per declared prefix.
+	 *
+	 * Shared by the cloud-candidate predicate and query()'s
+	 * `exclude_local_only`, so the list and the panel total cannot disagree
+	 * about what a document path looks like.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return string[] e.g. array( 'wpmediaverse-documents/%' ).
+	 */
+	private static function local_only_like_patterns(): array {
+		global $wpdb;
+
+		return array_map(
+			static function ( $prefix ) use ( $wpdb ) {
+				return $wpdb->esc_like( $prefix . '/' ) . '%';
+			},
+			\WPMediaVerse\Services\LocalDriver::local_only_prefixes()
+		);
 	}
 
 	/**
@@ -3193,13 +3242,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function count_public_cloud_candidates( bool $local_url_only = false, bool $invert = false ): int {
 		global $wpdb;
 
-		$where  = array( "status IN ('publish','draft')", 'file_path IS NOT NULL', "file_path != ''", 'privacy = %s' );
-		$params = array( 'public' );
-
-		if ( $local_url_only ) {
-			$where[]  = $invert ? 'file_url NOT LIKE %s' : 'file_url LIKE %s';
-			$params[] = 'http%/wp-content/uploads/%';
-		}
+		list( $where, $params ) = $this->public_cloud_candidate_where( $local_url_only, $invert );
 
 		$sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE " . implode( ' AND ', $where );
 
@@ -3795,6 +3838,11 @@ class MediaRepository implements MediaRepositoryInterface {
 				// FALSE is accepted for symmetry and finds index rows whose file
 				// went missing.
 				'has_file'                 => null,
+				// TRUE drops rows whose file sits in a local-only tree
+				// (`mvs_local_only_path_prefixes`, e.g. Pro documents) — rows
+				// no storage-driver operation may act on. The cloud panel
+				// counts with it so its tiles add up to its total.
+				'exclude_local_only'       => false,
 				'authors_in'               => array(),
 				'privacy_in'               => array(),
 				'mime_like_in'             => array(),
@@ -3948,6 +3996,13 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[] = $args['has_file']
 				? "( m.file_path IS NOT NULL AND m.file_path != '' )"
 				: "( m.file_path IS NULL OR m.file_path = '' )";
+		}
+
+		if ( ! empty( $args['exclude_local_only'] ) ) {
+			foreach ( self::local_only_like_patterns() as $pattern ) {
+				$where[]  = 'm.file_path NOT LIKE %s';
+				$params[] = $pattern;
+			}
 		}
 
 		$mvs_privacy_not = array_values( array_filter( array_map( 'strval', (array) $args['privacy_not_in'] ) ) );
