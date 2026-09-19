@@ -410,6 +410,7 @@ $mvs_archive_url = home_url( '/media/' );
 				role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
 				<span class="mvs-bulk-count" data-wp-text="state.bulkLabel"></span>
 
+				<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock; the dashboard bar is gated the same way. Basecamp 10320619418. ?>
 				<label class="mvs-bulk-privacy-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 					<select class="mvs-bulk-privacy" data-wp-on--change="actions.setExploreBulkPrivacy">
@@ -420,6 +421,7 @@ $mvs_archive_url = home_url( '/media/' );
 					</select>
 				</label>
 				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkPrivacy" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+				<?php endif; ?>
 
 				<label class="mvs-bulk-album-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>

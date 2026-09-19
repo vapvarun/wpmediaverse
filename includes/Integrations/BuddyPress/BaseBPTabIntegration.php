@@ -451,15 +451,18 @@ abstract class BaseBPTabIntegration {
 				<input type="text" id="mvs-bp-upload-tags" class="mvs-bp-upload-field"
 					placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 					aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" />
+				<?php
+				// Owner lock (Basecamp 10320619418): hidden when members may not
+				// choose; the upload then takes the site default server-side. The
+				// options come from the one shared list, preselected at the site
+				// default like every other upload picker.
+				if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) :
+					?>
 				<select id="mvs-bp-upload-privacy" class="mvs-bp-upload-field"
 					aria-label="<?php esc_attr_e( 'Who can see this media', 'wpmediaverse' ); ?>">
-					<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
-					<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
-					<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-						<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-					<?php endif; ?>
-					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
+					<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( \WPMediaVerse\Core\SettingsHelper::get_default_privacy() ); ?>
 				</select>
+				<?php endif; ?>
 				<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle(); ?>
 			</div>
 
