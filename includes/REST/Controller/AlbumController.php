@@ -392,41 +392,6 @@ class AlbumController extends WP_REST_Controller {
 	}
 
 	/**
-	 * The album's item ids this viewer may actually open.
-	 *
-	 * A viewable album does not make its contents viewable: a public album can
-	 * hold a private item, because the privacy clamp only ever tightens. The
-	 * list and the count both used the raw membership, so a signed-out caller
-	 * got the ids of items they cannot open and a count of how many were being
-	 * withheld - the enumeration handle for the /items leak fixed alongside
-	 * this. 2.5.1.
-	 *
-	 * @since 2.5.1
-	 *
-	 * @param int $album_id Album post id.
-	 * @return int[]
-	 */
-	private function viewable_item_ids( int $album_id ): array {
-		$mvs_ids = array_map( 'intval', array_column( $this->albums->get_items( $album_id ), 'media_id' ) );
-
-		if ( empty( $mvs_ids ) ) {
-			return array();
-		}
-
-		$mvs_viewer_id = get_current_user_id();
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_ids );
-
-		return array_values(
-			array_filter(
-				$mvs_ids,
-				function ( $mvs_media_id ) use ( $mvs_viewer_id ) {
-					return $this->privacy->can_view( (int) $mvs_media_id, $mvs_viewer_id );
-				}
-			)
-		);
-	}
-
-	/**
 	 * Get an album's media items, in album order, paginated.
 	 *
 	 * `GET /albums/{id}/items`. The route previously registered POST only, so
@@ -458,25 +423,10 @@ class AlbumController extends WP_REST_Controller {
 
 		// get_items() already excludes trashed media and orders by position, so
 		// the slice below is the album's real order, not a re-sort.
-		$all_ids = array_map( 'intval', array_column( $this->albums->get_items( $post->ID ), 'media_id' ) );
-
-		// The ALBUM being viewable does not make its CONTENTS viewable. A public
-		// album can hold a private item two ordinary ways - adding a private item
-		// to a public album, or flipping a private album public, since the privacy
-		// clamp only ever tightens - and every member was formatted and returned
-		// regardless, handing a signed-out caller the title, description, owner,
-		// filename and stats of items they cannot open. Same shape as the
-		// media/{id}/group hole, found by the route-authority guard. 2.5.1.
-		$mvs_viewer_id = get_current_user_id();
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $all_ids );
-		$all_ids = array_values(
-			array_filter(
-				$all_ids,
-				function ( $mvs_media_id ) use ( $mvs_viewer_id ) {
-					return $this->privacy->can_view( (int) $mvs_media_id, $mvs_viewer_id );
-				}
-			)
-		);
+		// One rule, in AlbumService: a viewable album does not make its contents
+		// viewable, and every surface listing membership must apply the same
+		// filter. The renderer had its own copy of the query without it.
+		$all_ids = $this->albums->viewable_item_ids( $post->ID );
 
 		// Counted after filtering: an honest total over a filtered page is its own
 		// disclosure - it tells a stranger how much is being withheld.
@@ -830,7 +780,7 @@ class AlbumController extends WP_REST_Controller {
 			'link'           => get_permalink( $album_id ),
 			'privacy'        => $privacy_value ? $privacy_value : 'public',
 			'album_type'     => $album_type ? $album_type : 'default',
-			'media_count'    => count( $this->viewable_item_ids( $album_id ) ),
+			'media_count'    => count( $this->albums->viewable_item_ids( $album_id ) ),
 			'cover_url'      => $this->albums->get_cover_url( $album_id ),
 			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
 			'is_owner'       => $is_owner,
@@ -838,7 +788,7 @@ class AlbumController extends WP_REST_Controller {
 		);
 
 		if ( $include_items ) {
-			$data['items'] = $this->viewable_item_ids( $album_id );
+			$data['items'] = $this->albums->viewable_item_ids( $album_id );
 		}
 
 		/**

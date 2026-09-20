@@ -1,0 +1,76 @@
+{
+  "_doc": [
+    "Declared authority for every shortcode and block this plugin registers.",
+    "RenderSurfaceAuthorityTest walks the LIVE registries ($GLOBALS['shortcode_tags'] and",
+    "WP_Block_Type_Registry), keeps the entries whose callback/render.php lives inside this",
+    "plugin, and fails when one of them is missing here - so a new shortcode or block cannot",
+    "ship without someone stating whether it takes an object id.",
+    "",
+    "id_att   - the attribute that names an object. Every renderer that has one is DISPATCHED",
+    "           anonymously against a private fixture of every type (media, document, album,",
+    "           collection) and must disclose nothing that belongs to it.",
+    "null     - takes no object id. MUST carry a reason saying why it cannot leak one.",
+    "user_att - takes a user id rather than an object id. Rendered anonymously scoped to the",
+    "           fixture owner; the owner's private item must not appear.",
+    "discloses - fields this renderer reveals ON PURPOSE (title|slug). Requires a reason.",
+    "           Everything else - file path, signed URL, description, the ids of items the",
+    "           renderer discovered rather than was handed - is still checked."
+  ],
+  "shortcodes": {
+    "mvs_album": { "id_att": "id" },
+    "mvs_player": { "id_att": "id" },
+    "mvs_pdf_viewer": { "id_att": "id" },
+    "mvs_collection": { "id_att": "id" },
+    "mvs_lock_overlay": {
+      "id_att": "id",
+      "discloses": [ "title", "slug" ],
+      "reason": "The block IS the teaser for gated content: an editor places it naming one item so a visitor can be told what is behind the lock and offered a way in. The title and the login-redirect permalink are the product. The file, the signed URL and the thumbnail are not, and are still asserted absent. OPEN QUESTION for the owner: it teases items with no access rule and so no unlock path, where the teaser reveals a private title for nothing."
+    },
+    "mvs_gallery": {
+      "id_att": null,
+      "user_att": "user_id",
+      "reason": "A query, not an object: it renders through mvs/media-grid, whose SQL carries MediaRepository::explore_privacy_clause() for the current viewer."
+    },
+    "mvs_member_photos": {
+      "id_att": null,
+      "user_att": "user_id",
+      "reason": "A member's grid. Delegates to mvs/media-grid, so the same viewer-scoped privacy clause decides every row."
+    },
+    "mvs_explore_feed": {
+      "id_att": null,
+      "reason": "The public feed. No id; rows come from the same viewer-scoped privacy clause."
+    },
+    "mvs_documents": {
+      "id_att": null,
+      "reason": "Lists MediaRepository::public_documents() only - it never tries to answer 'what may this viewer see', it lists what is already public. The folder/drive branches hand off to Pro's permission ladder."
+    },
+    "mvs_stats": { "id_att": null, "reason": "Aggregate counts for the whole site. Takes no id and names no item." },
+    "mvs_dashboard": { "id_att": null, "reason": "The signed-in member's own dashboard. Renders an auth gate for anonymous visitors." },
+    "mvs_upload": { "id_att": null, "reason": "An upload form. Reads nothing." },
+    "mvs_profile_edit": { "id_att": null, "reason": "The signed-in member's own profile form. Returns a log-in prompt for anonymous visitors." },
+    "mvs_usage_history": { "id_att": null, "reason": "The signed-in member's own upload ledger. Returns '' for anonymous visitors." }
+  },
+  "blocks": {
+    "mvs/album-viewer": { "id_att": "albumId" },
+    "mvs/media-player": { "id_att": "mediaId" },
+    "mvs/pdf-viewer": { "id_att": "mediaId" },
+    "mvs/lock-overlay": {
+      "id_att": "mediaId",
+      "discloses": [ "title", "slug" ],
+      "reason": "Same renderer as [mvs_lock_overlay]; see the reason there."
+    },
+    "mvs/media-grid": {
+      "id_att": null,
+      "user_att": "userId",
+      "reason": "The one grid emitter. Its SQL carries MediaRepository::explore_privacy_clause() for the current viewer, so the gate is in the query rather than in a per-row filter."
+    },
+    "mvs/member-photos": {
+      "id_att": null,
+      "user_att": "userId",
+      "reason": "Delegates to mvs/media-grid."
+    },
+    "mvs/explore-feed": { "id_att": null, "reason": "The public feed; no id." },
+    "mvs/media-stats": { "id_att": null, "reason": "Aggregate counts only." },
+    "mvs/media-upload": { "id_att": null, "reason": "An upload form. Reads nothing." }
+  }
+}

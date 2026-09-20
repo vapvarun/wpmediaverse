@@ -55,25 +55,23 @@ if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int)
 	return;
 }
 
-// Get album items joined with mvs_media_index for full media data.
-global $wpdb;
-$album_items_table = $wpdb->prefix . 'mvs_album_items';
-// The index is the joined side of a query this template owns; the repository
-// supplies the name (Rule 7 — see MediaRepository::index_table()).
-$index_table       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
+// Album membership the VIEWER may open. This template used to run its own
+// JOIN filtered on status alone, so a public album holding a private item
+// rendered that item's title and permalink to anyone - the same hole the REST
+// route had, in a second copy of the query. AlbumService owns the rule now.
+// 2.5.1.
+$mvs_albums   = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+$mvs_repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+$mvs_item_ids = $mvs_albums->viewable_item_ids( $album_id );
 
-// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-$items = $wpdb->get_results(
-	$wpdb->prepare(
-		"SELECT idx.* FROM {$album_items_table} ai
-		INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
-		WHERE ai.album_id = %d AND idx.status = 'publish'
-		ORDER BY ai.position ASC",
-		$album_id
-	),
-	ARRAY_A
-);
-// phpcs:enable
+$items = array();
+foreach ( $mvs_item_ids as $mvs_item_id ) {
+	$mvs_row = $mvs_repo->get_all( (int) $mvs_item_id );
+
+	if ( $mvs_row && 'publish' === ( $mvs_row['status'] ?? '' ) ) {
+		$items[] = $mvs_row;
+	}
+}
 
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 if ( empty( $mvs_shortcode_context ) ) {

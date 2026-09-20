@@ -365,6 +365,43 @@ class AlbumService {
 	}
 
 	/**
+	 * The album's item ids this viewer may actually open.
+	 *
+	 * A viewable album does not make its contents viewable: the privacy clamp
+	 * only ever tightens, so a public album genuinely holds private items. Every
+	 * surface that lists album membership has to apply this, and each one that
+	 * rolled its own leaked - the REST route did (fixed 2.5.1), and so did the
+	 * album-viewer block and the [mvs_album] shortcode. It lives here so there
+	 * is one rule with one place to fix.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int      $album_id  Album post id.
+	 * @param int|null $viewer_id Viewer, or null for the current user.
+	 * @return int[]
+	 */
+	public function viewable_item_ids( int $album_id, ?int $viewer_id = null ): array {
+		$mvs_ids = array_map( 'intval', array_column( $this->get_items( $album_id ), 'media_id' ) );
+
+		if ( empty( $mvs_ids ) ) {
+			return array();
+		}
+
+		$mvs_viewer  = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+		$mvs_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_ids );
+
+		return array_values(
+			array_filter(
+				$mvs_ids,
+				static function ( $mvs_media_id ) use ( $mvs_privacy, $mvs_viewer ) {
+					return $mvs_privacy->can_view( (int) $mvs_media_id, $mvs_viewer );
+				}
+			)
+		);
+	}
+
+	/**
 	 * Get items for an album, ordered by position.
 	 *
 	 * @param int $album_id Album post ID.
