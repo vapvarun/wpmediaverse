@@ -1,21 +1,48 @@
 {
   "release_version": "2.5.1",
   "mode": "combo",
-  "ran_at": "2026-09-19T19:18:55Z",
+  "ran_at": "2026-09-20T09:33:57Z",
   "free_version": "2.5.1",
   "pro_version": "2.5.1",
   "sections": {
-    "A_fresh_install": { "pass": 5, "fail": 0, "skipped": 0 },
-    "B_upgrade": { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows": { "pass": 32, "fail": 0, "skipped": 12 },
-    "D_regression_guards": { "pass": 25, "fail": 0, "skipped": 17 },
-    "E_pro_smoke": { "pass": 5, "fail": 0, "skipped": 19 },
-    "F_cross_browser": { "pass": 2, "fail": 0, "skipped": 3 }
+    "A_fresh_install": {
+      "pass": 5,
+      "fail": 0,
+      "skipped": 0
+    },
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 3
+    },
+    "C_core_flows": {
+      "pass": 32,
+      "fail": 0,
+      "skipped": 12
+    },
+    "D_regression_guards": {
+      "pass": 25,
+      "fail": 0,
+      "skipped": 17
+    },
+    "E_pro_smoke": {
+      "pass": 5,
+      "fail": 0,
+      "skipped": 19
+    },
+    "F_cross_browser": {
+      "pass": 2,
+      "fail": 0,
+      "skipped": 3
+    }
   },
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "WHAT THIS STAMP COVERS. Free 3eae0218 / Pro b40e23e, both clean trees. RE-RUN THIS ROUND: the set() write-after-delete repro and a live-row update; the pristine Docker activation of both zips end to end, including the new schema assertions and a read/write probe against the column-less table; the sticky-offset geometry at 1440 and 390 plus a collateral sweep over Load More, the lightbox, the Load More focus ring and the bulk bar; and the album picker's REST scoping for two different members plus a private-album leak probe. CARRIED FORWARD UNCHANGED from the 2026-09-19T18:54Z stamp and NOT re-evidenced here: A3 and A4 (first-request routing and the compete page, which nothing in this delta touches), every other C, D, E and F row, and all skip reasons. Row total remains 123. Dev-site debug.log produced ZERO new output across this entire round.",
+    "WHAT THIS STAMP COVERS. Free 5ed0b75e / Pro 22768f0, both clean trees. This is a TARGETED re-stamp, not a re-walk: the delta since the 2026-09-19T19:18Z stamp is three commits that are release metadata plus one annotation, so only the rows that touch the changed method were re-run. RE-RUN THIS ROUND: a mechanical proof that fcf3fc77 is behaviour-neutral (see the next entry), the drive_document_facets() DISTINCT query against seeded space-drive rows including its bound-parameter path, and the rows that route through it - the Pro document listing parity for a signed-in member (/documents, /folders, /me/shared, /drives, /documents/search), the drive UI render, and the signed-out visibility spec on all four Pro document routes. CARRIED FORWARD UNCHANGED and NOT re-evidenced here: every other A, C, D, E and F row, with the same pass and skip reasons as the 19:18 stamp; B stays skipped. Row total remains 123. Counts are identical to the previous stamp because nothing regressed and no row changed state. Dev-site debug.log gained only WordPress core's overnight automatic-update lines, with zero severity entries.",
+    "BEHAVIOUR-NEUTRALITY OF fcf3fc77 VERIFIED MECHANICALLY, not taken on trust. Across the whole Free range 3eae0218..5ed0b75e exactly one PHP file changed, includes/Repository/MediaRepository.php; Pro's range is readme.txt only. Proof one: the prepare() call in drive_document_facets() was token-extracted from both revisions and is IDENTICAL - 25 tokens, md5 c4e9536c80fbbaba981288610385fb4f on both sides - reading prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . \" FROM {$index} WHERE {$where_sql} AND privacy = 'space'\" , ...$params ). The SQL text and the bound parameters are unchanged, and ARRAY_N is still the fetch mode in both. Proof two: a whole-file token stream with comments and whitespace stripped differs in exactly three hunks, and all three are the temp-variable extraction - the assignment target becomes $mvs_drive_sql, the '(array) $wpdb->get_results(' tokens move from before the prepare call to after it, and $mvs_drive_sql is passed in its place. No token inside the prepare call was added, removed or reordered. The claim holds: this is a phpcs annotation move, not a query change.",
+    "DRIVE_DOCUMENT_FACETS RE-EXERCISED LIVE, with a fixture that makes the result meaningful. Called cold the method returned zero drives on this site, which proves little, because nothing here carries privacy='space' - so three rows were seeded, two on drive 77 and one on drive 88. The DISTINCT query then returned exactly two tuples, [\"space\",77,0,0] and [\"space\",88,0,0], collapsing the two rows that share drive 77 and matching the shape space_drive_tuple_sql() declares, with an empty wpdb->last_error. The bound-parameter path was exercised through the author argument, including a hostile value ('1 OR 1=1; DROP TABLE x --') which produced no error, no rows and left the index intact - the parameters really are bound, which is what the moved annotation asserts. All three seeded rows were deleted afterwards and the index is back to its 181-row baseline with zero empty-slug rows.",
+    "PRO DOCUMENT LISTING PARITY AND VISIBILITY SPEC RE-RUN, the rows that route through the changed method via PermissionService::viewer_visibility(). Signed-in member (mina_aoki): /documents 200 with her one document, /folders 200, /me/shared 200 with one shared document, /drives 200, /documents/search 200. The drive UI at /my-media/documents/ renders one document row with the '1 document' count and the My documents, Shared with me and Trash tabs, with no PHP notice and zero console errors. Signed-out, which is the want=drives-only branch: /documents, /folders, /me/shared and /drives all answer 401, unchanged from the documented gate with mvs_pro_documents_anon_links=0. Every figure matches what these rows recorded before the annotation change.",
     "FIXED AND RE-VERIFIED - the set() write-after-delete stub INSERT (the finding that held the previous stamp red). MediaRepository::set() now returns when the index row is absent instead of inserting a one-column stub. Deterministic repro re-run: set(999777,'file_url',...) and set(999778,...) on ids absent from the index each produced an empty wpdb->last_error, created NO row, and left the index count unchanged at 181; the 'Duplicate entry \\'\\' for key wp_mvs_media_index.slug' error no longer appears anywhere in the log window. Regression check on the same call path: set() against a LIVE row (media 63383) applied the UPDATE, moved updated_at, and was restored to its original file_url cleanly - the guard does not block normal writes. Empty-slug rows across the whole index: 0. The coordinator's tests/unit/WriteAfterDeleteTest.php (3 tests) covers the same ground in CI.",
     "FIXTURE BASELINE RE-BASED to 181 index rows, down from 182, because the coordinator deleted the pre-existing ghost row 63388 (empty slug, title and media_type, created 2026-09-18 by an earlier occurrence of this bug) through delete_cascade. Confirmed at the start and end of this round: 181 rows, 0 rows with an empty slug, no E2E leftovers.",
     "ACTIVATION RE-RUN ON A PRISTINE INSTALL after the Migrator change. Throwaway Docker stack, WordPress 7.1.1 / PHP 8.2 / MariaDB 11, both 2.5.1 zips rebuilt from the clean trees. WP_DEBUG and WP_DEBUG_LOG were forced on in wp-config.php BEFORE any install and proven wired with a canary notice that landed in the log, so the empty result below is meaningful rather than an artefact of logging being off. Free activates, then Pro on top: ZERO debug.log output across both. mvs_db_version 36, 37 mvs_* tables combo (matching the dev site), MVS_VERSION and MVS_PRO_VERSION both 2.5.1, mvs_media_spaces created. Stack torn down with docker compose down -v; two unrelated pre-existing docker-smoke containers on the host (up 3 and 4 days) were left untouched.",
