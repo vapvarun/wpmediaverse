@@ -169,7 +169,7 @@ Report whether the current user can view the item (resolves privacy rules and an
 
 ### GET /media/{id}/group
 
-**Auth:** Public.
+**Auth:** Public (privacy enforced per item).
 
 Return every item that belongs to the same gallery/upload group as `{id}` (used to build multi-item lightboxes).
 

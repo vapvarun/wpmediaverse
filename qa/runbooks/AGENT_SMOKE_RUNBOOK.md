@@ -271,6 +271,14 @@ Each step is a contract, not a script. When you verify it, exercise the UI as a 
 ### C.anon.album-collection
 **What to verify:** `/album/<slug>/` and `/collection/<slug>/` render their items respecting privacy. A private album shows a lock state to anon, not the items. A public collection with smart rules that evaluate to zero shows a "no items match rules" empty state.
 
+### C.anon.album-item-privacy
+**What to verify:** the item-level rule, on a **public** album holding one public and one private item. Anonymous and a second member (not the owner) see only the public item — its title and permalink — in all three surfaces: the `[mvs_album]` shortcode on a page, the `mvs/album-viewer` block on a post, and `GET /wp-json/mvs/v1/albums/{id}/items`. The owner sees both. The three must agree item for item for the same viewer, and `media_count` must never exceed what that viewer can see. Repeat for `[mvs_collection]`: a collection in a members-only space must refuse an anonymous visitor outright, while a public collection renders for everyone.
+**Why it matters:** 2.5.1 fixed exactly this. The rule lived in three copies; the REST copy was corrected first and the two renderers kept listing private items to anyone. A whole-object check (above) passes while this leaks.
+
+### C.anon.private-community-case
+**What to verify:** on a private community, request a gated route with the namespace and path in **mixed case** (`/wp-json/MVS/v1/albums`, `/wp-json/mvs/V1/ALBUMS`) while signed out. Every casing must refuse, exactly as the all-lowercase form does. Then confirm a logged-in member still gets normal results on the same routes, with no failed requests.
+**Why it matters:** WordPress matches routes case-insensitively while the gate compared them case-sensitively, so capitalisation alone bypassed the login requirement (CWE-863, reported externally). The risk of the fix is over-blocking members, so both halves are the test.
+
 ### C.anon.dashboard-gate
 **What to verify:** `/my-media/` for an anonymous visitor shows a styled "Log in" CTA with `redirect_to` round-trip — NOT a plain orphan sentence. (See D.dashboard-anon-gate.)
 

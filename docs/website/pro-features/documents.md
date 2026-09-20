@@ -49,6 +49,48 @@ Opening a document uses the right tier for its type. MediaVerse embeds what the 
 
 Downloads always work, whatever the type.
 
+## One File, Several Spaces
+
+A file can be linked into more than one space without being uploaded again. The file stays
+on its owner's drive; the space gets a link to it, and that space's members can open it.
+
+- **Who may link:** anyone who can write to the target space (member, moderator or owner)
+  **and** can edit the file - which in practice means its owner. Linking is the same level
+  of permission as uploading into that space.
+- **Who may remove a link:** the space's moderator or owner, or the file's owner.
+- **What a link is not:** removing a link never deletes the file. It stays on its owner's
+  drive, and the other spaces it is linked into keep their copy of the link.
+
+Space search finds files linked into a space, not only the ones uploaded there.
+
+## When a Space Is Deleted
+
+Deleting a space **trashes** its drive - the documents and folders that live in that space -
+the same soft delete a member performs, so nothing is destroyed and everything can be
+restored. Files that members merely **linked in from their own drives are left alone**;
+they belong to those members, not to the space.
+
+A large drive is cleaned in batches across several requests rather than in one, so deleting
+a space with thousands of files does not time out.
+
+## Orphaned Files
+
+Earlier versions could leave a document file on disk after its record was gone. **MediaVerse
+> Settings > Documents** has a card that looks for these: "Check for orphaned files" is a dry
+run that reports what it found and deletes nothing, and the delete step is a separate,
+deliberate action.
+
+The same thing is available on the command line, which is the better choice on a big site:
+
+```bash
+wp mvs-pro documents reclaim-orphans --dry-run
+wp mvs-pro documents reclaim-orphans --scope=<segment>/2025/03 --dry-run
+wp mvs-pro documents reclaim-orphans --yes
+```
+
+Always run the dry run first and read what it lists. A file it names is one no document row
+points at any more; if that is not what you expect, stop and investigate rather than deleting.
+
 ## For Site Owners
 
 Settings live at **MediaVerse > Settings > Documents**:

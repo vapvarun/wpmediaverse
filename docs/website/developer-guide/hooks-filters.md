@@ -226,6 +226,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_default_thumbnail_style` | filter | Free | 1.8.0 |
 | `mvs_grid_thumb_size_key` | filter | Free | 1.8.0 |
 | `mvs_storage_repair_enabled` | filter | Free | 1.8.0 |
+| `mvs_local_only_path_prefixes` | filter | Free | 2.5.1 |
 | `mvs_strip_dead_bp_links` | filter | Free | 1.7.1 |
 | `mvs_dead_bp_link_patterns` | filter | Free | 1.7.1 |
 | `mvs_dm_denial_message` | filter | Free | 1.8.0 |
@@ -1506,6 +1507,43 @@ $terms = apply_filters( 'mvs_ai_moderation_terms', array( 'nudity', 'violence' )
 ---
 
 ## 11. Storage & Files
+
+### `mvs_local_only_path_prefixes`
+
+Names the path prefixes that always resolve against the WordPress uploads base and never
+live on a cloud driver, whatever the site's configured storage is. Pro registers
+`wpmediaverse-documents` through this filter, which is how a site on S3 or BunnyCDN keeps
+its document drive on local disk while its media goes to the cloud.
+
+Prefixes are normalised (backslashes to forward slashes, surrounding slashes trimmed) and
+anything that is not a safe relative path is dropped. **An empty string is rejected on
+purpose** - it would reroute every media path to the uploads root.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$prefixes` | string[] | Prefixes collected so far, e.g. `array( 'wpmediaverse-documents' )` |
+
+**Returns:** `string[]`
+
+```php
+/**
+ * Keep a custom tree on local disk on a cloud-storage site.
+ *
+ * @since 2.5.1
+ *
+ * @param string[] $prefixes Prefixes collected so far.
+ * @return string[]
+ */
+add_filter(
+	'mvs_local_only_path_prefixes',
+	function ( array $prefixes ): array {
+		$prefixes[] = 'my-private-archive';
+		return $prefixes;
+	}
+);
+```
 
 ### `mvs_storage_driver`
 
