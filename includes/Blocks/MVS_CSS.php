@@ -61,11 +61,15 @@ class MVS_CSS {
 	}
 
 	public static function generate( $unique_id, $attrs ) {
-		if ( empty( $unique_id ) ) {
+		if ( empty( $unique_id ) || ! is_scalar( $unique_id ) ) {
+			// A non-scalar id reached sanitize_html_class() and emitted a PHP
+			// "Array to string conversion" warning plus a .mvs-block-Array
+			// selector. No render path passes one, but a block attribute is
+			// author-controlled and this is cheaper than trusting that. 2.5.1.
 			return '';
 		}
 
-		$selector = '.mvs-block-' . sanitize_html_class( $unique_id );
+		$selector = '.mvs-block-' . sanitize_html_class( (string) $unique_id );
 		$desktop  = array();
 		$tablet   = array();
 		$mobile   = array();
