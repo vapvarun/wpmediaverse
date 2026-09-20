@@ -14,6 +14,8 @@ declare( strict_types=1 );
 
 namespace WPMediaVerse\Cert;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * WP-CLI handler for the functional certification gate.
  */

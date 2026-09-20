@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace WPMediaVerse\Media;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Links media items to an arbitrary object — a BuddyPress activity, a BuddyNext
  * post (`bn_post`), a space, etc. — so a headless consumer can attach and read

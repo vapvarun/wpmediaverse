@@ -28,6 +28,8 @@ declare( strict_types=1 );
 
 namespace WPMediaVerse\Cert;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Runs the functional certification checks for WPMediaVerse.
  */

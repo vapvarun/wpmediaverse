@@ -1335,6 +1335,13 @@ class SignedUrlService {
 				$start = (int) $matches[1];
 				$end   = ! empty( $matches[2] ) ? (int) $matches[2] : $file_size - 1;
 
+				// Clamp to the file. A client asking for bytes=0-999999999 used to
+				// get a Content-Length far larger than the body it received: the
+				// read loop stops at feof, so nothing outside the file was ever
+				// served, but the header lied and a strict client hangs waiting
+				// for bytes that will not come. 2.5.1.
+				$end = min( $end, $file_size - 1 );
+
 				if ( $start > $end || $start >= $file_size ) {
 					status_header( 416 );
 					header( "Content-Range: bytes */{$file_size}" );
