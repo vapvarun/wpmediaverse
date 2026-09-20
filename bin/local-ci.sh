@@ -323,12 +323,33 @@ if [ "$MODE" != "quick" ]; then
     if jq . "$MANIFEST_FILE" > /dev/null 2>&1; then
       pass "3.1 Manifest is valid JSON"
 
-      MANIFEST_AT="$(jq -r '.generated.at // empty' "$MANIFEST_FILE")"
-      if [ -n "$MANIFEST_AT" ]; then
-        AGE_DAYS=$(( ($(date -u +%s) - $(date -juf "%Y-%m-%dT%H:%M:%SZ" "$MANIFEST_AT" +%s 2>/dev/null || echo 0)) / 86400 ))
-        if [ "$AGE_DAYS" -gt 30 ]; then
-          warn "3.1 Manifest is ${AGE_DAYS}d old — refresh via /wp-plugin-onboard --refresh"
-        fi
+      # FRESHNESS, asked of git rather than of the manifest itself.
+      #
+      # This used to read `.generated.at` — a string a human edits — and only
+      # warn when it passed 30 days. Both halves failed on 2026-09-21: the
+      # manifest had stopped at 2.4.1 and missed everything 2.5.0 and 2.5.1
+      # added, while `.generated.at` read 2026-09-01, so the stage saw "19
+      # days" and said nothing. A self-declared date is a `touch`, and a warn
+      # nobody reads is not a gate.
+      #
+      # Git owns the two timestamps that cannot be talked out of: when the
+      # manifest last changed, and when the source it describes last changed.
+      # Same shape bin/build-release.sh uses to gate the smoke report.
+      MANIFEST_TS="$(git log -1 --format=%ct -- "$MANIFEST_FILE" 2>/dev/null || echo 0)"
+      SRC_TS="$(git log -1 --format=%ct -- includes 2>/dev/null || echo 0)"
+      if [ "${MANIFEST_TS:-0}" -gt 0 ] && [ "${SRC_TS:-0}" -gt 0 ] && [ "$MANIFEST_TS" -lt "$SRC_TS" ]; then
+        fail "3.1a Manifest is STALE — includes/ was committed after $MANIFEST_FILE"
+        printf "    manifest last commit: %s\n" "$(date -r "$MANIFEST_TS" -u '+%Y-%m-%d %H:%M')"
+        printf "    includes/ last commit: %s\n" "$(date -r "$SRC_TS" -u '+%Y-%m-%d %H:%M')"
+        printf "    Record what changed as a delta entry under .generated in the manifest and\n"
+        printf "    commit it WITH the change (CLAUDE.md: keep the manifest in sync with the\n"
+        printf "    commit that adds a hook, route or CLI command). A commit that adds no new\n"
+        printf "    surface is a legitimate one-line delta saying exactly that.\n"
+        printf "    This plugin is agent-enumeration-only — do NOT run the deterministic\n"
+        printf "    generator, it zeroes the registrar-pattern categories.\n"
+        printf "    Emergency bypass: SKIP_LOCAL_CI=1 git push\n"
+      else
+        pass "3.1a Manifest is at least as new as the source it describes"
       fi
     else
       fail "3.1 Manifest JSON invalid"
