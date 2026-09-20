@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MediaVerse 2.5.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-09-20 12:40:42+00:00\n"
+"POT-Creation-Date: 2026-09-20 14:55:19+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -4245,11 +4245,11 @@ msgstr[1] ""
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:322
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:334
 #: includes/REST/Controller/AlbumController.php:383
-#: includes/REST/Controller/AlbumController.php:413
-#: includes/REST/Controller/AlbumController.php:500
-#: includes/REST/Controller/AlbumController.php:580
-#: includes/REST/Controller/AlbumController.php:717
-#: includes/REST/Controller/AlbumController.php:742
+#: includes/REST/Controller/AlbumController.php:448
+#: includes/REST/Controller/AlbumController.php:555
+#: includes/REST/Controller/AlbumController.php:635
+#: includes/REST/Controller/AlbumController.php:772
+#: includes/REST/Controller/AlbumController.php:797
 #: includes/REST/Controller/BulkController.php:315
 #: includes/Services/AlbumService.php:341
 #: includes/Services/AlbumService.php:670 templates/album.php:38
@@ -4573,8 +4573,8 @@ msgstr ""
 #: includes/REST/Controller/AccessController.php:417
 #: includes/REST/Controller/AccessController.php:442
 #: includes/REST/Controller/AdminController.php:73
-#: includes/REST/Controller/AlbumController.php:710
-#: includes/REST/Controller/AlbumController.php:735
+#: includes/REST/Controller/AlbumController.php:765
+#: includes/REST/Controller/AlbumController.php:790
 #: includes/REST/Controller/FavoriteController.php:328
 #: includes/REST/Controller/InterestsController.php:232
 #: includes/REST/Controller/ProfileController.php:150
@@ -4757,7 +4757,7 @@ msgstr ""
 msgid "Activity media links"
 msgstr ""
 
-#: includes/REST/CommunityPrivacyGate.php:269
+#: includes/REST/CommunityPrivacyGate.php:285
 msgid "This community is private. Please log in to view it."
 msgstr ""
 
@@ -4839,41 +4839,41 @@ msgid "Your account will be permanently deleted on %s. You can cancel until then
 msgstr ""
 
 #: includes/REST/Controller/AlbumController.php:388
-#: includes/REST/Controller/AlbumController.php:418
+#: includes/REST/Controller/AlbumController.php:453
 msgid "You do not have access to this album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:514
+#: includes/REST/Controller/AlbumController.php:569
 #: includes/REST/Controller/BulkController.php:146
 #: includes/REST/Controller/MediaController.php:1049
 msgid "Privacy is set by the site owner, so it cannot be changed here."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:596
+#: includes/REST/Controller/AlbumController.php:651
 msgid "Failed to delete album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:613
+#: includes/REST/Controller/AlbumController.php:668
 msgid "Order must be an array of media IDs."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:637
+#: includes/REST/Controller/AlbumController.php:692
 msgid "media_ids must be a non-empty array."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:658
+#: includes/REST/Controller/AlbumController.php:713
 msgid "Item not found in album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:697
+#: includes/REST/Controller/AlbumController.php:752
 msgid "You do not have permission to create albums."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:724
+#: includes/REST/Controller/AlbumController.php:779
 msgid "You do not have permission to edit this album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:749
+#: includes/REST/Controller/AlbumController.php:804
 msgid "You do not have permission to delete this album."
 msgstr ""
 
