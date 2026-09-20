@@ -624,6 +624,13 @@ class Shortcodes {
 			return '<p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p>';
 		}
 
+		// The container gate the REST route has always had and this renderer
+		// never did: a members-only collection rendered its contents to a
+		// signed-out visitor. 2.5.1.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $collection_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
+			return '<p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p>';
+		}
+
 		$container = \WPMediaVerse\Core\Plugin::container();
 		$service   = $container->get( 'collections' );
 		$type      = $service->get_type( $collection_id );
@@ -633,17 +640,11 @@ class Shortcodes {
 			$resolved  = $service->resolve( $collection_id, (int) $atts['per_page'], 1, get_current_user_id() );
 			$media_ids = array_column( $resolved['items'], 'media_id' );
 		} else {
-			global $wpdb;
-			$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$collection_id,
-					(int) $atts['per_page']
-				)
-			);
-
-			/** This filter is documented in includes/Social/FavoriteService.php */
-			$media_ids = apply_filters( 'mvs_collection_media_ids', array_map( 'absint', (array) $media_ids ), $collection_id, (int) $atts['per_page'] );
+			// FavoriteService owns this read: same query, same Pro filter, and the
+			// viewer gate that has to run after the filter. This copy had the
+			// query and the filter and not the gate, so a public collection
+			// listed its private members to anyone. One caller, one rule. 2.5.1.
+			$media_ids = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, (int) $atts['per_page'] );
 		}
 
 		if ( empty( $media_ids ) ) {

@@ -177,6 +177,7 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Security - Block spacing and type settings are checked against the units CSS allows, so a contributor cannot put a script into a page through them.
 * Security - An album you can open no longer shows you the items inside it that you cannot. A public album holding a private photo listed that photo's details to anyone.
 * Security - A private community stays private however the address is typed. The gate that requires a login on a private community matched the address case-sensitively, so a request with different capitalisation was served without one.
+* Security - Album and collection blocks and shortcodes show only the items the visitor may open. A public album or collection holding a private photo listed that photo to anyone, and a members-only collection rendered its contents to signed-out visitors.
 * Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 * Dev      - The page width token --mvs-content-width is documented in the developer guide.
 * Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
