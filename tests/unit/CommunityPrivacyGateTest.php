@@ -290,4 +290,67 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 			$this->assertSame( 'mvs_community_private', $result->get_error_code() );
 		}
 	}
+
+	/**
+	 * The gate is case-insensitive, because WordPress route matching is.
+	 *
+	 * Core matches a route with `preg_match( '@^' . $route . '$@i', $path )`,
+	 * but `get_route()` returns the path exactly as it was sent. The gate
+	 * compared case-sensitively, so `/MVS/v1/albums` dispatched to the real
+	 * controller while the gate decided it was somebody else's namespace - and
+	 * this gate is the only thing forcing auth on routes that are deliberately
+	 * `__return_true`. A signed-out visitor read a private community's albums
+	 * and media by changing the case of the namespace.
+	 *
+	 * Reported by kta1kri. CWE-863.
+	 *
+	 * @dataProvider mixed_case_routes
+	 *
+	 * @param string $route Route as an attacker would send it.
+	 * @return void
+	 */
+	public function test_private_blocks_a_guest_whatever_the_case( string $route ): void {
+		add_filter( 'mvs_rest_require_auth', '__return_true' );
+		wp_set_current_user( 0 );
+
+		$result = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', $route ) );
+
+		$this->assertInstanceOf( \WP_Error::class, $result, $route . ' slipped past the private-community gate.' );
+		$this->assertSame( 'mvs_community_private', $result->get_error_code() );
+		$this->assertSame( 401, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * Spellings core will dispatch and the gate must therefore recognise.
+	 *
+	 * @return array<string, string[]>
+	 */
+	public function mixed_case_routes(): array {
+		return array(
+			'upper namespace'   => array( '/MVS/v1/albums' ),
+			'upper version'     => array( '/mvs/V1/media' ),
+			'shouting'          => array( '/MVS/V1/MEDIA' ),
+			'title case'        => array( '/Mvs/v1/tags' ),
+			'pro namespace'     => array( '/MVS-PRO/v1/challenges' ),
+		);
+	}
+
+	/**
+	 * An exemption still matches when the route arrives in another case.
+	 *
+	 * The exemption list is compared against the same normalised route, so it
+	 * has to be normalised too - otherwise closing the bypass would have
+	 * quietly started 401ing signed media URLs on a private community.
+	 *
+	 * @return void
+	 */
+	public function test_exemptions_survive_normalisation(): void {
+		add_filter( 'mvs_rest_require_auth', '__return_true' );
+		wp_set_current_user( 0 );
+
+		$this->assertNull(
+			CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', '/MVS/v1/serve' ) ),
+			'The signed serve route must stay exempt whatever the case.'
+		);
+	}
 }

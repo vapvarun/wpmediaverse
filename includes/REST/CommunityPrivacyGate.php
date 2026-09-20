@@ -185,10 +185,23 @@ class CommunityPrivacyGate {
 		 */
 		$prefixes = (array) apply_filters( 'mvs_rest_gated_route_prefixes', array( '/mvs/v1/' ), $request );
 
-		$route = (string) $request->get_route();
+		// Normalised ONCE, and every comparison below uses this value.
+		//
+		// WordPress matches routes case-insensitively (`preg_match( '@^' . $route
+		// . '$@i', $path )`), but get_route() hands back the path exactly as it
+		// was sent. A case-sensitive prefix test therefore said "not ours" for
+		// `/MVS/v1/albums` while core happily dispatched it to the real
+		// controller - and since this gate is the only thing forcing auth on
+		// routes that are deliberately `__return_true`, a signed-out visitor
+		// read a private community's albums and media by changing the case of
+		// the namespace. Reported by kta1kri; same bug class as the BuddyNext
+		// fix bea05103. CWE-863. 2.5.1.
+		$route = strtolower( (string) $request->get_route() );
 		$gated = false;
 		foreach ( $prefixes as $prefix ) {
-			if ( '' !== $prefix && 0 === strpos( $route, (string) $prefix ) ) {
+			$prefix = strtolower( (string) $prefix );
+
+			if ( '' !== $prefix && 0 === strpos( $route, $prefix ) ) {
 				$gated = true;
 				break;
 			}
@@ -243,7 +256,10 @@ class CommunityPrivacyGate {
 		);
 
 		foreach ( $exempt as $prefix ) {
-			$prefix = (string) $prefix;
+			// Lower-cased for the same reason the gate prefixes are: $route was
+			// normalised above, so an exemption carrying any upper case would
+			// silently stop matching the route it names.
+			$prefix = strtolower( (string) $prefix );
 
 			// Match on a PATH BOUNDARY, not a bare string prefix. A plain
 			// strpos() makes every exemption wider than the route it names:
