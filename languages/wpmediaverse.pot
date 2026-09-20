@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MediaVerse 2.5.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-09-20 14:55:19+00:00\n"
+"POT-Creation-Date: 2026-09-20 17:19:44+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -53,15 +53,15 @@ msgstr ""
 msgid "Choose an album in the block settings to display it here."
 msgstr ""
 
-#: build/blocks/album-viewer/render.php:137
-#: src/blocks/album-viewer/render.php:137
+#: build/blocks/album-viewer/render.php:135
+#: src/blocks/album-viewer/render.php:135
 msgid "Empty album"
 msgstr ""
 
-#: build/blocks/album-viewer/render.php:138
+#: build/blocks/album-viewer/render.php:136
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:237
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:387
-#: src/blocks/album-viewer/render.php:138 templates/album.php:352
+#: src/blocks/album-viewer/render.php:136 templates/album.php:352
 msgid "This album is empty."
 msgstr ""
 
@@ -295,7 +295,7 @@ msgid "Log in"
 msgstr ""
 
 #: build/blocks/media-upload/render.php:97
-#: includes/Shortcodes/Shortcodes.php:776 src/blocks/media-upload/render.php:97
+#: includes/Shortcodes/Shortcodes.php:777 src/blocks/media-upload/render.php:97
 #: templates/partials/profile-edit-panel.php:72 templates/profile-edit.php:122
 msgid "Uploading..."
 msgstr ""
@@ -2359,7 +2359,7 @@ msgid "SETTINGS"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsPage.php:607
-#: includes/Shortcodes/Shortcodes.php:851 templates/profile-edit.php:198
+#: includes/Shortcodes/Shortcodes.php:852 templates/profile-edit.php:198
 msgid "Save Changes"
 msgstr ""
 
@@ -2970,7 +2970,7 @@ msgstr ""
 
 #: includes/Admin/Settings/SettingsRegistrar.php:1046
 #: includes/Admin/Settings/SettingsRegistrar.php:1126
-#: includes/Shortcodes/Shortcodes.php:831
+#: includes/Shortcodes/Shortcodes.php:832
 #: templates/partials/profile-edit-panel.php:117 templates/profile-edit.php:178
 msgid "Everyone"
 msgstr ""
@@ -4138,7 +4138,7 @@ msgid "%s: Media"
 msgstr ""
 
 #: includes/Core/TemplateLoader.php:929 includes/Core/TemplateLoader.php:933
-#: includes/Shortcodes/Shortcodes.php:758 templates/explore.php:159
+#: includes/Shortcodes/Shortcodes.php:759 templates/explore.php:159
 #: templates/partials/dashboard-content.php:309 templates/profile-edit.php:102
 msgid "Edit Profile"
 msgstr ""
@@ -4245,14 +4245,14 @@ msgstr[1] ""
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:322
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:334
 #: includes/REST/Controller/AlbumController.php:383
-#: includes/REST/Controller/AlbumController.php:448
-#: includes/REST/Controller/AlbumController.php:555
-#: includes/REST/Controller/AlbumController.php:635
-#: includes/REST/Controller/AlbumController.php:772
-#: includes/REST/Controller/AlbumController.php:797
+#: includes/REST/Controller/AlbumController.php:413
+#: includes/REST/Controller/AlbumController.php:505
+#: includes/REST/Controller/AlbumController.php:585
+#: includes/REST/Controller/AlbumController.php:722
+#: includes/REST/Controller/AlbumController.php:747
 #: includes/REST/Controller/BulkController.php:315
 #: includes/Services/AlbumService.php:341
-#: includes/Services/AlbumService.php:670 templates/album.php:38
+#: includes/Services/AlbumService.php:707 templates/album.php:38
 msgid "Album not found."
 msgstr ""
 
@@ -4573,8 +4573,8 @@ msgstr ""
 #: includes/REST/Controller/AccessController.php:417
 #: includes/REST/Controller/AccessController.php:442
 #: includes/REST/Controller/AdminController.php:73
-#: includes/REST/Controller/AlbumController.php:765
-#: includes/REST/Controller/AlbumController.php:790
+#: includes/REST/Controller/AlbumController.php:715
+#: includes/REST/Controller/AlbumController.php:740
 #: includes/REST/Controller/FavoriteController.php:328
 #: includes/REST/Controller/InterestsController.php:232
 #: includes/REST/Controller/ProfileController.php:150
@@ -4791,7 +4791,7 @@ msgstr ""
 #: includes/REST/Controller/ReactionController.php:230
 #: includes/REST/Controller/SignedUrlController.php:232
 #: includes/REST/Controller/StatsController.php:108
-#: includes/Services/AlbumService.php:683
+#: includes/Services/AlbumService.php:720
 msgid "Media item not found."
 msgstr ""
 
@@ -4839,41 +4839,41 @@ msgid "Your account will be permanently deleted on %s. You can cancel until then
 msgstr ""
 
 #: includes/REST/Controller/AlbumController.php:388
-#: includes/REST/Controller/AlbumController.php:453
+#: includes/REST/Controller/AlbumController.php:418
 msgid "You do not have access to this album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:569
+#: includes/REST/Controller/AlbumController.php:519
 #: includes/REST/Controller/BulkController.php:146
 #: includes/REST/Controller/MediaController.php:1049
 msgid "Privacy is set by the site owner, so it cannot be changed here."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:651
+#: includes/REST/Controller/AlbumController.php:601
 msgid "Failed to delete album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:668
+#: includes/REST/Controller/AlbumController.php:618
 msgid "Order must be an array of media IDs."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:692
+#: includes/REST/Controller/AlbumController.php:642
 msgid "media_ids must be a non-empty array."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:713
+#: includes/REST/Controller/AlbumController.php:663
 msgid "Item not found in album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:752
+#: includes/REST/Controller/AlbumController.php:702
 msgid "You do not have permission to create albums."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:779
+#: includes/REST/Controller/AlbumController.php:729
 msgid "You do not have permission to edit this album."
 msgstr ""
 
-#: includes/REST/Controller/AlbumController.php:804
+#: includes/REST/Controller/AlbumController.php:754
 msgid "You do not have permission to delete this album."
 msgstr ""
 
@@ -4944,7 +4944,8 @@ msgstr ""
 #: includes/REST/Controller/CollectionController.php:204
 #: includes/REST/Controller/CollectionController.php:374
 #: includes/REST/Controller/CollectionController.php:401
-#: includes/Shortcodes/Shortcodes.php:624 templates/collection.php:35
+#: includes/Shortcodes/Shortcodes.php:624
+#: includes/Shortcodes/Shortcodes.php:631 templates/collection.php:35
 msgid "Collection not found."
 msgstr ""
 
@@ -5315,11 +5316,11 @@ msgstr ""
 msgid "Album title is required."
 msgstr ""
 
-#: includes/Services/AlbumService.php:693
+#: includes/Services/AlbumService.php:730
 msgid "Cover image must be an image (not video or audio)."
 msgstr ""
 
-#: includes/Services/AlbumService.php:706
+#: includes/Services/AlbumService.php:743
 msgid ""
 "Could not add the selected media to this album (the album type may not "
 "accept it)."
@@ -5598,92 +5599,92 @@ msgstr ""
 msgid "Please provide a collection ID: [mvs_collection id=\"123\"]"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:650
+#: includes/Shortcodes/Shortcodes.php:651
 msgid "No media in this collection."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:680
+#: includes/Shortcodes/Shortcodes.php:681
 #: templates/partials/dashboard-content.php:199
 msgid "(Untitled)"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:699 templates/profile-edit.php:18
+#: includes/Shortcodes/Shortcodes.php:700 templates/profile-edit.php:18
 msgid "Please log in to edit your profile."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:770 templates/profile-edit.php:116
+#: includes/Shortcodes/Shortcodes.php:771 templates/profile-edit.php:116
 msgid "Your avatar"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:775
+#: includes/Shortcodes/Shortcodes.php:776
 #: templates/partials/profile-edit-panel.php:71 templates/profile-edit.php:121
 msgid "Change Avatar"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:786 templates/profile-edit.php:132
+#: includes/Shortcodes/Shortcodes.php:787 templates/profile-edit.php:132
 msgid "Remove (use Gravatar)"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:789 templates/profile-edit.php:135
+#: includes/Shortcodes/Shortcodes.php:790 templates/profile-edit.php:135
 msgid "JPEG, PNG, GIF, or WebP. Max 2 MB."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:796
+#: includes/Shortcodes/Shortcodes.php:797
 #: templates/partials/profile-edit-panel.php:90 templates/profile-edit.php:143
 msgid "First Name"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:804
+#: includes/Shortcodes/Shortcodes.php:805
 #: templates/partials/profile-edit-panel.php:95 templates/profile-edit.php:151
 msgid "Last Name"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:812
+#: includes/Shortcodes/Shortcodes.php:813
 #: templates/partials/profile-edit-panel.php:101 templates/profile-edit.php:159
 msgid "Display Name"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:820
+#: includes/Shortcodes/Shortcodes.php:821
 #: templates/partials/profile-edit-panel.php:106 templates/profile-edit.php:167
 msgid "Bio"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:827
+#: includes/Shortcodes/Shortcodes.php:828
 #: templates/partials/profile-edit-panel.php:113 templates/profile-edit.php:174
 msgid "Who can message you"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:832
+#: includes/Shortcodes/Shortcodes.php:833
 #: templates/partials/profile-edit-panel.php:118 templates/profile-edit.php:179
 msgid "People who follow you"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:833
+#: includes/Shortcodes/Shortcodes.php:834
 #: templates/partials/profile-edit-panel.php:119 templates/profile-edit.php:180
 msgid "People you follow back"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:834
+#: includes/Shortcodes/Shortcodes.php:835
 #: templates/partials/profile-edit-panel.php:120 templates/profile-edit.php:181
 msgid "No one"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:839
+#: includes/Shortcodes/Shortcodes.php:840
 #: templates/partials/profile-edit-panel.php:124 templates/profile-edit.php:186
 msgid "Show your online status"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:843
+#: includes/Shortcodes/Shortcodes.php:844
 #: templates/partials/profile-edit-panel.php:128 templates/profile-edit.php:190
 msgid "Yes"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:844
+#: includes/Shortcodes/Shortcodes.php:845
 #: templates/partials/profile-edit-panel.php:129 templates/profile-edit.php:191
 msgid "No"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:852 templates/album.php:197
+#: includes/Shortcodes/Shortcodes.php:853 templates/album.php:197
 #: templates/media-single.php:854 templates/partials/dashboard-content.php:1434
 #: templates/partials/dashboard-content.php:1547
 #: templates/partials/dashboard-content.php:1663
@@ -5691,17 +5692,17 @@ msgstr ""
 msgid "Saving..."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:924
+#: includes/Shortcodes/Shortcodes.php:925
 msgid ""
 "Documents are switched off in MediaVerse settings, so this page has nothing "
 "to list."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:959
+#: includes/Shortcodes/Shortcodes.php:960
 msgid "Folder listings need MediaVerse Pro."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:1009
+#: includes/Shortcodes/Shortcodes.php:1010
 msgid "This drive view needs MediaVerse Pro."
 msgstr ""
 
