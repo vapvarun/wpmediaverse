@@ -2590,7 +2590,8 @@
       ],
       "guards_note": "Each is paired with a PHPUnit test that walks the live registry and fails the build when code and manifest disagree. See ../wpmediaverse/docs/standards/authorization-guards.md.",
       "not_re_enumerated": "tables / blocks / shortcodes / cron / admin_pages / capabilities / settings unchanged by this range."
-    }
+    },
+    "delta_2026_09_21_docs_round": "No surface change. The 2.5.1 docs round corrected one docblock in includes/Video/VideoController.php - it said chapter editing takes edit_mvs_media, which is the pre-fix contract; the code below it already required moderate_mvs_media. Recorded so the manifest stays at least as new as the source it describes, which local-CI stage 3.1a now enforces from git timestamps rather than a self-declared date."
   },
   "category_sources": {
     "rest": [
