@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MediaVerse 2.5.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-09-19 19:21:20+00:00\n"
+"POT-Creation-Date: 2026-09-20 12:40:42+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -4773,16 +4773,17 @@ msgstr ""
 #: includes/REST/Controller/FavoriteController.php:189
 #: includes/REST/Controller/MediaController.php:722
 #: includes/REST/Controller/MediaController.php:746
-#: includes/REST/Controller/MediaController.php:957
-#: includes/REST/Controller/MediaController.php:1165
-#: includes/REST/Controller/MediaController.php:1499
-#: includes/REST/Controller/MediaController.php:1533
-#: includes/REST/Controller/MediaController.php:1653
-#: includes/REST/Controller/MediaController.php:1768
-#: includes/REST/Controller/MediaController.php:1814
-#: includes/REST/Controller/MediaController.php:1876
-#: includes/REST/Controller/MediaController.php:1898
-#: includes/REST/Controller/MediaController.php:1923
+#: includes/REST/Controller/MediaController.php:759
+#: includes/REST/Controller/MediaController.php:976
+#: includes/REST/Controller/MediaController.php:1184
+#: includes/REST/Controller/MediaController.php:1518
+#: includes/REST/Controller/MediaController.php:1604
+#: includes/REST/Controller/MediaController.php:1705
+#: includes/REST/Controller/MediaController.php:1806
+#: includes/REST/Controller/MediaController.php:1873
+#: includes/REST/Controller/MediaController.php:1935
+#: includes/REST/Controller/MediaController.php:1957
+#: includes/REST/Controller/MediaController.php:1982
 #: includes/REST/Controller/ReactionController.php:125
 #: includes/REST/Controller/ReactionController.php:132
 #: includes/REST/Controller/ReactionController.php:173
@@ -4844,7 +4845,7 @@ msgstr ""
 
 #: includes/REST/Controller/AlbumController.php:514
 #: includes/REST/Controller/BulkController.php:146
-#: includes/REST/Controller/MediaController.php:1030
+#: includes/REST/Controller/MediaController.php:1049
 msgid "Privacy is set by the site owner, so it cannot be changed here."
 msgstr ""
 
@@ -5059,80 +5060,80 @@ msgstr ""
 msgid "You do not have permission to view this media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:818
+#: includes/REST/Controller/MediaController.php:837
 msgid "No file was uploaded."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:823
+#: includes/REST/Controller/MediaController.php:842
 msgid "File upload error."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:980
+#: includes/REST/Controller/MediaController.php:999
 msgid "Media title cannot be empty."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1038
+#: includes/REST/Controller/MediaController.php:1057
 #: includes/Services/UploadService.php:381
 msgid "That privacy level is not available on this site."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1055
+#: includes/REST/Controller/MediaController.php:1074
 #: includes/Services/UploadService.php:398
 msgid "This media is not in a Space, so it cannot be limited to a Space's members."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1116
+#: includes/REST/Controller/MediaController.php:1135
 msgid "Could not save categories for this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1177
+#: includes/REST/Controller/MediaController.php:1196
 msgid "Documents are replaced through the document routes, not the media routes."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1184
+#: includes/REST/Controller/MediaController.php:1203
 msgid "No file provided."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1207
+#: includes/REST/Controller/MediaController.php:1226
 #: includes/Services/UploadService.php:119
 msgid "This file type is not allowed."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1304
+#: includes/REST/Controller/MediaController.php:1323
 msgid "Failed to store the file."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1539
-#: includes/REST/Controller/MediaController.php:1659
-#: includes/REST/Controller/MediaController.php:1773
-#: includes/REST/Controller/MediaController.php:1882
+#: includes/REST/Controller/MediaController.php:1610
+#: includes/REST/Controller/MediaController.php:1711
+#: includes/REST/Controller/MediaController.php:1811
+#: includes/REST/Controller/MediaController.php:1941
 #: includes/REST/Controller/SignedUrlController.php:157
 #: includes/REST/Controller/SignedUrlController.php:241
 #: includes/REST/Controller/StatsController.php:113
 msgid "You do not have access to this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1640
+#: includes/REST/Controller/MediaController.php:1692
 msgid "Downloads are disabled on this site."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1666
+#: includes/REST/Controller/MediaController.php:1718
 msgid "The owner has disabled downloads for this media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1861
+#: includes/REST/Controller/MediaController.php:1920
 msgid "You do not have permission to upload media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1909
+#: includes/REST/Controller/MediaController.php:1968
 msgid "You do not have permission to edit this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1934
+#: includes/REST/Controller/MediaController.php:1993
 msgid "You do not have permission to delete this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:2291
+#: includes/REST/Controller/MediaController.php:2350
 msgid ""
 "Resolve specific media IDs to full objects in one call (e.g. album items). "
 "Max 100, privacy-gated, order preserved."
