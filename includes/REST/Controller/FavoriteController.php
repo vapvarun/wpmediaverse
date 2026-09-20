@@ -190,7 +190,24 @@ class FavoriteController extends WP_REST_Controller {
 		}
 
 		$collection_id = $request->get_param( 'collection_id' );
-		$result        = $this->favorites->toggle( $media_id, get_current_user_id(), $collection_id ? (int) $collection_id : null );
+
+		// Favouriting and collecting are different questions. can_view() above
+		// is the right gate for a favourite - anything you may look at, you may
+		// bookmark. A COLLECTION is curated and shareable, so it takes the
+		// narrower rule: public, or your own. Without this, a members-only
+		// photo could be pulled into a collection by any logged-in curator,
+		// because can_view() admits members-level to everyone signed in.
+		// Basecamp 10298612348.
+		if ( $collection_id
+			&& ! \WPMediaVerse\Core\Plugin::container()->get( 'collections' )->may_contain( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error(
+				'mvs_not_collectable',
+				__( 'Only public media, or your own uploads, can go in a collection.', 'wpmediaverse' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$result = $this->favorites->toggle( $media_id, get_current_user_id(), $collection_id ? (int) $collection_id : null );
 
 		/**
 		 * Fires after a favorite is toggled.
@@ -237,9 +254,24 @@ class FavoriteController extends WP_REST_Controller {
 		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$page_ids    = array();
 		$created_map = array();
+		// EXISTS IS NOT VISIBLE. This gated on existence alone, so a member who
+		// had favourited an item that later went private kept seeing its title,
+		// its thumbnail slot and an Unfavorite button - the image 403'd, the card
+		// around it did not. Privacy was half-applied: the member could not see
+		// the photo but could see what it was called and that it still existed.
+		// can_view() is the same gate this controller already applies to a single
+		// favourite (see the POST path). Basecamp 10297947358.
+		$mvs_privacy  = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		$mvs_viewer   = get_current_user_id();
+		$mvs_filtered = 0;
+
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];
 			if ( ! $repo->exists( $media_id ) ) {
+				continue;
+			}
+			if ( ! $mvs_privacy->can_view( $media_id, $mvs_viewer ) ) {
+				++$mvs_filtered;
 				continue;
 			}
 			$page_ids[]               = $media_id;
@@ -269,9 +301,18 @@ class FavoriteController extends WP_REST_Controller {
 			$enriched[]          = $media;
 		}
 
+		// The total drops with the rows. Leaving it whole would advertise a page
+		// the viewer cannot be shown and paginate against a number that can never
+		// be filled - the count-and-list disagreement this plugin keeps producing.
+		// It is a per-viewer figure now, which is what the list has always been.
+		$mvs_total = max( 0, (int) $result['total'] - $mvs_filtered );
+
 		$response = rest_ensure_response( $enriched );
-		$response->header( 'X-WP-Total', $result['total'] );
-		$response->header( 'X-WP-TotalPages', (int) ceil( $result['total'] / $per_page ) );
+		// Cast at the call site: header() takes a string, and both values are
+		// computed ints. Two baselined int-given errors lived here; casting
+		// removes them rather than carrying the ignore forward.
+		$response->header( 'X-WP-Total', (string) $mvs_total );
+		$response->header( 'X-WP-TotalPages', (string) ( $per_page > 0 ? (int) ceil( $mvs_total / $per_page ) : 0 ) );
 
 		return $response;
 	}

@@ -50,22 +50,22 @@ class HealthCheckService {
 	 */
 	public function register_tests( array $tests ): array {
 		$tests['direct']['wpmediaverse_tables'] = array(
-			'label' => __( 'WPMediaVerse Database Tables', 'wpmediaverse' ),
+			'label' => __( 'MediaVerse Database Tables', 'wpmediaverse' ),
 			'test'  => array( $this, 'test_tables' ),
 		);
 
 		$tests['direct']['wpmediaverse_uploads'] = array(
-			'label' => __( 'WPMediaVerse Upload Directory', 'wpmediaverse' ),
+			'label' => __( 'MediaVerse Upload Directory', 'wpmediaverse' ),
 			'test'  => array( $this, 'test_uploads' ),
 		);
 
 		$tests['direct']['wpmediaverse_pages'] = array(
-			'label' => __( 'WPMediaVerse Required Pages', 'wpmediaverse' ),
+			'label' => __( 'MediaVerse Required Pages', 'wpmediaverse' ),
 			'test'  => array( $this, 'test_pages' ),
 		);
 
 		$tests['direct']['wpmediaverse_media_privacy'] = array(
-			'label' => __( 'WPMediaVerse Media Privacy', 'wpmediaverse' ),
+			'label' => __( 'MediaVerse Media Privacy', 'wpmediaverse' ),
 			'test'  => array( $this, 'test_media_privacy' ),
 		);
 
@@ -111,7 +111,7 @@ class HealthCheckService {
 
 		if ( empty( $missing ) ) {
 			return array(
-				'label'       => __( 'WPMediaVerse database tables are present', 'wpmediaverse' ),
+				'label'       => __( 'MediaVerse database tables are present', 'wpmediaverse' ),
 				'status'      => 'good',
 				'badge'       => array(
 					'label' => 'WPMediaVerse',
@@ -123,7 +123,7 @@ class HealthCheckService {
 		}
 
 		return array(
-			'label'       => __( 'WPMediaVerse database tables are missing', 'wpmediaverse' ),
+			'label'       => __( 'MediaVerse database tables are missing', 'wpmediaverse' ),
 			'status'      => 'critical',
 			'badge'       => array(
 				'label' => 'WPMediaVerse',
@@ -164,7 +164,7 @@ class HealthCheckService {
 		$mvs_dir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse';
 		if ( is_dir( $mvs_dir ) && ! wp_is_writable( $mvs_dir ) ) {
 			return array(
-				'label'       => __( 'WPMediaVerse upload directory is not writable', 'wpmediaverse' ),
+				'label'       => __( 'MediaVerse upload directory is not writable', 'wpmediaverse' ),
 				'status'      => 'critical',
 				'badge'       => array(
 					'label' => 'WPMediaVerse',
@@ -176,7 +176,7 @@ class HealthCheckService {
 		}
 
 		return array(
-			'label'       => __( 'WPMediaVerse upload directory is writable', 'wpmediaverse' ),
+			'label'       => __( 'MediaVerse upload directory is writable', 'wpmediaverse' ),
 			'status'      => 'good',
 			'badge'       => array(
 				'label' => 'WPMediaVerse',
@@ -208,7 +208,7 @@ class HealthCheckService {
 
 		if ( empty( $missing ) ) {
 			return array(
-				'label'       => __( 'WPMediaVerse pages are set up', 'wpmediaverse' ),
+				'label'       => __( 'MediaVerse pages are set up', 'wpmediaverse' ),
 				'status'      => 'good',
 				'badge'       => array(
 					'label' => 'WPMediaVerse',
@@ -220,7 +220,7 @@ class HealthCheckService {
 		}
 
 		return array(
-			'label'       => __( 'WPMediaVerse pages are missing', 'wpmediaverse' ),
+			'label'       => __( 'MediaVerse pages are missing', 'wpmediaverse' ),
 			'status'      => 'recommended',
 			'badge'       => array(
 				'label' => 'WPMediaVerse',
@@ -379,7 +379,7 @@ class HealthCheckService {
 			);
 			$result['description'] = sprintf(
 				'<p>%s</p>',
-				__( 'WPMediaVerse could not reach this site over HTTP to check whether stored media is readable by anyone. This usually means loopback requests are blocked. The deny rules are in place, but on nginx they are ignored, so this is worth confirming by hand.', 'wpmediaverse' )
+				__( 'MediaVerse could not reach this site over HTTP to check whether stored media is readable by anyone. This usually means loopback requests are blocked. The deny rules are in place, but on nginx they are ignored, so this is worth confirming by hand.', 'wpmediaverse' )
 			);
 
 			return $result;
@@ -398,7 +398,7 @@ class HealthCheckService {
 		$result['description'] = sprintf(
 			'<p>%s</p><p>%s</p>',
 			__( 'Anyone can open a stored file directly by its address, without signing in and without a permission check. Media set to Only me, Members or Friends is affected, and so is anything a member made private after sharing it — the older address keeps working.', 'wpmediaverse' ),
-			__( 'The deny rules WPMediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration instead. Nothing on the site loads media by that address, so the rule is safe to add.', 'wpmediaverse' )
+			__( 'The deny rules MediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration instead. Nothing on the site loads media by that address, so the rule is safe to add.', 'wpmediaverse' )
 		);
 		$result['actions']     = '<p>' . esc_html__( 'Add this to the site\'s nginx configuration, then reload nginx:', 'wpmediaverse' )
 			. '</p><pre class="mvs-health-snippet"><code>' . esc_html( $this->nginx_rule() ) . '</code></pre>';

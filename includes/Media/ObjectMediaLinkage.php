@@ -32,6 +32,41 @@ class ObjectMediaLinkage {
 	private const TABLE = 'mvs_bp_activity_media';
 
 	/**
+	 * Register hooks. Called from `Plugin::register_services` factory.
+	 *
+	 * Deliberately NOT inside the BuddyPress integration: this table is written
+	 * by `set_object_media()` for any object namespace (`bn_post`, spaces, …),
+	 * so a site running BuddyNext without BuddyPress must still have its links
+	 * cleaned up when the media they point at is deleted.
+	 */
+	public function init(): void {
+		add_action( 'mvs_media_deleted', array( $this, 'on_media_deleted' ) );
+	}
+
+	/**
+	 * Drop every link that points at a media item which no longer exists.
+	 *
+	 * `mvs_media_deleted` already had six listeners; this table was not one of
+	 * them, so deleting media left its linkage rows pointing at nothing (measured
+	 * on the QA site: 14 of 26 rows). The rows are inert - the render path checks
+	 * the media still exists - but they accumulate for the life of the install.
+	 *
+	 * @param int $media_id Deleted media id.
+	 * @return void
+	 */
+	public function on_media_deleted( $media_id ): void {
+		global $wpdb;
+
+		$media_id = (int) $media_id;
+		if ( $media_id <= 0 ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete( $wpdb->prefix . self::TABLE, array( 'media_id' => $media_id ), array( '%d' ) );
+	}
+
+	/**
 	 * Replace the media linked to an object with the given ordered set.
 	 *
 	 * Idempotent: clears any existing links for the object first. Passing an

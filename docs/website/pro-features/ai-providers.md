@@ -1,10 +1,10 @@
 # AI Providers
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-WPMediaVerse Pro adds Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) as AI analysis providers alongside the built-in OpenAI Vision option. All four providers support auto-tagging and content moderation.
+MediaVerse Pro adds Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) as AI analysis providers alongside the built-in OpenAI Vision option. All four providers support auto-tagging and content moderation.
 
 ![AI and Moderation settings tab showing provider selector](../images/admin-settings-general.png)
 
@@ -92,7 +92,7 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 
 ## Circuit Breaker
 
-WPMediaVerse Pro implements a circuit breaker for all AI providers. If a provider records 5 consecutive failures (network timeout, invalid API key, rate limit), the circuit opens and no further API calls are made to that provider for a cooldown period of 1 hour. This prevents quota exhaustion during outages.
+MediaVerse Pro implements a circuit breaker for all AI providers. If a provider records 5 consecutive failures (network timeout, invalid API key, rate limit), the circuit opens and no further API calls are made to that provider for a cooldown period of 1 hour. This prevents quota exhaustion during outages.
 
 While the circuit is open, calls to that provider are skipped. The failure counter is stored in a transient that expires after the cooldown, and a successful call resets the counter immediately. There is no separate half-open/retry phase or manual reset command.
 

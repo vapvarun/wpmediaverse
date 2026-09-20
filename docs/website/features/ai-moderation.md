@@ -1,15 +1,15 @@
 # AI Moderation
 
-> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require MediaVerse Pro.
 
 
-WPMediaVerse integrates with OpenAI Vision (GPT-4o or GPT-4o Mini) to automatically analyze and moderate uploaded media. WPMediaVerse Pro adds support for Google Vision, AWS Rekognition, and Claude (Anthropic).
+MediaVerse integrates with OpenAI Vision (GPT-4o or GPT-4o Mini) to automatically analyze and moderate uploaded media. MediaVerse Pro adds support for Google Vision, AWS Rekognition, and Claude (Anthropic).
 
 ![AI moderation result on a media post](../images/admin-moderation.jpg)
 
 ## How AI Analysis Works
 
-When **Auto-Analyze Uploads** is enabled, WPMediaVerse sends each uploaded image to OpenAI immediately after storage. The analysis returns:
+When **Auto-Analyze Uploads** is enabled, MediaVerse sends each uploaded image to OpenAI immediately after storage. The analysis returns:
 
 - A natural-language description of the image
 - Suggested tags (comma-separated keywords)
@@ -19,7 +19,7 @@ The description is saved to the `ai_description` media metadata key. If **Auto-A
 
 ## How AI Moderation Works
 
-When **Auto-Moderate Uploads** is enabled, WPMediaVerse checks the AI safety scores against configurable thresholds. If a policy violation is detected, the action defined in **When AI Flags Content** is applied:
+When **Auto-Moderate Uploads** is enabled, MediaVerse checks the AI safety scores against configurable thresholds. If a policy violation is detected, the action defined in **When AI Flags Content** is applied:
 
 | Action | What Happens |
 |--------|-------------|
@@ -49,7 +49,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/moderation/123/analyze \
 
 ## Budget Control
 
-Set a monthly spending cap at **Media > Settings > AI & Moderation > Monthly AI Budget ($)**. WPMediaVerse tracks estimated spending per call and stops making AI calls when the budget is reached.
+Set a monthly spending cap at **Media > Settings > AI & Moderation > Monthly AI Budget ($)**. MediaVerse tracks estimated spending per call and stops making AI calls when the budget is reached.
 
 To check current spending:
 
@@ -86,7 +86,7 @@ add_action( 'mvs_ai_providers', function( $ai_service ) {
 
 ## Moderation & AI Metadata
 
-These keys live in WPMediaVerse's `mvs_media_meta` table (accessed via the `MediaRepository`), not in WordPress post meta. `moderation_status` is also a column on the `mvs_media_index` table.
+These keys live in MediaVerse's `mvs_media_meta` table (accessed via the `MediaRepository`), not in WordPress post meta. `moderation_status` is also a column on the `mvs_media_index` table.
 
 | Meta Key | Values | Description |
 |----------|--------|-------------|

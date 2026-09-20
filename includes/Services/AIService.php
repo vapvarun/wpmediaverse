@@ -232,7 +232,7 @@ class AIService {
 			// Apply tags to the mvs_tag taxonomy if auto-apply is enabled.
 			if ( get_option( 'mvs_ai_auto_apply_tags', false ) ) {
 				wp_set_object_terms( $media_id, $tags, 'mvs_tag', true );
-				$all_terms = get_the_terms( $media_id, 'mvs_tag' );
+				$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
 				if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 				}
@@ -342,10 +342,17 @@ class AIService {
 	/**
 	 * Run full AI pipeline on a media item (analyze + tag + moderate).
 	 *
-	 * @param int $media_id Media post ID.
+	 * @param int  $media_id Media post ID.
+	 * @param bool $auto     True for the automatic upload path, where the
+	 *                       owner's Auto-Analyze switch decides whether
+	 *                       description and tags are generated at all. False
+	 *                       (default) for a deliberate run - the admin re-run
+	 *                       button, `wp mvs ai`, the REST analyze route - where
+	 *                       the person asked for it, so the switch does not
+	 *                       apply.
 	 * @return array{description: string|null, tags: string[], moderation: array|null}
 	 */
-	public function process( int $media_id ): array {
+	public function process( int $media_id, bool $auto = false ): array {
 		$output = array(
 			'description' => null,
 			'tags'        => array(),
@@ -367,15 +374,25 @@ class AIService {
 		}
 
 		// Per-feature owner control: description and tag generation are each
-		// opt-out (default on) under the auto-analyze master switch.
-		if ( get_option( 'mvs_ai_auto_describe', true ) ) {
+		// opt-out (default on) UNDER the auto-analyze master switch - and on the
+		// automatic path that switch is now actually honoured.
+		//
+		// It was not, and the label calls it "master switch for the two options
+		// below". maybe_queue_ai() queues when auto-analyze OR auto-moderate is
+		// on, and these two gates default open, so an owner who enabled only
+		// moderation silently bought a description and a tag call on every
+		// upload: three provider calls instead of one, plus AI text written onto
+		// media they never asked to have described.
+		$generate = ! $auto || get_option( 'mvs_ai_auto_analyze', false );
+
+		if ( $generate && get_option( 'mvs_ai_auto_describe', true ) ) {
 			$analysis = $this->analyze( $media_id );
 			if ( ! is_wp_error( $analysis ) ) {
 				$output['description'] = $analysis['description'];
 			}
 		}
 
-		if ( get_option( 'mvs_ai_auto_tag', true ) ) {
+		if ( $generate && get_option( 'mvs_ai_auto_tag', true ) ) {
 			$tags = $this->auto_tag( $media_id );
 			if ( ! is_wp_error( $tags ) ) {
 				$output['tags'] = $tags;
@@ -408,7 +425,12 @@ class AIService {
 	 * @return bool
 	 */
 	private function check_budget(): bool {
-		$budget = (float) get_option( 'mvs_ai_monthly_budget', 0 );
+		// Fallback 10, matching the registered default and what activation writes.
+		// This read used to fall back to 0, and 0 means "no cap" two lines down -
+		// so any install missing the row (restored backup, copy-in-place deploy,
+		// an activation hook that never ran) span the cap off silently, in the
+		// expensive direction.
+		$budget = (float) get_option( 'mvs_ai_monthly_budget', 10 );
 		if ( $budget <= 0 ) {
 			return true; // No budget limit set.
 		}
@@ -479,7 +501,7 @@ class AIService {
 	public function get_usage_stats(): array {
 		$usage  = get_option( 'mvs_ai_usage', array() );
 		$month  = gmdate( 'Y-m' );
-		$budget = (float) get_option( 'mvs_ai_monthly_budget', 0 );
+		$budget = (float) get_option( 'mvs_ai_monthly_budget', 10 );
 
 		$current = isset( $usage[ $month ] ) ? $usage[ $month ] : array(
 			'calls'   => 0,

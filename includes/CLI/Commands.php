@@ -15,7 +15,7 @@ use WPMediaVerse\Core\MediaTypes;
 use WPMediaVerse\Services\CloudOps;
 
 /**
- * Manage WPMediaVerse media, stats, and maintenance tasks.
+ * Manage MediaVerse media, stats, and maintenance tasks.
  */
 class Commands {
 
@@ -331,7 +331,7 @@ class Commands {
 	}
 
 	/**
-	 * Flush all WPMediaVerse caches.
+	 * Flush all MediaVerse caches.
 	 *
 	 * ## EXAMPLES
 	 *
@@ -342,7 +342,7 @@ class Commands {
 	public function cache_flush( $args, $assoc_args ) {
 		$cache = \WPMediaVerse\Core\Plugin::container()->get( 'cache' );
 		$cache->flush_all();
-		WP_CLI::success( 'All WPMediaVerse caches flushed.' );
+		WP_CLI::success( 'All MediaVerse caches flushed.' );
 	}
 
 	/**

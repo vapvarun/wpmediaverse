@@ -212,7 +212,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 34
+			count: 36
 			path: includes/Core/Plugin.php
 
 		-
@@ -307,7 +307,7 @@ parameters:
 
 		-
 			message: "#^Function buddypress not found\\.$#"
-			count: 2
+			count: 3
 			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
 
 		-
@@ -369,11 +369,6 @@ parameters:
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
 			path: includes/REST/Controller/CommentController.php
-
-		-
-			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
-			count: 2
-			path: includes/REST/Controller/FavoriteController.php
 
 		-
 			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:unfollow_user\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"

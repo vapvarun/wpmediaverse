@@ -104,7 +104,7 @@ class FavoriteService {
 	 */
 	public function get_user_favorites( int $user_id, ?int $collection_id = null, int $per_page = 20, int $page = 1, string $search = '', string $orderby = 'favorited', string $order = 'DESC' ): array {
 		global $wpdb;
-		$table  = $wpdb->prefix . 'mvs_favorites';
+		$table = $wpdb->prefix . 'mvs_favorites';
 		// Driving table is favourites; the index is only the joined side, so the
 		// repository supplies the name rather than swallowing the query (Rule 7 —
 		// see MediaRepository::index_table()).
@@ -128,8 +128,8 @@ class FavoriteService {
 			'date'      => 'm.created_at',
 		);
 
-		$orderby = isset( $columns[ $orderby ] ) ? $orderby : 'favorited';
-		$order   = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
+		$orderby     = isset( $columns[ $orderby ] ) ? $orderby : 'favorited';
+		$order       = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 		$needs_media = '' !== $search || 'favorited' !== $orderby;
 
 		// The join stays OFF on the default path. Adding it unconditionally would
@@ -155,7 +155,7 @@ class FavoriteService {
 
 		$items = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT f.media_id, f.collection_id, f.created_at FROM {$table} f{$join} WHERE {$where} ORDER BY {$columns[ $orderby ]} {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT f.media_id, f.collection_id, f.created_at FROM {$table} f{$join} WHERE {$where} ORDER BY {$columns[ $orderby ]} {$order}, f.id {$order} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...$params
 			),
 			ARRAY_A
@@ -174,13 +174,22 @@ class FavoriteService {
 	 * use `CollectionService::resolve()` instead — this method returns the
 	 * raw favorited media-id list without rule resolution.
 	 *
-	 * @since 1.3.0
+	 * VIEWER-FILTERED. This returned raw favourite rows with no privacy check,
+	 * so a manual collection could show a cover, and count, media the viewer
+	 * cannot open - the same half-applied privacy the favourites list had
+	 * (10297947358). The smart path has always resolved with a viewer id; this
+	 * one now does too. Basecamp 10298492555.
 	 *
-	 * @param int $collection_id Collection post ID.
-	 * @param int $limit         Max rows to return. 0 = no limit.
+	 * @since 1.3.0
+	 * @since 2.4.2 $viewer_id added; rows the viewer cannot view are dropped.
+	 *
+	 * @param int      $collection_id Collection post ID.
+	 * @param int      $limit         Max rows to return. 0 = no limit.
+	 * @param int|null $viewer_id     Viewer to authorise against. Null = current
+	 *                                user. Pass 0 for an explicit anonymous read.
 	 * @return array<int> Media IDs ordered by created_at DESC.
 	 */
-	public function get_collection_media_ids( int $collection_id, int $limit = 100 ): array {
+	public function get_collection_media_ids( int $collection_id, int $limit = 100, ?int $viewer_id = null ): array {
 		global $wpdb;
 		$table = $wpdb->prefix . 'mvs_favorites';
 
@@ -217,7 +226,29 @@ class FavoriteService {
 		 * @param int   $collection_id Collection post ID.
 		 * @param int   $limit         Max rows requested (0 = no limit).
 		 */
-		return apply_filters( 'mvs_collection_media_ids', $ids, $collection_id, $limit );
+		$ids = apply_filters( 'mvs_collection_media_ids', $ids, $collection_id, $limit );
+
+		// Gate AFTER the filter, not before. Pro hooks this filter to union in
+		// the multi-collection rows from mvs_pro_collection_items; gating first
+		// would authorise Free's rows and let every Pro row straight through on
+		// a combo install - the exact half-applied privacy this card is about.
+		$viewer  = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+		$privacy = \WPMediaVerse\Core\Plugin::container()->has( 'privacy' )
+			? \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )
+			: null;
+
+		if ( ! $privacy ) {
+			return $ids;
+		}
+
+		return array_values(
+			array_filter(
+				$ids,
+				static function ( $media_id ) use ( $privacy, $viewer ) {
+					return $privacy->can_view( (int) $media_id, $viewer );
+				}
+			)
+		);
 	}
 
 	/**

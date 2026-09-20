@@ -31,6 +31,11 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 		}
 
 		add_action( 'bp_setup_nav', array( $this, 'add_group_tab' ), 100 );
+
+		// Keep this tab's assets alive on a BuddyNext site. This class never
+		// registered the filter at all, so the group Media tab lost every
+		// mvs-* handle - stylesheets included - to the suppression sweep.
+		$this->register_shared_hooks();
 	}
 
 	/**
@@ -163,7 +168,7 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT mi.media_id FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE {$base_where} ORDER BY mi.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT mi.media_id FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE {$base_where} ORDER BY mi.created_at DESC, mi.media_id DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...array_merge( $base_params, array( $per_page, $offset ) )
 			)
 		);

@@ -598,6 +598,176 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Privacy level labels, in display order.
+	 *
+	 * One source for every privacy picker. Before this there were four different
+	 * wordings across eight render sites - "Members", "Members Only",
+	 * "Members Only - logged-in users" and "Members: logged-in users only" - and
+	 * the bare "Members" reads as "followers only" to a member choosing it,
+	 * which has already produced a false bug report (Basecamp 10286023341).
+	 * The explicit wording came from the upload picker, which was the only
+	 * surface that had it.
+	 *
+	 * Friends is omitted unless BuddyPress' friends component is active: without
+	 * it the level has no semantics distinct from Members.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return array<string,string> Privacy slug => human label.
+	 */
+	public static function privacy_labels(): array {
+		$labels = array(
+			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
+			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			/* translators: shown for items stored at the legacy 'loggedin' level, which behaves exactly like Members. */
+			'loggedin' => __( 'Members: logged-in users only (legacy)', 'wpmediaverse' ),
+			'friends'  => __( 'Friends: BuddyPress friends only', 'wpmediaverse' ),
+			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
+			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
+			'private'  => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
+		);
+
+		/**
+		 * Filter the display label for every privacy level.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param array<string,string> $labels Privacy slug => label.
+		 */
+		return (array) apply_filters( 'mvs_privacy_labels', $labels );
+	}
+
+	/**
+	 * Read a single privacy level's label.
+	 *
+	 * Never returns a raw slug: an unknown level is title-cased so a badge shows
+	 * something a member can read rather than database vocabulary.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $privacy Privacy slug.
+	 * @return string
+	 */
+	public static function privacy_label( string $privacy ): string {
+		$labels = self::privacy_labels();
+
+		if ( isset( $labels[ $privacy ] ) ) {
+			return $labels[ $privacy ];
+		}
+
+		return ucfirst( str_replace( '_', ' ', $privacy ) );
+	}
+
+	/**
+	 * The levels a member may CHOOSE, as opposed to the levels that can be shown.
+	 *
+	 * Not the same list. `space` and `group` are context-bound - they mean
+	 * something only for media inside a space or a group, and offering them as
+	 * free choices would let a member pick a level with no context to satisfy.
+	 * `loggedin` is a stored synonym of `members`, kept readable but not offered
+	 * twice. `friends` needs BuddyPress' friends component, or it has no
+	 * semantics distinct from members.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return array<string,string> Privacy slug => label, in display order.
+	 */
+	public static function privacy_choices(): array {
+		$labels  = self::privacy_labels();
+		$choices = array(
+			'public'  => $labels['public'],
+			'members' => $labels['members'],
+		);
+
+		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
+			$choices['friends'] = $labels['friends'];
+		}
+
+		$choices['private'] = $labels['private'];
+
+		/**
+		 * Filter the privacy levels offered in a picker.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param array<string,string> $choices Privacy slug => label.
+		 */
+		return (array) apply_filters( 'mvs_privacy_choices', $choices );
+	}
+
+	/**
+	 * The "Also share as a story" checkbox, for every upload surface.
+	 *
+	 * One emitter rather than per-surface copies: the toggle shipped only on the
+	 * Upload page, so the dashboard popup, the FAB modal and the BuddyPress tab
+	 * silently could not create a story. The Pro + setting guard lives here too,
+	 * so a surface cannot forget it. Basecamp 10313107097.
+	 *
+	 * Surfaces driven by the Interactivity API pass their own store action in
+	 * $on_change; classic-JS surfaces (the BuddyPress tab) pass '' and read the
+	 * checkbox by its class.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $on_change Interactivity action for data-wp-on--change, or '' for a plain checkbox.
+	 * @param bool   $checked   Whether the box starts ticked.
+	 * @return void
+	 */
+	public static function story_toggle( string $on_change = '', bool $checked = false ): void {
+		if ( ! self::stories_available() ) {
+			return;
+		}
+
+		printf(
+			'<label class="mvs-upload-story-toggle"><input type="checkbox" class="mvs-upload-story-input"%s%s /><span>%s</span></label>',
+			'' !== $on_change ? ' data-wp-on--change="' . esc_attr( $on_change ) . '"' : '',
+			checked( $checked, true, false ),
+			esc_html__( 'Also share as a story (visible for 24 hours)', 'wpmediaverse' )
+		);
+	}
+
+	/**
+	 * Can this site create stories at all?
+	 *
+	 * Pro owns stories, so a Free-only site must not be offered the checkbox:
+	 * the upload succeeds and no story is ever created, which reads as broken
+	 * rather than absent. Basecamp #10156642726.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return bool
+	 */
+	public static function stories_available(): bool {
+		return defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stories_enabled', '0' );
+	}
+
+	public static function privacy_options( string $selected = '' ): void {
+		$choices = self::privacy_choices();
+
+		// A stored level the picker does not offer (loggedin, space, group, or
+		// anything an import or the REST write set) is shown as a disabled
+		// option rather than leaving the select blank. Before this, an owner
+		// opening their own item saw an empty privacy field with no way to read
+		// what it was currently set to. Basecamp 10290748981.
+		if ( '' !== $selected && ! isset( $choices[ $selected ] ) ) {
+			printf(
+				'<option value="%s" selected disabled>%s</option>',
+				esc_attr( $selected ),
+				esc_html( self::privacy_label( $selected ) )
+			);
+		}
+
+		foreach ( $choices as $mvs_slug => $mvs_label ) {
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $mvs_slug ),
+				selected( $selected, $mvs_slug, false ),
+				esc_html( $mvs_label )
+			);
+		}
+	}
+
+	/**
 	 * BuddyNext-aware login URL.
 	 *
 	 * Identity in this stack lives in BuddyNext (login/register/reset/2FA/social),
@@ -982,6 +1152,49 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
 	 *                        - 'size' (string) Image size. Default 'medium'.
 	 */
+	/**
+	 * The aspect-ratio style a justified grid item carries.
+	 *
+	 * `original` mode lays media out as justified rows (Flickr-style): each
+	 * row is stretched to the full width and every tile takes the share its
+	 * own aspect ratio earns. The ratio has to reach CSS per item, and it is
+	 * emitted as an INSTANCE CUSTOM PROPERTY, which Coding Rule 19 permits -
+	 * it is data, not a cosmetic declaration.
+	 *
+	 * One emitter, so a surface cannot honour the layout and forget the ratio:
+	 * every tile that lands in a `.mvs-media-grid` calls this. A row with no
+	 * stored dimensions (an album or collection cover) falls back to 3:2, the
+	 * same default Pro's Flickr layout uses.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param array<string, mixed>|int $row Media row (from MediaRepository, which
+	 *                                      SELECTs *), or a media id to look up.
+	 * @return string ` style="--mvs-ar:1.5"`, ready to concatenate into a tag.
+	 */
+	public function grid_item_ar_style( $row ): string {
+		$width  = 0.0;
+		$height = 0.0;
+
+		if ( is_array( $row ) ) {
+			$width  = isset( $row['width'] ) ? (float) $row['width'] : 0.0;
+			$height = isset( $row['height'] ) ? (float) $row['height'] : 0.0;
+		} elseif ( (int) $row > 0 ) {
+			$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$width  = (float) $repo->get( (int) $row, 'width' );
+			$height = (float) $repo->get( (int) $row, 'height' );
+		}
+
+		$ratio = ( $width > 0.0 && $height > 0.0 ) ? round( $width / $height, 4 ) : 1.5;
+
+		// Clamped so one panorama cannot swallow a whole row, and a 1px-wide
+		// thumbnail cannot collapse to a sliver. The CSS min-width is the
+		// second half of the same guard.
+		$ratio = max( 0.3, min( 4.0, $ratio ) );
+
+		return ' style="--mvs-ar:' . esc_attr( (string) $ratio ) . '"';
+	}
+
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
@@ -1050,6 +1263,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		);
 
 		echo '<div class="' . esc_attr( $item_class ) . '"' . $data_str // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $data_str is assembled from esc_attr()-wrapped key/value pairs above; the leading space + pre-escaped attrs are safe.
+			. $this->grid_item_ar_style( $media_row ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the only value it interpolates.
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() output (encoded + escaped JSON for the data-wp-context attribute).
 			. '>';
@@ -1106,7 +1320,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// Gallery badge showing item count.
 		if ( $is_gallery && $group_count > 1 ) {
 			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
-			echo '<span class="dashicons dashicons-images-alt2"></span> ' . esc_html( $group_count );
+			echo '<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> ' . esc_html( $group_count );
 			echo '</span>';
 		}
 
@@ -1492,6 +1706,88 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Sort and direction for a media listing, read from the URL.
+	 *
+	 * The ONE reader for `?sort=` / `?order=` on Explore, profiles and every
+	 * Pro layout, so the Grid and the Pro layouts offer the same sort and
+	 * Load More (which reads the same URL) continues the same order. An
+	 * allowlist, never the caller's string: `orderby` reaches SQL as an
+	 * identifier, so an unknown value falls back to newest first.
+	 *
+	 * @since 2.4.2
+	 * @return array{orderby: string, order: string} orderby created_at|title|views; order ASC|DESC.
+	 */
+	public function explore_sort(): array {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view controls on a GET page.
+		$sort  = isset( $_GET['sort'] ) ? sanitize_key( wp_unslash( $_GET['sort'] ) ) : '';
+		$order = isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		return array(
+			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views' ), true ) ? $sort : 'created_at',
+			'order'   => 'asc' === $order ? 'ASC' : 'DESC',
+		);
+	}
+
+	/**
+	 * The Explore toolbar: item count, sort and direction, as a GET form.
+	 *
+	 * Rendered by the Grid layout and every Pro layout (feeds and profiles), so
+	 * a visitor gets the same controls whichever layout the owner picked.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int        $total_items Items in the listing.
+	 * @param array|null $hidden      [ name => value ] carried on submit. Null =
+	 *                                the current search, tag and category.
+	 * @return string Escaped HTML.
+	 */
+	public function render_explore_sort_toolbar( int $total_items, ?array $hidden = null ): string {
+		if ( null === $hidden ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
+			$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+			$hidden = array(
+				's'            => $search,
+				'mvs_tag'      => (string) get_query_var( 'mvs_tag', '' ),
+				'mvs_category' => (string) get_query_var( 'mvs_category', '' ),
+			);
+		}
+		$sort = $this->explore_sort();
+
+		return $this->render_panel_toolbar(
+			array(
+				'id'     => 'mvs-explore',
+				'form'   => true,
+				'class'  => 'mvs-explore__controls',
+				'hidden' => array_filter( $hidden ),
+				'count'  => sprintf(
+					/* translators: %s: number of media items. */
+					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
+					number_format_i18n( $total_items )
+				),
+				'sort'   => array(
+					'name'    => 'sort',
+					'label'   => __( 'Sort by', 'wpmediaverse' ),
+					'value'   => $sort['orderby'],
+					'options' => array(
+						'created_at' => __( 'Date added', 'wpmediaverse' ),
+						'title'      => __( 'Title', 'wpmediaverse' ),
+						'views'      => __( 'Views', 'wpmediaverse' ),
+					),
+				),
+				'order'  => array(
+					'name'  => 'order',
+					'label' => __( 'Direction', 'wpmediaverse' ),
+					// No 'options': render_panel_toolbar() derives them from the
+					// sort field. Basecamp 10297765808.
+					'value' => strtolower( $sort['order'] ),
+				),
+				'submit' => __( 'Apply', 'wpmediaverse' ),
+			)
+		);
+	}
+
+	/**
 	 * Render the toolbar that sits above a panel's list or grid.
 	 *
 	 * ONE shape for every list surface: search, count, filters, sort, direction.
@@ -1577,6 +1873,20 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			}
 		}
 
+		// The direction labels depend on the SORT field, and this is the one
+		// place both are in scope, so every caller gets them right without
+		// restating them.
+		//
+		// This OVERRIDES whatever options the caller passed. Deferring to them
+		// was the first version of this fix and it changed nothing: all seven
+		// call sites hand over the same hard-coded Newest/Oldest pair, which is
+		// precisely the defect. A caller that genuinely needs its own wording
+		// uses the mvs_direction_labels filter, which knows the field.
+		// Basecamp 10297765808.
+		if ( ! empty( $args['order'] ) && is_array( $args['order'] ) && ! empty( $args['sort']['value'] ) ) {
+			$args['order']['options'] = $this->direction_labels( (string) $args['sort']['value'] );
+		}
+
 		foreach ( array( 'sort', 'order' ) as $key ) {
 			if ( ! empty( $args[ $key ] ) && is_array( $args[ $key ] ) ) {
 				$selects[] = $args[ $key ];
@@ -1633,6 +1943,64 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @param array  $select Select config.
 	 * @return string
 	 */
+	/**
+	 * Direction labels that match the field being sorted.
+	 *
+	 * Every toolbar offered "Newest first / Oldest first" whatever the sort
+	 * was, so Explore sorted by Title labelled A-Z as "Newest first", the drive
+	 * sorted by Size called largest-first "Newest", and Trending had an
+	 * "Oldest first" that means nothing at all. Seven call sites shared one
+	 * hard-coded pair. Basecamp 10297765808.
+	 *
+	 * Derived from what the field IS, not from a list of field names: anything
+	 * unrecognised falls back to the ascending/descending pair, which is true
+	 * of every sort. Add a sort field anywhere and it gets a sane label without
+	 * being registered here.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $sort_field The current `sort`/`orderby` value.
+	 * @return array<string,string> desc => label, asc => label.
+	 */
+	public function direction_labels( string $sort_field ): array {
+		$field = strtolower( trim( $sort_field ) );
+
+		// Chronological: the only family where "newest" is the honest word.
+		$chronological = array( 'date', 'created_at', 'favorited', 'updated_at', 'published' );
+
+		// Alphabetical.
+		$alphabetical = array( 'title', 'name', 'filename', 'author' );
+
+		if ( in_array( $field, $chronological, true ) ) {
+			$labels = array(
+				'desc' => __( 'Newest first', 'wpmediaverse' ),
+				'asc'  => __( 'Oldest first', 'wpmediaverse' ),
+			);
+		} elseif ( in_array( $field, $alphabetical, true ) ) {
+			$labels = array(
+				'desc' => __( 'Z to A', 'wpmediaverse' ),
+				'asc'  => __( 'A to Z', 'wpmediaverse' ),
+			);
+		} else {
+			// Quantitative - views, size, trending, popular, and anything a
+			// filter adds later. "Most first" reads correctly for all of them.
+			$labels = array(
+				'desc' => __( 'Most first', 'wpmediaverse' ),
+				'asc'  => __( 'Fewest first', 'wpmediaverse' ),
+			);
+		}
+
+		/**
+		 * Filter the direction labels for a sort field.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param array<string,string> $labels     desc/asc labels.
+		 * @param string               $sort_field The field being sorted.
+		 */
+		return (array) apply_filters( 'mvs_direction_labels', $labels, $field );
+	}
+
 	private function toolbar_select( string $id, array $select ): string {
 		$name    = isset( $select['name'] ) ? (string) $select['name'] : '';
 		$label   = isset( $select['label'] ) ? (string) $select['label'] : '';
@@ -1753,6 +2121,12 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// Favorites.
 					'loginToFavorite'      => __( 'Please log in to favorite.', 'wpmediaverse' ),
 					'favoriteUpdateFailed' => __( 'Could not update favorite.', 'wpmediaverse' ),
+					// The favourite button's accessible name, which has to change
+					// with the state. Only its CSS class moved before, so a screen
+					// reader heard "Add to favorites" whether or not the item was
+					// already a favourite. Basecamp 10297839293.
+					'addToFavorites'       => __( 'Add to favorites', 'wpmediaverse' ),
+					'removeFromFavorites'  => __( 'Remove from favorites', 'wpmediaverse' ),
 					// Comments.
 					'loginToComment'       => __( 'Please log in to comment.', 'wpmediaverse' ),
 					'commentPostFailed'    => __( 'Could not post comment.', 'wpmediaverse' ),

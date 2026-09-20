@@ -33,7 +33,7 @@ class MediaListPage {
 			'mvs-admin-media-list',
 			MVS_PLUGIN_URL . 'assets/js/admin/media-list.js',
 			array( 'mvs-admin-confirm', 'mvs-toast' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/media-list.js' ),
 			array( 'in_footer' => true )
 		);
 		wp_localize_script(
@@ -175,7 +175,25 @@ class MediaListPage {
 						<div class="alignleft actions">
 							<select name="media_type">
 								<option value=""><?php esc_html_e( 'All Types', 'wpmediaverse' ); ?></option>
-								<?php foreach ( array( 'image', 'video', 'audio', 'document' ) as $t ) : ?>
+								<?php
+								// Documents are NOT offered here. They have their own menu
+								// (page=mvs-documents), their own categorisation, and their own
+								// listing that renders them as rows with a type chip - a media
+								// grid draws pictures and a PDF has none. Owner, 2026-09-13:
+								// "Documents categorization is different as we already have
+								// different menu for it, do not mix files with media." Same
+								// call as Activator's "documents get their OWN listing page,
+								// not a corner of Explore" (2026-08-09). Basecamp 10280356655.
+								//
+								// The one exception is an owner who ALREADY has the filter
+								// applied: leaving it out of the list then would blank their
+								// current view with no way back to it.
+								$mvs_types = array( 'image', 'video', 'audio' );
+								if ( 'document' === $type_filter ) {
+									$mvs_types[] = 'document';
+								}
+								?>
+								<?php foreach ( $mvs_types as $t ) : ?>
 									<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $type_filter, $t ); ?>><?php echo esc_html( ucfirst( $t ) ); ?></option>
 								<?php endforeach; ?>
 							</select>
@@ -265,7 +283,7 @@ class MediaListPage {
 					</div>
 
 					<div class="mvs-widget-footer">
-						<?php self::render_pagination( $total, $total_pages, $paged ); ?>
+						<?php self::render_pagination( $total, $total_pages, $paged, 'bottom' ); ?>
 					</div>
 				</div>
 			</form>
@@ -356,10 +374,25 @@ class MediaListPage {
 					<span class="mvs-thumb-placeholder"><i data-lucide="<?php echo esc_attr( $icon ); ?>"></i></span>
 				<?php endif; ?>
 			</td>
+			<?php
+			// No link to a document Free cannot render - the permalink returns a
+			// branded 404 by design. Computed before the title, because the BOLD
+			// TITLE is the primary click target in every WP list table; guarding
+			// only the row-actions "View" span removed the link almost nobody
+			// clicks and kept the one everybody does. Basecamp 10280356655.
+			$mvs_is_doc      = in_array( (string) $type, array( 'document', 'legacy_document' ), true );
+			$mvs_can_view_it = ! $mvs_is_doc || \WPMediaVerse\Core\Plugin::documents_enabled();
+			?>
 			<td class="column-primary">
+				<?php if ( $mvs_can_view_it ) : ?>
 				<strong><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php echo esc_html( $title ); ?></a></strong>
+				<?php else : ?>
+				<strong><?php echo esc_html( $title ); ?></strong>
+				<?php endif; ?>
 				<div class="row-actions">
-					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span>
+					<?php if ( $mvs_can_view_it ) : ?>
+					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span> |
+					<?php endif; ?>
 					<?php
 					$details_url = add_query_arg(
 						array(
@@ -370,7 +403,7 @@ class MediaListPage {
 						admin_url( 'admin.php' )
 					);
 					?>
-					| <span class="details"><a href="<?php echo esc_url( $details_url ); ?>"><?php esc_html_e( 'Details', 'wpmediaverse' ); ?></a></span>
+					<span class="details"><a href="<?php echo esc_url( $details_url ); ?>"><?php esc_html_e( 'Details', 'wpmediaverse' ); ?></a></span>
 					<?php
 					$ai_review_url = add_query_arg(
 						array(
@@ -744,15 +777,18 @@ class MediaListPage {
 	 * @param int $total_pages Total pages.
 	 * @param int $paged       Current page.
 	 */
-	private static function render_pagination( int $total, int $total_pages, int $paged ): void {
+	private static function render_pagination( int $total, int $total_pages, int $paged, string $which = 'top' ): void {
 		if ( $total_pages <= 1 ) {
-			echo '<div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
+			// Wrapped in .tablenav: core's list-tables.css scopes every
+			// .tablenav-pages rule to that ancestor, so without it this screen
+			// rendered raw unstyled links. Basecamp 10280400207.
+			echo '<div class="tablenav ' . esc_attr( $which ) . '"><div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
 				sprintf(
 				/* translators: %s: number of items */
 					_n( '%s item', '%s items', $total, 'wpmediaverse' ),
 					number_format_i18n( $total )
 				)
-			) . '</span></div>';
+			) . '</span></div></div>';
 			return;
 		}
 
@@ -768,7 +804,7 @@ class MediaListPage {
 			)
 		);
 
-		echo '<div class="tablenav-pages">';
+		echo '<div class="tablenav ' . esc_attr( $which ) . '"><div class="tablenav-pages">';
 		echo '<span class="displaying-num">' . esc_html(
 			sprintf(
 			/* translators: %s: number of items */
@@ -776,8 +812,36 @@ class MediaListPage {
 				number_format_i18n( $total )
 			)
 		) . '</span>';
+		// Core styles .button and .tablenav-pages-navspan (list-tables.css:716),
+		// never .page-numbers - which is why WP_List_Table::pagination() builds
+		// its links by hand rather than calling paginate_links(). Without this
+		// the wrapper alone left 6px text links where core draws 32x32 controls.
+		// Basecamp 10280400207.
+		$page_links = array_map(
+			static function ( $link ) {
+				$extra = ( false !== strpos( $link, '<a' ) )
+					? 'button '
+					// The current page and the ellipsis are <span>s; core's
+					// non-link equivalent is .tablenav-pages-navspan.
+					: 'tablenav-pages-navspan button disabled ';
+
+				// Insert right after the opening quote rather than before the
+				// literal "page-numbers": prev/next links are class="next
+				// page-numbers", so anchoring on that token missed them and the
+				// arrows stayed 9px while the numbers became 32px. Quote style
+				// is matched either way rather than assumed.
+				return (string) preg_replace(
+					'/\bclass=(["\'])/',
+					'class=$1' . $extra,
+					$link,
+					1
+				);
+			},
+			$page_links
+		);
+
 		echo '<span class="pagination-links">' . implode( "\n", $page_links ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links returns safe HTML
-		echo '</div>';
+		echo '</div></div>';
 	}
 
 	/**
@@ -1216,7 +1280,11 @@ class MediaListPage {
 		// Apply tags to the taxonomy and mirror onto the media's tags field.
 		if ( ! empty( $tags ) ) {
 			wp_set_object_terms( $media_id, $tags, 'mvs_tag', true );
-			$all_terms = get_the_terms( $media_id, 'mvs_tag' );
+			// wp_get_object_terms, not get_the_terms: media rows live in
+			// mvs_media_index, not wp_posts, and get_the_terms() opens with
+			// get_post() and bails on a non-post. The write path uses the
+			// post-agnostic wp_set_object_terms(). Basecamp 10278224214.
+			$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' );
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 				$repo->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 			}
@@ -1590,7 +1658,7 @@ class MediaListPage {
 						</table>
 
 						<h2><?php esc_html_e( 'Thumbnail sizes', 'wpmediaverse' ); ?></h2>
-						<p class="description"><?php esc_html_e( 'WPMediaVerse keeps three smaller versions of every image so pages load fast.', 'wpmediaverse' ); ?></p>
+						<p class="description"><?php esc_html_e( 'MediaVerse keeps three smaller versions of every image so pages load fast.', 'wpmediaverse' ); ?></p>
 						<table class="widefat striped">
 							<thead><tr>
 								<th><?php esc_html_e( 'Size', 'wpmediaverse' ); ?></th>

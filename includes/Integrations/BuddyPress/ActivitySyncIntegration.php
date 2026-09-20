@@ -162,9 +162,14 @@ class ActivitySyncIntegration {
 			return true;
 		}
 
+		// Album privacy is post meta on the album (AlbumService::get_privacy()).
+		// This used to read mvs_media_index at media_id = <album post ID>: on
+		// most sites that ID belongs to an unrelated photo, so a public album
+		// could hide the activity (or a private one show it) on that photo's
+		// privacy. Basecamp 10320619418; same defect class as 10183850886.
 		$album_id = (int) $repo->get( $media_id, 'album_id' );
 		if ( $album_id > 0 ) {
-			$album_privacy = (string) $repo->get( $album_id, 'privacy' );
+			$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 			if ( self::privacy_to_hide_sitewide( $album_privacy ) ) {
 				return true;
 			}
@@ -202,10 +207,13 @@ class ActivitySyncIntegration {
 		}
 
 		if ( ! empty( $album_ids ) ) {
-			$albums = $repo->get_batch( array_keys( $album_ids ) );
-			foreach ( $albums as $album ) {
-				$album_privacy = isset( $album['privacy'] ) ? (string) $album['privacy'] : '';
-				if ( self::privacy_to_hide_sitewide( $album_privacy ) ) {
+			// Album privacy from the album's post meta, as in should_hide_for_media();
+			// one primed meta query for the distinct albums, not one per album.
+			$album_ids = array_keys( $album_ids );
+			update_postmeta_cache( $album_ids );
+			$albums = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+			foreach ( $album_ids as $album_id ) {
+				if ( self::privacy_to_hide_sitewide( $albums->get_privacy( (int) $album_id ) ) ) {
 					return true;
 				}
 			}
@@ -689,7 +697,7 @@ class ActivitySyncIntegration {
 				(string) $album_id
 			)
 		);
-		$album_hidden         = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
+		$album_hidden         = self::privacy_to_hide_sitewide( \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( (int) $album_id ) );
 
 		foreach ( $gallery_activity_ids as $aid ) {
 			$activity = new \BP_Activity_Activity( (int) $aid );
@@ -703,7 +711,7 @@ class ActivitySyncIntegration {
 			$attached_csv = bp_activity_get_meta( (int) $aid, '_mvs_media_ids', true );
 			$attached_ids = $attached_csv ? array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) ) : array();
 
-			$album_privacy_slug = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
+			$album_privacy_slug = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( (int) $album_id );
 			if ( '' === $album_privacy_slug ) {
 				$album_privacy_slug = 'public';
 			}
@@ -1075,13 +1083,13 @@ class ActivitySyncIntegration {
 
 		// Most-restrictive privacy across the bundle — any non-public attachment
 		// (or non-public parent album) hides the entire gallery activity.
-		$album_hidden  = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
+		$album_hidden  = self::privacy_to_hide_sitewide( \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( (int) $album_id ) );
 		$hide_sitewide = $album_hidden || self::should_hide_for_batch( $media_ids );
 
 		// Private albums / batches leave zero public footprint — skip the
 		// gallery activity insert entirely. See record_upload_activity()
 		// for the rationale (Basecamp #9936622656).
-		$album_privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
+		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( (int) $album_id );
 		if ( 'private' === $album_privacy || 'private' === self::effective_privacy_for_batch( $media_ids ) ) {
 			return;
 		}

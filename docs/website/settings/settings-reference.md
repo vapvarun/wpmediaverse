@@ -1,6 +1,6 @@
 # Settings Reference
 
-Every option WPMediaVerse and WPMediaVerse Pro register, with its option key, type and default.
+Every option MediaVerse and MediaVerse Pro register, with its option key, type and default.
 
 The other pages in this section explain settings in the order you meet them in the admin screens. This page is the complete index: use it when you need to set an option in code, seed a site with WP-CLI, or check what a value defaults to before you change it.
 
@@ -113,7 +113,7 @@ See [Webhooks](webhooks.md) for the payload format and the event list.
 
 ## Pro options
 
-Registered by `Admin\ProSettings` and `Admin\GamificationSettings`. All Pro options are inert unless WPMediaVerse Pro is active.
+Registered by `Admin\ProSettings` and `Admin\GamificationSettings`. All Pro options are inert unless MediaVerse Pro is active.
 
 ### Feature toggles
 

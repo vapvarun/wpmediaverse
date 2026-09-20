@@ -175,6 +175,35 @@ class CertRunner {
 				wp_set_current_user( $actor );
 			}
 
+			// AN ORACLE THAT CANNOT REACH ITS GATE IS A HOLE, NOT A FAILURE.
+			//
+			// `MVS_PRO_LICENSE_BYPASS` makes `License::is_valid()` return true
+			// before it reads the option at all, so deleting the option below
+			// changes nothing: the OFF dispatch answers exactly like the ON one
+			// and the oracle reports the gate dead while the gate is fine. That
+			// is the same false failure `set_state()` documents avoiding for the
+			// option-vs-license distinction, arriving by a different door.
+			//
+			// The constant is a DEV convenience (wp-config on QA-seeded sites,
+			// never shipped - 0 occurrences outside tests/), which means the
+			// false red appears precisely where certs are run most. Record the
+			// hole with its reason: holes are tracked and do not fail the gate.
+			if ( 'license' === $kind && defined( 'MVS_PRO_LICENSE_BYPASS' ) && MVS_PRO_LICENSE_BYPASS ) {
+				$rows[] = array(
+					'check'  => 'contract',
+					'entity' => $id,
+					'status' => 'hole',
+					'detail' => 'not provable here: MVS_PRO_LICENSE_BYPASS short-circuits the licence read, so OFF and ON are indistinguishable. Run on a site without the constant to certify this gate.',
+				);
+
+				if ( $actor ) {
+					wp_set_current_user( $prev );
+					wp_delete_user( $actor );
+				}
+
+				continue;
+			}
+
 			$snapshot = $this->snapshot( $id, $kind );
 			$this->set_state( $id, $kind, false );
 			$off = $this->dispatch( $route, $method, $params );

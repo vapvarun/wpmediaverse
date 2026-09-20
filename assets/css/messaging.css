@@ -4,14 +4,20 @@
    CSS Custom Properties
    ---------------------------------------------------------------- */
 :root {
-	--mvs-chat-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+	/* BuddyNext first, then the theme via inherit — see frontend.css. */
+	--mvs-chat-font: var(--font-body, inherit);
+	/* Fill colour. Text declarations use --mvs-chat-primary-text below, which
+	   inherits the AA clamp from --mvs-primary-text in frontend.css. This token
+	   is a second name for the same colour, so the accent-as-text sweep that
+	   asked only about --mvs-primary never saw it. Basecamp 10253005724. */
 	--mvs-chat-primary: var(--color-theme-primary, #0095f6);
+	--mvs-chat-primary-text: var(--mvs-primary-text, var(--mvs-chat-primary));
 	--mvs-chat-primary-hover: var(--color-link-hover, #1877f2);
 	--mvs-chat-bg: var(--color-theme-body, #fff);
 	--mvs-chat-surface: var(--color-theme-white-box, #f8f9fa);
 	--mvs-chat-border: var(--global-border-color, #dbdbdb);
 	--mvs-chat-text: var(--global-title-color, #262626);
-	--mvs-chat-text-secondary: var(--global-font-color, #8e8e8e);
+	--mvs-chat-text-secondary: var(--global-font-color, #6e6e6e);
 	--mvs-chat-bubble-sent: #0095f6;
 	--mvs-chat-bubble-sent-text: #fff;
 	--mvs-chat-bubble-received: #efefef;
@@ -194,7 +200,7 @@ body.dark-mode {
 	border: none;
 	cursor: pointer;
 	padding: 4px;
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 }
 
 .mvs-chat-header__back svg {
@@ -261,7 +267,7 @@ body.dark-mode {
 	border: none;
 	cursor: pointer;
 	padding: 4px;
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 }
 
 .mvs-chat-header__new svg,
@@ -312,7 +318,7 @@ body.dark-mode {
 .mvs-chat-tabs__tab:hover,
 .mvs-chat-tabs__tab:focus {
 	background: none;
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 	border: none;
 	border-bottom: 2px solid transparent;
 	border-bottom-color: var(--mvs-chat-primary);
@@ -320,7 +326,7 @@ body.dark-mode {
 }
 
 .mvs-chat-tabs__tab[data-active="true"] {
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 	border-bottom-color: var(--mvs-chat-primary);
 	border-radius: 0;
 }
@@ -341,7 +347,7 @@ body.dark-mode {
 .mvs-chat-tabs .mvs-chat-tabs__tab:hover,
 .mvs-chat-tabs .mvs-chat-tabs__tab:focus,
 .mvs-chat-tabs .mvs-chat-tabs__tab[data-active="true"] {
-	color: var(--mvs-chat-primary) !important;
+	color: var(--mvs-chat-primary-text) !important;
 	border-bottom-color: var(--mvs-chat-primary) !important;
 }
 
@@ -544,7 +550,7 @@ body.dark-mode {
 .mvs-chat-messages__load-more button {
 	background: none;
 	border: none;
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 	cursor: pointer;
 	font-size: 13px;
 }
@@ -658,7 +664,7 @@ body.dark-mode {
 }
 
 .mvs-chat-msg__check--read {
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 }
 
 /* Optimistic send status — sending spinner + failed/retry control. */
@@ -823,6 +829,12 @@ body.dark-mode {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.mvs-chat-msg__gone {
+	/* Colour inherited on purpose: a sent bubble is accent-filled, where a muted
+	   grey would fail contrast. Italic alone marks it, like "message deleted". */
+	font-style: italic;
 }
 
 .mvs-chat-msg__file-size {
@@ -1051,7 +1063,7 @@ body.dark-mode {
 
 .mvs-chat-composer__btn:hover,
 .mvs-chat-composer__btn:focus {
-	color: var(--mvs-chat-primary);
+	color: var(--mvs-chat-primary-text);
 	background: none;
 	border: none;
 }
@@ -1270,7 +1282,7 @@ body.dark-mode {
 	min-height: 480px;
 	max-height: 820px;
 	background: var(--mvs-chat-bg);
-	max-width: 1200px;
+	max-width: var(--mvs-content-width, 1200px); /* the owner width token; Basecamp 10320619449 */
 	margin: 0 auto;
 	border: 1px solid var(--mvs-chat-border);
 	border-radius: 4px;

@@ -12,7 +12,7 @@
 > |---|---|---|
 > | REST endpoints | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` | 122 |
 > | REST controllers | `ls includes/REST/Controller/*.php \| wc -l` | 25 |
-> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 262 |
+> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 274 |
 > | Plugin AJAX actions | `grep -rhoE "add_action\( *'wp_ajax_mvs_[a-z_]+'" includes/ \| sort -u \| wc -l` | 2 (`mvs_import_demo_data`, `mvs_cleanup_demo_data`) - the looser `grep -rho "wp_ajax_mvs_[a-z_]*"` returns 3, counting a bare prefix inside a comment |
 > | Admin page registrations | `grep -rn 'add_menu_page(\|add_submenu_page(' includes/ \| grep -vc 'function \|\*'` | 12 call sites (the manifest's `admin_pages: 22` counts rendered surfaces: these 12 plus 2 CPT menu entries and 8 settings tabs) |
 > | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 39 distinct options (51 `register_setting()` calls) |
@@ -20,7 +20,7 @@
 > | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 9 registered, 13 `block.json` (4 Interactivity-only) |
 > | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 53 |
 > | WP-CLI subcommands | `grep -c 'public function ' includes/CLI/Commands.php` | 20 |
-> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 30 |
+> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 32 |
 >
 > 2.4.0 added 4 hooks (the manifest gained 20 more on 2026-09-01 that shipped undocumented): `mvs_media_trashed` / `mvs_media_restored` (actions) and `mvs_has_custom_avatar` / `mvs_media_drive_access` (filters) — all four verified present.
 >
@@ -163,7 +163,7 @@ container-registered) consumed by the upload pipeline.
 ## Custom Tables (23)
 
 All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
-(`Migrator::CURRENT_VERSION` is 30). Re-enumerate with
+(`Migrator::CURRENT_VERSION` is 32). Re-enumerate with
 `grep -o 'CREATE TABLE[^(]*mvs_[a-z_]*' includes/Core/Migrator.php | sort -u`.
 
 | Table | Purpose |
@@ -418,7 +418,7 @@ All QA lives in `qa/` — single home for Free + Pro. Pro has no `qa/` directory
 | `qa/rules/` | Organization rules — CSS, NAMING, PHP, PROCESS, RENDER-STATE |
 | `qa/inventory/WHAT-TO-CHECK.md` | Flat list — surfaces, actions, settings, data stores, contracts |
 | `qa/audits/` | Dated audits (a11y, doc-drift, etc.) |
-| `qa/runs/` | Append-only run evidence + `FINDINGS-HISTORY.md` + `drafts/` |
+| `qa/runs/` | Append-only final run reports + `FINDINGS-HISTORY.md`. Drafts, raw debug logs and screenshots go to `app/qa-artifacts/`, never the repo |
 | `qa/.last-smoke-pass.json` | Release-gate green-light signal (combo mode) |
 | `qa/.last-smoke-pass-free.json` | Release-gate green-light signal (free mode) |
 

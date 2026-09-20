@@ -24,6 +24,17 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// LUCIDE, from the block itself. These icons are <i data-lucide> and need the
+// library to hydrate them into SVG. Plugin::enqueue_frontend_assets() only
+// enqueues it behind `$is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl ||
+// $is_mvs_page` (Plugin.php:1343) - and a block dropped on an ORDINARY post
+// matches none of those, so the icons stayed unhydrated there.
+//
+// register_lucide_script() is idempotent (wp_script_is guard) and attaches the
+// MutationObserver that re-hydrates icons after an Interactivity region swap.
+\WPMediaVerse\Core\Plugin::register_lucide_script();
+wp_enqueue_script( 'mvs-lucide' );
+
 $mvs_pdf_id      = isset( $attributes['mediaId'] ) ? absint( $attributes['mediaId'] ) : 0;
 $mvs_pdf_height  = isset( $attributes['height'] ) ? absint( $attributes['height'] ) : 600;
 $mvs_pdf_toolbar = ! empty( $attributes['showToolbar'] );

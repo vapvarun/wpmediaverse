@@ -18,12 +18,19 @@
 
 .mvs-explore-filter-btn:hover,
 .mvs-explore-filter-btn.active {
-	background: var(--mvs-primary);
-	color: var(--mvs-surface);
+	background: var(--mvs-btn-primary-bg);
+	color: var(--mvs-btn-primary-fg);
 	border-color: var(--mvs-primary);
 }
 
-.mvs-explore-search {
+/* Scoped to the element, not the bare class. This block renders a SEARCH INPUT
+   with class="mvs-explore-search" (render.php), but explore.php, documents.php,
+   collection.php and Pro's explore-filters.php all use that same class on a
+   <div> that wraps an entire form. Because the block's stylesheet loads on
+   pages with no block on them, the unscoped rule painted a 20px-radius box
+   around those wrappers - a second border outside the search pill they already
+   draw. One class, two components: Coding Rule 13. */
+input.mvs-explore-search {
 	flex: 1;
 	min-width: 200px;
 	padding: 8px 16px;
@@ -32,28 +39,15 @@
 	font-size: 14px;
 }
 
-.mvs-explore-search:focus {
+input.mvs-explore-search:focus {
 	outline: none;
 	border-color: var(--mvs-primary);
 	box-shadow: 0 0 0 1px var(--mvs-primary);
 }
 
-.mvs-load-more {
-	display: block;
-	margin: 24px auto 0;
-	padding: 10px 24px;
-	border: 1px solid var(--mvs-primary);
-	border-radius: 4px;
-	background: transparent;
-	color: var(--mvs-primary);
-	cursor: pointer;
-	font-size: 14px;
-}
-
-.mvs-load-more:hover {
-	background: var(--mvs-primary);
-	color: var(--mvs-surface);
-}
+/* .mvs-load-more / .mvs-load-more-btn are owned by assets/css/frontend/load-more.css.
+   This file used to restyle .mvs-load-more as the button itself; it is now the
+   wrapper <div>, so those rules painted a full-width accent strip on hover. */
 
 /* ──────────────────────────────────────────────────────────────────────────
    Search autocomplete — debounced dropdown of top-8 title matches.

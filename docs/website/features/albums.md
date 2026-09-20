@@ -1,6 +1,6 @@
 # Albums
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
 Group your photos into beautiful collections - tell a story, document a trip, or organize your portfolio with a single shareable album.
@@ -28,8 +28,8 @@ Group your photos into beautiful collections - tell a story, document a trip, or
 
 ## For Site Owners
 
-1. Albums are enabled by default once WPMediaVerse is activated
-2. To embed a specific album on a page, use the **WPMediaVerse: Album Viewer** block in the block editor - select the album from the block sidebar
+1. Albums are enabled by default once MediaVerse is activated
+2. To embed a specific album on a page, use the **MediaVerse: Album Viewer** block in the block editor - select the album from the block sidebar
 3. Or use the shortcode `[mvs_album id="123"]` where `123` is the album's post ID
 4. Users manage their own albums from their media dashboard
 5. Admins can view and delete any album from **Media > Albums** in wp-admin
@@ -51,7 +51,7 @@ If a user can see the album but not a specific media item (because the item's pr
 
 ## Displaying an Album
 
-**Gutenberg Block:** Add the **WPMediaVerse: Album Viewer** block, then select an album from the block settings.
+**Gutenberg Block:** Add the **MediaVerse: Album Viewer** block, then select an album from the block settings.
 
 **Shortcode:**
 ```

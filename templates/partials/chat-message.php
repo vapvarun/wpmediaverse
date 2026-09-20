@@ -61,7 +61,7 @@ defined( 'ABSPATH' ) || exit;
 		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" fill="currentColor"/></svg>
 		</button>
-		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for me', 'wpmediaverse' ); ?>">
+		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
 		</button>
 		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--unsend" data-wp-on--click="actions.unsendMessage" data-wp-bind--hidden="state.hideUnsend" type="button" title="<?php esc_attr_e( 'Unsend for everyone', 'wpmediaverse' ); ?>">
@@ -130,6 +130,9 @@ defined( 'ABSPATH' ) || exit;
 		<div data-wp-bind--hidden="context.item.notMediaShare">
 			<?php require __DIR__ . '/chat-media-card.php'; ?>
 		</div>
+
+		<!-- The file this message carried no longer exists -->
+		<span class="mvs-chat-msg__gone" data-wp-bind--hidden="context.item.noFileGone"><?php esc_html_e( 'Attachment no longer available', 'wpmediaverse' ); ?></span>
 	</div>
 
 	<!-- Timestamp + send status / read receipt -->

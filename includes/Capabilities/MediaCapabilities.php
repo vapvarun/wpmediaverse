@@ -139,6 +139,14 @@ class MediaCapabilities {
 				// Community platform, not a blog: contributor publishes too
 				// (no WP submit-for-review semantics here). See subscriber note.
 				'publish_mvs_media',
+				// Singular AND plural. The Permissions matrix displays the
+				// singular; every gate checks the plural. Granting only the
+				// plural here made "Edit Own" and "Delete Own" render UNCHECKED
+				// for Subscriber while subscribers could in fact edit and delete
+				// their own media - the matrix telling the owner the opposite of
+				// what was true. Every other role already had both.
+				'edit_mvs_media',
+				'delete_mvs_media',
 				'edit_mvs_medias',
 				'delete_mvs_medias',
 				'publish_mvs_medias',
@@ -156,6 +164,14 @@ class MediaCapabilities {
 				// there is no upload-can-but-publish-cannot mismatch
 				// (Basecamp #9962830813).
 				'publish_mvs_media',
+				// Singular AND plural. The Permissions matrix displays the
+				// singular; every gate checks the plural. Granting only the
+				// plural here made "Edit Own" and "Delete Own" render UNCHECKED
+				// for Subscriber while subscribers could in fact edit and delete
+				// their own media - the matrix telling the owner the opposite of
+				// what was true. Every other role already had both.
+				'edit_mvs_media',
+				'delete_mvs_media',
 				'edit_mvs_medias',
 				'delete_mvs_medias',
 				'publish_mvs_medias',
@@ -344,26 +360,46 @@ class MediaCapabilities {
 	/**
 	 * Remove capabilities from roles (on uninstall).
 	 */
+	/**
+	 * Every capability this plugin can put on a role.
+	 *
+	 * ONE list, derived from the declarations that grant. `remove_caps()` used
+	 * to restate the set as a hardcoded literal beside `get_base_member_caps()`
+	 * - two hand-maintained lists that had to agree, with nothing enforcing it.
+	 * They did agree, but only because someone remembered twice; a capability
+	 * added to a role array and forgotten here would survive uninstall in
+	 * silence, which is how Basecamp 10296868773 came to be filed.
+	 *
+	 * Asking the grant side what it grants is the fix (Coding Rule 22), and
+	 * `CapabilitiesTest::test_every_granted_cap_is_removable()` holds it.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @return string[]
+	 */
+	public static function all_caps(): array {
+		$caps = self::get_base_member_caps();
+
+		foreach ( self::get_role_caps() as $role_caps ) {
+			$caps = array_merge( $caps, $role_caps );
+		}
+
+		// The override screens write whatever the matrix holds and expand it
+		// through PLURAL_CAP_MAP, so a cap can reach a role without appearing
+		// in the arrays above. Both sides of the map are included: cheap here,
+		// and the alternative is a capability nothing ever removes.
+		$caps = array_merge( $caps, array_keys( self::PLURAL_CAP_MAP ), array_values( self::PLURAL_CAP_MAP ) );
+
+		return array_values( array_unique( $caps ) );
+	}
+
+	/**
+	 * Remove every capability this plugin grants, from every role.
+	 *
+	 * @since 1.0.0
+	 */
 	public static function remove_caps(): void {
-		$all_caps = array_merge(
-			self::get_base_member_caps(),
-			array(
-				'edit_others_mvs_media',
-				'delete_others_mvs_media',
-				'moderate_mvs_media',
-				'manage_mvs_settings',
-				'manage_mvs_access',
-				'publish_mvs_media',
-				'edit_others_mvs_medias',
-				'edit_published_mvs_medias',
-				'edit_private_mvs_medias',
-				'delete_others_mvs_medias',
-				'delete_published_mvs_medias',
-				'delete_private_mvs_medias',
-				'publish_mvs_medias',
-				'read_private_mvs_medias',
-			)
-		);
+		$all_caps = self::all_caps();
 
 		global $wp_roles;
 		foreach ( $wp_roles->roles as $role_slug => $role_data ) {

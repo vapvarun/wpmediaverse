@@ -24,6 +24,17 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// LUCIDE, from the block itself. These icons are <i data-lucide> and need the
+// library to hydrate them into SVG. Plugin::enqueue_frontend_assets() only
+// enqueues it behind `$is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl ||
+// $is_mvs_page` (Plugin.php:1343) - and a block dropped on an ORDINARY post
+// matches none of those, so the icons stayed unhydrated there.
+//
+// register_lucide_script() is idempotent (wp_script_is guard) and attaches the
+// MutationObserver that re-hydrates icons after an Interactivity region swap.
+\WPMediaVerse\Core\Plugin::register_lucide_script();
+wp_enqueue_script( 'mvs-lucide' );
+
 $mvs_member_user_id  = isset( $attributes['userId'] ) ? absint( $attributes['userId'] ) : 0;
 $mvs_member_columns  = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 3;
 $mvs_member_per_page = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : 12;
@@ -110,7 +121,10 @@ $mvs_member_stats = array(
 if ( $mvs_member_user_obj ) {
 	$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 	if ( $repo ) {
-		$mvs_member_stats['media'] = (int) $repo->count_by_author( $mvs_member_resolved_user_id );
+		// Viewer-scoped. count_by_author() applies no audience filter, so this
+		// card advertised a media total that included the member's private and
+		// members-only items to anyone who could see the block.
+		$mvs_member_stats['media'] = (int) $repo->count_visible_by_author( $mvs_member_resolved_user_id );
 	}
 	$follows = \WPMediaVerse\Core\Plugin::container()->get( 'follows' );
 	if ( $follows ) {

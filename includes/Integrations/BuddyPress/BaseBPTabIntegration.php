@@ -36,6 +36,104 @@ defined( 'ABSPATH' ) || exit;
  */
 abstract class BaseBPTabIntegration {
 
+	/**
+	 * Every `mvs-*` handle a BP tab screen needs alive, including deps.
+	 *
+	 * ONE list, read by BOTH sides. `enqueue_assets()` puts these on the page and
+	 * `keep_tab_handles()` exempts them from the BuddyNext suppression sweep, so
+	 * the two cannot drift. They did drift, and that was the bug: the sweep in
+	 * `Plugin::enforce_frontend_presence()` deregisters every enqueued `mvs-*`
+	 * handle except what `mvs_frontend_presence_keep_handles` protects, and the
+	 * old callback protected TWO handles while this class enqueued FIVE. Load
+	 * More rendered with its script stripped (Basecamp 10300002499).
+	 *
+	 * THE DEPENDENCIES ARE IN THE LIST ON PURPOSE. Deregistering a dependency
+	 * does not just remove it: the dependent still reports `enqueued`, and then
+	 * prints NOTHING. Measured - registering `main` with dep `dep`, enqueuing
+	 * `main`, deregistering `dep`: `wp_script_is( 'main', 'enqueued' )` stays
+	 * true and `do_items()` emits 0 bytes. So protecting `mvs-load-more` without
+	 * `mvs-card-builders`, or `mvs-bp-actions` without `mvs-confirm`, protects
+	 * nothing. `bp-actions.js` fails CLOSED when `window.mvsConfirm` is absent
+	 * (admin-ux-rulebook Rule 10 bans native confirm), so a stripped
+	 * `mvs-confirm` silently disables every delete rather than erroring.
+	 *
+	 * Adding an enqueue to this class means adding its handle here. That is the
+	 * whole contract - one edit, both sides.
+	 *
+	 * @since 2.5.0
+	 * @var string[]
+	 */
+	protected const TAB_ASSET_HANDLES = array(
+		// Enqueued directly by enqueue_assets() / enqueue_upload_assets().
+		'mvs-frontend',
+		'mvs-bp-integration',
+		'mvs-load-more',
+		'mvs-bp-actions',
+		'mvs-lucide',
+		'mvs-bp-tab-upload',
+		// Declared deps of the above. Without these the dependents print nothing.
+		'mvs-card-builders', // dep of mvs-load-more   (Plugin.php:1299)
+		'mvs-confirm',       // dep of mvs-bp-actions  (Plugin.php:1728)
+		'mvs-dropzone',      // dep of mvs-bp-tab-upload (BaseBPTabIntegration:381)
+	);
+
+	/**
+	 * Register the hooks both tab subclasses need.
+	 *
+	 * Lives here rather than in each `init()` because GroupTabIntegration never
+	 * registered the keep-handles filter at all - so on a BuddyNext site the
+	 * group Media tab lost ALL its assets, stylesheets included, which is worse
+	 * than the reported profile symptom and had not been filed.
+	 *
+	 * @since 2.5.0
+	 */
+	protected function register_shared_hooks(): void {
+		add_filter( 'mvs_frontend_presence_keep_handles', array( $this, 'keep_tab_handles' ) );
+	}
+
+	/**
+	 * Is the current request one of MediaVerse's own BuddyPress screens?
+	 *
+	 * Member Media tab (any sub-tab: all / albums / documents) or a group's
+	 * Media tab. Mirrors the predicate `Plugin.php:1744` and `Plugin.php:3077`
+	 * already compute - a fourth copy is exactly the enumeration Coding Rule 22
+	 * warns about, so subclasses and callers should use THIS one.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @return bool
+	 */
+	protected function is_mvs_bp_screen(): bool {
+		$is_member_media = function_exists( 'bp_is_user' ) && bp_is_user()
+			&& function_exists( 'bp_current_component' ) && 'media' === bp_current_component();
+
+		$is_group_media = function_exists( 'bp_is_group' ) && bp_is_group()
+			&& function_exists( 'bp_current_action' ) && 'media' === bp_current_action();
+
+		return $is_member_media || $is_group_media;
+	}
+
+	/**
+	 * Exempt this tab's assets from the BuddyNext frontend-suppression sweep.
+	 *
+	 * Runs inside `enforce_frontend_presence()` at `wp_enqueue_scripts@PHP_INT_MAX`,
+	 * by which point BuddyPress has resolved the component, so the check is
+	 * reliable. Only the handles this class owns are exempted; the rest of the
+	 * suppression is left alone.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @param string[] $handles Handles the sweep must not strip.
+	 * @return string[]
+	 */
+	public function keep_tab_handles( array $handles ): array {
+		if ( ! $this->is_mvs_bp_screen() ) {
+			return $handles;
+		}
+
+		return array_values( array_unique( array_merge( $handles, self::TAB_ASSET_HANDLES ) ) );
+	}
+
 	// ============================================================
 	// Subclass contract — context-specific bits only.
 	// ============================================================
@@ -232,7 +330,7 @@ abstract class BaseBPTabIntegration {
 		// No null-guard on the service: a missing privacy service must fail
 		// CLOSED (fatal), not skip the gate and leak.
 		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
-		if ( ! $privacy->can_view( (int) $album->ID, get_current_user_id() ) ) {
+		if ( ! $privacy->can_view( (int) $album->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';
 			return;
@@ -274,6 +372,9 @@ abstract class BaseBPTabIntegration {
 		wp_enqueue_style( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-bp-actions' );
+		// Every handle enqueued here is listed in self::TAB_ASSET_HANDLES, which
+		// keep_tab_handles() returns to the suppression sweep. Add an enqueue,
+		// add it there - the constant is the single source both sides read.
 		// Lucide, for the SAME reason as mvs-load-more above: it is registered
 		// globally by Plugin but only ENQUEUED on MVS-native pages, and a BP
 		// profile or group screen is not one. Without it every `data-lucide`
@@ -296,6 +397,13 @@ abstract class BaseBPTabIntegration {
 			array(
 				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					'confirmMedia' => __( 'Delete this media? This cannot be undone.', 'wpmediaverse' ),
+					'confirmAlbum' => __( 'Delete this album? Media items inside it will remain in your library.', 'wpmediaverse' ),
+					'mediaDeleted' => __( 'Media deleted.', 'wpmediaverse' ),
+					'albumDeleted' => __( 'Album deleted.', 'wpmediaverse' ),
+					'deleteFailed' => __( 'Delete failed.', 'wpmediaverse' ),
+				),
 			)
 		);
 	}
@@ -350,15 +458,19 @@ abstract class BaseBPTabIntegration {
 				<input type="text" id="mvs-bp-upload-tags" class="mvs-bp-upload-field"
 					placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 					aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" />
+				<?php
+				// Owner lock (Basecamp 10320619418): hidden when members may not
+				// choose; the upload then takes the site default server-side. The
+				// options come from the one shared list, preselected at the site
+				// default like every other upload picker.
+				if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) :
+					?>
 				<select id="mvs-bp-upload-privacy" class="mvs-bp-upload-field"
 					aria-label="<?php esc_attr_e( 'Who can see this media', 'wpmediaverse' ); ?>">
-					<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
-					<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
-					<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-						<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
-					<?php endif; ?>
-					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
+					<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( \WPMediaVerse\Core\SettingsHelper::get_default_privacy() ); ?>
 				</select>
+				<?php endif; ?>
+				<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle(); ?>
 			</div>
 
 			<div class="mvs-bp-upload-status" id="mvs-bp-upload-status" style="display:none;"></div>
@@ -379,7 +491,7 @@ abstract class BaseBPTabIntegration {
 			'mvs-bp-tab-upload',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-tab-upload.js',
 			array( 'mvs-rest', 'mvs-dropzone' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/frontend/bp-tab-upload.js' ),
 			array( 'in_footer' => true )
 		);
 		wp_localize_script(
@@ -397,6 +509,9 @@ abstract class BaseBPTabIntegration {
 					'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
 					/* translators: %d: number of files. */
 					'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
+					'uploadFailed'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+					/* translators: 1: files uploaded, 2: files that failed */
+					'someFailed'    => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
 				),
 			)
 		);
@@ -510,10 +625,12 @@ abstract class BaseBPTabIntegration {
 			// Privacy gate: never render an album the current viewer cannot see.
 			// The album list query is not privacy-filtered, so a private /
 			// members-only album would otherwise leak to logged-out users and
-			// non-members. Album privacy lives in mvs_media_index keyed by the
-			// album post ID (same id space PrivacyService::can_view expects).
+			// non-members. Album privacy lives on the album POST (_mvs_privacy)
+			// since 2.4.0, NOT in mvs_media_index - an index row at this ID is an
+			// unrelated media item that happens to share the integer, which is
+			// why the call declares SPACE_CPT. Basecamp 10298525085.
 			// No null-guard on the service — fail closed, never skip the gate.
-			if ( ! $privacy->can_view( $album_id, $viewer_id ) ) {
+			if ( ! $privacy->can_view( $album_id, $viewer_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				continue;
 			}
 

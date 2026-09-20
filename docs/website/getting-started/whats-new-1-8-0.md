@@ -1,12 +1,12 @@
 # What's New in 1.8.0
 
-WPMediaVerse 1.8.0 adds configurable AI moderation with a new Claude provider, working image and text watermarks, a masonry media grid as the new default, member blocking from the frontend, an Integrations page for the Wbcom plugin family, and a long list of QA-driven fixes across storage, video, and theme compatibility. No database schema change.
+MediaVerse 1.8.0 adds configurable AI moderation with a new Claude provider, working image and text watermarks, a masonry media grid as the new default, member blocking from the frontend, an Integrations page for the Wbcom plugin family, and a long list of QA-driven fixes across storage, video, and theme compatibility. No database schema change.
 
 > **Included in Free.** Every item on this page applies to the free version unless marked **Pro**. Pro picks up these improvements automatically because Pro builds on top of free.
 
 ## Integrations page
 
-A new **WPMediaVerse > Integrations** admin page lists the Wbcom plugin family with product logos, short descriptions, and store links, plus a one-click companion installer that installs and activates a companion plugin without leaving the page. See [Integrations](integrations.md#integrations-admin-page-180).
+A new **MediaVerse > Integrations** admin page lists the Wbcom plugin family with product logos, short descriptions, and store links, plus a one-click companion installer that installs and activates a companion plugin without leaving the page. See [Integrations](integrations.md#integrations-admin-page-180).
 
 ## Member blocking from the frontend
 
@@ -64,6 +64,6 @@ New filters: `mvs_ai_moderation_terms`, `mvs_ai_cost_per_call`, `mvs_storage_rep
 
 ## Upgrade notes
 
-- Pairs with WPMediaVerse Pro 1.8.0 - install both updates together.
+- Pairs with MediaVerse Pro 1.8.0 - install both updates together.
 - No database migration runs for this release.
 - If your site relies on the square-crop grid, set **Thumbnail Style** back to Square in **Settings > Display** after updating (the default flipped to Original proportions).

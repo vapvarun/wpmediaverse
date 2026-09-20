@@ -344,6 +344,16 @@ interface MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool;
 
 	/**
+	 * Delete rows in a media-keyed table whose media no longer exists.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $table Unprefixed table with a `media_id` column.
+	 * @return int Rows deleted.
+	 */
+	public function delete_rows_without_media( string $table ): int;
+
+	/**
 	 * Purge the mvs_media_index + mvs_media_meta rows for an id and drop its row
 	 * cache. Targeted row/meta cleanup for album/collection privacy rows on
 	 * delete (they never touch the downstream tables delete_cascade() clears).
@@ -422,10 +432,28 @@ interface MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param array $args author, folder_id, per_page, page.
+	 * The one exception is `visible_to` (since 2.5.1): a plain-array viewer spec
+	 * Pro's PermissionService builds, applied in SQL so a listing of someone
+	 * else's drive counts and pages what the viewer can see in two queries.
+	 *
+	 * @param array $args author, folder_id, per_page, page, visible_to.
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function drive_documents( array $args = array() ): array;
+
+	/**
+	 * Distinct drives (of `space`-privacy rows), folders and linked spaces in a
+	 * drive listing — the bounded inputs Pro resolves to build `visible_to`.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array    $args        drive_documents() args.
+	 * @param string[] $want        Any of `drives`, `folders`, `spaces`.
+	 * @param int      $skip_author Viewer whose own rows need no facet (the spec's
+	 *                              `author` rung admits them); 0 for none.
+	 * @return array{drives: array[], folders: int[], spaces: int[]}
+	 */
+	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ), int $skip_author = 0 ): array;
 
 	/**
 	 * Published document ids whose TITLE matches a phrase, in title order.

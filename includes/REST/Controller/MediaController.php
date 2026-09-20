@@ -638,6 +638,7 @@ class MediaController extends WP_REST_Controller {
 				'where'    => $where,
 				'params'   => $params,
 				'orderby'  => $request->get_param( 'orderby' ),
+				'order'    => $request->get_param( 'order' ),
 				'per_page' => $per_page,
 				'offset'   => $offset,
 			),
@@ -659,6 +660,7 @@ class MediaController extends WP_REST_Controller {
 				'params'   => $params,
 				'join'     => ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '',
 				'orderby'  => $request->get_param( 'orderby' ),
+				'order'    => $feed_args['order'] ?? $request->get_param( 'order' ),
 				'per_page' => $per_page,
 				'offset'   => $offset,
 			)
@@ -895,7 +897,7 @@ class MediaController extends WP_REST_Controller {
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
-			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+			$cat_terms = wp_get_object_terms( $media_id, 'mvs_category' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
 			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
 			}
@@ -1016,6 +1018,19 @@ class MediaController extends WP_REST_Controller {
 		$privacy_changed = false;
 		if ( $privacy ) {
 			$clean_privacy = sanitize_text_field( $privacy );
+
+			// The owner may have locked privacy (Settings > General > Allow Users
+			// to Set Privacy). The edit screens hide the picker then, but still
+			// send the item's CURRENT level with every save, so only a change is
+			// refused - and refused out loud, never silently dropped (Rule 20).
+			if ( ! PrivacyService::user_may_choose_privacy()
+				&& $clean_privacy !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
+				return new WP_Error(
+					'mvs_privacy_locked',
+					__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+					array( 'status' => 403 )
+				);
+			}
 
 			if ( ! in_array( $clean_privacy, PrivacyService::supported_levels(), true ) ) {
 				return new WP_Error(
@@ -1150,6 +1165,20 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Documents are replaced through the Pro document route, which keeps
+		// the old version (`_mvs_replaced_from`) and checks folder grants. Here
+		// the new bytes would be stored in the MEDIA tree on the active driver
+		// (a public cloud bucket), the row re-typed from its MIME, and the old
+		// file deleted through the cloud driver while the local copy stayed on
+		// disk. Same refusal as the media feed.
+		if ( in_array( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'media_type' ), MediaTypes::DOCUMENTS, true ) ) {
+			return new \WP_Error(
+				'mvs_document_route',
+				__( 'Documents are replaced through the document routes, not the media routes.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		$files = $request->get_file_params();
 		if ( empty( $files['file'] ) ) {
 			return new \WP_Error( 'mvs_no_file', __( 'No file provided.', 'wpmediaverse' ), array( 'status' => 400 ) );
@@ -1176,6 +1205,46 @@ class MediaController extends WP_REST_Controller {
 
 		if ( ! in_array( $mime, $allowed, true ) ) {
 			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		// The SAME quota gate as a fresh upload, for the same reason as the MIME
+		// guard above: this endpoint used to run neither, so a member who was out
+		// of quota could not upload but could still push new bytes in through
+		// Replace. A package limit an owner sells has to hold on every write path.
+		//
+		// Runs BEFORE anything touches disk - store(), the watermark stamp and the
+		// EXIF pass are all below - so a refusal leaves the existing file intact.
+
+		/*
+		 * Two deliberate differences from handle():
+		 *
+		 * context 'replace' - a replacement creates no new item, so the per-type
+		 * ITEM cap must not apply. Without this a member at "5 of 5 images" could
+		 * never fix a bad photo, which reads as a bug and is not what a quota is
+		 * for. Pro's QuotaService skips that branch on this context.
+		 *
+		 * the byte DELTA, not the file size - the old bytes are about to be
+		 * freed, so only growth counts against the storage limit. A same-size
+		 * replacement consumes nothing; a smaller one is always allowed.
+		 */
+		$mvs_new_size = (int) ( filesize( $file['tmp_name'] ) ?: 0 );
+		$mvs_old_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
+
+		/** This filter is documented in includes/Services/UploadService.php */
+		$mvs_replace_args = apply_filters(
+			'mvs_upload_args',
+			array(
+				'mime'       => $mime,
+				'media_type' => $upload_service->get_media_type_public( $mime ),
+				'file_size'  => max( 0, $mvs_new_size - $mvs_old_size ),
+				'file_name'  => $file['name'],
+				'context'    => 'replace',
+			),
+			get_current_user_id()
+		);
+
+		if ( is_wp_error( $mvs_replace_args ) ) {
+			return $mvs_replace_args;
 		}
 
 		// Store new file.
@@ -1212,6 +1281,14 @@ class MediaController extends WP_REST_Controller {
 		// two copies of a rotation is how the paths drift apart again.
 		$upload_service->apply_exif_orientation( $file['tmp_name'], $mime );
 
+		// Then strip, on the same owner switch as a fresh upload. Replace ran
+		// orientation, filename strategy, watermark, optimize and the WebP/AVIF
+		// siblings - everything except this - so replacing a photo kept the GPS
+		// coordinates a normal upload would have removed. Basecamp 10316771960.
+		if ( get_option( 'mvs_strip_exif', true ) && 0 === strpos( (string) $mime, 'image/' ) ) {
+			$upload_service->strip_exif( $file['tmp_name'] );
+		}
+
 		// A replacement is new member bytes entering the library, so it stamps —
 		// the same rule as a fresh upload. This MUST run before store() below:
 		// store() persists the temp file, and the WebP/AVIF siblings are cut from
@@ -1227,10 +1304,15 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
 
-		// Delete old file.
-		$old_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-		if ( $old_path ) {
-			$driver->delete( $old_path );
+		// Delete the old file from every tier it may live on. Not the active
+		// driver alone: uploads land on local disk and are copied to the cloud
+		// afterwards, so a cloud-only delete left the local copy behind, and a
+		// local-only path (Pro documents) must never be sent to a cloud driver.
+		// delete_everywhere() handles both. The equality guard keeps a
+		// same-named replacement from deleting the file just stored.
+		$old_path = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
+		if ( '' !== $old_path && $old_path !== $dest_path ) {
+			$storage->delete_everywhere( $old_path );
 		}
 
 		// Update media index with new file data.
@@ -1461,6 +1543,59 @@ class MediaController extends WP_REST_Controller {
 
 		$ip_hash = hash( 'sha256', self::get_client_ip() . wp_salt() );
 
+		/**
+		 * How long the same visitor's repeat views of one item are ignored.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param int $window Seconds. Default 30 minutes.
+		 */
+		$mvs_view_window = (int) apply_filters( 'mvs_view_dedup_window', 30 * MINUTE_IN_SECONDS );
+
+		// Count a visitor once per window, not once per page load. There was no
+		// dedup at all: every reload of a media page inserted another row and
+		// incremented the counter, so a member refreshing their own item inflated
+		// it at will. The RateLimiter above only caps abuse volume at 60/min - far
+		// above normal reloading - so it never stood in for this.
+		//
+		// Keyed on the logged-in user when there is one, else the salted IP hash,
+		// and it uses the media_user_date index the table already carries for
+		// exactly this lookup. Basecamp 10278289615.
+		if ( $mvs_view_window > 0 ) {
+			$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $mvs_view_window );
+			$mvs_seen  = $user_id
+				? $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$user_id,
+						$mvs_since
+					)
+				)
+				: $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$ip_hash,
+						$mvs_since
+					)
+				);
+
+			if ( $mvs_seen ) {
+				// Already counted. Return the current total so the client still
+				// renders a number rather than treating this as a failure.
+				return rest_ensure_response(
+					array(
+						'success' => true,
+						'counted' => false,
+						'views'   => (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+							$wpdb->prepare( "SELECT views FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", $media_id )
+						),
+					)
+				);
+			}
+		}
+
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_views',
 			array(
@@ -1534,6 +1669,59 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		$ip_hash = hash( 'sha256', self::get_client_ip() . wp_salt() );
+
+		/**
+		 * How long the same visitor's repeat views of one item are ignored.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param int $window Seconds. Default 30 minutes.
+		 */
+		$mvs_view_window = (int) apply_filters( 'mvs_view_dedup_window', 30 * MINUTE_IN_SECONDS );
+
+		// Count a visitor once per window, not once per page load. There was no
+		// dedup at all: every reload of a media page inserted another row and
+		// incremented the counter, so a member refreshing their own item inflated
+		// it at will. The RateLimiter above only caps abuse volume at 60/min - far
+		// above normal reloading - so it never stood in for this.
+		//
+		// Keyed on the logged-in user when there is one, else the salted IP hash,
+		// and it uses the media_user_date index the table already carries for
+		// exactly this lookup. Basecamp 10278289615.
+		if ( $mvs_view_window > 0 ) {
+			$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $mvs_view_window );
+			$mvs_seen  = $user_id
+				? $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$user_id,
+						$mvs_since
+					)
+				)
+				: $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+					$wpdb->prepare(
+						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = 'view' AND created_at > %s LIMIT 1",
+						$media_id,
+						$ip_hash,
+						$mvs_since
+					)
+				);
+
+			if ( $mvs_seen ) {
+				// Already counted. Return the current total so the client still
+				// renders a number rather than treating this as a failure.
+				return rest_ensure_response(
+					array(
+						'success' => true,
+						'counted' => false,
+						'views'   => (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+							$wpdb->prepare( "SELECT views FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", $media_id )
+						),
+					)
+				);
+			}
+		}
 
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_views',
@@ -1869,8 +2057,21 @@ class MediaController extends WP_REST_Controller {
 
 		$author_id_raw = ! empty( $all['post_author'] ) ? (int) $all['post_author'] : 0;
 		$viewer_id     = get_current_user_id();
-		$can_edit      = $viewer_id > 0
-			&& ( $viewer_id === $author_id_raw || user_can( $viewer_id, 'manage_options' ) );
+		$is_own        = $viewer_id > 0 && $viewer_id === $author_id_raw;
+
+		// Mirror update_item_permissions_check() / delete_item_permissions_check()
+		// exactly: own item needs edit_mvs_medias, someone else's needs
+		// edit_others_mvs_medias. The old test was ownership-or-manage_options,
+		// which ignored the permission matrix entirely — so revoking "Edit" left
+		// the button on screen and a member clicking it got a 403 from the API
+		// (Basecamp 10285497657), while a delegated "Edit Others" role had no
+		// affordance at all (10285691473).
+		$can_edit   = $is_own
+			? user_can( $viewer_id, 'edit_mvs_medias' )
+			: ( $viewer_id > 0 && user_can( $viewer_id, 'edit_others_mvs_medias' ) );
+		$can_delete = $is_own
+			? user_can( $viewer_id, 'delete_mvs_medias' )
+			: ( $viewer_id > 0 && user_can( $viewer_id, 'delete_others_mvs_medias' ) );
 
 		// allow_download: per-media flag. Absent meta = default true.
 		// '0' string = explicit opt-out by the owner. The lightbox button
@@ -1899,8 +2100,9 @@ class MediaController extends WP_REST_Controller {
 		// of re-deriving an icon and a label from the raw MIME — the lightbox used
 		// to hardcode the file-text glyph and print the raw MIME (Basecamp
 		// 10248528902). Empty for non-documents.
-		$mvs_doc_icon  = '';
-		$mvs_doc_label = '';
+		$mvs_doc_icon   = '';
+		$mvs_doc_label  = '';
+		$mvs_doc_viewer = '';
 		if ( 'document' === $media_type_value ) {
 			$mvs_doc_mime  = (string) ( $all['file_type'] ?? '' );
 			$mvs_doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
@@ -1910,6 +2112,19 @@ class MediaController extends WP_REST_Controller {
 			if ( $mvs_doc_bytes > 0 ) {
 				$mvs_doc_label = trim( $mvs_doc_label . ( '' !== $mvs_doc_label ? ' · ' : '' ) . size_format( $mvs_doc_bytes ) );
 			}
+
+			// The same viewer the single-media page renders, so the two surfaces
+			// stop disagreeing about the same file: favourite a text document,
+			// open it in the lightbox, and you got less than by opening its page.
+			// Basecamp 10268223516.
+			//
+			// Free asks; whoever answers decides what it can safely return here.
+			// Which document types have a script-free preview is Pro's knowledge,
+			// and duplicating that list in Free would be two lists to keep in
+			// step. Pro returns '' for anything it cannot render inside a REST
+			// request, and the lightbox falls back to the doc card - which is the
+			// correct rendering for a binary anyway.
+			$mvs_doc_viewer = (string) apply_filters( 'mvs_document_viewer_html', '', $media_id, $mvs_doc_mime );
 		}
 
 		$data = array(
@@ -1951,7 +2166,9 @@ class MediaController extends WP_REST_Controller {
 			// alternative to a blurhash, computed once at upload (empty when the
 			// media predates it or is not an image).
 			'placeholder_color' => ! empty( $all['placeholder_color'] ) ? (string) $all['placeholder_color'] : '',
+			'doc_viewer_html'   => $mvs_doc_viewer,
 			'can_edit'          => $can_edit,
+			'can_delete'        => $can_delete,
 			'is_favorited'      => $is_favorited,
 			'viewer_reaction'   => $viewer_reaction,
 		);
@@ -2137,8 +2354,16 @@ class MediaController extends WP_REST_Controller {
 				 *
 				 * @param string[] $options Sort option slugs.
 				 */
-				'enum'              => apply_filters( 'mvs_feed_sort_options', array( 'date', 'trending', 'popular' ) ),
+				// created_at / title / views match the Explore toolbar, so Load More
+				// continues whatever order the visitor chose.
+				'enum'              => apply_filters( 'mvs_feed_sort_options', array( 'date', 'trending', 'popular', 'created_at', 'title', 'views' ) ),
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'order'        => array(
+				'type'              => 'string',
+				'enum'              => array( 'asc', 'desc' ),
+				'default'           => 'desc',
+				'sanitize_callback' => 'sanitize_key',
 			),
 			'tag'          => array(
 				'type'              => 'string',

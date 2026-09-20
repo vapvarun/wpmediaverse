@@ -62,8 +62,11 @@
 	filter: blur(var(--mvs-blur, 20px));
 }
 
-.mvs-lock-overlay-placeholder .dashicons {
-	font-size: 64px;
+/* The placeholder icon is a Lucide <svg> now, not a dashicon font glyph, so it
+   is sized with width/height - an SVG ignores font-size and ships its own
+   24x24 viewBox. Basecamp 10300077675. */
+.mvs-lock-overlay-placeholder .mvs-icon [data-lucide],
+.mvs-lock-overlay-placeholder .mvs-icon svg {
 	width: 64px;
 	height: 64px;
 	color: rgba(255, 255, 255, 0.5);

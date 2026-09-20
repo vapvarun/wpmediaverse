@@ -1,10 +1,10 @@
 # Pro REST API Reference
 
-> Endpoints marked **(Pro)** require WPMediaVerse Pro. Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later — check your installed Pro version if a route 404s.
+> Endpoints marked **(Pro)** require MediaVerse Pro. Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later — check your installed Pro version if a route 404s.
 
 **Base URL:** `/wp-json/mvs-pro/v1/`
 
-WPMediaVerse Pro registers its own REST namespace, `mvs-pro/v1`, alongside the free `mvs/v1` namespace. Pro must be active for any of these routes to be registered.
+MediaVerse Pro registers its own REST namespace, `mvs-pro/v1`, alongside the free `mvs/v1` namespace. Pro must be active for any of these routes to be registered.
 
 Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` header with a nonce from `wp_create_nonce( 'wp_rest' )` and include `credentials: 'same-origin'` so the request is tied to the logged-in user. Application Passwords (WP 5.6+) work for mobile/headless clients.
 
@@ -1367,7 +1367,7 @@ Pro endpoints use the same error envelope as the free API:
 ```json
 {
   "code": "mvs_pro_rest_forbidden",
-  "message": "You do not have permission to manage WPMediaVerse Pro settings.",
+  "message": "You do not have permission to manage MediaVerse Pro settings.",
   "data": { "status": 403 }
 }
 ```

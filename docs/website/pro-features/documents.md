@@ -1,6 +1,6 @@
 # Document Library
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 Give every member a private drive for their files. Folders, sharing, search, trash and a viewer that shows a contract as a contract - not as its words in a plain column.

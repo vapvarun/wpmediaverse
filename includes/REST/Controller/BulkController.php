@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Core\MediaTypes;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\REST\RateLimiter;
 
@@ -103,6 +104,25 @@ class BulkController extends WP_REST_Controller {
 		$requested   = count( $media_ids );
 		$allowed_ids = $this->filter_allowed_ids( $media_ids, $user_id );
 
+		// Documents are not media-library items: their access is grants-first
+		// through the folder chain, and they have their own trash and bulk flow
+		// on the Pro document routes. This route authorises by media author, so
+		// acting on a document here would bypass that ACL and its trash (a
+		// member's bulk delete hard-deleted a document outright). Same refusal
+		// as the media feed. Refuse the whole request rather than silently drop
+		// the ids — a partial success would read as "done". Checked on the
+		// allowed ids only, so the refusal is no oracle for ids the caller
+		// cannot touch.
+		foreach ( $allowed_ids as $media_id ) {
+			if ( in_array( (string) Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'media_type' ), MediaTypes::DOCUMENTS, true ) ) {
+				return new WP_Error(
+					'mvs_document_route',
+					__( 'Documents cannot be changed through media bulk actions. Use the document routes instead.', 'wpmediaverse' ),
+					array( 'status' => 400 )
+				);
+			}
+		}
+
 		switch ( $action ) {
 			case 'delete':
 				$response = $this->bulk_delete( $allowed_ids );
@@ -120,6 +140,10 @@ class BulkController extends WP_REST_Controller {
 				$privacy = $request->get_param( 'privacy' );
 				if ( ! $privacy ) {
 					return new WP_Error( 'mvs_missing_privacy', __( 'privacy is required for change_privacy.', 'wpmediaverse' ), array( 'status' => 400 ) );
+				}
+				// Same owner lock as the single-item update. Basecamp 10320619418.
+				if ( ! \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
+					return new WP_Error( 'mvs_privacy_locked', __( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ), array( 'status' => 403 ) );
 				}
 				$response = $this->bulk_change_privacy( $allowed_ids, $privacy );
 				break;
@@ -248,32 +272,25 @@ class BulkController extends WP_REST_Controller {
 	/**
 	 * Bulk delete media items.
 	 *
+	 * Exactly what the single-item DELETE /media/{id} does, per id: delete_all()
+	 * -> delete_cascade(), which clears every child table and fires
+	 * `mvs_media_files_orphaned` so StorageCleanupService reclaims the original
+	 * and every variant through StorageService::delete_everywhere(). This used
+	 * to unlink only `file_path` through the active driver directly — leaving
+	 * every thumbnail behind, and sending local-only paths to the cloud.
+	 *
 	 * @param int[] $media_ids Media IDs.
 	 * @return WP_REST_Response
 	 */
 	private function bulk_delete( array $media_ids ): WP_REST_Response {
-		global $wpdb;
+		$repo    = Plugin::container()->get( 'media_repository' );
 		$deleted = 0;
 
 		foreach ( $media_ids as $media_id ) {
-			$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-
-			// Delete stored file.
-			if ( $file_path ) {
-				$storage = Plugin::container()->get( 'storage' );
-				$storage->get_driver()->delete( $file_path );
-			}
-
-			// Delete from custom tables.
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
-			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
-			++$deleted;
 			// mvs_media_deleted is fired inside delete_cascade() (the single
 			// funnel) — not fired here to avoid a double-fire (audit 2026-06-04).
+			$repo->delete_all( $media_id );
+			++$deleted;
 		}
 
 		return rest_ensure_response(
@@ -286,7 +303,7 @@ class BulkController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Bulk move items to album.
+	 * Bulk add items to an album (items stay in any other album).
 	 *
 	 * @param int[] $media_ids Media IDs.
 	 * @param int   $album_id  Target album ID.
@@ -304,32 +321,10 @@ class BulkController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to add items to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
-		global $wpdb;
-
-		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT MAX(position) FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d",
-				$album_id
-			)
-		);
-
-		$added = 0;
-		foreach ( $media_ids as $media_id ) {
-			++$max_pos;
-			$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_album_items',
-				array(
-					'album_id' => $album_id,
-					'media_id' => $media_id,
-					'position' => $max_pos,
-					'added_at' => current_time( 'mysql', true ),
-				),
-				array( '%d', '%d', '%d', '%s' )
-			);
-			if ( false !== $result ) {
-				++$added;
-			}
-		}
+		// The same write as adding one item: album_id pointer, privacy clamp,
+		// playlist type check and mvs_album_items_added. A raw insert here
+		// skipped all four.
+		$added = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->add_items( $album_id, $media_ids );
 
 		return rest_ensure_response(
 			array(

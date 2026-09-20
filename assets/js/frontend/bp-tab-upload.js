@@ -47,11 +47,16 @@
 			var el = document.getElementById( id );
 			return el ? String( el.value || '' ).trim() : '';
 		}
+		// The story checkbox is emitted by TemplateHelpers::story_toggle() only
+		// when Pro is active and stories are on, so it is often absent.
+		var storyBox = document.querySelector( '.mvs-bp-upload-fields .mvs-upload-story-input' );
+
 		return {
 			title: val( 'mvs-bp-upload-title' ),
 			description: val( 'mvs-bp-upload-description' ),
 			tags: val( 'mvs-bp-upload-tags' ),
-			privacy: val( 'mvs-bp-upload-privacy' )
+			privacy: val( 'mvs-bp-upload-privacy' ),
+			story: !! ( storyBox && storyBox.checked )
 		};
 	}
 
@@ -182,6 +187,7 @@
 		var total = files.length;
 		var done = 0;
 		var failed = 0;
+		var lastError = '';
 		var meta = readMetaFields();
 		// Tie a multi-file selection together so the BuddyPress activity sync
 		// emits ONE carousel item instead of one feed row per file — the same
@@ -194,11 +200,20 @@
 		function next() {
 			if ( done >= total ) {
 				var uploaded = total - failed;
-				statusEl.textContent = format( i18n.uploaded, { '%d': uploaded } );
-				statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
+				if ( ! uploaded ) {
+					// Nothing got in: say why and stay (it used to say "0 file(s) uploaded!" in green and reload).
+					window.mvsDropzone.showFailure( statusEl, lastError || i18n.uploadFailed || '' );
+					return;
+				}
+				if ( failed ) {
+					window.mvsDropzone.showFailure( statusEl, format( i18n.someFailed, { '%1$d': uploaded, '%2$d': failed } ) + ' ' + lastError );
+				} else {
+					statusEl.textContent = format( i18n.uploaded, { '%d': uploaded } );
+					statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
+				}
 				setTimeout( function () {
 					window.location.reload();
-				}, 800 );
+				}, failed ? 2500 : 800 );
 				return;
 			}
 			var fd = new FormData();
@@ -227,6 +242,11 @@
 				} ).then( function ( r ) {
 					if ( ! r.ok ) {
 						failed++;
+						lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
+					} else if ( meta.story && r.data && r.data.id ) {
+						// "Also share as a story" (Pro). Non-fatal: the media is
+						// uploaded either way. Basecamp 10313107097.
+						window.mvsRest.markAsStory( r.data.id );
 					}
 					done++;
 					if ( done < total ) {
@@ -235,6 +255,7 @@
 					next();
 				} ).catch( function () {
 					failed++;
+					lastError = i18n.uploadFailed || '';
 					done++;
 					next();
 				} );
@@ -248,6 +269,8 @@
 		var total = files.length;
 		var done = 0;
 		var uploadedIds = [];
+		var failed = 0;
+		var lastError = '';
 		// Mirror the shared-ui modal flag (src/blocks/shared-ui/view.js:878):
 		// for ≥2-file album batches, tag each per-file POST so the server
 		// suppresses per-media BP activities and emits ONE "uploaded N photos
@@ -258,19 +281,25 @@
 
 		function next() {
 			if ( done >= total ) {
-				if ( uploadedIds.length ) {
-					statusEl.textContent = i18n.addingToAlbum || '';
-					window.mvsRest.restFetch( restUrl + 'albums/' + albumId + '/items', {
-						method: 'POST',
-						body: { media_ids: uploadedIds },
-					} ).then( function () {
+				if ( ! uploadedIds.length ) {
+					window.mvsDropzone.showFailure( statusEl, lastError || i18n.uploadFailed || '' );
+					return;
+				}
+				statusEl.textContent = i18n.addingToAlbum || '';
+				window.mvsRest.restFetch( restUrl + 'albums/' + albumId + '/items', {
+					method: 'POST',
+					body: { media_ids: uploadedIds },
+				} ).then( function () {
+					if ( failed ) {
+						window.mvsDropzone.showFailure( statusEl, format( i18n.someFailed, { '%1$d': uploadedIds.length, '%2$d': failed } ) + ' ' + lastError );
+					} else {
 						statusEl.textContent = format( i18n.addedToAlbum, { '%d': uploadedIds.length } );
 						statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
-						setTimeout( function () {
-							window.location.reload();
-						}, 800 );
-					} );
-				}
+					}
+					setTimeout( function () {
+						window.location.reload();
+					}, failed ? 2500 : 800 );
+				} );
 				return;
 			}
 			var fd = new FormData();
@@ -284,10 +313,11 @@
 					method: 'POST',
 					body: fd
 				} ).then( function ( r ) {
-					return r.data;
-				} ).then( function ( data ) {
-					if ( data && data.id ) {
-						uploadedIds.push( data.id );
+					if ( r.ok && r.data && r.data.id ) {
+						uploadedIds.push( r.data.id );
+					} else {
+						failed++;
+						lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
 					}
 					done++;
 					if ( done < total ) {
@@ -295,6 +325,8 @@
 					}
 					next();
 				} ).catch( function () {
+					failed++;
+					lastError = i18n.uploadFailed || '';
 					done++;
 					next();
 				} );

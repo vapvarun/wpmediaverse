@@ -224,4 +224,4 @@ The WPMediaVerse Team
 
 ---
 
-**P.S.** We offer a 14-day refund if Pro does not work out for your setup. No awkward questions.
+**P.S.** We offer a 30-day money-back guarantee if Pro does not work out for your setup.

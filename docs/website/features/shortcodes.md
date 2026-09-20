@@ -1,9 +1,9 @@
 # Shortcodes
 
-> **Included in Free** - This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-WPMediaVerse provides **12** shortcodes for embedding media features in pages, posts, and classic editor content.
+MediaVerse provides **12** shortcodes for embedding media features in pages, posts, and classic editor content.
 
 ## [mvs_gallery]
 
@@ -212,7 +212,7 @@ Shows the current member's own upload usage ledger. Useful on an account page be
 
 ## [mvs_documents]
 
-> Free shortcode, Pro engine. With the Documents master toggle off it renders nothing (an administrator sees a one-line notice saying why). Folder listings need Pro; without it an editor sees "Folder listings need WPMediaVerse Pro" and a visitor sees nothing.
+> Free shortcode, Pro engine. With the Documents master toggle off it renders nothing (an administrator sees a one-line notice saying why). Folder listings need Pro; without it an editor sees "Folder listings need MediaVerse Pro" and a visitor sees nothing.
 
 Lists the current member's documents. Paginates through the `doc_page` query parameter and accepts a `doc_type` query parameter that overrides the `type` attribute.
 
@@ -230,7 +230,7 @@ Lists the current member's documents. Paginates through the `doc_page` query par
 
 ## Pro: [mvs_document]
 
-> Requires WPMediaVerse Pro.
+> Requires MediaVerse Pro.
 
 Embeds one document inline. A non-document media ID is refused, so the shortcode cannot become a second unguarded route to a photo.
 
@@ -246,7 +246,7 @@ Embeds one document inline. A non-document media ID is refused, so the shortcode
 
 ## Pro: Compete shortcodes
 
-> These require WPMediaVerse Pro, and each one needs its feature toggle enabled. With the toggle off the shortcode renders nothing rather than an error.
+> These require MediaVerse Pro, and each one needs its feature toggle enabled. With the toggle off the shortcode renders nothing rather than an error.
 
 Every block in the Compete set has a matching shortcode, so you can place competitions on a classic-editor page or inside a page builder.
 
@@ -290,7 +290,7 @@ Use hyphens in shortcode attributes (`padding-desktop`); they are converted to t
 
 ## Pro: Layout feed shortcodes
 
-> Require WPMediaVerse Pro. See [Layout Modes](../pro-features/layout-modes.md) for what each layout looks like.
+> Require MediaVerse Pro. See [Layout Modes](../pro-features/layout-modes.md) for what each layout looks like.
 
 | Shortcode | Layout |
 |-----------|--------|

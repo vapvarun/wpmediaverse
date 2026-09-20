@@ -361,6 +361,17 @@
 			'data-media-type': mediaType,
 		} );
 
+		// Aspect ratio for `original` (justified-rows) mode — the JS twin of
+		// TemplateHelpers::grid_item_ar_style(). Without it an appended card
+		// falls back to 1.5 and a portrait photo takes a landscape share of the
+		// row, so page 2 would not match page 1. Same clamp as PHP, and inert
+		// in square/list mode, which never reads --mvs-ar.
+		var arW = item.width || 0;
+		var arH = item.height || 0;
+		var ar  = ( arW > 0 && arH > 0 ) ? ( arW / arH ) : 1.5;
+		ar = Math.max( 0.3, Math.min( 4, ar ) );
+		root.style.setProperty( '--mvs-ar', ar.toFixed( 4 ) );
+
 		// Owner-only per-item actions (delete). Gated by TWO conditions:
 		//   1. Server says the viewer can edit this item (`can_edit`).
 		//   2. The grid container opts in via `data-show-actions="1"`. Only
@@ -788,205 +799,20 @@
 	 * 5. INSTAGRAM (simplified) — matches instagram/partials/feed-card.php
 	 * ==================================================================== */
 
-	/**
-	 * Build a simplified Instagram-layout card for Load More.
-	 *
-	 * The full Instagram card is very complex (Interactivity API bindings,
-	 * follow/like/favorite state, comment forms, gallery carousels, etc.).
-	 * This builder produces a simplified version with:
-	 *   - Header (avatar + author name)
-	 *   - Image
-	 *   - Stats footer (likes + comments)
-	 *   - Caption
-	 * And adds class `mvs-ig-card--loadmore` to distinguish from
-	 * PHP-rendered cards.
-	 *
-	 * Structure:
-	 *   article.mvs-ig-card.mvs-ig-card--loadmore[data-media-id]
-	 *     div.mvs-ig-card-header
-	 *       a.mvs-ig-card-author
-	 *         img.mvs-ig-card-avatar
-	 *         strong.mvs-ig-card-username
-	 *     div.mvs-ig-card-media
-	 *       img.mvs-ig-card-img
-	 *     div.mvs-ig-actions
-	 *       div.mvs-ig-actions-left
-	 *         button.mvs-ig-action-btn (heart outline)
-	 *         a.mvs-ig-action-btn (comment link)
-	 *       div.mvs-ig-actions-right
-	 *         button.mvs-ig-action-btn (bookmark outline)
-	 *     div.mvs-ig-likes
-	 *       strong (like count)
-	 *     div.mvs-ig-caption
-	 *       strong.mvs-ig-caption-author
-	 *       span.mvs-ig-caption-text
-	 *
-	 * @param {Object} item  REST API media object.
-	 * @return {HTMLElement}
-	 */
-	function instagram( item ) {
-		var mediaId  = getId( item );
-		var title    = item.title || '';
-		var desc     = item.description || '';
-		var thumbUrl = item.thumbnail_url || '';
-		var link     = item.link || '#';
-		var stats    = item.stats || {};
-		var author   = item.author_data || {};
-
-		var root = el( 'article', 'mvs-ig-card mvs-ig-card--loadmore', {
-			'data-media-id': mediaId,
-		} );
-
-		// ── Header ──────────────────────────────────────────────────────
-		var header = el( 'div', 'mvs-ig-card-header' );
-		var authorLink = el( 'a', 'mvs-ig-card-author', {
-			href: author.profile_url || '#',
-		} );
-
-		if ( author.avatar ) {
-			var avatar = el( 'img', 'mvs-ig-card-avatar', {
-				src: author.avatar,
-				alt: author.name || '',
-				width: '32',
-				height: '32',
-			} );
-			authorLink.appendChild( avatar );
-		}
-
-		var username = document.createElement( 'strong' );
-		username.className = 'mvs-ig-card-username';
-		username.textContent = author.name || '';
-		authorLink.appendChild( username );
-		header.appendChild( authorLink );
-		root.appendChild( header );
-
-		// ── Media area ──────────────────────────────────────────────────
-		// Video-first (matching the server-side instagram feed-card.php).
-		// preload="none" and no `#t=` fragment: a <video> paints its current
-		// frame as soon as it has one and only shows the poster until then, so
-		// forcing a 0.1s frame painted over every poster — leaving a blank tile
-		// for any video that opens on a fade-in or title card. See the matching
-		// comment in TemplateHelpers::media_thumbnail(). Layout-specific classes
-		// (mvs-ig-video / mvs-ig-card-img) are kept so the Instagram CSS applies.
-		var mediaWrap = el( 'div', 'mvs-ig-card-media' );
-		var fileUrl   = item.file_url || '';
-
-		if ( item.media_type === 'video' && fileUrl ) {
-			var video = el( 'video', 'mvs-ig-video', {
-				src: fileUrl,
-				muted: 'muted',
-				playsinline: 'playsinline',
-				preload: 'none',
-			} );
-			if ( thumbUrl ) {
-				video.poster = thumbUrl;
-			}
-			mediaWrap.appendChild( video );
-		} else if ( thumbUrl || fileUrl ) {
-			var img = el( 'img', 'mvs-ig-card-img', {
-				src: thumbUrl || fileUrl,
-				alt: title,
-				loading: 'lazy',
-			} );
-			mediaWrap.appendChild( img );
-		}
-
-		root.appendChild( mediaWrap );
-
-		// ── Action bar ──────────────────────────────────────────────────
-		var actions = el( 'div', 'mvs-ig-actions' );
-
-		var actionsLeft = el( 'div', 'mvs-ig-actions-left' );
-
-		// Heart button (outline).
-		var heartBtn = el( 'button', 'mvs-ig-action-btn', { type: 'button' } );
-		heartBtn.appendChild( svg( '24', '24', '0 0 24 24', [
-			{
-				tag: 'path',
-				attrs: {
-					d: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
-				},
-			},
-		], { fill: 'none', stroke: 'currentColor', 'stroke-width': '2' } ) );
-		actionsLeft.appendChild( heartBtn );
-
-		// Comment link.
-		var commentLink = el( 'a', 'mvs-ig-action-btn', { href: link + '#comments' } );
-		commentLink.appendChild( svg( '24', '24', '0 0 24 24', [
-			{
-				tag: 'path',
-				attrs: {
-					d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
-				},
-			},
-		], { fill: 'none', stroke: 'currentColor', 'stroke-width': '2' } ) );
-		actionsLeft.appendChild( commentLink );
-
-		actions.appendChild( actionsLeft );
-
-		// Bookmark button (outline).
-		var actionsRight = el( 'div', 'mvs-ig-actions-right' );
-		var bookmarkBtn = el( 'button', 'mvs-ig-action-btn', { type: 'button' } );
-		bookmarkBtn.appendChild( svg( '24', '24', '0 0 24 24', [
-			{
-				tag: 'path',
-				attrs: {
-					d: 'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z',
-				},
-			},
-		], { fill: 'none', stroke: 'currentColor', 'stroke-width': '2' } ) );
-		actionsRight.appendChild( bookmarkBtn );
-		actions.appendChild( actionsRight );
-
-		root.appendChild( actions );
-
-		// ── Like count ──────────────────────────────────────────────────
-		var likes = stats.reactions || 0;
-		if ( likes > 0 ) {
-			var likesDiv = el( 'div', 'mvs-ig-likes' );
-			var likesStrong = document.createElement( 'strong' );
-			likesStrong.textContent = fmtNum( likes ) + ' like' + ( likes !== 1 ? 's' : '' );
-			likesDiv.appendChild( likesStrong );
-			root.appendChild( likesDiv );
-		}
-
-		// ── Caption ─────────────────────────────────────────────────────
-		if ( author.name || desc ) {
-			var caption = el( 'div', 'mvs-ig-caption' );
-
-			if ( author.name ) {
-				var captionAuthor = document.createElement( 'strong' );
-				captionAuthor.className = 'mvs-ig-caption-author';
-				captionAuthor.textContent = author.name;
-				caption.appendChild( captionAuthor );
-			}
-
-			if ( desc ) {
-				var space = document.createTextNode( ' ' );
-				caption.appendChild( space );
-				var captionText = el( 'span', 'mvs-ig-caption-text' );
-				captionText.textContent = desc;
-				caption.appendChild( captionText );
-			}
-
-			root.appendChild( caption );
-		}
-
-		return root;
-	}
-
 	/* ── Export ───────────────────────────────────────────────────────── */
 
-	window.mvsCardBuilders = {
+	// Merge, and let an already-registered builder win: Pro registers its own
+	// Instagram builder (the one that matches its server-rendered card), and the
+	// two scripts load in no guaranteed order.
+	window.mvsCardBuilders = Object.assign( {
 		grid: grid,
 		pinterest: pinterest,
 		flickr: flickr,
 		dribbble: dribbble,
-		instagram: instagram,
 		// Canonical thumbnail builder — available to Pro layout builders and
 		// any future integration that needs to render a media thumb consistent
 		// with the server-side TemplateHelpers::media_thumbnail() output.
 		buildThumbnail: buildMediaThumbnail,
-	};
+	}, window.mvsCardBuilders || {} );
 
 } )();

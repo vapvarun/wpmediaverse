@@ -171,17 +171,26 @@ class Activator {
 		// the WP 6.7+ `_load_textdomain_just_in_time was called incorrectly`
 		// notice. Titles are not re-translated on each page render anyway.
 		$pages = array(
-			'mvs_page_explore'   => array(
+			'mvs_page_explore'           => array(
 				'title'     => 'Explore Media',
 				'slug'      => 'explore-media',
-				'shortcode' => '[mvs_gallery columns="3" count="24"]',
+				// NO columns/count. render_gallery() accepts type, category, tag,
+				// orderby, order and user_id - and deliberately takes columns and
+				// per-page from mvs_grid_columns / mvs_items_per_page so a
+				// shortcode cannot override an admin setting. Shipping them here
+				// taught an API the plugin refuses to have: an owner edited
+				// columns="3" to "4", saved, and nothing moved.
+				// Existing pages keep their copy; the attributes are inert, and
+				// rewriting a page an owner may have edited is not ours to do.
+				// Basecamp 10297763946.
+				'shortcode' => '[mvs_gallery]',
 			),
-			'mvs_page_dashboard' => array(
+			'mvs_page_dashboard'         => array(
 				'title'     => 'My Media',
 				'slug'      => 'my-media',
 				'shortcode' => '[mvs_dashboard]',
 			),
-			'mvs_page_upload'    => array(
+			'mvs_page_upload'            => array(
 				'title'     => 'Upload Media',
 				'slug'      => 'upload-media',
 				'shortcode' => '[mvs_upload]',

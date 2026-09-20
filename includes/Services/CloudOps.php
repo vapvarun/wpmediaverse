@@ -60,6 +60,36 @@ class CloudOps {
 	}
 
 	/**
+	 * The refusal for a row whose files sit in a local-only tree, or null.
+	 *
+	 * Local-only trees (`mvs_local_only_path_prefixes`, e.g. Pro documents) are
+	 * uploads-relative and deny-protected, and never belong on a media cloud
+	 * driver: a public bucket would publish them, and the private path segment
+	 * would leak in every request. So a cloud operation refuses them outright,
+	 * before any copy, URL rewrite or delete — in either direction. The
+	 * candidate queries already exclude them; this is the net for a caller
+	 * that hands one in by id (CLI, repair, repatriation).
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string[] $paths Every stored path of the media.
+	 * @return array|null Result array for the caller, or null to proceed.
+	 */
+	private static function local_only_refusal( array $paths ): ?array {
+		foreach ( $paths as $path ) {
+			if ( '' !== LocalDriver::local_only_prefix( (string) $path ) ) {
+				return array(
+					'ok'     => false,
+					'status' => 'skipped-local-only',
+					'error'  => 'file lives in a local-only storage tree (e.g. documents) and never moves between storage drivers',
+				);
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Status option key. Stores the most recent admin-triggered job state.
 	 *
 	 * @var string
@@ -86,15 +116,23 @@ class CloudOps {
 	 *   2. Phase 1 — copy original + every variant to the destination (verify
 	 *      each). Files already present are skipped; files missing from BOTH
 	 *      source and destination are skipped (stale meta, nothing to move).
-	 *   3. Phase 2 (only if Phase 1 fully succeeded) — refresh `file_url` to the
-	 *      destination's URL for the original, then optionally delete every
-	 *      source copy.
+	 *   3. Phase 2 (only if Phase 1 fully succeeded AND the original is now
+	 *      verified on the destination) — refresh `file_url` to the
+	 *      destination's URL for the original, then optionally delete the
+	 *      source copy of every file the destination was verified to hold.
+	 *      A file that was "skipped" because neither side had it is never
+	 *      deleted, and an original neither side has fails the row: flipping
+	 *      the URL and deleting on the strength of an exists() that answered
+	 *      "missing" is how a document lost its only copy (2.5.1).
+	 *
+	 * Rows in a local-only tree (Pro documents) are refused up front with
+	 * status `skipped-local-only`.
 	 *
 	 * @param int    $media_id    Media ID.
 	 * @param string $from        Source driver slug.
 	 * @param string $to          Destination driver slug.
 	 * @param bool   $keep_source If true, source files are kept after a verified upload.
-	 * @return array { ok: bool, status: 'migrated'|'skipped'|'failed', error?: string }
+	 * @return array { ok: bool, status: 'migrated'|'skipped'|'failed'|'skipped-non-public'|'skipped-local-only', error?: string }
 	 */
 	public static function migrate_one( int $media_id, string $from, string $to, bool $keep_source ): array {
 		global $wpdb;
@@ -106,6 +144,19 @@ class CloudOps {
 				'status' => 'failed',
 				'error'  => 'media row not found',
 			);
+		}
+
+		// Full file set for this media — original + every recorded variant.
+		// Same authoritative enumerator the orphan-cleanup path uses, so a
+		// migration moves exactly what an uninstall would remove (no thumbnail
+		// left behind on the old driver). Falls back to the original alone if
+		// the repository is unavailable.
+		$rel_path = (string) $row['file_path'];
+		$paths    = self::stored_paths( $media_id, $rel_path );
+
+		$refusal = self::local_only_refusal( $paths );
+		if ( $refusal ) {
+			return $refusal;
 		}
 
 		// Defense in depth — privacy gate. Cloud buckets we support today
@@ -127,7 +178,6 @@ class CloudOps {
 			}
 		}
 
-		$rel_path      = (string) $row['file_path'];
 		$source_driver = self::resolve_driver( $from );
 		$dest_driver   = self::resolve_driver( $to );
 
@@ -139,18 +189,12 @@ class CloudOps {
 			);
 		}
 
-		// Full file set for this media — original + every recorded variant.
-		// Same authoritative enumerator the orphan-cleanup path uses, so a
-		// migration moves exactly what an uninstall would remove (no thumbnail
-		// left behind on the old driver). Falls back to the original alone if
-		// the repository is unavailable.
-		$paths = self::stored_paths( $media_id, $rel_path );
-
 		// Phase 1 — copy every file to the destination and verify. Track which
 		// tmp dirs we created so we can clean them all up at the end.
 		$tmp_dirs    = array();
 		$moved_any   = false;
 		$failed_path = '';
+		$on_dest     = array(); // Paths the destination is verified to hold.
 
 		foreach ( $paths as $path ) {
 			$result = self::copy_to_dest( $source_driver, $dest_driver, $path, $tmp_dirs );
@@ -160,6 +204,9 @@ class CloudOps {
 			}
 			if ( 'moved' === $result ) {
 				$moved_any = true;
+			}
+			if ( 'absent' !== $result ) {
+				$on_dest[] = $path;
 			}
 		}
 
@@ -172,6 +219,18 @@ class CloudOps {
 				'ok'     => false,
 				'status' => 'failed',
 				'error'  => 'transfer failed for ' . $failed_path,
+			);
+		}
+
+		// The original is what file_url points at. If the destination does not
+		// hold it, there is nothing to repoint the row at and nothing proven
+		// safe to delete — leave the row exactly as it is.
+		if ( ! in_array( $rel_path, $on_dest, true ) ) {
+			self::cleanup_tmp_dirs( $tmp_dirs );
+			return array(
+				'ok'     => false,
+				'status' => 'failed',
+				'error'  => 'original not found on source or destination; nothing moved, file_url and source left untouched',
 			);
 		}
 
@@ -202,8 +261,10 @@ class CloudOps {
 		// Basecamp #10162798416; it keeps the stored data honest.
 		self::refresh_variant_urls( $media_id, $dest_driver );
 
+		// Only files the destination verifiably holds. A variant skipped as
+		// "absent on both sides" is never deleted on the source's word alone.
 		if ( ! $keep_source ) {
-			foreach ( $paths as $path ) {
+			foreach ( $on_dest as $path ) {
 				$source_driver->delete( $path );
 			}
 		}
@@ -285,31 +346,32 @@ class CloudOps {
 	/**
 	 * Copy ONE relative path to the destination driver and verify it landed.
 	 *
-	 * Idempotent: a file already on the destination is reported as 'skipped'.
-	 * A file missing from BOTH source and destination is also 'skipped' (stale
-	 * meta — there is nothing to move and the variant is already absent
-	 * everywhere). Only a genuine download/upload/verify failure is 'failed'.
+	 * Idempotent: a file already on the destination is reported as 'present'.
+	 * A file missing from BOTH source and destination is 'absent' (stale meta —
+	 * there is nothing to move). The two used to share one 'skipped', which let
+	 * migrate_one() treat "not there" as "safely there" and delete the source.
+	 * Only a genuine download/upload/verify failure is 'failed'.
 	 *
 	 * @param StorageDriverInterface $source_driver Source driver.
 	 * @param StorageDriverInterface $dest_driver   Destination driver.
 	 * @param string                 $rel_path      Relative path to copy.
 	 * @param array                  $tmp_dirs      Collected tmp dirs (by reference).
-	 * @return string 'moved'|'skipped'|'failed'
+	 * @return string 'moved'|'present'|'absent'|'failed'
 	 */
 	private static function copy_to_dest( $source_driver, $dest_driver, string $rel_path, array &$tmp_dirs ): string {
 		if ( '' === $rel_path ) {
-			return 'skipped';
+			return 'absent';
 		}
 
 		if ( $dest_driver->exists( $rel_path ) ) {
-			return 'skipped';
+			return 'present';
 		}
 
 		// Not on the destination — must be readable on the source to move it.
 		// If it is absent from the source too, the variant is already gone
 		// (stale meta); skip rather than fail the whole media.
 		if ( ! $source_driver->exists( $rel_path ) ) {
-			return 'skipped';
+			return 'absent';
 		}
 
 		$tmp_path   = trailingslashit( get_temp_dir() ) . 'mvs-cloudops-' . uniqid() . '/' . ltrim( $rel_path, '/' );
@@ -427,6 +489,11 @@ class CloudOps {
 			);
 		}
 
+		$refusal = self::local_only_refusal( array( (string) $row['file_path'] ) );
+		if ( $refusal ) {
+			return $refusal;
+		}
+
 		if ( 'public' !== (string) $row['privacy'] ) {
 			return array(
 				'ok'     => false,
@@ -512,11 +579,16 @@ class CloudOps {
 		// omits `legacy_document`, so it would under-count the total while the
 		// button still moved those files — the panel would report a backlog
 		// that never reached zero.
+		//
+		// Local-only rows (Pro documents) are left out of every tile, the same
+		// way the candidate list leaves them out: they never go to a cloud
+		// driver, so counting them in the total made the tiles fall short of it.
 		$base = array(
-			'status'      => '',
-			'status_in'   => array( 'publish', 'draft' ),
-			'has_file'    => true,
-			'media_types' => null,
+			'status'             => '',
+			'status_in'          => array( 'publish', 'draft' ),
+			'has_file'           => true,
+			'media_types'        => null,
+			'exclude_local_only' => true,
 		);
 
 		$total = $repo->query_count( $base );

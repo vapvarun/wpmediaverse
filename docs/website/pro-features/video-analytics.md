@@ -1,10 +1,10 @@
 # Video Analytics
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-WPMediaVerse Pro records play events for every video, builds per-video heatmaps, and provides a dashboard showing retention and engagement metrics.
+MediaVerse Pro records play events for every video, builds per-video heatmaps, and provides a dashboard showing retention and engagement metrics.
 
 ![Video analytics dashboard showing play counts and retention curve](../images/admin-stats.png)
 

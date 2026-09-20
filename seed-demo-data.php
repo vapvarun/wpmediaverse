@@ -1366,6 +1366,10 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 	mvs_seed_log( 'Creating competition demo data...' );
 
 	// Enable all competition features so demo data is visible.
+	// The master switch too: without it the seeded competitions exist in the
+	// tables but nothing renders them, and demo data you cannot see is worse
+	// than none. Competitions are opt-in, and seeding demo data IS opting in.
+	update_option( 'mvs_competitions_enabled', '1' );
 	update_option( 'mvs_challenges_enabled', '1' );
 	update_option( 'mvs_battles_enabled', '1' );
 	update_option( 'mvs_tournaments_enabled', '1' );

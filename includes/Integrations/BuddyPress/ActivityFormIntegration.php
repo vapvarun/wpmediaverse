@@ -41,7 +41,7 @@ class ActivityFormIntegration {
 			return;
 		}
 
-		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$allow_user_privacy = \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy();
 		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		?>
 		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
@@ -146,7 +146,7 @@ class ActivityFormIntegration {
 			'mvs-bp-activity-media',
 			MVS_PLUGIN_URL . 'assets/js/bp-activity-media.js',
 			array( 'mvs-rest', 'jquery', 'mvs-lucide', 'wp-i18n' ),
-			filemtime( $js_path ),
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/bp-activity-media.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -350,7 +350,7 @@ class ActivityFormIntegration {
 	 * @return string Sanitized privacy slug (public|members|friends|private) or ''.
 	 */
 	private function resolve_chosen_privacy(): string {
-		if ( ! (bool) get_option( 'mvs_allow_user_privacy', true ) ) {
+		if ( ! \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
 			return '';
 		}
 

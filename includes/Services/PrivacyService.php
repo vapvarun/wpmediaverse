@@ -18,11 +18,57 @@ defined( 'ABSPATH' ) || exit;
 class PrivacyService {
 
 	/**
+	 * Which ID space a caller is asking about.
+	 *
+	 * `mvs_media_index.media_id` and `wp_posts.ID` are independent AUTO_INCREMENT
+	 * sequences, so one integer can name BOTH a media item and an album. No
+	 * inspection of the integer can say which the caller meant - both entities
+	 * genuinely exist. So the caller says.
+	 *
+	 * AUTO keeps the old one-argument signature working and resolves media-first
+	 * when the row is a real media row, which is the safe side of the ambiguity:
+	 * serving a private file to a stranger is worse than an album owner being
+	 * asked to use the album route. Basecamp 10298525085.
+	 *
+	 * @since 2.4.2
+	 */
+	public const SPACE_AUTO  = 'auto';
+	public const SPACE_MEDIA = 'media';
+	public const SPACE_CPT   = 'cpt';
+
+	/**
 	 * Per-request cache for access check results.
 	 *
 	 * @var array<string, bool>
 	 */
 	private $cache = array();
+
+	/**
+	 * May this user choose a media item's privacy level?
+	 *
+	 * One answer for every picker and every write path. Settings > General >
+	 * "Allow Users to Set Privacy" promises that, when off, "all uploads use the
+	 * Default Privacy Level" and "the privacy selector is hidden from users" -
+	 * but only the upload surfaces read it, so a member could upload at the
+	 * default and change the level one click later in Edit, in bulk, or through
+	 * the REST update. Anyone who can manage MediaVerse settings keeps the
+	 * control: moderating privacy is part of running the site.
+	 * Basecamp 10320619418.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $user_id User, or 0 for the current one.
+	 * @return bool
+	 */
+	public static function user_may_choose_privacy( int $user_id = 0 ): bool {
+		if ( (bool) get_option( 'mvs_allow_user_privacy', true ) ) {
+			return true;
+		}
+
+		$user_id = $user_id > 0 ? $user_id : get_current_user_id();
+
+		return $user_id > 0 && user_can( $user_id, 'manage_mvs_settings' );
+	}
 
 	/**
 	 * The privacy levels this site will ACCEPT on a write.
@@ -243,14 +289,14 @@ class PrivacyService {
 	 * @param int $user_id  User ID (0 for anonymous).
 	 * @return bool
 	 */
-	public function can_view( int $media_id, int $user_id = 0 ): bool {
-		$cache_key = "{$media_id}:{$user_id}";
+	public function can_view( int $media_id, int $user_id = 0, string $space = self::SPACE_AUTO ): bool {
+		$cache_key = "{$media_id}:{$user_id}:{$space}";
 
 		if ( isset( $this->cache[ $cache_key ] ) ) {
 			return $this->cache[ $cache_key ];
 		}
 
-		$result = $this->check_access( $media_id, $user_id );
+		$result = $this->check_access( $media_id, $user_id, $space );
 
 		$this->cache[ $cache_key ] = $result;
 
@@ -264,7 +310,7 @@ class PrivacyService {
 	 * @param int $user_id  User ID.
 	 * @return bool
 	 */
-	private function check_access( int $media_id, int $user_id ): bool {
+	private function check_access( int $media_id, int $user_id, string $space = self::SPACE_AUTO ): bool {
 		// Resolve the item's author, and with it which KIND of thing this ID is.
 		//
 		// Albums and collections are CPTs; media lives in mvs_media_index. Since
@@ -280,21 +326,119 @@ class PrivacyService {
 		// owner was denied their own album and an unrelated member was granted it.
 		// Root cause, not symptom: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$post_type     = get_post_type( $media_id );
 		$allowed_types = array( 'mvs_album', 'mvs_collection' );
 
-		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
-			// Album / collection CPT — wp_posts.post_author is authoritative.
-			$author_id = (int) get_post_field( 'post_author', $media_id );
-		} elseif ( $repo->exists( $media_id ) ) {
-			$author_id = $repo->get_author( $media_id );
+		// Is there a REAL media row here? A typed index row is media. The
+		// predicate is a non-empty media_type, not MediaTypes::is_known():
+		// `is_known()` tests ALL, which deliberately omits `legacy_document`,
+		// and the row that first demonstrated this bug was exactly that. This
+		// mirrors AccessRulesService, which has resolved index-first since
+		// 10073499758 - the two guards for one hazard had diverged.
+		$in_index = $repo->exists( $media_id );
+		$typed    = $in_index && '' !== (string) $repo->get( $media_id, 'media_type' );
+
+		// get_post_type() is a wp_posts read, and this ran once per tile in a
+		// grid (2.5.1). Ask only when the answer can still change the outcome:
+		// a 'cpt' caller always needs it, and so does an untyped row. A TYPED
+		// index row is media whatever wp_posts says - see $is_media below -
+		// and a 'media' caller never consults the post at all.
+		$mvs_needs_post_type = self::SPACE_CPT === $space
+			|| ! ( $typed || ( self::SPACE_MEDIA === $space && $in_index ) );
+		$post_type           = $mvs_needs_post_type ? get_post_type( $media_id ) : '';
+		$is_cpt              = (bool) $post_type && in_array( $post_type, $allowed_types, true );
+
+		// The typed test decides the COLLISION only. An untyped index row is
+		// still a media row - insert() does not default media_type, so rows
+		// legitimately carry '' - and demanding a type here made can_view()
+		// stricter than the code it replaced, denying an owner their own media.
+		$is_media = $in_index && ( ! $is_cpt || $typed );
+
+		if ( self::SPACE_CPT === $space ) {
+			// The caller holds a post and says so. Never consult the index -
+			// a colliding photo must not decide an album's visibility.
+			if ( ! $is_cpt ) {
+				return false;
+			}
+			$treat_as_cpt = true;
+		} elseif ( self::SPACE_MEDIA === $space ) {
+			if ( ! $in_index ) {
+				return false;
+			}
+			$treat_as_cpt = false;
 		} else {
-			return false;
+			// Legacy one-argument callers. Media wins the collision: post-type
+			// first is what served a private photo because a published album
+			// shared its integer (10298525085); media_type-first alone is what
+			// denied an album owner their own album (10071824547). Neither is
+			// right for both, so AUTO takes the side where the failure is a
+			// refusal rather than a leak, and the CPT callers below say 'cpt'.
+			if ( $is_media ) {
+				$treat_as_cpt = false;
+			} elseif ( $is_cpt ) {
+				$treat_as_cpt = true;
+			} else {
+				return false;
+			}
+		}
+
+		if ( $treat_as_cpt ) {
+			$author_id = (int) get_post_field( 'post_author', $media_id );
+		} else {
+			$author_id = $repo->get_author( $media_id );
+			// From here on this ID is media, whatever post shares its integer.
+			$post_type = '';
 		}
 
 		// Owners and admins always have access.
 		if ( $user_id && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
 			return true;
+		}
+
+		// A block removes access to the blocked member's media, in BOTH
+		// directions. It belongs here rather than in each caller: every read
+		// path - the permalink, the REST single item, the profile grid, the
+		// lightbox, thumbnails and downloads - resolves through can_view(), so
+		// one guard covers them all. Before this the only block handling was a
+		// list filter in MediaController, which hid a blocked member from the
+		// blocker's LISTS while leaving every direct URL open: a blocked member
+		// could still open the blocker's media page, see it on their profile
+		// and fetch it from the API. docs/website/features/user-blocking.md
+		// promises the opposite.
+		//
+		// ONE-DIRECTIONAL, and that is the documented contract, not a
+		// simplification: docs/website/features/user-blocking.md says
+		// "Blocking is one-directional. You can still view the blocked user's
+		// public media unless you also choose to hide it." So the person who
+		// was blocked loses access to the blocker's media; the blocker keeps
+		// access to theirs. is_blocked( author, viewer ) asks exactly that,
+		// and reusing ReportService avoids a third hand-rolled mvs_blocks
+		// query - which is how FollowService and MediaController already
+		// ended up with two different ones.
+		//
+		// Above the mvs_privacy_can_view filter deliberately: a safety decision
+		// must not be re-granted by a filter that only knows about privacy.
+		if ( $user_id > 0 && $author_id > 0 && $author_id !== $user_id ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			if ( $container->has( 'reports' ) ) {
+				$reports = $container->get( 'reports' );
+				if ( method_exists( $reports, 'is_blocked' )
+					&& $reports->is_blocked( $author_id, $user_id ) ) {
+					return false;
+				}
+			}
+		}
+
+		// Moderation outranks privacy for everyone else. This belongs here, not in
+		// each caller's query: moderation_status is an opt-in argument on
+		// MediaRepository::query(), so before this guard only the Explore listing
+		// passed it and the permalink, serve endpoint, thumbnail and REST single-item
+		// all served flagged AND moderator-rejected media to anonymous visitors.
+		// Owners/moderators returned above, so a takedown stays reviewable.
+		if ( ! in_array( $post_type, $allowed_types, true ) ) {
+			$moderation = (string) $repo->get( $media_id, 'moderation_status' );
+			if ( in_array( $moderation, array( 'flagged', 'rejected', 'pending' ), true ) ) {
+				return false;
+			}
 		}
 
 		// Same split for the privacy value itself: an album's lives in post meta,

@@ -111,7 +111,11 @@
 	gap: 12px;
 }
 
-.mvs-upload-fields input,
+/* Text fields only. A bare `input` selector also caught the "share as story"
+   checkbox in this same container, stretching it to width:100% with a border
+   and padding -- it rendered as a 523px bordered box instead of a checkbox.
+   Basecamp 10313183837. */
+.mvs-upload-fields input[type="text"],
 .mvs-upload-fields textarea {
 	width: 100%;
 	padding: 8px 12px;
@@ -219,6 +223,6 @@
 }
 
 .mvs-upload-docs-pointer a {
-	color: var(--mvs-primary);
+	color: var(--mvs-primary-text, var(--mvs-primary));
 	text-decoration: underline;
 }

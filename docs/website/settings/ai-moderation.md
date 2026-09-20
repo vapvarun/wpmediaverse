@@ -1,6 +1,6 @@
 # AI & Moderation Settings
 
-Access these settings at **WPMediaVerse > Settings > AI & Moderation**.
+Access these settings at **MediaVerse > Settings > AI & Moderation**.
 
 ![AI and Moderation settings tab](../images/admin-settings-general.png)
 
@@ -57,7 +57,7 @@ When this constant is defined, the settings page field is disabled and shows a n
 
 ## Moderation Queue
 
-Administrators with the `moderate_mvs_media` capability can review flagged media at **WPMediaVerse > Media Moderation** (renamed from "Moderation" in 2.0.0 to avoid ambiguity with the general WordPress term).
+Administrators with the `moderate_mvs_media` capability can review flagged media at **MediaVerse > Media Moderation** (renamed from "Moderation" in 2.0.0 to avoid ambiguity with the general WordPress term).
 
 ![Moderation queue with pending media items](../images/admin-moderation.jpg)
 
@@ -68,10 +68,10 @@ The queue shows:
 
 ## Log Viewer
 
-The AI & moderation activity log is available at **WPMediaVerse > Logs**. It shows each AI call, the result, estimated cost, and any action taken.
+The AI & moderation activity log is available at **MediaVerse > Logs**. It shows each AI call, the result, estimated cost, and any action taken.
 
 ![AI log viewer showing analysis results](../images/admin-stats.png)
 
 ## Budget Alerts
 
-When monthly AI spend reaches 80% of your budget, WPMediaVerse adds an admin notice. When the budget is fully consumed, **all** AI calls - analysis, tagging, and moderation - are suspended and a warning appears on the settings page. Because a fresh install ships with a conservative `$10` default cap, AI never silently runs against an unbounded bill before you have chosen a budget.
+When monthly AI spend reaches 80% of your budget, MediaVerse adds an admin notice. When the budget is fully consumed, **all** AI calls - analysis, tagging, and moderation - are suspended and a warning appears on the settings page. Because a fresh install ships with a conservative `$10` default cap, AI never silently runs against an unbounded bill before you have chosen a budget.

@@ -6,7 +6,24 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
+
+/**
+ * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
+ * with focus left on the page behind them, so Tab walked the dashboard cards
+ * under the overlay before reaching the form (WCAG 2.4.3). One behaviour for
+ * all three: focus moves to the first field on open, Tab stays inside, and
+ * focus returns to whatever opened the modal on close. Basecamp 10320657228.
+ */
+const MODAL_FOCUSABLE =
+	'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const modalOpeners = {};
+
+function modalFocusables( root ) {
+	return Array.from( root.querySelectorAll( MODAL_FOCUSABLE ) ).filter(
+		( el ) => el.offsetParent !== null || el === document.activeElement
+	);
+}
 
 /**
  * Which loader owns each panel, and what its default sort is.
@@ -187,6 +204,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			description: '',
 			tags: '',
 			privacy: '',
+			story: false,
 			pendingFiles: [],
 			pendingCount: 0,
 			hasPending: false,
@@ -202,6 +220,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			tagInput: '',
 			tagResults: [],
 			tagDropdownVisible: false,
+			// Off by default - a title edit leaves the URL alone. Held in state so
+			// re-opening the panel shows what the member actually chose.
+			regenerateSlug: false,
 			saving: false,
 		},
 		// Albums
@@ -268,6 +289,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			collectionId: 0,
 			title: '',
 			description: '',
+			// Two levels only. The vocabulary lives in PHP
+			// (CollectionService::PRIVACY_LEVELS) and the picker renders both
+			// options server-side, so the store just carries the chosen value.
+			privacy: 'public',
 			collectionType: 'smart',
 			rules: [],
 			saving: false,
@@ -492,8 +517,42 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get itemTitle() {
 			return getContext().item?.title || ( state.i18n?.untitled || '(Untitled)' );
 		},
+		get editModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.editModal.privacy );
+		},
+		get editModalPrivacyLabel() {
+			return state.privacyLabelFor( state.editModal.privacy );
+		},
+		get albumModalPrivacyUnlisted() {
+			return state.privacyUnlisted( state.albumModal.privacy );
+		},
+		get albumModalPrivacyLabel() {
+			return state.privacyLabelFor( state.albumModal.privacy );
+		},
+		/**
+		 * Is the stored level one the picker does not offer?
+		 *
+		 * privacy_options() renders the offered levels server-side; this only
+		 * decides whether the extra disabled option appears. The offered set
+		 * comes from privacy_choices() via PHP - filterable, BP-conditional -
+		 * so it is never restated here. Basecamp 10290748981.
+		 */
+		privacyUnlisted( stored ) {
+			const offered = state.i18n?.privacyChoices || [];
+			return !! stored && ! offered.includes( stored );
+		},
+		privacyLabelFor( stored ) {
+			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
+		},
+
 		get itemPrivacy() {
-			return getContext().item?.privacy || 'public';
+			// Label, never the stored slug. The badge used to print `loggedin`
+			// straight from the database, lowercase and untranslated, directly
+			// above a picker calling the same state "Members: logged-in users
+			// only". Basecamp 10290748981.
+			const slug = getContext().item?.privacy || 'public';
+			const map = state.i18n?.privacyLabels || {};
+			return map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' );
 		},
 		get albumItemCount() {
 			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );
@@ -601,6 +660,39 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 	},
 	actions: {
+		/**
+		 * Keep Tab inside the open modal and close it on Escape
+		 * (data-wp-on--keydown on .mvs-modal).
+		 */
+		trapModalFocus( event ) {
+			// Escape closes like the overlay click does; the focus watch then
+			// returns focus to the opener.
+			if ( 'Escape' === event.key ) {
+				const key = getContext().modalKey;
+				if ( key && state[ key ] ) {
+					event.preventDefault();
+					state[ key ].visible = false;
+				}
+				return;
+			}
+			if ( 'Tab' !== event.key ) {
+				return;
+			}
+			const els = modalFocusables( getElement().ref );
+			if ( ! els.length ) {
+				return;
+			}
+			const first = els[ 0 ];
+			const last = els[ els.length - 1 ];
+			if ( event.shiftKey && document.activeElement === first ) {
+				event.preventDefault();
+				last.focus();
+			} else if ( ! event.shiftKey && document.activeElement === last ) {
+				event.preventDefault();
+				first.focus();
+			}
+		},
+
 		/* =====================================================================
 		   Tabs
 		   ===================================================================== */
@@ -688,6 +780,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( input ) input.click();
 		},
 
+		// role="button" gives the dropzone a Tab stop, not Enter/Space.
+		handleUploadKeydown( event ) {
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.handleUploadClick( event );
+			}
+		},
+
 		handleUploadDragOver( event ) {
 			event.preventDefault();
 			state.upload.dragOver = true;
@@ -744,6 +844,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		setUploadTags( event ) { state.upload.tags = event.target.value; },
 		setUploadPrivacy( event ) { state.upload.privacy = event.target.value; },
 
+		setUploadStory( event ) { state.upload.story = !! event.target.checked; },
+
 		async uploadFiles( files ) {
 			const ctx = getContext();
 
@@ -786,6 +888,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// sync emits ONE carousel item instead of one feed row per file.
 			// Same key shape as the upload modal (shared-ui), which has always
 			// sent this.
+			let duplicates = 0;
+			let lastDuplicateId = 0;
 			const mediaGroup =
 				total > 1
 					? 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 )
@@ -823,6 +927,21 @@ const { state, actions } = store( 'mvs/dashboard', {
 					} );
 					if ( res.ok ) {
 						uploaded++;
+						// The server flags a re-upload of identical content. The
+						// upload block and the shared modal both surface this;
+						// the dashboard panel read res.data only on failure, so
+						// a member uploading a duplicate here was told
+						// "1 file(s) uploaded!" and nothing else.
+						const mediaData = res.data;
+						if ( mediaData && mediaData.duplicate_warning ) {
+							duplicates++;
+							lastDuplicateId = mediaData.existing_media_id || 0;
+						}
+						// "Also share as a story" (Pro). Non-fatal: the media is
+						// uploaded either way. Basecamp 10313107097.
+						if ( state.upload.story && mediaData && mediaData.id ) {
+							await window.mvsRest.markAsStory( mediaData.id );
+						}
 					} else {
 						const errData = res.data || {};
 						lastError = errData.message || ( state.i18n?.uploadFailed || 'Upload failed.' );
@@ -834,19 +953,27 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			state.upload.uploading = false;
 			state.upload.status = '';
+			const duplicateNote = duplicates > 0
+				? ' ' + (
+					state.i18n?.duplicatesDetected ||
+						'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+				)
+					.replace( '%1$d', duplicates )
+					.replace( '%2$d', lastDuplicateId )
+				: '';
 			if ( uploaded === 0 ) {
 				sharedUI.actions.showToast( lastError || ( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ), 'error' );
 			} else if ( uploaded < total ) {
 				sharedUI.actions.showToast(
 					( state.i18n?.filesUploadedPartial || '%1$d of %2$d file(s) uploaded.' )
 						.replace( '%1$d', uploaded )
-						.replace( '%2$d', total ),
+						.replace( '%2$d', total ) + duplicateNote,
 					'error'
 				);
 			} else {
 				sharedUI.actions.showToast(
-					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ),
-					'success'
+					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ) + duplicateNote,
+					duplicates > 0 ? 'warning' : 'success'
 				);
 			}
 			if ( uploaded > 0 ) {
@@ -962,6 +1089,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.tagInput = '';
 			state.editModal.tagResults = [];
 			state.editModal.tagDropdownVisible = false;
+			state.editModal.regenerateSlug = false;
 		},
 
 		closeEditModal() {
@@ -969,19 +1097,18 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		setEditTitle( event ) { state.editModal.title = event.target.value; },
+		setEditRegenerateSlug( event ) { state.editModal.regenerateSlug = !! event.target.checked; },
 		setEditDesc( event ) { state.editModal.description = event.target.value; },
 		setEditPrivacy( event ) { state.editModal.privacy = event.target.value; },
 
-		updateEditTagInput( event ) {
+		async updateEditTagInput( event ) {
 			const ctx = getContext();
 			state.editModal.tagInput = event.target.value;
-			sharedUI.actions.searchTags( state.editModal.tagInput, ctx.restUrl );
-			setTimeout( () => {
-				const uiState = store( 'mvs/shared-ui' ).state;
-				state.editModal.tagResults = ( uiState.tagAutocomplete?.results || [] )
-					.filter( ( t ) => ! state.editModal.tags.includes( t ) );
-				state.editModal.tagDropdownVisible = state.editModal.tagResults.length > 0;
-			}, 350 );
+			await sharedUI.actions.searchTags( state.editModal.tagInput, ctx.restUrl );
+			const uiState = store( 'mvs/shared-ui' ).state;
+			state.editModal.tagResults = ( uiState.tagResults || [] )
+				.filter( ( t ) => ! state.editModal.tags.includes( t ) );
+			state.editModal.tagDropdownVisible = state.editModal.tagResults.length > 0;
 		},
 
 		addEditTag( event ) {
@@ -1193,7 +1320,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.bulkTagsValue = event.target.value;
 		},
 		/**
-		 * Fill the Move-to-album picker the first time it is needed.
+		 * Fill the Add-to-album picker the first time it is needed.
 		 *
 		 * Reuses loadAlbums() rather than adding a second album fetch: the panel
 		 * loader already handles paging, sort and the empty case, and two loaders
@@ -1316,7 +1443,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'move_to_album', media_ids: ids, album_id: state.bulkAlbumValue } } );
 				if ( res.ok ) {
 					state.bulkSelectedIds = [];
-					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkMovedToAlbum || 'Moved to album.' ) );
+					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkMovedToAlbum || 'Added to album.' ) );
 					sharedUI.actions.showToast( msg.text, msg.type );
 				} else {
 					// The route's own reason beats ours — it knows about a
@@ -1836,6 +1963,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collectionModal.collectionId = 0;
 			state.collectionModal.title = '';
 			state.collectionModal.description = '';
+			state.collectionModal.privacy = 'public';
 			state.collectionModal.collectionType = 'smart';
 			state.collectionModal.rules = [ { key: '', value: '', index: 0 } ];
 			state.collectionModal.saving = false;
@@ -1853,6 +1981,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collectionModal.collectionId = id;
 			state.collectionModal.title = item.title || '';
 			state.collectionModal.description = item.description || '';
+			state.collectionModal.privacy = item.privacy || 'public';
 			state.collectionModal.collectionType = item.type || 'manual';
 			state.collectionModal.rules = ( item.rules || [] ).map( ( r, i ) => ( { ...r, index: i } ) );
 			if ( state.collectionModal.rules.length === 0 && item.type === 'smart' ) {
@@ -1869,6 +1998,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		setCollectionTitle( event ) { state.collectionModal.title = event.target.value; },
 		setCollectionDesc( event ) { state.collectionModal.description = event.target.value; },
+		setCollectionPrivacy( event ) { state.collectionModal.privacy = event.target.value; },
 		setCollectionTypeManual() { state.collectionModal.collectionType = 'manual'; },
 		setCollectionTypeSmart() { state.collectionModal.collectionType = 'smart'; },
 
@@ -1971,6 +2101,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const payload = {
 				title: state.collectionModal.title,
 				description: state.collectionModal.description,
+				privacy: state.collectionModal.privacy,
 			};
 
 			const validRules = state.collectionModal.rules
@@ -2129,6 +2260,37 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 	},
 	callbacks: {
+		/**
+		 * data-wp-watch on each .mvs-modal; its context names the state key
+		 * (albumModal / collectionModal / editModal) so one callback serves all.
+		 */
+		manageModalFocus() {
+			const key = getContext().modalKey;
+			const { ref } = getElement();
+			if ( ! key || ! ref ) {
+				return;
+			}
+			if ( state[ key ]?.visible ) {
+				if ( ref.contains( document.activeElement ) ) {
+					return;
+				}
+				modalOpeners[ key ] = document.activeElement;
+				// After the overlay's `hidden` binding has flushed.
+				window.requestAnimationFrame( () => {
+					const els = modalFocusables( ref );
+					const first = els.find( ( el ) => ! el.classList.contains( 'mvs-modal-close' ) ) || els[ 0 ];
+					if ( first ) {
+						first.focus();
+					}
+				} );
+			} else if ( modalOpeners[ key ] ) {
+				const opener = modalOpeners[ key ];
+				modalOpeners[ key ] = null;
+				if ( document.contains( opener ) && typeof opener.focus === 'function' ) {
+					opener.focus();
+				}
+			}
+		},
 		init() {
 			const ctx = getContext();
 			// Apply admin default privacy to upload state.

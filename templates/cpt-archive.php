@@ -108,7 +108,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 			} elseif ( ! $mvs_is_albums && $mvs_collection_svc ) {
 				$mvs_ctype = get_post_meta( $mvs_post_id, '_mvs_collection_type', true ) ?: 'manual';
 				if ( 'smart' === $mvs_ctype ) {
-					$mvs_resolved   = $mvs_collection_svc->resolve( $mvs_post_id, 1, 1 );
+					$mvs_resolved   = $mvs_collection_svc->resolve( $mvs_post_id, 1, 1, get_current_user_id() );
 					$mvs_item_count = $mvs_resolved['total'];
 					$mvs_first_ids  = array_column( $mvs_resolved['items'], 'media_id' );
 				} else {
@@ -135,7 +135,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 			$mvs_card_class = $mvs_is_albums ? 'mvs-grid-item--album' : 'mvs-grid-item--collection';
 			?>
 
-			<div class="mvs-grid-item <?php echo esc_attr( $mvs_card_class ); ?>">
+			<div class="mvs-grid-item <?php echo esc_attr( $mvs_card_class ); ?>"<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- covers carry no stored dimensions; helper returns its escaped 3:2 fallback. ?>>
 				<a href="<?php echo esc_url( $mvs_permalink ); ?>" class="mvs-grid-item-link">
 					<?php if ( $mvs_cover_url ) : ?>
 						<img src="<?php echo esc_url( $mvs_cover_url ); ?>"
@@ -148,7 +148,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 					<?php endif; ?>
 					<span class="mvs-album-badge"
 						title="<?php echo esc_attr( sprintf( /* translators: %d: item count */ _n( '%d item', '%d items', $mvs_item_count, 'wpmediaverse' ), $mvs_item_count ) ); ?>">
-						<span class="dashicons dashicons-images-alt2" aria-hidden="true"></span>
+						<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span>
 					</span>
 					<div class="mvs-grid-item-overlay">
 						<div class="mvs-grid-item-stats">

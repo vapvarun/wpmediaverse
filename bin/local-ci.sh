@@ -21,6 +21,28 @@
 
 set -uo pipefail
 
+
+# WordPress test library location.
+#
+# WAS hardcoded to /tmp/wordpress-tests-lib in four places. macOS sweeps /tmp on
+# reboot and at some date rollovers, which empties the directory but leaves the
+# hollow shell behind - so the installer's "already installed" check returned
+# early, the gate's -f check failed, and BOTH unit suites reported "skipped" on
+# every push while looking perfectly green. That is the exact silence stage 2.4
+# was added to end (Pro's suite sat at 83 red unnoticed); a gate that disables
+# itself is worse than no gate.
+#
+# Resolution order: an explicit WP_TESTS_DIR wins, then a persistent home under
+# $HOME, then the historical /tmp path so an existing install keeps working.
+MVS_TESTS_DIR="${WP_TESTS_DIR:-}"
+if [ -z "$MVS_TESTS_DIR" ]; then
+  if [ -f "$HOME/.wp-tests-lib/includes/functions.php" ]; then
+    MVS_TESTS_DIR="$HOME/.wp-tests-lib"
+  else
+    MVS_TESTS_DIR="/tmp/wordpress-tests-lib"
+  fi
+fi
+export WP_TESTS_DIR="$MVS_TESTS_DIR"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PLUGIN_SLUG="$(basename "$PLUGIN_DIR")"
@@ -67,6 +89,15 @@ echo "Mode: $MODE  ·  Site: $SITE_URL"
 echo ""
 
 # ─── 1.x — Static checks (fast, no runtime needed) ───────────────────────────
+
+step "1.0" "No local QA/debug output tracked (logs, drafts, screenshots)"
+JUNK=$(git ls-files | grep -E '(^|/)(\.debug-log-[^/]*|error_log|debug\.log|[^/]*\.log)$|^qa/runs/drafts/|^qa/.*\.(png|jpe?g)$' || true)
+if [ -n "$JUNK" ]; then
+  fail "1.0 local QA/debug output is tracked; move it to app/qa-artifacts/ and git rm --cached it:"
+  echo "$JUNK" | sed 's/^/    /'
+else
+  pass "No local QA/debug output tracked"
+fi
 
 step "1.1" "PHP lint (every changed-source PHP file)"
 PHP_LINT_FAILED=0
@@ -175,10 +206,10 @@ fi
 # duplicate register_setting() calls, dropdown choices vs sanitizer whitelist
 # drift, sanitize_text_field used on fixed-choice dropdowns.
 if [ -x vendor/bin/phpunit ] && [ -f tests/unit/SettingsContractTest.php ]; then
-  if [ -f /tmp/wordpress-tests-lib/includes/functions.php ]; then
+  if [ -f "$WP_TESTS_DIR/includes/functions.php" ]; then
     run_stage "2.3" "Settings API contract (PHPUnit)" composer test:contract
   else
-    warn "2.3 Settings contract test skipped — WP_TESTS_DIR (/tmp/wordpress-tests-lib) not installed"
+    warn "2.3 Settings contract test skipped — WP_TESTS_DIR ($WP_TESTS_DIR) not installed"
   fi
 fi
 
@@ -202,10 +233,10 @@ fi
 # note for the pointer; the Free flake itself is its own open item, not
 # solved by that plan.
 if [ -x vendor/bin/phpunit ]; then
-  if [ -f /tmp/wordpress-tests-lib/includes/functions.php ]; then
+  if [ -f "$WP_TESTS_DIR/includes/functions.php" ]; then
     run_stage "2.4" "Full Free unit suite (PHPUnit)" composer test:unit
   else
-    warn "2.4 Free unit suite skipped — WP_TESTS_DIR (/tmp/wordpress-tests-lib) not installed"
+    warn "2.4 Free unit suite skipped — WP_TESTS_DIR ($WP_TESTS_DIR) not installed"
   fi
 fi
 

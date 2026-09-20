@@ -63,19 +63,27 @@ class CollectionMetaBox {
 	 */
 	public function render( $post ): void {
 		$collection_type = $this->service->get_type( $post->ID );
-		$rules           = $this->service->get_rules( $post->ID );
+
+		// get_type() reads an unset type as 'manual' (existing collections rely on
+		// that, so it stays). But a brand-new collection on a site that cannot fill
+		// a manual one - no Save button - starts as Smart, the only type that works.
+		$mvs_collections_on = (bool) apply_filters( 'mvs_collections_enabled', false );
+		if ( ! $mvs_collections_on && '' === (string) get_post_meta( $post->ID, '_mvs_collection_type', true ) ) {
+			$collection_type = 'smart';
+		}
+		$rules = $this->service->get_rules( $post->ID );
 
 		wp_enqueue_style(
 			'mvs-admin-collection-metabox',
 			MVS_PLUGIN_URL . 'assets/css/collection-metabox.css',
 			array(),
-			MVS_VERSION
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/collection-metabox.css' )
 		);
 		wp_enqueue_script(
 			'mvs-admin-collection-metabox',
 			MVS_PLUGIN_URL . 'assets/js/admin/collection-metabox.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/collection-metabox.js' ),
 			array( 'in_footer' => true )
 		);
 		wp_localize_script(
@@ -116,11 +124,19 @@ class CollectionMetaBox {
 		}
 		?>
 
+		<?php
+		// Same switch as the front-end Save button (see dashboard-content.php).
+		// An existing manual collection keeps its option so it can be seen and
+		// saved unchanged.
+		$mvs_can_fill_manual = $mvs_collections_on || 'manual' === $collection_type;
+		?>
 		<div class="mvs-metabox-type-toggle">
+			<?php if ( $mvs_can_fill_manual ) : ?>
 			<label>
 				<input type="radio" name="mvs_collection_type" value="manual" <?php checked( $collection_type, 'manual' ); ?> />
 				<span><?php esc_html_e( 'Manual', 'wpmediaverse' ); ?></span>
 			</label>
+			<?php endif; ?>
 			<label>
 				<input type="radio" name="mvs_collection_type" value="smart" <?php checked( $collection_type, 'smart' ); ?> />
 				<span><?php esc_html_e( 'Smart', 'wpmediaverse' ); ?></span>
@@ -128,7 +144,7 @@ class CollectionMetaBox {
 		</div>
 
 		<p class="mvs-metabox-hint<?php echo 'manual' !== $collection_type ? ' mvs-hidden' : ''; ?>" id="mvs-manual-hint">
-			<?php esc_html_e( 'Manual collections are populated via the Favorites button on media items.', 'wpmediaverse' ); ?>
+			<?php esc_html_e( 'Add media with the Save button on any media item.', 'wpmediaverse' ); ?>
 		</p>
 
 		<div id="mvs-rules-wrap" class="mvs-metabox-rules-wrap<?php echo 'smart' !== $collection_type ? ' mvs-hidden' : ''; ?>">

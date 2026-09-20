@@ -155,7 +155,7 @@ BASELINE_SIZE=$(wc -c < "$WP_PATH/wp-content/debug.log" 2>/dev/null || echo 0)
 tail -c +$((BASELINE_SIZE + 1)) "$WP_PATH/wp-content/debug.log" 2>/dev/null | grep -vE "^\s*$|^\[cli\]"
 ```
 
-At walk end, archive the diff window to `qa/runs/.debug-log-<release_version>-<ran_at>.txt`.
+At walk end, archive the diff window to `$WP_PATH/../qa-artifacts/debug-log-<release_version>-<ran_at>.txt` (outside the repo, not web-served). Only the triaged `debug_log_issues[]` rows go into the JSON and the run report. Raw logs, drafts and screenshots are never committed; `bin/local-ci.sh` stage 1.0 fails the push if one is tracked.
 
 ---
 
@@ -163,15 +163,43 @@ At walk end, archive the diff window to `qa/runs/.debug-log-<release_version>-<r
 
 Run on a clean WordPress install with no prior MVS data.
 
+> **A and B ARE walkable — use the docker-smoke stack, not the model site.**
+> Both sections sat at `0 pass` for releases with a `manual_required` note
+> saying "not walkable on a live dev site". That was true of mediaverse.local
+> and false of the project: `~/Documents/work-artifacts/docker-smoke/` gives a
+> throwaway WP in about a minute.
+>
+> ```bash
+> cd ~/Documents/work-artifacts/docker-smoke
+> docker compose down -v && docker compose up -d      # wipes to pristine
+> C=docker-smoke-wpcli-1
+> docker exec $C wp core install --url=http://localhost:8899 \
+>   --title=Smoke --admin_user=admin --admin_password=admin \
+>   --admin_email=a@b.test --skip-email --allow-root
+> docker exec $C wp plugin install /zips/wpmediaverse-<v>.zip --activate --allow-root
+> ```
+>
+> Port 8899 may be held by the long-running wp-env QA stack; stop only its
+> `wordpress` container (volumes persist) rather than tearing that env down.
+> Compose MERGES `ports` lists, so an override file adding a second port does
+> not replace the first - it binds both and fails on the taken one.
+>
+> **Seeding a row for B1:** `mvs_media_index` has NO `user_id` and NO `id`
+> column. It is `post_author` and `media_id`, and `slug` is NOT NULL UNIQUE.
+> An insert with the wrong column names fails silently through `$wpdb->insert`
+> and the survival check then reports LOST when nothing was ever seeded -
+> a false data-loss alarm. Always assert `$wpdb->insert_id` and print
+> `$wpdb->last_error` before trusting the result.
+
 ### A1 — Free activates without fatal
 **What to verify:** activating WPMediaVerse on a fresh WP install completes with no PHP fatal, creates every expected table, registers expected post types / taxonomies / capabilities, and the admin landing page renders.
 **Why it matters:** activation fatals trash customer sites and require a manual SFTP rescue.
-**Acceptance:** all 23 `wp_mvs_*` tables exist (36 with Pro active); `mvs_db_version` is the SCHEMA version integer — 30 at 2.4.0, NOT the plugin version string; admin "WPMediaVerse" menu renders; `/wp-admin/admin.php?page=wpmediaverse` returns 200 with no fatal **when authenticated** (an unauthenticated request correctly 302s to login, which is not a failure).
+**Acceptance:** all 23 `wp_mvs_*` tables exist (36 with Pro active); `mvs_db_version` is the SCHEMA version integer — **32 at 2.5.0** (30 at 2.4.0/2.4.1, verified by an upgrade walk), NOT the plugin version string; admin "WPMediaVerse" menu renders; `/wp-admin/admin.php?page=wpmediaverse` returns 200 with no fatal **when authenticated** (an unauthenticated request correctly 302s to login, which is not a failure).
 
 > Corrected 2026-08-31 by a Docker fresh-install walk. This line said "21 tables" and "`mvs_db_version` equals `MVS_VERSION`". Both were wrong and both would fail a correct install: the count is 23, and `mvs_db_version` has always been an integer (25 at 2.3.0 → 30 at 2.4.0). Re-derive the count from `Migrator` rather than trusting this number after a release that adds a table.
 
 ### A2 — Pro activates cleanly on top of Free (combo only)
-**What to verify:** activating WPMediaVerse Pro on top of an already-active Free does not fatal, creates Pro-only tables (8 expected, prefixed `mvs_pro_*` or feature-named per Pro CLAUDE.md), registers Pro admin pages, and `MVS_PRO_VERSION` matches `MVS_VERSION`.
+**What to verify:** activating WPMediaVerse Pro on top of an already-active Free does not fatal, creates Pro-only tables (**13 expected**, taking the combo total to **36** — verified by a Docker fresh-install walk 2026-09-15. All 13 come from Pro's `Migrator`: 11 declare their name inline, and `mvs_pro_folders` / `mvs_pro_document_search` route through `Migrator::create_table()` (`:857`), which interpolates the name into `CREATE TABLE {$table}` — so a grep for `CREATE TABLE.*mvs_` misses them. Count the tables, not the CREATE statements; prefixed `mvs_pro_*` or feature-named per Pro CLAUDE.md), registers Pro admin pages, and `MVS_PRO_VERSION` matches `MVS_VERSION`.
 **Acceptance:** Pro main file's `Requires Plugins: wpmediaverse` header is honored — deactivating Free leaves Pro disabled with a clear admin notice; reactivating Free re-enables Pro without intervention. No `from`-origin entry in debug.log during either activation.
 
 ### A3 — First-request routing works without manual flush
@@ -203,6 +231,21 @@ Run on a clean WordPress install with no prior MVS data.
 
 ## C — Core customer flows
 
+> **Pick fixtures that can actually satisfy the check.** Two anon checks
+> reported false empty states in the 2026-09-15 walk because the fixture was
+> wrong, not the code: `bn_demo_alex_rivera` has 0 PUBLIC media (4 private), and
+> tag `2026` has 1 object. Both rendered a correct empty state that read as a
+> missing grid. Query first:
+>
+> ```sql
+> SELECT post_author, COUNT(*) FROM wp_mvs_media_index
+>  WHERE privacy='public' AND status='publish' GROUP BY post_author ORDER BY 2 DESC;
+> ```
+>
+> On this site that gives `mina_aoki` (12 public) and tag `nature` (11 public).
+> Also note grid thumbnails may be served from the CDN (`*.b-cdn.net`), so an
+> assertion that only accepts `/wp-content/uploads/` under-reports.
+
 Persona ladder: **Anonymous > Member > Admin**. Pick a real test user from each persona — admin is user 1, create a subscriber-role member with login `e2e_member` if absent, and a moderator-capable user `e2e_mod` if Free's moderation queue requires one. Cover both desktop 1280px and mobile 390px where relevant.
 
 Each step is a contract, not a script. When you verify it, exercise the UI as a user would AND confirm the server-side effect (DB row, REST response, signed URL valid, queued side-effect) to rule out a "looks right, didn't actually save" bug.
@@ -219,7 +262,7 @@ Each step is a contract, not a script. When you verify it, exercise the UI as a 
 **What to verify:** `/media/?mvs_tag=<known-tag>` returns the filtered feed with a clear-filter affordance, OR a clean empty state with the same affordances as zero-results search. Unknown tag slug does not fatal — produces a clean empty state.
 
 ### C.anon.single-media
-**What to verify:** `/media/<slug>/` renders the single-media template — image (signed URL streams 200 `image/jpeg|webp|png|gif`), title, description, tags, owner, social meta in `<head>` (`og:image` + `og:title` + `twitter:card`). Auth-gated actions (favorite, react, comment, follow) cleanly redirect a logged-out visitor to login rather than failing silently with 403.
+**What to verify:** the canonical single-media URL is **`/p/<media_id>/`**, not `/media/<slug>/` — the slug form 301-redirects to it (verified 2026-09-15: `/media/editing-desk/` -> `/p/1915/`, `/media/audio-posting-from-mediaverse-end/` -> `/p/1919/`). Probe `/p/<id>/`; a walker testing the slug form sees a 301 and can mistake it for a broken share target. It renders the single-media template — image (signed URL streams 200 `image/jpeg|webp|png|gif`), title, description, tags, owner, social meta in `<head>` (`og:image` + `og:title` + `twitter:card`). Auth-gated actions (favorite, react, comment, follow) cleanly redirect a logged-out visitor to login rather than failing silently with 403.
 **Why it matters:** this is the canonical share target.
 
 ### C.anon.user-profile
@@ -423,6 +466,10 @@ Each row is a repro of a past customer-impacting bug. These rows stay specific o
 | D.settings-unlabelled-controls | 61 controls on the Settings screen had no accessible name; the row heading was a bare `<th>`, which does not name a control inside the cell. Measured on the accessibility tree the max-upload input reported `spinbutton: "100"` — its value and nothing else. | On `?page=mvs-settings`, every `input`/`select`/`textarea` has an accessible name (label[for], aria-label, or a wrapping label). Clicking a row heading moves focus to its control — check across at least Storage, Competitions, Webhooks, AI and Connected Accounts, since Pro registers by looping over field maps. Save round-trip still persists. (Basecamp 10252222135.) |
 | D.btn-primary-four-copies | `.mvs-btn--primary` was declared in four stylesheets, so a token fix reached one screen and not another — the contrast floor had to be applied four times and the copy someone forgot shipped broken. | Inject `:root { --mvs-btn-primary-bg: rgb(1,2,3) }` on Explore, My Media, `/media/challenges/` and inside a `#buddypress` container. All four buttons follow it. **Allow the CSS transition to settle before reading** — measuring immediately returns an interpolated oklab value that reads as a failure. (Basecamp 10252281364.) |
 | D.touch-floor-scoped-to-one-viewport | Two rules had the tap-target floor and scoped it to the wrong viewport, in opposite directions: Pro's competition floor was trapped inside `max-width:1023px`, and `.mvs-load-more-btn` had a compliant 40px base that a `max-width:640px` override SHRANK to 36px — below the floor at exactly the viewport the floor exists for. | At 390px, `.mvs-load-more-btn` measures ≥40px tall. At 1440px, `.mvs-competition-tab` measures ≥40px. `--mvs-touch-min` resolves to 34px in wp-admin and 44px on member surfaces. At a true 1024px viewport (iPad landscape) the §3.1 floor is ON. (Basecamp 10252222115, 10252222205.) |
+
+| D.block-empty-state-silent | `lock-overlay/render.php` returned bare on both guards (no mediaId, and media not in the index), so the block vanished from the page with no explanation - the exact case `qa/rules/RENDER-STATE-RULES.md` uses as its worked BAD example, never fixed in the file it named. | Render `<!-- wp:mvs/lock-overlay {"mediaId":0} /-->` as a user WITH `edit_posts`: output is non-empty and contains `mvs-empty-state-frontend` plus "Select a media item to protect". Repeat with `mediaId` set to an id absent from `mvs_media_index`: output names "no longer exists". Repeat BOTH as an anonymous visitor: output is exactly 0 bytes (a configuration hint must never reach a reader). Sibling check: `media-player`, `pdf-viewer`, `album-viewer`, `member-photos` and Pro's `pro-tournament`/`pro-challenge`/`pro-battle` all still pair every bare return with an editor-only notice. |
+
+| D.bp-tab-asset-sweep | On a BuddyNext site the suppression sweep (`Plugin::enforce_frontend_presence`, `wp_enqueue_scripts@PHP_INT_MAX`) deregisters every enqueued `mvs-*` handle except those `mvs_frontend_presence_keep_handles` protects. The profile callback protected 2 handles while the tab enqueued 6, and `GroupTabIntegration` registered the filter NOT AT ALL. Load More rendered with its script stripped; group tabs lost even their stylesheets. | With BuddyNext active, open `/members/<user>/media/` and `/groups/<slug>/media/`. Assert every handle in `BaseBPTabIntegration::TAB_ASSET_HANDLES` is still `wp_script_is()`/`wp_style_is()` registered AND enqueued after the sweep - all 9, including the transitive deps `mvs-card-builders`, `mvs-confirm`, `mvs-dropzone`. Deregistering a dep does not only remove it: the dependent still reports `enqueued` and then prints ZERO bytes, so checking the dependent's flag alone passes while the script is silently absent. Click Load More and assert a second page arrives; click a delete action and assert the styled confirm modal appears (`bp-actions.js` fails closed when `window.mvsConfirm` is missing, so a stripped `mvs-confirm` disables delete with no error). |
 
 Every customer-visible fix from this point on ships with a new D row OR a graduation-to-C move of an existing D row that stayed clean for 2 releases.
 

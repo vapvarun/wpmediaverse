@@ -1,6 +1,6 @@
 # Photo Challenges
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -30,7 +30,7 @@ Run weekly themed photo competitions - your community submits their best shots, 
 
 ## For Site Owners
 
-1. Go to **WPMediaVerse > Settings > Gamification** and enable **Photo Challenges**
+1. Go to **MediaVerse > Settings > Gamification** and enable **Photo Challenges**
 2. Go to **Competitions > Challenge Manager** and click **Add Challenge**
 3. Set a theme title, entry start date, entry end date, and voting end date
 4. Set XP prizes for 1st, 2nd, 3rd place and a participation XP amount for all entrants

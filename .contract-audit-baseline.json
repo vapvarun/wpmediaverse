@@ -121,6 +121,10 @@
     {
       "id": "user_meta-read-never-written:_mvs_extra_document_credits",
       "reason": "Suppressed ONLY because the bug it reported has been FIXED — this entry is not a 'verified exception', it is a scar. The audit was RIGHT: Quota\\QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which excludes documents by design) instead of SUMMARY_TYPES (the metered list, which includes them), so add_credits( $user, 'document', N ) returned false and wrote nothing. Document credits could never be granted, while deduct_credit() has no such guard and increment_usage() calls it for documents over the package limit. Fixed 2026-09-03; proven at runtime — add_credits() now takes the key from '' to '3'. The finding persists only because the write builds the key dynamically as '_mvs_extra_' . $media_type . '_credits', which a literal scan cannot see. If this ever fires again after a refactor, re-verify at RUNTIME before assuming it is noise."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_document_space_drive_trash",
+      "reason": "Fired by Action Scheduler: SpaceDriveCleanup::trash_drive() queues as_enqueue_async_action( self::CONTINUE_HOOK ) when a deleted space's drive exceeds one run; the audit does not resolve the class constant."
     }
   ]
 }

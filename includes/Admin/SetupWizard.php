@@ -38,9 +38,9 @@ class SetupWizard {
 	public function add_hidden_page(): void {
 		add_submenu_page(
 			'wpmediaverse',
-			__( 'WPMediaVerse Setup', 'wpmediaverse' ),
+			__( 'MediaVerse Setup', 'wpmediaverse' ),
 			__( 'Setup', 'wpmediaverse' ),
-			'manage_options',
+			'mvs_settings_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_wizard' )
 		);
@@ -126,7 +126,7 @@ class SetupWizard {
 			'mvs-admin',
 			MVS_PLUGIN_URL . 'assets/css/admin.css',
 			array(),
-			MVS_VERSION
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/css/admin.css' )
 		);
 
 		wp_enqueue_script(
@@ -144,7 +144,7 @@ class SetupWizard {
 			'mvs-icons',
 			MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
 			array( 'lucide' ),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/icons.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -169,7 +169,7 @@ class SetupWizard {
 		?>
 		<div class="mvs-setup-wizard">
 			<div class="mvs-setup-header">
-				<h1><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></h1>
+				<h1><?php esc_html_e( 'MediaVerse', 'wpmediaverse' ); ?></h1>
 				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
 			</div>
 
@@ -220,7 +220,7 @@ class SetupWizard {
 	private function render_step_welcome(): void {
 		?>
 		<div class="mvs-setup-step">
-			<h2><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h2>
+			<h2><?php esc_html_e( 'Welcome to MediaVerse!', 'wpmediaverse' ); ?></h2>
 			<p><?php esc_html_e( 'Transform your WordPress site into a media sharing platform. Upload, organize, and share images, videos, and audio with your community.', 'wpmediaverse' ); ?></p>
 			<ul class="mvs-setup-features">
 				<li><i data-lucide="image"></i> <?php esc_html_e( 'Upload and organize media in albums and collections', 'wpmediaverse' ); ?></li>
@@ -312,7 +312,12 @@ class SetupWizard {
 	 */
 	private function render_step_display(): void {
 		$columns  = (int) get_option( 'mvs_grid_columns', 3 );
-		$per_page = (int) get_option( 'mvs_items_per_page', 24 );
+		// 12, matching the registered default and every other read site. This
+		// was 24, and a passed default suppresses the registered one, so the
+		// wizard preselected 24 on a fresh install and Continue wrote a value
+		// the owner never chose - the Display tab then disagreed with the
+		// documented default for the life of the site.
+		$per_page = (int) get_option( 'mvs_items_per_page', 12 );
 		$style    = \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style();
 		?>
 		<div class="mvs-setup-step">
@@ -331,7 +336,11 @@ class SetupWizard {
 								<option value="2" <?php selected( $columns, 2 ); ?>><?php esc_html_e( '2 columns', 'wpmediaverse' ); ?></option>
 								<option value="3" <?php selected( $columns, 3 ); ?>><?php esc_html_e( '3 columns', 'wpmediaverse' ); ?></option>
 								<option value="4" <?php selected( $columns, 4 ); ?>><?php esc_html_e( '4 columns', 'wpmediaverse' ); ?></option>
+								<option value="5" <?php selected( $columns, 5 ); ?>><?php esc_html_e( '5 columns', 'wpmediaverse' ); ?></option>
 							</select>
+							<p class="description">
+								<?php esc_html_e( 'Applies to the grid layout only. Justified rows sizes each row to fit, and list shows one item per row - see Default Layout below.', 'wpmediaverse' ); ?>
+							</p>
 						</td>
 					</tr>
 					<tr>
@@ -345,15 +354,19 @@ class SetupWizard {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Thumbnail Style', 'wpmediaverse' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Default Layout', 'wpmediaverse' ); ?></th>
 						<td>
 							<label>
 								<input type="radio" name="mvs_thumbnail_style" value="square" <?php checked( $style, 'square' ); ?> />
-								<?php esc_html_e( 'Square (cropped)', 'wpmediaverse' ); ?>
+								<?php esc_html_e( 'Grid - square crops', 'wpmediaverse' ); ?>
 							</label><br>
 							<label>
 								<input type="radio" name="mvs_thumbnail_style" value="original" <?php checked( $style, 'original' ); ?> />
-								<?php esc_html_e( 'Original aspect ratio', 'wpmediaverse' ); ?>
+								<?php esc_html_e( 'Justified rows - original proportions', 'wpmediaverse' ); ?>
+							</label><br>
+							<label>
+								<input type="radio" name="mvs_thumbnail_style" value="list" <?php checked( $style, 'list' ); ?> />
+								<?php esc_html_e( 'List - one row per item', 'wpmediaverse' ); ?>
 							</label>
 						</td>
 					</tr>
@@ -381,7 +394,7 @@ class SetupWizard {
 				<i data-lucide="check-circle"></i>
 			</div>
 			<h2><?php esc_html_e( 'Your Media Hub is Ready!', 'wpmediaverse' ); ?></h2>
-			<p><?php esc_html_e( 'WPMediaVerse is configured and ready to use. Here are some next steps:', 'wpmediaverse' ); ?></p>
+			<p><?php esc_html_e( 'MediaVerse is configured and ready to use. Here are some next steps:', 'wpmediaverse' ); ?></p>
 
 			<div class="mvs-setup-done-links">
 				<?php if ( $explore_id ) : ?>

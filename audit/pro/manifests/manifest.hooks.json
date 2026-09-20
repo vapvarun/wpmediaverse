@@ -387,6 +387,18 @@
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
     },
     {
+      "name": "mvs_document_can_moderate_space",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $can",
+        "int $space_id",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/SpaceLinkService.php:212",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_document_default_privacy",
       "type": "filter",
       "where": "includes/Documents/DocumentSettings.php:579",
@@ -420,6 +432,18 @@
       "where": "includes/Documents/FolderService.php:1471",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_linked_to_space",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $space_id",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/SpaceLinkService.php:114",
+      "consumed_by": []
     },
     {
       "name": "mvs_document_max_depth",
@@ -501,9 +525,21 @@
     {
       "name": "mvs_document_trashed",
       "type": "action",
-      "where": "includes/Documents/DocumentActionService.php:165",
+      "where": "includes/Documents/DocumentActionService.php:230",
       "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
+      "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library. 2026-09-19: moved into DocumentActionService::trash_document(), shared by the per-item action and SpaceDriveCleanup."
+    },
+    {
+      "name": "mvs_document_unlinked_from_space",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $space_id",
+        "int $user_id"
+      ],
+      "where": "includes/Documents/SpaceLinkService.php:156",
+      "consumed_by": []
     },
     {
       "name": "mvs_document_uploaded",
@@ -746,6 +782,16 @@
       "where": "includes/REST/CompeteSummaryController.php:153",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 \u2014 this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_competitions_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php",
+      "consumed_by": []
     },
     {
       "name": "mvs_pro_credits_added",
@@ -1227,12 +1273,23 @@
           "mvs_close_challenge_entries",
           "mvs_finalize_expired_challenges",
           "mvs_resolve_expired_matches",
-          "mvs_start_registered_tournaments"
+          "mvs_start_registered_tournaments",
+          "mvs_document_space_drive_trash"
         ],
         "action_scheduler_note": "scheduled in Pro Core/Plugin.php and fired by Action Scheduler, so they carry no literal do_action call site in our source. Real hooks, deliberately kept.",
         "mvs_rest_public_namespaces": "asserted by Pro tests/unit/AnonymousLinkGuardsTest.php D4 as a guard against a FUTURE exemption. Nothing fires it today, so it is deliberately not listed as fired."
       },
       "verification": "0 hooks fired in code missing from a manifest; 0 hooks in a manifest fired nowhere."
+    },
+    "delta_2026_09_19": {
+      "scope": "targeted delta - Basecamp 10320784308 (space drive cleanup on BuddyNext space deletion)",
+      "action_scheduler_added": [
+        "mvs_document_space_drive_trash (SpaceDriveCleanup::CONTINUE_HOOK, enqueued in includes/Documents/SpaceDriveCleanup.php, handler SpaceDriveCleanup::trash_drive)"
+      ],
+      "external_hooks_consumed_added": [
+        "buddynext_purge_space_data (BuddyNext SpaceService::delete) -> SpaceDriveCleanup::trash_drive"
+      ],
+      "hooks_fired_added": []
     }
   }
 }

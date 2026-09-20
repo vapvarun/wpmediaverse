@@ -33,7 +33,7 @@ $mvs_archive_url = home_url( '/media/' );
 		// (audit 2026-06-04). Mirror the single-media behaviour: a viewer who
 		// can't see the album gets the branded 404, nothing else.
 		$mvs_album_id = (int) get_the_ID();
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_album_id, get_current_user_id() ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_album_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			status_header( 404 );
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';
@@ -54,11 +54,13 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<?php
-		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'privacy' );
-		if ( ! $album_privacy ) {
-			$album_privacy = 'public';
-		}
-		$album_type         = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'album_type' );
+		// Post meta is authoritative for both. Reading the mvs_media_index row keyed
+		// on the album's post ID returns whatever media item happens to share that
+		// ID, which defaulted a private album to 'public' — and, because this value
+		// seeds editPrivacy below, republished it on the next title edit.
+		$mvs_albums    = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$album_privacy = $mvs_albums->get_privacy( $mvs_album_id );
+		$album_type    = $mvs_albums->get_album_type( $mvs_album_id );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
@@ -174,6 +176,8 @@ $mvs_archive_url = home_url( '/media/' );
 								<textarea data-wp-on--input="actions.updateEditDesc"
 									data-wp-bind--value="context.editDesc"></textarea>
 							</div>
+							<?php // Hidden while the owner has locked privacy; Save re-sends the current level (context.editPrivacy), which the REST update accepts. Basecamp 10320619418. ?>
+							<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 							<div class="mvs-field">
 								<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 								<select data-wp-on--change="actions.updateEditPrivacy">
@@ -184,6 +188,7 @@ $mvs_archive_url = home_url( '/media/' );
 									<?php endforeach; ?>
 								</select>
 							</div>
+							<?php endif; ?>
 							<div class="mvs-inline-edit-actions">
 								<button class="mvs-btn" type="button"
 									data-wp-on--click="actions.saveEdit"
@@ -204,7 +209,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php if ( $mvs_is_album_owner ) : ?>
 				<div class="mvs-album-upload-section">
 					<button type="button" id="mvs-album-upload-btn" class="mvs-btn">
-						<span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
+						<span class="mvs-icon"><i data-lucide="plus" aria-hidden="true"></i></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 					</button>
 					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;"
 						data-album-id="<?php echo esc_attr( (string) get_the_ID() ); ?>">
@@ -213,7 +218,7 @@ $mvs_archive_url = home_url( '/media/' );
 						?>
 						<input type="file" multiple accept="<?php echo esc_attr( $mvs_album_mimes ); ?>" id="mvs-album-file-input" style="display:none" />
 						<div class="mvs-bp-dropzone" id="mvs-album-dropzone">
-							<span class="dashicons dashicons-cloud-upload"></span>
+							<span class="mvs-icon"><i data-lucide="upload-cloud" aria-hidden="true"></i></span>
 							<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload into this album', 'wpmediaverse' ); ?></span>
 						</div>
 						<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>
@@ -226,7 +231,6 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php endif; ?>
 
 			<?php
-			$album_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'album_type' );
 			$is_playlist = 'playlist' === $album_type;
 			?>
 
@@ -300,7 +304,15 @@ $mvs_archive_url = home_url( '/media/' );
 					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
 					\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 				?>
-				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
+				<?php
+				// Same emitter Explore and the media-grid block use, so Default
+				// Layout reaches every grid instead of three of five. Its own
+				// description has always named albums and collections; they were
+				// the surfaces the 1.8.0 layout work missed.
+				// Basecamp 10297763824.
+				$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+				?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
 					<?php
 					foreach ( $items as $item_row ) :
 						$media_id = (int) $item_row['media_id'];
@@ -326,7 +338,7 @@ $mvs_archive_url = home_url( '/media/' );
 							} else {
 								?>
 								<button type="button" class="mvs-album-set-cover" data-media-id="<?php echo esc_attr( (string) $media_id ); ?>">
-									<span class="dashicons dashicons-star-filled" aria-hidden="true"></span>
+									<span class="mvs-icon"><i data-lucide="star" aria-hidden="true"></i></span>
 									<span class="mvs-album-set-cover__label"><?php esc_html_e( 'Set as cover', 'wpmediaverse' ); ?></span>
 								</button>
 								<?php

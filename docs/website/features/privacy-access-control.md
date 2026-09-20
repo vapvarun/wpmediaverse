@@ -1,9 +1,9 @@
 # Privacy & Access Control
 
-> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require MediaVerse Pro.
 
 
-WPMediaVerse provides privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
+MediaVerse provides privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
 
 The six levels below are the ones the upload form offers. The full vocabulary a write is allowed to store is `PrivacyService::supported_levels()` - as of 2.4.0 `public`, `members`, `loggedin`, `friends`, `group`, `space`, `private`, `dm` and `custom`, filterable through `mvs_privacy_levels`. A level not in that list is refused at the edge rather than stored and silently ignored.
 
@@ -69,7 +69,7 @@ Access grants can have optional expiry dates. Expired grants are cleaned up via 
 
 ## Signed URLs for Private Files
 
-For media stored with a non-public privacy level, WPMediaVerse can generate time-limited signed URLs:
+For media stored with a non-public privacy level, MediaVerse can generate time-limited signed URLs:
 
 ```bash
 curl https://yoursite.com/wp-json/mvs/v1/media/123/signed-url \
@@ -104,7 +104,7 @@ Return `null` to let the built-in logic run. Return `true` or `false` to overrid
 
 ## Explore Archive Privacy Filtering
 
-On the explore archive (`/media/`), WPMediaVerse applies automatic privacy filtering through a SQL clause on its own `mvs_media_index` table (a `privacy IN (...) OR post_author = current` gate shared by every explore surface), not a WordPress `posts_where` filter:
+On the explore archive (`/media/`), MediaVerse applies automatic privacy filtering through a SQL clause on its own `mvs_media_index` table (a `privacy IN (...) OR post_author = current` gate shared by every explore surface), not a WordPress `posts_where` filter:
 
 - **Logged-out users** see only `public` media.
 - **Logged-in non-moderators** see `public`, `members` media, and their own media (any privacy level).

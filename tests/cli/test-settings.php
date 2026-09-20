@@ -101,6 +101,9 @@ function run_settings_tests(): array {
 
 	if ( is_pro_active() ) {
 		$toggles = array(
+			// The competitions master switch. Every competition sub-toggle is
+			// gated behind it, so it round-trips here alongside them.
+			'mvs_competitions_enabled',
 			'mvs_challenges_enabled',
 			'mvs_battles_enabled',
 			'mvs_tournaments_enabled',

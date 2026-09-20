@@ -42,7 +42,7 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		// sibling of the Explore-Documents page fix 10194672141). This exempts
 		// only the two stylesheets the tab content needs; the rest of the UI
 		// suppression is left untouched.
-		add_filter( 'mvs_frontend_presence_keep_handles', array( $this, 'keep_media_tab_styles' ) );
+		$this->register_shared_hooks();
 
 		// Resolve member profile URLs to the BP member page. Lives here so core
 		// (TemplateHelpers::get_user_profile_url) stays standalone — it defaults
@@ -51,26 +51,6 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		add_filter( 'mvs_user_profile_url', array( $this, 'filter_user_profile_url' ), 10, 2 );
 	}
 
-	/**
-	 * Exempt the Media-tab stylesheets from the BuddyNext frontend-suppression
-	 * sweep while a member's Media tab (any sub-tab) is being viewed.
-	 *
-	 * Runs inside enforce_frontend_presence() at wp_enqueue_scripts@PHP_INT_MAX;
-	 * BuddyPress has resolved the current component by then, so the check is
-	 * reliable. Adds only the two stylesheets the tab content renders with.
-	 *
-	 * @param string[] $handles Handles the sweep must not strip.
-	 * @return string[]
-	 */
-	public function keep_media_tab_styles( array $handles ): array {
-		if ( function_exists( 'bp_is_user' ) && bp_is_user()
-			&& function_exists( 'bp_is_current_component' ) && bp_is_current_component( 'media' ) ) {
-			$handles[] = 'mvs-frontend';
-			$handles[] = 'mvs-bp-integration';
-		}
-
-		return $handles;
-	}
 
 	/**
 	 * Resolve a member's profile URL to their BuddyPress member page.
@@ -186,6 +166,50 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 				$media_count
 			);
 			buddypress()->members->nav->edit_nav( array( 'name' => $nav_name ), 'media' );
+		}
+
+		// Documents gets the same badge, for the same reason Media has one: two
+		// sibling tabs where only one advertises how much is behind it left a
+		// visitor unable to tell a full Documents tab from an empty one. Worse
+		// at zero media, where the Media badge is suppressed entirely and a
+		// profile with 40 documents showed no numbers at all.
+		//
+		// Free cannot count them. Documents are Pro's - rows, folders, grants
+		// and the privacy resolution all live there, and a raw index count here
+		// would advertise documents the viewer may not open, which is the
+		// defect 10296867415 was filed for. So this asks, exactly the way the
+		// LIST already asks via `mvs_profile_documents_html`, and renders
+		// nothing when Pro is absent. Basecamp 10298471056.
+		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
+			return;
+		}
+
+		/**
+		 * Viewer-scoped count of the profile owner's documents.
+		 *
+		 * Answered by Pro. Free has no way to count documents the viewer is
+		 * allowed to see and must not guess.
+		 *
+		 * @since 2.4.2
+		 *
+		 * @param int $count     Document count. Default 0 (no badge).
+		 * @param int $owner_id  The profile owner.
+		 * @param int $viewer_id The current viewer (0 when logged out).
+		 */
+		$doc_count = (int) apply_filters(
+			'mvs_profile_documents_count',
+			0,
+			(int) $displayed_user_id,
+			get_current_user_id()
+		);
+
+		if ( $doc_count > 0 ) {
+			$doc_nav_name = sprintf(
+				/* translators: %s: document count */
+				__( 'Documents', 'wpmediaverse' ) . ' <span class="count">%s</span>',
+				$doc_count
+			);
+			buddypress()->members->nav->edit_nav( array( 'name' => $doc_nav_name ), 'documents', 'media' );
 		}
 	}
 

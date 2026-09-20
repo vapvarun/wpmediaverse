@@ -216,6 +216,75 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The media grid is a MEDIA grid.
+	 *
+	 * `src/blocks/media-grid/render.php` constrained with `media_type != ''` —
+	 * an exclusion, which kept out the album/collection privacy stubs and let
+	 * every other type straight through. So `[mvs_gallery]` and the block served
+	 * documents beside photos: 136 documents against 84 media on the QA baseline.
+	 * Basecamp 10298650705.
+	 *
+	 * Asserted against the same clause the template builds, because a block
+	 * template is not reachable from a unit test — the browser check covers the
+	 * rendered grid.
+	 */
+	public function test_the_media_grid_clause_excludes_documents(): void {
+		global $wpdb;
+
+		$author = self::factory()->user->create();
+		$photo  = $this->insert_row( 'image', $author );
+		$doc    = $this->insert_row( 'document', $author );
+
+		list( $sql, $params ) = MediaTypes::in_clause( MediaTypes::library_types(), 'm.media_type' );
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+		$ids   = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT media_id FROM {$table} m WHERE m.post_author = %d AND {$sql}",
+					array_merge( array( $author ), $params )
+				)
+			)
+		);
+
+		$this->assertContains( $photo, $ids );
+		$this->assertNotContains( $doc, $ids, 'A document reached the media grid.' );
+	}
+
+	/**
+	 * …and a deliberate file grid is still possible.
+	 *
+	 * The default must be narrow without becoming a dead end: `type="document"`
+	 * replaces the library clause rather than narrowing it, so an owner who
+	 * wants a document grid can still ask for one.
+	 */
+	public function test_the_media_grid_can_still_be_asked_for_documents(): void {
+		global $wpdb;
+
+		$author = self::factory()->user->create();
+		$photo  = $this->insert_row( 'image', $author );
+		$doc    = $this->insert_row( 'document', $author );
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+		$ids   = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT media_id FROM {$table} m WHERE m.post_author = %d AND m.media_type = %s",
+					$author,
+					'document'
+				)
+			)
+		);
+
+		$this->assertContains( $doc, $ids, 'An explicit document grid returned no documents.' );
+		$this->assertNotContains( $photo, $ids, 'An explicit document grid returned media.' );
+	}
+
+	/**
 	 * The BuddyPress profile tab and /users/{id}/media inherit the default.
 	 *
 	 * query_by_author() delegates to query(), so this proves the fix reaches the

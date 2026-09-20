@@ -57,7 +57,7 @@ class ModerationQueue {
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Moderation', 'wpmediaverse' ),
 			$menu_title,
-			'manage_options',
+			'mvs_moderation_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
@@ -166,7 +166,7 @@ class ModerationQueue {
 			'mvs-admin-moderation-queue',
 			MVS_PLUGIN_URL . 'assets/js/admin/moderation-queue.js',
 			array(),
-			MVS_VERSION,
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/moderation-queue.js' ),
 			array( 'in_footer' => true )
 		);
 

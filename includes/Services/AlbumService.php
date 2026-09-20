@@ -64,9 +64,18 @@ class AlbumService {
 		}
 
 		// @deprecated 2.4.0 Legacy read. Remove in 3.0.0 once every install has run v26.
-		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
-			->get( 'media_repository' )
-			->get( $album_id, 'privacy' );
+		//
+		// Only a PRIVACY-ONLY stub row may answer here. A row carrying a
+		// media_type is a real media item that merely shares this album's
+		// integer, and its privacy is not the album's - reading it is the
+		// collision this docblock warns about. Basecamp 10298525085.
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( '' !== (string) $repo->get( $album_id, 'media_type' ) ) {
+			return 'public';
+		}
+
+		$legacy = (string) $repo->get( $album_id, 'privacy' );
 
 		return '' !== $legacy ? $legacy : 'public';
 	}
@@ -119,6 +128,17 @@ class AlbumService {
 	 */
 	private function clamp_items_privacy( int $album_id, array $media_ids ): void {
 		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		// A member the owner has locked out of choosing privacy does not change
+		// an item's privacy through an album either: adding to an album made
+		// before the lock, or re-saving one, leaves every item at the level the
+		// owner's rules gave it. Keyed on the ACTING user, so a manager editing
+		// the album still cascades, and so does a system caller with no user
+		// (imports, WP-CLI, cron). Basecamp 10320619418.
+		$actor_id = get_current_user_id();
+		if ( $actor_id > 0 && ! PrivacyService::user_may_choose_privacy( $actor_id ) ) {
 			return;
 		}
 
@@ -254,6 +274,17 @@ class AlbumService {
 
 		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
 		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
+
+		// Owner's privacy lock (Settings > General > Allow Users to Set Privacy).
+		// An album's privacy is not only the album's: set_privacy() and
+		// add_items() carry it down onto every item in it, so a member who may not
+		// choose privacy must not choose it here either, or "create a private
+		// album, add my photo" becomes the route round the lock. The album takes
+		// the site default, exactly as UploadService does for an upload by the
+		// same author. Basecamp 10320619418.
+		if ( ! PrivacyService::user_may_choose_privacy( $author_id ) ) {
+			$privacy = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
+		}
 
 		// Album attributes live in post meta. Before 2.4.0 they were written through
 		// MediaRepository at media_id = <album post ID>, which put an album ID into the
@@ -419,21 +450,43 @@ class AlbumService {
 			)
 		);
 
-		$added = 0;
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Whose media may go in. Adding to an album repoints the item's album_id
+		// and clamps its privacy, so it is a write to the ITEM: a member may only
+		// file their own media, as the dashboard picker (me/media) already offers.
+		// Without this a member could add another member's public photo to their
+		// own private album and make it private. Managers, and system callers
+		// with no user (imports, WP-CLI, cron), are not limited.
+		$actor_id  = get_current_user_id();
+		$any_owner = 0 === $actor_id || user_can( $actor_id, 'edit_others_mvs_medias' );
+
+		$added    = 0;
+		$accepted = array();
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 
-			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			if ( ! $repo->exists( $media_id ) ) {
+				continue;
+			}
+
+			if ( ! $any_owner && (int) $repo->get( $media_id, 'post_author' ) !== $actor_id ) {
 				continue;
 			}
 
 			// Playlist albums only accept audio media.
 			if ( $is_playlist ) {
-				$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
+				$file_type = $repo->get( $media_id, 'file_type' );
 				if ( $file_type && 0 !== strpos( $file_type, 'audio/' ) ) {
 					continue;
 				}
 			}
+
+			// Accepted, but an item already in the album fails the unique key
+			// below and so is NOT counted in $added - and the repoint/clamp
+			// block runs only when $added > 0. Re-adding therefore does not
+			// heal a legacy album_id of 0; only a fresh insert writes it.
+			$accepted[] = $media_id;
 
 			++$max_pos;
 			$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -454,21 +507,20 @@ class AlbumService {
 
 		// Store album association on each media item.
 		if ( $added > 0 ) {
-			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-
 			// Record the album association on each item, then clamp their privacy to
 			// the album's — the same one-way tightening that set_privacy() re-applies
-			// when the album's own privacy later changes.
-			foreach ( $media_ids as $mid ) {
-				$repo->set( (int) $mid, 'album_id', $album_id );
+			// when the album's own privacy later changes. Only ACCEPTED items: this
+			// used to walk the raw input, so a skipped id (missing, not audio for a
+			// playlist, someone else's) was still pointed at the album and clamped.
+			foreach ( $accepted as $mid ) {
+				$repo->set( $mid, 'album_id', $album_id );
 			}
 
-			$this->clamp_items_privacy( $album_id, array_map( 'intval', $media_ids ) );
+			$this->clamp_items_privacy( $album_id, $accepted );
 
-			// The actor may be a co-collaborator, not the album owner — keep it
+			// $actor_id (above) may be a co-collaborator, not the album owner — kept
 			// distinct from the author lookup so gamification adapters can award
 			// the right user.
-			$actor_id = get_current_user_id();
 
 			/**
 			 * Fires after media items are added to an album.
@@ -478,6 +530,8 @@ class AlbumService {
 			 *              ($album_id, $media_ids, $added). The in-tree
 			 *              ActivitySyncIntegration listener was updated in the
 			 *              same change.
+			 * @since 2.5.1 $media_ids holds only the ids the album accepted, not
+			 *              the raw request.
 			 *
 			 * @param int   $album_id  Album post ID.
 			 * @param int   $actor_id  User who added the items (may differ from
@@ -485,7 +539,7 @@ class AlbumService {
 			 * @param array $media_ids Media post IDs that were added.
 			 * @param int   $added     Number of items successfully added.
 			 */
-			do_action( 'mvs_album_items_added', $album_id, $actor_id, $media_ids, $added );
+			do_action( 'mvs_album_items_added', $album_id, $actor_id, $accepted, $added );
 		}
 
 		return $added;
@@ -510,7 +564,69 @@ class AlbumService {
 			array( '%d', '%d' )
 		);
 
+		if ( $deleted > 0 ) {
+			$this->release_items( $album_id, array( $media_id ) );
+		}
+
 		return $deleted > 0;
+	}
+
+	/**
+	 * Repoint items that have just left an album.
+	 *
+	 * The item's album pointer, mvs_media_index.album_id, is set by add_items(),
+	 * and read by PrivacyService::effective_privacy_for_media() and the BuddyPress
+	 * activity sync. Removing an item, or deleting the album, only
+	 * dropped the mvs_album_items row, so the pointer kept naming an album the
+	 * item had left or that no longer existed: the item went on inheriting that
+	 * album's privacy and media_ids_in_album() kept returning it. Items still in
+	 * another album now point at the one they joined most recently, the rest at 0.
+	 *
+	 * Call AFTER the mvs_album_items rows are gone. Only items whose pointer
+	 * names $album_id are touched.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int   $album_id  Album the items left.
+	 * @param int[] $media_ids Items that left it.
+	 * @return void
+	 */
+	private function release_items( int $album_id, array $media_ids ): void {
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$media_ids = array_values(
+			array_filter(
+				array_map( 'intval', $media_ids ),
+				static function ( int $mid ) use ( $repo, $album_id ): bool {
+					return $mid > 0 && (int) $repo->get( $mid, 'album_id' ) === $album_id;
+				}
+			)
+		);
+
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		global $wpdb;
+
+		// One query for the remaining memberships of the whole set; ascending, so
+		// the last row seen per item is its most recent album.
+		$placeholders = implode( ',', array_fill( 0, count( $media_ids ), '%d' ) );
+		$rows         = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id, album_id FROM {$wpdb->prefix}mvs_album_items WHERE media_id IN ({$placeholders}) ORDER BY added_at ASC, id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_ids
+			),
+			ARRAY_A
+		);
+
+		$next = array_fill_keys( $media_ids, 0 );
+		foreach ( (array) $rows as $row ) {
+			$next[ (int) $row['media_id'] ] = (int) $row['album_id'];
+		}
+
+		foreach ( $next as $mid => $next_album ) {
+			$repo->set( (int) $mid, 'album_id', $next_album );
+		}
 	}
 
 	/**
@@ -792,10 +908,18 @@ class AlbumService {
 	public function delete_all_items( int $album_id ): int {
 		global $wpdb;
 
-		return (int) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// Read the pointers before the rows go, then release them (see
+		// release_items()): deleting an album must not leave its items naming it.
+		$pointing = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->media_ids_in_album( $album_id );
+
+		$deleted = (int) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_album_items',
 			array( 'album_id' => $album_id ),
 			array( '%d' )
 		);
+
+		$this->release_items( $album_id, $pointing );
+
+		return $deleted;
 	}
 }

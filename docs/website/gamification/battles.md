@@ -1,6 +1,6 @@
 # Photo Battles
 
-> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -41,7 +41,7 @@ Go to **My Media > Battles** to see all your battles with win/loss/pending statu
 
 ## For Site Owners
 
-1. Go to **WPMediaVerse > Settings > Gamification** and enable **Photo Battles**
+1. Go to **MediaVerse > Settings > Gamification** and enable **Photo Battles**
 2. Battles are self-service - users challenge each other directly, no admin involvement required
 3. Submit and vote windows are currently 48 hours each
 4. Monitor all active battles from **Competitions**
@@ -68,7 +68,7 @@ From any media item page, click **Challenge to Battle**. You can also start a ba
 2. Search for and select your opponent by username
 3. Submit the challenge invite
 
-The opponent receives a WPMediaVerse notification and, if BuddyPress notifications are active, a BuddyPress notification.
+The opponent receives a MediaVerse notification and, if BuddyPress notifications are active, a BuddyPress notification.
 
 ## Submitting a Photo
 

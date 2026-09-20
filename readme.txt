@@ -1,9 +1,9 @@
-=== WPMediaVerse ===
+=== MediaVerse ===
 Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
-Tested up to: 7.0
-Stable tag: 2.4.1
+Tested up to: 7.1
+Stable tag: 2.5.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,11 +14,11 @@ The media layer your community site is missing. Custom database tables, AI moder
 
 **[Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2)** | **[Get Pro](https://store.wbcomdesigns.com/wpmediaverse-pro/)** | **[Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/)**
 
-WPMediaVerse is a complete media platform for WordPress - built on custom database tables, not wp_posts. Your community gets photo uploads, albums, reactions, comments, follows, direct messaging, AI moderation, and a full lightbox experience. Your site stays fast no matter how many uploads come in.
+MediaVerse is a complete media platform for WordPress - built on custom database tables, not wp_posts. Your community gets photo uploads, albums, reactions, comments, follows, direct messaging, AI moderation, and a full lightbox experience. Your site stays fast no matter how many uploads come in.
 
-**Why WPMediaVerse?**
+**Why MediaVerse?**
 
-Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in wp_posts. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses 23 dedicated, indexed tables of its own - media queries never touch your posts, pages, or products.
+Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in wp_posts. On active communities, that table grows into tens of thousands of mixed rows. MediaVerse uses 23 dedicated, indexed tables of its own - media queries never touch your posts, pages, or products.
 
 **What You Get (Free)**
 
@@ -61,7 +61,7 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * Storage driver pattern - local, or a cloud driver from Pro, or your own
 * WordPress Interactivity API - zero legacy JavaScript
 
-WPMediaVerse embeds and plays the file that was uploaded. It does not transcode, re-encode, or shell out to a video processor, and it ships no exec-family calls in either plugin, so a security scanner has nothing to flag.
+MediaVerse embeds and plays the file that was uploaded. It does not transcode, re-encode, or shell out to a video processor, and it ships no exec-family calls in either plugin, so a security scanner has nothing to flag.
 
 == Installation ==
 
@@ -74,13 +74,13 @@ WPMediaVerse embeds and plays the file that was uploaded. It does not transcode,
 
 = Does this require BuddyPress? =
 
-No. WPMediaVerse works as a standalone plugin. BuddyPress integration (activity feed, profile tabs, friend-based privacy) activates automatically when BuddyPress is detected.
+No. MediaVerse works as a standalone plugin. BuddyPress integration (activity feed, profile tabs, friend-based privacy) activates automatically when BuddyPress is detected.
 
 = What AI providers are supported? =
 
-The free plugin includes OpenAI, on the gpt-4o-mini model by default. WPMediaVerse Pro adds Google Vision, AWS Rekognition, and Claude (Anthropic). Additional providers can be registered via the `mvs_ai_providers` action hook.
+The free plugin includes OpenAI, on the gpt-4o-mini model by default. MediaVerse Pro adds Google Vision, AWS Rekognition, and Claude (Anthropic). Additional providers can be registered via the `mvs_ai_providers` action hook.
 
-= Does WPMediaVerse convert or transcode my videos? =
+= Does MediaVerse convert or transcode my videos? =
 
 No. It stores and plays the file that was uploaded, and it does not run FFmpeg or any other external binary. A video that will not play in a browser needs converting before you upload it.
 
@@ -90,7 +90,7 @@ Yes. Copy any template from `wpmediaverse/templates/` to `your-theme/wpmediavers
 
 = How do I import from rtMedia? =
 
-The importers ship in WPMediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Migration in the admin.
+The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Migration in the admin.
 
 = What are the shortcodes? =
 
@@ -121,6 +121,95 @@ The importers ship in WPMediaVerse Pro. With Pro active, run `wp mvs import-rtme
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.5.1 - September 2026 =
+
+A settings pass from the owner's seat, then a full QA walk: the privacy switch holds everywhere, dialogs work from the keyboard, and deleted documents leave the disk.
+
+* New      - The share as a story option appears on every upload screen, not only the Upload page.
+* New      - Searching your own drive now matches document tags, so a file tagged in the admin can be found by that tag.
+* Improve  - Strip EXIF Data removes only the location. Camera, lens, exposure and the copyright and credit fields stay on the photo.
+* Improve  - Thumbnail Quality changes the image size grids actually serve. Medium is roughly a third of the bytes of Large, which remains the default.
+* Improve  - Default Layout now applies to albums and collections, which its description has always named.
+* Improve  - Page width and grid gap read design tokens, so one line in a child theme adjusts every MediaVerse surface together.
+* Improve  - The confirmation dialog follows the site palette instead of a fixed one, in light and dark mode.
+* Improve  - The AVIF setting states whether this server can encode AVIF instead of warning that it might not.
+* Improve  - Setup wizard offers the documented 12 items per page rather than silently saving 24.
+* Improve  - Camera metadata is no longer copied into the database on every upload, where nothing ever read it.
+* Improve  - Album, collection, edit and upload dialogs are named for screen readers, keep keyboard focus inside while open and return it on close.
+* Improve  - The upload drop zones open the file picker with Enter or Space.
+* Improve  - Toasts are announced to screen readers, including a repeated message, and the dismiss button is a full-size touch target at the edge of the toast.
+* Improve  - The chat header shows when someone was last active in the site's language.
+* Improve  - The floating upload button steps aside while a dialog is open.
+* Improve  - Set Cover stays a small label on touch screens with a full-size tap area, and dialog Save buttons use the primary style.
+* Improve  - The bulk album action is labelled Add to album and applies the album's privacy and playlist rules, the same as adding one item.
+* Improve  - Profile stats, dropdowns and the bulk privacy menu fit their space at phone width, and admin tab rows fit phone screens.
+* Improve  - A grid of 12 items costs 12 database queries instead of 35. The per-item author, gallery-count and post-type reads are gone.
+* Fix      - Playback events are recorded on single media pages. The player analytics tab was empty for anyone not using the block.
+* Fix      - The monthly AI budget cap works. Saving the AI settings once was enough to disable it silently, and spending then showed as zero.
+* Fix      - Turning on only AI moderation no longer also buys a description and a tag for every upload.
+* Fix      - Replacing a photo's file strips its location, as a first upload always did.
+* Fix      - Allow Downloads hides the download button on a document card too, and the description says which surfaces it covers.
+* Fix      - Buttons, selects and inputs inherit the theme font instead of falling back to the browser default.
+* Fix      - An uploader's avatar and name sit on one line in the grid, and a long name truncates instead of wrapping under it.
+* Fix      - Privacy menus show their full label. The longest option was cut off mid-sentence.
+* Fix      - The media count lines up with the followers and following buttons on a profile.
+* Fix      - The share as a story checkbox renders as a checkbox rather than stretching across the row.
+* Fix      - A toast appears above the chat panel instead of behind it.
+* Fix      - Turning off Allow Users to Set Privacy also stops members changing privacy after upload, through editing, bulk actions, albums and the REST API.
+* Fix      - Deleted documents are removed from disk, not only from the library.
+* Fix      - Moving media to cloud storage no longer rewrites document links to files that were never uploaded.
+* Fix      - Bulk delete in the media library leaves documents to the Documents screen instead of sending their files to the cloud provider.
+* Fix      - Deleting an album no longer leaves its media pointing at it.
+* Fix      - Messaging errors show as error toasts instead of success.
+* Fix      - Delete confirmations on BuddyPress media tabs show their message.
+* Fix      - A cloud upload that finishes after the member deleted the media no longer recreates the item as a broken, empty entry.
+* Fix      - Bulk action controls and the dashboard tabs stay clickable where they stick under a theme's fixed header.
+* Fix      - The album picker on a profile or Explore lists only albums you can add to. It offered everyone's albums, and choosing another member's failed.
+* Fix      - Bulk Delete on Explore deletes the selected items. It reported a failure and deleted nothing.
+* Fix      - Tag suggestions appear while typing, in the dashboard edit box and on a media page.
+* Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
+* Security - A member can no longer change the privacy of another member's media by adding it to their own album.
+* Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
+* Dev      - The page width token --mvs-content-width is documented in the developer guide.
+* Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
+
+= 2.5.0 - September 2026 =
+
+Privacy fixes around blocking and collections, a real justified-row grid, and permissions you can read at a glance.
+
+* New      - Documents preview inside the lightbox instead of only offering a download.
+* New      - A collection can be public or members only, and the visibility gate now denies people it should.
+* New      - The Documents profile tab carries a count badge.
+* Improve  - The original grid draws true justified rows, so a row fills the width instead of stretching two tiles.
+* Improve  - Layout names say what they draw. The free grid is Justified rows, not Masonry.
+* Improve  - List layout renders as a list, and one setting decides both it and the grid.
+* Improve  - Permissions are presented as role cards, so nothing scrolls off the right edge and nothing is hidden.
+* Improve  - Every library panel opens the same way, toolbar first and then the create action.
+* Improve  - User facing strings say MediaVerse rather than WPMediaVerse.
+* Improve  - Rows that outlived their media are cleaned up on update, with no button to press.
+* Security - Blocking someone now stops them viewing your media, your profile listing and its counts.
+* Security - Strangers can no longer react inside private conversations, or on messages that do not exist.
+* Security - Moderation is enforced in the shared visibility gate.
+* Security - Explore no longer showed media from members you had blocked on its first page.
+* Security - A favourited private item no longer leaks its title.
+* Security - Only public media, or your own, can be added to a collection.
+* Security - A private photo keeps its own privacy when an album happens to share its ID.
+* Security - An upload with an unknown privacy level is no longer published.
+* Fix      - Documents leave the All Media type filter and the media grid, and have their own menu.
+* Fix      - Smart collections counted media the viewer cannot see, and profile counts advertised media they could not open.
+* Fix      - The count above a listing now counts the rows the listing shows.
+* Fix      - Paginated listings stop repeating and dropping rows.
+* Fix      - Replacing a file no longer skips the upload quota.
+* Fix      - A view is counted once with proper deduplication, instead of on every page load.
+* Fix      - One sort applies to every layout and survives Load More, and the Views sort actually sorts.
+* Fix      - Profile Load More no longer pulls other members media into the profile.
+* Fix      - Settings links such as ?section=display open the section they name.
+* Fix      - A refused upload now tells the member why, on every uploader.
+* Fix      - Direction labels say what the sort actually does.
+* Fix      - The Explore Feed block's grid layout engages instead of silently doing nothing.
+* Dev      - The 2.5.0 functional cert records 69 passes, 0 failures and 0 holes.
+* Compat   - Aligned with MediaVerse Pro 2.5.0. Install both updates together.
 
 = 2.4.1 - September 2026 =
 
@@ -190,7 +279,7 @@ My Media becomes a set of real, linkable sections, and documents get a proper ad
 * Dev      - Documents and media can now be given different drive-access answers through mvs_document_drive_access and mvs_media_drive_access.
 * Dev      - DashboardSections::flush() clears the resolved-section cache, so a section declared late in a request is no longer ignored.
 * Dev      - The plugin's border tokens now have one job each: --mvs-border-light for structure, --mvs-border for controls, --mvs-border-strong for emphasis. A theme overriding these gets predictable results instead of changing every outline at once.
-* Compat   - Aligned with WPMediaVerse Pro 2.4.0. Install both updates together.
+* Compat   - Aligned with MediaVerse Pro 2.4.0. Install both updates together.
 
 = 2.3.2 - August 2026 =
 
@@ -200,7 +289,7 @@ Media works again for logged-in members on private communities, and the communit
 * Fix      - Logged-out visitors are now redirected to the login page from every media page while the community is private. The pages previously rendered normally with working media links in the HTML.
 * Fix      - Message reaction updates no longer resend every conversation message for hours on hosts whose database server is not set to UTC. New messages are now stamped with the same clock the polling reads.
 * Dev      - New filters mvs_rest_gate_exempt_route_prefixes, mvs_community_gated_page and mvs_community_login_url let a host community or integration tune which routes and pages the privacy gate covers and where blocked visitors are sent.
-* Compat   - Aligned with WPMediaVerse Pro 2.3.2. Install both updates together.
+* Compat   - Aligned with MediaVerse Pro 2.3.2. Install both updates together.
 
 = 2.3.1 - August 2026 =
 
@@ -247,14 +336,14 @@ Photos taken on a phone keep their orientation, media added to a private album s
 * Fix      - Album counts ignore media that is in the trash.
 * Fix      - Opening a conversation no longer sends the other member a "sent you a message" notification when no message was sent.
 * Fix      - Demo data can be removed and re-imported. The importer previously refused to run once demo data had been deleted, and reported that refusal as a success.
-* Fix      - The "Also share as a story" toggle no longer appears when WPMediaVerse Pro is inactive to handle it.
+* Fix      - The "Also share as a story" toggle no longer appears when MediaVerse Pro is inactive to handle it.
 * Fix      - The album dropzone is visible on sites without BuddyPress, and album assets load correctly under client-side navigation.
 * Security - POST /auth/app-password is classified in the REST write gate.
 * Dev      - New filters: mvs_apply_exif_orientation, mvs_album_inherit_privacy, mvs_comment_duplicate_window, mvs_dm_unarchive_on_activity. New action: mvs_media_privacy_clamped_by_album.
 * Dev      - Removed 7 generated -rtl.css stylesheets and the rtlcss build step. Nothing loaded them, and serving them would double-flip right-to-left layouts, which already render correctly without them.
 * Dev      - The moderation queue route is GET /moderation. The REST reference previously documented /moderation/queue, which returns 404.
 * Dev      - Documentation now covers every REST route, hook, setting, shortcode, block and WP-CLI command. Four watermark hooks that never existed in the code were removed from the reference.
-* Compat   - Paired with WPMediaVerse Pro 2.3.0. Install both updates together.
+* Compat   - Paired with MediaVerse Pro 2.3.0. Install both updates together.
 
 = 2.2.1 - July 2026 =
 
@@ -266,7 +355,7 @@ Photos taken on a phone keep their orientation, media added to a private album s
 * Fix      - Media action buttons on BuddyPress profile tabs and the My Media dashboard (Upload Media, Create Album, Edit Media, collections) are readable in dark mode with visible hover states.
 * Fix      - Opening an album and clicking Share no longer shows a link icon next to the share icon.
 * Fix      - The chat composer's attachment chip stayed light grey in dark mode.
-* Compat   - Aligned with WPMediaVerse Pro 2.2.1. Install both updates together.
+* Compat   - Aligned with MediaVerse Pro 2.2.1. Install both updates together.
 
 = 2.2.0 - July 2026 =
 
@@ -279,11 +368,11 @@ Photos taken on a phone keep their orientation, media added to a private album s
 * Fix      - The Settings saved notice can be dismissed, fades out on its own, and no longer follows you across settings sections.
 * Fix      - Fatal error on BuddyBoss and older BuddyPress where bp_get_group_url() does not exist.
 * Dev      - Messaging service accepts an optional backdated created_at on conversations and messages, so a migration can replay a source DM history with its original dates. Live behavior is unchanged when the argument is absent.
-* Compat   - Aligned with WPMediaVerse Pro 2.2.0. Install both updates together.
+* Compat   - Aligned with MediaVerse Pro 2.2.0. Install both updates together.
 
 = 2.1.0 - July 2026 =
 
-Member safety and privacy release: block, suspend, and report tools, member-initiated account deletion, and a complete GDPR export and erase map. Paired with WPMediaVerse Pro 2.1.0 - install and test both together.
+Member safety and privacy release: block, suspend, and report tools, member-initiated account deletion, and a complete GDPR export and erase map. Paired with MediaVerse Pro 2.1.0 - install and test both together.
 
 * New      - Members can delete their own account, with a confirmation step and a grace window they can cancel.
 * New      - Report tools are on by default, and Free now has a moderation reports queue for site owners.
@@ -300,11 +389,11 @@ Member safety and privacy release: block, suspend, and report tools, member-init
 * Fix      - The direct-message typing indicator now works on sites without a persistent object cache.
 * Fix      - Dark mode no longer renders body text near-black on dark surfaces, and media surfaces pair foreground with background.
 * Dev      - Added mvs_conversation_participants.typing_until and a rank_scan index on mvs_media_index (Migrator v22).
-* Compat   - Lockstep with WPMediaVerse Pro 2.1.0. Install and test both together.
+* Compat   - Lockstep with MediaVerse Pro 2.1.0. Install and test both together.
 
 = 2.0.0 - July 2026 =
 
-Major release: upload watermarking, full frontend translation readiness, privacy hardening across albums, collections, and protected media, plus a batch of activity, moderation, and image-pipeline fixes. Paired with WPMediaVerse Pro 2.0.0 - install and test both together.
+Major release: upload watermarking, full frontend translation readiness, privacy hardening across albums, collections, and protected media, plus a batch of activity, moderation, and image-pipeline fixes. Paired with MediaVerse Pro 2.0.0 - install and test both together.
 
 * New      - Admin-global watermark stamped into every uploaded image at upload time, with a single stamp owner and no replace-file bypass.
 * New      - Create a new album directly from the upload modal.
@@ -329,7 +418,7 @@ Major release: upload watermarking, full frontend translation readiness, privacy
 * Dev      - New filter mvs_suppress_bp_comment_notification controls the BuddyPress comment-notification bridge.
 * Dev      - MediaRepositoryInterface now declares get_url_for_viewer().
 * Dev      - Removed the dead watermark preview and serve system and retired the admin access-rules UI; access-rule enforcement stays in the backend.
-* Compat   - Lockstep with WPMediaVerse Pro 2.0.0. Install and test both together.
+* Compat   - Lockstep with MediaVerse Pro 2.0.0. Install and test both together.
 
 = 1.9.0 - July 2026 =
 
@@ -407,7 +496,7 @@ Configurable AI moderation with a new Claude provider, working image and text wa
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
 * Dev      - New mvs_collections_enabled filter lets a collections backend render a "Save to collection" control next to the favorite heart; the lightbox exposes the actions.lightboxOpenCollections action and dispatches an mvs-collections-click event carrying the current media id.
 * Dev      - Inline styles in blocks, BuddyPress activity renderers, and frontend templates were moved to tokenized stylesheet classes, so theme and child-theme CSS can target them.
-* Compat   - Pairs with WPMediaVerse Pro 1.8.0. Install both updates together.
+* Compat   - Pairs with MediaVerse Pro 1.8.0. Install both updates together.
 
 = 1.7.0 - June 2026 =
 
@@ -421,7 +510,7 @@ Performance and reliability pass: a large media-grid query reduction plus seven 
 * Improve  - Public media served from the local driver now sends a stable URL with Cache-Control public headers so browsers and CDNs can cache it; private media stays no-store.
 * Dev      - The mvs_notification_created action now passes the rendered message and link, keeping BuddyNext and other listeners in sync.
 * Dev      - New filters mvs_stable_public_urls, mvs_public_media_max_age, mvs_public_local_file_url, mvs_public_local_thumbnail_url. New Site Health test for missing video posters. The mvs_thumbnail_size default changes from large to medium.
-* Compat   - Pairs with WPMediaVerse Pro 1.7.0. Install both updates together.
+* Compat   - Pairs with MediaVerse Pro 1.7.0. Install both updates together.
 
 = 1.6.0 - June 2026 =
 
@@ -456,7 +545,7 @@ Privacy hardening across every surface, a large messaging upgrade with group-con
 * Fix      - Public media now displays correctly on page-cached hosts. Expired-but-authentic image URLs in cached HTML still serve public files; non-public media keeps the strict expiry window. Disable via the mvs_serve_expired_public_urls filter.
 * Security - PDF-upload bypass through the media replace endpoint is closed, and replace honors the same type allowlist as upload.
 * Dev      - New filters mvs_collection_media_ids, mvs_reports_enabled, mvs_media_alt_text, mvs_hold_uploads_for_moderation, mvs_profile_privacy_levels, and mvs_serve_expired_public_urls; new actions mvs_album_deleted and mvs_collection_deleted; mvs_media_deleted now fires once from the delete cascade.
-* Compat   - Aligned with WPMediaVerse Pro 1.6.0. Install both updates together.
+* Compat   - Aligned with MediaVerse Pro 1.6.0. Install both updates together.
 
 = 1.5.0 - May 2026 =
 
@@ -471,13 +560,13 @@ Non-public uploads now render their own thumbnails. Upload and serve pipeline un
 * Dev     - New services MediaUrl, VariantSpec, StorageRouter, MediaVariantWriter, PosterService consolidate the upload and read pipeline. Existing methods kept as shims for at least two releases per the deprecation policy.
 * Dev     - Database migration to version 15 backfills thumb_size_path meta for video and audio rows where pre-1.5.0 uploads recorded the wrong subdirectory. Idempotent. Includes a posters fallback probe for sites whose URL meta also diverged.
 * Dev     - New filter mvs_broadcast_thumbnail_ttl controls the TTL for thumbnails embedded in long-lived surfaces like notification emails and RSS. Defaults to one hour. Filter target for sites that cache at the CDN for longer.
-* Compat  - Paired with WPMediaVerse Pro 1.5.0. Install both updates together when running Pro.
+* Compat  - Paired with MediaVerse Pro 1.5.0. Install both updates together when running Pro.
 
 = 1.4.0 - May 2026 =
 
 New cloud storage options, driver-agnostic media URLs, four release-blocking bug fixes, and a centralized media query layer.
 
-* New     - Cloudflare R2 and DigitalOcean Spaces are now selectable cloud storage drivers from Settings, Storage. The drivers ship in WPMediaVerse Pro; the Storage Driver setting lists them on every install.
+* New     - Cloudflare R2 and DigitalOcean Spaces are now selectable cloud storage drivers from Settings, Storage. The drivers ship in MediaVerse Pro; the Storage Driver setting lists them on every install.
 * New     - Driver-agnostic media URLs. Each item now resolves its display URL from the currently active storage driver every time the page renders, so switching between cloud providers (or back to local) no longer breaks images across the site. Path information is the source of truth; URLs are computed at read time.
 * New     - WP-CLI command wp mvs relocalize-private heals legacy non-public media whose URL meta still points at an old cloud bucket. Idempotent and safe to re-run.
 * Improve - Private and restricted media always stays on your server and is never uploaded to cloud storage. Only public media is eligible for the cloud, so private uploads cannot reach a public bucket.
@@ -491,7 +580,7 @@ New cloud storage options, driver-agnostic media URLs, four release-blocking bug
 * Fix     - Videos in the BuddyPress activity feed always show a poster image. Cover-less videos previously rendered a blank player in Safari and Bing.
 * Dev     - Database migration to version 14 backfills driver-agnostic path meta for every existing media item. Idempotent; safe on partial reruns.
 * Dev     - New filters mvs_serve_public_cloud_direct, mvs_public_cloud_thumbnail_url, and mvs_public_cloud_file_url to control or rewrite direct cloud URLs. New mvs_explore_query_args filter to adjust the Explore and profile feed query. Integration event hooks for gamification, activity, and notification consumers are documented in the developer guide.
-* Compat  - Paired with WPMediaVerse Pro 1.4.0. Install both updates together when running Pro.
+* Compat  - Paired with MediaVerse Pro 1.4.0. Install both updates together when running Pro.
 
 = 1.3.0 - May 2026 =
 
@@ -526,11 +615,11 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * Fix     - Cleared all PHP 8.4 and PHP 8.5 compatibility warnings. The plugin runs cleanly on the latest PHP versions.
 * Dev     - New action hook mvs_media_privacy_changed fires when a media's privacy column is updated. Useful for activity adapters and audit logs.
 * Dev     - New StorageDriverInterface::download($path, $local_dest) method on Local, S3, and BunnyCDN drivers. Third-party storage drivers must implement it.
-* Compat  - Paired with WPMediaVerse Pro 1.3.0. Install both updates together when running Pro.
+* Compat  - Paired with MediaVerse Pro 1.3.0. Install both updates together when running Pro.
 
 = 1.2.0 =
 * New: Member Photos block + shortcode (`mvs/member-photos`, `[mvs_member_photos]`) - auto-detects whose photos to show: explicit `userId` → BP displayed user → post author → current user. Drop it into a BP profile, an author template, or a regular page and it just works.
-* New: PDF Viewer block + shortcode (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`) - embeds PDFs uploaded to WPMediaVerse using the browser's native PDF viewer (`#view=FitH`); inspector exposes height (200–1400 px) and toolbar toggle. Five distinct empty states (no id / not found / not a PDF / no permission / asset missing) - never a blank rectangle.
+* New: PDF Viewer block + shortcode (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`) - embeds PDFs uploaded to MediaVerse using the browser's native PDF viewer (`#view=FitH`); inspector exposes height (200–1400 px) and toolbar toggle. Five distinct empty states (no id / not found / not a PDF / no permission / asset missing) - never a blank rectangle.
 * New: More sort options on Media Grid - added "Most Popular", "Most Viewed", "Most Reactions", and "Random". Asc/Desc direction toggle exposed in the inspector (hidden when sort = Random). New `userId` attribute on `mvs/media-grid` and `user_id` attr on `[mvs_gallery]` filter to one author.
 * New: Search autocomplete on the Explore feed - type two or more characters and a top-8 title-match dropdown opens (debounced 250 ms). Full keyboard support: ArrowDown / ArrowUp / Enter / ESC. ARIA combobox + listbox semantics so screen readers announce matches as you type.
 * New: Lightbox Download button - toolbar button next to Share + Open. Counts each download in `mvs_media_stats.downloads`; rate-limited at 30/min/user via the central `RateLimiter`. New `POST /mvs/v1/media/{id}/download` REST endpoint.
@@ -542,7 +631,7 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * New: Upload modal polish - preview tiles show filename + per-tile (×) remove button; audio files get an audio-fallback icon (no broken-image SVG).
 
 * New: Bulk Actions on All Media - multi-select header/footer checkboxes + a Bulk Actions toolbar. Action menu is context-aware to the active filter: in the Trash filter → Restore + Delete permanently; otherwise → Move to Trash. Capability + `wp_nonce_field('mvs_bulk_media')` gates on submit; success notice with count + action.
-* New: Chat panel visibility setting under Direct Messages - pick where the floating chat panel renders: Everywhere (default) / WPMediaVerse pages only / BuddyPress pages only / Disabled. New `mvs_should_render_chat_panel` filter wraps the resolved decision so themes / add-ons can fine-tune by URL pattern.
+* New: Chat panel visibility setting under Direct Messages - pick where the floating chat panel renders: Everywhere (default) / MediaVerse pages only / BuddyPress pages only / Disabled. New `mvs_should_render_chat_panel` filter wraps the resolved decision so themes / add-ons can fine-tune by URL pattern.
 * New: Global "Allow downloads" toggle under Media Display - single switch that hides the new lightbox Download button site-wide AND makes the `record_download` REST endpoint refuse with 403. Per-media `allow_download` meta still gates further when the global is on.
 
 * Fix: Lightbox Share no longer falls back to a `window.prompt()` "Copy this link:" popup when neither `navigator.share` nor clipboard write is available - instead a toast error renders. `mvs_media_stats.shares` now also increments via the new `POST /mvs/v1/media/{id}/share` REST endpoint.

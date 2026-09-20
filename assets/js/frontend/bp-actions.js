@@ -53,7 +53,7 @@
 				return { ok: true };
 			}
 			var body = res.data;
-			return { ok: false, error: body && body.message ? body.message : 'Delete failed.' };
+			return { ok: false, error: body && body.message ? body.message : t( 'deleteFailed', 'Delete failed.' ) };
 		} );
 	}
 
@@ -66,6 +66,11 @@
 				card.parentNode && card.parentNode.removeChild( card );
 			}, 220 );
 		}
+	}
+
+	// Localized strings from BaseBPTabIntegration; English fallback.
+	function t( key, fallback ) {
+		return ( cfg.i18n && cfg.i18n[ key ] ) || fallback;
 	}
 
 	function toast( message, type ) {
@@ -99,13 +104,13 @@
 			event.stopPropagation();
 			var mediaId = mediaDel.dataset.mediaId;
 			if ( ! mediaId ) { return; }
-			confirmAction( 'Delete this media? This cannot be undone.' ).then( function ( ok ) {
+			confirmAction( t( 'confirmMedia', 'Delete this media? This cannot be undone.' ) ).then( function ( ok ) {
 				if ( ! ok ) { return; }
 				mediaDel.disabled = true;
 				apiDelete( 'media/' + mediaId ).then( function ( res ) {
 					if ( res.ok ) {
 						removeCard( mediaDel );
-						toast( 'Media deleted.', 'success' );
+						toast( t( 'mediaDeleted', 'Media deleted.' ), 'success' );
 					} else {
 						mediaDel.disabled = false;
 						toast( res.error, 'error' );
@@ -122,13 +127,13 @@
 			event.stopPropagation();
 			var albumId = albumDel.dataset.albumId;
 			if ( ! albumId ) { return; }
-			confirmAction( 'Delete this album? Media items inside it will remain in your library.' ).then( function ( ok ) {
+			confirmAction( t( 'confirmAlbum', 'Delete this album? Media items inside it will remain in your library.' ) ).then( function ( ok ) {
 				if ( ! ok ) { return; }
 				albumDel.disabled = true;
 				apiDelete( 'albums/' + albumId ).then( function ( res ) {
 					if ( res.ok ) {
 						removeCard( albumDel );
-						toast( 'Album deleted.', 'success' );
+						toast( t( 'albumDeleted', 'Album deleted.' ), 'success' );
 					} else {
 						albumDel.disabled = false;
 						toast( res.error, 'error' );

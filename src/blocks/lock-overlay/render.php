@@ -14,17 +14,53 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// LUCIDE, from the block itself. These icons are <i data-lucide> and need the
+// library to hydrate them into SVG. Plugin::enqueue_frontend_assets() only
+// enqueues it behind `$is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl ||
+// $is_mvs_page` (Plugin.php:1343) - and a block dropped on an ORDINARY post
+// matches none of those, so the icons stayed unhydrated there.
+//
+// register_lucide_script() is idempotent (wp_script_is guard) and attaches the
+// MutationObserver that re-hydrates icons after an Interactivity region swap.
+\WPMediaVerse\Core\Plugin::register_lucide_script();
+wp_enqueue_script( 'mvs-lucide' );
+
 $media_id        = isset( $attributes['mediaId'] ) ? absint( $attributes['mediaId'] ) : 0;
 $blur_amount     = isset( $attributes['blurAmount'] ) ? absint( $attributes['blurAmount'] ) : 20;
 $unlock_label    = ! empty( $attributes['unlockLabel'] ) ? sanitize_text_field( $attributes['unlockLabel'] ) : __( 'Restricted Content', 'wpmediaverse' );
 $overlay_opacity = isset( $attributes['overlayOpacity'] ) ? absint( $attributes['overlayOpacity'] ) : 60;
 
+// Misconfiguration - nothing chosen. Tell the editor rather than rendering
+// nothing (Coding Rule 11). Visitors get nothing: a configuration notice on a
+// live page is noise to them.
 if ( ! $media_id ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'lock',
+				'title'   => __( 'Lock Overlay', 'wpmediaverse' ),
+				'message' => __( 'Select a media item to protect in the block settings.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 
 // Verify media exists in the index table.
 if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'lock',
+				'title'   => __( 'Lock Overlay', 'wpmediaverse' ),
+				'message' => __( 'The referenced media no longer exists. Pick another item in the block settings.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 
@@ -96,7 +132,7 @@ $permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->
 				</audio>
 			<?php else : ?>
 				<div class="mvs-lock-overlay-file">
-					<span class="dashicons dashicons-media-default"></span>
+					<span class="mvs-icon"><i data-lucide="file" aria-hidden="true"></i></span>
 					<span><?php echo esc_html( $media_title ); ?></span>
 				</div>
 			<?php endif; ?>
@@ -108,12 +144,12 @@ $permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->
 					<img src="<?php echo esc_url( $preview_url ); ?>" alt="" loading="lazy" aria-hidden="true" />
 				<?php else : ?>
 					<div class="mvs-lock-overlay-placeholder">
-						<span class="dashicons dashicons-lock"></span>
+						<span class="mvs-icon"><i data-lucide="lock" aria-hidden="true"></i></span>
 					</div>
 				<?php endif; ?>
 			</div>
 			<div class="mvs-lock-overlay-prompt">
-				<span class="dashicons dashicons-lock mvs-lock-icon"></span>
+				<span class="mvs-lock-icon mvs-icon"><i data-lucide="lock" aria-hidden="true"></i></span>
 				<h3 class="mvs-lock-overlay-title"><?php echo esc_html( $media_title ); ?></h3>
 				<p class="mvs-lock-overlay-info"><?php echo esc_html( $unlock_label ); ?></p>
 				<?php if ( ! $user_id ) : ?>

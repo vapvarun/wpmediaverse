@@ -1,9 +1,9 @@
 # WP-CLI Commands
 
-> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+> Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
 
 
-WPMediaVerse registers its commands under the `wp mvs` namespace. Pro adds its own subcommands to that same namespace (`import-*`, `competitions *`) plus one command of its own, `wp mvs-pro cert`.
+MediaVerse registers its commands under the `wp mvs` namespace. Pro adds its own subcommands to that same namespace (`import-*`, `competitions *`) plus one command of its own, `wp mvs-pro cert`.
 
 ## wp mvs stats
 
@@ -130,7 +130,7 @@ The command outputs progress as it processes each batch and finishes with a coun
 
 ## wp mvs cache-flush
 
-Flush all WPMediaVerse caches - both object cache groups and plugin-managed transients. Run this after making direct database changes or when stale data is suspected.
+Flush all MediaVerse caches - both object cache groups and plugin-managed transients. Run this after making direct database changes or when stale data is suspected.
 
 ```bash
 wp mvs cache-flush
@@ -139,7 +139,7 @@ wp mvs cache-flush
 **Output:**
 
 ```
-Success: WPMediaVerse caches flushed.
+Success: MediaVerse caches flushed.
 ```
 
 ---
@@ -338,7 +338,7 @@ wp mvs migrate-storage --from=local --to=s3 --media-id=42
 | `--limit=<n>` | 0 (all) | Stop after this many rows |
 | `--include-non-public` | off | Also migrate non-public media (only when cloud bucket is private) |
 
-**Note:** `s3` and `bunnycdn` drivers require WPMediaVerse Pro.
+**Note:** `s3` and `bunnycdn` drivers require MediaVerse Pro.
 
 ---
 
@@ -569,7 +569,7 @@ wp mvs cert [<check>] [--porcelain]
 
 ### wp mvs-pro cert
 
-> Requires WPMediaVerse Pro. Added in Pro 1.8.1.
+> Requires MediaVerse Pro. Added in Pro 1.8.1.
 
 Certifies the Pro surface. Pro ships no engine of its own - the command reuses the Free `CertRunner`, pointed at the Pro plugin directory so the same checks read Pro's `audit/manifest` and `audit/cert-oracles.json`.
 
@@ -591,7 +591,7 @@ It takes the same `[<check>]` argument (`all`, `contract`, `boot`) and the same 
 
 Run one competitions scheduler tick immediately, instead of waiting for the recurring Action Scheduler job. A tick fires every competition transition hook once - activating scheduled challenges, closing challenge entries, finalizing expired challenges, starting registered tournaments, and resolving expired matches - so any challenge or tournament whose deadline has passed advances right away. Useful for debugging on a site where Action Scheduler / WP-Cron is not firing, or to force an immediate state advance after editing competition rows.
 
-Requires WPMediaVerse Pro with a competition feature enabled (challenges, tournaments, or battles).
+Requires MediaVerse Pro with a competition feature enabled (challenges, tournaments, or battles).
 
 ```bash
 wp mvs competitions tick
@@ -611,7 +611,7 @@ Success: Competitions tick executed.
 
 Force the one-shot competitions catch-up migration to run again. Clears the internal migration flag, re-fires every transition hook once, and re-marks the flag as done. Use this when competition DB rows are edited by hand and you need the scheduler to re-derive their state. Reports how many non-finalized, non-cancelled competitions remain after the pass.
 
-Requires WPMediaVerse Pro with a competition feature enabled.
+Requires MediaVerse Pro with a competition feature enabled.
 
 ```bash
 wp mvs competitions recompute

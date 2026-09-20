@@ -187,7 +187,78 @@ class ActivityContentIntegration {
 	 * @param object|null $activity BP activity object (passed by ref from BP).
 	 * @return string Enhanced content.
 	 */
+	/**
+	 * Remove <img> tags pointing directly at our own uploads folder.
+	 *
+	 * Was: only tags whose file no
+	 * longer exist, along with the anchor wrapping them.
+	 *
+	 * Scoped to wp-content/uploads/wpmediaverse/ on this site so it can never
+	 * touch an image another plugin, the theme, or the member put there. Only
+	 * touches content that actually contains that path, so the common case is
+	 * one strpos and no work.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param string $content Activity content.
+	 * @return string
+	 */
+	private function drop_missing_upload_images( string $content ): string {
+		$uploads  = wp_get_upload_dir();
+		$base_url = trailingslashit( $uploads['baseurl'] ) . 'wpmediaverse/';
+
+		if ( false === strpos( $content, $base_url ) ) {
+			return $content;
+		}
+
+		return (string) preg_replace_callback(
+			'#(?:<a\b[^>]*>\s*)?<img\b[^>]*\bsrc=["\']([^"\']+)["\'][^>]*>(?:\s*</a>)?#i',
+			static function ( $m ) use ( $base_url ) {
+				if ( 0 !== strpos( $m[1], $base_url ) ) {
+					return $m[0];
+				}
+
+				$relative = substr( $m[1], strlen( $base_url ) );
+				$relative = explode( '?', $relative )[0];
+
+				// Containment: a traversal in stored content must never let this
+				// reach outside the plugin's own upload folder.
+				if ( false !== strpos( $relative, '..' ) ) {
+					return '';
+				}
+
+				// EXISTENCE IS THE WRONG QUESTION, and it is why the first fix
+				// bounced: the file being on disk says nothing about whether a
+				// browser can fetch it. Activator::create_upload_protection()
+				// writes "Deny from all" over the whole wpmediaverse upload dir,
+				// so EVERY direct URL into it 403s - present or not. The member
+				// still saw a broken image; the guard just kept the tag.
+				//
+				// Nor can these be rewritten to a working URL. Both
+				// SignedUrlService::generate() and ::generate_thumbnail() take a
+				// media_id, and the whole premise of these legacy activities is
+				// that no id exists anywhere in the markup - which is why every
+				// id-keyed guard the plugin has finds nothing to check.
+				//
+				// So the tag goes, whatever the filesystem says. Anything the
+				// viewer CAN see is rendered by the id-keyed path below, which
+				// routes through MediaUrl and gets a signed URL.
+				// Basecamp 10290384337.
+				return '';
+			},
+			$content
+		);
+	}
+
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
+		// Drop <img> tags whose file is gone. Activities saved before media was
+		// referenced by id carry literal <img src="...uploads/wpmediaverse/...">
+		// with no media id anywhere, so every id-keyed guard we have - the
+		// linkage renderer, the _mvs_media_ids rebuild, refresh_broadcast_urls -
+		// correctly finds nothing to check and the member sees broken-image
+		// boxes on their own timeline forever. Basecamp 10290384337.
+		$content = $this->drop_missing_upload_images( $content );
+
 		// Activity already has MVS media markup baked into content
 		// (BP composer flow saves content with `mvs-activity-media-grid`
 		// inline). Refresh the URLs in place before returning — saved markup
@@ -316,8 +387,8 @@ class ActivityContentIntegration {
 			if ( $ids ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
 			}
-			$grid_html   = '';
-			$rendered    = 0;
+			$grid_html = '';
+			$rendered  = 0;
 			foreach ( $ids as $mid ) {
 				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $mid ) ) {
 					continue;
@@ -760,6 +831,21 @@ class ActivityContentIntegration {
 
 				if ( $media_id <= 0 ) {
 					return $m[0];
+				}
+
+				// The media this tile points at may be gone. ActivitySyncIntegration
+				// strips baked grids on delete, but only for deletions that fire
+				// `mvs_media_deleted`, and only since that hardening landed —
+				// anything removed before it, or by a path that bypasses the hook,
+				// still has its tile sitting in saved activity content. Refreshing
+				// the URL then just re-signs a link to nothing and the member gets
+				// a broken image where a photo used to be.
+				//
+				// Drop the tile instead, exactly as the rebuild path at the top of
+				// this class already does for the no-baked-markup case. Both render
+				// paths now agree that a missing media renders nothing.
+				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+					return '';
 				}
 
 				$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );

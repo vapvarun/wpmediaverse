@@ -30,7 +30,7 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		// anyone (individual thumbnails still sign per-viewer, but the structure
 		// leaked). A viewer who can't see the collection gets the branded 404,
 		// nothing else. Basecamp 10073499554.
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $collection_id, get_current_user_id() ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $collection_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			status_header( 404 );
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';
@@ -46,7 +46,7 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		$items     = array();
 
 		if ( 'smart' === $collection_type ) {
-			$resolved = $service->resolve( $collection_id, 100, 1 );
+			$resolved = $service->resolve( $collection_id, 100, 1, get_current_user_id() );
 			$items    = array_column( $resolved['items'], 'media_id' );
 		} else {
 			$items = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, 100 );
@@ -136,7 +136,9 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 				/* Batch index+meta for the page (1.7.0). */ $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $mvs_ids );
 				?>
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
-				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed">
+				<?php // Default Layout reaches collections too — see album.php. ?>
+				<?php $mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class(); ?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
 					<?php
 					foreach ( $items as $media_id ) :
 						$media_id     = (int) $media_id;

@@ -55,7 +55,17 @@ class ActivityMediaLinkage {
 		add_action( 'bp_activity_after_save', array( $this, 'on_activity_save' ), 20 );
 
 		// On activity delete, drop the linkage rows.
-		add_action( 'bp_before_activity_delete', array( $this, 'on_activity_delete' ) );
+		//
+		// `bp_activity_deleted_activities` and not `bp_before_activity_delete`:
+		// the "before" action carries the delete QUERY, so it only has an ['id']
+		// when the caller happened to delete by id. BuddyPress deletes by
+		// user_id / item_id / component / type all the time (user deletion,
+		// group deletion, comment cascades) and those left every linkage row
+		// behind - measured 18 of 26 rows orphaned on the QA site. BuddyPress's
+		// own docblock on bp_activity_delete() says to use this one when you
+		// want the IDs. It also fires AFTER the delete succeeded, so a failed
+		// delete no longer drops links.
+		add_action( 'bp_activity_deleted_activities', array( $this, 'on_activity_delete' ) );
 	}
 
 	/**
@@ -102,15 +112,22 @@ class ActivityMediaLinkage {
 	/**
 	 * Drop linkage rows when the parent activity is deleted.
 	 *
-	 * @param array $args BP activity delete args (ids, query).
+	 * Accepts either shape: the deleted-id list from
+	 * `bp_activity_deleted_activities` (an int or an int[]), or the legacy
+	 * `$args` array this used to be wired to, so anything still calling it
+	 * directly keeps working.
+	 *
+	 * @param array|int $activity_ids Deleted activity id(s), or legacy delete args.
 	 */
-	public function on_activity_delete( $args ): void {
-		$ids = array();
-		if ( is_array( $args ) && ! empty( $args['id'] ) ) {
-			$ids = (array) $args['id'];
+	public function on_activity_delete( $activity_ids ): void {
+		if ( is_array( $activity_ids ) && isset( $activity_ids['id'] ) ) {
+			$activity_ids = $activity_ids['id'];
 		}
-		foreach ( $ids as $activity_id ) {
-			$this->delete_links( (int) $activity_id );
+		foreach ( (array) $activity_ids as $activity_id ) {
+			$activity_id = (int) $activity_id;
+			if ( $activity_id > 0 ) {
+				$this->delete_links( $activity_id );
+			}
 		}
 	}
 
@@ -133,10 +150,29 @@ class ActivityMediaLinkage {
 			return '';
 		}
 
+		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
 		$pieces = array();
 		foreach ( $rows as $row ) {
+			$mvs_media_id = (int) $row->media_id;
+
+			// Skip media that can no longer be served. An activity entry outlives
+			// the media it embeds: the row can be trashed (reversible, so the
+			// activity must NOT be deleted for it) or gone entirely with a
+			// linkage row left behind, and either way the tile rendered a signed
+			// URL that answered 403 - neither hidden nor honest. Guarding the
+			// renderer covers trash, hard delete and legacy orphans in one place;
+			// deleting activities on trash would destroy a post that restoring
+			// the media should bring back. Basecamp 10285850126.
+			if ( ! $mvs_repo->exists( $mvs_media_id ) ) {
+				continue;
+			}
+			if ( 'publish' !== (string) $mvs_repo->get( $mvs_media_id, 'status' ) ) {
+				continue;
+			}
+
 			$pieces[] = $this->tpl->media_thumbnail(
-				(int) $row->media_id,
+				$mvs_media_id,
 				array(
 					'size'      => 'large',
 					// Long-lived broadcast TTL — activity content lives in
@@ -148,9 +184,16 @@ class ActivityMediaLinkage {
 				)
 			);
 		}
+
+		// Every linked media is gone or unpublished: render nothing rather than
+		// an empty grid wrapper.
+		if ( empty( $pieces ) ) {
+			return '';
+		}
+
 		// One wrapper around the per-media blocks so the existing
 		// `.mvs-activity-media` CSS picks them up unchanged.
-		$count_class = 'mvs-activity-media-group--count-' . count( $rows );
+		$count_class = 'mvs-activity-media-group--count-' . count( $pieces );
 		return '<div class="mvs-activity-media-group ' . esc_attr( $count_class ) . '"'
 			. ' data-mvs-activity-id="' . esc_attr( (string) $activity_id ) . '">'
 			. implode( '', $pieces )

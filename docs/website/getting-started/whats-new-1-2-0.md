@@ -1,6 +1,6 @@
 # What's New in 1.2.0
 
-WPMediaVerse 1.2.0 is a UX completeness release focused on filling gaps surfaced by real-world use. Twelve customer-visible improvements ship together, plus a full WCAG 2.1 AA accessibility pass.
+MediaVerse 1.2.0 is a UX completeness release focused on filling gaps surfaced by real-world use. Twelve customer-visible improvements ship together, plus a full WCAG 2.1 AA accessibility pass.
 
 > **Included in Free** - Every item on this page applies to the free version. Pro picks up these improvements automatically because Pro builds on top of free.
 
@@ -42,7 +42,7 @@ The **Media > All Media** admin screen now supports multi-select. Tick the rows 
 
 ## Chat panel visibility setting
 
-A new **Chat Panel Visibility** dropdown under **Media > Settings > Social** lets you scope where the floating chat panel renders: **Everywhere** (default), **WPMediaVerse pages only**, **BuddyPress pages only**, or **Disabled**. For code-level overrides there's the `mvs_should_render_chat_panel` filter.
+A new **Chat Panel Visibility** dropdown under **Media > Settings > Social** lets you scope where the floating chat panel renders: **Everywhere** (default), **MediaVerse pages only**, **BuddyPress pages only**, or **Disabled**. For code-level overrides there's the `mvs_should_render_chat_panel` filter.
 
 ## Global Allow Downloads toggle
 

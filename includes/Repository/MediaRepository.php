@@ -28,6 +28,32 @@ defined( 'ABSPATH' ) || exit;
 class MediaRepository implements MediaRepositoryInterface {
 
 	/**
+	 * Tables holding rows keyed by `media_id` that die with the media.
+	 *
+	 * Every delete purges these through delete_cascade(), and Migrator v32 uses
+	 * the same list to clear rows left behind before the cascade covered them -
+	 * one list, so the two cannot drift. `mvs_messages` is deliberately absent: a
+	 * conversation keeps its message when the shared file goes, and the chat
+	 * shows it as no longer available.
+	 *
+	 * @var string[]
+	 */
+	public const MEDIA_CHILD_TABLES = array(
+		'mvs_media_stats',
+		'mvs_media_views',
+		'mvs_media_meta',
+		'mvs_reactions',
+		'mvs_favorites',
+		'mvs_mentions',
+		'mvs_album_items',
+		'mvs_notifications',
+		'mvs_activity',
+		'mvs_access_rules',
+		'mvs_access_grants',
+		'mvs_media_spaces',
+	);
+
+	/**
 	 * Columns that live in mvs_media_index (core, queried frequently).
 	 *
 	 * @var string[]
@@ -65,7 +91,6 @@ class MediaRepository implements MediaRepositoryInterface {
 		'drive_id',
 		'view_count',
 		'reaction_count',
-		'comment_count',
 		'is_featured',
 		'created_at',
 		'updated_at',
@@ -102,6 +127,19 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @var array<int, array<string, mixed>>
 	 */
 	private static array $row_cache = array();
+
+	/**
+	 * Blocked-author ids per viewer, for this request only.
+	 *
+	 * Both query() and query_count() build through build_query_parts(), so a
+	 * single listing asked ReportService for the same block list twice. It is
+	 * an indexed lookup and cheap, but it is also the same answer both times.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @var array<int, int[]>
+	 */
+	private static array $blocked_cache = array();
 
 	/**
 	 * Tracks media_ids that have had ALL their meta loaded via prefetch.
@@ -149,6 +187,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public static function reset_test_cache(): void {
 		self::$row_cache         = array();
 		self::$meta_fully_loaded = array();
+		self::$blocked_cache     = array();
 	}
 
 	/**
@@ -807,25 +846,26 @@ class MediaRepository implements MediaRepositoryInterface {
 				)
 			);
 
-			if ( $exists ) {
-				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prefix . 'mvs_media_index',
-					array(
-						$key         => $value,
-						'updated_at' => current_time( 'mysql', true ),
-					),
-					array( 'media_id' => $media_id )
-				);
-			} else {
-				$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prefix . 'mvs_media_index',
-					array(
-						'media_id'   => $media_id,
-						$key         => $value,
-						'created_at' => current_time( 'mysql', true ),
-					)
-				);
+			// A write for a row that is gone is a write-after-delete, not a
+			// row to create: a queued cloud-upload job finishing after the
+			// member deleted the media called set( $id, 'file_url', ... ).
+			// This used to INSERT a stub carrying one column, which left a
+			// ghost with an empty slug, title, author and media_type - and
+			// because `slug` is NOT NULL UNIQUE, the SECOND such ghost failed
+			// on a duplicate-key database error instead. Rows are created by
+			// insert(), which supplies the whole shape. (2.5.1)
+			if ( ! $exists ) {
+				return;
 			}
+
+			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_media_index',
+				array(
+					$key         => $value,
+					'updated_at' => current_time( 'mysql', true ),
+				),
+				array( 'media_id' => $media_id )
+			);
 
 			// Fire only on UPDATE (old value existed) and when value actually changes.
 			// Inserts skip — uploaders set privacy at activity-creation time directly.
@@ -1004,7 +1044,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$rows = (array) $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d",
+				'SELECT ' . implode( ', ', $selects ) . " {$from} ORDER BY idx.created_at DESC, idx.media_id DESC LIMIT %d OFFSET %d",
 				...array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) )
 			),
 			ARRAY_A
@@ -1301,6 +1341,67 @@ class MediaRepository implements MediaRepositoryInterface {
 				    AND title LIKE %s
 				  ORDER BY title ASC
 				  LIMIT %d",
+				$like,
+				$limit
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * Documents of ONE owner whose mvs_tag matches, for in-drive search.
+	 *
+	 * Tags are set in wp-admin and, until 2.5.1, read nowhere: an admin could
+	 * tag a contract "signed" and no search on the site would find it.
+	 *
+	 * Deliberately owner-scoped, and the caller must pass the searching member's
+	 * own id. A tag is an organiser's label, often internal ("contracts",
+	 * "signed", a client name); matching it in a site-wide or public search would
+	 * turn those labels into terms anyone could guess to surface documents.
+	 * Inside your own drive there is no such exposure - you set them.
+	 *
+	 * Matches the term NAME or SLUG, so "contract" finds the "contracts" tag.
+	 * Bounded like `document_title_candidates()` for the same reason: this feeds
+	 * a ranked candidate list, not a listing anyone pages through.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $query     Search phrase. Escaped for LIKE here, not by callers.
+	 * @param int    $author_id Owner whose documents may match. Required.
+	 * @param int    $limit     Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_tag_candidates( string $query, int $author_id, int $limit = 50 ): array {
+		global $wpdb;
+
+		$query     = trim( $query );
+		$author_id = (int) $author_id;
+
+		if ( '' === $query || $author_id <= 0 ) {
+			return array();
+		}
+
+		$limit = max( 1, min( 500, $limit ) );
+		$like  = '%' . $wpdb->esc_like( $query ) . '%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT m.media_id
+				   FROM {$wpdb->term_relationships} tr
+				   INNER JOIN {$wpdb->term_taxonomy} tt
+				           ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = 'mvs_tag'
+				   INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+				   INNER JOIN {$wpdb->prefix}mvs_media_index m ON m.media_id = tr.object_id
+				  WHERE m.media_type = 'document'
+				    AND m.status = 'publish'
+				    AND m.post_author = %d
+				    AND ( t.name LIKE %s OR t.slug LIKE %s )
+				  ORDER BY m.created_at DESC
+				  LIMIT %d",
+				$author_id,
+				$like,
 				$like,
 				$limit
 			)
@@ -1720,7 +1821,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at, folder_id, drive_type, drive_id
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -1818,7 +1919,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -1891,122 +1992,26 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type int    $per_page  Default 50.
 	 *     @type int    $page      Default 1.
 	 *     @type string $status    publish|trash. Default publish.
+	 *     @type array  $visible_to Optional viewer spec from Pro's PermissionService
+	 *                              (see document_visibility_clause()). When given,
+	 *                              rows AND total are limited to what that viewer
+	 *                              may see, in the same two queries.
 	 * }
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function drive_documents( array $args = array() ): array {
 		global $wpdb;
 
-		$author    = isset( $args['author'] ) ? (int) $args['author'] : 0;
-		$folder_id = isset( $args['folder_id'] ) ? (int) $args['folder_id'] : 0;
-
-		// `status` is an ALLOWLIST, not a passthrough — it lands in an indexed
-		// column of a query a member controls through the URL. The trash view is
-		// the only caller that asks for anything but `publish`, and it asks for a
-		// listing the member can restore from: without one, trashing is a one-way
-		// door and the row is simply gone from every surface they have.
-		$status   = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
-			? (string) $args['status']
-			: 'publish';
 		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
 		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
 
-		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+		list( $where, $params ) = $this->drive_documents_scope( $args );
 
-		// `any_folder` spans the whole drive rather than one folder — what a
-		// "Recent" view needs, since recency is a property of the document and
-		// not of where it happens to be filed.
-		//
-		// INDEX REALITY, re-measured 2026-08-19 on a 30,000-document fixture
-		// after the soft spot this comment used to describe was closed.
-		//
-		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY.
-		//
-		// INSIDE A FOLDER there is no drive predicate — the folder already
-		// scoped the drive — so the query is `media_type`, `folder_id`,
-		// `status`, `created_at`, which is `KEY doc_listing` verbatim. That is
-		// why doc_listing is NOT redundant now that drive_listing exists, and
-		// must not be dropped: drive_listing has `drive_type`/`drive_id` at
-		// positions 2 and 3, so a folder listing that does not name a drive
-		// cannot use it past `media_type`.
-		//
-		// AT THE DRIVE ROOT the drive predicate makes the query `media_type`,
-		// `drive_type`, `drive_id`, `folder_id`, `status`, `created_at` —
-		// `KEY drive_listing` verbatim. Measured: 234 rows examined at 100%
-		// filtered, against 8,032 at 1.38% before.
-		//
-		// `any_folder` (the Recent view) drops `folder_id`, so it reads
-		// drive_listing's first three columns and then stops — indexed, but not
-		// the clean left-to-right read the other two get. That is the remaining
-		// soft spot and it is a much smaller one: the drive scope is applied by
-		// the index rather than by a post-filter over the whole document table.
-		$any_folder = ! empty( $args['any_folder'] );
-		$where      = $any_folder
-			? array( $type_sql, 'status = %s' )
-			: array( $type_sql, 'folder_id = %d', 'status = %s' );
-		$params     = $any_folder
-			? array_merge( $type_params, array( $status ) )
-			: array_merge( $type_params, array( $folder_id, $status ) );
+		if ( isset( $args['visible_to'] ) && is_array( $args['visible_to'] ) ) {
+			list( $visible_sql, $visible_params ) = $this->document_visibility_clause( $args['visible_to'] );
 
-		// ROOT SCOPING IS THE DRIVE, NOT THE AUTHOR (Phase 11 G1).
-		//
-		// This used to read `post_author = %d`, which worked only because a
-		// personal drive's owner and its documents' uploader are the same person.
-		// That coincidence is exactly what made a Space-root upload impossible:
-		// filed by a member, it would list under THEM rather than under the
-		// Space. `post_author` goes back to meaning only "who uploaded this".
-		//
-		// `drive_id = 0` is carried alongside for rows Migrator v29's bounded
-		// backfill has not reached yet — on those the author IS the drive, so
-		// falling back to it is correct rather than merely tolerant, and a
-		// half-migrated site lists exactly what it listed before.
-		$drive_type = isset( $args['drive_type'] ) ? (string) $args['drive_type'] : 'user';
-		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
-
-		if ( ( $any_folder || 0 === $folder_id ) && $drive_id > 0 ) {
-			// THE `OR` IS TEMPORARY, AND IT COSTS THE INDEX WHILE IT LASTS.
-			//
-			// Measured 2026-08-19 on a 30,000-document fixture: with the OR in
-			// place the optimiser SEES `drive_listing` in `possible_keys` and
-			// refuses it, falling back to `doc_listing` — 8,032 rows examined
-			// at 1.38% filtered for one page at OFFSET 1000. An OR cannot
-			// satisfy positions 2 and 3 of a composite index, so the six-column
-			// index v29 added was paying write cost on the hottest table in the
-			// product and serving nothing.
-			//
-			// The second branch exists only for rows Migrator v29's bounded
-			// backfill has not stamped yet. Once the backfill reports finished
-			// there are none, so the predicate collapses to the drive alone and
-			// `drive_listing` matches left-to-right — which is what §12 has
-			// claimed all along.
-			//
-			// Rows the backfill SKIPS are not lost by this: it skips only
-			// `post_author <= 0`, and the legacy branch could never match those
-			// either (it needs `post_author = %d` with a real author). An
-			// ownerless row belongs to no personal drive, so listing it under
-			// one was never right.
-			if ( self::drive_backfill_finished() ) {
-				$where[]  = 'drive_type = %s';
-				$where[]  = 'drive_id = %d';
-				$params[] = $drive_type;
-				$params[] = $drive_id;
-			} else {
-				$where[]  = '( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )';
-				$params[] = $drive_id;
-				$params[] = $drive_type;
-				$params[] = $author > 0 ? $author : $drive_id;
-			}
-		}
-
-		// A drive with 2,000 documents is unusable without a way to narrow it and
-		// a way to reorder it — big-site checklist item 5. Both run on indexed
-		// columns, and the sort column comes from a fixed allowlist because a
-		// column name cannot be a prepared parameter.
-		if ( ! empty( $args['doc_type'] ) ) {
-			list( $mime_sql, $mime_params ) = $this->document_type_clause( (string) $args['doc_type'] );
-
-			$where[] = $mime_sql;
-			$params  = array_merge( $params, $mime_params );
+			$where[] = $visible_sql;
+			$params  = array_merge( $params, $visible_params );
 		}
 
 		$sortable = array( 'created_at', 'title', 'file_size' );
@@ -2050,7 +2055,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, drive_type, drive_id, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY {$orderby} {$order}
+				  ORDER BY {$orderby} {$order}, media_id {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
@@ -2062,6 +2067,362 @@ class MediaRepository implements MediaRepositoryInterface {
 			'total' => $total,
 			'pages' => (int) ceil( $total / $per_page ),
 		);
+	}
+
+	/**
+	 * The WHERE parts that pick a drive listing's rows, before any viewer filter.
+	 *
+	 * Shared by drive_documents() and drive_document_facets() so the facets are
+	 * computed over exactly the rows the listing pages through.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array $args drive_documents() args.
+	 * @return array{0: string[], 1: array} WHERE parts and their params, in placeholder order.
+	 */
+	private function drive_documents_scope( array $args ): array {
+		global $wpdb;
+
+		$author    = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$folder_id = isset( $args['folder_id'] ) ? (int) $args['folder_id'] : 0;
+
+		// `status` is an ALLOWLIST, not a passthrough — it lands in an indexed
+		// column of a query a member controls through the URL. The trash view is
+		// the only caller that asks for anything but `publish`, and it asks for a
+		// listing the member can restore from: without one, trashing is a one-way
+		// door and the row is simply gone from every surface they have.
+		$status = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
+			? (string) $args['status']
+			: 'publish';
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		// `any_folder` spans the whole drive rather than one folder — what a
+		// "Recent" view needs, since recency is a property of the document and
+		// not of where it happens to be filed.
+		//
+		// INDEX REALITY, re-measured 2026-08-19 on a 30,000-document fixture
+		// after the soft spot this comment used to describe was closed.
+		//
+		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY.
+		//
+		// INSIDE A FOLDER there is no drive predicate — the folder already
+		// scoped the drive — so the query is `media_type`, `folder_id`,
+		// `status`, `created_at`, which is `KEY doc_listing` verbatim. That is
+		// why doc_listing is NOT redundant now that drive_listing exists, and
+		// must not be dropped: drive_listing has `drive_type`/`drive_id` at
+		// positions 2 and 3, so a folder listing that does not name a drive
+		// cannot use it past `media_type`.
+		//
+		// AT THE DRIVE ROOT the drive predicate makes the query `media_type`,
+		// `drive_type`, `drive_id`, `folder_id`, `status`, `created_at` —
+		// `KEY drive_listing` verbatim. Measured: 234 rows examined at 100%
+		// filtered, against 8,032 at 1.38% before.
+		//
+		// `any_folder` (the Recent view) drops `folder_id`, so it reads
+		// drive_listing's first three columns and then stops — indexed, but not
+		// the clean left-to-right read the other two get. That is the remaining
+		// soft spot and it is a much smaller one: the drive scope is applied by
+		// the index rather than by a post-filter over the whole document table.
+		$any_folder = ! empty( $args['any_folder'] );
+		$drive_type = isset( $args['drive_type'] ) ? (string) $args['drive_type'] : 'user';
+		$drive_id   = isset( $args['drive_id'] ) ? (int) $args['drive_id'] : $author;
+
+		// A SPACE ROOT carries its folder predicate INSIDE the drive clause below,
+		// not here: a document LINKED into the space keeps the `folder_id` of its
+		// HOME drive, so a global `folder_id = 0` dropped every linked file that
+		// happens to be filed in a folder at home — listed nowhere in the space,
+		// yet openable there by id.
+		$space_root = ! $any_folder && 0 === $folder_id && 'space' === $drive_type && $drive_id > 0;
+		$where      = ( $any_folder || $space_root )
+			? array( $type_sql, 'status = %s' )
+			: array( $type_sql, 'folder_id = %d', 'status = %s' );
+		$params     = ( $any_folder || $space_root )
+			? array_merge( $type_params, array( $status ) )
+			: array_merge( $type_params, array( $folder_id, $status ) );
+
+		// ROOT SCOPING IS THE DRIVE, NOT THE AUTHOR (Phase 11 G1).
+		//
+		// This used to read `post_author = %d`, which worked only because a
+		// personal drive's owner and its documents' uploader are the same person.
+		// That coincidence is exactly what made a Space-root upload impossible:
+		// filed by a member, it would list under THEM rather than under the
+		// Space. `post_author` goes back to meaning only "who uploaded this".
+		//
+		// `drive_id = 0` is carried alongside for rows Migrator v29's bounded
+		// backfill has not reached yet — on those the author IS the drive, so
+		// falling back to it is correct rather than merely tolerant, and a
+		// half-migrated site lists exactly what it listed before.
+		if ( ( $any_folder || 0 === $folder_id ) && $drive_id > 0 ) {
+			// THE `OR` IS TEMPORARY, AND IT COSTS THE INDEX WHILE IT LASTS.
+			//
+			// Measured 2026-08-19 on a 30,000-document fixture: with the OR in
+			// place the optimiser SEES `drive_listing` in `possible_keys` and
+			// refuses it, falling back to `doc_listing` — 8,032 rows examined
+			// at 1.38% filtered for one page at OFFSET 1000. An OR cannot
+			// satisfy positions 2 and 3 of a composite index, so the six-column
+			// index v29 added was paying write cost on the hottest table in the
+			// product and serving nothing.
+			//
+			// The second branch exists only for rows Migrator v29's bounded
+			// backfill has not stamped yet. Once the backfill reports finished
+			// there are none, so the predicate collapses to the drive alone and
+			// `drive_listing` matches left-to-right — which is what §12 has
+			// claimed all along.
+			//
+			// Rows the backfill SKIPS are not lost by this: it skips only
+			// `post_author <= 0`, and the legacy branch could never match those
+			// either (it needs `post_author = %d` with a real author). An
+			// ownerless row belongs to no personal drive, so listing it under
+			// one was never right.
+			if ( 'space' === $drive_type ) {
+				// A SPACE DRIVE LISTS TWO SETS AS ONE: the documents whose HOME is
+				// this space, plus documents linked in from another home drive via
+				// mvs_media_spaces (a member adding an existing file to this space).
+				// The link is what lets one file appear in several spaces without a
+				// copy — see Migrator v33 / MediaSpaceRepository.
+				//
+				// The subquery costs the drive index the same way the legacy OR
+				// above does, and for the same reason (an OR/IN can't satisfy the
+				// composite left-to-right). Accepted here: a space drive is a
+				// bounded, human-sized library (one community's files), not the
+				// whole-site personal-drive hot path the index comment agonises
+				// over. mvs_media_spaces.space_id is indexed, so the inner lookup
+				// is a key read.
+				// ponytail: correlated subquery per space-root listing; denormalise
+				// a space_id column onto the index if a single space ever grows past
+				// what this comfortably scans.
+				//
+				// The folder predicate applies to the NATIVE set only (see
+				// $space_root above): a linked file sits at the space root
+				// whatever folder it is filed in at home.
+				//
+				// Linked files join the LIVE listing only. `status` above already
+				// keeps a linked file its owner trashed out of the live view; the
+				// trash view is the space's OWN bin, and a file trashed on its
+				// owner's drive is theirs to restore there, not the space's.
+				$native   = $space_root
+					? '( drive_type = %s AND drive_id = %d AND folder_id = 0 )'
+					: '( drive_type = %s AND drive_id = %d )';
+				$params[] = $drive_type;
+				$params[] = $drive_id;
+
+				if ( 'publish' === $status ) {
+					$spaces_tbl = $wpdb->prefix . 'mvs_media_spaces';
+					$where[]    = "( {$native} OR media_id IN ( SELECT media_id FROM {$spaces_tbl} WHERE space_id = %d ) )";
+					$params[]   = $drive_id;
+				} else {
+					$where[] = $native;
+				}
+			} elseif ( self::drive_backfill_finished() ) {
+				$where[]  = 'drive_type = %s';
+				$where[]  = 'drive_id = %d';
+				$params[] = $drive_type;
+				$params[] = $drive_id;
+			} else {
+				$where[]  = '( ( drive_id = %d AND drive_type = %s ) OR ( drive_id = 0 AND post_author = %d ) )';
+				$params[] = $drive_id;
+				$params[] = $drive_type;
+				$params[] = $author > 0 ? $author : $drive_id;
+			}
+		}
+
+		// A drive with 2,000 documents is unusable without a way to narrow it and
+		// a way to reorder it — big-site checklist item 5. Both run on indexed
+		// columns, and the sort column comes from a fixed allowlist because a
+		// column name cannot be a prepared parameter.
+		if ( ! empty( $args['doc_type'] ) ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( (string) $args['doc_type'] );
+
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
+		}
+
+		return array( $where, $params );
+	}
+
+	/**
+	 * SQL for "the drive a row's `space` privacy is judged against".
+	 *
+	 * Mirrors Pro's PermissionService::drive_from_row(): the row's own drive
+	 * columns when both are set, else (folder_id, post_author) so the caller can
+	 * resolve the folder's drive, or the author's personal drive when the folder
+	 * is gone. Four columns so the caller's answer is matched as a tuple.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return string Comma-separated select list / row-constructor body.
+	 */
+	private static function space_drive_tuple_sql(): string {
+		$has = "( drive_type <> '' AND drive_id > 0 )";
+
+		return "CASE WHEN {$has} THEN drive_type ELSE '' END, CASE WHEN {$has} THEN drive_id ELSE 0 END, CASE WHEN {$has} THEN 0 ELSE folder_id END, CASE WHEN {$has} THEN 0 ELSE post_author END";
+	}
+
+	/**
+	 * Viewer-visibility WHERE clause for drive_documents().
+	 *
+	 * Free applies it; Pro decides it. Every input is a plain value Pro's
+	 * PermissionService computed for ONE viewer on ONE listing, so the privacy
+	 * ladder stays in Pro and this only turns its answer into an OR of indexed
+	 * or bounded predicates. A row matches when ANY of these holds:
+	 *
+	 * - `author`   the viewer uploaded it;
+	 * - `privacy`  its privacy value is open to this viewer on its own;
+	 * - `drives`   its privacy is `space` and the drive it is judged against
+	 *              (space_drive_tuple_sql()) is one of these tuples;
+	 * - `grantee`  the viewer, or one of their roles, holds a live document grant;
+	 * - `folders`  it sits in a folder whose ancestor chain carries a grant;
+	 * - `spaces`   it is linked into a space the viewer is a member of;
+	 * - `media`    it is one of these ids (a presented share link).
+	 *
+	 * An empty spec matches nothing: fail closed.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param array $spec {
+	 *     @type int      $author  Viewer id, 0 for none.
+	 *     @type string[] $privacy Privacy values visible without anything else.
+	 *     @type array[]  $drives  [drive_type, drive_id, folder_id, author] tuples.
+	 *     @type array    $grantee { @type int $user_id, @type string[] $roles }.
+	 *     @type int[]    $folders Folder ids.
+	 *     @type int[]    $spaces  Space ids.
+	 *     @type int[]    $media   Media ids.
+	 * }
+	 * @return array{0: string, 1: array} SQL fragment and params.
+	 */
+	private function document_visibility_clause( array $spec ): array {
+		global $wpdb;
+
+		$index  = $wpdb->prefix . 'mvs_media_index';
+		$or     = array();
+		$params = array();
+
+		$in = static function ( array $values, string $format ): string {
+			return implode( ', ', array_fill( 0, count( $values ), $format ) );
+		};
+
+		if ( ! empty( $spec['author'] ) ) {
+			$or[]     = 'post_author = %d';
+			$params[] = (int) $spec['author'];
+		}
+
+		$privacy = array_values( array_filter( array_map( 'strval', (array) ( $spec['privacy'] ?? array() ) ) ) );
+		if ( $privacy ) {
+			$or[]   = 'privacy IN ( ' . $in( $privacy, '%s' ) . ' )';
+			$params = array_merge( $params, $privacy );
+		}
+
+		$drives = array_values( (array) ( $spec['drives'] ?? array() ) );
+		if ( $drives ) {
+			$or[] = "( privacy = 'space' AND ( " . self::space_drive_tuple_sql() . ' ) IN ( ' . $in( $drives, '( %s, %d, %d, %d )' ) . ' ) )';
+			foreach ( $drives as $drive ) {
+				$drive    = array_values( (array) $drive );
+				$params[] = (string) ( $drive[0] ?? '' );
+				$params[] = (int) ( $drive[1] ?? 0 );
+				$params[] = (int) ( $drive[2] ?? 0 );
+				$params[] = (int) ( $drive[3] ?? 0 );
+			}
+		}
+
+		$grantee_id = (int) ( $spec['grantee']['user_id'] ?? 0 );
+		if ( $grantee_id > 0 ) {
+			$grants = $wpdb->prefix . 'mvs_access_grants';
+
+			list( $grantee_sql, $grantee_params ) = $this->grantee_clause( $grantee_id, (array) ( $spec['grantee']['roles'] ?? array() ) );
+
+			// `target` (target_type, media_id) serves the correlated lookup.
+			$or[]   = "EXISTS ( SELECT 1 FROM {$grants} g WHERE g.target_type = 'media' AND g.media_id = {$index}.media_id AND {$grantee_sql} AND g.revoked_at IS NULL AND ( g.expires_at IS NULL OR g.expires_at > %s ) )";
+			$params = array_merge( $params, $grantee_params, array( current_time( 'mysql', true ) ) );
+		}
+
+		$folders = array_values( array_filter( array_map( 'intval', (array) ( $spec['folders'] ?? array() ) ) ) );
+		if ( $folders ) {
+			$or[]   = 'folder_id IN ( ' . $in( $folders, '%d' ) . ' )';
+			$params = array_merge( $params, $folders );
+		}
+
+		$spaces = array_values( array_filter( array_map( 'intval', (array) ( $spec['spaces'] ?? array() ) ) ) );
+		if ( $spaces ) {
+			$links  = $wpdb->prefix . 'mvs_media_spaces';
+			$or[]   = "{$index}.media_id IN ( SELECT l.media_id FROM {$links} l WHERE l.space_id IN ( " . $in( $spaces, '%d' ) . ' ) )';
+			$params = array_merge( $params, $spaces );
+		}
+
+		$media = array_values( array_filter( array_map( 'intval', (array) ( $spec['media'] ?? array() ) ) ) );
+		if ( $media ) {
+			$or[]   = "{$index}.media_id IN ( " . $in( $media, '%d' ) . ' )';
+			$params = array_merge( $params, $media );
+		}
+
+		return array( $or ? '( ' . implode( ' OR ', $or ) . ' )' : '1 = 0', $params );
+	}
+
+	/**
+	 * What a viewer's permission on a drive listing depends on, in bounded form.
+	 *
+	 * Pro cannot decide `space` privacy or a space link in SQL: both ask the
+	 * BuddyNext bridge per drive. So it asks per DISTINCT drive, folder and
+	 * linked space among the listing's rows — a handful however large the drive
+	 * is — and hands the answers back to drive_documents() as `visible_to`.
+	 * One DISTINCT query per facet asked for, over the same scope the listing uses.
+	 *
+	 * @since 2.5.1
+	 *
+	 * `$skip_author` leaves out the viewer's own rows: the spec's `author` rung
+	 * already admits them, so they widen nothing, and on the viewer's own drive
+	 * (all theirs, the common case) every facet then comes back empty.
+	 *
+	 * @param array    $args        drive_documents() args.
+	 * @param string[] $want        Any of `drives`, `folders`, `spaces`.
+	 * @param int      $skip_author Viewer whose own rows need no facet; 0 for none.
+	 * @return array{drives: array[], folders: int[], spaces: int[]}
+	 */
+	public function drive_document_facets( array $args, array $want = array( 'drives', 'folders', 'spaces' ), int $skip_author = 0 ): array {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$out   = array(
+			'drives'  => array(),
+			'folders' => array(),
+			'spaces'  => array(),
+		);
+
+		list( $where, $params ) = $this->drive_documents_scope( $args );
+
+		if ( $skip_author > 0 ) {
+			$where[]  = 'post_author <> %d';
+			$params[] = $skip_author;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		if ( in_array( 'drives', $want, true ) ) {
+			// The values are bound; only the table name and the placeholder
+			// fragment built above are interpolated.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$mvs_drive_sql = $wpdb->prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . " FROM {$index} WHERE {$where_sql} AND privacy = 'space'", ...$params );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$rows          = (array) $wpdb->get_results( $mvs_drive_sql, ARRAY_N );
+
+			foreach ( $rows as $row ) {
+				$out['drives'][] = array( (string) $row[0], (int) $row[1], (int) $row[2], (int) $row[3] );
+			}
+		}
+
+		if ( in_array( 'folders', $want, true ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$out['folders'] = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT folder_id FROM {$index} WHERE {$where_sql} AND folder_id > 0", ...$params ) ) );
+		}
+
+		if ( in_array( 'spaces', $want, true ) ) {
+			$links = $wpdb->prefix . 'mvs_media_spaces';
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$out['spaces'] = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT space_id FROM {$links} WHERE media_id IN ( SELECT media_id FROM {$index} WHERE {$where_sql} )", ...$params ) ) );
+		}
+
+		return $out;
 	}
 
 	/**
@@ -2084,15 +2445,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// Params are appended in PLACEHOLDER ORDER. Building them out of order and
 		// splicing one back into position works right up until somebody adds a
 		// clause, and a misaligned prepare() is a silent wrong-answer bug.
-		$grantee_sql = '( ( g.grantee_type = %s AND g.user_id = %d )';
-		$params      = array( 'user', $user_id );
-
-		if ( $roles ) {
-			$grantee_sql .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
-			$params[]     = 'role';
-			$params       = array_merge( $params, $roles );
-		}
-		$grantee_sql .= ' )';
+		list( $grantee_sql, $params ) = $this->grantee_clause( $user_id, $roles );
 
 		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
 		// legitimately made to a role, and the uploader usually holds that role
@@ -2116,6 +2469,31 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params[] = $user_id;
 
 		return array( $where, $params );
+	}
+
+	/**
+	 * "This grant row is held by this viewer": the user directly, or a role they hold.
+	 *
+	 * Grants table alias `g`. Shared by "shared with me" and the drive listing's
+	 * visibility clause so the two cannot disagree about who a grant belongs to.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int      $user_id Viewer.
+	 * @param string[] $roles   The viewer's roles.
+	 * @return array{0: string, 1: array} SQL fragment and params.
+	 */
+	private function grantee_clause( int $user_id, array $roles ): array {
+		$roles  = array_values( array_map( 'strval', $roles ) );
+		$sql    = '( ( g.grantee_type = %s AND g.user_id = %d )';
+		$params = array( 'user', $user_id );
+
+		if ( $roles ) {
+			$sql   .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
+			$params = array_merge( $params, array( 'role' ), $roles );
+		}
+
+		return array( $sql . ' )', $params );
 	}
 
 	/**
@@ -2772,32 +3150,70 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function query_public_cloud_candidates( int $limit, bool $local_url_only = false ): array {
 		global $wpdb;
 
-		$limit = max( 1, $limit );
+		list( $where, $params ) = $this->public_cloud_candidate_where( $local_url_only, false );
+		$params[]               = max( 1, $limit );
 
-		if ( $local_url_only ) {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index
-					WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url LIKE %s
-					ORDER BY media_id ASC LIMIT %d",
-					'http%/wp-content/uploads/%',
-					$limit
-				),
-				ARRAY_A
-			);
-		} else {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index
-					WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public'
-					ORDER BY media_id ASC LIMIT %d",
-					$limit
-				),
-				ARRAY_A
-			);
-		}
+		$sql = "SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index WHERE " . implode( ' AND ', $where ) . ' ORDER BY media_id ASC LIMIT %d';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$params ), ARRAY_A );
 
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * The one predicate behind the cloud-candidate list and its count.
+	 *
+	 * Excludes local-only trees (`mvs_local_only_path_prefixes`, e.g. Pro
+	 * documents): they never go to a media cloud driver, and listing them made
+	 * "Migrate all" hand a public document to CloudOps, which rewrote its URL
+	 * to the CDN and deleted its only copy (2.5.1). A prefix NOT LIKE is a
+	 * residual filter on rows the status/privacy predicate already selected,
+	 * so the keyed walk stays index-driven.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param bool $local_url_only Restrict to rows still pointing at local uploads.
+	 * @param bool $invert         With $local_url_only, rows NOT pointing there.
+	 * @return array{0:string[],1:array} WHERE fragments and bound params.
+	 */
+	private function public_cloud_candidate_where( bool $local_url_only, bool $invert ): array {
+		$where  = array( "status IN ('publish','draft')", 'file_path IS NOT NULL', "file_path != ''", 'privacy = %s' );
+		$params = array( 'public' );
+
+		foreach ( self::local_only_like_patterns() as $pattern ) {
+			$where[]  = 'file_path NOT LIKE %s';
+			$params[] = $pattern;
+		}
+
+		if ( $local_url_only ) {
+			$where[]  = $invert ? 'file_url NOT LIKE %s' : 'file_url LIKE %s';
+			$params[] = 'http%/wp-content/uploads/%';
+		}
+
+		return array( $where, $params );
+	}
+
+	/**
+	 * LIKE patterns matching every local-only tree, one per declared prefix.
+	 *
+	 * Shared by the cloud-candidate predicate and query()'s
+	 * `exclude_local_only`, so the list and the panel total cannot disagree
+	 * about what a document path looks like.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return string[] e.g. array( 'wpmediaverse-documents/%' ).
+	 */
+	private static function local_only_like_patterns(): array {
+		global $wpdb;
+
+		return array_map(
+			static function ( $prefix ) use ( $wpdb ) {
+				return $wpdb->esc_like( $prefix . '/' ) . '%';
+			},
+			\WPMediaVerse\Services\LocalDriver::local_only_prefixes()
+		);
 	}
 
 	/**
@@ -2827,13 +3243,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function count_public_cloud_candidates( bool $local_url_only = false, bool $invert = false ): int {
 		global $wpdb;
 
-		$where  = array( "status IN ('publish','draft')", 'file_path IS NOT NULL', "file_path != ''", 'privacy = %s' );
-		$params = array( 'public' );
-
-		if ( $local_url_only ) {
-			$where[]  = $invert ? 'file_url NOT LIKE %s' : 'file_url LIKE %s';
-			$params[] = 'http%/wp-content/uploads/%';
-		}
+		list( $where, $params ) = $this->public_cloud_candidate_where( $local_url_only, $invert );
 
 		$sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE " . implode( ' AND ', $where );
 
@@ -2867,7 +3277,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string[] $where    WHERE fragments, already filtered.
 	 *     @type array    $params   Bound parameters for those fragments.
 	 *     @type string   $join     Extra JOIN fragments, or ''.
-	 *     @type string   $orderby  date|trending|popular.
+	 *     @type string   $orderby  date|trending|popular|created_at|title|views.
+	 *     @type string   $order    asc|desc (created_at/title/views). Default desc.
 	 *     @type int      $per_page Page size.
 	 *     @type int      $offset   Page offset.
 	 * }
@@ -2880,6 +3291,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params   = isset( $args['params'] ) && is_array( $args['params'] ) ? $args['params'] : array();
 		$join     = isset( $args['join'] ) ? (string) $args['join'] : '';
 		$orderby  = isset( $args['orderby'] ) ? (string) $args['orderby'] : '';
+		$order    = ( isset( $args['order'] ) && 'asc' === strtolower( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
 		$per_page = max( 1, (int) ( $args['per_page'] ?? 20 ) );
 		$offset   = max( 0, (int) ( $args['offset'] ?? 0 ) );
 
@@ -2916,8 +3328,18 @@ class MediaRepository implements MediaRepositoryInterface {
 				WHERE {$where_sql}
 				ORDER BY COALESCE(s.views, 0) DESC
 				LIMIT %d OFFSET %d";
+		} elseif ( 'views' === $orderby ) {
+			$data_sql = "SELECT i.media_id
+				FROM {$index} i
+				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
+				WHERE {$where_sql}
+				ORDER BY COALESCE(s.views, 0) {$order}, i.media_id {$order}
+				LIMIT %d OFFSET %d";
+		} elseif ( 'title' === $orderby ) {
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.title {$order}, i.media_id {$order} LIMIT %d OFFSET %d";
 		} else {
-			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d";
+			// date (the default) and created_at: newest first unless asc is asked for.
+			$data_sql = "SELECT i.media_id FROM {$index} i{$join} WHERE {$where_sql} ORDER BY i.created_at {$order}, i.media_id {$order} LIMIT %d OFFSET %d";
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -3040,6 +3462,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *                                     hide flagged/pending items.
 	 *     @type int    $limit             Max rows. Default 20.
 	 *     @type int    $offset            Pagination offset. Default 0.
+	 *     @type array  $media_types       Which library. Default null, meaning
+	 *                                     query()'s own default. Pass
+	 *                                     MediaTypes::DOCUMENTS for a document
+	 *                                     listing.
 	 * }
 	 * @return array<int, array> Numerically-indexed list of media rows.
 	 */
@@ -3051,8 +3477,17 @@ class MediaRepository implements MediaRepositoryInterface {
 				'moderation_status' => '',
 				'limit'             => 20,
 				'offset'            => 0,
+				'orderby'           => 'created_at',
+				'order'             => 'DESC',
 				'viewer_id'         => null,  // null => get_current_user_id()
 				'include_private'   => false, // owner/admin opt-in to see ALL
+				// null => let query() apply its own default (MEDIA_LIBRARY).
+				// This used to be absent entirely, so a caller asking for
+				// documents was handed images instead - silently, because an
+				// unknown key was dropped on the way to query(). Measured:
+				// query_by_author( media_types => ['document'] ) returned one
+				// row, of type image. Basecamp 10297845497.
+				'media_types'       => null,
 			)
 		);
 
@@ -3069,17 +3504,46 @@ class MediaRepository implements MediaRepositoryInterface {
 		// old discoverability via the `mvs_profile_privacy_levels` filter.
 		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
 
-		return $this->query(
-			array(
-				'author_id'         => $user_id,
-				'status'            => (string) $args['status'],
-				'moderation_status' => (string) $args['moderation_status'],
-				'limit'             => (int) $args['limit'],
-				'offset'            => (int) $args['offset'],
-				'privacy'           => $privacy,
-				'viewer_id'         => $viewer,
-			)
+		$query_args = array(
+			'author_id'         => $user_id,
+			'status'            => (string) $args['status'],
+			'moderation_status' => (string) $args['moderation_status'],
+			'limit'             => (int) $args['limit'],
+			'offset'            => (int) $args['offset'],
+			'orderby'           => (string) $args['orderby'],
+			'order'             => (string) $args['order'],
+			'privacy'           => $privacy,
+			'viewer_id'         => $viewer,
 		);
+
+		// Only when asked, so a caller that says nothing lists exactly what it
+		// listed before. count_visible_by_author() forwards it on the same
+		// terms - that is what keeps the two agreeing.
+		if ( null !== $args['media_types'] ) {
+			$query_args['media_types'] = (array) $args['media_types'];
+		}
+
+		return $this->query( $query_args );
+	}
+
+	/**
+	 * Privacy mode for listing an author's media to the current (or given)
+	 * viewer: 'any' for the owner or a moderator, the viewer-aware 'profile'
+	 * gate for everyone else.
+	 *
+	 * Public so templates that build their own query() args (the Pro Flickr /
+	 * Dribbble profiles, which also need exclude_non_cover_group) apply the
+	 * same gate as query_by_author(). Without it query() defaults to 'any',
+	 * and those profiles listed the author's private items to everyone.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int      $author_id Listing author.
+	 * @param int|null $viewer_id Viewer. Null = current user.
+	 * @return string Privacy mode for query()/query_count().
+	 */
+	public function profile_privacy_mode( int $author_id, ?int $viewer_id = null ): string {
+		return $this->resolve_profile_privacy_mode( $author_id, null === $viewer_id ? get_current_user_id() : (int) $viewer_id );
 	}
 
 	/**
@@ -3098,34 +3562,108 @@ class MediaRepository implements MediaRepositoryInterface {
 		$is_owner_self = ( $author_id === $viewer ) && $viewer > 0;
 		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
 
-		return ( $is_owner_self || $include_private || $is_admin ) ? 'any' : 'profile';
+		if ( $is_owner_self || $include_private || $is_admin ) {
+			return 'any';
+		}
+
+		// HAS THE AUTHOR BLOCKED THIS VIEWER?
+		//
+		// build_query_parts() already drops authors the VIEWER blocked, and
+		// that clause is shared, so a profile listing gets it too. What it
+		// cannot cover is this pair. Blocking is one-directional
+		// (docs/website/features/user-blocking.md): here the AUTHOR blocked the
+		// viewer, so get_blocked_ids($viewer) is empty and only this check
+		// fires.
+		//
+		// It lives in this method because it is the ONE place query_by_author()
+		// and count_visible_by_author() both consult, so the grid and the "14
+		// items" above it can never disagree - and the count is itself
+		// information about content the viewer is barred from.
+		//
+		// PrivacyService::can_view() already refuses the item. That is the item;
+		// this is the list that advertises it (Basecamp 10296867415).
+		if ( $viewer > 0 && $author_id > 0 ) {
+			$mvs_container = \WPMediaVerse\Core\Plugin::container();
+			// has() before get(): the container throws on an unregistered key,
+			// and it never returns null - so a null check here would be dead.
+			// Same shape as the item-level guard in PrivacyService.php:326.
+			if ( $mvs_container->has( 'reports' )
+				&& $mvs_container->get( 'reports' )->is_blocked( $author_id, $viewer ) ) {
+				return 'none';
+			}
+		}
+
+		return 'profile';
 	}
 
 	/**
-	 * Count media visible to a viewer on an author's profile listing.
+	 * Count what a viewer is shown on an uploader's listing.
+	 *
+	 * "author" here is the MEMBER WHO UPLOADED, not a WP post author - the
+	 * whole index is keyed on post_author for storage reasons, and the name
+	 * follows the column. Renaming it is a public-surface change and belongs
+	 * in its own pass.
 	 *
 	 * Mirrors query_by_author()'s privacy-mode selection so profile tabs
 	 * count exactly the rows they list (Basecamp #9941246549 — the BP
 	 * profile media tab previously counted/listed members-only items for
 	 * logged-out visitors via its own raw SQL).
 	 *
-	 * @since 1.6.0
+	 * PRIVACY WAS THE ONLY THING IT MIRRORED. Every other filter the caller
+	 * gave its list - moderation above all - was absent here, so the number
+	 * above a grid counted rows the grid then dropped. Measured with two rows
+	 * held for moderation: count 23, list 21. It reads $args now, applies the
+	 * same defaults through the same parse as query_by_author(), and hands
+	 * them to the same query_count(). Pass the list's args and the two agree
+	 * by construction rather than by everyone remembering.
+	 * Basecamp 10297845497.
 	 *
-	 * @param int      $user_id   Author user ID.
+	 * @since 1.6.0
+	 * @since 2.4.2 Accepts $args, mirroring query_by_author().
+	 *
+	 * @param int      $user_id   Uploader user ID.
 	 * @param int|null $viewer_id Viewer user ID. Null = current user.
+	 * @param array    $args      Same shape as query_by_author()'s $args; the
+	 *                            filters that narrow WHICH rows are counted
+	 *                            (status, moderation_status, media_types,
+	 *                            include_private) are honoured. Paging and
+	 *                            ordering are meaningless for a count and are
+	 *                            ignored.
 	 * @return int
 	 */
-	public function count_visible_by_author( int $user_id, ?int $viewer_id = null ): int {
+	public function count_visible_by_author( int $user_id, ?int $viewer_id = null, array $args = array() ): int {
 		$viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 
-		return $this->query_count(
+		$args = wp_parse_args(
+			$args,
 			array(
-				'author_id' => $user_id,
-				'status'    => 'publish',
-				'privacy'   => $this->resolve_profile_privacy_mode( $user_id, $viewer ),
-				'viewer_id' => $viewer,
+				'status'            => 'publish',
+				'moderation_status' => '',
+				'media_types'       => null,
+				'include_private'   => false,
 			)
 		);
+
+		$count_args = array(
+			'author_id'         => $user_id,
+			'status'            => (string) $args['status'],
+			'moderation_status' => (string) $args['moderation_status'],
+			'privacy'           => $this->resolve_profile_privacy_mode(
+				$user_id,
+				$viewer,
+				! empty( $args['include_private'] )
+			),
+			'viewer_id'         => $viewer,
+		);
+
+		// Only when asked. Omitted, query_count() applies its own default, so
+		// a caller that says nothing keeps counting exactly what it counted
+		// before this parameter existed.
+		if ( null !== $args['media_types'] ) {
+			$count_args['media_types'] = (array) $args['media_types'];
+		}
+
+		return $this->query_count( $count_args );
 	}
 
 	/**
@@ -3137,7 +3675,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @var array<string>
 	 */
-	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count' );
+	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count', 'views' );
 
 	/**
 	 * General media-index listing query — the single place feed/profile/explore
@@ -3166,9 +3704,22 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params[] = max( 1, (int) $args['limit'] );
 		$params[] = max( 0, (int) $args['offset'] );
 
+		// Views live in mvs_media_stats; mvs_media_index.view_count is not kept
+		// up to date (0 on every row here), so a views sort must join the stats.
+		// It used to fall back to created_at silently, which made the Grid's
+		// "Views" option sort by date.
+		$sort_join = '';
+		$sort_sql  = "m.{$orderby} {$order}";
+		if ( 'views' === $orderby ) {
+			$sort_join = " LEFT JOIN {$wpdb->prefix}mvs_media_stats mvs_sort_st ON mvs_sort_st.media_id = m.media_id";
+			$sort_sql  = "COALESCE(mvs_sort_st.views, 0) {$order}";
+		}
+
 		// $parts['join']/['where'] and $orderby/$order are built from internal
 		// allowlists + fixed fragments; all caller values flow through $params.
-		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']} ORDER BY m.{$orderby} {$order} LIMIT %d OFFSET %d";
+		// media_id breaks ties so equal titles / view counts never repeat or
+		// skip an item between pages.
+		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']}{$sort_join} WHERE {$parts['where']} ORDER BY {$sort_sql}, m.media_id {$order} LIMIT %d OFFSET %d";
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
@@ -3288,6 +3839,11 @@ class MediaRepository implements MediaRepositoryInterface {
 				// FALSE is accepted for symmetry and finds index rows whose file
 				// went missing.
 				'has_file'                 => null,
+				// TRUE drops rows whose file sits in a local-only tree
+				// (`mvs_local_only_path_prefixes`, e.g. Pro documents) — rows
+				// no storage-driver operation may act on. The cloud panel
+				// counts with it so its tiles add up to its total.
+				'exclude_local_only'       => false,
 				'authors_in'               => array(),
 				'privacy_in'               => array(),
 				'mime_like_in'             => array(),
@@ -3443,6 +3999,13 @@ class MediaRepository implements MediaRepositoryInterface {
 				: "( m.file_path IS NULL OR m.file_path = '' )";
 		}
 
+		if ( ! empty( $args['exclude_local_only'] ) ) {
+			foreach ( self::local_only_like_patterns() as $pattern ) {
+				$where[]  = 'm.file_path NOT LIKE %s';
+				$params[] = $pattern;
+			}
+		}
+
 		$mvs_privacy_not = array_values( array_filter( array_map( 'strval', (array) $args['privacy_not_in'] ) ) );
 		if ( $mvs_privacy_not ) {
 			$where[] = 'm.privacy NOT IN (' . implode( ', ', array_fill( 0, count( $mvs_privacy_not ), '%s' ) ) . ')';
@@ -3510,6 +4073,36 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( '' !== $privacy_where ) {
 			$where[] = $privacy_where;
 			$params  = array_merge( $params, $privacy_params );
+		}
+
+		// Blocked members are excluded from every multi-author listing, here
+		// rather than in each caller. The exclusion used to live only in
+		// MediaController's feed query, which serves page 2 onward - so Explore
+		// page 1 (rendered server-side through this builder) still showed media
+		// from people the viewer had blocked, and page 2 did not. Same viewer,
+		// same feed, two different answers.
+		//
+		// query() and query_count() both build from these parts, so the list and
+		// the count can never disagree - which is the other half of that bug.
+		//
+		// Gated on viewer_id > 0, and that is sufficient rather than lucky:
+		// explore.php passes viewer_id 0 for anonymous visitors (public-only
+		// anyway) AND for moderators, who are meant to see everything. Single
+		// author listings DO reach this clause and depend on it: it is what
+		// empties the profile of an author the viewer themselves blocked, list
+		// and count alike (ProfileBlockListingTest). The reverse pair - the
+		// author blocked the viewer - is handled in
+		// resolve_profile_privacy_mode(), which this cannot see.
+		$mvs_viewer = (int) $args['viewer_id'];
+		if ( $mvs_viewer > 0 ) {
+			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
+				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_ids( $mvs_viewer );
+			}
+			$mvs_blocked = self::$blocked_cache[ $mvs_viewer ];
+			if ( $mvs_blocked ) {
+				$where[] = 'm.post_author NOT IN (' . implode( ',', array_fill( 0, count( $mvs_blocked ), '%d' ) ) . ')';
+				$params  = array_merge( $params, array_map( 'intval', $mvs_blocked ) );
+			}
 		}
 
 		if ( '' !== (string) $args['since'] ) {
@@ -3665,6 +4258,13 @@ class MediaRepository implements MediaRepositoryInterface {
 					"((m.privacy != 'private' OR m.post_author = %d) AND m.privacy != 'dm')",
 					array( $viewer_id ),
 				);
+			case 'none':
+				// Yields nothing, for a viewer who must not see this author's
+				// listing at all. Distinct from every other mode here: the rest
+				// narrow WHICH rows are visible, this one answers "none of
+				// them" without the caller having to skip the query and keep a
+				// separate count in step.
+				return array( '1 = 0', array() );
 			case 'any':
 			default:
 				// 'any' applies no audience filter (owner-self profile, admin /
@@ -3802,7 +4402,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$items = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				"SELECT * FROM {$table} WHERE {$where_sql} ORDER BY created_at DESC, media_id DESC LIMIT %d OFFSET %d",
 				...array_merge( $params, array( $per_page, $offset ) )
 			),
 			ARRAY_A
@@ -4298,6 +4898,43 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
+	/**
+	 * How many tags WOULD qualify for the cloud, ignoring its limit.
+	 *
+	 * The cloud is capped deliberately - core's own wp_tag_cloud() caps at 45,
+	 * and 121 chips above the grid buries the media. But a cap with no way to
+	 * reach past it reads as "tags are missing", which is exactly how it was
+	 * reported. The caller uses this to decide whether to offer a route to the
+	 * rest. Basecamp 10278224214.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param array|null $types Media types to count against, null for the library default.
+	 * @return int
+	 */
+	public function tag_cloud_total( ?array $types = null ): int {
+		global $wpdb;
+
+		$types                          = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+
+		$sql = "SELECT COUNT(*) FROM (
+				SELECT t.term_id
+				FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+				INNER JOIN {$wpdb->prefix}mvs_media_index m ON m.media_id = tr.object_id
+				WHERE {$type_sql}
+				  AND tt.taxonomy = 'mvs_tag'
+				  AND m.status = 'publish'
+				  AND m.moderation_status = 'approved'
+				GROUP BY t.term_id
+			) AS qualifying";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+		return (int) $wpdb->get_var( $type_params ? $wpdb->prepare( $sql, $type_params ) : $sql );
+	}
+
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
 		global $wpdb;
 
@@ -4316,7 +4953,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			AND m.status = 'publish'
 			AND m.moderation_status = 'approved'
 			GROUP BY t.term_id, t.name, t.slug
-			ORDER BY media_count DESC, t.name ASC
+			ORDER BY media_count DESC, MAX(m.created_at) DESC, t.name ASC
 			LIMIT %d";
 
 		$params   = $type_params;
@@ -5051,9 +5688,58 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Delete rows in a media-keyed table whose media no longer exists.
+	 *
+	 * The one orphan rule, shared by Free's Migrator v32 and Pro's v16 so the
+	 * two cannot disagree. Album and collection ids share the numeric space with
+	 * media ids, and their stats/activity rows are keyed by post id in the same
+	 * `media_id` column, so an id that is a live album or collection is NOT an
+	 * orphan. Runs in bounded chunks so a large table is never held under one
+	 * long lock.
+	 *
+	 * @param string $table Unprefixed table with a `media_id` column, e.g. 'mvs_play_events'.
+	 * @return int Rows deleted.
+	 */
+	public function delete_rows_without_media( string $table ): int {
+		global $wpdb;
+
+		// The name is interpolated into SQL, so only a plugin table shape is accepted.
+		if ( ! preg_match( '/^mvs_[a-z_]+$/', $table ) ) {
+			return 0;
+		}
+
+		$t     = $wpdb->prefix . $table;
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$total = 0;
+
+		// A migration that runs before the table it names exists is not an
+		// error: the cascade list grows with the schema, so v32 sweeps a table
+		// v33 creates, and a fresh install logs a database error on activation
+		// for a sweep that has nothing to do anyway (2.5.1).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $t ) ) !== $t ) {
+			return 0;
+		}
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$deleted = (int) $wpdb->query(
+				"DELETE FROM {$t} WHERE {$t}.media_id > 0
+				AND NOT EXISTS ( SELECT 1 FROM {$index} m WHERE m.media_id = {$t}.media_id )
+				AND NOT EXISTS ( SELECT 1 FROM {$wpdb->posts} p WHERE p.ID = {$t}.media_id AND p.post_type IN ( 'mvs_album', 'mvs_collection' ) )
+				LIMIT 5000"
+			);
+			$total  += $deleted;
+		} while ( 5000 === $deleted );
+
+		return $total;
+	}
+
+	/**
 	 * Permanently delete a media item and all related data.
 	 *
-	 * Removes rows from stats, views, meta, and index tables (in that order).
+	 * Removes the media's rows from every MEDIA_CHILD_TABLES table, then its
+	 * comments, term relationships and finally the index row.
 	 *
 	 * @param int $media_id Media ID.
 	 * @return bool Always true.
@@ -5093,17 +5779,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		$where  = array( 'media_id' => $media_id );
 		$format = array( '%d' );
 
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_views', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', $where, $format );  // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', $where, $format );   // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', $where, $format );   // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_mentions', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_notifications', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_activity', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_access_rules', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_access_grants', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		foreach ( self::MEDIA_CHILD_TABLES as $child_table ) {
+			$wpdb->delete( $wpdb->prefix . $child_table, $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		}
 		// Media comments are detached from the post-ID space (comment_post_ID = 0)
 		// and linked to the media via comment meta; delete each + its meta.
 		$mvs_comment_ids = get_comments(

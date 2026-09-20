@@ -213,8 +213,8 @@ class SettingsRegistrar {
 			'mvs_general',
 			array(
 				'option'      => 'mvs_allow_user_privacy',
-				'label'       => __( 'Allow users to choose privacy level when uploading media.', 'wpmediaverse' ),
-				'description' => __( 'When disabled, all uploads use the Default Privacy Level above. The privacy selector is hidden from users.', 'wpmediaverse' ),
+				'label'       => __( 'Allow users to choose the privacy level of their media.', 'wpmediaverse' ),
+				'description' => __( 'When disabled, all uploads use the Default Privacy Level above and members cannot change it afterwards: the privacy selector is hidden when uploading, editing and in bulk actions. Users who can manage MediaVerse settings keep the control.', 'wpmediaverse' ),
 			)
 		);
 
@@ -260,8 +260,9 @@ class SettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option' => 'mvs_strip_exif',
-				'label'  => __( 'Remove GPS and device data from uploaded images.', 'wpmediaverse' ),
+				'option'      => 'mvs_strip_exif',
+				'label'       => __( 'Remove GPS location from uploaded photos.', 'wpmediaverse' ),
+				'description' => __( 'On by default. Only the coordinates are removed - camera, lens, exposure and the copyright/credit fields stay on the photo, so a photographer keeps their metadata and their byline. Applies to new uploads and to replaced files; photos already in the library are not changed.', 'wpmediaverse' ),
 			)
 		);
 
@@ -416,9 +417,13 @@ class SettingsRegistrar {
 		// Default OFF: on a photo platform, silently re-encoding every upload from
 		// (typically) q95 down to q92 loses ~18% of the file's data on the good
 		// photos and can never improve one, so it is opt-in, not opt-out
-		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE, always-on,
-		// lossless segment-removal path (mvs_strip_exif) — turning this off does
-		// not weaken privacy.
+		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE lossless
+		// segment-removal path — turning THIS off does not weaken privacy.
+		// "always-on" was the wrong word in both this comment and the customer
+		// description: that path is independent of this setting, but it is still
+		// gated on mvs_strip_exif (UploadService::handle()), so an owner who
+		// unticks Strip EXIF Data keeps GPS in the file while a description on
+		// another tab told them removal happens always.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
@@ -436,7 +441,7 @@ class SettingsRegistrar {
 			'mvs_storage',
 			array(
 				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
-				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data happens separately and always, with no quality loss. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
+				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data is a separate, lossless step controlled by Strip EXIF Data under General - it does not depend on this setting. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
 			)
 		);
 
@@ -486,33 +491,19 @@ class SettingsRegistrar {
 			'mvs_storage',
 			array(
 				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
-				'description' => __( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. Requires a host with AVIF-capable Imagick or GD; the option will silently no-op if the server cannot encode AVIF.', 'wpmediaverse' ),
-			)
-		);
-
-		// Anonymous opt-in usage telemetry. Counter-only, local-only — no
-		// data leaves the customer's site. Helps the plugin team know
-		// which hooks / routes / commands are actually used across the
-		// fleet, so cleanup decisions in future versions can be data-driven
-		// instead of guesswork. Disabled by default.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-		FieldRenderer::add_field(
-			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
-			__( 'Help improve WPMediaVerse', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => \WPMediaVerse\Services\TelemetryService::SETTING_KEY,
-				'description' => __( 'Allow this site to record anonymous usage counters locally. Only event names are counted (e.g. "thumbnail_generated", "rest:media:GET") — never user IDs, URLs, file paths, or media content. The counters stay on this site; nothing is transmitted. The plugin team will ask you to share the counter report manually when they need data to make a backwards-compatibility decision. Disabled by default.', 'wpmediaverse' ),
+				// Answer the host question instead of warning about it. The
+				// encoder returns null and logs nothing when the server cannot
+				// encode AVIF, so a ticked box was the owner's only evidence -
+				// and on most shared hosts it was wrong. One call to the same
+				// check the encoder uses turns "requires a capable host" into
+				// "this host can" or "this host cannot".
+				'description' => sprintf(
+					/* translators: %s: a sentence stating whether this server can encode AVIF. */
+					__( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. %s', 'wpmediaverse' ),
+					\WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' )->is_avif_supported()
+						? __( 'This server can encode AVIF.', 'wpmediaverse' )
+						: __( 'This server CANNOT encode AVIF - its image library was built without it, so turning this on will produce no AVIF files. Ask your host for Imagick or GD with AVIF support.', 'wpmediaverse' )
+				),
 			)
 		);
 
@@ -583,7 +574,7 @@ class SettingsRegistrar {
 					4 => __( '4 columns', 'wpmediaverse' ),
 					5 => __( '5 columns', 'wpmediaverse' ),
 				),
-				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids.', 'wpmediaverse' ),
+				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids. Applies when Default Layout below is set to <strong>Grid - square crops</strong>. Justified rows sizes each row to fit and list shows one item per row, so neither uses a fixed column count.', 'wpmediaverse' ) . apply_filters( 'mvs_grid_columns_scope_note', '' ),
 			)
 		);
 
@@ -627,17 +618,21 @@ class SettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			'mvs_thumbnail_style',
-			__( 'Thumbnail Style', 'wpmediaverse' ),
+			// Named "Thumbnail Style" when it only chose square-vs-original. It
+			// now picks the grid layout, list included, so the label says so.
+			// The OPTION KEY is unchanged - it is on every install.
+			__( 'Default Layout', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
 			SettingsPage::PAGE_SLUG . '-display',
 			'mvs_display',
 			array(
 				'option'      => 'mvs_thumbnail_style',
 				'choices'     => array(
-					'square'   => __( 'Square (cropped)', 'wpmediaverse' ),
-					'original' => __( 'Original proportions', 'wpmediaverse' ),
+					'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
+					'original' => __( 'Justified rows - original proportions', 'wpmediaverse' ),
+					'list'     => __( 'List - one row per item', 'wpmediaverse' ),
 				),
-				'description' => __( 'Square crops images uniformly. Original preserves aspect ratios.', 'wpmediaverse' ),
+				'description' => __( 'The default layout for media grids in blocks, shortcodes, albums and collections. A block or shortcode can override it for one grid. With MediaVerse Pro, the Explore page and member profiles instead follow the Pro platform layout, which defines its own display.', 'wpmediaverse' ),
 			)
 		);
 
@@ -647,11 +642,15 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_size' ),
-				// Default 'medium' (300px): grid/feed tiles render at ~150-300px,
-				// so shipping the 1024px 'large' on every tile was 5-10x the bytes
-				// for no visible gain. Owners who want retina-crisp grids can pick
-				// 'large'/'full'; the lightbox always uses the original. (1.7.0)
-				'default'           => 'medium',
+				// Default 'large', which is what grids have actually served since
+				// 1.8.0. 1.7.0 defaulted this to 'medium' for bytes; 1.8.0 then
+				// forced every grid to 'large' because a 300px rung upscales and
+				// looks soft on HiDPI - and left the default saying 'medium'. The
+				// result was a control that could not change anything: all three
+				// choices resolved to 'large'. The forcing is gone, so the setting
+				// decides again, and the default now states the rung that has been
+				// served all along, so no existing site's rendering changes.
+				'default'           => 'large',
 			)
 		);
 		FieldRenderer::add_field(
@@ -667,7 +666,7 @@ class SettingsRegistrar {
 					'large'  => __( 'Large (1024px, retina crisp)', 'wpmediaverse' ),
 					'full'   => __( 'Full (original, highest quality)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Controls image quality on grids and feeds. Larger sizes look sharper on retina displays but load slower.', 'wpmediaverse' ),
+				'description' => __( 'Image size served in grids and feeds. Large keeps tiles crisp on high-density screens and is the default. Medium is roughly a third of the bytes and is worth trying if page weight matters more than sharpness - on a retina screen those tiles will look softer. The lightbox and single media page are unaffected; they follow Lightbox Image Size.', 'wpmediaverse' ),
 			)
 		);
 
@@ -753,7 +752,7 @@ class SettingsRegistrar {
 			'mvs_display',
 			array(
 				'option'      => 'mvs_allow_downloads',
-				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, customers can still view media but the download button is hidden everywhere.', 'wpmediaverse' ),
+				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, members can still view media, and the button is hidden on every media surface - the lightbox, the single media page and a media-library document card - while the REST download route refuses with a 403. Members can also switch it off for one item of their own. The Documents library is separate and keeps its own sharing rules: this does not close a drive.', 'wpmediaverse' ),
 			)
 		);
 	}
@@ -1097,7 +1096,7 @@ class SettingsRegistrar {
 				'option'      => 'mvs_chat_panel_visibility',
 				'choices'     => array(
 					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
-					'mvs_pages'  => __( 'WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
+					'mvs_pages'  => __( 'MediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
 					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
 					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
 				),

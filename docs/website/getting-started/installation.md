@@ -1,6 +1,6 @@
 # Installation
 
-Get WPMediaVerse running on your WordPress site in under five minutes - install, activate, and your community is ready to start uploading.
+Get MediaVerse running on your WordPress site in under five minutes - install, activate, and your community is ready to start uploading.
 
 ## Requirements
 
@@ -12,10 +12,10 @@ Get WPMediaVerse running on your WordPress site in under five minutes - install,
 ## Installing via WordPress Admin
 
 1. Go to **Plugins > Add New Plugin** in your WordPress dashboard.
-2. Search for **WPMediaVerse**.
+2. Search for **MediaVerse**.
 3. Click **Install Now**, then **Activate**.
 
-![WordPress plugin search showing WPMediaVerse install button](../images/admin-overview.png)
+![WordPress plugin search showing MediaVerse install button](../images/admin-overview.png)
 
 ## Installing via ZIP Upload
 
@@ -24,17 +24,17 @@ Get WPMediaVerse running on your WordPress site in under five minutes - install,
 3. Choose the ZIP file and click **Install Now**.
 4. Click **Activate Plugin**.
 
-![Upload plugin screen with WPMediaVerse ZIP selected](../images/admin-overview.png)
+![Upload plugin screen with MediaVerse ZIP selected](../images/admin-overview.png)
 
 ## Installing via FTP
 
 1. Unzip the downloaded archive.
 2. Upload the `wpmediaverse` folder to `/wp-content/plugins/`.
-3. Go to **Plugins** in your dashboard and activate **WPMediaVerse**.
+3. Go to **Plugins** in your dashboard and activate **MediaVerse**.
 
 ## What Happens on Activation
 
-When you activate WPMediaVerse, the plugin automatically:
+When you activate MediaVerse, the plugin automatically:
 
 - Creates custom database tables for media index, stats, reactions, comments, favorites, follows, conversations, messages, collections, access grants, and webhooks - all separate from wp_posts for maximum performance.
 - Registers the `mvs_album` and `mvs_collection` custom post types (media itself uses the custom `mvs_media_index` table, not wp_posts).
