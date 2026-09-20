@@ -1,0 +1,796 @@
+{
+  "_doc": [
+    "Declared authority for every registered REST route. RouteAuthorityTest walks the live",
+    "registry and fails when a route is missing here, so a new route cannot ship without",
+    "someone stating who may reach it.",
+    "audience: public = anyone including signed out | member = any logged-in user |",
+    "owner = the object owner (or a moderator) | admin = a capability holder |",
+    "guarded = a custom callback that resolves authority itself.",
+    "A public route MUST carry a reason. A public route that takes an object id MUST carry",
+    "a probe naming the fixture type to test it with, or \"none\" with the reason why it cannot leak."
+  ],
+  "routes": {
+    "DELETE /mvs/v1/albums/(?P<id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::delete_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/albums/(?P<id>[\\d]+)/items/(?P<media_id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/collections/(?P<id>[\\d]+)": {
+      "audience": "owner",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CollectionController::owner_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/conversations/(?P<id>\\d+)": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/me": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccountController::auth_check",
+      "object_id": false,
+      "writes": true
+    },
+    "DELETE /mvs/v1/me/avatar": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ProfileController::check_logged_in",
+      "object_id": false,
+      "writes": true
+    },
+    "DELETE /mvs/v1/me/deletion": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccountController::auth_check",
+      "object_id": false,
+      "writes": true
+    },
+    "DELETE /mvs/v1/me/devices": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": true
+    },
+    "DELETE /mvs/v1/media/(?P<id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\MediaController::delete_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CommentController::create_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/favorite": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\FavoriteController::auth_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/reactions": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ReactionController::create_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/rules/(?P<rule_id>[\\d]+)": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/messages/(?P<id>\\d+)": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/messages/(?P<id>\\d+)/reactions": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/messages/(?P<id>\\d+)/unsend": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/tags/(?P<id>[\\d]+)": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\TagController::admin_check",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/users/(?P<id>[\\d]+)/block": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
+    "DELETE /mvs/v1/users/(?P<id>[\\d]+)/follow": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
+    "GET /mvs/v1/access/options": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::authenticated_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/ai/usage": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ModerationController::moderate_permissions_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/albums": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Public albums only. A members-only and a private album fixture were absent from every page, and a full sweep of the list showed 0 of the 2 non-public albums on the site. A stranger gets id, title, description, author id, permalink, cover, album_type and the member media id list. Caveat: that `items` array and `media_count` count members the caller may not view - see GET /albums/{id}. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path; the whole list was swept and carried no non-public album."
+    },
+    "GET /mvs/v1/albums/(?P<id>[\\d]+)": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "A public album answers 200; a members-only or private album answers 403 mvs_forbidden, a non-album id 404 mvs_not_found and an unknown id 404, so a non-public album's own title, description and cover never reach a stranger. Caveat observed, not a claim: on a PUBLIC album the payload's `items` array and `media_count` include member items whose own privacy is private or members - ids and a count, no metadata (a public album holding one public, one members-only and one private item returned items [67599,67601,67600], media_count 3). Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "album"
+    },
+    "GET /mvs/v1/albums/(?P<id>[\\d]+)/items": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "Public albums only; a private or members-only album answers 403. Items are filtered by the viewer's own access, so a public album holding a private item returns only the parts the caller may open, and X-WP-Total counts the filtered set rather than advertising what is withheld. Fixed and verified 2026-09-20: anonymous 1 of 3, member 2 of 3, owner 3 of 3.",
+      "probe": "album"
+    },
+    "GET /mvs/v1/app/config": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Site-level app bootstrap only, nothing per-user and nothing per-item: accent colour, logo/login background urls, layout, pro_active, the feature flag map, legal urls plus the owner's published abuse contact email, auth capabilities (social providers, twofactor, register, app_passwords_available, connect url/schemes), the document mime allowlist and size cap, default_privacy, the privacy-level labels, and search index counts. No keys, tokens or member data. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path and the payload is site configuration the owner publishes to the app."
+    },
+    "GET /mvs/v1/app/interests": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "A list of interest (mvs_category) terms: id, name, slug, count and a cover image url. Covers resolve to a CDN url or a signed mvs_uid=0 /serve url for a publicly viewable item. Caveat observed, not a claim: `count` is the raw term count and includes items a stranger cannot see (on the fixture site Architecture reported 5 against 3 anon-visible, Portraits 3 against 2) - an aggregate number only, no titles, owners or files. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path."
+    },
+    "GET /mvs/v1/auth/nonce": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/collections": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/collections/(?P<id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CollectionController::get_item_permissions_check",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/conversations/(?P<id>\\d+)": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/conversations/(?P<id>\\d+)/media": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/conversations/(?P<id>\\d+)/messages": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/conversations/(?P<id>\\d+)/messages/search": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/feed": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Public activity only. Sweeping every page signed out returned 80 activity rows, 69 of them carrying an embedded media object, and none referenced any of the 79 non-public media items on the site. A stranger gets the actor's display name, avatar and profile url, the activity type and text, and the embedded public media. Caveat observed, not a claim: the feed includes an item whose row status is 'draft' (privacy public), which GET /media excludes. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path; the whole feed was swept against the site's full non-public id set."
+    },
+    "GET /mvs/v1/me/blocked": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/conversations": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/deletion": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccountController::auth_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/favorites": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\FavoriteController::auth_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/followers": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/following": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/grants": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::authenticated_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/interests": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\InterestsController::logged_in_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/media": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/messages/unread-count": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/notifications": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/notifications/count": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/profile": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ProfileController::check_logged_in",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/stats": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/me/transactions": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/media": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Public, published, approved items only. Swept signed out across all pages: 56 ids, none of them among the site's 79 non-public items, and drafts and the trashed row were absent. None of status=draft, status=any, privacy=private, moderation_status=pending, tag=, author= or include=<private id> surfaced a non-public item (include of a private id returned []). Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path; the full list was swept against the site's non-public id set."
+    },
+    "GET /mvs/v1/media/(?P<id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\MediaController::get_item_permissions_check",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/media/(?P<id>[\\d]+)/access": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "A viewability answer, not content. A public item answers 200 {media_id, can_view:true, privacy, is_owner}; a members-only or private item answers 200 {media_id, can_view:false} and nothing else - no title, owner, file or stats. An unknown id answers 404 mvs_not_found. Caveat observed, not a claim: 200-vs-404 therefore confirms that an id exists, and a row whose status is draft or trash but whose privacy is public answers can_view:true. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "GET /mvs/v1/media/(?P<id>[\\d]+)/group": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "Public members of the group only. A members-only or private entry point answers 404 mvs_not_found and an unknown id 404. On a public entry point the per-member gate holds: a group seeded with one public, one members-only and one private item returned exactly one item, the public one, though group_count still reported 3. Caveat observed, not a claim: a row whose status is draft or trash but whose privacy is public answers 200 with full metadata, same as the guarded GET /media/{id} does. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/comments": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "Comments on a public item only: comment id, author id, display name, avatar, public profile url, content, parent, dates and replies. A members-only or private item answers 404 mvs_not_found, as does an unknown id, so the thread is not an existence oracle. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/favorite": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\FavoriteController::auth_check",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/reactions": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "Aggregate reaction counts on a public item only - {media_id, counts per type, total, user_reaction:null, reacted_at:null} - no reactor identities for a signed-out caller. A members-only or private item answers 404 mvs_not_found, as does an unknown id. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/rules": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/signed-url": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\SignedUrlController::get_signed_url_permissions_check",
+      "object_id": true,
+      "writes": false
+    },
+    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/stats": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "Counters on a public item only: views, downloads, reactions, comments, shares and updated_at. A members-only or private item answers 403 mvs_forbidden and an unknown id 404 mvs_not_found - no title, owner or file either way. Caveat observed, not a claim: 403-vs-404 therefore confirms that an id exists. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "GET /mvs/v1/messages/poll": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/moderation": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ModerationController::moderate_permissions_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/moderation/counts": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ModerationController::moderate_permissions_check",
+      "object_id": false,
+      "writes": false
+    },
+    "GET /mvs/v1/serve": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "The HMAC signature in the query string is the credential, so there is nothing for a session to authorise. Missing mvs_id/mvs_uid/mvs_exp/mvs_sig answers 400; a forged signature and an expired one both answer 'Invalid or expired signed URL'; a valid owner-minted URL replayed by a signed-out caller still re-checks privacy and answered 'Access denied.' for a private item. A stranger cannot mint one either: generate() and generate_thumbnail() both returned false for the members-only and private fixtures at user 0, and a plain CDN url for the public one. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - the media id travels in the query string, not the path, and the signature is verified before anything is read."
+    },
+    "GET /mvs/v1/tags": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Tag vocabulary only: id, name, slug, count. No titles, owners, files or ids of the tagged items. Caveat observed, not a claim: `count` is the raw term count and includes items a stranger cannot see - a tag put on one public and one private fixture reported count 2 while GET /media?tag= returned 1 item for it, and 6 of the site's own tags report more than their anon-visible total. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path; the payload is term names and aggregate counts."
+    },
+    "GET /mvs/v1/tags/cloud": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "The same tag vocabulary ordered by popularity: id, name, slug, count. Checked against the site's real terms, these counts DO match what a signed-out caller can actually see, unlike GET /tags. No item titles, owners, files or ids. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path."
+    },
+    "GET /mvs/v1/users/(?P<id>[\\d]+)": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "The public profile card and nothing more: id, display name, bio, avatar, public profile url, media_count, followers, following, is_following. No email, no user_login beyond the nicename already in the profile url, no private counts - a member owning one public, one members-only and one private item reported media_count 1. An unknown id answers 404 mvs_user_not_found. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - it takes a user id and returns only what the member's profile page already shows publicly; a private media fixture cannot be expressed in this path."
+    },
+    "GET /mvs/v1/users/(?P<id>[\\d]+)/activity": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "Public activity by that member only. A member with one public and one private activity row returned just the public one, and a full-page sweep referenced none of the site's 79 non-public media items. A non-user id answers 200 []. Payload is the actor card plus the embedded public media. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "user - the test fills this with a media id, which answers []; a real probe needs a user fixture that owns a private item."
+    },
+    "GET /mvs/v1/users/(?P<id>[\\d]+)/followers": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "A list of public profile cards - id, display name, avatar, public profile url, is_following - the same fields the member's own profile page shows. No emails, no follow timestamps, no blocked list. A non-user id answers 200 []. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - it takes a user id and returns only public profile cards; a private media fixture cannot be expressed in this path."
+    },
+    "GET /mvs/v1/users/(?P<id>[\\d]+)/following": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "A list of public profile cards - id, display name, avatar, public profile url, is_following - the same fields the member's own profile page shows. No emails, no follow timestamps, no blocked list. A non-user id answers 200 []. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - it takes a user id and returns only public profile cards; a private media fixture cannot be expressed in this path."
+    },
+    "GET /mvs/v1/users/(?P<id>[\\d]+)/media": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": false,
+      "reason": "That member's public items only. A member owning one public, one members-only and one private item returned exactly one, the public one, and a full-page sweep returned none of the site's 79 non-public items. A non-user id answers 200 []. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "user - the test fills this with a media id, which answers []; a real probe needs a user fixture that owns a private item."
+    },
+    "GET /mvs/v1/users/search": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Member discovery. `q` is required (missing or empty answers 400 rest_missing_callback_param). Matches are public profile cards - id, display name, avatar, public profile url, is_following. It searches display names, not addresses: querying a fixture member's exact email returned []. No emails or logins in the payload. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "none - no object id in the path."
+    },
+    "GET /mvs/v1/users/suggested": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
+    "PATCH /mvs/v1/conversations/(?P<id>\\d+)": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/admin/welcome/dismiss": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AdminController::logged_in_permissions_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/albums": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::create_item_permissions_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/albums/(?P<id>[\\d]+)/items": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/auth/app-password": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": true,
+      "reason": "Public by necessity - this is where a member gets their first credential, so there is nothing to authenticate with yet. A missing password answers 400; with the site toggle off, 403 mvs_app_passwords_off. With it forced on, a wrong password and an unknown username both answer the identical 401 mvs_login_failed 'The username or password you entered is incorrect.', so the route does not enumerate accounts. Nothing is issued without valid credentials. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures. The enabled path was exercised through the mvs_app_password_login_enabled filter in-process; no site option was changed.",
+      "probe": "none - no object id in the path; it takes credentials, not an object."
+    },
+    "POST /mvs/v1/collections": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/conversations": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/conversations/(?P<id>\\d+)/accept": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/conversations/(?P<id>\\d+)/decline": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/conversations/(?P<id>\\d+)/messages": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/conversations/(?P<id>\\d+)/read": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/conversations/(?P<id>\\d+)/typing": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/me/avatar": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ProfileController::check_logged_in",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/me/devices": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/me/dismiss": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\UserController::logged_in_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/me/interests": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\InterestsController::logged_in_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/me/notifications/read": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/me/onboarding/complete": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ProfileController::check_logged_in",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/media": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\MediaController::create_item_permissions_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<id>[\\d]+)/download": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": true,
+      "reason": "Records a download event; it does not return the file. With the site's Allow Downloads toggle off every id answers 403 mvs_downloads_disabled. With it forced on: a public item answers 200 {\"recorded\":true}, a members-only or private item 403 mvs_forbidden, an unknown id 404 mvs_not_found. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures. The enabled path was exercised through a pre_option_mvs_allow_downloads filter in-process; no site option was changed.",
+      "probe": "media"
+    },
+    "POST /mvs/v1/media/(?P<id>[\\d]+)/replace": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\MediaController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<id>[\\d]+)/report": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<id>[\\d]+)/share": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": true,
+      "reason": "Records a share event on a public item - 200 {\"recorded\":true}, incrementing that item's share counter. A members-only or private item answers 403 mvs_forbidden and an unknown id 404 mvs_not_found. Nothing about the item comes back in the response. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "POST /mvs/v1/media/(?P<id>[\\d]+)/view": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": true,
+      "writes": true,
+      "reason": "Records a view on a public item - 200 {\"recorded\":true}, incrementing the view counter and writing an mvs_media_views row. A members-only or private item answers 403 mvs_forbidden and an unknown id 404 mvs_not_found. Nothing about the item comes back in the response. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
+      "probe": "media"
+    },
+    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/comments": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CommentController::create_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/favorite": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\FavoriteController::auth_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/grant": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/reactions": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ReactionController::create_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/rules": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/media/bulk": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\BulkController::bulk_permissions_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/messages/(?P<id>\\d+)/reactions": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/messages/upload": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/moderation/(?P<id>[\\d]+)/analyze": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ModerationController::moderate_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/moderation/(?P<id>[\\d]+)/approve": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ModerationController::moderate_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/moderation/(?P<id>[\\d]+)/reject": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ModerationController::moderate_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/tags": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\TagController::create_tag_permissions_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/tags/merge": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\TagController::admin_check",
+      "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/users/(?P<id>[\\d]+)/block": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/users/(?P<id>[\\d]+)/follow": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
+    "POST /mvs/v1/users/(?P<id>[\\d]+)/report": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/albums/(?P<id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/albums/(?P<id>[\\d]+)/cover": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/albums/(?P<id>[\\d]+)/reorder": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\AlbumController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/collections/(?P<id>[\\d]+)": {
+      "audience": "owner",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CollectionController::owner_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/collections/(?P<id>[\\d]+)/rules": {
+      "audience": "owner",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CollectionController::owner_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/me/profile": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\ProfileController::check_logged_in",
+      "object_id": false,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/media/(?P<id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\MediaController::update_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CommentController::create_item_permissions_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/tags/(?P<id>[\\d]+)": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\TagController::admin_check",
+      "object_id": true,
+      "writes": true
+    }
+  }
+}

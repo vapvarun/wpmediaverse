@@ -139,4 +139,42 @@ class SecurityRegressionTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'font-size: 2rem;', $html );
 	}
+
+	/**
+	 * A viewable album does not make its contents viewable.
+	 *
+	 * Found by the route-authority guard on its first run: a public album can
+	 * hold a private item (add one, or flip a private album public - the
+	 * privacy clamp only tightens), and every member was formatted and
+	 * returned regardless.
+	 */
+	public function test_a_public_album_does_not_disclose_its_private_items(): void {
+		$albums = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+
+		$public_media  = $this->make( $this->owner, 'public' );
+		$private_media = $this->make( $this->owner, 'private' );
+
+		$album = (int) $albums->create( $this->owner, array( 'title' => 'Holiday', 'privacy' => 'public' ) );
+		$albums->add_items( $album, array( $public_media, $private_media ) );
+
+		wp_set_current_user( 0 );
+
+		$items = rest_do_request( new WP_REST_Request( 'GET', '/mvs/v1/albums/' . $album . '/items' ) );
+		$body  = (string) wp_json_encode( $items->get_data() );
+
+		$this->assertSame( 200, $items->get_status(), 'The public album itself should still open.' );
+		$this->assertStringNotContainsString( 'Group probe private', $body, 'A private item leaked through the album items route.' );
+		$this->assertCount( 1, (array) $items->get_data() );
+		$this->assertSame( '1', (string) ( $items->get_headers()['X-WP-Total'] ?? '' ), 'The total counted items the caller cannot see.' );
+
+		$single = rest_do_request( new WP_REST_Request( 'GET', '/mvs/v1/albums/' . $album ) );
+		$data   = (array) $single->get_data();
+
+		$this->assertSame( 1, (int) ( $data['media_count'] ?? 0 ), 'media_count counted a hidden item.' );
+		$this->assertNotContains( $private_media, (array) ( $data['items'] ?? array() ), 'The private item id was enumerable.' );
+
+		wp_set_current_user( $this->owner );
+		$owner_items = rest_do_request( new WP_REST_Request( 'GET', '/mvs/v1/albums/' . $album . '/items' ) );
+		$this->assertCount( 2, (array) $owner_items->get_data(), 'The owner should still see their own private item.' );
+	}
 }

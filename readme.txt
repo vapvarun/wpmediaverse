@@ -175,6 +175,7 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Security - A member can no longer change the privacy of another member's media by adding it to their own album.
 * Security - Gallery data for a private or members-only item is no longer returned to people who cannot open the item. Anyone could read its title, description, owner, filename, tags and stats.
 * Security - Block spacing and type settings are checked against the units CSS allows, so a contributor cannot put a script into a page through them.
+* Security - An album you can open no longer shows you the items inside it that you cannot. A public album holding a private photo listed that photo's details to anyone.
 * Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 * Dev      - The page width token --mvs-content-width is documented in the developer guide.
 * Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
