@@ -746,6 +746,19 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// The route is PUBLIC (permission_callback __return_true) because a public
+		// gallery must open for a signed-out visitor. The privacy gate therefore
+		// lives here, exactly as it does in get_item() - it did NOT until 2.5.1,
+		// and an anonymous caller walking the id space harvested the title,
+		// description, owner, filename, tags and stats of every private and
+		// members-only item on the site. 404, not 403: the sibling routes answer
+		// 404 for what you may not see, and an existence oracle is a leak of its
+		// own.
+		$mvs_viewer_id = get_current_user_id();
+		if ( ! $this->privacy->can_view( $media_id, $mvs_viewer_id ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		$group_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
 		if ( ! $group_id ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
@@ -782,8 +795,14 @@ class MediaController extends WP_REST_Controller {
 		$repo->prefetch( $int_group_ids );
 		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_group_ids );
 
+		// Per member, not just the entry point: one private photo inside an
+		// otherwise public gallery used to come back with the rest.
 		$items = array();
 		foreach ( $group_media_ids as $gid ) {
+			if ( ! $this->privacy->can_view( (int) $gid, $mvs_viewer_id ) ) {
+				continue;
+			}
+
 			$item = $this->prepare_item_for_response( (int) $gid, $request );
 			if ( $item ) {
 				$items[] = $item;
@@ -1515,6 +1534,58 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Has this visitor already produced this event for this item, recently?
+	 *
+	 * Views, downloads and shares dedup the same way: a visitor counts once per
+	 * window, not once per click. The three had drifted - views and downloads
+	 * each carried a copy of this (and the download copy still asked for 'view'
+	 * rows, so a download was dropped whenever the visitor had merely viewed the
+	 * item), and shares had no dedup at all. One rule, one place. 2.5.1.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int    $media_id   Media item.
+	 * @param int    $user_id    Viewer, 0 when signed out.
+	 * @param string $ip_hash    Salted IP hash, used when signed out.
+	 * @param string $event_type view, download or share.
+	 * @param int    $window     Seconds to look back; 0 disables dedup.
+	 * @return bool
+	 */
+	private function seen_recently( int $media_id, int $user_id, string $ip_hash, string $event_type, int $window ): bool {
+		if ( $window <= 0 ) {
+			return false;
+		}
+
+		global $wpdb;
+
+		$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $window );
+
+		if ( $user_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+			return (bool) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = %s AND created_at > %s LIMIT 1",
+					$media_id,
+					$user_id,
+					$event_type,
+					$mvs_since
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+		return (bool) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = %s AND created_at > %s LIMIT 1",
+				$media_id,
+				$ip_hash,
+				$event_type,
+				$mvs_since
+			)
+		);
+	}
+
+	/**
 	 * Record a view for a media item.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -1562,26 +1633,7 @@ class MediaController extends WP_REST_Controller {
 		// and it uses the media_user_date index the table already carries for
 		// exactly this lookup. Basecamp 10278289615.
 		if ( $mvs_view_window > 0 ) {
-			$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $mvs_view_window );
-			$mvs_seen  = $user_id
-				? $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-					$wpdb->prepare(
-						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = 'view' AND created_at > %s LIMIT 1",
-						$media_id,
-						$user_id,
-						$mvs_since
-					)
-				)
-				: $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-					$wpdb->prepare(
-						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = 'view' AND created_at > %s LIMIT 1",
-						$media_id,
-						$ip_hash,
-						$mvs_since
-					)
-				);
-
-			if ( $mvs_seen ) {
+			if ( $this->seen_recently( $media_id, $user_id, $ip_hash, 'view', $mvs_view_window ) ) {
 				// Already counted. Return the current total so the client still
 				// renders a number rather than treating this as a failure.
 				return rest_ensure_response(
@@ -1689,34 +1741,20 @@ class MediaController extends WP_REST_Controller {
 		// and it uses the media_user_date index the table already carries for
 		// exactly this lookup. Basecamp 10278289615.
 		if ( $mvs_view_window > 0 ) {
-			$mvs_since = gmdate( 'Y-m-d H:i:s', time() - $mvs_view_window );
-			$mvs_seen  = $user_id
-				? $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-					$wpdb->prepare(
-						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id = %d AND event_type = 'view' AND created_at > %s LIMIT 1",
-						$media_id,
-						$user_id,
-						$mvs_since
-					)
-				)
-				: $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
-					$wpdb->prepare(
-						"SELECT id FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d AND user_id IS NULL AND ip_hash = %s AND event_type = 'view' AND created_at > %s LIMIT 1",
-						$media_id,
-						$ip_hash,
-						$mvs_since
-					)
-				);
-
-			if ( $mvs_seen ) {
+			if ( $this->seen_recently( $media_id, $user_id, $ip_hash, 'download', $mvs_view_window ) ) {
 				// Already counted. Return the current total so the client still
 				// renders a number rather than treating this as a failure.
 				return rest_ensure_response(
 					array(
 						'success' => true,
 						'counted' => false,
-						'views'   => (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-							$wpdb->prepare( "SELECT views FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", $media_id )
+						// Downloads, not views. This dedup block was copied from
+						// record_view() and kept its event type and column, so a
+						// download went unrecorded whenever the same visitor had
+						// merely VIEWED the item inside the window, and the reply
+						// reported the view total. 2.5.1.
+						'downloads' => (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+							$wpdb->prepare( "SELECT downloads FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", $media_id )
 						),
 					)
 				);
@@ -1774,6 +1812,27 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		global $wpdb;
+
+		// Shares were the one event with NO dedup, so a counter was inflatable
+		// indefinitely at the rate limit (30/min). Views and downloads dedup off
+		// mvs_media_views, but that table's event_type is enum('view','download')
+		// and widening it means an ALTER on the fastest-growing table in the
+		// schema - not something to ship in a patch for a counter. A transient
+		// keyed like the row lookup gives the same one-per-window behaviour at
+		// no upgrade cost. 2.5.1.
+		$mvs_share_window = (int) apply_filters( 'mvs_view_dedup_window', 30 * MINUTE_IN_SECONDS );
+
+		if ( $mvs_share_window > 0 ) {
+			$mvs_share_key = 'mvs_share_' . md5(
+				$media_id . '|' . ( $user_id ? 'u' . $user_id : 'i' . hash( 'sha256', self::get_client_ip() . wp_salt() ) )
+			);
+
+			if ( get_transient( $mvs_share_key ) ) {
+				return rest_ensure_response( array( 'recorded' => false ) );
+			}
+
+			set_transient( $mvs_share_key, 1, $mvs_share_window );
+		}
 
 		// Ensure stats row exists, then increment shares.
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

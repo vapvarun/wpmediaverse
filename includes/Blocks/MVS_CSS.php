@@ -39,6 +39,27 @@ class MVS_CSS {
 	 * @param array<string, mixed> $attrs     Block attributes.
 	 * @return string CSS string.
 	 */
+	/**
+	 * A CSS length unit from block attributes, or the default.
+	 *
+	 * Block attributes are author-controlled strings that land inside a <style>
+	 * element, so an unvalidated unit closed the block and opened a <script>:
+	 * "px} </style><script>...". Anyone who can edit post content could store it,
+	 * and it ran for every visitor of that page, admins included. An allowlist is
+	 * the whole fix - there are seven legal units and none of them need escaping.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param mixed  $raw     Attribute value as supplied by the block.
+	 * @param string $default Unit to fall back to.
+	 * @return string
+	 */
+	private static function unit( $raw, string $default = 'px' ): string {
+		$mvs_unit = is_string( $raw ) ? strtolower( trim( $raw ) ) : '';
+
+		return in_array( $mvs_unit, array( 'px', 'em', 'rem', '%', 'vh', 'vw', 'pt' ), true ) ? $mvs_unit : $default;
+	}
+
 	public static function generate( $unique_id, $attrs ) {
 		if ( empty( $unique_id ) ) {
 			return '';
@@ -51,7 +72,7 @@ class MVS_CSS {
 
 		// Padding.
 		if ( ! empty( $attrs['padding'] ) && is_array( $attrs['padding'] ) ) {
-			$unit      = ! empty( $attrs['paddingUnit'] ) ? $attrs['paddingUnit'] : 'px';
+			$unit      = self::unit( $attrs['paddingUnit'] ?? '', 'px' );
 			$p         = $attrs['padding'];
 			$desktop[] = sprintf(
 				'padding: %s%s %s%s %s%s %s%s;',
@@ -67,7 +88,7 @@ class MVS_CSS {
 		}
 
 		if ( ! empty( $attrs['paddingTablet'] ) && is_array( $attrs['paddingTablet'] ) ) {
-			$unit     = ! empty( $attrs['paddingUnit'] ) ? $attrs['paddingUnit'] : 'px';
+			$unit      = self::unit( $attrs['paddingUnit'] ?? '', 'px' );
 			$p        = $attrs['paddingTablet'];
 			$tablet[] = sprintf(
 				'padding: %s%s %s%s %s%s %s%s;',
@@ -83,7 +104,7 @@ class MVS_CSS {
 		}
 
 		if ( ! empty( $attrs['paddingMobile'] ) && is_array( $attrs['paddingMobile'] ) ) {
-			$unit     = ! empty( $attrs['paddingUnit'] ) ? $attrs['paddingUnit'] : 'px';
+			$unit      = self::unit( $attrs['paddingUnit'] ?? '', 'px' );
 			$p        = $attrs['paddingMobile'];
 			$mobile[] = sprintf(
 				'padding: %s%s %s%s %s%s %s%s;',
@@ -100,7 +121,7 @@ class MVS_CSS {
 
 		// Margin.
 		if ( ! empty( $attrs['margin'] ) && is_array( $attrs['margin'] ) ) {
-			$unit      = ! empty( $attrs['marginUnit'] ) ? $attrs['marginUnit'] : 'px';
+			$unit      = self::unit( $attrs['marginUnit'] ?? '', 'px' );
 			$m         = $attrs['margin'];
 			$desktop[] = sprintf(
 				'margin: %s%s %s%s %s%s %s%s;',
@@ -116,7 +137,7 @@ class MVS_CSS {
 		}
 
 		if ( ! empty( $attrs['marginTablet'] ) && is_array( $attrs['marginTablet'] ) ) {
-			$unit     = ! empty( $attrs['marginUnit'] ) ? $attrs['marginUnit'] : 'px';
+			$unit      = self::unit( $attrs['marginUnit'] ?? '', 'px' );
 			$m        = $attrs['marginTablet'];
 			$tablet[] = sprintf(
 				'margin: %s%s %s%s %s%s %s%s;',
@@ -132,7 +153,7 @@ class MVS_CSS {
 		}
 
 		if ( ! empty( $attrs['marginMobile'] ) && is_array( $attrs['marginMobile'] ) ) {
-			$unit     = ! empty( $attrs['marginUnit'] ) ? $attrs['marginUnit'] : 'px';
+			$unit      = self::unit( $attrs['marginUnit'] ?? '', 'px' );
 			$m        = $attrs['marginMobile'];
 			$mobile[] = sprintf(
 				'margin: %s%s %s%s %s%s %s%s;',
@@ -149,7 +170,7 @@ class MVS_CSS {
 
 		// Border radius.
 		if ( ! empty( $attrs['borderRadius'] ) && is_array( $attrs['borderRadius'] ) ) {
-			$unit      = ! empty( $attrs['borderRadiusUnit'] ) ? $attrs['borderRadiusUnit'] : 'px';
+			$unit      = self::unit( $attrs['borderRadiusUnit'] ?? '', 'px' );
 			$r         = $attrs['borderRadius'];
 			$desktop[] = sprintf(
 				'border-radius: %s%s %s%s %s%s %s%s;',
@@ -177,15 +198,15 @@ class MVS_CSS {
 
 		// Font size (responsive).
 		if ( isset( $attrs['fontSize'] ) && '' !== $attrs['fontSize'] ) {
-			$unit      = ! empty( $attrs['fontSizeUnit'] ) ? $attrs['fontSizeUnit'] : 'px';
+			$unit      = self::unit( $attrs['fontSizeUnit'] ?? '', 'px' );
 			$desktop[] = sprintf( 'font-size: %s%s;', floatval( $attrs['fontSize'] ), $unit );
 		}
 		if ( isset( $attrs['fontSizeTablet'] ) && '' !== $attrs['fontSizeTablet'] ) {
-			$unit     = ! empty( $attrs['fontSizeUnit'] ) ? $attrs['fontSizeUnit'] : 'px';
+			$unit      = self::unit( $attrs['fontSizeUnit'] ?? '', 'px' );
 			$tablet[] = sprintf( 'font-size: %s%s;', floatval( $attrs['fontSizeTablet'] ), $unit );
 		}
 		if ( isset( $attrs['fontSizeMobile'] ) && '' !== $attrs['fontSizeMobile'] ) {
-			$unit     = ! empty( $attrs['fontSizeUnit'] ) ? $attrs['fontSizeUnit'] : 'px';
+			$unit      = self::unit( $attrs['fontSizeUnit'] ?? '', 'px' );
 			$mobile[] = sprintf( 'font-size: %s%s;', floatval( $attrs['fontSizeMobile'] ), $unit );
 		}
 
@@ -201,7 +222,8 @@ class MVS_CSS {
 
 		// Line height.
 		if ( isset( $attrs['lineHeight'] ) && '' !== $attrs['lineHeight'] ) {
-			$unit      = ! empty( $attrs['lineHeightUnit'] ) ? $attrs['lineHeightUnit'] : '';
+			// Unitless line-height is legal CSS, so '' is the default here.
+			$unit      = self::unit( $attrs['lineHeightUnit'] ?? '', '' );
 			$desktop[] = sprintf( 'line-height: %s%s;', floatval( $attrs['lineHeight'] ), $unit );
 		}
 
@@ -262,8 +284,12 @@ class MVS_CSS {
 		}
 
 		echo '<style id="mvs-block-styles">' . "\n";
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS is generated internally with escaped values.
-		echo implode( "\n", self::$styles );
+		// Belt and braces: values are allowlisted or absint()ed on the way in, and
+		// no selector this generator emits contains an angle bracket, so stripping
+		// them here closes the whole "break out of <style>" class rather than the
+		// instances known today. Basecamp: 2.5.1 security patch.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- allowlisted units + absint values, angle brackets stripped.
+		echo str_replace( array( '<', '>' ), '', implode( "\n", self::$styles ) );
 		echo "\n</style>\n";
 	}
 

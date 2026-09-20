@@ -168,8 +168,13 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Fix      - The album picker on a profile or Explore lists only albums you can add to. It offered everyone's albums, and choosing another member's failed.
 * Fix      - Bulk Delete on Explore deletes the selected items. It reported a failure and deleted nothing.
 * Fix      - Tag suggestions appear while typing, in the dashboard edit box and on a media page.
+* Fix      - Download counts record every download. A download was dropped when the same visitor had only viewed the item in the last half hour.
+* Fix      - Share counts count one share per visitor per half hour, as views and downloads already did.
+* Fix      - A partial media request that asks for more than the file holds is answered with the file's real length.
 * Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
 * Security - A member can no longer change the privacy of another member's media by adding it to their own album.
+* Security - Gallery data for a private or members-only item is no longer returned to people who cannot open the item. Anyone could read its title, description, owner, filename, tags and stats.
+* Security - Block spacing and type settings are checked against the units CSS allows, so a contributor cannot put a script into a page through them.
 * Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 * Dev      - The page width token --mvs-content-width is documented in the developer guide.
 * Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
