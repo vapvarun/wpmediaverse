@@ -253,7 +253,7 @@ wp_interactivity_state(
 			'bulkDeleted'             => __( 'Selected items deleted.', 'wpmediaverse' ),
 			'bulkPrivacyDone'         => __( 'Privacy updated.', 'wpmediaverse' ),
 			'bulkFailed'              => __( 'Bulk action failed.', 'wpmediaverse' ),
-			'bulkMovedToAlbum'        => __( 'Moved to album.', 'wpmediaverse' ),
+			'bulkMovedToAlbum'        => __( 'Added to album.', 'wpmediaverse' ),
 			'bulkPickAlbum'           => __( 'Choose an album first.', 'wpmediaverse' ),
 			'bulkTagsAdded'           => __( 'Tags added.', 'wpmediaverse' ),
 			'bulkTypeTags'            => __( 'Type at least one tag.', 'wpmediaverse' ),
@@ -737,6 +737,7 @@ wp_interactivity_state(
 			<div class="mvs-dashboard-dropzone"
 				data-wp-class--mvs-drag-active="state.upload.dragOver"
 				data-wp-on--click="actions.handleUploadClick"
+				data-wp-on--keydown="actions.handleUploadKeydown"
 				data-wp-on--dragover="actions.handleUploadDragOver"
 				data-wp-on--dragleave="actions.handleUploadDragLeave"
 				data-wp-on--drop="actions.handleUploadDrop"
@@ -758,7 +759,16 @@ wp_interactivity_state(
 			</div>
 			<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.toggleUploadFields">
-				<span data-wp-bind--hidden="state.upload.showFields"><?php esc_html_e( 'Add title, tags & privacy', 'wpmediaverse' ); ?></span>
+				<?php // Promise only what the panel holds: the privacy picker below is absent while the owner has locked privacy. Basecamp 10320619418. ?>
+				<span data-wp-bind--hidden="state.upload.showFields">
+					<?php
+					if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
+						esc_html_e( 'Add title, tags & privacy', 'wpmediaverse' );
+					} else {
+						esc_html_e( 'Add title & tags', 'wpmediaverse' );
+					}
+					?>
+				</span>
 				<span data-wp-bind--hidden="!state.upload.showFields"><?php esc_html_e( 'Hide fields', 'wpmediaverse' ); ?></span>
 			</button>
 			<?php
@@ -780,13 +790,14 @@ wp_interactivity_state(
 					<input type="text" id="mvs-upload-meta-tags" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
 						data-wp-on--input="actions.setUploadTags" />
 					<?php $mvs_def_priv = get_option( 'mvs_default_privacy', 'public' ); ?>
-					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
+					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 					<label class="mvs-sr-only" for="mvs-upload-meta-privacy"><?php esc_html_e( 'Who can see this', 'wpmediaverse' ); ?></label>
 					<select id="mvs-upload-meta-privacy" class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
 						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( $mvs_def_priv ); ?>
 					</select>
 					<?php endif; ?>
 				</div>
+				<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle( 'actions.setUploadStory' ); ?>
 			</div>
 			<div class="mvs-dashboard-upload-review" data-wp-bind--hidden="!state.upload.hasPending" hidden>
 				<span class="mvs-dashboard-upload-review-label">
@@ -813,6 +824,7 @@ wp_interactivity_state(
 		<div class="mvs-bulk-bar" data-wp-bind--hidden="!state.hasBulkSelection" hidden
 			role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
 			<span class="mvs-bulk-count" data-wp-text="state.bulkCountLabel"></span>
+			<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 			<label class="mvs-bulk-privacy-label">
 				<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-privacy" data-wp-on--change="actions.setBulkPrivacy">
@@ -823,23 +835,24 @@ wp_interactivity_state(
 				</select>
 			</label>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+			<?php endif; ?>
 
 			<?php
-			// Move to album. The REST action has existed since bulk shipped —
+			// Add to album. The REST action has existed since bulk shipped —
 			// only the control was missing. The picker fills on first focus
 			// from the SAME loader the Albums panel uses, so there is never a
 			// second album list to drift.
 			?>
 			<label class="mvs-bulk-album-label">
-				<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Add selected to album', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-album" data-wp-on--change="actions.setBulkAlbum" data-wp-on--focus="actions.ensureBulkAlbums">
-					<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+					<option value="0"><?php esc_html_e( 'Add to album…', 'wpmediaverse' ); ?></option>
 					<template data-wp-each="state.albums.items">
 						<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
 					</template>
 				</select>
 			</label>
-			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.bulkMoveToAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.bulkMoveToAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add', 'wpmediaverse' ); ?></button>
 
 			<?php
 			// Add tags. Comma-separated, matching the upload form, so there is
@@ -1287,9 +1300,11 @@ wp_interactivity_state(
 	<!-- Collection Modal (Create/Edit with Rule Builder) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.collectionModal.visible"
 		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation">
+		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation"
+			role="dialog" aria-modal="true" aria-labelledby="mvs-collection-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'collectionModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
-				<h2>
+				<h2 id="mvs-collection-modal-title">
 					<span data-wp-bind--hidden="state.collectionModal.isEdit"><?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.collectionModal.isEdit"><?php esc_html_e( 'Edit Collection', 'wpmediaverse' ); ?></span>
 				</h2>
@@ -1409,7 +1424,7 @@ wp_interactivity_state(
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeCollectionModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn" type="button"
+				<button class="mvs-btn mvs-btn--primary" type="button"
 					data-wp-on--click="actions.saveCollection"
 					data-wp-bind--disabled="state.collectionModal.saving">
 					<span data-wp-bind--hidden="state.collectionModal.saving">
@@ -1425,9 +1440,11 @@ wp_interactivity_state(
 	<!-- Edit Media Modal -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.editModal.visible"
 		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
+		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
+			role="dialog" aria-modal="true" aria-labelledby="mvs-dashboard-edit-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'editModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
-				<h2><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
+				<h2 id="mvs-dashboard-edit-modal-title"><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
 				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
 			</div>
 			<div class="mvs-modal-body">
@@ -1448,6 +1465,8 @@ wp_interactivity_state(
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
 					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
+					<?php // Hidden when the owner has locked privacy; the save still sends the current level, which the REST update accepts. Basecamp 10320619418. ?>
+					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
@@ -1473,6 +1492,7 @@ wp_interactivity_state(
 							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 						</select>
 					</div>
+					<?php endif; ?>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
 							<input type="checkbox" class="mvs-edit-regenerate-slug"
@@ -1520,7 +1540,7 @@ wp_interactivity_state(
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeEditModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn" type="button"
+				<button class="mvs-btn mvs-btn--primary" type="button"
 					data-wp-on--click="actions.saveEdit"
 					data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModal.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
@@ -1533,9 +1553,11 @@ wp_interactivity_state(
 	<!-- Album Modal (Create/Edit) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.albumModal.visible"
 		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
+		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
+			role="dialog" aria-modal="true" aria-labelledby="mvs-album-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
+			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'albumModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<div class="mvs-modal-header">
-				<h2>
+				<h2 id="mvs-album-modal-title">
 					<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.albumModal.isEdit"><?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?></span>
 				</h2>
@@ -1552,6 +1574,13 @@ wp_interactivity_state(
 					<textarea data-wp-bind--value="state.albumModal.description"
 						data-wp-on--input="actions.setAlbumDesc"></textarea>
 				</div>
+				<?php
+				// Hidden while the owner has locked privacy: an album's privacy is
+				// carried down onto its items, so it is a media privacy picker too.
+				// Create then takes the site default and Edit re-sends the album's
+				// current level, both of which the REST side accepts. Basecamp 10320619418.
+				if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) :
+					?>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 					<select data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
@@ -1577,6 +1606,7 @@ wp_interactivity_state(
 						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 					</select>
 				</div>
+				<?php endif; ?>
 				<div class="mvs-field">
 					<label>
 						<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Select Media', 'wpmediaverse' ); ?></span>
@@ -1623,7 +1653,7 @@ wp_interactivity_state(
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeAlbumModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn" type="button"
+				<button class="mvs-btn mvs-btn--primary" type="button"
 					data-wp-on--click="actions.saveAlbum"
 					data-wp-bind--disabled="state.albumModal.saving">
 					<span data-wp-bind--hidden="state.albumModal.saving">

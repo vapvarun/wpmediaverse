@@ -3,7 +3,7 @@
  */
 
 .mvs-album-viewer-block {
-	max-width: 1200px;
+	max-width: var(--mvs-content-width, 1200px); /* the owner width token; Basecamp 10320619449 */
 	margin: 0 auto;
 }
 

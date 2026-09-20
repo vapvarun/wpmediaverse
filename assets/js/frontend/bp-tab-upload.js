@@ -47,11 +47,16 @@
 			var el = document.getElementById( id );
 			return el ? String( el.value || '' ).trim() : '';
 		}
+		// The story checkbox is emitted by TemplateHelpers::story_toggle() only
+		// when Pro is active and stories are on, so it is often absent.
+		var storyBox = document.querySelector( '.mvs-bp-upload-fields .mvs-upload-story-input' );
+
 		return {
 			title: val( 'mvs-bp-upload-title' ),
 			description: val( 'mvs-bp-upload-description' ),
 			tags: val( 'mvs-bp-upload-tags' ),
-			privacy: val( 'mvs-bp-upload-privacy' )
+			privacy: val( 'mvs-bp-upload-privacy' ),
+			story: !! ( storyBox && storyBox.checked )
 		};
 	}
 
@@ -238,6 +243,10 @@
 					if ( ! r.ok ) {
 						failed++;
 						lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
+					} else if ( meta.story && r.data && r.data.id ) {
+						// "Also share as a story" (Pro). Non-fatal: the media is
+						// uploaded either way. Basecamp 10313107097.
+						window.mvsRest.markAsStory( r.data.id );
 					}
 					done++;
 					if ( done < total ) {

@@ -136,7 +136,9 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 				/* Batch index+meta for the page (1.7.0). */ $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $mvs_ids );
 				?>
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
-				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed">
+				<?php // Default Layout reaches collections too — see album.php. ?>
+				<?php $mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class(); ?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
 					<?php
 					foreach ( $items as $media_id ) :
 						$media_id     = (int) $media_id;

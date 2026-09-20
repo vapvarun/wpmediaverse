@@ -132,11 +132,11 @@ class SettingsHelper {
 	 * @return string One of 'medium', 'large', 'full'.
 	 */
 	public static function get_thumbnail_size(): string {
-		// Default 'medium' to match the registered setting default — grid/feed
-		// tiles render at ~150-300px, so 'large' (1024px) was wasted bytes. (1.7.0)
-		$size = (string) get_option( 'mvs_thumbnail_size', 'medium' );
+		// Default 'large', matching the registered default and the rung grids
+		// have served since 1.8.0.
+		$size = (string) get_option( 'mvs_thumbnail_size', 'large' );
 		if ( ! in_array( $size, self::ALLOWED_THUMBNAIL_SIZES, true ) ) {
-			$size = 'medium';
+			$size = 'large';
 		}
 
 		/**
@@ -149,7 +149,7 @@ class SettingsHelper {
 		 */
 		$size = (string) apply_filters( 'mvs_thumbnail_size_resolved', $size );
 		if ( ! in_array( $size, self::ALLOWED_THUMBNAIL_SIZES, true ) ) {
-			$size = 'medium';
+			$size = 'large';
 		}
 
 		return $size;
@@ -168,18 +168,21 @@ class SettingsHelper {
 	 *
 	 * @since 1.7.0
 	 *
-	 * Updated 1.8.0: grid/masonry tiles render large (up to ~half the viewport on
-	 * a 2-column masonry), so the 'medium' (300px) rung visibly upscales and looks
-	 * soft on HiDPI/retina screens. Serve 'large' (1024px) for the grid by default
-	 * so tiles stay crisp at retina density; byte-conscious sites can drop back to
-	 * 'medium' with the mvs_grid_thumb_size_key filter. The configured
-	 * mvs_thumbnail_size is passed to the filter so it can still drive the choice.
+	 * 1.8.0 made grids serve 'large' whatever the setting said, because a 300px
+	 * rung upscales and looks soft on HiDPI. That was the right DEFAULT and the
+	 * wrong mechanism: it also swallowed the owner's explicit choice, so
+	 * Thumbnail Quality could not change anything on the surfaces its own
+	 * description named. The crispness now comes from the default being 'large'
+	 * (2.5.1), and an owner who picks Medium gets Medium.
+	 *
+	 * 'full' still maps to 'large': the original file is not a thumbnail rung and
+	 * has no business inside a tile.
 	 *
 	 * @return string One of 'medium', 'large'.
 	 */
 	public static function get_grid_thumb_size_key(): string {
 		$configured = self::get_thumbnail_size();
-		$key        = ( 'medium' === $configured || 'full' === $configured ) ? 'large' : $configured;
+		$key        = ( 'full' === $configured ) ? 'large' : $configured;
 
 		/**
 		 * Filter the thumbnail rung used for grid/masonry tiles.

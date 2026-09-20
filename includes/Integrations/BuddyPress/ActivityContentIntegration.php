@@ -387,8 +387,8 @@ class ActivityContentIntegration {
 			if ( $ids ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
 			}
-			$grid_html   = '';
-			$rendered    = 0;
+			$grid_html = '';
+			$rendered  = 0;
 			foreach ( $ids as $mid ) {
 				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $mid ) ) {
 					continue;

@@ -166,12 +166,13 @@ wp_interactivity_state(
 		<?php endif; ?>
 	</div>
 
-	<!-- Upload Modal Overlay -->
-	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal">
+	<!-- Upload Modal Overlay. Dialog semantics, focus in/out (callbacks.uploadModalFocus), Tab trap and Escape (actions.handleLightboxKeydown). Basecamp 10320784059. -->
+	<div class="mvs-modal-overlay mvs-upload-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal"
+		role="dialog" aria-modal="true" aria-labelledby="mvs-upload-modal-title" data-wp-watch="callbacks.uploadModalFocus">
 		<div class="mvs-modal" data-wp-on--click="actions.handleModalClick">
 			<!-- Modal Header -->
 			<div class="mvs-modal-header">
-				<h3 class="mvs-modal-title" data-wp-text="state.uploadModalHeading"></h3>
+				<h3 class="mvs-modal-title" id="mvs-upload-modal-title" data-wp-text="state.uploadModalHeading"></h3>
 				<button class="mvs-modal-close" data-wp-on--click="actions.closeUploadModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
@@ -233,7 +234,8 @@ wp_interactivity_state(
 					</div>
 
 					<!-- Dropzone placeholder -->
-					<div class="mvs-modal-dropzone-placeholder" data-wp-bind--hidden="state.hasFiles">
+					<div class="mvs-modal-dropzone-placeholder" data-wp-bind--hidden="state.hasFiles"
+						role="button" tabindex="0" data-wp-on--keydown="actions.handleUploadKeydown">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" aria-hidden="true">
 							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 							<polyline points="17 8 12 3 7 8"></polyline>
@@ -254,7 +256,7 @@ wp_interactivity_state(
 
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
 					<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
-						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
+						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 						<div class="mvs-modal-field-row">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 								<?php
@@ -299,6 +301,9 @@ wp_interactivity_state(
 								<template data-wp-each="state.popularTags">
 									<button type="button" class="mvs-tag-pill" data-wp-on--click="actions.addUploadTag" data-wp-bind--data-mvs-tag-name="context.item.name"><span data-wp-text="context.item.name"></span></button>
 								</template>
+							</div>
+							<div class="mvs-modal-field mvs-modal-field--checkbox">
+								<?php \WPMediaVerse\Core\TemplateHelpers::story_toggle( 'actions.toggleUploadStory' ); ?>
 							</div>
 						</details>
 					</div>
@@ -358,6 +363,7 @@ wp_interactivity_state(
 					<!-- Privacy + slug-regenerate sit on the same row to save
 						vertical space — pure presentation, no functional pairing. -->
 					<div class="mvs-modal-row">
+						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
 						<div class="mvs-modal-field mvs-modal-field--inline">
 							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 							<select id="mvs-edit-privacy"
@@ -375,6 +381,7 @@ wp_interactivity_state(
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
+						<?php endif; ?>
 						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
 							<label for="mvs-edit-regenerate-slug" title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
 								<input type="checkbox" id="mvs-edit-regenerate-slug"
@@ -711,6 +718,13 @@ wp_interactivity_state(
 	</div>
 
 	<!-- Toast -->
+	<?php
+	// The announcement lives OUTSIDE the toast: the toast is `hidden` until it
+	// shows, and a live region must already be in the accessibility tree when
+	// its text changes or screen readers say nothing - which is what happened
+	// to every toast, errors included. Basecamp 10320657245.
+	?>
+	<div class="mvs-toast-live" role="status" aria-live="polite" aria-atomic="true" data-wp-text="state.toastLive"></div>
 	<div class="mvs-toast" hidden data-wp-bind--hidden="!state.toastVisible"
 		data-wp-bind--class="state.toastClass">
 		<span data-wp-text="state.toastMessage"></span>

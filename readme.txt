@@ -2,8 +2,8 @@
 Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
-Tested up to: 7.0
-Stable tag: 2.5.0
+Tested up to: 7.1
+Stable tag: 2.5.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -121,6 +121,58 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.5.1 - September 2026 =
+
+A settings pass from the owner's seat, then a full QA walk: the privacy switch holds everywhere, dialogs work from the keyboard, and deleted documents leave the disk.
+
+* New      - The share as a story option appears on every upload screen, not only the Upload page.
+* New      - Searching your own drive now matches document tags, so a file tagged in the admin can be found by that tag.
+* Improve  - Strip EXIF Data removes only the location. Camera, lens, exposure and the copyright and credit fields stay on the photo.
+* Improve  - Thumbnail Quality changes the image size grids actually serve. Medium is roughly a third of the bytes of Large, which remains the default.
+* Improve  - Default Layout now applies to albums and collections, which its description has always named.
+* Improve  - Page width and grid gap read design tokens, so one line in a child theme adjusts every MediaVerse surface together.
+* Improve  - The confirmation dialog follows the site palette instead of a fixed one, in light and dark mode.
+* Improve  - The AVIF setting states whether this server can encode AVIF instead of warning that it might not.
+* Improve  - Setup wizard offers the documented 12 items per page rather than silently saving 24.
+* Improve  - Camera metadata is no longer copied into the database on every upload, where nothing ever read it.
+* Improve  - Album, collection, edit and upload dialogs are named for screen readers, keep keyboard focus inside while open and return it on close.
+* Improve  - The upload drop zones open the file picker with Enter or Space.
+* Improve  - Toasts are announced to screen readers, including a repeated message, and the dismiss button is a full-size touch target at the edge of the toast.
+* Improve  - The chat header shows when someone was last active in the site's language.
+* Improve  - The floating upload button steps aside while a dialog is open.
+* Improve  - Set Cover stays a small label on touch screens with a full-size tap area, and dialog Save buttons use the primary style.
+* Improve  - The bulk album action is labelled Add to album and applies the album's privacy and playlist rules, the same as adding one item.
+* Improve  - Profile stats, dropdowns and the bulk privacy menu fit their space at phone width, and admin tab rows fit phone screens.
+* Improve  - A grid of 12 items costs 12 database queries instead of 35. The per-item author, gallery-count and post-type reads are gone.
+* Fix      - Playback events are recorded on single media pages. The player analytics tab was empty for anyone not using the block.
+* Fix      - The monthly AI budget cap works. Saving the AI settings once was enough to disable it silently, and spending then showed as zero.
+* Fix      - Turning on only AI moderation no longer also buys a description and a tag for every upload.
+* Fix      - Replacing a photo's file strips its location, as a first upload always did.
+* Fix      - Allow Downloads hides the download button on a document card too, and the description says which surfaces it covers.
+* Fix      - Buttons, selects and inputs inherit the theme font instead of falling back to the browser default.
+* Fix      - An uploader's avatar and name sit on one line in the grid, and a long name truncates instead of wrapping under it.
+* Fix      - Privacy menus show their full label. The longest option was cut off mid-sentence.
+* Fix      - The media count lines up with the followers and following buttons on a profile.
+* Fix      - The share as a story checkbox renders as a checkbox rather than stretching across the row.
+* Fix      - A toast appears above the chat panel instead of behind it.
+* Fix      - Turning off Allow Users to Set Privacy also stops members changing privacy after upload, through editing, bulk actions, albums and the REST API.
+* Fix      - Deleted documents are removed from disk, not only from the library.
+* Fix      - Moving media to cloud storage no longer rewrites document links to files that were never uploaded.
+* Fix      - Bulk delete in the media library leaves documents to the Documents screen instead of sending their files to the cloud provider.
+* Fix      - Deleting an album no longer leaves its media pointing at it.
+* Fix      - Messaging errors show as error toasts instead of success.
+* Fix      - Delete confirmations on BuddyPress media tabs show their message.
+* Fix      - A cloud upload that finishes after the member deleted the media no longer recreates the item as a broken, empty entry.
+* Fix      - Bulk action controls and the dashboard tabs stay clickable where they stick under a theme's fixed header.
+* Fix      - The album picker on a profile or Explore lists only albums you can add to. It offered everyone's albums, and choosing another member's failed.
+* Fix      - Bulk Delete on Explore deletes the selected items. It reported a failure and deleted nothing.
+* Fix      - Tag suggestions appear while typing, in the dashboard edit box and on a media page.
+* Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
+* Security - A member can no longer change the privacy of another member's media by adding it to their own album.
+* Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
+* Dev      - The page width token --mvs-content-width is documented in the developer guide.
+* Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
 
 = 2.5.0 - September 2026 =
 

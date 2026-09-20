@@ -188,10 +188,12 @@ class UploadService {
 		// the rotation in differently.
 		$this->apply_exif_orientation( $file['tmp_name'], $mime );
 
-		// Strip EXIF GPS data from images.
-		$exif_raw = array();
+		// Strip EXIF GPS data from images. Nothing is kept: the extracted block
+		// used to be written to meta as `exif_raw` and was never read by any
+		// template, REST field, admin screen or Pro surface - dead weight plus a
+		// privacy surface with no payoff. Basecamp 10316771960.
 		if ( get_option( 'mvs_strip_exif', true ) && $this->is_image( $mime ) ) {
-			$exif_raw = $this->extract_and_strip_exif( $file['tmp_name'] );
+			$this->strip_exif( $file['tmp_name'] );
 		}
 
 		// Determine media type from MIME.
@@ -329,7 +331,7 @@ class UploadService {
 		// sending a crafted privacy field directly to the REST API. Resolved
 		// BEFORE store() because the destination driver depends on it: private
 		// and other restricted media must never leave the local server.
-		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$allow_user_privacy = PrivacyService::user_may_choose_privacy( $user_id );
 		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		$requested_privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : '';
 
@@ -567,11 +569,6 @@ class UploadService {
 		// state, not a broken one.
 		if ( $defer_cloud ) {
 			self::queue_cloud_sync( $media_id );
-		}
-
-		// Store EXIF data in meta table (sparse data).
-		if ( ! empty( $exif_raw ) ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'exif_raw', $exif_raw );
 		}
 
 		// Persist optimization outcome on the media row. Done here (after the
@@ -1271,7 +1268,7 @@ class UploadService {
 	 * pixels. Browsers honour that tag, so an iPhone portrait looks correct
 	 * until something re-encodes the file without applying it — at which point
 	 * the raw landscape pixels are all that is left and every portrait lands
-	 * sideways. That is exactly what this pipeline did: extract_and_strip_exif()
+	 * sideways. That is exactly what this pipeline did: strip_exif()
 	 * removes the JPEG APP1 segment (where Orientation lives), the watermarker
 	 * uses raw GD, and the optimiser, the WebP/AVIF siblings and
 	 * generate_thumbnails() all save through WP_Image_Editor without rotating.
@@ -1375,30 +1372,31 @@ class UploadService {
 	}
 
 	/**
-	 * Extract EXIF data and strip GPS from JPEG images.
+	 * Strip GPS and other sensitive EXIF from an image file.
+	 *
+	 * Nothing is returned to the caller for storage: the extracted block used to
+	 * be kept as `exif_raw` meta that no surface ever read. Basecamp 10316771960.
+	 *
+	 * Public for the same reason apply_exif_orientation() is: the REST
+	 * replace-file path runs its own ingest and must reuse this seam rather
+	 * than grow a second copy - or, as it did until 2.5.1, skip it entirely.
 	 *
 	 * @param string $file_path File path.
-	 * @return array Raw EXIF data (before stripping).
+	 * @return bool True when the file carried GPS and was rewritten.
 	 */
-	private function extract_and_strip_exif( string $file_path ): array {
+	public function strip_exif( string $file_path ): bool {
 		if ( ! function_exists( 'exif_read_data' ) ) {
-			return array();
+			return false;
 		}
 
 		$exif = @exif_read_data( $file_path, 'ANY_TAG', true ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
 		if ( ! is_array( $exif ) ) {
-			return array();
+			return false;
 		}
 
-		// Check for GPS presence before stripping.
+		// The only thing still read out of the block: whether the FILE needs
+		// rewriting to drop its GPS tags.
 		$has_gps = isset( $exif['GPS'] );
-
-		// Strip sensitive EXIF sections before storing in meta.
-		$sensitive_sections = array( 'GPS', 'MakerNote', 'UndefinedTag:0xEA1C', 'MAKERNOTE' );
-		foreach ( $sensitive_sections as $section ) {
-			unset( $exif[ $section ] );
-		}
-		$raw = $exif;
 
 		// Strip GPS/EXIF from the stored file.
 		//
@@ -1417,6 +1415,17 @@ class UploadService {
 			$type = is_array( $info ) ? $info['mime'] : '';
 
 			if ( 'image/jpeg' === $type ) {
+				// Try the surgical removal first: drop the GPS IFD and leave the
+				// rest of the EXIF alone. Taking the whole APP1 segment also took
+				// the camera, lens and exposure a photographer wants kept, and
+				// the XMP/IPTC block where copyright and credit live - on a photo
+				// platform, destroying an author's byline to hide their location
+				// is a bad trade when only one of the two is a privacy problem.
+				// Basecamp 10252326888 follow-up.
+				if ( $this->strip_gps_ifd( $file_path ) ) {
+					return true;
+				}
+
 				if ( ! $this->strip_jpeg_app1_segments( $file_path ) && extension_loaded( 'gd' ) ) {
 					// PHP 8.4+ deprecated imagedestroy — GdImage instances are
 					// first-class objects and GC'd when $img goes out of scope.
@@ -1434,7 +1443,189 @@ class UploadService {
 			}
 		}
 
-		return $raw;
+		return $has_gps;
+	}
+
+	/**
+	 * Remove ONLY the GPS block from a JPEG's EXIF, in place.
+	 *
+	 * Unlinks the GPS IFD pointer (tag 0x8825) from IFD0 and zeroes the GPS
+	 * directory it pointed at, so neither `exif_read_data()` nor a raw scan of
+	 * the bytes finds coordinates. Everything else in the segment - camera make
+	 * and model, lens, exposure, orientation, the thumbnail IFD - is untouched,
+	 * and so is every other segment, including the XMP/IPTC block that carries
+	 * copyright.
+	 *
+	 * The IFD is rewritten in place at its original offset and padded back to
+	 * its original length, because every other value in a TIFF header is an
+	 * absolute offset from the start of the header: shrinking the directory
+	 * would silently invalidate all of them.
+	 *
+	 * FAILS CLOSED. Any structure this does not understand returns false, and
+	 * the caller then removes the whole APP1 segment as before. A privacy
+	 * control must never fail open and leave the coordinates in place.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param string $file_path Absolute path to a JPEG file.
+	 * @return bool True when GPS was removed and the file rewritten.
+	 */
+	private function strip_gps_ifd( string $file_path ): bool {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+		$bytes = @file_get_contents( $file_path );
+
+		if ( ! is_string( $bytes ) || strlen( $bytes ) < 4 || "\xFF\xD8" !== substr( $bytes, 0, 2 ) ) {
+			return false;
+		}
+
+		// XMP can carry its own GPS copy; this routine only understands the
+		// EXIF one, so hand those files to the whole-segment path.
+		if ( false !== strpos( $bytes, 'http://ns.adobe.com/xap/1.0/' ) && false !== stripos( $bytes, 'GPS' ) ) {
+			return false;
+		}
+
+		// Locate the EXIF APP1 segment by walking the marker chain.
+		$pos     = 2;
+		$len     = strlen( $bytes );
+		$tiff_at = 0;
+
+		while ( $pos + 4 <= $len && "\xFF" === $bytes[ $pos ] ) {
+			$marker = ord( $bytes[ $pos + 1 ] );
+			$size   = unpack( 'n', substr( $bytes, $pos + 2, 2 ) )[1];
+
+			if ( 0xDA === $marker || $size < 2 ) {
+				break; // Start of scan: no metadata beyond here.
+			}
+
+			if ( 0xE1 === $marker && "Exif\x00\x00" === substr( $bytes, $pos + 4, 6 ) ) {
+				$tiff_at = $pos + 10;
+				break;
+			}
+
+			$pos += 2 + $size;
+		}
+
+		if ( ! $tiff_at || $tiff_at + 8 > $len ) {
+			return false;
+		}
+
+		$order = substr( $bytes, $tiff_at, 2 );
+
+		if ( 'II' === $order ) {
+			$u16 = 'v';
+			$u32 = 'V';
+		} elseif ( 'MM' === $order ) {
+			$u16 = 'n';
+			$u32 = 'N';
+		} else {
+			return false;
+		}
+
+		$read16 = static function ( $at ) use ( $bytes, $u16, $len ) {
+			return ( $at + 2 <= $len ) ? unpack( $u16, substr( $bytes, $at, 2 ) )[1] : null;
+		};
+		$read32 = static function ( $at ) use ( $bytes, $u32, $len ) {
+			return ( $at + 4 <= $len ) ? unpack( $u32, substr( $bytes, $at, 4 ) )[1] : null;
+		};
+
+		$ifd0_at = $tiff_at + $read32( $tiff_at + 4 );
+		$count   = $read16( $ifd0_at );
+
+		if ( null === $count || $count < 1 || $ifd0_at + 2 + ( $count * 12 ) + 4 > $len ) {
+			return false;
+		}
+
+		// Find the GPS pointer among IFD0's entries.
+		$gps_entry_at = 0;
+		$gps_ifd_at   = 0;
+
+		for ( $i = 0; $i < $count; $i++ ) {
+			$entry_at = $ifd0_at + 2 + ( $i * 12 );
+
+			if ( 0x8825 === $read16( $entry_at ) ) {
+				$gps_entry_at = $entry_at;
+				$gps_ifd_at   = $tiff_at + $read32( $entry_at + 8 );
+				break;
+			}
+		}
+
+		if ( ! $gps_entry_at || $gps_ifd_at + 2 > $len ) {
+			return false;
+		}
+
+		// Zero the GPS directory itself, so the coordinates are not merely
+		// unreferenced but gone from the bytes. Value data living outside the
+		// entry (rationals, which is what coordinates are) is zeroed too.
+		$gps_count = $read16( $gps_ifd_at );
+
+		if ( null === $gps_count || $gps_ifd_at + 2 + ( $gps_count * 12 ) + 4 > $len ) {
+			return false;
+		}
+
+		$sizes = array(
+			1  => 1,
+			2  => 1,
+			3  => 2,
+			4  => 4,
+			5  => 8,
+			7  => 1,
+			9  => 4,
+			10 => 8,
+		);
+
+		for ( $i = 0; $i < $gps_count; $i++ ) {
+			$entry_at = $gps_ifd_at + 2 + ( $i * 12 );
+			$type     = $read16( $entry_at + 2 );
+			$n        = $read32( $entry_at + 4 );
+			$width    = isset( $sizes[ $type ] ) ? $sizes[ $type ] * $n : 0;
+
+			if ( $width > 4 ) {
+				$data_at = $tiff_at + $read32( $entry_at + 8 );
+
+				if ( $data_at > 0 && $data_at + $width <= $len ) {
+					$bytes = substr_replace( $bytes, str_repeat( "\x00", $width ), $data_at, $width );
+				}
+			}
+		}
+
+		$gps_block = 2 + ( $gps_count * 12 ) + 4;
+		$bytes     = substr_replace( $bytes, str_repeat( "\x00", $gps_block ), $gps_ifd_at, $gps_block );
+
+		// Rewrite IFD0 without the pointer, padded back to its original length
+		// so every absolute offset in the header stays valid.
+		$entries = '';
+
+		for ( $i = 0; $i < $count; $i++ ) {
+			$entry_at = $ifd0_at + 2 + ( $i * 12 );
+
+			if ( $entry_at !== $gps_entry_at ) {
+				$entries .= substr( $bytes, $entry_at, 12 );
+			}
+		}
+
+		$next_ifd = substr( $bytes, $ifd0_at + 2 + ( $count * 12 ), 4 );
+		$new_ifd0 = pack( $u16, $count - 1 ) . $entries . $next_ifd . str_repeat( "\x00", 12 );
+		$old_len  = 2 + ( $count * 12 ) + 4;
+
+		// The 12 bytes of padding replace the entry that was removed, so the
+		// directory occupies exactly the space it did before and nothing after
+		// it moves. Never write a different length.
+		if ( strlen( $new_ifd0 ) !== $old_len ) {
+			return false;
+		}
+
+		$bytes = substr_replace( $bytes, $new_ifd0, $ifd0_at, $old_len );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_put_contents_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( false === @file_put_contents( $file_path, $bytes ) ) {
+			return false;
+		}
+
+		// Trust nothing: confirm the coordinates are actually gone before
+		// reporting success, or the caller will not fall back.
+		$check = @exif_read_data( $file_path, 'ANY_TAG', true ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+
+		return is_array( $check ) && ! isset( $check['GPS'] );
 	}
 
 	/**
@@ -2219,6 +2410,76 @@ class UploadService {
 		}
 
 		self::run_cloud_sync( $media_id );
+	}
+
+	/**
+	 * Queue the reverse trip: pull a demoted media's bytes back from cloud.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function queue_cloud_repatriation( int $media_id ): void {
+		if ( $media_id <= 0 ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action(
+				'mvs_cloud_repatriate_media',
+				array( 'media_id' => $media_id ),
+				'wpmediaverse'
+			);
+			return;
+		}
+
+		self::run_cloud_repatriation( $media_id );
+	}
+
+	/**
+	 * Bring a no-longer-public media home and delete the cloud copy.
+	 *
+	 * Public media lives on the CDN; everything else is local-only
+	 * (StorageService::get_driver_for_privacy()). A media that was public and
+	 * is made private had only half of that enforced: its URLs were re-pointed
+	 * at the local copies, so the plugin stopped serving the CDN - but the
+	 * object stayed in the bucket, readable by anyone still holding its URL.
+	 * Free's listener comment described "Pro listeners (Bunny purge, S3 delete)"
+	 * that were never written, so nothing deleted it. Revoking access left the
+	 * old link working.
+	 *
+	 * Reuses the same seam as the forward trip rather than growing per-driver
+	 * cleanup: migrate_one() moves the original and every recorded variant, and
+	 * with $keep_source false it deletes them from the cloud once the local
+	 * copies verify. Cloud to local is explicitly allowed by its privacy gate.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return void
+	 */
+	public static function run_cloud_repatriation( int $media_id ): void {
+		$source = (string) get_option( 'mvs_storage_driver', 'local' );
+
+		if ( '' === $source || 'local' === $source ) {
+			return;
+		}
+
+		$result = CloudOps::migrate_one( (int) $media_id, $source, 'local', false );
+
+		if ( empty( $result['ok'] ) ) {
+			LoggerService::warning(
+				'storage',
+				'Could not bring a now-private media back from cloud; its bytes may still be reachable at the old CDN URL.',
+				array(
+					'media_id' => (int) $media_id,
+					'source'   => $source,
+					'status'   => $result['status'] ?? 'unknown',
+					'error'    => $result['error'] ?? '',
+				)
+			);
+		}
 	}
 
 	/**

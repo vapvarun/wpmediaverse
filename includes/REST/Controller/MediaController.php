@@ -1019,6 +1019,19 @@ class MediaController extends WP_REST_Controller {
 		if ( $privacy ) {
 			$clean_privacy = sanitize_text_field( $privacy );
 
+			// The owner may have locked privacy (Settings > General > Allow Users
+			// to Set Privacy). The edit screens hide the picker then, but still
+			// send the item's CURRENT level with every save, so only a change is
+			// refused - and refused out loud, never silently dropped (Rule 20).
+			if ( ! PrivacyService::user_may_choose_privacy()
+				&& $clean_privacy !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
+				return new WP_Error(
+					'mvs_privacy_locked',
+					__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+					array( 'status' => 403 )
+				);
+			}
+
 			if ( ! in_array( $clean_privacy, PrivacyService::supported_levels(), true ) ) {
 				return new WP_Error(
 					'mvs_privacy_unsupported',
@@ -1152,6 +1165,20 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Documents are replaced through the Pro document route, which keeps
+		// the old version (`_mvs_replaced_from`) and checks folder grants. Here
+		// the new bytes would be stored in the MEDIA tree on the active driver
+		// (a public cloud bucket), the row re-typed from its MIME, and the old
+		// file deleted through the cloud driver while the local copy stayed on
+		// disk. Same refusal as the media feed.
+		if ( in_array( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'media_type' ), MediaTypes::DOCUMENTS, true ) ) {
+			return new \WP_Error(
+				'mvs_document_route',
+				__( 'Documents are replaced through the document routes, not the media routes.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		$files = $request->get_file_params();
 		if ( empty( $files['file'] ) ) {
 			return new \WP_Error( 'mvs_no_file', __( 'No file provided.', 'wpmediaverse' ), array( 'status' => 400 ) );
@@ -1254,6 +1281,14 @@ class MediaController extends WP_REST_Controller {
 		// two copies of a rotation is how the paths drift apart again.
 		$upload_service->apply_exif_orientation( $file['tmp_name'], $mime );
 
+		// Then strip, on the same owner switch as a fresh upload. Replace ran
+		// orientation, filename strategy, watermark, optimize and the WebP/AVIF
+		// siblings - everything except this - so replacing a photo kept the GPS
+		// coordinates a normal upload would have removed. Basecamp 10316771960.
+		if ( get_option( 'mvs_strip_exif', true ) && 0 === strpos( (string) $mime, 'image/' ) ) {
+			$upload_service->strip_exif( $file['tmp_name'] );
+		}
+
 		// A replacement is new member bytes entering the library, so it stamps —
 		// the same rule as a fresh upload. This MUST run before store() below:
 		// store() persists the temp file, and the WebP/AVIF siblings are cut from
@@ -1269,10 +1304,15 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
 
-		// Delete old file.
-		$old_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-		if ( $old_path ) {
-			$driver->delete( $old_path );
+		// Delete the old file from every tier it may live on. Not the active
+		// driver alone: uploads land on local disk and are copied to the cloud
+		// afterwards, so a cloud-only delete left the local copy behind, and a
+		// local-only path (Pro documents) must never be sent to a cloud driver.
+		// delete_everywhere() handles both. The equality guard keeps a
+		// same-named replacement from deleting the file just stored.
+		$old_path = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
+		if ( '' !== $old_path && $old_path !== $dest_path ) {
+			$storage->delete_everywhere( $old_path );
 		}
 
 		// Update media index with new file data.
@@ -2026,7 +2066,7 @@ class MediaController extends WP_REST_Controller {
 		// the button on screen and a member clicking it got a 403 from the API
 		// (Basecamp 10285497657), while a delegated "Edit Others" role had no
 		// affordance at all (10285691473).
-		$can_edit = $is_own
+		$can_edit   = $is_own
 			? user_can( $viewer_id, 'edit_mvs_medias' )
 			: ( $viewer_id > 0 && user_can( $viewer_id, 'edit_others_mvs_medias' ) );
 		$can_delete = $is_own

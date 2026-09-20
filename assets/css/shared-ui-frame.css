@@ -4,6 +4,42 @@
  * @package WPMediaVerse
  */
 
+/* Form controls do not inherit font-family from an ancestor, and this shell is
+   printed on wp_footer outside every .mvs-* wrapper -- on an ordinary page only
+   this stylesheet loads, so frontend.css's body.mvs-page reset cannot reach it.
+   Without this the lightbox, FAB and toast controls render in the UA default
+   (Arial) next to theme-font text. Basecamp 10309690361. */
+.mvs-app-shell button,
+.mvs-app-shell input,
+.mvs-app-shell select,
+.mvs-app-shell textarea,
+.mvs-lightbox-overlay button,
+.mvs-lightbox-overlay input,
+.mvs-lightbox-overlay textarea,
+.mvs-toast button {
+	font-family: inherit;
+}
+
+/* Size at zero specificity, for the reason given beside the matching rule in
+   frontend.css: a component's own font-size must win. Basecamp 10309690361. */
+:where(.mvs-app-shell, .mvs-lightbox-overlay, .mvs-toast) :where(button, input, select, textarea) {
+	font-size: inherit;
+}
+
+/* Same select rule as frontend.css body.mvs-page select, for the shell that
+   prints outside every MVS wrapper. Basecamp 10313754840. */
+.mvs-app-shell select {
+	padding-inline-end: 2.25rem;
+	text-overflow: ellipsis;
+}
+
+/* Visible keyboard focus for shell form controls; see the matching rule in
+   frontend.css. Basecamp 10320619382. */
+:where(.mvs-app-shell) :is(input, select, textarea):focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+}
+
 /* ─── Floating Action Button ─── */
 /*
  * The + button's placement, as tokens, because two things depend on it: the
@@ -54,6 +90,19 @@
 
 .mvs-fab svg {
 	pointer-events: none;
+}
+
+/* While any MediaVerse dialog is open the FAB steps out. It sits later in the
+ * DOM at the same z-index as the overlay, so it floated over the modal (over
+ * the footer buttons at 390px) and was reachable outside the dialog's focus
+ * trap. Free's dialogs are shown by removing their `hidden` attribute, so the
+ * open state is readable here without any JS. The Pro connector import modal
+ * (printed in the dashboard footer) toggles an inline display instead, hence
+ * the two style exclusions — without them the FAB would vanish for good on
+ * that page. visibility also drops the FAB from the tab order and the
+ * accessibility tree. Basecamp 10320784115. */
+body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container {
+	visibility: hidden;
 }
 
 /* FAB menu — shown above the button when the member also has a Documents drive. */
@@ -259,6 +308,12 @@
 .mvs-modal-dropzone:hover {
 	border-color: var(--mvs-primary);
 	background: var(--mvs-info-bg-light);
+}
+
+.mvs-modal-dropzone-placeholder:focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+	border-radius: var(--mvs-radius-sm, 6px);
 }
 
 .mvs-modal-dropzone[hidden] {
@@ -628,7 +683,12 @@
 	padding: 12px 20px;
 	border-radius: 8px;
 	font-size: 14px;
-	z-index: 100000;
+	/* One above the chat panel (messaging.css, also 100000). Both are fixed
+	   children of the root stacking context and both print on wp_footer, so at
+	   equal z-index the panel -- registered second -- painted over every toast
+	   it raised: mic denied, wrong file type, API errors. Full occlusion below
+	   767px, where the panel is 100% wide. Basecamp 10313271935. */
+	z-index: 100001;
 	display: flex;
 	align-items: center;
 	gap: 12px;
@@ -648,6 +708,12 @@
 		left: 16px;
 		justify-content: center;
 		text-align: center;
+	}
+
+	/* The message takes the free width, so Dismiss sits at the inline end of
+	   the full-width toast instead of trailing the centred text. */
+	.mvs-toast > span {
+		flex: 1;
 	}
 }
 
@@ -698,6 +764,30 @@
 
 .mvs-toast-close:hover {
 	opacity: 1;
+}
+
+/* 44px hit area (was 16px). The negative margins give back most of what the
+   min size adds, so the toast grows only ~6px. Basecamp 10320657245. */
+.mvs-toast-close {
+	justify-content: center;
+	min-inline-size: var(--mvs-touch-min, 44px);
+	min-block-size: var(--mvs-touch-min, 44px);
+	margin-block: -12px;
+	margin-inline-end: -12px;
+}
+
+/* Visually hidden, still read out. Local on purpose: this stylesheet loads on
+   ordinary pages where frontend.css (and its .mvs-sr-only) does not. */
+.mvs-toast-live {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
 }
 
 /* ─── Animations ─── */

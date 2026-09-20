@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 32;
+	const CURRENT_VERSION = 36;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -82,6 +82,7 @@ class Migrator {
 			'mvs_follows',
 			'mvs_media_index',
 			'mvs_media_meta',
+			'mvs_media_spaces',
 			'mvs_media_stats',
 			'mvs_media_views',
 			'mvs_mentions',
@@ -382,7 +383,11 @@ class Migrator {
 				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
-				comment_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				-- No comment_count: it was written by the rtMedia importer and
+				-- read by nothing, so it could only ever go stale. Comment
+				-- totals are counted from wp_comments at read time. Existing
+				-- installs keep the column (dbDelta never drops one, and an
+				-- ALTER on a large index table is not worth a dead column).
 				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT NULL,
@@ -634,7 +639,6 @@ class Migrator {
 				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
-				comment_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT NULL,
@@ -2332,5 +2336,110 @@ class Migrator {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "DELETE FROM {$links} WHERE object_type = 'bp_activity' AND NOT EXISTS ( SELECT 1 FROM {$activity} a WHERE a.id = {$links}.activity_id )" );
 		}
+	}
+
+	/**
+	 * Migration v33 - the document<->space link table.
+	 *
+	 * A document has ONE home drive (mvs_media_index.drive_type/drive_id). This
+	 * join lets the same document appear in additional Spaces without a second
+	 * copy, mirroring Eventonomy's event<->space model: the space Files tab
+	 * unions its native rows with the rows linked here, and the link itself
+	 * grants that space's members view access (PermissionService honours it).
+	 *
+	 * PRIMARY KEY (media_id, space_id) makes a link idempotent - re-linking is a
+	 * no-op, not a duplicate. KEY space_id serves the listing union
+	 * (WHERE space_id = X). `added_by`/`added_at` are for the "linked by" line
+	 * and moderation. Cleanup is free: the table is in
+	 * MediaRepository::MEDIA_CHILD_TABLES, so delete_cascade() and the orphan
+	 * sweep (migrate_to_32 / Pro v16) already cover it.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_33(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_media_spaces (
+				media_id bigint(20) unsigned NOT NULL,
+				space_id bigint(20) unsigned NOT NULL,
+				added_by bigint(20) unsigned NOT NULL DEFAULT 0,
+				added_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (media_id, space_id),
+				KEY space_id (space_id)
+			) {$charset_collate};"
+		);
+	}
+
+	/**
+	 * Migration v34 — drop the `exif_raw` meta nobody ever read.
+	 *
+	 * Every upload wrote the extracted EXIF block to meta (GPS and MakerNote
+	 * already removed), and no template, REST field, admin screen or Pro surface
+	 * ever read it back: dead weight on every row, and camera metadata retained
+	 * for no purpose. 2.5.1 stops writing it; this clears what is already there.
+	 *
+	 * Deleted in batches keyed on the indexed `meta_key` column so a library with
+	 * a large upload history does not hold one long-running DELETE.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_34(): void {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_meta';
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$deleted = $wpdb->query(
+				$wpdb->prepare( "DELETE FROM {$table} WHERE meta_key = %s LIMIT 1000", 'exif_raw' )
+			);
+		} while ( 1000 === (int) $deleted );
+	}
+
+	/**
+	 * Migration v35 — repair an AI budget cap that saving the settings zeroed.
+	 *
+	 * `mvs_ai_cost_per_call` was registered in the AI settings group with no
+	 * field, so WordPress wrote null -> 0 for it on the owner's first Save of
+	 * that tab. Every AI call was then costed at zero, the monthly budget could
+	 * never be reached, and the Stats page reported $0.00 spent no matter how
+	 * much the provider actually billed.
+	 *
+	 * 2.5.1 stops registering it. This clears the zero it left behind, so the
+	 * read falls back to the real estimate again. A stored cost of zero is never
+	 * a legitimate setting - it is exactly the corruption - so only that case is
+	 * removed, and a value someone set deliberately is left alone.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_35(): void {
+		$stored = get_option( 'mvs_ai_cost_per_call', null );
+
+		if ( null !== $stored && (float) $stored <= 0 ) {
+			delete_option( 'mvs_ai_cost_per_call' );
+		}
+	}
+
+	/**
+	 * Migration v36 — drop the telemetry options with the feature.
+	 *
+	 * The counter service was never instrumented: `capture()` had no callers,
+	 * and nothing could read the counters back, so ticking "Help improve
+	 * MediaVerse" recorded nothing and the report its description asked owners
+	 * to share could not be produced. 2.5.1 removes the setting and the
+	 * service; these rows are what it left in wp_options.
+	 *
+	 * @since 2.5.1
+	 */
+	private function migrate_to_36(): void {
+		delete_option( 'mvs_telemetry_enabled' );
+		delete_option( 'mvs_telemetry_counters' );
+		delete_option( 'mvs_telemetry_since' );
 	}
 }

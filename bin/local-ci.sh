@@ -90,6 +90,15 @@ echo ""
 
 # ─── 1.x — Static checks (fast, no runtime needed) ───────────────────────────
 
+step "1.0" "No local QA/debug output tracked (logs, drafts, screenshots)"
+JUNK=$(git ls-files | grep -E '(^|/)(\.debug-log-[^/]*|error_log|debug\.log|[^/]*\.log)$|^qa/runs/drafts/|^qa/.*\.(png|jpe?g)$' || true)
+if [ -n "$JUNK" ]; then
+  fail "1.0 local QA/debug output is tracked; move it to app/qa-artifacts/ and git rm --cached it:"
+  echo "$JUNK" | sed 's/^/    /'
+else
+  pass "No local QA/debug output tracked"
+fi
+
 step "1.1" "PHP lint (every changed-source PHP file)"
 PHP_LINT_FAILED=0
 while IFS= read -r -d '' file; do

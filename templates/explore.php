@@ -395,7 +395,7 @@ $mvs_archive_url = home_url( '/media/' );
 						'deleted'       => __( 'Selected items deleted.', 'wpmediaverse' ),
 						'privacyDone'   => __( 'Privacy updated.', 'wpmediaverse' ),
 						'tagsAdded'     => __( 'Tags added.', 'wpmediaverse' ),
-						'movedToAlbum'  => __( 'Moved to album.', 'wpmediaverse' ),
+						'movedToAlbum'  => __( 'Added to album.', 'wpmediaverse' ),
 						'failed'        => __( 'Bulk action failed.', 'wpmediaverse' ),
 						/* translators: 1: number changed. 2: number selected. 3: number skipped. */
 						'partial'       => __( '%1$d of %2$d updated. %3$d were not yours to change.', 'wpmediaverse' ),
@@ -404,12 +404,24 @@ $mvs_archive_url = home_url( '/media/' );
 			);
 			?>
 			<div class="mvs-bulk-bar" data-wp-interactive="mvs/explore"
-				<?php echo wp_interactivity_data_wp_context( array( 'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php
+				// userId scopes the album picker's request to the member's own
+				// albums, exactly as the dashboard picker does. Without it the
+				// picker listed every album on the site and every foreign choice
+				// died with 403 mvs_forbidden. Basecamp 10320911477.
+				echo wp_interactivity_data_wp_context( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					array(
+						'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+						'userId'  => get_current_user_id(),
+					)
+				);
+				?>
 				data-wp-on-document--keydown="actions.exploreBulkKeydown"
 				data-wp-bind--hidden="!state.hasBulk" hidden
 				role="region" aria-label="<?php esc_attr_e( 'Bulk actions', 'wpmediaverse' ); ?>">
 				<span class="mvs-bulk-count" data-wp-text="state.bulkLabel"></span>
 
+				<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock; the dashboard bar is gated the same way. Basecamp 10320619418. ?>
 				<label class="mvs-bulk-privacy-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 					<select class="mvs-bulk-privacy" data-wp-on--change="actions.setExploreBulkPrivacy">
@@ -420,17 +432,18 @@ $mvs_archive_url = home_url( '/media/' );
 					</select>
 				</label>
 				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkPrivacy" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
+				<?php endif; ?>
 
 				<label class="mvs-bulk-album-label">
-					<span class="screen-reader-text"><?php esc_html_e( 'Move selected to album', 'wpmediaverse' ); ?></span>
+					<span class="screen-reader-text"><?php esc_html_e( 'Add selected to album', 'wpmediaverse' ); ?></span>
 					<select class="mvs-bulk-album" data-wp-on--change="actions.setExploreBulkAlbum" data-wp-on--focus="actions.ensureExploreAlbums">
-						<option value="0"><?php esc_html_e( 'Move to album…', 'wpmediaverse' ); ?></option>
+						<option value="0"><?php esc_html_e( 'Add to album…', 'wpmediaverse' ); ?></option>
 						<template data-wp-each="state.bulkAlbums">
 							<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
 						</template>
 					</select>
 				</label>
-				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Move', 'wpmediaverse' ); ?></button>
+				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkAlbum" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Add', 'wpmediaverse' ); ?></button>
 
 				<label class="mvs-bulk-tags-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Tags to add to selected', 'wpmediaverse' ); ?></span>

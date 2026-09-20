@@ -10,15 +10,15 @@
  */
 
 .mvs-frontend-confirm-dialog {
-	border: 1px solid #dcdcde;
+	border: 1px solid var( --mvs-border, #dcdcde );
 	border-radius: 12px;
 	padding: 0;
 	max-width: 440px;
 	width: calc( 100% - 32px );
 	box-shadow: 0 12px 32px rgba( 0, 0, 0, 0.18 );
 	font-family: inherit;
-	color: #1d2327;
-	background: #fff;
+	color: var( --mvs-text, #1d2327 );
+	background: var( --mvs-surface, #fff );
 }
 
 .mvs-frontend-confirm-dialog::backdrop {
@@ -57,31 +57,37 @@
 }
 
 .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel {
+	/* Fill derived from the text colour, NOT from --mvs-surface-2: on themes
+	   where surface-2 equals --mvs-surface (Reign resolves both to #fafbfd) the
+	   Cancel button would lose its fill and melt into the dialog body. The
+	   literal is the fallback for browsers without color-mix(). */
 	background: #f6f7f7;
-	color: #1d2327;
-	border-color: #c3c4c7;
+	background: color-mix( in srgb, currentColor 7%, transparent );
+	color: var( --mvs-text, #1d2327 );
+	border-color: var( --mvs-border-strong, #c3c4c7 );
 }
 
 .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover {
 	background: #eef0f1;
-	border-color: #8c8f94;
+	background: color-mix( in srgb, currentColor 13%, transparent );
+	border-color: var( --mvs-border-strong, #c3c4c7 );
 }
 
 .mvs-frontend-confirm-dialog .mvs-frontend-confirm-ok {
-	background: #2271b1;
-	color: #fff;
-	border-color: #2271b1;
+	background: var( --mvs-btn-primary-bg, #2271b1 );
+	color: var( --mvs-btn-primary-fg, #fff );
+	border-color: var( --mvs-btn-primary-bg, #2271b1 );
 }
 
 .mvs-frontend-confirm-dialog .mvs-frontend-confirm-ok:hover {
-	background: #135e96;
-	border-color: #135e96;
+	background: var( --mvs-primary-hover, #135e96 );
+	border-color: var( --mvs-primary-hover, #135e96 );
 }
 
 /* Destructive tone — applied via class toggle when opts.tone === 'destructive'. */
 .mvs-frontend-confirm-dialog--destructive .mvs-frontend-confirm-ok {
-	background: #b32d2e;
-	border-color: #b32d2e;
+	background: var( --mvs-danger, #b32d2e );
+	border-color: var( --mvs-danger, #b32d2e );
 }
 
 .mvs-frontend-confirm-dialog--destructive .mvs-frontend-confirm-ok:hover {

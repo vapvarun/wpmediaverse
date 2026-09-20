@@ -131,8 +131,22 @@ const { state, actions } = store( 'mvs/explore', {
 				return;
 			}
 			const ctx = getContext();
+
+			// Own albums only, the same request the dashboard picker makes.
+			// bulk_move_to_album refuses a foreign album with 403
+			// mvs_forbidden, so an unfiltered list offered choices that could
+			// only fail — and shipped other members' album titles to the
+			// browser, which is the half of the bug a client-side filter would
+			// not have fixed. Fails closed: no user id, no list.
+			const userId = parseInt( ctx.userId, 10 ) || 0;
+
+			if ( ! userId ) {
+				state.bulkAlbums = [];
+				return;
+			}
+
 			try {
-				const res = await window.mvsRest.restFetch( ctx.restUrl + 'albums?per_page=100' );
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'albums?author=' + userId + '&per_page=100' );
 				const data = res.data;
 				const items = Array.isArray( data ) ? data : ( data?.items || [] );
 				state.bulkAlbums = items.map( ( a ) => ( { id: a.id, title: a.title || '' } ) );
@@ -149,8 +163,13 @@ const { state, actions } = store( 'mvs/explore', {
 		 * reports the result — including the partial-success one, which is the
 		 * message the member most needs to read.
 		 */
-		async exploreBulk( action, body, doneKey, doneFallback ) {
-			const ctx = getContext();
+		async exploreBulk( action, body, doneKey, doneFallback, ctxOverride ) {
+			// The confirm overlay is printed in wp_footer, outside this block, so
+			// a callback handed to showConfirm() runs with no mvs/explore context
+			// and getContext() comes back undefined. Delete therefore always
+			// failed. Callers that cross the overlay pass their context in, the
+			// same way the dashboard's bulkDelete does.
+			const ctx = typeof ctxOverride?.restUrl === 'string' ? ctxOverride : getContext();
 			const ids = state.bulkIds.slice();
 
 			if ( ! ids.length || state.bulkBusy ) {
@@ -209,11 +228,12 @@ const { state, actions } = store( 'mvs/explore', {
 			// Through the shared confirm overlay, never a native confirm()
 			// (Pro/Free coding rule), and the same copy the dashboard uses.
 			const shared = store( 'mvs/shared-ui' );
+			const ctx = getContext();
 
 			shared?.actions?.showConfirm?.(
 				state.i18n?.deleteConfirm || 'Delete the selected items? This cannot be undone.',
 				() => {
-					actions.exploreBulk( 'delete', {}, 'deleted', 'Selected items deleted.' );
+					actions.exploreBulk( 'delete', {}, 'deleted', 'Selected items deleted.', ctx );
 				}
 			);
 		},
@@ -227,7 +247,7 @@ const { state, actions } = store( 'mvs/explore', {
 		},
 		async exploreBulkAlbum() {
 			if ( ! state.bulkAlbum ) return;
-			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Moved to album.' );
+			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Added to album.' );
 		},
 	},
 	// callbacks.init() used to fetch tags/cloud and build the chip row client

@@ -267,7 +267,7 @@ class UserController extends WP_REST_Controller {
 		// clause here, so this API can never drift from the rest of the plugin:
 		// anon = public; logged-in viewer = public + members + friends-of-author;
 		// owner/admin = own media (dm excluded); group/custom need per-item checks.
-		$repo  = Plugin::container()->get( 'media_repository' );
+		$repo = Plugin::container()->get( 'media_repository' );
 		// Same filters as the list below, or the total describes a different
 		// set than the rows. Basecamp 10297845497.
 		$total = $repo->count_visible_by_author(

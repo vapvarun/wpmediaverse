@@ -63,6 +63,25 @@ have been broken on your setup, or you may be testing the wrong surface.
 If step 2 does not reproduce, **stop and say so**. That is a finding: the card
 may be config-specific, already fixed elsewhere, or wrong. It is not a pass.
 
+### Replicating on a shared, live site (no checkout)
+
+Checking out the parent commit swaps code under a site other sessions may be
+using. Prefer the lightest method that reproduces the defect, lightest first:
+
+| Defect lives in | Reproduce the pre-fix state by | Example |
+|---|---|---|
+| CSS | Re-apply the old declaration in the page (`page.addStyleTag`, or remove the new rule from `document.styleSheets`) and measure both states on the same element | `font-size: inherit` re-added → buttons 13.8 → 15.9px; removed → back |
+| A PHP decision behind a filter/option | Flip it inside one `wp eval` (`add_filter(..., '__return_false', 999)`, `pre_option_*`) — never a stored option change you forget to undo | BuddyNext-off behaviour via `mvs_buddynext_active` |
+| A data path (writes, deletes) | Wrap the probe in `START TRANSACTION … ROLLBACK`, or use fixtures you delete and verify gone | Quota default wiped by a stale id |
+| Logic only a test can isolate | `git worktree add` the pre-fix sha into scratch and run the one test there | Never `git stash`/`checkout` a live repo |
+
+Then, before any measurement:
+
+- **Match the reporter's config, then restore it.** Write down theme, companion plugins (on/off), layout/feature options and role; set them; read them back at the end. A config you cannot host (a route another plugin owns) is a controlled toggle window, not a guess — say which route each number came from.
+- **Drive the reporter's flow, not the symptom.** Open the panel the way a member does (pick a file, click the toggle), not by forcing `hidden=false`.
+- **Measure what the owner would see.** Clickability: `elementFromPoint` at the control's centre and edges, then a real click and a state read. Clipping: widest label (`canvas.measureText`) vs the control's content box. Alignment: glyph tops via a `Range`, not box tops. Always 1440 and 390, and look at the screenshot.
+- **One browser per agent, one QA run per site.** Before starting, check the board for another session's recent comments/moves and `git log` for new commits (C-6). Parallel QA on one site corrupts both runs.
+
 ---
 
 ## 1.5 The role ladder — reproduce as who *saw* it, then as who *else* can
@@ -389,6 +408,25 @@ For a card in **Bugs** (a report, not a fix) the question is *"is this real?"*, 
 | **CONFIRMED** | Reproduced as the reporter's role, triaged, prioritised. Ready for a developer. |
 | **CANNOT-REPRO** | Walked the ladder on the named surface and config; did not reproduce. Say exactly what was tried — this is a finding, not a dismissal. |
 | **NEEDS-INFO** | The card does not say who saw it, where, or on what config. Ask the specific question; do not guess. |
+
+### Where the card goes — the move is part of the verdict
+
+A verdict that leaves the card where it was is unfinished: two correct verdicts
+on three Possible Bugs cards (WPMediaVerse, 2026-09-18) sat for a day because
+nobody moved them. Move in the same turn, then **read `parent.title` back** (C-7).
+
+| Verdict | Column | The comment must say |
+|---|---|---|
+| PASS / CONFIRMED FIXED | Done | Evidence at both widths; commit sha tested |
+| ALREADY SHIPPED (fixed by another commit before this check) | Done | Which commit fixed it, verified at HEAD in the browser |
+| BOUNCE / STILL BROKEN | Bugs | Repro steps someone else can follow |
+| REFUTED / NOT A BUG | Done (closed), or the owner's "Not now" if they want it kept | The measurement that disproves it and the standard cited (§4); offer the filter/token if subjective |
+| SPLIT (bug half fixed, rest is a request) | Suggestion list / Scope | What shipped (sha) and exactly what remains as the request |
+| CONFIRMED (a report, not yet fixed) | Bugs | Reporter's role, config, triage priority |
+| CANNOT-REPRO / NEEDS-INFO / BLOCKED | Stays, reporter @mentioned | The specific question or the missing prerequisite |
+
+A card in **Possible Bugs** always leaves it after a verdict: CONFIRMED → Bugs,
+anything else → the row above. Possible Bugs is an inbox, not a resting place.
 
 ### The finding bar - what a BOUNCE or a new card must carry
 

@@ -197,6 +197,39 @@ $mvs_page_ids = array_map( 'intval', array_column( $media_items, 'media_id' ) );
 \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
 \WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 
+// Authors, in one pair of queries instead of a user + usermeta read per tile:
+// every tile prints a display name, an avatar and a profile link. (2.5.1)
+$mvs_grid_author_ids = array_values( array_unique( array_filter( array_map( 'intval', array_column( $media_items, 'post_author' ) ) ) ) );
+if ( $mvs_grid_author_ids ) {
+	cache_users( $mvs_grid_author_ids );
+}
+
+// Gallery tiles show "N in this group". One grouped COUNT for the page, not
+// one per grouped tile. (2.5.1)
+$mvs_grid_group_counts = array();
+$mvs_grid_page_groups  = array();
+foreach ( $mvs_page_ids as $mvs_grid_pid ) {
+	$mvs_grid_pid_group = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_grid_pid, 'media_group' );
+	if ( $mvs_grid_pid_group ) {
+		$mvs_grid_page_groups[] = (string) $mvs_grid_pid_group;
+	}
+}
+$mvs_grid_page_groups = array_values( array_unique( $mvs_grid_page_groups ) );
+if ( $mvs_grid_page_groups ) {
+	$mvs_grid_group_ph  = implode( ', ', array_fill( 0, count( $mvs_grid_page_groups ), '%s' ) );
+	$mvs_grid_group_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and placeholders are built above.
+			"SELECT meta_value, COUNT(*) AS c FROM {$meta_table} WHERE meta_key = 'media_group' AND meta_value IN ({$mvs_grid_group_ph}) GROUP BY meta_value",
+			...$mvs_grid_page_groups
+		),
+		ARRAY_A
+	);
+	foreach ( (array) $mvs_grid_group_rows as $mvs_grid_group_row ) {
+		$mvs_grid_group_counts[ (string) $mvs_grid_group_row['meta_value'] ] = (int) $mvs_grid_group_row['c'];
+	}
+}
+
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 if ( empty( $mvs_shortcode_context ) ) {
@@ -228,13 +261,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
 				$mvs_grid_group      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $item_id, 'media_group' );
-				$mvs_grid_group_cnt  = 0;
-				if ( $mvs_grid_group ) {
-					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-						"SELECT COUNT(*) FROM {$meta_table} WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						$mvs_grid_group
-					) );
-				}
+				$mvs_grid_group_cnt  = $mvs_grid_group ? ( $mvs_grid_group_counts[ (string) $mvs_grid_group ] ?? 0 ) : 0;
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
 				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );

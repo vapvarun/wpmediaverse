@@ -2269,6 +2269,16 @@ a.mvs-stat-card:focus {
 	border-bottom: 1px solid var(--mvs-border-light);
 	margin: 0 0 20px;
 	padding: 0;
+	/* A phone-width admin screen scrolls the tab row, not the page: five tabs
+	   pushed Quota & Credits 52px past a 390px viewport, and the labels broke
+	   onto two lines. Basecamp 10320657313. */
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+.mvs-admin-tabs > .mvs-admin-tab {
+	flex-shrink: 0;
+	white-space: nowrap;
 }
 
 .mvs-admin-tab {

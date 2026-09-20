@@ -104,7 +104,7 @@ class FavoriteService {
 	 */
 	public function get_user_favorites( int $user_id, ?int $collection_id = null, int $per_page = 20, int $page = 1, string $search = '', string $orderby = 'favorited', string $order = 'DESC' ): array {
 		global $wpdb;
-		$table  = $wpdb->prefix . 'mvs_favorites';
+		$table = $wpdb->prefix . 'mvs_favorites';
 		// Driving table is favourites; the index is only the joined side, so the
 		// repository supplies the name rather than swallowing the query (Rule 7 —
 		// see MediaRepository::index_table()).
@@ -128,8 +128,8 @@ class FavoriteService {
 			'date'      => 'm.created_at',
 		);
 
-		$orderby = isset( $columns[ $orderby ] ) ? $orderby : 'favorited';
-		$order   = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
+		$orderby     = isset( $columns[ $orderby ] ) ? $orderby : 'favorited';
+		$order       = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 		$needs_media = '' !== $search || 'favorited' !== $orderby;
 
 		// The join stays OFF on the default path. Adding it unconditionally would

@@ -71,7 +71,7 @@ class CollectionMetaBox {
 		if ( ! $mvs_collections_on && '' === (string) get_post_meta( $post->ID, '_mvs_collection_type', true ) ) {
 			$collection_type = 'smart';
 		}
-		$rules           = $this->service->get_rules( $post->ID );
+		$rules = $this->service->get_rules( $post->ID );
 
 		wp_enqueue_style(
 			'mvs-admin-collection-metabox',

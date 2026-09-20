@@ -381,7 +381,9 @@ $mvs_archive_url = home_url( '/media/' );
 						<?php endif; ?>
 						<?php echo $poster_url ? 'poster="' . esc_url( $poster_url ) . '"' : ''; ?>
 						data-wp-on--play="actions.onPlay"
-						data-wp-on--pause="actions.onPause">
+						data-wp-on--pause="actions.onPause"
+						data-wp-on--seeked="actions.onSeek"
+						data-wp-on--ended="actions.onComplete">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</video>
 				</div>
@@ -425,7 +427,9 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php endif; ?>
 					<audio controls preload="metadata"
 						data-wp-on--play="actions.onPlay"
-						data-wp-on--pause="actions.onPause">
+						data-wp-on--pause="actions.onPause"
+						data-wp-on--seeked="actions.onSeek"
+						data-wp-on--ended="actions.onComplete">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</audio>
 				</div>
@@ -482,7 +486,21 @@ $mvs_archive_url = home_url( '/media/' );
 									?>
 								</span>
 							</div>
-							<?php if ( '' !== $mvs_file_url ) : ?>
+							<?php
+							// Same two-part rule the REST download endpoint enforces
+							// (MediaController::record_download): the site-wide switch,
+							// then the per-item opt-out, absent meta meaning allow.
+							//
+							// This link had neither. "Allow Downloads" promises the
+							// button is hidden everywhere, and an owner who turned it
+							// off still shipped a working Download on every document -
+							// pointing at the file directly, so it also walked past the
+							// 403 that endpoint returns. Basecamp 10316771960 follow-up.
+							$mvs_dl_allowed = (bool) get_option( 'mvs_allow_downloads', true )
+								&& '0' !== (string) \WPMediaVerse\Core\Plugin::container()
+									->get( 'media_repository' )->get( $mvs_media_id, 'allow_download' );
+							?>
+							<?php if ( '' !== $mvs_file_url && $mvs_dl_allowed ) : ?>
 								<a class="mvs-doc-download" href="<?php echo esc_url( $mvs_file_url ); ?>" download>
 									<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 								</a>
@@ -779,16 +797,19 @@ $mvs_archive_url = home_url( '/media/' );
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
 					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
+					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 						<select data-wp-on--change="actions.updateEditPrivacy">
-							<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
-								<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $current_privacy, $opt ); ?>>
-									<?php echo esc_html( ucfirst( $opt ) ); ?>
-								</option>
-							<?php endforeach; ?>
+							<?php
+							// The shared labels, not bare "Public / Members / Private":
+							// "Members" alone reads as followers-only (Basecamp
+							// 10286023341), and this was the last picker on its own list.
+							\WPMediaVerse\Core\TemplateHelpers::privacy_options( (string) $current_privacy );
+							?>
 						</select>
 					</div>
+					<?php endif; ?>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
 						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
 							<input type="checkbox" class="mvs-edit-regenerate-slug"

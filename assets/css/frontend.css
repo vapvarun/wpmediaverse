@@ -13,8 +13,17 @@
    ========================================================================== */
 
 :root {
-    /* Typography — BuddyNext first, then system stack fallback */
-    --mvs-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    /* Typography — BuddyNext first, then the THEME, via inherit.
+       --font-body / --font-display are defined by BuddyNext and by nothing
+       else, so on every other theme these tokens fell through to a hardcoded
+       Apple system stack, and the plugin imposed that stack on top of whatever
+       the theme had set. MediaVerse pages read in a different typeface from the
+       site around them.
+       `inherit` is the fix rather than a chain of --wp--preset--font-family--*
+       names: a preset list only covers the themes someone thought to name, and
+       silently misses the next one. Inheriting takes the theme's own font on
+       ANY theme, block or classic, with nothing to maintain. */
+    --mvs-font: var(--font-body, inherit);
     --mvs-font-heading: var(--font-display, var(--mvs-font));
     /* Font-size scale — single source of truth for every font-xs/sm/md/lg
        callsite (137 of them, Free + Pro + admin). Was only in the never-enqueued
@@ -28,6 +37,15 @@
        --mvs-fl-row-height (Flickr), whose justified-rows technique this layout
        now shares - see the .mvs-grid--original block for why. */
     --mvs-grid-row-height: 240px;
+
+    /* Page width for every MediaVerse surface. The same 1200px used to be
+       hardcoded on four wrappers and a banner, so a site owner on a wide theme
+       had to override five rules in Additional CSS and would still drift the
+       moment a sixth surface was added. One token, one override:
+       :root { --mvs-content-width: 1600px; } in a child theme widens the lot,
+       and the surfaces stay consistent with each other by construction.
+       Basecamp 10313587813. */
+    --mvs-content-width: 1200px;
 
     /* Per-item aspect ratio for those justified rows. Every tile overrides
        this inline (TemplateHelpers::grid_item_ar_style() server-side,
@@ -384,6 +402,30 @@
     --mvs-space-6: 3rem;     /* 48px */
     --mvs-space-7: 4rem;     /* 64px */
 
+    /* What the page pins at the top of the viewport. Every sticky MVS surface
+       adds one of these to its own offset so it parks BELOW that chrome
+       instead of under it. A plugin cannot hardcode a theme's header height,
+       so the numbers come from measurement —
+       assets/js/frontend/sticky-top.js rewrites them on load/resize/scroll.
+       0 is the honest default and the value that STAYS on a theme with no
+       sticky header, so those themes keep the original offsets exactly.
+
+       Two of them, because our own sticky surfaces stack on each other:
+
+       --mvs-sticky-top    CHROME ONLY — the WP admin bar and the THEME's
+                           header. Nothing of ours counts toward it.
+                           Read by .mvs-dashboard-tabs and .mvs-dashboard-rail.
+       --mvs-sticky-stack  Chrome PLUS our own pinned surfaces sitting above
+                           the bulk bar (at <=860px the dashboard tab strip is
+                           one). Read by .mvs-bulk-bar.
+
+       The split is what stops a surface chasing itself: a single variable that
+       the tab strip both read and contributed to would creep down the page one
+       frame at a time. Each variable is measured with its own consumer
+       excluded. Basecamp 10320911387. */
+    --mvs-sticky-top: 0px;
+    --mvs-sticky-stack: 0px;
+
     /* Z-index layers — never use bare integers in plugin CSS.
        The overlay-and-above band sits in the 9990s: theme sticky headers run
        high (Reign #masthead is 999/1000, BuddyBoss ~991), and at the old
@@ -502,21 +544,19 @@ body.dark-mode {
        Follows BuddyNext type scale. Works with or without BuddyNext.
    ========================================================================== */
 
-/* WordPress defers global-styles-inline-css to <body> when Interactivity API
-   script modules are used. This overrides theme body font-size rules that loaded
-   in <head>. We reset body font-size on MVS pages to the theme's own CSS variable
-   (--font-size-regular) if available, falling back to 1rem. This ensures consistent
-   typography regardless of stylesheet load order. */
-body.mvs-page {
-    font-size: var(--font-size-regular, 1rem);
-}
+/* No body font-size here on purpose. body.mvs-page used to set
+   var(--font-size-regular, 1rem|inherit), but no theme and not BuddyNext defines
+   that token, so it only ever pinned MVS pages to the root size and overrode the
+   theme's own (responsive) body size - 17px on Reign phones where the theme uses
+   15px. The theme owns body text size. Basecamp 10317724451. */
 
 /* Scope: all MVS template wrappers use these classes.
    font-family set here so BuddyNext's Inter/Plus Jakarta Sans carries through. */
 .mvs-single-media,
 .mvs-single-album,
 .mvs-single-collection,
-.mvs-explore,
+.mvs-explore-page,
+.mvs-documents,
 .mvs-dashboard,
 .mvs-profile-edit {
     font-family: var(--mvs-font);
@@ -539,7 +579,8 @@ body.mvs-page {
 .mvs-single-media h1,
 .mvs-single-album h1,
 .mvs-single-collection h1,
-.mvs-explore h1,
+.mvs-explore-page h1,
+.mvs-documents h1,
 .mvs-dashboard h1,
 .mvs-profile-edit h1 {
     font-family: var(--mvs-font-heading);
@@ -552,7 +593,8 @@ body.mvs-page {
 .mvs-single-media h2,
 .mvs-single-album h2,
 .mvs-single-collection h2,
-.mvs-explore h2,
+.mvs-explore-page h2,
+.mvs-documents h2,
 .mvs-dashboard h2,
 .mvs-profile-edit h2 {
     font-family: var(--mvs-font-heading);
@@ -565,7 +607,8 @@ body.mvs-page {
 .mvs-single-media h3,
 .mvs-single-album h3,
 .mvs-single-collection h3,
-.mvs-explore h3,
+.mvs-explore-page h3,
+.mvs-documents h3,
 .mvs-dashboard h3,
 .mvs-profile-edit h3 {
     font-family: var(--mvs-font-heading);
@@ -578,7 +621,8 @@ body.mvs-page {
 .mvs-single-media h4,
 .mvs-single-album h4,
 .mvs-single-collection h4,
-.mvs-explore h4,
+.mvs-explore-page h4,
+.mvs-documents h4,
 .mvs-dashboard h4,
 .mvs-profile-edit h4 {
     font-size: 0.875rem;
@@ -586,21 +630,54 @@ body.mvs-page {
     margin: 0 0 0.5em;
 }
 
-/* Form elements inherit font from wrapper */
-.mvs-single-media button,
-.mvs-single-media input,
-.mvs-single-media select,
-.mvs-single-media textarea,
-.mvs-dashboard button,
-.mvs-dashboard input,
-.mvs-dashboard select,
-.mvs-dashboard textarea,
-.mvs-profile-edit button,
-.mvs-profile-edit input,
-.mvs-profile-edit select,
-.mvs-profile-edit textarea {
+/* Form controls do not inherit font-family from an ancestor -- the UA sheet
+   gives them its own default -- so MediaVerse buttons/inputs rendered in the
+   theme's page fell back to Arial while every div around them used the theme
+   font. This used to be scoped to a hand-maintained wrapper list that missed
+   .mvs-explore-page, .mvs-documents, .mvs-single-album and
+   .mvs-single-collection. body.mvs-page (TemplateLoader::body_class) covers
+   every MVS template at once; the footer-portalled shell (lightbox, FAB,
+   toast) carries its own copy in shared-ui-frame.css because it renders
+   outside these wrappers. Basecamp 10309690361, 10309616378. */
+body.mvs-page button,
+body.mvs-page input,
+body.mvs-page select,
+body.mvs-page textarea {
     font-family: inherit;
+}
+
+/* Size is a separate job at ZERO specificity. Sharing the rule above made
+   `font-size: inherit` (0,1,2) outrank every control's own single-class size
+   (.mvs-btn, .mvs-search-mode-btn, .mvs-lightbox-reaction ...), so they all
+   rendered at body size. :where() keeps the fallback for controls that set no
+   size of their own (inputs would otherwise drop to the UA 13.33px) and lets
+   any authored size win. Basecamp 10309690361. */
+:where(body.mvs-page) :where(button, input, select, textarea) {
     font-size: inherit;
+}
+
+/* Selects: never let a label run under the arrow, and never cut a word in
+   half. Themes that restyle selects (Reign: appearance:none plus a background
+   chevron 17px in from the edge) leave the UA arrow gutter to the control's own
+   padding, and ours was 12px, so the tail of a long option sat under the
+   chevron. The privacy labels are deliberately explicit (TemplateHelpers::
+   privacy_labels) and can be wider than a phone-width control, so the closed
+   state truncates with an ellipsis instead of clipping mid-word; the full label
+   is still in the open list. Basecamp 10313754840. */
+body.mvs-page select {
+    padding-inline-end: 2.25rem;
+    text-overflow: ellipsis;
+}
+
+/* Keyboard focus must be visible on every MVS form control, whatever the
+   theme does: Reign ships select/input :focus { outline: 0 }, and most of our
+   fields had no focus style of their own, so tabbing through a modal showed
+   nothing (WCAG 2.4.7). Same ring the toolbar controls already use. Kept at
+   (0,1,1) through :where() so a component's own focus style still wins, and
+   declared after the theme so a tie goes our way. Basecamp 10320619382. */
+:where(body.mvs-page) :is(input, select, textarea):focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
 }
 
 /* ==========================================================================
@@ -725,7 +802,8 @@ body.mvs-page {
 .mvs-single-album,
 .mvs-single-collection,
 .mvs-profile-edit,
-.mvs-explore,
+.mvs-explore-page,
+.mvs-documents,
 .mvs-dashboard {
     padding-bottom: calc(var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
 }
@@ -990,12 +1068,27 @@ body.dark-mode .mvs-skeleton::after {
     transition: background 0.15s;
 }
 
+/* align-items: the follower/following buttons carry padding-block for the 44px
+   tap target while the "N media" span does not, so under the default stretch
+   the span's content sat ~14px higher than the buttons'. Basecamp 10313672574. */
 .mvs-profile-header-stats {
     display: flex;
-    gap: 28px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mvs-space-xs, 6px) 28px;
     font-size: 0.9375rem;
     color: var(--mvs-text-secondary);
     margin-bottom: 12px;
+}
+
+/* Each stat stays one unit on one line. The media count is a span and the
+   follower counts are buttons; when the row got tight on a phone the buttons
+   shrank and broke "6 / followers" over two lines while "6 media" stayed on
+   one, so the row read as three layouts. A stat that does not fit now moves
+   to the next line whole. Basecamp 10313672574. */
+.mvs-profile-header-stats > * {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .mvs-profile-header-stats span {
@@ -1038,6 +1131,9 @@ body.dark-mode .mvs-skeleton::after {
 
     .mvs-profile-header-stats {
         justify-content: center;
+        /* 28px between three stats needs ~311px; the phone header column is
+           ~288px. The stat buttons already carry 6px inline padding. */
+        column-gap: var(--mvs-space-sm, 8px);
     }
 
     .mvs-profile-header-bio {
@@ -1356,7 +1452,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-single-album {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 20px;
 }
@@ -1398,7 +1494,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-explore-page {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 20px;
     box-sizing: border-box;
@@ -1491,7 +1587,7 @@ body.dark-mode .mvs-skeleton::after {
     min-width: 0;
 }
 
-.mvs-grid-item a {
+.mvs-grid-item > a {
     display: block;
     width: 100%;
     height: 100%;
@@ -1790,7 +1886,7 @@ body.dark-mode .mvs-skeleton::after {
 
 /* Instagram-like feed: author row below each card */
 .mvs-feed {
-    gap: 6px;
+    gap: var(--mvs-grid-gap, 6px);
 }
 
 .mvs-feed .mvs-grid-item {
@@ -2397,7 +2493,7 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-dashboard {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 20px;
 }
@@ -2534,7 +2630,15 @@ body.dark-mode .mvs-skeleton::after {
 @media (max-width: 860px) {
     .mvs-dashboard-tabs {
         position: sticky;
-        top: 0;
+        /* Below the theme's chrome, not under it. At `top: 0` this strip pinned
+           at 0-70 while Reign's header held 0-81 at z-index 999 against our 50,
+           so the whole strip was invisible and every tab hit-tested to the site
+           logo — the same defect as the bulk bar, on the control that navigates
+           between dashboard sections.
+           --mvs-sticky-top is CHROME ONLY and deliberately excludes this strip;
+           reading a variable this element also contributed to would walk it
+           down the page a frame at a time. Basecamp 10320911387. */
+        top: var(--mvs-sticky-top, 0px);
         z-index: var(--mvs-z-sticky);
         background: var(--mvs-bg);
         padding: 8px 0;
@@ -2704,7 +2808,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    gap: var(--mvs-grid-gap, 16px);
 }
 
 .mvs-dashboard-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
@@ -2793,7 +2897,18 @@ body.dark-mode .mvs-skeleton::after {
 /* Sticky action bar shown while ≥1 card is selected. */
 .mvs-bulk-bar {
     position: sticky;
-    top: var(--mvs-space-2);
+    /* Clears everything already pinned above it, then the usual gap. A flat
+       var(--mvs-space-2) parked the bar at ~8px, which on any theme with a
+       sticky header (Reign, the theme we ship with, pins 0-90 at 1440 and 0-81
+       at 390) is UNDERNEATH it: the count, the album picker and the Add button
+       were all covered, and elementFromPoint at each control returned the
+       theme's header link. A member could not click the very controls the bar
+       exists for.
+       The --stack variable, not --top: at <=860px the dashboard tab strip is
+       pinned between the theme header and this bar, and the bar has to clear
+       BOTH. --mvs-sticky-stack is 0 when nothing is pinned, so a theme without
+       a sticky header keeps the old offset exactly. Basecamp 10320911387. */
+    top: calc(var(--mvs-sticky-stack, 0px) + var(--mvs-space-2));
     z-index: 5;
     display: flex;
     flex-wrap: wrap;
@@ -2814,7 +2929,11 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-bulk-privacy {
-    max-width: 160px;
+    /* Was a 160px cap: every privacy label is wider (174-272px), so even the
+       default "Public: anyone can see" was clipped. Size to the label, never
+       wider than the bar. Basecamp 10313754840. */
+    width: auto;
+    max-width: 100%;
 }
 
 @media (max-width: 480px) {
@@ -2828,7 +2947,9 @@ body.dark-mode .mvs-skeleton::after {
     }
 
     .mvs-bulk-privacy {
-        max-width: none;
+        /* Full row on a phone. width:auto would size it to its (long) label
+           and push the arrow past the bar's edge. */
+        width: 100%;
     }
 }
 
@@ -3189,8 +3310,11 @@ a.mvs-dashboard-card-title:hover {
     min-height: 80px;
 }
 
+/* Same clipping as .mvs-dashboard-upload-row: 200px leaves ~156px of text
+   room, under the 207px/239px the longest privacy labels need. The modal is
+   560px wide, so 100% is safe. Basecamp 10309750901. */
 .mvs-field select {
-    max-width: 200px;
+    max-width: 100%;
 }
 
 /* ==========================================================================
@@ -3734,8 +3858,13 @@ a.mvs-dashboard-card-title:hover {
     flex: 1;
 }
 
+/* Privacy labels are sentences ("Only me: hidden from everyone else" measures
+   239px). A closed <select> clips rather than wraps or ellipsizes, so any fixed
+   cap truncates the selected option -- size to content instead, bounded by the
+   row. Basecamp 10313754840. */
 .mvs-dashboard-upload-row select {
-    max-width: 160px;
+    width: auto;
+    max-width: 100%;
 }
 
 .mvs-dashboard-upload-status {
@@ -4062,7 +4191,11 @@ a.mvs-dashboard-card-title:hover {
     position: relative;
 }
 
-.mvs-grid-item a {
+/* Direct child only: the media permalink. A descendant selector here also hit
+   .mvs-grid-item-author-link, overriding its display:flex (specificity 0,1,1
+   vs 0,1,0) so the avatar and name stacked and the name never ellipsized.
+   Same trap as the two cases documented above. Basecamp 10312738180. */
+.mvs-grid-item > a {
     display: block;
     position: relative;
     text-decoration: none;
@@ -4462,7 +4595,7 @@ a.mvs-dashboard-card-title:hover {
 /* --- Collection Single Page --- */
 
 .mvs-single-collection {
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     padding: 24px 16px 0;
 }
@@ -5013,13 +5146,14 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-media-picker-cover-btn {
     position: absolute;
-    bottom: 4px;
-    left: 4px;
+    inset-block-end: 4px;
+    inset-inline-start: 4px;
     background: rgba(0, 0, 0, 0.7);
     color: var(--mvs-bg);
     border: none;
     border-radius: 4px;
     padding: 2px 8px;
+    min-block-size: 24px; /* WCAG 2.2 target-size floor on fine pointers; 44px on touch below. */
     font-size: 11px;
     cursor: pointer;
     opacity: 0;
@@ -5032,18 +5166,38 @@ a.mvs-dashboard-card-title:hover {
     opacity: 1;
 }
 
+/* Revealed on keyboard focus but drew no ring (the theme strips button
+   outlines), so a keyboard user could not see which thumbnail's button was
+   active. Basecamp 10320657228. */
+.mvs-media-picker-cover-btn:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
 /* A hover-only reveal is unreachable on touch: there is no hover on a phone or
    tablet, so "Set Cover" was invisible and effectively untappable — while the
    hint directly above the picker instructs the member to click it. On a coarse
    pointer the button is simply always visible (Basecamp 10190678139). */
 @media (hover: none), (pointer: coarse) {
-    .mvs-media-picker-cover-btn {
+    /* Two classes to outrank the global `[class*="mvs-"] button` 44px touch
+       floor, which otherwise grew the chip back to 44px. */
+    .mvs-media-picker-item .mvs-media-picker-cover-btn {
         opacity: 1;
-        /* Revealing it is only half the fix — at 28px tall it was still under
-           the 40px touch floor, so it would have been visible and awkward to
-           hit. Padding rather than height so the label stays centred. */
-        min-height: 40px;
-        padding-block: 8px;
+        min-height: 24px;
+    }
+
+    /* The touch floor is met by the HIT AREA, not the chip. Growing the chip
+       itself to 44px covered about 40% of a small tile (Basecamp 10320784172),
+       so the chip keeps its 24px corner size and this invisible layer extends
+       what a finger can hit. It grows upward, toward the tile's centre, and
+       only 4px (the chip's own offset) at the edges, so it never spills past
+       the tile into its neighbour. */
+    .mvs-media-picker-cover-btn::before {
+        content: "";
+        position: absolute;
+        inset-block: calc(24px - var(--mvs-touch-min, 44px)) -4px;
+        inset-inline: -4px;
+        min-inline-size: var(--mvs-touch-min, 44px);
     }
 }
 
@@ -5180,7 +5334,12 @@ a.mvs-dashboard-card-title:hover {
     gap: 8px;
 }
 
-.mvs-upload-fields input,
+/* Text fields only -- a bare `input` here also caught the "share as story"
+   checkbox and stretched it to the full row width. This block duplicates the
+   .mvs-upload-fields rules at ~3644 with different values; the two should be
+   consolidated, but that is a wider cleanup than this fix.
+   Basecamp 10313183837. */
+.mvs-upload-fields input[type="text"],
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
@@ -5891,7 +6050,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 14px 24px;
     border-radius: 8px;
     margin: 0 auto 20px;
-    max-width: 1200px;
+    max-width: var(--mvs-content-width, 1200px);
     position: relative;
 }
 
@@ -6272,7 +6431,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-cloud-item:focus-visible,
 .mvs-notification-bell:focus-visible,
 .mvs-modal-close:focus-visible,
-.mvs-dashboard-dropzone:focus-visible {
+.mvs-dashboard-dropzone:focus-visible,
+.mvs-load-more-btn:focus-visible {
     outline: 2px solid var(--mvs-primary);
     outline-offset: 2px;
 }
@@ -8479,7 +8639,12 @@ button.mvs-follows-open,
        and torn the card in half on scroll). */
     .mvs-dashboard-rail {
         position: sticky;
-        top: var(--mvs-space-4);
+        /* Chrome offset + the original gap. The rail is tall, so a sticky
+           header only ever buried its top ~66px rather than the whole card —
+           less visible than the bulk bar's failure, the same cause.
+           --mvs-sticky-top (chrome only): the rail is ours, so it must not
+           count toward the value it reads. Basecamp 10320911387. */
+        top: calc(var(--mvs-sticky-top, 0px) + var(--mvs-space-4));
         grid-column: 1;
         grid-row: 1 / span 2;
         display: flex;

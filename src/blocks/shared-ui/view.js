@@ -108,8 +108,17 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 /** The element that had focus when the lightbox opened, so it can be handed back. */
 let lightboxReturnFocus = null;
 
-function lightboxFocusables() {
-	const box = document.querySelector( '.mvs-lightbox' );
+/**
+ * The shell upload modal is the same kind of dialog and reuses the same
+ * focusables + Tab trap below, keyed by its own selector (Basecamp 10320784059).
+ */
+const UPLOAD_MODAL = '.mvs-upload-modal-overlay .mvs-modal';
+
+/** The element that opened the upload modal, so it can be handed back. */
+let uploadReturnFocus = null;
+
+function dialogFocusables( selector ) {
+	const box = document.querySelector( selector );
 
 	if ( ! box ) {
 		return [];
@@ -146,8 +155,8 @@ function lightboxRememberTrigger() {
  * Without this the trap is only half-built: focus starts inside but the first
  * Tab past the last control walks straight out into the page behind.
  */
-function lightboxTrapTab( event ) {
-	const items = lightboxFocusables();
+function dialogTrapTab( event, selector ) {
+	const items = dialogFocusables( selector );
 
 	if ( ! items.length ) {
 		return;
@@ -158,7 +167,7 @@ function lightboxTrapTab( event ) {
 	const active = document.activeElement;
 
 	if ( event.shiftKey ) {
-		if ( active === first || ! document.querySelector( '.mvs-lightbox' ).contains( active ) ) {
+		if ( active === first || ! document.querySelector( selector ).contains( active ) ) {
 			event.preventDefault();
 			last.focus();
 		}
@@ -214,6 +223,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
 		// --- Toast (flat) ---
 		toastMessage: '',
+		// The role=status region's text. Set when a toast shows, emptied when
+		// it hides, so the region is blank between toasts and every toast -
+		// the same message again included - is a change to announce.
+		toastLive: '',
 		toastType: 'success',
 		toastVisible: false,
 		// Derived from the type, not enumerated per type. assets/js/admin/toast.js
@@ -253,6 +266,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalDescription: '',
 		uploadModalTags: '',
 		uploadModalPrivacy: 'public',
+		uploadModalStory: false,
 		uploadModalMediaGroup: null,
 		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
 		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
@@ -642,15 +656,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 	actions: {
 		// --- Toast ---
 		showToast( msg, type = 'success' ) {
-			state.toastMessage = msg;
-			state.toastType = type;
-			state.toastVisible = true;
+			// The live region only speaks when its text changes. It is emptied
+			// whenever a toast hides, and blanked here too so a toast replacing
+			// one still on screen is announced. Basecamp 10320784236.
+			state.toastLive = '';
+			state.toastVisible = false;
 			clearTimeout( toastTimer );
 			toastTimer = setTimeout( () => {
-				state.toastVisible = false;
-			}, 3000 );
+				state.toastMessage = msg;
+				state.toastLive = msg;
+				state.toastType = type;
+				state.toastVisible = true;
+				toastTimer = setTimeout( actions.hideToast, 3000 );
+			}, 100 );
 		},
 		hideToast() {
+			clearTimeout( toastTimer );
+			state.toastLive = '';
 			state.toastVisible = false;
 		},
 
@@ -675,27 +697,36 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 
 		// --- Tag Autocomplete ---
+		// Resolves once state.tagResults holds this query's answer, so a caller
+		// can await it instead of guessing a delay. The callers that guessed
+		// (350ms, against a 300ms debounce plus a round trip) always read the
+		// previous keystroke's results, which is why their dropdowns never
+		// opened. A superseded call never resolves: its newer replacement does.
 		searchTags( query, restUrl ) {
 			state.tagQuery = query;
 			if ( query.length < 2 ) {
 				state.tagResults = [];
 				state.tagVisible = false;
-				return;
+				return Promise.resolve();
 			}
 			clearTimeout( tagSearchTimer );
-			tagSearchTimer = setTimeout( async () => {
-				try {
-					const res = await window.mvsRest.restFetch(
-						restUrl + 'tags?search=' + encodeURIComponent( query ) + '&per_page=8'
-					);
-					const data = res.data;
-					state.tagResults = data.map( ( t ) => t.name || t );
-					state.tagVisible = state.tagResults.length > 0;
-				} catch {
-					state.tagResults = [];
-					state.tagVisible = false;
-				}
-			}, 300 );
+
+			return new Promise( ( resolve ) => {
+				tagSearchTimer = setTimeout( async () => {
+					try {
+						const res = await window.mvsRest.restFetch(
+							restUrl + 'tags?search=' + encodeURIComponent( query ) + '&per_page=8'
+						);
+						const data = res.data;
+						state.tagResults = data.map( ( t ) => t.name || t );
+						state.tagVisible = state.tagResults.length > 0;
+					} catch {
+						state.tagResults = [];
+						state.tagVisible = false;
+					}
+					resolve();
+				}, 300 );
+			} );
 		},
 		hideTagAutocomplete() {
 			state.tagVisible = false;
@@ -726,6 +757,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		openUploadModal() {
 			const ctx = getContext();
 			state.uploadModalMode = ctx.uploadMode || 'photo';
+			uploadReturnFocus = document.activeElement;
 			state.uploadModalVisible = true;
 			state.uploadModalFiles = [];
 			state.uploadModalPreviews = [];
@@ -927,6 +959,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				input.click();
 			}
 		},
+		// The placeholder is the dropzone's keyboard-reachable button.
+		handleUploadKeydown( event ) {
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.handleUploadClick();
+			}
+		},
 		handleFileSelect( event ) {
 			actions.ingestFiles( Array.from( event.target.files ) );
 		},
@@ -1083,6 +1122,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateUploadPrivacy( event ) {
 			state.uploadModalPrivacy = event.target.value;
 		},
+		toggleUploadStory( event ) {
+			state.uploadModalStory = !! event.target.checked;
+		},
 		updateUploadAlbum( event ) {
 			// -1 = "Create new album", 0 = none, >0 = existing album id.
 			const val = parseInt( event.target.value, 10 );
@@ -1191,6 +1233,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						if ( mediaData && mediaData.duplicate_warning ) {
 							state.uploadModalDuplicates++;
 							state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
+						}
+						// "Also share as a story" (Pro). Non-fatal: the media is
+						// uploaded either way. Basecamp 10313107097.
+						if ( state.uploadModalStory && mediaData && mediaData.id ) {
+							await window.mvsRest.markAsStory( mediaData.id );
 						}
 					} else {
 						state.uploadModalFailed++;
@@ -1838,7 +1885,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// guard, because it applies whether or not the member is in a
 			// field — a text input inside the dialog is still inside it.
 			if ( event.key === 'Tab' && state.lightboxVisible ) {
-				lightboxTrapTab( event );
+				dialogTrapTab( event, '.mvs-lightbox' );
+				return;
+			}
+			if ( event.key === 'Tab' && state.uploadModalVisible ) {
+				dialogTrapTab( event, UPLOAD_MODAL );
 				return;
 			}
 
@@ -1945,7 +1996,54 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			// The close button first: it is the control a member most often
 			// wants, and landing there makes the dialog's boundary obvious.
-			const target = box.querySelector( '.mvs-lightbox-close' ) || lightboxFocusables()[ 0 ];
+			const target = box.querySelector( '.mvs-lightbox-close' ) || dialogFocusables( '.mvs-lightbox' )[ 0 ];
+
+			if ( target ) {
+				target.focus();
+			}
+		},
+		/**
+		 * Same job as lightboxFocus for the shell upload modal: after the render
+		 * that reveals it, move focus to Close; after the one that hides it, hand
+		 * focus back to the opener.
+		 */
+		uploadModalFocus() {
+			const box = document.querySelector( UPLOAD_MODAL );
+
+			if ( ! box ) {
+				return;
+			}
+
+			if ( ! state.uploadModalVisible ) {
+				const back = uploadReturnFocus;
+
+				uploadReturnFocus = null;
+
+				if ( ! back ) {
+					return;
+				}
+
+				// Opened from the FAB menu, whose item is hidden again by now:
+				// the FAB itself is the control that brought the member here.
+				const target =
+					document.contains( back ) && back.getClientRects().length
+						? back
+						: document.querySelector( '.mvs-fab' );
+
+				if ( target ) {
+					target.focus();
+				}
+
+				return;
+			}
+
+			if ( box.contains( document.activeElement ) ) {
+				return;
+			}
+
+			const target =
+				box.querySelector( '.mvs-modal-close' ) ||
+				dialogFocusables( UPLOAD_MODAL )[ 0 ];
 
 			if ( target ) {
 				target.focus();
@@ -2059,4 +2157,9 @@ const { state: mvsState } = store( 'mvs', {
 // delegated click handler on .mvs-media-edit-btn).
 window.mvsOpenEditModal = function ( mediaId ) {
 	actions.openEditModal( mediaId );
+};
+
+// Bridge: the toast for vanilla JS (bp-actions.js delete confirmations).
+window.mvsSharedUI = {
+	showToast: ( message, type ) => actions.showToast( message, type ),
 };

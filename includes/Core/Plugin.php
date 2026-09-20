@@ -316,6 +316,18 @@ class Plugin {
 			1
 		);
 
+		// The reverse worker: bring a demoted media's bytes home and delete the
+		// cloud copy. Queued by the privacy-change listener below.
+		add_action(
+			'mvs_cloud_repatriate_media',
+			static function ( $args ) {
+				$media_id = is_array( $args ) ? (int) ( $args['media_id'] ?? 0 ) : (int) $args;
+				\WPMediaVerse\Services\UploadService::run_cloud_repatriation( $media_id );
+			},
+			10,
+			1
+		);
+
 		// Storage re-localization on privacy escalation. When a media row
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or
@@ -326,6 +338,25 @@ class Plugin {
 			'mvs_media_privacy_changed',
 			array( self::$container->get( 'storage' ), 'sync_urls_on_privacy_change' ),
 			5,
+			3
+		);
+
+		// …and then actually remove the cloud copy. Localizing the URLs stopped
+		// US serving the CDN; it did not stop anyone holding the old URL. The
+		// comment above promised "Pro listeners (Bunny purge, S3 delete)" that
+		// were never written, so a photo made private stayed fetchable in the
+		// bucket indefinitely. Priority 6: after localization, so the local
+		// copies are the ones on the row before the remote bytes go.
+		add_action(
+			'mvs_media_privacy_changed',
+			static function ( $media_id, $new_privacy, $old_privacy ) {
+				if ( 'public' !== (string) $old_privacy || 'public' === (string) $new_privacy ) {
+					return;
+				}
+
+				\WPMediaVerse\Services\UploadService::queue_cloud_repatriation( (int) $media_id );
+			},
+			6,
 			3
 		);
 
@@ -791,13 +822,6 @@ class Plugin {
 			}
 		);
 
-		self::$container->register(
-			'telemetry',
-			function () {
-				return new \WPMediaVerse\Services\TelemetryService();
-			}
-		);
-
 		// Admin aggregates — single source of truth for site-wide counts
 		// (total media, views, storage, etc.). Coding Rule #16: every
 		// admin/CLI surface MUST read aggregates through this service so the
@@ -924,6 +948,16 @@ class Plugin {
 			'media_repository',
 			function () {
 				return new MediaRepository();
+			}
+		);
+
+		// document<->space link table. Registered so Pro reaches it through the
+		// container rather than importing the concrete class (architecture
+		// rule 3).
+		self::$container->register(
+			'media_space_repository',
+			function () {
+				return new \WPMediaVerse\Repository\MediaSpaceRepository();
 			}
 		);
 
@@ -1175,9 +1209,10 @@ class Plugin {
 	 */
 	public static function maybe_queue_ai( int $media_id ): void {
 		// Queue AI processing when EITHER auto-analyze (describe/tag) OR
-		// auto-moderate is enabled. process() gates each feature internally, so
-		// an owner who turns on only moderation must still get the job queued —
-		// gating solely on auto-analyze silently disabled moderation-only setups.
+		// auto-moderate is enabled. process( $id, true ) then applies each
+		// switch: moderation-only stays queued, and describe/tag run only when
+		// auto-analyze is on, so a moderation-only owner pays for one call
+		// rather than three.
 		if ( ! get_option( 'mvs_ai_auto_analyze', false ) && ! get_option( 'mvs_ai_auto_moderate', false ) ) {
 			return;
 		}
@@ -1195,7 +1230,7 @@ class Plugin {
 				'wpmediaverse'
 			);
 		} else {
-			$ai->process( $media_id );
+			$ai->process( $media_id, true );
 		}
 	}
 
@@ -1206,7 +1241,8 @@ class Plugin {
 	 */
 	public static function handle_ai_process( int $media_id ): void {
 		$ai = self::$container->get( 'ai' );
-		$ai->process( $media_id );
+		// true = automatic path: honour the Auto-Analyze switch for describe/tag.
+		$ai->process( $media_id, true );
 	}
 
 	/**
@@ -1358,6 +1394,7 @@ class Plugin {
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
 			wp_enqueue_script( 'mvs-dismissible' );
+			wp_enqueue_script( 'mvs-sticky-top' );
 			wp_enqueue_script( 'mvs-panel-toolbar' );
 			wp_enqueue_script( 'mvs-collection-filter' );
 			wp_enqueue_script( 'mvs-messages-scroll' );
@@ -1406,6 +1443,18 @@ class Plugin {
 				MVS_PLUGIN_URL . 'src/blocks/media-social/view.js',
 				array( array( 'id' => '@wordpress/interactivity' ) ),
 				self::asset_version( 'src/blocks/media-social/view.js' )
+			);
+
+			// Media player store — playback analytics (play/pause/seek/complete).
+			// templates/media-single.php renders its own <video>/<audio> bound to
+			// this store, but the store used to ship only as the media-player
+			// block's viewScriptModule, so the template path bound to nothing and
+			// mvs_play_events stayed empty. Basecamp 10309795254.
+			wp_enqueue_script_module(
+				'@mvs/media-player',
+				MVS_PLUGIN_URL . 'src/blocks/media-player/view.js',
+				array( array( 'id' => '@wordpress/interactivity' ) ),
+				self::asset_version( 'src/blocks/media-player/view.js' )
 			);
 
 			wp_enqueue_style(
@@ -1634,6 +1683,21 @@ class Plugin {
 			MVS_PLUGIN_URL . 'assets/js/frontend/panel-toolbar.js',
 			array(),
 			self::asset_version( 'assets/js/frontend/panel-toolbar.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		// Publishes --mvs-sticky-top (height of the WP admin bar + whatever
+		// header the THEME pins at the top) so sticky MVS surfaces park below
+		// that chrome instead of under it. Config-free and self-gating: it does
+		// nothing on a page with no .mvs-bulk-bar. Basecamp 10320911387.
+		wp_register_script(
+			'mvs-sticky-top',
+			MVS_PLUGIN_URL . 'assets/js/frontend/sticky-top.js',
+			array(),
+			self::asset_version( 'assets/js/frontend/sticky-top.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -2521,6 +2585,14 @@ class Plugin {
 				'Mute notifications'           => __( 'Mute notifications', 'wpmediaverse' ),
 				'Unmute notifications'         => __( 'Unmute notifications', 'wpmediaverse' ),
 				'Voice messages need a secure (https) connection.' => __( 'Voice messages need a secure (https) connection.', 'wpmediaverse' ),
+				// Chat header presence (2.5.1). Whole phrases, not glued
+				// fragments: "Active " + date + " ago" produced "Active
+				// 12/09/2026 ago" and could not be translated. Basecamp 10320657271.
+				'Online'                       => __( 'Online', 'wpmediaverse' ),
+				/* translators: %s: a relative time in the page language, such as "5 minutes ago". */
+				'Active %s'                    => __( 'Active %s', 'wpmediaverse' ),
+				/* translators: %s: a date, formatted for the viewer's locale. */
+				'Active on %s'                 => __( 'Active on %s', 'wpmediaverse' ),
 			),
 		);
 
@@ -2830,7 +2902,7 @@ JS;
 		// ids; registration is idempotent and dequeue of an unqueued id is a
 		// no-op, so listing the engine's modules here is safe and complete.
 		if ( function_exists( 'wp_dequeue_script_module' ) ) {
-			foreach ( array( '@mvs/shared-ui', '@mvs/media-social', 'mvs-messaging' ) as $module_id ) {
+			foreach ( array( '@mvs/shared-ui', '@mvs/media-social', '@mvs/media-player', 'mvs-messaging' ) as $module_id ) {
 				wp_dequeue_script_module( $module_id );
 			}
 		}

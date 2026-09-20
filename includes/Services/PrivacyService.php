@@ -44,6 +44,33 @@ class PrivacyService {
 	private $cache = array();
 
 	/**
+	 * May this user choose a media item's privacy level?
+	 *
+	 * One answer for every picker and every write path. Settings > General >
+	 * "Allow Users to Set Privacy" promises that, when off, "all uploads use the
+	 * Default Privacy Level" and "the privacy selector is hidden from users" -
+	 * but only the upload surfaces read it, so a member could upload at the
+	 * default and change the level one click later in Edit, in bulk, or through
+	 * the REST update. Anyone who can manage MediaVerse settings keeps the
+	 * control: moderating privacy is part of running the site.
+	 * Basecamp 10320619418.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @param int $user_id User, or 0 for the current one.
+	 * @return bool
+	 */
+	public static function user_may_choose_privacy( int $user_id = 0 ): bool {
+		if ( (bool) get_option( 'mvs_allow_user_privacy', true ) ) {
+			return true;
+		}
+
+		$user_id = $user_id > 0 ? $user_id : get_current_user_id();
+
+		return $user_id > 0 && user_can( $user_id, 'manage_mvs_settings' );
+	}
+
+	/**
 	 * The privacy levels this site will ACCEPT on a write.
 	 *
 	 * One list, asked by every write path. It used to be an inline array in
@@ -300,7 +327,6 @@ class PrivacyService {
 		// Root cause, not symptom: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$allowed_types = array( 'mvs_album', 'mvs_collection' );
-		$post_type     = get_post_type( $media_id );
 
 		// Is there a REAL media row here? A typed index row is media. The
 		// predicate is a non-empty media_type, not MediaTypes::is_known():
@@ -309,13 +335,23 @@ class PrivacyService {
 		// mirrors AccessRulesService, which has resolved index-first since
 		// 10073499758 - the two guards for one hazard had diverged.
 		$in_index = $repo->exists( $media_id );
-		$is_cpt   = (bool) $post_type && in_array( $post_type, $allowed_types, true );
+		$typed    = $in_index && '' !== (string) $repo->get( $media_id, 'media_type' );
+
+		// get_post_type() is a wp_posts read, and this ran once per tile in a
+		// grid (2.5.1). Ask only when the answer can still change the outcome:
+		// a 'cpt' caller always needs it, and so does an untyped row. A TYPED
+		// index row is media whatever wp_posts says - see $is_media below -
+		// and a 'media' caller never consults the post at all.
+		$mvs_needs_post_type = self::SPACE_CPT === $space
+			|| ! ( $typed || ( self::SPACE_MEDIA === $space && $in_index ) );
+		$post_type           = $mvs_needs_post_type ? get_post_type( $media_id ) : '';
+		$is_cpt              = (bool) $post_type && in_array( $post_type, $allowed_types, true );
 
 		// The typed test decides the COLLISION only. An untyped index row is
 		// still a media row - insert() does not default media_type, so rows
 		// legitimately carry '' - and demanding a type here made can_view()
 		// stricter than the code it replaced, denying an owner their own media.
-		$is_media = $in_index && ( ! $is_cpt || '' !== (string) $repo->get( $media_id, 'media_type' ) );
+		$is_media = $in_index && ( ! $is_cpt || $typed );
 
 		if ( self::SPACE_CPT === $space ) {
 			// The caller holds a post and says so. Never consult the index -

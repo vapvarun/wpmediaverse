@@ -69,8 +69,13 @@ playwright-report/
 test-results/
 .playwright-mcp/
 
-# Transient pre-release smoke debug-log archives (evidence only, not shipped)
-qa/.debug-log-*.txt
+# Local QA output never belongs in the repo: debug/error logs, worker drafts,
+# screenshots. It goes to ~/Local Sites/<site>/app/qa-artifacts/ instead.
+.debug-log-*.txt
+error_log
+qa/runs/drafts/
+qa/**/*.png
+qa/**/*.jpg
 
 # Minified assets — build output, not source.
 #

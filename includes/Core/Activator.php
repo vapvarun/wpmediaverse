@@ -171,7 +171,7 @@ class Activator {
 		// the WP 6.7+ `_load_textdomain_just_in_time was called incorrectly`
 		// notice. Titles are not re-translated on each page render anyway.
 		$pages = array(
-			'mvs_page_explore'   => array(
+			'mvs_page_explore'           => array(
 				'title'     => 'Explore Media',
 				'slug'      => 'explore-media',
 				// NO columns/count. render_gallery() accepts type, category, tag,
@@ -185,12 +185,12 @@ class Activator {
 				// Basecamp 10297763946.
 				'shortcode' => '[mvs_gallery]',
 			),
-			'mvs_page_dashboard' => array(
+			'mvs_page_dashboard'         => array(
 				'title'     => 'My Media',
 				'slug'      => 'my-media',
 				'shortcode' => '[mvs_dashboard]',
 			),
-			'mvs_page_upload'    => array(
+			'mvs_page_upload'            => array(
 				'title'     => 'Upload Media',
 				'slug'      => 'upload-media',
 				'shortcode' => '[mvs_upload]',
