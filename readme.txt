@@ -144,6 +144,7 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Improve  - Set Cover stays a small label on touch screens with a full-size tap area, and dialog Save buttons use the primary style.
 * Improve  - The bulk album action is labelled Add to album and applies the album's privacy and playlist rules, the same as adding one item.
 * Improve  - Profile stats, dropdowns and the bulk privacy menu fit their space at phone width, and admin tab rows fit phone screens.
+* Improve  - A grid of 12 items costs 12 database queries instead of 35. The per-item author, gallery-count and post-type reads are gone.
 * Fix      - Playback events are recorded on single media pages. The player analytics tab was empty for anyone not using the block.
 * Fix      - The monthly AI budget cap works. Saving the AI settings once was enough to disable it silently, and spending then showed as zero.
 * Fix      - Turning on only AI moderation no longer also buys a description and a tag for every upload.
@@ -162,13 +163,12 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Fix      - Deleting an album no longer leaves its media pointing at it.
 * Fix      - Messaging errors show as error toasts instead of success.
 * Fix      - Delete confirmations on BuddyPress media tabs show their message.
-* Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
-* Improve  - A grid of 12 items costs 12 database queries instead of 35. The per-item author, gallery-count and post-type reads are gone.
 * Fix      - A cloud upload that finishes after the member deleted the media no longer recreates the item as a broken, empty entry.
-* Fix      - Bulk action controls stay clickable when the bar sticks under a theme's fixed header.
+* Fix      - Bulk action controls and the dashboard tabs stay clickable where they stick under a theme's fixed header.
 * Fix      - The album picker on a profile or Explore lists only albums you can add to. It offered everyone's albums, and choosing another member's failed.
 * Fix      - Bulk Delete on Explore deletes the selected items. It reported a failure and deleted nothing.
 * Fix      - Tag suggestions appear while typing, in the dashboard edit box and on a media page.
+* Security - Making a public file private now deletes it from cloud storage. Its old CDN address kept working before.
 * Security - A member can no longer change the privacy of another member's media by adding it to their own album.
 * Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 * Dev      - The page width token --mvs-content-width is documented in the developer guide.
