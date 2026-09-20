@@ -3,12 +3,25 @@
 What this plugin lets a site actually do, in buyer language. The plugin registers 92 REST
 routes across 24 custom tables; that never says what they add up to. This file does.
 
-**Last verified against code:** 2026-09-19 (v2.5.1, branch `2.5.1` at `6155d820`). Re-checked
-this run: the counts (live registry + `Migrator::tables()`), and every row the 2.4.1, 2.5.0 and
-2.5.1 cycles touched - EXIF stripping, thumbnail quality, the privacy lock, cloud demotion,
-albums and collections, blocking and moderation, the direct-access Site Health probe, the
-document rows, telemetry (now removed) and the layout / width tokens. Rows nothing in those
-cycles touched carry their 2026-09-01 verification.
+**Last verified against code:** 2026-09-21 (v2.5.1, `main` at `04930487` - the tagged tree).
+Re-checked this run: the counts (live registry + `Migrator::tables()`), every row the 2.4.1,
+2.5.0 and 2.5.1 cycles touched - EXIF stripping, thumbnail quality, the privacy lock, cloud
+demotion, albums and collections, blocking and moderation, the direct-access Site Health probe,
+the document rows, telemetry (now removed) and the layout / width tokens - and the 2.5.1
+authorisation round below. Rows nothing in those cycles touched carry their 2026-09-01
+verification.
+
+**What the 2.5.1 authorisation round changed.** One rule now decides which items of an album a
+viewer may see (`AlbumService::viewable_item_ids()`), and the REST controller, the
+`mvs/album-viewer` block and the `[mvs_album]` shortcode all call it - each previously carried
+its own copy, and the copies in the two renderers listed private items to anyone. `[mvs_collection]`
+gained the container privacy gate it never had. `GET /media/{id}/group` now applies the same
+per-item check the rest of the read surface does. The private-community gate compares route
+prefixes case-insensitively, because WordPress matches routes that way and the gate did not.
+Block spacing and type values are checked against the units CSS allows. Four manifests in
+`audit/` now declare who may reach every route, capability, render surface and admin action,
+each backed by a test that fails the build when the code and the declaration disagree - see
+`docs/standards/authorization-guards.md`.
 
 **Companion:** [WPMediaVerse Pro](../wpmediaverse-pro/) adds competitions, cloud storage,
 AI providers, quotas, documents and video tooling — see its own `CAPABILITIES.md`.

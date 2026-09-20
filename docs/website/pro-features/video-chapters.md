@@ -40,7 +40,7 @@ Retrieve the chapter list for a media item.
 
 ### PUT /media/{id}/chapters
 
-Replace the chapter list for a media item. Requires ownership or the `edit_mvs_media` capability.
+Replace the chapter list for a media item. Requires ownership of the media, or the `moderate_mvs_media` capability. Not `edit_mvs_media`: every role including Subscriber holds that one, and it means "your own media", never anyone's.
 
 **Body:**
 

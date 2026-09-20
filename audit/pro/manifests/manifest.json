@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "2.4.0",
+    "version": "2.5.1",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -2203,6 +2203,12 @@
       "handler": "CLI\\SeedDocuments::__invoke",
       "file": "wpmediaverse-pro.php:357 (register); includes/CLI/SeedDocuments.php:91 (handler)",
       "note": "2.4.0. Seeds fixture documents into member/space drives for QA."
+    },
+    {
+      "command": "mvs-pro documents reclaim-orphans",
+      "handler": "CLI\\ReclaimOrphanDocuments",
+      "file": "wpmediaverse-pro.php:329",
+      "note": "Deletes document files left on disk with no row pointing at them. --dry-run reports only; --yes is the deliberate delete. Mirrors the Settings > Documents orphans card. Added 2.5.1."
     }
   ],
   "storage_drivers": [
@@ -2550,6 +2556,40 @@
       "generator_note": "write-manifest.mjs was NOT run and its output was NOT committed. It cannot see this plugin's registration patterns (SettingsRegistrar, ServiceContainer::register(), MediaCapabilities, PostTypes\\Album::register(), CLI subcommands declared as methods) and running it zeroes out settings / services / wp_cli / capabilities / post_types / taxonomies.",
       "see": "manifest.summary.json -> generated.refresh_2026_09_01 for the full per-surface delta, the false entries removed and the gaps closed.",
       "hooks_excluded": "hooks_fired and manifest.hooks.json were deliberately NOT touched - a separate pass owns them this cycle. Every hook-derived count is carried forward unverified."
+    },
+    "delta_2026_09_21_v251": {
+      "method": "Targeted delta, hand-verified against the shipped source. Agent-enumeration-only per CLAUDE.md - the deterministic generator zeroes this plugin's registrar-pattern categories and is deliberately not run.",
+      "scope": "Closes the 2.5.0 + 2.5.1 gap. The previous entry stopped at 2.4.1; the manifest was last touched 2026-09-01 while includes/ changed through 2026-09-20.",
+      "rest_added": [
+        "POST /documents/{id}/spaces",
+        "DELETE /documents/{id}/spaces/{space_id}",
+        "POST /documents/link"
+      ],
+      "rest_added_note": "Recorded in manifest.rest.json. Route strings and permission callbacks cross-checked against audit/route-authority.json, which is built from the live REST registry.",
+      "wp_cli_added": [
+        "mvs-pro documents reclaim-orphans"
+      ],
+      "classes_added": [
+        "Documents\\SpaceLinkService - the one authorized path for attaching/detaching a document<->space link",
+        "Documents\\SpaceDriveCleanup - trashes a deleted space's drive in batches",
+        "Documents\\OrphanReclaimService - finds and deletes document files with no row"
+      ],
+      "hooks_note": "manifest.hooks.json already carries buddynext_purge_space_data and mvs_document_space_drive_trash from an earlier commit in the cycle; hooks were not re-enumerated this pass.",
+      "security_2_5_1": [
+        "Video chapters require ownership or moderate_mvs_media, never edit_mvs_media (every role holds that one)",
+        "Private chapter titles are no longer readable anonymously",
+        "Connector export refuses media the caller did not author",
+        "Documents are stored under a name that cannot carry an executable extension",
+        "Saving connector preferences only accepts a connector in the mvs_connectors registry"
+      ],
+      "guards_added": [
+        "audit/route-authority.json",
+        "audit/capability-map.json",
+        "audit/render-authority.json",
+        "audit/admin-action-authority.json"
+      ],
+      "guards_note": "Each is paired with a PHPUnit test that walks the live registry and fails the build when code and manifest disagree. See ../wpmediaverse/docs/standards/authorization-guards.md.",
+      "not_re_enumerated": "tables / blocks / shortcodes / cron / admin_pages / capabilities / settings unchanged by this range."
     }
   },
   "category_sources": {

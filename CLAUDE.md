@@ -33,7 +33,7 @@
 
 | Key | Value |
 |-----|-------|
-| Version | 2.4.1 |
+| Version | 2.5.1 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
@@ -399,6 +399,7 @@ All docs (Free + Pro) live in this plugin. Pro is intentionally doc-free.
 | `docs/architecture/specs/` | Per-feature design specs (date-stamped) |
 | `docs/development/` | CODING_STANDARDS, CONTRIBUTING, EXTENSION_GUIDE, GIT_WORKFLOW, LOCAL_TESTING, LOCAL_TESTING-pro, MOBILE_UX_GUIDELINE, REFACTORING_ROADMAP, STRUCTURAL_GUIDELINE |
 | `docs/security/SECURITY_CHECKLIST.md` | Security checklist |
+| `docs/standards/authorization-guards.md` | What the four `audit/*-authority.json` manifests are (route, capability, render surface, admin action) and why each is an assertion rather than documentation. Their tests run inside the unit suite; a route that loses its permission check fails the build. |
 | `docs/verification/` | Ad-hoc verification reports (e.g. `cloud-storage-verification.md`) |
 | `docs/website/` | Public docs source. **Lives in this repo only** — do not publish or sync it anywhere. |
 | `docs/marketing/` | Marketing asset folder (different from `marketing/`) |

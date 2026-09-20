@@ -1105,8 +1105,39 @@
         "permission": "require_logged_in",
         "purpose": "Save playback resume position",
         "file": "includes/Video/VideoController.php:115"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/spaces",
+        "methods": [
+          "POST"
+        ],
+        "handler": "DocumentController::attach_space",
+        "permission": "link_permissions_check",
+        "purpose": "Link an existing document into a space (2.5.1)",
+        "file": "includes/REST/DocumentController.php:210"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/(?P<id>\\d+)/spaces/(?P<space_id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "DocumentController::detach_space",
+        "permission": "link_permissions_check",
+        "purpose": "Remove a document's link to a space; never deletes the file (2.5.1)",
+        "file": "includes/REST/DocumentController.php:230"
+      },
+      {
+        "route": "/mvs-pro/v1/documents/link",
+        "methods": [
+          "POST"
+        ],
+        "handler": "DocumentController::attach_space_by_ref",
+        "permission": "link_permissions_check",
+        "purpose": "Link a file into a space by URL, slug or id (2.5.1)",
+        "file": "includes/REST/DocumentController.php:246"
       }
-    ]
+    ],
+    "generated": null
   },
   "generated": {
     "at": "2026-07-07T00:00:00Z",
@@ -1164,6 +1195,7 @@
       "endpoints_added": 23,
       "file_lines_corrected": 85,
       "unmatched_after_pass": []
-    }
+    },
+    "delta_2026_09_21_v251": "Targeted delta, hand-verified against the shipped source (agent-enumeration-only per CLAUDE.md; the deterministic generator is not run on this plugin pair). Adds the three document<->space link routes shipped in 2.5.1. Route strings and permission callbacks cross-checked against audit/route-authority.json in wpmediaverse-pro, which is generated from the live REST registry."
   }
 }

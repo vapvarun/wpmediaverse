@@ -181,6 +181,7 @@ A settings pass from the owner's seat, then a full QA walk: the privacy switch h
 * Dev      - Removed the usage counter setting. It never recorded anything, and the report it described could not be produced.
 * Dev      - The page width token --mvs-content-width is documented in the developer guide.
 * Dev      - New installs no longer create the unused comment_count column on the media index. Existing installs keep it; nothing reads it.
+* Dev      - Every REST route, capability and render surface is now declared in audit/ and checked by a test, so a route that loses its permission check fails the build.
 
 = 2.5.0 - September 2026 =
 
@@ -828,6 +829,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.5.1 =
+Contains security fixes. A public album or collection listed the private items inside it to people who cannot open them, gallery data for a private item was returned to anyone who asked, and a private community could be read by typing its address with different capitalisation. Update as soon as you can, together with WPMediaVerse Pro 2.5.1.
 
 = 2.4.1 =
 Contains a security fix. If your site runs nginx, stored media may be downloadable by anyone with the address; after updating, open Tools > Site Health and follow the Media privacy item.

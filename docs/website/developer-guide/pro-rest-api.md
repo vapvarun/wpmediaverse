@@ -229,7 +229,7 @@ List chapter markers for a video.
 
 Replace all chapter markers for a video.
 
-**Auth:** Owner/Admin (chapter-edit permission)
+**Auth:** Owner of the media, or `moderate_mvs_media`
 
 **Body:**
 
