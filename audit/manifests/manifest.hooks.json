@@ -200,6 +200,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_ai_provider_fallback",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $fallback",
+        "string $provider_id"
+      ],
+      "where": "includes/Services/AIService.php:164",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_ai_providers",
       "type": "action",
       "args_count": 1,
@@ -1900,6 +1911,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_moderation_hide_sets_private",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $sets_private",
+        "int $media_id"
+      ],
+      "where": "includes/Services/ModerationService.php:142",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_moderation_tabs",
       "type": "filter",
       "args_count": 1,
@@ -1920,7 +1942,7 @@
     {
       "name": "mvs_notification_created",
       "type": "action",
-      "args_count": 7,
+      "args_count": 8,
       "args_signature": [
         "int $notification_id",
         "int $user_id",
@@ -1928,7 +1950,8 @@
         "int $actor_id",
         "int $media_id",
         "string $message",
-        "string $link"
+        "string $link",
+        "int $object_id"
       ],
       "where": "includes/Social/NotificationService.php:172",
       "consumed_by": []
@@ -1940,6 +1963,22 @@
       "args_count": 0,
       "where": "includes/Social/NotificationService.php:128",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_link",
+      "type": "filter",
+      "args_count": 5,
+      "args_signature": [
+        "string $link",
+        "string $type",
+        "int $actor_id",
+        "int $media_id",
+        "int $object_id"
+      ],
+      "where": "includes/Social/NotificationService.php:492",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Competitions/CompetitionUrl.php"
+      ]
     },
     {
       "name": "mvs_notification_message",
@@ -3002,28 +3041,6 @@
       "args_signature": [],
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_moderation_hide_sets_private",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $sets_private",
-        "int $media_id"
-      ],
-      "where": "includes/Services/ModerationService.php:142",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_provider_fallback",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool $fallback",
-        "string $provider_id"
-      ],
-      "where": "includes/Services/AIService.php:164",
       "consumed_by": []
     }
   ],

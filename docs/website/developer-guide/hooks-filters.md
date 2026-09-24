@@ -72,6 +72,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_notification_data` | filter | Free | 1.1 |
 | `mvs_notification_types` | filter | Free | 1.0 |
 | `mvs_notification_message` | filter | Free | 1.0 |
+| `mvs_notification_link` | filter | Free | 2.6 |
 | `mvs_push_send` | action | Free | 2.4.0 |
 | `mvs_push_should_send` | filter | Free | 2.4.0 |
 | `mvs_conversation_created` | action | Free | 1.0 |
@@ -188,6 +189,9 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_challenge_activated` | action | Pro | 1.5.0 |
 | `mvs_challenge_voting_started` | action | Pro | 1.5.0 |
 | `mvs_battle_cancelled` | action | Pro | 1.5.0 |
+| `mvs_battle_expired` | action | Pro | 2.6.0 |
+| `mvs_battle_submit_hours` | filter | Pro | 2.6.0 |
+| `mvs_battle_vote_hours` | filter | Pro | 2.6.0 |
 | `mvs_tournament_cancelled` | action | Pro | 1.5.0 |
 | `mvs_tournament_updated` | action | Pro | 1.5.0 |
 | `mvs_competition_status_changed` | action | Pro | 1.5.0 |
@@ -1018,6 +1022,9 @@ Fires after a notification is stored in the database. Use this to push notificat
 | `$type` | string | Notification type slug (e.g., `comment`, `follow`) |
 | `$actor_id` | int | User who triggered the notification |
 | `$media_id` | int | Related media post ID (0 if not media-related) |
+| `$message` | string | Rendered text, as the notifications menu shows it (1.7.0) |
+| `$link` | string | Where the notification points (1.7.0) |
+| `$object_id` | int | The row's `comment_id` slot: a comment id, or a competition id for Pro competition types (2.6.0) |
 
 ```php
 /**
@@ -1154,6 +1161,7 @@ add_filter( 'mvs_push_should_send', function( bool $should_send, int $user_id, a
 | `mvs_notification_data` | Filter notification data array before insert | `$data` (array), `$type` (string) | 1.1 |
 | `mvs_notification_types` | Filter the list of allowed notification type slugs | `$types` (array) | 1.0 |
 | `mvs_notification_message` | Override the rendered message label for a notification type. Return a non-null string to replace the default | `$label` (string\|null), `$type` (string), `$actor_name` (string), `$media_title` (string) | 1.0 |
+| `mvs_notification_link` | Where a notification points. Custom types with no media or profile (Pro competitions) supply their page here. `$object_id` is the row's `comment_id` slot | `$link` (string), `$type` (string), `$actor_id` (int), `$media_id` (int), `$object_id` (int) | 2.6 |
 
 ---
 
@@ -2683,6 +2691,9 @@ add_action( 'mvs_challenge_winner_named', function( int $challenge_id, int $user
 | `mvs_battle_accepted` | action | Opponent accepts battle | `$battle_id`, `$user_id` | 1.0 |
 | `mvs_battle_resolved` | action | Battle voting ends, winner determined | `$battle_id`, `$winner_id`, `$loser_id` | 1.0 |
 | `mvs_battle_cancelled` | action | Battle cancelled | `$battle_id` | 1.5.0 |
+| `mvs_battle_expired` | action | A pending or submitting battle passed its deadline and was closed without a winner | `$battle_id`, `$previous_status` (pending, accepted or active) | 2.6.0 |
+| `mvs_battle_submit_hours` | filter | Hours both sides get to submit (default 48) | `$hours` (int) | 2.6.0 |
+| `mvs_battle_vote_hours` | filter | Hours voting stays open (default 48) | `$hours` (int) | 2.6.0 |
 
 ---
 
