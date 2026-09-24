@@ -55,10 +55,57 @@ class MentionService {
 			 * @param string $context       Context: 'comment' or 'description'.
 			 * @param int|null $comment_id  Comment ID if applicable.
 			 */
-			do_action( 'mvs_mentions_created', $media_id, $mentioned_ids, $context, $comment_id );
+			do_action( 'mvs_mentions_created', $media_id, $mentioned_ids, $context, (int) $comment_id );
 		}
 
 		return $mentioned_ids;
+	}
+
+	/**
+	 * Record @mentions in a media item's current description.
+	 *
+	 * Called after an upload and after an edit that changes the description.
+	 * Only members not already recorded for this description are stored and
+	 * notified, so re-saving an edit does not notify the same people again.
+	 * The 'description' context existed but nothing ever called it (2.6.0).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $media_id Media ID.
+	 * @return int[] Newly mentioned user IDs.
+	 */
+	public function sync_description( int $media_id ): array {
+		global $wpdb;
+
+		$description = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'description' );
+		$author      = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		$known       = array_map(
+			'intval',
+			(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT mentioned_user_id FROM {$wpdb->prefix}mvs_mentions WHERE media_id = %d AND context = 'description'",
+					$media_id
+				)
+			)
+		);
+
+		$new = array();
+		foreach ( $this->extract_usernames( wp_strip_all_tags( $description ) ) as $username ) {
+			$user = get_user_by( 'login', $username );
+			// Mentioning yourself in your own description is not a mention.
+			if ( ! $user || $author === (int) $user->ID || in_array( (int) $user->ID, $known, true ) ) {
+				continue;
+			}
+			$this->store_mention( $media_id, (int) $user->ID, 'description', null );
+			$new[] = (int) $user->ID;
+		}
+
+		if ( ! empty( $new ) ) {
+			/** This action is documented in parse_and_store(). */
+			do_action( 'mvs_mentions_created', $media_id, $new, 'description', 0 );
+		}
+
+		return $new;
 	}
 
 	/**

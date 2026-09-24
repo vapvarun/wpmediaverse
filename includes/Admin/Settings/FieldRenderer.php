@@ -585,6 +585,8 @@ class FieldRenderer {
 			<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
 		</p>
 		<?php
+		$mvs_failures = array_slice( array_reverse( array_filter( (array) get_option( 'mvs_webhook_failures', array() ), 'is_array' ) ), 0, 10 );
+		require MVS_PLUGIN_DIR . 'templates/admin/webhook-failures.php';
 	}
 
 	/**

@@ -35,6 +35,10 @@ defined( 'ABSPATH' ) || exit;
 	data-wp-class--mvs-chat-msg--deleted="context.item.isDeleted"
 	data-wp-on--contextmenu="actions.showContextMenu"
 >
+	<!-- Sender name — group threads only, and only when it changed from the
+		previous message (showSenderName computed by displayMessages getter). -->
+	<div class="mvs-chat-msg__sender" data-wp-bind--hidden="context.item.hideSenderName" data-wp-text="context.item.sender_name"></div>
+
 	<!-- Context Menu (reactions + actions) -->
 	<div class="mvs-chat-msg__context-menu" data-wp-bind--hidden="context.item.noMenu">
 		<?php
@@ -63,6 +67,9 @@ defined( 'ABSPATH' ) || exit;
 		</button>
 		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+		</button>
+		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.reportMessage" data-wp-bind--hidden="state.hideReportMessage" type="button" title="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Report message', 'wpmediaverse' ); ?>">
+			<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
 		</button>
 		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--unsend" data-wp-on--click="actions.unsendMessage" data-wp-bind--hidden="state.hideUnsend" type="button" title="<?php esc_attr_e( 'Unsend for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z" fill="currentColor"/></svg>

@@ -53,59 +53,42 @@ class ReportController extends WP_REST_Controller {
 			return is_user_logged_in();
 		};
 
-		// POST /media/{id}/report.
-		register_rest_route(
-			$this->namespace,
-			'/media/(?P<id>[\d]+)/report',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'report_media' ),
-				'permission_callback' => $auth,
-				'args'                => array(
-					'id'      => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-					),
-					'reason'  => array(
-						'type'     => 'string',
-						'required' => true,
-						'enum'     => ReportService::REASONS,
-					),
-					'details' => array(
-						'type'    => 'string',
-						'default' => '',
-					),
-				),
-			)
+		$report_args = array(
+			'id'      => array(
+				'type'              => 'integer',
+				'required'          => true,
+				'sanitize_callback' => 'absint',
+			),
+			'reason'  => array(
+				'type'     => 'string',
+				'required' => true,
+				'enum'     => ReportService::REASONS,
+			),
+			'details' => array(
+				'type'    => 'string',
+				'default' => '',
+			),
 		);
 
-		// POST /users/{id}/report.
-		register_rest_route(
-			$this->namespace,
-			'/users/(?P<id>[\d]+)/report',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'report_user' ),
-				'permission_callback' => $auth,
-				'args'                => array(
-					'id'      => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-					),
-					'reason'  => array(
-						'type'     => 'string',
-						'required' => true,
-						'enum'     => ReportService::REASONS,
-					),
-					'details' => array(
-						'type'    => 'string',
-						'default' => '',
-					),
-				),
-			)
+		// POST /{media|users|comments|messages}/{id}/report.
+		$targets = array(
+			'media'    => 'report_media',
+			'users'    => 'report_user',
+			'comments' => 'report_comment',
+			'messages' => 'report_message',
 		);
+		foreach ( $targets as $base => $callback ) {
+			register_rest_route(
+				$this->namespace,
+				'/' . $base . '/(?P<id>[\d]+)/report',
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, $callback ),
+					'permission_callback' => $auth,
+					'args'                => $report_args,
+				)
+			);
+		}
 
 		// POST /users/{id}/block — block.
 		// DELETE /users/{id}/block — unblock.
@@ -183,35 +166,13 @@ class ReportController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function report_media( $request ) {
-		$disabled = $this->reports_disabled();
-		if ( is_wp_error( $disabled ) ) {
-			return $disabled;
-		}
-
-		$rate_check = RateLimiter::check( 'report', 10, 60 );
-		if ( is_wp_error( $rate_check ) ) {
-			return $rate_check;
-		}
-
-		$media_id = $request->get_param( 'id' );
+		$media_id = (int) $request->get_param( 'id' );
 
 		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$result = $this->reports->report(
-			get_current_user_id(),
-			'media',
-			$media_id,
-			sanitize_text_field( $request->get_param( 'reason' ) ),
-			sanitize_textarea_field( $request->get_param( 'details' ) )
-		);
-
-		if ( false === $result ) {
-			return new WP_Error( 'mvs_report_failed', __( 'Unable to submit report. You may have already reported this item.', 'wpmediaverse' ), array( 'status' => 400 ) );
-		}
-
-		return rest_ensure_response( array( 'reported' => true ) );
+		return $this->file_report( 'media', $media_id, $request );
 	}
 
 	/**
@@ -221,6 +182,77 @@ class ReportController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function report_user( $request ) {
+		$target_id = (int) $request->get_param( 'id' );
+
+		if ( ! get_userdata( $target_id ) ) {
+			return new WP_Error( 'mvs_user_not_found', __( 'User not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		return $this->file_report( 'user', $target_id, $request );
+	}
+
+	/**
+	 * Report a comment on a media item the reporter can open.
+	 *
+	 * A comment the reporter cannot see answers exactly like one that does not
+	 * exist. Your own comment cannot be reported (delete it instead).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function report_comment( $request ) {
+		$comment_id = (int) $request->get_param( 'id' );
+		$comment    = get_comment( $comment_id );
+		$media_id   = $comment ? \WPMediaVerse\Social\CommentService::comment_media_id( $comment_id ) : 0;
+
+		if ( ! $comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type || '1' !== (string) $comment->comment_approved
+			|| ! $media_id || ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		if ( (int) $comment->user_id === get_current_user_id() ) {
+			return new WP_Error( 'mvs_report_own', __( 'You cannot report your own comment.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		return $this->file_report( 'comment', $comment_id, $request );
+	}
+
+	/**
+	 * Report a message in a conversation the reporter is part of.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function report_message( $request ) {
+		$message_id = (int) $request->get_param( 'id' );
+		$messaging  = \WPMediaVerse\Core\Plugin::container()->get( 'messaging' );
+		$preview    = $messaging->get_message_preview( $message_id );
+		$convo_id   = $messaging->get_message_conversation_id( $message_id );
+
+		if ( ! $preview || ! $convo_id || '' === $messaging->get_participant_role( $convo_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Message not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		if ( (int) $preview['sender_id'] === get_current_user_id() ) {
+			return new WP_Error( 'mvs_report_own', __( 'You cannot report your own message.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		return $this->file_report( 'message', $message_id, $request );
+	}
+
+	/**
+	 * Shared tail of every report route: switch, rate limit, store.
+	 *
+	 * @param string          $type    Target type.
+	 * @param int             $id      Target id (already checked).
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function file_report( string $type, int $id, $request ) {
 		$disabled = $this->reports_disabled();
 		if ( is_wp_error( $disabled ) ) {
 			return $disabled;
@@ -231,22 +263,16 @@ class ReportController extends WP_REST_Controller {
 			return $rate_check;
 		}
 
-		$target_id = $request->get_param( 'id' );
-
-		if ( ! get_userdata( $target_id ) ) {
-			return new WP_Error( 'mvs_user_not_found', __( 'User not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
-		}
-
 		$result = $this->reports->report(
 			get_current_user_id(),
-			'user',
-			$target_id,
+			$type,
+			$id,
 			sanitize_text_field( $request->get_param( 'reason' ) ),
 			sanitize_textarea_field( $request->get_param( 'details' ) )
 		);
 
 		if ( false === $result ) {
-			return new WP_Error( 'mvs_report_failed', __( 'Unable to submit report. You may have already reported this user.', 'wpmediaverse' ), array( 'status' => 400 ) );
+			return new WP_Error( 'mvs_report_failed', __( 'Unable to submit report. You may have already reported this.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
 		return rest_ensure_response( array( 'reported' => true ) );

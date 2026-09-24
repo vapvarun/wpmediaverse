@@ -346,6 +346,9 @@ $mvs_archive_url = home_url( '/media/' );
 				if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) {
 					$mvs_video_aspect_style = sprintf( ' style="aspect-ratio:%d/%d;"', (int) $mvs_width, (int) $mvs_height );
 				}
+				// Resume playback (Pro, signed-in members only) — seed the
+				// store's translated chip prefix once per render.
+				\WPMediaVerse\Core\TemplateHelpers::media_player_i18n_state();
 				?>
 				<div class="mvs-media-video"
 					data-wp-interactive="mvs/media-player"
@@ -363,6 +366,13 @@ $mvs_archive_url = home_url( '/media/' );
 							// on empty analyticsUrl when Pro is inactive.
 							'analyticsUrl' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $mvs_media_id . '/events' ) ) : '',
 							'sessionId'    => defined( 'MVS_PRO_VERSION' ) ? substr( wp_generate_uuid4(), 0, 32 ) : '',
+							// Resume playback (Pro, signed-in members only). Empty
+							// string short-circuits every resume action in the store.
+							'resumeUrl'    => ( defined( 'MVS_PRO_VERSION' ) && is_user_logged_in() )
+								? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $mvs_media_id . '/resume' ) )
+								: '',
+							'resumeShown'  => false,
+							'resumeLabel'  => '',
 						)
 					);
 					?>
@@ -383,9 +393,16 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-on--play="actions.onPlay"
 						data-wp-on--pause="actions.onPause"
 						data-wp-on--seeked="actions.onSeek"
-						data-wp-on--ended="actions.onComplete">
+						data-wp-on--ended="actions.onComplete"
+						data-wp-on--loadedmetadata="actions.onLoadedMetadata"
+						data-wp-init="actions.initResume"
+						data-wp-on--timeupdate="actions.onTimeUpdate">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</video>
+					<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
+						<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>
+						<button type="button" class="mvs-resume-chip__btn" data-wp-on--click="actions.onResumeStartOver"><?php esc_html_e( 'Start over', 'wpmediaverse' ); ?></button>
+					</div>
 				</div>
 			<?php elseif ( $is_audio ) : ?>
 				<div class="mvs-media-audio"
@@ -917,6 +934,10 @@ $mvs_archive_url = home_url( '/media/' );
 									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
 										data-wp-bind--hidden="state.hideDeleteComment"
 										data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-bind--hidden="state.hideReportComment"
+										data-wp-on--click="actions.reportComment"
+										aria-label="<?php esc_attr_e( 'Report comment', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></button>
 								</div>
 							</div><!-- /.mvs-comment-body-wrap -->
 						</li>

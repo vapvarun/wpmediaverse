@@ -22,7 +22,7 @@ Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` hea
 - **Admin** — requires `manage_options` or `manage_mvs_settings` (noted per route).
 - **HMAC** — no WordPress auth; request body is verified against an HMAC-SHA256 signature header.
 
-Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_connectors_enabled`, `mvs_stories_enabled`). When one of those features is disabled its routes are not registered. Streaks is the exception: `POST /streaks/buy-freeze` registers regardless of `mvs_streaks_enabled` and refuses at call time instead.
+Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_connectors_enabled`, `mvs_stories_enabled`). When one of those features is disabled its routes are not registered. Streaks is the exception: `GET /me/streak` and `POST /streaks/buy-freeze` register regardless of `mvs_streaks_enabled` and refuses at call time instead.
 
 ---
 
@@ -438,7 +438,19 @@ Return the current user's point balance and the boost cost/limit settings.
 
 ## Streaks
 
-> Unlike the other gamification areas, this route registers whether or not `mvs_streaks_enabled` is on.
+> Unlike the other gamification areas, these routes register whether or not `mvs_streaks_enabled` is on.
+
+### GET /me/streak
+
+The current user's upload streak. **(New in 2.6.0)** `enabled` is the site's Streaks switch, so an app can hide the streak when the owner has turned it off.
+
+**Auth:** User
+
+**Response:**
+
+```json
+{ "current_streak": 4, "longest_streak": 9, "last_upload_date": "2026-09-23", "freezes": 1, "enabled": true }
+```
 
 ### POST /streaks/buy-freeze
 
@@ -853,6 +865,27 @@ Export local media to the remote platform.
 Run an incremental delta sync of recently changed items.
 
 **Auth:** User (must be connected)
+
+---
+
+### PUT /connectors/{id}/prefs
+
+Save the current user's preferences for one connector. **(New in 2.6.0)** An unknown connector id answers `404 mvs_connector_not_found`.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `auto_export` | bool | No | Export new uploads to this platform automatically |
+| `default_privacy` | string | No | `match`, `public`, `friends`, `members` or `private` |
+
+**Response:**
+
+```json
+{ "updated": { "auto_export": "1" } }
+```
 
 ---
 

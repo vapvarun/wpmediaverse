@@ -73,6 +73,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_notification_types` | filter | Free | 1.0 |
 | `mvs_notification_message` | filter | Free | 1.0 |
 | `mvs_notification_link` | filter | Free | 2.6 |
+| `mvs_activity_retention_days` | filter | Free | 2.6 |
 | `mvs_push_send` | action | Free | 2.4.0 |
 | `mvs_push_should_send` | filter | Free | 2.4.0 |
 | `mvs_conversation_created` | action | Free | 1.0 |
@@ -1162,6 +1163,7 @@ add_filter( 'mvs_push_should_send', function( bool $should_send, int $user_id, a
 | `mvs_notification_types` | Filter the list of allowed notification type slugs | `$types` (array) | 1.0 |
 | `mvs_notification_message` | Override the rendered message label for a notification type. Return a non-null string to replace the default | `$label` (string\|null), `$type` (string), `$actor_name` (string), `$media_title` (string) | 1.0 |
 | `mvs_notification_link` | Where a notification points. Custom types with no media or profile (Pro competitions) supply their page here. `$object_id` is the row's `comment_id` slot | `$link` (string), `$type` (string), `$actor_id` (int), `$media_id` (int), `$object_id` (int) | 2.6 |
+| `mvs_activity_retention_days` | Days of activity feed (`mvs_activity`, the `/feed` route) kept by the daily retention job. `0` keeps everything | `$days` (int, default 90) | 2.6 |
 
 ---
 

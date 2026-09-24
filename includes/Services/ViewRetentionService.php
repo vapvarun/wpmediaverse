@@ -48,7 +48,38 @@ class ViewRetentionService {
 	 * next daily run will retry).
 	 */
 	public static function purge(): void {
-		$days = self::resolve_retention_days();
+		self::purge_table( 'mvs_media_views', self::resolve_retention_days(), 'view_retention' );
+	}
+
+	/**
+	 * Same daily job: trim `mvs_activity`, the feed the app reads
+	 * (`/mvs/v1/feed`). Nothing ever removed its rows, so it grew with every
+	 * upload, reaction, comment and follow on the site (2.6.0). A feed older
+	 * than the window is not read; 0 keeps it forever.
+	 *
+	 * @since 2.6.0
+	 */
+	public static function purge_activity(): void {
+		/**
+		 * Days of activity feed kept. 0 = keep forever.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param int $days Default 90, like view retention.
+		 */
+		$days = min( self::MAX_DAYS, max( 0, (int) apply_filters( 'mvs_activity_retention_days', self::DEFAULT_DAYS ) ) );
+		self::purge_table( 'mvs_activity', $days, 'activity_retention' );
+	}
+
+	/**
+	 * Delete rows older than $days from one of our tables (created_at is
+	 * indexed on both), in bounded batches.
+	 *
+	 * @param string $table  Table name without prefix.
+	 * @param int    $days   Retention in days; 0 or less = keep forever.
+	 * @param string $source Log source.
+	 */
+	private static function purge_table( string $table, int $days, string $source ): void {
 		if ( $days <= 0 ) {
 			return; // 0 = retain forever.
 		}
@@ -57,14 +88,12 @@ class ViewRetentionService {
 
 		$prev = $wpdb->show_errors( false );
 
-		// Bounded delete. DELETE on an indexed column (created_at index
-		// exists on mvs_media_views) is fast even at millions of rows;
-		// LIMIT prevents the cron from holding the table hostage if
-		// retention was just dropped from 365 → 30 (large backfill window).
+		// LIMIT prevents the cron from holding the table hostage if retention
+		// was just dropped from 365 → 30 (large backfill window).
 		$sql = $wpdb->prepare(
-			"DELETE FROM {$wpdb->prefix}mvs_media_views
+			"DELETE FROM {$wpdb->prefix}{$table}
 			 WHERE created_at < ( UTC_TIMESTAMP() - INTERVAL %d DAY )
-			 LIMIT 50000",
+			 LIMIT 50000", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is code-controlled.
 			$days
 		);
 
@@ -72,7 +101,7 @@ class ViewRetentionService {
 		// Loop in 50k batches up to a safety cap so a 10M-row backlog
 		// drains over multiple days without blocking other cron jobs.
 		for ( $i = 0; $i < 20; $i++ ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared -- $sql is built by $wpdb->prepare() on line 64; re-preparing inside the loop wastes cycles.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared -- $sql is built by $wpdb->prepare() above; re-preparing inside the loop wastes cycles.
 			$rows = (int) $wpdb->query( $sql );
 			if ( $rows <= 0 ) {
 				break;
@@ -82,11 +111,12 @@ class ViewRetentionService {
 
 		$wpdb->show_errors( $prev );
 
-		if ( $total_deleted > 0 && function_exists( '\\WPMediaVerse\\Services\\LoggerService::info' ) ) {
+		if ( $total_deleted > 0 ) {
 			LoggerService::info(
-				'view_retention',
-				'Purged old view rows.',
+				$source,
+				'Purged old rows.',
 				array(
+					'table'          => $table,
 					'deleted_rows'   => $total_deleted,
 					'retention_days' => $days,
 				)

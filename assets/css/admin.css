@@ -2360,6 +2360,16 @@ a.mvs-stat-card:focus {
 	color: #b32d2e;
 }
 
+/* Recent failed deliveries under the webhook rows. Long URLs wrap instead of
+   widening the table on narrow screens. */
+.mvs-webhook-failures {
+	margin-block-start: var(--mvs-space-md, 16px);
+}
+
+.mvs-webhook-failures__url {
+	overflow-wrap: anywhere;
+}
+
 /* Access Rules mini-page — per-media rule management (view=access). The
    actions column stays narrow and end-aligned so Remove links line up. */
 .mvs-access-rules-table__actions {

@@ -376,8 +376,14 @@ class NotificationService {
 			$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		}
 
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		foreach ( $mentioned_ids as $uid ) {
 			if ( $owner && (int) $uid === $owner ) {
+				continue;
+			}
+			// A mention in a private item must not tell someone who cannot
+			// open it that it exists, or what it is called.
+			if ( ! $privacy->can_view( $media_id, (int) $uid ) ) {
 				continue;
 			}
 			$this->create( (int) $uid, 'media_mention', $actor, $media_id, $comment_id );

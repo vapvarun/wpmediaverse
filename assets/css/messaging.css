@@ -247,7 +247,8 @@ body.dark-mode {
 
 .mvs-chat-header__new,
 .mvs-chat-header__close,
-.mvs-chat-header__menu {
+.mvs-chat-header__menu,
+.mvs-chat-header__roster {
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -262,7 +263,9 @@ body.dark-mode {
 .mvs-chat-header__close:hover,
 .mvs-chat-header__close:focus,
 .mvs-chat-header__menu:hover,
-.mvs-chat-header__menu:focus {
+.mvs-chat-header__menu:focus,
+.mvs-chat-header__roster:hover,
+.mvs-chat-header__roster:focus {
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -272,7 +275,8 @@ body.dark-mode {
 
 .mvs-chat-header__new svg,
 .mvs-chat-header__close svg,
-.mvs-chat-header__menu svg {
+.mvs-chat-header__menu svg,
+.mvs-chat-header__roster svg {
 	width: 24px;
 	height: 24px;
 }
@@ -641,6 +645,15 @@ body.dark-mode {
 	font-weight: 600;
 	font-size: 11px;
 	margin-bottom: 2px;
+}
+
+/* Sender name above a received bubble — group threads only (2.6.0). */
+.mvs-chat-msg__sender {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--mvs-chat-text-secondary);
+	margin-block: 4px 2px;
+	margin-inline: 4px;
 }
 
 /* Timestamp + read receipt */
@@ -1227,6 +1240,130 @@ body.dark-mode {
 }
 
 /* ----------------------------------------------------------------
+   New Group (2.6.0) — "New group" entry + name/member setup in chat-new.
+   ---------------------------------------------------------------- */
+.mvs-chat-new__group-toggle {
+	display: flex;
+	align-items: center;
+	gap: var(--mvs-space-2, 8px);
+	width: 100%;
+	padding-block: 10px;
+	padding-inline: 16px;
+	border: none;
+	border-bottom: 1px solid var(--mvs-chat-border);
+	background: none;
+	color: var(--mvs-chat-primary-text);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.mvs-chat-new__group-toggle:hover,
+.mvs-chat-new__group-toggle:focus {
+	background: var(--mvs-chat-surface);
+}
+
+.mvs-chat-new__group-setup {
+	flex-shrink: 0;
+	padding-block: var(--mvs-space-2, 8px);
+	padding-inline: 16px;
+	border-bottom: 1px solid var(--mvs-chat-border);
+}
+
+.mvs-chat-new__group-name {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--mvs-chat-border);
+	border-radius: 8px;
+	background: var(--mvs-chat-surface);
+	color: var(--mvs-chat-text);
+	font-size: 14px;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.mvs-chat-new__group-name:focus {
+	border-color: var(--mvs-chat-primary);
+}
+
+.mvs-chat-new__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--mvs-space-1, 4px);
+	margin-block: var(--mvs-space-2, 8px) 0;
+	margin-inline: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.mvs-chat-new__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding-block: 4px;
+	padding-inline: 10px 6px;
+	border-radius: 999px;
+	background: var(--mvs-chat-surface);
+	border: 1px solid var(--mvs-chat-border);
+	font-size: 13px;
+	color: var(--mvs-chat-text);
+}
+
+.mvs-chat-new__chip-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	padding: 4px;
+	border: none;
+	border-radius: 50%;
+	background: none;
+	color: var(--mvs-chat-text-secondary);
+	cursor: pointer;
+}
+
+.mvs-chat-new__chip-remove:hover {
+	background: var(--mvs-chat-border);
+	color: var(--mvs-chat-text);
+}
+
+.mvs-chat-new__group-actions {
+	display: flex;
+	gap: var(--mvs-space-2, 8px);
+	margin-top: var(--mvs-space-2, 8px);
+}
+
+.mvs-chat-new__group-create,
+.mvs-chat-new__group-cancel {
+	flex: 1;
+	padding-block: 8px;
+	padding-inline: 12px;
+	border-radius: 8px;
+	border: 1px solid var(--mvs-chat-border);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mvs-chat-new__group-create {
+	background: var(--mvs-chat-primary);
+	border-color: var(--mvs-chat-primary);
+	color: #fff;
+}
+
+.mvs-chat-new__group-create:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.mvs-chat-new__group-cancel {
+	background: none;
+	color: var(--mvs-chat-text);
+}
+
+/* ----------------------------------------------------------------
    Message Request Banner
    ---------------------------------------------------------------- */
 .mvs-chat-request-banner {
@@ -1302,6 +1439,9 @@ body.dark-mode {
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
+	/* Positioning context for .mvs-chat-roster (position: absolute; inset: 0)
+	   so the group roster panel overlays this pane only, not the viewport. */
+	position: relative;
 }
 
 .mvs-messages-page .mvs-messages-main--empty {
@@ -1331,6 +1471,229 @@ body.dark-mode {
 }
 
 /* ----------------------------------------------------------------
+   Group Roster Panel (2.6.0) — opened from the group conversation header.
+   Overlays the thread rather than replacing it, matching the shared-ui
+   dialog pattern used elsewhere in this plugin.
+   ---------------------------------------------------------------- */
+.mvs-chat-roster {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	display: flex;
+	flex-direction: column;
+	background: var(--mvs-chat-bg);
+	overflow-y: auto;
+}
+
+.mvs-chat-roster__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-block: 12px;
+	padding-inline: 16px;
+	border-bottom: 1px solid var(--mvs-chat-border);
+	flex-shrink: 0;
+}
+
+.mvs-chat-roster__heading {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--mvs-chat-text);
+}
+
+.mvs-chat-roster__close {
+	display: flex;
+	align-items: center;
+	background: none;
+	border: none;
+	padding: 4px;
+	color: var(--mvs-chat-text);
+	cursor: pointer;
+}
+
+.mvs-chat-roster__close svg {
+	width: 20px;
+	height: 20px;
+}
+
+.mvs-chat-roster__title-row {
+	padding-block: 12px;
+	padding-inline: 16px;
+	border-bottom: 1px solid var(--mvs-chat-border);
+	flex-shrink: 0;
+}
+
+.mvs-chat-roster__title-view {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--mvs-space-2, 8px);
+}
+
+.mvs-chat-roster__title-text {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--mvs-chat-text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-chat-roster__title-edit {
+	display: flex;
+	gap: var(--mvs-space-2, 8px);
+}
+
+.mvs-chat-roster__title-input {
+	flex: 1;
+	padding: 8px 12px;
+	border: 1px solid var(--mvs-chat-border);
+	border-radius: 8px;
+	background: var(--mvs-chat-surface);
+	color: var(--mvs-chat-text);
+	font-size: 14px;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.mvs-chat-roster__title-input:focus {
+	border-color: var(--mvs-chat-primary);
+}
+
+.mvs-chat-roster__rename,
+.mvs-chat-roster__rename-save,
+.mvs-chat-roster__add-toggle {
+	flex-shrink: 0;
+	padding-block: 6px;
+	padding-inline: 12px;
+	border-radius: 8px;
+	border: 1px solid var(--mvs-chat-primary);
+	background: none;
+	color: var(--mvs-chat-primary-text);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mvs-chat-roster__section-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-block: 12px 4px;
+	padding-inline: 16px;
+	flex-shrink: 0;
+}
+
+.mvs-chat-roster__section-title {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--mvs-chat-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.mvs-chat-roster__add-panel {
+	padding-block: 4px 8px;
+	padding-inline: 16px;
+	flex-shrink: 0;
+}
+
+.mvs-chat-roster__add-result {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding-block: 8px;
+	padding-inline: 4px;
+	border: none;
+	background: none;
+	cursor: pointer;
+	text-align: left;
+	color: var(--mvs-chat-text);
+	font-size: 14px;
+}
+
+.mvs-chat-roster__add-result:hover {
+	background: var(--mvs-chat-surface);
+}
+
+.mvs-chat-roster__add-result img {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.mvs-chat-roster__list {
+	flex: 1;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.mvs-chat-roster__member {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding-block: 8px;
+	padding-inline: 16px;
+}
+
+.mvs-chat-roster__member-avatar {
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.mvs-chat-roster__member-name {
+	flex: 1;
+	min-width: 0;
+	font-size: 14px;
+	color: var(--mvs-chat-text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-chat-roster__member-admin {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--mvs-chat-text-secondary);
+	text-transform: uppercase;
+}
+
+.mvs-chat-roster__member-remove {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	background: none;
+	border: none;
+	padding: 4px;
+	color: var(--mvs-chat-danger);
+	cursor: pointer;
+}
+
+.mvs-chat-roster__leave {
+	flex-shrink: 0;
+	margin: var(--mvs-space-3, 16px);
+	padding-block: 10px;
+	padding-inline: 16px;
+	border-radius: 8px;
+	border: 1px solid var(--mvs-chat-danger);
+	background: none;
+	color: var(--mvs-chat-danger);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mvs-chat-roster__leave:hover {
+	background: var(--mvs-chat-danger);
+	color: #fff;
+}
+
+/* ----------------------------------------------------------------
    Responsive
    ---------------------------------------------------------------- */
 @media (max-width: 767px) {
@@ -1351,8 +1714,24 @@ body.dark-mode {
 	.mvs-chat-composer__send,
 	.mvs-chat-msg__voice-play,
 	.mvs-chat-header__new,
-	.mvs-chat-header__close {
+	.mvs-chat-header__close,
+	.mvs-chat-header__roster,
+	.mvs-chat-roster__close,
+	.mvs-chat-roster__member-remove,
+	.mvs-chat-new__group-toggle {
 		min-width: var(--mvs-touch-min, 44px);
+		min-height: var(--mvs-touch-min, 44px);
+	}
+
+	/* Text-label controls: the floor is height only (matches .mvs-chat-tabs__tab
+	   above) — forcing min-width here would stretch a short "Save"/"Leave
+	   group" label to an unnaturally wide button. */
+	.mvs-chat-roster__rename,
+	.mvs-chat-roster__rename-save,
+	.mvs-chat-roster__add-toggle,
+	.mvs-chat-roster__leave,
+	.mvs-chat-new__group-create,
+	.mvs-chat-new__group-cancel {
 		min-height: var(--mvs-touch-min, 44px);
 	}
 

@@ -22,6 +22,9 @@ const REST   = config.restBase || '/wp-json/mvs/v1';
 const NONCE  = config.nonce || '';
 const ME     = config.currentUser || {};
 const TRANSPORT = config.transport || { type: 'polling', intervals: { active: 3000, list: 10000, background: 30000 } };
+// Group DM management routes (Pro). Empty on a Free-only site — the UI hides
+// "New group" and every roster management control when this is ''.
+const GROUPS_REST = config.groupsRestBase || '';
 
 // Helper: REST fetch with auth.
 async function apiFetch( path, options = {} ) {
@@ -297,6 +300,19 @@ const { state, actions } = store( 'mvs/messaging', {
 		contextMenuMessageId: null,
 		pendingMediaShareId: null,
 
+		// ---- Group DMs (2.6.0) ----
+		// "New group" mode inside the chat-new view.
+		newGroupMode: false,
+		newGroupSelected: [], // [{ id, display_name, avatar_url }]
+		newGroupTitle: '',
+		// Roster panel (opened from the group conversation header).
+		rosterOpen: false,
+		editingGroupTitle: false,
+		groupTitleDraft: '',
+		showGroupAddPanel: false,
+		groupAddQuery: '',
+		groupAddResults: [],
+
 		// Voice recording internals.
 		_mediaRecorder: null,
 		_audioChunks: [],
@@ -382,15 +398,24 @@ const { state, actions } = store( 'mvs/messaging', {
 		// already existed in this store but was never referenced by any template.
 		get displayMessages() {
 			let prevKey = '';
+			let prevSenderId = null;
+			const isGroup = state.isGroupConversation;
 			return state.messages.map( m => {
 				const key = dayKey( m.created_at );
 				const isNewDay = key !== '' && key !== prevKey;
 				if ( key ) prevKey = key;
+				// Sender name above a received bubble in a group thread — only
+				// when it changed from the previous message (or a day separator
+				// intervened), matching WhatsApp/Telegram grouping.
+				const showSenderName = isGroup && m.isReceived && ( isNewDay || String( m.sender_id ) !== String( prevSenderId ) );
+				prevSenderId = m.sender_id;
 				return Object.assign( {}, m, {
 					timeLabel: messageTimeLabel( m.created_at ),
 					dayLabel: isNewDay ? dayLabel( m.created_at ) : '',
 					showDayHeader: isNewDay,
 					hideDayHeader: ! isNewDay,
+					showSenderName,
+					hideSenderName: ! showSenderName,
 				} );
 			} );
 		},
@@ -454,11 +479,126 @@ const { state, actions } = store( 'mvs/messaging', {
 			return __( 'Active %s' ).replace( '%s', ago );
 		},
 
+		// ---- Group DMs (2.6.0) ----
+		get hasGroupsRestBase() {
+			return !! GROUPS_REST;
+		},
+
+		get isGroupConversation() {
+			return state.activeConversation?.type === 'group';
+		},
+
+		// Active (non-left, non-removed) participants of the active conversation,
+		// excluding me — used for the group title/avatar fallback and the "New
+		// group" flow, mirroring how otherParticipant works for a 1:1 thread.
+		get groupActiveOthers() {
+			return ( state.activeConversation?.participants || [] )
+				.filter( p => p.status === 'active' && p.id !== ME.id );
+		},
+
+		// A group with no custom title falls back to the first 3 other active
+		// members' names, e.g. "Ana, Ben, Cy" — same idiom as WhatsApp/Messenger.
+		get groupTitle() {
+			const conv = state.activeConversation;
+			if ( ! conv ) return '';
+			if ( conv.title ) return conv.title;
+			return state.groupActiveOthers.slice( 0, 3 ).map( p => p.display_name ).filter( Boolean ).join( ', ' );
+		},
+
+		get groupAvatar() {
+			return state.groupActiveOthers[0]?.avatar_url || '';
+		},
+
+		// Active participants (incl. me), with per-row flags the template can't
+		// derive itself (Interactivity directives don't do === comparisons).
+		get activeGroupParticipants() {
+			const conv = state.activeConversation;
+			if ( ! conv || ! conv.participants ) return [];
+			const canManage = state.canManageGroup;
+			return conv.participants
+				.filter( p => p.status === 'active' )
+				.map( p => ( {
+					...p,
+					isAdmin: p.role === 'admin',
+					canRemove: canManage && p.id !== ME.id,
+				} ) );
+		},
+
+		get groupMemberCount() {
+			return state.activeGroupParticipants.length;
+		},
+
+		// No _n() in this module (see otherLastActive above) — a single
+		// translatable phrase avoids the plural-grammar problem entirely.
+		get groupMemberSubtitle() {
+			return __( '%d members' ).replace( '%d', state.groupMemberCount );
+		},
+
+		get isGroupAdmin() {
+			const conv = state.activeConversation;
+			if ( ! conv || conv.type !== 'group' || ! conv.participants ) return false;
+			const me = conv.participants.find( p => p.id === ME.id && p.status === 'active' );
+			return !! ( me && 'admin' === me.role );
+		},
+
+		// Rendering (title, roster, sender names) works on Free alone. Rename /
+		// add / remove / leave all call Pro's GroupController, so the controls
+		// that trigger them stay hidden without Pro rather than hitting a
+		// relative URL built from an empty groupsRestBase.
+		get canManageGroup() {
+			return state.isGroupAdmin && state.hasGroupsRestBase;
+		},
+
+		// Unify the 1:1 and group header so chat-conversation.php binds to one
+		// set of properties regardless of conversation type.
+		get headerAvatar() {
+			return state.isGroupConversation ? state.groupAvatar : state.otherAvatar;
+		},
+
+		get headerTitle() {
+			return state.isGroupConversation ? state.groupTitle : state.otherName;
+		},
+
+		get headerSubtitle() {
+			return state.isGroupConversation ? state.groupMemberSubtitle : state.otherLastActive;
+		},
+
+		get headerOnline() {
+			return ! state.isGroupConversation && state.otherIsOnline;
+		},
+
+		get showNewGroupToggle() {
+			return state.hasGroupsRestBase && ! state.newGroupMode;
+		},
+
+		get newMessageHeaderTitle() {
+			return state.newGroupMode ? __( 'New Group' ) : __( 'New Message' );
+		},
+
+		get newGroupSelectedEmpty() {
+			return state.newGroupSelected.length === 0;
+		},
+
+		get canCreateGroup() {
+			return state.newGroupSelected.length >= 2;
+		},
+
 		get voiceDurationFormatted() {
 			return formatDuration( state.voiceDuration );
 		},
 
 		get voiceSpeedLabel() { return state._voiceSpeed + 'x'; },
+
+		// Report shows on other people's messages when the site takes reports.
+		get hideReportMessage() {
+			const msg = getContext().item;
+			if ( ! msg || ! msg.isReceived || msg.reported ) return true;
+			try {
+				return ! store( 'mvs/shared-ui' ).state.reportsEnabled;
+			} catch ( e ) {
+				return true;
+			}
+		},
 
 		get hideUnsend() {
 			const ctx = getContext();
@@ -596,12 +736,18 @@ const { state, actions } = store( 'mvs/messaging', {
 			// createOrOpenConversation(), so backing out to the list left the id
 			// armed and it later fired on an unrelated new conversation.
 			state.pendingMediaShareId = null;
+			state.rosterOpen = false;
+			state.editingGroupTitle = false;
+			state.showGroupAddPanel = false;
 		},
 
 		openNewConversation() {
 			state.chatView = 'new';
 			state.searchQuery = '';
 			state.searchResults = [];
+			state.newGroupMode = false;
+			state.newGroupSelected = [];
+			state.newGroupTitle = '';
 			// Focus the recipient search once the 'new' view renders. Replaces
 			// the input's autofocus attribute, which fired on every page load
 			// (the chat panel ships in the DOM site-wide) and scrolled the page
@@ -636,11 +782,25 @@ const { state, actions } = store( 'mvs/messaging', {
 			try {
 				const data = yield apiFetch( '/me/conversations?tab=' + state.activeTab );
 				// Pre-compute other participant for each conversation (avoids array indexing in directives).
+				// Group threads reuse the same otherName/otherAvatar/otherOnline
+				// fields the list row already renders — title (or a fallback of
+				// the first 3 active members' names), the first active other
+				// member's avatar, and no online dot (presence isn't a group
+				// concept). 1:1 threads are untouched below.
 				state.conversations = ( data || [] ).map( conv => {
-					const other = ( conv.participants || [] ).find( p => p.id !== ME.id ) || conv.participants?.[0] || {};
-					conv.otherName   = other.display_name || '';
-					conv.otherAvatar = other.avatar_url || '';
-					conv.otherOnline = !! other.is_online;
+					if ( 'group' === conv.type ) {
+						const activeOthers = ( conv.participants || [] ).filter( p => p.status === 'active' && p.id !== ME.id );
+						conv.otherName   = conv.title || activeOthers.slice( 0, 3 ).map( p => p.display_name ).filter( Boolean ).join( ', ' );
+						conv.otherAvatar = activeOthers[0]?.avatar_url || '';
+						conv.otherOnline = false;
+						conv.isGroup     = true;
+					} else {
+						const other = ( conv.participants || [] ).find( p => p.id !== ME.id ) || conv.participants?.[0] || {};
+						conv.otherName   = other.display_name || '';
+						conv.otherAvatar = other.avatar_url || '';
+						conv.otherOnline = !! other.is_online;
+						conv.isGroup     = false;
+					}
 					conv.hasUnread   = !! conv.unread_count;
 					return conv;
 				} );
@@ -733,6 +893,254 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
+		},
+
+		// The chat-new search result button is shared between the 1:1 flow and
+		// "New group" mode (one button, one handler) so the two modes don't
+		// duplicate the search results template.
+		*onSearchResultClick() {
+			if ( state.newGroupMode ) {
+				actions.addNewGroupMember();
+				return;
+			}
+			yield actions.createOrOpenConversation();
+		},
+
+		// ---- Group DMs: "New group" (chat-new) ----
+		startNewGroup() {
+			state.newGroupMode = true;
+			state.newGroupSelected = [];
+			state.newGroupTitle = '';
+			state.searchQuery = '';
+			state.searchResults = [];
+		},
+
+		cancelNewGroup() {
+			state.newGroupMode = false;
+			state.newGroupSelected = [];
+			state.newGroupTitle = '';
+		},
+
+		updateNewGroupTitle() {
+			const el = getElement();
+			state.newGroupTitle = el.ref.value;
+		},
+
+		addNewGroupMember() {
+			const ctx = getContext();
+			const user = ctx.item;
+			if ( ! user || ! user.id ) return;
+			if ( state.newGroupSelected.some( u => String( u.id ) === String( user.id ) ) ) return;
+			// Cap at 49 invitees + the creator = 50, matching GroupController::MAX_MEMBERS.
+			if ( state.newGroupSelected.length >= 49 ) {
+				actions.showToast( __( 'A group can have at most 50 members.' ) );
+				return;
+			}
+			state.newGroupSelected = [ ...state.newGroupSelected, user ];
+			// Clear the search so the next name can be typed straight away,
+			// instead of leaving "No users found" for the person just picked.
+			state.searchQuery = '';
+			state.searchResults = [];
+		},
+
+		removeNewGroupMember() {
+			const ctx = getContext();
+			const user = ctx.item;
+			if ( ! user ) return;
+			state.newGroupSelected = state.newGroupSelected.filter( u => String( u.id ) !== String( user.id ) );
+		},
+
+		*createGroup() {
+			if ( ! state.canCreateGroup ) return;
+
+			try {
+				const body = { participant_ids: state.newGroupSelected.map( u => u.id ) };
+				const title = state.newGroupTitle.trim();
+				if ( title ) {
+					body.title = title;
+				}
+
+				const created = yield apiFetch( GROUPS_REST, {
+					method: 'POST',
+					body: JSON.stringify( body ),
+				} );
+
+				// Re-fetch via the free /conversations/{id} route — Pro's create
+				// response is the minimal shape_group() shape, while the list and
+				// thread views need the same object shape every other
+				// conversation already uses (last_message_preview, timestamps…).
+				const conv = yield apiFetch( '/conversations/' + created.id );
+
+				const idx = state.conversations.findIndex( c => String( c.id ) === String( conv.id ) );
+				if ( idx >= 0 ) {
+					state.conversations[ idx ] = conv;
+				} else {
+					state.conversations.unshift( conv );
+				}
+
+				state.newGroupMode = false;
+				state.newGroupSelected = [];
+				state.newGroupTitle = '';
+				state.activeConversationId = conv.id;
+				state.chatView = 'conversation';
+				state.messages = [];
+				state.hasMoreMessages = true;
+				yield actions.loadMessages();
+			} catch ( e ) {
+				actions.showToast( e.message || __( 'Could not create the group.' ) );
+			}
+		},
+
+		// ---- Group DMs: roster panel (chat-conversation) ----
+		openRoster() {
+			state.rosterOpen = true;
+			state.editingGroupTitle = false;
+			state.showGroupAddPanel = false;
+			state.groupAddQuery = '';
+			state.groupAddResults = [];
+		},
+
+		closeRoster() {
+			state.rosterOpen = false;
+			state.editingGroupTitle = false;
+			state.showGroupAddPanel = false;
+			state.groupAddQuery = '';
+			state.groupAddResults = [];
+		},
+
+		startRenameGroup() {
+			state.groupTitleDraft = state.groupTitle;
+			state.editingGroupTitle = true;
+		},
+
+		updateGroupTitleDraft() {
+			const el = getElement();
+			state.groupTitleDraft = el.ref.value;
+		},
+
+		*saveGroupTitle() {
+			const convId = state.activeConversationId;
+			const title = state.groupTitleDraft.trim();
+			if ( ! convId || ! title ) return;
+
+			try {
+				yield apiFetch( GROUPS_REST + '/' + convId, {
+					method: 'PUT',
+					body: JSON.stringify( { title } ),
+				} );
+				const conv = actions.resolveConversation( convId );
+				if ( conv ) {
+					conv.title = title;
+				}
+				state.editingGroupTitle = false;
+			} catch ( e ) {
+				actions.showToast( e.message );
+			}
+		},
+
+		toggleGroupAddPanel() {
+			state.showGroupAddPanel = ! state.showGroupAddPanel;
+			state.groupAddQuery = '';
+			state.groupAddResults = [];
+		},
+
+		updateGroupAddQuery() {
+			const el = getElement();
+			state.groupAddQuery = el.ref.value;
+			clearTimeout( state._groupAddSearchTimeout );
+			state._groupAddSearchTimeout = setTimeout( () => actions.searchGroupAddUsers(), 300 );
+		},
+
+		*searchGroupAddUsers() {
+			const q = state.groupAddQuery.trim();
+			if ( q.length < 2 ) {
+				state.groupAddResults = [];
+				return;
+			}
+
+			try {
+				const data = yield apiFetch( '/users/search?q=' + encodeURIComponent( q ) );
+				const existingIds = ( state.activeConversation?.participants || [] )
+					.filter( p => p.status === 'active' )
+					.map( p => String( p.id ) );
+				state.groupAddResults = ( data || [] )
+					.filter( u => u.id !== ME.id && ! existingIds.includes( String( u.id ) ) )
+					.map( u => ( {
+						...u,
+						display_name: u.display_name || u.name || '',
+						avatar_url: u.avatar_url || u.avatar || '',
+					} ) );
+			} catch ( e ) {
+				state.groupAddResults = [];
+			}
+		},
+
+		*addGroupMember() {
+			const ctx = getContext();
+			const userId = ctx.item?.id;
+			const convId = state.activeConversationId;
+			if ( ! userId || ! convId ) return;
+
+			try {
+				yield apiFetch( GROUPS_REST + '/' + convId + '/participants', {
+					method: 'POST',
+					body: JSON.stringify( { user_id: userId } ),
+				} );
+				const conv = yield apiFetch( '/conversations/' + convId );
+				const idx = state.conversations.findIndex( c => String( c.id ) === String( convId ) );
+				if ( idx >= 0 ) {
+					state.conversations[ idx ] = conv;
+				}
+				state.groupAddResults = state.groupAddResults.filter( u => String( u.id ) !== String( userId ) );
+			} catch ( e ) {
+				actions.showToast( e.message );
+			}
+		},
+
+		// Not a generator: the confirmation callback is async on its own, the
+		// same pattern every other showConfirm() caller in this plugin uses.
+		removeGroupMember() {
+			const ctx = getContext();
+			const member = ctx.item;
+			const convId = state.activeConversationId;
+			if ( ! member || ! convId ) return;
+
+			store( 'mvs/shared-ui' ).actions.showConfirm(
+				__( 'Remove this member from the group?' ),
+				async () => {
+					try {
+						await apiFetch( GROUPS_REST + '/' + convId + '/participants/' + member.id, { method: 'DELETE' } );
+						const conv = await apiFetch( '/conversations/' + convId );
+						const idx = state.conversations.findIndex( c => String( c.id ) === String( convId ) );
+						if ( idx >= 0 ) {
+							state.conversations[ idx ] = conv;
+						}
+					} catch ( e ) {
+						actions.showToast( e.message );
+					}
+				},
+				__( 'Remove' )
+			);
+		},
+
+		leaveGroup() {
+			const convId = state.activeConversationId;
+			if ( ! convId ) return;
+
+			store( 'mvs/shared-ui' ).actions.showConfirm(
+				__( 'Leave this group? You will no longer receive its messages.' ),
+				async () => {
+					try {
+						await apiFetch( GROUPS_REST + '/' + convId + '/leave', { method: 'POST' } );
+						state.conversations = state.conversations.filter( c => String( c.id ) !== String( convId ) );
+						state.rosterOpen = false;
+						actions.goBackToList();
+					} catch ( e ) {
+						actions.showToast( e.message );
+					}
+				},
+				__( 'Leave' )
+			);
 		},
 
 		*acceptRequest() {
@@ -1035,6 +1443,19 @@ const { state, actions } = store( 'mvs/messaging', {
 				actions.showToast( e.message );
 			}
 			state.contextMenuMessageId = null;
+		},
+
+		*reportMessage() {
+			const ctx = getContext();
+			const msgId = ctx.item?.id || state.contextMenuMessageId;
+			state.contextMenuMessageId = null;
+			if ( ! msgId ) return;
+			const filed = yield store( 'mvs/shared-ui' ).actions.promptReport( REST + '/messages/' + msgId + '/report' );
+			if ( filed ) {
+				state.messages = state.messages.map( m =>
+					String( m.id ) === String( msgId ) ? { ...m, reported: true } : m
+				);
+			}
 		},
 
 		*markRead() {

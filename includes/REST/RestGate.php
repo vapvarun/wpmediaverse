@@ -140,7 +140,7 @@ final class RestGate {
 				'mode'    => 'exempt',
 			),
 			array(
-				'pattern' => '#^/mvs/v1/media/\d+/report$#',
+				'pattern' => '#^/mvs/v1/(media|comments|messages)/\d+/report$#',
 				'methods' => array( 'POST' ),
 				'mode'    => 'exempt',
 			),

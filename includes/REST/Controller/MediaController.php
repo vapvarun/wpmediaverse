@@ -1105,6 +1105,10 @@ class MediaController extends WP_REST_Controller {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many( $media_id, $update_data );
 		}
 
+		if ( isset( $update_data['description'] ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'mentions' )->sync_description( $media_id );
+		}
+
 		// The privacy answer this request already gave is now stale. PrivacyService
 		// memoises can_view() per media:user for the request, and the response
 		// prepared below asks it again — without this, an item just made private

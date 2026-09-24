@@ -98,6 +98,30 @@ class NotificationController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /me/mentions - where the member was @mentioned (2.6.0).
+		register_rest_route(
+			$this->namespace,
+			'/me/mentions',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_mentions' ),
+				'permission_callback' => $auth,
+				'args'                => array(
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => 20,
+						'minimum' => 1,
+						'maximum' => 100,
+					),
+					'page'     => array(
+						'type'    => 'integer',
+						'default' => 1,
+						'minimum' => 1,
+					),
+				),
+			)
+		);
+
 		// GET /me/notifications/count.
 		register_rest_route(
 			$this->namespace,
@@ -126,6 +150,71 @@ class NotificationController extends WP_REST_Controller {
 
 		$response = rest_ensure_response( $data['notifications'] );
 		$response->header( 'X-WP-Total', $data['total'] );
+
+		return $response;
+	}
+
+	/**
+	 * Where the member was @mentioned, newest first.
+	 *
+	 * Each item is the canonical media object plus `mention` {context,
+	 * comment_id, created_at, by}. `by` is the comment's author for a comment
+	 * mention and the media owner for a description mention (the table keeps
+	 * no actor). Items the member can no longer open are left out and the
+	 * total drops with them, as on /me/favorites.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function get_mentions( $request ) {
+		$container = \WPMediaVerse\Core\Plugin::container();
+		$viewer    = get_current_user_id();
+		$per_page  = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
+		$result    = $container->get( 'mentions' )->get_for_user( $viewer, $per_page, \WPMediaVerse\REST\Pagination::resolve_page( $request ) );
+		$repo      = $container->get( 'media_repository' );
+		$privacy   = $container->get( 'privacy' );
+
+		$ids = array_values( array_unique( array_map( 'intval', array_column( $result['items'], 'media_id' ) ) ) );
+		if ( $ids ) {
+			$repo->prefetch( $ids );
+		}
+		MediaController::prime_viewer_state( $ids, $viewer );
+		$media_ctrl = new MediaController( $privacy );
+
+		$items  = array();
+		$hidden = 0;
+		foreach ( $result['items'] as $row ) {
+			$media_id = (int) $row['media_id'];
+			$media    = ( $repo->exists( $media_id ) && $privacy->can_view( $media_id, $viewer ) )
+				? $media_ctrl->prepare_item_for_response( $media_id, $request )
+				: null;
+			if ( null === $media ) {
+				++$hidden;
+				continue;
+			}
+
+			$comment_id = (int) $row['comment_id'];
+			$comment    = $comment_id ? get_comment( $comment_id ) : null;
+			$by         = $comment ? (int) $comment->user_id : (int) $repo->get( $media_id, 'post_author' );
+
+			$media['mention'] = array(
+				'context'    => (string) $row['context'],
+				'comment_id' => $comment_id,
+				'created_at' => (string) $row['created_at'],
+				'by'         => array(
+					'id'   => $by,
+					'name' => $by ? (string) get_the_author_meta( 'display_name', $by ) : '',
+				),
+			);
+			$items[]          = $media;
+		}
+
+		$total    = max( 0, (int) $result['total'] - $hidden );
+		$response = rest_ensure_response( $items );
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) (int) ceil( $total / max( 1, $per_page ) ) );
 
 		return $response;
 	}

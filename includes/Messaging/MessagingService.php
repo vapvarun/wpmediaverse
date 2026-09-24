@@ -1546,19 +1546,27 @@ class MessagingService {
 		// 'request_pending' is intentionally left untouched so the message-request
 		// gate still holds; the sender was already verified active/request_pending
 		// above, so this only reactivates recipients.
-		$wpdb->update(
-			$part_table,
-			array(
-				'status'      => 'active',
-				'is_archived' => 0,
-			),
-			array(
-				'conversation_id' => $conversation_id,
-				'status'          => 'left',
-			),
-			array( '%s', '%d' ),
-			array( '%d', '%s' )
-		);
+		//
+		// Group conversations are excluded: leaving a group is a deliberate
+		// membership choice (MessagingService::leave_conversation()), and the
+		// next message from any other member must not silently re-add someone
+		// who left. 'removed' is untouched by this query already (only 'left'
+		// rows match), so a removed member is never reactivated either way.
+		if ( 'group' !== $participant->type ) {
+			$wpdb->update(
+				$part_table,
+				array(
+					'status'      => 'active',
+					'is_archived' => 0,
+				),
+				array(
+					'conversation_id' => $conversation_id,
+					'status'          => 'left',
+				),
+				array( '%s', '%d' ),
+				array( '%d', '%s' )
+			);
+		}
 
 		// A new message also un-archives the thread for participants who had
 		// archived it. Archiving means "done with this for now", not "never
@@ -1950,10 +1958,11 @@ class MessagingService {
 		$sender = get_userdata( (int) $msg->sender_id );
 
 		return array(
-			'id'      => (int) $msg->id,
-			'content' => mb_substr( wp_strip_all_tags( $msg->content ), 0, 100 ),
-			'sender'  => $sender ? $sender->display_name : '',
-			'type'    => $msg->message_type,
+			'id'        => (int) $msg->id,
+			'content'   => mb_substr( wp_strip_all_tags( $msg->content ), 0, 100 ),
+			'sender'    => $sender ? $sender->display_name : '',
+			'sender_id' => (int) $msg->sender_id,
+			'type'      => $msg->message_type,
 		);
 	}
 

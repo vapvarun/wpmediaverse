@@ -526,7 +526,7 @@ class GDPRService {
 				foreach ( $spec['columns'] as $column ) {
 					$has = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM `{$full}` LIKE %s", $column ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					if ( $has ) {
-						$where[] = $wpdb->prepare( "`{$column}` = %d", $user_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$where[] = '(' . \WPMediaVerse\Privacy\MemberDataMap::member_condition( $spec, $column, $user_id ) . ')';
 					}
 				}
 

@@ -850,6 +850,7 @@ class Plugin {
 			wp_schedule_event( time(), 'daily', 'mvs_purge_old_views' );
 		}
 		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge' ) );
+		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge_activity' ) );
 
 		// Wire LoggerService into key operations.
 		\WPMediaVerse\Services\LoggerService::register_hooks();
@@ -891,6 +892,14 @@ class Plugin {
 		// Eager: the dispatch must be hooked before any notification is created
 		// (notifications fire outside REST too), so bind it now rather than lazily.
 		self::$container->get( 'push' )->register();
+
+		// @mentions in a new upload's description (edits: MediaController).
+		add_action(
+			'mvs_media_uploaded',
+			static function ( $media_id ) {
+				self::$container->get( 'mentions' )->sync_description( (int) $media_id );
+			}
+		);
 
 		self::$container->register(
 			'reports',
@@ -2543,14 +2552,22 @@ class Plugin {
 
 		$user   = wp_get_current_user();
 		$config = array(
-			'restBase'    => esc_url_raw( rest_url( 'mvs/v1' ) ),
-			'nonce'       => wp_create_nonce( 'wp_rest' ),
-			'currentUser' => array(
+			'restBase'       => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			// Group DM management (create/rename/add/remove/leave) lives in Pro's
+			// GroupController. Free renders group threads on its own (title,
+			// roster, sender names via /mvs/v1/me/conversations), but only Pro
+			// exposes the management routes — so this key is empty on a Free-only
+			// site and messaging.js hides "New group" + roster controls
+			// accordingly. Same empty-string-when-Pro-absent pattern as
+			// templates/media-single.php's analyticsUrl.
+			'groupsRestBase' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
+			'nonce'          => wp_create_nonce( 'wp_rest' ),
+			'currentUser'    => array(
 				'id'           => $user->ID,
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
 			),
-			'transport'   => apply_filters(
+			'transport'      => apply_filters(
 				'mvs_messaging_transport',
 				new \WPMediaVerse\Messaging\RestPollingTransport()
 			)->get_client_config(),
@@ -2558,41 +2575,65 @@ class Plugin {
 			// source (gettext-style). The module can't import @wordpress/i18n and
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
 			// the store reads these instead. Basecamp 10073528834.
-			'i18n'        => array(
-				'Request failed'               => __( 'Request failed', 'wpmediaverse' ),
-				'Could not open conversation.' => __( 'Could not open conversation.', 'wpmediaverse' ),
-				'Could not share media.'       => __( 'Could not share media.', 'wpmediaverse' ),
-				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
+			'i18n'           => array(
+				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
+				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
+				'Could not share media.'               => __( 'Could not share media.', 'wpmediaverse' ),
+				'Upload failed'                        => __( 'Upload failed', 'wpmediaverse' ),
 				/* translators: %s: file name */
-				'Uploading %s…'                => __( 'Uploading %s…', 'wpmediaverse' ),
+				'Uploading %s…'                        => __( 'Uploading %s…', 'wpmediaverse' ),
 				'Only image, video, and audio files can be shared in messages.' => __( 'Only image, video, and audio files can be shared in messages.', 'wpmediaverse' ),
-				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
-				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
-				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),
+				'Microphone access denied'             => __( 'Microphone access denied', 'wpmediaverse' ),
+				'You reacted — tap to remove'          => __( 'You reacted — tap to remove', 'wpmediaverse' ),
+				'Reacted'                              => __( 'Reacted', 'wpmediaverse' ),
 				// Sidebar preview placeholders for attachment-only messages —
 				// mirror MessagingService::build_message_preview() (card 10127764989).
-				'Voice message'                => __( 'Voice message', 'wpmediaverse' ),
-				'Photo'                        => __( 'Photo', 'wpmediaverse' ),
-				'Video'                        => __( 'Video', 'wpmediaverse' ),
-				'Audio'                        => __( 'Audio', 'wpmediaverse' ),
-				'File'                         => __( 'File', 'wpmediaverse' ),
-				'Shared a media'               => __( 'Shared a media', 'wpmediaverse' ),
-				'Attachment'                   => __( 'Attachment', 'wpmediaverse' ),
+				'Voice message'                        => __( 'Voice message', 'wpmediaverse' ),
+				'Photo'                                => __( 'Photo', 'wpmediaverse' ),
+				'Video'                                => __( 'Video', 'wpmediaverse' ),
+				'Audio'                                => __( 'Audio', 'wpmediaverse' ),
+				'File'                                 => __( 'File', 'wpmediaverse' ),
+				'Shared a media'                       => __( 'Shared a media', 'wpmediaverse' ),
+				'Attachment'                           => __( 'Attachment', 'wpmediaverse' ),
 				// Day separators in the message thread (2.3.0).
-				'Today'                        => __( 'Today', 'wpmediaverse' ),
-				'Yesterday'                    => __( 'Yesterday', 'wpmediaverse' ),
+				'Today'                                => __( 'Today', 'wpmediaverse' ),
+				'Yesterday'                            => __( 'Yesterday', 'wpmediaverse' ),
 				// Mute control + voice-recording capability notice (2.3.0).
-				'Mute notifications'           => __( 'Mute notifications', 'wpmediaverse' ),
-				'Unmute notifications'         => __( 'Unmute notifications', 'wpmediaverse' ),
+				'Mute notifications'                   => __( 'Mute notifications', 'wpmediaverse' ),
+				'Unmute notifications'                 => __( 'Unmute notifications', 'wpmediaverse' ),
 				'Voice messages need a secure (https) connection.' => __( 'Voice messages need a secure (https) connection.', 'wpmediaverse' ),
 				// Chat header presence (2.5.1). Whole phrases, not glued
 				// fragments: "Active " + date + " ago" produced "Active
 				// 12/09/2026 ago" and could not be translated. Basecamp 10320657271.
-				'Online'                       => __( 'Online', 'wpmediaverse' ),
+				'Online'                               => __( 'Online', 'wpmediaverse' ),
 				/* translators: %s: a relative time in the page language, such as "5 minutes ago". */
-				'Active %s'                    => __( 'Active %s', 'wpmediaverse' ),
+				'Active %s'                            => __( 'Active %s', 'wpmediaverse' ),
 				/* translators: %s: a date, formatted for the viewer's locale. */
-				'Active on %s'                 => __( 'Active on %s', 'wpmediaverse' ),
+				'Active on %s'                         => __( 'Active on %s', 'wpmediaverse' ),
+				// Group DMs (2.6.0).
+				'New Message'                          => __( 'New Message', 'wpmediaverse' ),
+				'New Group'                            => __( 'New Group', 'wpmediaverse' ),
+				'New group'                            => __( 'New group', 'wpmediaverse' ),
+				'Group name (optional)'                => __( 'Group name (optional)', 'wpmediaverse' ),
+				'Create'                               => __( 'Create', 'wpmediaverse' ),
+				'Cancel'                               => __( 'Cancel', 'wpmediaverse' ),
+				'Group info'                           => __( 'Group info', 'wpmediaverse' ),
+				'Rename'                               => __( 'Rename', 'wpmediaverse' ),
+				'Save'                                 => __( 'Save', 'wpmediaverse' ),
+				'Members'                              => __( 'Members', 'wpmediaverse' ),
+				'Admin'                                => __( 'Admin', 'wpmediaverse' ),
+				'Add people'                           => __( 'Add people', 'wpmediaverse' ),
+				'Search users…'                        => __( 'Search users…', 'wpmediaverse' ),
+				'Remove member'                        => __( 'Remove member', 'wpmediaverse' ),
+				'Remove this member from the group?'   => __( 'Remove this member from the group?', 'wpmediaverse' ),
+				'Remove'                               => __( 'Remove', 'wpmediaverse' ),
+				'Leave group'                          => __( 'Leave group', 'wpmediaverse' ),
+				'Leave this group? You will no longer receive its messages.' => __( 'Leave this group? You will no longer receive its messages.', 'wpmediaverse' ),
+				'Leave'                                => __( 'Leave', 'wpmediaverse' ),
+				/* translators: %d: number of active group members. */
+				'%d members'                           => __( '%d members', 'wpmediaverse' ),
+				'A group can have at most 50 members.' => __( 'A group can have at most 50 members.', 'wpmediaverse' ),
+				'Could not create the group.'          => __( 'Could not create the group.', 'wpmediaverse' ),
 			),
 		);
 

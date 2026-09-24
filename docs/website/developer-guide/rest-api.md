@@ -628,6 +628,18 @@ Submit a content report against a media item.
 
 Report a user. Same `reason` / `details` body as media reports.
 
+### POST /comments/{id}/report
+
+**Auth:** Authenticated. Rate-limited to 10/min. **(New in 2.6.0)**
+
+Report a comment. Same `reason` / `details` body as media reports. A comment on media the caller cannot open answers `404 mvs_not_found`, the same as a missing one. Reporting your own comment answers `400 mvs_report_own`.
+
+### POST /messages/{id}/report
+
+**Auth:** Authenticated. Rate-limited to 10/min. **(New in 2.6.0)**
+
+Report a message in a conversation the caller is an active participant of. Same body as media reports. A message in any other conversation answers `404 mvs_not_found`; your own message answers `400 mvs_report_own`. Moderators see the message text on the Reports screen.
+
 ### POST /users/{id}/block
 
 **Auth:** Authenticated.
@@ -805,6 +817,27 @@ Mark notifications as read. Pass an `ids` array to mark specific notifications, 
 ```json
 { "ids": [12, 13, 14] }
 ```
+
+### GET /me/mentions
+
+**Auth:** Authenticated. **(New in 2.6.0)**
+
+Where the current user was @mentioned (comments and media descriptions), newest first. Each item is the standard media object plus a `mention` object:
+
+```json
+{
+  "id": 123,
+  "title": "Harbour at dusk",
+  "mention": {
+    "context": "description",
+    "comment_id": 0,
+    "created_at": "2026-09-24 10:15:00",
+    "by": { "id": 7, "name": "Ana" }
+  }
+}
+```
+
+`by` is the comment's author for a comment mention and the media owner for a description mention. Items the caller can no longer open are left out, and `X-WP-Total` / `X-WP-TotalPages` drop with them. Supports `page` and `per_page` (max 100).
 
 ---
 
@@ -1006,6 +1039,8 @@ Return the activity feed.
 **Auth:** Public.
 
 Return a user's public activity (uploads, album creations, reactions). Supports `page`, `per_page`.
+
+The feed (`mvs_activity`) keeps 90 days by default; older events are removed by the daily retention job. Change the window with the `mvs_activity_retention_days` filter (`0` keeps everything).
 
 ---
 

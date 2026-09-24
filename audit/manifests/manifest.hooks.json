@@ -132,6 +132,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_activity_retention_days",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $days"
+      ],
+      "where": "includes/Services/ViewRetentionService.php:70",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_activity_types",
       "type": "filter",
       "args_count": 1,

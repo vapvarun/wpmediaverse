@@ -37,6 +37,43 @@ class ReportService {
 	);
 
 	/**
+	 * Reasons with their labels, in REASONS order, for report pickers.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array<int, array{value:string, label:string}>
+	 */
+	public static function reason_labels(): array {
+		$labels = array(
+			'spam'           => __( 'Spam', 'wpmediaverse' ),
+			'harassment'     => __( 'Harassment', 'wpmediaverse' ),
+			'nudity'         => __( 'Nudity or sexual content', 'wpmediaverse' ),
+			'violence'       => __( 'Violence or dangerous acts', 'wpmediaverse' ),
+			'copyright'      => __( 'Copyright infringement', 'wpmediaverse' ),
+			'misinformation' => __( 'Misinformation', 'wpmediaverse' ),
+			'other'          => __( 'Other', 'wpmediaverse' ),
+		);
+
+		$out = array();
+		foreach ( self::REASONS as $reason ) {
+			$out[] = array(
+				'value' => $reason,
+				'label' => $labels[ $reason ],
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * What a member can report. The REST routes check each target exists and
+	 * that the reporter can see it before calling report().
+	 *
+	 * @since 2.6.0 comment and message.
+	 * @var string[]
+	 */
+	const TARGET_TYPES = array( 'media', 'user', 'comment', 'message' );
+
+	/**
 	 * Whether members may file reports on this site.
 	 *
 	 * Single source of truth for the report write path. Every caller (REST,
@@ -72,7 +109,7 @@ class ReportService {
 	 * @since 1.1.0
 	 *
 	 * @param int    $reporter_id Reporter user ID.
-	 * @param string $target_type 'media' or 'user'.
+	 * @param string $target_type One of TARGET_TYPES.
 	 * @param int    $target_id   Target media/user ID.
 	 * @param string $reason      Report reason.
 	 * @param string $details     Optional details.
@@ -85,7 +122,7 @@ class ReportService {
 			return false;
 		}
 
-		if ( ! in_array( $target_type, array( 'media', 'user' ), true ) ) {
+		if ( ! in_array( $target_type, self::TARGET_TYPES, true ) ) {
 			return false;
 		}
 
@@ -156,6 +193,79 @@ class ReportService {
 		do_action( 'mvs_report_submitted', $report_id, $reporter_id, $target_type, $target_id, $reason );
 
 		return $report_id;
+	}
+
+	/**
+	 * Label, link and type name for what a report is about. Shared by Free's
+	 * Reports screen and Pro's User Reports tab, so a new target type is
+	 * described in one place.
+	 *
+	 * @since 2.6.0 comment and message targets.
+	 *
+	 * @param string $type Target type.
+	 * @param int    $id   Target id.
+	 * @return array{0:string, 1:string, 2:string} Label, link ('' for none), type name.
+	 */
+	public function describe_target( string $type, int $id ): array {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( 'media' === $type ) {
+			// A media id is a row in mvs_media_index, NOT a wp_posts ID: the two
+			// sequences collide, and get_permalink()/get_the_title() named and
+			// linked whatever post happened to share the number (a report on a
+			// photo showed a BuddyPress email template). Ask the repository.
+			$exists = $id && $repo->exists( $id );
+			$title  = $exists ? trim( (string) $repo->get( $id, 'title' ) ) : '';
+			if ( '' === $title ) {
+				$title = $exists
+					/* translators: %d: media ID. */
+					? sprintf( __( 'Media #%d', 'wpmediaverse' ), $id )
+					/* translators: %d: media ID. */
+					: sprintf( __( 'Media #%d (deleted)', 'wpmediaverse' ), $id );
+			}
+			return array( $title, $exists ? $repo->get_permalink( $id ) : '', __( 'Media', 'wpmediaverse' ) );
+		}
+
+		if ( 'comment' === $type ) {
+			$comment  = get_comment( $id );
+			$media_id = $comment ? \WPMediaVerse\Social\CommentService::comment_media_id( $id ) : 0;
+			if ( ! $comment ) {
+				/* translators: %d: comment ID. */
+				return array( sprintf( __( 'Comment #%d (deleted)', 'wpmediaverse' ), $id ), '', __( 'Comment', 'wpmediaverse' ) );
+			}
+			return array(
+				/* translators: 1: comment excerpt, 2: author name. */
+				sprintf( __( '"%1$s" by %2$s', 'wpmediaverse' ), wp_trim_words( wp_strip_all_tags( $comment->comment_content ), 20 ), $comment->comment_author ),
+				$media_id && $repo->exists( $media_id ) ? $repo->get_permalink( $media_id ) : '',
+				__( 'Comment', 'wpmediaverse' ),
+			);
+		}
+
+		if ( 'message' === $type ) {
+			// Moderators see the reported message's text here; there is no admin
+			// link into a private conversation.
+			$preview = \WPMediaVerse\Core\Plugin::container()->get( 'messaging' )->get_message_preview( $id );
+			if ( ! $preview ) {
+				/* translators: %d: message ID. */
+				return array( sprintf( __( 'Message #%d (deleted)', 'wpmediaverse' ), $id ), '', __( 'Message', 'wpmediaverse' ) );
+			}
+			return array(
+				/* translators: 1: message excerpt, 2: sender name. */
+				sprintf( __( '"%1$s" from %2$s', 'wpmediaverse' ), $preview['content'], $preview['sender'] ),
+				'',
+				__( 'Message', 'wpmediaverse' ),
+			);
+		}
+
+		$user = get_userdata( $id );
+		return array(
+			$user
+				? $user->display_name
+				/* translators: %d: user ID. */
+				: sprintf( __( 'Member #%d (deleted)', 'wpmediaverse' ), $id ),
+			$user ? (string) get_author_posts_url( $id ) : '',
+			__( 'Member', 'wpmediaverse' ),
+		);
 	}
 
 	/**

@@ -111,6 +111,11 @@ parameters:
 			path: includes/Admin/Settings/SettingsPage.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 3
 			path: includes/Admin/Settings/SettingsPage.php

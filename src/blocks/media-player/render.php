@@ -103,6 +103,14 @@ $mvs_analytics_url = $mvs_pro_active
 $mvs_session_id   = $mvs_pro_active
 	? substr( wp_generate_uuid4(), 0, 32 )
 	: '';
+
+// Resume playback (Pro, signed-in members only) — empty string short-circuits
+// every resume action in the store. Seed the store's translated chip prefix
+// once per render.
+$mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
+	? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $media_id . '/resume' ) )
+	: '';
+\WPMediaVerse\Core\TemplateHelpers::media_player_i18n_state();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-player"
@@ -116,6 +124,9 @@ $mvs_session_id   = $mvs_pro_active
 			'playing'      => false,
 			'analyticsUrl' => $mvs_analytics_url,
 			'sessionId'    => $mvs_session_id,
+			'resumeUrl'    => $mvs_resume_url,
+			'resumeShown'  => false,
+			'resumeLabel'  => '',
 		)
 	);
 	?>
@@ -123,18 +134,27 @@ $mvs_session_id   = $mvs_pro_active
 	data-wp-init="actions.trackView"
 >
 	<?php if ( $is_video ) : ?>
-		<video class="mvs-player-video"
-			controls
-			<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
-			<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
-			preload="metadata"
-			data-wp-on--play="actions.onPlay"
-			data-wp-on--pause="actions.onPause"
-			data-wp-on--seeked="actions.onSeek"
-			data-wp-on--ended="actions.onComplete"
-		>
-			<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
-		</video>
+		<div class="mvs-player-video-wrap">
+			<video class="mvs-player-video"
+				controls
+				<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
+				<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
+				preload="metadata"
+				data-wp-on--play="actions.onPlay"
+				data-wp-on--pause="actions.onPause"
+				data-wp-on--seeked="actions.onSeek"
+				data-wp-on--ended="actions.onComplete"
+				data-wp-on--loadedmetadata="actions.onLoadedMetadata"
+				data-wp-init="actions.initResume"
+				data-wp-on--timeupdate="actions.onTimeUpdate"
+			>
+				<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
+			</video>
+			<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
+				<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>
+				<button type="button" class="mvs-resume-chip__btn" data-wp-on--click="actions.onResumeStartOver"><?php esc_html_e( 'Start over', 'wpmediaverse' ); ?></button>
+			</div>
+		</div>
 	<?php elseif ( $is_audio ) : ?>
 		<div class="mvs-player-audio-wrap">
 			<div class="mvs-player-audio-title"><?php echo esc_html( $media_title ); ?></div>

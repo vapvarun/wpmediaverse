@@ -16,6 +16,69 @@
 	height: auto;
 }
 
+/* Positioning context for the resume-playback chip — scoped to the video
+ * only, so it never gets pulled toward the download-actions bar below it. */
+.mvs-player-video-wrap {
+	position: relative;
+}
+
+/* Resume-playback chip ("Resumed at M:SS — Start over"). Card requirement:
+ * signed-in members, videos over 2 minutes, not nearly finished. Shared
+ * markup + class names with templates/media-single.php's player — see
+ * assets/css/frontend.css for the sibling copy of these rules, needed
+ * because a media-single page does not necessarily enqueue this block
+ * stylesheet. Token-driven so light/dark tracks the surrounding theme. */
+.mvs-resume-chip {
+	position: absolute;
+	inset-inline: var(--mvs-space-3);
+	inset-block-start: var(--mvs-space-3); /* top: the native controls live at the bottom */
+	z-index: var(--mvs-z-sticky);
+	display: flex;
+	align-items: center;
+	gap: var(--mvs-space-2);
+	max-width: calc(100% - var(--mvs-space-3) * 2);
+	padding: var(--mvs-space-2) var(--mvs-space-3);
+	background: var(--mvs-overlay);
+	color: var(--mvs-btn-primary-fg);
+	border-radius: var(--mvs-radius-md);
+	font-size: var(--mvs-font-sm);
+	box-shadow: var(--mvs-shadow-md);
+}
+
+.mvs-resume-chip__label {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-resume-chip__btn {
+	flex: 0 0 auto;
+	min-height: var(--mvs-touch-min);
+	padding: var(--mvs-space-1) var(--mvs-space-3);
+	background: transparent;
+	border: 1px solid var(--mvs-btn-primary-fg);
+	border-radius: var(--mvs-radius-sm);
+	color: var(--mvs-btn-primary-fg);
+	font-size: var(--mvs-font-sm);
+	cursor: pointer;
+}
+
+.mvs-resume-chip__btn:hover,
+.mvs-resume-chip__btn:focus-visible {
+	background: var(--mvs-overlay);
+	opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+	.mvs-resume-chip {
+		flex-direction: column;
+		align-items: stretch;
+		text-align: center;
+	}
+}
+
 .mvs-player-audio-wrap {
 	padding: 24px;
 	background: #1a1a2e;

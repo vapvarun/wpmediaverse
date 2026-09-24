@@ -214,6 +214,8 @@ function mapLightboxComment( c ) {
 		content: c.content,
 		canEdit: !! ( isOwn && age < editWindow ),
 		canDelete: !! ( isOwn || canModerate ),
+		canReport: !! ( state.reportsEnabled && state.currentUserId && ! isOwn ),
+		reported: false,
 		editing: false,
 		editText: '',
 	};
@@ -594,7 +596,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// Per-comment action visibility (in the data-wp-each loop, item = comment).
 		get hideLightboxCommentActions() {
 			const item = getContext().item;
-			return ( ! item?.canEdit && ! item?.canDelete ) || item?.editing;
+			return ( ! item?.canEdit && ! item?.canDelete && ! item?.canReport ) || item?.editing;
+		},
+		get hideLightboxReportComment() {
+			const item = getContext().item;
+			return ! item?.canReport || item?.reported || item?.editing;
 		},
 		get hideLightboxEditComment() {
 			const item = getContext().item;
@@ -694,6 +700,51 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		handleConfirmCancel() {
 			state.confirmVisible = false;
 			state.confirmCallback = null;
+		},
+
+		// --- Report ---
+		// One report flow for everything a member can report (media, comments,
+		// messages): the confirm dialog with a reason picker, then POST to the
+		// target's /report route. Reasons come from the server (ReportService).
+		// Resolves true when the report was filed.
+		promptReport( url ) {
+			return new Promise( ( resolve ) => {
+				const select = document.createElement( 'select' );
+				select.className = 'mvs-report-reason-select';
+				select.setAttribute( 'aria-label', state.i18n?.reportPrompt || 'Why are you reporting this?' );
+				( state.reportReasons || [] ).forEach( ( r ) => {
+					const opt = document.createElement( 'option' );
+					opt.value = r.value;
+					opt.textContent = r.label;
+					select.appendChild( opt );
+				} );
+
+				actions.showConfirm(
+					state.i18n?.reportPrompt || 'Why are you reporting this?',
+					async () => {
+						const res = await window.mvsRest.restFetch( url, {
+							method: 'POST',
+							body: { reason: select.value || 'other' },
+						} );
+						if ( res.ok ) {
+							actions.showToast( state.i18n?.reportSubmitted || 'Report submitted. Thank you.', 'success' );
+						} else {
+							actions.showToast( res.data?.message || state.i18n?.reportAlready || 'Already reported or error occurred.', 'error' );
+						}
+						resolve( !! res.ok );
+					},
+					state.i18n?.reportAction || 'Report'
+				);
+
+				// The dialog renders on the next frame; put the picker under its message.
+				requestAnimationFrame( () => {
+					const container = document.querySelector( '.mvs-confirm' );
+					if ( container ) {
+						container.querySelectorAll( '.mvs-report-reason-select' ).forEach( ( el ) => el.remove() );
+						container.querySelector( 'p' )?.after( select );
+					}
+				} );
+			} );
 		},
 
 		// --- Tag Autocomplete ---
@@ -1690,6 +1741,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 				}
 			} );
+		},
+
+		async reportLightboxComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return;
+			if ( await actions.promptReport( ctx.restUrl + 'comments/' + item.id + '/report' ) ) {
+				item.reported = true;
+			}
 		},
 
 		/**

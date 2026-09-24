@@ -286,6 +286,12 @@
       "object_id": false,
       "writes": false
     },
+    "GET /mvs/v1/me/mentions": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": false,
+      "writes": false
+    },
     "GET /mvs/v1/me/messages/unread-count": {
       "audience": "member",
       "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
@@ -528,6 +534,12 @@
       "object_id": false,
       "writes": true
     },
+    "POST /mvs/v1/comments/(?P<id>[\\d]+)/report": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
+      "writes": true
+    },
     "POST /mvs/v1/conversations": {
       "audience": "member",
       "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",
@@ -676,6 +688,12 @@
       "audience": "guarded",
       "permission_callback": "WPMediaVerse\\REST\\Controller\\BulkController::bulk_permissions_check",
       "object_id": false,
+      "writes": true
+    },
+    "POST /mvs/v1/messages/(?P<id>[\\d]+)/report": {
+      "audience": "guarded",
+      "permission_callback": "Closure",
+      "object_id": true,
       "writes": true
     },
     "POST /mvs/v1/messages/(?P<id>\\d+)/reactions": {

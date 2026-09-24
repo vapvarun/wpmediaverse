@@ -85,6 +85,40 @@ class MemberModeration {
 	}
 
 	/**
+	 * When the member's own account deletion is due, or 0.
+	 *
+	 * A deletion request also suspends the member, so the two states overlap;
+	 * the screens show the deletion as its own state so a moderator does not
+	 * "restore" someone without knowing their account is about to be deleted.
+	 *
+	 * @param int $user_id Member.
+	 * @return int Unix timestamp, or 0.
+	 */
+	private function deletion_at( int $user_id ): int {
+		return (int) \WPMediaVerse\Core\Plugin::container()->get( 'account_deletion' )->scheduled_at( $user_id );
+	}
+
+	/**
+	 * Row-action URL for this screen's actions.
+	 *
+	 * @param int    $user_id Member.
+	 * @param string $action  suspend | restore | cancel_deletion.
+	 * @return string
+	 */
+	private function action_url( int $user_id, string $action ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					self::ACTION => $action,
+					'user_id'    => $user_id,
+				),
+				admin_url( 'users.php' )
+			),
+			'mvs_suspend_user_' . $user_id
+		);
+	}
+
+	/**
 	 * Render the suspend checkbox on the profile screen.
 	 *
 	 * @param \WP_User $user The user being edited.
@@ -111,6 +145,22 @@ class MemberModeration {
 					</p>
 				</td>
 			</tr>
+			<?php $mvs_deletion_at = $this->deletion_at( (int) $user->ID ); ?>
+			<?php if ( $mvs_deletion_at ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Account deletion', 'wpmediaverse' ); ?></th>
+					<td>
+						<strong>
+							<?php
+							/* translators: %s: date */
+							echo esc_html( sprintf( __( 'Deletion scheduled for %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ), $mvs_deletion_at ) ) );
+							?>
+						</strong>
+						<a href="<?php echo esc_url( $this->action_url( (int) $user->ID, 'cancel_deletion' ) ); ?>"><?php esc_html_e( 'Cancel deletion', 'wpmediaverse' ); ?></a>
+						<p class="description"><?php esc_html_e( 'The member asked to delete their account, which also suspended it. Unticking Suspended cancels the deletion as well.', 'wpmediaverse' ); ?></p>
+					</td>
+				</tr>
+			<?php endif; ?>
 		</table>
 		<?php
 	}
@@ -150,6 +200,9 @@ class MemberModeration {
 			update_user_meta( $user_id, 'mvs_suspended', 1 );
 		} else {
 			delete_user_meta( $user_id, 'mvs_suspended' );
+			// Restoring a member whose deletion is pending must not leave the
+			// deletion running: they would be active until the cron deletes them.
+			$this->cancel_deletion( $user_id );
 		}
 
 		/**
@@ -161,6 +214,19 @@ class MemberModeration {
 		 * @param bool $suspended Whether they are now suspended.
 		 */
 		do_action( 'mvs_member_suspension_changed', $user_id, $suspended );
+	}
+
+	/**
+	 * Cancel a pending account deletion (clears its suspension too).
+	 *
+	 * @param int $user_id Member.
+	 * @return bool True when a deletion was pending and is now cancelled.
+	 */
+	private function cancel_deletion( int $user_id ): bool {
+		if ( ! $this->deletion_at( $user_id ) ) {
+			return false;
+		}
+		return ! is_wp_error( \WPMediaVerse\Core\Plugin::container()->get( 'account_deletion' )->cancel( $user_id ) );
 	}
 
 	/**
@@ -195,6 +261,17 @@ class MemberModeration {
 		// lean on core-native semantics instead of inline colour: plain text for
 		// Active, bold for the state that matters. The red destructive cue lives on
 		// the row action below via core's own `submitdelete` class.
+		$deletion_at = $this->deletion_at( (int) $user_id );
+		if ( $deletion_at ) {
+			$cancel = $this->can_suspend( (int) $user_id )
+				? ' <a href="' . esc_url( $this->action_url( (int) $user_id, 'cancel_deletion' ) ) . '">' . esc_html__( 'Cancel', 'wpmediaverse' ) . '</a>'
+				: '';
+			return '<strong>' . esc_html(
+				/* translators: %s: date */
+				sprintf( __( 'Deletion scheduled for %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ), $deletion_at ) )
+			) . '</strong>' . $cancel;
+		}
+
 		if ( ! $this->is_suspended( (int) $user_id ) ) {
 			return esc_html__( 'Active', 'wpmediaverse' );
 		}
@@ -219,16 +296,7 @@ class MemberModeration {
 
 		$suspended = $this->is_suspended( $user_id );
 
-		$url = wp_nonce_url(
-			add_query_arg(
-				array(
-					self::ACTION => $suspended ? 'restore' : 'suspend',
-					'user_id'    => $user_id,
-				),
-				admin_url( 'users.php' )
-			),
-			'mvs_suspend_user_' . $user_id
-		);
+		$url = $this->action_url( $user_id, $suspended ? 'restore' : 'suspend' );
 
 		// Suspend is destructive → core's `submitdelete` class (renders red, the
 		// WP convention for a row's destructive action). Restore is a plain link
@@ -259,17 +327,16 @@ class MemberModeration {
 			wp_die( esc_html__( 'You are not allowed to suspend this member.', 'wpmediaverse' ), 403 );
 		}
 
-		$suspend = 'suspend' === sanitize_key( wp_unslash( $_GET[ self::ACTION ] ) );
+		$action = sanitize_key( wp_unslash( $_GET[ self::ACTION ] ) );
 
-		$this->set_suspended( $user_id, $suspend );
+		if ( 'cancel_deletion' === $action ) {
+			$notice = $this->cancel_deletion( $user_id ) ? 'deletion_cancelled' : 'deletion_gone';
+		} else {
+			$this->set_suspended( $user_id, 'suspend' === $action );
+			$notice = 'suspend' === $action ? 'suspended' : 'restored';
+		}
 
-		wp_safe_redirect(
-			add_query_arg(
-				'mvs_suspended_notice',
-				$suspend ? 'suspended' : 'restored',
-				admin_url( 'users.php' )
-			)
-		);
+		wp_safe_redirect( add_query_arg( 'mvs_suspended_notice', $notice, admin_url( 'users.php' ) ) );
 		exit;
 	}
 
@@ -285,9 +352,16 @@ class MemberModeration {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only, no state change.
 		$notice = sanitize_key( wp_unslash( $_GET['mvs_suspended_notice'] ) );
 
-		$message = 'suspended' === $notice
-			? __( 'Member suspended. They can still browse, but cannot post, comment, react, or message — on the website or in the app.', 'wpmediaverse' )
-			: __( 'Member restored. They can post again.', 'wpmediaverse' );
+		$messages = array(
+			'suspended'          => __( 'Member suspended. They can still browse, but cannot post, comment, react, or message — on the website or in the app.', 'wpmediaverse' ),
+			'restored'           => __( 'Member restored. They can post again.', 'wpmediaverse' ),
+			'deletion_cancelled' => __( 'Account deletion cancelled. The member is active again.', 'wpmediaverse' ),
+			'deletion_gone'      => __( 'That account is no longer scheduled for deletion.', 'wpmediaverse' ),
+		);
+		if ( ! isset( $messages[ $notice ] ) ) {
+			return;
+		}
+		$message = $messages[ $notice ];
 
 		printf(
 			'<div class="notice notice-success is-dismissible"><p>%s</p></div>',

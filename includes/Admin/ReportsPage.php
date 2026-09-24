@@ -225,37 +225,7 @@ class ReportsPage {
 	 * @param string $status Current tab, so actions return here.
 	 */
 	private function render_row( object $row, string $status ): void {
-		$target_label = '';
-		$target_link  = '';
-
-		if ( 'media' === $row->target_type ) {
-			// A media id is a row in mvs_media_index, NOT a wp_posts ID: the two
-			// sequences collide, and get_permalink()/get_the_title() named and
-			// linked whatever post happened to share the number (a report on a
-			// photo showed a BuddyPress email template). Ask the repository.
-			$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-			$id     = (int) $row->target_id;
-			$exists = $id && $repo->exists( $id );
-			$title  = $exists ? trim( (string) $repo->get( $id, 'title' ) ) : '';
-
-			$target_link = $exists ? $repo->get_permalink( $id ) : '';
-			if ( '' !== $title ) {
-				$target_label = $title;
-			} elseif ( $exists ) {
-				/* translators: %d: media ID. */
-				$target_label = sprintf( __( 'Media #%d', 'wpmediaverse' ), $id );
-			} else {
-				/* translators: %d: media ID. */
-				$target_label = sprintf( __( 'Media #%d (deleted)', 'wpmediaverse' ), $id );
-			}
-		} else {
-			$user         = get_userdata( (int) $row->target_id );
-			$target_link  = $user ? (string) get_author_posts_url( (int) $row->target_id ) : '';
-			$target_label = $user
-				? $user->display_name
-				/* translators: %d: user ID. */
-				: sprintf( __( 'Member #%d (deleted)', 'wpmediaverse' ), (int) $row->target_id );
-		}
+		list( $target_label, $target_link, $type_label ) = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->describe_target( (string) $row->target_type, (int) $row->target_id );
 
 		$reporter       = get_userdata( (int) $row->reporter_id );
 		$reporter_label = $reporter ? $reporter->display_name : __( 'Deleted member', 'wpmediaverse' );
@@ -270,7 +240,7 @@ class ReportsPage {
 			echo esc_html( $target_label );
 		}
 		echo '</strong><br />';
-		echo '<span class="description">' . esc_html( 'media' === $row->target_type ? __( 'Media', 'wpmediaverse' ) : __( 'Member', 'wpmediaverse' ) ) . '</span>';
+		echo '<span class="description">' . esc_html( $type_label ) . '</span>';
 		echo '</td>';
 
 		echo '<td>' . esc_html( $row->reason ) . '</td>';

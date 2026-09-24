@@ -2155,17 +2155,32 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'deleteAction'         => __( 'Delete', 'wpmediaverse' ),
 					// Report.
 					'loginToReport'        => __( 'Please log in to report content.', 'wpmediaverse' ),
-					'reasonSpam'           => __( 'Spam', 'wpmediaverse' ),
-					'reasonHarassment'     => __( 'Harassment', 'wpmediaverse' ),
-					'reasonNudity'         => __( 'Nudity or sexual content', 'wpmediaverse' ),
-					'reasonViolence'       => __( 'Violence or dangerous acts', 'wpmediaverse' ),
-					'reasonCopyright'      => __( 'Copyright infringement', 'wpmediaverse' ),
-					'reasonMisinformation' => __( 'Misinformation', 'wpmediaverse' ),
-					'reasonOther'          => __( 'Other', 'wpmediaverse' ),
-					'reportPrompt'         => __( 'Why are you reporting this media?', 'wpmediaverse' ),
-					'reportSubmitted'      => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
-					'reportAlready'        => __( 'Already reported or error occurred.', 'wpmediaverse' ),
-					'reportAction'         => __( 'Report', 'wpmediaverse' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Seed PHP-translated strings for the mvs/media-player Interactivity
+	 * store's resume-playback chip.
+	 *
+	 * The store (src/blocks/media-player/view.js) is a script MODULE, so
+	 * window.wp.i18n.__() is English-locked there. We inject the translated
+	 * prefix into interactivity state; the store reads state.i18n.<key> with
+	 * an English fallback and appends the formatted timestamp itself. Called
+	 * before the first data-wp-interactive="mvs/media-player" root element in
+	 * media-single.php and the media-player block's render.php so the state
+	 * is seeded during render. Mirrors media_social_i18n_state() (Basecamp
+	 * 10073528834).
+	 *
+	 * @return void
+	 */
+	public static function media_player_i18n_state(): void {
+		wp_interactivity_state(
+			'mvs/media-player',
+			array(
+				'i18n' => array(
+					'resumedAtPrefix' => __( 'Resumed at', 'wpmediaverse' ),
 				),
 			)
 		);

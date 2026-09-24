@@ -1370,6 +1370,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-media-video {
+    position: relative; /* positioning context for the resume-playback chip */
     width: 100%;
     background: var(--mvs-overlay);
     /* aspect-ratio is set inline from the media's stored width/height so
@@ -4156,6 +4157,64 @@ a.mvs-dashboard-card-title:hover {
 .mvs-media-video {
     border-radius: 4px;
     overflow: hidden;
+}
+
+/* Resume-playback chip ("Resumed at M:SS — Start over"). Card requirement:
+ * signed-in members, videos over 2 minutes, not nearly finished. `.mvs-media-video`
+ * above is already `position: relative` (see section "Media Content"), so the
+ * chip anchors to the video frame. Mirrored in
+ * src/blocks/media-player/style.css for the Media Player block, which does
+ * not always share this stylesheet on the page it renders on. Token-driven so
+ * light/dark tracks the surrounding theme. */
+.mvs-resume-chip {
+    position: absolute;
+    inset-inline: var(--mvs-space-3);
+    inset-block-start: var(--mvs-space-3); /* top: the native controls live at the bottom */
+    z-index: var(--mvs-z-sticky);
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    max-width: calc(100% - var(--mvs-space-3) * 2);
+    padding: var(--mvs-space-2) var(--mvs-space-3);
+    background: var(--mvs-overlay);
+    color: var(--mvs-btn-primary-fg);
+    border-radius: var(--mvs-radius-md);
+    font-size: var(--mvs-font-sm);
+    box-shadow: var(--mvs-shadow-md);
+}
+
+.mvs-resume-chip__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mvs-resume-chip__btn {
+    flex: 0 0 auto;
+    min-height: var(--mvs-touch-min);
+    padding: var(--mvs-space-1) var(--mvs-space-3);
+    background: transparent;
+    border: 1px solid var(--mvs-btn-primary-fg);
+    border-radius: var(--mvs-radius-sm);
+    color: var(--mvs-btn-primary-fg);
+    font-size: var(--mvs-font-sm);
+    cursor: pointer;
+}
+
+.mvs-resume-chip__btn:hover,
+.mvs-resume-chip__btn:focus-visible {
+    background: var(--mvs-overlay);
+    opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+    .mvs-resume-chip {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
 }
 
 .mvs-audio-info {
