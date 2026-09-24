@@ -26,6 +26,14 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | `/media/challenges/` | challenge list | "no active challenges" |
 | `/media/tournaments/` | bracket list | "no tournaments in registration" |
 | `/messages/` | conversation list + composer | "start a conversation" CTA |
+| `/media/challenges/{id}/` | theme, status, deadlines, entry picker, entries gallery | "no entries yet" + submit CTA |
+| `/media/battles/{id}/` | both photos + vote control | — |
+| `/media/tournaments/{id}/` | bracket with rounds | "bracket not available yet" before start |
+| `/upload-media/` | uploader with privacy + tags | anon → "log in to upload" gate |
+| `/my-media/{media,albums,collections,favorites,profile,documents}/` | deep link lands on that tab | same per-tab empty states as `/my-media/` |
+| `/my-media/documents/{shared,trash,<folder-path>}/` (+ `/page/N/`) | drive view for that scope | "nothing shared" / "trash is empty" / "this folder is empty" |
+| `/album/`, `/collection/` archives | card grid of public albums / collections | "no albums yet" |
+| `/media-tag/{slug}/`, `/media-category/{slug}/` | filtered grid + tag cloud | "no media tagged X yet" + browse-all (a tag whose only items are private lands here) |
 | BP `/members/{user}/media/` | real thumbnails (not page URL) | empty state, no broken img tags |
 | BP `/groups/{slug}/media/` | group media | "no media in this group" |
 | `/explore-document/` public listing | rows (never tiles) with type chip, size, author, pagination | "no documents yet" / filtered → "nothing matches that filter" + browse-all |
@@ -44,6 +52,12 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | Admin Pro Quota & Credits | package list + credit log | "no packages yet" with create CTA |
 | Admin Pro Theme Library | themes grid | — (default themes seeded on activation) |
 | Admin Pro Migration Tool | detected counts | "no migrable data detected" |
+| Admin Tags (`mvs-tags`) | tag table with counts, search, bulk actions, edit/delete | "no tags yet" |
+| Admin Pro Stories (`mvs-stories`) | active stories list | "no active stories right now" |
+| Admin Logs (`mvs-logs`) | filterable log table + Clear All | "no log entries" |
+| Admin Integrations (`mvs-integrations`) | Wbcom family cards with install/active state | — |
+| Admin Setup wizard (`mvs-setup`) | welcome + setup steps | re-running after setup must not create duplicate pages |
+| Admin Pro Challenges / Tournaments / Battles | status tabs with counts, row actions (End Entries, Create Tournament) | empty tab → CTA, not a blank table |
 | Lightbox Edit-Media modal | title/description/privacy/allow-download fields prefilled from media, save → REST PUT → live update | save disabled while title empty; ESC closes without saving |
 | Lightbox Download button | downloads original asset; increments `mvs_media_stats.downloads` once per click; rate-limited at 30/min/user | hidden when global `mvs_allow_downloads` off OR per-media `allow_download='0'` |
 | Lightbox Fullscreen button | enters native Fullscreen API on the image panel; F key toggles | exit on ESC or F again; toolbar still operable in fullscreen |
@@ -56,7 +70,7 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | Single-media OG + Twitter Card meta | `og:title`/`og:image`/`og:description`/`twitter:card` injected on `wp_head` priority 5 | absent on non-media pages |
 | Frontend chat-panel | renders or not per `mvs_chat_panel_visibility` (`everywhere` / `mvs_pages` / `bp_pages` / `disabled`) | `disabled` mode → no `.mvs-chat-panel` markup at all |
 | BP notification surface (BP active) | only the BP nav bell renders MVS notifications | dashboard-content `.mvs-notification-bell` suppressed (no double-render) |
-| Site Health → `wpmediaverse_video_posters` test | appears in WP Site Health; reports ffmpeg availability (via `PosterService::is_ffmpeg_available()`) and whether posterless videos fall back to the bundled default SVG | meaningful status string, never a blank/fatal test row |
+| Site Health → MediaVerse tests (`wpmediaverse_tables`, `_uploads`, `_pages`, `_media_privacy`) | four rows in Tools → Site Health, each with a pass/fail label and the WPMediaVerse badge | a failing test names the fix (missing table, unwritable dir, unassigned page, public private-media), never a blank/fatal row |
 
 Render rule (standing): every row above must produce visible output in both populated and empty branches. No bare `return;` in render paths. This includes all 9 registered Gutenberg blocks (`mvs/*`) and all 12 shortcodes (`[mvs_*]`).
 
