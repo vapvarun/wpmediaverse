@@ -148,10 +148,24 @@ class AIService {
 			return $this->providers[ $provider_id ];
 		}
 
-		// Fallback to any available provider.
-		foreach ( $this->providers as $provider ) {
-			if ( $provider->is_available() ) {
-				return $provider;
+		/**
+		 * Whether to fall back to another configured provider when the selected
+		 * one has no key.
+		 *
+		 * Default false since 2.6.0: an owner who chose Claude or Google was
+		 * silently billed by OpenAI instead. With no fallback, AI pauses and the
+		 * AI tab says why.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool   $fallback    Whether to fall back.
+		 * @param string $provider_id Selected provider id.
+		 */
+		if ( apply_filters( 'mvs_ai_provider_fallback', false, $provider_id ) ) {
+			foreach ( $this->providers as $provider ) {
+				if ( $provider->is_available() ) {
+					return $provider;
+				}
 			}
 		}
 

@@ -2140,8 +2140,10 @@ class MediaController extends WP_REST_Controller {
 		// allow_download: per-media flag. Absent meta = default true.
 		// '0' string = explicit opt-out by the owner. The lightbox button
 		// honors both this AND the global mvs_allow_downloads setting.
+		// The site-wide switch is folded in here too, so the app never shows a
+		// Download button the /download route will refuse with a 403.
 		$allow_download_raw = isset( $all['allow_download'] ) ? (string) $all['allow_download'] : '';
-		$allow_download     = ( '0' !== $allow_download_raw );
+		$allow_download     = ( '0' !== $allow_download_raw ) && (bool) get_option( 'mvs_allow_downloads', true );
 
 		// Viewer-relative interaction state (1.9.0, additive). Resolved from the
 		// per-request prefill when a list endpoint primed it (2 queries/page),

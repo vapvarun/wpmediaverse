@@ -198,7 +198,19 @@ class Sanitizers {
 
 		$result = array_values( array_unique( array_merge( $custom_stored, $kept_known ) ) );
 
-		// Present-but-empty (and no custom types) = remove all -> ''.
+		// Nothing ticked is refused, not stored. '' used to mean "default" to
+		// the field (all eight boxes shown ticked) and "nothing" to the upload
+		// path (every upload rejected), so the screen said one thing and the
+		// site did the other. Keep the previous choice and say why.
+		if ( empty( $result ) ) {
+			add_settings_error(
+				'mvs_allowed_file_types',
+				'mvs_allowed_file_types_empty',
+				__( 'Pick at least one file type. With none ticked, members could not upload anything, so the previous selection was kept.', 'wpmediaverse' )
+			);
+			return $stored;
+		}
+
 		return implode( ',', $result );
 	}
 
@@ -255,18 +267,22 @@ class Sanitizers {
 		}
 
 		$sanitized = array();
-		foreach ( $input as $webhook ) {
+		foreach ( $input as $index => $webhook ) {
 			$url = isset( $webhook['url'] ) ? esc_url_raw( $webhook['url'] ) : '';
 			if ( empty( $url ) ) {
 				continue;
 			}
+			// "Remove" beside this row's saved secret (FieldRenderer::render_webhook_row).
+			$remove_secret = \WPMediaVerse\Core\SettingsHelper::secret_removal_requested( 'mvs_webhook_secret_' . (int) $index );
 
 			$events = isset( $webhook['events'] ) && is_array( $webhook['events'] )
 				? array_map( 'sanitize_text_field', $webhook['events'] )
 				: array( '*' );
 
 			$secret = isset( $webhook['secret'] ) ? sanitize_text_field( $webhook['secret'] ) : '';
-			if ( '' === $secret && isset( $existing_secrets[ $url ] ) ) {
+			if ( $remove_secret ) {
+				$secret = '';
+			} elseif ( '' === $secret && isset( $existing_secrets[ $url ] ) ) {
 				$secret = $existing_secrets[ $url ];
 			}
 
@@ -323,7 +339,8 @@ class Sanitizers {
 	 */
 	public static function sanitize_thumbnail_size( $value ): string {
 		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_thumbnail_size'], true ) ? $value : self::WHITELISTS['mvs_thumbnail_size'][0];
+		// Fall back to the registered default ('large'), not the first choice.
+		return in_array( $value, self::WHITELISTS['mvs_thumbnail_size'], true ) ? $value : 'large';
 	}
 
 	/**

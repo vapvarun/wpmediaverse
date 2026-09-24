@@ -50,7 +50,7 @@ class AiSettingsRegistrar {
 						'rekognition'   => __( 'AWS Rekognition', 'wpmediaverse' ),
 						'anthropic'     => __( 'Claude (Anthropic)', 'wpmediaverse' ),
 					),
-					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ),
+					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ) . self::provider_status_note(),
 				)
 			);
 		} else {
@@ -257,7 +257,7 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_ai_monthly_budget',
-				'description' => __( 'Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is reached and resume next month. Set to 0 to disable the cap (unlimited spend) — recommended only after you have a billing alert configured on the OpenAI account itself.', 'wpmediaverse' ),
+				'description' => __( 'Monthly limit on AI calls, counted at an estimated $0.01 per call. AI stops when the estimate reaches this number and resumes next month. Real cost depends on the model, so also set a billing limit in your provider account. Set to 0 for no limit.', 'wpmediaverse' ),
 			)
 		);
 
@@ -275,6 +275,21 @@ class AiSettingsRegistrar {
 		//
 		// The default lives at the read site (AIService::track_usage()) and stays
 		// overridable through the `mvs_ai_cost_per_call` filter.
+	}
+
+	/**
+	 * A warning appended to the provider help when the selected provider has
+	 * no key, so the owner sees why AI is paused instead of being billed by a
+	 * different provider (there is no silent fallback since 2.6.0).
+	 *
+	 * @return string Leading space + sentence, or ''.
+	 */
+	private static function provider_status_note(): string {
+		$container = \WPMediaVerse\Core\Plugin::container();
+		if ( ! $container->has( 'ai' ) || $container->get( 'ai' )->get_active_provider() ) {
+			return '';
+		}
+		return ' ' . __( 'The selected provider has no API key, so AI features are paused until you add one.', 'wpmediaverse' );
 	}
 
 	/**

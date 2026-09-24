@@ -559,58 +559,87 @@ class FieldRenderer {
 
 	/**
 	 * Render the webhook configuration field.
+	 *
+	 * One block per stored webhook (or one empty block when there are none).
+	 * Only the first used to be rendered, and because the save rebuilds the
+	 * option from what was posted, every other webhook - ones added through
+	 * the REST API or code - was deleted by the next Save on this tab.
 	 */
 	public static function render_webhook_field(): void {
-		$webhooks = get_option( 'mvs_webhooks', array() );
-		$webhook  = ! empty( $webhooks[0] ) ? $webhooks[0] : array(
-			'url'    => '',
-			'secret' => '',
-			'events' => array( '*' ),
-		);
+		$webhooks = array_values( array_filter( (array) get_option( 'mvs_webhooks', array() ), 'is_array' ) );
+		if ( empty( $webhooks ) ) {
+			$webhooks = array(
+				array(
+					'url'    => '',
+					'secret' => '',
+					'events' => array( '*' ),
+				),
+			);
+		}
 
-		$all_events = \WPMediaVerse\Integrations\WebhookService::EVENTS;
+		foreach ( $webhooks as $index => $webhook ) {
+			self::render_webhook_row( (int) $index, $webhook );
+		}
 		?>
-		<fieldset>
+		<p class="description mvs-webhook-events-hint">
+			<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * One webhook's URL, secret and events.
+	 *
+	 * The first row keeps the ids it always had (mvs-webhook-url, ...), so
+	 * nothing that targets them changes.
+	 *
+	 * @param int   $index   Row index in mvs_webhooks.
+	 * @param array $webhook Stored webhook.
+	 */
+	private static function render_webhook_row( int $index, array $webhook ): void {
+		$all_events = \WPMediaVerse\Integrations\WebhookService::EVENTS;
+		$suffix     = 0 === $index ? '' : '-' . $index;
+		$name       = 'mvs_webhooks[' . $index . ']';
+		$secret_id  = 'mvs_webhook_secret_' . $index;
+		$wh_secret  = (string) ( $webhook['secret'] ?? '' );
+		$wh_display = '' !== $wh_secret ? str_repeat( '*', max( 0, strlen( $wh_secret ) - 4 ) ) . substr( $wh_secret, -4 ) : '';
+		$selected   = (array) ( $webhook['events'] ?? array( '*' ) );
+		?>
+		<fieldset class="mvs-webhook-row">
 			<p>
 				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all (Basecamp 10252222135). ?>
-				<label for="mvs-webhook-url"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
-				<input type="url" name="mvs_webhooks[0][url]" id="mvs-webhook-url" class="regular-text"
+				<label for="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
+				<input type="url" name="<?php echo esc_attr( $name ); ?>[url]" id="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"
 					placeholder="https://example.com/webhook"
 				/>
 			</p>
 			<p>
-				<label for="mvs-webhook-secret"><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
-				<?php
-				$wh_secret  = $webhook['secret'] ?? '';
-				$wh_display = $wh_secret ? str_repeat( '*', max( 0, strlen( $wh_secret ) - 4 ) ) . substr( $wh_secret, -4 ) : '';
-				?>
-				<input type="password" name="mvs_webhooks[0][secret]" id="mvs-webhook-secret" class="regular-text" autocomplete="off"
+				<label for="<?php echo esc_attr( $secret_id ); ?>"><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
+				<input type="password" name="<?php echo esc_attr( $name ); ?>[secret]" id="<?php echo esc_attr( $secret_id ); ?>" class="regular-text" autocomplete="off"
 					value=""
-					placeholder="<?php echo esc_attr( $wh_display ? sprintf( 'Current: %s', $wh_display ) : esc_attr__( 'Shared secret for HMAC signing', 'wpmediaverse' ) ); ?>"
+					<?php /* translators: %s: masked form of the stored secret. */ ?>
+					placeholder="<?php echo esc_attr( '' !== $wh_display ? sprintf( __( 'Current: %s', 'wpmediaverse' ), $wh_display ) : __( 'Shared secret for signing', 'wpmediaverse' ) ); ?>"
 				/>
-				<?php if ( $wh_secret ) : ?>
+				<?php if ( '' !== $wh_secret ) : ?>
+					<?php self::render_secret_remove_control( $secret_id ); ?>
 					<span class="description"><?php esc_html_e( 'Leave empty to keep the current secret.', 'wpmediaverse' ); ?></span>
 				<?php endif; ?>
 			</p>
-			<p id="mvs-webhook-events" class="mvs-webhook-events">
+			<p id="mvs-webhook-events<?php echo esc_attr( $suffix ); ?>" class="mvs-webhook-events">
 				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />
-				<?php $selected_events = $webhook['events'] ?? array( '*' ); ?>
 				<label>
-					<input type="checkbox" name="mvs_webhooks[0][events][]" value="*"
-						<?php checked( in_array( '*', $selected_events, true ) ); ?>
+					<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[events][]" value="*"
+						<?php checked( in_array( '*', $selected, true ) ); ?>
 					/> <?php esc_html_e( 'All events', 'wpmediaverse' ); ?>
 				</label><br />
 				<?php foreach ( $all_events as $event ) : ?>
 					<label>
-						<input type="checkbox" name="mvs_webhooks[0][events][]" value="<?php echo esc_attr( $event ); ?>"
-							<?php checked( in_array( $event, $selected_events, true ) ); ?>
+						<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[events][]" value="<?php echo esc_attr( $event ); ?>"
+							<?php checked( in_array( $event, $selected, true ) ); ?>
 						/> <code><?php echo esc_html( $event ); ?></code>
 					</label><br />
 				<?php endforeach; ?>
-			</p>
-			<p class="description mvs-webhook-events-hint">
-				<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
 			</p>
 		</fieldset>
 		<?php

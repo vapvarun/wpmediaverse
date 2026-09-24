@@ -18,7 +18,7 @@ AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) 
 | Generate Tags | On | When Auto-Analyze is on, use AI to suggest tags for each upload. Turn off to skip tag-suggestion calls. |
 | Auto-Apply Tags | Off | When enabled, AI-suggested tags are automatically assigned to the `mvs_tag` taxonomy. Requires **Generate Tags** to be on. |
 | Auto-Moderate Uploads | Off | When enabled, each new upload is checked for policy violations. The action taken depends on the **When AI Flags Content** setting below. |
-| Monthly AI Budget ($) | $10 | Hard cap on AI spend per calendar month, covering analysis, tagging **and moderation** calls. When the cap is reached, all AI calls stop until the next month. Set to **0** for unlimited spend - recommended only after you configure a billing alert on the provider account itself. |
+| Monthly AI Budget ($) | $10 | Monthly limit on AI calls (analysis, tagging **and moderation**), counted at an estimated $0.01 per call. When the estimate reaches the limit, AI stops until the next month. Real cost depends on the model, so also set a billing limit in your provider account. Set to **0** for no limit. |
 
 **Estimated cost per call** is not a settings-page field - it is a developer-only default (`$0.01`) used for budget tracking, overridable via the [`mvs_ai_cost_per_call`](../developer-guide/hooks-filters.md) filter.
 
@@ -75,3 +75,5 @@ The AI & moderation activity log is available at **MediaVerse > Logs**. It shows
 ## Budget Alerts
 
 When monthly AI spend reaches 80% of your budget, MediaVerse adds an admin notice. When the budget is fully consumed, **all** AI calls - analysis, tagging, and moderation - are suspended and a warning appears on the settings page. Because a fresh install ships with a conservative `$10` default cap, AI never silently runs against an unbounded bill before you have chosen a budget.
+
+**Provider without a key:** MediaVerse uses only the provider you selected. If it has no API key, AI features pause and the AI tab says so - it no longer switches to another provider that has a key. Developers can restore the old fallback with the `mvs_ai_provider_fallback` filter.

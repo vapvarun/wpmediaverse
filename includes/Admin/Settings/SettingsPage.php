@@ -47,6 +47,7 @@ class SettingsPage {
 		// Must run before options.php resolves its gate, which happens on
 		// admin_init, so register these early rather than on admin_menu.
 		add_action( 'admin_init', array( $this, 'register_option_page_capabilities' ), 1 );
+		SettingsSaveGuard::register();
 		add_action( 'admin_menu', array( $this, 'cleanup_admin_menu' ), 999 );
 		add_action( 'admin_init', array( $this->registrar, 'register_all' ) );
 		add_action( 'admin_init', array( $this, 'track_settings_changes' ) );
@@ -615,7 +616,15 @@ class SettingsPage {
 								}
 								?>
 								<?php settings_fields( $section['option_group'] ); ?>
-								<?php $this->render_section_cards( $section, $section_id ); ?>
+								<?php
+								// Posts the names this form rendered, so a Save never resets a
+								// setting that was not on screen (SettingsSaveGuard).
+								SettingsSaveGuard::render_with_manifest(
+									function () use ( $section, $section_id ) {
+										$this->render_section_cards( $section, $section_id );
+									}
+								);
+								?>
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
 									<?php

@@ -3014,6 +3014,17 @@
       ],
       "where": "includes/Services/ModerationService.php:142",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_provider_fallback",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $fallback",
+        "string $provider_id"
+      ],
+      "where": "includes/Services/AIService.php:164",
+      "consumed_by": []
     }
   ],
   "generated": {

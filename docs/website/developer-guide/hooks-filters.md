@@ -109,6 +109,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_moderation_changed` | action | Free | 1.0 |
 | `mvs_moderation_hide_sets_private` | filter | Free | 2.6 |
 | `mvs_should_ai_analyze` | filter | Free | 1.1 |
+| `mvs_ai_provider_fallback` | filter | Free | 2.6 |
 | `mvs_ai_result` | filter | Free | 1.1 |
 | `mvs_ai_moderation_result` | filter | Free | 1.1 |
 | `mvs_openai_api_key` | filter | Free | 1.0 |
@@ -1424,6 +1425,21 @@ add_action( 'mvs_moderation_changed', function( int $media_id, string $status, s
 ```
 
 ---
+
+### `mvs_ai_provider_fallback`
+
+Whether AI falls back to another provider that has a key when the selected provider has none. Default `false` since 2.6.0 (before, a site set to Claude or Google with no key was silently billed by OpenAI).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$fallback` | bool | Default `false` |
+| `$provider_id` | string | Selected provider id |
+
+```php
+add_filter( 'mvs_ai_provider_fallback', '__return_true' );
+```
 
 ### `mvs_should_ai_analyze` **(New in 1.1)**
 
