@@ -1,6 +1,6 @@
-# Owner inventory - 2.5.2 cycle start (Free + Pro)
+# Owner inventory - 2.6.0 cycle start (Free + Pro)
 
-**Date:** 2026-09-24 · **Branch:** `2.5.2` (Free `3aaaa344`, Pro `a23e971`) · **Site:** mediaverse.local (Reign + BuddyNext, Free+Pro active, licence active)
+**Date:** 2026-09-24 · **Branch:** `2.6.0` · **Site:** mediaverse.local (Reign + BuddyNext, Free+Pro active, licence active)
 **Method:** live, not code-read. Admin menu + settings read from the rendered wp-admin; every admin and
 frontend URL fetched in the logged-in browser (admin) and again with no cookies (visitor); every
 frontend route loaded in a 390px frame for overflow. Code-derived lens: `docs/qa/OWNER_INVENTORY.md`
