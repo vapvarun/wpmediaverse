@@ -190,7 +190,7 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | `mvs_message_reactions` | Reactions on DM messages |
 | `mvs_transactions` | Credit/monetization transactions |
 | `mvs_bp_activity_media` | BuddyPress activity-to-media mapping |
-| `mvs_device_tokens` | Registered push device tokens (`/me/devices`, Migrator v30) |
+| `mvs_device_tokens` | The ONE push device registry (`/me/devices`, Migrator v30). Pro's `/mvs-pro/v1/push/register-device` writes here too, and Pro's Expo sender reads it on `mvs_push_send`. |
 
 ---
 

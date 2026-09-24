@@ -980,6 +980,8 @@ Site name, description, icon, and auth discovery come from the core WordPress `/
 
 Register (or refresh) the current user's device push token so the app can deliver push notifications.
 
+Since 2.6.0 the token is stored in MediaVerse's single device registry, the same one `/mvs/v1/me/devices` uses. A token already registered to another member is refused (`"registered": false`), never moved. Pushes follow the `mvs_push_should_send` filter.
+
 **Auth:** User
 
 **Body:**
@@ -987,8 +989,7 @@ Register (or refresh) the current user's device push token so the app can delive
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `expo_push_token` | string | Yes | - | The device's Expo push token |
-| `platform` | string | No | `""` | One of `""`, `ios`, `android`, `web` |
-| `device_name` | string | No | `""` | Human-readable device label |
+| `platform` | string | Yes | - | One of `ios`, `android`, `web` (required since 2.6.0) |
 
 **Response:**
 
