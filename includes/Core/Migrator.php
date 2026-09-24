@@ -361,6 +361,17 @@ class Migrator {
 		);
 
 		// 9. Media index — authoritative media record (no CPT dependency).
+		//
+		// No comment_count: it was written by the rtMedia importer and read by
+		// nothing, so it could only ever go stale. Comment totals are counted
+		// from wp_comments at read time. Existing installs keep the column
+		// (dbDelta never drops one, and an ALTER on a large index table is not
+		// worth a dead column).
+		//
+		// Keep comments OUT of the SQL string: dbDelta() reads every line of a
+		// CREATE TABLE as a column definition, so the "-- ..." lines that used
+		// to sit here became five failing `ALTER TABLE ... ADD COLUMN --`
+		// queries on every existing site's upgrade (shipped in 2.5.1).
 		dbDelta(
 			"CREATE TABLE {$prefix}mvs_media_index (
 				media_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -383,11 +394,6 @@ class Migrator {
 				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
-				-- No comment_count: it was written by the rtMedia importer and
-				-- read by nothing, so it could only ever go stale. Comment
-				-- totals are counted from wp_comments at read time. Existing
-				-- installs keep the column (dbDelta never drops one, and an
-				-- ALTER on a large index table is not worth a dead column).
 				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT NULL,

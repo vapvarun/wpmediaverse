@@ -2522,3 +2522,12 @@ a.mvs-stat-card:focus {
 .mvs-settings-nav-item {
 	min-height: var(--mvs-touch-min);
 }
+
+/* "Remove" beside a saved key (secret-fields.js). A bare button-link is 17px
+   tall; the admin floor is --mvs-touch-min. */
+.wp-core-ui .mvs-secret-remove { /* beats core .wp-core-ui .button-link */
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--mvs-touch-min);
+	padding-inline: 4px;
+}
