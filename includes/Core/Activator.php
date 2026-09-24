@@ -229,15 +229,19 @@ class Activator {
 			// 1. If the option already points to a live page with our shortcode, nothing to do.
 			$existing_id = (int) get_option( $option_key );
 			if ( $existing_id > 0 && 'publish' === get_post_status( $existing_id ) ) {
-				$existing_content = get_post_field( 'post_content', $existing_id );
-				if ( strpos( $existing_content, $page_data['shortcode'] ) !== false ) {
+				if ( self::page_has_shortcode( $existing_id, $page_data['shortcode'] ) ) {
 					continue;
 				}
 			}
 
+			// 2 and 3 adopt an existing page ONLY when it already carries our
+			// shortcode. Matching on slug or title alone took over an owner's own
+			// page that happened to be called "My Media" and pointed the plugin
+			// at content it cannot render.
+
 			// 2. Try to find an existing published page with the expected slug.
 			$found = get_page_by_path( $page_data['slug'], OBJECT, 'page' );
-			if ( $found && 'publish' === $found->post_status ) {
+			if ( $found && 'publish' === $found->post_status && self::page_has_shortcode( $found->ID, $page_data['shortcode'] ) ) {
 				update_option( $option_key, $found->ID );
 				continue;
 			}
@@ -255,7 +259,7 @@ class Activator {
 				)
 			);
 			$by_title       = $by_title_query->have_posts() ? $by_title_query->posts[0] : null;
-			if ( $by_title && 'publish' === $by_title->post_status ) {
+			if ( $by_title && 'publish' === $by_title->post_status && self::page_has_shortcode( $by_title->ID, $page_data['shortcode'] ) ) {
 				update_option( $option_key, $by_title->ID );
 				continue;
 			}
@@ -281,6 +285,24 @@ class Activator {
 		if ( $auto_add_detached ) {
 			add_action( 'transition_post_status', '_wp_auto_add_pages_to_menu', 10, 3 );
 		}
+	}
+
+	/**
+	 * Whether a page's content carries the given shortcode's tag.
+	 *
+	 * Matches the tag, not the exact string, so pages created by older releases
+	 * with attributes (`[mvs_gallery columns="3"]`) still count as ours.
+	 * has_shortcode() cannot be used: shortcodes are not registered yet when the
+	 * activation hook runs.
+	 *
+	 * @param int    $page_id   Page ID.
+	 * @param string $shortcode Shortcode as written, e.g. `[mvs_gallery]`.
+	 * @return bool
+	 */
+	private static function page_has_shortcode( int $page_id, string $shortcode ): bool {
+		$tag = trim( $shortcode, '[]' );
+
+		return 1 === preg_match( '/\[' . preg_quote( $tag, '/' ) . '[\s\]\/]/', (string) get_post_field( 'post_content', $page_id ) );
 	}
 
 	/**

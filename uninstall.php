@@ -2,7 +2,15 @@
 /**
  * Uninstall WPMediaVerse.
  *
- * Drops all custom tables, deletes options, and removes post meta.
+ * KEEPS MEMBER DATA unless the owner opted in (Settings > General >
+ * "Remove Data on Delete"). Premium plugins are routinely updated by deleting
+ * and re-uploading them; before 2.6.0 that path dropped every table - media,
+ * albums, messages - with no question asked.
+ *
+ * Always: scheduled work is cleared and caches (transients) are dropped.
+ * With the opt-in: tables, options, post meta, albums/collections, user meta
+ * and capabilities go too. Uploaded files and the pages MediaVerse created are
+ * never touched here - the setting says so.
  *
  * @package WPMediaVerse
  */
@@ -12,6 +20,37 @@ defined( 'ABSPATH' ) || exit;
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 global $wpdb;
+
+// The one list of scheduled work (see Deactivator), required directly for the
+// same reason the Migrator is below: uninstall runs outside the bootstrap.
+$mvs_deactivator = __DIR__ . '/includes/Core/Deactivator.php';
+if ( is_readable( $mvs_deactivator ) ) {
+	require_once $mvs_deactivator;
+	\WPMediaVerse\Core\Deactivator::clear_scheduled( true );
+}
+
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_timeout_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+// Spelled out rather than read from GeneralSettingsRegistrar::DELETE_DATA_OPTION:
+// that class needs the Settings API loaded, and this file runs standalone.
+if ( '1' !== (string) get_option( 'mvs_delete_data_on_uninstall', '' ) ) {
+	return;
+}
+
+// Pro reads the same opt-in when it is deleted. If Pro is still installed, the
+// option has to outlive this uninstall, or deleting Free first would quietly
+// turn Pro's delete into a keep.
+if ( ! function_exists( 'get_plugins' ) ) {
+	require_once ABSPATH . 'wp-admin/includes/plugin.php';
+}
+$mvs_pro_installed = false;
+foreach ( get_plugins() as $mvs_plugin_data ) {
+	if ( 'wpmediaverse-pro' === ( $mvs_plugin_data['TextDomain'] ?? '' ) ) {
+		$mvs_pro_installed = true;
+		break;
+	}
+}
 
 // Remove custom tables.
 //
@@ -50,8 +89,13 @@ foreach ( $mvs_tables as $mvs_table ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$mvs_table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 }
 
-// Delete all mvs_ options.
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+// Delete all mvs_ options (the opt-in survives while Pro is installed, see above).
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name <> %s", $wpdb->esc_like( 'mvs_' ) . '%', $mvs_pro_installed ? 'mvs_delete_data_on_uninstall' : '' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+// Per-member state: suspension, interests, privacy presets, counters, resume
+// positions, connector credentials - every MediaVerse key uses one of these two
+// prefixes. Deleted with the rest of the data the owner asked to remove.
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s OR meta_key LIKE %s", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( '_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 // Delete all _mvs_ post meta.
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $wpdb->esc_like( '_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -90,7 +134,3 @@ if ( file_exists( $mvs_caps_file ) ) {
 		\WPMediaVerse\Capabilities\MediaCapabilities::remove_caps();
 	}
 }
-
-// Delete transients.
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_timeout_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery

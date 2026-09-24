@@ -39,7 +39,8 @@ class SettingsRegistrar {
 	 * Register all settings, sections, and fields.
 	 */
 	public function register_all(): void {
-		$this->register_general_settings();
+		( new GeneralSettingsRegistrar() )->register();
+		$this->register_storage_settings();
 		$this->register_display_settings();
 		( new AiSettingsRegistrar() )->register();
 		$this->register_moderation_settings();
@@ -88,213 +89,13 @@ class SettingsRegistrar {
 	}
 
 	// -------------------------------------------------------------------------
-	// General settings (General + Uploads + Storage sections)
+	// Storage settings (the General tab's own fields live in GeneralSettingsRegistrar)
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Register General-tab settings.
+	 * Register Storage-tab settings.
 	 */
-	private function register_general_settings(): void {
-		// General section.
-		add_settings_section(
-			'mvs_general',
-			__( 'General', 'wpmediaverse' ),
-			function () {
-				echo '<p>' . esc_html__( 'Upload limits, file types, privacy defaults, and duplicate detection.', 'wpmediaverse' ) . '</p>';
-			},
-			SettingsPage::PAGE_SLUG . '-general'
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_max_upload_size',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_size_mb' ),
-				'default'           => 104857600,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_max_upload_size',
-			__( 'Max Upload Size', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_size_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option' => 'mvs_max_upload_size',
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_allowed_file_types',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_file_types' ),
-				'default'           => self::DEFAULT_ALLOWED_FILE_TYPES,
-			)
-		);
-
-		// Defeat WP's update_option->add_option no-op: when the stored value
-		// equals the registered default, update_option() routes the write through
-		// add_option(), which bails on an existing row — so the FIRST change is
-		// silently dropped. When the value is genuinely changing away from the
-		// default, delete the row first so add_option() INSERTs cleanly. Never
-		// fires on a no-op; never touches the default or the filter, so
-		// fresh-install seeding is preserved. (Sanitizers::sanitize_file_types is
-		// idempotent, so add_option's second sanitize pass on the CSV is safe.)
-		add_filter(
-			'pre_update_option_mvs_allowed_file_types',
-			static function ( $value, $old_value ) {
-				if ( $value === $old_value ) {
-					return $value;
-				}
-				if ( (string) $old_value === self::DEFAULT_ALLOWED_FILE_TYPES ) {
-					delete_option( 'mvs_allowed_file_types' );
-				}
-				return $value;
-			},
-			10,
-			2
-		);
-
-		FieldRenderer::add_field(
-			'mvs_allowed_file_types',
-			__( 'Allowed File Types', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_file_types_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option'      => 'mvs_allowed_file_types',
-				'description' => __( 'Select which file formats users can upload.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_default_privacy',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_default_privacy' ),
-				'default'           => 'public',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_default_privacy',
-			__( 'Default Privacy Level', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option'      => 'mvs_default_privacy',
-				'choices'     => array(
-					'public'  => __( 'Public', 'wpmediaverse' ),
-					'members' => __( 'Members Only', 'wpmediaverse' ),
-					'private' => __( 'Private', 'wpmediaverse' ),
-				),
-				'description' => __( 'New uploads default to this privacy level. Users can change per upload.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_allow_user_privacy',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_allow_user_privacy',
-			__( 'Allow Users to Set Privacy', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option'      => 'mvs_allow_user_privacy',
-				'label'       => __( 'Allow users to choose the privacy level of their media.', 'wpmediaverse' ),
-				'description' => __( 'When disabled, all uploads use the Default Privacy Level above and members cannot change it afterwards: the privacy selector is hidden when uploading, editing and in bulk actions. Users who can manage MediaVerse settings keep the control.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_duplicate_action',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_duplicate_action' ),
-				'default'           => 'warn',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_duplicate_action',
-			__( 'Duplicate Detection', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option'      => 'mvs_duplicate_action',
-				'choices'     => array(
-					'warn'  => __( 'Warn (allow upload)', 'wpmediaverse' ),
-					'skip'  => __( 'Skip (reject duplicate)', 'wpmediaverse' ),
-					'allow' => __( 'Allow (no check)', 'wpmediaverse' ),
-				),
-				'description' => __( 'Controls what happens when a user uploads a file that already exists.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_strip_exif',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_strip_exif',
-			__( 'Strip EXIF Data', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option'      => 'mvs_strip_exif',
-				'label'       => __( 'Remove GPS location from uploaded photos.', 'wpmediaverse' ),
-				'description' => __( 'On by default. Only the coordinates are removed - camera, lens, exposure and the copyright/credit fields stay on the photo, so a photographer keeps their metadata and their byline. Applies to new uploads and to replaced files; photos already in the library are not changed.', 'wpmediaverse' ),
-			)
-		);
-
-		// App sign-in. AppCredentials::is_enabled() has always READ this option
-		// and its docblock calls it an owner switch — but nothing registered or
-		// wrote it, so the only way to turn the exchange off was to write PHP
-		// against the mvs_app_password_login_enabled filter. A switch that
-		// controls whether members can trade their WordPress password for an
-		// app credential belongs in the UI. Caught by the contract audit
-		// (option-read-never-written) before the 2.3.0 release.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_app_password_login',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_app_password_login',
-			__( 'App Sign-In', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-general',
-			'mvs_general',
-			array(
-				'option'      => 'mvs_app_password_login',
-				'label'       => __( 'Let members sign in to a mobile app with their WordPress password.', 'wpmediaverse' ),
-				'description' => __( 'The site issues an Application Password behind the scenes. Turn this off if you require every member to go through the interactive login instead, for example when you enforce two-factor authentication.', 'wpmediaverse' ),
-			)
-		);
-
+	private function register_storage_settings(): void {
 		// Storage section.
 		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-storage' );
 
