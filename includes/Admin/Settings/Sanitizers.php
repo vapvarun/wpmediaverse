@@ -78,7 +78,7 @@ class Sanitizers {
 		'mvs_items_per_page'         => array( 12, 24, 48 ),
 		'mvs_ai_provider'            => array( 'openai', 'google_vision', 'rekognition', 'anthropic' ),
 		'mvs_openai_model'           => array( 'gpt-4o-mini', 'gpt-4o' ),
-		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject', 'delete' ),
+		'mvs_moderation_auto_action' => array( 'flag', 'reject', 'delete' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
 		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
@@ -209,9 +209,12 @@ class Sanitizers {
 	 * @return string
 	 */
 	public static function sanitize_password_option( $value ): string {
+		$option = str_replace( 'sanitize_option_', '', current_filter() );
+		if ( \WPMediaVerse\Core\SettingsHelper::secret_removal_requested( $option ) ) {
+			return '';
+		}
 		$value = sanitize_text_field( $value );
 		if ( '' === $value ) {
-			$option = str_replace( 'sanitize_option_', '', current_filter() );
 			return get_option( $option, '' );
 		}
 		return $value;
@@ -414,6 +417,11 @@ class Sanitizers {
 	 */
 	public static function sanitize_moderation_auto_action( $value ): string {
 		$value = is_string( $value ) ? $value : '';
+		// 'hide' is retired (it now does what 'flag' does); a site still set to
+		// it is saved back as 'flag'. ModerationService still reads a stored 'hide'.
+		if ( 'hide' === $value ) {
+			return 'flag';
+		}
 		return in_array( $value, self::WHITELISTS['mvs_moderation_auto_action'], true ) ? $value : 'flag';
 	}
 

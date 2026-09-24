@@ -110,7 +110,8 @@ class StatsController extends WP_REST_Controller {
 
 		// Privacy check — don't expose stats for private media.
 		if ( ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		$stats = $this->stats->get_for_media( $media_id );

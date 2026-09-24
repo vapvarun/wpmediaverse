@@ -23,10 +23,11 @@ When **Auto-Moderate Uploads** is enabled, MediaVerse checks the AI safety score
 
 | Action | What Happens |
 |--------|-------------|
-| Flag for review | Media stays published but appears in the moderation queue |
-| Hide | Media's `privacy` is set to `private` |
-| Reject | Media's `post_status` is set to `draft` |
+| Hide until I review it | Media is hidden from everyone except its author and moderators, and appears in the moderation queue. Approving it restores it exactly as the member left it. |
+| Reject (move to draft) | Media is moved to draft |
 | Delete permanently | Media and its files are removed from local and cloud storage. Cannot be undone. |
+
+Before 2.6.0 there was a separate **Hide** choice that also forced the item's privacy to private, and approving it did not change it back. Sites still set to it now behave like **Hide until I review it**; the `mvs_moderation_hide_sets_private` filter restores the old behaviour.
 
 Moderation status changes fire the `mvs_moderation_changed` action hook (`$media_id`, `$status`, `$old_status`, `$user_id`).
 

@@ -119,13 +119,29 @@ class ModerationService {
 				break;
 
 			case 'hide':
-				$this->set_status( $media_id, self::STATUS_FLAGGED );
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'private' );
-				break;
-
 			case 'flag':
 			default:
+				// "Hide until I review it". A flagged item is already hidden from
+				// everyone but its author and moderators (PrivacyService), so
+				// approving it puts it back exactly as the member left it. The
+				// retired 'hide' value used to also force privacy to private,
+				// which approve never undid - a false positive stayed private for
+				// good. Sites that relied on that can restore it with the filter.
 				$this->set_status( $media_id, self::STATUS_FLAGGED );
+
+				/**
+				 * Whether a stored 'hide' action also forces the media private.
+				 *
+				 * Default false since 2.6.0. Approving does not restore privacy.
+				 *
+				 * @since 2.6.0
+				 *
+				 * @param bool $sets_private Whether to set privacy to private.
+				 * @param int  $media_id     Media ID.
+				 */
+				if ( 'hide' === $auto_action && apply_filters( 'mvs_moderation_hide_sets_private', false, $media_id ) ) {
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'private' );
+				}
 				break;
 		}
 	}

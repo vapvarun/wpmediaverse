@@ -52,7 +52,7 @@ When this constant is defined, the settings page field is disabled and shows a n
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| When AI Flags Content | Flag for review | What happens when AI detects a policy violation. Options: **Flag for review** (keeps media visible but adds it to the moderation queue), **Hide** (sets media to private), **Reject** (moves media to draft), **Delete permanently** (removes the media and its files from local and cloud storage - cannot be undone). The default changed from Delete permanently to Flag for review in 2.0.0, so a fresh install can never auto-delete uploads before an admin has chosen otherwise. |
+| When AI Flags Content | Hide until I review it | What happens when AI detects a policy violation. Options: **Hide until I review it** (hidden from everyone except the author and moderators until you approve it), **Reject** (moves media to draft), **Delete permanently** (removes the media and its files from local and cloud storage - cannot be undone). The default changed from Delete permanently to Flag for review in 2.0.0, so a fresh install can never auto-delete uploads before an admin has chosen otherwise. |
 | Auto-Hide Threshold | 3 | Number of user reports required to automatically hide a media item. The media is set to private and added to the moderation queue. Set to 0 to disable automatic hiding. |
 
 ## Moderation Queue

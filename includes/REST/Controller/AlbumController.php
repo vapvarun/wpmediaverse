@@ -385,7 +385,8 @@ class AlbumController extends WP_REST_Controller {
 
 		// Privacy enforcement.
 		if ( ! $this->privacy->can_view( $post->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		return rest_ensure_response( $this->prepare_album_response( $post, true ) );
@@ -415,7 +416,8 @@ class AlbumController extends WP_REST_Controller {
 
 		// Same gate as get_item() — a private album's contents are private.
 		if ( ! $this->privacy->can_view( $post->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		$per_page = (int) $request->get_param( 'per_page' );

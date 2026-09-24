@@ -691,13 +691,16 @@ class SettingsRegistrar {
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_moderation_auto_action',
+				// Three choices since 2.6.0: "Flag for review" and "Hide" both hid
+				// the item until review, so owners were choosing between two
+				// names for one outcome. A stored 'hide' still works and is saved
+				// back as 'flag' (Sanitizers::sanitize_moderation_auto_action).
 				'choices'     => array(
-					'flag'   => __( 'Flag for review (keep visible)', 'wpmediaverse' ),
-					'hide'   => __( 'Hide (set to private)', 'wpmediaverse' ),
+					'flag'   => __( 'Hide until I review it', 'wpmediaverse' ),
 					'reject' => __( 'Reject (move to draft)', 'wpmediaverse' ),
-					'delete' => __( 'Delete permanently (removes file from storage/cloud)', 'wpmediaverse' ),
+					'delete' => __( 'Delete permanently', 'wpmediaverse' ),
 				),
-				'description' => __( 'Action taken automatically when AI detects a policy violation in uploaded media. "Delete permanently" removes the media and its files from local and cloud storage and cannot be undone.', 'wpmediaverse' ),
+				'description' => __( 'What happens when AI flags an upload. Hidden items stay visible to their author and appear in Moderation; approving one restores it. "Delete permanently" removes the files too and cannot be undone.', 'wpmediaverse' ),
 			)
 		);
 

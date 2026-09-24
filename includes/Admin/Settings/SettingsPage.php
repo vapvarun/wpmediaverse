@@ -488,6 +488,19 @@ class SettingsPage {
 			)
 		);
 
+		// "Remove" link beside saved keys (Free and Pro secret fields).
+		wp_enqueue_script(
+			'mvs-secret-fields',
+			MVS_PLUGIN_URL . 'assets/js/admin/secret-fields.js',
+			array( 'wp-i18n' ),
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/secret-fields.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_set_script_translations( 'mvs-secret-fields', 'wpmediaverse', MVS_PLUGIN_DIR . 'languages' );
+
 		// Progressive disclosure for AI provider credentials (show only the
 		// selected provider's key/model).
 		wp_enqueue_script(

@@ -11,6 +11,8 @@
 
 namespace WPMediaVerse\Social;
 
+use WPMediaVerse\Services\ModerationService;
+
 defined( 'ABSPATH' ) || exit;
 
 
@@ -128,8 +130,14 @@ class ReportService {
 			$threshold = (int) get_option( 'mvs_report_auto_hide_threshold', 3 );
 			if ( $threshold > 0 ) {
 				$count = $this->get_report_count( $target_type, $target_id );
-				if ( $count >= $threshold ) {
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $target_id, 'moderation_status', 'flagged' );
+				// Through ModerationService, not a raw column write: that is what
+				// fires mvs_moderation_changed, which clears cached grids, sends the
+				// media.moderated webhook and logs the action. The raw write left a
+				// hidden tile in cached feeds and integrations never heard about it.
+				// Only once: further reports on an already-flagged item change nothing.
+				$moderation = \WPMediaVerse\Core\Plugin::container()->get( 'moderation' );
+				if ( $count >= $threshold && ModerationService::STATUS_FLAGGED !== $moderation->get_status( $target_id ) ) {
+					$moderation->set_status( $target_id, ModerationService::STATUS_FLAGGED );
 				}
 			}
 		}

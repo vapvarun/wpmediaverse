@@ -443,7 +443,8 @@ class PrivacyService {
 
 		// Same split for the privacy value itself: an album's lives in post meta,
 		// a media item's in its index row.
-		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
+		$is_post_object = $post_type && in_array( $post_type, $allowed_types, true );
+		if ( $is_post_object ) {
 			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $media_id );
 		} else {
 			$privacy = (string) $repo->get( $media_id, 'privacy' );
@@ -457,12 +458,17 @@ class PrivacyService {
 		 *
 		 * Return a non-null boolean to short-circuit the built-in check.
 		 *
+		 * Fires for MEDIA only (an mvs_media_index id), never for an album or
+		 * collection post: every listener reads the id as media, and the two
+		 * id sequences collide, so an album check used to be answered from an
+		 * unrelated photo's row (an inherit-privacy flag, a competition entry).
+		 *
 		 * @param bool|null $result   Access result. Null to use default logic.
-		 * @param int       $media_id Media post ID.
+		 * @param int       $media_id Media ID (mvs_media_index).
 		 * @param int       $user_id  User ID.
 		 * @param string    $privacy  Privacy level.
 		 */
-		$filtered = apply_filters( 'mvs_privacy_can_view', null, $media_id, $user_id, $privacy );
+		$filtered = $is_post_object ? null : apply_filters( 'mvs_privacy_can_view', null, $media_id, $user_id, $privacy );
 		if ( null !== $filtered ) {
 			return (bool) $filtered;
 		}
@@ -473,7 +479,7 @@ class PrivacyService {
 		// fail ("We couldn't find that media"). Consulted only for restrictive
 		// levels (public/members/loggedin already resolve below) and only when
 		// the messaging engine is loaded. Owner/admin were granted earlier.
-		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'space', 'custom' ), true ) ) {
+		if ( ! $is_post_object && $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'space', 'custom' ), true ) ) {
 			$container = \WPMediaVerse\Core\Plugin::container();
 			if ( $container->has( 'messaging' ) ) {
 				$messaging = $container->get( 'messaging' );

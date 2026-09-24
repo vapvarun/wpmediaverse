@@ -229,12 +229,25 @@ class ReportsPage {
 		$target_link  = '';
 
 		if ( 'media' === $row->target_type ) {
-			$target_link  = (string) get_permalink( (int) $row->target_id );
-			$title        = get_the_title( (int) $row->target_id );
-			$target_label = '' !== trim( (string) $title )
-				? $title
+			// A media id is a row in mvs_media_index, NOT a wp_posts ID: the two
+			// sequences collide, and get_permalink()/get_the_title() named and
+			// linked whatever post happened to share the number (a report on a
+			// photo showed a BuddyPress email template). Ask the repository.
+			$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$id     = (int) $row->target_id;
+			$exists = $id && $repo->exists( $id );
+			$title  = $exists ? trim( (string) $repo->get( $id, 'title' ) ) : '';
+
+			$target_link = $exists ? $repo->get_permalink( $id ) : '';
+			if ( '' !== $title ) {
+				$target_label = $title;
+			} elseif ( $exists ) {
 				/* translators: %d: media ID. */
-				: sprintf( __( 'Media #%d', 'wpmediaverse' ), (int) $row->target_id );
+				$target_label = sprintf( __( 'Media #%d', 'wpmediaverse' ), $id );
+			} else {
+				/* translators: %d: media ID. */
+				$target_label = sprintf( __( 'Media #%d (deleted)', 'wpmediaverse' ), $id );
+			}
 		} else {
 			$user         = get_userdata( (int) $row->target_id );
 			$target_link  = $user ? (string) get_author_posts_url( (int) $row->target_id ) : '';

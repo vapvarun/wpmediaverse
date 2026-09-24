@@ -302,11 +302,42 @@ class FieldRenderer {
 	}
 
 	/**
+	 * The "Remove" link beside a saved key.
+	 *
+	 * The hidden input stays disabled (so it is not posted) until the owner
+	 * clicks Remove; assets/js/admin/secret-fields.js flips it, and
+	 * SettingsHelper::secret_removal_requested() reads it on save. Pro renders
+	 * the same markup for its own secret fields.
+	 *
+	 * @param string $option Option name.
+	 */
+	public static function render_secret_remove_control( string $option ): void {
+		printf(
+			' <button type="button" class="button-link mvs-secret-remove" data-mvs-secret="%1$s" data-undo-label="%3$s">%2$s</button><input type="hidden" name="%4$s[]" value="%1$s" disabled />',
+			esc_attr( $option ),
+			esc_html__( 'Remove', 'wpmediaverse' ),
+			esc_attr__( 'Undo', 'wpmediaverse' ),
+			esc_attr( \WPMediaVerse\Core\SettingsHelper::REMOVE_SECRETS_FIELD )
+		);
+	}
+
+	/**
 	 * Render a password input field.
 	 *
 	 * @param array $args Field arguments.
 	 */
 	public static function render_password_field( array $args ): void {
+		// A key defined in wp-config.php wins (SettingsHelper), so the field is
+		// only information: editing it here would change nothing.
+		if ( ! empty( $args['constant'] ) && defined( $args['constant'] ) && '' !== (string) constant( $args['constant'] ) ) {
+			printf(
+				'<p class="description">%s</p>',
+				/* translators: %s: PHP constant name. */
+				esc_html( sprintf( __( 'Set in wp-config.php (%s).', 'wpmediaverse' ), $args['constant'] ) )
+			);
+			return;
+		}
+
 		$value   = get_option( $args['option'], '' );
 		$display = '';
 		if ( $value ) {
@@ -317,9 +348,11 @@ class FieldRenderer {
 			'<input type="password" name="%1$s" id="%1$s" value="%2$s" class="regular-text" autocomplete="off" placeholder="%3$s" />',
 			esc_attr( $args['option'] ),
 			'',
-			esc_attr( $display ? sprintf( 'Current: %s', $display ) : '' )
+			/* translators: %s: masked form of the stored key. */
+			esc_attr( $display ? sprintf( __( 'Current: %s', 'wpmediaverse' ), $display ) : '' )
 		);
 		if ( $value ) {
+			self::render_secret_remove_control( $args['option'] );
 			echo '<p class="description">' . esc_html__( 'Leave empty to keep the current key.', 'wpmediaverse' ) . '</p>';
 		}
 		if ( ! empty( $args['description'] ) ) {

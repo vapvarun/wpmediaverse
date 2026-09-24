@@ -89,6 +89,7 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_openai_api_key',
+				'constant'    => 'MVS_OPENAI_API_KEY',
 				'class'       => 'mvs-ai-openai-field',
 				'description' => sprintf(
 					/* translators: %s: link to the OpenAI API keys page. */

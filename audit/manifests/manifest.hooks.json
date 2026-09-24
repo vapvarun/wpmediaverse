@@ -3003,6 +3003,17 @@
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_moderation_hide_sets_private",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $sets_private",
+        "int $media_id"
+      ],
+      "where": "includes/Services/ModerationService.php:142",
+      "consumed_by": []
     }
   ],
   "generated": {

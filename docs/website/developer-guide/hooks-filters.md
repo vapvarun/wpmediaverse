@@ -107,6 +107,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_user_data_purged` | action | Free | 1.2 |
 | `mvs_media_flagged` | action | Free | 1.0 |
 | `mvs_moderation_changed` | action | Free | 1.0 |
+| `mvs_moderation_hide_sets_private` | filter | Free | 2.6 |
 | `mvs_should_ai_analyze` | filter | Free | 1.1 |
 | `mvs_ai_result` | filter | Free | 1.1 |
 | `mvs_ai_moderation_result` | filter | Free | 1.1 |
@@ -1374,6 +1375,21 @@ add_action( 'mvs_dashboard_widgets', function() {
 ---
 
 ## 10. AI & Moderation
+
+### `mvs_moderation_hide_sets_private`
+
+Whether a site whose AI action is still stored as the retired `hide` value also forces flagged media to private. Since 2.6.0 flagging only hides the item until review, and approving it restores it as the member left it. Return `true` to bring back the old behaviour; note that approving does not restore the original privacy.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$sets_private` | bool | Default `false` |
+| `$media_id` | int | Media ID |
+
+```php
+add_filter( 'mvs_moderation_hide_sets_private', '__return_true' );
+```
 
 ### `mvs_moderation_changed`
 

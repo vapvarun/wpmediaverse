@@ -322,23 +322,43 @@ class SettingsHelper {
 	 * @return string The configured API key, or '' when not set.
 	 */
 	public static function get_openai_api_key(): string {
-		$key = (string) get_option( 'mvs_openai_api_key', '' );
+		// The wp-config constant wins over a key saved in the database (since
+		// 2.6.0). Before, a stale DB key outranked it, so an owner who moved the
+		// key into wp-config.php kept being billed on the old one.
+		$key = defined( 'MVS_OPENAI_API_KEY' ) && '' !== (string) MVS_OPENAI_API_KEY
+			? (string) MVS_OPENAI_API_KEY
+			: (string) get_option( 'mvs_openai_api_key', '' );
 
 		/**
-		 * Filter the OpenAI API key after it is loaded from options.
+		 * Filter the OpenAI API key after it is resolved (constant, then option).
 		 *
-		 * Mirrors Services\OpenAIProvider::get_api_key() — kept here so cross-
-		 * plugin readers go through the same filter chain.
-		 *
-		 * @param string $key API key from options.
+		 * @param string $key API key.
 		 */
-		$key = (string) apply_filters( 'mvs_openai_api_key', $key );
+		return (string) apply_filters( 'mvs_openai_api_key', $key );
+	}
 
-		if ( '' === $key && defined( 'MVS_OPENAI_API_KEY' ) ) {
-			$key = (string) MVS_OPENAI_API_KEY;
-		}
+	/**
+	 * Name of the POST field that carries "remove this saved key" requests.
+	 */
+	public const REMOVE_SECRETS_FIELD = 'mvs_remove_secrets';
 
-		return $key;
+	/**
+	 * Whether the owner clicked "Remove" on a saved key in the settings form.
+	 *
+	 * Read inside a Settings API save, after options.php has verified the
+	 * nonce and capability. Shared by Free's password fields and Pro's secret
+	 * fields so both halves clear a key the same way.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	public static function secret_removal_requested( string $option ): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php verified the nonce before any sanitize callback runs.
+		$requested = isset( $_POST[ self::REMOVE_SECRETS_FIELD ] ) ? (array) wp_unslash( $_POST[ self::REMOVE_SECRETS_FIELD ] ) : array();
+
+		return in_array( $option, array_map( 'sanitize_key', $requested ), true );
 	}
 
 	/**
