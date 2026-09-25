@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 38;
+	const CURRENT_VERSION = 39;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -2549,5 +2549,24 @@ class Migrator {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$wpdb->query( "DROP TABLE IF EXISTS {$rules}" );
+	}
+
+	/**
+	 * Migration v39 - member email defaults (2.6.0).
+	 *
+	 * A new install starts with the member emails on. A site updating to
+	 * 2.6.0 starts with them off, so an update does not suddenly email every
+	 * member; the owner turns them on in Settings > General > Emails (owner
+	 * decision). add_option() never overwrites a choice already made.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_39(): void {
+		// The stored version is still the one this run started from.
+		$fresh = 0 === (int) get_option( self::VERSION_OPTION, 0 );
+
+		foreach ( \WPMediaVerse\Services\EmailService::TYPES as $option ) {
+			add_option( $option, $fresh ? '1' : '0' );
+		}
 	}
 }

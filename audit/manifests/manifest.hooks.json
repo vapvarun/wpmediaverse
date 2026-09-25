@@ -1149,6 +1149,30 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_email_body",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $body",
+        "string $type",
+        "int $user_id"
+      ],
+      "where": "includes/Services/EmailService.php:179",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_email_subject",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $subject",
+        "string $type",
+        "int $user_id"
+      ],
+      "where": "includes/Services/EmailService.php:168",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_explore_query_args",
       "type": "filter",
       "args_count": 2,
@@ -2314,6 +2338,20 @@
       "args_count": 0,
       "where": "includes/Admin/MediaListPage.php:1059",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_report_resolved",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $report_id",
+        "int $reporter_id",
+        "string $status"
+      ],
+      "where": "includes/Social/ReportService.php:409",
+      "consumed_by": [
+        "includes/Social/NotificationService.php"
+      ]
     },
     {
       "name": "mvs_report_submitted",

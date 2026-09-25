@@ -317,7 +317,7 @@ class SettingsPage {
 				'description'  => __( 'Upload limits, file types, privacy defaults, and page assignments.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_general',
 				'page_slug'    => self::PAGE_SLUG . '-general',
-				'section_ids'  => array( 'mvs_general', 'mvs_pages' ),
+				'section_ids'  => array( 'mvs_general', 'mvs_emails', 'mvs_pages' ),
 				'is_pro'       => false,
 				'priority'     => 10,
 			),

@@ -98,6 +98,11 @@ const { actions } = store( 'mvs/profile-edit', {
 			const { ref } = getElement();
 			ctx.onlineStatus = ref.value;
 		},
+		updateEmailActivity() {
+			const ctx = getContext();
+			const { ref } = getElement();
+			ctx.emailActivity = ref.value;
+		},
 
 		*saveProfile( event ) {
 			if ( event && event.preventDefault ) {
@@ -121,6 +126,7 @@ const { actions } = store( 'mvs/profile-edit', {
 						description: ctx.bio,
 						dm_access: ctx.dmAccess,
 						online_status: ctx.onlineStatus,
+						email_activity: ctx.emailActivity,
 					},
 				} );
 

@@ -30,6 +30,7 @@ class NotificationService {
 		'media_mention',
 		'media_favorite',
 		'new_message',
+		'report_resolved',
 	);
 
 	/**
@@ -53,11 +54,31 @@ class NotificationService {
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
+		add_action( 'mvs_report_resolved', array( $this, 'on_report_resolved' ), 10, 3 );
 		// `mvs_message_sent` is handled by Messaging\NotificationListener (mute,
 		// coalescing, BuddyNext routing, unread-cache). This service used to
 		// ALSO hook it via on_message(), producing a second, un-muted,
 		// un-coalesced notification for every DM (audit 2026-06-04). Listener
 		// owns it; on_message() removed.
+	}
+
+	/**
+	 * Tell the reporter their report was reviewed (mvs_report_resolved).
+	 *
+	 * Deliberately says nothing about what was decided: the reporter learns
+	 * that someone looked, not what happened to another member.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int    $report_id   Report id.
+	 * @param int    $reporter_id Reporter.
+	 * @param string $status      resolved | dismissed.
+	 */
+	public function on_report_resolved( $report_id, $reporter_id, $status ): void {
+		unset( $report_id, $status );
+		if ( (int) $reporter_id ) {
+			$this->create( (int) $reporter_id, 'report_resolved', 0 );
+		}
 	}
 
 	/**
@@ -577,6 +598,9 @@ class NotificationService {
 			case 'new_message':
 				/* translators: %s: user name */
 				return sprintf( __( '%s sent you a message', 'wpmediaverse' ), $actor_name );
+
+			case 'report_resolved':
+				return __( 'A moderator reviewed your report. Thank you for helping keep the community safe.', 'wpmediaverse' );
 
 			default:
 				/* translators: %s: user name */

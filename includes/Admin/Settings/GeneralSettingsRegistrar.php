@@ -256,6 +256,62 @@ class GeneralSettingsRegistrar {
 		);
 
 		$this->register_delete_data_setting();
+		$this->register_email_settings();
+	}
+
+	/**
+	 * Emails section: the few member emails the owner can switch on (2.6.0).
+	 *
+	 * Account deletion confirmations are always sent, so they have no box.
+	 */
+	private function register_email_settings(): void {
+		add_settings_section(
+			'mvs_emails',
+			__( 'Emails', 'wpmediaverse' ),
+			function () {
+				echo '<p>' . esc_html__( 'Email members about things they would otherwise miss while away. Members can turn these off with one switch in their profile or the link in any email. Account deletion confirmations are always sent.', 'wpmediaverse' ) . '</p>';
+			},
+			SettingsPage::PAGE_SLUG . '-general'
+		);
+
+		$emails = array(
+			\WPMediaVerse\Services\EmailService::TYPES['battle_invite']   => array(
+				__( 'Photo battle invites', 'wpmediaverse' ),
+				__( 'Someone challenged the member to a battle (MediaVerse Pro).', 'wpmediaverse' ),
+			),
+			\WPMediaVerse\Services\EmailService::TYPES['document_shared'] => array(
+				__( 'Documents shared with a member', 'wpmediaverse' ),
+				__( 'Someone shared a document with the member (MediaVerse Pro).', 'wpmediaverse' ),
+			),
+			\WPMediaVerse\Services\EmailService::TYPES['report_resolved'] => array(
+				__( 'Report reviewed', 'wpmediaverse' ),
+				__( 'A moderator resolved or dismissed a report the member filed. The email does not say what was decided.', 'wpmediaverse' ),
+			),
+		);
+
+		foreach ( $emails as $option => $copy ) {
+			register_setting(
+				SettingsPage::OPTION_GROUP . '_general',
+				$option,
+				array(
+					'type'              => 'boolean',
+					'sanitize_callback' => 'rest_sanitize_boolean',
+					'default'           => false,
+				)
+			);
+			FieldRenderer::add_field(
+				$option,
+				$copy[0],
+				array( FieldRenderer::class, 'render_checkbox_field' ),
+				SettingsPage::PAGE_SLUG . '-general',
+				'mvs_emails',
+				array(
+					'option'      => $option,
+					'label'       => __( 'Send this email', 'wpmediaverse' ),
+					'description' => $copy[1],
+				)
+			);
+		}
 	}
 
 	/**

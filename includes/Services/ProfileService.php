@@ -47,8 +47,9 @@ class ProfileService {
 	 * @var array<string,string>
 	 */
 	const META_FIELDS = array(
-		'dm_access'     => '_mvs_dm_access',
-		'online_status' => '_mvs_show_online',
+		'dm_access'      => '_mvs_dm_access',
+		'online_status'  => '_mvs_show_online',
+		'email_activity' => \WPMediaVerse\Services\EmailService::MEMBER_META,
 	);
 
 	/**
@@ -57,8 +58,9 @@ class ProfileService {
 	 * @var array<string,string[]>
 	 */
 	const META_VALUES = array(
-		'dm_access'     => array( 'everyone', 'followers', 'mutual', 'nobody' ),
-		'online_status' => array( 'everyone', 'nobody' ),
+		'dm_access'      => array( 'everyone', 'followers', 'mutual', 'nobody' ),
+		'online_status'  => array( 'everyone', 'nobody' ),
+		'email_activity' => array( 'on', 'off' ),
 	);
 
 	/**
@@ -110,8 +112,13 @@ class ProfileService {
 		foreach ( self::META_FIELDS as $field => $meta_key ) {
 			$stored = get_user_meta( $user_id, $meta_key, true );
 			if ( '' === $stored || false === $stored ) {
-				$option_key = 'online_status' === $field ? 'mvs_show_online_status' : 'mvs_dm_access';
-				$stored     = get_option( $option_key, self::META_VALUES[ $field ][0] );
+				$site_defaults = array(
+					'dm_access'     => 'mvs_dm_access',
+					'online_status' => 'mvs_show_online_status',
+				);
+				$stored        = isset( $site_defaults[ $field ] )
+					? get_option( $site_defaults[ $field ], self::META_VALUES[ $field ][0] )
+					: self::META_VALUES[ $field ][0];
 			}
 			$profile[ $field ] = $stored;
 		}

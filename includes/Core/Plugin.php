@@ -288,6 +288,9 @@ class Plugin {
 		// Fair-use storage limit: keeps each member's cached usage current.
 		self::$container->get( 'storage_limit' )->init();
 
+		// Member emails: the minimal set the owner switches on (2.6.0).
+		self::$container->get( 'emails' )->init();
+
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
 			self::$container->get( 'moderation' );
@@ -699,6 +702,13 @@ class Plugin {
 			'account_deletion',
 			function () {
 				return new AccountDeletionService();
+			}
+		);
+
+		self::$container->register(
+			'emails',
+			function () {
+				return new \WPMediaVerse\Services\EmailService();
 			}
 		);
 

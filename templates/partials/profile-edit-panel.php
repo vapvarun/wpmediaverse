@@ -40,6 +40,7 @@ defined( 'ABSPATH' ) || exit;
 					'bio'             => $mvs_current_user->description,
 					'dmAccess'        => get_user_meta( $mvs_current_user->ID, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
 					'onlineStatus'    => get_user_meta( $mvs_current_user->ID, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
+					'emailActivity'   => 'off' === get_user_meta( $mvs_current_user->ID, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 					'avatarUrl'       => $mvs_avatar_url ?: '',
 					'hasCustomAvatar' => $mvs_has_custom,
 					'uploadingAvatar' => false,
@@ -127,6 +128,15 @@ defined( 'ABSPATH' ) || exit;
 							data-wp-on--change="actions.updateOnlineStatus">
 							<option value="everyone"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
 							<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
+					<div class="mvs-profile-field">
+						<label for="mvs-email-activity"><?php esc_html_e( 'Email me about activity', 'wpmediaverse' ); ?></label>
+						<select id="mvs-email-activity"
+							data-wp-bind--value="context.emailActivity"
+							data-wp-on--change="actions.updateEmailActivity">
+							<option value="on"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
+							<option value="off"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 						</select>
 					</div>
 				</div>

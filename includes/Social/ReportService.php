@@ -382,6 +382,10 @@ class ReportService {
 	public function update_status( int $report_id, string $status ): bool {
 		global $wpdb;
 
+		$before = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( "SELECT reporter_id, status FROM {$wpdb->prefix}mvs_reports WHERE id = %d", $report_id )
+		);
+
 		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_reports',
 			array( 'status' => $status ),
@@ -390,7 +394,22 @@ class ReportService {
 			array( '%d' )
 		);
 
-		return false !== $updated && $updated > 0;
+		$changed = false !== $updated && $updated > 0;
+
+		if ( $changed && $before && 'pending' === (string) $before->status && in_array( $status, array( 'resolved', 'dismissed' ), true ) ) {
+			/**
+			 * Fires when a pending report is resolved or dismissed.
+			 *
+			 * @since 2.6.0
+			 *
+			 * @param int    $report_id   Report id.
+			 * @param int    $reporter_id Who reported it.
+			 * @param string $status      resolved | dismissed.
+			 */
+			do_action( 'mvs_report_resolved', $report_id, (int) $before->reporter_id, $status );
+		}
+
+		return $changed;
 	}
 
 	/**

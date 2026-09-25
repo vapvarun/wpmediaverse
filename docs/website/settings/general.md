@@ -15,6 +15,20 @@ Access these settings at **MediaVerse > Settings > General**.
 | Duplicate Detection | Warn (allow upload) | What to do when a user uploads a file with a SHA-256 hash matching an existing media item. Options: Warn (allow upload), Skip (reject duplicate), Allow (no check). |
 | Strip EXIF Data | Enabled | When enabled, removes GPS coordinates and device information from uploaded JPEG images before storing them. |
 
+## Emails Section
+
+MediaVerse emails members about the few things they would otherwise miss while away. Each email is one checkbox. On a new install they start on; on a site updating to 2.6.0 they start off, so turn on the ones you want.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| Photo battle invites | On (new install) / Off (update) | Someone challenged the member to a photo battle (MediaVerse Pro). |
+| Documents shared with a member | On (new install) / Off (update) | Someone shared a document with the member (MediaVerse Pro). |
+| Report reviewed | On (new install) / Off (update) | A moderator resolved or dismissed a report the member filed. The email does not say what was decided. |
+
+Account deletion confirmations are always sent: they are how a member learns that someone with their password asked to delete the account.
+
+Emails come from your site name and the admin email address (Settings > General in WordPress). A member can stop them with "Email me about activity" in their profile settings, or with the link at the bottom of any email. Developers can change the wording with the `mvs_email_subject` and `mvs_email_body` filters.
+
 ## Storage Section
 
 | Option | Default | Description |
