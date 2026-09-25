@@ -199,7 +199,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			dragOver: false,
 			uploading: false,
 			status: '',
-			showFields: true,
 			title: '',
 			description: '',
 			tags: '',
@@ -344,6 +343,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get hasMoreAlbums() { return state.albums.page < state.albums.totalPages; },
 		get hasMoreCollections() { return state.collections.page < state.collections.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
+		// Search and sort have nothing to act on in an empty list. Kept while a
+		// search is on, so a member can clear the search that emptied it.
+		get toolbarHidden() {
+			const panel = state[ getContext()?.panel ];
+			return !! panel && ! panel.items.length && ! panel.loading && ! ( panel.s || '' ).trim();
+		},
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading; },
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
@@ -820,7 +825,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.upload.pendingFiles = files;
 			state.upload.pendingCount = files.length;
 			state.upload.hasPending = true;
-			state.upload.showFields = true;
 			state.upload.status = '';
 		},
 
@@ -836,10 +840,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.upload.hasPending = false;
 			const input = document.querySelector( '.mvs-dashboard-upload input[type="file"]' );
 			if ( input ) input.value = '';
-		},
-
-		toggleUploadFields() {
-			state.upload.showFields = ! state.upload.showFields;
 		},
 
 		setUploadTitle( event ) { state.upload.title = event.target.value; },
@@ -985,7 +985,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.upload.description = '';
 				state.upload.tags = '';
 				state.upload.privacy = ctx.defaultPrivacy || 'public';
-				state.upload.showFields = false;
 				state.media.page = 1;
 				actions.loadMedia( ctx, 1 );
 			}
@@ -1574,13 +1573,19 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}, 350 );
 		},
 
+		// One select carries both field and direction (2.6.0): "oldest" is the
+		// panel's default field ascending, a name sorts A-Z, the rest newest first.
 		toolbarSort( event ) {
 			const slug = event.target.dataset.panel;
 			if ( ! PANELS[ slug ] ) return;
-			state[ slug ].orderby = event.target.value;
+			const value = event.target.value;
+			state[ slug ].orderby = 'oldest' === value ? PANELS[ slug ].orderby : value;
+			state[ slug ].order = ( 'oldest' === value || 'title' === value ) ? 'asc' : 'desc';
 			actions.applyToolbar( getContext(), slug );
 		},
 
+		// The separate direction select is gone from the template; kept for a
+		// theme copy of dashboard-content.php that still renders it.
 		toolbarOrder( event ) {
 			const slug = event.target.dataset.panel;
 			if ( ! PANELS[ slug ] ) return;

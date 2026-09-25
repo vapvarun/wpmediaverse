@@ -17,6 +17,10 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// Fields a community plugin owns are edited there, not here.
+$mvs_community = \WPMediaVerse\Services\ProfileService::community_profile( (int) $mvs_current_user->ID );
+$mvs_deferred  = $mvs_community['fields'];
 ?>
 <?php
 // `hidden` server-side unless this IS the requested section — the binding only
@@ -62,6 +66,8 @@ defined( 'ABSPATH' ) || exit;
 				data-wp-bind--hidden="!context.profileError"
 				data-wp-text="context.profileError"></div>
 
+			<?php require MVS_PLUGIN_DIR . 'templates/partials/community-profile-notice.php'; ?>
+
 			<div class="mvs-profile-avatar-section">
 				<div class="mvs-profile-avatar-preview">
 					<img data-wp-bind--src="context.avatarUrl"
@@ -86,23 +92,31 @@ defined( 'ABSPATH' ) || exit;
 			</div>
 
 			<div class="mvs-profile-form-inline">
+				<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) || ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field-row">
+					<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) ) : ?>
 					<div class="mvs-profile-field">
 						<label><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
 						<input type="text" data-wp-bind--value="context.firstName"
 							data-wp-on--input="actions.updateFirstName" />
 					</div>
+					<?php endif; ?>
+					<?php if ( ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 					<div class="mvs-profile-field">
 						<label><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
 						<input type="text" data-wp-bind--value="context.lastName"
 							data-wp-on--input="actions.updateLastName" />
 					</div>
+					<?php endif; ?>
 				</div>
+				<?php endif; ?>
+				<?php if ( ! in_array( 'display_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
 					<input type="text" data-wp-bind--value="context.displayName"
 						data-wp-on--input="actions.updateDisplayName" />
 				</div>
+				<?php endif; ?>
 				<div class="mvs-profile-field">
 					<label><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
 					<textarea rows="3" maxlength="500"

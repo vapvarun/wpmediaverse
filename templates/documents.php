@@ -36,6 +36,20 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 ?>
 <div class="mvs-documents mvs-page">
 	<?php
+	// This page lists PUBLIC documents; a member's own drive lives in their
+	// dashboard. One link across, so the drive has one home and this page
+	// does not have to pretend to be it.
+	if ( is_user_logged_in() && (int) get_option( 'mvs_page_dashboard', 0 ) && \WPMediaVerse\Core\DashboardSections::exists( 'documents' ) ) :
+		?>
+	<p>
+		<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( 'documents' ) ); ?>">
+			<?php esc_html_e( 'Your documents', 'wpmediaverse' ); ?>
+		</a>
+	</p>
+		<?php
+	endif;
+	?>
+	<?php
 	// The same search bar and chip row Explore Media uses, with its classes, so
 	// the two pages read as one product rather than two. Documents get a type
 	// chip row where media gets tags — the equivalent "narrow this down"

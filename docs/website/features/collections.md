@@ -3,18 +3,20 @@
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-Save and curate media from anyone on your site into personal boards - like Pinterest boards, but for your community's photos and videos.
+Save and curate media from anyone on your site into personal boards - like Pinterest boards, but for your community's photos and videos. Unlike an album, which holds only your own uploads, a collection can hold anyone's media.
 
 ## What You Can Do
 
-- Save any public media item to a personal collection with one click
+- Save any public media item to a personal collection with one click (requires MediaVerse Pro)
 - Create multiple collections for different themes or moods (e.g., "Travel Inspiration", "Black and White")
-- Curate manually by hand-picking individual photos, or let smart rules auto-fill a collection
+- Let smart rules fill a collection automatically, or (with MediaVerse Pro) curate one by hand
 - Smart collections stay fresh automatically - tag a rule once and the collection updates itself
 - Share collections publicly or keep them private
 - Browse your saved collections from your media dashboard
 
 ## How It Works (for Users)
+
+> Steps 1-4 use the **Save** button, which comes with MediaVerse Pro. On a free-only site, create a smart collection from **My Media > Collections** instead.
 
 1. When you find a photo you love, click the **Save** button (bookmark icon) below it
 2. Choose an existing collection from the dropdown, or click **New Collection** to create one
@@ -39,6 +41,7 @@ Save and curate media from anyone on your site into personal boards - like Pinte
 | Type | Description |
 |------|-------------|
 | **Manual** | You add specific media items by hand. Items are stored in the `wp_mvs_favorites` table with the collection ID. |
+| **Favorites** | Every member has one, created the first time they open their collections. It holds everything they saved or favorited, is always private, and cannot be deleted. |
 | **Smart** | Rules-based. The collection resolves its item list dynamically at request time based on criteria like tag, category, media type, or date range. |
 
 ## Displaying a Collection

@@ -285,13 +285,27 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		 */
 		$html = (string) apply_filters( 'mvs_profile_documents_html', '', $owner_id, $viewer_id );
 
+		// The profile tab SHOWS the owner's documents; managing them happens in
+		// the one drive, the dashboard's documents section.
+		$is_owner   = $viewer_id > 0 && $viewer_id === $owner_id;
+		$manage_url = ( $is_owner && \WPMediaVerse\Core\DashboardSections::exists( 'documents' ) && (int) get_option( 'mvs_page_dashboard', 0 ) )
+			? \WPMediaVerse\Core\DashboardSections::url( 'documents' )
+			: '';
+
 		if ( '' !== trim( $html ) ) {
+			if ( '' !== $manage_url ) {
+				printf(
+					'<p><a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="%s">%s</a></p>',
+					esc_url( $manage_url ),
+					esc_html__( 'Manage in your documents', 'wpmediaverse' )
+				);
+			}
+
 			// Pro escapes each field as it builds the list.
 			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pro renderer escapes every value.
 			return;
 		}
 
-		$is_owner = $viewer_id > 0 && $viewer_id === $owner_id;
 		$message  = $is_owner
 			? __( "You haven't added any documents yet.", 'wpmediaverse' )
 			: __( 'No documents to show.', 'wpmediaverse' );
@@ -300,6 +314,14 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 			array(
 				'icon'    => 'file-text',
 				'message' => $message,
+				'actions' => '' !== $manage_url
+					? array(
+						array(
+							'url'   => $manage_url,
+							'label' => __( 'Manage in your documents', 'wpmediaverse' ),
+						),
+					)
+					: array(),
 			)
 		);
 	}

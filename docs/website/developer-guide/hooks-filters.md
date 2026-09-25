@@ -143,6 +143,11 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_user_profile_url` | filter | Free | 1.0 |
 | `mvs_profile_data` | filter | Free | 1.0 |
 | `mvs_profile_update_fields` | filter | Free | 1.0 |
+| `mvs_community_profile` | filter | Free | 2.6.0 |
+| `mvs_profile_edit_redirect` | filter | Free | 2.6.0 |
+| `mvs_redirect_legacy_drive_query` | filter | Free | 2.6.0 |
+| `mvs_default_media_title` | filter | Free | 2.6.0 |
+| `mvs_show_favorite_button` | filter | Free | 2.6.0 |
 | `mvs_avatar_allowed_types` | filter | Free | 1.0 |
 | `mvs_avatar_max_size` | filter | Free | 1.0 |
 | `mvs_story_created` | action | Pro | 1.0 (moved from Free in 1.9.0) |
@@ -578,6 +583,7 @@ add_action( 'mvs_dashboard_panels', function() {
 | `mvs_template_variables` | filter | Filter template variables before render | `$args` (array), `$template_name` (string) | 1.1 |
 | `mvs_body_classes` | filter | Filter MVS body CSS classes | `$classes` (array) | 1.1 |
 | `mvs_reserved_media_paths` | filter | Filter reserved URL paths under `/media/` | `$paths` (array) | 1.0 |
+| `mvs_redirect_legacy_drive_query` | filter | Whether `?drive=my-drive\|shared\|recent` on the Explore Documents page redirects (302) to the dashboard documents section. Return `false` to keep rendering the drive on that page. | `$redirect` (bool), `$drive` (string) | 2.6.0 |
 
 ---
 
@@ -2204,6 +2210,10 @@ add_filter( 'mvs_user_display_name', function( string $name, int $user_id ) {
 | `mvs_avatar_deleted` | action | Avatar removed | `$user_id` | 1.0 |
 | `mvs_profile_data` | filter | Filter profile data in REST response | `$data` (array), `$user_id` | 1.0 |
 | `mvs_profile_update_fields` | filter | Filter allowed profile update fields | `$fields` (array), `$user_id` | 1.0 |
+| `mvs_community_profile` | filter | Which profile fields a community plugin owns. Return `url`, `label` and `fields` (keys from `first_name`, `last_name`, `display_name`, `description`); MediaVerse hides those inputs, links to `url`, and drops them on save. BuddyPress with Extended Profiles answers for the name fields by default. Return an empty `url` to edit everything in MediaVerse. | `$profile` (array), `$user_id` (int) | 2.6.0 |
+| `mvs_profile_edit_redirect` | filter | Whether `/media/edit-profile/` redirects (302) to the dashboard profile section. Return `false` to keep the standalone editor. | `$redirect` (bool) | 2.6.0 |
+| `mvs_default_media_title` | filter | Title given to an upload the member did not title (default: readable text from the file name, e.g. "Magnific feel the beat"). Return `sanitize_file_name( pathinfo( $original_name, PATHINFO_FILENAME ) )` for the pre-2.6.0 slug-style titles. | `$title` (string), `$original_name` (string) | 2.6.0 |
+| `mvs_show_favorite_button` | filter | Show the separate Favorite (star) button in the lightbox and on the single media page, as before 2.6.0. Default `false`: Save is the one way to keep an item. | `$show` (bool) | 2.6.0 |
 | `mvs_avatar_allowed_types` | filter | Filter allowed avatar MIME types | `$types` (array), `$user_id` | 1.0 |
 | `mvs_avatar_max_size` | filter | Max avatar file size in bytes | `$bytes` (int), default `2 * MB_IN_BYTES` | 1.0 |
 

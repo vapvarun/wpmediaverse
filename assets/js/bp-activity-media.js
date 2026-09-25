@@ -855,7 +855,7 @@
 			if ( sidebar ) { sidebar.removeAttribute( 'hidden' ); }
 
 			// Media: show the right element (img/video/audio) based on type.
-			var img = media ? media.querySelector( 'img' ) : null;
+			var img = media ? ( media.querySelector( 'picture img' ) || media.querySelector( 'img' ) ) : null;
 			var vid = media ? media.querySelector( 'video' ) : null;
 			var aud = media ? media.querySelector( 'audio' ) : null;
 			var isVideo = data.media_type === 'video';
@@ -889,6 +889,41 @@
 				} else {
 					aud.removeAttribute( 'src' );
 					aud.setAttribute( 'hidden', '' );
+				}
+			}
+
+			// Audio cover art, the title, and no fullscreen for audio: the same
+			// rules as the Interactivity lightbox (shared-ui/view.js), set by
+			// hand because the clone strips the data-wp-* bindings and un-hides
+			// everything they controlled.
+			var cover = media ? media.querySelector( '.mvs-lightbox-audio-cover' ) : null;
+			var coverUrl = isAudio ? ( data.large_url || data.thumbnail_url || '' ) : '';
+			if ( cover ) {
+				if ( coverUrl ) {
+					cover.src = coverUrl;
+					cover.removeAttribute( 'hidden' );
+				} else {
+					cover.removeAttribute( 'src' );
+					cover.setAttribute( 'hidden', '' );
+				}
+			}
+			var titleEl = overlay.querySelector( '.mvs-lightbox-title' );
+			if ( titleEl ) {
+				titleEl.textContent = data.title || '';
+				if ( data.title ) {
+					titleEl.removeAttribute( 'hidden' );
+				} else {
+					titleEl.setAttribute( 'hidden', '' );
+				}
+			}
+			var fsBtn = overlay.querySelector( '.mvs-lightbox-fullscreen' );
+			if ( fsBtn ) {
+				if ( isAudio ) {
+					fsBtn.setAttribute( 'hidden', '' );
+					fsBtn.setAttribute( 'aria-pressed', 'false' );
+					overlay.classList.remove( 'mvs-lightbox--fullscreen' );
+				} else {
+					fsBtn.removeAttribute( 'hidden' );
 				}
 			}
 
@@ -1147,12 +1182,19 @@
 		// dingbat, so the clone lost its icon and the longer "Favorited" string
 		// hit the button's overflow:hidden and clipped (Basecamp 10264108133).
 		// Write only the <span>; leave the icon alone.
+		// The button that keeps an item: Free's Save (2.6.0), or the old star in
+		// a theme copy of shared-ui-frame.php. data-mvs-* survives the clone.
+		var FAV_TOGGLE = '.mvs-lightbox-actions button[data-mvs-fav-toggle], .mvs-lightbox-actions button.mvs-lb-fav';
+
 		function setSharedFavState( btn, isFav ) {
 			if ( ! btn ) { return; }
 			btn.classList.toggle( 'active', isFav );
 			btn.setAttribute( 'aria-pressed', isFav ? 'true' : 'false' );
 			var label = btn.querySelector( 'span' );
-			var text  = isFav ? __( 'Favorited', 'wpmediaverse' ) : __( 'Favorite', 'wpmediaverse' );
+			// The button says which words it uses (Save/Saved or Favorite/Favorited).
+			var text  = isFav
+				? ( btn.getAttribute( 'data-mvs-label-on' ) || __( 'Favorited', 'wpmediaverse' ) )
+				: ( btn.getAttribute( 'data-mvs-label-off' ) || __( 'Favorite', 'wpmediaverse' ) );
 			if ( label ) {
 				label.textContent = text;
 			} else {
@@ -1168,7 +1210,7 @@
 				// .mvs-lb-fav, not the first .mvs-lightbox-action in the bar: the
 				// first-match selector rewrites whatever button happens to lead
 				// the row, which is not the favourite one once Save/Edit render.
-				var favBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lb-fav' );
+				var favBtn = overlay.querySelector( FAV_TOGGLE );
 				if ( ! favBtn ) { return; }
 				setSharedFavState( favBtn, !! ( data && data.favorited ) );
 			} ).catch( function() { /* silent */ } );
@@ -1327,7 +1369,7 @@
 			// selecting on [data-wp-on--click*=...] never matched and the handler
 			// was dead (Basecamp #10077932144). The .mvs-lb-fav class survives the
 			// clone and is locale-independent (textContent was translation-broken).
-			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-fav' );
+			var btn = e.target.closest( FAV_TOGGLE );
 			if ( ! btn ) { return; }
 			if ( ! suiState.mediaId ) { return; }
 
@@ -1371,7 +1413,8 @@
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
-			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-save' );
+			// Not Free's Save, which keeps the item in Favorites (FAV_TOGGLE).
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-save:not([data-mvs-fav-toggle])' );
 			if ( ! btn ) { return; }
 			if ( ! suiState.mediaId ) { return; }
 

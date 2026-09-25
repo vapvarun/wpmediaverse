@@ -3,7 +3,7 @@
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-Group your photos into beautiful collections - tell a story, document a trip, or organize your portfolio with a single shareable album.
+Group your own uploads into an album - tell a story, document a trip, or build a portfolio you can share with one link.
 
 ## What You Can Do
 

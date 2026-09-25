@@ -48,6 +48,10 @@ if ( $mvs_container->has( 'reports' ) ) {
 	}
 }
 
+// Fields a community plugin owns are edited there, not here.
+$mvs_community = \WPMediaVerse\Services\ProfileService::community_profile( (int) $mvs_user_id );
+$mvs_deferred  = $mvs_community['fields'];
+
 $mvs_profile_ctx = array(
 	'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 	'nonce'           => wp_create_nonce( 'wp_rest' ),
@@ -110,6 +114,8 @@ wp_enqueue_script_module(
 		data-wp-bind--hidden="!context.errorMessage"
 		data-wp-text="context.errorMessage"></div>
 
+	<?php require MVS_PLUGIN_DIR . 'templates/partials/community-profile-notice.php'; ?>
+
 	<!-- Avatar Section -->
 	<div class="mvs-profile-avatar-section">
 		<div class="mvs-profile-avatar-preview">
@@ -140,6 +146,7 @@ wp_enqueue_script_module(
 
 	<!-- Profile Fields -->
 	<form class="mvs-profile-form" data-wp-on--submit="actions.saveProfile">
+		<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) ) : ?>
 		<div class="mvs-profile-field">
 			<label for="mvs-first-name"><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
 			<input type="text" id="mvs-first-name"
@@ -147,7 +154,9 @@ wp_enqueue_script_module(
 				data-wp-on--input="actions.updateFirstName"
 				autocomplete="given-name" />
 		</div>
+		<?php endif; ?>
 
+		<?php if ( ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 		<div class="mvs-profile-field">
 			<label for="mvs-last-name"><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
 			<input type="text" id="mvs-last-name"
@@ -155,7 +164,9 @@ wp_enqueue_script_module(
 				data-wp-on--input="actions.updateLastName"
 				autocomplete="family-name" />
 		</div>
+		<?php endif; ?>
 
+		<?php if ( ! in_array( 'display_name', $mvs_deferred, true ) ) : ?>
 		<div class="mvs-profile-field">
 			<label for="mvs-display-name"><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
 			<input type="text" id="mvs-display-name"
@@ -163,6 +174,7 @@ wp_enqueue_script_module(
 				data-wp-on--input="actions.updateDisplayName"
 				autocomplete="nickname" />
 		</div>
+		<?php endif; ?>
 
 		<div class="mvs-profile-field">
 			<label for="mvs-bio"><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>

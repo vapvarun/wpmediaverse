@@ -702,6 +702,17 @@
       "added": "2.3.2"
     },
     {
+      "name": "mvs_community_profile",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $profile",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php:266",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_conversation_created",
       "type": "action",
       "args_count": 3,
@@ -790,6 +801,17 @@
       "args_signature": [],
       "args_count": 0,
       "where": "includes/Core/Plugin.php:1708",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_default_media_title",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $title",
+        "string $original_name"
+      ],
+      "where": "includes/Services/FilenameStrategy.php:270",
       "consumed_by": []
     },
     {
@@ -2158,6 +2180,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_profile_edit_redirect",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $redirect"
+      ],
+      "where": "includes/Core/TemplateLoader.php:1027",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_profile_privacy_levels",
       "type": "filter",
       "args_count": 3,
@@ -2321,6 +2353,17 @@
         "string $redirect_url"
       ],
       "where": "includes/Core/TemplateLoader.php:643",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_redirect_legacy_drive_query",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $redirect",
+        "string $drive"
+      ],
+      "where": "includes/Core/TemplateLoader.php:525",
       "consumed_by": []
     },
     {
@@ -2632,6 +2675,16 @@
         "int $media_id"
       ],
       "where": "includes/Social/NotificationService.php:116",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_show_favorite_button",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $show"
+      ],
+      "where": "templates/partials/shared-ui-frame.php",
       "consumed_by": []
     },
     {

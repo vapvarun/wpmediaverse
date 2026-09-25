@@ -105,6 +105,9 @@ class ProfileService {
 			'avatar'            => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'has_custom_avatar' => $this->has_custom_avatar( $user_id ),
 			'profile_url'       => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $user_id ),
+			// Which fields the community plugin owns, and where to edit them,
+			// so an app client can hide the same inputs the web form hides.
+			'community_profile' => self::community_profile( $user_id ),
 		);
 
 		// User-level privacy settings (fall back to the site-wide option, then
@@ -153,6 +156,11 @@ class ProfileService {
 		 * @param int   $user_id User ID.
 		 */
 		$fields = apply_filters( 'mvs_profile_update_fields', $fields, $user_id );
+
+		// A field the community plugin owns is edited there, never here - two
+		// writers to one name is how the two profiles drifted apart. Dropped
+		// server-side so a direct REST call cannot fight the community plugin.
+		$fields = array_diff_key( $fields, array_flip( self::community_profile( $user_id )['fields'] ) );
 
 		$userdata = array( 'ID' => $user_id );
 
@@ -208,6 +216,64 @@ class ProfileService {
 		do_action( 'mvs_profile_updated', $user_id, $fields );
 
 		return true;
+	}
+
+	/**
+	 * The community plugin's profile editor, when one owns the member's name.
+	 *
+	 * One profile editor per field: when a community plugin (BuddyPress with
+	 * Extended Profiles) already edits the member's name, MediaVerse links to
+	 * it instead of offering a second form that writes the same field. Bio,
+	 * avatar and the MediaVerse-only settings stay here.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
+	 */
+	public static function community_profile( int $user_id ): array {
+		$profile = array(
+			'url'    => '',
+			'label'  => '',
+			'fields' => array(),
+		);
+
+		if ( $user_id && function_exists( 'bp_is_active' ) && bp_is_active( 'xprofile' ) ) {
+			$url = function_exists( 'bp_members_get_user_url' ) && function_exists( 'bp_members_get_path_chunks' )
+				? bp_members_get_user_url( $user_id, bp_members_get_path_chunks( array( bp_get_profile_slug(), 'edit' ) ) )
+				: trailingslashit( (string) bp_core_get_user_domain( $user_id ) ) . 'profile/edit/';
+
+			$profile = array(
+				'url'    => (string) $url,
+				'label'  => __( 'Edit your community profile', 'wpmediaverse' ),
+				'fields' => array( 'first_name', 'last_name', 'display_name' ),
+			);
+		}
+
+		/**
+		 * Filters which profile fields a community plugin owns.
+		 *
+		 * Return `url` + `label` + `fields` to have MediaVerse's profile forms
+		 * hide those fields, link to the community editor, and refuse to save
+		 * them. Return an empty `url` to edit everything in MediaVerse, as
+		 * before 2.6.0.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param array $profile { url, label, fields } - fields are ProfileService::ALLOWED_FIELDS keys.
+		 * @param int   $user_id User ID.
+		 */
+		$profile = (array) apply_filters( 'mvs_community_profile', $profile, $user_id );
+
+		$url = isset( $profile['url'] ) ? (string) $profile['url'] : '';
+
+		return array(
+			'url'    => $url,
+			'label'  => '' === $url ? '' : ( (string) ( $profile['label'] ?? '' ) ?: __( 'Edit your community profile', 'wpmediaverse' ) ),
+			// No link, no deferral: hiding a field with nowhere to edit it would
+			// leave the member unable to change their name at all.
+			'fields' => '' !== $url ? array_values( array_intersect( (array) ( $profile['fields'] ?? array() ), self::ALLOWED_FIELDS ) ) : array(),
+		);
 	}
 
 	/**

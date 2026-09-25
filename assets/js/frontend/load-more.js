@@ -202,7 +202,11 @@
 		// rendered in that order, so pages 2+ must ask for the same one.
 		var pageQuery = new URLSearchParams( window.location.search );
 		var sortKey   = pageQuery.get( 'sort' );
-		if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views' ].indexOf( sortKey ) !== -1 ) {
+		if ( 'media' === config.endpoint && 'oldest' === sortKey ) {
+			// The one-select spelling of created_at ascending (2.6.0).
+			url.searchParams.set( 'orderby', 'created_at' );
+			url.searchParams.set( 'order', 'asc' );
+		} else if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views' ].indexOf( sortKey ) !== -1 ) {
 			url.searchParams.set( 'orderby', sortKey );
 			url.searchParams.set( 'order', 'asc' === pageQuery.get( 'order' ) ? 'asc' : 'desc' );
 		}

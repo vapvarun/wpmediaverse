@@ -17,6 +17,103 @@ defined( 'ABSPATH' ) || exit;
 class FavoriteService {
 
 	/**
+	 * Post meta marking a member's "Favorites" collection (2.6.0).
+	 *
+	 * Save replaced the lightbox Favorite button; everything a member ever
+	 * favorited shows up in this collection. It is a VIEW over their
+	 * mvs_favorites rows, not a copy: no rows move, so the favourite REST
+	 * routes the app uses, counts and GDPR export all keep working unchanged.
+	 * Always private, never deletable, never smart.
+	 *
+	 * @since 2.6.0
+	 * @var string
+	 */
+	public const FAVORITES_META = '_mvs_favorites_collection';
+
+	/**
+	 * Per-request cache of member id => Favorites collection id.
+	 *
+	 * @var array<int,int>
+	 */
+	private static array $favorites_ids = array();
+
+	/**
+	 * A member's Favorites collection, created on first need.
+	 *
+	 * Matched by its marker, never by title: a translated or member-made
+	 * "Favorites" collection is a different thing and stays untouched.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int  $user_id Member.
+	 * @param bool $create  Create it when missing.
+	 * @return int Collection post ID, or 0.
+	 */
+	public function favorites_collection_id( int $user_id, bool $create = false ): int {
+		if ( $user_id <= 0 ) {
+			return 0;
+		}
+		if ( ! empty( self::$favorites_ids[ $user_id ] ) ) {
+			return self::$favorites_ids[ $user_id ];
+		}
+
+		$found = get_posts(
+			array(
+				'post_type'      => 'mvs_collection',
+				'post_status'    => 'private',
+				'author'         => $user_id,
+				'meta_key'       => self::FAVORITES_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- one row per member.
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+				'no_found_rows'  => true,
+			)
+		);
+		$id = (int) ( $found[0] ?? 0 );
+
+		// ponytail: two first requests at once can each create one; the lowest
+		// ID wins the lookup above. Add a lock if duplicates are ever seen.
+		if ( ! $id && $create ) {
+			$id = (int) wp_insert_post(
+				array(
+					'post_type'   => 'mvs_collection',
+					'post_status' => 'private',
+					'post_author' => $user_id,
+					'post_title'  => __( 'Favorites', 'wpmediaverse' ),
+					'meta_input'  => array(
+						self::FAVORITES_META => 1,
+						\WPMediaVerse\Services\CollectionService::PRIVACY_META => 'private',
+						'_mvs_collection_type' => 'manual',
+					),
+				)
+			);
+		}
+
+		if ( $id ) {
+			self::$favorites_ids[ $user_id ] = $id;
+		}
+
+		return $id;
+	}
+
+	/**
+	 * The member whose Favorites collection this is, or 0 for any other.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $collection_id Collection post ID.
+	 * @return int
+	 */
+	public static function favorites_owner( int $collection_id ): int {
+		if ( $collection_id <= 0 || ! get_post_meta( $collection_id, self::FAVORITES_META, true ) ) {
+			return 0;
+		}
+
+		return (int) get_post_field( 'post_author', $collection_id );
+	}
+
+	/**
 	 * Toggle a favorite on a media item (idempotent).
 	 *
 	 * If already favorited, unfavorite. If not favorited, add favorite.
@@ -193,19 +290,25 @@ class FavoriteService {
 		global $wpdb;
 		$table = $wpdb->prefix . 'mvs_favorites';
 
+		// A member's Favorites collection holds everything they favorited; any
+		// other manual collection holds the rows filed under it.
+		$owner = self::favorites_owner( $collection_id );
+		$col   = $owner ? 'user_id' : 'collection_id';
+		$val   = $owner ? $owner : $collection_id;
+
 		if ( $limit > 0 ) {
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT media_id FROM {$table} WHERE collection_id = %d ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$collection_id,
+					"SELECT media_id FROM {$table} WHERE {$col} = %d ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $col is one of two literals.
+					$val,
 					$limit
 				)
 			);
 		} else {
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT media_id FROM {$table} WHERE collection_id = %d ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$collection_id
+					"SELECT media_id FROM {$table} WHERE {$col} = %d ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $col is one of two literals.
+					$val
 				)
 			);
 		}

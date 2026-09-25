@@ -190,6 +190,11 @@ class FavoriteController extends WP_REST_Controller {
 		}
 
 		$collection_id = $request->get_param( 'collection_id' );
+		// The Favorites collection IS the favourites list, so targeting it is a
+		// plain favourite: can_view() rules, not the collection rule.
+		if ( $collection_id && \WPMediaVerse\Social\FavoriteService::favorites_owner( (int) $collection_id ) ) {
+			$collection_id = 0;
+		}
 
 		// Favouriting and collecting are different questions. can_view() above
 		// is the right gate for a favourite - anything you may look at, you may
@@ -236,6 +241,9 @@ class FavoriteController extends WP_REST_Controller {
 	 */
 	public function get_my_favorites( $request ) {
 		$collection_id = $request->get_param( 'collection_id' );
+		if ( $collection_id && \WPMediaVerse\Social\FavoriteService::favorites_owner( (int) $collection_id ) ) {
+			$collection_id = 0; // The Favorites collection lists every favourite.
+		}
 		$per_page      = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page          = \WPMediaVerse\REST\Pagination::resolve_page( $request );
 

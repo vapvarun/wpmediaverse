@@ -223,7 +223,7 @@ class SetupWizard {
 			<h2><?php esc_html_e( 'Welcome to MediaVerse!', 'wpmediaverse' ); ?></h2>
 			<p><?php esc_html_e( 'Transform your WordPress site into a media sharing platform. Upload, organize, and share images, videos, and audio with your community.', 'wpmediaverse' ); ?></p>
 			<ul class="mvs-setup-features">
-				<li><i data-lucide="image"></i> <?php esc_html_e( 'Upload and organize media in albums and collections', 'wpmediaverse' ); ?></li>
+				<li><i data-lucide="image"></i> <?php esc_html_e( 'Group your uploads into albums and gather media into collections', 'wpmediaverse' ); ?></li>
 				<li><i data-lucide="users"></i> <?php esc_html_e( 'Social features: reactions, comments, favorites, follows', 'wpmediaverse' ); ?></li>
 				<li><i data-lucide="shield"></i> <?php esc_html_e( 'AI-powered moderation and privacy controls', 'wpmediaverse' ); ?></li>
 				<li><i data-lucide="message-square"></i> <?php esc_html_e( 'Optional BuddyPress integration', 'wpmediaverse' ); ?></li>

@@ -124,10 +124,11 @@ test.describe( 'Documents QA full member browser', () => {
 		await openDrive( page );
 
 		const folderName = `FULL Bulk ${ TAG }`;
+		await page.locator( 'summary.mvs-drive__newfolder-button' ).click(); // 2.6.0: New folder opens the field.
 		await page.locator( '#mvs-new-folder' ).fill( folderName );
 		await Promise.all( [
 			page.waitForNavigation( { waitUntil: 'networkidle' } ),
-			page.locator( '.mvs-drive__newfolder-button' ).click(),
+			page.locator( '.mvs-drive__newfolder button[type="submit"]' ).click(),
 		] );
 		const folderLink = page.locator( 'a.mvs-drive__name', { hasText: folderName } );
 		await expect( folderLink ).toBeVisible();
@@ -234,7 +235,7 @@ echo 'YES';
 
 		await autoLogin( page, MEMBER_A );
 		await openDrive( page );
-		await expect( page.locator( '.mvs-drive__newfolder' ) ).toBeVisible();
+		await expect( page.locator( '.mvs-drive__newfolder-toggle' ) ).toBeVisible();
 		const after = wpEval( `
 global $wpdb;
 echo (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE media_type='document' AND post_author=22");

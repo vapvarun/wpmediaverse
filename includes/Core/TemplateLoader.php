@@ -39,6 +39,9 @@ class TemplateLoader {
 		// load_media_templates, or the dead panel renders first.
 		add_action( 'template_redirect', array( $this, 'redirect_offsite_section' ), 4 );
 
+		// The member's drive has one home: the dashboard's documents section.
+		add_action( 'template_redirect', array( $this, 'redirect_legacy_drive_query' ), 4 );
+
 		// Serve media templates via template_redirect.
 		add_action( 'template_redirect', array( $this, 'load_media_templates' ), 5 );
 
@@ -466,6 +469,69 @@ class TemplateLoader {
 					return $hosts;
 				}
 			);
+		}
+
+		wp_safe_redirect( $target, 302 );
+		exit;
+	}
+
+	/**
+	 * Send `?drive=my-drive|shared|recent` on the documents page to the dashboard.
+	 *
+	 * The member's drive used to answer at two addresses: the dashboard's
+	 * documents section and the public Explore Documents page with a `?drive=`
+	 * query. Same drive, two URLs, two sets of chrome - and the page title said
+	 * "Explore Documents" over a member's private files. The dashboard section
+	 * is the one home now; the old query keeps working as a 302 so bookmarks
+	 * and links already out there still land somewhere real.
+	 *
+	 * Only when the dashboard page exists and this member can see its documents
+	 * section - otherwise there is nowhere better to go, and the shortcode's own
+	 * `?drive=` branch (kept, not removed) renders as before.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return void
+	 */
+	public function redirect_legacy_drive_query(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only routing.
+		$drive = isset( $_GET['drive'] ) ? sanitize_key( wp_unslash( $_GET['drive'] ) ) : '';
+
+		if ( ! in_array( $drive, array( 'my-drive', 'shared', 'recent' ), true ) || ! is_singular() ) {
+			return;
+		}
+
+		$post = get_queried_object();
+
+		if ( ! $post instanceof \WP_Post || ! has_shortcode( (string) $post->post_content, 'mvs_documents' ) ) {
+			return;
+		}
+
+		if ( ! (int) get_option( 'mvs_page_dashboard', 0 ) || ! DashboardSections::exists( 'documents' ) ) {
+			return;
+		}
+
+		/**
+		 * Whether `?drive=` on the documents page redirects to the dashboard.
+		 *
+		 * Return false to keep rendering the drive on the documents page, as
+		 * before 2.6.0.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool   $redirect Default true.
+		 * @param string $drive    Requested drive root.
+		 */
+		if ( ! apply_filters( 'mvs_redirect_legacy_drive_query', true, $drive ) ) {
+			return;
+		}
+
+		$target = DashboardSections::url( 'documents' );
+
+		// `documents/shared/` is a real route; with plain permalinks there is no
+		// path to append, so the drive root is the honest landing.
+		if ( 'shared' === $drive && get_option( 'permalink_structure' ) ) {
+			$target = trailingslashit( $target ) . 'shared/';
 		}
 
 		wp_safe_redirect( $target, 302 );
@@ -943,6 +1009,25 @@ class TemplateLoader {
 		if ( ! is_user_logged_in() ) {
 			wp_safe_redirect( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( '/media/edit-profile/' ) ) );
 			exit;
+		}
+
+		// One profile editor: the dashboard's profile section. This page stays
+		// (themes may override the template), but members are sent to the one
+		// home so the two forms cannot drift apart again.
+		if ( (int) get_option( 'mvs_page_dashboard', 0 ) && DashboardSections::exists( 'profile' ) ) {
+			/**
+			 * Whether /media/edit-profile/ redirects to the dashboard profile section.
+			 *
+			 * Return false to keep serving the standalone editor, as before 2.6.0.
+			 *
+			 * @since 2.6.0
+			 *
+			 * @param bool $redirect Default true.
+			 */
+			if ( apply_filters( 'mvs_profile_edit_redirect', true ) ) {
+				wp_safe_redirect( DashboardSections::url( 'profile' ), 302 );
+				exit;
+			}
 		}
 
 		add_filter(

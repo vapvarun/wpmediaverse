@@ -248,9 +248,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		tagResults: [],
 		tagVisible: false,
 
-		// --- FAB menu (only when the member also has a Documents drive) ---
-		fabMenuOpen: false,
-
 		// --- Upload Modal (flat) ---
 		uploadModalVisible: false,
 		uploadModalMode: 'photo', // photo | gallery | video | audio (auto-detected from files)
@@ -530,6 +527,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 			return d.thumbnail_url || '';
 		},
+		// Audio: cover art (embedded ID3 art becomes the thumbnail variants) and
+		// no fullscreen, since there is nothing to enlarge.
+		get lightboxAudioCoverUrl() {
+			const d = state.lightboxMediaData;
+			return d?.media_type === 'audio' ? ( d.large_url || d.thumbnail_url || '' ) : '';
+		},
+		get lightboxHideFullscreen() {
+			return state.lightboxMediaData?.media_type === 'audio';
+		},
+		get lightboxFullscreenActive() {
+			return state.lightboxFullscreen && ! state.lightboxHideFullscreen;
+		},
 		get lightboxFileType() {
 			return state.lightboxMediaData?.file_type || '';
 		},
@@ -585,7 +594,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxFavoriteLabel() {
 			// Icon is rendered separately via Lucide (data-lucide="star"); label is plain text.
-			return state.lightboxIsFavorited ? 'Favorited' : 'Favorite';
+			return state.lightboxIsFavorited ? ( state.i18n?.favorited || 'Favorited' ) : ( state.i18n?.favorite || 'Favorite' );
+		},
+		get lightboxSaveLabel() {
+			return state.lightboxIsFavorited ? ( state.i18n?.saved || 'Saved' ) : ( state.i18n?.save || 'Save' );
 		},
 		get lightboxHasComments() {
 			return state.lightboxComments.length > 0;
@@ -784,24 +796,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.tagResults = [];
 		},
 
-		// --- FAB menu ---
+		// --- FAB ---
+		// 2.6.0 dropped the Media / Documents menu: one tap uploads. Kept for a
+		// theme copy of shared-ui-frame.php that still binds the old toggle.
 		toggleFabMenu() {
-			state.fabMenuOpen = ! state.fabMenuOpen;
-		},
-		fabUploadMedia() {
-			state.fabMenuOpen = false;
-			// Sibling actions are called through the captured `actions` proxy, not
-			// `this` — inside an Interactivity action `this` does not resolve the
-			// store's actions, so `this.openUploadModal()` was a silent no-op and
-			// the FAB menu's "Upload media" did nothing (Basecamp 10240363216).
 			actions.openUploadModal();
-		},
-		closeFabMenuOnOutside( event ) {
-			// data-wp-on-document--click fires for every click, including the FAB
-			// toggle itself — only close when the click landed OUTSIDE the FAB.
-			if ( state.fabMenuOpen && event.target && ! event.target.closest( '.mvs-fab-container' ) ) {
-				state.fabMenuOpen = false;
-			}
 		},
 
 		// --- Upload Modal ---
@@ -1970,8 +1969,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} else {
 						actions.closeLightbox();
 					}
-				} else if ( state.fabMenuOpen ) {
-					state.fabMenuOpen = false;
 				}
 			} else if ( state.lightboxVisible ) {
 				// Not while the member is typing. This handler is bound with
@@ -1993,7 +1990,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.lightboxPrev();
 				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {
 					actions.lightboxNext();
-				} else if ( event.key === 'f' || event.key === 'F' ) {
+				} else if ( ( event.key === 'f' || event.key === 'F' ) && ! state.lightboxHideFullscreen ) {
 					state.lightboxFullscreen = ! state.lightboxFullscreen;
 				}
 			}
@@ -2227,3 +2224,38 @@ window.mvsOpenEditModal = function ( mediaId ) {
 window.mvsSharedUI = {
 	showToast: ( message, type ) => actions.showToast( message, type ),
 };
+
+// Swipe between items on touch. One listener for every lightbox: it clicks
+// the visible prev/next button, so the Interactivity lightbox and the BP
+// clone (whose buttons have their own delegated handlers) move the same way.
+// ponytail: a swipe that starts on a <video>/<audio> is left to the player's
+// scrubber; add a dedicated swipe zone if members ask for it there too.
+( () => {
+	let startX = 0;
+	let startY = 0;
+	let stage = null;
+
+	document.addEventListener( 'touchstart', ( event ) => {
+		stage = null;
+		if ( event.touches.length !== 1 ) return;
+		const target = event.target instanceof Element ? event.target : null;
+		const media = target?.closest( '.mvs-lightbox-media' );
+		if ( ! media || target.closest( 'video, audio' ) ) return;
+		stage = media;
+		startX = event.touches[ 0 ].clientX;
+		startY = event.touches[ 0 ].clientY;
+	}, { passive: true } );
+
+	document.addEventListener( 'touchend', ( event ) => {
+		if ( ! stage || ! event.changedTouches.length ) return;
+		const dx = event.changedTouches[ 0 ].clientX - startX;
+		const dy = event.changedTouches[ 0 ].clientY - startY;
+		const media = stage;
+		stage = null;
+		if ( Math.abs( dx ) < 50 || Math.abs( dx ) <= Math.abs( dy ) ) return;
+		// Swiping left shows the next item; mirrored in right-to-left layouts.
+		const rtl = 'rtl' === document.documentElement.dir;
+		const next = ( dx < 0 ) !== rtl;
+		media.querySelector( next ? '.mvs-lightbox-nav--next:not([hidden])' : '.mvs-lightbox-nav--prev:not([hidden])' )?.click();
+	}, { passive: true } );
+} )();

@@ -41,7 +41,7 @@ test.describe( 'Documents QA smoke (combo)', () => {
 		const drive = page.locator( '.mvs-drive' );
 		await expect( drive ).toBeVisible();
 		await expect( drive.locator( '#mvs-document-file, .mvs-drive__upload-input' ) ).toBeAttached();
-		await expect( drive.locator( '.mvs-drive__newfolder' ) ).toBeVisible();
+		await expect( drive.locator( '.mvs-drive__newfolder-toggle' ) ).toBeVisible();
 		await expect( drive.locator( '.mvs-drive__trash-link, a[href*="show=trash"]' ).first() ).toBeVisible();
 		await expect( drive.locator( '.mvs-drive__row' ).first() ).toBeVisible( { timeout: 15_000 } );
 	} );

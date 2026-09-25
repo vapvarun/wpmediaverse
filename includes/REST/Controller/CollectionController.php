@@ -201,9 +201,15 @@ class CollectionController extends WP_REST_Controller {
 		$order   = 'asc' === strtolower( (string) $request->get_param( 'order' ) ) ? 'ASC' : 'DESC';
 		$search  = (string) $request->get_param( 's' );
 
+		// Every member has a Favorites collection (2.6.0): Save replaced the
+		// lightbox Favorite button. Private, so it is listed only here, where
+		// the author is the caller.
+		$favorites = \WPMediaVerse\Core\Plugin::container()->get( 'favorites' );
+		$favorites->favorites_collection_id( get_current_user_id(), true );
+
 		$query_args = array(
 			'post_type'      => 'mvs_collection',
-			'post_status'    => 'publish',
+			'post_status'    => array( 'publish', 'private' ),
 			'author'         => get_current_user_id(),
 			'posts_per_page' => $per_page,
 			'paged'          => $page,
@@ -418,6 +424,10 @@ class CollectionController extends WP_REST_Controller {
 	public function delete_item( $request ) {
 		$collection_id = $request->get_param( 'id' );
 
+		if ( \WPMediaVerse\Social\FavoriteService::favorites_owner( (int) $collection_id ) ) {
+			return new WP_Error( 'mvs_favorites_collection_locked', __( 'Your Favorites collection cannot be deleted. Remove items from it instead.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
 		// Nullify collection_id in favorites referencing this collection.
 		global $wpdb;
 		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -570,6 +580,7 @@ class CollectionController extends WP_REST_Controller {
 			'can_edit'    => $can_edit,
 			'privacy'     => $this->collections->get_privacy( $post->ID ),
 			'total'       => $total,
+			'is_favorites' => (bool) \WPMediaVerse\Social\FavoriteService::favorites_owner( $post->ID ),
 		);
 
 		if ( 'smart' === $collection_type ) {
@@ -592,10 +603,13 @@ class CollectionController extends WP_REST_Controller {
 				$data['favorites'] = array();
 				if ( ! empty( $mvs_page_ids ) ) {
 					$mvs_placeholders   = implode( ',', array_fill( 0, count( $mvs_page_ids ), '%d' ) );
+					// A member's Favorites collection is their favorites rows.
+					$mvs_owner          = \WPMediaVerse\Social\FavoriteService::favorites_owner( $post->ID );
+					$mvs_col            = $mvs_owner ? 'user_id' : 'collection_id';
 					$data['favorites']  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 						$wpdb->prepare(
-							"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d AND media_id IN ({$mvs_placeholders}) ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-							array_merge( array( $post->ID ), $mvs_page_ids )
+							"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE {$mvs_col} = %d AND media_id IN ({$mvs_placeholders}) ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $mvs_col is one of two literals.
+							array_merge( array( $mvs_owner ? $mvs_owner : $post->ID ), $mvs_page_ids )
 						),
 						ARRAY_A
 					);

@@ -49,6 +49,23 @@ class Collection {
 		register_post_type( 'mvs_collection', $args );
 
 		add_action( 'before_delete_post', array( self::class, 'on_before_delete' ), 10, 2 );
+		add_filter( 'private_title_format', array( self::class, 'favorites_title_format' ), 10, 2 );
+	}
+
+	/**
+	 * A member's Favorites collection is private by design, so its title never
+	 * carries WordPress's "Private:" prefix (2.6.0).
+	 *
+	 * @param string        $format Title format.
+	 * @param \WP_Post|null $post   Post.
+	 * @return string
+	 */
+	public static function favorites_title_format( $format, $post = null ) {
+		if ( $post instanceof \WP_Post && 'mvs_collection' === $post->post_type
+			&& \WPMediaVerse\Social\FavoriteService::favorites_owner( (int) $post->ID ) ) {
+			return '%s';
+		}
+		return $format;
 	}
 
 	/**

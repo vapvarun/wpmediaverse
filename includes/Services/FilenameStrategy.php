@@ -239,4 +239,34 @@ final class FilenameStrategy {
 
 		return ( '' !== $ext ) ? ( $stem . '.' . $ext ) : $stem;
 	}
+
+	/**
+	 * A readable title from an uploaded file's name, for uploads the member
+	 * did not title: "magnific-feel-the-beat.mp3" becomes "Magnific feel the beat".
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $original_name The file name as uploaded.
+	 * @return string
+	 */
+	public static function title_from( string $original_name ): string {
+		$stem  = (string) pathinfo( $original_name, PATHINFO_FILENAME );
+		$title = trim( (string) preg_replace( '/[\s._-]+/u', ' ', sanitize_text_field( $stem ) ) );
+		if ( '' !== $title ) {
+			$title = mb_strtoupper( mb_substr( $title, 0, 1, 'UTF-8' ), 'UTF-8' ) . mb_substr( $title, 1, null, 'UTF-8' );
+		}
+
+		/**
+		 * Filters the title given to an upload the member did not title.
+		 *
+		 * Return sanitize_file_name( pathinfo( $original_name, PATHINFO_FILENAME ) )
+		 * to keep the pre-2.6.0 slug-style titles.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param string $title         Readable title.
+		 * @param string $original_name File name as uploaded.
+		 */
+		return (string) apply_filters( 'mvs_default_media_title', $title, $original_name );
+	}
 }

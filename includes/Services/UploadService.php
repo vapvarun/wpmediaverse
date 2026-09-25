@@ -477,7 +477,7 @@ class UploadService {
 
 		$file_url = $driver->url( $dest_path );
 
-		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
+		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : FilenameStrategy::title_from( (string) $file['name'] );
 
 		// Determine status. MediaVerse is a community/engagement platform: any
 		// logged-in member's upload publishes immediately by default.

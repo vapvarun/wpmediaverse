@@ -189,8 +189,8 @@ wp_interactivity_state(
 			?>
 		</p>
 	<?php endif; ?>
-	<!-- Optional metadata fields -->
-	<div class="mvs-upload-fields">
+	<!-- Optional metadata fields: they appear once a file is picked. -->
+	<div class="mvs-upload-fields" data-wp-bind--hidden="!state.hasPending" hidden>
 		<input type="text" class="mvs-upload-title-input"
 			placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
 			aria-label="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"

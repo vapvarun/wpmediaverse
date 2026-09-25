@@ -683,7 +683,19 @@ $mvs_archive_url = home_url( '/media/' );
 					</template>
 				</div>
 				<div class="mvs-social-bar__actions">
-					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
+					<?php
+					// One way to keep an item: Save (2.6.0). Without Pro it saves to the
+					// member's Favorites; with Pro the collection picker below does, and
+					// its first row is Favorites. This filter is documented in
+					// templates/partials/shared-ui-frame.php.
+					$mvs_legacy_fav     = (bool) apply_filters( 'mvs_show_favorite_button', false );
+					$mvs_collections_on = (bool) apply_filters( 'mvs_collections_enabled', false );
+					$mvs_keep_icon      = $mvs_legacy_fav ? 'star' : 'bookmark';
+					$mvs_keep_label     = $mvs_legacy_fav ? __( 'Favorite', 'wpmediaverse' ) : __( 'Save', 'wpmediaverse' );
+					$mvs_keep_login     = $mvs_legacy_fav ? __( 'Log in to favorite', 'wpmediaverse' ) : __( 'Log in to save', 'wpmediaverse' );
+					$mvs_show_keep      = $mvs_legacy_fav || ! $mvs_collections_on;
+					?>
+					<?php if ( $mvs_show_keep && is_user_logged_in() && ! $mvs_is_owner ) : ?>
 						<?php
 						// aria-pressed, and a label that changes with the state. Only the
 						// CSS class moved before, so a screen-reader user could not tell
@@ -697,25 +709,25 @@ $mvs_archive_url = home_url( '/media/' );
 							data-wp-bind--aria-pressed="context.isFavorite"
 							data-wp-bind--aria-label="state.favoriteLabel"
 							data-wp-on--click="actions.toggleFavorite"
-							data-mvs-tooltip="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>"
+							data-mvs-tooltip="<?php echo esc_attr( $mvs_keep_label ); ?>"
 							aria-pressed="false"
 							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">
-							<i data-lucide="star" aria-hidden="true"></i>
-							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
+							<i data-lucide="<?php echo esc_attr( $mvs_keep_icon ); ?>" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php echo esc_html( $mvs_keep_label ); ?></span>
 						</button>
-					<?php elseif ( ! is_user_logged_in() ) : ?>
+					<?php elseif ( $mvs_show_keep && ! is_user_logged_in() ) : ?>
 						<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-btn--icon-collapse mvs-login-prompt"
-							data-mvs-tooltip="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
-							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
-							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">
-							<i data-lucide="star" aria-hidden="true"></i>
-							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
+							data-mvs-tooltip="<?php echo esc_attr( $mvs_keep_login ); ?>"
+							title="<?php echo esc_attr( $mvs_keep_login ); ?>"
+							aria-label="<?php echo esc_attr( $mvs_keep_login ); ?>">
+							<i data-lucide="<?php echo esc_attr( $mvs_keep_icon ); ?>" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php echo esc_html( $mvs_keep_label ); ?></span>
 						</a>
 					<?php endif; ?>
 					<?php
 					// "Save to collection" is separate from the heart (a like). Rendered
 					// only when a collections backend (Pro) enables it via the filter.
-					if ( is_user_logged_in() && apply_filters( 'mvs_collections_enabled', false ) ) :
+					if ( is_user_logged_in() && $mvs_collections_on ) :
 						?>
 						<button class="mvs-collect-btn mvs-btn--icon-collapse" type="button"
 							data-mvs-collections-trigger

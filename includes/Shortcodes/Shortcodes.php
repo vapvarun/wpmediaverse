@@ -663,6 +663,10 @@ class Shortcodes {
 			$mvs_has_custom  = $mvs_profile_svc->has_custom_avatar( $mvs_user_id );
 		}
 
+		// Fields a community plugin owns are edited there, not here.
+		$mvs_community = \WPMediaVerse\Services\ProfileService::community_profile( (int) $mvs_user_id );
+		$mvs_deferred  = $mvs_community['fields'];
+
 		$mvs_profile_ctx = array(
 			'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 			'nonce'           => wp_create_nonce( 'wp_rest' ),
@@ -697,6 +701,8 @@ class Shortcodes {
 				data-wp-bind--hidden="!context.errorMessage"
 				data-wp-text="context.errorMessage"></div>
 
+			<?php require MVS_PLUGIN_DIR . 'templates/partials/community-profile-notice.php'; ?>
+
 			<div class="mvs-profile-avatar-section">
 				<div class="mvs-profile-avatar-preview">
 					<img data-wp-bind--src="context.avatarUrl"
@@ -725,6 +731,7 @@ class Shortcodes {
 			</div>
 
 			<form class="mvs-profile-form" data-wp-on--submit="actions.saveProfile">
+				<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label for="mvs-first-name"><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
 					<input type="text" id="mvs-first-name"
@@ -732,7 +739,9 @@ class Shortcodes {
 						data-wp-on--input="actions.updateFirstName"
 						autocomplete="given-name" />
 				</div>
+				<?php endif; ?>
 
+				<?php if ( ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label for="mvs-last-name"><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
 					<input type="text" id="mvs-last-name"
@@ -740,7 +749,9 @@ class Shortcodes {
 						data-wp-on--input="actions.updateLastName"
 						autocomplete="family-name" />
 				</div>
+				<?php endif; ?>
 
+				<?php if ( ! in_array( 'display_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label for="mvs-display-name"><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
 					<input type="text" id="mvs-display-name"
@@ -748,6 +759,7 @@ class Shortcodes {
 						data-wp-on--input="actions.updateDisplayName"
 						autocomplete="nickname" />
 				</div>
+				<?php endif; ?>
 
 				<div class="mvs-profile-field">
 					<label for="mvs-bio"><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
@@ -936,6 +948,11 @@ class Shortcodes {
 		// through the SAME `mvs_documents_drive_html` filter the folder branch
 		// uses, so there is one seam for "this needs Pro's drive", not two
 		// that can drift apart again.
+		//
+		// Since 2.6.0 TemplateLoader::redirect_legacy_drive_query() sends these
+		// URLs to the dashboard's documents section before this runs. The branch
+		// stays: it still answers when that redirect is filtered off, when there
+		// is no dashboard page, and for themes/embeds that call the shortcode.
 		if ( '' !== $mvs_doc_root ) {
 			$mvs_doc_root_html = (string) apply_filters(
 				'mvs_documents_drive_html',

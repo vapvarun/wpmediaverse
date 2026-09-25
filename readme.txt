@@ -24,7 +24,7 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 
 * **Custom Table Architecture** - 23 indexed tables keep media, albums, social activity and messages out of WordPress core data
 * **Media Uploads** - Drag & drop with MIME validation, EXIF stripping, duplicate detection, thumbnail generation
-* **Albums & Collections** - Ordered albums with cover images, smart collections with auto-curation rules
+* **Albums & Collections** - Albums group a member's own uploads (ordered, with a cover); collections gather media from anyone on the site, by smart rules or (with Pro) a Save button
 * **Social Layer** - Reactions (6 types), threaded comments, favorites, @mentions, follow/unfollow, sharing
 * **Direct Messaging** - Text, media and voice messaging between members, with read state and typing indicators, and no third-party service needed
 * **AI Moderation** - OpenAI scans uploads automatically. Flag, hide, reject, or delete before they go public

@@ -1845,6 +1845,15 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$order = isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
+		// "oldest" is the one-select spelling of created_at ascending (2.6.0);
+		// ?sort=created_at&order=asc and ?sort=title links keep working.
+		if ( 'oldest' === $sort ) {
+			return array(
+				'orderby' => 'created_at',
+				'order'   => 'ASC',
+			);
+		}
+
 		return array(
 			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views' ), true ) ? $sort : 'created_at',
 			'order'   => 'asc' === $order ? 'ASC' : 'DESC',
@@ -1865,6 +1874,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_explore_sort_toolbar( int $total_items, ?array $hidden = null ): string {
+		// Nothing to sort.
+		if ( $total_items < 1 ) {
+			return '';
+		}
 		if ( null === $hidden ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
 			$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
@@ -1887,22 +1900,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
 					number_format_i18n( $total_items )
 				),
+				// One select, field and direction together (2.6.0).
 				'sort'   => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $sort['orderby'],
+					'value'   => ( 'created_at' === $sort['orderby'] && 'ASC' === $sort['order'] ) ? 'oldest' : $sort['orderby'],
 					'options' => array(
-						'created_at' => __( 'Date added', 'wpmediaverse' ),
-						'title'      => __( 'Title', 'wpmediaverse' ),
-						'views'      => __( 'Views', 'wpmediaverse' ),
+						'created_at' => __( 'Newest', 'wpmediaverse' ),
+						'oldest'     => __( 'Oldest', 'wpmediaverse' ),
+						'views'      => __( 'Most viewed', 'wpmediaverse' ),
 					),
-				),
-				'order'  => array(
-					'name'  => 'order',
-					'label' => __( 'Direction', 'wpmediaverse' ),
-					// No 'options': render_panel_toolbar() derives them from the
-					// sort field. Basecamp 10297765808.
-					'value' => strtolower( $sort['order'] ),
 				),
 				'submit' => __( 'Apply', 'wpmediaverse' ),
 			)
@@ -1942,6 +1949,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *     @type string $submit   Submit label. Omit for client-driven panels,
 	 *                            which apply on change and need no button.
 	 *     @type string $class    Extra wrapper class(es).
+	 *     @type array  $attrs    data-* / aria-* attributes on the wrapper.
 	 * }
 	 * @return string Escaped HTML.
 	 */
@@ -1951,9 +1959,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$extra  = isset( $args['class'] ) ? ' ' . (string) $args['class'] : '';
 		$submit = isset( $args['submit'] ) ? (string) $args['submit'] : '';
 
-		$html = $form
-			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search">'
-			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search">';
+		$wrap  = $this->toolbar_attrs( $args );
+		$html  = $form
+			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search"' . $wrap . '>'
+			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search"' . $wrap . '>';
 
 		if ( $form && ! empty( $args['hidden'] ) && is_array( $args['hidden'] ) ) {
 			foreach ( $args['hidden'] as $name => $value ) {

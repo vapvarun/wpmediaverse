@@ -64,6 +64,10 @@ wp_interactivity_state(
 			'reportSubmitted'  => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
 			'reportAlready'    => __( 'Already reported or error occurred.', 'wpmediaverse' ),
 			'reportAction'     => __( 'Report', 'wpmediaverse' ),
+			'save'             => __( 'Save', 'wpmediaverse' ),
+			'saved'            => __( 'Saved', 'wpmediaverse' ),
+			'favorite'         => __( 'Favorite', 'wpmediaverse' ),
+			'favorited'        => __( 'Favorited', 'wpmediaverse' ),
 			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
 			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
 			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
@@ -129,43 +133,12 @@ wp_interactivity_state(
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>
 		<?php
-		// When the member also has a Documents drive, the FAB opens a small menu
-		// (Media / Documents) so the drive is reachable from the global upload
-		// affordance; otherwise it keeps its single-action behaviour and opens the
-		// upload modal directly (Basecamp 10206301990). Documents availability + the
-		// drive URL come from Free's own seams — no Pro classes.
-		$mvs_fab_docs_url = '';
-		if ( $mvs_is_logged_in
-		&& \WPMediaVerse\Core\Plugin::documents_enabled()
-		&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
-		) {
-			$mvs_fab_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
-		}
+		// One tap uploads. Documents keeps its own home in the dashboard nav, so
+		// the FAB no longer opens a Media / Documents menu (it did from Basecamp
+		// 10206301990 until the 2.6.0 member-experience pass).
 		?>
 	<div class="mvs-fab-container"
-		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'
-		<?php
-		if ( '' !== $mvs_fab_docs_url ) :
-			?>
-			data-wp-on-document--click="actions.closeFabMenuOnOutside"<?php endif; ?>>
-		<?php if ( '' !== $mvs_fab_docs_url ) : ?>
-		<div class="mvs-fab-menu" hidden data-wp-bind--hidden="!state.fabMenuOpen" role="menu" aria-label="<?php esc_attr_e( 'Add', 'wpmediaverse' ); ?>">
-			<button type="button" class="mvs-fab-menu-item" role="menuitem" data-wp-on--click="actions.fabUploadMedia">
-				<?php esc_html_e( 'Upload media', 'wpmediaverse' ); ?>
-			</button>
-			<a class="mvs-fab-menu-item" role="menuitem" href="<?php echo esc_url( $mvs_fab_docs_url ); ?>">
-				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
-			</a>
-		</div>
-		<button class="mvs-fab" data-wp-on--click="actions.toggleFabMenu"
-			aria-haspopup="true" data-wp-bind--aria-expanded="state.fabMenuOpen"
-			aria-label="<?php esc_attr_e( 'Add media or open Documents', 'wpmediaverse' ); ?>">
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
-				<line x1="12" y1="5" x2="12" y2="19"></line>
-				<line x1="5" y1="12" x2="19" y2="12"></line>
-			</svg>
-		</button>
-		<?php else : ?>
+		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'>
 		<button class="mvs-fab" data-wp-on--click="actions.openUploadModal"
 			aria-label="<?php esc_attr_e( 'Upload media', 'wpmediaverse' ); ?>">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
@@ -173,7 +146,6 @@ wp_interactivity_state(
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
 		</button>
-		<?php endif; ?>
 	</div>
 
 	<!-- Upload Modal Overlay. Dialog semantics, focus in/out (callbacks.uploadModalFocus), Tab trap and Escape (actions.handleLightboxKeydown). Basecamp 10320784059. -->
@@ -450,10 +422,12 @@ wp_interactivity_state(
 		?>
 		<div class="mvs-lightbox" role="dialog" aria-modal="true"
 			aria-label="<?php esc_attr_e( 'Media viewer', 'wpmediaverse' ); ?>"
-			data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreen">
+			data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreenActive">
 			<!-- Fullscreen toggle — hides the comments sidebar and expands the media. -->
+			<?php // Not for audio: there is nothing to enlarge. ?>
 			<button class="mvs-lightbox-fullscreen" data-wp-on--click="actions.toggleLightboxFullscreen"
-				data-wp-bind--aria-pressed="state.lightboxFullscreen"
+				data-wp-bind--hidden="state.lightboxHideFullscreen"
+				data-wp-bind--aria-pressed="state.lightboxFullscreenActive"
 				aria-label="<?php esc_attr_e( 'Toggle fullscreen', 'wpmediaverse' ); ?>">
 				<svg class="mvs-lightbox-fs-expand" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -476,9 +450,9 @@ wp_interactivity_state(
 
 			<!-- Image with gallery navigation -->
 			<div class="mvs-lightbox-media" data-wp-bind--hidden="state.lightboxLoading">
-				<!-- Prev arrow (gallery groups only) -->
+				<!-- Prev / next: whenever there is a neighbour, in a gallery group or in the grid it was opened from. -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--prev"
-					data-wp-bind--hidden="!state.lightboxIsGroup"
+					data-wp-bind--hidden="!state.lightboxHasPrev"
 					data-wp-on--click="actions.lightboxPrev"
 					aria-label="<?php esc_attr_e( 'Previous', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -491,6 +465,8 @@ wp_interactivity_state(
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
 				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
+				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
+				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 				<?php // A document has no displayable image, so instead of synthesising a broken <img> from its file URL the lightbox shows a doc card (glyph + title + type); the chrome below (Open / Download) still reaches the file. (Basecamp 10248528902) ?>
 				<?php // Pro's viewer when it can render the type, the download card otherwise. Basecamp 10268223516. ?>
@@ -502,9 +478,8 @@ wp_interactivity_state(
 					<span class="mvs-doc-card__meta" data-wp-text="state.lightboxDocLabel"></span>
 				</div>
 
-				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
-					data-wp-bind--hidden="!state.lightboxIsGroup"
+					data-wp-bind--hidden="!state.lightboxHasNext"
 					data-wp-on--click="actions.lightboxNext"
 					aria-label="<?php esc_attr_e( 'Next', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -537,6 +512,8 @@ wp_interactivity_state(
 					</a>
 				</div>
 
+				<h2 class="mvs-lightbox-title" data-wp-text="state.lightboxTitle" data-wp-bind--hidden="!state.lightboxTitle" hidden></h2>
+
 				<!-- Stats -->
 				<div class="mvs-lightbox-stats">
 					<span data-wp-text="state.lightboxViewsText"></span>
@@ -568,18 +545,39 @@ wp_interactivity_state(
 
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
-					<?php if ( $mvs_is_logged_in ) : ?>
-						<?php // One icon per feature on every surface: star = Favorite, heart = Like, bookmark = Save (Basecamp 10277695437). ?>
-						<button class="mvs-lightbox-action mvs-lb-fav" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
+					<?php
+					/*
+					 * One way to keep an item: Save (2.6.0). Reactions say how you feel;
+					 * Save keeps it. Everything a member saves in Free, and everything
+					 * they ever favorited, is in their private "Favorites" collection.
+					 * With Pro, Save opens the collection picker, whose first row is
+					 * that Favorites collection.
+					 *
+					 * Filters whether the lightbox and the single media page still show
+					 * the separate Favorite (star) button they had before 2.6.0.
+					 *
+					 * @since 2.6.0
+					 *
+					 * @param bool $show Default false.
+					 */
+					$mvs_legacy_fav     = (bool) apply_filters( 'mvs_show_favorite_button', false );
+					$mvs_collections_on = (bool) apply_filters( 'mvs_collections_enabled', false );
+					?>
+					<?php if ( $mvs_is_logged_in && $mvs_legacy_fav ) : ?>
+						<button class="mvs-lightbox-action mvs-lb-fav" data-mvs-fav-toggle data-mvs-label-on="<?php esc_attr_e( 'Favorited', 'wpmediaverse' ); ?>" data-mvs-label-off="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
 							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
-					<?php // "Save to collection" is separate from the heart; shown only when a collections backend (Pro) enables it. ?>
-					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_collections_enabled', false ) ) : ?>
+					<?php if ( $mvs_is_logged_in && $mvs_collections_on ) : ?>
 						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
 							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+						</button>
+					<?php elseif ( $mvs_is_logged_in && ! $mvs_legacy_fav ) : ?>
+						<button class="mvs-lightbox-action mvs-lb-save" type="button" data-mvs-fav-toggle data-mvs-label-on="<?php esc_attr_e( 'Saved', 'wpmediaverse' ); ?>" data-mvs-label-off="<?php esc_attr_e( 'Save', 'wpmediaverse' ); ?>" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" data-wp-bind--aria-pressed="state.lightboxIsFavorited" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save to your Favorites', 'wpmediaverse' ); ?>">
+							<i data-lucide="bookmark" aria-hidden="true"></i>
+							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxSaveLabel"></span>
 						</button>
 					<?php endif; ?>
 					<?php

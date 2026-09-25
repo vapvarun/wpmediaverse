@@ -100,6 +100,9 @@ class CollectionService {
 	 * @return string 'public' or 'members'; 'public' when nothing is stored.
 	 */
 	public function get_privacy( int $collection_id ): string {
+		if ( \WPMediaVerse\Social\FavoriteService::favorites_owner( $collection_id ) ) {
+			return 'private';
+		}
 		$stored = (string) get_post_meta( $collection_id, self::PRIVACY_META, true );
 
 		return in_array( $stored, self::PRIVACY_LEVELS, true ) ? $stored : 'public';
@@ -124,6 +127,9 @@ class CollectionService {
 	 * @return string The level actually stored.
 	 */
 	public function set_privacy( int $collection_id, string $privacy ): string {
+		if ( \WPMediaVerse\Social\FavoriteService::favorites_owner( $collection_id ) ) {
+			return 'private'; // A member's Favorites never go public.
+		}
 		$privacy = in_array( $privacy, self::PRIVACY_LEVELS, true ) ? $privacy : 'public';
 
 		update_post_meta( $collection_id, self::PRIVACY_META, $privacy );
@@ -250,6 +256,9 @@ class CollectionService {
 	 * @return string 'manual' or 'smart'.
 	 */
 	public function get_type( int $collection_id ): string {
+		if ( \WPMediaVerse\Social\FavoriteService::favorites_owner( $collection_id ) ) {
+			return 'manual';
+		}
 		$type = get_post_meta( $collection_id, '_mvs_collection_type', true );
 		return $type ? $type : 'manual';
 	}

@@ -64,18 +64,20 @@ test.describe( 'Documents QA interactive walk', () => {
 		await autoLogin( page, MEMBER_A );
 		await openDrive( page );
 
+		await page.locator( 'summary.mvs-drive__newfolder-button' ).click(); // 2.6.0: New folder opens the field.
 		await page.locator( '#mvs-new-folder' ).fill( FOLDER );
 		await Promise.all( [
 			page.waitForNavigation( { waitUntil: 'networkidle' } ),
-			page.locator( '.mvs-drive__newfolder-button' ).click(),
+			page.locator( '.mvs-drive__newfolder button[type="submit"]' ).click(),
 		] );
 
 		await expect( page.locator( '.mvs-drive__name', { hasText: FOLDER } ) ).toBeVisible();
 
+		await page.locator( 'summary.mvs-drive__newfolder-button' ).click(); // 2.6.0: New folder opens the field.
 		await page.locator( '#mvs-new-folder' ).fill( FOLDER );
 		await Promise.all( [
 			page.waitForNavigation( { waitUntil: 'networkidle' } ),
-			page.locator( '.mvs-drive__newfolder-button' ).click(),
+			page.locator( '.mvs-drive__newfolder button[type="submit"]' ).click(),
 		] );
 
 		const notice = page.locator( '.mvs-drive__notice, [role="status"]' );
@@ -287,7 +289,7 @@ echo get_role('subscriber')->has_cap('use_mvs_documents') ? 'YES' : 'no';
 
 		await autoLogin( page, MEMBER_A );
 		await openDrive( page );
-		await expect( page.locator( '.mvs-drive__newfolder' ) ).toBeVisible();
+		await expect( page.locator( '.mvs-drive__newfolder-toggle' ) ).toBeVisible();
 	} );
 
 	test( '§4 Master toggle off removes routes; on restores', async ( { page, request } ) => {
@@ -314,7 +316,7 @@ echo $n;
 
 		await autoLogin( page, MEMBER_A );
 		await openDrive( page );
-		await expect( page.locator( '.mvs-drive__newfolder' ) ).toBeVisible();
+		await expect( page.locator( '.mvs-drive__newfolder-toggle' ) ).toBeVisible();
 	} );
 
 	test( '§1.5 Move document to drive root', async ( { page } ) => {
@@ -366,10 +368,11 @@ echo $n;
 			await page.waitForLoadState( 'networkidle' );
 		}
 
+		await page.locator( 'summary.mvs-drive__newfolder-button' ).click(); // 2.6.0: New folder opens the field.
 		await page.locator( '#mvs-new-folder' ).fill( child );
 		await Promise.all( [
 			page.waitForNavigation( { waitUntil: 'networkidle' } ),
-			page.locator( '.mvs-drive__newfolder-button' ).click(),
+			page.locator( '.mvs-drive__newfolder button[type="submit"]' ).click(),
 		] );
 
 		const childLink = page.locator( `a.mvs-drive__name`, { hasText: child } );
