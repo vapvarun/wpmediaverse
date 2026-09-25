@@ -34,14 +34,10 @@ function gmtToMs( s ) {
 // interactivity state by TemplateHelpers::media_social_i18n_state() via
 // wp_interactivity_state(); read them as `state.i18n.<key>` with an English
 // fallback. Basecamp 10073528834.
-const REACTION_TYPES = {
-	like: '\u{1F44D}',
-	love: '\u{2764}\u{FE0F}',
-	haha: '\u{1F602}',
-	wow: '\u{1F62E}',
-	sad: '\u{1F622}',
-	angry: '\u{1F621}',
-};
+// Reactions render as the vendored Microsoft Fluent emoji SVGs (the same set as
+// BuddyNext) so they look identical on every platform; state.emojiBase is seeded
+// by TemplateHelpers::media_social_i18n_state().
+const REACTION_TYPES = [ 'like', 'love', 'haha', 'wow', 'sad', 'angry' ];
 
 const sharedUI = store( 'mvs/shared-ui' );
 
@@ -57,9 +53,9 @@ async function fetchReactions( ctx ) {
 		const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions' );
 		const data = res.data;
 		ctx.userReaction = data.user_reaction || '';
-		ctx.reactions = Object.keys( REACTION_TYPES ).map( ( type ) => ( {
+		ctx.reactions = REACTION_TYPES.map( ( type ) => ( {
 			type,
-			emoji: REACTION_TYPES[ type ],
+			icon: ( state.emojiBase || '' ) + type + '.svg',
 			count: data.counts?.[ type ] || 0,
 			active: data.user_reaction === type,
 		} ) );

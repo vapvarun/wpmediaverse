@@ -19,6 +19,10 @@ const I18N = config.i18n || {};
 const __ = ( str ) => ( Object.prototype.hasOwnProperty.call( I18N, str ) ? I18N[ str ] : str );
 
 const REST   = config.restBase || '/wp-json/mvs/v1';
+// Known reaction characters -> vendored Fluent emoji files, so chat reactions
+// look like media reactions on every platform. Anything else stays text.
+const EMOJI_FILES = { '\u{1F44D}': 'like', '\u{2764}\u{FE0F}': 'love', '\u{2764}': 'love', '\u{1F602}': 'haha', '\u{1F62E}': 'wow', '\u{1F622}': 'sad', '\u{1F621}': 'angry' };
+const emojiIcon = ( ch ) => ( EMOJI_FILES[ ch ] && config.emojiBase ) ? config.emojiBase + EMOJI_FILES[ ch ] + '.svg' : '';
 const NONCE  = config.nonce || '';
 const ME     = config.currentUser || {};
 const TRANSPORT = config.transport || { type: 'polling', intervals: { active: 3000, list: 10000, background: 30000 } };
@@ -226,13 +230,14 @@ function enrichMessage( msg ) {
 			// DM `mine` is the complete who-reacted signal, and it also drives the
 			// tap-to-remove toggle below.
 			const label = mine
-				? __( 'You reacted — tap to remove', 'wpmediaverse' )
+				? __( 'You reacted. Tap to remove.', 'wpmediaverse' )
 				: __( 'Reacted', 'wpmediaverse' );
 			// messageId is carried onto the reaction so the pill — which lives
 			// inside data-wp-each="reactions" where context.item is the reaction,
 			// not the message — can resolve its own message. Plain camelCase: the
 			// Interactivity each does not track underscore-prefixed props.
-			return { ...r, mine, notMine: ! mine, reactedByLabel: label, messageId: msg.id };
+			const icon = emojiIcon( r.emoji );
+			return { ...r, mine, notMine: ! mine, reactedByLabel: label, messageId: msg.id, icon, noIcon: ! icon };
 		} );
 	}
 	msg.notText    = msg.message_type !== 'text';

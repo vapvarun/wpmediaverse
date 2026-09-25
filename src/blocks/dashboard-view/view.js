@@ -550,9 +550,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// straight from the database, lowercase and untranslated, directly
 			// above a picker calling the same state "Members: logged-in users
 			// only". Basecamp 10290748981.
+			// Short word only ("Members", not "Members: logged-in users only"),
+			// the same rule as TemplateHelpers::privacy_short_label().
 			const slug = getContext().item?.privacy || 'public';
 			const map = state.i18n?.privacyLabels || {};
-			return map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' );
+			const label = map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' );
+			return label.split( ':' )[ 0 ].trim();
 		},
 		get albumItemCount() {
 			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );

@@ -14,19 +14,10 @@ defined( 'ABSPATH' ) || exit;
 // Logged-out: show a "Log in to upload" CTA instead of a blank gap on the page.
 if ( ! is_user_logged_in() ) {
 	// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML; the __()/wp_login_url() values are data it escapes.
-	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
-		array(
-			'icon'    => 'upload',
-			'title'   => __( 'Log in to upload', 'wpmediaverse' ),
-			'message' => __( 'You need an account to share media.', 'wpmediaverse' ),
-			'actions' => array(
-				array(
-					'url'     => wp_login_url( get_permalink() ),
-					'label'   => __( 'Log in', 'wpmediaverse' ),
-					'variant' => 'primary',
-				),
-			),
-		)
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+		'upload',
+		__( 'Log in to upload', 'wpmediaverse' ),
+		__( 'You need an account to share media.', 'wpmediaverse' )
 	);
 	// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;

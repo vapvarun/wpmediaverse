@@ -659,7 +659,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<!-- Previously split across .mvs-social-bar + sticky .mvs-social-actions; the sticky -->
 			<!-- bar overlapped the chat FAB on mobile and wasted vertical space. -->
 			<div class="mvs-social-bar">
-				<div class="mvs-reactions<?php echo ! is_user_logged_in() ? ' mvs-reactions--readonly' : ''; ?>"
+				<div class="mvs-reactions"
 					role="group" aria-label="<?php esc_attr_e( 'Reactions', 'wpmediaverse' ); ?>">
 					<template data-wp-each="context.reactions">
 						<?php
@@ -675,8 +675,8 @@ $mvs_archive_url = home_url( '/media/' );
 							data-wp-bind--data-reaction-type="context.item.type"
 							data-wp-bind--aria-label="context.item.type"
 							data-wp-on--click="actions.toggleReaction">
-							<span class="mvs-reaction-emoji" data-wp-text="context.item.emoji"></span>
-							<span class="mvs-count" data-wp-text="context.item.count"></span>
+							<img class="mvs-reaction-emoji" data-wp-bind--src="context.item.icon" alt="" width="20" height="20" />
+							<span class="mvs-count" data-wp-text="context.item.count" data-wp-bind--hidden="!context.item.count"></span>
 						</button>
 					</template>
 				</div>

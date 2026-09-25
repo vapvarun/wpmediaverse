@@ -67,8 +67,11 @@
 	height: var(--mvs-fab-diameter);
 	padding: 0;
 	border-radius: 50%;
-	background: var(--mvs-primary);
-	color: #fff;
+	/* The contrast-safe button pair every primary button uses. A fixed white
+	   icon on --mvs-primary went pale-on-pale in dark mode, where the primary
+	   turns light. */
+	background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+	color: var(--mvs-btn-primary-fg, #fff);
 	border: none;
 	cursor: pointer;
 	display: flex;
@@ -81,7 +84,7 @@
 .mvs-fab:hover {
 	transform: scale(1.1);
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-	background: var(--mvs-primary-hover);
+	background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover));
 }
 
 .mvs-fab:active {

@@ -60,7 +60,20 @@ defined( 'ABSPATH' ) || exit;
 				echo wp_interactivity_data_wp_context( array( 'emoji' => $emoji ) );
 				?>
 				type="button"
-			><?php echo esc_html( $emoji ); ?></button>
+				aria-label="<?php echo esc_attr( $emoji ); ?>"
+			>
+				<?php
+				$mvs_emoji_slug = array(
+					"\xE2\x9D\xA4\xEF\xB8\x8F" => 'love',
+					"\xF0\x9F\x98\x82"         => 'haha',
+					"\xF0\x9F\x98\xAE"         => 'wow',
+					"\xF0\x9F\x98\xA2"         => 'sad',
+					"\xF0\x9F\x98\xA1"         => 'angry',
+					"\xF0\x9F\x91\x8D"         => 'like',
+				)[ $emoji ] ?? '';
+				?>
+				<img src="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::emoji_url( $mvs_emoji_slug ) ); ?>" alt="" width="20" height="20" />
+			</button>
 		<?php endforeach; ?>
 		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" fill="currentColor"/></svg>
@@ -163,7 +176,8 @@ defined( 'ABSPATH' ) || exit;
 				data-wp-bind--aria-pressed="context.item.mine"
 				type="button"
 			>
-				<span data-wp-text="context.item.emoji"></span>
+				<img class="mvs-chat-msg__reaction-icon" data-wp-bind--src="context.item.icon" data-wp-bind--hidden="context.item.noIcon" alt="" width="16" height="16" />
+				<span data-wp-text="context.item.emoji" data-wp-bind--hidden="context.item.icon"></span>
 				<span class="mvs-chat-msg__reaction-count" data-wp-text="context.item.count"></span>
 			</button>
 		</template>

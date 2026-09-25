@@ -1570,6 +1570,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const ctx = getContext();
 			const type = event.target.closest( '[data-reaction]' )?.dataset.reaction;
 			if ( ! type || ! state.lightboxMediaId ) return;
+			if ( ! state.currentUserId ) {
+				actions.showToast( state.i18n?.loginToReact || 'Please log in to react.', 'error' );
+				return;
+			}
 			const isActive = state.lightboxUserReaction === type;
 			try {
 				await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/reactions', {

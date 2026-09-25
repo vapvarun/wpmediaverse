@@ -907,9 +907,10 @@ wp_interactivity_state(
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 								data-wp-bind--hidden="!context.item.can_edit"
 								data-wp-on--click="actions.openEditModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+							<button class="mvs-btn mvs-btn--small mvs-dashboard-card-delete" type="button"
 								data-wp-bind--hidden="!context.item.can_delete"
-								data-wp-on--click="actions.confirmDeleteMedia"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+								data-wp-on--click="actions.confirmDeleteMedia"
+								aria-label="<?php esc_attr_e( 'Delete this media', 'wpmediaverse' ); ?>" data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 						</div>
 					</div>
 				</div>
@@ -1016,8 +1017,9 @@ wp_interactivity_state(
 						<div class="mvs-dashboard-card-actions">
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 								data-wp-on--click="actions.openAlbumModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-								data-wp-on--click="actions.confirmDeleteAlbum"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+							<button class="mvs-btn mvs-btn--small mvs-dashboard-card-delete" type="button"
+								data-wp-on--click="actions.confirmDeleteAlbum"
+								aria-label="<?php esc_attr_e( 'Delete this album', 'wpmediaverse' ); ?>" data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 						</div>
 					</div>
 				</div>
@@ -1252,8 +1254,9 @@ wp_interactivity_state(
 						<div class="mvs-dashboard-card-actions">
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 								data-wp-on--click="actions.openEditCollection"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-								data-wp-on--click="actions.confirmDeleteCollection"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+							<button class="mvs-btn mvs-btn--small mvs-dashboard-card-delete" type="button"
+								data-wp-on--click="actions.confirmDeleteCollection"
+								aria-label="<?php esc_attr_e( 'Delete this collection', 'wpmediaverse' ); ?>" data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 						</div>
 					</div>
 				</div>

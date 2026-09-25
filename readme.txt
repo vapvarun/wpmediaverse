@@ -120,6 +120,10 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 7. **BuddyPress Profile** - Media tab on user profiles with album support.
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
+== Credits ==
+
+Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
+
 == Changelog ==
 
 = 2.5.1 - September 2026 =

@@ -52,28 +52,6 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 			$items = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, 100 );
 		}
 
-		$rules = $service->get_rules( $collection_id );
-
-		// Resolve rule values to human-readable names.
-		foreach ( $rules as &$rule ) {
-			if ( 'tag' === $rule['key'] ) {
-				$term = get_term( (int) $rule['value'], 'mvs_tag' );
-				if ( $term && ! is_wp_error( $term ) ) {
-					$rule['value'] = $term->name;
-				}
-			} elseif ( 'category' === $rule['key'] ) {
-				$term = get_term( (int) $rule['value'], 'mvs_category' );
-				if ( $term && ! is_wp_error( $term ) ) {
-					$rule['value'] = $term->name;
-				}
-			} elseif ( 'author' === $rule['key'] ) {
-				$user = get_userdata( (int) $rule['value'] );
-				if ( $user ) {
-					$rule['value'] = $user->display_name;
-				}
-			}
-		}
-		unset( $rule );
 		?>
 
 		<article id="mvs-collection-<?php the_ID(); ?>" <?php post_class( 'mvs-collection-article' ); ?>>
@@ -104,12 +82,7 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 						);
 						?>
 					</span>
-					<span class="mvs-collection-type-badge"><?php echo esc_html( $collection_type ); ?></span>
-					<?php if ( 'smart' === $collection_type && ! empty( $rules ) ) : ?>
-						<?php foreach ( $rules as $rule ) : ?>
-							<span class="mvs-rule-pill"><?php echo esc_html( $rule['key'] . ': ' . $rule['value'] ); ?></span>
-						<?php endforeach; ?>
-					<?php endif; ?>
+					<?php // Manual vs smart and the matching rules are curation settings (edited in wp-admin); visitors only see the result. ?>
 				</div>
 				<?php if ( get_the_content() ) : ?>
 					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>

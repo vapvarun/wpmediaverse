@@ -432,65 +432,11 @@ class Shortcodes {
 	 */
 	public function render_dashboard( $atts ): string {
 		if ( ! is_user_logged_in() ) {
-			$return_url = get_permalink();
-			$login_url  = \WPMediaVerse\Core\TemplateHelpers::login_url( $return_url );
-			$signup_url = function_exists( 'wc_registration_url' )
-				? wc_registration_url( $return_url )
-				: wp_registration_url();
-
-			ob_start();
-			?>
-			<div class="mvs-auth-gate">
-				<div class="mvs-auth-gate__card">
-					<div class="mvs-auth-gate__glyph" aria-hidden="true">
-						<i data-lucide="layout-dashboard"></i>
-					</div>
-					<h2 class="mvs-auth-gate__title">
-						<?php esc_html_e( 'Your creative space awaits', 'wpmediaverse' ); ?>
-					</h2>
-					<p class="mvs-auth-gate__lede">
-						<?php esc_html_e( 'Sign in to manage your uploads, curate albums, track stats, and follow the creators you love.', 'wpmediaverse' ); ?>
-					</p>
-					<ul class="mvs-auth-gate__benefits">
-						<li>
-							<span class="mvs-auth-gate__benefit-icon" aria-hidden="true">
-								<i data-lucide="folder-open"></i>
-							</span>
-							<span><?php esc_html_e( 'Organize uploads in albums &amp; collections', 'wpmediaverse' ); ?></span>
-						</li>
-						<li>
-							<span class="mvs-auth-gate__benefit-icon" aria-hidden="true">
-								<i data-lucide="heart"></i>
-							</span>
-							<span><?php esc_html_e( 'Save favorites and follow creators', 'wpmediaverse' ); ?></span>
-						</li>
-						<li>
-							<span class="mvs-auth-gate__benefit-icon" aria-hidden="true">
-								<i data-lucide="bar-chart-3"></i>
-							</span>
-							<span><?php esc_html_e( 'Track views, reactions and comments', 'wpmediaverse' ); ?></span>
-						</li>
-					</ul>
-					<div class="mvs-auth-gate__actions">
-						<a class="mvs-btn mvs-btn--primary mvs-auth-gate__primary" href="<?php echo esc_url( $login_url ); ?>">
-							<?php esc_html_e( 'Log in to continue', 'wpmediaverse' ); ?>
-						</a>
-						<?php if ( get_option( 'users_can_register' ) && $signup_url ) : ?>
-							<a class="mvs-auth-gate__secondary" href="<?php echo esc_url( $signup_url ); ?>">
-								<?php
-								printf(
-									/* translators: %s: emphasised "Sign up free" link text. */
-									esc_html__( 'No account yet? %s', 'wpmediaverse' ),
-									'<strong>' . esc_html__( 'Create one — it\'s free.', 'wpmediaverse' ) . '</strong>'
-								);
-								?>
-							</a>
-						<?php endif; ?>
-					</div>
-				</div>
-			</div>
-			<?php
-			return (string) ob_get_clean();
+			return \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+				'layout-dashboard',
+				__( 'Log in to see your media', 'wpmediaverse' ),
+				__( 'Your uploads, albums and saved items live here.', 'wpmediaverse' )
+			);
 		}
 
 		wp_enqueue_style( 'mvs-frontend' );

@@ -1872,3 +1872,16 @@ body.dark-mode {
 .mvs-chat-header__menu {
     position: relative;
 }
+
+/* Chat reactions use the same Fluent emoji SVGs as media reactions. */
+.mvs-chat-msg__context-btn img {
+	display: block;
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+}
+
+.mvs-chat-msg__reaction-icon {
+	display: block;
+	inline-size: 1rem;
+	block-size: 1rem;
+}

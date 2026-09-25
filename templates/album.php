@@ -101,8 +101,17 @@ $mvs_archive_url = home_url( '/media/' );
 						);
 						?>
 					</span>
-					<span class="mvs-collection-type-badge"><?php echo esc_html( $album_type ? $album_type : 'album' ); ?></span>
-					<span class="mvs-privacy-badge"><?php echo esc_html( ucfirst( $album_privacy ) ); ?></span>
+					<?php
+					// Only what a viewer can use: "Playlist" when it is one, and the
+					// privacy word when it is not public. "DEFAULT" and the raw slug
+					// were internal values.
+					if ( 'playlist' === $album_type ) :
+						?>
+						<span class="mvs-collection-type-badge"><?php esc_html_e( 'Playlist', 'wpmediaverse' ); ?></span>
+					<?php endif; ?>
+					<?php if ( 'public' !== $album_privacy ) : ?>
+						<span class="mvs-privacy-badge"><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_short_label( (string) $album_privacy ) ); ?></span>
+					<?php endif; ?>
 
 				</div>
 				<?php if ( get_the_content() ) : ?>

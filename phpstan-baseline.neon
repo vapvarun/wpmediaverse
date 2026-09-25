@@ -237,6 +237,11 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 3
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
 			path: includes/Core/TemplateHelpers.php
 

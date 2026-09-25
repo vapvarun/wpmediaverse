@@ -3017,10 +3017,10 @@ a.mvs-dashboard-card-title:hover {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 10px;
-    font-size: 0.7em;
+    /* Sentence case, readable size: the badge says one plain word ("Members",
+       "Only me"), not a shouted label (2.6.0 member walk). */
+    font-size: 0.8em;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .mvs-privacy-badge--public {
@@ -5470,13 +5470,6 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-bg);
 }
 
-/* Read-only reactions for logged-out users */
-.mvs-reactions--readonly .mvs-reaction-btn {
-    cursor: default;
-    opacity: 0.7;
-    pointer-events: none;
-}
-
 .mvs-favorite-btn {
     padding: 5px 12px;
     border: 1px solid var(--mvs-border);
@@ -6746,9 +6739,18 @@ a.mvs-dashboard-card-title:hover {
         padding: 4px;
     }
 
+    /* The Media / People switch gets its own row on phones. It used to be
+       hidden here, which left People search unreachable on a phone. */
+    .mvs-search-bar {
+        flex-wrap: wrap;
+    }
+
     .mvs-search-mode {
-        display: none;
-        /* Collapsed on very small screens — defaults to media mode */
+        flex-basis: 100%;
+    }
+
+    .mvs-search-mode-btn {
+        flex: 1;
     }
 }
 
@@ -7097,7 +7099,11 @@ a.mvs-dashboard-card-title:hover {
     border: none;
     cursor: pointer;
     font-size: 13px;
-    padding: 6px 2px;
+    /* No side padding: the label needs the whole column. The font is the
+       theme's (inherited), so label width varies by site; "Download" filled its
+       52px box exactly on one theme and was cut to "Downlo..." while the
+       theme's web font was still loading (2.6.0 member walk). */
+    padding: 6px 0;
     text-align: center;
     border-radius: 6px;
     text-decoration: none;
@@ -7710,226 +7716,6 @@ a.mvs-dashboard-card-title:hover {
     margin-left: 8px;
 }
 
-/* -----------------------------------------------------------------------
-   Auth gate — premium empty-state shown on plugin pages that require login
-   (e.g. /my-media/ dashboard shortcode while logged out).
-   ----------------------------------------------------------------------- */
-.mvs-auth-gate {
-    display: flex;
-    justify-content: center;
-    padding: clamp(32px, 8vw, 96px) 16px;
-}
-
-.mvs-auth-gate__card {
-    position: relative;
-    width: 100%;
-    max-width: 560px;
-    padding: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 48px);
-    background: var(--mvs-surface, #fff);
-    border-radius: var(--mvs-radius-lg, 16px);
-    box-shadow:
-        0 1px 2px rgba(15, 23, 42, 0.04),
-        0 18px 48px -12px rgba(15, 23, 42, 0.18);
-    text-align: center;
-    overflow: hidden;
-    color: var(--mvs-primary-text, var(--mvs-primary));
-    box-sizing: border-box;
-}
-
-.mvs-auth-gate__card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 4px;
-    background: linear-gradient(90deg,
-        var(--mvs-primary, #0073aa) 0%,
-        #6a5acd 50%,
-        #ff6aa6 100%);
-}
-
-.mvs-auth-gate__card::after {
-    content: "";
-    position: absolute;
-    width: 280px;
-    height: 280px;
-    right: -120px;
-    top: -140px;
-    background: radial-gradient(circle,
-        rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08) 0%,
-        transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-}
-
-.mvs-auth-gate__glyph {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 88px;
-    height: 88px;
-    margin: 0 auto 20px;
-    border-radius: 50%;
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
-    color: var(--mvs-primary-text, var(--mvs-primary));
-    z-index: 1;
-}
-
-.mvs-auth-gate__glyph svg {
-    width: 44px;
-    height: 44px;
-    stroke-width: 1.75;
-}
-
-.mvs-auth-gate__title {
-    position: relative;
-    margin: 0 0 12px;
-    font-family: var(--mvs-font-heading, inherit);
-    font-size: clamp(22px, 2.6vw, 28px);
-    font-weight: 700;
-    line-height: 1.25;
-    color: var(--mvs-text, #1e1e1e);
-    z-index: 1;
-}
-
-.mvs-auth-gate__lede {
-    position: relative;
-    margin: 0 auto 28px;
-    max-width: 420px;
-    font-size: 15px;
-    line-height: 1.55;
-    color: var(--mvs-text-secondary, #646970);
-    z-index: 1;
-}
-
-.mvs-auth-gate__benefits {
-    position: relative;
-    list-style: none;
-    padding: 0;
-    margin: 0 0 32px;
-    text-align: left;
-    display: grid;
-    gap: 12px;
-    z-index: 1;
-}
-
-.mvs-auth-gate__benefits li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: var(--mvs-surface-2, #f6f7f7);
-    border-radius: var(--mvs-radius-md, 10px);
-    font-size: 14px;
-    color: var(--mvs-text, #1e1e1e);
-    line-height: 1.4;
-}
-
-.mvs-auth-gate__benefit-icon {
-    flex: 0 0 36px;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--mvs-surface, #fff);
-    border-radius: 50%;
-    color: var(--mvs-primary-text, var(--mvs-primary));
-    line-height: 1;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.mvs-auth-gate__benefit-icon svg {
-    width: 18px;
-    height: 18px;
-    stroke-width: 2;
-}
-
-.mvs-auth-gate__actions {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    z-index: 1;
-}
-
-.mvs-auth-gate__primary {
-    min-width: 240px;
-    padding: 12px 28px;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-.mvs-auth-gate__secondary {
-    font-size: 14px;
-    /* --mvs-text-secondary measured 3.52:1 on the gate's own background, under
-       the 4.5 floor for text, and the link was 18.2px tall against a 40px
-       contract - the earlier pass fixed the PRIMARY call to action on this gate
-       and stopped there (QA re-verify, Basecamp 10252222150).
-       Body text colour carries the contrast; inline-flex + min-height give the
-       control a real hit area without turning it into a button. */
-    color: var(--mvs-text, #1e1e1e);
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--mvs-touch-min, 40px);
-    text-decoration: none;
-    transition: color 150ms ease;
-}
-
-.mvs-auth-gate__secondary:hover,
-.mvs-auth-gate__secondary:focus-visible {
-    color: var(--mvs-primary-text, var(--mvs-primary));
-}
-
-.mvs-auth-gate__secondary strong {
-    color: var(--mvs-primary-text, var(--mvs-primary));
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-@media (max-width: 640px) {
-    .mvs-auth-gate {
-        padding: 24px 12px 48px;
-    }
-    .mvs-auth-gate__card {
-        padding: 28px 20px 32px;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -8px rgba(15, 23, 42, 0.15);
-    }
-    .mvs-auth-gate__glyph {
-        width: 72px;
-        height: 72px;
-        margin-bottom: 16px;
-    }
-    .mvs-auth-gate__glyph svg {
-        width: 44px;
-        height: 44px;
-    }
-    .mvs-auth-gate__primary {
-        width: 100%;
-        min-width: 0;
-    }
-}
-
-/* Dark-mode auth-gate card. The earlier `prefers-color-scheme` media query
-   here was removed (per Jetonomy 2026-04-29 lesson — theme-class is the
-   single source of truth for dark mode; OS-level pref races with the theme
-   toggle and produces inconsistent state when a user is on a light theme
-   with a dark OS or vice versa). Hooks the same dark-mode selector group
-   defined at the top of the file so any theme that flips dark mode via
-   class also flips this card. */
-[data-theme="dark"] .mvs-auth-gate__card,
-[data-bx-mode="dark"] .mvs-auth-gate__card,
-html.dark-mode .mvs-auth-gate__card,
-body.dark-mode .mvs-auth-gate__card {
-    background: var(--mvs-surface, #1e1e1e);
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.2),
-        0 18px 48px -12px rgba(0, 0, 0, 0.55);
-}
-
 /* Album cover hint inside FAB upload modal (album mode, files selected). */
 .mvs-modal-album-cover-hint {
     display: flex;
@@ -8372,6 +8158,9 @@ button.mvs-follows-open,
 .mvs-documents__chip {
 	display: inline-flex;
 	align-items: center;
+	/* Size to the label, not the fixed type column: as a grid item it
+	   stretched to the column width and "PDF" sat in a ~110px pill. */
+	justify-self: start;
 	/* Containment only. The ellipsis lives on the inner span: this element is
 	   display:inline-flex, and text-overflow does not apply to the anonymous
 	   flex item a bare text node becomes - so declaring it here did nothing but
@@ -9122,4 +8911,41 @@ a.mvs-dashboard-tab:focus-visible {
 .mvs-upload-meta-tags,
 .mvs-upload-meta-privacy {
     min-height: var(--mvs-touch-min);
+}
+
+/* Reactions render as vendored Fluent emoji SVGs (assets/emoji), the same set as
+   BuddyNext, so they look identical on every platform. One size for every
+   reaction surface. */
+.mvs-reaction-emoji,
+.mvs-lightbox-reaction img {
+    display: block;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    flex: none;
+}
+
+/* My Media card Delete: a quiet icon button that turns red on hover/focus,
+   pushed to the end of the row. A solid red Delete on every card made the
+   destructive action the loudest thing on the page (2.6.0 member walk). The
+   confirm dialog is unchanged. */
+.mvs-dashboard-card-delete {
+    margin-inline-start: auto;
+    min-inline-size: var(--mvs-touch-min, 44px);
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--mvs-border);
+    color: var(--mvs-text-secondary);
+}
+
+.mvs-dashboard-card-delete:hover,
+.mvs-dashboard-card-delete:focus-visible {
+    color: var(--mvs-danger);
+    border-color: var(--mvs-danger);
+    background: transparent;
+}
+
+.mvs-dashboard-card-delete i,
+.mvs-dashboard-card-delete svg {
+    inline-size: 16px;
+    block-size: 16px;
 }

@@ -741,8 +741,7 @@ class TemplateLoader {
 		add_filter(
 			'document_title_parts',
 			function ( $title ) use ( $media ) {
-				$title['title'] = $media['title'] ?: __( 'Media', 'wpmediaverse' );
-				return $title;
+				return self::title_parts( (array) $title, $media['title'] ?: __( 'Media', 'wpmediaverse' ) );
 			}
 		);
 
@@ -809,6 +808,27 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Title parts for a MediaVerse route: the page title plus the site name.
+	 *
+	 * These routes are virtual, so WordPress reads them as the blog home and
+	 * drops the site name (and adds the tagline) from the tab title: a media
+	 * page showed just "Coffee Cheers". Every route filter goes through here so
+	 * they all read "Page - Site" like the theme's own pages (2.6.0).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param array  $parts Title parts from document_title_parts.
+	 * @param string $title Page title.
+	 * @return array
+	 */
+	public static function title_parts( array $parts, string $title ): array {
+		unset( $parts['tagline'] );
+		$parts['title'] = $title;
+		$parts['site']  = get_bloginfo( 'name', 'display' );
+		return $parts;
+	}
+
+	/**
 	 * Point active SEO plugins at a virtual route's real title + canonical.
 	 *
 	 * These routes emit a custom query var (mvs_media_archive / mvs_profile_user
@@ -855,8 +875,7 @@ class TemplateLoader {
 		add_filter(
 			'document_title_parts',
 			function ( $title ) {
-				$title['title'] = __( 'Explore Media', 'wpmediaverse' );
-				return $title;
+				return self::title_parts( (array) $title, __( 'Explore Media', 'wpmediaverse' ) );
 			}
 		);
 		$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
@@ -897,8 +916,7 @@ class TemplateLoader {
 			'document_title_parts',
 			function ( $title ) use ( $user ) {
 				/* translators: %s: user display name */
-				$title['title'] = sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name );
-				return $title;
+				return self::title_parts( (array) $title, sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name ) );
 			}
 		);
 		/* translators: %s: user display name */
@@ -926,8 +944,7 @@ class TemplateLoader {
 		add_filter(
 			'document_title_parts',
 			function ( $title ) {
-				$title['title'] = __( 'Edit Profile', 'wpmediaverse' );
-				return $title;
+				return self::title_parts( (array) $title, __( 'Edit Profile', 'wpmediaverse' ) );
 			}
 		);
 		$this->apply_seo_overrides( __( 'Edit Profile', 'wpmediaverse' ) );

@@ -2553,6 +2553,9 @@ class Plugin {
 		$user   = wp_get_current_user();
 		$config = array(
 			'restBase'       => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			// Fluent emoji folder: known reaction characters render as the same
+			// SVGs as media reactions (messaging.js EMOJI_FILES).
+			'emojiBase'      => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
 			// Group DM management (create/rename/add/remove/leave) lives in Pro's
 			// GroupController. Free renders group threads on its own (title,
 			// roster, sender names via /mvs/v1/me/conversations), but only Pro
@@ -2584,7 +2587,7 @@ class Plugin {
 				'Uploading %s…'                        => __( 'Uploading %s…', 'wpmediaverse' ),
 				'Only image, video, and audio files can be shared in messages.' => __( 'Only image, video, and audio files can be shared in messages.', 'wpmediaverse' ),
 				'Microphone access denied'             => __( 'Microphone access denied', 'wpmediaverse' ),
-				'You reacted — tap to remove'          => __( 'You reacted — tap to remove', 'wpmediaverse' ),
+				'You reacted. Tap to remove.'          => __( 'You reacted. Tap to remove.', 'wpmediaverse' ),
 				'Reacted'                              => __( 'Reacted', 'wpmediaverse' ),
 				// Sidebar preview placeholders for attachment-only messages —
 				// mirror MessagingService::build_message_preview() (card 10127764989).
@@ -3277,6 +3280,13 @@ JS;
 				if ( apply_filters( 'mvs_buddynext_active', false ) ) {
 					return;
 				}
+
+				add_filter(
+					'document_title_parts',
+					static function ( $parts ) {
+						return \WPMediaVerse\Core\TemplateLoader::title_parts( (array) $parts, __( 'Messages', 'wpmediaverse' ) );
+					}
+				);
 
 				$template = \WPMediaVerse\Core\TemplateLoader::locate( 'messages.php' );
 				if ( ! $template ) {

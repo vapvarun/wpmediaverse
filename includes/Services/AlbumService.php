@@ -431,17 +431,20 @@ class AlbumService {
 	 * @return array<int, array> Numerically-indexed list of media rows in album order.
 	 */
 	public function get_items_with_data( int $album_id, string $status = 'publish' ): array {
-		$items = $this->get_items( $album_id );
-		if ( empty( $items ) ) {
+		// Only what the viewer may open (viewable_item_ids(), the one rule). The
+		// album page used get_items() directly, so a private or group-only item
+		// in someone's public album showed as a broken tile with its title, and
+		// counted in "N items" (2.6.0 member walk).
+		$media_ids = $this->viewable_item_ids( $album_id );
+		if ( empty( $media_ids ) ) {
 			return array();
 		}
 
-		$media_ids = array_column( $items, 'media_id' );
-		$rows      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( $media_ids );
+		$rows = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( $media_ids );
 
 		$ordered = array();
-		foreach ( $items as $item ) {
-			$mid = (int) $item['media_id'];
+		foreach ( $media_ids as $mid ) {
+			$mid = (int) $mid;
 			if ( ! isset( $rows[ $mid ] ) ) {
 				continue;
 			}

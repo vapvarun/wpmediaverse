@@ -598,6 +598,36 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * URL of a vendored Microsoft Fluent emoji (assets/emoji/<slug>.svg).
+	 *
+	 * Reactions render as these SVGs, the same set BuddyNext uses, so a
+	 * reaction looks the same on every platform instead of depending on the
+	 * OS emoji font (2.6.0). Unknown slugs return ''.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $slug like|love|haha|wow|sad|angry|fire.
+	 * @return string
+	 */
+	public static function emoji_url( string $slug ): string {
+		$slug = sanitize_key( $slug );
+		if ( '' === $slug || ! file_exists( MVS_PLUGIN_DIR . 'assets/emoji/' . $slug . '.svg' ) ) {
+			return '';
+		}
+		return MVS_PLUGIN_URL . 'assets/emoji/' . $slug . '.svg';
+	}
+
+	/**
+	 * Base URL of the vendored emoji folder, for stores that build
+	 * `<base><slug>.svg` client-side.
+	 *
+	 * @since 2.6.0
+	 */
+	public static function emoji_base_url(): string {
+		return MVS_PLUGIN_URL . 'assets/emoji/';
+	}
+
+	/**
 	 * Privacy level labels, in display order.
 	 *
 	 * One source for every privacy picker. Before this there were four different
@@ -619,9 +649,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$labels = array(
 			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
 			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
-			/* translators: shown for items stored at the legacy 'loggedin' level, which behaves exactly like Members. */
-			'loggedin' => __( 'Members: logged-in users only (legacy)', 'wpmediaverse' ),
-			'friends'  => __( 'Friends: BuddyPress friends only', 'wpmediaverse' ),
+			// The old 'loggedin' level behaves exactly like Members, so it reads the
+			// same; "(legacy)" was internal history shown to members.
+			'loggedin' => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'friends'  => __( 'Friends: your friends only', 'wpmediaverse' ),
 			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
 			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
 			'private'  => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
@@ -656,6 +687,23 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		return ucfirst( str_replace( '_', ' ', $privacy ) );
+	}
+
+	/**
+	 * Short badge word for a privacy level: the part of its label before the
+	 * colon ("Public", "Members", "Only me"). One rule, so a level added through
+	 * mvs_privacy_labels gets a short form too; a label without a colon is used
+	 * whole.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $privacy Stored level.
+	 * @return string
+	 */
+	public static function privacy_short_label( string $privacy ): string {
+		$label = self::privacy_label( $privacy );
+		$colon = strpos( $label, ':' );
+		return false === $colon ? $label : trim( substr( $label, 0, $colon ) );
 	}
 
 	/**
@@ -1653,6 +1701,46 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * The one visitor sign-in prompt: icon, one line, Log in, and Create an
+	 * account when registration is open. My Media, Upload and every other
+	 * member-only surface use this, so a visitor meets one pattern instead of
+	 * three (2.6.0 member walk).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $icon    Lucide icon name.
+	 * @param string $title   Heading, e.g. "Log in to upload".
+	 * @param string $message One plain line.
+	 * @return string Escaped HTML.
+	 */
+	public function render_login_gate( string $icon, string $title, string $message ): string {
+		$return  = (string) get_permalink();
+		$actions = array(
+			array(
+				'url'     => self::login_url( $return ),
+				'label'   => __( 'Log in', 'wpmediaverse' ),
+				'variant' => 'primary',
+			),
+		);
+		if ( get_option( 'users_can_register' ) ) {
+			$actions[] = array(
+				'url'     => function_exists( 'wc_registration_url' ) ? wc_registration_url( $return ) : wp_registration_url(),
+				'label'   => __( 'Create an account', 'wpmediaverse' ),
+				'variant' => 'secondary',
+			);
+		}
+
+		return $this->render_block_empty_state(
+			array(
+				'icon'    => $icon,
+				'title'   => $title,
+				'message' => $message,
+				'actions' => $actions,
+			)
+		);
+	}
+
+	/**
 	 * Render a frontend / block empty-state panel (Coding Rule #11).
 	 *
 	 * One canonical empty state for every front-end "nothing here yet" surface,
@@ -2113,7 +2201,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		wp_interactivity_state(
 			'mvs/media-social',
 			array(
-				'i18n' => array(
+				'emojiBase' => self::emoji_base_url(),
+				'i18n'      => array(
 					// Reactions.
 					'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
 					'reactionSaveFailed'   => __( 'Could not save reaction.', 'wpmediaverse' ),
