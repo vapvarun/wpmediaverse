@@ -25,9 +25,6 @@ This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom p
 | **Google Cloud Vision** | Pro | Advanced image labeling, object detection, safe search | -- | Yes |
 | **AWS Rekognition** | Pro | Face detection, content moderation, celebrity recognition | -- | Yes |
 | **OpenAI Whisper** | Pro | Automatic video/audio transcription to WebVTT captions | -- | Yes |
-| **MemberPress** | Pro | Auto-assign quota packages based on membership level | -- | Yes |
-| **Paid Memberships Pro** | Pro | Auto-assign quota packages based on PMPro level | -- | Yes |
-| **WooCommerce** | Pro | Sell upload quota packages as WooCommerce products | -- | Yes |
 | **WordPress Webhooks** | Free | Send real-time HTTP notifications on media events | Yes | Yes |
 
 ## Community & Social
@@ -162,33 +159,13 @@ Automatic speech-to-text transcription for video and audio uploads:
 
 **Setup:** Enable at **Media > Settings > Video > Auto-Captions** (uses the same OpenAI API key).
 
-## Monetization
+## Storage Limits
 
-### MemberPress **(Pro)**
-
-Automatically assign upload quota packages based on MemberPress membership levels.
-
-**How it works:**
-1. Create quota packages in **Media > Quotas** (e.g., "Free: 50 photos", "Premium: unlimited")
-2. Map each MemberPress membership to a quota package
-3. When a user purchases or is assigned a membership, their quota updates automatically
-4. When a membership expires, the user reverts to the default package
-
-### Paid Memberships Pro **(Pro)**
-
-Same automatic package assignment, but using PMPro membership levels instead of MemberPress.
-
-### WooCommerce **(Pro)**
-
-Sell upload quota packages as WooCommerce products:
-
-**How it works:**
-1. Create quota packages in **Media > Quotas**
-2. Create a WooCommerce product and map it to a quota package
-3. When a customer completes checkout, their quota package activates
-4. If the order is refunded or cancelled, the package reverts to default
-
-This lets you sell storage tiers directly from your WooCommerce store.
+MediaVerse is not a membership/commerce plugin, so it has no MemberPress, Paid Memberships Pro
+or WooCommerce integration for upload quotas - that whole system (packages, credits,
+membership-plugin mapping) was removed in 2.6.0. What replaces it is one optional storage
+allowance: set a **Fair-use storage limit per member (MB)** on **Settings > General** (0 = no
+limit), and optionally override it for one member on their wp-admin profile.
 
 ## Webhooks
 

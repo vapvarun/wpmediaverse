@@ -690,6 +690,36 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * "Used X of Y" for the signed-in member, only when a storage limit applies.
+	 *
+	 * Nothing renders for an unlimited member (the default): a usage box full
+	 * of "Unlimited" told them nothing (2.6.0 member walk).
+	 *
+	 * @since 2.6.0
+	 */
+	public static function render_storage_usage(): void {
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+		$usage = \WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->summary( $user_id );
+		if ( ! $usage['limit'] ) {
+			return;
+		}
+		printf(
+			'<p class="mvs-storage-usage" data-mvs-storage-usage>%s</p>',
+			esc_html(
+				sprintf(
+					/* translators: 1: storage used, 2: storage limit, e.g. "48 MB of 500 MB". */
+					__( 'Used %1$s of %2$s', 'wpmediaverse' ),
+					size_format( $usage['used'] ? $usage['used'] : 0, 1 ),
+					size_format( $usage['limit'], 1 )
+				)
+			)
+		);
+	}
+
+	/**
 	 * Short badge word for a privacy level: the part of its label before the
 	 * colon ("Public", "Members", "Only me"). One rule, so a level added through
 	 * mvs_privacy_labels gets a short form too; a label without a colon is used

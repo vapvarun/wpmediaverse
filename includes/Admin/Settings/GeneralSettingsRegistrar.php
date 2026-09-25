@@ -63,6 +63,28 @@ class GeneralSettingsRegistrar {
 			)
 		);
 
+		// Fair-use storage limit per member (2.6.0). 0 = no limit, the default.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_general',
+			\WPMediaVerse\Services\StorageLimitService::OPTION,
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
+		);
+		FieldRenderer::add_field(
+			\WPMediaVerse\Services\StorageLimitService::OPTION,
+			__( 'Fair-use storage limit per member (MB)', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_number_field' ),
+			SettingsPage::PAGE_SLUG . '-general',
+			'mvs_general',
+			array(
+				'option'      => \WPMediaVerse\Services\StorageLimitService::OPTION,
+				'description' => __( 'Stops one account from filling the server. Leave at 0 unless you need it. You can give one member a different limit on their user profile.', 'wpmediaverse' ),
+			)
+		);
+
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
 			'mvs_allowed_file_types',

@@ -26,133 +26,19 @@ Some feature areas only register their routes when the matching admin toggle is 
 
 ---
 
-## Quota & Credits
+## Storage Limits
 
-User-facing quota summaries plus admin package/credit management and the signed external top-up webhook.
+Quota packages, credits, the paid-credit webhook and the `mvs-pro/v1` quota/package/credit
+routes documented on this page in earlier versions were all removed in 2.6.0 - MediaVerse is
+not a membership/commerce plugin.
 
-### GET /me/quota
-
-Return the current user's quota summary (per-type usage and limits for image, video, audio).
-
-**Auth:** User
-
----
-
-### GET /me/quota/check
-
-Lightweight pre-upload check: can the current user upload a given media type (and optional file size) right now?
-
-**Auth:** User
-
-**Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `media_type` | string | Yes | — | One of `image`, `video`, `audio` |
-| `file_size` | int | No | `0` | Size in bytes, for storage-limit checks |
-
-**Response:**
-
-```json
-{ "can_upload": true, "reason": "" }
-```
-
----
-
-### GET /me/credits/history
-
-Return the current user's credit transaction history.
-
-**Auth:** User
-
----
-
-### GET /users/{user_id}/quota
-
-Get a specific user's quota summary.
-
-**Auth:** Admin
-
----
-
-### POST /users/{user_id}/package
-
-Assign a quota package to a user.
-
-**Auth:** Admin
-
-**Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `package_id` | int | Yes | Package to assign |
-
----
-
-### POST /users/{user_id}/credits
-
-Grant extra upload credits to a user for a specific media type.
-
-**Auth:** Admin
-
-**Body:**
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `media_type` | string | Yes | — | One of `image`, `video`, `audio` |
-| `amount` | int | Yes | — | Credits to add (min `1`) |
-| `note` | string | No | `""` | Optional ledger note |
-
----
-
-### GET /packages
-
-List all quota packages.
-
-**Auth:** Admin
-
----
-
-### POST /packages
-
-Create a quota package.
-
-**Auth:** Admin
-
-**Body:**
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | string | Yes | — | Package name |
-| `image_limit` | int | No | `0` | Image upload limit (0 = none) |
-| `video_limit` | int | No | `0` | Video upload limit |
-| `audio_limit` | int | No | `0` | Audio upload limit |
-| `storage_bytes` | int | No | `0` | Storage cap in bytes |
-| `is_default` | bool | No | `false` | Whether this is the default package |
-
----
-
-### PUT /packages/{id}
-
-Update a quota package.
-
-**Auth:** Admin
-
----
-
-### DELETE /packages/{id}
-
-Delete a quota package.
-
-**Auth:** Admin
-
----
-
-### POST /credits/webhook
-
-External credit top-up endpoint. Used by integrations that grant credits from an outside system.
-
-**Auth:** HMAC — the request is **not** cookie/capability authenticated. The handler verifies the `X-MVS-Signature` header against `hash_hmac( 'sha256', $body, $secret )` using `hash_equals()`. Requests with an invalid or missing signature are rejected.
+Storage limits are a **free-plugin** feature: one optional per-member MB allowance, not a Pro
+package system. Set it on **Settings > General > "Fair-use storage limit per member (MB)"**
+(0 = no limit); a site owner can give one member a different limit on that member's wp-admin
+profile (blank there means "use the site limit", 0 means "no limit for this member"). It is
+enforced on every upload path, including Pro's document uploads, through the free `mvs/v1`
+API - see `GET /me/storage` and `GET`/`PUT /users/{id}/storage` in the
+[main REST API reference](rest-api.md).
 
 ---
 

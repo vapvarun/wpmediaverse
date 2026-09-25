@@ -4,9 +4,11 @@
 
 
 
-MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video analytics, chapters and auto-captions, AI providers, quota management, and granular privacy controls.
+MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video analytics, chapters and auto-captions, AI providers, and granular privacy controls.
 
 > Pro does not transcode video. The FFmpeg pipeline was removed in 2.4.0 - MediaVerse embeds media, it does not process it. The player uses the original file.
+
+> Storage limits are not a Pro feature. Free's Settings > General has one optional "Fair-use storage limit per member (MB)" (0 = no limit), with a per-member override on the member's wp-admin profile. Pro's quota packages, credits and membership-plugin quota mapping were removed in 2.6.0 - see [Free vs Pro](../getting-started/free-vs-pro.md).
 
 ![MediaVerse Pro license key entry screen](../images/admin-overview.png)
 
@@ -73,7 +75,6 @@ The migration tool admin page is now a generic shell that hosts per-platform car
 | Watermarking | [watermarking.md](watermarking.md) | GD-based text and logo watermarks on media |
 | Video Analytics | [video-analytics.md](video-analytics.md) | Play event tracking, heatmaps, and retention reports |
 | AI Providers | [ai-providers.md](ai-providers.md) | Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) support |
-| Quotas | [quotas.md](quotas.md) | Per-user storage and count limits with membership integration |
 | Advanced Privacy | [advanced-privacy.md](advanced-privacy.md) | Multi-level privacy, presets, album inheritance, and bulk updates |
 | Connected Accounts | [connected-accounts.md](connected-accounts.md) | Connect Flickr to import/export photos and auto-push new uploads |
 | Stories | [stories.md](stories.md) | 24-hour ephemeral stories with a tap-to-advance viewer and "seen by" receipts |

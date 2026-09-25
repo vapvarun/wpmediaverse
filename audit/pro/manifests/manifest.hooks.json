@@ -758,17 +758,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_before_quota_check",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$args",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:537",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_captions_generated",
       "type": "action",
       "args_count": 2,
@@ -827,29 +816,9 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_credits_added",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "$user_id",
-        "$media_type",
-        "$amount",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:428",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_document_extraction_enabled",
       "type": "filter",
       "where": "includes/Documents/ExtractionService.php:200",
-      "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_pro_document_quota_precheck",
-      "type": "filter",
-      "where": "includes/Documents/DocumentIngestService.php:238",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
     },
@@ -894,178 +863,11 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_memberpress_package_assigned",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "$user_id",
-        "$membership_id",
-        "$package_id"
-      ],
-      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:96",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_memberpress_package_reverted",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "$user_id",
-        "$default"
-      ],
-      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:133",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_pmpro_package_assigned",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $user_id",
-        "int $level_id",
-        "$package_id"
-      ],
-      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:86",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_pmpro_package_reverted",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $user_id",
-        "$default"
-      ],
-      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:109",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_default_applies_to_unassigned",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:263",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_package_unassigned",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "$user_id",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:362",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_revert_to_default_on_end",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool",
-        "$user_id",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:343",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_source",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$package",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:277",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_widget_visible",
-      "type": "filter",
-      "where": "includes/Frontend/UsageWidget.php:118",
-      "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_pro_webhook_event_ttl",
-      "type": "filter",
-      "where": "includes/Quota/QuotaController.php:610",
-      "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_pro_webhook_replay_window",
-      "type": "filter",
-      "where": "includes/Quota/QuotaController.php:531",
-      "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_pro_webhook_require_timestamp",
-      "type": "filter",
-      "where": "includes/Quota/QuotaController.php:469",
-      "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_pro_webhook_timestamp_tolerance",
-      "type": "filter",
-      "where": "includes/Quota/QuotaController.php:459",
-      "consumed_by": [],
-      "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_pro_woo_package_assigned",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $user_id",
-        "int $product_id",
-        "$package_id",
-        "$new_status"
-      ],
-      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:103",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_woo_package_reverted",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $user_id",
-        "$default",
-        "$new_status"
-      ],
-      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:132",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_zip_reader_available",
       "type": "filter",
       "where": "includes/Documents/ZipEntryReader.php:83",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
-    },
-    {
-      "name": "mvs_quota_render_mapping_fields",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Admin/QuotaPage.php:526",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_quota_save_mapping",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Admin/QuotaPage.php:690",
-      "consumed_by": []
     },
     {
       "name": "mvs_resolve_expired_matches",

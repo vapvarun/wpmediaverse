@@ -675,6 +675,9 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_media = $mvs_toolbar_state( 'media', 'date' );
+		// Used X of Y, only when a storage limit applies (2.6.0).
+		\WPMediaVerse\Core\TemplateHelpers::render_storage_usage();
+
 		/**
 		 * Fires immediately before a dashboard panel's search/filter toolbar.
 		 *

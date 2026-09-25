@@ -581,6 +581,10 @@ class RestGateTest extends WP_UnitTestCase {
 			'POST /mvs/v1/users/1/block' => 'exempt',
 			'POST /mvs/v1/users/1/follow' => 'gated',
 			'POST /mvs/v1/users/1/report' => 'exempt',
+			// Admin-only storage limit edit: the permission check is the gate.
+			'POST /mvs/v1/users/1/storage' => 'self',
+			'PUT /mvs/v1/users/1/storage' => 'self',
+			'PATCH /mvs/v1/users/1/storage' => 'self',
 			'PUT /mvs/v1/albums/1' => 'self',
 			'PUT /mvs/v1/albums/1/cover' => 'self',
 			'PUT /mvs/v1/albums/1/reorder' => 'self',

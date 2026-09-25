@@ -72,13 +72,8 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Upload Streaks with milestones | -- | Yes |
 | Weekly Autopilot (auto-create challenges) | -- | Yes |
 | XP integration with wb-gamification | -- | Yes |
-| **Quotas & Monetization** | | |
-| Per-user upload quotas (count + storage) | -- | Yes |
-| Quota packages (Free, Premium, etc.) | -- | Yes |
-| MemberPress integration | -- | Yes |
-| Paid Memberships Pro integration | -- | Yes |
-| WooCommerce integration | -- | Yes |
-| Credit transaction log | -- | Yes |
+| **Storage Limits** | | |
+| Fair-use storage limit per member (MB), site-wide + per-member override | Yes | Yes (inherited) |
 | **User Profiles** | | |
 | Public profile page (/media/@username/) | Yes | Yes |
 | Follow / Message buttons | Yes | Yes |
@@ -93,7 +88,6 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Tournament bracket manager | -- | Yes |
 | Battle monitor | -- | Yes |
 | Video analytics dashboard | -- | Yes |
-| Quota & credits management | -- | Yes |
 | Media stats & insights | -- | Yes |
 | **BuddyPress Integration** | | |
 | Profile media tab | Yes | Yes |
@@ -167,7 +161,6 @@ MediaVerse Pro is for sites that need professional-grade features:
 - **Scale** - Offload media to S3 or BunnyCDN for global CDN delivery and unlimited storage
 - **Video intelligence** - Chapters, auto-captions, and engagement analytics
 - **Engagement** - Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
-- **Monetization** - Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
 - **Privacy** - A picker UI for all six privacy levels, plus saved presets and bulk privacy management
 - **AI** - Google Vision, AWS Rekognition, and Claude (Anthropic) for auto-tagging and advanced content moderation
 - **Migration** - Import from rtMedia, MediaPress, or BuddyBoss with one WP-CLI command

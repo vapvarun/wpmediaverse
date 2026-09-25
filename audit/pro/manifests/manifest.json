@@ -469,16 +469,6 @@
         "file": "includes/Documents/DeliveryController.php:118"
       },
       {
-        "route": "/mvs-pro/v1/me/quota/check",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UsageWidget::rest_check_quota",
-        "permission": "is_user_logged_in (closure)",
-        "purpose": "Check current user quota for a media type",
-        "file": "includes/Frontend/UsageWidget.php:248"
-      },
-      {
         "route": "/mvs-pro/v1/groups",
         "methods": [
           "POST"
@@ -579,108 +569,6 @@
         "permission": "logged_in_check",
         "purpose": "Create a privacy preset",
         "file": "includes/Privacy/PrivacyController.php:110"
-      },
-      {
-        "route": "/mvs-pro/v1/credits/webhook",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::handle_webhook",
-        "permission": "__return_true",
-        "purpose": "Payment/credits webhook receiver",
-        "file": "includes/Quota/QuotaController.php:206"
-      },
-      {
-        "route": "/mvs-pro/v1/me/credits/history",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_credit_history",
-        "permission": "logged_in_check",
-        "purpose": "Get current user credit history",
-        "file": "includes/Quota/QuotaController.php:217"
-      },
-      {
-        "route": "/mvs-pro/v1/me/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_my_quota",
-        "permission": "logged_in_check",
-        "purpose": "Get current user quota",
-        "file": "includes/Quota/QuotaController.php:52"
-      },
-      {
-        "route": "/mvs-pro/v1/packages",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::list_packages",
-        "permission": "admin_check",
-        "purpose": "List quota packages",
-        "file": "includes/Quota/QuotaController.php:137"
-      },
-      {
-        "route": "/mvs-pro/v1/packages",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::create_package",
-        "permission": "admin_check",
-        "purpose": "Create a quota package",
-        "file": "includes/Quota/QuotaController.php:137"
-      },
-      {
-        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "QuotaController::delete_package",
-        "permission": "admin_check",
-        "purpose": "Delete a quota package",
-        "file": "includes/Quota/QuotaController.php:181"
-      },
-      {
-        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
-        "methods": [
-          "POST",
-          "PUT",
-          "PATCH"
-        ],
-        "handler": "QuotaController::update_package",
-        "permission": "admin_check",
-        "purpose": "Update a quota package",
-        "file": "includes/Quota/QuotaController.php:181"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/credits",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::add_user_credits",
-        "permission": "admin_check",
-        "purpose": "Add credits to a user",
-        "file": "includes/Quota/QuotaController.php:104"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/package",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::assign_user_package",
-        "permission": "admin_check",
-        "purpose": "Assign package to a user",
-        "file": "includes/Quota/QuotaController.php:81"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_user_quota",
-        "permission": "admin_check",
-        "purpose": "Get a user's quota",
-        "file": "includes/Quota/QuotaController.php:63"
       },
       {
         "route": "/mvs-pro/v1/admin/gamification-notice/dismiss",
@@ -1262,13 +1150,6 @@
       "file": "includes/Admin/ThemeLibrary.php:58"
     },
     {
-      "title": "Quota & Credits",
-      "slug": "mvs-quotas",
-      "parent": "wpmediaverse",
-      "capability": "manage_mvs_settings",
-      "file": "includes/Admin/QuotaPage.php:45"
-    },
-    {
       "title": "Import Migration",
       "slug": "mvs-migration",
       "parent": "wpmediaverse",
@@ -1607,19 +1488,6 @@
         "AnalyticsController"
       ],
       "purpose": "Video heatmaps, play analytics, aggregation cron"
-    },
-    {
-      "namespace": "Quota",
-      "key_classes": [
-        "QuotaService",
-        "QuotaController",
-        "AbstractQuotaAdapter",
-        "MemberPressAdapter",
-        "PaidMembershipsProAdapter",
-        "WooCommerceAdapter"
-      ],
-      "purpose": "Upload/storage quotas (soft blocker for premium space limits), membership-plugin bridges via Integrations\\AbstractQuotaAdapter",
-      "notes_1_6_0": "Default package applies to NEW registrations only; unassigned = unlimited. Lapsed subscriptions UNASSIGN (fires mvs_pro_quota_package_unassigned action). Legacy filters: mvs_pro_quota_default_applies_to_unassigned (read-time) + mvs_pro_quota_revert_to_default_on_end (write-time) - enable both or neither. Basecamp #9941320629."
     },
     {
       "namespace": "Storage",
@@ -2004,11 +1872,6 @@
       "file": "includes/Core/Migrator.php:498"
     },
     {
-      "name": "{prefix}mvs_credit_log",
-      "purpose": "Credit/quota transaction ledger",
-      "file": "includes/Core/Migrator.php:383"
-    },
-    {
       "name": "{prefix}mvs_play_events",
       "purpose": "Video play + heatmap analytics events",
       "file": "includes/Core/Migrator.php:402"
@@ -2032,15 +1895,6 @@
       "name": "{prefix}mvs_pro_push_devices",
       "purpose": "Native push device registry (Expo tokens per user/device)",
       "file": "includes/Core/Migrator.php:252"
-    },
-    {
-      "name": "{prefix}mvs_pro_webhook_events",
-      "note": "Pro-owned. CREATE at includes/Core/Migrator.php:399. Missing from the 2.2.0-branch generation."
-    },
-    {
-      "name": "{prefix}mvs_quota_packages",
-      "purpose": "Upload/storage quota package definitions",
-      "file": "includes/Core/Migrator.php:366"
     }
   ],
   "cron": [
@@ -2321,9 +2175,6 @@
     "mvs_settings_group_labels",
     "mvs_repair_media_thumb",
     "mvs_can_repair_thumb",
-    "mvs_quota_save_mapping",
-    "mvs_quota_render_mapping_fields",
-    "mvs_pro_quota_default_applies_to_unassigned",
     "mvs_pro_inject_compete_nav",
     "mvs_privacy_can_view",
     "mvs_notification_created",
@@ -2607,7 +2458,8 @@
     "delta_2026_09_25_v260_small_ux": "2.6.0 small UX (hand-verified). New class Competitions\\TabPicker: Battles, Challenges and Tournaments open on the first tab that has items (server picks it from count_by_status(), passed as initialTab in the Interactivity context). UsageWidget rows carry data-type so the upload block can refresh them. No hook, route, option or table added.",
     "delta_2026_09_25_v260_possible_bugs": "2.6.0 Possible Bugs batch (hand-verified). New REST route POST /mvs-pro/v1/admin/gamification-notice/dismiss (manage_mvs_settings, per-user meta _mvs_pro_gamification_notice_dismissed, swept on uninstall via Lifecycle::USER_META_KEYS). New class Admin\\GamificationNotice (notice moved out of Core\\Plugin; MediaVerse screens only). NoticeSuppressor::is_mvs_screen() is now public static. Boosts: confirm reads restUrl from store state; feed-card boost wrap restates isOwner; modal and backdrop render hidden. No hook, option or table added.",
     "delta_2026_09_25_v260_qa_round2": "2.6.0 QA round 2 (hand-verified). NoticeSuppressor::is_mvs_screen() keys on the admin page slug (wpmediaverse, mvs-*): submenu screen ids come from the translated menu title. Gamification notice carries mvs-notice. Chapters PUT, story owner routes and /media/{id}/collections answer 404 for media the viewer cannot see. Uninstall with data removal also deletes wpmediaverse-pro_* licence options. No route, hook, option or table added.",
-    "delta_2026_09_25_v260_jobs_once": "2.6.0 (hand-verified). New Core\\Jobs::ensure_recurring(): recurring Action Scheduler jobs (competitions tick, autopilot, captions reaper, daily streak) are scheduled with the unique flag and duplicates are collapsed. battles-store deep link loads GET /battles/{id} only. Autopilot also reschedules on timezone_string / gmt_offset changes. No route, hook, option or table added."
+    "delta_2026_09_25_v260_jobs_once": "2.6.0 (hand-verified). New Core\\Jobs::ensure_recurring(): recurring Action Scheduler jobs (competitions tick, autopilot, captions reaper, daily streak) are scheduled with the unique flag and duplicates are collapsed. battles-store deep link loads GET /battles/{id} only. Autopilot also reschedules on timezone_string / gmt_offset changes. No route, hook, option or table added.",
+    "delta_2026_09_25_v260_quota_removed": "2.6.0 removes the entire quota/credits system (owner decision, 2026-09-25): packages, per-type limits, credits, credit log, the paid-credit webhook, membership mapping (MemberPress/PMPro/WooCommerce adapters), upgrade prompt, frontend usage widget, and the Quota & Credits admin page + menu (mvs-quotas). Deleted: Quota\\QuotaService, Quota\\QuotaController, Admin\\QuotaPage, Frontend\\UsageWidget, Integrations\\AbstractQuotaAdapter and its three MemberPress/PaidMembershipsPro/WooCommerce QuotaAdapter implementations. Removed 11 REST routes under /mvs-pro/v1/ (packages, packages/{id}, users/{id}/quota, users/{id}/package, users/{id}/credits, credits/webhook, me/quota, me/quota/check, me/credits/history), 20 hooks (mvs_pro_* quota/webhook actions+filters and mvs_quota_save_mapping/mvs_quota_render_mapping_fields), and 3 tables (mvs_quota_packages, mvs_credit_log, mvs_pro_webhook_events). Replaced by ONE Free setting: option mvs_storage_limit_mb (site limit, MB, 0 = no limit) + user meta of the same name (per-member override), enforced by Free's Services\\StorageLimitService on the existing mvs_upload_args filter, which Documents already applies. Pro Migrator v20 migrates each site's default-package storage limit onto mvs_storage_limit_mb, copies non-default package limits onto the affected members as per-member overrides, pins previously-unlimited members to 0 (no limit) so the upgrade never suddenly caps them, then drops the three retired tables and the quota/credit/webhook options and user meta. CURRENT_VERSION is now 20."
   },
   "category_sources": {
     "rest": [
@@ -3287,17 +3139,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_before_quota_check",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$args",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:537",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_captions_generated",
       "type": "action",
       "args_count": 2,
@@ -3339,19 +3180,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_pro_credits_added",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "$user_id",
-        "$media_type",
-        "$amount",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:428",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_pro_inject_compete_nav",
       "type": "filter",
       "args_count": 1,
@@ -3381,138 +3209,6 @@
         "$window"
       ],
       "where": "includes/Leaderboard/LeaderboardService.php:79",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_memberpress_package_assigned",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "$user_id",
-        "$membership_id",
-        "$package_id"
-      ],
-      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:96",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_memberpress_package_reverted",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "$user_id",
-        "$default"
-      ],
-      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:133",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_pmpro_package_assigned",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $user_id",
-        "int $level_id",
-        "$package_id"
-      ],
-      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:86",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_pmpro_package_reverted",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $user_id",
-        "$default"
-      ],
-      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:109",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_default_applies_to_unassigned",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "bool",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:263",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_package_unassigned",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "$user_id",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:362",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_revert_to_default_on_end",
-      "type": "filter",
-      "args_count": 3,
-      "args_signature": [
-        "bool",
-        "$user_id",
-        "$source"
-      ],
-      "where": "includes/Quota/QuotaService.php:343",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_quota_source",
-      "type": "filter",
-      "args_count": 2,
-      "args_signature": [
-        "$package",
-        "$user_id"
-      ],
-      "where": "includes/Quota/QuotaService.php:277",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_woo_package_assigned",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $user_id",
-        "int $product_id",
-        "$package_id",
-        "$new_status"
-      ],
-      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:103",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_pro_woo_package_reverted",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $user_id",
-        "$default",
-        "$new_status"
-      ],
-      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:132",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_quota_render_mapping_fields",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Admin/QuotaPage.php:526",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_quota_save_mapping",
-      "type": "action",
-      "args_count": 0,
-      "args_signature": [],
-      "where": "includes/Admin/QuotaPage.php:690",
       "consumed_by": []
     },
     {
@@ -3677,16 +3373,6 @@
       "key": "core.watermarker",
       "class": "Core\\Watermarker",
       "file": "includes/Core/Watermarker.php"
-    },
-    {
-      "key": "quota.service",
-      "class": "Quota\\QuotaService",
-      "file": "includes/Quota/QuotaService.php"
-    },
-    {
-      "key": "quota.controller",
-      "class": "Quota\\QuotaController",
-      "file": "includes/Quota/QuotaController.php"
     },
     {
       "key": "frontend.usage_widget",
@@ -3904,21 +3590,6 @@
       "file": "includes/Gamification/CompetePointsBridge.php"
     },
     {
-      "key": "quota_adapter.memberpress",
-      "class": "Integrations\\MemberPress\\QuotaAdapter",
-      "file": "includes/Integrations/MemberPress/QuotaAdapter.php"
-    },
-    {
-      "key": "quota_adapter.pmpro",
-      "class": "Integrations\\PaidMembershipsPro\\QuotaAdapter",
-      "file": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php"
-    },
-    {
-      "key": "quota_adapter.woocommerce",
-      "class": "Integrations\\WooCommerce\\QuotaAdapter",
-      "file": "includes/Integrations/WooCommerce/QuotaAdapter.php"
-    },
-    {
       "key": "admin.pro_settings",
       "class": "Admin\\ProSettings",
       "file": "includes/Admin/ProSettings.php"
@@ -4022,7 +3693,7 @@
       "note": "Exists so document administration can be delegated to a role WITHOUT manage_options. Offered as a column on Free's role matrix through mvs_managed_caps."
     }
   ],
-  "hooks_fired_count": 118,
+  "hooks_fired_count": 74,
   "settings": [
     {
       "option": "mvs_app_accent_color",
@@ -4250,10 +3921,6 @@
     {
       "option": "mvs_pro_streak_freeze_cost",
       "where": "includes/Admin/GamificationSettings.php"
-    },
-    {
-      "option": "mvs_pro_webhook_secret",
-      "where": "includes/Admin/ProSettings.php"
     },
     {
       "option": "mvs_stories_enabled",

@@ -21,6 +21,7 @@ Registered by `Admin\Settings\SettingsRegistrar` and `Admin\Settings\AiSettingsR
 
 | Option key | Setting label | Type | Default |
 |---|---|---|---|
+| `mvs_storage_limit_mb` | Fair-use storage limit per member (MB) | integer | `0` (no limit). Per-member override: user meta `mvs_storage_limit_mb` (absent = site limit, 0 = no limit). Filter: `mvs_storage_limit_bytes` |
 | `mvs_max_upload_size` | Max Upload Size | integer | `104857600` (100 MB, in bytes) |
 | `mvs_allowed_file_types` | Allowed File Types | string | `image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg` |
 | `mvs_duplicate_action` | Duplicate Detection | string | `warn` |

@@ -3411,35 +3411,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Aggregate row count + total bytes per file_type for a user.
-	 *
-	 * Used by Pro's QuotaService.recalculate_usage(). Single GROUP BY that
-	 * returns one row per mime type with `cnt` and `total_size`. The caller
-	 * maps file_type -> high-level bucket (image/video/audio).
-	 *
-	 * @since 1.3.0
-	 *
-	 * @param int $user_id Author ID.
-	 * @return array<int, array{file_type:string,cnt:int,total_size:int}>
-	 */
-	public function aggregate_usage_by_author( int $user_id ): array {
-		global $wpdb;
-
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT file_type, COUNT(*) AS cnt, COALESCE(SUM(file_size), 0) AS total_size
-				FROM {$wpdb->prefix}mvs_media_index
-				WHERE post_author = %d
-				GROUP BY file_type",
-				$user_id
-			),
-			ARRAY_A
-		);
-
-		return is_array( $rows ) ? $rows : array();
-	}
-
-	/**
 	 * Query the most recent published media rows since a given datetime.
 	 *
 	 * Returns full mvs_media_index rows in created_at DESC order. Used by
@@ -5582,6 +5553,28 @@ class MediaRepository implements MediaRepositoryInterface {
 		);
 
 		return (int) $deleted;
+	}
+
+	/**
+	 * Bytes a member's files take: every item they own that is not trashed.
+	 *
+	 * Backs the fair-use storage limit (StorageLimitService). Read live, so a
+	 * delete or a trash frees the space at once. Uses the post_author index.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id Member.
+	 * @return int
+	 */
+	public function storage_used_by( int $user_id ): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COALESCE( SUM( file_size ), 0 ) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status <> 'trash'",
+				$user_id
+			)
+		);
 	}
 
 	/**

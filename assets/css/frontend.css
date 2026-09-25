@@ -3044,6 +3044,13 @@ a.mvs-dashboard-card-title:hover {
     font-weight: 600;
 }
 
+/* "Used X of Y", only when a storage limit applies (Upload, My Media). */
+.mvs-storage-usage {
+    margin: 0 0 var(--mvs-space-sm, 8px);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm, 14px);
+}
+
 /* My Media: an upload held for review is shown to its owner, marked. */
 .mvs-review-badge {
     display: inline-block;

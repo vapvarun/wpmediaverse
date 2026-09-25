@@ -2,13 +2,11 @@
 /**
  * TransactionService — append-only per-media-type usage ledger (mvs_transactions).
  *
- * Architecture: materialized balance + immutable ledger.
- *   - Fast "current count" lives in usermeta (`_mvs_<type>_count`, maintained by
- *     the Pro QuotaService) — cheap to read for quota checks.
- *   - This ledger records EVERY usage delta with a running balance_after, so the
- *     plugin keeps an auditable history ("what did this member upload, when, why")
- *     that a bare counter throws away. Powers GET /me/transactions, a member
- *     usage history, and owner-side auditing.
+ * An append-only record of uploads per member and media type, with a running
+ * balance_after, so the plugin keeps an auditable history ("what did this
+ * member upload, when") that a bare counter throws away. Powers
+ * GET /me/transactions and the [mvs_usage_history] shortcode. Storage limits
+ * are not read from here: StorageLimitService measures usage live.
  *
  * The table (mvs_transactions, Migrator v9) was created but never written or read
  * before 1.8.0 — this is the model that finally owns it (Coding Rule: no raw $wpdb
@@ -30,8 +28,6 @@ class TransactionService {
 	 * Hook the upload event so every upload appends a usage row.
 	 */
 	public function init(): void {
-		// Priority 20: after the Pro QuotaService (5) has bumped the counter, so
-		// the ledger and the materialized counter stay consistent.
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_uploaded' ), 20, 1 );
 	}
 

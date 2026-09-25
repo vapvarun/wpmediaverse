@@ -2659,6 +2659,17 @@
       ]
     },
     {
+      "name": "mvs_storage_limit_bytes",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $bytes",
+        "int $user_id"
+      ],
+      "where": "includes/Services/StorageLimitService.php:79",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_storage_repair_enabled",
       "type": "filter",
       "args_count": 1,

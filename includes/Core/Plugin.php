@@ -285,6 +285,9 @@ class Plugin {
 		// Schedules the grace-period sweep.
 		self::$container->get( 'account_deletion' )->init();
 
+		// Fair-use storage limit: keeps each member's cached usage current.
+		self::$container->get( 'storage_limit' )->init();
+
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
 			self::$container->get( 'moderation' );
@@ -696,6 +699,14 @@ class Plugin {
 			'account_deletion',
 			function () {
 				return new AccountDeletionService();
+			}
+		);
+
+		// One optional storage allowance per member (2.6.0).
+		self::$container->register(
+			'storage_limit',
+			function () {
+				return new \WPMediaVerse\Services\StorageLimitService();
 			}
 		);
 

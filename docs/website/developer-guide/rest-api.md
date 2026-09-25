@@ -540,6 +540,18 @@ Search for users by display name or username.
 | `q` | string | (required) | Search term |
 | `per_page` | int | `10` | Results per page (max: 50) |
 
+### GET /me/storage
+
+**Auth:** Authenticated.
+
+The member's storage use and limit, in bytes: `{ "used": 52428800, "limit": 524288000 }`. `limit` is `0` when no limit applies (the default). Usage counts every item the member owns that is not in the trash, plus chat attachments sent from 2.6.0 on.
+
+### GET /users/{id}/storage and PUT /users/{id}/storage
+
+**Auth:** `edit_users`.
+
+Read or set one member's own limit. The response adds `limit_mb`: the member's own limit in MB, or `null` when they follow the site limit. Send `limit_mb` as a number (`0` = no limit for this member) or `null` to go back to the site limit.
+
 ---
 
 ## Reports & Blocking

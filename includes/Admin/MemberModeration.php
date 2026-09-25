@@ -145,6 +145,20 @@ class MemberModeration {
 					</p>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row"><label for="mvs_storage_limit_mb"><?php esc_html_e( 'Storage limit for this member (MB)', 'wpmediaverse' ); ?></label></th>
+				<td>
+					<?php $mvs_own_limit = get_user_meta( (int) $user->ID, \WPMediaVerse\Services\StorageLimitService::USER_META, true ); ?>
+					<input type="number" min="0" id="mvs_storage_limit_mb" name="mvs_storage_limit_mb" class="small-text" value="<?php echo esc_attr( (string) $mvs_own_limit ); ?>" />
+					<p class="description">
+						<?php
+						$mvs_used = \WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->used_bytes( (int) $user->ID );
+						/* translators: %s: storage the member uses now, e.g. "48 MB". */
+						echo esc_html( sprintf( __( 'Leave blank to use the site limit, or 0 for no limit. Using %s now.', 'wpmediaverse' ), size_format( $mvs_used ? $mvs_used : 0, 1 ) ) );
+						?>
+					</p>
+				</td>
+			</tr>
 			<?php $mvs_deletion_at = $this->deletion_at( (int) $user->ID ); ?>
 			<?php if ( $mvs_deletion_at ) : ?>
 				<tr>
@@ -187,6 +201,14 @@ class MemberModeration {
 		}
 
 		$this->set_suspended( $user_id, isset( $_POST['mvs_suspended'] ) );
+
+		// Per-member storage limit: blank = the site limit, 0 = no limit.
+		$mvs_limit = isset( $_POST['mvs_storage_limit_mb'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['mvs_storage_limit_mb'] ) ) ) : '';
+		if ( '' === $mvs_limit || ! is_numeric( $mvs_limit ) ) {
+			delete_user_meta( $user_id, \WPMediaVerse\Services\StorageLimitService::USER_META );
+		} else {
+			update_user_meta( $user_id, \WPMediaVerse\Services\StorageLimitService::USER_META, absint( $mvs_limit ) );
+		}
 	}
 
 	/**

@@ -156,17 +156,6 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_layout_modes` | filter | Pro | 1.0 |
 | `mvs_layout_template_map` | filter | Pro | 1.0 |
 | `mvs_layout_config` | filter | Pro | 1.1 |
-| `mvs_pro_credits_added` | action | Pro | 1.0 |
-| `mvs_pro_woo_package_assigned` | action | Pro | 1.0 |
-| `mvs_pro_woo_package_reverted` | action | Pro | 1.0 |
-| `mvs_pro_memberpress_package_assigned` | action | Pro | 1.0 |
-| `mvs_pro_memberpress_package_reverted` | action | Pro | 1.0 |
-| `mvs_pro_pmpro_package_assigned` | action | Pro | 1.0 |
-| `mvs_pro_pmpro_package_reverted` | action | Pro | 1.0 |
-| `mvs_quota_render_mapping_fields` | action | Pro | 1.0 |
-| `mvs_quota_save_mapping` | action | Pro | 1.0 |
-| `mvs_pro_before_quota_check` | filter | Pro | 1.1 |
-| `mvs_pro_quota_source` | filter | Pro | 1.1 |
 | `mvs_challenge_created` | action | Pro | 1.0 |
 | `mvs_challenge_entry_submitted` | action | Pro | 1.0 |
 | `mvs_challenge_finalized` | action | Pro | 1.0 |
@@ -264,14 +253,15 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 15. [Video Processing (Pro)](#15-video-processing-pro)
 16. [Analytics (Pro)](#16-analytics-pro)
 17. [Layout System (Pro)](#17-layout-system-pro)
-18. [Quota System (Pro)](#18-quota-system-pro)
 19. [Competitions (Pro)](#19-competitions-pro)
 21. [Connectors (Pro)](#21-connectors-pro)
 22. [Common Recipes](#22-common-recipes)
 23. [Additional Hooks Reference](#23-additional-hooks-reference)
 
-> There is no section 20 — a retired section left the gap. Heading numbers are
-> kept as-is so existing deep links to sections 21-23 keep working.
+> There is no section 18 or 20 - retired sections left the gaps (18 was the
+> quota system, removed 2.6.0; storage limits are now Free's one per-member
+> MB allowance, see Settings > General). Heading numbers are kept as-is so
+> existing deep links to sections 19, 21-23 keep working.
 
 ---
 
@@ -2558,91 +2548,6 @@ add_filter( 'mvs_active_layout', function( string $slug ) {
 
 ---
 
-## 18. Quota System (Pro)
-
-### `mvs_pro_quota_source` **(Pro)** **(New in 1.1)**
-
-Filters the quota package assigned to a user. Use this to integrate a custom membership or LMS plugin.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$package` | array\|null | Package definition or `null` for the site default |
-| `$user_id` | int | User ID |
-
-**Returns:** `array|null`
-
-```php
-/**
- * Assign quota from a custom LMS based on course enrollment.
- *
- * @since 1.1
- *
- * @param array|null $package Quota package definition.
- * @param int        $user_id User ID.
- * @return array|null
- */
-add_filter( 'mvs_pro_quota_source', function( $package, int $user_id ) {
-    $course_id = my_lms_get_active_course( $user_id );
-    if ( $course_id ) {
-        return my_lms_get_quota_for_course( $course_id );
-    }
-    return $package;
-}, 10, 2 );
-```
-
----
-
-### `mvs_pro_before_quota_check` **(Pro)** **(New in 1.1)**
-
-Fires before quota enforcement runs. Return a `WP_Error` to reject the action before quota is checked.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$args` | array | Quota check args (media_type, count) |
-| `$user_id` | int | User ID |
-
-**Returns:** `array|WP_Error`
-
-```php
-/**
- * Block uploads during a scheduled maintenance window.
- *
- * @since 1.1
- *
- * @param array $args    Quota check arguments.
- * @param int   $user_id User ID.
- * @return array|WP_Error
- */
-add_filter( 'mvs_pro_before_quota_check', function( $args, int $user_id ) {
-    if ( get_option( 'my_plugin_maintenance_mode' ) ) {
-        return new WP_Error( 'maintenance', __( 'Uploads are paused for maintenance.', 'my-plugin' ) );
-    }
-    return $args;
-}, 10, 2 );
-```
-
----
-
-### Additional Quota Hooks
-
-| Hook | Type | Description | Parameters | Since |
-|------|------|-------------|------------|-------|
-| `mvs_pro_credits_added` | action | Credits added to user quota | `$user_id`, `$media_type`, `$amount`, `$source` | 1.0 |
-| `mvs_pro_woo_package_assigned` | action | WooCommerce order assigns a quota package | `$user_id`, `$product_id`, `$package_id`, `$order_status` | 1.0 |
-| `mvs_pro_woo_package_reverted` | action | WooCommerce order cancelled, package reverted | `$user_id`, `$default`, `$order_status` | 1.0 |
-| `mvs_pro_memberpress_package_assigned` | action | MemberPress membership assigns package | `$user_id`, `$membership_id`, `$package_id` | 1.0 |
-| `mvs_pro_memberpress_package_reverted` | action | MemberPress membership expired, reverted | `$user_id`, `$default` | 1.0 |
-| `mvs_pro_pmpro_package_assigned` | action | PMPro level assigns package | `$user_id`, `$level_id`, `$package_id` | 1.0 |
-| `mvs_pro_pmpro_package_reverted` | action | PMPro level cancelled, reverted | `$user_id`, `$default` | 1.0 |
-| `mvs_quota_render_mapping_fields` | action | Admin quota page renders mapping UI | none | 1.0 |
-| `mvs_quota_save_mapping` | action | Admin saves quota mapping | none | 1.0 |
-
----
-
 ## 19. Competitions (Pro)
 
 ### Challenges
@@ -2959,30 +2864,29 @@ add_action( 'mvs_notification_created', function( int $notification_id, int $use
 
 ---
 
-### Recipe 5: Custom quota from an LMS plugin (Pro)
+### Recipe 5: Custom storage limit from an LMS plugin
 
-Use `mvs_pro_quota_source` to assign quota packages based on LearnDash course enrollment.
+The quota-package system this recipe used to show (`mvs_pro_quota_source`) was removed in
+2.6.0. Storage is now one per-member MB allowance (`mvs_storage_limit_mb` option + user meta),
+with a single filter seam, `mvs_storage_limit_bytes`, for a site that wants the limit to come
+from somewhere else.
 
 ```php
 /**
- * Map LearnDash course enrollment to MVS quota packages.
+ * Map LearnDash course enrollment to a member's storage limit.
  *
- * @since 1.1
+ * @since 2.6.0
  *
- * @param array|null $package Current quota package or null for site default.
- * @param int        $user_id User ID.
- * @return array|null
+ * @param int $bytes   Limit in bytes (0 = no limit).
+ * @param int $user_id Member.
+ * @return int
  */
-add_filter( 'mvs_pro_quota_source', function( $package, int $user_id ) {
-    // Check if the user is enrolled in the "Pro Creator" course (ID: 123).
+add_filter( 'mvs_storage_limit_bytes', function( $bytes, int $user_id ) {
+    // A member enrolled in the "Pro Creator" course (ID: 123) gets 10 GB.
     if ( function_exists( 'sfwd_lms_has_access' ) && sfwd_lms_has_access( 123, $user_id ) ) {
-        return [
-            'photo_limit' => 500,
-            'video_limit' => 50,
-            'label'       => 'Pro Creator',
-        ];
+        return 10 * GB_IN_BYTES;
     }
-    return $package;
+    return $bytes;
 }, 10, 2 );
 ```
 
@@ -3124,7 +3028,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 |------|------|-----------|-------------|
 | `mvs_apply_exif_orientation` | filter | `true, $file_path, $mime` | Filters whether EXIF orientation is applied on upload. Escape hatch for sites that already normalise orientation upstream (some CDNs and phone-upload apps do) and would otherwise pay for the re-encode twice. Since 2.3.0. |
 | `mvs_filename_strategy_upgrade_default` | filter | `self::DEFAULT_FRESH` | Filter the default filename strategy applied when a site has not explicitly chosen one. Defaults to 'hashed' since 1.6.0. |
-| `mvs_hold_uploads_for_moderation` | filter | `false, $user_id` | Filter: hold ALL new uploads for manual moderation before they go live. Default false - members publish immediately (the engagement-first default for this community platform; the only standing limit on a member is their Pro storage/upload quota). |
+| `mvs_hold_uploads_for_moderation` | filter | `false, $user_id` | Filter: hold ALL new uploads for manual moderation before they go live. Default false - members publish immediately (the engagement-first default for this community platform; the only standing limit on a member is their optional storage allowance). |
 | `mvs_media_files_orphaned` | action | `$media_id, $orphaned_files` | Fires with every relative file path owned by a media item that is about to be torn down, so a cleanup listener can delete the bytes from disk and cloud asynchronously. |
 | `mvs_media_replaced` | action | `$media_id, $file_data, get_current_user_id(), $media_type` | Fires after a file replacement has been fully processed. Use this hook (not mvs_media_uploaded) for replace-specific reactions such as re-generating captions or a poster. |
 | `mvs_watermark_stamp_file` | filter | `false, $path, $mime, $user_id` | Stamp the admin watermark into bytes a member is publishing right now. THE RULE, stated once: stamp what the member publishes now; never re-process what is already in the library. |
@@ -3199,10 +3103,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_pro_compete_summary_cache_ttl` **(Pro)** | filter | `MINUTE_IN_SECONDS` | Compete summary cache TTL in seconds. Set to 0 to disable caching. |
 | `mvs_pro_inject_compete_nav` **(Pro)** | filter | `false ) ) { add_filter( 'wp_nav_menu_items', array( self::class, 'inject_compete_nav_link'` | See the call site. |
 | `mvs_pro_leaderboard_cache_ttl` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | Leaderboard cache TTL in seconds. Set to 0 to disable caching. |
-| `mvs_pro_quota_default_applies_to_unassigned` **(Pro)** | filter | `false, $user_id` | The default package is assigned to NEW users at registration and is NOT applied retroactively to users without an explicit assignment, so marking or changing the default never silently re-quotas existing members (the reported bug). Unassigned = unlimited: quota is a soft blocker for selling premi... |
-| `mvs_pro_quota_package_unassigned` **(Pro)** | action | `$user_id, $source` | Fires after a lapsed subscription clears a user's quota package assignment. |
-| `mvs_pro_quota_revert_to_default_on_end` **(Pro)** | filter | `false, $user_id, $source ) ) { $default = $this->get_default_package(` | Filters whether a lapsed subscription reverts the user to the default package (pre-1.6.0 behaviour) instead of clearing the assignment. |
-| `mvs_pro_quota_widget_visible` **(Pro)** | filter | `$visible, $summary` | Filters whether the quota usage widget renders for the current user. |
+| `mvs_storage_limit_bytes` | filter | `$bytes, $user_id` | Free. A member's storage limit in bytes (0 = no limit) - the one seam for sourcing the limit from somewhere else, e.g. a membership or LMS plugin. Replaces the quota-package hooks removed in 2.6.0. |
 
 ### Documents (2.4.0)
 
@@ -3234,7 +3135,6 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_document_anon_links` | filter | `$default, $media_id` | Whether anonymous share links may be minted for this document. |
 | `mvs_document_can_grant` | filter | `$default, $drive_type, $drive_id, $user_id` | Whether this member may share documents on this drive with someone else. |
 | `mvs_pro_document_extraction_enabled` **(Pro)** | filter | `$enabled` | Whether document text extraction runs. |
-| `mvs_pro_document_quota_precheck` **(Pro)** | filter | `null, $user_id, $size` | Quota verdict before a document upload is accepted. Return a `WP_Error` to refuse. |
 | `mvs_pro_zip_reader_available` **(Pro)** | filter | `true` | Whether `ext-zip` is treated as present. Exists so the download-card fallback path is testable on a machine that has the extension. |
 | `mvs_redirect_documents` | filter | `false, $media_id, $redirect_url` | Whether a document permalink may be redirected away from its own page. Default false — a document renders its own page. True restores the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for documents too. |
 | `mvs_media_feed_allows_documents` | filter | `false` | Production Rule 3 escape hatch: `__return_true` restores the pre-2.4.0 behaviour where `GET /media?media_type=document` returned document rows. |

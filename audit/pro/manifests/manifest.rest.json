@@ -427,16 +427,6 @@
         "file": "includes/Documents/DeliveryController.php:118"
       },
       {
-        "route": "/mvs-pro/v1/me/quota/check",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UsageWidget::rest_check_quota",
-        "permission": "is_user_logged_in (closure)",
-        "purpose": "Check current user quota for a media type",
-        "file": "includes/Frontend/UsageWidget.php:248"
-      },
-      {
         "route": "/mvs-pro/v1/groups",
         "methods": [
           "POST"
@@ -537,108 +527,6 @@
         "permission": "logged_in_check",
         "purpose": "Create a privacy preset",
         "file": "includes/Privacy/PrivacyController.php:110"
-      },
-      {
-        "route": "/mvs-pro/v1/credits/webhook",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::handle_webhook",
-        "permission": "__return_true",
-        "purpose": "Payment/credits webhook receiver",
-        "file": "includes/Quota/QuotaController.php:206"
-      },
-      {
-        "route": "/mvs-pro/v1/me/credits/history",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_credit_history",
-        "permission": "logged_in_check",
-        "purpose": "Get current user credit history",
-        "file": "includes/Quota/QuotaController.php:217"
-      },
-      {
-        "route": "/mvs-pro/v1/me/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_my_quota",
-        "permission": "logged_in_check",
-        "purpose": "Get current user quota",
-        "file": "includes/Quota/QuotaController.php:52"
-      },
-      {
-        "route": "/mvs-pro/v1/packages",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::list_packages",
-        "permission": "admin_check",
-        "purpose": "List quota packages",
-        "file": "includes/Quota/QuotaController.php:137"
-      },
-      {
-        "route": "/mvs-pro/v1/packages",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::create_package",
-        "permission": "admin_check",
-        "purpose": "Create a quota package",
-        "file": "includes/Quota/QuotaController.php:137"
-      },
-      {
-        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "QuotaController::delete_package",
-        "permission": "admin_check",
-        "purpose": "Delete a quota package",
-        "file": "includes/Quota/QuotaController.php:181"
-      },
-      {
-        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
-        "methods": [
-          "POST",
-          "PUT",
-          "PATCH"
-        ],
-        "handler": "QuotaController::update_package",
-        "permission": "admin_check",
-        "purpose": "Update a quota package",
-        "file": "includes/Quota/QuotaController.php:181"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/credits",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::add_user_credits",
-        "permission": "admin_check",
-        "purpose": "Add credits to a user",
-        "file": "includes/Quota/QuotaController.php:104"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/package",
-        "methods": [
-          "POST"
-        ],
-        "handler": "QuotaController::assign_user_package",
-        "permission": "admin_check",
-        "purpose": "Assign package to a user",
-        "file": "includes/Quota/QuotaController.php:81"
-      },
-      {
-        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "QuotaController::get_user_quota",
-        "permission": "admin_check",
-        "purpose": "Get a user's quota",
-        "file": "includes/Quota/QuotaController.php:63"
       },
       {
         "route": "/mvs-pro/v1/admin/gamification-notice/dismiss",

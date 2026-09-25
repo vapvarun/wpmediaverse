@@ -304,6 +304,12 @@
       "object_id": false,
       "writes": false
     },
+    "GET /mvs/v1/me/storage": {
+      "audience": "member",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\UserController::logged_in_check",
+      "object_id": false,
+      "writes": false
+    },
     "GET /mvs/v1/me/transactions": {
       "audience": "guarded",
       "permission_callback": "Closure",
@@ -457,6 +463,12 @@
       "writes": false,
       "reason": "That member's public items only. A member owning one public, one members-only and one private item returned exactly one, the public one, and a full-page sweep returned none of the site's 79 non-public items. A non-user id answers 200 []. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
       "probe": "user - the test fills this with a media id, which answers []; a real probe needs a user fixture that owns a private item."
+    },
+    "GET /mvs/v1/users/(?P<id>[\\d]+)/storage": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\UserController::manage_users_check",
+      "object_id": true,
+      "writes": false
     },
     "GET /mvs/v1/users/search": {
       "audience": "public",
@@ -771,6 +783,12 @@
     "POST,PUT,PATCH /mvs/v1/tags/(?P<id>[\\d]+)": {
       "audience": "admin",
       "permission_callback": "WPMediaVerse\\REST\\Controller\\TagController::admin_check",
+      "object_id": true,
+      "writes": true
+    },
+    "POST,PUT,PATCH /mvs/v1/users/(?P<id>[\\d]+)/storage": {
+      "audience": "admin",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\UserController::manage_users_check",
       "object_id": true,
       "writes": true
     }

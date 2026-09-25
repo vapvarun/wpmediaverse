@@ -1170,6 +1170,29 @@
         "permission": "CollectionController::get_item_permissions_check",
         "purpose": "List the media items in a collection (paginated, viewer-gated)",
         "file": "includes/REST/Controller/CollectionController.php:134"
+      },
+      {
+        "route": "/mvs/v1/me/storage",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_my_storage",
+        "permission": "logged_in_check",
+        "purpose": "The member's storage used and limit in bytes (0 = no limit)",
+        "file": "includes/REST/Controller/UserController.php"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/storage",
+        "methods": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "UserController::get_user_storage / update_user_storage",
+        "permission": "manage_users_check",
+        "purpose": "Read or set a member's own storage limit in MB (admins)",
+        "file": "includes/REST/Controller/UserController.php"
       }
     ]
   },

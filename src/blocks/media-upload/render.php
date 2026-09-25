@@ -91,7 +91,6 @@ wp_interactivity_state(
 			'uploadNFiles'       => __( 'Upload %d files', 'wpmediaverse' ),
 			/* translators: %d: number of files. */
 			'uploadingNFiles'    => __( 'Uploading %d file(s)...', 'wpmediaverse' ),
-			'uploadLimitReached' => __( 'Upload limit reached. Please upgrade your plan.', 'wpmediaverse' ),
 			/* translators: %1$d: current file number, %2$d: total number of files. */
 			'uploadingProgress'  => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
 			/* translators: %s: file name. */
@@ -107,6 +106,8 @@ wp_interactivity_state(
 			'allowedFallback'    => __( 'images, videos, and audio files', 'wpmediaverse' ),
 			/* translators: %1$s: rejected file names, %2$s: supported formats. */
 			'fileTypeNotAllowed' => __( 'File type not allowed: %1$s. Supported formats: %2$s.', 'wpmediaverse' ),
+			/* translators: 1: storage used, 2: storage limit, e.g. "48 MB of 500 MB". */
+			'storageUsed'        => __( 'Used %1$s of %2$s', 'wpmediaverse' ),
 		),
 	)
 );
@@ -136,6 +137,7 @@ wp_interactivity_state(
 	?>
 	'
 >
+	<?php \WPMediaVerse\Core\TemplateHelpers::render_storage_usage(); ?>
 	<div class="mvs-upload-dropzone"
 		data-wp-on--click="actions.handleClick"
 		data-wp-on--dragover="actions.handleDragOver"

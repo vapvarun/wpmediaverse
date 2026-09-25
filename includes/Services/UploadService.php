@@ -228,7 +228,8 @@ class UploadService {
 		/**
 		 * Filters the upload arguments before processing.
 		 *
-		 * Pro uses this to enforce quota limits. Return a WP_Error to reject.
+		 * The storage limit (StorageLimitService) refuses here, as can any
+		 * add-on. Return a WP_Error to reject.
 		 *
 		 * @since 1.1.0
 		 *

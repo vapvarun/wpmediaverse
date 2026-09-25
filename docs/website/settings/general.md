@@ -8,6 +8,7 @@ Access these settings at **MediaVerse > Settings > General**.
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| Fair-use storage limit per member (MB) | 0 (no limit) | How much each member can store in total, across every file type. Stops one account from filling the server; leave at 0 unless you need it. Give one member a different limit on their user profile (Users > edit a member > "Storage limit for this member"): blank uses this site limit, 0 means no limit for them. A member over the limit sees "You have used X of Y. Delete something to upload more." Site administrators are never limited. |
 | Max Upload Size | 100 MB | Maximum file size per upload. Enter value in MB. The plugin reads this setting server-side - WordPress's `upload_max_filesize` PHP ini value also applies. |
 | Allowed File Types | image/jpeg, image/png, image/gif, image/webp, video/mp4, video/webm, audio/mpeg, audio/ogg | Comma-separated list of allowed MIME types. |
 | Default Privacy Level | Public | The privacy level assigned to new uploads when the user does not choose one. Options: Public, Members Only, Private. |

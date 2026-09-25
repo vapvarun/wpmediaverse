@@ -108,7 +108,6 @@
         { "slug": "watermarking", "title": "Watermarking" },
         { "slug": "video-analytics", "title": "Video Analytics & Heatmaps" },
         { "slug": "ai-providers", "title": "AI Providers (Vision & Rekognition)" },
-        { "slug": "quotas", "title": "Quotas & Credit Packages" },
         { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" },
         { "slug": "stories", "title": "Stories" },
         { "slug": "collections", "title": "Save to Collections (Pro Picker)" },
