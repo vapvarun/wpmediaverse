@@ -646,8 +646,13 @@ class TemplateLoader {
 		$can_view = $this->can_view_media( $media );
 
 		if ( ! $can_view ) {
+			// Only a published, approved Members / Friends / Group item: signing in
+			// can open those. A private, custom-list, pending or rejected item
+			// answers like a missing one (QA, 2.6.0).
 			$mvs_signing_in_could_help = ! is_user_logged_in()
-				&& 'private' !== (string) ( $media['privacy'] ?? '' )
+				&& in_array( (string) ( $media['privacy'] ?? '' ), array( 'members', 'loggedin', 'friends', 'group', 'space' ), true )
+				&& in_array( (string) ( $media['moderation_status'] ?? 'approved' ), array( '', 'approved' ), true )
+				&& 'publish' === (string) ( $media['status'] ?? 'publish' )
 				&& ! in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true );
 
 			if ( ! $mvs_signing_in_could_help ) {
@@ -1137,6 +1142,15 @@ class TemplateLoader {
 		global $wp_query;
 
 		$wp_query->set_404();
+		// set_404() resets the flags but leaves the queried item in place, so a
+		// theme header still printed a private album's title over "not found"
+		// (QA, 2.6.0). A hidden item must look exactly like a missing one.
+		$wp_query->posts             = array();
+		$wp_query->post              = null;
+		$wp_query->post_count        = 0;
+		$wp_query->queried_object    = null;
+		$wp_query->queried_object_id = 0;
+		$GLOBALS['post']             = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- the album must not reach the theme.
 		status_header( 404 );
 		nocache_headers();
 

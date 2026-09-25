@@ -99,7 +99,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 
 			if ( $mvs_is_albums && $mvs_album_svc ) {
 				$mvs_cover_id   = $mvs_album_svc->get_resolved_cover_media_id( $mvs_post_id );
-				$mvs_item_count = $mvs_album_svc->get_item_count( $mvs_post_id );
+				$mvs_item_count = $mvs_album_svc->viewable_item_count( $mvs_post_id );
 				if ( $mvs_cover_id ) {
 					$mvs_cover_url = \WPMediaVerse\Core\MediaUrl::thumb( $mvs_cover_id );
 				} else {

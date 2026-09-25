@@ -1889,12 +1889,9 @@ class MediaController extends WP_REST_Controller {
 			);
 		}
 
-		return rest_ensure_response(
-			array(
-				'media_id' => $media_id,
-				'can_view' => false,
-			)
-		);
+		// Hidden looks exactly like missing: "can_view: false" confirmed that a
+		// private item exists (QA, 2.6.0).
+		return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 	}
 
 	/**

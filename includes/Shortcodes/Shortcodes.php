@@ -469,7 +469,7 @@ class Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_block_template( string $block_name, array $attributes ): string {
-		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'lock-overlay', 'member-photos', 'pdf-viewer' );
+		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'member-photos', 'pdf-viewer' );
 		if ( ! in_array( $block_name, $allowed, true ) ) {
 			return '';
 		}

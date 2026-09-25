@@ -168,7 +168,10 @@ class ReportController extends WP_REST_Controller {
 	public function report_media( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+		// Only something the reporter can see: reporting a hidden item filed a
+		// report and confirmed that it exists (QA, 2.6.0). Same as comments.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id )
+			|| ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 

@@ -651,7 +651,7 @@ abstract class BaseBPTabIntegration {
 			}
 
 			$cover_url  = $album_svc->get_cover_url( $album_id );
-			$item_count = $album_svc->get_item_count( $album_id );
+			$item_count = $album_svc->viewable_item_count( $album_id, $viewer_id );
 			$album_link = get_permalink( $album_id );
 
 			echo '<div class="mvs-grid-item mvs-grid-item--album" data-album-id="' . esc_attr( (string) $album_id ) . '">';

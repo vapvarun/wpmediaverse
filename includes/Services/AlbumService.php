@@ -471,6 +471,33 @@ class AlbumService {
 	}
 
 	/**
+	 * How many items of an album this viewer can open.
+	 *
+	 * The number shown on album cards. The raw count told a viewer how many
+	 * hidden items an album holds ("5 items" on a card whose album shows them
+	 * 3, QA 2.6.0). The owner and moderators see everything, so they get the
+	 * cheap count; anyone else gets the same filter as the album page.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int      $album_id  Album post id.
+	 * @param int|null $viewer_id Viewer, or null for the current user.
+	 * @return int
+	 */
+	public function viewable_item_count( int $album_id, ?int $viewer_id = null ): int {
+		$mvs_viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+		$mvs_owner  = (int) get_post_field( 'post_author', $album_id );
+
+		if ( ( $mvs_viewer && $mvs_viewer === $mvs_owner ) || user_can( $mvs_viewer, 'moderate_mvs_media' ) ) {
+			return $this->get_item_count( $album_id );
+		}
+
+		// ponytail: loads the album's ids once per card; fine for a page of
+		// cards, add a counted privacy query if albums reach tens of thousands.
+		return count( $this->viewable_item_ids( $album_id, $mvs_viewer ) );
+	}
+
+	/**
 	 * Get the item count for an album.
 	 *
 	 * @param int $album_id Album post ID.
