@@ -1298,9 +1298,11 @@ a.mvs-stat-card:focus {
 }
 
 /* Hide WP's auto-generated duplicate "Settings saved" notices on our settings page.
-   We render a single notice below the Save button instead. */
-.wpmediaverse-admin > .wrap > .notice,
-.wpmediaverse-admin .mvs-settings-page-header .notice {
+   We render a single notice below the Save button instead. MediaVerse's own
+   notices (.mvs-notice) stay visible: this also hid the Pro "needs WB
+   Gamification" notice, which WordPress moves into the header. */
+.wpmediaverse-admin > .wrap > .notice:not(.mvs-notice),
+.wpmediaverse-admin .mvs-settings-page-header .notice:not(.mvs-notice) {
 	display: none;
 }
 
