@@ -1361,7 +1361,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			echo '</div>';
 		}
 
-		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
+		// Named on the link itself: an audio tile or a video with no poster
+		// renders a placeholder with no <img alt>, and the link was then an
+		// unnamed "link" to screen readers.
+		$mvs_link_name = '' !== trim( (string) $media_title ) ? (string) $media_title : __( 'View media', 'wpmediaverse' );
+		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link" aria-label="' . esc_attr( $mvs_link_name ) . '">';
 
 		$this->render_grid_thumbnail( $media_id, $size, $media_title );
 

@@ -90,12 +90,36 @@
 	background: var(--mvs-success-bg);
 	padding: 8px 12px;
 	border-radius: 4px;
-	border-left: 4px solid var(--mvs-success);
+	border-inline-start: 4px solid var(--mvs-success);
 	font-size: 0.95em;
 }
 
 .mvs-upload-success p {
 	margin: 0;
+}
+
+/* What next after an upload: open the item, or go to My Media. */
+.mvs-upload-success .mvs-upload-success__next {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--mvs-space-md, 16px);
+	margin-top: 4px;
+}
+
+.mvs-upload-success__next a {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--mvs-touch-min, 44px);
+	color: inherit;
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.mvs-upload-success__next a:hover,
+.mvs-upload-success__next a:focus-visible {
+	color: inherit;
+	text-decoration-thickness: 2px;
 }
 
 .mvs-upload-dropzone__hint {

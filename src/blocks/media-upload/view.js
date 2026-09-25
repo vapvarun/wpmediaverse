@@ -149,6 +149,24 @@ function filterFiles( files, ctx ) {
 	return valid;
 }
 
+function setFill( row, used, total ) {
+	const fillEl = row.querySelector( '.mvs-quota-fill' );
+	if ( fillEl && total > 0 ) {
+		fillEl.style.width = `${ Math.min( 100, Math.round( ( used / total ) * 100 ) ) }%`;
+	}
+}
+
+function formatBytes( bytes ) {
+	const units = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
+	let value = Number( bytes ) || 0;
+	let unit = 0;
+	while ( value >= 1024 && unit < units.length - 1 ) {
+		value /= 1024;
+		unit++;
+	}
+	return `${ unit ? value.toFixed( 1 ).replace( /\.0$/, '' ) : value } ${ units[ unit ] }`;
+}
+
 const { state, actions } = store( 'mvs/media-upload', {
 	state: {
 		get isDragOver() {
@@ -375,6 +393,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 					if ( resp.ok ) {
 						successCount++;
 						const mediaData = resp.data;
+						ctx.lastLink = ( mediaData && mediaData.link ) || '';
 						if ( mediaData && mediaData.duplicate_warning ) {
 							duplicateCount++;
 							lastDuplicateId = mediaData.existing_media_id || 0;
@@ -400,6 +419,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 
 			ctx.uploading = false;
 			ctx.uploadMessage = '';
+			// "View it" only makes sense for a single file; several go to My Media.
+			if ( successCount !== 1 ) {
+				ctx.lastLink = '';
+			}
 			if ( successCount === files.length ) {
 				ctx.successMessage = ( state.i18n?.uploadSuccess || '%d file(s) uploaded successfully!' ).replace( '%d', successCount );
 			} else if ( successCount > 0 ) {
@@ -456,40 +479,32 @@ const { state, actions } = store( 'mvs/media-upload', {
 					const quotaData = quotaResp.data;
 					const summary = quotaData.summary;
 					if ( summary ) {
-						const rows = quotaWidget.querySelectorAll( '.mvs-quota-row' );
-						const typeMap = [ 'image', 'video', 'audio' ];
-						rows.forEach( ( row, i ) => {
-							const type = typeMap[ i ];
+						// Rows carry data-type, so every row (documents and storage
+						// included) finds its own numbers. Unlimited rows show the
+						// used count alone and have no bar.
+						quotaWidget.querySelectorAll( '.mvs-quota-row[data-type]' ).forEach( ( row ) => {
+							const type = row.dataset.type;
 							const data = summary[ type ];
-							if ( ! data ) {
+							const countEl = row.querySelector( '.mvs-quota-count' );
+							if ( ! data || ! countEl ) {
 								return;
 							}
-							const countEl = row.querySelector( '.mvs-quota-count' );
-							if ( countEl && ! data.unlimited ) {
-								countEl.textContent = `${ data.used } / ${ data.total }`;
+							if ( 'storage' === type ) {
+								countEl.textContent = `${ formatBytes( data.used ) } / ${ formatBytes( data.limit ) }`;
+								setFill( row, data.used, data.limit );
+								return;
 							}
-							const fillEl = row.querySelector( '.mvs-quota-fill' );
-							if ( fillEl && ! data.unlimited && data.total > 0 ) {
-								fillEl.style.width = `${ Math.min( 100, Math.round( ( data.used / data.total ) * 100 ) ) }%`;
+							countEl.textContent = data.unlimited ? String( data.used ) : `${ data.used } / ${ data.total }`;
+							if ( ! data.unlimited ) {
+								setFill( row, data.used, data.total );
 							}
 						} );
-						// Update storage row (last row).
-						if ( summary.storage && ! summary.storage.unlimited && rows.length > typeMap.length ) {
-							const storageRow = rows[ typeMap.length ];
-							const countEl = storageRow.querySelector( '.mvs-quota-count' );
-							if ( countEl ) {
-								const usedMB = ( summary.storage.used / ( 1024 * 1024 ) ).toFixed( 0 );
-								const limitGB = ( summary.storage.limit / ( 1024 * 1024 * 1024 ) ).toFixed( 0 );
-								countEl.textContent = `${ usedMB } MB / ${ limitGB } GB`;
-							}
-						}
 					}
 				}
 			} catch {
 				// Quota refresh is non-critical.
 			}
 		}
-		setTimeout( () => { ctx.successMessage = ''; }, 8000 );
 		},
 	},
 } );

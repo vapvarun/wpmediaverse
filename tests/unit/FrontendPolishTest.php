@@ -67,6 +67,35 @@ class FrontendPolishTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'tagline', $parts );
 	}
 
+	public function test_grid_tile_link_is_named_even_without_a_title(): void {
+		( new \WPMediaVerse\Core\Migrator() )->run();
+		$repo = Plugin::container()->get( 'media_repository' );
+		$make = static function ( string $title ) use ( $repo ): int {
+			return (int) $repo->insert(
+				array(
+					'title'             => $title,
+					'post_author'       => self::factory()->user->create(),
+					'media_type'        => 'audio',
+					'status'            => 'publish',
+					'moderation_status' => 'approved',
+					'privacy'           => 'public',
+					'file_path'         => '2026/09/probe.mp3',
+					'file_type'         => 'audio/mpeg',
+					'slug'              => 'tile-probe-' . wp_generate_password( 8, false, false ),
+				)
+			);
+		};
+		$helpers = Plugin::container()->get( 'template_helpers' );
+		$render  = static function ( int $id ) use ( $helpers ): string {
+			ob_start();
+			$helpers->render_grid_item( $id );
+			return (string) ob_get_clean();
+		};
+
+		$this->assertStringContainsString( 'class="mvs-grid-item-link" aria-label="Rain on the roof"', $render( $make( 'Rain on the roof' ) ) );
+		$this->assertStringContainsString( 'class="mvs-grid-item-link" aria-label="View media"', $render( $make( '' ) ), 'An untitled audio tile rendered an unnamed link.' );
+	}
+
 	public function test_reactions_resolve_to_fluent_svgs(): void {
 		foreach ( \WPMediaVerse\Social\ReactionService::TYPES as $type ) {
 			$this->assertStringEndsWith( 'assets/emoji/' . $type . '.svg', TemplateHelpers::emoji_url( $type ) );

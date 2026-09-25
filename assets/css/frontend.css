@@ -1964,6 +1964,14 @@ body.dark-mode .mvs-skeleton::after {
     border-radius: 4px;
 }
 
+/* On touch screens the author row is a tap target: reach the plugin's touch
+   floor instead of the 24px the avatar gives it. Desktop keeps the compact row. */
+@media (pointer: coarse), (max-width: 640px) {
+    .mvs-grid-item-author-link {
+        min-height: var(--mvs-touch-min, 44px);
+    }
+}
+
 /* -- Album badge (carousel indicator) in feed */
 .mvs-album-badge {
     position: absolute;

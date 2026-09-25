@@ -123,6 +123,8 @@ wp_interactivity_state(
 			'uploading'      => false,
 			'uploadError'    => '',
 			'successMessage' => '',
+			'lastLink'       => '',
+			'myMediaUrl'     => get_option( 'mvs_page_dashboard' ) ? (string) get_permalink( (int) get_option( 'mvs_page_dashboard' ) ) : '',
 			'hasPending'     => false,
 			'pendingCount'   => 0,
 			'files'          => array(),
@@ -219,5 +221,9 @@ wp_interactivity_state(
 	</div>
 	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
 		<p data-wp-text="state.successText"></p>
+		<p class="mvs-upload-success__next">
+			<a data-wp-bind--href="context.lastLink" data-wp-bind--hidden="!context.lastLink" hidden><?php esc_html_e( 'View it', 'wpmediaverse' ); ?></a>
+			<a data-wp-bind--href="context.myMediaUrl" data-wp-bind--hidden="!context.myMediaUrl" hidden><?php esc_html_e( 'Go to My Media', 'wpmediaverse' ); ?></a>
+		</p>
 	</div>
 </div>
