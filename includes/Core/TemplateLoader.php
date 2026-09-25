@@ -1084,9 +1084,17 @@ class TemplateLoader {
 			return;
 		}
 
+		// Pages where the member is looking at one item. On phones the + upload
+		// button steps aside there (frontend.css): it covered the reactions and
+		// comment box, and viewing a post is not where people upload.
+		$is_view_page = (bool) get_query_var( 'mvs_media_slug' ) || is_singular( array( 'mvs_album', 'mvs_collection' ) );
+
 		add_filter(
 			'body_class',
-			static function ( array $classes ): array {
+			static function ( array $classes ) use ( $is_view_page ): array {
+				if ( $is_view_page ) {
+					$classes[] = 'mvs-view-page';
+				}
 				/**
 				 * Filters the body classes added to WPMediaVerse pages.
 				 *

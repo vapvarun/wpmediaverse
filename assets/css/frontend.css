@@ -8949,3 +8949,40 @@ a.mvs-dashboard-tab:focus-visible {
     inline-size: 16px;
     block-size: 16px;
 }
+
+/* Phones: no + upload button on single media / album / collection pages
+   (body.mvs-view-page, TemplateLoader). It sat over the reactions and the
+   comment box; upload stays in the header, My Media and Explore. Chat stays. */
+@media (max-width: 640px) {
+    .mvs-view-page .mvs-fab-container {
+        display: none;
+    }
+}
+
+/* Social bar: plain icons at rest, like the lightbox row. Every reaction and
+   action used to sit in its own bordered pill, and the chosen reaction became
+   a solid primary block. Now: no border or fill at rest, a soft tint for
+   hover and for the reaction you chose. The 44px tap area stays, invisible. */
+.mvs-social-bar .mvs-reaction-btn,
+.mvs-social-bar .mvs-social-bar__actions button {
+    border-color: transparent;
+    background: transparent;
+    min-block-size: var(--mvs-touch-min, 44px);
+}
+
+.mvs-social-bar .mvs-reaction-btn:hover,
+.mvs-social-bar .mvs-social-bar__actions button:hover {
+    background: var(--mvs-surface-2);
+    border-color: transparent;
+}
+
+.mvs-social-bar .mvs-reaction-btn.active,
+.mvs-social-bar .mvs-social-bar__actions button.active {
+    background: var(--mvs-info-bg);
+    border-color: transparent;
+    color: var(--mvs-primary-text, var(--mvs-primary));
+}
+
+.mvs-social-bar .mvs-reaction-btn.active .mvs-count {
+    color: var(--mvs-primary-text, var(--mvs-primary));
+}
