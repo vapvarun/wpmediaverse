@@ -92,6 +92,27 @@ foreach ( $mvs_tables as $mvs_table ) {
 // Delete all mvs_ options (the opt-in survives while Pro is installed, see above).
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name <> %s", $wpdb->esc_like( 'mvs_' ) . '%', $mvs_pro_installed ? 'mvs_delete_data_on_uninstall' : '' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
+// Options stored under the plugin slug rather than the mvs_ prefix: the
+// licence key and its status, and the setup preset flag (QA, 2.6.0). The
+// underscore is literal, so Pro's `wpmediaverse-pro_*` keys are left for
+// Pro's own uninstall.
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'wpmediaverse_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+// Media tags and categories. The taxonomies are not registered while this
+// file runs on its own, so their terms are removed directly; a term another
+// taxonomy still uses is kept.
+$mvs_tt_rows = $wpdb->get_results( "SELECT term_taxonomy_id, term_id FROM {$wpdb->term_taxonomy} WHERE taxonomy IN ( 'mvs_tag', 'mvs_category' )" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+if ( $mvs_tt_rows ) {
+	$mvs_tt_ids   = implode( ',', array_map( 'intval', wp_list_pluck( $mvs_tt_rows, 'term_taxonomy_id' ) ) );
+	$mvs_term_ids = implode( ',', array_map( 'intval', wp_list_pluck( $mvs_tt_rows, 'term_id' ) ) );
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- integer lists built above.
+	$wpdb->query( "DELETE FROM {$wpdb->term_relationships} WHERE term_taxonomy_id IN ( {$mvs_tt_ids} )" );
+	$wpdb->query( "DELETE FROM {$wpdb->term_taxonomy} WHERE term_taxonomy_id IN ( {$mvs_tt_ids} )" );
+	$wpdb->query( "DELETE FROM {$wpdb->termmeta} WHERE term_id IN ( {$mvs_term_ids} ) AND term_id NOT IN ( SELECT term_id FROM {$wpdb->term_taxonomy} )" );
+	$wpdb->query( "DELETE FROM {$wpdb->terms} WHERE term_id IN ( {$mvs_term_ids} ) AND term_id NOT IN ( SELECT term_id FROM {$wpdb->term_taxonomy} )" );
+	// phpcs:enable
+}
+
 // Per-member state: suspension, interests, privacy presets, counters, resume
 // positions, connector credentials - every MediaVerse key uses one of these two
 // prefixes. Deleted with the rest of the data the owner asked to remove.
