@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 36;
+	const CURRENT_VERSION = 37;
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -149,7 +149,8 @@ class Migrator {
 				PRIMARY KEY  (id),
 				KEY reporter_target (reporter_id, target_type, target_id),
 				KEY target (target_type, target_id),
-				KEY status (status)
+				KEY status (status),
+				KEY status_created (status, created_at)
 			) {$charset_collate};"
 		);
 
@@ -179,7 +180,8 @@ class Migrator {
 				PRIMARY KEY  (id),
 				KEY user_date (user_id, created_at),
 				KEY type_date (type, created_at),
-				KEY created_at (created_at)
+				KEY created_at (created_at),
+				KEY media_id (media_id)
 			) {$charset_collate};"
 		);
 	}
@@ -208,7 +210,9 @@ class Migrator {
 				PRIMARY KEY  (id),
 				UNIQUE KEY follower_following (follower_id, following_id),
 				KEY following_id (following_id),
-				KEY status (status)
+				KEY status (status),
+				KEY follower_created (follower_id, created_at),
+				KEY following_created (following_id, created_at)
 			) {$charset_collate};"
 		);
 
@@ -225,7 +229,9 @@ class Migrator {
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY user_unread (user_id, read_at),
-				KEY user_date (user_id, created_at)
+				KEY user_date (user_id, created_at),
+				KEY media_id (media_id),
+				KEY actor_id (actor_id)
 			) {$charset_collate};"
 		);
 	}
@@ -266,7 +272,8 @@ class Migrator {
 				PRIMARY KEY  (id),
 				UNIQUE KEY media_user (media_id, user_id),
 				KEY user_id (user_id),
-				KEY collection_id (collection_id)
+				KEY collection_id (collection_id),
+				KEY user_created (user_id, created_at)
 			) {$charset_collate};"
 		);
 
@@ -281,7 +288,8 @@ class Migrator {
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY media_user_date (media_id, user_id, created_at),
-				KEY created_at (created_at)
+				KEY created_at (created_at),
+				KEY user_id (user_id)
 			) {$charset_collate};"
 		);
 
@@ -356,7 +364,8 @@ class Migrator {
 				added_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				UNIQUE KEY album_media (album_id, media_id),
-				KEY album_position (album_id, position)
+				KEY album_position (album_id, position),
+				KEY media_id (media_id)
 			) {$charset_collate};"
 		);
 
@@ -436,7 +445,8 @@ class Migrator {
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY level_date (level, created_at),
-				KEY context_date (context, created_at)
+				KEY context_date (context, created_at),
+				KEY created_at (created_at)
 			) {$charset_collate};"
 		);
 
@@ -2447,5 +2457,55 @@ class Migrator {
 		delete_option( 'mvs_telemetry_enabled' );
 		delete_option( 'mvs_telemetry_counters' );
 		delete_option( 'mvs_telemetry_since' );
+	}
+
+	/**
+	 * Migration v37 — big-site indexes (50k media / 10k members target).
+	 *
+	 * Several hot lookups had no matching index: per-media activity /
+	 * notification / album-item rows, per-user view history, error-log
+	 * retention deletes (`LoggerService::prune()`), the reports moderation
+	 * queue filtered by status and sorted by date, and the follow/favorite
+	 * list views (`FollowService::get_followers()` / `get_following()` both
+	 * `ORDER BY created_at DESC`; `FavoriteService::get_user_favorites()`
+	 * defaults to the same). Idempotent via `add_index_if_missing()`
+	 * (SHOW INDEX guard, same pattern as v21/v25/v27/v29) — safe to rerun.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_37(): void {
+		global $wpdb;
+
+		$prefix = $wpdb->prefix;
+
+		$this->add_index_if_missing( $prefix . 'mvs_activity', 'media_id', 'media_id (media_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_notifications', 'media_id', 'media_id (media_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_notifications', 'actor_id', 'actor_id (actor_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_album_items', 'media_id', 'media_id (media_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_media_views', 'user_id', 'user_id (user_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_error_log', 'created_at', 'created_at (created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_reports', 'status_created', 'status_created (status, created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_follows', 'follower_created', 'follower_created (follower_id, created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_follows', 'following_created', 'following_created (following_id, created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_favorites', 'user_created', 'user_created (user_id, created_at)' );
+
+		// AI usage moved from one autoloaded array (mvs_ai_usage) to per-month,
+		// per-field rows (AIService::usage_field_option()). Carry the existing
+		// counters over, or an upgrade mid-month would reset spend to zero and
+		// let the site run past its monthly AI budget.
+		$legacy = get_option( 'mvs_ai_usage', null );
+		if ( is_array( $legacy ) ) {
+			foreach ( $legacy as $month => $fields ) {
+				if ( ! is_string( $month ) || ! preg_match( '/^\d{4}-\d{2}$/', $month ) || ! is_array( $fields ) ) {
+					continue;
+				}
+				foreach ( array( 'calls', 'success', 'failed', 'cost' ) as $field ) {
+					if ( isset( $fields[ $field ] ) ) {
+						add_option( 'mvs_ai_usage_' . $month . '_' . $field, (float) $fields[ $field ], '', false );
+					}
+				}
+			}
+			delete_option( 'mvs_ai_usage' );
+		}
 	}
 }

@@ -255,25 +255,32 @@ class AccountDeletionService {
 
 	/**
 	 * Cron sweep: delete every account whose grace period has expired.
+	 *
+	 * Due accounts are selected in SQL (numeric meta_value <= now), oldest
+	 * due first, capped at 100 per run — not "every scheduled deletion" then
+	 * filtered in PHP. At 10k+ members that PHP filter pass scanned every
+	 * pending deletion on every hourly tick regardless of how many were
+	 * actually due.
 	 */
 	public function process_due(): void {
 		$due = get_users(
 			array(
-				'meta_key'     => self::META_SCHEDULED, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- indexed meta lookup, bounded by number=100.
-				'meta_compare' => 'EXISTS',
-				'number'       => 100,
-				'fields'       => 'ID',
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- indexed numeric meta lookup, bounded by number=100.
+					'due_clause' => array(
+						'key'     => self::META_SCHEDULED,
+						'value'   => time(),
+						'compare' => '<=',
+						'type'    => 'NUMERIC',
+					),
+				),
+				'orderby'    => array( 'due_clause' => 'ASC' ),
+				'number'     => 100,
+				'fields'     => 'ID',
 			)
 		);
 
-		$now = time();
-
 		foreach ( $due as $user_id ) {
-			$when = $this->scheduled_at( (int) $user_id );
-
-			if ( $when > 0 && $when <= $now ) {
-				$this->execute( (int) $user_id );
-			}
+			$this->execute( (int) $user_id );
 		}
 	}
 

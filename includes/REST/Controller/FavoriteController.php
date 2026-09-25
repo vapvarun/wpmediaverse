@@ -264,6 +264,10 @@ class FavoriteController extends WP_REST_Controller {
 		$mvs_privacy  = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		$mvs_viewer   = get_current_user_id();
 		$mvs_filtered = 0;
+		// Prefetch the page BEFORE the existence/privacy loop: exists() and
+		// can_view() read the prefetched rows, so the loop no longer runs two
+		// queries per favourite (2.6.0, big-site pass).
+		$repo->prefetch( array_map( 'intval', array_column( $result['items'], 'media_id' ) ) );
 
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];

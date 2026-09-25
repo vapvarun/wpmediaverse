@@ -411,6 +411,7 @@ class ReportService {
 			return true;
 		}
 
+		unset( $this->block_relations[ $blocker_id ], $this->block_relations[ $blocked_id ] );
 		global $wpdb;
 
 		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -448,6 +449,7 @@ class ReportService {
 	 * @return bool
 	 */
 	public function unblock_user( int $blocker_id, int $blocked_id ): bool {
+		unset( $this->block_relations[ $blocker_id ], $this->block_relations[ $blocked_id ] );
 		global $wpdb;
 
 		return (bool) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -470,16 +472,53 @@ class ReportService {
 	 * @return bool
 	 */
 	public function is_blocked( int $blocker_id, int $blocked_id ): bool {
-		global $wpdb;
+		// Answered from one member's block relations, loaded once per request.
+		// Privacy checks ask "did this author block the viewer?" once per tile:
+		// the viewer is the constant side, so their relations (both directions,
+		// one query) answer the whole page. It was one query per tile - 775 on
+		// an 800-item album page (2.6.0, big-site pass).
+		if ( isset( $this->block_relations[ $blocker_id ] ) ) {
+			return isset( $this->block_relations[ $blocker_id ]['blocks'][ $blocked_id ] );
+		}
 
-		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d AND blocked_id = %d",
-				$blocker_id,
-				$blocked_id
-			)
-		);
+		return isset( $this->relations_of( $blocked_id )['blocked_by'][ $blocker_id ] );
 	}
+
+	/**
+	 * A member's block relations: whom they block, and who blocks them.
+	 *
+	 * @param int $user_id Member.
+	 * @return array{blocks: array<int,bool>, blocked_by: array<int,bool>}
+	 */
+	private function relations_of( int $user_id ): array {
+		if ( ! isset( $this->block_relations[ $user_id ] ) ) {
+			global $wpdb;
+			$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare( "SELECT blocker_id, blocked_id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d OR blocked_id = %d", $user_id, $user_id )
+			);
+			$rel = array(
+				'blocks'     => array(),
+				'blocked_by' => array(),
+			);
+			foreach ( $rows as $row ) {
+				if ( (int) $row->blocker_id === $user_id ) {
+					$rel['blocks'][ (int) $row->blocked_id ] = true;
+				} else {
+					$rel['blocked_by'][ (int) $row->blocker_id ] = true;
+				}
+			}
+			$this->block_relations[ $user_id ] = $rel;
+		}
+
+		return $this->block_relations[ $user_id ];
+	}
+
+	/**
+	 * Per-request block relations, member id => relations_of() result.
+	 *
+	 * @var array<int, array{blocks: array<int,bool>, blocked_by: array<int,bool>}>
+	 */
+	private $block_relations = array();
 
 	/**
 	 * Check if either user has blocked the other (bidirectional).
@@ -491,17 +530,7 @@ class ReportService {
 	 * @return bool True if either has blocked the other.
 	 */
 	public function is_blocked_either_way( int $user_a, int $user_b ): bool {
-		global $wpdb;
-
-		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->prefix}mvs_blocks WHERE (blocker_id = %d AND blocked_id = %d) OR (blocker_id = %d AND blocked_id = %d) LIMIT 1",
-				$user_a,
-				$user_b,
-				$user_b,
-				$user_a
-			)
-		);
+		return $this->is_blocked( $user_a, $user_b ) || $this->is_blocked( $user_b, $user_a );
 	}
 
 	/**

@@ -449,12 +449,58 @@ class AIService {
 			return true; // No budget limit set.
 		}
 
-		$usage = get_option( 'mvs_ai_usage', array() );
-		$month = gmdate( 'Y-m' );
-
-		$spent = isset( $usage[ $month ]['cost'] ) ? (float) $usage[ $month ]['cost'] : 0;
+		$spent = (float) get_option( self::usage_field_option( 'cost', gmdate( 'Y-m' ) ), 0 );
 
 		return $spent < $budget;
+	}
+
+	/**
+	 * Per-month, per-field usage counter option name.
+	 *
+	 * Usage used to live as one nested array under a single `mvs_ai_usage`
+	 * option (autoloaded, read-modify-write on every AI call). Splitting into
+	 * one small autoload=false row per field lets each counter be incremented
+	 * atomically instead of racing a get/update_option round trip, and keeps
+	 * the counters out of the autoloaded-options blob every request pays for.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $field 'calls' | 'success' | 'failed' | 'cost'.
+	 * @param string $month 'Y-m'.
+	 * @return string
+	 */
+	private static function usage_field_option( string $field, string $month ): string {
+		return 'mvs_ai_usage_' . $month . '_' . $field;
+	}
+
+	/**
+	 * Atomically add `$delta` to a numeric, autoload=false wp_options row.
+	 *
+	 * `get_option()` then `update_option()` is a read-modify-write: two
+	 * concurrent AI calls can both read count 41 and both write back 42,
+	 * silently losing an increment. `option_value = option_value + %f` is a
+	 * single UPDATE, atomic at the database layer under concurrency.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $option Option name.
+	 * @param float  $delta  Amount to add.
+	 */
+	private static function atomic_increment_option( string $option, float $delta ): void {
+		global $wpdb;
+
+		// No-op if the row already exists; creates it autoload=false otherwise.
+		add_option( $option, 0, '', false );
+
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"UPDATE {$wpdb->options} SET option_value = option_value + %f WHERE option_name = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$delta,
+				$option
+			)
+		);
+
+		wp_cache_delete( $option, 'options' );
 	}
 
 	/**
@@ -465,25 +511,16 @@ class AIService {
 	 * @param bool   $success     Whether the call succeeded.
 	 */
 	private function track_usage( string $provider_id, string $action, bool $success ): void {
-		$usage = get_option( 'mvs_ai_usage', array() );
 		$month = gmdate( 'Y-m' );
 
-		if ( ! isset( $usage[ $month ] ) ) {
-			$usage[ $month ] = array(
-				'calls'   => 0,
-				'success' => 0,
-				'failed'  => 0,
-				'cost'    => 0,
-			);
+		self::atomic_increment_option( self::usage_field_option( 'calls', $month ), 1 );
+
+		if ( ! $success ) {
+			self::atomic_increment_option( self::usage_field_option( 'failed', $month ), 1 );
+			return;
 		}
 
-		++$usage[ $month ]['calls'];
-
-		if ( $success ) {
-			++$usage[ $month ]['success'];
-		} else {
-			++$usage[ $month ]['failed'];
-		}
+		self::atomic_increment_option( self::usage_field_option( 'success', $month ), 1 );
 
 		// Estimated cost per call — plugin-defaulted (no settings field). Devs can
 		// override per provider/model via the filter; budget tracking uses it.
@@ -500,11 +537,8 @@ class AIService {
 			(float) get_option( 'mvs_ai_cost_per_call', 0.01 ),
 			$provider_id
 		);
-		if ( $success ) {
-			$usage[ $month ]['cost'] += $cost_per_call;
-		}
 
-		update_option( 'mvs_ai_usage', $usage );
+		self::atomic_increment_option( self::usage_field_option( 'cost', $month ), $cost_per_call );
 	}
 
 	/**
@@ -513,18 +547,14 @@ class AIService {
 	 * @return array{calls: int, success: int, failed: int, cost: float, budget: float}
 	 */
 	public function get_usage_stats(): array {
-		$usage  = get_option( 'mvs_ai_usage', array() );
-		$month  = gmdate( 'Y-m' );
-		$budget = (float) get_option( 'mvs_ai_monthly_budget', 10 );
+		$month = gmdate( 'Y-m' );
 
-		$current = isset( $usage[ $month ] ) ? $usage[ $month ] : array(
-			'calls'   => 0,
-			'success' => 0,
-			'failed'  => 0,
-			'cost'    => 0,
+		return array(
+			'calls'   => (int) get_option( self::usage_field_option( 'calls', $month ), 0 ),
+			'success' => (int) get_option( self::usage_field_option( 'success', $month ), 0 ),
+			'failed'  => (int) get_option( self::usage_field_option( 'failed', $month ), 0 ),
+			'cost'    => (float) get_option( self::usage_field_option( 'cost', $month ), 0 ),
+			'budget'  => (float) get_option( 'mvs_ai_monthly_budget', 10 ),
 		);
-
-		$current['budget'] = $budget;
-		return $current;
 	}
 }

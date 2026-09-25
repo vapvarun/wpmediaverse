@@ -57,7 +57,7 @@ switch ( $mvs_context ) {
 // Popular tags for the secondary-navigation row. Counted against the media
 // index, not the taxonomy count, so a suggested tag always has media behind it
 // — a 404 that hands the visitor another dead end is the worst place for one.
-$mvs_popular_tags = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud( 5 );
+$mvs_popular_tags = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->tag_cloud( 5 );
 ?>
 <div class="mvs-archive mvs-archive--404">
 	<div class="mvs-empty-state-frontend mvs-empty-state-frontend--404">

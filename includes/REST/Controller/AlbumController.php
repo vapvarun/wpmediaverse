@@ -439,6 +439,7 @@ class AlbumController extends WP_REST_Controller {
 		if ( ! empty( $page_ids ) ) {
 			// One batched read for the page, then the shared media formatter —
 			// no per-tile query, and no second copy of the response shape.
+			MediaController::prime_viewer_state( $page_ids, get_current_user_id() );
 			$media_controller = new MediaController( $this->privacy );
 			foreach ( $page_ids as $media_id ) {
 				$prepared = $media_controller->prepare_item_for_response( $media_id, $request );

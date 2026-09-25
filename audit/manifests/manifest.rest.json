@@ -1230,6 +1230,16 @@
         "permission": "closure (logged-in check)",
         "purpose": "Get suggested users to follow",
         "file": "includes/REST/Controller/UserController.php:156"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)/items",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CollectionController::get_collection_items",
+        "permission": "CollectionController::get_item_permissions_check",
+        "purpose": "List the media items in a collection (paginated, viewer-gated)",
+        "file": "includes/REST/Controller/CollectionController.php:134"
       }
     ]
   },

@@ -50,10 +50,14 @@ $mvs_tag_limit = max( 1, min( 200, $mvs_tag_limit ) );
 //
 // Rendering on the server makes it correct on every navigation by
 // construction, and removes a REST round-trip from every Explore load.
-$mvs_repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+// Cached (5 min): this partial renders on every Explore layout, every
+// request. CacheService::tag_cloud()/tag_cloud_total() wrap the repository's
+// GROUP BY join in a persistent cache so a 50k+ media library isn't re-scored
+// on every page view.
+$mvs_cache      = \WPMediaVerse\Core\Plugin::container()->get( 'cache' );
 $mvs_show_all   = ! empty( $_GET['mvs_all_tags'] ); // phpcs:ignore WordPress.Security.NonceVerification
-$mvs_tag_total  = $mvs_repo->tag_cloud_total();
-$mvs_tag_chips  = $mvs_repo->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 ) : $mvs_tag_limit );
+$mvs_tag_total  = $mvs_cache->tag_cloud_total();
+$mvs_tag_chips  = $mvs_cache->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 ) : $mvs_tag_limit );
 $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ) ); // phpcs:ignore WordPress.Security.NonceVerification
 ?>
 <div class="mvs-tag-cloud">

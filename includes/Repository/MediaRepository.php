@@ -3307,28 +3307,24 @@ class MediaRepository implements MediaRepositoryInterface {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count_sql, ...$params ) : $count_sql );
 
+		// trending/popular recompute a score across the WHOLE filtered set on
+		// every call (no index can back "score DESC") — expensive at 50k+ rows
+		// and identical for every viewer hitting the same filter combination
+		// within the cache window. Rank once, cache briefly, paginate by slicing.
+		if ( 'trending' === $orderby || 'popular' === $orderby ) {
+			$ids = $this->ranked_feed_page( $orderby, $where_sql, $join, $params, $per_page, $offset );
+
+			return array(
+				'ids'   => $ids,
+				'total' => $total,
+			);
+		}
+
 		$page_params   = $params;
 		$page_params[] = $per_page;
 		$page_params[] = $offset;
 
-		if ( 'trending' === $orderby ) {
-			// (reactions * 3 + comments * 5 + views) / age_hours^1.5
-			$data_sql = "SELECT i.media_id,
-				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
-				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
-				FROM {$index} i
-				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
-				WHERE {$where_sql}
-				ORDER BY trending_score DESC
-				LIMIT %d OFFSET %d";
-		} elseif ( 'popular' === $orderby ) {
-			$data_sql = "SELECT i.media_id
-				FROM {$index} i
-				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
-				WHERE {$where_sql}
-				ORDER BY COALESCE(s.views, 0) DESC
-				LIMIT %d OFFSET %d";
-		} elseif ( 'views' === $orderby ) {
+		if ( 'views' === $orderby ) {
 			$data_sql = "SELECT i.media_id
 				FROM {$index} i
 				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
@@ -3349,6 +3345,70 @@ class MediaRepository implements MediaRepositoryInterface {
 			'ids'   => array_map( 'intval', $ids ),
 			'total' => $total,
 		);
+	}
+
+	/**
+	 * Paginate a trending/popular feed from a short-lived cached ranking.
+	 *
+	 * Caches the top `$cache_cap` ranked media IDs for this exact filter
+	 * combination (keyed off the WHERE/JOIN/params that already fully identify
+	 * the query) for 5 minutes, then serves pages by slicing the cached array —
+	 * no SQL at all for cache hits within the window. A page that reaches past
+	 * the cached window (deep pagination into "Trending") falls back to a
+	 * direct, single-page query rather than growing the cache unbounded.
+	 *
+	 * ponytail: TTL-only invalidation, no cardinality cap beyond the per-key TTL.
+	 * Fine for trending/popular (score, not correctness, and it settles within
+	 * 5 minutes); would need a write-time bust if a "must reflect instantly"
+	 * ranked sort is added later.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $orderby   'trending' or 'popular'.
+	 * @param string $where_sql Already-built WHERE clause (identifies the filter).
+	 * @param string $join      Extra JOIN fragment, or ''.
+	 * @param array  $params    Bound parameters for $where_sql.
+	 * @param int    $per_page  Page size.
+	 * @param int    $offset    Page offset.
+	 * @return int[] Media IDs for this page, in rank order.
+	 */
+	private function ranked_feed_page( string $orderby, string $where_sql, string $join, array $params, int $per_page, int $offset ): array {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$stats = $wpdb->prefix . 'mvs_media_stats';
+
+		$score_expr = 'trending' === $orderby
+			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5))'
+			: 'COALESCE(s.views, 0)';
+
+		$cache_cap  = 300;
+		$cache_key  = 'ranked_feed_' . $orderby . '_' . md5( $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
+		$cache_args = $params;
+		$cache_args[] = $cache_cap;
+
+		$ranked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->remember(
+			$cache_key,
+			static function () use ( $wpdb, $index, $stats, $where_sql, $join, $score_expr, $cache_args ) {
+				$sql = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d";
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$rows = (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$cache_args ) );
+				return array_map( 'intval', $rows );
+			},
+			\WPMediaVerse\Services\CacheService::TTL_MEDIUM
+		);
+
+		if ( $offset + $per_page <= $cache_cap ) {
+			return array_slice( $ranked_ids, $offset, $per_page );
+		}
+
+		// Deep page beyond the cached window: direct query for just this page.
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = $offset;
+		$sql = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$page_params ) ) );
 	}
 
 	/**
@@ -4360,10 +4420,23 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params = array();
 
 		if ( '' !== $search ) {
-			$where[]  = '(title LIKE %s OR description LIKE %s)';
-			$like     = '%' . $wpdb->esc_like( $search ) . '%';
-			$params[] = $like;
-			$params[] = $like;
+			// FULLTEXT when the index exists (Migrator v… adds `media_search_ft`
+			// on title+description) — an indexed lookup instead of a `LIKE
+			// '%term%'` table scan, which cannot use any index and got slower
+			// with every media row on the site. `fulltext_boolean_query()`
+			// returns '' for a term that reduces to nothing (all-punctuation
+			// input, or a site whose FULLTEXT min-word-length setting drops
+			// every word) — falls through to LIKE rather than matching nothing.
+			$boolean_query = $this->has_fulltext_index() ? $this->fulltext_boolean_query( $search ) : '';
+			if ( '' !== $boolean_query ) {
+				$where[]  = 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)';
+				$params[] = $boolean_query;
+			} else {
+				$where[]  = '(title LIKE %s OR description LIKE %s)';
+				$like     = '%' . $wpdb->esc_like( $search ) . '%';
+				$params[] = $like;
+				$params[] = $like;
+			}
 		}
 
 		// An explicit type filter wins — that is how an owner asks this screen for
@@ -4808,6 +4881,37 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Turn a free-text admin search term into a MySQL BOOLEAN MODE query.
+	 *
+	 * Every word becomes a required prefix match (`+word*`) so "sun set"
+	 * behaves like an AND of prefixes rather than boolean-mode's default OR —
+	 * the admin search box has always meant "narrow the list", not "broaden
+	 * it". Boolean-mode operator characters are stripped from the input first
+	 * so admin search text can never be (mis)read as query syntax.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $term Raw search term.
+	 * @return string Boolean-mode query, or '' when nothing usable remains.
+	 */
+	private function fulltext_boolean_query( string $term ): string {
+		$term  = preg_replace( '/[+\-><()~*"@]+/', ' ', $term );
+		$words = array_filter( preg_split( '/\s+/', trim( (string) $term ) ) );
+		if ( empty( $words ) ) {
+			return '';
+		}
+		return implode(
+			' ',
+			array_map(
+				static function ( $word ) {
+					return '+' . $word . '*';
+				},
+				$words
+			)
+		);
+	}
+
+	/**
 	 * The media-index table name, for callers that JOIN to it from their own.
 	 *
 	 * NARROW ON PURPOSE, and not a way around Rule 7. It is for the case where
@@ -4858,11 +4962,19 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * subquery (previously copy-pasted verbatim across 6 listing sites).
 	 *
 	 * Returns rows that are gallery members at a non-zero position — the outer
-	 * query wraps this in `m.media_id NOT IN (...)`. Fully static: no params.
+	 * query wraps this in `<alias>.media_id NOT IN (...)`. Fully static: no
+	 * params, so any caller's alias works unchanged.
+	 *
+	 * Public since 2.6.0 so `MediaController`'s feed query (which builds its
+	 * WHERE outside the repository per the `mvs_feed_query_args` contract, see
+	 * Rule 7's note on `feed_page()`) can reuse this instead of keeping its own
+	 * copy — the two had drifted onto different "which item is the cover"
+	 * definitions (`group_position = '0'` here vs "lowest media_id in the
+	 * group" in the old inline copy).
 	 *
 	 * @return string Subquery SQL (no surrounding parentheses).
 	 */
-	private function gallery_exclude_subquery(): string {
+	public function gallery_exclude_subquery(): string {
 		global $wpdb;
 
 		$meta = $wpdb->prefix . 'mvs_media_meta';

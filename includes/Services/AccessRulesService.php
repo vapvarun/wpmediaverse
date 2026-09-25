@@ -55,6 +55,14 @@ class AccessRulesService {
 	 *
 	 * @var array<int, bool>
 	 */
+	/**
+	 * Every media id with at least one rule, loaded once per request; false
+	 * when there are too many to hold (see has_active_rules()).
+	 *
+	 * @var array<int, int>|false|null
+	 */
+	private static $rules_media_set = null;
+
 	private static $rules_presence_cache = array();
 
 	/**
@@ -297,6 +305,20 @@ class AccessRulesService {
 			return self::$rules_presence_cache[ $media_id ];
 		}
 
+		// Few items ever carry rules, so load the whole set once per request
+		// instead of one COUNT per tile (794 on an 800-item album page).
+		// ponytail: capped at 5000 rule-bearing media; past that it falls back
+		// to the per-id COUNT below. Access rules are being retired anyway.
+		if ( null === self::$rules_media_set ) {
+			global $wpdb;
+			$ids                   = $wpdb->get_col( "SELECT DISTINCT media_id FROM {$wpdb->prefix}mvs_access_rules LIMIT 5001" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			self::$rules_media_set = count( $ids ) > 5000 ? false : array_flip( array_map( 'intval', $ids ) );
+		}
+		if ( is_array( self::$rules_media_set ) ) {
+			self::$rules_presence_cache[ $media_id ] = isset( self::$rules_media_set[ $media_id ] );
+			return self::$rules_presence_cache[ $media_id ];
+		}
+
 		global $wpdb;
 		$table = $wpdb->prefix . 'mvs_access_rules';
 
@@ -367,6 +389,7 @@ class AccessRulesService {
 	 */
 	public static function flush_rules_presence_cache(): void {
 		self::$rules_presence_cache = array();
+		self::$rules_media_set      = null;
 	}
 
 	/**

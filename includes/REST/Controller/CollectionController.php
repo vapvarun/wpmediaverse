@@ -123,6 +123,43 @@ class CollectionController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /collections/{id}/items — hydrated, paginated media items.
+		// Mirrors AlbumController::get_album_items(): a collection is unbounded
+		// (manual collections especially can grow past thousands of favorites),
+		// and the collection detail route above only ever carried a raw `total`
+		// plus a same-shape-as-before item list capped by whatever the caller
+		// asked for — this is the entry point the Load More button and the app
+		// use to page through the rest.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/items',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_collection_items' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
+				'args'                => array(
+					'id'       => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+					'page'     => array(
+						'type'              => 'integer',
+						'default'           => 1,
+						'minimum'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+					'per_page' => array(
+						'type'              => 'integer',
+						'default'           => 20,
+						'minimum'           => 1,
+						'maximum'           => 100,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
 		// PUT /collections/{id}/rules — set smart collection rules.
 		register_rest_route(
 			$this->namespace,
@@ -218,6 +255,69 @@ class CollectionController extends WP_REST_Controller {
 		$page     = $page ? (int) $page : 1;
 
 		return rest_ensure_response( $this->prepare_collection_response( $post, true, $per_page, $page ) );
+	}
+
+	/**
+	 * Get a collection's media items, hydrated and paginated.
+	 *
+	 * `GET /collections/{id}/items`. Smart collections page through
+	 * `CollectionService::resolve()`, which is already a bounded, indexed
+	 * MediaRepository query. Manual collections page by slicing the
+	 * viewer-gated favourite ID list (same approach — and the same documented
+	 * ceiling — as `AlbumController::get_album_items()`).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_collection_items( $request ) {
+		$post = get_post( $request->get_param( 'id' ) );
+		if ( ! $post || 'mvs_collection' !== $post->post_type ) {
+			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $post->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
+		$per_page = $per_page ? (int) $per_page : 20;
+		$page     = max( 1, (int) $request->get_param( 'page' ) );
+		$viewer   = get_current_user_id();
+
+		if ( 'smart' === $this->collections->get_type( $post->ID ) ) {
+			$resolved = $this->collections->resolve( $post->ID, $per_page, $page, $viewer );
+			$page_ids = array_column( $resolved['items'], 'media_id' );
+			$total    = (int) $resolved['total'];
+		} else {
+			// Counted after the viewer gate: an honest total over a filtered page
+			// is its own disclosure — it tells a stranger how much is withheld.
+			$all_ids  = $this->manual_visible_ids( $post->ID );
+			$total    = count( $all_ids );
+			$page_ids = array_slice( $all_ids, ( $page - 1 ) * $per_page, $per_page );
+		}
+
+		$items = array();
+		if ( ! empty( $page_ids ) ) {
+			// One batched read for the page, then the shared media formatter —
+			// mirrors AlbumController::get_album_items().
+			$media_controller = new MediaController( \WPMediaVerse\Core\Plugin::container()->get( 'privacy' ) );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( array_map( 'intval', $page_ids ) );
+			MediaController::prime_viewer_state( array_map( 'intval', $page_ids ), get_current_user_id() );
+			foreach ( $page_ids as $media_id ) {
+				$prepared = $media_controller->prepare_item_for_response( (int) $media_id, $request );
+				if ( null !== $prepared ) {
+					$items[] = $prepared;
+				}
+			}
+		}
+
+		$response = rest_ensure_response( $items );
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) ( $per_page > 0 ? (int) ceil( $total / $per_page ) : 0 ) );
+
+		return $response;
 	}
 
 	/**
@@ -446,9 +546,12 @@ class CollectionController extends WP_REST_Controller {
 			// mvs_collection_media_ids filter - so a collection could report
 			// more items than it would show, and draw its cover from media the
 			// viewer cannot open. Basecamp 10298492555.
-			// ponytail: linear scan, one privacy check per row (request-cached).
-			// Fine at the sizes this endpoint serves; needs a batched gate if
-			// manual collections ever run to thousands.
+			// ponytail: linear scan, one privacy check per row — but batch-prefetched
+			// (FavoriteService::get_collection_media_ids() primes MediaRepository
+			// before the can_view() loop, 2.6.0), so it is one query pair for the
+			// whole collection, not one per row. Still an unbounded read at
+			// $limit = 0; needs a real DB-level cap if manual collections ever run
+			// past the tens of thousands.
 			$manual_ids = $this->manual_visible_ids( $post->ID );
 			$cover_ids  = array_slice( $manual_ids, 0, 5 );
 			$total      = count( $manual_ids );
@@ -478,26 +581,25 @@ class CollectionController extends WP_REST_Controller {
 			if ( 'smart' === $collection_type ) {
 				$data['items'] = $smart_items;
 			} else {
+				// Paginated by the same $per_page/$page the caller already sent
+				// (and the smart branch above already honours via resolve()) —
+				// previously ignored here, so a manual collection's detail
+				// response always returned EVERY favourite row regardless of
+				// per_page, unbounded at any collection size.
 				global $wpdb;
-				$mvs_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC",
-						$post->ID
-					),
-					ARRAY_A
-				);
+				$mvs_page_ids = array_slice( $manual_ids, ( $page - 1 ) * $per_page, $per_page );
 
-				// Keep created_at (the gated helper returns ids only) but show
-				// only the rows $total counted, so the list matches the number.
-				$mvs_visible       = array_flip( $manual_ids );
-				$data['favorites'] = array_values(
-					array_filter(
-						(array) $mvs_rows,
-						static function ( $mvs_row ) use ( $mvs_visible ) {
-							return isset( $mvs_visible[ (int) $mvs_row['media_id'] ] );
-						}
-					)
-				);
+				$data['favorites'] = array();
+				if ( ! empty( $mvs_page_ids ) ) {
+					$mvs_placeholders   = implode( ',', array_fill( 0, count( $mvs_page_ids ), '%d' ) );
+					$data['favorites']  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+						$wpdb->prepare(
+							"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d AND media_id IN ({$mvs_placeholders}) ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+							array_merge( array( $post->ID ), $mvs_page_ids )
+						),
+						ARRAY_A
+					);
+				}
 			}
 		}
 

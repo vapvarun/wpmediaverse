@@ -200,6 +200,12 @@
       "object_id": true,
       "writes": false
     },
+    "GET /mvs/v1/collections/(?P<id>[\\d]+)/items": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\CollectionController::get_item_permissions_check",
+      "object_id": true,
+      "writes": false
+    },
     "GET /mvs/v1/conversations/(?P<id>\\d+)": {
       "audience": "member",
       "permission_callback": "WPMediaVerse\\Messaging\\MessagingController::check_auth",

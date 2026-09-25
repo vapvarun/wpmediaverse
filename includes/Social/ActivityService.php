@@ -171,6 +171,27 @@ class ActivityService {
 			)
 		);
 
+		// Prime caches in bulk before formatting — format_activity() calls
+		// get_userdata() and MediaRepository::get_all() per row, which without
+		// this is N+1 (a fresh query per row per lookup at 50k+ media / 10k
+		// members). cache_users() primes core's user cache; prefetch() primes
+		// the repository's request-scope row+meta cache (mvs_media_index is not
+		// a CPT, so core's own post-cache priming would prime nothing useful).
+		$actor_ids = array();
+		$media_ids = array();
+		foreach ( $rows as $row ) {
+			$actor_ids[] = (int) $row->user_id;
+			if ( $row->media_id ) {
+				$media_ids[] = (int) $row->media_id;
+			}
+		}
+		if ( $actor_ids ) {
+			cache_users( array_unique( $actor_ids ) );
+		}
+		if ( $media_ids ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( array_unique( $media_ids ) );
+		}
+
 		$activities = array();
 		foreach ( $rows as $row ) {
 			$activities[] = $this->format_activity( $row );

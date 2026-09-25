@@ -328,6 +328,11 @@ class Plugin {
 			1
 		);
 
+		// can_view() memoises per request; a privacy change must not keep
+		// answering with the old level (a bulk "make private" followed by a
+		// listing in the same request listed the items to everyone).
+		add_action( 'mvs_media_privacy_changed', array( self::$container->get( 'privacy' ), 'flush_cache' ), 1, 0 );
+
 		// Storage re-localization on privacy escalation. When a media row
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or

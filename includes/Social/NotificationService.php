@@ -240,7 +240,12 @@ class NotificationService {
 			);
 		}
 		if ( $media_ids ) {
-			_prime_post_caches( array_unique( $media_ids ), false, false );
+			// NOT _prime_post_caches(): mvs_media_index is not CPT-backed (see
+			// Module Map), so priming the wp_posts cache primed nothing that
+			// format_notification()'s MediaRepository::get()/get_permalink()
+			// calls actually read — every notification with a media_id still
+			// ran its own query. This is the cache format_notification() reads.
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( array_unique( $media_ids ) );
 		}
 
 		$notifications = array();

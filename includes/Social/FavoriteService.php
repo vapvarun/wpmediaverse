@@ -241,6 +241,14 @@ class FavoriteService {
 			return $ids;
 		}
 
+		// One batch load before the per-id can_view() loop below, instead of a
+		// fresh MediaRepository query per id — real N+1 at $limit = 0 (unbounded
+		// manual-collection reads), the shape collection.php and
+		// CollectionController::manual_visible_ids() both call with.
+		if ( $ids ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
+		}
+
 		return array_values(
 			array_filter(
 				$ids,

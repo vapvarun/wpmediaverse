@@ -230,7 +230,12 @@ class TagController extends WP_REST_Controller {
 		// taxonomy count includes documents, which the media feeds this cloud
 		// filters exclude by design — so document-only tags were rendered as
 		// chips that always returned zero items (Basecamp 10259632183).
-		$terms = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud( $limit );
+		//
+		// Cached: this route (and the identical query behind the Explore chip
+		// row) reruns a GROUP BY join across term_relationships + mvs_media_index
+		// on every uncached hit — expensive at 50k+ media. CacheService::tag_cloud()
+		// wraps the repository call in a 5-minute persistent cache.
+		$terms = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->tag_cloud( $limit );
 
 		$data = array();
 		foreach ( $terms as $term ) {

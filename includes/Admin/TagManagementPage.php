@@ -24,6 +24,24 @@ class TagManagementPage {
 	private const PER_PAGE = 20;
 
 	/**
+	 * Action Scheduler hook that processes one batch of a tag merge.
+	 *
+	 * @since 2.6.0
+	 */
+	public const MERGE_HOOK = 'mvs_tag_merge_batch';
+
+	/**
+	 * Media items reassigned per merge batch.
+	 */
+	private const MERGE_BATCH_SIZE = 200;
+
+	/**
+	 * Above this many linked media items, a merge runs in the background
+	 * instead of inline on the request.
+	 */
+	private const MERGE_LARGE_THRESHOLD = 200;
+
+	/**
 	 * Constructor. Registers hooks for handling tag actions.
 	 */
 	public function __construct() {
@@ -31,7 +49,9 @@ class TagManagementPage {
 		add_action( 'admin_init', array( $this, 'handle_single_delete' ) );
 		add_action( 'admin_init', array( $this, 'handle_edit' ) );
 		add_action( 'admin_init', array( $this, 'handle_create' ) );
+		add_action( 'admin_init', array( $this, 'handle_merge' ) );
 		add_action( 'admin_notices', array( $this, 'show_admin_notices' ) );
+		add_action( self::MERGE_HOOK, array( $this, 'process_merge_batch' ), 10, 3 );
 	}
 
 	/**
@@ -98,7 +118,9 @@ class TagManagementPage {
 			$args['search'] = $search;
 		}
 
-		// Get total count — must match the display query so pagination is correct.
+		// Get total count — must match the display query so pagination is
+		// correct. wp_count_terms() runs a COUNT query instead of loading
+		// every matching WP_Term object just to discard them for a number.
 		$count_args = array(
 			'taxonomy'   => 'mvs_tag',
 			'hide_empty' => false,
@@ -106,8 +128,7 @@ class TagManagementPage {
 		if ( $search ) {
 			$count_args['search'] = $search;
 		}
-		$all_tags = get_terms( $count_args );
-		$total    = is_wp_error( $all_tags ) ? 0 : count( $all_tags );
+		$total = (int) wp_count_terms( $count_args );
 
 		$total_pages = (int) ceil( $total / $per_page );
 
@@ -320,8 +341,12 @@ class TagManagementPage {
 	 * @param int    $total       Total number of items.
 	 * @param int    $paged       Current page number.
 	 * @param int    $total_pages Total number of pages.
+	 * @param string $param       Query arg carrying the page number. Defaults
+	 *                            to 'paged' (the tag list); the linked-media
+	 *                            list on the edit screen reuses this with
+	 *                            'media_paged' so the two pagers don't collide.
 	 */
-	private function render_pagination( string $base_url, int $total, int $paged, int $total_pages ): void {
+	private function render_pagination( string $base_url, int $total, int $paged, int $total_pages, string $param = 'paged' ): void {
 
 		if ( $total_pages <= 1 ) {
 			return;
@@ -333,7 +358,7 @@ class TagManagementPage {
 			if ( $i === $paged ) {
 				$page_links[] = '<span class="page-numbers current">' . esc_html( (string) $i ) . '</span>';
 			} else {
-				$page_links[] = '<a class="page-numbers" href="' . esc_url( add_query_arg( 'paged', $i, $base_url ) ) . '">' . esc_html( (string) $i ) . '</a>';
+				$page_links[] = '<a class="page-numbers" href="' . esc_url( add_query_arg( $param, $i, $base_url ) ) . '">' . esc_html( (string) $i ) . '</a>';
 			}
 		}
 
@@ -534,6 +559,144 @@ class TagManagementPage {
 	}
 
 	/**
+	 * Handle the "Merge Into Another Tag" form on the edit screen.
+	 *
+	 * Small tags merge inline; a tag over `MERGE_LARGE_THRESHOLD` linked
+	 * items is handed to Action Scheduler instead — every prior merge ran
+	 * `wp_set_object_terms()` + a repository write per linked item inline on
+	 * this request, which timed out on a large tag.
+	 */
+	public function handle_merge(): void {
+		if ( ! isset( $_GET['page'] ) || 'mvs-tags' !== $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+		if ( ! isset( $_POST['form_action'] ) || 'merge_tags' !== $_POST['form_action'] ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+			wp_die( esc_html__( 'You do not have permission to merge tags.', 'wpmediaverse' ) );
+		}
+
+		$source_id = isset( $_POST['source_tag_id'] ) ? absint( $_POST['source_tag_id'] ) : 0;
+
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'mvs_merge_tags_' . $source_id ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
+		}
+
+		$target_id = isset( $_POST['target_tag_id'] ) ? absint( $_POST['target_tag_id'] ) : 0;
+
+		if ( $source_id <= 0 || $target_id <= 0 || $source_id === $target_id ) {
+			wp_die( esc_html__( 'Choose two different tags to merge.', 'wpmediaverse' ) );
+		}
+
+		$source = get_term( $source_id, 'mvs_tag' );
+		$target = get_term( $target_id, 'mvs_tag' );
+		if ( ! $source || is_wp_error( $source ) || ! $target || is_wp_error( $target ) ) {
+			wp_die( esc_html__( 'One of the selected tags no longer exists.', 'wpmediaverse' ) );
+		}
+
+		$large = (int) $source->count > self::MERGE_LARGE_THRESHOLD;
+
+		if ( $large && function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, 0 ), 'wpmediaverse' );
+		} else {
+			$this->process_merge_batch( $source_id, $target_id, 0 );
+		}
+
+		$redirect_url = add_query_arg(
+			array( 'merged' => $large ? 'queued' : '1' ),
+			admin_url( 'admin.php?page=mvs-tags' )
+		);
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
+	 * Merge one batch of a source tag's media into the target tag.
+	 *
+	 * Action Scheduler callback (also called directly for small/synchronous
+	 * merges). `term_relationships` rows are only ADDED to during a batch —
+	 * the source term isn't deleted until the last batch — so offset-based
+	 * paging across calls stays stable.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $source_id Source term id.
+	 * @param int $target_id Target term id.
+	 * @param int $offset    Rows already processed.
+	 */
+	public function process_merge_batch( int $source_id, int $target_id, int $offset = 0 ): void {
+		$source = get_term( $source_id, 'mvs_tag' );
+		if ( ! $source || is_wp_error( $source ) ) {
+			return; // Already merged and deleted (or never existed) — nothing left to do.
+		}
+		$target = get_term( $target_id, 'mvs_tag' );
+		if ( ! $target || is_wp_error( $target ) ) {
+			return;
+		}
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$media_ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT tr.object_id FROM {$wpdb->term_relationships} tr
+					WHERE tr.term_taxonomy_id = %d
+					ORDER BY tr.object_id ASC
+					LIMIT %d OFFSET %d",
+					(int) $source->term_taxonomy_id,
+					self::MERGE_BATCH_SIZE,
+					$offset
+				)
+			)
+		);
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		foreach ( $media_ids as $media_id ) {
+			wp_set_object_terms( $media_id, $target_id, 'mvs_tag', true );
+			$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts.
+			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
+				$repo->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
+			}
+		}
+
+		if ( count( $media_ids ) === self::MERGE_BATCH_SIZE ) {
+			// More rows remain — advance the cursor rather than deleting the
+			// source tag yet, so a huge merge never blocks one request/run.
+			if ( function_exists( 'as_enqueue_async_action' ) ) {
+				as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, $offset + self::MERGE_BATCH_SIZE ), 'wpmediaverse' );
+			} else {
+				$this->process_merge_batch( $source_id, $target_id, $offset + self::MERGE_BATCH_SIZE );
+			}
+			return;
+		}
+
+		// Last batch — every linked item now also carries the target tag, so
+		// the source tag is safe to remove.
+		wp_delete_term( $source_id, 'mvs_tag' );
+
+		/**
+		 * Fires after a tag merge finishes (inline or background).
+		 *
+		 * Listeners get an empty affected-post list from this path.
+		 * ponytail: the affected-post list isn't accumulated across batches
+		 * (unbounded memory for a large merge is the exact thing batching
+		 * exists to avoid) — listeners get an empty array here. Shares the
+		 * hook name REST's `merge_tags` fires, which DOES carry the list for
+		 * its (always-synchronous, so always small) merges.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param int   $source_id Source term id (deleted).
+		 * @param int   $target_id Target term id (kept).
+		 * @param int[] $posts     Empty for a background merge.
+		 */
+		do_action( 'mvs_tags_merged', $source_id, $target_id, array() );
+	}
+
+	/**
 	 * Handle individual delete action.
 	 */
 	public function handle_single_delete(): void {
@@ -606,14 +769,35 @@ class TagManagementPage {
 			wp_die( esc_html__( 'Tag not found.', 'wpmediaverse' ) );
 		}
 
-		// Get media items with this tag.
+		// Get media items with this tag, ONE PAGE at a time — a tag on a
+		// large library can link thousands of items, and the edit screen
+		// used to load every one of them (plus a get_all() call per item)
+		// on a single request.
+		$media_per_page = self::PER_PAGE;
+		$media_paged    = isset( $_GET['media_paged'] ) ? max( 1, absint( $_GET['media_paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
+		$media_offset   = ( $media_paged - 1 ) * $media_per_page;
+
 		global $wpdb;
+		$media_total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				WHERE tt.term_id = %d AND tt.taxonomy = 'mvs_tag'",
+				$tag_id
+			)
+		);
+		$media_total_pages = (int) ceil( $media_total / $media_per_page );
+
 		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT tr.object_id FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-				WHERE tt.term_id = %d AND tt.taxonomy = 'mvs_tag'",
-				$tag_id
+				WHERE tt.term_id = %d AND tt.taxonomy = 'mvs_tag'
+				ORDER BY tr.object_id ASC
+				LIMIT %d OFFSET %d",
+				$tag_id,
+				$media_per_page,
+				$media_offset
 			)
 		);
 
@@ -629,6 +813,30 @@ class TagManagementPage {
 
 		$cancel_url  = admin_url( 'admin.php?page=mvs-tags' );
 		$form_action = admin_url( 'admin.php?page=mvs-tags' );
+		$edit_url    = add_query_arg(
+			array(
+				'page'   => 'mvs-tags',
+				'action' => 'edit',
+				'tag_id' => $tag_id,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		// Merge target choices — every other tag, name-ordered. Capped: this
+		// is a picklist for a human, not a listing to page through.
+		$merge_targets = get_terms(
+			array(
+				'taxonomy'   => 'mvs_tag',
+				'hide_empty' => false,
+				'exclude'    => array( $tag_id ),
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+				'number'     => 200,
+			)
+		);
+		if ( is_wp_error( $merge_targets ) ) {
+			$merge_targets = array();
+		}
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline">
@@ -712,15 +920,44 @@ class TagManagementPage {
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+				<?php $this->render_pagination( $edit_url, $media_total, $media_paged, $media_total_pages, 'media_paged' ); ?>
 				<p class="description">
 					<?php
 					printf(
 						// translators: %d: number of media items.
 						esc_html__( 'This tag is linked to %d media item(s).', 'wpmediaverse' ),
-						count( $media_items )
+						$media_total
 					);
 					?>
 				</p>
+			<?php endif; ?>
+
+			<hr />
+
+			<h2><?php esc_html_e( 'Merge Into Another Tag', 'wpmediaverse' ); ?></h2>
+			<?php if ( empty( $merge_targets ) ) : ?>
+				<p><?php esc_html_e( 'No other tags exist to merge into.', 'wpmediaverse' ); ?></p>
+			<?php else : ?>
+				<p class="description">
+					<?php
+					esc_html_e(
+						'Every media item on this tag moves to the tag you choose below, and this tag is then deleted. Large tags run in the background so the page never times out.',
+						'wpmediaverse'
+					);
+					?>
+				</p>
+				<form method="post" action="<?php echo esc_url( $form_action ); ?>" onsubmit="return confirm( '<?php echo esc_js( __( 'Merge this tag into the selected tag? This cannot be undone.', 'wpmediaverse' ) ); ?>' );">
+					<?php wp_nonce_field( 'mvs_merge_tags_' . $tag_id, '_wpnonce' ); ?>
+					<input type="hidden" name="source_tag_id" value="<?php echo esc_attr( (string) $tag_id ); ?>" />
+					<input type="hidden" name="form_action" value="merge_tags" />
+					<select name="target_tag_id" required>
+						<option value=""><?php esc_html_e( 'Choose a tag…', 'wpmediaverse' ); ?></option>
+						<?php foreach ( $merge_targets as $target ) : ?>
+							<option value="<?php echo esc_attr( (string) $target->term_id ); ?>"><?php echo esc_html( $target->name ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<?php submit_button( esc_html__( 'Merge Tag', 'wpmediaverse' ), 'secondary', 'submit', false ); ?>
+				</form>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -793,6 +1030,13 @@ class TagManagementPage {
 
 		if ( isset( $_GET['created'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tag created successfully.', 'wpmediaverse' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['merged'] ) ) {
+			$message = 'queued' === $_GET['merged']
+				? __( 'Merge started in the background — this is a large tag, so it will finish over the next few minutes.', 'wpmediaverse' )
+				: __( 'Tags merged successfully.', 'wpmediaverse' );
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}

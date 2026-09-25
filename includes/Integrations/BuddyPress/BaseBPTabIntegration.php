@@ -339,16 +339,32 @@ abstract class BaseBPTabIntegration {
 		$this->render_back_link();
 		$this->render_album_header( $album );
 
-		$items = $this->fetch_album_items( (int) $album->ID );
+		// All viewer-visible items, then paginate — an album is unbounded, and
+		// this view used to render every item on every page load with no
+		// prefetch, so a large album meant one render_grid_item() query chain
+		// per item, every visit (big-site target: 50k+ media).
+		$all_items = $this->fetch_album_items( (int) $album->ID );
 
 		if ( $this->is_authorized() ) {
 			$this->render_album_upload_form( (int) $album->ID );
 		}
 
-		if ( empty( $items ) ) {
+		if ( empty( $all_items ) ) {
 			$this->render_empty_single_album();
 		} else {
-			$this->render_album_items_grid( $items );
+			$mpage     = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$per_page  = absint( get_option( 'mvs_items_per_page', 12 ) );
+			$max_pages = $per_page > 0 ? (int) ceil( count( $all_items ) / $per_page ) : 1;
+			$mpage     = max( 1, min( $mpage, max( 1, $max_pages ) ) );
+			$page_items = $per_page > 0 ? array_slice( $all_items, ( $mpage - 1 ) * $per_page, $per_page ) : $all_items;
+
+			// Batch index + meta for the page in one pair of queries so each
+			// tile renders from the request cache (same win album.php already
+			// has via MediaRepository::prefetch()).
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $page_items );
+
+			$this->render_album_items_grid( $page_items );
+			$this->render_numeric_pagination( $mpage, $max_pages );
 		}
 
 		echo '</div>';
@@ -679,15 +695,29 @@ abstract class BaseBPTabIntegration {
 	 * @param int       $paged Current page.
 	 */
 	protected function render_albums_pagination( \WP_Query $query, int $paged ): void {
-		if ( $query->max_num_pages <= 1 ) {
+		$this->render_numeric_pagination( $paged, (int) $query->max_num_pages );
+	}
+
+	/**
+	 * Render numeric `?mpage=` pagination. Shared by the albums grid
+	 * (`render_albums_pagination()`) and a single album's items grid
+	 * (`single_album_content()`) so both use one pager, one URL param.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $current     Current page.
+	 * @param int $total_pages Total pages.
+	 */
+	protected function render_numeric_pagination( int $current, int $total_pages ): void {
+		if ( $total_pages <= 1 ) {
 			return;
 		}
 		$pagination = paginate_links(
 			array(
 				'base'    => add_query_arg( 'mpage', '%#%' ),
 				'format'  => '',
-				'current' => $paged,
-				'total'   => $query->max_num_pages,
+				'current' => $current,
+				'total'   => $total_pages,
 			)
 		);
 		if ( $pagination ) {
@@ -782,21 +812,21 @@ abstract class BaseBPTabIntegration {
 	}
 
 	/**
-	 * Fetch ordered media IDs for an album.
+	 * Fetch ordered, viewer-gated media IDs for an album.
+	 *
+	 * Delegates to `AlbumService::viewable_item_ids()` — the one rule
+	 * (`album.php` and `AlbumController` both already apply it) — instead of
+	 * a raw, ungated `mvs_album_items` scan. Without the gate, a private or
+	 * group-only item inside an otherwise-public album rendered its title and
+	 * tile to any BP tab visitor: the exact defect `album.php` fixed in the
+	 * 2.6.0 member walk, reproduced here because this view kept its own copy
+	 * of the query.
 	 *
 	 * @param int $album_id Album CPT ID.
 	 * @return int[]
 	 */
 	protected function fetch_album_items( int $album_id ): array {
-		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_album_items';
-		$ids   = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$album_id
-			)
-		);
-		return array_map( 'intval', $ids ?: array() );
+		return \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->viewable_item_ids( $album_id, get_current_user_id() );
 	}
 
 	// ============================================================

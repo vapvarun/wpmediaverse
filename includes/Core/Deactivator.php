@@ -47,6 +47,8 @@ class Deactivator {
 		'mvs_deliver_webhook',
 		'mvs_cloud_sync_media',
 		'mvs_cloud_repatriate_media',
+		'mvs_user_deletion_cascade',
+		'mvs_tag_merge_batch',
 	);
 
 	/**

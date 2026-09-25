@@ -1437,6 +1437,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_log_social_events",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $log_social_events"
+      ],
+      "where": "includes/Services/LoggerService.php:42",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_login_url",
       "type": "filter",
       "args_count": 2,

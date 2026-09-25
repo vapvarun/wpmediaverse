@@ -599,14 +599,14 @@ class MediaController extends WP_REST_Controller {
 			// LEFT JOINs mvs_media_stats, which also has a media_id column, so an
 			// unqualified ref is ambiguous and the data query silently returns 0
 			// rows while the (stats-join-free) COUNT query still returns the total.
-			$where[] = "(i.media_id NOT IN (
-				SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
-				WHERE mm.meta_key = 'media_group' AND mm.media_id != (
-					SELECT mm2.media_id FROM {$wpdb->prefix}mvs_media_meta mm2
-					WHERE mm2.meta_key = 'media_group' AND mm2.meta_value = mm.meta_value
-					ORDER BY mm2.media_id ASC LIMIT 1
-				)
-			))";
+			//
+			// Reuses the repository's canonical definition of "non-cover gallery
+			// member" instead of keeping a second copy here — this inline copy
+			// used a different rule ("lowest media_id in the group") than
+			// `MediaRepository::gallery_exclude_subquery()` ("group_position !=
+			// '0'"), so the same media could be a cover in Explore and not in
+			// this feed, or vice versa.
+			$where[] = '(i.media_id NOT IN (' . \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_exclude_subquery() . '))';
 		}
 
 		// Filter by specific media group ID.
@@ -2024,6 +2024,44 @@ class MediaController extends WP_REST_Controller {
 	private static ?int $viewer_state_primed_for = null;
 
 	/**
+	 * Engagement stats per media id, filled by prime_stats().
+	 *
+	 * @var array<int, array|null>
+	 */
+	private static $stats_map = array();
+
+	/**
+	 * Load mvs_media_stats for many media in one query.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Media ids.
+	 */
+	private static function prime_stats( array $media_ids ): void {
+		global $wpdb;
+
+		$ids = array();
+		foreach ( $media_ids as $mid ) {
+			$mid = (int) $mid;
+			if ( $mid > 0 && ! array_key_exists( $mid, self::$stats_map ) ) {
+				$ids[ $mid ]              = true;
+				self::$stats_map[ $mid ] = null;
+			}
+		}
+		if ( ! $ids ) {
+			return;
+		}
+
+		$ids          = array_keys( $ids );
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT media_id, views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id IN ({$placeholders})", $ids ), ARRAY_A );
+		foreach ( (array) $rows as $row ) {
+			self::$stats_map[ (int) $row['media_id'] ] = $row;
+		}
+	}
+
+	/**
 	 * Batch-load the current viewer's favorite + reaction state for a page of
 	 * media so prepare_item_for_response() resolves is_favorited / viewer_reaction
 	 * from a set instead of one query per tile (big-site: 2 queries/page, not 2N).
@@ -2040,6 +2078,23 @@ class MediaController extends WP_REST_Controller {
 		self::$viewer_state_primed_for = $viewer_id;
 		self::$viewer_fav_set          = array();
 		self::$viewer_reaction_map     = array();
+
+		// Page-level batches every list needs regardless of viewer: engagement
+		// stats and the authors' user records. prepare_item_for_response() ran
+		// one stats query and one user lookup per tile (2.6.0, big-site pass).
+		self::$stats_map = array();
+		self::prime_stats( $media_ids );
+		$repo    = Plugin::container()->get( 'media_repository' );
+		$authors = array();
+		foreach ( $media_ids as $mid ) {
+			$author = (int) $repo->get( (int) $mid, 'post_author' );
+			if ( $author > 0 ) {
+				$authors[ $author ] = true;
+			}
+		}
+		if ( $authors ) {
+			cache_users( array_keys( $authors ) );
+		}
 
 		if ( $viewer_id <= 0 ) {
 			return;
@@ -2323,14 +2378,17 @@ class MediaController extends WP_REST_Controller {
 			$data['album_name'] = ! empty( $all['album_name'] ) ? $all['album_name'] : null;
 		}
 
-		// Include engagement stats for card builders.
-		$stats_row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$media_id
-			),
-			ARRAY_A
-		);
+		// Include engagement stats for card builders (batched by prime_stats()
+		// when the list primed its page; one query otherwise).
+		$stats_row = array_key_exists( $media_id, self::$stats_map )
+			? self::$stats_map[ $media_id ]
+			: $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$media_id
+				),
+				ARRAY_A
+			);
 
 		$data['stats'] = array(
 			'views'     => (int) ( $stats_row['views'] ?? 0 ),

@@ -553,7 +553,7 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php
 				// Same source as the cloud at the top of the page: counted against
 				// the media index so a suggested tag always has media behind it.
-				$mvs_popular_tags = $mvs_repo->tag_cloud( 5 );
+				$mvs_popular_tags = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->tag_cloud( 5 );
 				if ( ! empty( $mvs_popular_tags ) ) :
 					?>
 					<div class="mvs-tag-cloud mvs-empty-state-tags">
@@ -588,7 +588,7 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php
 				// Same source as the cloud at the top of the page: counted against
 				// the media index so a suggested tag always has media behind it.
-				$mvs_popular_tags = $mvs_repo->tag_cloud( 5 );
+				$mvs_popular_tags = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->tag_cloud( 5 );
 				if ( ! empty( $mvs_popular_tags ) ) :
 					?>
 					<div class="mvs-tag-cloud mvs-empty-state-tags">

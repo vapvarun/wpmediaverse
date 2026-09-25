@@ -20,11 +20,32 @@ defined( 'ABSPATH' ) || exit;
 class UserDeletionService {
 
 	/**
+	 * Action Scheduler hook that processes one batch of the media cascade.
+	 *
+	 * @since 2.6.0
+	 */
+	public const CASCADE_HOOK = 'mvs_user_deletion_cascade';
+
+	/**
+	 * Action Scheduler group, matching every other AS job in this plugin.
+	 */
+	private const AS_GROUP = 'wpmediaverse';
+
+	/**
+	 * Media items torn down per batch. A member with thousands of uploads
+	 * previously ran the whole cascade (file I/O + child-table deletes per
+	 * item) inline on the `deleted_user` request; this bounds each request
+	 * / AS run to a fixed amount of work.
+	 */
+	private const CASCADE_BATCH_SIZE = 100;
+
+	/**
 	 * Register WordPress hooks.
 	 */
 	public function init(): void {
 		add_action( 'deleted_user', array( $this, 'handle_user_deletion' ), 10, 1 );
 		add_action( 'remove_user_from_blog', array( $this, 'handle_user_removed_from_blog' ), 10, 2 );
+		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 );
 	}
 
 	/**
@@ -211,9 +232,10 @@ class UserDeletionService {
 			$media_ids = array_values( array_diff( $media_ids, $reassigned ) );
 		}
 
-		foreach ( $media_ids as $media_id ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
-		}
+		// Batched via Action Scheduler — a member with thousands of uploads
+		// used to run every delete_cascade() (file I/O + child-table deletes)
+		// inline on this request, big-site checklist item 3 in one hook.
+		$this->cascade_media_deletion( $user_id, $media_ids );
 
 		// Phase 1b — delete the user's albums and collections (CPTs). These were
 		// never removed, orphaning the album's mvs_album_items rows and (for
@@ -389,6 +411,68 @@ class UserDeletionService {
 		 * @param int $user_id Deleted user ID.
 		 */
 		do_action( 'mvs_user_data_purged', $user_id );
+	}
+
+	/**
+	 * Cascade-delete a user's media, batched via Action Scheduler when it is
+	 * available, synchronous otherwise (headless / no AS runner).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int   $user_id   Deleted user id (carried through for logging/reschedule).
+	 * @param int[] $media_ids Media ids owned by the user.
+	 */
+	private function cascade_media_deletion( int $user_id, array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			$this->schedule_cascade_batch( $user_id, array_values( array_map( 'intval', $media_ids ) ) );
+			return;
+		}
+
+		foreach ( $media_ids as $media_id ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
+		}
+	}
+
+	/**
+	 * Enqueue the next cascade batch. Idempotent by construction — each call
+	 * enqueues a fresh AS action carrying only the ids still to process.
+	 *
+	 * @param int   $user_id   Deleted user id.
+	 * @param int[] $media_ids Remaining media ids.
+	 */
+	private function schedule_cascade_batch( int $user_id, array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $media_ids ), self::AS_GROUP );
+	}
+
+	/**
+	 * Action Scheduler callback — deletes one batch of media and re-enqueues
+	 * itself for whatever remains. `delete_cascade()` is a no-op on an id
+	 * that no longer exists, so a retried/duplicated batch is harmless.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int   $user_id   Deleted user id (unused here beyond reschedule bookkeeping).
+	 * @param int[] $media_ids Media ids for this cascade run.
+	 */
+	public function process_cascade_batch( int $user_id, array $media_ids ): void {
+		$batch     = array_slice( $media_ids, 0, self::CASCADE_BATCH_SIZE );
+		$remaining = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		foreach ( $batch as $media_id ) {
+			$repo->delete_cascade( (int) $media_id );
+		}
+
+		if ( ! empty( $remaining ) ) {
+			$this->schedule_cascade_batch( $user_id, $remaining );
+		}
 	}
 
 	/**

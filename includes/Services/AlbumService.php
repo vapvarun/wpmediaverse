@@ -428,9 +428,13 @@ class AlbumService {
 	 *
 	 * @param int    $album_id Album post ID.
 	 * @param string $status   Status filter (default 'publish'). Pass '' to skip filtering.
+	 * @param int    $per_page Max rows to return. 0 (default) = unbounded, preserving
+	 *                         the original behaviour for existing callers (e.g. the
+	 *                         playlist track list, which needs every track).
+	 * @param int    $page     Page number, 1-based. Only applied when $per_page > 0.
 	 * @return array<int, array> Numerically-indexed list of media rows in album order.
 	 */
-	public function get_items_with_data( int $album_id, string $status = 'publish' ): array {
+	public function get_items_with_data( int $album_id, string $status = 'publish', int $per_page = 0, int $page = 1 ): array {
 		// Only what the viewer may open (viewable_item_ids(), the one rule). The
 		// album page used get_items() directly, so a private or group-only item
 		// in someone's public album showed as a broken tile with its title, and
@@ -438,6 +442,16 @@ class AlbumService {
 		$media_ids = $this->viewable_item_ids( $album_id );
 		if ( empty( $media_ids ) ) {
 			return array();
+		}
+
+		// Slice to the requested page BEFORE the batch read, so an album with
+		// thousands of items only ever hydrates the page being rendered — not
+		// every item every time the page loads.
+		if ( $per_page > 0 ) {
+			$media_ids = array_slice( $media_ids, max( 0, $page - 1 ) * $per_page, $per_page );
+			if ( empty( $media_ids ) ) {
+				return array();
+			}
 		}
 
 		$rows = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( $media_ids );

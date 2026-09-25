@@ -135,6 +135,13 @@ class MediaListPage {
 		$status_counts = $listing['status_counts'];
 		$total_pages   = (int) ceil( $total / $per_page );
 
+		// Prefetch index + meta for every row on the page in 2 queries total,
+		// instead of the 4-8 mvs_media_meta queries each render_row() cell
+		// (optimization badge, AI badge, thumbnail, permalink) fires per row.
+		if ( ! empty( $items ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( wp_list_pluck( $items, 'media_id' ) );
+		}
+
 		$base_url = admin_url( 'admin.php?page=mvs-media' );
 		?>
 		<div class="wrap wpmediaverse-admin">

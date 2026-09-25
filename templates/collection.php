@@ -40,16 +40,24 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 			return;
 		}
 
-		// Resolve items.
-		$container = \WPMediaVerse\Core\Plugin::container();
-		$service   = $container->get( 'collections' );
-		$items     = array();
+		// Resolve items — first page only. A collection is unbounded (a hardcoded
+		// 100-item read here does not scale to the 50k+ media / thousands-of-
+		// favourites target), so this renders page 1 and GET /collections/{id}/items
+		// (mirrors the existing GET /albums/{id}/items) serves the Load More button.
+		$container      = \WPMediaVerse\Core\Plugin::container();
+		$service        = $container->get( 'collections' );
+		$mvs_per_page   = absint( get_option( 'mvs_items_per_page', 12 ) );
+		$items          = array();
+		$mvs_coll_total = 0;
 
 		if ( 'smart' === $collection_type ) {
-			$resolved = $service->resolve( $collection_id, 100, 1, get_current_user_id() );
-			$items    = array_column( $resolved['items'], 'media_id' );
+			$resolved       = $service->resolve( $collection_id, $mvs_per_page, 1, get_current_user_id() );
+			$items          = array_column( $resolved['items'], 'media_id' );
+			$mvs_coll_total = (int) $resolved['total'];
 		} else {
-			$items = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, 100 );
+			$mvs_all_ids    = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, 0 );
+			$mvs_coll_total = count( $mvs_all_ids );
+			$items          = array_slice( $mvs_all_ids, 0, $mvs_per_page );
 		}
 
 		?>
@@ -77,8 +85,8 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 						<?php
 						printf(
 							/* translators: %d: number of items */
-							esc_html( _n( '%d item', '%d items', count( $items ), 'wpmediaverse' ) ),
-							count( $items )
+							esc_html( _n( '%d item', '%d items', $mvs_coll_total, 'wpmediaverse' ) ),
+							$mvs_coll_total
 						);
 						?>
 					</span>
@@ -111,7 +119,7 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
 				<?php // Default Layout reaches collections too — see album.php. ?>
 				<?php $mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class(); ?>
-				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container>
 					<?php
 					foreach ( $items as $media_id ) :
 						$media_id     = (int) $media_id;
@@ -131,6 +139,23 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 					endforeach;
 					?>
 				</div>
+				<?php if ( $mvs_coll_total > count( $items ) ) : ?>
+					<div class="mvs-load-more">
+						<button type="button" class="mvs-load-more-btn"
+							data-rest-url="<?php echo esc_attr( rest_url( 'mvs/v1/' ) ); ?>"
+							data-nonce="<?php echo esc_attr( wp_create_nonce( 'wp_rest' ) ); ?>"
+							data-page="1"
+							data-per-page="<?php echo esc_attr( $mvs_per_page ); ?>"
+							data-endpoint="collections/<?php echo (int) $collection_id; ?>/items"
+							data-layout="grid">
+							<span class="mvs-load-more-label"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
+							<span class="mvs-load-more-spinner"></span>
+						</button>
+					</div>
+					<p class="mvs-load-more-end" hidden>
+						<?php esc_html_e( "You're all caught up!", 'wpmediaverse' ); ?>
+					</p>
+				<?php endif; ?>
 			<?php else : ?>
 				<p class="mvs-no-media">
 					<?php
