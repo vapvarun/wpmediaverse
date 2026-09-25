@@ -71,10 +71,10 @@ Every page is registered with `manage_options`. Four render callbacks
 |---|---|---|---|---|
 | Overview | `wpmediaverse` | N | N | Y |
 | Moderation queue | `mvs-moderation` | N | **N** (see gaps) | Y |
-| Reports | `mvs-reports` | N | N | Y |
+| Reports (Moderation tab; `mvs-reports` hidden, still routable) | `mvs-moderation&tab=user-reports` | N | N | Y |
 | Stats | `mvs-stats` | N | N | Y |
-| Logs | `mvs-logs` | N | N | Y |
-| Integrations | `mvs-integrations` | N | N | Y |
+| MediaVerse Logs (under Tools) | `tools.php?page=mvs-logs` | N | N | Y |
+| Integrations (Overview card; hidden from the sidebar) | `mvs-integrations` | N | N | Y |
 | Setup wizard | `mvs-setup` | N | N | Y |
 
 ## Visibility levels

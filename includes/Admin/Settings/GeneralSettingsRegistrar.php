@@ -4,7 +4,7 @@
  *
  * Extracted from SettingsRegistrar (Known Debt: "next edit must extract a
  * group, not add one") so the General tab - upload limits, file types,
- * privacy defaults, duplicate detection, EXIF, app sign-in and data removal -
+ * privacy defaults, duplicate detection, EXIF, who can upload and data removal -
  * lives in its own focused unit, the way AiSettingsRegistrar does. Same
  * namespace, so FieldRenderer / SettingsPage resolve without imports.
  *
@@ -173,8 +173,8 @@ class GeneralSettingsRegistrar {
 			'mvs_general',
 			array(
 				'option'      => 'mvs_allow_user_privacy',
-				'label'       => __( 'Allow users to choose the privacy level of their media.', 'wpmediaverse' ),
-				'description' => __( 'When disabled, all uploads use the Default Privacy Level above and members cannot change it afterwards: the privacy selector is hidden when uploading, editing and in bulk actions. Users who can manage MediaVerse settings keep the control.', 'wpmediaverse' ),
+				'label'       => __( 'Let members choose', 'wpmediaverse' ),
+				'description' => __( 'Members choose who sees each upload. Off: every upload uses the default above.', 'wpmediaverse' ),
 			)
 		);
 
@@ -197,7 +197,7 @@ class GeneralSettingsRegistrar {
 				'option'      => 'mvs_duplicate_action',
 				'choices'     => array(
 					'warn'  => __( 'Warn (allow upload)', 'wpmediaverse' ),
-					'skip'  => __( 'Skip (reject duplicate)', 'wpmediaverse' ),
+					'skip'  => __( 'Block the upload', 'wpmediaverse' ),
 					'allow' => __( 'Allow (no check)', 'wpmediaverse' ),
 				),
 				'description' => __( 'Controls what happens when a user uploads a file that already exists.', 'wpmediaverse' ),
@@ -215,48 +215,53 @@ class GeneralSettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			'mvs_strip_exif',
-			__( 'Strip EXIF Data', 'wpmediaverse' ),
+			__( 'Remove location from photos', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
 			SettingsPage::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
 				'option'      => 'mvs_strip_exif',
 				'label'       => __( 'Remove GPS location from uploaded photos.', 'wpmediaverse' ),
-				'description' => __( 'On by default. Only the coordinates are removed - camera, lens, exposure and the copyright/credit fields stay on the photo, so a photographer keeps their metadata and their byline. Applies to new uploads and to replaced files; photos already in the library are not changed.', 'wpmediaverse' ),
+				'description' => __( 'Only the GPS position is removed. Camera details and photo credits stay. Applies to new uploads.', 'wpmediaverse' ),
 			)
 		);
 
-		// App sign-in. AppCredentials::is_enabled() has always READ this option
-		// and its docblock calls it an owner switch — but nothing registered or
-		// wrote it, so the only way to turn the exchange off was to write PHP
-		// against the mvs_app_password_login_enabled filter. A switch that
-		// controls whether members can trade their WordPress password for an
-		// app credential belongs in the UI. Caught by the contract audit
-		// (option-read-never-written) before the 2.3.0 release.
+		// mvs_app_password_login moved to the Mobile App tab in 2.6.0.
+
+		$this->register_upload_roles_setting();
+		$this->register_delete_data_setting();
+		$this->register_email_settings();
+	}
+
+	/**
+	 * "Who can upload media": the one new control of the 2.6.0 simplification,
+	 * replacing the Permissions matrix for the question owners actually ask.
+	 *
+	 * The mvs_upload_roles option is only the transport: the sanitizer writes the
+	 * upload_mvs_media capability through MediaCapabilities, and the field reads
+	 * it back from the roles, so nothing here can disagree with who can upload.
+	 */
+	private function register_upload_roles_setting(): void {
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
-			'mvs_app_password_login',
+			'mvs_upload_roles',
 			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
+				'type'              => 'array',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_upload_roles' ),
+				'default'           => array(),
 			)
 		);
 		FieldRenderer::add_field(
-			'mvs_app_password_login',
-			__( 'App Sign-In', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
+			'mvs_upload_roles',
+			__( 'Who can upload media', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_upload_roles_field' ),
 			SettingsPage::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option'      => 'mvs_app_password_login',
-				'label'       => __( 'Let members sign in to a mobile app with their WordPress password.', 'wpmediaverse' ),
-				'description' => __( 'The site issues an Application Password behind the scenes. Turn this off if you require every member to go through the interactive login instead, for example when you enforce two-factor authentication.', 'wpmediaverse' ),
+				'option'      => 'mvs_upload_roles',
+				'description' => __( 'Members of the ticked roles can upload. Administrators can always upload. Unticking a role deletes nothing.', 'wpmediaverse' ),
 			)
 		);
-
-		$this->register_delete_data_setting();
-		$this->register_email_settings();
 	}
 
 	/**

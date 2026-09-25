@@ -20,7 +20,7 @@ If you need the original files kept pristine, do not enable watermarking - keep 
 
 ## Requirements
 
-- PHP GD extension enabled (verify with `phpinfo()` - look for the `gd` section). If GD is unavailable the watermark is not applied and the failure is recorded on **Media > Logs**.
+- PHP GD extension enabled (verify with `phpinfo()` - look for the `gd` section). If GD is unavailable the watermark is not applied and the failure is recorded on **Tools > MediaVerse Logs**.
 - For logo watermarks: a PNG file with a transparent background is recommended.
 
 ## Enabling watermarks

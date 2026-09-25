@@ -41,8 +41,9 @@ class SettingsRegistrar {
 	public function register_all(): void {
 		( new GeneralSettingsRegistrar() )->register();
 		$this->register_storage_settings();
-		$this->register_display_settings();
+		( new DisplaySettingsRegistrar() )->register();
 		( new AiSettingsRegistrar() )->register();
+		( new AppSettingsRegistrar() )->register();
 		$this->register_moderation_settings();
 		$this->register_webhook_settings();
 		$this->register_messaging_settings();
@@ -59,10 +60,10 @@ class SettingsRegistrar {
 	 * documented default) until the option is manually written somewhere.
 	 *
 	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` USED to be registered
-	 * here AND in register_display_settings(). Two register_setting() calls
+	 * here AND in the Display registrar. Two register_setting() calls
 	 * for the same option silently overwrites the first sanitize_callback —
 	 * the same class of bug that wiped dm_access values. Both are now owned
-	 * solely by register_display_settings(). This method only registers
+	 * solely by DisplaySettingsRegistrar. This method only registers
 	 * options without a settings-page UI.
 	 *
 	 * See qa/runs/FINDINGS-HISTORY.md (E3, F13) for background.
@@ -93,14 +94,39 @@ class SettingsRegistrar {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * Where files can be stored, driver => plain label.
+	 *
+	 * Public so the "storage changed" notice names the place, not the slug.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function storage_driver_choices(): array {
+		return array(
+			'local'    => __( 'This server (WordPress uploads)', 'wpmediaverse' ),
+			's3'       => __( 'Amazon S3', 'wpmediaverse' ),
+			'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
+			'r2'       => __( 'Cloudflare R2', 'wpmediaverse' ),
+			'dospaces' => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
+		);
+	}
+
+	/**
 	 * Register Storage-tab settings.
+	 *
+	 * Signed URL expiry, view retention, filename strategy and the WebP/AVIF
+	 * copies are registered with no field since 2.6.0: each has one right
+	 * value for almost every site. Stored values keep working, and the save
+	 * guard never resets an option that is not on screen.
 	 */
 	private function register_storage_settings(): void {
-		// Storage section.
-		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-storage' );
+		$page  = SettingsPage::PAGE_SLUG . '-storage';
+		$group = SettingsPage::OPTION_GROUP . '_storage';
+		$image = \WPMediaVerse\Services\ImageOptimizationService::class;
+
+		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', $page );
 
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
+			$group,
 			'mvs_storage_driver',
 			array(
 				'type'              => 'string',
@@ -108,126 +134,65 @@ class SettingsRegistrar {
 				'default'           => 'local',
 			)
 		);
+		$choices = self::storage_driver_choices();
 		if ( self::is_pro_active() ) {
 			FieldRenderer::add_field(
 				'mvs_storage_driver',
-				__( 'Storage Driver', 'wpmediaverse' ),
+				__( 'Where files are stored', 'wpmediaverse' ),
 				array( FieldRenderer::class, 'render_select_field' ),
-				SettingsPage::PAGE_SLUG . '-storage',
+				$page,
 				'mvs_storage',
 				array(
 					'option'      => 'mvs_storage_driver',
-					'choices'     => array(
-						'local'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
-						's3'       => __( 'Amazon S3', 'wpmediaverse' ),
-						'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
-						'r2'       => __( 'Cloudflare R2', 'wpmediaverse' ),
-						'dospaces' => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
-					),
-					'description' => __( 'Where uploaded media files are stored. Cloud drivers require API credentials.', 'wpmediaverse' ),
+					'choices'     => $choices,
+					'description' => __( 'New uploads go here. Cloud storage needs the account details below.', 'wpmediaverse' ),
 				)
 			);
 		} else {
 			FieldRenderer::add_field(
 				'mvs_storage_driver',
-				__( 'Storage Driver', 'wpmediaverse' ),
+				__( 'Where files are stored', 'wpmediaverse' ),
 				array( FieldRenderer::class, 'render_pro_select_field' ),
-				SettingsPage::PAGE_SLUG . '-storage',
+				$page,
 				'mvs_storage',
 				array(
-					'current' => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
-					'pro'     => array(
-						__( 'Amazon S3', 'wpmediaverse' ),
-						__( 'BunnyCDN', 'wpmediaverse' ),
-						__( 'Cloudflare R2', 'wpmediaverse' ),
-						__( 'DigitalOcean Spaces', 'wpmediaverse' ),
-					),
+					'current' => array_shift( $choices ),
+					'pro'     => array_values( $choices ),
 				)
 			);
 		}
 
-		// Signed URL TTL.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			'mvs_signed_url_ttl',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-				'default'           => 3600,
-			)
+		$fieldless = array(
+			'mvs_signed_url_ttl'                                     => array( 'integer', 'absint', 3600 ),
+			// Legacy: public cloud media is always served from its CDN URL;
+			// per-request proxying is the `mvs_serve_public_cloud_direct` filter.
+			'mvs_cloud_direct_public_urls'                           => array( 'boolean', 'rest_sanitize_boolean', false ),
+			\WPMediaVerse\Services\ViewRetentionService::SETTING => array( 'integer', array( \WPMediaVerse\Services\ViewRetentionService::class, 'sanitize_setting' ), \WPMediaVerse\Services\ViewRetentionService::DEFAULT_DAYS ),
+			// Default ON when the editor can write WebP; AVIF stays opt-in.
+			$image::SETTING_GENERATE_WEBP                            => array( 'boolean', 'rest_sanitize_boolean', true ),
+			$image::SETTING_GENERATE_AVIF                            => array( 'boolean', 'rest_sanitize_boolean', false ),
+			// Hashed by default since 1.6.0; matches FilenameStrategy's runtime
+			// fallback so get_option() and resolve_strategy agree (#9962530792).
+			\WPMediaVerse\Services\FilenameStrategy::SETTING     => array( 'string', array( Sanitizers::class, 'sanitize_filename_strategy' ), \WPMediaVerse\Services\FilenameStrategy::effective_default() ),
 		);
-		FieldRenderer::add_field(
-			'mvs_signed_url_ttl',
-			__( 'Signed URL Expiry (seconds)', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => 'mvs_signed_url_ttl',
-				'description' => __( 'How long signed URLs remain valid for private media files. Default: 3600 (1 hour).', 'wpmediaverse' ),
-			)
-		);
+		foreach ( $fieldless as $option => $spec ) {
+			register_setting(
+				$group,
+				$option,
+				array(
+					'type'              => $spec[0],
+					'sanitize_callback' => $spec[1],
+					'default'           => $spec[2],
+				)
+			);
+		}
 
-		// Legacy option, retained for back-compat only. Public media whose file
-		// lives on cloud is now ALWAYS served directly from its CDN URL — the
-		// /serve proxy can only stream local files, so a stored cloud URL has no
-		// working alternative. The display decision is driven by each media's
-		// actual stored location + privacy (SignedUrlService::is_cloud_hosted_url
-		// / public_cloud_direct_allowed), not by this toggle, so the checkbox was
-		// removed. The option key stays registered so existing stored values do
-		// not error; operators who need per-request proxying can use the
-		// `mvs_serve_public_cloud_direct` filter instead.
+		// Lossy for JPEG (about quality 92), so OFF by default: re-encoding every
+		// upload can only lose detail (Basecamp #10073918955). Removing GPS is a
+		// separate lossless step controlled by mvs_strip_exif.
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			'mvs_cloud_direct_public_urls',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-
-		// View-event retention. Daily cron drops rows from mvs_media_views
-		// older than this window — keeps the table bounded as traffic grows.
-		// Aggregates in mvs_media_stats (counts, totals) are unaffected.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			\WPMediaVerse\Services\ViewRetentionService::SETTING,
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( \WPMediaVerse\Services\ViewRetentionService::class, 'sanitize_setting' ),
-				'default'           => \WPMediaVerse\Services\ViewRetentionService::DEFAULT_DAYS,
-			)
-		);
-		FieldRenderer::add_field(
-			\WPMediaVerse\Services\ViewRetentionService::SETTING,
-			__( 'View Event Retention (days)', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => \WPMediaVerse\Services\ViewRetentionService::SETTING,
-				/* translators: %d: maximum allowed retention in days. */
-				'description' => sprintf( __( 'How long raw view events are kept in the database. Aggregated counts (Total Views, etc.) are NOT affected. Default: 90 days. Set to 0 to retain forever. Maximum: %d.', 'wpmediaverse' ), \WPMediaVerse\Services\ViewRetentionService::MAX_DAYS ),
-			)
-		);
-
-		// Image optimization — re-compression of originals. PNG/GIF are re-encoded;
-		// JPEG is re-encoded at quality 92 (filterable via
-		// `mvs_optimize_jpeg_quality`) with metadata stripped, which is LOSSY.
-		// Default OFF: on a photo platform, silently re-encoding every upload from
-		// (typically) q95 down to q92 loses ~18% of the file's data on the good
-		// photos and can never improve one, so it is opt-in, not opt-out
-		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE lossless
-		// segment-removal path — turning THIS off does not weaken privacy.
-		// "always-on" was the wrong word in both this comment and the customer
-		// description: that path is independent of this setting, but it is still
-		// gated on mvs_strip_exif (UploadService::handle()), so an owner who
-		// unticks Strip EXIF Data keeps GPS in the file while a description on
-		// another tab told them removal happens always.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+			$group,
+			$image::SETTING_OPTIMIZE_ORIGINALS,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -235,325 +200,14 @@ class SettingsRegistrar {
 			)
 		);
 		FieldRenderer::add_field(
-			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+			$image::SETTING_OPTIMIZE_ORIGINALS,
 			__( 'Compress uploaded images', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
+			$page,
 			'mvs_storage',
 			array(
-				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
-				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data is a separate, lossless step controlled by Strip EXIF Data under General - it does not depend on this setting. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
-			)
-		);
-
-		// WebP variants — sibling WebP file generated for the original and
-		// every thumbnail size. Default on when the active editor (Imagick or
-		// GD) can write image/webp.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-		FieldRenderer::add_field(
-			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
-			__( 'Create WebP copies for faster loading', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
-				'description' => __( 'Save a second copy of every image in WebP format. WebP files are about 25 to 35 percent smaller than JPEG, so pages load faster for your visitors. Browsers that support WebP use the smaller file; older browsers keep using the original. Already have older uploads to optimize? Visit a media item and use Re-optimize, or ask your developer to run the bulk optimizer command.', 'wpmediaverse' ),
-			)
-		);
-
-		// AVIF variants — sibling AVIF file for the original and every thumb
-		// size. AVIF compresses 30 to 50 percent smaller than WebP but takes
-		// noticeably longer to encode and depends on the host PHP image editor
-		// supporting it (Imagick with libheif, or GD on PHP 8.1+ with libavif).
-		// Default OFF so the slower encode is opt-in.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-		FieldRenderer::add_field(
-			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
-			__( 'Create AVIF copies for the smallest possible files', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
-				// Answer the host question instead of warning about it. The
-				// encoder returns null and logs nothing when the server cannot
-				// encode AVIF, so a ticked box was the owner's only evidence -
-				// and on most shared hosts it was wrong. One call to the same
-				// check the encoder uses turns "requires a capable host" into
-				// "this host can" or "this host cannot".
-				'description' => sprintf(
-					/* translators: %s: a sentence stating whether this server can encode AVIF. */
-					__( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. %s', 'wpmediaverse' ),
-					\WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' )->is_avif_supported()
-						? __( 'This server can encode AVIF.', 'wpmediaverse' )
-						: __( 'This server CANNOT encode AVIF - its image library was built without it, so turning this on will produce no AVIF files. Ask your host for Imagick or GD with AVIF support.', 'wpmediaverse' )
-				),
-			)
-		);
-
-		// Filename strategy. Controls how new uploads are named on disk.
-		// Existing media is NEVER renamed — this only affects future uploads.
-		// Sanitizer lives in Sanitizers (canonical home for every select-field
-		// whitelist sanitizer) so SettingsContractTest can introspect it.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_storage',
-			\WPMediaVerse\Services\FilenameStrategy::SETTING,
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_filename_strategy' ),
-				// Hashed by default since 1.6.0 (filterable via
-				// mvs_filename_strategy_upgrade_default). Matches the runtime
-				// fallback in FilenameStrategy so REST / programmatic get_option
-				// reads agree with resolve_strategy (audit 2026-06-04, #9962530792).
-				'default'           => \WPMediaVerse\Services\FilenameStrategy::effective_default(),
-			)
-		);
-		FieldRenderer::add_field(
-			\WPMediaVerse\Services\FilenameStrategy::SETTING,
-			__( 'Stored Filenames', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => \WPMediaVerse\Services\FilenameStrategy::SETTING,
-				'choices'     => array(
-					'hashed'             => __( 'Hashed (recommended) — random 16-char filename, original kept as metadata', 'wpmediaverse' ),
-					'original_sanitized' => __( 'Original (sanitized) — keeps the user filename, capped at 100 chars', 'wpmediaverse' ),
-				),
-				'description' => __( 'How new uploads are named on disk. "Hashed" is more secure (no enumeration) and avoids long-filename / emoji edge cases. Existing media is never renamed.', 'wpmediaverse' ),
-			)
-		);
-	}
-
-	// -------------------------------------------------------------------------
-	// Display settings (new tab)
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Register Display-tab settings.
-	 */
-	private function register_display_settings(): void {
-		add_settings_section( 'mvs_display', __( 'Media Display', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-display' );
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_grid_columns',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_grid_columns' ),
-				'default'           => 3,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_grid_columns',
-			__( 'Grid Columns', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_grid_columns',
-				'choices'     => array(
-					2 => __( '2 columns', 'wpmediaverse' ),
-					3 => __( '3 columns', 'wpmediaverse' ),
-					4 => __( '4 columns', 'wpmediaverse' ),
-					5 => __( '5 columns', 'wpmediaverse' ),
-				),
-				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids. Applies when Default Layout below is set to <strong>Grid - square crops</strong>. Justified rows sizes each row to fit and list shows one item per row, so neither uses a fixed column count.', 'wpmediaverse' ) . apply_filters( 'mvs_grid_columns_scope_note', '' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_items_per_page',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_items_per_page' ),
-				'default'           => 12,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_items_per_page',
-			__( 'Items Per Page', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_items_per_page',
-				'choices'     => array(
-					12 => __( '12', 'wpmediaverse' ),
-					24 => __( '24', 'wpmediaverse' ),
-					48 => __( '48', 'wpmediaverse' ),
-				),
-				'description' => __( 'How many media items to show before pagination.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_thumbnail_style',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
-				// Default flipped square -> original in 1.8.0 (masonry, full aspect
-				// ratio). Front-end resolves via SettingsHelper::get_thumbnail_style()
-				// + the mvs_default_thumbnail_style escape-hatch filter.
-				'default'           => 'original',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_thumbnail_style',
-			// Named "Thumbnail Style" when it only chose square-vs-original. It
-			// now picks the grid layout, list included, so the label says so.
-			// The OPTION KEY is unchanged - it is on every install.
-			__( 'Default Layout', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_thumbnail_style',
-				'choices'     => array(
-					'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
-					'original' => __( 'Justified rows - original proportions', 'wpmediaverse' ),
-					'list'     => __( 'List - one row per item', 'wpmediaverse' ),
-				),
-				'description' => __( 'The default layout for media grids in blocks, shortcodes, albums and collections. A block or shortcode can override it for one grid. With MediaVerse Pro, the Explore page and member profiles instead follow the Pro platform layout, which defines its own display.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_thumbnail_size',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_size' ),
-				// Default 'large', which is what grids have actually served since
-				// 1.8.0. 1.7.0 defaulted this to 'medium' for bytes; 1.8.0 then
-				// forced every grid to 'large' because a 300px rung upscales and
-				// looks soft on HiDPI - and left the default saying 'medium'. The
-				// result was a control that could not change anything: all three
-				// choices resolved to 'large'. The forcing is gone, so the setting
-				// decides again, and the default now states the rung that has been
-				// served all along, so no existing site's rendering changes.
-				'default'           => 'large',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_thumbnail_size',
-			__( 'Thumbnail Quality', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_thumbnail_size',
-				'choices'     => array(
-					'medium' => __( 'Medium (300px, faster loading)', 'wpmediaverse' ),
-					'large'  => __( 'Large (1024px, retina crisp)', 'wpmediaverse' ),
-					'full'   => __( 'Full (original, highest quality)', 'wpmediaverse' ),
-				),
-				'description' => __( 'Image size served in grids and feeds. Large keeps tiles crisp on high-density screens and is the default. Medium is roughly a third of the bytes and is worth trying if page weight matters more than sharpness - on a retina screen those tiles will look softer. The lightbox and single media page are unaffected; they follow Lightbox Image Size.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_large_image_size',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_large_image_size' ),
-				// 1024 keeps existing installs pixel-identical; the "Large" rung
-				// only changes when an owner deliberately sets a custom value.
-				'default'           => 1024,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_large_image_size',
-			__( 'Large Image Size', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_large_image_size',
-				'description' => __( 'Max width/height in pixels for the "Large" image size used by grids and feeds (default 1024). To set a custom display size — e.g. 800px — enter it here and pick "Large" for Thumbnail Quality above. New uploads use it immediately; to apply it to images already uploaded, run <code>wp mvs regenerate-thumbnails</code>, or use the per-item "Repair thumb" link on the Media list.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_lightbox_image_source',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_lightbox_image_source' ),
-				// 'large', not 'original': opening a photo used to stream the
-				// full unresized file through /serve, so the first view of a
-				// 4-6 MB phone photo was visibly slow on every site that had
-				// not changed this setting. 1024px is the size the lightbox
-				// actually displays on all but the largest screens. Sites that
-				// want the original back set this to 'original' or 'auto' —
-				// the setting IS the escape hatch (Production Rule 3).
-				// Basecamp 10171640247.
-				'default'           => 'large',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_lightbox_image_source',
-			__( 'Lightbox Image Size', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_lightbox_image_source',
-				'choices'     => array(
-					'original' => __( 'Original (highest quality, best for full-size viewing)', 'wpmediaverse' ),
-					'large'    => __( 'Large (1024px, faster to load)', 'wpmediaverse' ),
-					'medium'   => __( 'Medium (300px, fastest — small gallery)', 'wpmediaverse' ),
-					'auto'     => __( 'Auto (original on desktop, large on mobile)', 'wpmediaverse' ),
-				),
-				// The old copy promised a "View Original" control that has never
-				// existed in the lightbox — the Open action goes to the media
-				// permalink, not the file. (Basecamp 10171640247)
-				'description' => __( 'Which image size opens in the lightbox. Original is sharpest on high-density screens but is the slowest to load; Large is a good default on media-heavy communities. Sized options only apply where the variant exists — the original is used as a fallback.', 'wpmediaverse' ),
-			)
-		);
-
-		// Allow downloads — global toggle. When off, the lightbox Download
-		// button is hidden and the /mvs/v1/media/{id}/download REST endpoint
-		// rejects with 403 (defense-in-depth: hiding the button alone won't
-		// stop a determined caller hitting the endpoint directly).
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_allow_downloads',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_allow_downloads',
-			__( 'Allow Downloads', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-display',
-			'mvs_display',
-			array(
-				'option'      => 'mvs_allow_downloads',
-				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, members can still view media, and the button is hidden on every media surface - the lightbox, the single media page and a media-library document card - while the REST download route refuses with a 403. Members can also switch it off for one item of their own. The Documents library is separate and keeps its own sharing rules: this does not close a drive.', 'wpmediaverse' ),
+				'option'      => $image::SETTING_OPTIMIZE_ORIGINALS,
+				'description' => __( 'Makes new images 10-30% smaller. JPEGs lose a little quality.', 'wpmediaverse' ),
 			)
 		);
 	}
@@ -568,75 +222,27 @@ class SettingsRegistrar {
 	private function register_moderation_settings(): void {
 		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-moderation' );
 
-		// Legal + safety surface. Handed to the mobile app through
-		// /mvs/v1/app/config -> legal.*, because App Store guideline 1.2 expects a
-		// UGC app to make its policy reachable inside the app and to publish a
-		// contact for abuse reports. These belong to the community, not to us:
-		// each site owns its own moderators, data and terms.
-		//
-		// The privacy policy is NOT duplicated here — WordPress core already has
-		// that field (Settings -> Privacy), every install has it, and most owners
-		// have filled it in. Asking twice invites the two to disagree.
-		$legal_fields = array(
-			'mvs_terms_url'      => array(
-				__( 'Terms of Service URL', 'wpmediaverse' ),
-				__( 'Shown in the mobile app under About. Leave blank if you have none.', 'wpmediaverse' ),
-			),
-			'mvs_eula_url'       => array(
-				__( 'EULA URL', 'wpmediaverse' ),
-				__( 'Leave blank to use the standard Apple end-user licence, which the app falls back to.', 'wpmediaverse' ),
-			),
-			'mvs_guidelines_url' => array(
-				__( 'Community Guidelines URL', 'wpmediaverse' ),
-				__( 'What members may and may not post. Shown in the app and alongside the Report control.', 'wpmediaverse' ),
-			),
-		);
-
-		foreach ( $legal_fields as $option => $labels ) {
-			register_setting(
-				SettingsPage::OPTION_GROUP . '_moderation',
-				$option,
-				array(
-					'type'              => 'string',
-					'sanitize_callback' => 'esc_url_raw',
-					'default'           => '',
-				)
-			);
-			FieldRenderer::add_field(
-				$option,
-				$labels[0],
-				array( FieldRenderer::class, 'render_text_field' ),
-				SettingsPage::PAGE_SLUG . '-moderation',
-				'mvs_moderation',
-				array(
-					'option'      => $option,
-					'description' => $labels[1],
-					'placeholder' => 'https://',
-				)
-			);
-		}
-
-		// Somebody must receive abuse reports. Defaults to the site admin, because
-		// on a UGC site that person exists whether or not they nominated anyone.
+		// What members may post. Shown in the app and beside the Report control.
+		// The other legal links live on the Mobile App tab (AppSettingsRegistrar).
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_moderation',
-			'mvs_abuse_contact_email',
+			'mvs_guidelines_url',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_email',
+				'sanitize_callback' => 'esc_url_raw',
 				'default'           => '',
 			)
 		);
 		FieldRenderer::add_field(
-			'mvs_abuse_contact_email',
-			__( 'Abuse Contact Email', 'wpmediaverse' ),
+			'mvs_guidelines_url',
+			__( 'Community Guidelines URL', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_text_field' ),
 			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
-				'option'      => 'mvs_abuse_contact_email',
-				'description' => __( 'Where members can reach a human about abuse. Published in the mobile app. Defaults to the site administrator.', 'wpmediaverse' ),
-				'placeholder' => get_option( 'admin_email' ),
+				'option'      => 'mvs_guidelines_url',
+				'description' => __( 'What members may and may not post. Shown in the app and alongside the Report control.', 'wpmediaverse' ),
+				'placeholder' => 'https://',
 			)
 		);
 
@@ -667,6 +273,28 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Lived on the AI tab until 2.6.0; it is a moderation decision.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_moderation',
+			'mvs_ai_auto_moderate',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		FieldRenderer::add_field(
+			'mvs_ai_auto_moderate',
+			__( 'AI Moderation', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-moderation',
+			'mvs_moderation',
+			array(
+				'option' => 'mvs_ai_auto_moderate',
+				'label'  => __( 'Check new uploads with AI and act on what it flags.', 'wpmediaverse' ),
+			)
+		);
+
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_moderation_auto_action',
@@ -691,6 +319,7 @@ class SettingsRegistrar {
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_moderation_auto_action',
+				'show_when'   => 'mvs_ai_auto_moderate',
 				// Three choices since 2.6.0: "Flag for review" and "Hide" both hid
 				// the item until review, so owners were choosing between two
 				// names for one outcome. A stored 'hide' still works and is saved
@@ -724,6 +353,7 @@ class SettingsRegistrar {
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_ai_moderation_categories',
+				'show_when'   => 'mvs_ai_auto_moderate',
 				'choices'     => array(
 					'nudity'    => __( 'Nudity / sexual content', 'wpmediaverse' ),
 					'violence'  => __( 'Violence / gore', 'wpmediaverse' ),
@@ -757,6 +387,7 @@ class SettingsRegistrar {
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_ai_moderation_custom_terms',
+				'show_when'   => 'mvs_ai_auto_moderate',
 				'description' => __( 'Optional. Comma-separated terms the AI should also flag, in addition to the categories above — e.g. weapons, gambling, political content, competitor logos. Leave blank to use only the built-in categories.', 'wpmediaverse' ),
 			)
 		);
@@ -813,18 +444,13 @@ class SettingsRegistrar {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Register Messaging (DM) settings on the General tab.
+	 * Register Messages settings.
 	 */
 	private function register_messaging_settings(): void {
 		add_settings_section(
 			'mvs_messaging',
-			__( 'Direct Messages', 'wpmediaverse' ),
-			function () {
-				printf(
-					'<p class="description">%s</p>',
-					esc_html__( 'Configure direct messaging privacy and spam prevention.', 'wpmediaverse' )
-				);
-			},
+			__( 'Messages', 'wpmediaverse' ),
+			'__return_null',
 			SettingsPage::PAGE_SLUG . '-social'
 		);
 
@@ -840,7 +466,7 @@ class SettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			'mvs_dm_access',
-			__( 'Who Can Send DMs', 'wpmediaverse' ),
+			__( 'Who can send messages', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
 			SettingsPage::PAGE_SLUG . '-social',
 			'mvs_messaging',
@@ -850,9 +476,9 @@ class SettingsRegistrar {
 					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
 					'followers' => __( 'Followers only (others go to Requests)', 'wpmediaverse' ),
 					'mutual'    => __( 'Mutual followers only', 'wpmediaverse' ),
-					'nobody'    => __( 'Nobody (DMs disabled)', 'wpmediaverse' ),
+					'nobody'    => __( 'Nobody (messages off)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Controls who is allowed to send direct messages to other users on the site.', 'wpmediaverse' ),
+				'description' => __( 'Who may start a conversation with another member.', 'wpmediaverse' ),
 			)
 		);
 
@@ -874,7 +500,7 @@ class SettingsRegistrar {
 			'mvs_messaging',
 			array(
 				'option'      => 'mvs_dm_min_age',
-				'description' => __( 'Accounts younger than this cannot send DMs. Set 0 to disable.', 'wpmediaverse' ),
+				'description' => __( 'Accounts younger than this cannot send messages. 0 turns this off.', 'wpmediaverse' ),
 			)
 		);
 
@@ -904,7 +530,7 @@ class SettingsRegistrar {
 					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
 					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Controls where the floating chat icon appears for logged-in users. Themes and other plugins can override per-page via the <code>mvs_should_render_chat_panel</code> filter.', 'wpmediaverse' ),
+				'description' => __( 'Where the floating chat icon appears for signed-in members.', 'wpmediaverse' ),
 			)
 		);
 
@@ -931,14 +557,10 @@ class SettingsRegistrar {
 					'followers' => __( 'Followers only', 'wpmediaverse' ),
 					'nobody'    => __( 'Nobody', 'wpmediaverse' ),
 				),
-				'description' => __( 'Who can see when a user is currently online in the messaging interface.', 'wpmediaverse' ),
+				'description' => __( 'Who can see that a member is online right now.', 'wpmediaverse' ),
 			)
 		);
 	}
-
-	// -------------------------------------------------------------------------
-	// Watermark settings (on General tab)
-	// -------------------------------------------------------------------------
 
 	// -------------------------------------------------------------------------
 	// Page assignment settings (on General tab)
@@ -961,7 +583,7 @@ class SettingsRegistrar {
 		);
 
 		$pages = array(
-			'mvs_page_dashboard'         => __( 'Dashboard Page', 'wpmediaverse' ),
+			'mvs_page_dashboard'         => __( 'My Media page', 'wpmediaverse' ),
 			'mvs_page_explore'           => __( 'Explore Page', 'wpmediaverse' ),
 			'mvs_page_upload'            => __( 'Upload Page', 'wpmediaverse' ),
 			// Created on activation since 2.4.0 but never offered here, so the

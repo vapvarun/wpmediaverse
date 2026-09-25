@@ -215,8 +215,22 @@ class SettingsHelper {
 	 * @return string 'square' or 'original'.
 	 */
 	public static function get_thumbnail_style(): string {
-		$allowed = self::GRID_LAYOUTS;
+		$default = self::default_thumbnail_style();
+		$style   = (string) get_option( 'mvs_thumbnail_style', $default );
+		return in_array( $style, self::GRID_LAYOUTS, true ) ? $style : $default;
+	}
 
+	/**
+	 * The grid layout a site that has not chosen one gets.
+	 *
+	 * One reader for the filter, shared by get_thumbnail_style() and the
+	 * registered default of mvs_thumbnail_style, so the two cannot disagree.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string One of self::GRID_LAYOUTS.
+	 */
+	public static function default_thumbnail_style(): string {
 		/**
 		 * Filter the default grid layout for sites that have not chosen one.
 		 *
@@ -226,12 +240,54 @@ class SettingsHelper {
 		 *                        or 'list' (one row per item).
 		 */
 		$default = (string) apply_filters( 'mvs_default_thumbnail_style', 'original' );
-		if ( ! in_array( $default, $allowed, true ) ) {
-			$default = 'original';
-		}
+		return in_array( $default, self::GRID_LAYOUTS, true ) ? $default : 'original';
+	}
 
-		$style = (string) get_option( 'mvs_thumbnail_style', $default );
-		return in_array( $style, $allowed, true ) ? $style : $default;
+	/**
+	 * Every choice the one "Layout" setting offers, value => label.
+	 *
+	 * Free offers its three grid layouts; Pro adds its platform skins through
+	 * the filter. The same list is the setting's sanitizer whitelist.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array<string, string>
+	 */
+	public static function layout_choices(): array {
+		/**
+		 * Filter the choices of the Settings > Display "Layout" select.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param array<string, string> $choices Value => label.
+		 */
+		return (array) apply_filters(
+			'mvs_layout_choices',
+			array(
+				'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
+				'original' => __( 'Justified rows - original proportions', 'wpmediaverse' ),
+				'list'     => __( 'List - one row per item', 'wpmediaverse' ),
+			)
+		);
+	}
+
+	/**
+	 * The layout the "Layout" setting currently shows as selected.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string A key of layout_choices().
+	 */
+	public static function selected_layout(): string {
+		/**
+		 * Filter which layout choice reads as selected. Pro answers with its
+		 * platform skin when one is active.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param string $layout The Free grid layout in use.
+		 */
+		return (string) apply_filters( 'mvs_layout_selected', self::get_thumbnail_style() );
 	}
 
 	/**

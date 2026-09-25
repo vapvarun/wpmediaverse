@@ -831,7 +831,7 @@
       "args_signature": [
         "string $style"
       ],
-      "where": "includes/Core/SettingsHelper.php:188",
+      "where": "includes/Core/SettingsHelper.php:242",
       "consumed_by": []
     },
     {
@@ -1149,6 +1149,16 @@
       ]
     },
     {
+      "name": "mvs_documents_admin_after_list",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/admin/documents.php:349",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/DocumentOrphansPanel.php::render"
+      ]
+    },
+    {
       "name": "mvs_documents_drive_html",
       "type": "filter",
       "args_count": 3,
@@ -1322,7 +1332,7 @@
       "args_signature": [
         "string $note"
       ],
-      "where": "includes/Admin/Settings/SettingsRegistrar.php:586",
+      "where": "includes/Admin/Settings/DisplaySettingsRegistrar.php:65",
       "consumed_by": [
         "wpmediaverse-pro/includes/Core/Plugin.php::grid_columns_scope_note"
       ]
@@ -1384,6 +1394,42 @@
       ],
       "where": "includes/Services/UploadService.php:395",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_choices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $choices"
+      ],
+      "where": "includes/Core/SettingsHelper.php:265",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/LayoutSetting.php::choices"
+      ]
+    },
+    {
+      "name": "mvs_layout_saved",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "string $value"
+      ],
+      "where": "includes/Admin/Settings/Sanitizers.php:365",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/LayoutSetting.php::saved"
+      ]
+    },
+    {
+      "name": "mvs_layout_selected",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $layout"
+      ],
+      "where": "includes/Core/SettingsHelper.php:290",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/LayoutSetting.php::selected"
+      ]
     },
     {
       "name": "mvs_loaded",
@@ -2675,6 +2721,16 @@
         "int $media_id"
       ],
       "where": "includes/Social/NotificationService.php:116",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_show_demo_import",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $show"
+      ],
+      "where": "includes/Admin/OverviewPage.php:269",
       "consumed_by": []
     },
     {

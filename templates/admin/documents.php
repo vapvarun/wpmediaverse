@@ -338,4 +338,14 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 
 		<?php endif; ?>
 	<?php endif; ?>
+
+	<?php
+	/**
+	 * Fires below the Documents list, outside its forms. Pro prints its
+	 * document maintenance tools here.
+	 *
+	 * @since 2.6.0
+	 */
+	do_action( 'mvs_documents_admin_after_list' );
+	?>
 </div>

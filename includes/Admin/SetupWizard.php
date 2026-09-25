@@ -101,9 +101,6 @@ class SetupWizard {
 	 */
 	private function save_display(): void {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		if ( isset( $_POST['mvs_grid_columns'] ) ) {
-			update_option( 'mvs_grid_columns', absint( $_POST['mvs_grid_columns'] ) );
-		}
 		if ( isset( $_POST['mvs_items_per_page'] ) ) {
 			update_option( 'mvs_items_per_page', absint( $_POST['mvs_items_per_page'] ) );
 		}
@@ -154,9 +151,15 @@ class SetupWizard {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$step = isset( $_GET['step'] ) ? sanitize_key( $_GET['step'] ) : 'welcome';
 
+		// The Pages step (a read-only list of the pages activation created)
+		// was removed in 2.6.0; the Overview screen shows the same thing. An
+		// old link to it lands on the next step instead of the Welcome screen.
+		if ( 'pages' === $step ) {
+			$step = 'display';
+		}
+
 		$steps         = array(
 			'welcome' => __( 'Welcome', 'wpmediaverse' ),
-			'pages'   => __( 'Pages', 'wpmediaverse' ),
 			'display' => __( 'Display', 'wpmediaverse' ),
 			'done'    => __( 'Done', 'wpmediaverse' ),
 		);
@@ -198,9 +201,6 @@ class SetupWizard {
 					case 'welcome':
 						$this->render_step_welcome();
 						break;
-					case 'pages':
-						$this->render_step_pages();
-						break;
 					case 'display':
 						$this->render_step_display();
 						break;
@@ -230,7 +230,7 @@ class SetupWizard {
 			</ul>
 			<p><?php esc_html_e( 'This quick setup will help you configure the essentials. You can change any setting later.', 'wpmediaverse' ); ?></p>
 			<div class="mvs-setup-actions">
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=pages' ) ); ?>"
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=display' ) ); ?>"
 					class="mvs-btn mvs-btn--primary mvs-btn--hero">
 					<?php esc_html_e( "Let's Get Started", 'wpmediaverse' ); ?>
 				</a>
@@ -244,74 +244,9 @@ class SetupWizard {
 	}
 
 	/**
-	 * Step 2: Pages confirmation.
-	 */
-	private function render_step_pages(): void {
-		$pages = array(
-			'mvs_page_explore'   => array(
-				'label' => __( 'Explore Media', 'wpmediaverse' ),
-				'icon'  => 'images',
-				'desc'  => __( 'Public gallery page where visitors browse all media.', 'wpmediaverse' ),
-			),
-			'mvs_page_dashboard' => array(
-				'label' => __( 'My Media', 'wpmediaverse' ),
-				'icon'  => 'users',
-				'desc'  => __( 'Personal dashboard for users to manage their uploads.', 'wpmediaverse' ),
-			),
-			'mvs_page_upload'    => array(
-				'label' => __( 'Upload Media', 'wpmediaverse' ),
-				'icon'  => 'upload-cloud',
-				'desc'  => __( 'Frontend upload form linked from the Explore page header.', 'wpmediaverse' ),
-			),
-		);
-		?>
-		<div class="mvs-setup-step">
-			<h2><?php esc_html_e( 'Frontend Pages', 'wpmediaverse' ); ?></h2>
-			<p><?php esc_html_e( 'These pages have been automatically created for your media hub:', 'wpmediaverse' ); ?></p>
-
-			<div class="mvs-setup-pages-list">
-				<?php
-				foreach ( $pages as $option_key => $page_info ) :
-					$page_id = (int) get_option( $option_key, 0 );
-					$exists  = $page_id > 0 && 'publish' === get_post_status( $page_id );
-					$url     = $exists ? get_permalink( $page_id ) : '';
-					$slug    = $exists ? get_post_field( 'post_name', $page_id ) : '';
-					?>
-					<div class="mvs-setup-page-card">
-						<i data-lucide="<?php echo esc_attr( $page_info['icon'] ); ?>"></i>
-						<div class="mvs-setup-page-info">
-							<strong><?php echo esc_html( $page_info['label'] ); ?></strong>
-							<span><?php echo esc_html( $page_info['desc'] ); ?></span>
-							<?php if ( $exists ) : ?>
-								<code>/<?php echo esc_html( $slug ); ?>/</code>
-							<?php else : ?>
-								<span class="mvs-text-danger"><?php esc_html_e( 'Not created. Please reactivate the plugin.', 'wpmediaverse' ); ?></span>
-							<?php endif; ?>
-						</div>
-						<?php if ( $exists ) : ?>
-							<span class="mvs-setup-page-status mvs-text-success">
-								<i data-lucide="check-circle"></i>
-							</span>
-						<?php endif; ?>
-					</div>
-				<?php endforeach; ?>
-			</div>
-
-			<div class="mvs-setup-actions">
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=display' ) ); ?>"
-					class="mvs-btn mvs-btn--primary">
-					<?php esc_html_e( 'Continue', 'wpmediaverse' ); ?>
-				</a>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Step 3: Display settings.
+	 * Step 2: Display settings.
 	 */
 	private function render_step_display(): void {
-		$columns  = (int) get_option( 'mvs_grid_columns', 3 );
 		// 12, matching the registered default and every other read site. This
 		// was 24, and a passed default suppresses the registered one, so the
 		// wizard preselected 24 on a fresh install and Continue wrote a value
@@ -329,20 +264,6 @@ class SetupWizard {
 				<input type="hidden" name="mvs_wizard_step" value="display" />
 
 				<table class="form-table">
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Grid Columns', 'wpmediaverse' ); ?></th>
-						<td>
-							<select name="mvs_grid_columns">
-								<option value="2" <?php selected( $columns, 2 ); ?>><?php esc_html_e( '2 columns', 'wpmediaverse' ); ?></option>
-								<option value="3" <?php selected( $columns, 3 ); ?>><?php esc_html_e( '3 columns', 'wpmediaverse' ); ?></option>
-								<option value="4" <?php selected( $columns, 4 ); ?>><?php esc_html_e( '4 columns', 'wpmediaverse' ); ?></option>
-								<option value="5" <?php selected( $columns, 5 ); ?>><?php esc_html_e( '5 columns', 'wpmediaverse' ); ?></option>
-							</select>
-							<p class="description">
-								<?php esc_html_e( 'Applies to the grid layout only. Justified rows sizes each row to fit, and list shows one item per row - see Default Layout below.', 'wpmediaverse' ); ?>
-							</p>
-						</td>
-					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Items Per Page', 'wpmediaverse' ); ?></th>
 						<td>
@@ -383,7 +304,7 @@ class SetupWizard {
 	}
 
 	/**
-	 * Step 5: Done.
+	 * Step 3: Done.
 	 */
 	private function render_step_done(): void {
 		$explore_id   = (int) get_option( 'mvs_page_explore', 0 );

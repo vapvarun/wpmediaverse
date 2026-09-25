@@ -136,8 +136,8 @@ class MediaListPage {
 		$total_pages   = (int) ceil( $total / $per_page );
 
 		// Prefetch index + meta for every row on the page in 2 queries total,
-		// instead of the 4-8 mvs_media_meta queries each render_row() cell
-		// (optimization badge, AI badge, thumbnail, permalink) fires per row.
+		// instead of the mvs_media_meta queries each render_row() cell
+		// (AI badge, thumbnail, permalink) fires per row.
 		if ( ! empty( $items ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( wp_list_pluck( $items, 'media_id' ) );
 		}
@@ -226,14 +226,12 @@ class MediaListPage {
 							<thead>
 								<tr>
 									<td class="manage-column column-cb check-column"><input type="checkbox" class="mvs-cb-select-all" aria-label="<?php esc_attr_e( 'Select all media', 'wpmediaverse' ); ?>" /></td>
-									<th class="manage-column mvs-col-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
-									<th class="manage-column mvs-col-optimization"><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-ai"><?php esc_html_e( 'AI', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
 								</tr>
@@ -245,7 +243,7 @@ class MediaListPage {
 									$base_url           = admin_url( 'admin.php?page=mvs-media' );
 									?>
 									<tr>
-										<td colspan="10">
+										<td colspan="9">
 											<div class="mvs-empty-state-admin">
 												<i data-lucide="images"></i>
 												<?php if ( $has_active_filters ) : ?>
@@ -274,14 +272,12 @@ class MediaListPage {
 							<tfoot>
 								<tr>
 									<td class="manage-column column-cb check-column"><input type="checkbox" class="mvs-cb-select-all" aria-label="<?php esc_attr_e( 'Select all media', 'wpmediaverse' ); ?>" /></td>
-									<th class="manage-column mvs-col-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
-									<th class="manage-column mvs-col-optimization"><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-ai"><?php esc_html_e( 'AI', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
 								</tr>
@@ -358,7 +354,6 @@ class MediaListPage {
 		?>
 		<tr>
 			<th scope="row" class="check-column"><input type="checkbox" name="media_ids[]" value="<?php echo esc_attr( $media_id ); ?>" /></th>
-			<td class="mvs-col-id"><?php echo absint( $media_id ); ?></td>
 			<td class="mvs-col-thumb">
 				<?php
 				$ml_su     = Plugin::container()->get( 'signed_urls' );
@@ -422,42 +417,6 @@ class MediaListPage {
 					);
 					?>
 					| <span class="ai-review"><a href="<?php echo esc_url( $ai_review_url ); ?>"><?php esc_html_e( 'AI Review', 'wpmediaverse' ); ?></a></span>
-					<?php if ( 'trash' !== $status && 0 === strpos( (string) ( $item['file_type'] ?? '' ), 'image/' ) ) : ?>
-						| <span class="optimize"><a href="
-						<?php
-						echo esc_url(
-							wp_nonce_url(
-								add_query_arg(
-									array(
-										'action'   => 'optimize',
-										'media_id' => $media_id,
-									),
-									admin_url( 'admin.php?page=mvs-media' )
-								),
-								'mvs_optimize_media_' . $media_id
-							)
-						);
-						?>
-																					" title="<?php esc_attr_e( 'Re-encode this image, strip metadata, and emit a WebP sibling.', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Optimize', 'wpmediaverse' ); ?></a></span>
-					<?php endif; ?>
-					<?php if ( 'trash' !== $status && self::can_repair_thumb( $media_id, (string) ( $item['file_type'] ?? '' ) ) ) : ?>
-						| <span class="repair-thumb"><a href="
-						<?php
-						echo esc_url(
-							wp_nonce_url(
-								add_query_arg(
-									array(
-										'action'   => 'repair_thumb',
-										'media_id' => $media_id,
-									),
-									admin_url( 'admin.php?page=mvs-media' )
-								),
-								'mvs_repair_thumb_' . $media_id
-							)
-						);
-						?>
-															" title="<?php esc_attr_e( 'Regenerate the thumbnail for this media from the original. Use this when the grid shows a broken image.', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Repair thumb', 'wpmediaverse' ); ?></a></span>
-					<?php endif; ?>
 					<?php if ( 'trash' !== $status ) : ?>
 						| <span class="trash"><a href="
 						<?php
@@ -515,77 +474,10 @@ class MediaListPage {
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $type ); ?>"><?php echo esc_html( ucfirst( $type ) ); ?></span></td>
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( ucfirst( $privacy ) ); ?></span></td>
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( ucfirst( $status ) ); ?></span></td>
-			<td><?php self::render_optimization_cell( $media_id, (string) ( $item['file_type'] ?? '' ) ); ?></td>
 			<td class="mvs-col-ai"><?php self::render_ai_cell( $media_id ); ?></td>
 			<td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $item['created_at'] ) ) ); ?></td>
 		</tr>
 		<?php
-	}
-
-	/**
-	 * Render the Optimization column cell for one media row.
-	 */
-	private static function render_optimization_cell( int $media_id, string $mime ): void {
-		if ( 0 !== strpos( $mime, 'image/' ) ) {
-			echo '<span class="mvs-media-badge mvs-media-badge--neutral">' . esc_html__( 'N/A', 'wpmediaverse' ) . '</span>';
-			return;
-		}
-
-		$repo         = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$optimized_at = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT );
-		$failed_code  = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZE_FAILED );
-
-		if ( '' !== $failed_code ) {
-			printf(
-				'<span class="mvs-media-badge mvs-media-badge--danger" title="%s">%s</span>',
-				esc_attr( $failed_code ),
-				esc_html__( 'Failed', 'wpmediaverse' )
-			);
-			return;
-		}
-
-		if ( 0 === $optimized_at ) {
-			echo '<span class="mvs-media-badge mvs-media-badge--draft">' . esc_html__( 'Not optimized', 'wpmediaverse' ) . '</span>';
-			return;
-		}
-
-		$before = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_BEFORE );
-		$after  = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_AFTER );
-		$webp   = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
-
-		$saved_pct = ( $before > 0 ) ? round( ( $before - $after ) / $before * 100, 1 ) : 0;
-
-		// Pick badge style + label by outcome:
-		// 1. JPEG shrunk -> green badge with savings %
-		// 2. No JPEG savings but a WebP copy was created -> success "WebP ready"
-		// 3. No savings, no WebP -> neutral "No size gain". We deliberately
-		// avoid the word "Optimized" here because an admin staring at a 3 MB
-		// file would (correctly) push back on that claim.
-		if ( $saved_pct > 0 ) {
-			$badge_class = 'mvs-media-badge--success';
-			$badge_label = '-' . $saved_pct . '%';
-		} elseif ( '' !== $webp ) {
-			$badge_class = 'mvs-media-badge--success';
-			$badge_label = __( 'WebP ready', 'wpmediaverse' );
-		} else {
-			$badge_class = 'mvs-media-badge--neutral';
-			$badge_label = __( 'No size gain', 'wpmediaverse' );
-		}
-
-		$title = sprintf(
-			/* translators: 1: original file size, 2: optimized file size, 3: webp variant availability */
-			__( 'Original %1$s, optimized %2$s. WebP variant: %3$s.', 'wpmediaverse' ),
-			$before > 0 ? size_format( $before ) : '-',
-			$after > 0 ? size_format( $after ) : '-',
-			'' !== $webp ? __( 'available', 'wpmediaverse' ) : __( 'not generated', 'wpmediaverse' )
-		);
-
-		printf(
-			'<span class="mvs-media-badge %s" title="%s">%s</span>',
-			esc_attr( $badge_class ),
-			esc_attr( $title ),
-			esc_html( $badge_label )
-		);
 	}
 
 	/**
@@ -1140,7 +1032,7 @@ class MediaListPage {
 	}
 
 	/**
-	 * Decide whether the per-row Repair link should render for a given media.
+	 * Decide whether the Details view offers Repair thumbnails for a media.
 	 *
 	 * Returns true only when there's a real repair path for this media's
 	 * type, so users never see a button that does nothing. Free votes yes
@@ -1715,7 +1607,7 @@ class MediaListPage {
 						<?php if ( $is_img ) : ?>
 							<a class="button button-primary" href="<?php echo esc_url( $optimize_url ); ?>"><?php esc_html_e( 'Re-optimize', 'wpmediaverse' ); ?></a>
 						<?php endif; ?>
-						<?php if ( $is_img && self::can_repair_thumb( $media_id, $mime ) ) : ?>
+						<?php if ( self::can_repair_thumb( $media_id, $mime ) ) : ?>
 							<a class="button" href="<?php echo esc_url( $repair_url ); ?>"><?php esc_html_e( 'Repair thumbnails', 'wpmediaverse' ); ?></a>
 						<?php endif; ?>
 						<a class="button button-link-delete" href="<?php echo esc_url( $trash_url ); ?>"><?php esc_html_e( 'Move to Trash', 'wpmediaverse' ); ?></a>

@@ -4,7 +4,7 @@ MediaVerse connects with 12+ third-party services and plugins out of the box. No
 
 ## Integrations Admin Page (1.8.0)
 
-Go to **MediaVerse > Integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
+Open the **Integrations** card on the **MediaVerse** Overview screen and click **View integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
 
 - **Install free** - installs and activates the companion plugin's free version in one click, without leaving the page.
 - **Learn more** - links out to the product's page on the Wbcom store.
@@ -18,7 +18,7 @@ This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom p
 |-------------|--------|-------------|:----:|:---:|
 | **BuddyPress** | Free | Profile media tabs, group media, activity stream, notifications | Yes | Yes |
 | **BuddyNext** | Free | Enhanced member directory and profile blocks | Yes | Yes |
-| **WB Gamification** | Free (separate plugin) | XP points, badges, leaderboards for competitions (optional - competitions run without it, only points need it) | -- | Yes |
+| **WB Gamification** | Free (separate plugin) | Points, badges, leaderboards for competitions (optional - competitions run without it, only points need it) | -- | Yes |
 | **Amazon S3** | Pro | Store all media files on S3 with CDN delivery | -- | Yes |
 | **BunnyCDN** | Pro | Store and deliver media via BunnyCDN edge network | -- | Yes |
 | **OpenAI** | Free | AI content moderation, auto-tagging, description generation | Yes | Yes |
@@ -54,11 +54,11 @@ If you use the BuddyNext theme, MediaVerse detects it automatically and enhances
 
 ### wb-gamification **(Pro)**
 
-**This integration requires the separate, free WB Gamification plugin.** Points (XP) are only earned or spent when WB Gamification is installed and active. Without it, the competition features still run fully - members can create and enter Challenges, Battles, and Tournaments, vote, and see winners - but no points are awarded for wins or streaks, and the point-spending controls (such as Media Boosts) stay hidden. Every MediaVerse award/spend path is guarded, so Pro works correctly whether or not WB Gamification is present.
+**This integration requires the separate, free WB Gamification plugin.** Points are only earned or spent when WB Gamification is installed and active. Without it, the competition features still run fully - members can create and enter Challenges, Battles, and Tournaments, vote, and see winners - but no points are awarded for wins or streaks, and the point-spending controls (such as Media Boosts) stay hidden. Every MediaVerse award/spend path is guarded, so Pro works correctly whether or not WB Gamification is present.
 
 When WB Gamification is active, MediaVerse Pro feeds it points for these competition outcomes via the `wb_gam_points_for_action` filter:
 
-| Action | When | Default XP |
+| Action | When | Default points |
 |--------|------|-----------|
 | Win a challenge (1st) | First place in a challenge | 200 |
 | Win a challenge (2nd) | Second place | 100 |
@@ -68,7 +68,7 @@ When WB Gamification is active, MediaVerse Pro feeds it points for these competi
 | Win a tournament | Tournament champion | configurable |
 | Reach a streak milestone | Hit a daily-upload streak threshold | configurable |
 
-Challenge XP values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - MediaVerse Pro only tells it which competition outcome occurred.
+Challenge point values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - MediaVerse Pro only tells it which competition outcome occurred.
 
 Get the free plugin: [WB Gamification](https://wbcomdesigns.com/downloads/wordpress-gamification-plugin/).
 

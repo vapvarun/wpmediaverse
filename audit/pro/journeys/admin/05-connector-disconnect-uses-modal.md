@@ -69,8 +69,8 @@ flow — opens the styled modal instead of a browser dialog.
 - **Expect**: `POST /wp-json/mvs-pro/v1/connectors/{connector_id}/disconnect`
   fires. Page reloads on `data.disconnected === true` response.
 
-### 6. (Optional) Repeat on the admin Settings → Connectors tab
-- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings#connectors`
+### 6. (Optional) Repeat on the admin Settings → Flickr import tab
+- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings#connectors` (the tab was renamed "Flickr import" in 2.6.0; the anchor is unchanged). With "Turn on Flickr import" unticked the key, secret and connector cards hide; tick it to show them.
 - **Expect**: `window.mvsConfirm` is a function (provided by Pro's
   `Admin\ConfirmDialog` class on Pro admin screens). Clicking
   `.mvs-disconnect-btn` opens the admin `<dialog id="mvs-confirm-dialog">`
@@ -86,7 +86,7 @@ ALL of the following hold:
 3. Confirm button is labeled "Disconnect" and tinted destructive.
 4. Cancel aborts with zero outbound API requests.
 5. Confirm fires the disconnect endpoint.
-6. (If step 6 included) Pro admin Settings → Connectors tab also shows the
+6. (If step 6 included) Pro admin Settings → Flickr import tab also shows the
    styled `<dialog id="mvs-confirm-dialog">` on disconnect.
 
 ## Fail diagnostics

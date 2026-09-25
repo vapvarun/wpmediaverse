@@ -61,8 +61,8 @@ estimated_runtime_minutes: 10
 - **On fail**: `includes/CLI/Commands.php::migrate_storage` (must delegate to `CloudOps::migrate_one`, never re-implement the transfer), `Commands::sweep_stored_variants`, `Services/CloudOps::migrate_one`, `Repository/MediaRepository::get_stored_file_paths`.
 
 ### 6. Responsive check — mobile 390px (REQUIRED)
-- **Action**: `playwright_resize 390 844`; reload Settings, Storage; screenshot the Storage Management overview, the R2/DO credential cards, and the migrate action row.
-- **Expect**: `scrollWidth - innerWidth <= 1`; the overview list reflows (no clipped columns); credential fields full-width and labelled; Migrate all / Move next / Delete buttons reachable and >= 40px; the sidebar settings nav usable.
+- **Action**: `playwright_resize 390 844`; reload Settings, Storage; screenshot the Storage Management overview, the active driver's credential card, and the migrate action row. Change "Where files are stored" to another cloud driver without saving.
+- **Expect**: `scrollWidth - innerWidth <= 1`; the overview list reflows (no clipped columns); only the selected driver's credential card is shown (2.6.0 show-when) and it swaps live on change; credential fields full-width and labelled; Migrate all / Delete buttons reachable and >= 40px; the sidebar settings nav usable.
 - **On fail**: `wpmediaverse-pro/assets/css/admin.css` storage-mgmt `@media (max-width:640px)` block.
 
 ### 7. Translation-readiness
@@ -78,7 +78,7 @@ ALL of the following hold:
 3. Every non-public media's `file_url` is local (private never on cloud).
 4. The switch-service guard shows the remaining count and Migrate all completes, rewriting URLs.
 4b. `wp mvs migrate-storage` lands EVERY stored path on the destination (original + thumbnails + WebP/AVIF siblings), and both the single-media view and the grid render the migrated item with no broken images.
-5. No horizontal scroll at 390x844 on the Storage screen; all controls reachable and >= 40px.
+5. No horizontal scroll at 390x844 on the Storage screen; all controls reachable and >= 40px; only the selected driver's credential card shows.
 6. All Storage Management strings are translation-ready (`wpmediaverse-pro`).
 
 ## Fail diagnostics

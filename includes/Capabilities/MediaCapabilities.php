@@ -358,6 +358,53 @@ class MediaCapabilities {
 	}
 
 	/**
+	 * Grant one capability to exactly the given roles, through apply_role_caps().
+	 *
+	 * Only roles whose state CHANGES reach the writer, so saving a screen
+	 * without touching the list records no override at all. Administrators are
+	 * never part of the selection: the screen says they can always do this.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string   $cap   Capability.
+	 * @param string[] $roles Role slugs that should hold it.
+	 * @return string[] Role slugs that hold it afterwards.
+	 */
+	public static function apply_role_selection( string $cap, array $roles ): array {
+		$matrix = array();
+		foreach ( wp_roles()->role_objects as $slug => $role ) {
+			$want = in_array( (string) $slug, $roles, true );
+			if ( 'administrator' !== $slug && $want !== $role->has_cap( $cap ) ) {
+				$matrix[ (string) $slug ] = array( $cap => $want );
+			}
+		}
+
+		if ( $matrix ) {
+			self::apply_role_caps( $matrix );
+		}
+
+		return self::roles_with_cap( $cap );
+	}
+
+	/**
+	 * Role slugs whose role grants a capability.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $cap Capability.
+	 * @return string[]
+	 */
+	public static function roles_with_cap( string $cap ): array {
+		$holding = array();
+		foreach ( wp_roles()->role_objects as $slug => $role ) {
+			if ( $role->has_cap( $cap ) ) {
+				$holding[] = (string) $slug;
+			}
+		}
+		return $holding;
+	}
+
+	/**
 	 * Remove capabilities from roles (on uninstall).
 	 */
 	/**

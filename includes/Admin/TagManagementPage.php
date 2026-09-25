@@ -206,20 +206,15 @@ class TagManagementPage {
 		<table class="wp-list-table widefat fixed striped table-view-list">
 			<thead>
 				<?php
+				// ID and Slug columns left in 2.6.0 (the slug is on the edit
+				// screen). $allowed_orderby still accepts both, so a bookmarked
+				// sort keeps working.
 				$sort_columns = array(
-					'term_id' => array(
-						'label' => __( 'ID', 'wpmediaverse' ),
-						'class' => 'column-id',
-					),
-					'name'    => array(
+					'name'  => array(
 						'label' => __( 'Name', 'wpmediaverse' ),
 						'class' => 'column-primary',
 					),
-					'slug'    => array(
-						'label' => __( 'Slug', 'wpmediaverse' ),
-						'class' => 'column-slug',
-					),
-					'count'   => array(
+					'count' => array(
 						'label' => __( 'Count', 'wpmediaverse' ),
 						'class' => 'column-count',
 					),
@@ -250,7 +245,7 @@ class TagManagementPage {
 			<tbody>
 				<?php if ( empty( $tags ) ) : ?>
 					<tr>
-						<td colspan="6">
+						<td colspan="4">
 							<div class="mvs-empty-state-admin">
 								<i data-lucide="tag"></i>
 								<h3><?php esc_html_e( 'No Tags Found', 'wpmediaverse' ); ?></h3>
@@ -267,9 +262,7 @@ class TagManagementPage {
 			<tfoot>
 				<tr>
 					<td class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-2" /></td>
-					<th class="manage-column column-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 					<th class="manage-column column-primary"><?php esc_html_e( 'Name', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-slug"><?php esc_html_e( 'Slug', 'wpmediaverse' ); ?></th>
 					<th class="manage-column column-count"><?php esc_html_e( 'Count', 'wpmediaverse' ); ?></th>
 					<th class="manage-column column-actions"><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
 				</tr>
@@ -320,11 +313,9 @@ class TagManagementPage {
 			<th class="check-column">
 				<input type="checkbox" name="tag_ids[]" value="<?php echo esc_attr( (string) $tag->term_id ); ?>" />
 			</th>
-			<td class="column-id"><?php echo esc_html( (string) $tag->term_id ); ?></td>
 			<td class="column-primary">
 				<strong><a href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $tag->name ); ?></a></strong>
 			</td>
-			<td class="column-slug"><?php echo esc_html( $tag->slug ); ?></td>
 			<td class="column-count"><?php echo esc_html( (string) $tag->count ); ?></td>
 			<td class="column-actions">
 				<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a>

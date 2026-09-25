@@ -16,8 +16,8 @@ estimated_runtime_minutes: 6
 
 **2.0.0 redesign**: watermarking is no longer per-media and is NOT coupled to
 access rules (the old access-rules UI + rules-gated watermark preview/serve path
-was removed). It is a single admin setting (Settings -> Display -> Image
-Watermarking): Enable + Apply-to (all uploads / selected uploader roles). The
+was removed). It is a single admin setting (Settings -> Storage -> Image
+Watermarking, moved from Display in 2.6.0 because it changes the stored file): Enable + Apply-to (all uploads / selected uploader roles). The
 mark is stamped into the image bytes at upload (`UploadService` ->
 `mvs_watermark_stamp_file` -> Pro `Watermarker::stamp_file`), so every viewer —
 regardless of role or login state — sees the watermark on the stored file and its
@@ -37,8 +37,8 @@ thumbnails. This journey replaces the retired `access-rules-and-watermark` journ
 ## Steps
 
 ### 1. Settings page exposes ONE watermark control (no access-rules coupling)
-- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings`; open the Display section.
-- **Expect**: exactly one `[name="mvs_watermark_enabled"]` and one `[name="mvs_watermark_apply"]` (options: All uploads / Uploads from selected roles). No "access rule" wording anywhere on the page. Enable help text says the mark is baked in at upload and everyone sees it.
+- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings`; open the Storage section. Untick Enable Watermark without saving.
+- **Expect**: exactly one `[name="mvs_watermark_enabled"]` and one `[name="mvs_watermark_apply"]` (options: All uploads / Uploads from selected roles). No "access rule" wording anywhere on the page. Enable help text says the mark is baked in at upload and everyone sees it. With Enable unticked, the other watermark rows (Apply to, type, text, image, position, opacity, size, colour) hide; ticking it shows them again. None of them is on the Display tab any more.
 
 ### 2. Upload an in-scope image (member) — file is stamped
 - **Action**: as an in-scope uploader, `POST /wp-json/mvs/v1/media` with the fixture (see journey 01 step 2). Capture `$MEDIA_ID` + its stored file path.

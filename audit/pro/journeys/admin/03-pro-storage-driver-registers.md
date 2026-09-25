@@ -22,12 +22,12 @@ estimated_runtime_minutes: 2
 - **Expect**: object instance of `BunnyCDNDriver`.
 
 ### 3. Settings dropdown lists Pro drivers
-- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=wpmediaverse-settings#general`
-- **Expect**: `select[name="mvs_storage_driver"]` contains options `s3` and `bunny` in addition to `local`.
+- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings#storage`
+- **Expect**: the "Where files are stored" select (`select[name="mvs_storage_driver"]`) contains options `s3`, `bunnycdn`, `r2` and `dospaces` in addition to `local`, labelled in plain words ("This server (WordPress uploads)", "Amazon S3", ...). Picking one shows only that driver's credential card; picking `local` hides all four. After a driver change is saved, the notice names the place ("New uploads now go to Amazon S3."), never the slug.
 
 ## Pass criteria
 
-Filter returns Pro driver objects for `s3` and `bunny` keys; settings dropdown lists them.
+Filter returns Pro driver objects for `s3` and `bunny` keys; settings dropdown lists every driver and shows only the selected driver's credentials.
 
 ## Fail diagnostics
 

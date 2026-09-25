@@ -1878,9 +1878,9 @@ class Plugin {
 	 * Reorder the WPMediaVerse submenu for a logical admin experience.
 	 *
 	 * Groups (Wbcom Rule 2): Overview → Content → Moderation → Insights →
-	 * Tools → Settings last. Pro extends this list via its own reorder when
-	 * active; Free must still order every slug it registers so items like
-	 * Documents / Tags / Logs do not land in a random middle bucket.
+	 * Settings last. Pro extends this list via its own reorder when active;
+	 * Free must still order every slug it shows in the sidebar so items like
+	 * Documents / Tags do not land in a random middle bucket.
 	 */
 	public static function reorder_submenu(): void {
 		global $submenu;
@@ -1901,15 +1901,12 @@ class Plugin {
 			'edit.php?post_type=mvs_collection',
 			'mvs-tags',
 			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_album',
-			// Moderation / trust & safety queues.
+			// Moderation / trust & safety (reports are a Moderation tab).
 			'mvs-moderation',
-			'mvs-reports',
 			// Insights.
 			'mvs-stats',
-			// Tools.
-			'mvs-integrations',
-			'mvs-logs',
-			// Config — always last.
+			// Config — always last. Logs live under Tools, and Integrations
+			// is reached from the Overview card, so neither is listed here.
 			'mvs-settings',
 		);
 

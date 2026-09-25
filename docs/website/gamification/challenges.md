@@ -4,7 +4,7 @@
 
 
 
-Run weekly themed photo competitions - your community submits their best shots, votes for their favorites, and the top three photographers win XP prizes.
+Run weekly themed photo competitions - your community submits their best shots, votes for their favorites, and the top three photographers win point prizes.
 
 ## What You Can Do (as a User)
 
@@ -12,7 +12,7 @@ Run weekly themed photo competitions - your community submits their best shots, 
 - Enter your best photo for any active challenge
 - Vote for your favorite entries during the voting window
 - Track your standing and see the final rankings with winner badges
-- Earn XP for participating, even if you do not place in the top three
+- Earn points for participating, even if you do not place in the top three
 
 ## How It Works (for Users)
 
@@ -24,16 +24,16 @@ Run weekly themed photo competitions - your community submits their best shots, 
 6. When the entry window closes, the challenge moves to the **Voting** tab
 7. Vote for your single favorite entry - you can only vote once per challenge
 8. When voting closes, open the **Finalized** tab to see the ranked results
-9. Winner badges (1st, 2nd, 3rd) appear on the top entries and XP is awarded automatically to your account
+9. Winner badges (1st, 2nd, 3rd) appear on the top entries and points are awarded automatically to your account
 
 ![Photo Challenges frontend page showing active challenge](../images/challenges-page.png)
 
 ## For Site Owners
 
 1. Go to **MediaVerse > Settings > Gamification** and enable **Photo Challenges**
-2. Go to **Competitions > Challenge Manager** and click **Add Challenge**
+2. Go to **MediaVerse > Photo Challenges** and click **Add Challenge**
 3. Set a theme title, entry start date, entry end date, and voting end date
-4. Set XP prizes for 1st, 2nd, 3rd place and a participation XP amount for all entrants
+4. Set point prizes for 1st, 2nd, 3rd place and a participation point amount for all entrants
 5. Click **Save** - the challenge appears on the frontend when the start date arrives
 6. To run challenges on autopilot without manual creation, enable **Autopilot** in the settings (see below)
 
@@ -48,26 +48,26 @@ A challenge moves through four stages. All transitions are handled by Action Sch
 | **Scheduled** | Challenge is published but the start date has not arrived |
 | **Active** | Entry window is open - users can submit photos |
 | **Voting** | Entry window closed - community can vote on submissions |
-| **Finalized** | Voting closed - winners determined, XP awarded |
+| **Finalized** | Voting closed - winners determined, points awarded |
 
 ## Creating a Challenge
 
-Go to **Competitions > Challenge Manager** and click **Add Challenge**.
+Go to **MediaVerse > Photo Challenges** and click **Add Challenge**.
 
 ![Challenge Manager create form](../images/admin-competitions.png)
 
 | Field | Description |
 |-------|-------------|
 | Theme | Title or topic for the challenge (e.g., "Golden Hour Photography") |
-| Theme Library | Pick from 25+ pre-built themes instead of writing one manually |
+| Challenge Themes | Pick from 25+ pre-built themes instead of writing one manually |
 | Entry Start | Date and time when photo submissions open |
 | Entry End | Date and time when submissions close |
 | Voting End | Date and time when voting closes |
 | Max Entries Per User | How many photos one user may submit |
-| XP - 1st Place | XP awarded to the top vote-getter |
-| XP - 2nd Place | XP awarded to the second-highest vote-getter |
-| XP - 3rd Place | XP awarded to the third-highest vote-getter |
-| XP - Participation | XP awarded to all entrants when the challenge finalizes |
+| Points - 1st Place | Points awarded to the top vote-getter |
+| Points - 2nd Place | Points awarded to the second-highest vote-getter |
+| Points - 3rd Place | Points awarded to the third-highest vote-getter |
+| Points - Participation | Points awarded to all entrants when the challenge finalizes |
 
 ## Autopilot
 
@@ -79,13 +79,13 @@ Autopilot creates and schedules challenges automatically so you do not need to c
 | Autopilot Day | `mvs_autopilot_day` | Day of the week to start each new challenge - a lowercase day name (`monday` through `sunday`) |
 | Autopilot Hour | `mvs_autopilot_hour` | Hour of day (0–23, site timezone) to open entries |
 
-When autopilot runs, it picks the next unused theme from the Theme Library. Once all themes are used, it cycles back to the first theme.
+When autopilot runs, it picks the next unused theme from Challenge Themes. Once all themes are used, it cycles back to the first theme.
 
-## Theme Library
+## Challenge Themes
 
-The Theme Library ships with 25+ pre-built challenge themes. Go to **Competitions > Theme Library** to browse, add, edit, or disable themes.
+Challenge Themes ships with 25+ pre-built challenge themes. Go to **MediaVerse > Challenge Themes** to browse, add, edit, or disable themes.
 
-![Theme Library grid showing theme cards with categories](../images/admin-competitions.png)
+![Challenge Themes grid showing theme cards with categories](../images/admin-competitions.png)
 
 Themes are categorized (Nature, Urban, Portrait, Abstract, etc.). You can add custom themes and assign them to any category.
 
@@ -157,4 +157,4 @@ The media picker in the entry form lets users select from their existing uploade
 |-------------|-----------|
 | `mvs_activate_scheduled_challenges` | Runs hourly - sets `Scheduled` challenges to `Active` when start date is past |
 | `mvs_close_challenge_entries` | Runs hourly - sets `Active` challenges to `Voting` when entry deadline is past |
-| `mvs_finalize_expired_challenges` | Runs hourly - sets `Voting` challenges to `Finalized`, tallies votes, awards XP |
+| `mvs_finalize_expired_challenges` | Runs hourly - sets `Voting` challenges to `Finalized`, tallies votes, awards points |

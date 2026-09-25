@@ -50,12 +50,12 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | Admin All Media | table + filters + pagination | filtered-empty vs truly-empty distinct |
 | Admin Pro Competitions Dashboard | active counts + quick links | "create your first challenge" CTA |
 | Admin Pro Quota & Credits | package list + credit log | "no packages yet" with create CTA |
-| Admin Pro Theme Library | themes grid | — (default themes seeded on activation) |
+| Admin Pro Challenge Themes (`mvs-theme-library`) | themes grid | — (default themes seeded on activation) |
 | Admin Pro Migration Tool | detected counts | "no migrable data detected" |
 | Admin Tags (`mvs-tags`) | tag table with counts, search, bulk actions, edit/delete | "no tags yet" |
 | Admin Pro Stories (`mvs-stories`) | active stories list | "no active stories right now" |
-| Admin Logs (`mvs-logs`) | filterable log table + Clear All | "no log entries" |
-| Admin Integrations (`mvs-integrations`) | Wbcom family cards with install/active state | — |
+| Admin Logs (Tools > MediaVerse Logs, `tools.php?page=mvs-logs`; old `admin.php` URL redirects) | filterable log table + Clear All | "no log entries" |
+| Admin Integrations (`mvs-integrations`, from the Overview card; not in the sidebar) | Wbcom family cards with install/active state | — |
 | Admin Setup wizard (`mvs-setup`) | welcome + setup steps | re-running after setup must not create duplicate pages |
 | Admin Pro Challenges / Tournaments / Battles | status tabs with counts, row actions (End Entries, Create Tournament) | empty tab → CTA, not a blank table |
 | Lightbox Edit-Media modal | title/description/privacy/allow-download fields prefilled from media, save → REST PUT → live update | save disabled while title empty; ESC closes without saving |

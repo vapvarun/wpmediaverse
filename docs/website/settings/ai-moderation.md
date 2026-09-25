@@ -1,41 +1,34 @@
 # AI & Moderation Settings
 
-Access these settings at **MediaVerse > Settings > AI & Moderation**.
+These settings are on two tabs: **MediaVerse > Settings > AI** and **MediaVerse > Settings > Moderation**.
 
-![AI and Moderation settings tab](../images/admin-settings-general.png)
-
-## AI Features Section
+## AI Features Section (AI tab)
 
 AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) supply an API key and (2) turn on at least one of the toggles below. There is no separate "enable AI" master switch because a missing key already disables every AI feature - you stay in full control of what runs and what it costs.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision**, **AWS Rekognition**, and **Claude (Anthropic)** (added in 1.8.0, selectable from this dropdown). |
-| OpenAI API Key | (empty) | Your OpenAI API key. You can also define `MVS_OPENAI_API_KEY` in `wp-config.php` instead. |
-| OpenAI Model | GPT-4o Mini | Model used for analysis calls. **GPT-4o Mini** is cheaper; **GPT-4o** provides higher quality results. |
-| Auto-Analyze Uploads | Off | Master switch for the two per-feature toggles below. When off, neither descriptions nor tags are generated on upload. |
-| Generate Descriptions | On | When Auto-Analyze is on, use AI to generate a description / alt text for each upload. Turn off to skip description calls and only generate tags. |
-| Generate Tags | On | When Auto-Analyze is on, use AI to suggest tags for each upload. Turn off to skip tag-suggestion calls. |
-| Auto-Apply Tags | Off | When enabled, AI-suggested tags are automatically assigned to the `mvs_tag` taxonomy. Requires **Generate Tags** to be on. |
-| Auto-Moderate Uploads | Off | When enabled, each new upload is checked for policy violations. The action taken depends on the **When AI Flags Content** setting below. |
+| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision**, **AWS Rekognition**, and **Claude (Anthropic)**. Only the key card for the provider you pick is shown. |
+| OpenAI API Key | (empty) | Your OpenAI API key. Shown when OpenAI is the provider. With Pro it also shows while Whisper auto-captions is on, because captions use this key. You can also define `MVS_OPENAI_API_KEY` in `wp-config.php` instead. |
+| Auto-Analyze Uploads | Off | Run AI on every new upload. Master switch for the two rows below. |
+| Generate Descriptions | On | Use AI to write a description / alt text for each upload. Shown only while Auto-Analyze Uploads is on. |
+| Generate Tags | On | Use AI to suggest tags for each upload. Shown only while Auto-Analyze Uploads is on. |
+| Auto-Apply Tags | Off | Assign AI-suggested tags to the `mvs_tag` taxonomy automatically. Shown only while Generate Tags is on. |
 | Monthly AI Budget ($) | $10 | Monthly limit on AI calls (analysis, tagging **and moderation**), counted at an estimated $0.01 per call. When the estimate reaches the limit, AI stops until the next month. Real cost depends on the model, so also set a billing limit in your provider account. Set to **0** for no limit. |
+
+**Model choice has no screen control since 2.6.0.** The OpenAI model (`mvs_openai_model`, default `gpt-4o-mini`) and, with Pro, the Claude model (`mvs_pro_anthropic_model`, default Haiku) are still registered and still used. Set them in code or with WP-CLI if you need a different model.
 
 **Estimated cost per call** is not a settings-page field - it is a developer-only default (`$0.01`) used for budget tracking, overridable via the [`mvs_ai_cost_per_call`](../developer-guide/hooks-filters.md) filter.
 
-### AI Flag Criteria and Custom Flag Terms **(New in 1.8.0)**
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| AI Flag Criteria | All 6 categories on | Checkbox group controlling which content categories the AI flags: Nudity / sexual content, Violence / gore, Hate / harassment, Self-harm, Drugs, Spam. Unchecking all categories restores every category (the rule can never go blank). |
-| Custom Flag Terms | (empty) | Optional comma-separated terms the AI should also flag beyond the built-in categories - e.g. `weapons, gambling, political content, competitor logos`. Narrated to the AI alongside the categories above. |
+Hiding a row is visual only. Saving never changes the stored value of a hidden setting.
 
 ### Choosing exactly which AI features run
 
-Each toggle is independent so a site owner enables only what they want to pay for:
+Each toggle is independent so a site owner turns on only what they want to pay for:
 
 - **Descriptions only** - Auto-Analyze on, Generate Descriptions on, Generate Tags off.
 - **Tags only** - Auto-Analyze on, Generate Descriptions off, Generate Tags on (add Auto-Apply Tags to write them to the taxonomy automatically).
-- **Moderation only** - leave Auto-Analyze off and turn on Auto-Moderate; uploads are scanned for policy violations without generating descriptions or tags.
+- **Moderation only** - leave Auto-Analyze off and turn on **AI Moderation** on the Moderation tab. Uploads are checked without generating descriptions or tags.
 
 The budget cap applies to all of the above, so moderation calls also stop once the monthly cap is hit.
 
@@ -48,12 +41,19 @@ define( 'MVS_OPENAI_API_KEY', 'sk-your-key-here' );
 
 When this constant is defined, the settings page field is disabled and shows a notice.
 
-## Moderation Section
+## Moderation Section (Moderation tab)
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| When AI Flags Content | Hide until I review it | What happens when AI detects a policy violation. Options: **Hide until I review it** (hidden from everyone except the author and moderators until you approve it), **Reject** (moves media to draft), **Delete permanently** (removes the media and its files from local and cloud storage - cannot be undone). The default changed from Delete permanently to Flag for review in 2.0.0, so a fresh install can never auto-delete uploads before an admin has chosen otherwise. |
-| Auto-Hide Threshold | 3 | Number of user reports required to automatically hide a media item. The media is set to private and added to the moderation queue. Set to 0 to disable automatic hiding. |
+| Community Guidelines URL | (empty) | What members may and may not post. Shown in the app and alongside the Report control. |
+| Member Reporting | On | Members can flag content and people for review. Reports appear under User Reports. Turning this off hides every Report control and refuses incoming reports. |
+| AI Moderation | Off | Check new uploads with AI and act on what it flags. Moved here from the AI tab in 2.6.0 (it was "Auto-Moderate Uploads"). |
+| When AI Flags Content | Hide until I review it | What happens when AI flags an upload. Shown only while AI Moderation is on. Options: **Hide until I review it** (hidden from everyone except the author and moderators until you approve it), **Reject (move to draft)**, **Delete permanently** (removes the media and its files from local and cloud storage - cannot be undone). |
+| AI Flag Criteria | All 6 categories on | Which content categories the AI flags: Nudity / sexual content, Violence / gore, Hate / harassment, Self-harm, Drugs, Spam. Unchecking all categories restores every category, so the rule can never go blank. Shown only while AI Moderation is on. |
+| Custom Flag Terms | (empty) | Optional comma-separated terms the AI should also flag beyond the built-in categories - for example `weapons, gambling, political content, competitor logos`. Shown only while AI Moderation is on. |
+| Auto-Hide Threshold | 3 | Number of reports before media is hidden automatically and added to the moderation queue. Set to 0 to turn this off. |
+
+The Terms of Service URL and Abuse Contact Email moved from this tab to **Settings > Mobile App** in 2.6.0.
 
 ## Moderation Queue
 
@@ -68,7 +68,7 @@ The queue shows:
 
 ## Log Viewer
 
-The AI & moderation activity log is available at **MediaVerse > Logs**. It shows each AI call, the result, estimated cost, and any action taken.
+The AI & moderation activity log is available at **Tools > MediaVerse Logs**. It shows each AI call, the result, estimated cost, and any action taken.
 
 ![AI log viewer showing analysis results](../images/admin-stats.png)
 

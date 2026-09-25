@@ -13,8 +13,8 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Overview page — the landing page under WPMediaVerse admin menu.
  *
- * Shows at-a-glance stats, quick links, recent uploads, and system status
- * so a site owner can understand plugin health immediately.
+ * Shows at-a-glance stats, quick links, recent uploads, and the status of
+ * companion integrations so a site owner can understand the site at once.
  */
 class OverviewPage {
 
@@ -172,7 +172,6 @@ class OverviewPage {
 
 		$stats        = $this->get_stats();
 		$recent_media = $this->get_recent_media();
-		$system_info  = $this->get_system_info();
 		?>
 		<div class="wrap wpmediaverse-admin">
 			<div class="mvs-page-header">
@@ -255,21 +254,23 @@ class OverviewPage {
 							</div>
 
 							<?php
-							// Offer Import when there is no demo content, Delete when there is.
-							//
-							// This used to ask `0 === total_media` — "is the site empty?" — which
-							// is a different question. Any media at all, including the owner's own
-							// real uploads, hid the Import button permanently: after running
-							// Delete Demo Data the cleanup correctly reported "no demo users
-							// found", and there was still no way to import again short of
-							// deleting every file on the site.
+							// Offer Delete when demo content is present, and Import only on a
+							// site with no media at all.
 							//
 							// `mvs_demo_seeded` is the marker the seeder writes and the cleanup
-							// removes, so it answers the question actually being asked. It is read
-							// live, not through the day-long aggregate cache that made the old
-							// gate stale on top of being wrong.
+							// removes, so it answers "is there demo data to delete". Import is a
+							// separate question: demo members and media land beside real ones,
+							// so it is offered on an empty site only (2.6.0). The count is read
+							// live from the repository, not through the day-long aggregate
+							// cache, so it cannot go stale. `mvs_show_demo_import` restores the
+							// button on a site that already has media.
+							$mvs_seeded      = (bool) get_option( 'mvs_demo_seeded' );
+							$mvs_show_import = ! $mvs_seeded && (bool) apply_filters(
+								'mvs_show_demo_import',
+								0 === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->count_published()
+							);
 							?>
-							<?php if ( ! get_option( 'mvs_demo_seeded' ) ) : ?>
+							<?php if ( $mvs_show_import ) : ?>
 								<div class="mvs-demo-import mvs-section-divider">
 									<h4 class="mvs-demo-title"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
 									<p class="mvs-demo-desc">
@@ -285,7 +286,7 @@ class OverviewPage {
 										<div class="mvs-import-progress-bar mvs-progress-bar" id="mvs-import-progress-bar"></div>
 									</div>
 								</div>
-							<?php else : ?>
+							<?php elseif ( $mvs_seeded ) : ?>
 								<?php if ( current_user_can( 'manage_mvs_settings' ) ) : ?>
 									<div class="mvs-demo-cleanup mvs-section-divider">
 										<button type="button" class="mvs-btn mvs-btn--danger" id="mvs-cleanup-demo-btn"
@@ -453,52 +454,14 @@ class OverviewPage {
 						</div>
 					</div>
 
-					<?php // System Status Widget. ?>
-					<div class="mvs-admin-widget mvs-widget-spaced">
-						<div class="mvs-widget-header">
-							<h2><?php esc_html_e( 'System Status', 'wpmediaverse' ); ?></h2>
-						</div>
-						<div class="mvs-widget-body">
-							<ul class="mvs-status-list">
-								<li>
-									<span class="mvs-status-label"><?php esc_html_e( 'PHP Version', 'wpmediaverse' ); ?></span>
-									<span class="mvs-status-value <?php echo version_compare( PHP_VERSION, '7.4', '>=' ) ? 'mvs-status-ok' : 'mvs-status-bad'; ?>">
-										<?php echo esc_html( PHP_VERSION ); ?>
-									</span>
-								</li>
-								<li>
-									<span class="mvs-status-label"><?php esc_html_e( 'WordPress', 'wpmediaverse' ); ?></span>
-									<span class="mvs-status-value mvs-status-ok"><?php echo esc_html( get_bloginfo( 'version' ) ); ?></span>
-								</li>
-								<li>
-									<span class="mvs-status-label"><?php esc_html_e( 'Upload Limit', 'wpmediaverse' ); ?></span>
-									<span class="mvs-status-value"><?php echo esc_html( size_format( (int) get_option( 'mvs_max_upload_size', 104857600 ) ) ); ?></span>
-								</li>
-								<li>
-									<span class="mvs-status-label"><?php esc_html_e( 'Storage Driver', 'wpmediaverse' ); ?></span>
-									<span class="mvs-status-value"><?php echo esc_html( ucfirst( get_option( 'mvs_storage_driver', 'local' ) ) ); ?></span>
-								</li>
-								<li>
-									<span class="mvs-status-label"><?php esc_html_e( 'AI Provider', 'wpmediaverse' ); ?></span>
-									<?php
-									$ai_key = get_option( 'mvs_openai_api_key', '' );
-									if ( defined( 'MVS_OPENAI_API_KEY' ) && MVS_OPENAI_API_KEY ) {
-										$ai_key = MVS_OPENAI_API_KEY;
-									}
-									?>
-									<span class="mvs-status-value <?php echo esc_attr( $ai_key ? 'mvs-status-ok' : 'mvs-status-warn' ); ?>">
-										<?php echo $ai_key ? esc_html__( 'Configured', 'wpmediaverse' ) : esc_html__( 'Not set', 'wpmediaverse' ); ?>
-									</span>
-								</li>
-								<li>
-									<span class="mvs-status-label"><?php esc_html_e( 'BuddyPress', 'wpmediaverse' ); ?></span>
-									<span class="mvs-status-value <?php echo esc_attr( $system_info['buddypress'] ? 'mvs-status-ok' : '' ); ?>">
-										<?php echo $system_info['buddypress'] ? esc_html__( 'Active', 'wpmediaverse' ) : esc_html__( 'Inactive', 'wpmediaverse' ); ?>
-									</span>
-								</li>
-							</ul>
-						</div>
-					</div>
+					<?php
+					// Integrations summary. The Integrations page left the sidebar in
+					// 2.6.0; this card is its entry point. Installing plugins is an
+					// admin job, so the card is too.
+					if ( current_user_can( 'manage_options' ) ) {
+						IntegrationsPage::render_overview_card();
+					}
+					?>
 				</div>
 
 			<?php
@@ -527,7 +490,7 @@ class OverviewPage {
 		$settings_url    = admin_url( 'admin.php?page=mvs-settings' );
 		$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
 		$explore_url_wb  = $explore_page_id ? get_permalink( $explore_page_id ) : home_url( '/media/' );
-		$permissions_url = admin_url( 'admin.php?page=mvs-settings#permissions' );
+		$permissions_url = admin_url( 'admin.php?page=mvs-settings#general' );
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
 			<div class="mvs-welcome-banner__content">
@@ -629,17 +592,6 @@ class OverviewPage {
 	private function get_recent_media(): array {
 		// Single source of truth — see AdminAggregatesService::recent_media.
 		return \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->recent_media();
-	}
-
-	/**
-	 * Get system information.
-	 *
-	 * @return array
-	 */
-	private function get_system_info(): array {
-		return array(
-			'buddypress' => class_exists( 'BuddyPress' ),
-		);
 	}
 
 	/**

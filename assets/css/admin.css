@@ -1182,49 +1182,6 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-accent);
 }
 
-.mvs-setup-pages-list {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	margin-bottom: 16px;
-}
-
-.mvs-setup-page-card {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 12px 16px;
-	border: 1px solid var(--mvs-border-light);
-	border-radius: var(--mvs-radius-md);
-	background: var(--mvs-surface-2);
-}
-
-.mvs-setup-page-card [data-lucide] {
-	color: var(--mvs-accent);
-	width: 24px;
-	height: 24px;
-	stroke-width: 1.5;
-}
-
-.mvs-setup-page-info {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.mvs-setup-page-info span {
-	font-size: 12px;
-	color: var(--mvs-text-muted);
-}
-
-.mvs-setup-page-info code {
-	font-size: 12px;
-	background: var(--mvs-bg);
-	padding: 1px 4px;
-	border-radius: 2px;
-}
-
 .mvs-setup-role-list {
 	display: flex;
 	flex-direction: column;
@@ -1739,7 +1696,7 @@ a.mvs-stat-card:focus {
 .mvs-media-badge--pending { background: var(--mvs-warn); }
 .mvs-media-badge--trash { background: var(--mvs-danger); }
 
-/* Semantic variants used by the optimization column and detail page. */
+/* Semantic variants used by the media Details view and the AI column. */
 .mvs-media-badge--success { background: var(--mvs-success-strong); }
 .mvs-media-badge--danger { background: var(--mvs-danger); }
 .mvs-media-badge--neutral { background: var(--mvs-text-secondary); }
@@ -1752,16 +1709,8 @@ a.mvs-stat-card:focus {
 	width: 2.2em;
 }
 
-.mvs-col-id {
-	width: 60px;
-}
-
 .mvs-col-thumb {
 	width: 60px;
-}
-
-.mvs-col-optimization {
-	width: 130px;
 }
 
 /* The Title column claims its share by width, not by pinning the others.
@@ -1772,10 +1721,6 @@ a.mvs-stat-card:focus {
    Keyed on the column's own class, it survives a column being added. */
 .mvs-admin-widget .wp-list-table .column-primary {
 	width: 26%;
-}
-
-.mvs-admin-widget .wp-list-table td.mvs-col-id {
-	color: var(--mvs-text-secondary);
 }
 
 .mvs-thumb {
@@ -1939,8 +1884,6 @@ a.mvs-stat-card:focus {
 .mvs-form-inline { display: inline; }
 .mvs-text-muted { color: var(--mvs-text-muted); }
 .mvs-text-secondary { color: var(--mvs-text-secondary); margin: 0; }
-.mvs-text-danger { color: var(--mvs-danger); }
-.mvs-text-success { color: var(--mvs-success); }
 .mvs-mt-0 { margin-top: 0; }
 .mvs-setup-finish-form { margin-top: 24px; }
 

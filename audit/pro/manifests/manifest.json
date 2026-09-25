@@ -1110,42 +1110,35 @@
     {
       "title": "Competitions",
       "slug": "mvs-competitions",
-      "parent": "(top-level add_menu_page)",
+      "parent": "wpmediaverse",
       "capability": "manage_mvs_settings",
-      "file": "includes/Admin/CompetitionsDashboard.php:101"
-    },
-    {
-      "title": "Dashboard",
-      "slug": "mvs-competitions",
-      "parent": "mvs-competitions",
-      "capability": "manage_mvs_settings",
-      "file": "includes/Admin/CompetitionsDashboard.php:111"
+      "file": "includes/Admin/CompetitionsDashboard.php:112 (add_submenu_page under wpmediaverse since 2.6.0; was a top-level menu)"
     },
     {
       "title": "Photo Challenges",
       "slug": "mvs-challenges",
-      "parent": "mvs-competitions",
+      "parent": "wpmediaverse",
       "capability": "manage_mvs_settings",
       "file": "includes/Admin/ChallengeManager.php:77"
     },
     {
       "title": "Tournaments",
       "slug": "mvs-tournaments",
-      "parent": "mvs-competitions",
+      "parent": "wpmediaverse",
       "capability": "manage_mvs_settings",
       "file": "includes/Admin/TournamentManager.php:54"
     },
     {
       "title": "Photo Battles",
       "slug": "mvs-battles",
-      "parent": "mvs-competitions",
+      "parent": "wpmediaverse",
       "capability": "manage_mvs_settings",
       "file": "includes/Admin/BattleMonitor.php:31"
     },
     {
-      "title": "Theme Library (Themes)",
+      "title": "Challenge Themes",
       "slug": "mvs-theme-library",
-      "parent": "mvs-competitions",
+      "parent": "wpmediaverse",
       "capability": "manage_mvs_settings",
       "file": "includes/Admin/ThemeLibrary.php:58"
     },
@@ -1154,7 +1147,7 @@
       "slug": "mvs-migration",
       "parent": "wpmediaverse",
       "capability": "manage_mvs_settings",
-      "file": "includes/Admin/MigrationPage.php:73"
+      "file": "includes/Admin/MigrationPage.php:84 (removed from the sidebar unless current or a source exists: a detected platform or a saved migration state; cached 1h in transient mvs_pro_migration_has_source)"
     },
     {
       "title": "Stories",
@@ -2462,7 +2455,9 @@
     "delta_2026_09_25_v260_quota_removed": "2.6.0 removes the entire quota/credits system (owner decision, 2026-09-25): packages, per-type limits, credits, credit log, the paid-credit webhook, membership mapping (MemberPress/PMPro/WooCommerce adapters), upgrade prompt, frontend usage widget, and the Quota & Credits admin page + menu (mvs-quotas). Deleted: Quota\\QuotaService, Quota\\QuotaController, Admin\\QuotaPage, Frontend\\UsageWidget, Integrations\\AbstractQuotaAdapter and its three MemberPress/PaidMembershipsPro/WooCommerce QuotaAdapter implementations. Removed 11 REST routes under /mvs-pro/v1/ (packages, packages/{id}, users/{id}/quota, users/{id}/package, users/{id}/credits, credits/webhook, me/quota, me/quota/check, me/credits/history), 20 hooks (mvs_pro_* quota/webhook actions+filters and mvs_quota_save_mapping/mvs_quota_render_mapping_fields), and 3 tables (mvs_quota_packages, mvs_credit_log, mvs_pro_webhook_events). Replaced by ONE Free setting: option mvs_storage_limit_mb (site limit, MB, 0 = no limit) + user meta of the same name (per-member override), enforced by Free's Services\\StorageLimitService on the existing mvs_upload_args filter, which Documents already applies. Pro Migrator v20 migrates each site's default-package storage limit onto mvs_storage_limit_mb, copies non-default package limits onto the affected members as per-member overrides, pins previously-unlimited members to 0 (no limit) so the upgrade never suddenly caps them, then drops the three retired tables and the quota/credit/webhook options and user meta. CURRENT_VERSION is now 20.",
     "delta_2026_09_25_v260_battle_invite": "2.6.0: BattleNotificationListener emits a battle_invite notification to the challenged member on mvs_battle_created (read by Free's EmailService when the owner turns the email on). No hook, route, option or table added.",
     "delta_2026_09_25_v260_notice_hook": "GamificationNotice::maybe_render hooked through a no-arg closure; admin_notices passed '' into its ?bool parameter. No new surface.",
-    "delta_2026_09_25_v260_member_experience_pro": "2.6.0 member experience (hand-verified). Save picker: GET /media/{id}/collections lists the member's Free Favorites collection first; POST with that id sets the Free favourite (never a Pro row). mvs_collection_response filter builds a manual collection's members from Free's gated id list, fixing list responses that read 0 items. Streak widget hidden until the first upload, Lucide flame. Drive toolbar: visible 'Upload as' label, New folder is a <details> disclosure. Battles deep link: 'This battle is not available.' on 404, All battles button, focus the card. No route, hook, option or table added."
+    "delta_2026_09_25_v260_member_experience_pro": "2.6.0 member experience (hand-verified). Save picker: GET /media/{id}/collections lists the member's Free Favorites collection first; POST with that id sets the Free favourite (never a Pro row). mvs_collection_response filter builds a manual collection's members from Free's gated id list, fixing list responses that read 0 items. Streak widget hidden until the first upload, Lucide flame. Drive toolbar: visible 'Upload as' label, New folder is a <details> disclosure. Battles deep link: 'This battle is not available.' on 404, All battles button, focus the card. No route, hook, option or table added.",
+    "delta_2026_09_25_v260_admin_pages": "2.6.0 admin simplification (menus). Competitions is no longer a top-level menu: mvs-competitions, mvs-challenges, mvs-tournaments, mvs-battles and mvs-theme-library are submenus of wpmediaverse (slugs unchanged), ordered after Stats; the separate 'Dashboard' submenu entry is gone. Theme Library is titled 'Challenge Themes'. ConfirmDialog now uses NoticeSuppressor::is_mvs_screen() (page-slug detection), because submenu screen ids come from the parent menu title. Import (mvs-migration) leaves the sidebar unless a source platform is detected or a migration has started. Storage panel dropped the 'Move next N' button (admin_post mvs_pro_cloud_migrate_batch handler kept). Challenge and tournament admin labels say points, not XP. No admin_post, AJAX or REST handler removed; no option or table added.",
+    "delta_2026_09_25_v260_settings_simplification_pro": "2.6.0 settings simplification (hand-verified). New transport options mvs_upload_roles (_general; state is the upload_mvs_media capability via MediaCapabilities::apply_role_selection) and mvs_layout_choice (_display; writes mvs_thumbnail_style or, through Pro LayoutSetting, mvs_pro_feed_layout). New settings tab 'app' (mvs_settings_app / mvs-settings-app, section mvs_app). Group moves: mvs_app_password_login _general->_app; mvs_terms_url, mvs_eula_url, mvs_abuse_contact_email _moderation->_app; mvs_ai_auto_moderate _ai->_moderation; Pro mvs_watermark_* _display->_storage; Pro app branding _display->_app. Settings tab 'permissions' removed from the sidebar (renderer + admin_post_mvs_save_role_caps kept; re-add via mvs_settings_sections). Registered with no field (values/defaults unchanged): mvs_thumbnail_style, mvs_thumbnail_size, mvs_large_image_size, mvs_lightbox_image_source, mvs_signed_url_ttl, mvs_view_retention_days, mvs_filename_strategy, mvs_generate_webp, mvs_generate_avif, mvs_openai_model, mvs_eula_url, Pro mvs_pro_feed_layout, mvs_pro_anthropic_model. data-mvs-show-when rules drive one generic evaluator (assets/js/admin/ai-provider-fields.js). New hooks mvs_layout_choices, mvs_layout_selected, mvs_layout_saved, mvs_documents_admin_after_list, mvs_show_demo_import. New classes DisplaySettingsRegistrar, AppSettingsRegistrar (Free), LayoutSetting (Pro). Pro: orphaned-files card moved to the Documents admin screen; grid_columns_scope_note callback removed (Grid Columns now shows only for the square layout); /app/config layout uses Sanitizers::feed_layouts()."
   },
   "category_sources": {
     "rest": [

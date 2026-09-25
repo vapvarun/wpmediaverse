@@ -53,7 +53,13 @@ class IntegrationsPage {
 	}
 
 	/**
-	 * Add the Integrations submenu under the WPMediaVerse top-level menu.
+	 * Register the Integrations page under the WPMediaVerse menu.
+	 *
+	 * Since 2.6.0 the page is reached from the Integrations card on the
+	 * Overview screen, not the sidebar. It stays registered so the card, old
+	 * bookmarks and the install redirect all resolve, and it is removed from
+	 * the sidebar on every screen except its own (keeping it there on its own
+	 * screen lets get_admin_page_title() resolve).
 	 */
 	public function register_submenu(): void {
 		add_submenu_page(
@@ -64,6 +70,57 @@ class IntegrationsPage {
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET inspection.
+		$current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( self::PAGE_SLUG !== $current_page ) {
+			remove_submenu_page( 'wpmediaverse', self::PAGE_SLUG );
+		}
+	}
+
+	/**
+	 * Compact companion summary for the Overview screen.
+	 *
+	 * One line per companion with its status, and a link to the full page.
+	 * Deliberately no install buttons: installing happens on the Integrations
+	 * page, which explains what each companion adds.
+	 */
+	public static function render_overview_card(): void {
+		?>
+		<div class="mvs-admin-widget mvs-widget-spaced">
+			<div class="mvs-widget-header">
+				<h2><?php esc_html_e( 'Integrations', 'wpmediaverse' ); ?></h2>
+			</div>
+			<div class="mvs-widget-body">
+				<ul class="mvs-status-list">
+					<?php foreach ( CompanionRegistry::all() as $slug => $companion ) : ?>
+						<?php
+						$status = CompanionRegistry::status( $slug );
+						if ( 'active' === $status ) {
+							$status_class = 'mvs-status-ok';
+							$status_label = __( 'Connected', 'wpmediaverse' );
+						} elseif ( 'installed_inactive' === $status ) {
+							$status_class = 'mvs-status-warn';
+							$status_label = __( 'Installed, inactive', 'wpmediaverse' );
+						} else {
+							$status_class = '';
+							$status_label = __( 'Not installed', 'wpmediaverse' );
+						}
+						?>
+						<li>
+							<span class="mvs-status-label"><?php echo esc_html( (string) ( $companion['label'] ?? $slug ) ); ?></span>
+							<span class="mvs-status-value <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			</div>
+			<div class="mvs-widget-footer">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG ) ); ?>">
+					<?php esc_html_e( 'View integrations', 'wpmediaverse' ); ?> &rarr;
+				</a>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**

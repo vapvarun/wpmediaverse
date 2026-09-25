@@ -27,17 +27,44 @@ class LogViewerPage {
 	}
 
 	/**
-	 * Add log viewer page under Media menu.
+	 * Add the log viewer under Tools.
+	 *
+	 * Logs are a debugging tool, not something a site owner visits day to
+	 * day, so since 2.6.0 they live under Tools with a label that says whose
+	 * logs they are. The slug is unchanged, and old admin.php bookmarks are
+	 * redirected by redirect_legacy_url().
 	 */
 	public function add_menu_page(): void {
-		add_submenu_page(
-			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
+		$hook = add_submenu_page(
+			'tools.php',
 			__( 'Log Viewer', 'wpmediaverse' ),
-			__( 'Logs', 'wpmediaverse' ),
+			__( 'MediaVerse Logs', 'wpmediaverse' ),
 			'mvs_settings_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
+
+		if ( $hook ) {
+			add_action( 'load-' . $hook, array( $this, 'redirect_legacy_url' ) );
+		}
+	}
+
+	/**
+	 * Send an old `admin.php?page=mvs-logs` bookmark to the page under Tools.
+	 *
+	 * WordPress still resolves the old URL (the page hook is found through its
+	 * Tools parent), so without this it would render with the MediaVerse menu
+	 * collapsed. Every query arg is carried over, so a filtered view survives.
+	 */
+	public function redirect_legacy_url(): void {
+		if ( 'admin.php' !== ( $GLOBALS['pagenow'] ?? '' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only redirect of the same GET view.
+		$args = array_map( 'sanitize_text_field', wp_unslash( $_GET ) );
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'tools.php' ) ) );
+		exit;
 	}
 
 	/**
@@ -66,7 +93,7 @@ class LogViewerPage {
 					'page'    => self::PAGE_SLUG,
 					'cleared' => '1',
 				),
-				admin_url( 'admin.php' )
+				admin_url( 'tools.php' )
 			)
 		);
 		exit;
@@ -106,7 +133,7 @@ class LogViewerPage {
 			'info'    => '#2271b1',
 		);
 
-		$base_url = admin_url( 'admin.php?page=' . self::PAGE_SLUG );
+		$base_url = admin_url( 'tools.php?page=' . self::PAGE_SLUG );
 
 		?>
 		<div class="wrap wpmediaverse-admin">

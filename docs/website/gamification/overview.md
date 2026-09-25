@@ -4,7 +4,7 @@
 
 
 
-MediaVerse Gamification turns your media community into a competitive platform. Users earn XP, enter photo competitions, challenge each other to battles, and boost their media visibility - all integrated with the wb-gamification plugin's XP and reward engine.
+MediaVerse Gamification turns your media community into a competitive platform. Users earn points, enter photo competitions, challenge each other to battles, and boost their media visibility - all integrated with the wb-gamification plugin's points and reward engine.
 
 Gamification requires **MediaVerse Pro** and the **wb-gamification plugin** (active and configured). All gamification features are disabled by default. Enable each feature individually at **MediaVerse > Settings > Gamification**.
 
@@ -33,7 +33,7 @@ All three competition types share a unified database schema. Each type follows i
 
 ### Challenges
 
-Themed weekly competitions. Admin creates a challenge with a theme, entry window, and voting window. Users submit a photo, community votes, winners earn XP prizes.
+Themed weekly competitions. Admin creates a challenge with a theme, entry window, and voting window. Users submit a photo, community votes, winners earn point prizes.
 
 ### Battles
 
@@ -55,15 +55,15 @@ Single-elimination brackets for 4 to 64 participants. Users register, the system
 
 The `mvs_competitions.type` column distinguishes between `challenge`, `battle`, and `tournament` records.
 
-## XP Integration
+## Points Integration
 
-XP and points are not awarded by MediaVerse itself - the separate free **wb-gamification** plugin is the points engine. MediaVerse ships an integration manifest that registers 15 gamification actions (photo upload, album creation, likes/comments/follows/favorites received and given, bookmarks, battle win, challenge participation, challenge placing, tournament round win, tournament win, and streak milestones).
+Points are not awarded by MediaVerse itself - the separate free **wb-gamification** plugin is the points engine. MediaVerse ships an integration manifest that registers 15 gamification actions (photo upload, album creation, likes/comments/follows/favorites received and given, bookmarks, battle win, challenge participation, challenge placing, tournament round win, tournament win, and streak milestones).
 
-![wb-gamification manifest showing MediaVerse actions and XP values](../images/admin-settings-gamification.png)
+![wb-gamification manifest showing MediaVerse actions and point values](../images/admin-settings-gamification.png)
 
-As members interact with the site and competitions, MediaVerse fires the matching action hooks - for example `mvs_media_uploaded`, `mvs_battle_resolved`, `mvs_challenge_winner_named`, `mvs_tournament_finalized`, and `mvs_streak_milestone` - and wb-gamification awards the points configured for each action. The per-competition XP prizes you set on a challenge or tournament are honored through the `wb_gam_points_for_action` filter, so the points a member earns match the prize shown in the UI.
+As members interact with the site and competitions, MediaVerse fires the matching action hooks - for example `mvs_media_uploaded`, `mvs_battle_resolved`, `mvs_challenge_winner_named`, `mvs_tournament_finalized`, and `mvs_streak_milestone` - and wb-gamification awards the points configured for each action. The per-competition point prizes you set on a challenge or tournament are honored through the `wb_gam_points_for_action` filter, so the points a member earns match the prize shown in the UI.
 
-> Without the wb-gamification plugin active, competitions still run end to end - members enter, vote, and win - but no points are earned or spent. Install and activate wb-gamification to enable the XP and rewards layer.
+> Without the wb-gamification plugin active, competitions still run end to end - members enter, vote, and win - but no points are earned or spent. Install and activate wb-gamification to enable the points and rewards layer.
 
 ## Frontend Pages
 

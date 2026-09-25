@@ -219,11 +219,39 @@ class FieldRenderer {
 			echo '</div>';
 		}
 		echo '</div>';
+	}
 
-		printf(
-			'<p class="description">%s <code>mvs_allowed_file_types</code></p>',
-			esc_html__( 'Uploads are limited to the image, video, and audio formats WordPress supports natively. Developers can allow additional MIME types in code with the filter:', 'wpmediaverse' )
-		);
+	/**
+	 * Render "Who can upload media": one box per role, ticked from the live
+	 * upload_mvs_media capability (the option is only the transport).
+	 *
+	 * Administrators are shown ticked and locked: they can always upload, and
+	 * a disabled box posts nothing, so the sanitizer never sees them.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public static function render_upload_roles_field( array $args ): void {
+		// Sentinel: with every box unticked the list still posts.
+		printf( '<input type="hidden" name="%s[]" value="" />', esc_attr( $args['option'] ) );
+
+		echo '<div class="mvs-file-types-grid">';
+		foreach ( wp_roles()->get_names() as $slug => $label ) {
+			$role  = get_role( (string) $slug );
+			$admin = 'administrator' === $slug;
+			printf(
+				'<div class="mvs-file-types-group"><label for="%1$s"><input type="checkbox" id="%1$s" name="%2$s[]" value="%3$s" %4$s %5$s /> %6$s</label></div>',
+				esc_attr( $args['option'] . '-' . $slug ),
+				esc_attr( $args['option'] ),
+				esc_attr( (string) $slug ),
+				checked( $admin || ( $role && $role->has_cap( 'upload_mvs_media' ) ), true, false ),
+				disabled( $admin, true, false ),
+				esc_html( translate_user_role( $label ) )
+			);
+		}
+		echo '</div>';
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
 	}
 
 	/**
@@ -268,8 +296,9 @@ class FieldRenderer {
 		$default    = isset( $registered[ $args['option'] ]['default'] )
 			? $registered[ $args['option'] ]['default']
 			: '';
-		$value      = get_option( $args['option'], $default );
-		$choices    = $args['choices'] ?? array();
+		// 'value' lets a transport option show the state it writes elsewhere.
+		$value   = $args['value'] ?? get_option( $args['option'], $default );
+		$choices = $args['choices'] ?? array();
 
 		printf( '<select name="%1$s" id="%1$s">', esc_attr( $args['option'] ) );
 		foreach ( $choices as $key => $label ) {
@@ -639,12 +668,29 @@ class FieldRenderer {
 					<label>
 						<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[events][]" value="<?php echo esc_attr( $event ); ?>"
 							<?php checked( in_array( $event, $selected, true ) ); ?>
-						/> <code><?php echo esc_html( $event ); ?></code>
+						/> <?php echo esc_html( self::webhook_event_label( $event ) ); ?>
 					</label><br />
 				<?php endforeach; ?>
 			</p>
 		</fieldset>
 		<?php
+	}
+
+	/**
+	 * Plain name for a webhook event. The stored value stays the event id.
+	 *
+	 * @param string $event Event id, e.g. media.uploaded.
+	 * @return string
+	 */
+	private static function webhook_event_label( string $event ): string {
+		$labels = array(
+			'media.uploaded'  => __( 'Media uploaded', 'wpmediaverse' ),
+			'media.deleted'   => __( 'Media deleted', 'wpmediaverse' ),
+			'media.moderated' => __( 'Moderation status changed', 'wpmediaverse' ),
+			'media.reaction'  => __( 'Someone reacted to media', 'wpmediaverse' ),
+			'media.comment'   => __( 'Someone commented on media', 'wpmediaverse' ),
+		);
+		return $labels[ $event ] ?? $event;
 	}
 
 	/**

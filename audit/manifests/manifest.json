@@ -1243,25 +1243,25 @@
       "file": "includes/Admin/ModerationQueue.php:56"
     },
     {
-      "title": "Logs",
+      "title": "MediaVerse Logs",
       "slug": "mvs-logs",
-      "parent": "wpmediaverse",
-      "capability": "manage_options",
-      "file": "includes/Admin/LogViewerPage.php:33"
+      "parent": "tools.php",
+      "capability": "mvs_settings_screen",
+      "file": "includes/Admin/LogViewerPage.php:38 (add_submenu_page under Tools; load- hook redirects old admin.php?page=mvs-logs URLs to tools.php with the same query args)"
     },
     {
       "title": "Setup",
       "slug": "mvs-setup",
       "parent": "wpmediaverse",
       "capability": "manage_options",
-      "file": "includes/Admin/SetupWizard.php:39"
+      "file": "includes/Admin/SetupWizard.php:39 (hidden; 3 steps Welcome, Display, Done - an old step=pages link lands on Display)"
     },
     {
       "title": "Integrations",
       "slug": "mvs-integrations",
       "parent": "wpmediaverse",
       "capability": "manage_options",
-      "file": "includes/Admin/IntegrationsPage.php:59"
+      "file": "includes/Admin/IntegrationsPage.php:65 (registered, but removed from the sidebar unless it is the current screen; entry point is the Overview Integrations card, IntegrationsPage::render_overview_card())"
     },
     {
       "title": "Albums (CPT list)",
@@ -1336,9 +1336,9 @@
     {
       "title": "Reports",
       "slug": "mvs-reports",
-      "parent": "wpmediaverse",
-      "capability": "manage_options",
-      "file": "includes/Admin/ReportsPage.php:84 (add_submenu_page)"
+      "parent": "mvs-moderation",
+      "capability": "mvs_moderation_screen",
+      "file": "includes/Admin/ReportsPage.php:102 (Free only when Pro is inactive; registered under Moderation but removed from the sidebar unless current; the queue renders as the Moderation screen Reports tab (tab=user-reports) via mvs_moderation_tabs)"
     },
     {
       "title": "Permissions tab",
@@ -6608,7 +6608,9 @@
     "delta_2026_09_25_v260_eager_listeners": "notifications + activity services are resolved at boot so their init() hooks (mvs_report_resolved, mvs_media_uploaded, ...) exist on admin/cron/CLI requests, not only REST. No new surface.",
     "delta_2026_09_25_v260_one_home": "2.6.0 one home each (hand-verified). Member drive: TemplateLoader::redirect_legacy_drive_query() 302s ?drive=my-drive|shared|recent on the [mvs_documents] page to the dashboard documents section (filter mvs_redirect_legacy_drive_query); Explore Documents links to Your documents; the BP Documents tab links the owner to Manage in your documents. Profile: /media/edit-profile/ 302s to the dashboard profile section (filter mvs_profile_edit_redirect); new ProfileService::community_profile() + filter mvs_community_profile (BuddyPress xprofile owns first/last/display name) hides those inputs in all three profile forms (partial templates/partials/community-profile-notice.php), drops them on save, and is exposed as community_profile in GET /me/profile. No route, option or table added.",
     "delta_2026_09_25_v260_member_experience": "2.6.0 member experience (hand-verified). Save replaces the lightbox/single-page Favorite button (filter mvs_show_favorite_button restores it). FavoriteService::favorites_collection_id() makes each member a private, undeletable 'Favorites' mvs_collection (meta _mvs_favorites_collection) created on first GET /collections; its items ARE the member's mvs_favorites rows (FavoriteService::favorites_owner(), get_collection_media_ids by user_id); /collections list includes private posts for the author and returns is_favorites; DELETE answers 400 mvs_favorites_collection_locked; favourite routes treat the Favorites id as a plain favourite. Lightbox: prev/next bound to lightboxHasPrev/Next, swipe on touch, title, audio cover art, no fullscreen for audio (BP clone parity). Lists: one sort select (Newest/Oldest/third order; ?sort=oldest), toolbar hidden on empty lists, Explore tags one scrolling row + More tags. Upload fields appear after a file is picked; FAB uploads in one tap (Media/Documents menu removed, toggleFabMenu kept as alias); FAB safe area reads --mvs-fab-bottom/diameter. FilenameStrategy::title_from() + filter mvs_default_media_title. Tab lead lines + copy for Albums vs Collections. No route, option or table added.",
-    "delta_2026_09_25_v260_member_experience_qa": "QA round on member experience. Lightbox gallery edges hand over to the neighbouring grid tile (no wrap); entering a gallery backwards starts at its last photo. Dashboard sections accept 'nav' => false (routable, not on the rail); Favorites uses it and the Favorites collection's link opens /my-media/favorites/. Collection cards show a 'Smart' badge only; coverless album placeholder uses the Lucide folder icon; the + upload window is titled 'Upload media'. No route, hook, option or table added."
+    "delta_2026_09_25_v260_member_experience_qa": "QA round on member experience. Lightbox gallery edges hand over to the neighbouring grid tile (no wrap); entering a gallery backwards starts at its last photo. Dashboard sections accept 'nav' => false (routable, not on the rail); Favorites uses it and the Favorites collection's link opens /my-media/favorites/. Collection cards show a 'Smart' badge only; coverless album placeholder uses the Lucide folder icon; the + upload window is titled 'Upload media'. No route, hook, option or table added.",
+    "delta_2026_09_25_v260_admin_pages": "2.6.0 admin simplification (menus). Logs moved under Tools as 'MediaVerse Logs' (slug mvs-logs unchanged; old admin.php URLs redirect with their query args). Integrations and Free Reports stay registered but leave the sidebar unless current; Integrations is reached from a new Overview card, Free Reports render as the Moderation 'Reports' tab (tab=user-reports) and its status handler returns there. Moderation hides the AI Flagged tab only when AI moderation is off and nothing is flagged; the default tab is the first one shown. Overview: System Status widget removed, Integrations card added (manage_options), demo import offered only with no published media (new filter mvs_show_demo_import). Stats Overview tab dropped the Total Media / Documents / Albums / Storage Used cards. All Media dropped the ID and Optimization columns and the Optimize / Repair thumb row links (both remain on the Details view; handlers unchanged). Tags dropped the ID and Slug columns (orderby=term_id/slug still accepted). Setup wizard dropped the Pages step and Grid Columns. No admin_post, AJAX or REST handler removed; no option or table added.",
+    "delta_2026_09_25_v260_settings_simplification": "2.6.0 settings simplification (hand-verified). New transport options mvs_upload_roles (_general; state is the upload_mvs_media capability via MediaCapabilities::apply_role_selection) and mvs_layout_choice (_display; writes mvs_thumbnail_style or, through Pro LayoutSetting, mvs_pro_feed_layout). New settings tab 'app' (mvs_settings_app / mvs-settings-app, section mvs_app). Group moves: mvs_app_password_login _general->_app; mvs_terms_url, mvs_eula_url, mvs_abuse_contact_email _moderation->_app; mvs_ai_auto_moderate _ai->_moderation; Pro mvs_watermark_* _display->_storage; Pro app branding _display->_app. Settings tab 'permissions' removed from the sidebar (renderer + admin_post_mvs_save_role_caps kept; re-add via mvs_settings_sections). Registered with no field (values/defaults unchanged): mvs_thumbnail_style, mvs_thumbnail_size, mvs_large_image_size, mvs_lightbox_image_source, mvs_signed_url_ttl, mvs_view_retention_days, mvs_filename_strategy, mvs_generate_webp, mvs_generate_avif, mvs_openai_model, mvs_eula_url, Pro mvs_pro_feed_layout, mvs_pro_anthropic_model. data-mvs-show-when rules drive one generic evaluator (assets/js/admin/ai-provider-fields.js). New hooks mvs_layout_choices, mvs_layout_selected, mvs_layout_saved, mvs_documents_admin_after_list, mvs_show_demo_import. New classes DisplaySettingsRegistrar, AppSettingsRegistrar (Free), LayoutSetting (Pro). Pro: orphaned-files card moved to the Documents admin screen; grid_columns_scope_note callback removed (Grid Columns now shows only for the square layout); /app/config layout uses Sanitizers::feed_layouts()."
   },
   "category_sources": {
     "rest": [

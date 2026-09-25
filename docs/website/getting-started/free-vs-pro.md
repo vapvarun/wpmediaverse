@@ -71,7 +71,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Media Boosts (spend points for visibility) | -- | Yes |
 | Upload Streaks with milestones | -- | Yes |
 | Weekly Autopilot (auto-create challenges) | -- | Yes |
-| XP integration with wb-gamification | -- | Yes |
+| Points integration with wb-gamification | -- | Yes |
 | **Storage Limits** | | |
 | Fair-use storage limit per member (MB), site-wide + per-member override | Yes | Yes (inherited) |
 | **User Profiles** | | |
@@ -84,7 +84,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Media list with bulk actions | Yes | Yes |
 | Settings (general, display, social, AI) | Yes | Yes |
 | Competitions dashboard | -- | Yes |
-| Challenge manager with theme library | -- | Yes |
+| Challenge manager with challenge themes | -- | Yes |
 | Tournament bracket manager | -- | Yes |
 | Battle monitor | -- | Yes |
 | Video analytics dashboard | -- | Yes |

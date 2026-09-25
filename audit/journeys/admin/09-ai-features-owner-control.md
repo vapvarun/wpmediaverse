@@ -19,8 +19,8 @@ estimated_runtime_minutes: 8
 
 - Site: `$SITE_URL`
 - Admin: `?autologin=1`
-- AI settings: `$SITE_URL/wp-admin/admin.php?page=mvs-settings` then the "AI & Moderation" tab (`#ai`).
-- Options of record: `mvs_ai_provider`, `mvs_ai_auto_analyze`, `mvs_ai_auto_apply_tags`, `mvs_ai_auto_moderate`, `mvs_moderation_auto_action`, `mvs_ai_monthly_budget`; Pro captions `mvs_pro_settings[captions_auto]`.
+- AI settings: `$SITE_URL/wp-admin/admin.php?page=mvs-settings` then the AI tab (`#ai`). AI moderation (`mvs_ai_auto_moderate` and what happens to flagged uploads) lives on the Moderation tab (`#moderation`) since 2.6.0.
+- Options of record: `mvs_ai_provider`, `mvs_ai_auto_analyze`, `mvs_ai_auto_apply_tags`, `mvs_ai_auto_moderate`, `mvs_moderation_auto_action`, `mvs_ai_monthly_budget`; Pro captions `mvs_pro_settings[captions_auto]`. `mvs_openai_model` and `mvs_pro_anthropic_model` have no screen control since 2.6.0 (registered, default model).
 
 ## Steps
 
@@ -44,6 +44,11 @@ estimated_runtime_minutes: 8
 - **Expect**: no fatal, no broken admin UX; AI steps cleanly skip (WP_Error logged, empty result), media still publishes and displays.
 - **On fail**: provider `is_available()` / `get_active_provider()` null handling.
 
+### 4b. Dependent controls hide until they apply (2.6.0 show-when)
+- **Action**: on the AI tab untick Auto-Analyze; change the AI Provider select without saving; on the Moderation tab untick AI Moderation.
+- **Expect**: Generate Descriptions / Generate Tags / Auto-Apply Tags rows hide while Auto-Analyze is off; only the selected provider's key card shows (OpenAI key also shows while Whisper captions are on); the flagged-upload action, flag criteria and custom terms hide while AI Moderation is off. Hiding is visual only: saving with rows hidden keeps their stored values (`wp option get`).
+- **On fail**: `assets/js/admin/ai-provider-fields.js`, `SettingsPage::render_section_fields` / `render_section_cards` (`data-mvs-show-when`).
+
 ### 5. Budget cap applies where the owner expects
 - **Action**: set `mvs_ai_monthly_budget` low; confirm analyze/tag AND moderate respect the cap.
 - **Expect**: AI calls stop when the monthly cap is reached across all AI features (not just analyze/tag).
@@ -57,6 +62,7 @@ ALL of the following hold:
 3. The configured key is sent in the provider request when a feature is on.
 4. With no key / feature off, AI cleanly skips and media still works.
 5. The monthly budget cap applies to all AI features including moderation.
+6. Dependent rows and provider cards hide until they apply, and a save with them hidden changes none of their values.
 
 ## Fail diagnostics
 

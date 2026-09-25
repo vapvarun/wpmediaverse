@@ -20,7 +20,8 @@ estimated_runtime_minutes: 7
 - Site: `$SITE_URL`
 - Owner: `journey_owner` (autologin `?autologin=journey_owner`)
 - Other: `journey_other`
-- Active driver is a cloud driver (verify `mvs_storage_driver != local`).
+- Active driver is a cloud driver (verify `mvs_storage_driver != local`). On Settings > Storage only that driver's credential card shows (2.6.0).
+- Signed URL lifetime is `mvs_signed_url_ttl` (default 3600). It has no settings-screen control since 2.6.0; a Storage-tab save must leave it unchanged.
 
 ## Steps
 

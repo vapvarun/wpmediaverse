@@ -96,6 +96,11 @@ class Sanitizers {
 	 * @return array<int, mixed>|null Allowed values, or null if not whitelisted.
 	 */
 	public static function get_whitelist( string $option ): ?array {
+		// The Layout choices are extensible (Pro adds its skins), so they are
+		// read from the same list the select draws, not frozen here.
+		if ( 'mvs_layout_choice' === $option ) {
+			return array_keys( \WPMediaVerse\Core\SettingsHelper::layout_choices() );
+		}
 		return self::WHITELISTS[ $option ] ?? null;
 	}
 
@@ -327,6 +332,60 @@ class Sanitizers {
 	public static function sanitize_thumbnail_style( $value ): string {
 		$value = is_string( $value ) ? $value : '';
 		return in_array( $value, self::WHITELISTS['mvs_thumbnail_style'], true ) ? $value : 'original';
+	}
+
+	/**
+	 * Sanitize the one "Layout" choice (a transport option, never read).
+	 *
+	 * A Free grid layout is written to mvs_thumbnail_style, the option every
+	 * grid reads; mvs_layout_saved lets Pro store its platform skin. An unknown
+	 * value changes nothing.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string The saved choice.
+	 */
+	public static function sanitize_layout_choice( $value ): string {
+		$value = is_string( $value ) ? $value : '';
+		if ( ! in_array( $value, (array) self::get_whitelist( 'mvs_layout_choice' ), true ) ) {
+			return \WPMediaVerse\Core\SettingsHelper::selected_layout();
+		}
+		if ( in_array( $value, \WPMediaVerse\Core\SettingsHelper::GRID_LAYOUTS, true ) ) {
+			update_option( 'mvs_thumbnail_style', $value );
+		}
+
+		/**
+		 * Fires when the Settings > Display "Layout" choice is saved.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param string $value A key of SettingsHelper::layout_choices().
+		 */
+		do_action( 'mvs_layout_saved', $value );
+
+		return $value;
+	}
+
+	/**
+	 * Sanitize "Who can upload media" (a transport option).
+	 *
+	 * The state is the upload_mvs_media capability, written through
+	 * MediaCapabilities so the choice survives version-bump re-grants. Roles
+	 * whose state does not change are left alone, and a value that is not a
+	 * list (the field was not on the form) changes nothing.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param mixed $value Submitted role slugs.
+	 * @return string[] Roles holding the capability afterwards.
+	 */
+	public static function sanitize_upload_roles( $value ): array {
+		$caps = \WPMediaVerse\Capabilities\MediaCapabilities::class;
+		if ( ! is_array( $value ) ) {
+			return $caps::roles_with_cap( 'upload_mvs_media' );
+		}
+		return $caps::apply_role_selection( 'upload_mvs_media', array_values( array_filter( array_map( 'sanitize_key', $value ) ) ) );
 	}
 
 	/**

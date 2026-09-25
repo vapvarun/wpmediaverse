@@ -45,6 +45,10 @@ The queue is empty on a clean install (all demo media is `approved`). Seed exact
 - **Action**: `curl -H 'X-WP-Nonce: $NONCE' $SITE_URL/wp-json/mvs/v1/moderation/counts`
 - **Expect**: `pending` count decremented by 1.
 
+### 6. (Optional) AI Flagged tab hides when it cannot have anything in it
+- **Action**: with `mvs_ai_auto_moderate` off and `moderation/counts` reporting `flagged: 0`, open `$SITE_URL/wp-admin/admin.php?page=mvs-moderation`.
+- **Expect**: no "AI Flagged" tab; the first tab shown ("Pending Review") is active. With any flagged item, or AI moderation on, the tab is back.
+
 ## Pass criteria
 
 Approve action transitions DB `moderation_status` to 'approved' AND moderation/counts decrements.

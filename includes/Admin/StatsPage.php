@@ -205,57 +205,15 @@ class StatsPage {
 	 * Render the overview stats tab content.
 	 */
 	private function render_overview_tab(): void {
-		global $wpdb;
-
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$range       = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( $_GET['range'] ) ) : 'all';
 		$range_start = $this->get_range_start( $range );
 
-		// The card is labelled "Total Media", so it counts media. Documents get
-		// their own card beside it: an owner reading a jump in a number needs to
-		// know which library grew, and a count that stops being part of one total
-		// has to become its own or it silently vanishes from the admin.
-		list( $mvs_stats_type_sql, $mvs_stats_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
-		list( $mvs_stats_doc_sql, $mvs_stats_doc_params )   = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
-
-		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
-		//
-		// Through `query_count()` rather than hand-built SQL — Rule 7. The filter
-		// set expresses all four of these exactly: `media_types` carries the same
-		// library split `MediaTypes::in_clause()` used to build, `since` carries
-		// the date floor, and `privacy => 'any'` keeps the admin totals
-		// unscoped, which is what an owner's dashboard has always shown.
-		$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-
-		$mvs_count_args = array(
-			'status'  => 'publish',
-			'privacy' => 'any',
-		);
-
-		if ( $range_start ) {
-			$mvs_count_args['since'] = $range_start;
-		}
-
-		$total_media     = $mvs_repo->query_count( array_merge( $mvs_count_args, array( 'media_types' => MediaTypes::MEDIA_LIBRARY ) ) );
-		$total_documents = $mvs_repo->query_count( array_merge( $mvs_count_args, array( 'media_types' => MediaTypes::DOCUMENT_LIBRARY ) ) );
-
-		if ( $range_start ) {
-			$total_albums = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s AND post_date_gmt >= %s",
-					'mvs_album',
-					'publish',
-					$range_start
-				)
-			);
-		} else {
-			$album_counts = wp_count_posts( 'mvs_album' );
-			$total_albums = isset( $album_counts->publish ) ? (int) $album_counts->publish : 0;
-		}
-
-		// Stats totals and leaderboard, through the aggregates service — Rule 16
-		// puts site-wide aggregates there, and Rule 7 keeps the index join out of
-		// an admin page.
+		// Library totals (media, documents, albums, storage) live on the
+		// Overview screen; 2.6.0 dropped the duplicate cards here. This tab
+		// shows what the date range changes: engagement and the leaderboard,
+		// through the aggregates service (Rule 16 puts site-wide aggregates
+		// there, and Rule 7 keeps the index join out of an admin page).
 		$mvs_aggregates = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' );
 		$mvs_since      = $range_start ? (string) $range_start : '';
 
@@ -264,11 +222,6 @@ class StatsPage {
 
 		// AI usage.
 		$ai_stats = $this->ai->get_usage_stats();
-
-		// Single source of truth — see AdminAggregatesService.
-		$aggregates        = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' );
-		$storage_size      = $aggregates->storage_size_bytes();
-		$storage_formatted = $aggregates->storage_used_human();
 
 		?>
 		<!-- Date Range Selector -->
@@ -304,28 +257,12 @@ class StatsPage {
 		<?php // --- Stat Cards --- ?>
 		<div class="mvs-admin-stats">
 			<div class="mvs-stat-card mvs-stat-card--accent">
-				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_media ) ); ?></span>
-				<span class="mvs-stat-label"><?php esc_html_e( 'Total Media', 'wpmediaverse' ); ?></span>
-			</div>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . \WPMediaVerse\Admin\DocumentListPage::SLUG ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
-				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_documents ) ); ?></span>
-				<span class="mvs-stat-label"><?php esc_html_e( 'Documents', 'wpmediaverse' ); ?></span>
-			</a>
-			<div class="mvs-stat-card mvs-stat-card--accent">
-				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_albums ) ); ?></span>
-				<span class="mvs-stat-label"><?php esc_html_e( 'Albums', 'wpmediaverse' ); ?></span>
-			</div>
-			<div class="mvs-stat-card mvs-stat-card--accent">
 				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_views'] ) ); ?></span>
 				<span class="mvs-stat-label"><?php esc_html_e( 'Total Views', 'wpmediaverse' ); ?></span>
 			</div>
 			<div class="mvs-stat-card mvs-stat-card--accent">
 				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_reactions'] ) ); ?></span>
 				<span class="mvs-stat-label"><?php esc_html_e( 'Reactions', 'wpmediaverse' ); ?></span>
-			</div>
-			<div class="mvs-stat-card mvs-stat-card--warning">
-				<span class="mvs-stat-number"><?php echo esc_html( $storage_formatted ); ?></span>
-				<span class="mvs-stat-label"><?php esc_html_e( 'Storage Used', 'wpmediaverse' ); ?></span>
 			</div>
 		</div>
 

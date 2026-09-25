@@ -155,6 +155,49 @@ class ModerationQueue {
 	}
 
 	/**
+	 * Build the Moderation screen's tabs.
+	 *
+	 * AI Flagged is left out only when it can have nothing in it: AI
+	 * moderation is off AND nothing is flagged. Media is also flagged by the
+	 * report threshold and by a moderator, so a non-zero count always keeps
+	 * the tab. The first tab left is the default.
+	 *
+	 * @param array $counts Moderation counts: flagged, pending, rejected.
+	 * @return array Tab definitions, after the mvs_moderation_tabs filter.
+	 */
+	public static function build_tabs( array $counts ): array {
+		$flagged = (int) ( $counts['flagged'] ?? 0 );
+		$tabs    = array();
+
+		if ( $flagged > 0 || get_option( 'mvs_ai_auto_moderate', false ) ) {
+			$tabs['ai-flagged'] = array(
+				'label' => __( 'AI Flagged', 'wpmediaverse' ),
+				'count' => $flagged,
+			);
+		}
+
+		$tabs['pending']  = array(
+			'label' => __( 'Pending Review', 'wpmediaverse' ),
+			'count' => (int) ( $counts['pending'] ?? 0 ),
+		);
+		$tabs['resolved'] = array(
+			'label' => __( 'Resolved / Rejected', 'wpmediaverse' ),
+			'count' => (int) ( $counts['rejected'] ?? 0 ),
+		);
+
+		/**
+		 * Filter moderation page tabs.
+		 *
+		 * Free's reports queue (when Pro is inactive) and Pro's User Reports
+		 * both add a `user-reports` tab here.
+		 * Each tab entry: 'slug' => array( 'label' => string, 'count' => int, 'callback' => callable ).
+		 *
+		 * @param array $tabs Tab definitions.
+		 */
+		return (array) apply_filters( 'mvs_moderation_tabs', $tabs );
+	}
+
+	/**
 	 * Render the moderation page with tabs.
 	 */
 	public function render_page(): void {
@@ -170,38 +213,12 @@ class ModerationQueue {
 			array( 'in_footer' => true )
 		);
 
-		$counts = $this->moderation->get_counts();
-
-		// Build tabs — Pro can inject "User Reports" via this filter.
-		$tabs = array(
-			'ai-flagged' => array(
-				'label' => __( 'AI Flagged', 'wpmediaverse' ),
-				'count' => $counts['flagged'],
-			),
-			'pending'    => array(
-				'label' => __( 'Pending Review', 'wpmediaverse' ),
-				'count' => $counts['pending'],
-			),
-			'resolved'   => array(
-				'label' => __( 'Resolved / Rejected', 'wpmediaverse' ),
-				'count' => $counts['rejected'],
-			),
-		);
-
-		/**
-		 * Filter moderation page tabs.
-		 *
-		 * Pro plugin uses this to inject the "User Reports" tab.
-		 * Each tab entry: 'slug' => array( 'label' => string, 'count' => int, 'callback' => callable ).
-		 *
-		 * @param array $tabs Tab definitions.
-		 */
-		$tabs = apply_filters( 'mvs_moderation_tabs', $tabs );
+		$tabs = self::build_tabs( $this->moderation->get_counts() );
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'ai-flagged';
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : '';
 		if ( ! isset( $tabs[ $active_tab ] ) ) {
-			$active_tab = 'ai-flagged';
+			$active_tab = (string) array_key_first( $tabs );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -232,6 +249,7 @@ class ModerationQueue {
 							'reject'    => __( 'Media item rejected.', 'wpmediaverse' ),
 							'resolved'  => __( 'Report marked as resolved.', 'wpmediaverse' ),
 							'dismissed' => __( 'Report dismissed.', 'wpmediaverse' ),
+							'pending'   => __( 'Report reopened.', 'wpmediaverse' ),
 						);
 						if ( isset( $update_messages[ $updated ] ) ) {
 							echo esc_html( $update_messages[ $updated ] );

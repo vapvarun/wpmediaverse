@@ -14,7 +14,7 @@ estimated_runtime_minutes: 5
 
 # Media optimization toggles persist and gate the upload pipeline
 
-**Why this journey exists**: `mvs_optimize_originals`, `mvs_generate_webp`, and `mvs_generate_avif` are owner-controlled toggles that act during the upload pipeline, not on any GET route — so the cert contract (flip-and-dispatch) cannot prove them. This journey is their enforcement proof: it saves each toggle, reloads to confirm persistence, then uploads an image and asserts the derivative behaviour matches the toggle. A toggle that saves but does not change what the pipeline produces is a dead toggle.
+**Why this journey exists**: `mvs_optimize_originals`, `mvs_generate_webp`, and `mvs_generate_avif` are toggles that act during the upload pipeline, not on any GET route — so the cert contract (flip-and-dispatch) cannot prove them. This journey is their enforcement proof: it saves each toggle, reloads to confirm persistence, then uploads an image and asserts the derivative behaviour matches the toggle. A toggle that saves but does not change what the pipeline produces is a dead toggle.
 
 ## Setup
 
@@ -30,8 +30,8 @@ estimated_runtime_minutes: 5
 - **Expect**: wp-admin dashboard, top-bar "Howdy, admin".
 
 ### 2. Enable all three optimization toggles
-- **Action**: open `admin.php?page=mvs-settings#storage`; check `mvs_optimize_originals`, `mvs_generate_webp`, `mvs_generate_avif`; submit.
-- **Expect**: HTTP 302 -> reload -> "Settings saved." notice.
+- **Action**: open `admin.php?page=mvs-settings#storage`; check "Compress uploaded images" (`mvs_optimize_originals`); submit. Since 2.6.0 WebP and AVIF have no screen control (WebP on by default, AVIF opt-in), so set them with `wp option update mvs_generate_webp 1` and `wp option update mvs_generate_avif 1`.
+- **Expect**: HTTP 302 -> reload -> "Settings saved." notice. The Storage tab shows no WebP or AVIF checkbox, and the save did NOT reset either option (the save guard only writes rendered options).
 
 ### 3. Confirm persistence in DB
 - **Action**: `mysql_query "SELECT option_name, option_value FROM wp_options WHERE option_name IN ('mvs_optimize_originals','mvs_generate_webp','mvs_generate_avif')"`
@@ -42,7 +42,7 @@ estimated_runtime_minutes: 5
 - **Expect**: 201 Created; response `id` set. Derivatives exist: `mysql_query "SELECT meta_key FROM wp_mvs_media_meta WHERE media_id=<id> AND meta_key IN ('original_webp','original_avif')"` returns both rows (or the equivalent generated-file markers), and the stored original dimensions are within the configured max.
 
 ### 5. Disable all three toggles
-- **Action**: uncheck the three toggles in the Storage tab; submit; reload.
+- **Action**: uncheck "Compress uploaded images" in the Storage tab and submit; `wp option update mvs_generate_webp 0` and `wp option update mvs_generate_avif 0`; reload.
 - **Expect**: DB rows now `0`; reloaded checkboxes unchecked.
 
 ### 6. Upload a second image with toggles OFF
