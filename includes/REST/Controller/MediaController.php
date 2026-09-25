@@ -545,16 +545,10 @@ class MediaController extends WP_REST_Controller {
 		// `media_search_ft` is created in Migrator::migrate_to_13.
 		$search = trim( (string) $request->get_param( 's' ) );
 		if ( '' !== $search ) {
-			$ft_term = $this->build_fulltext_search_term( $search );
-			if ( null !== $ft_term && self::has_fulltext_search_index() ) {
-				$where[]  = 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)';
-				$params[] = $ft_term;
-			} else {
-				$like     = '%' . $wpdb->esc_like( $search ) . '%';
-				$where[]  = '(title LIKE %s OR description LIKE %s)';
-				$params[] = $like;
-				$params[] = $like;
-			}
+			// One search rule for Explore and the admin list (MediaRepository::search_clause()).
+			list( $mvs_search_sql, $mvs_search_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->search_clause( $search );
+			$where[] = $mvs_search_sql;
+			$params  = array_merge( $params, $mvs_search_params );
 		}
 
 		// Scope filter. The feed blocks (Instagram/Dribbble/Flickr/Pinterest)
@@ -2546,59 +2540,5 @@ class MediaController extends WP_REST_Controller {
 			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 		return '127.0.0.1';
-	}
-
-	/**
-	 * Build a BOOLEAN MODE search term for MATCH/AGAINST. Returns null when
-	 * the input is too short or every token gets dropped (fall back to LIKE).
-	 *
-	 * Splits on whitespace, drops tokens shorter than the InnoDB minimum
-	 * token length (3 chars by default), strips MySQL boolean-mode operators
-	 * (`+`, `-`, `*`, `(`, `)`, `~`, `<`, `>`, `"`, `@`, NUL) and appends a
-	 * trailing `*` for prefix matching ("auto" matches "automotive"). Each
-	 * token also gets a leading `+` so the user effectively sees AND-search.
-	 *
-	 * @since 1.2.1
-	 *
-	 * @param string $search Raw search input.
-	 * @return string|null   BOOLEAN MODE term or null to indicate fallback.
-	 */
-	private static function build_fulltext_search_term( string $search ): ?string {
-		$cleaned = preg_replace( '/[+\-*()~<>"@\x00]/', ' ', $search );
-		$tokens  = preg_split( '/\s+/u', (string) $cleaned, -1, PREG_SPLIT_NO_EMPTY );
-		if ( ! $tokens ) {
-			return null;
-		}
-
-		$kept = array();
-		foreach ( $tokens as $token ) {
-			if ( mb_strlen( $token, 'UTF-8' ) < 3 ) {
-				continue;
-			}
-			$kept[] = '+' . $token . '*';
-		}
-		if ( ! $kept ) {
-			return null;
-		}
-
-		return implode( ' ', $kept );
-	}
-
-	/**
-	 * Detect whether the FULLTEXT search index exists. Cached for the
-	 * request lifetime via a static — schema doesn't change between
-	 * REST calls, so a single SHOW INDEX per request is plenty.
-	 *
-	 * @since 1.2.1
-	 */
-	private static function has_fulltext_search_index(): bool {
-		static $cached = null;
-		if ( null !== $cached ) {
-			return $cached;
-		}
-		$cached = \WPMediaVerse\Core\Plugin::container()
-			->get( 'media_repository' )
-			->has_fulltext_index();
-		return $cached;
 	}
 }

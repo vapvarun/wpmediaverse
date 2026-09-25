@@ -129,6 +129,11 @@ $mvs_archive_url = home_url( '/media/' );
 	);
 	?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
+		<?php
+		// A visitor who has to sign in sees nothing about the item: no title,
+		// owner, avatar or date (TemplateLoader::serve_single_media()).
+		if ( $mvs_can_view ) :
+			?>
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
 				<div class="mvs-media-author-info">
@@ -306,21 +311,18 @@ $mvs_archive_url = home_url( '/media/' );
 				</p>
 			<?php endif; ?>
 		</header>
+		<?php endif; ?>
 
 		<div class="mvs-media-content">
 			<?php if ( ! $mvs_can_view ) : ?>
 				<div class="mvs-media-gate">
 					<div class="mvs-media-gate__glyph" aria-hidden="true"><i data-lucide="lock"></i></div>
-					<?php if ( is_user_logged_in() ) : ?>
-						<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is private', 'wpmediaverse' ); ?></p>
-						<p class="mvs-media-gate__lede"><?php esc_html_e( 'You don\'t have permission to view this media. It may be limited to the owner, their connections, or a specific group.', 'wpmediaverse' ); ?></p>
-					<?php else : ?>
-						<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is for members', 'wpmediaverse' ); ?></p>
-						<p class="mvs-media-gate__lede"><?php esc_html_e( 'Log in to view this media.', 'wpmediaverse' ); ?></p>
-						<a class="mvs-btn mvs-btn--primary mvs-media-gate__cta" href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
-							<?php esc_html_e( 'Log in to view', 'wpmediaverse' ); ?>
-						</a>
-					<?php endif; ?>
+					<?php // Only signed-out visitors reach this; anyone else who cannot view gets a 404. ?>
+					<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is for members', 'wpmediaverse' ); ?></p>
+					<p class="mvs-media-gate__lede"><?php esc_html_e( 'Log in to view this media.', 'wpmediaverse' ); ?></p>
+					<a class="mvs-btn mvs-btn--primary mvs-media-gate__cta" href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
+						<?php esc_html_e( 'Log in to view', 'wpmediaverse' ); ?>
+					</a>
 				</div>
 			<?php elseif ( $is_image ) : ?>
 				<div class="mvs-media-image">

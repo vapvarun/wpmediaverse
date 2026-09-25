@@ -631,6 +631,31 @@ class TemplateLoader {
 			return;
 		}
 
+		// Who may see this, decided BEFORE any redirect: a host redirect used to
+		// run first, so a signed-out visitor on a private photo was sent to the
+		// owner's profile, which told them whose it was (QA, 2.6.0).
+		//
+		// A viewer who cannot see the item gets one of two answers:
+		// - a signed-out visitor on an item that signing in could open
+		// (members, friends, group) gets a "Log in to view" page that names
+		// nothing: no title, owner, image or description;
+		// - everyone else (signed-in viewers, private items, documents) gets
+		// the same 404 as a missing slug, so the page cannot confirm that the
+		// item exists. A document's filename can carry a client's name, which
+		// is why documents never get the prompt.
+		$can_view = $this->can_view_media( $media );
+
+		if ( ! $can_view ) {
+			$mvs_signing_in_could_help = ! is_user_logged_in()
+				&& 'private' !== (string) ( $media['privacy'] ?? '' )
+				&& ! in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true );
+
+			if ( ! $mvs_signing_in_could_help ) {
+				self::render_branded_404( 'media', $slug );
+				return;
+			}
+		}
+
 		/**
 		 * Let a host redirect single-media URLs somewhere else instead of rendering
 		 * the standalone page. BuddyNext uses this to send /media/{slug}/ to the
@@ -646,7 +671,7 @@ class TemplateLoader {
 		 * @param string $slug         The requested slug (or numeric id).
 		 * @param string $media_type   image|video|audio|document|legacy_document.
 		 */
-		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug, $mvs_media_type );
+		$redirect_url = $can_view ? (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug, $mvs_media_type ) : '';
 
 		// A DOCUMENT IS NOT A FEED OBJECT, so it does not follow a redirect meant
 		// for one. The filter above predates documents and was written for the
@@ -690,34 +715,6 @@ class TemplateLoader {
 			exit;
 		}
 
-		// Check privacy. A denied viewer gets the SAME single-media template and
-		// container — the template swaps the media itself for a "log in to view"
-		// message in the media slot and hides the social + comment sections. No
-		// redirect, no separate 404/gate page. The file URL, poster, OG image and
-		// download are never exposed to a denied viewer (see mvs_media_can_view;
-		// MediaUrl::file()/get_thumb_url() already return '' when the gate denies).
-		$can_view = $this->can_view_media( $media );
-
-		// Documents get a DIFFERENT refusal contract than media: 404, never
-		// 403. Media's 403-with-login-prompt page is deliberate (see the
-		// comment above `$can_view`) — a photo's privacy state is not
-		// sensitive to reveal. A document's filename can carry a client's
-		// name, so confirming "this exists but you can't see it" (what 403
-		// means) is itself the leak the checklist's must-never-happen table
-		// exists to prevent. Confirmed 2026-08-11 combo QA (F2): a
-		// revoked-grant document and a never-granted document both answered
-		// 403 here before this fix. Documents-disabled (above) and
-		// documents-refused (here) now both render the identical branded
-		// 404 — a denied viewer cannot tell "off" from "not yours to see"
-		// from "does not exist", which is the point.
-		if (
-			! $can_view
-			&& in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true )
-		) {
-			self::render_branded_404( 'media', $slug );
-			return;
-		}
-
 		// Set globals for the template.
 		$GLOBALS['mvs_current_media']  = $media;
 		$GLOBALS['mvs_media_can_view'] = $can_view;
@@ -740,8 +737,10 @@ class TemplateLoader {
 		// Set page title.
 		add_filter(
 			'document_title_parts',
-			function ( $title ) use ( $media ) {
-				return self::title_parts( (array) $title, $media['title'] ?: __( 'Media', 'wpmediaverse' ) );
+			function ( $title ) use ( $media, $can_view ) {
+				// The prompt page names nothing, the tab title included.
+				$mvs_page_title = $can_view ? ( $media['title'] ?: __( 'Media', 'wpmediaverse' ) ) : __( 'Log in to view', 'wpmediaverse' );
+				return self::title_parts( (array) $title, $mvs_page_title );
 			}
 		);
 

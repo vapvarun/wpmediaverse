@@ -616,15 +616,15 @@ class TagManagementPage {
 	 * Merge one batch of a source tag's media into the target tag.
 	 *
 	 * Action Scheduler callback (also called directly for small/synchronous
-	 * merges). `term_relationships` rows are only ADDED to during a batch —
-	 * the source term isn't deleted until the last batch — so offset-based
-	 * paging across calls stays stable.
+	 * merges). Each item is moved to the target and detached from the source,
+	 * so every batch reads the first rows still on the source; the source term
+	 * is deleted once none are left.
 	 *
 	 * @since 2.6.0
 	 *
 	 * @param int $source_id Source term id.
 	 * @param int $target_id Target term id.
-	 * @param int $offset    Rows already processed.
+	 * @param int $offset    Kept for batches queued before this change; new batches pass 0.
 	 */
 	public function process_merge_batch( int $source_id, int $target_id, int $offset = 0 ): void {
 		$source = get_term( $source_id, 'mvs_tag' );
@@ -656,6 +656,10 @@ class TagManagementPage {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		foreach ( $media_ids as $media_id ) {
 			wp_set_object_terms( $media_id, $target_id, 'mvs_tag', true );
+			// Detach the source before syncing the item's tag list: syncing
+			// while it was still attached kept the old name in the list after
+			// the merge (QA, 2.6.0).
+			wp_remove_object_terms( $media_id, $source_id, 'mvs_tag' );
 			$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts.
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 				$repo->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
@@ -663,12 +667,13 @@ class TagManagementPage {
 		}
 
 		if ( count( $media_ids ) === self::MERGE_BATCH_SIZE ) {
-			// More rows remain — advance the cursor rather than deleting the
-			// source tag yet, so a huge merge never blocks one request/run.
+			// More rows remain. Each batch detaches the items it moved, so the
+			// next batch starts from the top again (offset 0) rather than
+			// paging, which would skip items as the set shrinks.
 			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, $offset + self::MERGE_BATCH_SIZE ), 'wpmediaverse' );
+				as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, 0 ), 'wpmediaverse' );
 			} else {
-				$this->process_merge_batch( $source_id, $target_id, $offset + self::MERGE_BATCH_SIZE );
+				$this->process_merge_batch( $source_id, $target_id, 0 );
 			}
 			return;
 		}

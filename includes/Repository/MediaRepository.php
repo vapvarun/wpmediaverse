@@ -2403,7 +2403,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$mvs_drive_sql = $wpdb->prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . " FROM {$index} WHERE {$where_sql} AND privacy = 'space'", ...$params );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$rows          = (array) $wpdb->get_results( $mvs_drive_sql, ARRAY_N );
+			$rows = (array) $wpdb->get_results( $mvs_drive_sql, ARRAY_N );
 
 			foreach ( $rows as $row ) {
 				$out['drives'][] = array( (string) $row[0], (int) $row[1], (int) $row[2], (int) $row[3] );
@@ -3382,9 +3382,9 @@ class MediaRepository implements MediaRepositoryInterface {
 			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5))'
 			: 'COALESCE(s.views, 0)';
 
-		$cache_cap  = 300;
-		$cache_key  = 'ranked_feed_' . $orderby . '_' . md5( $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
-		$cache_args = $params;
+		$cache_cap    = 300;
+		$cache_key    = 'ranked_feed_' . $orderby . '_' . md5( $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
+		$cache_args   = $params;
 		$cache_args[] = $cache_cap;
 
 		$ranked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->remember(
@@ -3406,7 +3406,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$page_params   = $params;
 		$page_params[] = $per_page;
 		$page_params[] = $offset;
-		$sql = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
+		$sql           = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$page_params ) ) );
 	}
@@ -4420,23 +4420,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params = array();
 
 		if ( '' !== $search ) {
-			// FULLTEXT when the index exists (Migrator v… adds `media_search_ft`
-			// on title+description) — an indexed lookup instead of a `LIKE
-			// '%term%'` table scan, which cannot use any index and got slower
-			// with every media row on the site. `fulltext_boolean_query()`
-			// returns '' for a term that reduces to nothing (all-punctuation
-			// input, or a site whose FULLTEXT min-word-length setting drops
-			// every word) — falls through to LIKE rather than matching nothing.
-			$boolean_query = $this->has_fulltext_index() ? $this->fulltext_boolean_query( $search ) : '';
-			if ( '' !== $boolean_query ) {
-				$where[]  = 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)';
-				$params[] = $boolean_query;
-			} else {
-				$where[]  = '(title LIKE %s OR description LIKE %s)';
-				$like     = '%' . $wpdb->esc_like( $search ) . '%';
-				$params[] = $like;
-				$params[] = $like;
-			}
+			// Indexed FULLTEXT where it can help, LIKE where it cannot (search_clause()).
+			list( $mvs_search_sql, $mvs_search_params ) = $this->search_clause( $search );
+			$where[]                                    = $mvs_search_sql;
+			$params                                     = array_merge( $params, $mvs_search_params );
 		}
 
 		// An explicit type filter wins — that is how an owner asks this screen for
@@ -4874,41 +4861,96 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function has_fulltext_index(): bool {
 		global $wpdb;
 
+		// Schema does not change within a request; one SHOW INDEX is enough.
+		static $has = null;
+		if ( null !== $has ) {
+			return $has;
+		}
+
 		$table = $wpdb->prefix . 'mvs_media_index';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (bool) $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+		$has = (bool) $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+		return $has;
 	}
 
 	/**
-	 * Turn a free-text admin search term into a MySQL BOOLEAN MODE query.
+	 * InnoDB's built-in FULLTEXT stopwords. MySQL never indexes these, so a
+	 * required `+the*` matches no row at all.
 	 *
-	 * Every word becomes a required prefix match (`+word*`) so "sun set"
-	 * behaves like an AND of prefixes rather than boolean-mode's default OR —
-	 * the admin search box has always meant "narrow the list", not "broaden
-	 * it". Boolean-mode operator characters are stripped from the input first
-	 * so admin search text can never be (mis)read as query syntax.
+	 * @since 2.6.0
+	 */
+	private const FULLTEXT_STOPWORDS = array( 'a', 'about', 'an', 'are', 'as', 'at', 'be', 'by', 'com', 'de', 'en', 'for', 'from', 'how', 'i', 'in', 'is', 'it', 'la', 'of', 'on', 'or', 'that', 'the', 'this', 'to', 'was', 'what', 'when', 'where', 'who', 'will', 'with', 'und', 'www' );
+
+	/**
+	 * Turn a free-text search term into a MySQL BOOLEAN MODE query.
+	 *
+	 * Every usable word becomes a required prefix match (`+word*`), so "sun
+	 * set" narrows the list rather than broadening it. Boolean-mode operator
+	 * characters are stripped first so search text is never read as syntax.
+	 *
+	 * Words FULLTEXT never indexes (shorter than 3 characters, InnoDB's
+	 * default minimum, or a stopword) are left out: required, they matched
+	 * nothing, so an exact title such as "Mountain Peak at Sunrise" or
+	 * "QA Load 17" found no rows (QA, 2.6.0). When a word is left out the
+	 * caller should also require the whole phrase with LIKE, which keeps the
+	 * result exact while FULLTEXT still does the narrowing.
+	 *
+	 * Shared by the admin media list and the REST media search.
 	 *
 	 * @since 2.6.0
 	 *
 	 * @param string $term Raw search term.
-	 * @return string Boolean-mode query, or '' when nothing usable remains.
+	 * @return array{query:string, dropped:bool} Query ('' when nothing usable
+	 *         remains, so the caller falls back to LIKE) and whether any word
+	 *         was left out.
 	 */
-	private function fulltext_boolean_query( string $term ): string {
-		$term  = preg_replace( '/[+\-><()~*"@]+/', ' ', $term );
-		$words = array_filter( preg_split( '/\s+/', trim( (string) $term ) ) );
-		if ( empty( $words ) ) {
-			return '';
+	public static function fulltext_boolean_query( string $term ): array {
+		$term  = preg_replace( '/[+\-><()~*"@\x00]+/', ' ', $term );
+		$words = preg_split( '/\s+/u', trim( (string) $term ), -1, PREG_SPLIT_NO_EMPTY );
+		$kept  = array();
+
+		foreach ( (array) $words as $word ) {
+			if ( mb_strlen( $word, 'UTF-8' ) < 3 || in_array( mb_strtolower( $word, 'UTF-8' ), self::FULLTEXT_STOPWORDS, true ) ) {
+				continue;
+			}
+			$kept[] = '+' . $word . '*';
 		}
-		return implode(
-			' ',
-			array_map(
-				static function ( $word ) {
-					return '+' . $word . '*';
-				},
-				$words
-			)
+
+		return array(
+			'query'   => implode( ' ', $kept ),
+			'dropped' => count( $kept ) < count( (array) $words ),
 		);
+	}
+
+	/**
+	 * WHERE fragment + params for a title/description search.
+	 *
+	 * FULLTEXT when the index exists and the term has indexable words; the
+	 * whole phrase is also required with LIKE when a word had to be left out;
+	 * LIKE alone when FULLTEXT cannot help.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $search Raw search term.
+	 * @return array{0:string, 1:array<int,string>} SQL fragment and its params.
+	 */
+	public function search_clause( string $search ): array {
+		global $wpdb;
+
+		$like = '%' . $wpdb->esc_like( $search ) . '%';
+		$ft   = $this->has_fulltext_index() ? self::fulltext_boolean_query( $search ) : array(
+			'query'   => '',
+			'dropped' => true,
+		);
+
+		if ( '' === $ft['query'] ) {
+			return array( '(title LIKE %s OR description LIKE %s)', array( $like, $like ) );
+		}
+		if ( $ft['dropped'] ) {
+			return array( '(MATCH(title, description) AGAINST (%s IN BOOLEAN MODE) AND (title LIKE %s OR description LIKE %s))', array( $ft['query'], $like, $like ) );
+		}
+		return array( 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)', array( $ft['query'] ) );
 	}
 
 	/**
