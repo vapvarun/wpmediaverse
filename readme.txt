@@ -41,13 +41,12 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 
 **Pro Adds**
 
-* 5 layout modes (Grid, Instagram, Pinterest, Flickr, Dribbble)
+* 4 more layouts: Instagram, Pinterest, Flickr and Dribbble
 * Photo Challenges, 1v1 Battles, Tournament Brackets
 * Points, Streaks, Boosts gamification engine
 * Member document drives with folders, sharing, search, trash and in-page previews
 * Amazon S3, BunnyCDN, Cloudflare R2 and DigitalOcean Spaces cloud storage drivers
-* Auto-captions via Whisper AI
-* Per-user storage quotas (MemberPress, WooCommerce, PMPro integration)
+* Video chapters and Whisper AI captions for the MediaVerse mobile app and the REST API (the web player does not show them yet)
 * Stories, leaderboards, and a Flickr import connector
 * Google Vision, AWS Rekognition, and Claude (Anthropic) moderation
 * Migration importers (rtMedia, MediaPress, BuddyBoss)

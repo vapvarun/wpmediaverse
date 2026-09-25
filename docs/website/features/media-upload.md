@@ -134,7 +134,7 @@ if ( is_wp_error( $result ) ) {
 ## Actions Fired During Upload
 
 - `mvs_before_media_insert` - fires before the `mvs_media` post is created.
-- `mvs_before_upload_form` - fires before the upload form HTML is rendered (used by Pro for quota display).
+- `mvs_before_upload_form` - fires before the upload form HTML is rendered.
 - `mvs_media_uploaded` - fires after the post is created and indexed. Passes `$media_id` (int), an array of file metadata (`file_url`, `file_path`, `file_size`, `file_type`, `file_hash`, `media_type`, `privacy`, etc.), `$user_id` (int), and `$media_type` (string).
 
 ## Media Metadata

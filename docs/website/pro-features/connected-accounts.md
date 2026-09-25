@@ -102,7 +102,7 @@ After connecting, the member can browse and import their Flickr media.
 For each photo, MediaVerse:
 
 - Downloads the best available image size from Flickr.
-- Creates a media item in your library through the standard upload pipeline (so quotas, watermarking, and AI features all apply).
+- Creates a media item in your library through the standard upload pipeline (so the storage limit, watermarking and AI features all apply).
 - Copies the title, description, tags, and Flickr privacy (mapped to MediaVerse privacy).
 - Records the Flickr photo ID so the same photo is **never imported twice** - re-importing an already-imported photo is reported as "skipped".
 

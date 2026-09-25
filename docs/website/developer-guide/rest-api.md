@@ -1234,7 +1234,7 @@ Cancel a pending deletion request and restore the account to normal standing.
 
 ### GET /me/transactions
 
-The authenticated member's own usage ledger - upload credits consumed and granted.
+The authenticated member's own usage ledger - one row per upload.
 
 **Auth:** Authenticated.
 

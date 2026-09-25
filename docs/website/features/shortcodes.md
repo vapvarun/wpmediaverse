@@ -183,7 +183,7 @@ Embeds a PDF using the browser-native viewer (the `#view=FitH` URL fragment). No
 
 > Free. Requires a logged-in visitor - renders nothing for guests.
 
-Shows the current member's own upload usage ledger. Useful on an account page beside the quota widget when you sell upload packages with Pro.
+Shows the current member's own upload history, one row per upload. Useful on an account page.
 
 ```
 [mvs_usage_history]
