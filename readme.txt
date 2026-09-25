@@ -125,6 +125,39 @@ Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui
 
 == Changelog ==
 
+= 2.6.0 - September 2026 =
+
+A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My Media, fewer settings, and member emails you choose.
+
+* New      - Save keeps an item; everything a member saves, and everything they favorited before, is in their private Favorites collection.
+* New      - The lightbox shows previous and next whenever there is a neighbour, supports swipe on touch, shows the item title, and shows cover art behind audio.
+* New      - Member emails for photo battle invites, shared documents and reviewed reports, each switched on in Settings > General > Emails.
+* New      - Members turn activity emails off with one profile switch or the unsubscribe link, and the account deletion confirmation is always sent.
+* New      - An optional storage limit per member, unlimited by default, with a per-member override on the user's profile.
+* New      - A "Who can upload media" role picker on Settings > General, and upload controls hide for members who cannot upload.
+* New      - A Mobile App settings tab for app sign-in, branding, terms and the abuse contact.
+* New      - The member who reported something is notified when a moderator reviews it.
+* Improve  - Settings show only while their switch is on, and developer settings leave the screen, about 130 controls down to about 55.
+* Improve  - One Layout choice replaces the separate layout settings, and Grid Columns shows only for the grid layout.
+* Improve  - Every list has one sort control, empty lists hide search and sort, and Explore tags sit on one scrolling row.
+* Improve  - Upload details appear after a file is picked, the + button uploads in one tap, and untitled uploads get a readable title from the file name.
+* Improve  - Logs moved under Tools, Integrations is a card on Overview, Reports is a Moderation tab, and the AI Flagged tab hides when it is not in use.
+* Improve  - Old profile editor and document links open the member's My Media pages, and BuddyPress sites edit names on the community profile.
+* Improve  - Albums and Collections each say what they hold, and settings use plain words throughout.
+* Improve  - Large sites load faster with new indexes, batched reads and paginated lists.
+* Fix      - Private items now look exactly like missing ones on pages, in the API and in album counts.
+* Fix      - Saving a settings tab no longer resets values that were not on the screen.
+* Fix      - Message times carry an explicit UTC value so every client shows the same clock.
+* Fix      - The + button no longer covers the last controls on a page.
+* Fix      - Search finds exact titles, and merging tags removes the old tag.
+* Security - Block style fields no longer accept CSS that could inject into the page.
+* Security - Draft media is no longer returned to signed-out visitors through the API.
+* Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.
+* Dev      - Removed settings keep their saved values and filters, so no site changes behaviour on update.
+* Dev      - New filters mvs_show_favorite_button, mvs_default_media_title, mvs_email_subject, mvs_email_body, mvs_community_profile, mvs_profile_edit_redirect and mvs_show_demo_import, and new action mvs_report_resolved.
+* Dev      - Uninstall keeps member data unless the owner opts in, and a full removal also deletes media tags, categories and licence options.
+* Compat   - Aligned with MediaVerse Pro 2.6.0. Install both updates together.
+
 = 2.5.1 - September 2026 =
 
 A settings pass from the owner's seat, then a full QA walk: the privacy switch holds everywhere, dialogs work from the keyboard, and deleted documents leave the disk.
@@ -832,6 +865,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.6.0 =
+Contains security fixes. Block style fields accepted CSS that could inject into the page, and draft media could be read through the API by signed-out visitors. Update together with WPMediaVerse Pro 2.6.0.
 
 = 2.5.1 =
 Contains security fixes. A public album or collection listed the private items inside it to people who cannot open them, gallery data for a private item was returned to anyone who asked, and a private community could be read by typing its address with different capitalisation. Update as soon as you can, together with WPMediaVerse Pro 2.5.1.
