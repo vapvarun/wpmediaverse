@@ -27,7 +27,8 @@ $mvs_page_ids = array_filter(
 		)
 	)
 );
-$mvs_show_fab = $mvs_is_logged_in && (
+// The + button uploads, so only members who may upload get it.
+$mvs_show_fab = $mvs_is_logged_in && \WPMediaVerse\Core\Abilities::can_upload() && (
 	( ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids ) )
 	|| ! empty( $GLOBALS['mvs_current_media'] )
 	|| ! empty( $GLOBALS['mvs_is_media_archive'] )

@@ -84,4 +84,21 @@ class UploadRolesPickerTest extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/value="administrator"\s+checked=\'checked\'\s+disabled=\'disabled\'/', $html );
 		$this->assertStringContainsString( 'name="mvs_upload_roles[]" value=""', $html, 'No sentinel: an all-unticked list would not post.' );
 	}
+
+	public function test_members_who_cannot_upload_see_no_upload_controls(): void {
+		$member = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		get_role( 'subscriber' )->remove_cap( 'upload_mvs_media' );
+		wp_set_current_user( $member );
+		$GLOBALS['mvs_is_media_archive'] = true; // A page that would show the + button.
+
+		ob_start();
+		include MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
+		$frame = (string) ob_get_clean();
+		unset( $GLOBALS['mvs_is_media_archive'] );
+		$this->assertStringNotContainsString( 'class="mvs-fab"', $frame, 'A member who cannot upload got the + button.' );
+
+		$block = render_block( array( 'blockName' => 'mvs/media-upload', 'attrs' => array(), 'innerBlocks' => array(), 'innerHTML' => '', 'innerContent' => array() ) );
+		$this->assertStringContainsString( 'Uploading is not open to your account', $block, 'The upload page was blank.' );
+		get_role( 'subscriber' )->add_cap( 'upload_mvs_media' );
+	}
 }

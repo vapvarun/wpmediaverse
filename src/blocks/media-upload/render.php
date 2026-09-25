@@ -23,8 +23,18 @@ if ( ! is_user_logged_in() ) {
 	return;
 }
 
-// Logged-in without the upload capability: stay silent (no broken affordance).
-if ( ! current_user_can( 'upload_mvs_media' ) ) {
+// Signed in but not allowed to upload (Settings > General > Who can upload
+// media): say so instead of a blank page (Coding Rule 11).
+if ( ! \WPMediaVerse\Core\Abilities::can_upload() ) {
+	// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+		array(
+			'icon'    => 'upload-cloud',
+			'title'   => __( 'Uploading is not open to your account', 'wpmediaverse' ),
+			'message' => __( 'Ask the site owner if you should be able to share media here.', 'wpmediaverse' ),
+		)
+	);
+	// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;
 }
 

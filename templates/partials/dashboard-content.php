@@ -737,6 +737,8 @@ wp_interactivity_state(
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
 
+		<?php // Only for members who may upload (Settings > General > Who can upload media). ?>
+		<?php if ( \WPMediaVerse\Core\Abilities::can_upload() ) : ?>
 		<!-- Upload Section -->
 		<div class="mvs-dashboard-upload">
 			<div class="mvs-dashboard-dropzone"
@@ -811,6 +813,7 @@ wp_interactivity_state(
 			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
 				data-wp-text="state.upload.status" hidden></div>
 		</div>
+		<?php endif; ?>
 
 		<!-- Media Grid -->
 		<div class="mvs-bulk-bar" data-wp-bind--hidden="!state.hasBulkSelection" hidden

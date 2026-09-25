@@ -255,7 +255,7 @@ abstract class BaseBPTabIntegration {
 		echo '<div class="mvs-bp-screen">';
 		$this->render_sub_tabs( 'media' );
 
-		if ( $this->is_authorized() ) {
+		if ( $this->is_authorized() && \WPMediaVerse\Core\Abilities::can_upload() ) {
 			$this->render_upload_form();
 		}
 
