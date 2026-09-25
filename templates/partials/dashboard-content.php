@@ -1001,7 +1001,7 @@ wp_interactivity_state(
 						<img data-wp-bind--hidden="!state.hasAlbumCover" data-wp-bind--src="context.item.cover_url" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"
 							data-wp-bind--hidden="state.hasAlbumCover">
-							<span class="mvs-grid-album-icon">&#128193;</span>
+							<span class="mvs-grid-album-icon" aria-hidden="true"><i data-lucide="folder"></i></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -1049,6 +1049,13 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_favorites = $mvs_toolbar_state( 'favorites', 'favorited' );
+		// Reached from Collections > Favorites, not the rail (2.6.0).
+		?>
+		<p class="mvs-panel-lead">
+			<a href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( 'collections' ) ); ?>"><?php esc_html_e( 'Collections', 'wpmediaverse' ); ?></a>
+			/ <?php esc_html_e( 'Favorites: everything you saved.', 'wpmediaverse' ); ?>
+		</p>
+		<?php
 		/** This action is documented in templates/partials/dashboard-content.php */
 		do_action( 'mvs_dashboard_before_panel_toolbar', 'favorites' );
 		echo $mvs_tpl->render_panel_toolbar(
@@ -1069,7 +1076,7 @@ wp_interactivity_state(
 				),
 				'search' => array(
 					'name'  => 'q',
-					'label' => __( 'Search your favourites', 'wpmediaverse' ),
+					'label' => __( 'Search your favorites', 'wpmediaverse' ),
 					'value' => $mvs_tb_favorites['s'],
 					'attrs' => array(
 						'data-panel'        => 'favorites',
@@ -1125,7 +1132,7 @@ wp_interactivity_state(
 					<div class="mvs-dashboard-card-body">
 						<div class="mvs-dashboard-card-title" data-wp-text="state.itemTitle"></div>
 						<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-							data-wp-on--click="actions.unfavorite"><?php esc_html_e( 'Unfavorite', 'wpmediaverse' ); ?></button>
+							data-wp-on--click="actions.unfavorite"><?php esc_html_e( 'Remove', 'wpmediaverse' ); ?></button>
 					</div>
 				</div>
 			</template>
@@ -1237,7 +1244,8 @@ wp_interactivity_state(
 							data-wp-bind--hidden="state.hasCollectionCover">
 							<span class="mvs-grid-collection-icon"><i data-lucide="library" aria-hidden="true"></i></span>
 						</div>
-						<span class="mvs-collection-type-badge" data-wp-text="context.item.type"></span>
+						<?php // Only "Smart" says something; every other collection is filled by hand. Only smart responses carry rules. ?>
+						<span class="mvs-collection-type-badge" data-wp-bind--hidden="!context.item.rules" hidden><?php esc_html_e( 'Smart', 'wpmediaverse' ); ?></span>
 					</a>
 					<div class="mvs-dashboard-card-body">
 						<a class="mvs-dashboard-card-title" data-wp-bind--href="context.item.link"

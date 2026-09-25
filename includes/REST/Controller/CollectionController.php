@@ -574,7 +574,8 @@ class CollectionController extends WP_REST_Controller {
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
 			'type'        => $collection_type,
-			'link'        => get_permalink( $post->ID ),
+			// Favorites opens its manage view (search, sort, remove) on the web.
+			'link'        => \WPMediaVerse\Social\FavoriteService::favorites_owner( $post->ID ) ? \WPMediaVerse\Core\DashboardSections::url( 'favorites' ) : get_permalink( $post->ID ),
 			'cover_url'   => $this->cover_from_media_ids( $cover_ids ),
 			'is_owner'    => $is_owner,
 			'can_edit'    => $can_edit,

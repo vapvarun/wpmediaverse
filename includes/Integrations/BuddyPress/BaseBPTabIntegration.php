@@ -671,7 +671,7 @@ abstract class BaseBPTabIntegration {
 			if ( $cover_url ) {
 				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
 			} else {
-				echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"><span class="mvs-grid-album-icon">&#128193;</span></div>';
+				echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"><span class="mvs-grid-album-icon" aria-hidden="true"><i data-lucide="folder"></i></span></div>';
 			}
 			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
 			echo '<span class="mvs-grid-stat">';

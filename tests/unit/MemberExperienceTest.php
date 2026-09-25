@@ -38,4 +38,17 @@ class MemberExperienceTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'orderby' => 'title', 'order' => 'ASC' ), $tpl->explore_sort() );
 		$_GET = array();
 	}
+
+	public function test_favorites_has_one_home_in_collections(): void {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		\WPMediaVerse\Core\DashboardSections::flush();
+
+		$rail = array();
+		foreach ( \WPMediaVerse\Core\DashboardSections::grouped() as $sections ) {
+			$rail = array_merge( $rail, array_keys( $sections ) );
+		}
+		$this->assertNotContains( 'favorites', $rail, 'Favorites is a second home on the rail.' );
+		$this->assertContains( 'collections', $rail );
+		$this->assertTrue( \WPMediaVerse\Core\DashboardSections::exists( 'favorites' ), '/my-media/favorites/ stopped working.' );
+	}
 }

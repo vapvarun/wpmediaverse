@@ -69,7 +69,7 @@ wp_interactivity_state(
 			'favorite'         => __( 'Favorite', 'wpmediaverse' ),
 			'favorited'        => __( 'Favorited', 'wpmediaverse' ),
 			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
-			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
+			'uploadMedia'      => __( 'Upload media', 'wpmediaverse' ),
 			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
 			'createAlbum'      => __( 'Create Album', 'wpmediaverse' ),
 			'uploadVideo'      => __( 'Upload Video', 'wpmediaverse' ),

@@ -86,6 +86,7 @@ final class DashboardSections {
 		 *         'count'      => fn() => 31,    // or null for no number
 		 *         'url'        => '',            // defaults to /<page>/<slug>/
 		 *         'endpoints'  => 'mvs-pro/v1/documents',
+		 *         'nav'        => true,          // false = not on the rail (still routable)
 		 *     )
 		 *
 		 * @since 2.4.0
@@ -159,6 +160,11 @@ final class DashboardSections {
 		$grouped = array();
 
 		foreach ( self::all() as $slug => $section ) {
+			// 'nav' => false: a real, routable section reached from another
+			// panel rather than from the rail (Favorites, 2.6.0).
+			if ( isset( $section['nav'] ) && false === $section['nav'] ) {
+				continue;
+			}
 			$grouped[ $section['group'] ][ $slug ] = $section;
 		}
 
@@ -333,6 +339,8 @@ final class DashboardSections {
 			'count'      => $section['count'] ?? null,
 			'url'        => isset( $section['url'] ) ? (string) $section['url'] : '',
 			'endpoints'  => isset( $section['endpoints'] ) ? (string) $section['endpoints'] : '',
+			// False: routable, but reached from another panel, not the rail.
+			'nav'        => ! isset( $section['nav'] ) || (bool) $section['nav'],
 		);
 	}
 
@@ -367,11 +375,15 @@ final class DashboardSections {
 				'order'     => 30,
 				'endpoints' => 'mvs/v1/collections',
 			),
+			// Not on the rail since 2.6.0: Save is the one way to keep an item and
+			// Collections > Favorites is its one home; that card opens this panel,
+			// which keeps search, sort and remove. /my-media/favorites/ still works.
 			'favorites'   => array(
 				'label'     => __( 'Favorites', 'wpmediaverse' ),
 				'group'     => 'library',
 				'order'     => 60,
 				'endpoints' => 'mvs/v1/favorites',
+				'nav'       => false,
 			),
 			// Editing your profile was a button on a card above the rail, which
 			// cost every member ~110px of vertical space on every visit to say

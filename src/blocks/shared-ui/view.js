@@ -221,6 +221,10 @@ function mapLightboxComment( c ) {
 	};
 }
 
+// Set by lightboxPrev when it steps back into the previous grid tile, so a
+// gallery entered backwards opens on its last photo.
+let enterGroupAtEnd = false;
+
 const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
 		// --- Toast (flat) ---
@@ -315,7 +319,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get uploadModalHeading() {
 			const titles = {
-				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
+				// The + button's default mode accepts every type (auto-detect).
+				photo: ( state.i18n?.uploadMedia || 'Upload media' ),
 				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
 				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
 				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
@@ -659,13 +664,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return ( state.lightboxCurrentIndex + 1 ) + ' / ' + state.lightboxGroupItems.length;
 		},
 		get lightboxHasPrev() {
-			if ( state.lightboxGroupItems.length > 1 ) return true;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
 			const idx = gridIds.indexOf( state.lightboxMediaId );
 			return idx > 0;
 		},
 		get lightboxHasNext() {
-			if ( state.lightboxGroupItems.length > 1 ) return true;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
 			const idx = gridIds.indexOf( state.lightboxMediaId );
 			return idx >= 0 && idx < gridIds.length - 1;
@@ -1488,15 +1493,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' );
 					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
+						const start = enterGroupAtEnd ? groupData.length - 1 : 0;
 						state.lightboxGroupItems = groupData;
-						state.lightboxCurrentIndex = 0;
-						state.lightboxMediaData = groupData[ 0 ];
+						state.lightboxCurrentIndex = start;
+						state.lightboxMediaData = groupData[ start ];
 						loadLightboxMedia();
 					}
 				}
+				enterGroupAtEnd = false;
 
 				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
 			} catch {
+				enterGroupAtEnd = false;
 				state.lightboxLoading = false;
 				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
@@ -1884,10 +1892,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				// Stat increment failure is non-blocking — the download still happened.
 			}
 		},
+		// A gallery steps through its photos, then its edges hand over to the
+		// neighbouring grid tile. It used to wrap, so Next cycled one gallery
+		// forever once prev/next were always visible (QA, 2.6.0).
 		lightboxPrev() {
-			if ( state.lightboxGroupItems.length > 1 ) {
-				let idx = state.lightboxCurrentIndex - 1;
-				if ( idx < 0 ) idx = state.lightboxGroupItems.length - 1;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) {
+				const idx = state.lightboxCurrentIndex - 1;
 				state.lightboxCurrentIndex = idx;
 				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
 				return;
@@ -1895,13 +1905,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const gridIds = window.mvsGridRegistry || [];
 			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
 			if ( currentIdx > 0 ) {
+				enterGroupAtEnd = true; // Going back into a gallery starts at its last photo.
 				actions.openLightboxById( gridIds[ currentIdx - 1 ] );
 			}
 		},
 		lightboxNext() {
-			if ( state.lightboxGroupItems.length > 1 ) {
-				let idx = state.lightboxCurrentIndex + 1;
-				if ( idx >= state.lightboxGroupItems.length ) idx = 0;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) {
+				const idx = state.lightboxCurrentIndex + 1;
 				state.lightboxCurrentIndex = idx;
 				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
 				return;
