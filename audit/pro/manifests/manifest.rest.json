@@ -641,6 +641,16 @@
         "file": "includes/Quota/QuotaController.php:63"
       },
       {
+        "route": "/mvs-pro/v1/admin/gamification-notice/dismiss",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AdminController::dismiss_gamification_notice",
+        "permission": "manage_settings_permissions_check",
+        "purpose": "Hide the WB Gamification notice for the current admin",
+        "file": "includes/REST/AdminController.php:69"
+      },
+      {
         "route": "/mvs-pro/v1/admin/gamification-welcome/dismiss",
         "methods": [
           "POST"

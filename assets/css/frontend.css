@@ -795,8 +795,21 @@ body.mvs-page select {
     }
 }
 
-/* §7 — FAB safe area: every page that hosts a FAB pads its bottom so content
-   never sits behind it. iOS notch supported via env(safe-area-inset-bottom). */
+/* §7 — FAB safe area: a page pads its bottom only when a floating button is
+   actually on it (the + upload FAB or the chat bubble), read from the rendered
+   page rather than a copy of the PHP condition. A visitor, or a page with no
+   FAB, used to get 80px of empty space. iOS notch via env(). */
+body:has(.mvs-fab-container, .mvs-chat-trigger) {
+    --mvs-fab-pad: var(--mvs-fab-safe);
+}
+
+@media (max-width: 640px) {
+    /* The + FAB steps aside on view pages (below); only chat can still float. */
+    body.mvs-view-page:not(:has(.mvs-chat-trigger)) {
+        --mvs-fab-pad: 0px;
+    }
+}
+
 .mvs-page,
 .mvs-single-media,
 .mvs-single-album,
@@ -805,7 +818,7 @@ body.mvs-page select {
 .mvs-explore-page,
 .mvs-documents,
 .mvs-dashboard {
-    padding-bottom: calc(var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--mvs-fab-pad, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
 /* §4.1/§4.2 — Icon-collapse buttons: text-and-icon control that collapses to
@@ -8895,11 +8908,24 @@ a.mvs-dashboard-tab:focus-visible {
  */
 .mvs-search-mode-btn,
 .mvs-tag-cloud-item,
-.mvs-dashboard-tab,
-.mvs-dashboard-rail-head__link {
+.mvs-dashboard-tab {
     display: inline-flex;
     align-items: center;
     min-height: var(--mvs-touch-min);
+}
+
+/* "View profile" in the rail head sits under the name beside a 40px avatar.
+   At 44px everywhere it made the identity block taller than the avatar on
+   desktop (Basecamp 10327123393); it only needs the touch floor on touch. */
+.mvs-dashboard-rail-head__link {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (pointer: coarse), (max-width: 640px) {
+    .mvs-dashboard-rail-head__link {
+        min-height: var(--mvs-touch-min);
+    }
 }
 
 /*
