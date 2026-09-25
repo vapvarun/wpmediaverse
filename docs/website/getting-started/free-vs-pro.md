@@ -118,9 +118,6 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | **Integrations** | | |
 | BuddyPress 12+ | Yes | Yes |
 | wb-gamification | -- | Yes |
-| MemberPress | -- | Yes |
-| Paid Memberships Pro | -- | Yes |
-| WooCommerce | -- | Yes |
 | OpenAI (moderation + captions) | Yes | Yes |
 | Google Cloud Vision | -- | Yes |
 | AWS Rekognition | -- | Yes |
