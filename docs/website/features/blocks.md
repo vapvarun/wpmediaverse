@@ -80,6 +80,10 @@ Grid columns and pagination inherit from **Media > Settings > Display**.
 
 Stories moved to Pro in 1.9.0 as a complete feature: the `mvs/pro-stories` block (stories bar + fullscreen viewer), a create-from-the-bar upload tile, `mvs-pro/v1` REST routes, and view receipts. It is a Pro-registered block, not one of the 8 free blocks above. See [Stories (Pro)](../pro-features/stories.md) for the full reference.
 
+## Document Blocks (Pro)
+
+With Pro Documents on, two more blocks appear: **Document** (`mvs/pro-document-embed`, one document with its preview) and **Document List** (`mvs/pro-document-list`, a folder or filtered set as rows). Both check access for whoever is reading the page. See [Documents (Pro)](../pro-features/documents.md#blocks).
+
 ## Member Photos Block
 
 The Member Photos block renders a single member's media grid. The block resolves the user automatically using a four-step fallback chain so the same block works in profile templates, member-specific pages, author archives, and BuddyPress profile tabs without per-page wiring.

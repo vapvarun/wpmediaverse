@@ -166,6 +166,7 @@ class SettingsRegistrar {
 			'mvs_signed_url_ttl'                                     => array( 'integer', 'absint', 3600 ),
 			// Legacy: public cloud media is always served from its CDN URL;
 			// per-request proxying is the `mvs_serve_public_cloud_direct` filter.
+			// Inert since 1.4.0: kept registered for stored values, read by nothing.
 			'mvs_cloud_direct_public_urls'                           => array( 'boolean', 'rest_sanitize_boolean', false ),
 			\WPMediaVerse\Services\ViewRetentionService::SETTING => array( 'integer', array( \WPMediaVerse\Services\ViewRetentionService::class, 'sanitize_setting' ), \WPMediaVerse\Services\ViewRetentionService::DEFAULT_DAYS ),
 			// Default ON when the editor can write WebP; AVIF stays opt-in.

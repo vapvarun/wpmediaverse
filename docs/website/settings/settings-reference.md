@@ -36,7 +36,7 @@ Rows marked "no screen control since 2.6.0 (set in code/WP-CLI)" are still regis
 | `mvs_filename_strategy` | Stored Filenames - no screen control since 2.6.0 (set in code/WP-CLI) | string | `hashed` |
 | `mvs_generate_webp` | Create WebP copies - no screen control since 2.6.0 (set in code/WP-CLI) | boolean | `true` |
 | `mvs_generate_avif` | Create AVIF copies - no screen control since 2.6.0 (set in code/WP-CLI) | boolean | `false` |
-| `mvs_cloud_direct_public_urls` | *(no settings field - set in code)* | boolean | `false` |
+| `mvs_cloud_direct_public_urls` | *(no settings field; inert since 1.4.0 - public cloud media is served directly automatically, this value is ignored)* | boolean | `false` |
 
 `mvs_duplicate_action` accepts `warn` (allow the upload and warn), `skip` (shown as "Block the upload") or `allow` (skip the hash check entirely). `mvs_strip_exif` removes only the GPS location from new uploads; camera details and photo credits stay, and files already stored are not rewritten.
 

@@ -75,8 +75,8 @@ a space with thousands of files does not time out.
 
 ## Orphaned Files
 
-Earlier versions could leave a document file on disk after its record was gone. **MediaVerse
-> Settings > Documents** has a card that looks for these: "Check for orphaned files" is a dry
+Earlier versions could leave a document file on disk after its record was gone. The
+**MediaVerse > Documents** admin screen has a card, below the list, that looks for these: "Check for orphaned files" is a dry
 run that reports what it found and deletes nothing, and the delete step is a separate,
 deliberate action.
 
@@ -122,6 +122,21 @@ On a site whose licence has lapsed:
 Activating the licence restores everything immediately. Nothing is migrated, converted or lost.
 
 Every other Pro feature is unaffected by licence state - the licence buys updates.
+
+## Blocks
+
+Two blocks put documents on any page or post. Both decide access for the person reading
+the page, on every view, so a visitor never sees a document they could not open elsewhere.
+
+| Block | What it shows | Settings |
+|-------|---------------|----------|
+| **Document** (`mvs/pro-document-embed`) | One document, with its preview and a Download button | **Document** - pick it in the block sidebar. **Download only** - show the Download button without the preview. |
+| **Document List** (`mvs/pro-document-list`) | The documents in one folder, or a filtered set, as rows | **Folder** - which folder (none = all the documents the viewer may see). **Type** - limit to one document type. **Limit** - how many rows, 1 to 50 (default 20). |
+
+A Document block with nothing picked tells editors to pick one and shows nothing to visitors.
+A Document List with nothing the viewer may open shows nothing. The list is the
+`[mvs_documents]` shortcode underneath, so `[mvs_documents folder="12" type="pdf" per_page="10"]`
+gives the same result in a classic editor.
 
 ## REST API Endpoints for Documents
 
