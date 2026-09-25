@@ -18,6 +18,8 @@ All routes below use the `mvs/v1` namespace (the messaging routes share the same
 
 **Update methods.** Every route documented below with `PUT` also accepts `PATCH` and `POST`. WordPress registers these three together as its "editable" method group, so all three reach the same handler with the same arguments and the same response. `PUT` is used throughout this page as the canonical form; pick whichever your HTTP client handles most comfortably.
 
+**Timestamps.** Datetime fields such as `created_at`, `updated_at` and `last_read_at` are stored in UTC and sent as `YYYY-MM-DD HH:MM:SS` with no timezone marker, the shape the mobile app and older clients parse. Every one of them also has an ISO-8601 sibling ending in `_gmt` (`created_at_gmt: "2026-09-24T17:56:07Z"`), in every `mvs/v1` response including messaging and the poll endpoint. Read the `_gmt` field: passing the bare value to JavaScript's `new Date()` reads it as the browser's local time and shifts the clock by the viewer's UTC offset. Add your own UTC keys to the list with the `mvs_rest_timestamp_keys` filter.
+
 **Rate limiting.** Many routes are throttled per user/IP (the limit is noted where it is unusually tight). Exceeding a limit returns `429 Too Many Requests`.
 
 ---
