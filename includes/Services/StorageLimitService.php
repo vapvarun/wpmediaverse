@@ -62,6 +62,13 @@ class StorageLimitService {
 	 * @return int
 	 */
 	public function limit_bytes( int $user_id ): int {
+		// People who manage MediaVerse are never limited, so everything that
+		// reads the limit (the upload check, "Used X of Y", /me/storage) agrees:
+		// a manager was shown "Used 38.1 MB of 1.0 MB" while uploading freely.
+		if ( $user_id && user_can( $user_id, 'manage_mvs_settings' ) ) {
+			return 0;
+		}
+
 		$own = $user_id ? get_user_meta( $user_id, self::USER_META, true ) : '';
 		$mb  = ( '' !== $own && is_numeric( $own ) ) ? (float) $own : (float) get_option( self::OPTION, 0 );
 
@@ -115,7 +122,7 @@ class StorageLimitService {
 	 */
 	public function check( int $user_id, int $bytes ): ?WP_Error {
 		$limit = $this->limit_bytes( $user_id );
-		if ( ! $limit || user_can( $user_id, 'manage_mvs_settings' ) ) {
+		if ( ! $limit ) {
 			return null;
 		}
 

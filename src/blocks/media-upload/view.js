@@ -157,7 +157,9 @@ function formatBytes( bytes ) {
 		value /= 1024;
 		unit++;
 	}
-	return `${ unit ? value.toFixed( 1 ).replace( /\.0$/, '' ) : value } ${ units[ unit ] }`;
+	// One decimal, like the server's size_format( $bytes, 1 ), so the line reads
+	// the same before and after an upload.
+	return `${ unit ? value.toFixed( 1 ) : value } ${ units[ unit ] }`;
 }
 
 const { state, actions } = store( 'mvs/media-upload', {

@@ -101,6 +101,7 @@ class StorageLimitTest extends WP_UnitTestCase {
 			grant_super_admin( $admin );
 		}
 		$this->assertNull( $this->limits->check( $admin, 999 * MB_IN_BYTES ) );
+		$this->assertSame( 0, $this->limits->summary( $admin )['limit'], 'An exempt manager was shown a limit they are not held to.' );
 	}
 
 	public function test_member_reads_their_own_usage(): void {
