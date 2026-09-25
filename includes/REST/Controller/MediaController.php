@@ -432,6 +432,17 @@ class MediaController extends WP_REST_Controller {
 		$where  = array( 'status = %s', 'moderation_status = %s' );
 		$params = array( 'publish', 'approved' );
 
+		// A member listing their OWN media also sees what is held for review
+		// (flagged, pending): "Hide until I review it" hides it from everyone
+		// else, not from its owner, who otherwise saw a count one higher than
+		// the grid and could not find their upload (QA, 2.6.0). Rejected items
+		// are moved to draft, so the status clause still leaves them out.
+		$mvs_viewer_id = get_current_user_id();
+		if ( $mvs_viewer_id && (int) $author === $mvs_viewer_id ) {
+			$where[1] = "moderation_status IN ( 'approved', 'flagged', 'pending' )";
+			array_pop( $params );
+		}
+
 		// POSITIVE INCLUSION, never exclusion. This clause used to read
 		// media_type != '' — which answered "what do I not want today" and passed
 		// every future type straight through. `document` rows would have landed in

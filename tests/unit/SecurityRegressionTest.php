@@ -124,6 +124,42 @@ class SecurityRegressionTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'padding: 1px 1px 1px 1px;', $html );
 	}
 
+	public function test_block_text_styles_cannot_add_rules(): void {
+		$css = \WPMediaVerse\Blocks\MVS_CSS::generate(
+			'probe-text',
+			array(
+				'fontFamily'    => 'a;} body{display:none!important} .x{',
+				'fontWeight'    => '700;} body{display:none} x{',
+				'textTransform' => 'uppercase;} body{background:url(https://evil.example/t.gif)} x{',
+				'boxShadow'     => true,
+				'shadowColor'   => 'red;} body{display:none} x{',
+			)
+		);
+
+		$this->assertSame( 1, substr_count( (string) $css, '{' ), 'A block style value opened its own CSS rule (QA, 2.6.0).' );
+		$this->assertSame( 1, substr_count( (string) $css, '}' ) );
+		$this->assertStringNotContainsString( 'display:none', (string) $css );
+		$this->assertStringNotContainsString( 'url(', (string) $css );
+	}
+
+	public function test_legitimate_text_styles_still_render(): void {
+		$css = (string) \WPMediaVerse\Blocks\MVS_CSS::generate(
+			'probe-text-ok',
+			array(
+				'fontFamily'    => 'var(--wp--preset--font-family--inter)',
+				'fontWeight'    => '600',
+				'textTransform' => 'uppercase',
+				'boxShadow'     => true,
+				'shadowColor'   => 'rgba(0, 0, 0, 0.2)',
+			)
+		);
+
+		$this->assertStringContainsString( 'font-family: var(--wp--preset--font-family--inter);', $css );
+		$this->assertStringContainsString( 'font-weight: 600;', $css );
+		$this->assertStringContainsString( 'text-transform: uppercase;', $css );
+		$this->assertStringContainsString( 'rgba(0, 0, 0, 0.2)', $css );
+	}
+
 	public function test_a_legitimate_unit_still_renders(): void {
 		\WPMediaVerse\Blocks\MVS_CSS::add(
 			'probe-legit',

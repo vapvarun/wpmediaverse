@@ -146,7 +146,12 @@ class NotificationService {
 			array( '%d', '%s', '%d', '%d', '%d', '%s' )
 		);
 
-		if ( $wpdb->insert_id ) {
+		// Read the id now: a listener on mvs_notification_created that inserts a
+		// row of its own (Pro queues an Action Scheduler job) overwrites
+		// $wpdb->insert_id, and create() returned that id instead (QA, 2.6.0).
+		$notification_id = (int) $wpdb->insert_id;
+
+		if ( $notification_id ) {
 			wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
 
 			/**
@@ -171,9 +176,9 @@ class NotificationService {
 			 * @param int    $object_id       The row's comment_id slot (2.6.0).
 			 */
 			$rendered = $this->build_message_and_link( $type, $actor_id, $media_id, $comment_id );
-			do_action( 'mvs_notification_created', $wpdb->insert_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'], $comment_id );
+			do_action( 'mvs_notification_created', $notification_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'], $comment_id );
 
-			return $wpdb->insert_id;
+			return $notification_id;
 		}
 
 		return false;

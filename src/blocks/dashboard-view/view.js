@@ -1007,7 +1007,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 				// instead would report the loaded PAGE, so a 60-item library would
 				// say "20 items" until somebody pressed Load more.
 				state.media.total = parseInt( ( res.headers && res.headers.get( 'X-WP-Total' ) ) || '0', 10 );
-				const data = res.data;
+				// Held for review: shown to the owner with a badge, hidden from others.
+				const data = ( res.data || [] ).map( ( item ) => ( {
+					...item,
+					underReview: [ 'flagged', 'pending' ].includes( item.moderation_status ),
+				} ) );
 
 				if ( page === 1 ) {
 					state.media.items = data;

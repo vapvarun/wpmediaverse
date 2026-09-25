@@ -438,6 +438,15 @@ class PrivacyService {
 			if ( in_array( $moderation, array( 'flagged', 'rejected', 'pending' ), true ) ) {
 				return false;
 			}
+
+			// An unpublished item (draft, trashed) is its owner's alone. REST
+			// served a draft in full, file URL included, to signed-out visitors
+			// while its page answered 404 (QA, 2.6.0). An empty status predates
+			// the column and is treated as published.
+			$status = (string) $repo->get( $media_id, 'status' );
+			if ( '' !== $status && 'publish' !== $status ) {
+				return false;
+			}
 		}
 
 		// Same split for the privacy value itself: an album's lives in post meta,
