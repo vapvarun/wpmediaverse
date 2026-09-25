@@ -930,6 +930,12 @@ class Plugin {
 			}
 		);
 
+		// Boot the listeners now: resolved only while registering REST routes,
+		// their init() hooks never existed on admin, cron or CLI requests, so a
+		// report resolved from Pro's Reports screen notified nobody.
+		self::$container->get( 'notifications' );
+		self::$container->get( 'activity' );
+
 		self::$container->register(
 			'profile',
 			function () {

@@ -84,10 +84,9 @@ class MemberEmailsTest extends WP_UnitTestCase {
 	public function test_a_reviewed_report_emails_the_reporter(): void {
 		global $wpdb;
 		update_option( EmailService::TYPES['report_resolved'], '1' );
-		$notifier = Plugin::container()->get( 'notifications' );
-		if ( ! has_action( 'mvs_report_resolved', array( $notifier, 'on_report_resolved' ) ) ) {
-			add_action( 'mvs_report_resolved', array( $notifier, 'on_report_resolved' ), 10, 3 );
-		}
+		// No REST request here: the listener must already be hooked, as it is
+		// when an admin resolves a report from a wp-admin screen.
+		$this->assertNotFalse( has_action( 'mvs_report_resolved' ), 'Nothing listens for a resolved report outside REST.' );
 		$wpdb->insert( $wpdb->prefix . 'mvs_reports', array( 'reporter_id' => $this->member, 'target_type' => 'user', 'target_id' => 7, 'reason' => 'spam', 'status' => 'pending' ) ); // phpcs:ignore
 
 		Plugin::container()->get( 'reports' )->update_status( (int) $wpdb->insert_id, 'resolved' );
