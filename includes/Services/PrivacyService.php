@@ -331,9 +331,8 @@ class PrivacyService {
 		// Is there a REAL media row here? A typed index row is media. The
 		// predicate is a non-empty media_type, not MediaTypes::is_known():
 		// `is_known()` tests ALL, which deliberately omits `legacy_document`,
-		// and the row that first demonstrated this bug was exactly that. This
-		// mirrors AccessRulesService, which has resolved index-first since
-		// 10073499758 - the two guards for one hazard had diverged.
+		// and the row that first demonstrated this bug was exactly that
+		// (index-first resolution, Basecamp 10073499758).
 		$in_index = $repo->exists( $media_id );
 		$typed    = $in_index && '' !== (string) $repo->get( $media_id, 'media_type' );
 

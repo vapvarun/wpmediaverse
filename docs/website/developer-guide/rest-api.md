@@ -434,72 +434,7 @@ List the current user's favorites. Supports `collection_id`, `page`, `per_page`.
 
 ---
 
-## Access Control & Grants
-
-These routes manage per-media access rules and direct user grants. All require the media owner or the `manage_mvs_access` capability.
-
-### GET /media/{media_id}/rules
-
-**Auth:** Owner or `manage_mvs_access`.
-
-List the access rules attached to a media item.
-
-### POST /media/{media_id}/rules
-
-**Auth:** Owner or `manage_mvs_access`. Rate-limited to 30/min.
-
-Replace the full rule set for a media item.
-
-```json
-{
-  "rules": [
-    { "rule_type": "follower", "rule_value": "1" },
-    { "rule_type": "purchase", "rule_value": "1", "price": 4.99, "currency": "USD" }
-  ]
-}
-```
-
-Each rule's `rule_type` must be one of `AccessRulesService::RULE_TYPES`.
-
-### DELETE /media/{media_id}/rules/{rule_id}
-
-**Auth:** Owner or `manage_mvs_access`.
-
-Delete a single access rule.
-
-### POST /media/{media_id}/grant
-
-**Auth:** Owner or `manage_mvs_access`.
-
-Grant a specific user access to the media.
-
-```json
-{
-  "user_id": 55,
-  "source": "manual",
-  "expires_at": "2026-01-01T00:00:00Z"
-}
-```
-
-`source` defaults to `manual` and must be one of `AccessRulesService::GRANT_SOURCES`.
-
-### DELETE /media/{media_id}/grant/{user_id}
-
-**Auth:** Owner or `manage_mvs_access`.
-
-Revoke a user's grant.
-
-### GET /me/grants
-
-**Auth:** Authenticated.
-
-List the media the current user has been granted access to.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `per_page` | int | `20` | Items per page (max: 100) |
-| `page` | int | `1` | Page number |
-| `active_only` | bool | `true` | Exclude expired grants |
+Access rules and grants (`/media/{id}/rules`, `/media/{id}/grant`, `/me/grants`, `/access/options`) were removed in 2.6.0. Access is decided by the item's privacy; documents are shared through Pro's document sharing.
 
 ---
 
@@ -1297,18 +1232,6 @@ The authenticated member's own usage ledger - upload credits consumed and grante
 | `page` | integer | `1` | Page number. |
 
 Pairs with the `[mvs_usage_history]` shortcode, which renders the same data.
-
----
-
-## Access control
-
-### GET /access/options
-
-Return the building blocks for the access-rule builder: the site's roles, and the rule types available to members.
-
-**Auth:** Authenticated.
-
-Drives the frontend edit-modal access panel, the admin sub-page, and the mobile app - all three read this one endpoint rather than hardcoding a rule-type list. Pro extends the returned rule types through the `mvs_access_rule_types_ui` filter, so a client that renders whatever this endpoint returns picks up Pro's monetization and code-grant rule types with no client change.
 
 ---
 

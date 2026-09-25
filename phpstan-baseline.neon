@@ -361,16 +361,6 @@ parameters:
 			path: includes/Messaging/NotificationListener.php
 
 		-
-			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, float given\\.$#"
-			count: 1
-			path: includes/REST/Controller/AccessController.php
-
-		-
-			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
-			count: 1
-			path: includes/REST/Controller/AccessController.php
-
-		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
 			path: includes/REST/Controller/AlbumController.php

@@ -88,7 +88,7 @@ wp mvs prune-views --days=30 --dry-run
 
 ## wp mvs cleanup-expired
 
-Remove expired custom access grants from the `wp_mvs_access_grants` table.
+Mark document share grants that have passed their expiry as revoked in the `wp_mvs_access_grants` table (reads already ignore them; this keeps the table tidy).
 
 ```bash
 # Cleanup with default batch size (100 grants at a time).

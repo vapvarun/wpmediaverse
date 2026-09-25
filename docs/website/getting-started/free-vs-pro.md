@@ -101,7 +101,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Activity stream media | Yes | Yes |
 | Notifications (likes, comments, follows) | Yes | Yes |
 | **Gutenberg Blocks** | | |
-| Core blocks (Media Grid, Player, Album, Upload, Stats, Explore Feed, Lock Overlay, Member Photos, PDF Viewer) | Yes (9) | Yes (inherited) |
+| Core blocks (Media Grid, Player, Album, Upload, Stats, Explore Feed, Member Photos, PDF Viewer) | Yes (8) | Yes (inherited) |
 | Pro feature blocks (Tournament, Challenge, Battle, Leaderboard, Compete Hub) | -- | Yes (5) |
 | Pro feed-layout blocks (Instagram, Flickr, Pinterest, Dribbble) | -- | Yes (4) |
 | Pro list blocks (Tournaments List, Challenges List, Battles Active) | -- | Yes (3) |

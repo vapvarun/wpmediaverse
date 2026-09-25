@@ -142,10 +142,6 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_profile_update_fields` | filter | Free | 1.0 |
 | `mvs_avatar_allowed_types` | filter | Free | 1.0 |
 | `mvs_avatar_max_size` | filter | Free | 1.0 |
-| `mvs_access_rule_created` | action | Free | 1.0 |
-| `mvs_access_rule_deleted` | action | Free | 1.0 |
-| `mvs_access_granted` | action | Free | 1.0 |
-| `mvs_access_revoked` | action | Free | 1.0 |
 | `mvs_story_created` | action | Pro | 1.0 (moved from Free in 1.9.0) |
 | `mvs_story_expired` | action | Pro | 1.0 (moved from Free in 1.9.0) |
 | `mvs_privacy_can_view` | filter | Free | 1.0 |
@@ -2333,10 +2329,6 @@ add_action( 'mvs_media_privacy_changed', function( int $media_id, string $new_pr
 
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
-| `mvs_access_rule_created` | action | Access rule created for a media item | `$rule_id`, `$media_id`, `$rule_type`, `$rule_value` | 1.0 |
-| `mvs_access_rule_deleted` | action | Access rule removed | `$rule_id`, `$media_id`, `$rule_type` | 1.0 |
-| `mvs_access_granted` | action | User granted access to restricted media | `$grant_id`, `$media_id`, `$user_id`, `$source` | 1.0 |
-| `mvs_access_revoked` | action | User access revoked | `$media_id`, `$user_id` | 1.0 |
 | `mvs_album_items_added` | action | Media added to an album | `$album_id`, `$actor_id`, `$media_ids`, `$added` (signature changed in 1.2.3) | 1.0 |
 
 > **Stories moved to Pro in 1.9.0.** `mvs_story_created` and `mvs_story_expired` now fire from `WPMediaVersePro\Stories\StoryService` — see [Stories (Pro)](../pro-features/stories.md). The free plugin no longer ships a `StoryService`; the upload block's "Also share as a story" toggle only renders when the `mvs_stories_enabled` option is on, which Pro sets when it registers the feature.
@@ -3180,12 +3172,11 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_viewer_thumbnail_ttl` | filter | `HOUR_IN_SECONDS, $media_id, $viewer_id, $size` | Filter the viewer-aware thumbnail TTL (seconds). Default 1 hour; the /serve endpoint re-checks privacy per request, so this is only a cache horizon, not a credential lifetime. |
 | `mvs_viewer_url_ttl` | filter | `HOUR_IN_SECONDS, $media_id, $viewer_id` | Filter the viewer-aware full-file URL TTL (seconds). Default 1 hour; the /serve endpoint re-checks privacy per request, so this is only a cache horizon, not a credential lifetime. |
 
-### Social, moderation and access rules
+### Social and moderation
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
 | `mvs_explore_tag_cloud_limit` | filter | `20` | How many tags the Explore tag cloud requests. A community with a handful of curated tags and one with hundreds want different numbers, so this is not hardcoded. Clamped to 1-200, the range the `/tags/cloud` endpoint itself accepts. Honoured by both the Free Explore template and the Pro layout partial. Since 2.3.0. |
-| `mvs_access_rule_types_ui` | filter | `$rule_types` | Filter the access-rule types offered in the rule-builder UIs. Pro hooks here to add monetization / code-grant rule types. |
 | `mvs_ai_cost_per_call` | filter | `(float) get_option( 'mvs_ai_cost_per_call', 0.01 ), $provider_id` | Filter the estimated per-call AI cost used for budget tracking. |
 | `mvs_comment_duplicate_window` | filter | `60, $media_id, $user_id` | Filters the duplicate-comment window, in seconds. Wide enough to absorb a double-click or a retry on a slow connection, short enough that deliberately repeating yourself later still works. |
 | `mvs_feed_media_ids` | filter | `$int_ids, $request` | Filter the final list of media IDs returned by the feed query. Allows Pro to reorder results (e.g. |

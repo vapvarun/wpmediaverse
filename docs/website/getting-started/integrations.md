@@ -267,9 +267,8 @@ Registered in `BlockRegistrar::BLOCKS`:
 | Album Viewer | Display an album with its media items |
 | Media Stats | Display a media statistics dashboard |
 | Explore Feed | A discover/explore feed showing trending and recent media |
-| Lock Overlay | Paywall overlay on gated media, with blurred preview and unlock prompt |
 | Member Photos | A member's photos. Auto-detects the displayed BuddyPress member, the post author, or the current user |
-| PDF Viewer | Embed a PDF inline using the browser's native viewer, under the same privacy and access rules as other media |
+| PDF Viewer | Embed a PDF inline using the browser's native viewer, under the same privacy as other media |
 
 There is no Profile Edit block - profile editing ships as the `[mvs_profile_edit]` shortcode only.
 
@@ -293,7 +292,6 @@ All registered in `Shortcodes\Shortcodes` (Free):
 | `[mvs_profile_edit]` | Inline profile editing form |
 | `[mvs_documents]` | A document drive listing (renders through Pro's Documents engine) |
 | `[mvs_explore_feed]` | Explore feed with search, tags and pagination |
-| `[mvs_lock_overlay]` | Paywall overlay on gated media |
 | `[mvs_member_photos]` | A member's photos |
 | `[mvs_pdf_viewer]` | Inline PDF viewer |
 | `[mvs_usage_history]` | The member's storage/usage history |

@@ -324,33 +324,18 @@ class Shortcodes {
 	}
 
 	/**
-	 * Render the [mvs_lock_overlay] shortcode.
+	 * The retired [mvs_lock_overlay] shortcode renders nothing.
 	 *
-	 * Usage: [mvs_lock_overlay id="123" blur="20" overlay_opacity="60" unlock_label="Restricted Content"]
+	 * MediaVerse no longer locks media behind rules (2.6.0). The shortcode stays
+	 * registered so pages that still contain it show nothing, rather than the
+	 * raw shortcode text or the media it used to cover.
 	 *
-	 * @param array|string $atts Shortcode attributes.
-	 * @return string
+	 * @deprecated 2.6.0
+	 *
+	 * @return string Always empty.
 	 */
-	public function render_lock_overlay( $atts ): string {
-		$atts = shortcode_atts(
-			array(
-				'id'              => 0,
-				'blur'            => 20,
-				'overlay_opacity' => 60,
-				'unlock_label'    => '',
-			),
-			$atts,
-			'mvs_lock_overlay'
-		);
-
-		$block_attrs = array(
-			'mediaId'        => absint( $atts['id'] ),
-			'blurAmount'     => absint( $atts['blur'] ),
-			'overlayOpacity' => absint( $atts['overlay_opacity'] ),
-			'unlockLabel'    => sanitize_text_field( $atts['unlock_label'] ),
-		);
-
-		return $this->render_block_template( 'lock-overlay', $block_attrs );
+	public function render_lock_overlay(): string {
+		return '';
 	}
 
 	/**

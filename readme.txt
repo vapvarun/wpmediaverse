@@ -106,7 +106,6 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 * `[mvs_explore_feed]` - Explore feed
 * `[mvs_member_photos]` - One member's photos
 * `[mvs_pdf_viewer id="789"]` - PDF viewer
-* `[mvs_lock_overlay]` - Locked-media overlay
 * `[mvs_usage_history]` - Member usage history
 
 == Screenshots ==

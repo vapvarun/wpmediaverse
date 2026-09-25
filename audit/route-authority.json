@@ -76,21 +76,9 @@
       "object_id": true,
       "writes": true
     },
-    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)": {
-      "audience": "admin",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
-      "object_id": true,
-      "writes": true
-    },
     "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/reactions": {
       "audience": "guarded",
       "permission_callback": "WPMediaVerse\\REST\\Controller\\ReactionController::create_item_permissions_check",
-      "object_id": true,
-      "writes": true
-    },
-    "DELETE /mvs/v1/media/(?P<media_id>[\\d]+)/rules/(?P<rule_id>[\\d]+)": {
-      "audience": "admin",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
       "object_id": true,
       "writes": true
     },
@@ -129,12 +117,6 @@
       "permission_callback": "Closure",
       "object_id": true,
       "writes": true
-    },
-    "GET /mvs/v1/access/options": {
-      "audience": "guarded",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::authenticated_check",
-      "object_id": false,
-      "writes": false
     },
     "GET /mvs/v1/ai/usage": {
       "audience": "admin",
@@ -274,12 +256,6 @@
       "object_id": false,
       "writes": false
     },
-    "GET /mvs/v1/me/grants": {
-      "audience": "guarded",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::authenticated_check",
-      "object_id": false,
-      "writes": false
-    },
     "GET /mvs/v1/me/interests": {
       "audience": "member",
       "permission_callback": "WPMediaVerse\\REST\\Controller\\InterestsController::logged_in_check",
@@ -385,12 +361,6 @@
       "writes": false,
       "reason": "Aggregate reaction counts on a public item only - {media_id, counts per type, total, user_reaction:null, reacted_at:null} - no reactor identities for a signed-out caller. A members-only or private item answers 404 mvs_not_found, as does an unknown id. Verified signed out on 2026-09-20 by dispatching the route with wp_set_current_user(0) + rest_do_request against public / members-only / private fixtures.",
       "probe": "media"
-    },
-    "GET /mvs/v1/media/(?P<media_id>[\\d]+)/rules": {
-      "audience": "admin",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
-      "object_id": true,
-      "writes": false
     },
     "GET /mvs/v1/media/(?P<media_id>[\\d]+)/signed-url": {
       "audience": "guarded",
@@ -672,21 +642,9 @@
       "object_id": true,
       "writes": true
     },
-    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/grant": {
-      "audience": "admin",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
-      "object_id": true,
-      "writes": true
-    },
     "POST /mvs/v1/media/(?P<media_id>[\\d]+)/reactions": {
       "audience": "guarded",
       "permission_callback": "WPMediaVerse\\REST\\Controller\\ReactionController::create_item_permissions_check",
-      "object_id": true,
-      "writes": true
-    },
-    "POST /mvs/v1/media/(?P<media_id>[\\d]+)/rules": {
-      "audience": "admin",
-      "permission_callback": "WPMediaVerse\\REST\\Controller\\AccessController::manage_permissions_check",
       "object_id": true,
       "writes": true
     },

@@ -3,7 +3,7 @@
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-MediaVerse registers **9** Gutenberg blocks under the **MediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
+MediaVerse registers **8** Gutenberg blocks under the **MediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
 
 ![Gutenberg block inserter showing the MediaVerse block category](../images/admin-overview.png)
 
@@ -19,9 +19,8 @@ MediaVerse registers **9** Gutenberg blocks under the **MediaVerse** block categ
 | PDF Viewer | `mvs/pdf-viewer` | Browser-native PDF embed using the `#view=FitH` URL fragment. Configurable height, optional toolbar, five distinct empty states |
 | Media Stats | `mvs/media-stats` | Site-wide or per-user media statistics |
 | Explore Feed | `mvs/explore-feed` | Infinite-scroll explore feed (all public media) with search autocomplete |
-| Lock Overlay | `mvs/lock-overlay` | Paywall/restriction overlay for any block |
 
-*Story Viewer is not in this list of 9. The block source and the server-side `StoryService` that used to ship here were relocated to Pro in 1.9.0 along with a complete Stories feature (create-flow toggle, viewer, REST API, view receipts). See [Stories (Pro)](../pro-features/stories.md).*
+*Story Viewer is not in this list of 8. The block source and the server-side `StoryService` that used to ship here were relocated to Pro in 1.9.0 along with a complete Stories feature (create-flow toggle, viewer, REST API, view receipts). See [Stories (Pro)](../pro-features/stories.md).*
 
 ## Interactivity API Architecture
 
@@ -79,7 +78,7 @@ Grid columns and pagination inherit from **Media > Settings > Display**.
 
 ## Story Viewer (Pro)
 
-Stories moved to Pro in 1.9.0 as a complete feature: the `mvs/pro-stories` block (stories bar + fullscreen viewer), a create-from-the-bar upload tile, `mvs-pro/v1` REST routes, and view receipts. It is a Pro-registered block, not one of the 9 free blocks above. See [Stories (Pro)](../pro-features/stories.md) for the full reference.
+Stories moved to Pro in 1.9.0 as a complete feature: the `mvs/pro-stories` block (stories bar + fullscreen viewer), a create-from-the-bar upload tile, `mvs-pro/v1` REST routes, and view receipts. It is a Pro-registered block, not one of the 8 free blocks above. See [Stories (Pro)](../pro-features/stories.md) for the full reference.
 
 ## Member Photos Block
 
@@ -122,13 +121,9 @@ The Explore Feed block provides an infinite-scroll feed of all public media. It 
 
 **Search autocomplete (1.2.0):** the search input now shows a type-ahead dropdown - top eight title matches, debounced 250 ms, full keyboard navigation (Arrow keys, Enter, Escape) and ARIA combobox semantics for screen reader users.
 
-## Lock Overlay Block
-
-The Lock Overlay block wraps any other block content and shows a restriction message to users who do not meet access criteria. Configure access rules via the **Access Control** REST API.
-
 ## Internal Interactivity modules (not blocks)
 
-Four directories under `src/blocks/` carry a `block.json` but are **not** registered as editor blocks - `BlockRegistrar::BLOCKS` lists the nine above and nothing else. Each is an Interactivity API store that the plugin's templates bind to (enqueued as a script module via `wp_enqueue_script_module()`), which is how a page rendered by a shortcode still gets a fully reactive interface.
+Four directories under `src/blocks/` carry a `block.json` but are **not** registered as editor blocks - `BlockRegistrar::BLOCKS` lists the eight above and nothing else. Each is an Interactivity API store that the plugin's templates bind to (enqueued as a script module via `wp_enqueue_script_module()`), which is how a page rendered by a shortcode still gets a fully reactive interface.
 
 | Block | Purpose |
 |---|---|
@@ -137,6 +132,6 @@ Four directories under `src/blocks/` carry a `block.json` but are **not** regist
 | `mvs/media-social` | Social interactions store for single media and album pages |
 | `mvs/shared-ui` | Shared UI store - toasts, confirm dialogs, tag autocomplete |
 
-Each declares `"supports": { "inserter": false }` in its `block.json`, and none of them is passed to `register_block_type()`, so none appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a `block.json` count of the source tree (13) is not mistaken for a registered-block count (9).
+Each declares `"supports": { "inserter": false }` in its `block.json`, and none of them is passed to `register_block_type()`, so none appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a `block.json` count of the source tree (13) is not mistaken for a registered-block count (8).
 
 > **Do not remove these from a custom build.** The dashboard, explore and single-media templates bind to these stores by name. Dropping one leaves the matching interface inert - buttons render but nothing responds.

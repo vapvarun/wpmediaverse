@@ -403,7 +403,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				// no longer fetches a moov atom per tile.
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
-			// No streamable URL (access-rules locked the file). Show the
+			// No streamable URL (the viewer may not stream the file). Show the
 			// default poster as a still image with the play overlay.
 			$img_alt = $alt;
 			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">'

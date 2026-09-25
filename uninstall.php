@@ -78,7 +78,7 @@ if ( is_readable( $mvs_migrator ) ) {
 }
 
 $mvs_tables = class_exists( '\WPMediaVerse\Core\Migrator' )
-	? \WPMediaVerse\Core\Migrator::tables()
+	? array_merge( \WPMediaVerse\Core\Migrator::tables(), \WPMediaVerse\Core\Migrator::RETIRED_TABLES )
 	// The migrator's own file missing (a broken install being cleaned up) is the
 	// one case where a copy is better than nothing: the tables with member data
 	// in them. Deliberately short, and deliberately not maintained — the list

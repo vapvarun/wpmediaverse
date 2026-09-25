@@ -142,22 +142,6 @@ Embeds the explore archive - infinite-scroll public media feed with filter chips
 | `filters` | `true` | Show the filter chips. |
 | `search` | `true` | Show the search input with autocomplete. |
 
-## [mvs_lock_overlay]
-
-Renders a privacy lock overlay for a single media item. If the current user has access, the overlay falls through and renders the player or image inline. If they do not, the overlay shows the configured restriction message.
-
-```
-[mvs_lock_overlay id="456"]
-[mvs_lock_overlay id="456" blur="20" overlay_opacity="60" unlock_label="Restricted Content"]
-```
-
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `id` | (required) | Media post ID to evaluate access against. |
-| `blur` | `20` | Blur amount applied to the locked preview. |
-| `overlay_opacity` | `60` | Overlay opacity (0–100). |
-| `unlock_label` | (empty) | Custom restriction label. |
-
 ## [mvs_member_photos]
 
 Renders a member's media grid. Auto-resolves the user - explicit `user_id` attribute first, then the BuddyPress displayed user, then the post author, then the current user - so the same shortcode works on profile pages, member-specific landing pages, and author archives.
@@ -300,3 +284,7 @@ Use hyphens in shortcode attributes (`padding-desktop`); they are converted to t
 | `[mvs_pro_dribbble_feed]` | Dribbble-style cards with stats |
 
 These accept the same presentation attributes as the Compete shortcodes.
+
+## Retired shortcodes
+
+`[mvs_lock_overlay]` was retired in 2.6.0 and now outputs nothing.

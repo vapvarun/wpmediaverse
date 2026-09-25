@@ -14,7 +14,15 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 37;
+	const CURRENT_VERSION = 38;
+
+	/**
+	 * Tables older versions created that no current version does. Uninstall
+	 * drops them too, for a site deleted before its upgrade ran.
+	 *
+	 * @since 2.6.0
+	 */
+	const RETIRED_TABLES = array( 'mvs_access_rules' );
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -69,7 +77,6 @@ class Migrator {
 	public static function tables(): array {
 		return array(
 			'mvs_access_grants',
-			'mvs_access_rules',
 			'mvs_activity',
 			'mvs_album_items',
 			'mvs_blocks',
@@ -304,22 +311,6 @@ class Migrator {
 				shares bigint(20) unsigned NOT NULL DEFAULT 0,
 				updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (media_id)
-			) {$charset_collate};"
-		);
-
-		// 5. Access rules.
-		dbDelta(
-			"CREATE TABLE {$prefix}mvs_access_rules (
-				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-				media_id bigint(20) unsigned NOT NULL,
-				rule_type varchar(50) NOT NULL,
-				rule_value text NOT NULL,
-				price decimal(10,2) DEFAULT NULL,
-				currency varchar(3) DEFAULT NULL,
-				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				PRIMARY KEY  (id),
-				KEY media_id (media_id),
-				KEY rule_type (rule_type)
 			) {$charset_collate};"
 		);
 
@@ -2507,5 +2498,56 @@ class Migrator {
 			}
 			delete_option( 'mvs_ai_usage' );
 		}
+	}
+
+	/**
+	 * Migration v38 - remove per-media access rules (2.6.0).
+	 *
+	 * MediaVerse is not a membership plugin: privacy plus sharing with people
+	 * or a group is the whole access model, and the rules (role, capability,
+	 * membership, code, price) and the Lock Overlay block are gone.
+	 *
+	 * Rules could lock an item that was otherwise public, so dropping them
+	 * alone would publish it. Every item that had a rule is first set to
+	 * private (only the owner and moderators), which is never broader than
+	 * what the rules allowed; the owner can loosen it. `mvs_access_grants`
+	 * stays: document sharing reads and writes it.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_38(): void {
+		global $wpdb;
+
+		$rules = $wpdb->prefix . 'mvs_access_rules';
+
+		// A site that never had the table reads no rows here.
+		$suppressed = $wpdb->suppress_errors();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$locked = array_map( 'intval', (array) $wpdb->get_col( "SELECT DISTINCT media_id FROM {$rules}" ) );
+		$wpdb->suppress_errors( $suppressed );
+		$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$index  = $wpdb->prefix . 'mvs_media_index';
+
+		foreach ( $locked as $media_id ) {
+			if ( $media_id <= 0 ) {
+				continue;
+			}
+			$privacy = (string) $repo->get_raw( $media_id, 'privacy' );
+			if ( in_array( $privacy, array( 'private', 'dm' ), true ) ) {
+				continue;
+			}
+			if ( '' !== (string) $repo->get_raw( $media_id, 'media_type' ) ) {
+				// Media: through the repository so the privacy-change hook runs
+				// (a public cloud copy is brought back to local storage).
+				$repo->set( $media_id, 'privacy', 'private' );
+			} else {
+				// An album or collection keeps its privacy on a type-less index row.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update( $index, array( 'privacy' => 'private' ), array( 'media_id' => $media_id ) );
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$wpdb->query( "DROP TABLE IF EXISTS {$rules}" );
 	}
 }

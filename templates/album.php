@@ -321,7 +321,6 @@ $mvs_archive_url = home_url( '/media/' );
 					// Batch index + all meta for the page in 2 queries so each tile renders from the request cache. (1.7.0)
 					$mvs_page_ids = array_map( 'intval', array_column( $items, 'media_id' ) );
 					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
-					\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 				?>
 				<?php
 				// Same emitter Explore and the media-grid block use, so Default

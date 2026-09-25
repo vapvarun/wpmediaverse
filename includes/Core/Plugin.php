@@ -35,7 +35,6 @@ use WPMediaVerse\REST\Controller\StatsController;
 use WPMediaVerse\REST\Controller\AdminController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
-use WPMediaVerse\REST\Controller\AccessController;
 use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Services\WatermarkService;
@@ -56,7 +55,6 @@ use WPMediaVerse\Social\FavoriteService;
 use WPMediaVerse\Social\MentionService;
 use WPMediaVerse\Social\ShareService;
 use WPMediaVerse\Services\StatsService;
-use WPMediaVerse\Services\AccessRulesService;
 use WPMediaVerse\Integrations\BuddyPress\BuddyPressManager;
 use WPMediaVerse\Integrations\WebhookService;
 use WPMediaVerse\Services\CacheService;
@@ -364,10 +362,6 @@ class Plugin {
 			6,
 			3
 		);
-
-		// Access rules privacy filter (priority 20 — after default privacy at 10).
-		$access_rules = self::$container->get( 'access_rules' );
-		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
 		// NOTE: the dashboard's Documents tab is no longer registered here. It
 		// began as a registry LINK out to the documents page, and became a real
@@ -752,16 +746,9 @@ class Plugin {
 		);
 
 		self::$container->register(
-			'access_rules',
-			function () {
-				return new AccessRulesService();
-			}
-		);
-
-		self::$container->register(
 			'signed_urls',
 			function ( ServiceContainer $c ) {
-				return new SignedUrlService( $c->get( 'access_rules' ), $c->get( 'privacy' ) );
+				return new SignedUrlService( $c->get( 'privacy' ) );
 			}
 		);
 
@@ -1010,7 +997,6 @@ class Plugin {
 		$collections  = self::$container->get( 'collections' );
 		$moderation   = self::$container->get( 'moderation' );
 		$ai           = self::$container->get( 'ai' );
-		$access_rules = self::$container->get( 'access_rules' );
 		$signed_urls  = self::$container->get( 'signed_urls' );
 
 		$follows       = self::$container->get( 'follows' );
@@ -1033,7 +1019,6 @@ class Plugin {
 			new StatsController( $stats, $privacy ),
 			new TagController(),
 			new ModerationController( $moderation, $ai ),
-			new AccessController( $access_rules ),
 			new SignedUrlController( $signed_urls, $privacy ),
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),

@@ -113,7 +113,6 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 				<?php
 				$mvs_ids = array_map( 'intval', $items );
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_ids );
-				\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_ids );
 				/* Batch index+meta for the page (1.7.0). */ $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $mvs_ids );
 				?>
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>

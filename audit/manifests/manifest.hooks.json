@@ -1,65 +1,6 @@
 {
   "hooks_fired": [
     {
-      "name": "mvs_access_granted",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $grant_id",
-        "int $media_id",
-        "int $user_id",
-        "string $source"
-      ],
-      "where": "includes/Services/AccessRulesService.php:451",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_revoked",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/Services/AccessRulesService.php:487",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_created",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $rule_id",
-        "int $media_id",
-        "string $rule_type",
-        "mixed $rule_value"
-      ],
-      "where": "includes/Services/AccessRulesService.php:106",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_deleted",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $rule_id",
-        "int $media_id",
-        "string $rule_type"
-      ],
-      "where": "includes/Services/AccessRulesService.php:185",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_types_ui",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $rule_types"
-      ],
-      "where": "includes/Services/AccessRulesService.php:280",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_account_deletion_cancelled",
       "type": "action",
       "args_count": 1,

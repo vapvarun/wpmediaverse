@@ -389,7 +389,6 @@ class MediaController extends WP_REST_Controller {
 			}
 			$viewer = get_current_user_id();
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
-			\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $ids );
 			self::prime_viewer_state( $ids, $viewer );
 			$items = array();
 			foreach ( $ids as $mid ) {
@@ -679,11 +678,10 @@ class MediaController extends WP_REST_Controller {
 		// for the whole page BEFORE the per-item prepare loop below, mirroring
 		// the template grids (explore.php/album.php/collection.php) since
 		// 1.7.0. Without this, prepare_item_for_response() -> get_all() and
-		// -> sign_file_url() -> can_view() -> has_active_rules() each fire one
+		// -> sign_file_url() -> can_view() each fire one
 		// query per item (this was the REST-path gap; templates were fixed).
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->prefetch( $int_ids );
-		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_ids );
 
 		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
 		// so the per-item prepare below stays query-bounded at any list size.
@@ -788,7 +786,6 @@ class MediaController extends WP_REST_Controller {
 		$int_group_ids = array_map( 'intval', $group_media_ids );
 		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->prefetch( $int_group_ids );
-		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_group_ids );
 
 		// Per member, not just the entry point: one private photo inside an
 		// otherwise public gallery used to come back with the rest.

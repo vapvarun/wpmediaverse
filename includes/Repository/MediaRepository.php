@@ -48,7 +48,6 @@ class MediaRepository implements MediaRepositoryInterface {
 		'mvs_album_items',
 		'mvs_notifications',
 		'mvs_activity',
-		'mvs_access_rules',
 		'mvs_access_grants',
 		'mvs_media_spaces',
 	);

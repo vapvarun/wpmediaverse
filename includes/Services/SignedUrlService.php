@@ -35,13 +35,6 @@ class SignedUrlService {
 	const PARAM_SIZE      = 'mvs_size';
 
 	/**
-	 * Access rules service.
-	 *
-	 * @var AccessRulesService
-	 */
-	private $access_rules;
-
-	/**
 	 * Privacy service.
 	 *
 	 * @var PrivacyService
@@ -51,12 +44,10 @@ class SignedUrlService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AccessRulesService $access_rules Access rules service.
-	 * @param PrivacyService     $privacy      Privacy service.
+	 * @param PrivacyService $privacy Privacy service.
 	 */
-	public function __construct( AccessRulesService $access_rules, PrivacyService $privacy ) {
-		$this->access_rules = $access_rules;
-		$this->privacy      = $privacy;
+	public function __construct( PrivacyService $privacy ) {
+		$this->privacy = $privacy;
 	}
 
 	/**
@@ -738,18 +729,6 @@ class SignedUrlService {
 	}
 
 	/**
-	 * Check if a media item requires signed URLs.
-	 *
-	 * Media with active access rules should use signed URLs.
-	 *
-	 * @param int $media_id Media post ID.
-	 * @return bool
-	 */
-	public function requires_signed_url( int $media_id ): bool {
-		return $this->access_rules->has_active_rules( $media_id );
-	}
-
-	/**
 	 * Direct CDN URL for a public media's size-specific thumbnail, if its file
 	 * lives on cloud.
 	 *
@@ -949,11 +928,7 @@ class SignedUrlService {
 		}
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		if ( 'public' !== (string) $repo->get_raw( $media_id, 'privacy' ) ) {
-			return false;
-		}
-
-		return ! $this->access_rules->has_active_rules( $media_id );
+		return 'public' === (string) $repo->get_raw( $media_id, 'privacy' );
 	}
 
 	/**

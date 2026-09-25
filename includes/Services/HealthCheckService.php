@@ -85,7 +85,6 @@ class HealthCheckService {
 			'mvs_favorites',
 			'mvs_media_views',
 			'mvs_media_stats',
-			'mvs_access_rules',
 			'mvs_access_grants',
 			'mvs_mentions',
 			'mvs_album_items',

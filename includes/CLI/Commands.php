@@ -238,9 +238,23 @@ class Commands {
 	 * @subcommand cleanup-expired
 	 */
 	public function cleanup_expired( $args, $assoc_args ) {
-		$batch_size   = (int) Utils\get_flag_value( $assoc_args, 'batch-size', 100 );
-		$access_rules = \WPMediaVerse\Core\Plugin::container()->get( 'access_rules' );
-		$cleaned      = $access_rules->cleanup_expired( $batch_size );
+		global $wpdb;
+		$batch_size = (int) Utils\get_flag_value( $assoc_args, 'batch-size', 100 );
+		$now        = current_time( 'mysql', true );
+
+		// Share grants (document sharing) that have passed their expiry are
+		// marked revoked. Reads already ignore them; this keeps the table tidy.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$cleaned = (int) $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_access_grants SET revoked_at = %s
+				WHERE revoked_at IS NULL AND expires_at IS NOT NULL AND expires_at <= %s
+				LIMIT %d",
+				$now,
+				$now,
+				$batch_size
+			)
+		);
 		WP_CLI::success( "Cleaned up {$cleaned} expired access grants." );
 	}
 

@@ -46,11 +46,6 @@
       "file": "includes/Core/Migrator.php:289"
     },
     {
-      "name": "{prefix}mvs_access_rules",
-      "purpose": "Per-media access control rules",
-      "file": "includes/Core/Migrator.php:303"
-    },
-    {
       "name": "{prefix}mvs_access_grants",
       "purpose": "Granted access tokens",
       "file": "includes/Core/Migrator.php:319"
