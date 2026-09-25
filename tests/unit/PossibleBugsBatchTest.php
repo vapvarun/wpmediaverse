@@ -75,18 +75,22 @@ class PossibleBugsBatchTest extends WP_UnitTestCase {
 	}
 
 	public function test_my_media_lists_the_owners_held_items(): void {
-		$held = $this->media( array( 'moderation_status' => 'flagged' ) );
+		$held     = $this->media( array( 'moderation_status' => 'flagged' ) );
+		$rejected = $this->media( array( 'moderation_status' => 'rejected' ) );
 		$this->media();
 
 		wp_set_current_user( $this->owner );
 		$res = rest_do_request( new WP_REST_Request( 'GET', '/mvs/v1/me/media' ) );
 		$ids = array_map( 'intval', wp_list_pluck( $res->get_data(), 'id' ) );
 		$this->assertContains( $held, $ids, 'The owner could not see their own item held for review.' );
+		$this->assertContains( $rejected, $ids, 'The owner could not see their own rejected item (counted but not listed).' );
 		$this->assertSame( count( $ids ), (int) $res->get_headers()['X-WP-Total'], 'The count and the list disagree.' );
 
 		wp_set_current_user( self::factory()->user->create() );
 		$req = new WP_REST_Request( 'GET', '/mvs/v1/media' );
 		$req->set_param( 'author', $this->owner );
-		$this->assertNotContains( $held, array_map( 'intval', wp_list_pluck( rest_do_request( $req )->get_data(), 'id' ) ), 'Someone else saw an item held for review.' );
+		$others = array_map( 'intval', wp_list_pluck( rest_do_request( $req )->get_data(), 'id' ) );
+		$this->assertNotContains( $held, $others, 'Someone else saw an item held for review.' );
+		$this->assertNotContains( $rejected, $others, 'Someone else saw a rejected item.' );
 	}
 }

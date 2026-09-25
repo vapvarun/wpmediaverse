@@ -902,6 +902,7 @@ wp_interactivity_state(
 						<div class="mvs-dashboard-card-meta">
 							<span class="mvs-privacy-badge" data-wp-text="state.itemPrivacy"></span>
 							<span class="mvs-review-badge" data-wp-bind--hidden="!context.item.underReview" hidden><?php esc_html_e( 'Under review', 'wpmediaverse' ); ?></span>
+							<span class="mvs-review-badge" data-wp-bind--hidden="!context.item.notApproved" hidden><?php esc_html_e( 'Not approved', 'wpmediaverse' ); ?></span>
 						</div>
 						<?php // can_edit / can_delete come from MediaController and mirror what the REST write gates enforce, so a revoked permission removes the control instead of handing out a button that 403s. ?>
 						<div class="mvs-dashboard-card-actions">

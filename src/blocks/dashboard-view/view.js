@@ -1011,6 +1011,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const data = ( res.data || [] ).map( ( item ) => ( {
 					...item,
 					underReview: [ 'flagged', 'pending' ].includes( item.moderation_status ),
+					notApproved: 'rejected' === item.moderation_status,
 				} ) );
 
 				if ( page === 1 ) {
