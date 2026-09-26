@@ -80,8 +80,11 @@ class TransactionService {
 				'delta'         => $delta,
 				'balance_after' => $balance_after,
 				'reason'        => substr( $reason, 0, 100 ),
+				// UTC from PHP, never the column DEFAULT: MySQL fills that in the
+				// server's zone (Basecamp 10343134036).
+				'created_at'    => current_time( 'mysql', true ),
 			),
-			array( '%d', '%s', '%d', '%d', '%s' )
+			array( '%d', '%s', '%d', '%d', '%s', '%s' )
 		);
 
 		return $ok ? (int) $wpdb->insert_id : 0;

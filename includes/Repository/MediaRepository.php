@@ -1149,7 +1149,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		);
 
 		if ( isset( $days[ $window ] ) ) {
-			$cond .= $wpdb->prepare( ' AND i.created_at >= DATE_SUB( NOW(), INTERVAL %d DAY )', $days[ $window ] );
+			$cond .= $wpdb->prepare( ' AND i.created_at >= DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d DAY )', $days[ $window ] );
 		}
 
 		return $cond;
@@ -3455,7 +3455,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$stats = $wpdb->prefix . 'mvs_media_stats';
 
 		$score_expr = 'trending' === $orderby
-			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5))'
+			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, UTC_TIMESTAMP()), 1), 1.5))'
 			: 'COALESCE(s.views, 0)';
 
 		$cache_cap    = 300;
@@ -5624,7 +5624,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)",
 				$days_old
 			)
 		);

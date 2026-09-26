@@ -209,7 +209,7 @@ class Commands {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$count = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)",
 					$days
 				)
 			);

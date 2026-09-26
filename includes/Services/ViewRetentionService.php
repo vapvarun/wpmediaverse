@@ -40,7 +40,7 @@ class ViewRetentionService {
 
 	/**
 	 * Daily cron callback. Reads `mvs_view_retention_days`; deletes rows
-	 * older than `created_at < NOW() - INTERVAL N DAY` from
+	 * older than `created_at < UTC_TIMESTAMP() - INTERVAL N DAY` from
 	 * `mvs_media_views`. Aggregates in `mvs_media_stats` are unaffected —
 	 * only the raw event log is trimmed.
 	 *

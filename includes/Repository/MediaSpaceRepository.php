@@ -51,7 +51,7 @@ class MediaSpaceRepository {
 				$media_id,
 				$space_id,
 				max( 0, $added_by ),
-				current_time( 'mysql' )
+				current_time( 'mysql', true )
 			)
 		);
 
