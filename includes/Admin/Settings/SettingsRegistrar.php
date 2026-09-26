@@ -46,7 +46,7 @@ class SettingsRegistrar {
 		( new AppSettingsRegistrar() )->register();
 		$this->register_moderation_settings();
 		$this->register_webhook_settings();
-		$this->register_messaging_settings();
+		( new MessagingSettingsRegistrar() )->register();
 		$this->register_pages_settings();
 		$this->register_undocumented_settings();
 	}
@@ -440,128 +440,6 @@ class SettingsRegistrar {
 		);
 	}
 
-	// -------------------------------------------------------------------------
-	// Messaging settings (DM section on General tab)
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Register Messages settings.
-	 */
-	private function register_messaging_settings(): void {
-		add_settings_section(
-			'mvs_messaging',
-			__( 'Messages', 'wpmediaverse' ),
-			'__return_null',
-			SettingsPage::PAGE_SLUG . '-social'
-		);
-
-		// DM access level.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_social',
-			'mvs_dm_access',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_dm_access' ),
-				'default'           => 'everyone',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_dm_access',
-			__( 'Who can send messages', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-social',
-			'mvs_messaging',
-			array(
-				'option'      => 'mvs_dm_access',
-				'choices'     => array(
-					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
-					'followers' => __( 'Followers only (others go to Requests)', 'wpmediaverse' ),
-					'mutual'    => __( 'Mutual followers only', 'wpmediaverse' ),
-					'nobody'    => __( 'Nobody (messages off)', 'wpmediaverse' ),
-				),
-				'description' => __( 'Who may start a conversation with another member.', 'wpmediaverse' ),
-			)
-		);
-
-		// Min account age.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_social',
-			'mvs_dm_min_age',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-				'default'           => 0,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_dm_min_age',
-			__( 'Minimum Account Age (days)', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-social',
-			'mvs_messaging',
-			array(
-				'option'      => 'mvs_dm_min_age',
-				'description' => __( 'Accounts younger than this cannot send messages. 0 turns this off.', 'wpmediaverse' ),
-			)
-		);
-
-		// Chat-panel visibility — controls where the slide-out chat icon
-		// appears for logged-in users. Defaults to 'everywhere' to preserve
-		// 1.1.x behavior; sites that want a quieter chrome can scope it.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_social',
-			'mvs_chat_panel_visibility',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_panel_visibility' ),
-				'default'           => 'everywhere',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_chat_panel_visibility',
-			__( 'Chat Panel Visibility', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-social',
-			'mvs_messaging',
-			array(
-				'option'      => 'mvs_chat_panel_visibility',
-				'choices'     => array(
-					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
-					'mvs_pages'  => __( 'MediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
-					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
-					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
-				),
-				'description' => __( 'Where the floating chat icon appears for signed-in members.', 'wpmediaverse' ),
-			)
-		);
-
-		// Online status visibility.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_social',
-			'mvs_show_online_status',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_show_online_status' ),
-				'default'           => 'everyone',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_show_online_status',
-			__( 'Online Status Visibility', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-social',
-			'mvs_messaging',
-			array(
-				'option'      => 'mvs_show_online_status',
-				'choices'     => array(
-					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
-					'followers' => __( 'Followers only', 'wpmediaverse' ),
-					'nobody'    => __( 'Nobody', 'wpmediaverse' ),
-				),
-				'description' => __( 'Who can see that a member is online right now.', 'wpmediaverse' ),
-			)
-		);
-	}
 
 	// -------------------------------------------------------------------------
 	// Page assignment settings (on General tab)

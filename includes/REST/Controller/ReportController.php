@@ -232,9 +232,17 @@ class ReportController extends WP_REST_Controller {
 	 */
 	public function report_message( $request ) {
 		$message_id = (int) $request->get_param( 'id' );
-		$messaging  = \WPMediaVerse\Core\Plugin::container()->get( 'messaging' );
-		$preview    = $messaging->get_message_preview( $message_id );
-		$convo_id   = $messaging->get_message_conversation_id( $message_id );
+		$container  = \WPMediaVerse\Core\Plugin::container();
+
+		// Messages turned off: there is nothing live to report, and the route
+		// answers like the rest of messaging (not found).
+		if ( ! $container->has( 'messaging' ) ) {
+			return new WP_Error( 'mvs_messaging_disabled', __( 'Messages are turned off on this site.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$messaging = $container->get( 'messaging' );
+		$preview   = $messaging->get_message_preview( $message_id );
+		$convo_id  = $messaging->get_message_conversation_id( $message_id );
 
 		if ( ! $preview || ! $convo_id || '' === $messaging->get_participant_role( $convo_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Message not found.', 'wpmediaverse' ), array( 'status' => 404 ) );

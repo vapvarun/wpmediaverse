@@ -32,7 +32,19 @@ class NotificationListener {
 	public function init(): void {
 		add_action( 'mvs_message_sent', array( $this, 'on_message_sent' ), 10, 4 );
 
-		// GDPR hooks.
+		$this->init_privacy();
+	}
+
+	/**
+	 * GDPR export and erase of stored messages.
+	 *
+	 * Registered even while Messages is turned off: the conversations are kept,
+	 * so a member can still ask for them or have them erased.
+	 *
+	 * @since 2.6.0
+	 * @return void
+	 */
+	public function init_privacy(): void {
 		add_filter( 'wp_privacy_personal_data_exporters', array( $this, 'register_exporter' ) );
 		add_filter( 'wp_privacy_personal_data_erasers', array( $this, 'register_eraser' ) );
 	}

@@ -244,7 +244,11 @@ class ReportService {
 		if ( 'message' === $type ) {
 			// Moderators see the reported message's text here; there is no admin
 			// link into a private conversation.
-			$preview = \WPMediaVerse\Core\Plugin::container()->get( 'messaging' )->get_message_preview( $id );
+			// Reports outlive the Messages switch: with it off there is no
+			// `messaging` service, but the stored message still has to be read.
+			$container = \WPMediaVerse\Core\Plugin::container();
+			$messaging = $container->has( 'messaging' ) ? $container->get( 'messaging' ) : new \WPMediaVerse\Messaging\MessagingService();
+			$preview   = $messaging->get_message_preview( $id );
 			if ( ! $preview ) {
 				/* translators: %d: message ID. */
 				return array( sprintf( __( 'Message #%d (deleted)', 'wpmediaverse' ), $id ), '', __( 'Message', 'wpmediaverse' ) );

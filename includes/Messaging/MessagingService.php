@@ -291,6 +291,17 @@ class MessagingService {
 	public function find_or_create_conversation( int $user_a, int $user_b, array $args = array() ): array {
 		global $wpdb;
 
+		// Before the lookup: with one user on both sides of the self-join below,
+		// any of their direct conversations matched, so "message myself" opened
+		// a conversation with somebody else.
+		if ( $user_a === $user_b ) {
+			return array(
+				'conversation_id' => 0,
+				'created'         => false,
+				'status'          => 'cannot_message_self',
+			);
+		}
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
@@ -2093,11 +2104,14 @@ class MessagingService {
 		}
 
 		if ( $msg->deleted_for_all ) {
+			// Same keys as a live preview: without sender_id, reporting an unsent
+			// message warned and skipped the "your own message" check.
 			return array(
-				'id'      => (int) $msg->id,
-				'content' => 'This message was deleted',
-				'sender'  => '',
-				'type'    => 'text',
+				'id'        => (int) $msg->id,
+				'content'   => 'This message was deleted',
+				'sender'    => '',
+				'sender_id' => (int) $msg->sender_id,
+				'type'      => 'text',
 			);
 		}
 

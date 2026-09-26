@@ -88,7 +88,7 @@ final class ConfigController extends WP_REST_Controller {
 		$features = (array) apply_filters(
 			'mvs_app_config_features',
 			array(
-				'messaging'        => ! in_array( (string) $dm_access, array( 'nobody', 'disabled', 'none' ), true ),
+				'messaging'        => \WPMediaVerse\Core\Plugin::messaging_enabled() && ! in_array( (string) $dm_access, array( 'nobody', 'disabled', 'none' ), true ),
 				'reactions'        => true,
 				'comments'         => true,
 				'favorites'        => true,

@@ -2396,7 +2396,28 @@ class Plugin {
 	 * Initialize the DM/messaging engine.
 	 */
 	private static function init_messaging(): void {
+		// Turning Messages on or off adds or removes the /messages/ rewrite rule.
+		foreach ( array( 'add_option_', 'update_option_' ) as $prefix ) {
+			add_action(
+				$prefix . \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION,
+				static function () {
+					set_transient( 'mvs_flush_rewrite', true );
+				}
+			);
+		}
+
 		$messaging_service = new \WPMediaVerse\Messaging\MessagingService();
+		$listener          = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
+
+		if ( ! self::messaging_enabled() ) {
+			// Off: the engine never boots, so nothing listens (no routes, panel,
+			// page or `messaging` service - BuddyNext reads that as "no messaging").
+			// Members' stored messages stay exportable and erasable.
+			$listener->init_privacy();
+			add_action( 'admin_bar_menu', array( self::class, 'messages_off_admin_note' ), 100 );
+			return;
+		}
+
 		$transport         = apply_filters(
 			'mvs_messaging_transport',
 			new \WPMediaVerse\Messaging\RestPollingTransport()
@@ -2405,7 +2426,6 @@ class Plugin {
 
 		add_action( 'rest_api_init', array( $controller, 'register_routes' ) );
 
-		$listener = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
 		$listener->init();
 
 		// Register the service in the container for other components.
@@ -3221,6 +3241,57 @@ JS;
 	 */
 	private static function is_bp_page(): bool {
 		return function_exists( 'is_buddypress' ) && is_buddypress();
+	}
+
+	/**
+	 * Whether private messaging is on (Settings > Messages, filterable).
+	 *
+	 * @since 2.6.0
+	 * @return bool
+	 */
+	public static function messaging_enabled(): bool {
+		/**
+		 * Whether private messaging is on for this site.
+		 *
+		 * Defaults to the Settings > Messages switch. Off, the messaging engine
+		 * does not boot at all; stored conversations are kept.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool $enabled Whether messaging is on.
+		 */
+		return (bool) apply_filters(
+			'mvs_messaging_enabled',
+			(bool) get_option( \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION, true )
+		);
+	}
+
+	/**
+	 * Tell an administrator why /messages/ is a 404 while Messages is off.
+	 *
+	 * An admin-bar item, so it reaches only people who can change the setting
+	 * and needs no front-end styles of its own.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param \WP_Admin_Bar $bar Admin bar.
+	 * @return void
+	 */
+	public static function messages_off_admin_note( $bar ): void {
+		global $wp;
+
+		if ( ! is_404() || ! current_user_can( 'manage_options' ) || self::messages_slug() !== trim( (string) ( $wp->request ?? '' ), '/' ) ) {
+			return;
+		}
+
+		$bar->add_node(
+			array(
+				'id'    => 'mvs-messages-off',
+				'title' => esc_html__( 'Messages is turned off', 'wpmediaverse' ),
+				'href'  => admin_url( 'admin.php?page=' . \WPMediaVerse\Admin\Settings\SettingsPage::PAGE_SLUG ) . '#social',
+				'meta'  => array( 'title' => esc_attr__( 'Turn it on in Settings > Messages', 'wpmediaverse' ) ),
+			)
+		);
 	}
 
 	/**

@@ -482,6 +482,9 @@ final class RestGate {
 				return self::conversation_peers( (int) $request->get_param( 'conversation_id' ) );
 
 			case 'message_peers':
+				if ( ! Plugin::container()->has( 'messaging' ) ) {
+					return array();
+				}
 				/** @var \WPMediaVerse\Messaging\MessagingService $messaging */
 				$messaging = Plugin::container()->get( 'messaging' );
 				return self::conversation_peers( $messaging->get_message_conversation_id( $captured ) );
@@ -513,7 +516,7 @@ final class RestGate {
 	 * @return int[]
 	 */
 	private static function conversation_peers( int $conversation_id ): array {
-		if ( $conversation_id <= 0 ) {
+		if ( $conversation_id <= 0 || ! Plugin::container()->has( 'messaging' ) ) {
 			return array();
 		}
 

@@ -40,7 +40,7 @@ $mvs_dm_access    = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
 	get_user_meta( $mvs_profile_id, '_mvs_dm_access', true ),
 	array( 'everyone', 'followers', 'mutual', 'nobody' )
 );
-$mvs_messaging_on = ( 'nobody' !== $mvs_dm_access );
+$mvs_messaging_on = \WPMediaVerse\Core\Plugin::messaging_enabled() && ( 'nobody' !== $mvs_dm_access );
 
 // Member reporting is a Pro feature — POST /users/{id}/report 403s in Free unless
 // this filter is true. Only surface the Report action when it will actually work.
