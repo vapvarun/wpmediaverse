@@ -33,6 +33,35 @@ A folder's privacy cascades to what is inside it, and **it only ever tightens**.
 
 On a large folder the cascade runs in the background rather than in the request, so a folder holding tens of thousands of documents does not stall the page. The folder's own privacy changes first and immediately, so the window while the rest catches up fails closed rather than open.
 
+## Folders and the Trash
+
+Trashing a folder takes **everything inside it** to the trash with it: its subfolders and every document in them. Until the folder is restored, nobody can open, download or find those files, including people they were shared with.
+
+Restoring the folder brings back exactly what it took. A document somebody trashed on its own before the folder went to the trash stays in the trash, so restoring a folder never undoes a separate decision about a file inside it. For the same reason, a document that went to the trash with its folder is not listed on its own in the trash view: it comes back with the folder.
+
+**Names are free while a folder is in the trash.** You can make a new folder called *Contracts* straight after trashing the old one. If the old one is restored later and the name is taken, it comes back as *Contracts (restored)*.
+
+**The trash empties itself.** A folder is deleted permanently, with everything in it, 30 days after it was trashed. Folders that were already in the trash when your site updated to 2.6.0 get their 30 days from the update, not from the day they were trashed. Change the period, or keep the trash forever, with the `mvs_folder_trash_retention_days` filter (return `0` to never purge):
+
+```php
+add_filter( 'mvs_folder_trash_retention_days', fn() => 90 );
+```
+
+There is no setting for this on purpose: one sensible default, and a filter for sites that need something else.
+
+### Who can change a folder
+
+On a member's own drive, the member does everything. On a **space** drive, folders are shared structure:
+
+| Action | Space owner, moderators, site admins | Other space members |
+|---|---|---|
+| Create a folder | Yes | Yes |
+| Rename, move, change privacy, trash | Any folder | Only folders they created that hold nothing anyone else added |
+| Restore from the trash | Any folder | Only folders they trashed themselves |
+| Delete permanently | Any trashed folder | Only folders they trashed themselves |
+
+Adding files to any folder of the space stays open to every member who can upload there.
+
 ## Accepted File Types
 
 Documents are a separate library from media, with their own accepted types and its own size limit. Out of the box: PDF, Word, Excel, PowerPoint, the OpenDocument equivalents, RTF, plain text, Markdown and CSV.
@@ -156,12 +185,15 @@ gives the same result in a classic editor.
 | `GET` | `/mvs-pro/v1/me/shared` | Documents shared with me |
 | `GET` | `/mvs-pro/v1/drives` | Drives this member can reach |
 | `GET`/`POST` | `/mvs-pro/v1/folders` | List or create folders |
-| `POST`/`DELETE` | `/mvs-pro/v1/folders/{id}` | Rename, move or trash a folder |
+| `POST`/`DELETE` | `/mvs-pro/v1/folders/{id}` | Rename, move or trash a folder. `DELETE ...?force=true` permanently deletes a folder that is already in the trash |
+| `POST` | `/mvs-pro/v1/folders/{id}/restore` | Restore a folder and what it took to the trash |
 | `GET`/`POST` | `/mvs-pro/v1/documents/{id}/permissions` | Read or grant access |
 | `POST` | `/mvs-pro/v1/documents/{id}/permissions/link` | Mint a share link |
 | `DELETE` | `/mvs-pro/v1/permissions/{id}` | Withdraw access |
 
 Every route works with an Application Password alone - no cookies, no nonce - so a mobile app can drive the whole feature.
+
+Folder responses tell the client what the viewer may do, so an app never has to work out the rules itself: every folder carries `can_manage` (may rename, move, trash, restore or delete it), and the folder list returns the header `X-MVS-Can-Create-Folder: 1|0`. A trashed folder also carries `trashed_by`, `trashed_at`, `purge_at` (null while the trash is kept forever) and `item_count`.
 
 ## Hooks and Filters
 
@@ -175,5 +207,8 @@ Every route works with an Application Password alone - no cookies, no nonce - so
 | `mvs_document_row_actions` | filter | Add row actions to the admin document list |
 | `mvs_document_admin_panels` | filter | Add panels to the admin document editor |
 | `mvs_document_uploaded` | action | Fires after a document is stored |
+| `mvs_folder_trash_retention_days` | filter | Days a trashed folder is kept before it is deleted permanently. Default 30, `0` keeps it forever |
+| `mvs_folder_before_purge` | action | Fires once before a folder and its contents are permanently deleted, with the folder id and the document ids. Log or back up here |
+| `mvs_document_folder_deleted` | action | Fires after a folder and its contents were permanently deleted |
 
 A setting always wins over the screen it came from: if your site already sets one of these filters, it keeps winning after you upgrade, so upgrading into the settings screen never silently reconfigures a site.

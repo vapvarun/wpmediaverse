@@ -95,6 +95,10 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_dm_allowed_file_types` | filter | Free | 1.0 |
 | `mvs_messaging_poll_intervals` | filter | Free | 1.0 |
 | `mvs_messaging_transport` | filter | Free | 1.0 |
+| `mvs_messaging_enabled` | filter | Free | 2.6.0 |
+| `mvs_folder_trash_retention_days` | filter | Pro | 2.6.0 |
+| `mvs_folder_before_purge` | action | Pro | 2.6.0 |
+| `mvs_document_folder_deleted` | action | Pro | 2.6.0 |
 | `mvs_show_online_status` | filter | Free | 1.0 |
 | `mvs_dm_max_upload_size` | filter | Free | 1.0 |
 | `mvs_settings_sidebar_after` | action | Free | 1.0 |
@@ -716,13 +720,13 @@ These filters back the `GET /app/config` response consumed by the native mobile 
 
 #### `mvs_app_config_features`
 
-Filters the `features` boolean map returned by `GET /app/config`. Free seeds its always-on capabilities plus the messaging gate (derived from `mvs_dm_access`); Pro filters in its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …).
+Filters the `features` boolean map returned by `GET /app/config`. Free seeds its always-on capabilities plus the messaging gate (derived from the Messages switch and `mvs_dm_access`); Pro filters in its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …).
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity` (all `true` except `messaging`, which follows `mvs_dm_access`) |
+| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity` (all `true` except `messaging`, which is `false` when the Messages switch is off or `mvs_dm_access` is `nobody`) |
 
 **Returns:** `array<string,bool>`
 
@@ -1166,6 +1170,25 @@ add_filter( 'mvs_push_should_send', function( bool $should_send, int $user_id, a
 ---
 
 ## 8. Direct Messages
+
+### `mvs_messaging_enabled` **(New in 2.6.0)**
+
+Whether private messaging is on for the site. Defaults to the **Settings > Messages > Messages** switch (`mvs_messaging_enabled` option, on unless the owner turned it off). When it returns `false` the messaging engine does not boot at all: no `mvs/v1` messaging routes, no chat panel or /messages/ page, no Message buttons, no Pro group chat, and no `messaging` service in the container, which is how integrations such as BuddyNext know to hide their own Messages pages. Stored conversations are kept, and WordPress personal-data export and erase for messages stay registered.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$enabled` | bool | Whether messaging is on |
+
+```php
+/**
+ * Keep messaging off on a staging copy whatever the setting says.
+ */
+add_filter( 'mvs_messaging_enabled', function ( bool $enabled ): bool {
+    return 'staging' === wp_get_environment_type() ? false : $enabled;
+} );
+```
+
+The filter is read once per request, early in plugin boot, so hook it from a must-use plugin or your plugin's main file, not from a template.
 
 ### `mvs_can_send_message`
 
@@ -2338,6 +2361,28 @@ add_action( 'mvs_media_privacy_changed', function( int $media_id, string $new_pr
 | `mvs_album_items_added` | action | Media added to an album | `$album_id`, `$actor_id`, `$media_ids`, `$added` (signature changed in 1.2.3) | 1.0 |
 
 > **Stories moved to Pro in 1.9.0.** `mvs_story_created` and `mvs_story_expired` now fire from `WPMediaVersePro\Stories\StoryService` — see [Stories (Pro)](../pro-features/stories.md). The free plugin no longer ships a `StoryService`; the upload block's "Also share as a story" toggle only renders when the `mvs_stories_enabled` option is on, which Pro sets when it registers the feature.
+
+---
+
+### Document folder trash **(Pro, New in 2.6.0)**
+
+| Hook | Type | Description | Parameters |
+|---|---|---|---|
+| `mvs_folder_trash_retention_days` | filter | Days a trashed folder is kept before it and its contents are permanently deleted. `0` keeps the trash forever | `$days` (int), default `30` |
+| `mvs_folder_before_purge` | action | Fires once before a folder, its subfolders and their documents are permanently deleted, by the automatic purge or a force delete | `$folder_id` (int), `$document_ids` (int[]) |
+| `mvs_document_folder_deleted` | action | Fires after the folder and its contents are gone | `$folder_id` (int) |
+
+```php
+// Keep trashed folders for 90 days instead of 30.
+add_filter( 'mvs_folder_trash_retention_days', fn() => 90 );
+
+// Record what a purge is about to remove.
+add_action( 'mvs_folder_before_purge', function ( int $folder_id, array $document_ids ) {
+    error_log( sprintf( 'Purging folder %d with %d documents', $folder_id, count( $document_ids ) ) );
+}, 10, 2 );
+```
+
+The purge is one scheduled job per trashed folder at its expiry (Action Scheduler, WP-Cron as a fallback), not a daily sweep.
 
 ---
 

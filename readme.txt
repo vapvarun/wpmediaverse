@@ -136,6 +136,7 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * New      - A "Who can upload media" role picker on Settings > General, and upload controls hide for members who cannot upload.
 * New      - A Mobile App settings tab for app sign-in, branding, terms and the abuse contact.
 * New      - The member who reported something is notified when a moderator reviews it.
+* New      - A Messages switch in Settings > Messages turns private messaging off everywhere, including integrations built on MediaVerse, and keeps existing conversations.
 * Improve  - Settings show only while their switch is on, and developer settings leave the screen, about 130 controls down to about 55.
 * Improve  - One Layout choice replaces the separate layout settings, and Grid Columns shows only for the grid layout.
 * Improve  - Every list has one sort control, empty lists hide search and sort, and Explore tags sit on one scrolling row.
@@ -144,16 +145,20 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Improve  - Old profile editor and document links open the member's My Media pages, and BuddyPress sites edit names on the community profile.
 * Improve  - Albums and Collections each say what they hold, and settings use plain words throughout.
 * Improve  - Large sites load faster with new indexes, batched reads and paginated lists.
+* Improve  - "Who can send messages: Nobody" now says what it does: no new messages, while existing conversations stay readable.
 * Fix      - Private items now look exactly like missing ones on pages, in the API and in album counts.
 * Fix      - Saving a settings tab no longer resets values that were not on the screen.
 * Fix      - Message times carry an explicit UTC value so every client shows the same clock.
 * Fix      - The + button no longer covers the last controls on a page.
 * Fix      - Search finds exact titles, and merging tags removes the old tag.
+* Fix      - Usage history, space links and device tokens are stored in UTC on hosts whose database or site clock is not UTC, and trending and view retention compare in UTC.
+* Fix      - Starting a conversation with yourself is refused instead of opening one of your other conversations.
+* Fix      - Reporting a message that was unsent no longer logs a warning, and your own messages still cannot be reported.
 * Security - Block style fields no longer accept CSS that could inject into the page.
 * Security - Draft media is no longer returned to signed-out visitors through the API.
 * Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.
 * Dev      - Removed settings keep their saved values and filters, so no site changes behaviour on update.
-* Dev      - New filters mvs_show_favorite_button, mvs_default_media_title, mvs_email_subject, mvs_email_body, mvs_community_profile, mvs_profile_edit_redirect and mvs_show_demo_import, and new action mvs_report_resolved.
+* Dev      - New filters mvs_show_favorite_button, mvs_default_media_title, mvs_email_subject, mvs_email_body, mvs_community_profile, mvs_profile_edit_redirect, mvs_show_demo_import and mvs_messaging_enabled, and new action mvs_report_resolved.
 * Dev      - Uninstall keeps member data unless the owner opts in, and a full removal also deletes media tags, categories and licence options.
 * Compat   - Aligned with MediaVerse Pro 2.6.0. Install both updates together.
 

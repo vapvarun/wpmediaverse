@@ -88,13 +88,14 @@ All four are on the **Mobile App** tab since 2.6.0. App Sign-In moved there from
 
 | Option key | Setting label | Type | Default |
 |---|---|---|---|
+| `mvs_messaging_enabled` | Messages (turn on private messages) | boolean | `true` |
 | `mvs_dm_access` | Who can send messages | string | `everyone` |
 | `mvs_dm_min_age` | Minimum Account Age (days) | integer | `0` |
 | `mvs_chat_panel_visibility` | Chat Panel Visibility | string | `everywhere` |
 | `mvs_show_online_status` | Online Status Visibility | string | `everyone` |
 | `mvs_comment_edit_window` | *(no settings field - filterable)* | integer | `900` (15 minutes) |
 
-`mvs_dm_access` accepts `everyone`, `followers`, `mutual` or `nobody` (shown as "Nobody (messages off)"). This is the only place the word "followers" appears as a setting value - it controls who may open a conversation with a member, and has nothing to do with media privacy.
+`mvs_dm_access` accepts `everyone`, `followers`, `mutual` or `nobody` (shown as "Nobody (no new messages; existing conversations stay readable)"; to switch messaging off entirely, untick `mvs_messaging_enabled`). This is the only place the word "followers" appears as a setting value - it controls who may open a conversation with a member, and has nothing to do with media privacy.
 
 `mvs_comment_edit_window` is the number of seconds after posting during which a member may still edit their own comment.
 

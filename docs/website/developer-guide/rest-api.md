@@ -4,7 +4,7 @@
 
 **Base URL:** `/wp-json/mvs/v1/`
 
-All routes below use the `mvs/v1` namespace (the messaging routes share the same namespace).
+All routes below use the `mvs/v1` namespace (the messaging routes share the same namespace). The messaging routes exist only while **Settings > Messages > Messages** is on; with it off they are not registered and answer WordPress's standard `404 rest_no_route`, so check `features.messaging` in `GET /app/config` first.
 
 **Authentication.** Reads of public data are open. Every write — and every `/me/*` route — requires an authenticated user. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )` and send cookies with `credentials: 'same-origin'`, or use a WordPress Application Password for non-browser clients.
 
@@ -587,7 +587,7 @@ Report a comment. Same `reason` / `details` body as media reports. A comment on 
 
 **Auth:** Authenticated. Rate-limited to 10/min. **(New in 2.6.0)**
 
-Report a message in a conversation the caller is an active participant of. Same body as media reports. A message in any other conversation answers `404 mvs_not_found`; your own message answers `400 mvs_report_own`. Moderators see the message text on the Reports screen.
+Report a message in a conversation the caller is an active participant of. Same body as media reports. A message in any other conversation answers `404 mvs_not_found`; your own message, including one you unsent, answers `400 mvs_report_own`; with Messages turned off it answers `404 mvs_messaging_disabled`. Moderators see the message text on the Reports screen.
 
 ### POST /users/{id}/block
 
@@ -859,7 +859,7 @@ Single call a client makes before theming itself and deciding which feature surf
 }
 ```
 
-`features.messaging` is `false` when `mvs_dm_access` is `nobody`/`disabled`/`none`. Pro extends `features` with its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …) and can populate `accent_color` / `logo_url` / `login_bg_url` / `dark_mode_default` / `layout` from its Mobile App Branding settings.
+`features.messaging` is `false` when the Messages switch is off (`mvs_messaging_enabled`) or `mvs_dm_access` is `nobody`/`disabled`/`none`. Hide the app's Messages tab when it is `false`. Pro extends `features` with its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …) and can populate `accent_color` / `logo_url` / `login_bg_url` / `dark_mode_default` / `layout` from its Mobile App Branding settings.
 
 ### GET /app/interests
 
@@ -1020,7 +1020,7 @@ Start a new conversation.
 | `recipient_id` | Yes | - | User ID to start (or resume) a conversation with |
 | `as_request` | No | `false` | When `true`, force the conversation to open as a pending **message request** (lands in the recipient's Requests tab and must be accepted/declined) instead of an active thread — even if the sender/recipient relationship would otherwise allow a direct thread. Lets a native app open a "message request" flow explicitly through `mvs/v1` alone (1.8.0). |
 
-**Response:** `201 Created` with the new conversation object.
+**Response:** `201 Created` with the new conversation object, or `200` with the existing one when the two members already have a direct conversation. Refusals carry an `error` code and a readable `message`: `403 cannot_message_self` (your own ID), `403 blocked`, `403 dms_disabled`, `403 account_too_new`, `429 rate_limited`, `400 invalid_recipient`.
 
 ### GET /conversations/{id}
 

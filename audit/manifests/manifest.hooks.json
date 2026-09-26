@@ -1935,6 +1935,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_messaging_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php:3264",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-09-26 - Messages master switch."
+    },
+    {
       "name": "mvs_messaging_poll_intervals",
       "type": "filter",
       "args_signature": [],

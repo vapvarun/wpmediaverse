@@ -1515,6 +1515,17 @@
       "controls": "Allow Application-Password login for the mobile app / API clients."
     },
     {
+      "key": "mvs_messaging_enabled",
+      "group": "messaging",
+      "type": "boolean",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/MessagingSettingsRegistrar.php",
+      "controls": "Messages master switch (2.6.0). Off: the messaging engine does not boot (no routes, chat panel, /messages/ page, Message buttons, Pro group chat or `messaging` service); conversations are kept. Filter: mvs_messaging_enabled."
+    },
+    {
       "key": "mvs_chat_panel_visibility",
       "group": "messaging",
       "type": "string",

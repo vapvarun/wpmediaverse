@@ -62,12 +62,14 @@ If a member has restricted who can message them to followers only, your message 
 
 ## For Site Owners
 
-1. Go to **Media > Settings > Social** to configure site-wide DM defaults
-2. Set who can send DMs by default: everyone, followers, mutual followers, or nobody
-3. Set a minimum account age (in days) to prevent new accounts from sending DMs
-4. Users can override their own DM access setting from their account settings
-5. The chat panel appears automatically at the bottom of every page for logged-in users - no shortcode needed
-6. To adjust how often the chat checks for new messages, set the polling interval (default: 3 seconds)
+1. Go to **MediaVerse > Settings > Messages**.
+2. **Messages** turns private messaging on or off for the whole site (on by default). Off, the chat, the /messages/ page, Message buttons, the messaging API and Pro group chat all disappear, and so do the Messages pages of integrations built on MediaVerse, such as BuddyNext. Conversations are kept for when you turn it back on.
+3. **Who can send messages** sets who may start a conversation: everyone, followers, mutual followers, or nobody. Nobody stops new messages while members keep reading the conversations they already have.
+4. A member can make their own setting stricter than the site's (for example, mutual followers only), never looser.
+5. Set a **Minimum Account Age** (in days) to stop brand-new accounts from sending messages.
+6. The chat panel appears automatically for signed-in members, no shortcode needed. **Chat Panel Visibility** limits where it shows. How often the chat checks for new messages is set in code, see Transport below.
+
+Messaging yourself is refused with "You can't send a message to yourself".
 
 ## Database Tables
 

@@ -1083,7 +1083,7 @@ Optional `doc_type` behaves exactly as on upload.
 
 ### POST /documents/{id}/restore
 
-Restore a trashed document.
+Restore a trashed document. Refused with `409 mvs_document_folder_trashed` while the folder it is in is still in the trash: restore the folder, which brings the document back with it.
 
 **Auth:** Owner/Admin. Write-gated.
 
@@ -1157,6 +1157,17 @@ List folders in a drive.
 | `orderby` | string | `name` | One of `name`, `created_at`, `updated_at` |
 | `order` | string | `ASC` | Sort direction |
 
+Every folder in the response carries **`can_manage`** (bool): whether the viewer may rename, move, re-privacy, trash, restore or delete that folder (see *Who can change a folder* below). The response header **`X-MVS-Can-Create-Folder: 1|0`** says whether the viewer may create a folder in this drive. Render controls from these rather than re-deriving the rules.
+
+With `status=trashed` the list holds only the folders the viewer may restore, and each row also carries:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `trashed_at` | string | When it was trashed, UTC |
+| `trashed_by` | int | Who trashed it; `0` for the system (for example a deleted space) |
+| `purge_at` | string\|null | When it will be deleted permanently, UTC ISO-8601; `null` while the trash is kept forever |
+| `item_count` | int | Subfolders plus documents inside |
+
 ---
 
 ### POST /folders
@@ -1185,7 +1196,7 @@ Get a single folder.
 
 Rename, re-parent, or re-privacy a folder.
 
-**Auth:** Owner/Admin. Write-gated.
+**Auth:** A viewer the folder reports `can_manage: true` to. Write-gated.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -1197,17 +1208,30 @@ Rename, re-parent, or re-privacy a folder.
 
 ### DELETE /folders/{id}
 
-Trash a folder.
+Trash a folder, its subfolders and every document in them. The documents are trashed through the normal document trash, so every trash hook fires; on a large folder the first 200 go in the request and the rest in background batches. The folder's name is free again at once.
 
-**Auth:** Owner/Admin. Write-gated.
+With **`force=true`**, permanently delete a folder that is **already in the trash**, with its subfolders, documents and files. Returns `{ "folder_id", "deleted", "queued" }`; `queued: true` means a very large folder is finishing in the background. A live folder is refused with `409 mvs_folder_not_trashed`. `mvs_folder_before_purge` fires first.
+
+**Auth:** `can_manage`. Write-gated.
 
 ---
 
 ### POST /folders/{id}/restore
 
-Restore a trashed folder.
+Restore a trashed folder, the subfolders trashed with it, and the documents it took to the trash. A document trashed on its own beforehand stays in the trash. If a live sibling took the name meanwhile, the folder comes back as `Name (restored)`.
 
-**Auth:** Owner/Admin. Write-gated.
+**Auth:** `can_manage`. Write-gated.
+
+---
+
+### Who can change a folder
+
+| Viewer | Create | Rename / move / privacy / trash | Restore / force delete |
+|---|---|---|---|
+| Drive owner, site admin (`own`) | Yes | Any folder | Any folder |
+| Space moderator (answered by the host, e.g. BuddyNext, through `mvs_document_can_moderate_space`) | Yes | Any folder | Any folder |
+| Other writer on the drive (a space member) | Yes | Folders they created that hold nothing anyone else added | Folders they created and trashed themselves |
+| Reader | No | No | No |
 
 ---
 
