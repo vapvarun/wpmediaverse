@@ -428,7 +428,7 @@
         "int $space_id",
         "int $user_id"
       ],
-      "where": "includes/Documents/SpaceLinkService.php:212",
+      "where": "includes/Documents/PermissionService.php:2130",
       "consumed_by": []
     },
     {
@@ -444,6 +444,17 @@
       "where": "includes/Documents/FolderService.php:352",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_document_folder_deleted",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $folder_id"
+      ],
+      "where": "includes/Documents/FolderService.php:1944",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-09-26 - folder trash (Basecamp 10343724056 / 10343724158)."
     },
     {
       "name": "mvs_document_folder_privacy_cascaded",
@@ -616,6 +627,29 @@
       "args_signature": [],
       "where": "includes/Competitions/CompetitionsScheduler.php:151",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_folder_before_purge",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $folder_id",
+        "int[] $document_ids"
+      ],
+      "where": "includes/Documents/FolderService.php:1907",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-09-26 - folder trash (Basecamp 10343724056 / 10343724158)."
+    },
+    {
+      "name": "mvs_folder_trash_retention_days",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $days"
+      ],
+      "where": "includes/Documents/FolderService.php:1763",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-09-26 - folder trash (Basecamp 10343724056 / 10343724158)."
     },
     {
       "name": "mvs_layout_assets",

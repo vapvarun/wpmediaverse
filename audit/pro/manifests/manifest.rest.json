@@ -697,7 +697,7 @@
         ],
         "handler": "REST\\FolderController::delete_item",
         "permission": "update_item_permissions_check",
-        "purpose": "Trash a folder (2.4.0)",
+        "purpose": "Trash a folder, or with force=true permanently delete a trashed one (2.4.0; force 2.6.0)",
         "file": "includes/REST/FolderController.php:85"
       },
       {

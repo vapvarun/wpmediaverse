@@ -1578,10 +1578,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param int[] $folder_ids Folder ids.
+	 * @param int[]  $folder_ids Folder ids.
+	 * @param string $status     `publish` (default) or `trash`.
 	 * @return array<int, int> folder_id => direct document count.
 	 */
-	public function count_documents_in_folders( array $folder_ids ): array {
+	public function count_documents_in_folders( array $folder_ids, string $status = 'publish' ): array {
 		global $wpdb;
 
 		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ) ) ) );
@@ -1594,7 +1595,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$index        = $wpdb->prefix . 'mvs_media_index';
 		$placeholders = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
-		$params       = array_merge( $type_params, $folder_ids, array( 'publish' ) );
+		$params       = array_merge( $type_params, $folder_ids, array( 'trash' === $status ? 'trash' : 'publish' ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = (array) $wpdb->get_results(
@@ -1614,6 +1615,73 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		return $counts;
+	}
+
+	/**
+	 * Document ids filed in any of a set of folders, in id order.
+	 *
+	 * The row-set behind a folder-level lifecycle step: trashing, restoring or
+	 * purging a folder's contents, and asking whether a folder holds anyone
+	 * else's files. Callers page with `after_id` so a large folder is walked in
+	 * bounded batches, never loaded whole.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $folder_ids Folder ids.
+	 * @param array $args {
+	 *     @type string $status         `publish`, `trash` or `any`. Default `publish`.
+	 *     @type int    $limit          Row cap. Default 200.
+	 *     @type int    $after_id       Keyset cursor. Default 0.
+	 *     @type int    $exclude_author Skip documents this user uploaded. Default 0.
+	 *     @type string $meta_key       Only documents carrying this meta key. Default ''.
+	 * }
+	 * @return int[]
+	 */
+	public function document_ids_in_folders( array $folder_ids, array $args = array() ): array {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ) ) ) );
+
+		if ( ! $folder_ids ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index  = $wpdb->prefix . 'mvs_media_index';
+		$meta   = $wpdb->prefix . 'mvs_media_meta';
+		$where  = array( $type_sql, 'i.folder_id IN ( ' . implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) ) . ' )', 'i.media_id > %d' );
+		$params = array_merge( $type_params, $folder_ids, array( (int) ( $args['after_id'] ?? 0 ) ) );
+		$status = (string) ( $args['status'] ?? 'publish' );
+
+		if ( 'any' !== $status ) {
+			$where[]  = 'i.status = %s';
+			$params[] = 'trash' === $status ? 'trash' : 'publish';
+		}
+
+		if ( ! empty( $args['exclude_author'] ) ) {
+			$where[]  = 'i.post_author <> %d';
+			$params[] = (int) $args['exclude_author'];
+		}
+
+		if ( ! empty( $args['meta_key'] ) ) {
+			$where[]  = "EXISTS ( SELECT 1 FROM {$meta} m WHERE m.media_id = i.media_id AND m.meta_key = %s )";
+			$params[] = (string) $args['meta_key'];
+		}
+
+		$params[] = max( 1, (int) ( $args['limit'] ?? 200 ) );
+
+		// `media_type` inside MediaTypes::in_clause() is unqualified; the index is
+		// the only table in FROM that has it, so it resolves without the alias.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT i.media_id FROM {$index} i WHERE " . implode( ' AND ', $where ) . ' ORDER BY i.media_id ASC LIMIT %d',
+				...$params
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
 	}
 
 	/**
@@ -2230,6 +2298,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		// a way to reorder it — big-site checklist item 5. Both run on indexed
 		// columns, and the sort column comes from a fixed allowlist because a
 		// column name cannot be a prepared parameter.
+		// A trash view hides documents that went to the trash WITH their folder:
+		// they come back when the folder does, and restoring one alone would put
+		// it inside a folder nobody can open.
+		if ( ! empty( $args['exclude_meta'] ) ) {
+			$meta_tbl = $wpdb->prefix . 'mvs_media_meta';
+			$where[]  = "NOT EXISTS ( SELECT 1 FROM {$meta_tbl} xm WHERE xm.media_id = {$wpdb->prefix}mvs_media_index.media_id AND xm.meta_key = %s )";
+			$params[] = (string) $args['exclude_meta'];
+		}
+
 		if ( ! empty( $args['doc_type'] ) ) {
 			list( $mime_sql, $mime_params ) = $this->document_type_clause( (string) $args['doc_type'] );
 
