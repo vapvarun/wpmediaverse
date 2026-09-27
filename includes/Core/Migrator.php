@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 39;
+	const CURRENT_VERSION = 40;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -2525,8 +2525,8 @@ class Migrator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$locked = array_map( 'intval', (array) $wpdb->get_col( "SELECT DISTINCT media_id FROM {$rules}" ) );
 		$wpdb->suppress_errors( $suppressed );
-		$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$index  = $wpdb->prefix . 'mvs_media_index';
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$index = $wpdb->prefix . 'mvs_media_index';
 
 		foreach ( $locked as $media_id ) {
 			if ( $media_id <= 0 ) {
@@ -2568,5 +2568,56 @@ class Migrator {
 		foreach ( \WPMediaVerse\Services\EmailService::TYPES as $option ) {
 			add_option( $option, $fresh ? '1' : '0' );
 		}
+	}
+
+	/**
+	 * Migration v40 - one album per photo, and each photo's own privacy (2.6.0).
+	 *
+	 * A photo in an album now shows with the album's privacy in both directions,
+	 * and belongs to one album (Basecamp 10264373450). This puts existing data in
+	 * that shape without changing what anyone sees:
+	 *
+	 *  1. membership rows for albums that no longer exist are removed;
+	 *  2. a photo in several albums keeps only the one it joined last;
+	 *  3. every photo's album_id pointer is set from its membership (it had
+	 *     drifted: 0, or a deleted album, on real data);
+	 *  4. every photo in an album records its CURRENT privacy as its own, so
+	 *     leaving the album restores it.
+	 *
+	 * Nothing's privacy changes here. The old clamp only tightened, so a photo a
+	 * member set private in a public album is still private after the update;
+	 * the album rule applies the next time that album or its photos change.
+	 * An update must not publish what the owner did not ask to publish.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_40(): void {
+		global $wpdb;
+
+		$items = $wpdb->prefix . 'mvs_album_items';
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "DELETE ai FROM {$items} ai LEFT JOIN {$wpdb->posts} p ON p.ID = ai.album_id AND p.post_type = 'mvs_album' WHERE p.ID IS NULL" );
+
+		$wpdb->query(
+			"DELETE ai FROM {$items} ai
+			 JOIN {$items} newer ON newer.media_id = ai.media_id
+			  AND ( newer.added_at > ai.added_at OR ( newer.added_at = ai.added_at AND newer.id > ai.id ) )"
+		);
+
+		$wpdb->query(
+			"UPDATE {$index} m LEFT JOIN {$items} ai ON ai.media_id = m.media_id
+			 SET m.album_id = COALESCE( ai.album_id, 0 )
+			 WHERE m.album_id <> COALESCE( ai.album_id, 0 )"
+		);
+
+		$wpdb->query(
+			"INSERT IGNORE INTO {$meta} ( media_id, meta_key, meta_value )
+			 SELECT ai.media_id, 'own_privacy', IF( m.privacy = '', 'public', m.privacy )
+			 FROM {$items} ai JOIN {$index} m ON m.media_id = ai.media_id"
+		);
+		// phpcs:enable
 	}
 }

@@ -558,8 +558,8 @@ class MediaController extends WP_REST_Controller {
 		if ( '' !== $search ) {
 			// One search rule for Explore and the admin list (MediaRepository::search_clause()).
 			list( $mvs_search_sql, $mvs_search_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->search_clause( $search );
-			$where[] = $mvs_search_sql;
-			$params  = array_merge( $params, $mvs_search_params );
+			$where[]                                    = $mvs_search_sql;
+			$params                                     = array_merge( $params, $mvs_search_params );
 		}
 
 		// Scope filter. The feed blocks (Instagram/Dribbble/Flickr/Pinterest)
@@ -1081,8 +1081,20 @@ class MediaController extends WP_REST_Controller {
 				}
 			}
 
-			$update_data['privacy'] = $clean_privacy;
-			$privacy_changed        = true;
+			// A photo in an album shows with the album's privacy; the member's
+			// choice is kept for when it leaves the album (Basecamp 10264373450).
+			// The edit screens send the CURRENT level with every save - for a
+			// photo in an album that is the album's - so an unchanged value is
+			// not a choice and must not overwrite the one set aside.
+			$current_privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+			if ( $clean_privacy === $current_privacy ) {
+				$clean_privacy = '';
+			}
+
+			if ( '' !== $clean_privacy && ! \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->keep_own_privacy_if_in_album( $media_id, $clean_privacy ) ) {
+				$update_data['privacy'] = $clean_privacy;
+				$privacy_changed        = true;
+			}
 		}
 
 		// JSON body inspection — used by the tags/categories block further
@@ -1756,8 +1768,8 @@ class MediaController extends WP_REST_Controller {
 				// renders a number rather than treating this as a failure.
 				return rest_ensure_response(
 					array(
-						'success' => true,
-						'counted' => false,
+						'success'   => true,
+						'counted'   => false,
 						// Downloads, not views. This dedup block was copied from
 						// record_view() and kept its event type and column, so a
 						// download went unrecorded whenever the same visitor had
@@ -2044,7 +2056,7 @@ class MediaController extends WP_REST_Controller {
 		foreach ( $media_ids as $mid ) {
 			$mid = (int) $mid;
 			if ( $mid > 0 && ! array_key_exists( $mid, self::$stats_map ) ) {
-				$ids[ $mid ]              = true;
+				$ids[ $mid ]             = true;
 				self::$stats_map[ $mid ] = null;
 			}
 		}
@@ -2102,6 +2114,36 @@ class MediaController extends WP_REST_Controller {
 
 		self::$viewer_fav_set      = Plugin::container()->get( 'favorites' )->get_favorited_set( $viewer_id, $media_ids );
 		self::$viewer_reaction_map = Plugin::container()->get( 'reactions' )->get_user_reactions_map( $viewer_id, $media_ids );
+	}
+
+	/**
+	 * The album a photo is in, for the response: id, title and privacy.
+	 *
+	 * Built from the photo's album_id (loaded with the row) and the post cache,
+	 * so a listing adds no membership query per photo.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int         $album_id    Photo's album pointer.
+	 * @param string|null $own_privacy The member's own choice, or null to omit it.
+	 * @return array<string, mixed>|null
+	 */
+	private function album_summary( int $album_id, ?string $own_privacy ): ?array {
+		$album = $album_id > 0 ? get_post( $album_id ) : null;
+		if ( ! $album || 'mvs_album' !== $album->post_type || 'trash' === $album->post_status ) {
+			return null;
+		}
+
+		$summary = array(
+			'id'      => $album_id,
+			'title'   => $album->post_title,
+			'privacy' => \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id ),
+		);
+		if ( null !== $own_privacy ) {
+			$summary['own_privacy'] = '' !== $own_privacy ? $own_privacy : null;
+		}
+
+		return $summary;
 	}
 
 	/**
@@ -2267,6 +2309,11 @@ class MediaController extends WP_REST_Controller {
 			'doc_icon'          => $mvs_doc_icon,
 			'doc_label'         => $mvs_doc_label,
 			'privacy'           => $privacy_value,
+			// The album this photo is in, whose privacy it shows with (2.6.0,
+			// Basecamp 10264373450), or null. own_privacy - what the member
+			// chose, back in force when the photo leaves the album - only for
+			// whoever may edit the photo.
+			'album'             => $this->album_summary( (int) ( $all['album_id'] ?? 0 ), $can_edit ? (string) ( $all['own_privacy'] ?? '' ) : null ),
 			'allow_download'    => $allow_download,
 			// Display filename — original user-provided name when the upload
 			// strategy hashed the on-disk basename (1.2.1+). Falls back to the

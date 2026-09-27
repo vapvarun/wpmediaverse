@@ -78,7 +78,12 @@ class HiddenAnswersLikeMissingTest extends WP_UnitTestCase {
 	public function test_album_card_counts_only_what_the_viewer_can_open(): void {
 		$albums = Plugin::container()->get( 'albums' );
 		$album  = (int) $albums->create( $this->owner, array( 'title' => 'Mixed' ) );
+		// A public album still holding a private photo: the shape upgraded sites keep
+		// (v40 never loosens) and the mvs_album_inherit_privacy escape hatch makes.
+		// The 2.6.0 album rule would publish the photo, so switch it off here.
+		add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 		$albums->add_items( $album, array( $this->media( 'public' ), $this->media( 'public' ), $this->media( 'private' ) ) );
+		remove_filter( 'mvs_album_inherit_privacy', '__return_false' );
 
 		$this->assertSame( 2, $albums->viewable_item_count( $album, $this->other ), 'The card counted a hidden item.' );
 		$this->assertSame( 3, $albums->viewable_item_count( $album, $this->owner ) );

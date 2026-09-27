@@ -347,17 +347,27 @@ class BulkController extends WP_REST_Controller {
 		global $wpdb;
 		$updated = 0;
 
+		$albums        = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$album_decides = 0;
 		foreach ( $media_ids as $media_id ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', $privacy );
+			// In an album: the album decides; the choice is kept for when it leaves.
+			if ( $albums->keep_own_privacy_if_in_album( (int) $media_id, $privacy ) ) {
+				++$album_decides;
+			} else {
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', $privacy );
+			}
 			++$updated;
 		}
 
 		return rest_ensure_response(
 			array(
-				'action'    => 'change_privacy',
-				'privacy'   => $privacy,
-				'processed' => $updated,
-				'total'     => count( $media_ids ),
+				'action'        => 'change_privacy',
+				'privacy'       => $privacy,
+				'processed'     => $updated,
+				'total'         => count( $media_ids ),
+				// Items in an album keep showing with the album's privacy; the
+				// choice applies when they leave it (2.6.0).
+				'album_decides' => $album_decides,
 			)
 		);
 	}

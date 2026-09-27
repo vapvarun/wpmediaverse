@@ -301,6 +301,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		privacyLabelFor( stored ) {
 			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
 		},
+		// Short word in running text: "Members", not "Members: logged-in users
+		// only" - the same rule as TemplateHelpers::privacy_short_label().
+		privacyShortLabel( stored ) {
+			return String( state.privacyLabelFor( stored ) ).split( ':' )[ 0 ].trim();
+		},
 		get hideUploadMetaFields() {
 			return state.uploadModalUploading;
 		},
@@ -310,6 +315,39 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get isCreatingNewAlbum() {
 			// "Create new album" chosen in the "Add to album" select (value -1).
 			return state.uploadModalAlbum === -1;
+		},
+		/*
+		 * A photo in an album shows with the album's privacy (2.6.0, Basecamp
+		 * 10264373450), so a privacy picker next to an album would offer a
+		 * choice that is ignored. Where an album decides, the picker becomes a
+		 * plain sentence saying which album and what that means.
+		 */
+		get uploadAlbumChosen() {
+			const id = state.uploadModalAlbum;
+			return id > 0 ? ( state.userAlbums || [] ).find( ( a ) => a.id === id ) || null : null;
+		},
+		get uploadPrivacyFollowsAlbum() {
+			return !! state.uploadAlbumChosen;
+		},
+		get uploadPrivacyFollowsText() {
+			const album = state.uploadAlbumChosen;
+			return album ? state.followsAlbumText( album ) : '';
+		},
+		get editPrivacyFollowsAlbum() {
+			return !! state.editModalAlbum;
+		},
+		get editPrivacyFollowsText() {
+			const album = state.editModalAlbum;
+			return album
+				? ( state.i18n?.editFollowsAlbum || 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.' )
+					.replace( '%1$s', album.title || '' )
+					.replace( '%2$s', state.privacyShortLabel( album.privacy || 'public' ) )
+				: '';
+		},
+		followsAlbumText( album ) {
+			return ( state.i18n?.followsAlbum || 'Follows album "%1$s" (%2$s)' )
+				.replace( '%1$s', album.title || '' )
+				.replace( '%2$s', state.privacyShortLabel( album.privacy || 'public' ) );
 		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
@@ -396,6 +434,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalTitle: '',
 		editModalDescription: '',
 		editModalPrivacy: 'public',
+		editModalAlbum: null, // { id, title, privacy } when the photo is in an album
 		editModalAllowDownload: true,
 		// Off by default — title edits leave the URL slug alone. The user
 		// can opt in via the "Update URL slug from title" checkbox; the
@@ -705,6 +744,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.confirmCallback = callback;
 			state.confirmButtonLabel = buttonLabel;
 			state.confirmVisible = true;
+			// The confirm button is the dangerous one, so Cancel takes focus:
+			// an Enter pressed without reading never destroys or exposes anything.
+			window.requestAnimationFrame( () => {
+				document.querySelector( '.mvs-confirm-overlay:not([hidden]) .mvs-confirm-cancel' )?.focus();
+			} );
 		},
 		handleConfirmYes() {
 			const cb = state.confirmCallback;
@@ -902,6 +946,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalTitle = data.title || '';
 				state.editModalDescription = data.description || '';
 				state.editModalPrivacy = data.privacy || 'public';
+				state.editModalAlbum = data.album || null;
 				state.editModalAllowDownload = data.allow_download !== false;
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
@@ -914,6 +959,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalTitle = '';
 			state.editModalDescription = '';
 			state.editModalPrivacy = 'public';
+			state.editModalAlbum = null;
 			state.editModalAllowDownload = true;
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
@@ -1199,7 +1245,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const rows = Array.isArray( res.data ) ? res.data : [];
 				state.userAlbums = rows
 					.filter( ( a ) => a && ( a.can_edit || a.is_owner ) )
-					.map( ( a ) => ( { id: a.id, title: a.title || 'Untitled' } ) );
+					.map( ( a ) => ( { id: a.id, title: a.title || 'Untitled', privacy: a.privacy || 'public' } ) );
 			} catch {
 				state.userAlbums = [];
 			}

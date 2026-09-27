@@ -199,6 +199,29 @@ wp_interactivity_state(
 			// Which levels the picker OFFERS - filterable, and BP-conditional.
 			// The store must not restate this vocabulary. Basecamp 10290748981.
 			'privacyChoices'          => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
+			// How strict each level is, from PrivacyService, so the album screen can
+			// tell when a save would show photos to more people (2.6.0).
+			'privacyLevels'           => array_map(
+				array( \WPMediaVerse\Services\PrivacyService::class, 'privacy_to_level' ),
+				array_combine( array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_labels() ), array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_labels() ) )
+			),
+			/* translators: %s: album name. */
+			'inAlbum'                 => __( 'In: %s', 'wpmediaverse' ),
+			/* translators: %s: album name. */
+			'willMove'                => __( 'Moves from %s', 'wpmediaverse' ),
+			/* translators: 1: number of photos, 2: privacy level. */
+			'albumWidens'             => __( '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".', 'wpmediaverse' ),
+			'saveAnyway'              => __( 'Save anyway', 'wpmediaverse' ),
+			/* translators: %d: number of photos. */
+			'bulkAlbumDecides'        => __( '%d photo(s) are in an album and keep its privacy until they leave it.', 'wpmediaverse' ),
+			/* translators: %s: privacy level, e.g. Members. */
+			'privacyViaAlbum'         => __( '%s (album)', 'wpmediaverse' ),
+			/* translators: 1: album name, 2: privacy level. */
+			'editFollowsAlbum'        => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
+			/* translators: %d: number of photos. */
+			'photosMoved'             => __( '%d photo(s) moved from other albums.', 'wpmediaverse' ),
+			/* translators: %d: number of photos. */
+			'photosReleased'          => __( '%d photo(s) removed; each is back to its own privacy.', 'wpmediaverse' ),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
 			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),
@@ -1486,8 +1509,8 @@ wp_interactivity_state(
 					<?php // Hidden when the owner has locked privacy; the save still sends the current level, which the REST update accepts. Basecamp 10320619418. ?>
 					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 					<div class="mvs-field mvs-field--inline">
-						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
+						<label for="mvs-dash-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select id="mvs-dash-edit-privacy" aria-describedby="mvs-dash-edit-privacy-album" data-wp-bind--disabled="state.editPrivacyFollowsAlbum" data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
 							<?php
 							// Options come from STATE, not from privacy_options().
 							//
@@ -1509,6 +1532,7 @@ wp_interactivity_state(
 							<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModal.privacy" data-wp-text="state.editModalPrivacyLabel"></option>
 							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 						</select>
+						<p id="mvs-dash-edit-privacy-album" class="mvs-field-hint" hidden data-wp-bind--hidden="!state.editPrivacyFollowsAlbum" data-wp-text="state.editPrivacyFollowsText"></p>
 					</div>
 					<?php endif; ?>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
@@ -1655,6 +1679,7 @@ wp_interactivity_state(
 									data-wp-bind--hidden="!state.showPickerAudioPlaceholder">
 									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input. ?></span>
 								</div>
+								<span class="mvs-media-picker-album" hidden data-wp-bind--hidden="!state.pickerItemAlbumLabel" data-wp-text="state.pickerItemAlbumLabel"></span>
 								<span class="mvs-media-picker-check">&#x2713;</span>
 								<button class="mvs-media-picker-cover-btn" type="button"
 									data-wp-on--click="actions.setCoverItem">
@@ -1666,6 +1691,10 @@ wp_interactivity_state(
 							</div>
 						</template>
 					</div>
+					<button type="button" class="mvs-btn mvs-btn--secondary mvs-media-picker-more" hidden
+						data-wp-bind--hidden="!state.albumModal.pickerHasMore"
+						data-wp-bind--disabled="state.albumModal.pickerLoading"
+						data-wp-on--click="actions.loadMorePickerMedia"><?php esc_html_e( 'Load more media', 'wpmediaverse' ); ?></button>
 				</div>
 			</div>
 			<div class="mvs-modal-footer">

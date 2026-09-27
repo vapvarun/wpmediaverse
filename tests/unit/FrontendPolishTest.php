@@ -27,7 +27,7 @@ class FrontendPolishTest extends WP_UnitTestCase {
 		$repo   = Plugin::container()->get( 'media_repository' );
 		$albums = Plugin::container()->get( 'albums' );
 
-		$make = static function ( string $privacy ) use ( $repo, $owner ): int {
+		$make    = static function ( string $privacy ) use ( $repo, $owner ): int {
 			return (int) $repo->insert(
 				array(
 					'title'             => 'Album probe ' . $privacy,
@@ -45,7 +45,12 @@ class FrontendPolishTest extends WP_UnitTestCase {
 		$public  = $make( 'public' );
 		$private = $make( 'private' );
 		$album   = (int) $albums->create( $owner, array( 'title' => 'Mixed album' ) );
+		// A public album still holding a private photo: the shape upgraded sites keep
+		// (v40 never loosens) and the mvs_album_inherit_privacy escape hatch makes.
+		// The 2.6.0 album rule would publish the photo, so switch it off here.
+		add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 		$albums->add_items( $album, array( $public, $private ) );
+		remove_filter( 'mvs_album_inherit_privacy', '__return_false' );
 
 		wp_set_current_user( $viewer );
 		$ids = array_map( 'intval', array_column( $albums->get_items_with_data( $album ), 'media_id' ) );
@@ -60,7 +65,13 @@ class FrontendPolishTest extends WP_UnitTestCase {
 	}
 
 	public function test_route_title_keeps_the_site_name(): void {
-		$parts = TemplateLoader::title_parts( array( 'title' => get_bloginfo( 'name' ), 'tagline' => 'Just another site' ), 'Compete' );
+		$parts = TemplateLoader::title_parts(
+			array(
+				'title'   => get_bloginfo( 'name' ),
+				'tagline' => 'Just another site',
+			),
+			'Compete'
+		);
 
 		$this->assertSame( 'Compete', $parts['title'] );
 		$this->assertSame( get_bloginfo( 'name', 'display' ), $parts['site'] );
@@ -69,8 +80,8 @@ class FrontendPolishTest extends WP_UnitTestCase {
 
 	public function test_grid_tile_link_is_named_even_without_a_title(): void {
 		( new \WPMediaVerse\Core\Migrator() )->run();
-		$repo = Plugin::container()->get( 'media_repository' );
-		$make = static function ( string $title ) use ( $repo ): int {
+		$repo    = Plugin::container()->get( 'media_repository' );
+		$make    = static function ( string $title ) use ( $repo ): int {
 			return (int) $repo->insert(
 				array(
 					'title'             => $title,

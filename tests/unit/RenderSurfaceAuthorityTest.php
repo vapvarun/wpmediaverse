@@ -254,10 +254,16 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 		$out = array();
 
 		foreach ( (array) ( $this->manifest['shortcodes'] ?? array() ) as $tag => $entry ) {
-			$out[ 'shortcode [' . $tag . ']' ] = array( 'kind' => 'shortcode', 'name' => $tag ) + (array) $entry;
+			$out[ 'shortcode [' . $tag . ']' ] = array(
+				'kind' => 'shortcode',
+				'name' => $tag,
+			) + (array) $entry;
 		}
 		foreach ( (array) ( $this->manifest['blocks'] ?? array() ) as $name => $entry ) {
-			$out[ 'block ' . $name ] = array( 'kind' => 'block', 'name' => $name ) + (array) $entry;
+			$out[ 'block ' . $name ] = array(
+				'kind' => 'block',
+				'name' => $name,
+			) + (array) $entry;
 		}
 
 		return $out;
@@ -296,9 +302,9 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 	 * privacy test goes green while probing a public item.
 	 */
 	private function seed(): void {
-		$albums   = Plugin::container()->get( 'albums' );
-		$colls    = Plugin::container()->get( 'collections' );
-		$privacy  = Plugin::container()->get( 'privacy' );
+		$albums  = Plugin::container()->get( 'albums' );
+		$colls   = Plugin::container()->get( 'collections' );
+		$privacy = Plugin::container()->get( 'privacy' );
 
 		$private_media = $this->seed_media( 'MVSRENDERSECRETMEDIA', 'private' );
 		$private_doc   = $this->seed_media( 'MVSRENDERSECRETDOC', 'private', 'document', 'application/pdf' );
@@ -306,8 +312,8 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 		// mvs_favorites carries a UNIQUE (media_id, user_id), so one item cannot
 		// sit in two of this owner's collections - each collection fixture needs
 		// its own private member or the second one silently probes an empty list.
-		$coll_member   = $this->seed_media( 'MVSRENDERSECRETINCOLLECTION', 'private' );
-		$decoy         = $this->seed_media( 'MVSRENDERPUBLICDECOY', 'public' );
+		$coll_member = $this->seed_media( 'MVSRENDERSECRETINCOLLECTION', 'private' );
+		$decoy       = $this->seed_media( 'MVSRENDERPUBLICDECOY', 'public' );
 
 		// A PRIVATE album. create() takes the site default when the owner's
 		// privacy lock is on, so the level is set explicitly afterwards.
@@ -320,7 +326,12 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 		// hold one - see AlbumController::viewable_item_ids().
 		$public_album = (int) $albums->create( $this->owner, array( 'title' => 'MVSRENDERPUBLICALBUM' ) );
 		$albums->set_privacy( $public_album, 'public' );
+		// A public album still holding a private photo: the shape upgraded sites keep
+		// (v40 never loosens) and the mvs_album_inherit_privacy escape hatch makes.
+		// The 2.6.0 album rule would publish the photo, so switch it off here.
+		add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 		$albums->add_items( $public_album, array( $album_member ) );
+		remove_filter( 'mvs_album_inherit_privacy', '__return_false' );
 
 		// The same shape for a manual collection.
 		$public_collection = (int) self::factory()->post->create(
@@ -344,7 +355,10 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 		$colls->set_privacy( $members_collection, 'members' );
 
 		global $wpdb;
-		foreach ( array( $public_collection => $private_media, $members_collection => $coll_member ) as $cid => $mid ) {
+		foreach ( array(
+			$public_collection  => $private_media,
+			$members_collection => $coll_member,
+		) as $cid => $mid ) {
 			$wpdb->insert(
 				$wpdb->prefix . 'mvs_favorites',
 				array(
@@ -357,12 +371,12 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 		}
 
 		$this->fixtures = array(
-			'private media'                   => $private_media,
-			'private document'                => $private_doc,
-			'private album'                   => $private_album,
-			'public album + private item'     => $public_album,
+			'private media'                    => $private_media,
+			'private document'                 => $private_doc,
+			'private album'                    => $private_album,
+			'public album + private item'      => $public_album,
 			'public collection + private item' => $public_collection,
-			'members collection'              => $members_collection,
+			'members collection'               => $members_collection,
 		);
 
 		$privacy->flush_cache();
@@ -385,7 +399,7 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 			$this->secrets[ (string) $repo->get( $mid, 'title' ) ]     = 'title';
 			$this->secrets[ (string) $repo->get( $mid, 'slug' ) ]      = 'slug';
 			$this->secrets[ (string) $repo->get( $mid, 'file_path' ) ] = 'file path';
-			$this->secrets[ 'mvs_id=' . $mid ]                          = 'signed URL';
+			$this->secrets[ 'mvs_id=' . $mid ]                         = 'signed URL';
 		}
 
 		$this->secrets['MVSRENDERSECRETALBUM'] = 'title';
@@ -460,7 +474,14 @@ class RenderSurfaceAuthorityTest extends WP_UnitTestCase {
 				continue;
 			}
 
-			$html = $this->render( $entry, array( $att => $this->owner, 'perPage' => 50, 'per_page' => 50 ) );
+			$html = $this->render(
+				$entry,
+				array(
+					$att       => $this->owner,
+					'perPage'  => 50,
+					'per_page' => 50,
+				)
+			);
 
 			if ( null === $html ) {
 				$leaks[] = $key . ' — threw while rendering';

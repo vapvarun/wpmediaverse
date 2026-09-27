@@ -389,7 +389,7 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		return rest_ensure_response( $this->prepare_album_response( $post, true ) );
+		return rest_ensure_response( $this->prepare_album_response( $post, true, true ) );
 	}
 
 	/**
@@ -762,9 +762,10 @@ class AlbumController extends WP_REST_Controller {
 	 *
 	 * @param \WP_Post $post          Post object.
 	 * @param bool     $include_items Whether to include album items.
+	 * @param bool     $with_counts   Single-album view: add own_privacy_counts for editors.
 	 * @return array
 	 */
-	private function prepare_album_response( $post, bool $include_items = false ): array {
+	private function prepare_album_response( $post, bool $include_items = false, bool $with_counts = false ): array {
 		$album_id      = $post->ID;
 		$privacy_value = $this->albums->get_privacy( $album_id );
 		$album_type    = $this->albums->get_album_type( $album_id );
@@ -792,6 +793,13 @@ class AlbumController extends WP_REST_Controller {
 
 		if ( $include_items ) {
 			$data['items'] = $this->albums->viewable_item_ids( $album_id );
+
+			// Photos by the privacy their member chose, so the album screen can
+			// warn before making the album more public than some of them
+			// (Basecamp 10264373450). Editors only; a single query.
+			if ( $with_counts && $can_edit ) {
+				$data['own_privacy_counts'] = $this->albums->own_privacy_counts( $album_id );
+			}
 		}
 
 		/**

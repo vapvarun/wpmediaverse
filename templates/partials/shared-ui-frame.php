@@ -98,6 +98,11 @@ wp_interactivity_state(
 			// offer. privacyChoices is what privacy_choices() offers, so the
 			// vocabulary is never restated client-side. Basecamp 10290748981.
 			'privacyLabels'      => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			// A photo in an album shows with the album's privacy (2.6.0).
+			/* translators: 1: album name, 2: privacy level. */
+			'followsAlbum'       => __( 'Follows album "%1$s" (%2$s)', 'wpmediaverse' ),
+			/* translators: 1: album name, 2: privacy level. */
+			'editFollowsAlbum'   => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
 			'privacyChoices'     => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 		),
 	)
@@ -241,7 +246,8 @@ wp_interactivity_state(
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
 					<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
 						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
-						<div class="mvs-modal-field-row">
+						<p class="mvs-modal-note" hidden data-wp-bind--hidden="!state.uploadPrivacyFollowsAlbum" data-wp-text="state.uploadPrivacyFollowsText"></p>
+						<div class="mvs-modal-field-row" data-wp-bind--hidden="state.uploadPrivacyFollowsAlbum">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 								<?php
 								// A level the picker does not offer (loggedin, space, group,
@@ -351,6 +357,8 @@ wp_interactivity_state(
 						<div class="mvs-modal-field mvs-modal-field--inline">
 							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 							<select id="mvs-edit-privacy"
+								aria-describedby="mvs-edit-privacy-album"
+								data-wp-bind--disabled="state.editPrivacyFollowsAlbum"
 								data-wp-on--change="actions.updateEditPrivacy"
 								data-wp-bind--value="state.editModalPrivacy">
 								<?php
@@ -364,6 +372,7 @@ wp_interactivity_state(
 								<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModalPrivacy" data-wp-text="state.editModalPrivacyLabel"></option>
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
+							<p id="mvs-edit-privacy-album" class="mvs-modal-note" hidden data-wp-bind--hidden="!state.editPrivacyFollowsAlbum" data-wp-text="state.editPrivacyFollowsText"></p>
 						</div>
 						<?php endif; ?>
 						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
@@ -757,7 +766,7 @@ wp_interactivity_state(
 		<div class="mvs-confirm">
 			<p data-wp-text="state.confirmMessage"></p>
 			<div class="mvs-confirm-actions">
-				<button class="mvs-btn mvs-btn--secondary" type="button"
+				<button class="mvs-btn mvs-btn--secondary mvs-confirm-cancel" type="button"
 					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 				<button class="mvs-btn mvs-btn--danger" type="button"
 					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>

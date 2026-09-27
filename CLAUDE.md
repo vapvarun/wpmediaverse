@@ -20,7 +20,7 @@
 > | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 8 registered, 12 `block.json` (4 Interactivity-only) |
 > | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 55 |
 > | WP-CLI subcommands | `grep -c 'public function ' includes/CLI/Commands.php` | 20 |
-> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 39 (2026-09-26) |
+> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 40 (2026-09-27) |
 >
 > 2.4.0 added 4 hooks (the manifest gained 20 more on 2026-09-01 that shipped undocumented): `mvs_media_trashed` / `mvs_media_restored` (actions) and `mvs_has_custom_avatar` / `mvs_media_drive_access` (filters) — all four verified present.
 >
@@ -164,7 +164,7 @@ container-registered) consumed by the upload pipeline.
 ## Custom Tables (23)
 
 All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
-(`Migrator::CURRENT_VERSION` is 39 as of 2026-09-26). Re-enumerate with
+(`Migrator::CURRENT_VERSION` is 40 as of 2026-09-27). Re-enumerate with
 `grep -o 'CREATE TABLE[^(]*mvs_[a-z_]*' includes/Core/Migrator.php | sort -u`.
 
 | Table | Purpose |

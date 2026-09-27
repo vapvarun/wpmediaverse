@@ -215,6 +215,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			title: '',
 			description: '',
 			privacy: 'public',
+			album: null, // { id, title, privacy } when the photo is in an album
 			tags: [],
 			tagInput: '',
 			tagResults: [],
@@ -244,10 +245,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			description: '',
 			privacy: 'public',
 			pickerItems: [],
+			pickerPage: 1,
+			pickerHasMore: false,
 			selectedIds: [],
 			coverId: 0,
 			pickerLoading: false,
 			saving: false,
+			originalPrivacy: 'public',
+			loosenConfirmed: false,
 		},
 		// Notifications
 		notifications: {
@@ -549,6 +554,24 @@ const { state, actions } = store( 'mvs/dashboard', {
 		privacyLabelFor( stored ) {
 			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
 		},
+		privacyLevel( stored ) {
+			return ( state.i18n?.privacyLevels || {} )[ stored || 'public' ] || 0;
+		},
+		/*
+		 * One album per photo (2.6.0): a photo already in another album moves
+		 * when it is picked here, so the picker says where it is now, and where
+		 * it will move from once selected (Basecamp 10264373450).
+		 */
+		get pickerItemAlbumLabel() {
+			const { item } = getContext();
+			const album = item?.album;
+			if ( ! album || album.id === state.albumModal.albumId ) {
+				return '';
+			}
+			const selected = state.albumModal.selectedIds.includes( item.id );
+			const tpl = selected ? ( state.i18n?.willMove || 'Moves from %s' ) : ( state.i18n?.inAlbum || 'In: %s' );
+			return tpl.replace( '%s', album.title || '' );
+		},
 
 		get itemPrivacy() {
 			// Label, never the stored slug. The badge used to print `loggedin`
@@ -557,10 +580,28 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// only". Basecamp 10290748981.
 			// Short word only ("Members", not "Members: logged-in users only"),
 			// the same rule as TemplateHelpers::privacy_short_label().
-			const slug = getContext().item?.privacy || 'public';
+			const item = getContext().item;
+			const slug = item?.privacy || 'public';
 			const map = state.i18n?.privacyLabels || {};
-			const label = map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' );
-			return label.split( ':' )[ 0 ].trim();
+			const label = ( map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' ) ).split( ':' )[ 0 ].trim();
+			// In an album the album's privacy applies; say so, so the badge and
+			// the edit modal agree (2.6.0, Basecamp 10264373450).
+			return item?.album ? ( state.i18n?.privacyViaAlbum || '%s (album)' ).replace( '%s', label ) : label;
+		},
+		// A photo in an album shows with the album's privacy (2.6.0, Basecamp
+		// 10264373450): the picker would offer a choice that is ignored, so it
+		// is disabled and says which album decides.
+		get editPrivacyFollowsAlbum() {
+			return !! state.editModal.album;
+		},
+		get editPrivacyFollowsText() {
+			const album = state.editModal.album;
+			if ( ! album ) {
+				return '';
+			}
+			return ( state.i18n?.editFollowsAlbum || 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.' )
+				.replace( '%1$s', album.title || '' )
+				.replace( '%2$s', String( state.privacyLabelFor( album.privacy || 'public' ) ).split( ':' )[ 0 ].trim() );
 		},
 		get albumItemCount() {
 			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );
@@ -1087,6 +1128,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.title = item.title || '';
 			state.editModal.description = item.description || '';
 			state.editModal.privacy = item.privacy || 'public';
+			state.editModal.album = item.album || null;
 			// Use Array.from() — `item.tags` may be a WordPress Interactivity
 			// Proxy or a JSON-parsed array. Array.from() handles both safely
 			// and always yields a plain array for JSON serialization.
@@ -1507,6 +1549,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 				if ( res.ok ) {
 					state.bulkSelectedIds = [];
 					const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkPrivacyDone || 'Privacy updated.' ) );
+					// Photos in an album keep showing with the album's privacy; say
+					// so, or the member believes they changed (2.6.0).
+					if ( res.data?.album_decides ) {
+						msg.text += ' ' + ( state.i18n?.bulkAlbumDecides || '%d photo(s) are in an album and keep its privacy until they leave it.' ).replace( '%d', res.data.album_decides );
+					}
 					sharedUI.actions.showToast( msg.text, msg.type );
 					actions.loadMedia( ctx, state.media.page || 1 );
 				} else {
@@ -1650,6 +1697,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.originalItems = album?.items ? [ ...album.items ] : [];
 			state.albumModal.coverId = album?.cover_media_id || 0;
 			state.albumModal.saving = false;
+			state.albumModal.originalPrivacy = album?.privacy || 'public';
+			state.albumModal.loosenConfirmed = false;
 
 			// Load user media for picker.
 			actions.loadPickerMedia();
@@ -1665,6 +1714,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.selectedIds = [];
 			state.albumModal.coverId = 0;
 			state.albumModal.saving = false;
+			state.albumModal.originalPrivacy = 'public';
+			state.albumModal.loosenConfirmed = false;
 			actions.loadPickerMedia();
 		},
 
@@ -1676,17 +1727,62 @@ const { state, actions } = store( 'mvs/dashboard', {
 		setAlbumDesc( event ) { state.albumModal.description = event.target.value; },
 		setAlbumPrivacy( event ) { state.albumModal.privacy = event.target.value; },
 
-		async loadPickerMedia() {
+		async loadPickerMedia( page = 1 ) {
 			const ctx = getContext();
+			const perPage = 48;
+			page = Number.isInteger( page ) ? page : 1;
 			state.albumModal.pickerLoading = true;
 			try {
-				const res = await apiFetch( ctx, 'me/media?per_page=100' );
-				const data = res.data;
-				state.albumModal.pickerItems = data;
+				// Paged: a fixed per_page=100 hid every older photo from a member
+				// with more than 100 (Basecamp 10264373450).
+				const res = await apiFetch( ctx, 'me/media?per_page=' + perPage + '&page=' + page );
+				const rows = Array.isArray( res.data ) ? res.data : [];
+				state.albumModal.pickerItems = 1 === page ? rows : [ ...state.albumModal.pickerItems, ...rows ];
+				state.albumModal.pickerPage = page;
+				state.albumModal.pickerHasMore = rows.length === perPage;
 			} catch {
-				state.albumModal.pickerItems = [];
+				if ( 1 === page ) {
+					state.albumModal.pickerItems = [];
+				}
+				state.albumModal.pickerHasMore = false;
 			}
 			state.albumModal.pickerLoading = false;
+		},
+		loadMorePickerMedia() {
+			actions.loadPickerMedia( state.albumModal.pickerPage + 1 );
+		},
+
+		/*
+		 * A photo in an album shows with the album's privacy, so making an album
+		 * more public, or adding a stricter photo to it, widens who sees those
+		 * photos. Count them so the member is asked first - never for a change
+		 * that only tightens (Basecamp 10264373450).
+		 */
+		async countWidenedPhotos( ctx, albumId, toAdd ) {
+			const next = state.privacyLevel( state.albumModal.privacy );
+			let count = 0;
+
+			if ( albumId && next < state.privacyLevel( state.albumModal.originalPrivacy ) ) {
+				try {
+					const res = await apiFetch( ctx, 'albums/' + albumId );
+					const own = res.data?.own_privacy_counts || {};
+					Object.keys( own ).forEach( ( slug ) => {
+						if ( state.privacyLevel( slug ) > next ) {
+							count += own[ slug ];
+						}
+					} );
+				} catch { /* no count: save without the prompt rather than block it */ }
+			}
+
+			state.albumModal.pickerItems
+				.filter( ( item ) => toAdd.includes( item.id ) )
+				.forEach( ( item ) => {
+					if ( state.privacyLevel( item.privacy ) > next ) {
+						count += 1;
+					}
+				} );
+
+			return count;
 		},
 
 		togglePickerItem( event ) {
@@ -1719,8 +1815,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
-		async saveAlbum() {
-			const ctx = getContext();
+		async saveAlbum( ctxOrEvent ) {
+			// Re-entered from the confirm dialog's callback, outside any directive,
+			// so the context is passed in rather than read.
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
 			state.albumModal.saving = true;
 
 			// Invariant: the cover media MUST be one of the album's items,
@@ -1739,6 +1837,33 @@ const { state, actions } = store( 'mvs/dashboard', {
 				description: state.albumModal.description,
 				privacy: state.albumModal.privacy,
 			};
+
+			const originalItems = state.albumModal.isEdit ? ( state.albumModal.originalItems || [] ) : [];
+			const pendingAdd = state.albumModal.selectedIds.filter( ( id ) => ! originalItems.includes( id ) );
+			const pendingRemove = originalItems.filter( ( id ) => ! state.albumModal.selectedIds.includes( id ) );
+			const moving = state.albumModal.pickerItems.filter(
+				( item ) => pendingAdd.includes( item.id ) && item.album && item.album.id !== state.albumModal.albumId
+			).length;
+
+			if ( ! state.albumModal.loosenConfirmed ) {
+				const widened = await actions.countWidenedPhotos( ctx, state.albumModal.isEdit ? state.albumModal.albumId : 0, pendingAdd );
+				if ( widened > 0 ) {
+					state.albumModal.saving = false;
+					const label = String( state.privacyLabelFor( state.albumModal.privacy ) ).split( ':' )[ 0 ].trim();
+					sharedUI.actions.showConfirm(
+						( state.i18n?.albumWidens || '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
+							.replace( '%1$d', widened )
+							.replace( /%2\$s/g, label ),
+						() => {
+							state.albumModal.loosenConfirmed = true;
+							actions.saveAlbum( ctx );
+						},
+						state.i18n?.saveAnyway || 'Save anyway'
+					);
+					return;
+				}
+			}
+			state.albumModal.loosenConfirmed = false;
 
 			try {
 				let albumId = state.albumModal.albumId;
@@ -1799,7 +1924,17 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 				state.albumModal.visible = false;
 				state.albumModal.saving = false;
-				sharedUI.actions.showToast( state.albumModal.isEdit ? ( state.i18n?.albumUpdated || 'Album updated!' ) : ( state.i18n?.albumCreated || 'Album created!' ), 'success' );
+				// Say what happened to the photos, not only to the album: which
+				// moved in from another album, and which went back to their own
+				// privacy (Basecamp 10264373450).
+				const notes = [ state.albumModal.isEdit ? ( state.i18n?.albumUpdated || 'Album updated!' ) : ( state.i18n?.albumCreated || 'Album created!' ) ];
+				if ( moving ) {
+					notes.push( ( state.i18n?.photosMoved || '%d photo(s) moved from other albums.' ).replace( '%d', moving ) );
+				}
+				if ( pendingRemove.length ) {
+					notes.push( ( state.i18n?.photosReleased || '%d photo(s) removed; each is back to its own privacy.' ).replace( '%d', pendingRemove.length ) );
+				}
+				sharedUI.actions.showToast( notes.join( ' ' ), 'success' );
 				await actions.loadAlbums( ctx );
 			} catch {
 				state.albumModal.saving = false;

@@ -27,9 +27,9 @@ Pro adds multi-level inheritance, presets, and bulk management on top of these l
 
 ## Album-Level Inheritance
 
-Media added to a non-public album inherits the album's privacy. This is a **Free** feature as of 2.3.0 — see the Albums documentation.
+A photo in an album shows with the album's privacy, and a photo in no album with its own. This is a **Free** feature - see the Albums documentation.
 
-The privacy of an item is clamped to the more restrictive of (item, album) at the moment it is added to the album. The clamp only tightens; it never loosens an item that is already more restrictive.
+Since 2.6.0 the album applies in both directions (making an album public again brings its photos back), each photo belongs to one album, and a photo's own privacy is kept and restored when it leaves the album. Before 2.6.0 the album only ever tightened an item and the item's original setting was lost.
 
 Site owners can opt out with the `mvs_album_inherit_privacy` filter:
 

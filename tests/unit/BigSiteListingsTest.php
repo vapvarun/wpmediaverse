@@ -50,7 +50,7 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 
 	// ------------------------------------------------------------------
 	// 1. Album items route paginates, and the total matches only what
-	//    this viewer may see.
+	// this viewer may see.
 	// ------------------------------------------------------------------
 
 	public function test_album_items_route_paginates_and_total_matches_viewable_items(): void {
@@ -59,7 +59,10 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 
 		$album_id = Plugin::container()->get( 'albums' )->create(
 			$owner,
-			array( 'title' => 'Big album', 'privacy' => 'public' )
+			array(
+				'title'   => 'Big album',
+				'privacy' => 'public',
+			)
 		);
 		$this->assertIsInt( $album_id );
 
@@ -70,7 +73,12 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 		}
 		$private_id = $this->seed_media( $owner, 'private' );
 
+		// A public album still holding a private photo: the shape upgraded sites keep
+		// (v40 never loosens) and the mvs_album_inherit_privacy escape hatch makes.
+		// The 2.6.0 album rule would publish the photo, so switch it off here.
+		add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 		Plugin::container()->get( 'albums' )->add_items( $album_id, array_merge( $public_ids, array( $private_id ) ) );
+		remove_filter( 'mvs_album_inherit_privacy', '__return_false' );
 
 		wp_set_current_user( $stranger );
 
@@ -175,15 +183,15 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 
 		global $wpdb;
 
-		$before_cold = $wpdb->num_queries;
-		$cold        = $cache->tag_cloud( 20 );
+		$before_cold  = $wpdb->num_queries;
+		$cold         = $cache->tag_cloud( 20 );
 		$cold_queries = $wpdb->num_queries - $before_cold;
 
 		$this->assertGreaterThan( 0, $cold_queries, 'first call should hit the database' );
 		$this->assertNotEmpty( $cold, 'fixture: tag cloud should contain the seeded tag' );
 
-		$before_warm = $wpdb->num_queries;
-		$warm        = $cache->tag_cloud( 20 );
+		$before_warm  = $wpdb->num_queries;
+		$warm         = $cache->tag_cloud( 20 );
 		$warm_queries = $wpdb->num_queries - $before_warm;
 
 		$this->assertSame( 0, $warm_queries, 'second call within the cache window must not touch the database' );
@@ -192,7 +200,7 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 
 	// ------------------------------------------------------------------
 	// 3. Activity feed: batch-prefetches actors + media; query count does
-	//    not grow with the number of distinct actors/media on the page.
+	// not grow with the number of distinct actors/media on the page.
 	// ------------------------------------------------------------------
 
 	private function record_activity( int $actor_id, int $media_id ): void {
@@ -220,8 +228,14 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 		$this->record_activity( $solo_actor, $solo_media );
 
 		global $wpdb;
-		$before    = $wpdb->num_queries;
-		$activities->get_feed( array( 'scope' => 'public', 'per_page' => 1, 'page' => 1 ) );
+		$before = $wpdb->num_queries;
+		$activities->get_feed(
+			array(
+				'scope'    => 'public',
+				'per_page' => 1,
+				'page'     => 1,
+			)
+		);
 		$baseline_queries = $wpdb->num_queries - $before;
 
 		// 7 MORE activities, each from a distinct, never-before-seen actor and
@@ -233,7 +247,13 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 		}
 
 		$before = $wpdb->num_queries;
-		$activities->get_feed( array( 'scope' => 'public', 'per_page' => 10, 'page' => 1 ) );
+		$activities->get_feed(
+			array(
+				'scope'    => 'public',
+				'per_page' => 10,
+				'page'     => 1,
+			)
+		);
 		$eight_row_queries = $wpdb->num_queries - $before;
 
 		// Without the batch prefetch, 7 more distinct actors + 7 more distinct

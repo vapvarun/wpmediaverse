@@ -516,6 +516,13 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	}
 }
 
+.mvs-modal-note {
+	margin: 0 0 12px;
+	font-size: 0.875rem;
+	line-height: 1.45;
+	color: var(--mvs-text-secondary);
+}
+
 .mvs-modal-field-row {
 	display: flex;
 	gap: 12px;
