@@ -48,6 +48,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		'mvs_album_items',
 		'mvs_notifications',
 		'mvs_activity',
+		// Deleted by media_id alone. Safe only while every grant targets media:
+		// the column is shared with Pro folder grants (target_type 'folder', where
+		// media_id holds a FOLDER id), which nothing writes today. If folder
+		// sharing is ever built, filter this delete on target_type first, or
+		// deleting document N wipes the grants on folder N (Basecamp 10344002012).
 		'mvs_access_grants',
 		'mvs_media_spaces',
 	);
