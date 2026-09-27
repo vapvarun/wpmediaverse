@@ -232,6 +232,57 @@ class MediaDriveAccessSeamTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A signed-out visitor is asked about, and an open space lets them read.
+	 *
+	 * The gate used to refuse user 0 before asking the bridge, so a photo on an
+	 * OPEN space was hidden from visitors while a document on the same drive
+	 * showed (Basecamp 10344310617).
+	 */
+	public function test_a_visitor_reads_a_space_photo_when_the_space_says_read(): void {
+		$id   = $this->space_photo( self::factory()->user->create() );
+		$seen = null;
+
+		$this->hook(
+			'mvs_media_drive_access',
+			static function ( $level, $type, $drive, $user ) use ( &$seen ) {
+				$seen = $user;
+				return 0 === (int) $user ? 'read' : $level;
+			}
+		);
+
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		$this->assertTrue( $privacy->can_view( $id, 0 ), 'An open space refused its visitor.' );
+		$this->assertSame( 0, $seen, 'The bridge was never asked about the visitor.' );
+	}
+
+	/**
+	 * A private or secret space still refuses the visitor.
+	 */
+	public function test_a_visitor_is_refused_when_the_space_says_none(): void {
+		$id = $this->space_photo( self::factory()->user->create() );
+
+		$this->hook(
+			'mvs_media_drive_access',
+			static function () {
+				return 'none';
+			}
+		);
+
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		$this->assertFalse( $privacy->can_view( $id, 0 ) );
+	}
+
+	/**
+	 * With no bridge at all, a visitor never reads space media.
+	 */
+	public function test_a_visitor_is_refused_when_nothing_answers(): void {
+		$id = $this->space_photo( self::factory()->user->create() );
+
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		$this->assertFalse( $privacy->can_view( $id, 0 ) );
+	}
+
+	/**
 	 * The filter receives the document answer as its default.
 	 *
 	 * That is what makes "leave it alone and nothing changes" true, so it is

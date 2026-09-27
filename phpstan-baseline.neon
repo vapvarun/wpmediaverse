@@ -86,11 +86,6 @@ parameters:
 			path: includes/Admin/OverviewPage.php
 
 		-
-			message: "#^Property WP_Screen\\:\\:\\$id \\(string\\) on left side of \\?\\? is not nullable\\.$#"
-			count: 1
-			path: includes/Admin/OverviewPage.php
-
-		-
 			message: "#^Parameter \\#1 \\$args of function wp_dropdown_pages expects array\\{depth\\?\\: int, child_of\\?\\: int, selected\\?\\: int\\|string, echo\\?\\: bool\\|int, name\\?\\: string, id\\?\\: string, class\\?\\: string, show_option_none\\?\\: string, \\.\\.\\.\\}, array\\{name\\: mixed, selected\\: int, show_option_none\\: string, option_none_value\\: 0\\} given\\.$#"
 			count: 1
 			path: includes/Admin/Settings/FieldRenderer.php

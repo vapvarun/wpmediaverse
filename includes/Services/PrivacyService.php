@@ -593,18 +593,19 @@ class PrivacyService {
 	 * Falls back to private when nothing answers, which is what an unbridged site
 	 * should do with a privacy level it cannot evaluate.
 	 *
+	 * A signed-out visitor is asked about too, not refused up front. Whether a
+	 * space is readable by visitors is the space's rule (an open space is), and
+	 * refusing here made photos disagree with documents on the same drive: the
+	 * post showed in Explore and the photo did not (Basecamp 10344310617).
+	 *
 	 * @since 2.4.0
 	 *
 	 * @param int $media_id Media id.
-	 * @param int $user_id  Requesting user.
+	 * @param int $user_id  Requesting user, 0 for a signed-out visitor.
 	 * @return bool
 	 */
 	private function check_space( int $media_id, int $user_id ): bool {
-		if ( ! $user_id ) {
-			return false;
-		}
-
-		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$drive_type = (string) $repo->get( $media_id, 'drive_type' );
 		$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
 
