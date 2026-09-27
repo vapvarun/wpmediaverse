@@ -1119,6 +1119,17 @@ class TemplateLoader {
 			$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
 		}
 
+		// A theme copy of explore.php (or a Pro layout) from before 2.6.0 reads
+		// the search term from $_GET['s']; Explore now sends `q`. Hand the term
+		// to that old copy too, so its search keeps working. This runs after
+		// WordPress parsed the request, so it cannot turn the page into a site
+		// search. ponytail: remove in 3.0.0, once theme copies had two majors
+		// to re-copy (Production Rule 1).
+		$mvs_search = Plugin::container()->get( 'template_helpers' )->explore_search();
+		if ( '' !== $mvs_search && ! isset( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
+			$_GET['s'] = $mvs_search;
+		}
+
 		$template = self::locate( 'explore.php' );
 		if ( $template ) {
 			$this->render_template( $template );
