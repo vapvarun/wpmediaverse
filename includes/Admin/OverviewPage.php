@@ -504,8 +504,7 @@ class OverviewPage {
 		}
 
 		$settings_url    = admin_url( 'admin.php?page=mvs-settings' );
-		$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
-		$explore_url_wb  = $explore_page_id ? get_permalink( $explore_page_id ) : home_url( '/media/' );
+		$explore_url_wb  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 		$permissions_url = admin_url( 'admin.php?page=mvs-settings#general' );
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">

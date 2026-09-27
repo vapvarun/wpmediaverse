@@ -116,7 +116,7 @@ $mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strto
 $mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_media_id );
 
 // Archive URL (base media page).
-$mvs_archive_url = home_url( '/media/' );
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 ?>
 <div class="mvs-single-media mvs-page">
 	<?php

@@ -30,7 +30,7 @@ do_action( 'mvs_before_content' );
 
 $mvs_context     = isset( $GLOBALS['mvs_404_context'] ) ? (string) $GLOBALS['mvs_404_context'] : '';
 $mvs_identifier  = isset( $GLOBALS['mvs_404_identifier'] ) ? (string) $GLOBALS['mvs_404_identifier'] : '';
-$mvs_archive_url = home_url( '/media/' );
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 
 switch ( $mvs_context ) {
 	case 'profile':

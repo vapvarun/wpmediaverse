@@ -61,7 +61,7 @@ $mvs_tag_chips  = $mvs_cache->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 
 $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ) ); // phpcs:ignore WordPress.Security.NonceVerification
 ?>
 <div class="mvs-tag-cloud<?php echo $mvs_show_all ? ' mvs-tag-cloud--all' : ''; ?>">
-	<a class="mvs-tag-cloud-item <?php echo '' === $mvs_active_tag && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
+	<a class="mvs-tag-cloud-item <?php echo '' === $mvs_active_tag && '' === \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_search() ? 'active' : ''; ?>"
 		href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
 	<span class="mvs-tag-cloud-items">
 		<?php

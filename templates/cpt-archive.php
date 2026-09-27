@@ -26,7 +26,7 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 // -----------------------------------------------------------------------
 $mvs_cpt          = is_post_type_archive( 'mvs_album' ) ? 'mvs_album' : 'mvs_collection';
 $mvs_is_albums    = 'mvs_album' === $mvs_cpt;
-$mvs_archive_url  = home_url( '/media/' );
+$mvs_archive_url  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 $mvs_posts_pp     = 24; // big-site readiness: bounded, never unbounded.
 
 // -----------------------------------------------------------------------

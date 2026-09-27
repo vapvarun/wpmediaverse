@@ -18,7 +18,7 @@ do_action( 'mvs_before_content' );
 require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Archive URL (base media page).
-$mvs_archive_url = home_url( '/media/' );
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 ?>
 <?php // Logged-out CTA banner. ?>
 <?php if ( ! is_user_logged_in() ) : ?>
@@ -41,14 +41,14 @@ $mvs_archive_url = home_url( '/media/' );
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 	<?php
-// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
-// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
-// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
-// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
-// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
-// idempotent no-op because themes may override this template — Production Rule #5.
-?>
-<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
+	// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+	// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+	// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+	// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+	// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+	// idempotent no-op because themes may override this template — Production Rule #5.
+	?>
+	<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
 <?php endif; ?>
 
 <div class="mvs-explore-page">
@@ -196,8 +196,9 @@ $mvs_archive_url = home_url( '/media/' );
 				<div class="mvs-search-field">
 					<svg class="mvs-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 					<label for="mvs-search-input" class="screen-reader-text"><?php esc_html_e( 'Search media', 'wpmediaverse' ); ?></label>
-					<input type="text" name="s" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
-						value="<?php echo isset( $_GET['s'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['s'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>" id="mvs-search-input" />
+					<?php // `q`, never `s`: on a real page `s` becomes the site's own search (Basecamp 10344452624). ?>
+					<input type="text" name="<?php echo esc_attr( \WPMediaVerse\Core\TemplateHelpers::EXPLORE_SEARCH_PARAM ); ?>" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
+						value="<?php echo esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_search() ); ?>" id="mvs-search-input" />
 				</div>
 			</div>
 		</form>
@@ -215,19 +216,19 @@ $mvs_archive_url = home_url( '/media/' );
 	</div>
 
 	<?php
-// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
-// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
-// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
-// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
-// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
-// idempotent no-op because themes may override this template — Production Rule #5.
-?>
+	// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+	// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+	// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+	// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+	// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+	// idempotent no-op because themes may override this template — Production Rule #5.
+	?>
 <?php wp_enqueue_script( 'mvs-explore-search' ); ?>
 
 	<?php
 	// One tag cloud for every Explore layout: Free's grid and all Pro feed layouts
 	// render this same partial, so the chips cannot drift apart again.
-	include \WPMediaVerse\Core\TemplateLoader::locate( 'explore-tag-cloud.php', 'partials' );
+	require \WPMediaVerse\Core\TemplateLoader::locate( 'explore-tag-cloud.php', 'partials' );
 	?>
 
 	<?php
@@ -236,7 +237,7 @@ $mvs_archive_url = home_url( '/media/' );
 	$paged    = max( 1, absint( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
 	$offset   = ( $paged - 1 ) * $per_page;
 
-	$mvs_search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+	$mvs_search = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_search();
 
 	// Privacy scope by viewer: anon -> public only; logged-in non-moderator ->
 	// public + members + own; moderator -> no privacy filter.
@@ -271,17 +272,17 @@ $mvs_archive_url = home_url( '/media/' );
 	$mvs_order     = $mvs_sort_args['order'];
 
 	$mvs_query_args = array(
-		'status'                  => 'publish',
-		'moderation_status'       => 'approved',
-		'search'                  => $mvs_search,
-		'privacy'                 => $mvs_privacy,
-		'viewer_id'               => $mvs_viewer_id,
-		'exclude_non_cover_group' => true,
+		'status'                   => 'publish',
+		'moderation_status'        => 'approved',
+		'search'                   => $mvs_search,
+		'privacy'                  => $mvs_privacy,
+		'viewer_id'                => $mvs_viewer_id,
+		'exclude_non_cover_group'  => true,
 		'exclude_empty_media_type' => true,
-		'orderby'                 => $mvs_sort,
-		'order'                   => $mvs_order,
-		'limit'                   => $per_page,
-		'offset'                  => $offset,
+		'orderby'                  => $mvs_sort,
+		'order'                    => $mvs_order,
+		'limit'                    => $per_page,
+		'offset'                   => $offset,
 	);
 
 	// Profile user filter.
@@ -364,7 +365,7 @@ $mvs_archive_url = home_url( '/media/' );
 	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_explore_sort_toolbar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the helper escapes every value.
 		(int) $total_items,
 		array(
-			's'            => $mvs_search,
+			\WPMediaVerse\Core\TemplateHelpers::EXPLORE_SEARCH_PARAM => $mvs_search,
 			'mvs_tag'      => $mvs_filter_tag,
 			'mvs_category' => $mvs_filter_cat,
 		)
@@ -502,7 +503,7 @@ $mvs_archive_url = home_url( '/media/' );
 					data-layout="grid"
 					data-tag="<?php echo esc_attr( get_query_var( 'mvs_tag', '' ) ); ?>"
 					data-category="<?php echo esc_attr( get_query_var( 'mvs_category', '' ) ); ?>"
-					data-search="<?php echo esc_attr( get_query_var( 's', '' ) ); ?>"
+					data-search="<?php echo esc_attr( $mvs_search ); ?>"
 					<?php // No scope: REST then applies the same viewer privacy as page 1 (public + members + own). ?>
 					<?php if ( $mvs_profile ) : ?>
 					data-author="<?php echo absint( $mvs_profile->ID ); ?>"

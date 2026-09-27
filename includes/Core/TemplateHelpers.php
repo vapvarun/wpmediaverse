@@ -28,6 +28,15 @@ defined( 'ABSPATH' ) || exit;
 class TemplateHelpers implements TemplateHelpersInterface {
 
 	/**
+	 * Query parameter Explore searches with. See explore_search().
+	 *
+	 * @since 2.6.0
+	 *
+	 * @var string
+	 */
+	public const EXPLORE_SEARCH_PARAM = 'q';
+
+	/**
 	 * Resolve the best thumbnail URL for a media item.
 	 *
 	 * Priority: custom thumbnail meta (thumb_large/thumb_medium/thumb_thumb) >
@@ -1535,17 +1544,48 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * sent users to the rewrite instead of the real page on sites whose explore
 	 * page has a different slug (e.g. /explore-media/).
 	 *
+	 * The ONE place that answers "where is Explore". Templates in both plugins
+	 * link here instead of spelling /media/, which a mapped page now redirects
+	 * (Basecamp 10344452624).
+	 *
+	 * @since 2.6.0 public (was the private resolve_explore_url()).
+	 *
 	 * @return string
 	 */
-	private function resolve_explore_url(): string {
+	public function explore_url(): string {
 		$explore_id = (int) get_option( 'mvs_page_explore', 0 );
-		if ( $explore_id ) {
+		if ( $explore_id && 'publish' === get_post_status( $explore_id ) ) {
 			$url = get_permalink( $explore_id );
 			if ( $url ) {
 				return $url;
 			}
 		}
 		return home_url( '/media/' );
+	}
+
+	/**
+	 * The Explore search term from the current request.
+	 *
+	 * Explore searches with `q`, the same word the dashboard and the drive use,
+	 * because `s` is a RESERVED WordPress query var: on a real page (a mapped
+	 * Explore page, or the front page) `?s=` turns the request into the site's
+	 * own search. `s` is still read so old /media/?s= links keep working
+	 * (Basecamp 10344452624).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string Sanitised term, or ''.
+	 */
+	public function explore_search(): string {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view state.
+		foreach ( array( self::EXPLORE_SEARCH_PARAM, 's' ) as $key ) {
+			if ( isset( $_GET[ $key ] ) && '' !== $_GET[ $key ] ) {
+				return sanitize_text_field( wp_unslash( $_GET[ $key ] ) );
+			}
+		}
+		// phpcs:enable
+
+		return '';
 	}
 
 	/**
@@ -1647,7 +1687,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				}
 
 				$parent = array(
-					'url'   => $this->resolve_explore_url(),
+					'url'   => $this->explore_url(),
 					'label' => __( 'Explore', 'wpmediaverse' ),
 				);
 				break;
@@ -1661,7 +1701,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					);
 				} else {
 					$parent = array(
-						'url'   => $this->resolve_explore_url(),
+						'url'   => $this->explore_url(),
 						'label' => __( 'Explore', 'wpmediaverse' ),
 					);
 				}
@@ -1879,12 +1919,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			return '';
 		}
 		if ( null === $hidden ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
-			$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 			$hidden = array(
-				's'            => $search,
-				'mvs_tag'      => (string) get_query_var( 'mvs_tag', '' ),
-				'mvs_category' => (string) get_query_var( 'mvs_category', '' ),
+				self::EXPLORE_SEARCH_PARAM => $this->explore_search(),
+				'mvs_tag'                  => (string) get_query_var( 'mvs_tag', '' ),
+				'mvs_category'             => (string) get_query_var( 'mvs_category', '' ),
 			);
 		}
 		$sort = $this->explore_sort();
@@ -1959,8 +1997,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$extra  = isset( $args['class'] ) ? ' ' . (string) $args['class'] : '';
 		$submit = isset( $args['submit'] ) ? (string) $args['submit'] : '';
 
-		$wrap  = $this->toolbar_attrs( $args );
-		$html  = $form
+		$wrap = $this->toolbar_attrs( $args );
+		$html = $form
 			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search"' . $wrap . '>'
 			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search"' . $wrap . '>';
 

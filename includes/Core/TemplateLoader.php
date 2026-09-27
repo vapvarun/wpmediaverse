@@ -28,6 +28,15 @@ class TemplateLoader {
 	const THEME_DIR = 'wpmediaverse';
 
 	/**
+	 * Paths the My Media page used to live at, newest first (max 5).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @var string
+	 */
+	const OLD_DASHBOARD_PATHS_OPTION = 'mvs_dashboard_old_paths';
+
+	/**
 	 * Ask for the rewrite rules to be rebuilt on the next request.
 	 *
 	 * @since 2.6.0
@@ -60,6 +69,52 @@ class TemplateLoader {
 
 		if ( $after->post_name !== $before->post_name || (int) $after->post_parent !== (int) $before->post_parent ) {
 			self::queue_rewrite_flush();
+
+			// Remember where the page used to live, the way WordPress remembers
+			// a post's old slug, so links saved elsewhere (a nav menu, a
+			// bookmark) still reach their section (Basecamp 10344452624).
+			// ponytail: an ANCESTOR's rename is not recorded (core does not
+			// either); add it if owners hit it.
+			if ( $post_id === $dashboard ) {
+				$old  = ( $before->post_parent ? get_page_uri( (int) $before->post_parent ) . '/' : '' ) . $before->post_name;
+				$list = array_values( array_diff( (array) get_option( self::OLD_DASHBOARD_PATHS_OPTION, array() ), array( $old, get_page_uri( $dashboard ) ) ) );
+				array_unshift( $list, $old );
+				update_option( self::OLD_DASHBOARD_PATHS_OPTION, array_slice( $list, 0, 5 ), false );
+			}
+		}
+	}
+
+	/**
+	 * 301 a request for an old My Media path to the page's current path.
+	 *
+	 * Only a request that is about to 404 is touched, so a page that now owns
+	 * the old address always wins.
+	 *
+	 * @since 2.6.0
+	 */
+	public function redirect_old_dashboard_path(): void {
+		if ( ! is_404() ) {
+			return;
+		}
+
+		$dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
+		$old_paths = (array) get_option( self::OLD_DASHBOARD_PATHS_OPTION, array() );
+		if ( ! $dashboard || ! $old_paths ) {
+			return;
+		}
+
+		$request = trim( (string) ( $GLOBALS['wp']->request ?? '' ), '/' );
+		foreach ( $old_paths as $old ) {
+			$old = trim( (string) $old, '/' );
+			if ( '' === $old || ( $request !== $old && 0 !== strpos( $request, $old . '/' ) ) ) {
+				continue;
+			}
+
+			$url = home_url( user_trailingslashit( get_page_uri( $dashboard ) . substr( $request, strlen( $old ) ) ) );
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET state carried over.
+			$query = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+			wp_safe_redirect( $query ? add_query_arg( urlencode_deep( $query ), $url ) : $url, 301 );
+			exit;
 		}
 	}
 
@@ -108,6 +163,11 @@ class TemplateLoader {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET filters carried to the new address.
 		$query = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+		// `s` would turn the page into the site's own search; Explore reads `q`.
+		if ( isset( $query['s'] ) ) {
+			$query[ TemplateHelpers::EXPLORE_SEARCH_PARAM ] = $query['s'];
+			unset( $query['s'] );
+		}
 		if ( $query ) {
 			$url = add_query_arg( urlencode_deep( $query ), $url );
 		}
@@ -129,6 +189,7 @@ class TemplateLoader {
 		add_action( 'add_option_mvs_page_dashboard', array( self::class, 'queue_rewrite_flush' ) );
 		add_action( 'update_option_mvs_page_dashboard', array( self::class, 'queue_rewrite_flush' ) );
 		add_action( 'post_updated', array( self::class, 'flush_when_dashboard_path_changes' ), 10, 3 );
+		add_action( 'template_redirect', array( $this, 'redirect_old_dashboard_path' ), 4 );
 
 		// Send off-site sections to where they actually live. Before
 		// load_media_templates, or the dead panel renders first.

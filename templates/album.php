@@ -19,7 +19,7 @@ do_action( 'mvs_before_content' );
 require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Archive URL (base media page).
-$mvs_archive_url = home_url( '/media/' );
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 ?>
 <div class="mvs-single-album">
 	<?php

@@ -451,7 +451,6 @@ class Shortcodes {
 			'restUrl'  => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
 			'userId'   => get_current_user_id(),
-			'mediaUrl' => esc_url( home_url( '/media/' ) ),
 		);
 
 		ob_start();

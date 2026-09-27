@@ -22,6 +22,9 @@ class SiteAccessAndRoutingTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		delete_option( 'mvs_page_dashboard' );
+		delete_option( 'mvs_page_explore' );
+		delete_option( TemplateLoader::OLD_DASHBOARD_PATHS_OPTION );
+		unset( $_GET['q'], $_GET['s'] );
 		delete_option( CommunityPrivacyGate::MEMBERS_ONLY_OPTION );
 		delete_transient( 'mvs_flush_rewrite' );
 		remove_all_filters( 'mvs_rest_require_auth' );
@@ -119,5 +122,50 @@ class SiteAccessAndRoutingTest extends WP_UnitTestCase {
 		$this->assertFalse( CommunityPrivacyGate::page_needs_login(), 'Members are never sent to login.' );
 
 		delete_option( 'mvs_page_explore_documents' );
+	}
+
+	public function test_moving_the_dashboard_page_remembers_its_old_path(): void {
+		$this->set_permalink_structure( '/%postname%/' );
+		$page = self::factory()->post->create(
+			array(
+				'post_type' => 'page',
+				'post_name' => 'my-media',
+			)
+		);
+		update_option( 'mvs_page_dashboard', $page );
+
+		$parent = self::factory()->post->create(
+			array(
+				'post_type' => 'page',
+				'post_name' => 'visual-feed',
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $page,
+				'post_parent' => $parent,
+			)
+		);
+
+		$this->assertSame( array( 'my-media' ), get_option( TemplateLoader::OLD_DASHBOARD_PATHS_OPTION ) );
+	}
+
+	public function test_explore_searches_with_q_and_still_reads_old_s_links(): void {
+		$helpers = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+
+		$_GET['s'] = 'legacy';
+		$this->assertSame( 'legacy', $helpers->explore_search(), 'Old /media/?s= links keep working.' );
+
+		$_GET['q'] = 'current';
+		$this->assertSame( 'current', $helpers->explore_search(), 'q wins: s is WordPress\'s own search.' );
+	}
+
+	public function test_explore_url_is_the_mapped_page_when_there_is_one(): void {
+		$helpers = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+		$this->assertSame( home_url( '/media/' ), $helpers->explore_url() );
+
+		$page = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		update_option( 'mvs_page_explore', $page );
+		$this->assertSame( get_permalink( $page ), $helpers->explore_url() );
 	}
 }
