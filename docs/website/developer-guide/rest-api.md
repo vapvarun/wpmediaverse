@@ -486,11 +486,21 @@ List the current user's followers.
 
 Get the current user's profile.
 
+Besides the profile fields, the response carries what a client needs to render the member's settings honestly:
+
+| Field | Meaning |
+|---|---|
+| `dm_access` | "Who can message you" as the site enforces it: the member's choice, or the site setting when that is stricter |
+| `dm_access_choices` | The values the member may pick: the site setting and everything stricter, least to most restrictive |
+| `email_activity_available` | `false` when the owner has no member email type switched on; hide the activity-email switch then |
+
+Show the messaging and online-status controls only when `features.messaging` in `GET /app/config` is `true`.
+
 ### PUT /me/profile
 
 **Auth:** Authenticated.
 
-Update profile fields.
+Update profile fields. A `dm_access` looser than the site setting is saved as the site setting, so the stored value is always one the site honours.
 
 ```json
 {

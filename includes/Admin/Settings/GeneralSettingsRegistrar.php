@@ -136,7 +136,8 @@ class GeneralSettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_default_privacy' ),
-				'default'           => 'public',
+				// Same source as Activator: Members Only on a private community.
+				'default'           => \WPMediaVerse\Admin\PrivateCommunityDefault::default_privacy(),
 			)
 		);
 		FieldRenderer::add_field(

@@ -60,7 +60,7 @@ $mvs_profile_ctx = array(
 	'lastName'        => $mvs_user->last_name,
 	'displayName'     => $mvs_user->display_name,
 	'bio'             => $mvs_user->description,
-	'dmAccess'        => get_user_meta( $mvs_user_id, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
+	'dmAccess'        => \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_user_id ),
 	'onlineStatus'    => get_user_meta( $mvs_user_id, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
 	'emailActivity'   => 'off' === get_user_meta( $mvs_user_id, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 	'avatarUrl'       => $mvs_avatar_url,
@@ -183,15 +183,15 @@ wp_enqueue_script_module(
 				data-wp-bind--value="context.bio"></textarea>
 		</div>
 
+		<?php if ( \WPMediaVerse\Core\Plugin::messaging_enabled() ) : ?>
 		<div class="mvs-profile-field">
 			<label for="mvs-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
 			<select id="mvs-dm-access"
 				data-wp-bind--value="context.dmAccess"
 				data-wp-on--change="actions.updateDmAccess">
-				<option value="everyone"><?php esc_html_e( 'Everyone', 'wpmediaverse' ); ?></option>
-				<option value="followers"><?php esc_html_e( 'People who follow you', 'wpmediaverse' ); ?></option>
-				<option value="mutual"><?php esc_html_e( 'People you follow back', 'wpmediaverse' ); ?></option>
-				<option value="nobody"><?php esc_html_e( 'No one', 'wpmediaverse' ); ?></option>
+				<?php foreach ( \WPMediaVerse\Services\ProfileService::dm_access_options() as $mvs_dm_value => $mvs_dm_label ) : ?>
+					<option value="<?php echo esc_attr( $mvs_dm_value ); ?>"><?php echo esc_html( $mvs_dm_label ); ?></option>
+				<?php endforeach; ?>
 			</select>
 		</div>
 
@@ -204,6 +204,8 @@ wp_enqueue_script_module(
 				<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 			</select>
 		</div>
+		<?php endif; ?>
+		<?php if ( \WPMediaVerse\Services\EmailService::any_type_enabled() ) : ?>
 		<div class="mvs-profile-field">
 			<label for="mvs-email-activity"><?php esc_html_e( 'Email me about activity', 'wpmediaverse' ); ?></label>
 			<select id="mvs-email-activity"
@@ -213,6 +215,7 @@ wp_enqueue_script_module(
 				<option value="off"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 			</select>
 		</div>
+		<?php endif; ?>
 
 		<div class="mvs-profile-actions">
 			<button type="submit" class="mvs-btn mvs-btn--primary"

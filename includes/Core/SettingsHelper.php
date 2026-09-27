@@ -435,7 +435,14 @@ class SettingsHelper {
 	public static function get_max_upload_size( int $user_id = 0 ): int {
 		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
 
-		/** This filter is documented in includes/Services/UploadService.php */
+		/**
+		 * Filters the maximum upload file size in bytes.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $max_size Maximum upload size in bytes.
+		 * @param int $user_id  Uploading user ID.
+		 */
 		return (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
 	}
 

@@ -46,6 +46,23 @@ class EmailService {
 	}
 
 	/**
+	 * Whether the owner switched on any member email type. When none is on,
+	 * a member's activity-email switch would do nothing, so it is hidden.
+	 *
+	 * @since 2.6.0
+	 * @return bool
+	 */
+	public static function any_type_enabled(): bool {
+		foreach ( self::TYPES as $option ) {
+			if ( get_option( $option, false ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Whether the owner switched a type's email on.
 	 *
 	 * @param string $type Notification type.

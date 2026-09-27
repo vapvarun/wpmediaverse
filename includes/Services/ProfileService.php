@@ -53,12 +53,20 @@ class ProfileService {
 	);
 
 	/**
+	 * "Who can message you", least to most restrictive. The site-wide
+	 * mvs_dm_access is a ceiling: a member may only choose it or stricter.
+	 *
+	 * @var string[]
+	 */
+	const DM_RANK = array( 'everyone', 'followers', 'mutual', 'nobody' );
+
+	/**
 	 * Allowed values per meta field (first entry is the default).
 	 *
 	 * @var array<string,string[]>
 	 */
 	const META_VALUES = array(
-		'dm_access'      => array( 'everyone', 'followers', 'mutual', 'nobody' ),
+		'dm_access'      => self::DM_RANK,
 		'online_status'  => array( 'everyone', 'nobody' ),
 		'email_activity' => array( 'on', 'off' ),
 	);
@@ -126,6 +134,12 @@ class ProfileService {
 			$profile[ $field ] = $stored;
 		}
 
+		// What the site actually enforces, and what the member may pick, so the
+		// web form and an app render the same honest choices.
+		$profile['dm_access']               = self::effective_dm_access( $user_id );
+		$profile['dm_access_choices']       = self::dm_access_choices();
+		$profile['email_activity_available'] = \WPMediaVerse\Services\EmailService::any_type_enabled();
+
 		/**
 		 * Filters the profile data returned by the profile service.
 		 *
@@ -187,6 +201,11 @@ class ProfileService {
 			if ( ! in_array( $value, self::META_VALUES[ $field ], true ) ) {
 				continue;
 			}
+			// A member may narrow the site setting, never widen it: a looser
+			// choice is stored as the site's own level, so "Saved" is true.
+			if ( 'dm_access' === $field ) {
+				$value = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling( (string) get_option( 'mvs_dm_access', 'everyone' ), $value, self::DM_RANK );
+			}
 			update_user_meta( $user_id, $meta_key, $value );
 			$meta_updated = true;
 		}
@@ -231,6 +250,54 @@ class ProfileService {
 	 * @param int $user_id User ID.
 	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
 	 */
+	/**
+	 * "Who can message you" values a member may pick on this site: the site
+	 * setting and everything stricter.
+	 *
+	 * @since 2.6.0
+	 * @return string[]
+	 */
+	public static function dm_access_choices(): array {
+		$site  = (string) get_option( 'mvs_dm_access', 'everyone' );
+		$index = array_search( $site, self::DM_RANK, true );
+
+		// Unknown site value fails closed, like resolve_privacy_ceiling().
+		return array_slice( self::DM_RANK, false === $index ? count( self::DM_RANK ) - 1 : (int) $index );
+	}
+
+	/**
+	 * The member's "who can message you" as the site enforces it.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id Member.
+	 * @return string
+	 */
+	public static function effective_dm_access( int $user_id ): string {
+		return \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
+			(string) get_option( 'mvs_dm_access', 'everyone' ),
+			get_user_meta( $user_id, self::META_FIELDS['dm_access'], true ),
+			self::DM_RANK
+		);
+	}
+
+	/**
+	 * Labels for the "who can message you" choices this site allows.
+	 *
+	 * @since 2.6.0
+	 * @return array<string,string> value => label.
+	 */
+	public static function dm_access_options(): array {
+		$labels = array(
+			'everyone'  => __( 'Everyone', 'wpmediaverse' ),
+			'followers' => __( 'People who follow you', 'wpmediaverse' ),
+			'mutual'    => __( 'People you follow back', 'wpmediaverse' ),
+			'nobody'    => __( 'No one', 'wpmediaverse' ),
+		);
+
+		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
+	}
+
 	public static function community_profile( int $user_id ): array {
 		$profile = array(
 			'url'    => '',

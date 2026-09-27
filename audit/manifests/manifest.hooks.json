@@ -1505,7 +1505,7 @@
         "int $max_size",
         "int $user_id"
       ],
-      "where": "includes/Services/UploadService.php:123",
+      "where": "includes/Core/SettingsHelper.php:446",
       "consumed_by": []
     },
     {

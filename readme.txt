@@ -155,6 +155,8 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Fix      - Usage history, space links and device tokens are stored in UTC on hosts whose database or site clock is not UTC, and trending and view retention compare in UTC.
 * Fix      - Starting a conversation with yourself is refused instead of opening one of your other conversations.
 * Fix      - Reporting a message that was unsent no longer logs a warning, and your own messages still cannot be reported.
+* Fix      - Profile settings offer only the messaging choices the site allows, hide messaging and online status while Messages is off, and hide the activity-email switch when no email type is on.
+* Fix      - The chat panel's "MediaVerse pages only" choice now includes the Explore Documents page.
 * Security - Block style fields no longer accept CSS that could inject into the page.
 * Security - Draft media is no longer returned to signed-out visitors through the API.
 * Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.

@@ -122,17 +122,8 @@ class UploadService {
 		}
 
 		// Check file size using server-side measurement (not client-reported).
-		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
-
-		/**
-		 * Filters the maximum upload file size in bytes.
-		 *
-		 * @since 1.1.0
-		 *
-		 * @param int $max_size Maximum upload size in bytes.
-		 * @param int $user_id  Uploading user ID.
-		 */
-		$max_size = (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
+		// One reader for the limit, shared with Pro's document ingest.
+		$max_size = \WPMediaVerse\Core\SettingsHelper::get_max_upload_size( $user_id );
 
 		$actual_size = filesize( $file['tmp_name'] );
 		if ( false === $actual_size || $actual_size > $max_size ) {

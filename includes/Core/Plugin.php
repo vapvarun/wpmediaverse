@@ -3225,6 +3225,7 @@ JS;
 			array(
 				(int) get_option( 'mvs_page_dashboard', 0 ),
 				(int) get_option( 'mvs_page_explore', 0 ),
+				(int) get_option( 'mvs_page_explore_documents', 0 ),
 				(int) get_option( 'mvs_page_upload', 0 ),
 			)
 		);

@@ -42,7 +42,7 @@ $mvs_deferred  = $mvs_community['fields'];
 					'lastName'        => $mvs_current_user->last_name,
 					'displayName'     => $mvs_current_user->display_name,
 					'bio'             => $mvs_current_user->description,
-					'dmAccess'        => get_user_meta( $mvs_current_user->ID, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
+					'dmAccess'        => \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_current_user->ID ),
 					'onlineStatus'    => get_user_meta( $mvs_current_user->ID, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
 					'emailActivity'   => 'off' === get_user_meta( $mvs_current_user->ID, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 					'avatarUrl'       => $mvs_avatar_url ?: '',
@@ -124,15 +124,15 @@ $mvs_deferred  = $mvs_community['fields'];
 						data-wp-bind--value="context.bio"></textarea>
 				</div>
 				<div class="mvs-profile-field-row">
+					<?php if ( \WPMediaVerse\Core\Plugin::messaging_enabled() ) : ?>
 					<div class="mvs-profile-field">
 						<label for="mvs-dash-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
 						<select id="mvs-dash-dm-access"
 							data-wp-bind--value="context.dmAccess"
 							data-wp-on--change="actions.updateDmAccess">
-							<option value="everyone"><?php esc_html_e( 'Everyone', 'wpmediaverse' ); ?></option>
-							<option value="followers"><?php esc_html_e( 'People who follow you', 'wpmediaverse' ); ?></option>
-							<option value="mutual"><?php esc_html_e( 'People you follow back', 'wpmediaverse' ); ?></option>
-							<option value="nobody"><?php esc_html_e( 'No one', 'wpmediaverse' ); ?></option>
+							<?php foreach ( \WPMediaVerse\Services\ProfileService::dm_access_options() as $mvs_dm_value => $mvs_dm_label ) : ?>
+								<option value="<?php echo esc_attr( $mvs_dm_value ); ?>"><?php echo esc_html( $mvs_dm_label ); ?></option>
+							<?php endforeach; ?>
 						</select>
 					</div>
 					<div class="mvs-profile-field">
@@ -144,6 +144,8 @@ $mvs_deferred  = $mvs_community['fields'];
 							<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 						</select>
 					</div>
+					<?php endif; ?>
+					<?php if ( \WPMediaVerse\Services\EmailService::any_type_enabled() ) : ?>
 					<div class="mvs-profile-field">
 						<label for="mvs-email-activity"><?php esc_html_e( 'Email me about activity', 'wpmediaverse' ); ?></label>
 						<select id="mvs-email-activity"
@@ -153,6 +155,7 @@ $mvs_deferred  = $mvs_community['fields'];
 							<option value="off"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 						</select>
 					</div>
+					<?php endif; ?>
 				</div>
 				<div class="mvs-profile-form-actions">
 					<button type="button" class="mvs-btn mvs-btn--primary mvs-btn--small"
