@@ -2,6 +2,11 @@ parameters:
 	ignoreErrors:
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Core/TemplateVersions.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 2
 			path: includes/Admin/DocumentListPage.php
 

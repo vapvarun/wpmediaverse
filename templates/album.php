@@ -8,6 +8,7 @@
  * Override by copying to your-theme/wpmediaverse/album.php
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -47,9 +48,9 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		// on the album's post ID returns whatever media item happens to share that
 		// ID, which defaulted a private album to 'public' — and, because this value
 		// seeds editPrivacy below, republished it on the next title edit.
-		$mvs_albums    = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-		$album_privacy = $mvs_albums->get_privacy( $mvs_album_id );
-		$album_type    = $mvs_albums->get_album_type( $mvs_album_id );
+		$mvs_albums         = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$album_privacy      = $mvs_albums->get_privacy( $mvs_album_id );
+		$album_type         = $mvs_albums->get_album_type( $mvs_album_id );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		$mvs_is_playlist    = 'playlist' === $album_type;
 

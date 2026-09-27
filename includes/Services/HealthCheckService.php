@@ -69,7 +69,68 @@ class HealthCheckService {
 			'test'  => array( $this, 'test_media_privacy' ),
 		);
 
+		$tests['direct']['wpmediaverse_template_overrides'] = array(
+			'label' => __( 'MediaVerse Template Overrides', 'wpmediaverse' ),
+			'test'  => array( $this, 'test_template_overrides' ),
+		);
+
 		return $tests;
+	}
+
+	/**
+	 * Tell the owner which theme copies of our templates are out of date.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array
+	 */
+	public function test_template_overrides(): array {
+		$outdated = \WPMediaVerse\Core\TemplateVersions::outdated();
+
+		if ( empty( $outdated ) ) {
+			return array(
+				'label'       => __( 'Your theme\'s MediaVerse templates are up to date', 'wpmediaverse' ),
+				'status'      => 'good',
+				'badge'       => array(
+					'label' => 'WPMediaVerse',
+					'color' => 'blue',
+				),
+				'description' => sprintf( '<p>%s</p>', esc_html__( 'Your theme does not override any MediaVerse template, or every copy it has matches the current version.', 'wpmediaverse' ) ),
+				'test'        => 'wpmediaverse_template_overrides',
+			);
+		}
+
+		$items = '';
+		foreach ( $outdated as $row ) {
+			$items .= sprintf(
+				'<li><code>%1$s</code> (%2$s): %3$s</li>',
+				esc_html( $row['file'] ),
+				esc_html( $row['plugin'] ),
+				esc_html(
+					'' === $row['theme_version']
+						/* translators: %s: current template version. */
+						? sprintf( __( 'your copy has no version (made before 2.6.0), current is %s', 'wpmediaverse' ), $row['plugin_version'] )
+						/* translators: 1: theme copy version, 2: current template version. */
+						: sprintf( __( 'your copy is version %1$s, current is %2$s', 'wpmediaverse' ), $row['theme_version'], $row['plugin_version'] )
+				)
+			);
+		}
+
+		return array(
+			'label'       => __( 'Your theme has outdated copies of MediaVerse templates', 'wpmediaverse' ),
+			'status'      => 'recommended',
+			'badge'       => array(
+				'label' => 'WPMediaVerse',
+				'color' => 'orange',
+			),
+			'description' => sprintf(
+				'<p>%1$s</p><ul>%2$s</ul><p>%3$s</p>',
+				esc_html__( 'Your theme replaces these MediaVerse templates with its own copies, and the copies are older than the templates in the plugin. They keep working, but they miss fixes and may not show new features correctly.', 'wpmediaverse' ),
+				$items,
+				esc_html__( 'Ask your theme developer to update them: copy the current file from the plugin\'s templates folder over the theme\'s copy in its wpmediaverse folder, then re-apply the theme\'s changes.', 'wpmediaverse' )
+			),
+			'test'        => 'wpmediaverse_template_overrides',
+		);
 	}
 
 	/**

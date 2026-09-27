@@ -7,6 +7,7 @@
  * the Services\TransactionService — never raw $wpdb.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  *
  * @var int $mvs_uh_user_id  Optional member ID (defaults to current user).
  * @var int $mvs_uh_limit    Optional row cap (default 20).

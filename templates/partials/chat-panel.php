@@ -3,6 +3,7 @@
  * Chat panel — slide-out container rendered in wp_footer.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   1.1.0
  */
 

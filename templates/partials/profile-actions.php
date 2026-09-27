@@ -7,6 +7,7 @@
  *   $mvs_is_own_profile (bool) — Whether the viewer is the profile owner.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   1.2.0
  */
 

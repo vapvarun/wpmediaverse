@@ -11,6 +11,7 @@
  * Override by copying to your-theme/wpmediaverse/cpt-archive.php
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -19,15 +20,15 @@ defined( 'ABSPATH' ) || exit;
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // -----------------------------------------------------------------------
 // Determine which CPT we are archiving.
 // -----------------------------------------------------------------------
-$mvs_cpt          = is_post_type_archive( 'mvs_album' ) ? 'mvs_album' : 'mvs_collection';
-$mvs_is_albums    = 'mvs_album' === $mvs_cpt;
-$mvs_archive_url  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
-$mvs_posts_pp     = 24; // big-site readiness: bounded, never unbounded.
+$mvs_cpt         = is_post_type_archive( 'mvs_album' ) ? 'mvs_album' : 'mvs_collection';
+$mvs_is_albums   = 'mvs_album' === $mvs_cpt;
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
+$mvs_posts_pp    = 24; // big-site readiness: bounded, never unbounded.
 
 // -----------------------------------------------------------------------
 // Pagination.
@@ -53,11 +54,11 @@ $mvs_total_pages = $mvs_archive_query->max_num_pages;
 // -----------------------------------------------------------------------
 // Service references (loaded once, reused in the loop).
 // -----------------------------------------------------------------------
-$mvs_container       = \WPMediaVerse\Core\Plugin::container();
-$mvs_album_svc       = $mvs_is_albums ? $mvs_container->get( 'albums' ) : null;
-$mvs_collection_svc  = $mvs_is_albums ? null : $mvs_container->get( 'collections' );
-$mvs_favorites_svc   = $mvs_is_albums ? null : ( $mvs_container->has( 'favorites' ) ? $mvs_container->get( 'favorites' ) : null );
-$mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
+$mvs_container      = \WPMediaVerse\Core\Plugin::container();
+$mvs_album_svc      = $mvs_is_albums ? $mvs_container->get( 'albums' ) : null;
+$mvs_collection_svc = $mvs_is_albums ? null : $mvs_container->get( 'collections' );
+$mvs_favorites_svc  = $mvs_is_albums ? null : ( $mvs_container->has( 'favorites' ) ? $mvs_container->get( 'favorites' ) : null );
+$mvs_tpl_helpers    = $mvs_container->get( 'template_helpers' );
 ?>
 <div class="mvs-explore-page">
 
@@ -88,14 +89,14 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 			// -------------------------------------------------------
 			// Cover image resolution.
 			// Albums: use AlbumService::get_resolved_cover_media_id +
-			//         MediaUrl::thumb (consistent with the explore.php
-			//         card markup, avoids a raw image URL write).
+			// MediaUrl::thumb (consistent with the explore.php
+			// card markup, avoids a raw image URL write).
 			// Collections: first published media item in the collection.
 			// Per-card cover lookups are accepted here — there is no
 			// batch cover API yet; each card is O(1) cached DB reads.
 			// -------------------------------------------------------
-			$mvs_cover_url   = '';
-			$mvs_item_count  = 0;
+			$mvs_cover_url  = '';
+			$mvs_item_count = 0;
 
 			if ( $mvs_is_albums && $mvs_album_svc ) {
 				$mvs_cover_id   = $mvs_album_svc->get_resolved_cover_media_id( $mvs_post_id );
@@ -220,7 +221,7 @@ $mvs_tpl_helpers     = $mvs_container->get( 'template_helpers' );
 </div><!-- .mvs-explore-page -->
 
 <?php
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 

@@ -9,6 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -60,44 +61,44 @@ wp_interactivity_state(
 		'reportsEnabled'      => \WPMediaVerse\Social\ReportService::reports_enabled(),
 		'reportReasons'       => \WPMediaVerse\Social\ReportService::reason_labels(),
 		'i18n'                => array(
-			'reportPrompt'     => __( 'Why are you reporting this?', 'wpmediaverse' ),
-			'loginToReact'     => __( 'Please log in to react.', 'wpmediaverse' ),
-			'reportSubmitted'  => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
-			'reportAlready'    => __( 'Already reported or error occurred.', 'wpmediaverse' ),
-			'reportAction'     => __( 'Report', 'wpmediaverse' ),
-			'save'             => __( 'Save', 'wpmediaverse' ),
-			'saved'            => __( 'Saved', 'wpmediaverse' ),
-			'favorite'         => __( 'Favorite', 'wpmediaverse' ),
-			'favorited'        => __( 'Favorited', 'wpmediaverse' ),
-			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
-			'uploadMedia'      => __( 'Upload media', 'wpmediaverse' ),
-			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
-			'createAlbum'      => __( 'Create Album', 'wpmediaverse' ),
-			'uploadVideo'      => __( 'Upload Video', 'wpmediaverse' ),
-			'uploadAudio'      => __( 'Upload Audio', 'wpmediaverse' ),
-			'upload'           => __( 'Upload', 'wpmediaverse' ),
-			'savedRedirecting' => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
-			'settingsSaved'    => __( 'Media settings saved.', 'wpmediaverse' ),
-			'selectFiles'      => __( 'Please select files to upload.', 'wpmediaverse' ),
+			'reportPrompt'       => __( 'Why are you reporting this?', 'wpmediaverse' ),
+			'loginToReact'       => __( 'Please log in to react.', 'wpmediaverse' ),
+			'reportSubmitted'    => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
+			'reportAlready'      => __( 'Already reported or error occurred.', 'wpmediaverse' ),
+			'reportAction'       => __( 'Report', 'wpmediaverse' ),
+			'save'               => __( 'Save', 'wpmediaverse' ),
+			'saved'              => __( 'Saved', 'wpmediaverse' ),
+			'favorite'           => __( 'Favorite', 'wpmediaverse' ),
+			'favorited'          => __( 'Favorited', 'wpmediaverse' ),
+			'titleRequired'      => __( 'Title cannot be empty.', 'wpmediaverse' ),
+			'uploadMedia'        => __( 'Upload media', 'wpmediaverse' ),
+			'createGallery'      => __( 'Create Gallery Post', 'wpmediaverse' ),
+			'createAlbum'        => __( 'Create Album', 'wpmediaverse' ),
+			'uploadVideo'        => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadAudio'        => __( 'Upload Audio', 'wpmediaverse' ),
+			'upload'             => __( 'Upload', 'wpmediaverse' ),
+			'savedRedirecting'   => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+			'settingsSaved'      => __( 'Media settings saved.', 'wpmediaverse' ),
+			'selectFiles'        => __( 'Please select files to upload.', 'wpmediaverse' ),
 			/* translators: %d: number of files uploaded. */
-			'filesUploaded'    => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			'filesUploaded'      => __( '%d file(s) uploaded!', 'wpmediaverse' ),
 			/* translators: 1: uploaded count, 2: failed count. */
-			'uploadedFailed'   => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
-			'uploadFailedRetry' => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+			'uploadedFailed'     => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
+			'uploadFailedRetry'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
 			/* translators: 1: number of duplicate files, 2: existing media ID. */
 			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
-			'albumCreated'     => __( 'Album "%s" created!', 'wpmediaverse' ),
-			'failedLoad'       => __( 'Failed to load media.', 'wpmediaverse' ),
-			'failedComment'    => __( 'Failed to post comment.', 'wpmediaverse' ),
-			'linkCopied'       => __( 'Link copied!', 'wpmediaverse' ),
-			'copyFailed'       => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
-			'notDownloadable'  => __( 'This media is not available for download.', 'wpmediaverse' ),
+			'albumCreated'       => __( 'Album "%s" created!', 'wpmediaverse' ),
+			'failedLoad'         => __( 'Failed to load media.', 'wpmediaverse' ),
+			'failedComment'      => __( 'Failed to post comment.', 'wpmediaverse' ),
+			'linkCopied'         => __( 'Link copied!', 'wpmediaverse' ),
+			'copyFailed'         => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+			'notDownloadable'    => __( 'This media is not available for download.', 'wpmediaverse' ),
 			// Read by the store to name a stored level the picker does not
 			// offer. privacyChoices is what privacy_choices() offers, so the
 			// vocabulary is never restated client-side. Basecamp 10290748981.
-			'privacyLabels'    => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
-			'privacyChoices'   => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
+			'privacyLabels'      => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			'privacyChoices'     => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 		),
 	)
 );
@@ -745,11 +746,11 @@ wp_interactivity_state(
 	</div>
 
 	<!-- Confirm dialog — shared by every mvs/shared-ui showConfirm() caller
-	     (lightbox comment delete/edit, etc.). It lives here, in the global
-	     wp_footer frame, so it is present wherever the lightbox is. Before this
-	     it was copy-pasted into media-single/album/dashboard only, so the same
-	     confirm-driven action was inert on every other surface (Explore, profile
-	     grids): showConfirm() set state.confirmVisible with nothing bound to it. -->
+		(lightbox comment delete/edit, etc.). It lives here, in the global
+		wp_footer frame, so it is present wherever the lightbox is. Before this
+		it was copy-pasted into media-single/album/dashboard only, so the same
+		confirm-driven action was inert on every other surface (Explore, profile
+		grids): showConfirm() set state.confirmVisible with nothing bound to it. -->
 	<div class="mvs-confirm-overlay" hidden
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.confirmVisible">

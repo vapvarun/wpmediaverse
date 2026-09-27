@@ -186,6 +186,13 @@ if [ -x bin/dead-template-check.sh ]; then
   run_stage "1.8" "Dead-template check (no orphan templates)" bash bin/dead-template-check.sh
 fi
 
+# 1.9 — Template versioning: every theme-overridable template carries @version,
+# and a template changed since the last tag must bump it, or Site Health cannot
+# tell an owner their theme copy is stale. See bin/template-version-check.sh.
+if [ -x bin/template-version-check.sh ]; then
+  run_stage "1.9" "Template versioning (@version present and bumped)" bash bin/template-version-check.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then

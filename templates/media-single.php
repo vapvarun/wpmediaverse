@@ -6,6 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -599,56 +600,56 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 			}
 
 			$mvs_social_ctx = array(
-				'mediaId'            => $mvs_media_id,
-				'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-				'nonce'              => wp_create_nonce( 'wp_rest' ),
-				'isLoggedIn'         => is_user_logged_in(),
-				'currentUserId'      => $mvs_current_user_id,
+				'mediaId'             => $mvs_media_id,
+				'restUrl'             => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'               => wp_create_nonce( 'wp_rest' ),
+				'isLoggedIn'          => is_user_logged_in(),
+				'currentUserId'       => $mvs_current_user_id,
 				// Server-resolved edit window (seconds). The client used to hardcode
 				// 15 minutes while the server read the filterable
 				// mvs_comment_edit_window option, so any site that changed it got a
 				// UI that hid Edit while the API still allowed it — or offered Edit
 				// that then 403'd.
-				'commentEditWindow'  => (int) apply_filters(
+				'commentEditWindow'   => (int) apply_filters(
 					'mvs_comment_edit_window',
 					(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 				),
 				// A moderator may delete anyone's comment (the DELETE route allows it),
 				// so the Delete control shows on others' comments too — matching the API.
 				'canModerateComments' => current_user_can( 'moderate_mvs_media' ),
-				'isOwner'            => $mvs_is_owner,
-				'authorId'           => $mvs_author_id,
-				'isFollowing'        => false,
-				'type'               => 'media',
-				'archiveUrl'         => esc_url( $mvs_archive_url ),
-				'initialTitle'       => $mvs_title,
-				'initialDesc'        => $mvs_desc,
-				'initialPrivacy'     => $current_privacy,
-				'initialTags'        => $mvs_tag_names,
-				'reactions'          => array(),
-				'userReaction'       => '',
-				'isFavorite'         => $mvs_is_favorited,
-				'reported'           => $mvs_has_reported,
-				'comments'           => array(),
-				'commentText'        => '',
-				'viewCount'          => '',
-				'editVisible'        => false,
-				'editTitle'          => $mvs_title,
-				'editDesc'           => $mvs_desc,
-				'editPrivacy'        => $current_privacy,
+				'isOwner'             => $mvs_is_owner,
+				'authorId'            => $mvs_author_id,
+				'isFollowing'         => false,
+				'type'                => 'media',
+				'archiveUrl'          => esc_url( $mvs_archive_url ),
+				'initialTitle'        => $mvs_title,
+				'initialDesc'         => $mvs_desc,
+				'initialPrivacy'      => $current_privacy,
+				'initialTags'         => $mvs_tag_names,
+				'reactions'           => array(),
+				'userReaction'        => '',
+				'isFavorite'          => $mvs_is_favorited,
+				'reported'            => $mvs_has_reported,
+				'comments'            => array(),
+				'commentText'         => '',
+				'viewCount'           => '',
+				'editVisible'         => false,
+				'editTitle'           => $mvs_title,
+				'editDesc'            => $mvs_desc,
+				'editPrivacy'         => $current_privacy,
 				// Off by default — title edits leave the URL slug alone.
-				'editRegenerateSlug' => false,
+				'editRegenerateSlug'  => false,
 				// Empty at SSR so the data-wp-each <template> matches hydration; the
 				// store's callbacks.init() fills editTags from initialTags (above).
-				'editTags'           => array(),
-				'tagInput'           => '',
-				'tagResults'         => array(),
-				'tagDropdownVisible' => false,
-				'saving'             => false,
+				'editTags'            => array(),
+				'tagInput'            => '',
+				'tagResults'          => array(),
+				'tagDropdownVisible'  => false,
+				'saving'              => false,
 				// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
 				// Previously this had a leading 🔗 emoji which rendered alongside the
 				// lucide SVG as a double-icon (card #6).
-				'shareLabel'         => __( 'Share', 'wpmediaverse' ),
+				'shareLabel'          => __( 'Share', 'wpmediaverse' ),
 			);
 			?>
 

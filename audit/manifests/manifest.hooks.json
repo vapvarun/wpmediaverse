@@ -2910,6 +2910,18 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_template_roots",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $roots"
+      ],
+      "where": "includes/Core/TemplateVersions.php:41",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Core/Plugin.php"
+      ]
+    },
+    {
       "name": "mvs_template_variables",
       "type": "filter",
       "args_count": 2,

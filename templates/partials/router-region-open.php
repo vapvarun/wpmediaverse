@@ -6,6 +6,7 @@
  * JS navigate action can read them synchronously without a REST round-trip.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;

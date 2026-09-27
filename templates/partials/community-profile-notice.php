@@ -9,6 +9,7 @@
  * Expects: $mvs_community - the array community_profile() returns.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   2.6.0
  */
 

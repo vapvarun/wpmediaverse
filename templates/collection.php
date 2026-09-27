@@ -6,6 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/collection.php
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;

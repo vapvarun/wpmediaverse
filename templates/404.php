@@ -18,13 +18,14 @@
  * Override: copy to `your-theme/wpmediaverse/404.php`.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
 
 \WPMediaVerse\Core\TemplateHelpers::site_header();
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 do_action( 'mvs_before_content' );
 
@@ -88,6 +89,6 @@ $mvs_popular_tags = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->tag_
 </div>
 <?php
 do_action( 'mvs_after_content' );
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 \WPMediaVerse\Core\TemplateHelpers::site_footer();

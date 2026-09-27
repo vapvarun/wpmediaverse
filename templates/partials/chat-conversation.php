@@ -3,6 +3,7 @@
  * Chat conversation — active chat header, messages, and composer.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   1.1.0
  */
 

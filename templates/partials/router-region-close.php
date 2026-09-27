@@ -4,6 +4,7 @@
  * router-region-open.php.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;

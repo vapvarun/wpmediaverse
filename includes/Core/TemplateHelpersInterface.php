@@ -22,6 +22,17 @@ defined( 'ABSPATH' ) || exit;
 interface TemplateHelpersInterface {
 
 	/**
+	 * Query parameter Explore searches with. See explore_search().
+	 *
+	 * On the interface so Pro can name it without touching a Free class.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @var string
+	 */
+	public const EXPLORE_SEARCH_PARAM = 'q';
+
+	/**
 	 * Get a signed thumbnail URL for a media item at the requested size.
 	 *
 	 * @param int      $media_id Media ID.

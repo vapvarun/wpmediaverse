@@ -3,6 +3,7 @@
  * Chat composer — text input, attachment picker, voice recorder, send button.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   1.1.0
  */
 

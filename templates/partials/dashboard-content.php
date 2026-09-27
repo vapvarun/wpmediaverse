@@ -6,6 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -577,11 +578,11 @@ wp_interactivity_state(
 				// found the hard way:
 				//
 				// - The section lives on its own page (`url` declared). Pro's
-				//   Compete hub — Basecamp 10264172058.
+				// Compete hub — Basecamp 10264172058.
 				// - The section's panel is server-rendered on demand and only
-				//   emitted when it IS the active section. The drive, below:
-				//   rendering it on every tab cost ~53 queries for a member with
-				//   a real drive, so it is emitted only for itself.
+				// emitted when it IS the active section. The drive, below:
+				// rendering it on every tab cost ~53 queries for a member with
+				// a real drive, so it is emitted only for itself.
 				//
 				// The JS used to name `documents` directly. That was a name-check
 				// standing in for a rule, so when Compete arrived it was not

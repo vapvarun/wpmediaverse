@@ -279,6 +279,8 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
     plugins, and say in the commit what the sweep covered and what it did not. A fix
     with no sweep note is half a fix. (2026-09-03.)
 
+24. **Changing an overridable template bumps its `@version`.** Every template a theme can override (`templates/**` except `templates/admin/`) carries `@version` in its header; it moves to the release that ships a markup or variable change, and ONLY then. Site Health (`TemplateVersions` + `HealthCheckService::test_template_overrides()`) compares a theme's copy against it, so an unbumped change hides a stale copy from the owner. A template that stops reading or sending a request value is exactly such a change (the `s` -> `q` Explore search, Basecamp 10344452624). Enforced by `bin/template-version-check.sh` (local-CI stage 1.9), mutation-tested both ways. Pro registers its folder through `mvs_template_roots`. (Basecamp 10344471983, 2026-09-27.)
+
 **Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
 
 ---
@@ -466,6 +468,7 @@ What the gate runs (in order, see `bin/local-ci.sh`):
 | 1.6b Erasure coverage | `php bin/check-erasure.php` | a user-keyed table that is neither ERASE nor RETAIN in the privacy map | ✅ exits 0 |
 | 1.7 Template-style | `bin/template-style-check.sh` | inline cosmetic CSS / hardcoded hex in markup (Coding Rule 19) | ✅ exits 0 |
 | 1.8 Dead-template check | `bin/dead-template-check.sh` | orphan templates nothing loads | ✅ exits 0 |
+| 1.9 Template versioning | `bin/template-version-check.sh` | an overridable template without `@version`, or changed since the last tag without a bump (Coding Rule 24) | ✅ exits 0 (added 2026-09-27) |
 | 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific Rules 1–8 (1 native cap checks, 2 REST `__return_true` allowlist, 3 admin aggregates via `AdminAggregatesService`, 4 no per-entity transients, 5 REST `per_page` declares a `maximum`, 6 no refusal-as-success, 7 no direct `mvs_media_index` query outside `MediaRepository`, 8 no exec-family call in shipped source) | ✅ all 8 pass. Rule 7 (added 2026-08-11, **hard `violation()` since 2026-08-15**): all 32 tracked call sites migrated across `CLI/Commands.php` (11), `Services/CloudOps.php` (8), `Services/CptIdCollisionService.php` (6), `REST/Controller/MediaController.php` (4) and `Services/StorageRepairService.php` (3). Mutation-tested — a planted leak fails the script with exit 1. Allowlist is the repository layer (`Repository/MediaRepository.php`, `Repository/MediaIntegrityRepository.php`) plus `Core/Migrator.php` and `Services/AdminAggregatesService.php`, each with a written architectural reason. Rule 8 (2026-08-30) enforces Coding Rule 21 — 0 hits. |
 | 2.2 Architecture | `../wpmediaverse-pro/bin/architecture-checks.sh` (falls back to a local `bin/` copy; skipped if neither is checked out) | Free/Pro contract invariants | ✅ runs from the Free side too — this row previously said "(Pro only)", which is wrong |
 | 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 (skipped with a warning if `/tmp/wordpress-tests-lib` is absent) |

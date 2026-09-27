@@ -28,15 +28,6 @@ defined( 'ABSPATH' ) || exit;
 class TemplateHelpers implements TemplateHelpersInterface {
 
 	/**
-	 * Query parameter Explore searches with. See explore_search().
-	 *
-	 * @since 2.6.0
-	 *
-	 * @var string
-	 */
-	public const EXPLORE_SEARCH_PARAM = 'q';
-
-	/**
 	 * Resolve the best thumbnail URL for a media item.
 	 *
 	 * Priority: custom thumbnail meta (thumb_large/thumb_medium/thumb_thumb) >

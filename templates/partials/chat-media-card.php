@@ -6,6 +6,7 @@
  * Context: context.item.media_share = media data object.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   1.1.0
  */
 

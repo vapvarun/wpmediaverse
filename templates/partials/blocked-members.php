@@ -17,6 +17,7 @@
  * hydration under any theme.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
