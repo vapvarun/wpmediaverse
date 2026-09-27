@@ -46,12 +46,12 @@ Rows marked "no screen control since 2.6.0 (set in code/WP-CLI)" are still regis
 
 | Option key | Setting label | Type | Default |
 |---|---|---|---|
-| `mvs_default_privacy` | Default Privacy Level | string | `public` |
+| `mvs_default_privacy` | Default Privacy Level | string | `public` (`members` on a private community) |
 | `mvs_allow_user_privacy` | Allow Users to Set Privacy | boolean | `true` |
 | `mvs_upload_roles` | Who can upload media | array | *(empty array)* |
 | `mvs_allow_downloads` | Allow Downloads (Display tab) | boolean | `true` |
 
-`mvs_default_privacy` is the level applied when the uploader makes no choice. When `mvs_allow_user_privacy` is off, the privacy select is removed from the upload form and every upload takes the default.
+`mvs_default_privacy` is the level applied when the uploader makes no choice. A fresh install on a private community (one that answers `mvs_rest_require_auth` with `true`, such as BuddyNext's private mode) starts at `members`, because public files can be opened by anyone holding the file address. A site that becomes private later keeps its saved value, and administrators see a one-time notice on MediaVerse screens offering to switch to Members Only. When `mvs_allow_user_privacy` is off, the privacy select is removed from the upload form and every upload takes the default.
 
 `mvs_upload_roles` is only the transport for the "Who can upload media" checkboxes. The real state is the `upload_mvs_media` capability on each role: saving the field adds or removes that capability, and the field reads the roles back. Administrators can always upload. Reading this option does not tell you who can upload; check the roles instead.
 

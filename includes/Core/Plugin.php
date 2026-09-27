@@ -238,6 +238,7 @@ class Plugin {
 				self::$container->get( 'admin.reports' );
 			}
 			self::$container->get( 'admin.member_moderation' );
+			self::$container->get( 'admin.private_default' );
 			self::$container->get( 'admin.stats' );
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
@@ -726,6 +727,13 @@ class Plugin {
 			'admin.member_moderation',
 			function () {
 				return new MemberModeration();
+			}
+		);
+
+		self::$container->register(
+			'admin.private_default',
+			function () {
+				return new \WPMediaVerse\Admin\PrivateCommunityDefault();
 			}
 		);
 

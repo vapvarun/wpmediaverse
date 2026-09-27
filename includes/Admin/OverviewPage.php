@@ -36,6 +36,30 @@ class OverviewPage {
 	}
 
 	/**
+	 * Whether an admin screen belongs to MediaVerse.
+	 *
+	 * The one definition used for loading admin assets and for showing
+	 * MediaVerse-only notices, so the two cannot disagree.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param \WP_Screen|null $screen Current screen.
+	 * @return bool
+	 */
+	public static function is_mvs_screen( $screen ): bool {
+		if ( ! $screen instanceof \WP_Screen ) {
+			return false;
+		}
+
+		$id = (string) $screen->id;
+
+		return 'mvs_album' === $screen->post_type
+			|| 'mvs_collection' === $screen->post_type
+			|| false !== strpos( $id, 'wpmediaverse' )
+			|| false !== strpos( $id, 'mvs-' );
+	}
+
+	/**
 	 * Enqueue shared admin CSS on all WPMediaVerse admin pages.
 	 *
 	 * @param string $hook_suffix The current admin page.
@@ -47,15 +71,7 @@ class OverviewPage {
 		}
 
 		// Enqueue on any WPMediaVerse admin page.
-		$mvs_screen_id = $screen->id ?? '';
-		$is_mvs_page   = (
-			'mvs_album' === $screen->post_type ||
-			'mvs_collection' === $screen->post_type ||
-			false !== strpos( $mvs_screen_id, 'wpmediaverse' ) ||
-			false !== strpos( $mvs_screen_id, 'mvs-' )
-		);
-
-		if ( $is_mvs_page ) {
+		if ( self::is_mvs_screen( $screen ) ) {
 			wp_enqueue_style(
 				'mvs-admin',
 				MVS_PLUGIN_URL . 'assets/css/admin.css',

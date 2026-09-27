@@ -18,7 +18,7 @@
 > | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 31 distinct literal options (40 real `register_setting()` calls; a naive `grep -c` also matches doc-comment mentions of the function name, inflating to 44). 3 of the 40 calls are foreach loops expanding to 12 more options, mostly behind class constants - full expansion gives 47 distinct settings, see manifest.summary.json |
 > | Custom tables | `grep -c 'CREATE TABLE' includes/Core/Migrator.php` | 23 distinct names (24 real statements; the naive count returns 25 because it also matches a comment at Migrator.php:372 describing dbDelta's column-parsing behavior) |
 > | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 8 registered, 12 `block.json` (4 Interactivity-only) |
-> | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 54 |
+> | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 55 |
 > | WP-CLI subcommands | `grep -c 'public function ' includes/CLI/Commands.php` | 20 |
 > | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 39 (2026-09-26) |
 >
@@ -121,6 +121,7 @@ To re-enumerate the whole table:
 | `admin.moderation` | `ModerationQueue` |
 | `admin.reports` | `ReportsPage` |
 | `admin.member_moderation` | `MemberModeration` |
+| `admin.private_default` | `PrivateCommunityDefault` |
 | `admin.stats` | `StatsPage` |
 | `admin.logs` | `LogViewerPage` |
 | `admin.setup_wizard` | `SetupWizard` |
@@ -152,7 +153,7 @@ To re-enumerate the whole table:
 | `template_helpers` | `TemplateHelpers` |
 | `messaging` | `MessagingService` (registered in `init_messaging()`) |
 
-**54 keys as of 2026-09-27** — re-run the grep above rather than trusting that number.
+**55 keys as of 2026-09-27** — re-run the grep above rather than trusting that number.
 The `stories` key is **gone** (removed with `StoryService` in 1.8.1). Plus a non-container static
 helper: `Core\MediaUrl` (single read-side URL facade for non-REST callers; replaces the never-built
 `Services\MediaUrl` referenced before 1.5.0). `VariantSpec` is a value object (not
@@ -309,7 +310,7 @@ These rules protect 50+ production customer sites. They are mechanically enforce
 
 ## Known Debt (Do Not Worsen)
 
-> **Debt criterion (2026-05-03 update):** A file lands here only when it has a CONCRETE structural problem — duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at WPMediaVerse's scale (54 container services, 24 REST controllers, Free + Pro pair), files in the 1k–3k range are normal and healthy as long as they're focused on one responsibility. The team splits at ~2.5k+ when a file's scope genuinely outgrows one class (BP manager was 2,811; Settings was 2,401 — both already split).
+> **Debt criterion (2026-05-03 update):** A file lands here only when it has a CONCRETE structural problem — duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at WPMediaVerse's scale (55 container services, 24 REST controllers, Free + Pro pair), files in the 1k–3k range are normal and healthy as long as they're focused on one responsibility. The team splits at ~2.5k+ when a file's scope genuinely outgrows one class (BP manager was 2,811; Settings was 2,401 — both already split).
 
 **Line counts below are `wc -l` as of 2026-09-01.** Re-measure before quoting one; the previous
 set in this table was 6–18 months stale and understated four files by more than 2×.

@@ -146,6 +146,7 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Improve  - Albums and Collections each say what they hold, and settings use plain words throughout.
 * Improve  - Large sites load faster with new indexes, batched reads and paginated lists.
 * Improve  - "Who can send messages: Nobody" now says what it does: no new messages, while existing conversations stay readable.
+* Improve  - On a private community, new uploads start as Members Only, and a site that becomes private later gets a one-time notice offering the switch.
 * Fix      - Private items now look exactly like missing ones on pages, in the API and in album counts.
 * Fix      - Saving a settings tab no longer resets values that were not on the screen.
 * Fix      - Message times carry an explicit UTC value so every client shows the same clock.

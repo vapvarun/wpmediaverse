@@ -25,12 +25,23 @@
     "its strictest rule everywhere and there is no wriggle room to claim otherwise.",
     "A member or public entry MUST carry a reason. A nopriv handler MUST carry a reason.",
     "",
-    "Free registers 5 handlers. One (admin_post_mvs_report_status) is conditional: it",
+    "Free registers 6 handlers. One (admin_post_mvs_report_status) is conditional: it",
     "mounts only when Pro is absent, so it does not appear in a runtime walk on a site",
     "running both. It carries conditional + conditional_on, the same escape hatch Pro's",
     "route-authority.json uses for feature toggles."
   ],
   "handlers": {
+    "admin_post_mvs_private_default": {
+      "surface": "admin_post",
+      "callback": "WPMediaVerse\\Admin\\PrivateCommunityDefault::handle",
+      "audience": "admin",
+      "capability": "manage_options",
+      "nonce_action": "mvs_private_default",
+      "nonce_field": "_wpnonce",
+      "writes": true,
+      "get_reachable": false,
+      "source": "wpmediaverse/includes/Admin/PrivateCommunityDefault.php:103"
+    },
     "admin_post_mvs_report_status": {
       "surface": "admin_post",
       "callback": "WPMediaVerse\\Admin\\ReportsPage::handle_status_change",

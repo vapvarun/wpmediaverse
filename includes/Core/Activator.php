@@ -338,7 +338,10 @@ class Activator {
 			'mvs_max_upload_size'     => 104857600, // 100MB in bytes.
 			// PDF dropped from default in 1.2.3 — see SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note.
 			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
-			'mvs_default_privacy'     => 'public',
+			// Members Only on a private community: public files are reachable by
+			// anyone with the address (Basecamp 10252887515). Only written when the
+			// option is missing, so an owner's saved choice is never replaced.
+			'mvs_default_privacy'     => \WPMediaVerse\Admin\PrivateCommunityDefault::default_privacy(),
 			'mvs_duplicate_action'    => 'warn',
 			'mvs_strip_exif'          => true,
 			'mvs_storage_driver'      => 'local',
