@@ -420,12 +420,24 @@ class FieldRenderer {
 			? $registered[ $args['option'] ]['default']
 			: false;
 		$value      = get_option( $args['option'], $default );
-		printf(
-			'<label><input type="checkbox" name="%s" value="1" %s /> %s</label>',
-			esc_attr( $args['option'] ),
-			checked( $value, true, false ),
-			esc_html( $args['label'] ?? '' )
-		);
+		if ( array_key_exists( 'locked', $args ) ) {
+			// Another plugin decides this value: show its answer, and post the
+			// stored one back unchanged so saving the page never rewrites it.
+			printf(
+				'<input type="hidden" name="%1$s" value="%2$s" /><label><input type="checkbox" id="%1$s" disabled %3$s /> %4$s</label>',
+				esc_attr( $args['option'] ),
+				esc_attr( $value ? '1' : '' ),
+				checked( (bool) $args['locked'], true, false ),
+				esc_html( $args['label'] ?? '' )
+			);
+		} else {
+			printf(
+				'<label><input type="checkbox" name="%s" value="1" %s /> %s</label>',
+				esc_attr( $args['option'] ),
+				checked( $value, true, false ),
+				esc_html( $args['label'] ?? '' )
+			);
+		}
 		if ( ! empty( $args['description'] ) ) {
 			printf(
 				'<p class="description">%s</p>',

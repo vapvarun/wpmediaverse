@@ -2424,6 +2424,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_redirect_media_archive_to_explore_page",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $redirect",
+        "int $page"
+      ],
+      "where": "includes/Core/TemplateLoader.php:97",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_registration_url",
       "type": "filter",
       "args_count": 2,

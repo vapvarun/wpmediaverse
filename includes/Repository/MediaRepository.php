@@ -4759,6 +4759,49 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Hand a member's media to another member, the way WordPress hands over posts.
+	 *
+	 * Used when an account is deleted with "Attribute all content to" (Basecamp
+	 * 10344411938). Privacy is untouched. A personal drive IS its owner, so a
+	 * `user` drive that named the old author now names the new one; team drives
+	 * keep their drive. DM attachments are left out: they live inside the
+	 * sender's messages, which are erased with the account, so the caller
+	 * deletes them with those messages (owner decision 2026-09-27).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $from Author being removed.
+	 * @param int $to   Author receiving the media.
+	 * @return int[] Media ids that moved.
+	 */
+	public function reassign_author_media( int $from, int $to ): array {
+		global $wpdb;
+
+		if ( $from <= 0 || $to <= 0 || $from === $to ) {
+			return array();
+		}
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT media_id FROM {$table} WHERE post_author = %d AND privacy <> 'dm'", $from ) ) );
+
+		if ( ! $ids ) {
+			return array();
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET drive_id = %d WHERE post_author = %d AND privacy <> 'dm' AND drive_type = 'user' AND drive_id = %d", $to, $from, $from ) );
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET post_author = %d, updated_at = %s WHERE post_author = %d AND privacy <> 'dm'", $to, current_time( 'mysql', true ), $from ) );
+		// phpcs:enable
+
+		foreach ( $ids as $id ) {
+			self::invalidate_row_cache( $id );
+		}
+
+		return $ids;
+	}
+
+	/**
 	 * Every row a member authored that lives on somebody ELSE'S drive.
 	 *
 	 * The rows a departing member must NOT take with them (§15 T1). A document

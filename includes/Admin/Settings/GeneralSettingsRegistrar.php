@@ -130,6 +130,25 @@ class GeneralSettingsRegistrar {
 			)
 		);
 
+		// Members only (2.6.0): arms CommunityPrivacyGate on a standalone site.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_general',
+			\WPMediaVerse\REST\CommunityPrivacyGate::MEMBERS_ONLY_OPTION,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		FieldRenderer::add_field(
+			\WPMediaVerse\REST\CommunityPrivacyGate::MEMBERS_ONLY_OPTION,
+			__( 'Members Only', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-general',
+			'mvs_general',
+			$this->members_only_field_args()
+		);
+
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
 			'mvs_default_privacy',
@@ -318,6 +337,32 @@ class GeneralSettingsRegistrar {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Field arguments for the Members only switch.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function members_only_field_args(): array {
+		$args = array(
+			'option'      => \WPMediaVerse\REST\CommunityPrivacyGate::MEMBERS_ONLY_OPTION,
+			'label'       => __( 'Only logged-in members can see WP MediaVerse', 'wpmediaverse' ),
+			'description' => __( 'Visitors who are not logged in are sent to the login page from Explore, media pages, profiles and Compete, and the API refuses them. Members see everything as before.', 'wpmediaverse' ),
+		);
+
+		// A community plugin (BuddyNext's private mode) answers the same signal
+		// and its answer wins, so a switch here would do nothing. Show its answer.
+		if ( \WPMediaVerse\REST\CommunityPrivacyGate::host_decides() ) {
+			$args['locked']       = (bool) apply_filters( 'mvs_rest_require_auth', false, null );
+			$args['description']  = $args['locked']
+				? __( 'On: your community plugin keeps this site private, so visitors are already sent to the login page. Change it in that plugin\'s settings.', 'wpmediaverse' )
+				: __( 'Off: your community plugin decides who can see this site. Turn on its private or members-only mode to hide WP MediaVerse from visitors.', 'wpmediaverse' );
+		}
+
+		return $args;
 	}
 
 	/**

@@ -28,6 +28,95 @@ class TemplateLoader {
 	const THEME_DIR = 'wpmediaverse';
 
 	/**
+	 * Ask for the rewrite rules to be rebuilt on the next request.
+	 *
+	 * @since 2.6.0
+	 */
+	public static function queue_rewrite_flush(): void {
+		set_transient( 'mvs_flush_rewrite', true );
+	}
+
+	/**
+	 * Rebuild the rules when the My Media page's path changes.
+	 *
+	 * Its path is its slug plus every ancestor's, so a change to the page OR to
+	 * any page above it moves the dashboard.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int      $post_id Updated post.
+	 * @param \WP_Post $after   Post after the update.
+	 * @param \WP_Post $before  Post before the update.
+	 */
+	public static function flush_when_dashboard_path_changes( int $post_id, $after, $before ): void {
+		$dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
+		if ( ! $dashboard || 'page' !== $after->post_type ) {
+			return;
+		}
+
+		if ( $post_id !== $dashboard && ! in_array( $post_id, get_post_ancestors( $dashboard ), true ) ) {
+			return;
+		}
+
+		if ( $after->post_name !== $before->post_name || (int) $after->post_parent !== (int) $before->post_parent ) {
+			self::queue_rewrite_flush();
+		}
+	}
+
+	/**
+	 * Send /media/ to the owner's Explore page when one is mapped.
+	 *
+	 * Mapping a page as Explore left /media/ live as a second, indexable copy
+	 * of the same archive (Basecamp 10344427396). The owner's page wins; paging
+	 * and the query string (search, tag, type) carry over. Unmapped sites keep
+	 * /media/ as Explore. Singles stay at /media/<slug>/.
+	 *
+	 * @since 2.6.0
+	 */
+	public function redirect_archive_to_explore_page(): void {
+		if ( ! get_query_var( 'mvs_media_archive' ) ) {
+			return;
+		}
+
+		$page = (int) get_option( 'mvs_page_explore', 0 );
+		if ( ! $page || 'publish' !== get_post_status( $page ) ) {
+			return;
+		}
+
+		/**
+		 * Whether /media/ redirects to the mapped Explore page.
+		 *
+		 * Return false to keep /media/ serving Explore alongside the mapped page,
+		 * as it did before 2.6.0.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool $redirect Default true.
+		 * @param int  $page     Mapped Explore page id.
+		 */
+		if ( ! apply_filters( 'mvs_redirect_media_archive_to_explore_page', true, $page ) ) {
+			return;
+		}
+
+		$url   = (string) get_permalink( $page );
+		$paged = (int) get_query_var( 'paged' );
+		if ( $paged > 1 ) {
+			$url = get_option( 'permalink_structure' )
+				? trailingslashit( $url ) . user_trailingslashit( 'page/' . $paged, 'paged' )
+				: add_query_arg( 'paged', $paged, $url );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET filters carried to the new address.
+		$query = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+		if ( $query ) {
+			$url = add_query_arg( urlencode_deep( $query ), $url );
+		}
+
+		wp_safe_redirect( $url, 301 );
+		exit;
+	}
+
+	/**
 	 * Initialize template hooks.
 	 */
 	public function init(): void {
@@ -35,9 +124,18 @@ class TemplateLoader {
 		add_action( 'init', array( $this, 'register_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 
+		// The dashboard rules are built from the mapped page's path, so mapping
+		// another page, renaming it or moving it under a parent must rebuild them.
+		add_action( 'add_option_mvs_page_dashboard', array( self::class, 'queue_rewrite_flush' ) );
+		add_action( 'update_option_mvs_page_dashboard', array( self::class, 'queue_rewrite_flush' ) );
+		add_action( 'post_updated', array( self::class, 'flush_when_dashboard_path_changes' ), 10, 3 );
+
 		// Send off-site sections to where they actually live. Before
 		// load_media_templates, or the dead panel renders first.
 		add_action( 'template_redirect', array( $this, 'redirect_offsite_section' ), 4 );
+
+		// One Explore address: a mapped Explore page replaces /media/.
+		add_action( 'template_redirect', array( $this, 'redirect_archive_to_explore_page' ), 4 );
 
 		// The member's drive has one home: the dashboard's documents section.
 		add_action( 'template_redirect', array( $this, 'redirect_legacy_drive_query' ), 4 );
@@ -174,7 +272,10 @@ class TemplateLoader {
 		$mvs_dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
 
 		if ( $mvs_dashboard ) {
-			$mvs_dashboard_slug = get_post_field( 'post_name', $mvs_dashboard );
+			// The page's full PATH, not its post_name: as a child page it lives at
+			// parent/my-media/, and a rule built from `my-media` never matched, so
+			// every section 404'd (Basecamp 10344427213).
+			$mvs_dashboard_slug = get_page_uri( $mvs_dashboard );
 
 			if ( $mvs_dashboard_slug ) {
 				// RESERVED SEGMENTS FIRST. `documents/(.+?)` below matches any path,
@@ -942,13 +1043,20 @@ class TemplateLoader {
 	private function serve_media_archive(): void {
 		$GLOBALS['mvs_is_media_archive'] = true;
 
-		add_filter(
-			'document_title_parts',
-			function ( $title ) {
-				return self::title_parts( (array) $title, __( 'Explore Media', 'wpmediaverse' ) );
-			}
-		);
-		$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
+		// Only the virtual /media/ route needs a title of its own. A mapped
+		// Explore page is a real page: WordPress and SEO plugins already title it
+		// from the owner's page (the front-page title when it is the front page),
+		// and forcing "Explore Media" there overrode the name the owner chose
+		// (Basecamp 10344427413).
+		if ( get_query_var( 'mvs_media_archive' ) ) {
+			add_filter(
+				'document_title_parts',
+				function ( $title ) {
+					return self::title_parts( (array) $title, __( 'Explore Media', 'wpmediaverse' ) );
+				}
+			);
+			$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
+		}
 
 		$template = self::locate( 'explore.php' );
 		if ( $template ) {

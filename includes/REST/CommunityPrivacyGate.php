@@ -44,6 +44,15 @@ defined( 'ABSPATH' ) || exit;
 class CommunityPrivacyGate {
 
 	/**
+	 * Settings > General "Members only" switch for a standalone site.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @var string
+	 */
+	public const MEMBERS_ONLY_OPTION = 'mvs_members_only';
+
+	/**
 	 * Wire the pre-dispatch gate and the page-layer gate.
 	 *
 	 * The template_redirect@3 hook runs before Pro's compete loader (@4) and
@@ -55,6 +64,55 @@ class CommunityPrivacyGate {
 	public static function register(): void {
 		add_filter( 'rest_pre_dispatch', array( self::class, 'gate' ), 10, 3 );
 		add_action( 'template_redirect', array( self::class, 'gate_page' ), 3 );
+
+		// Priority 1: the owner's own switch is the starting answer, and a host
+		// community plugin answering at the default priority replaces it. The
+		// host always decides, so the two never fight (owner decision 2026-09-27).
+		add_filter( 'mvs_rest_require_auth', array( self::class, 'members_only_setting' ), 1 );
+	}
+
+	/**
+	 * Answer the private-community signal from the Members only setting.
+	 *
+	 * Standalone sites had no way to arm this gate: only BuddyNext's private
+	 * mode did (Basecamp 10344427420).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param bool $required Answer so far.
+	 * @return bool
+	 */
+	public static function members_only_setting( $required ): bool {
+		return (bool) $required || (bool) get_option( self::MEMBERS_ONLY_OPTION, false );
+	}
+
+	/**
+	 * Whether another plugin answers the private-community signal.
+	 *
+	 * When one does (BuddyNext's private mode), its answer replaces the
+	 * Members only setting, so the settings screen shows that plugin's answer
+	 * instead of a switch that would do nothing.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return bool
+	 */
+	public static function host_decides(): bool {
+		global $wp_filter;
+
+		if ( empty( $wp_filter['mvs_rest_require_auth'] ) ) {
+			return false;
+		}
+
+		foreach ( $wp_filter['mvs_rest_require_auth']->callbacks as $callbacks ) {
+			foreach ( $callbacks as $callback ) {
+				if ( array( self::class, 'members_only_setting' ) !== $callback['function'] ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -127,8 +185,14 @@ class CommunityPrivacyGate {
 		);
 
 		if ( ! $is_gated_page ) {
-			$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
-			if ( $explore_page_id && is_page( $explore_page_id ) ) {
+			// Both Explore pages: media, and documents (2.6.0, Basecamp 10344427420).
+			$explore_page_ids = array_filter(
+				array(
+					(int) get_option( 'mvs_page_explore', 0 ),
+					(int) get_option( 'mvs_page_explore_documents', 0 ),
+				)
+			);
+			if ( $explore_page_ids && is_page( $explore_page_ids ) ) {
 				$is_gated_page = true;
 			}
 		}

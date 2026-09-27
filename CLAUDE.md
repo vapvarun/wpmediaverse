@@ -12,10 +12,10 @@
 > |---|---|---|
 > | REST endpoints | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` | 118 |
 > | REST controllers | `ls includes/REST/Controller/*.php \| wc -l` | 24 |
-> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 290 |
+> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 291 |
 > | Plugin AJAX actions | `grep -rhoE "add_action\( *'wp_ajax_mvs_[a-z_]+'" includes/ \| sort -u \| wc -l` | 2 (`mvs_import_demo_data`, `mvs_cleanup_demo_data`) - the looser `grep -rho "wp_ajax_mvs_[a-z_]*"` returns 3, counting a bare prefix inside a comment |
 > | Admin page registrations | `grep -rn 'add_menu_page(\|add_submenu_page(' includes/ \| grep -vc 'function \|\*'` | 12 call sites (the manifest's `admin_pages: 22` counts rendered surfaces: these 12 plus 2 CPT menu entries and 8 settings tabs) |
-> | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 31 distinct literal options (40 real `register_setting()` calls; a naive `grep -c` also matches doc-comment mentions of the function name, inflating to 44). 3 of the 40 calls are foreach loops expanding to 12 more options, mostly behind class constants - full expansion gives 47 distinct settings, see manifest.summary.json |
+> | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 31 distinct literal options (41 real `register_setting()` calls; a naive `grep -c` also matches doc-comment mentions of the function name, inflating to 44). 3 of the 41 calls are foreach loops expanding to 12 more options, mostly behind class constants - full expansion gives 48 distinct settings, see manifest.summary.json |
 > | Custom tables | `grep -c 'CREATE TABLE' includes/Core/Migrator.php` | 23 distinct names (24 real statements; the naive count returns 25 because it also matches a comment at Migrator.php:372 describing dbDelta's column-parsing behavior) |
 > | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 8 registered, 12 `block.json` (4 Interactivity-only) |
 > | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 55 |

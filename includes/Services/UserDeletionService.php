@@ -43,9 +43,40 @@ class UserDeletionService {
 	 * Register WordPress hooks.
 	 */
 	public function init(): void {
-		add_action( 'deleted_user', array( $this, 'handle_user_deletion' ), 10, 1 );
-		add_action( 'remove_user_from_blog', array( $this, 'handle_user_removed_from_blog' ), 10, 2 );
+		// Both carry WordPress's "Attribute all content to" choice as $reassign.
+		add_action( 'deleted_user', array( $this, 'handle_user_deletion' ), 10, 2 );
+		add_action( 'remove_user_from_blog', array( $this, 'handle_user_removed_from_blog' ), 10, 3 );
+		// WordPress only offers that choice when the user owns posts, so a member
+		// with only media was never asked and lost it all.
+		add_filter( 'users_have_additional_content', array( $this, 'users_have_media' ), 10, 2 );
 		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 );
+	}
+
+	/**
+	 * Tell the Delete Users screen that these members own media.
+	 *
+	 * Makes WordPress show "Attribute all content to" for a member whose only
+	 * content is media (Basecamp 10344411938).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param bool  $has_content Answer so far.
+	 * @param int[] $user_ids    Users being deleted.
+	 * @return bool
+	 */
+	public function users_have_media( $has_content, $user_ids ): bool {
+		if ( $has_content ) {
+			return true;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		foreach ( (array) $user_ids as $user_id ) {
+			if ( $repo->author_media_ids( (int) $user_id, 1 ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -195,9 +226,14 @@ class UserDeletionService {
 	 *   2. Purge rows that reference the user directly (reactions, favorites, follows, blocks,
 	 *      reports, access grants, mentions, conversation participation, messages).
 	 *
-	 * @param int $user_id User ID being deleted.
+	 * When the admin chose "Attribute all content to", phase 1 hands the media
+	 * to that member instead, as WordPress does with posts; only DM attachments,
+	 * which live inside the erased messages, still go (Basecamp 10344411938).
+	 *
+	 * @param int      $user_id  User ID being deleted.
+	 * @param int|null $reassign Member receiving the content, or null to erase it.
 	 */
-	public function handle_user_deletion( int $user_id ): void {
+	public function handle_user_deletion( int $user_id, $reassign = null ): void {
 		if ( $user_id <= 0 ) {
 			return;
 		}
@@ -227,6 +263,19 @@ class UserDeletionService {
 		// derived: MediaVerse does not know what a Space is, let alone who owns
 		// one. Anything not reassigned falls through to the cascade unchanged.
 		$reassigned = $this->reassign_team_drive_media( $user_id );
+
+		// Phase 1a (cont.) — the admin chose "Attribute all content to": everything else
+		// the member uploaded goes to that member instead of being erased. Space
+		// files were already handed to their Space above; this takes the rest.
+		$reassign = (int) $reassign;
+		if ( $reassign > 0 && $reassign !== $user_id && get_userdata( $reassign ) ) {
+			$container  = \WPMediaVerse\Core\Plugin::container();
+			$reassigned = array_merge( $reassigned, $container->get( 'media_repository' )->reassign_author_media( $user_id, $reassign ) );
+
+			if ( $container->has( 'cache' ) ) {
+				$container->get( 'cache' )->flush_all();
+			}
+		}
 
 		if ( ! empty( $reassigned ) ) {
 			$media_ids = array_values( array_diff( $media_ids, $reassigned ) );
@@ -480,11 +529,12 @@ class UserDeletionService {
 	 * Delegates to the same cascade so per-site data is cleaned when a user is
 	 * removed from an individual site without being deleted network-wide.
 	 *
-	 * @param int $user_id User being removed.
-	 * @param int $blog_id Blog ID (unused — $wpdb already scopes to the current blog).
+	 * @param int      $user_id  User being removed.
+	 * @param int      $blog_id  Blog ID (unused — $wpdb already scopes to the current blog).
+	 * @param int|null $reassign Member receiving the content, or null to erase it.
 	 */
-	public function handle_user_removed_from_blog( int $user_id, int $blog_id ): void {
+	public function handle_user_removed_from_blog( int $user_id, int $blog_id, $reassign = null ): void {
 		unset( $blog_id );
-		$this->handle_user_deletion( $user_id );
+		$this->handle_user_deletion( $user_id, $reassign );
 	}
 }
