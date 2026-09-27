@@ -2162,9 +2162,10 @@ class MessagingService {
 		// group-conversation work (tracked separately) - until then a recipient
 		// gets a clear 403 rather than a confusing 400.
 		if ( (int) $row->sender_id !== $user_id ) {
+			// Outside the conversation the message does not exist, or ids are probeable.
 			return array(
 				'success' => false,
-				'error'   => 'not_sender',
+				'error'   => '' === $this->get_participant_role( (int) $row->conversation_id, $user_id ) ? 'not_found' : 'not_sender',
 			);
 		}
 
@@ -2363,9 +2364,10 @@ class MessagingService {
 		}
 
 		if ( (int) $msg->sender_id !== $user_id ) {
+			// Outside the conversation the message does not exist, or ids are probeable.
 			return array(
 				'success' => false,
-				'error'   => 'not_sender',
+				'error'   => '' === $this->get_participant_role( (int) $msg->conversation_id, $user_id ) ? 'not_found' : 'not_sender',
 			);
 		}
 

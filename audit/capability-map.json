@@ -128,6 +128,6 @@
         ]
     },
     "bare_check_allowlist": {
-        "includes\/REST\/Controller\/BulkController.php:403": "Entry gate, not object authority: bulk_permissions_check only asks whether the caller may edit media at all. Authority per id is proved later by filter_allowed_ids(), which drops anything the caller did not author unless they hold edit_others_mvs_medias. Verified by the 2.5.1 security audit."
+        "includes\/REST\/Controller\/BulkController.php:407": "Entry gate, not object authority: bulk_permissions_check only asks whether the caller may edit media at all. Authority per id is proved later by filter_allowed_ids(), which drops anything the caller did not author unless they hold edit_others_mvs_medias. Verified by the 2.5.1 security audit."
     }
 }

@@ -495,7 +495,8 @@ class CollectionController extends WP_REST_Controller {
 			return true;
 		}
 
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this collection.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		// An unpublished collection is the owner's own: to anyone else it does not exist.
+		return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 	}
 
 	/**
@@ -514,6 +515,11 @@ class CollectionController extends WP_REST_Controller {
 
 		if ( (int) $post->post_author === $user_id || current_user_can( 'moderate_mvs_media' ) ) {
 			return true;
+		}
+
+		// A member who cannot even see the collection gets the missing answer.
+		if ( 'publish' !== $post->post_status || ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $post->ID, $user_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to modify this collection.', 'wpmediaverse' ), array( 'status' => 403 ) );

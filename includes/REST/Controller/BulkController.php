@@ -303,7 +303,7 @@ class BulkController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Bulk add items to an album (items stay in any other album).
+	 * Bulk move items into an album (a photo belongs to one album, so it leaves any other).
 	 *
 	 * @param int[] $media_ids Media IDs.
 	 * @param int   $album_id  Target album ID.
@@ -318,6 +318,10 @@ class BulkController extends WP_REST_Controller {
 		// Verify the current user owns or can edit the target album.
 		$album_user_id = get_current_user_id();
 		if ( (int) $album->post_author !== $album_user_id && ! current_user_can( 'edit_others_mvs_medias' ) ) {
+			// A member who cannot even see the album gets the missing-album answer.
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $album_id, $album_user_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
+				return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			}
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to add items to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 

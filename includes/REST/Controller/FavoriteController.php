@@ -157,7 +157,9 @@ class FavoriteController extends WP_REST_Controller {
 		$media_id = $request->get_param( 'media_id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+		// Hidden looks exactly like missing.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id )
+			|| ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, $user_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 

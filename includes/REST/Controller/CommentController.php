@@ -291,20 +291,14 @@ class CommentController extends WP_REST_Controller {
 		$media_id   = $request->get_param( 'media_id' );
 		$user_id    = get_current_user_id();
 
-		$comment = get_comment( $comment_id );
-		if ( ! $comment ) {
-			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id );
+		if ( is_wp_error( $comment ) ) {
+			return $comment;
 		}
 
 		// Verify ownership.
 		if ( (int) $comment->user_id !== $user_id ) {
 			return new WP_Error( 'mvs_forbidden', __( 'You can only edit your own comments.', 'wpmediaverse' ), array( 'status' => 403 ) );
-		}
-
-		// Verify comment belongs to media. Media comments are detached from the
-		// post-ID space (comment_post_ID = 0); the owning media id is in meta.
-		if ( \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id ) !== (int) $media_id ) {
-			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
 		// Edit window — option-driven with filter override. Option is declared in
@@ -379,11 +373,9 @@ class CommentController extends WP_REST_Controller {
 		$comment_id = $request->get_param( 'comment_id' );
 		$media_id   = $request->get_param( 'media_id' );
 
-		// Verify the comment belongs to the specified media item (media id lives
-		// in comment meta; comment_post_ID is 0 for detached media comments).
-		$comment = get_comment( $comment_id );
-		if ( $comment && \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id ) !== (int) $media_id ) {
-			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id );
+		if ( is_wp_error( $comment ) ) {
+			return $comment;
 		}
 
 		$result = $this->comments->delete( $comment_id, get_current_user_id() );
@@ -393,6 +385,32 @@ class CommentController extends WP_REST_Controller {
 		}
 
 		return new WP_REST_Response( null, 204 );
+	}
+
+	/**
+	 * A MediaVerse comment on this media item that the caller can see.
+	 *
+	 * Missing, on another media item, or on media the caller cannot view all
+	 * answer the same 404, so the route cannot confirm a hidden comment exists
+	 * (same shape as ReportController::report_comment). Media comments are
+	 * detached from the post-ID space; the owning media id is in comment meta.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $comment_id Comment id.
+	 * @param int $media_id   Media id from the route.
+	 * @return \WP_Comment|WP_Error
+	 */
+	private function visible_comment( int $comment_id, int $media_id ) {
+		$comment = get_comment( $comment_id );
+
+		if ( ! $comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type
+			|| \WPMediaVerse\Social\CommentService::comment_media_id( $comment_id ) !== $media_id
+			|| ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		return $comment;
 	}
 
 	/**

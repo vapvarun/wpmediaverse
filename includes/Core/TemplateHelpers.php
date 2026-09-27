@@ -1779,6 +1779,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_login_gate( string $icon, string $title, string $message ): string {
+		// A shortcode on an ordinary page returns this before loading anything
+		// else, so the gate brings its own look and icon.
+		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_script( 'mvs-lucide' );
+
 		$return  = (string) get_permalink();
 		$actions = array(
 			array(

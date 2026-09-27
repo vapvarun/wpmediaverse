@@ -15,9 +15,14 @@ defined( 'ABSPATH' ) || exit;
 
 if ( ! is_user_logged_in() ) {
 	\WPMediaVerse\Core\TemplateHelpers::site_header();
-	echo '<div class="mvs-profile-edit"><p>';
-	esc_html_e( 'Please log in to edit your profile.', 'wpmediaverse' );
-	echo '</p></div>';
+	echo '<div class="mvs-profile-edit">';
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_login_gate() returns escaped HTML.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+		'user-pen',
+		__( 'Log in to edit your profile', 'wpmediaverse' ),
+		__( 'Your photo, name and bio live here.', 'wpmediaverse' )
+	);
+	echo '</div>';
 	\WPMediaVerse\Core\TemplateHelpers::site_footer();
 	return;
 }

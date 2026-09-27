@@ -211,7 +211,7 @@ class IntegrationsPage {
 						$badge_label = __( 'Connected', 'wpmediaverse' );
 					} elseif ( 'installed_inactive' === $status ) {
 						$badge_class = 'mvs-status-badge mvs-status-badge--warning';
-						$badge_label = __( 'Installed, activate', 'wpmediaverse' );
+						$badge_label = __( 'Installed, inactive', 'wpmediaverse' );
 					} else {
 						$badge_class = 'mvs-status-badge mvs-status-badge--muted';
 						$badge_label = __( 'Not installed', 'wpmediaverse' );

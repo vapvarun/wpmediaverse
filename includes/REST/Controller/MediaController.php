@@ -1971,22 +1971,7 @@ class MediaController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function update_item_permissions_check( $request ) {
-		$media_id = (int) $request->get_param( 'id' );
-		$user_id  = get_current_user_id();
-
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
-			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
-		}
-
-		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( 'edit_mvs_medias' ) ) {
-			return true;
-		}
-
-		if ( current_user_can( 'edit_others_mvs_medias' ) ) {
-			return true;
-		}
-
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to edit this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return $this->owner_or_refuse( $request, 'edit_mvs_medias', 'edit_others_mvs_medias', __( 'You do not have permission to edit this media item.', 'wpmediaverse' ) );
 	}
 
 	/**
@@ -1996,22 +1981,43 @@ class MediaController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function delete_item_permissions_check( $request ) {
-		$media_id = (int) $request->get_param( 'id' );
-		$user_id  = get_current_user_id();
+		return $this->owner_or_refuse( $request, 'delete_mvs_medias', 'delete_others_mvs_medias', __( 'You do not have permission to delete this media item.', 'wpmediaverse' ) );
+	}
+
+	/**
+	 * The owner holding $own_cap, or anyone holding $others_cap, may act.
+	 *
+	 * Anyone else is refused, and a member who cannot even see the item gets
+	 * the missing-item answer rather than a 403 that confirms it exists.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request    Request.
+	 * @param string          $own_cap    Capability for the owner's own item.
+	 * @param string          $others_cap Capability for anyone's item.
+	 * @param string          $forbidden  Refusal message for a visible item.
+	 * @return true|WP_Error
+	 */
+	private function owner_or_refuse( $request, string $own_cap, string $others_cap, string $forbidden ) {
+		$media_id  = (int) $request->get_param( 'id' );
+		$user_id   = get_current_user_id();
+		$not_found = new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 
 		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
-			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			return $not_found;
 		}
 
-		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( 'delete_mvs_medias' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( $own_cap ) ) {
 			return true;
 		}
 
-		if ( current_user_can( 'delete_others_mvs_medias' ) ) {
+		if ( current_user_can( $others_cap ) ) {
 			return true;
 		}
 
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to delete this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return $this->privacy->can_view( $media_id, $user_id )
+			? new WP_Error( 'mvs_forbidden', $forbidden, array( 'status' => 403 ) )
+			: $not_found;
 	}
 
 	/**

@@ -34,7 +34,7 @@ The setting is stored in the `mvs_pro_feed_layout` option.
 
 - The explore/browse page re-renders in the new layout style
 - All user profile media tabs switch to the new layout automatically
-- The lightbox updates: Flickr mode shows EXIF camera data in the sidebar; Instagram shows the swipe carousel
+- The lightbox is the same in every layout: same actions, same comments
 - Stories appear above the grid in Instagram mode only
 - Search and tag filtering behave identically to the default layout, including the empty states (2.2.0): a zero-result search shows "No results for ..." with a Browse-all button and popular-tag chips, and an unknown tag shows "Tag not found" instead of an unfiltered feed
 
@@ -74,9 +74,8 @@ Ideal for inspiration boards, discovery-focused sites, and mixed-format content.
 
 The Pinterest layout uses a masonry algorithm that preserves each image's original proportions. Cards include the media title and a truncated description below the image.
 
-- Column count is controlled by the **Grid Columns** display setting (2–4)
-- Hovering a card reveals a save-to-collection button
-- Infinite scroll loads the next page of results automatically
+- Columns follow the screen width: 4 on desktop, 3 on tablets, 2 on small tablets, 1 on phones (the **Grid Columns** setting applies to the square grid only)
+- A **Load More** button at the end of the feed loads the next page
 
 **Feed template:** `templates/layouts/pinterest/feed.php`
 **Profile template:** `templates/layouts/pinterest/profile.php`
@@ -91,8 +90,8 @@ Best for photography portfolios, camera clubs, and image-quality-focused communi
 
 The Flickr layout uses a justified gallery algorithm: images in each row are resized to fill the full container width while maintaining a consistent row height.
 
-- Clicking an image opens the lightbox with EXIF data displayed in the sidebar
-- Profile page shows a filmstrip-style contact sheet view
+- Clicking an image opens the lightbox
+- A member's profile shows the same justified gallery, limited to their media
 
 **Feed template:** `templates/layouts/flickr/feed.php`
 **Profile template:** `templates/layouts/flickr/profile.php`
@@ -105,12 +104,11 @@ Drop the Flickr layout on a specific page with the **Flickr Feed** block or the 
 
 Great for design showcases, creative portfolios, and high-resolution work.
 
-![Dribbble layout showing large shot thumbnails in a 2-column grid](../images/layout-dribbble.png)
+![Dribbble layout showing large shot thumbnails](../images/layout-dribbble.png)
 
-The Dribbble layout presents media as large portfolio shots in a 2-column grid. Each card shows the title, view count, and reaction count on hover. This layout is optimised for high-resolution PNG and GIF files.
+The Dribbble layout presents media as large portfolio shots in a responsive grid (cards at least 300px wide, one column on phones). Each card shows the title, view count, and reaction count on hover. This layout is optimised for high-resolution PNG and GIF files.
 
-- Animated GIFs play on hover
-- Profile page shows featured work prominently at the top before the full grid
+- A member's profile shows the same grid, limited to their media
 
 **Feed template:** `templates/layouts/dribbble/feed.php`
 **Profile template:** `templates/layouts/dribbble/profile.php`

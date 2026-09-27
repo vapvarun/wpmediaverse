@@ -6758,7 +6758,7 @@ a.mvs-dashboard-card-title:hover {
    RTL Support
    ========================================================================== */
 
-[dir="rtl"] [dir="rtl"] [dir="rtl"] [dir="rtl"] [dir="rtl"] .mvs-grid-item-info {
+[dir="rtl"] .mvs-grid-item-info {
     flex-direction: row-reverse;
 }
 
@@ -6787,7 +6787,7 @@ a.mvs-dashboard-card-title:hover {
     direction: rtl;
 }
 
-[dir="rtl"] [dir="rtl"] [dir="rtl"] .mvs-logged-out-banner__content {
+[dir="rtl"] .mvs-logged-out-banner__content {
     text-align: right;
 }
 

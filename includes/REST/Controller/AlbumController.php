@@ -714,22 +714,7 @@ class AlbumController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function update_item_permissions_check( $request ) {
-		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in.', 'wpmediaverse' ), array( 'status' => 401 ) );
-		}
-
-		$post    = get_post( $request->get_param( 'id' ) );
-		$user_id = get_current_user_id();
-
-		if ( ! $post || 'mvs_album' !== $post->post_type ) {
-			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
-		}
-
-		if ( (int) $post->post_author === $user_id || current_user_can( 'edit_others_mvs_medias' ) ) {
-			return true;
-		}
-
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to edit this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return $this->owner_or_refuse( $request, 'edit_others_mvs_medias', __( 'You do not have permission to edit this album.', 'wpmediaverse' ) );
 	}
 
 	/**
@@ -739,22 +724,42 @@ class AlbumController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function delete_item_permissions_check( $request ) {
+		return $this->owner_or_refuse( $request, 'delete_others_mvs_medias', __( 'You do not have permission to delete this album.', 'wpmediaverse' ) );
+	}
+
+	/**
+	 * The album's owner, or anyone holding $others_cap, may act.
+	 *
+	 * Anyone else is refused, and a member who cannot even see the album gets
+	 * the missing-album answer rather than a 403 that confirms it exists.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request    Request.
+	 * @param string          $others_cap Capability for anyone's album.
+	 * @param string          $forbidden  Refusal message for a visible album.
+	 * @return true|WP_Error
+	 */
+	private function owner_or_refuse( $request, string $others_cap, string $forbidden ) {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in.', 'wpmediaverse' ), array( 'status' => 401 ) );
 		}
 
-		$post    = get_post( $request->get_param( 'id' ) );
-		$user_id = get_current_user_id();
+		$post      = get_post( $request->get_param( 'id' ) );
+		$user_id   = get_current_user_id();
+		$not_found = new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 
 		if ( ! $post || 'mvs_album' !== $post->post_type ) {
-			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			return $not_found;
 		}
 
-		if ( (int) $post->post_author === $user_id || current_user_can( 'delete_others_mvs_medias' ) ) {
+		if ( (int) $post->post_author === $user_id || current_user_can( $others_cap ) ) {
 			return true;
 		}
 
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to delete this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return $this->privacy->can_view( $post->ID, $user_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT )
+			? new WP_Error( 'mvs_forbidden', $forbidden, array( 'status' => 403 ) )
+			: $not_found;
 	}
 
 	/**

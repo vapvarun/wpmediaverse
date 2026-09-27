@@ -627,7 +627,11 @@ class Shortcodes {
 	 */
 	public function render_profile_edit( $atts ): string {
 		if ( ! is_user_logged_in() ) {
-			return '<p>' . esc_html__( 'Please log in to edit your profile.', 'wpmediaverse' ) . '</p>';
+			return \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+				'user-pen',
+				__( 'Log in to edit your profile', 'wpmediaverse' ),
+				__( 'Your photo, name and bio live here.', 'wpmediaverse' )
+			);
 		}
 
 		wp_enqueue_style( 'mvs-frontend' );

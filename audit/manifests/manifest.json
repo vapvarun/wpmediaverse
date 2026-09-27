@@ -798,7 +798,7 @@
           "GET"
         ],
         "handler": "ModerationController::get_ai_usage",
-        "permission": "moderate_permissions_check",
+        "permission": "settings_permissions_check",
         "purpose": "Get AI moderation usage stats",
         "file": "includes/REST/Controller/ModerationController.php:152"
       },

@@ -226,7 +226,8 @@ class ReactionController extends WP_REST_Controller {
 	public function delete_item( $request ) {
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! $this->media_exists( $media_id ) ) {
+		// Hidden looks exactly like missing.
+		if ( ! $this->media_exists( $media_id ) || ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
