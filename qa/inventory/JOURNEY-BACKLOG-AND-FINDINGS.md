@@ -1,7 +1,7 @@
 # Journey backlog + findings — gap burn-down (2026-06)
 
-Output of the functionality-journey burn-down. Each journey below closes a coverage gap from
-`FUNCTIONALITY-JOURNEYS.md`. They are drafted-but-not-yet-promoted into `AGENT_SMOKE_RUNBOOK.md`
+Output of the functionality-journey burn-down. Each journey below closed a coverage gap from
+the June 2026 journey map (since replaced by `FUNCTIONALITY-CATALOG.md`). They are drafted-but-not-yet-promoted into `AGENT_SMOKE_RUNBOOK.md`
 (promote incrementally). The FINDINGS section is the actionable bug backlog the journeys surfaced —
 that is the real point: journeys exist to catch broken flows before customers do.
 

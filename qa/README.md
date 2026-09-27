@@ -21,7 +21,7 @@ than an obviously missing one. Current state:
 | `runbooks/MANUAL-UX-QA-free.md` | 2026-08-30 | current — J17 admin screens, J18 messaging, J19 the 2.4.0 seams |
 | `runbooks/MANUAL-UX-QA-pro.md` | 2026-08-30 | current — P22 captions/privacy/push/connectors, P23 documents |
 | `runbooks/DOCUMENTS-QA.md` | 2026-08-19 | current |
-| `inventory/FUNCTIONALITY-JOURNEYS.md` | 2026-06-24 | **stale, and deliberately not refreshed** — it duplicates what `audit/journeys/` now holds executably. Use those; this file is history. |
+| `inventory/FUNCTIONALITY-CATALOG.md` | 2026-09-27 | current - every Free and Pro feature with steps, expected result and UX expectation; the file to hand an outside tester. Replaced `FUNCTIONALITY-JOURNEYS.md` (June 2026, removed) |
 
 ## Coverage, measured 2026-08-30
 
@@ -62,6 +62,8 @@ qa/
 │   └── MANUAL-UX-QA-pro.md          # Pro manual UX walkthrough (20 journeys)
 │
 ├── inventory/                # flat list of what must be true
+│   ├── FUNCTIONALITY-CATALOG.md  # every feature: who, where, steps, expected, UX expectation.
+│   │                             # Self-contained; hand it to a third-party tester or QA tool.
 │   └── WHAT-TO-CHECK.md      # surfaces, actions, settings, data stores, cross-layer contracts.
 │                             # Includes the Regression Locks table — specs that have regressed
 │                             # at least once and must not drift.

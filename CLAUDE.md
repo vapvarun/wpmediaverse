@@ -281,7 +281,10 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
 
 24. **Changing an overridable template bumps its `@version`.** Every template a theme can override (`templates/**` except `templates/admin/`) carries `@version` in its header; it moves to the release that ships a markup or variable change, and ONLY then. Site Health (`TemplateVersions` + `HealthCheckService::test_template_overrides()`) compares a theme's copy against it, so an unbumped change hides a stale copy from the owner. A template that stops reading or sending a request value is exactly such a change (the `s` -> `q` Explore search, Basecamp 10344452624). Enforced by `bin/template-version-check.sh` (local-CI stage 1.9), mutation-tested both ways. Pro registers its folder through `mvs_template_roots`. (Basecamp 10344471983, 2026-09-27.)
 
+25. **Every feature has a catalog entry, written in the same commit.** `qa/inventory/FUNCTIONALITY-CATALOG.md` is the one file handed to testers and outside QA tools. A change that adds, removes or changes a feature, setting, screen, REST route, WP-CLI command or template adds or edits its entry (`MV-<AREA>-<NNN>`: who, where, setup, steps, expected, UX expectation, settings, edge cases) in the same commit, Free and Pro alike. Write facts read from the code, never a guess; if something cannot be confirmed, write a `Check:` line for the tester. A feature with no entry is a feature nobody tests. (2026-09-27.)
+
 **Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
+
 
 ---
 
@@ -420,6 +423,7 @@ All QA lives in `qa/` — single home for Free + Pro. Pro has no `qa/` directory
 | `qa/runbooks/MANUAL-UX-QA-free.md` | Free manual UX walkthrough |
 | `qa/runbooks/MANUAL-UX-QA-pro.md` | Pro manual UX walkthrough |
 | `qa/rules/` | Organization rules — CSS, NAMING, PHP, PROCESS, RENDER-STATE |
+| `qa/inventory/FUNCTIONALITY-CATALOG.md` | Every Free + Pro feature for testers and outside QA tools: who, where, steps, expected, UX expectation; plus the presentation bar and code-organization audit |
 | `qa/inventory/WHAT-TO-CHECK.md` | Flat list — surfaces, actions, settings, data stores, contracts |
 | `qa/audits/` | Dated audits (a11y, doc-drift, etc.) |
 | `qa/runs/` | Append-only final run reports + `FINDINGS-HISTORY.md`. Drafts, raw debug logs and screenshots go to `app/qa-artifacts/`, never the repo |

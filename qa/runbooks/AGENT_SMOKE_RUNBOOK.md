@@ -49,7 +49,7 @@ These are the inventories the runbook contracts are derived from. If a check is 
 - Free render contract: [`wpmediaverse/qa/RENDER-STATE-RULES.md`](../../qa/RENDER-STATE-RULES.md)
 - Free manual UX walkthrough (procedural): [`wpmediaverse/qa/MANUAL-UX-QA.md`](../../qa/MANUAL-UX-QA.md)
 - Free findings history: [`wpmediaverse/qa/runs/FINDINGS-HISTORY.md`](../../qa/runs/FINDINGS-HISTORY.md)
-- **Functionality -> journey coverage ledger** (every customer-reachable feature, by actor, mapped to its journey, with gaps flagged): [`wpmediaverse/qa/inventory/FUNCTIONALITY-JOURNEYS.md`](../../qa/inventory/FUNCTIONALITY-JOURNEYS.md). This is the backbone of the runbook: any row marked `GAP - none` (no journey) or `SURFACE-ONLY` (contract checked, journey not) is unprotected and is the standing journey backlog. Keep it in sync when adding or changing a feature.
+- **Functionality catalog** (every Free and Pro feature: who, where, steps, expected result, UX expectation): [`wpmediaverse/qa/inventory/FUNCTIONALITY-CATALOG.md`](../../qa/inventory/FUNCTIONALITY-CATALOG.md). Executable journeys live in `audit/journeys/`. Keep the catalog in sync when adding or changing a feature.
 - Pro manual UX walkthrough: [`wpmediaverse-pro/qa/MANUAL-UX-QA.md`](../../../wpmediaverse-pro/qa/MANUAL-UX-QA.md)
 - Free CLAUDE.md (module map, hooks, tables): [`wpmediaverse/CLAUDE.md`](../../CLAUDE.md)
 - Pro CLAUDE.md: [`wpmediaverse-pro/CLAUDE.md`](../../../wpmediaverse-pro/CLAUDE.md)
