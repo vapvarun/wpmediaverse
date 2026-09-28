@@ -1106,6 +1106,8 @@ A host community plugin (BuddyNext) is a display + push layer — it never re-im
 
 Four of this plugin's own types are a HOST's screen, not this plugin's: `new_follower`, `media_comment`, `media_favorite` and `new_message` already have their own first-class surface in a community plugin, so a host tells this plugin to skip creating those entirely (`mvs_should_send_notification`) and sends its own bell row, email and push. The contract payload is never built for those four either way. `report_resolved` names no media and links nowhere a host's bell could deep-link to, so it is never declared or sent through the contract — it stays a plugin-native-only notification. That leaves **`media_reaction`** and **`media_mention`** as the types a host actually receives.
 
+**Only declared types carry a payload.** `payload()` sends a type only when it appears in `mvs_community_notification_types`, so a type another plugin adds to `mvs_notification_types` (Pro's battles, challenges, tournaments and shared documents) stays out of the host bell until it is declared with its own object mapping.
+
 **`$contract_payload` shape** (empty `array()` when not applicable):
 
 | Key | Type | Description |
@@ -1119,6 +1121,8 @@ Four of this plugin's own types are a HOST's screen, not this plugin's: `new_fol
 | `url` | string | Same as `$link`. |
 | `context` | array | `{ type: 'media', id: $media_id }` when there is a media item. |
 | `notification_id` | int | Same as `$notification_id`. |
+| `group_key` | string | `{type}_{media_id}` when there is a media item, so repeats on one item merge into one bell row. |
+| `message_grouped` | string | The same words with the actor as `{actor} and {others}` (for example "{actor} and {others} reacted to Sunset"); the host fills in the names. |
 
 Three more seams complete the contract, all registered by `CommunityNotificationContract::register()`:
 

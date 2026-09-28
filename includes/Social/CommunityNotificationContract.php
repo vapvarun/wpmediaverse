@@ -13,9 +13,9 @@
  * follows, media comments, favorites and direct messages already have their
  * own first-class surface in a community plugin, so the host tells this
  * plugin to skip creating its own copy (`mvs_should_send_notification`) and
- * sends its own bell row + email + push. This class never carries a contract
- * payload for those four either way, so a host that forgets the skip filter
- * still cannot get a double notification from the contract side.
+ * sends its own bell row + email + push. Only DECLARED types carry a
+ * payload, and those four are not declared, so a host that forgets the skip
+ * filter still cannot get a double notification from the contract side.
  *
  * @package    WPMediaVerse
  * @subpackage Social
@@ -31,18 +31,6 @@ defined( 'ABSPATH' ) || exit;
  * remaining contract seams (types, visibility, removal).
  */
 final class CommunityNotificationContract {
-
-	/**
-	 * Types a host community plugin already owns its own bell row + email +
-	 * push for. This plugin's `mvs_should_send_notification` filter already
-	 * lets a host skip creating these entirely (see e.g. BuddyNext's
-	 * `WPMediaVerseBridge::skip_duplicate_mvs_notification()`), so on a site
-	 * with that filter wired these never even reach `NotificationService::
-	 * create()`. Excluded here too, defensively, so a host that has NOT
-	 * wired the skip filter still never gets a double notification from the
-	 * contract side.
-	 */
-	private const HOST_OWNED_TYPES = array( 'new_follower', 'media_comment', 'media_favorite', 'new_message' );
 
 	/**
 	 * Bell object type for a WPMediaVerse media item.
@@ -88,15 +76,22 @@ final class CommunityNotificationContract {
 	 * @param int    $media_id        Related media id (0 if none).
 	 * @param string $message         Rendered message (NotificationService::build_message_and_link()).
 	 * @param string $link            Rendered deep link (same builder).
+	 * @param string $message_grouped The same message with the actor as "{actor} and {others}".
 	 * @return array<string,mixed>
 	 */
-	public static function payload( int $notification_id, int $user_id, string $type, int $actor_id, int $media_id, string $message, string $link ): array {
+	public static function payload( int $notification_id, int $user_id, string $type, int $actor_id, int $media_id, string $message, string $link, string $message_grouped = '' ): array {
 		if ( $user_id <= 0 || $actor_id <= 0 || $actor_id === $user_id ) {
 			return array();
 		}
 
-		$type = sanitize_key( $type );
-		if ( '' === $type || in_array( $type, self::HOST_OWNED_TYPES, true ) ) {
+		// Only a declared type is sent: the declaration is the host's settings
+		// switch, so an undeclared type (Pro competitions, documents) would
+		// otherwise reach the bell with no switch and, for competitions, with a
+		// competition id in the media slot. The host-owned types are simply not
+		// declared.
+		$type     = sanitize_key( $type );
+		$declared = (array) apply_filters( 'mvs_community_notification_types', array() );
+		if ( '' === $type || ! isset( $declared[ $type ] ) ) {
 			return array();
 		}
 
@@ -106,7 +101,7 @@ final class CommunityNotificationContract {
 			return array();
 		}
 
-		return array(
+		$payload = array(
 			'recipient_id'    => $user_id,
 			'type'            => $type,
 			'actor_id'        => $actor_id,
@@ -120,6 +115,15 @@ final class CommunityNotificationContract {
 			) : array(),
 			'notification_id' => $notification_id,
 		);
+
+		// Fifty reactions on one photo are one row ("Aisha and 49 others reacted
+		// to Sunset"), not fifty: one group per media item and type.
+		if ( $media_id > 0 && '' !== trim( $message_grouped ) ) {
+			$payload['group_key']       = $type . '_' . $media_id;
+			$payload['message_grouped'] = trim( wp_strip_all_tags( $message_grouped ) );
+		}
+
+		return $payload;
 	}
 
 	/**

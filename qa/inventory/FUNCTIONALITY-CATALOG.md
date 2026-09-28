@@ -1715,6 +1715,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 ---
 
 
+#### MV-BP-009 - Reactions and mentions in the BuddyNext bell (community notification contract)
+- **Edition:** Free (with BuddyNext 1.2.2 or newer)
+- **Who:** Members. The recipient sees the row; anyone who later loses view rights on the media stops seeing it.
+- **Where:** BuddyNext's bell and notifications page; BuddyNext > Notification preferences (a "MediaVerse" section).
+- **Setup:** BuddyNext active. Members A and B. A owns a public photo.
+- **Steps:** 1. As B, react to A's photo. 2. As a third member C, react too. 3. As B, mention A in a comment on the photo. 4. As A, open the bell. 5. Make the photo private and view A's bell as B's session. 6. Switch "Reactions to your media" off in A's BuddyNext notification preferences and react again as another member. 7. Permanently delete the photo.
+- **Expected:** Steps 1-2 give ONE row for A: "C and 1 other reacted to <photo title>", linking to the photo. Step 3 gives one mention row. The words are MediaVerse's own. Step 5: the row stays for A (A can view it); a member who cannot see the photo never sees a row about it. Step 6: no new bell row; MediaVerse's own email (if switched on) is unaffected, because the BuddyNext switch only controls its bell. Step 7: every bell row about the photo disappears. BuddyNext never emails these; MediaVerse's own email settings decide.
+- **UX expectation:** Exactly one bell row per media item and type (repeats merge and move to the top), never a second row from BuddyNext's own media bridge. Follows, media comments, favourites and messages come from BuddyNext itself, one row each. Pro notices (battles, challenges, tournaments, shared documents) are not sent to the BuddyNext bell yet.
+- **Settings that change it:** BuddyNext Notification preferences > MediaVerse: "Reactions to your media", "Mentions" (both on by default). With BuddyNext deactivated MediaVerse behaves as before.
+- **Edge cases:** A member reacting to their own photo creates no row. Trash or private hides a row from anyone who can no longer view the photo; restoring or re-publishing brings it back; only a permanent delete removes rows. Blocked members never notify each other.
+
 ### Area: SET — Settings
 
 #### MV-SET-001 — Fair-use storage limit per member

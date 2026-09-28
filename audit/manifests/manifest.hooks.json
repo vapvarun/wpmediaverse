@@ -702,6 +702,18 @@
       "added": "2.3.2"
     },
     {
+      "name": "mvs_community_notification_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $types"
+      ],
+      "where": "includes/Social/CommunityNotificationContract.php:93",
+      "consumed_by": [
+        "CommunityNotificationContract::declare_types (the declared list, also read by BuddyNext for its settings catalogue)"
+      ]
+    },
+    {
       "name": "mvs_community_notification_removed",
       "type": "action",
       "args_count": 2,

@@ -105,6 +105,53 @@ class CommunityNotificationContractTest extends WP_UnitTestCase {
 		$this->assertSame( $media, $seen['object_id'] );
 		$this->assertNotEmpty( $seen['message'] );
 		$this->assertNotEmpty( $seen['url'] );
+
+		// Repeats on the same media merge into one bell row.
+		$this->assertSame( 'media_reaction_' . $media, $seen['group_key'] );
+		$this->assertStringStartsWith( '{actor} and {others}', $seen['message_grouped'] );
+	}
+
+	/**
+	 * Only a DECLARED type is sent. A type another plugin adds to
+	 * `mvs_notification_types` (Pro's competitions and documents) has no switch
+	 * in the host's settings, and competitions carry a competition id in the
+	 * media slot, so it must never reach the host bell undeclared.
+	 *
+	 * @return void
+	 */
+	public function test_an_undeclared_type_never_carries_a_payload(): void {
+		$media  = $this->media();
+		$member = self::factory()->user->create();
+
+		add_filter(
+			'mvs_notification_types',
+			static function ( $types ) {
+				$types[] = 'battle_invite';
+				return $types;
+			}
+		);
+		add_filter(
+			'mvs_notification_link',
+			static function ( $link, $type ) {
+				return 'battle_invite' === $type ? 'https://example.test/compete/battles/9/' : $link;
+			},
+			10,
+			2
+		);
+
+		$seen = 'not fired';
+		add_action(
+			'mvs_notification_created',
+			static function ( $id, $uid, $type, $actor, $mid, $msg, $link, $object_id, $payload ) use ( &$seen ) {
+				$seen = $payload;
+			},
+			10,
+			9
+		);
+
+		Plugin::container()->get( 'notifications' )->create( $member, 'battle_invite', $this->owner, $media );
+
+		$this->assertSame( array(), $seen, 'An undeclared type reached the community bell.' );
 	}
 
 	/**
