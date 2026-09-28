@@ -195,9 +195,25 @@ class NotificationService {
 			 * @param string $link            Deep link to the media / conversation /
 			 *                                profile the notification points at.
 			 * @param int    $object_id       The row's comment_id slot (2.6.0).
+			 * @param array  $contract_payload The BuddyNext / community notification
+			 *                                contract payload (added 2.6.0, appended so
+			 *                                every listener above keeps its declared
+			 *                                accepted_args). See
+			 *                                CommunityNotificationContract::payload().
 			 */
 			$rendered = $this->build_message_and_link( $type, $actor_id, $media_id, $comment_id );
-			do_action( 'mvs_notification_created', $notification_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'], $comment_id );
+			do_action(
+				'mvs_notification_created',
+				$notification_id,
+				$user_id,
+				$type,
+				$actor_id,
+				$media_id,
+				$rendered['message'],
+				$rendered['link'],
+				$comment_id,
+				CommunityNotificationContract::payload( $notification_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'], $rendered['message_grouped'] )
+			);
 
 			return $notification_id;
 		}
@@ -482,14 +498,14 @@ class NotificationService {
 	 *
 	 * @since 1.7.0
 	 * @since 2.4.2 Public, so the BuddyPress mirror renders the same words and link.
-	 * @since 2.6.0 $object_id and the mvs_notification_link filter.
+	 * @since 2.6.0 $object_id, the mvs_notification_link filter, and message_grouped.
 	 *
 	 * @param string $type      Notification type.
 	 * @param int    $actor_id  User who triggered it.
 	 * @param int    $media_id  Related media ID (0 if none).
 	 * @param int    $object_id The row's comment_id slot: a comment id, or the
 	 *                          id of whatever a custom type is about.
-	 * @return array{message:string,link:string}
+	 * @return array{message:string,link:string,message_grouped:string}
 	 */
 	public function build_message_and_link( string $type, int $actor_id, int $media_id, int $object_id = 0 ): array {
 		$actor       = get_userdata( $actor_id );
@@ -531,8 +547,16 @@ class NotificationService {
 		$link = (string) apply_filters( 'mvs_notification_link', $link, $type, $actor_id, $media_id, $object_id );
 
 		return array(
-			'message' => $message,
-			'link'    => $link,
+			'message'         => $message,
+			'link'            => $link,
+			// The same words with the actor as a group, for a host bell that
+			// merges repeats: "{actor} and {others} reacted to Sunset".
+			'message_grouped' => $media_id ? $this->build_notification_message(
+				$type,
+				/* translators: {actor} and {others} are placeholders the community bell fills in. Keep them as-is. */
+				__( '{actor} and {others}', 'wpmediaverse' ),
+				$media_title
+			) : '',
 		);
 	}
 

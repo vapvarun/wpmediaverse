@@ -900,6 +900,9 @@ class Plugin {
 			function () {
 				$service = new NotificationService();
 				$service->init();
+				// Eager: a host reads the declared-types filter as soon as it boots,
+				// and the removal hook must be live before any media is deleted.
+				\WPMediaVerse\Social\CommunityNotificationContract::register();
 				return $service;
 			}
 		);

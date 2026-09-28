@@ -76,6 +76,9 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_notification_types` | filter | Free | 1.0 |
 | `mvs_notification_message` | filter | Free | 1.0 |
 | `mvs_notification_link` | filter | Free | 2.6 |
+| `mvs_community_notification_types` | filter | Free | 2.6.0 |
+| `mvs_community_notification_visible` | filter | Free | 2.6.0 |
+| `mvs_community_notification_removed` | action | Free | 2.6.0 |
 | `mvs_activity_retention_days` | filter | Free | 2.6 |
 | `mvs_push_send` | action | Free | 2.4.0 |
 | `mvs_push_should_send` | filter | Free | 2.4.0 |
@@ -1028,6 +1031,7 @@ Fires after a notification is stored in the database. Use this to push notificat
 | `$message` | string | Rendered text, as the notifications menu shows it (1.7.0) |
 | `$link` | string | Where the notification points (1.7.0) |
 | `$object_id` | int | The row's `comment_id` slot: a comment id, or a competition id for Pro competition types (2.6.0) |
+| `$contract_payload` | array | The BuddyNext / community notification contract payload, or `array()` when this notification is not community-bell material (2.6.0). See [Community Notification Contract](#community-notification-contract-260) below. |
 
 ```php
 /**
@@ -1093,6 +1097,40 @@ add_filter( 'mvs_should_send_notification', function( bool $should_send, int $us
     return $should_send;
 }, 10, 5 );
 ```
+
+---
+
+### Community Notification Contract (2.6.0)
+
+A host community plugin (BuddyNext) is a display + push layer — it never re-implements this plugin's own rules. Every dispatch that reaches `mvs_notification_created` with a real member recipient (a `$user_id` that is not the actor) carries a shared payload as the hook's 9th argument, built ONCE by `WPMediaVerse\Social\CommunityNotificationContract::payload()` from the SAME `$message`/`$link` the hook's 6th/7th arguments already carry — never a second render of the notification text.
+
+Four of this plugin's own types are a HOST's screen, not this plugin's: `new_follower`, `media_comment`, `media_favorite` and `new_message` already have their own first-class surface in a community plugin, so a host tells this plugin to skip creating those entirely (`mvs_should_send_notification`) and sends its own bell row, email and push. The contract payload is never built for those four either way. `report_resolved` names no media and links nowhere a host's bell could deep-link to, so it is never declared or sent through the contract — it stays a plugin-native-only notification. That leaves **`media_reaction`** and **`media_mention`** as the types a host actually receives.
+
+**Only declared types carry a payload.** `payload()` sends a type only when it appears in `mvs_community_notification_types`, so a type another plugin adds to `mvs_notification_types` (Pro's battles, challenges, tournaments and shared documents) stays out of the host bell until it is declared with its own object mapping.
+
+**`$contract_payload` shape** (empty `array()` when not applicable):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `recipient_id` | int | Same as `$user_id`. |
+| `type` | string | Same as `$type`. |
+| `actor_id` | int | Same as `$actor_id`. |
+| `object_type` | string | `media` when `$media_id > 0`, else `''`. |
+| `object_id` | int | Same as `$media_id`. |
+| `message` | string | Plain-text `$message`, stripped of markup. |
+| `url` | string | Same as `$link`. |
+| `context` | array | `{ type: 'media', id: $media_id }` when there is a media item. |
+| `notification_id` | int | Same as `$notification_id`. |
+| `group_key` | string | `{type}_{media_id}` when there is a media item, so repeats on one item merge into one bell row. |
+| `message_grouped` | string | The same words with the actor as `{actor} and {others}` (for example "{actor} and {others} reacted to Sunset"); the host fills in the names. |
+
+Three more seams complete the contract, all registered by `CommunityNotificationContract::register()`:
+
+| Hook | Type | Args | Purpose |
+|------|------|------|---------|
+| `mvs_community_notification_types` | filter | `(array $types)` → `array` | Declares `media_reaction` and `media_mention` (`slug => {label, description, default_on}`), so a host lists one settings switch per type. |
+| `mvs_community_notification_visible` | filter | `(array $visible, int $viewer_id, array $targets)` → `array` | Per-viewer visibility for a page of bell rows, answered through the SAME `PrivacyService::can_view()` every other privacy decision in this plugin uses — never a second access rule. |
+| `mvs_community_notification_removed` | action | `(string $object_type, int $object_id)` | Fired on `mvs_media_deleted` (permanent delete only — trash/restore is a visibility question, answered by the filter above, not removal). |
 
 ---
 
