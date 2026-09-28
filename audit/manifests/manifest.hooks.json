@@ -702,6 +702,17 @@
       "added": "2.3.2"
     },
     {
+      "name": "mvs_community_notification_removed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "string $object_type",
+        "int $object_id"
+      ],
+      "where": "includes/Social/CommunityNotificationContract.php:66",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_community_profile",
       "type": "filter",
       "args_count": 2,
@@ -2006,7 +2017,7 @@
     {
       "name": "mvs_notification_created",
       "type": "action",
-      "args_count": 8,
+      "args_count": 9,
       "args_signature": [
         "int $notification_id",
         "int $user_id",
@@ -2015,7 +2026,8 @@
         "int $media_id",
         "string $message",
         "string $link",
-        "int $object_id"
+        "int $object_id",
+        "array $contract_payload"
       ],
       "where": "includes/Social/NotificationService.php:172",
       "consumed_by": []

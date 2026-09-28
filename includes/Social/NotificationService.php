@@ -195,9 +195,25 @@ class NotificationService {
 			 * @param string $link            Deep link to the media / conversation /
 			 *                                profile the notification points at.
 			 * @param int    $object_id       The row's comment_id slot (2.6.0).
+			 * @param array  $contract_payload The BuddyNext / community notification
+			 *                                contract payload (added 2.6.0, appended so
+			 *                                every listener above keeps its declared
+			 *                                accepted_args). See
+			 *                                CommunityNotificationContract::payload().
 			 */
 			$rendered = $this->build_message_and_link( $type, $actor_id, $media_id, $comment_id );
-			do_action( 'mvs_notification_created', $notification_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'], $comment_id );
+			do_action(
+				'mvs_notification_created',
+				$notification_id,
+				$user_id,
+				$type,
+				$actor_id,
+				$media_id,
+				$rendered['message'],
+				$rendered['link'],
+				$comment_id,
+				CommunityNotificationContract::payload( $notification_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'] )
+			);
 
 			return $notification_id;
 		}
