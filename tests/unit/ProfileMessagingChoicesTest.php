@@ -78,4 +78,11 @@ class ProfileMessagingChoicesTest extends WP_UnitTestCase {
 
 		$this->assertTrue( ( new \ReflectionMethod( Plugin::class, 'is_mvs_page' ) )->invoke( null ) );
 	}
+
+	public function test_follow_back_refusal_uses_the_words_members_see(): void {
+		$message = Plugin::container()->get( 'messaging' )->denial_message( 'mutual_follow_required' );
+
+		$this->assertStringContainsString( 'follow back', $message, 'The member choice is labelled "People you follow back" (Basecamp 10344500471).' );
+		$this->assertStringNotContainsString( 'connected', $message );
+	}
 }

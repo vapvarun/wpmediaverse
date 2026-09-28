@@ -181,7 +181,7 @@ class MessagingService {
 		$messages = array(
 			'blocked'                => __( 'You can no longer message this member.', 'wpmediaverse' ),
 			'dms_disabled'           => __( 'This member isn’t accepting messages right now.', 'wpmediaverse' ),
-			'mutual_follow_required' => __( 'This member only accepts messages from people they are connected with.', 'wpmediaverse' ),
+			'mutual_follow_required' => __( 'This member only accepts messages from people they follow back.', 'wpmediaverse' ),
 			'connections_only'       => __( 'This member only accepts messages from their connections.', 'wpmediaverse' ),
 			'account_too_new'        => __( 'Your account is too new to message this member yet.', 'wpmediaverse' ),
 			'cannot_message_self'    => __( 'You can’t send a message to yourself.', 'wpmediaverse' ),

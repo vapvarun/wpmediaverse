@@ -786,16 +786,16 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** none.
 - **Edge cases:** A member's own upload widget on the album page itself (owner-only "add more photos here" dropzone, per the album template) must not be shown to a non-owner.
 
-#### MV-ALB-010 — Playlist-type album (audio only)
+#### MV-ALB-010 - Audio playlist album (API only)
 - **Edition:** Free
-- **Who:** Member
-- **Where:** Album creation, album type = playlist.
-- **Setup:** A mix of audio and non-audio (image/video) items in the picker.
-- **Steps:** 1. Create/edit an album, set its type to playlist. 2. Try adding a non-audio item.
-- **Expected:** Non-audio items are rejected on add (server-side `file_type` check); only audio items are accepted.
-- **UX expectation:** A rejected item in a bulk "add" operation should not silently vanish from the count with no explanation — verify the picker or the add response communicates which items were skipped and why.
-- **Settings that change it:** none (album type is a per-album choice, not a site setting).
-- **Edge cases:** The member-facing create modal has NO type choice in 2.6.0; a playlist album can only be created through REST (`type=playlist`). A playlist album still renders correctly on its album page. Treat the missing UI as a known gap, not a test failure.
+- **Who:** Member (their own albums), through the REST API or the mobile app.
+- **Where:** `POST /mvs/v1/albums` with `"type": "playlist"`; the album single page (MV-ALB-009) plays it.
+- **Setup:** A member with several audio files and one image.
+- **Steps:** 1. Create an album with `type=playlist` via REST. 2. `POST /mvs/v1/albums/{id}/items` with the audio ids and the image id. 3. Open the album page.
+- **Expected:** Only the audio files join; the image is skipped. The album page lists the tracks and plays them in order.
+- **UX expectation:** The site's "New album" form has no type choice by design (owner decision 2026-09-28): playlists are an API and app feature. Do not report the missing control as a defect.
+- **Settings that change it:** none.
+- **Edge cases:** An empty playlist shows the album empty state; a playlist's privacy follows the album rule like any album (MV-ALB-002).
 
 #### MV-ALB-011 — Album privacy lock (owner turned off member privacy choice)
 - **Edition:** Free
@@ -1219,10 +1219,10 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 #### MV-MSG-002 — Who can send messages (DM access level)
 - **Edition:** Free
 - **Who:** Admin (setting); Member (sender/recipient)
-- **Where:** Settings > Messages > "Who can send messages" (option `mvs_dm_access`: Everyone / Followers only (others go to Requests) / Mutual followers only / Nobody). A per-recipient override also exists via their own Edit Profile "Who can message you" field, which can only be MORE restrictive than the site ceiling, never looser.
+- **Where:** Settings > Messages > "Who can send messages" (option `mvs_dm_access`: Everyone / Followers only (others go to Requests) / People the member follows back / Nobody). A per-recipient override also exists via their own Edit Profile "Who can message you" field, which can only be MORE restrictive than the site ceiling, never looser.
 - **Setup:** Two member accounts, no follow relationship between them.
 - **Steps:** 1. Set site-wide to "Everyone". Try messaging as A → B. 2. Set to "Followers only". Try again without a follow relationship — expect it becomes a Request instead of landing directly in the inbox. 3. Set to "Nobody". Try again.
-- **Expected:** Everyone: message sends directly. Followers only (non-follower sender): message becomes a pending Request in the recipient's Requests tab rather than failing outright. Mutual: requires both directions following. Nobody: refused outright with "This member isn't accepting messages right now." — existing conversations remain readable, only new sends are blocked.
+- **Expected:** Everyone: message sends directly. Followers only (non-follower sender): message becomes a pending Request in the recipient's Requests tab rather than failing outright. People the member follows back: requires both directions following; anyone else is refused with "This member only accepts messages from people they follow back." Nobody: refused outright with "This member isn't accepting messages right now." — existing conversations remain readable, only new sends are blocked.
 - **UX expectation:** The distinct "goes to Requests" behaviour for Followers-only must be visibly different from a hard refusal — the sender should get feedback that their message was sent as a request, not silently swallowed.
 - **Settings that change it:** `mvs_dm_access` (site ceiling) + the recipient's own profile preference (can tighten, never loosen, the site ceiling).
 - **Edge cases:** Minimum account age (`mvs_dm_min_age`, "Minimum Account Age (days)", default 0/off) additionally blocks a too-new sender with "Your account is too new to message this member yet." regardless of the access-level setting.
@@ -3129,7 +3129,7 @@ General pattern confirmed across controllers: an unauthenticated caller on a wri
 - **Where:** Explore page, Layout = "Pinterest Masonry".
 - **Setup:** Layout set to Pinterest.
 - **Steps:** 1. Set Layout to Pinterest. 2. Visit Explore. 3. Confirm CSS-columns masonry with cards preserving original image proportions. 4. Scroll for infinite/Load More.
-- **Expected:** Masonry columns fill without large gaps. Confirmed defect: the docs claim column count "is controlled by the Grid Columns display setting (2-4)," but Pinterest's column count is hardcoded in CSS breakpoints (4 columns desktop, 3 tablet-landscape, 2 tablet-portrait, 1 mobile) and never reads the Grid Columns setting at all — changing Grid Columns has zero effect on the Pinterest layout. Testers should expect 4/3/2/1 columns by viewport width regardless of what Grid Columns is set to.
+- **Expected:** Masonry columns fill without large gaps. Columns follow the viewport: 4 on desktop, 3 on tablet landscape, 2 on tablet portrait, 1 on phones. The Grid Columns setting applies to the square grid only.
 - **UX expectation:** Same empty/search/tag empty states as every other layout (shared partial) — a genuinely empty site never shows a blank white area, always the "No media has been shared yet" hero.
 - **Settings that change it:** "Layout" (this entry); items per page.
 - **Edge cases:** Very tall images should not create an oversized single column that pushes the layout off-balance — verify visually at 1440px.
@@ -3140,7 +3140,7 @@ General pattern confirmed across controllers: an unauthenticated caller on a wri
 - **Where:** Explore page, Layout = "Flickr Justified".
 - **Setup:** Layout set to Flickr.
 - **Steps:** 1. Set Layout to Flickr. 2. Visit Explore. 3. Confirm justified rows (images resized to fill full row width at a consistent row height, no ragged/blank row ends). 4. Click a tile.
-- **Expected:** Clicking opens the shared lightbox. Confirmed defect: the docs claim "the lightbox updates: Flickr mode shows EXIF camera data in the sidebar," but no EXIF reading or display feature exists anywhere in the plugin — the shared lightbox component is identical regardless of which layout is active (no per-layout branching, no camera-data sidebar, no swipe-carousel special case for Instagram either, despite the same doc sentence claiming that too). Testers should expect the plain shared lightbox with no EXIF data on any layout, including Flickr.
+- **Expected:** Clicking opens the shared lightbox. The lightbox is the same shared lightbox on every layout (no EXIF panel, no layout-specific carousel).
 - **UX expectation:** Same shared empty/search-empty/tag-not-found states as Instagram/Pinterest/Dribbble (one partial, one set of strings) — a QA pass that finds different empty-state wording on Flickr vs the others is a real regression, not a design choice.
 - **Settings that change it:** "Layout" (this entry); items per page.
 - **Edge cases:** A row with only one very wide or very narrow image at the end of the feed should not render a broken/blank trailing row.
@@ -3154,7 +3154,7 @@ General pattern confirmed across controllers: an unauthenticated caller on a wri
 - **Expected:** Hover reveals the title overlay; footer always shows author avatar/name plus a heart (likes) icon and, only when views > 0, an eye (views) icon — views icon is conditionally hidden, not shown as "0".
 - **UX expectation:** Stat icons render at the styled 14x14px size (dribbble.css), never at browser-default SVG viewBox size — this is exactly the regression Coding Rule 4 exists to prevent (see MV-LAY-016). Screen-reader text for stats uses full words ("%s like"/"%s likes", "%s view"/"%s views"), not just the raw number.
 - **Settings that change it:** "Layout" (this entry); items per page.
-- **Edge cases:** Animated GIFs. Confirmed defect: the docs claim "Animated GIFs play on hover," but there is no GIF-specific hover-to-play code anywhere — the card markup uses the same static thumbnail helper as every other media type, and the Dribbble JS store is explicitly CSS-only with no such behavior. Testers should expect a GIF to render as a static thumbnail on hover, the same as any other image.
+- **Edge cases:** Animated GIFs show as a static thumbnail on hover, like any other image.
 
 #### MV-LAY-006 — Instagram layout on a member profile
 - **Edition:** Pro
@@ -3183,7 +3183,7 @@ General pattern confirmed across controllers: an unauthenticated caller on a wri
 - **Who:** Any visitor.
 - **Where:** Member profile URL, Layout = Flickr.
 - **Setup:** Layout = Flickr; target member has published media.
-- **Steps:** 1. Set Layout to Flickr. 2. Visit a member profile. 3. Confirmed defect: the docs claim the profile shows a "filmstrip-style contact sheet view," but the profile page renders the exact same justified-row gallery component used on Explore (same CSS classes, same shared grid partial), just scoped to one author — there is no distinct filmstrip/contact-sheet treatment anywhere in the templates. Testers should expect the same justified-row look as Explore, not a different filmstrip style.
+- **Steps:** 1. Set Layout to Flickr. 2. Visit a member profile. 3. Confirm the profile shows the same justified gallery as Explore, limited to that member's media.
 - **Expected:** Justified-row feed scoped to the profile's author, same as Explore.
 - **UX expectation:** Same shared empty-state and stat-icon consistency as the Explore variant.
 - **Settings that change it:** "Layout" (this entry).
@@ -3194,7 +3194,7 @@ General pattern confirmed across controllers: an unauthenticated caller on a wri
 - **Who:** Any visitor.
 - **Where:** Member profile URL, Layout = Dribbble.
 - **Setup:** Layout = Dribbble; target member has published media.
-- **Steps:** 1. Set Layout to Dribbble. 2. Visit a member profile. 3. Confirmed defect: the docs claim "featured work" appears at the top before the full grid, but there is no featured-work section anywhere — the profile page renders the same shot-grid gallery used on Explore (same shared grid partial), scoped to one author, with no split between a "featured" area and "the rest." Testers should expect one continuous grid, not a featured section followed by a full grid.
+- **Steps:** 1. Set Layout to Dribbble. 2. Visit a member profile. 3. Confirm the profile shows the same shot grid as Explore, limited to that member's media, as one continuous grid.
 - **Expected:** Shot-grid feed scoped to the profile's author.
 - **UX expectation:** Same shared empty-state and stat-icon consistency as the Explore variant.
 - **Settings that change it:** "Layout" (this entry).
@@ -4966,20 +4966,20 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Settings that change it:** none — 90-day retention, 1-second rate limit, 5000-row batch, 50-batch cap are all hardcoded.
 - **Edge cases:** a prune run hitting exactly 50 batches (250k rows) in one tick — not resumable within the same run; a genuinely larger backlog needs more than one day's cron tick to fully catch up — not a bug, a known/accepted ceiling.
 
-### Area: PRV
+### Area: PPV - Pro advanced privacy
 
-#### MV-PRV-001 — Update privacy on a single media item (owner/admin only, with locked-site refusal)
+#### MV-PPV-001 — Update privacy on a single media item (owner/admin only, with locked-site refusal)
 - **Edition:** Pro
 - **Who:** Media owner OR a role with `moderate_mvs_media`; refused for everyone else and logged-out users
 - **Where:** `PUT /wp-json/mvs-pro/v1/media/{id}/privacy`
 - **Setup:** Media item exists; caller owns it or moderates
 - **Steps:** 1) As owner, PUT `{ privacy: "friends" }` on your own item. 2) As a different member, attempt the same — expect refusal. 3) As admin/moderator, attempt on someone else's item — expect success.
 - **Expected:** 401 `mvs_pro_unauthorized` if logged out. 404 `mvs_pro_not_found` if the media id doesn't exist. 403 `mvs_pro_forbidden` if logged in but neither owner nor moderator. On success: 200 with `{ success: true, media_id, privacy, inherit_album, message: 'Privacy updated to "<Label>".' }` where Label is one of Everyone/Logged-in Members/Friends Only/Group Members/Only Me/Specific People.
-- **UX expectation:** Re-submitting the SAME privacy level the item already has must succeed even when the site owner has the privacy lock ON (see MV-PRV-003) — the lock only blocks an actual CHANGE. A picker UI that always resubmits the current level on save (e.g., an unrelated field edit) must not start failing once the owner locks privacy.
-- **Settings that change it:** none for who CAN act; see MV-PRV-003 for the lock.
+- **UX expectation:** Re-submitting the SAME privacy level the item already has must succeed even when the site owner has the privacy lock ON (see MV-PPV-003) — the lock only blocks an actual CHANGE. A picker UI that always resubmits the current level on save (e.g., an unrelated field edit) must not start failing once the owner locks privacy.
+- **Settings that change it:** none for who CAN act; see MV-PPV-003 for the lock.
 - **Edge cases:** `custom` level with an empty `custom_users` array — code only rewrites the custom list "for a non-empty custom" request, so submitting `custom` with no users leaves the PREVIOUS custom list in place rather than clearing it; verify this doesn't surprise a member who expected the picker's empty state to mean "no one."
 
-#### MV-PRV-002 — Bulk privacy update across multiple items
+#### MV-PPV-002 — Bulk privacy update across multiple items
 - **Edition:** Pro
 - **Who:** Logged-in member (ownership checked per-item, not by the permission callback)
 - **Where:** `POST /wp-json/mvs-pro/v1/media/bulk-privacy`
@@ -4988,9 +4988,9 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Expected:** Non-owned items are silently split into `skipped`, never erroring the whole batch; owned items land in `updated`. Message text: "%d item(s) updated to \"<Label>\"." plus, if any skipped, " %d item(s) were skipped because you do not own them." If ZERO items updated (e.g., all skipped), response is still 200 (not an error status) with `success: false` and "No items were updated. You may not have permission to change privacy on the selected items."
 - **UX expectation:** A caller must read `success`/`skipped.length`, not just HTTP status, to know whether anything actually happened — a naive "200 = success" toast would misreport a fully-skipped bulk action as a success. Max 100 IDs per request enforced by the REST schema — a larger selection must be chunked client-side or is rejected at the schema level.
 - **Settings that change it:** admins bypass the ownership check via `moderate_mvs_media`.
-- **Edge cases:** Confirmed defect: the customer-facing doc describes an admin "Media > All Media" Bulk Actions "Change Privacy" option calling this same endpoint, with a 4-step walkthrough. MediaVerse's own "All Media" admin page does have a real Bulk Actions dropdown with checkboxes and an Apply button, but its only options are "Move to Trash" (or "Restore"/"Delete permanently" in Trash view) — there is no "Change Privacy" option anywhere in that dropdown. The REST endpoint works exactly as documented; only the admin bulk-action UI described in the doc does not exist.
+- **Edge cases:** There is no bulk privacy action on the wp-admin media list (docs corrected 2026-09-28). Members change privacy in bulk from the My Media bulk bar (Free); photos in an album keep the album privacy and the bar says how many.
 
-#### MV-PRV-003 — Privacy lock: Free's "Allow Users to Set Privacy" honored by Pro's routes
+#### MV-PPV-003 — Privacy lock: Free's "Allow Users to Set Privacy" honored by Pro's routes
 - **Edition:** Pro routes honoring a Free setting
 - **Who:** Site owner (toggles the lock) + any non-privileged member (feels the effect)
 - **Where:** Free: Settings > General, "Allow Users to Set Privacy" checkbox (`mvs_allow_user_privacy`, DEFAULT ON/true — out of the box members CAN change privacy; the owner opts INTO the lock by switching it off). Pro: both `PUT /media/{id}/privacy` and `POST /media/bulk-privacy`.
@@ -5001,7 +5001,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Settings that change it:** "Allow Users to Set Privacy" (`mvs_allow_user_privacy`, Free plugin, Settings > General).
 - **Edge cases:** An older Free version that predates the lock-check method is handled gracefully — Pro checks `method_exists()` first and defaults to allowing the change if Free doesn't support the lock at all, rather than erroring.
 
-#### MV-PRV-004 — "Followers Only" privacy level is not actually enforceable (likely bug)
+#### MV-PPV-004 — "Followers Only" privacy level is not actually enforceable (likely bug)
 - **Edition:** Pro
 - **Who:** Any member who sets an item to "Followers Only"; any of their followers trying to view it
 - **Where:** Privacy picker offering the `followers` option (surfaced via `privacy_options` in the media REST response, `PrivacyUIService::PRIVACY_LEVELS`)
@@ -5012,7 +5012,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Settings that change it:** none — this is a code-level gap, not a setting.
 - **Edge cases:** Confirm this reproduces on both the web (if a picker surfaces this option anywhere) and via direct REST call, and confirm it isn't secretly handled by an as-yet-unfound filter listener elsewhere in Pro.
 
-#### MV-PRV-005 — Privacy presets: save and retrieve
+#### MV-PPV-005 — Privacy presets: save and retrieve
 - **Edition:** Pro
 - **Who:** Logged-in member, own presets only (stored as personal user meta, never visible to others)
 - **Where:** `GET /wp-json/mvs-pro/v1/privacy/presets`, `POST /wp-json/mvs-pro/v1/privacy/presets`
@@ -5021,9 +5021,9 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Expected:** 201 Created on success with the saved preset object (`id`, `name`, `privacy`, `custom_users`, `created_at`). At 20 presets, further saves return 400 `mvs_pro_preset_save_failed`, "The preset could not be saved. You may have reached the maximum of 20 presets, or the name was empty." Empty `name` after sanitization also hits this same error.
 - **UX expectation:** The error message deliberately conflates two distinct causes (cap reached vs empty name) into one string — a UI showing this verbatim should make clear to the member which one actually happened if it can tell, rather than leaving them guessing.
 - **Settings that change it:** none (20-preset cap is a hardcoded constant, not a setting).
-- **Edge cases:** Confirmed defect: the customer doc describes a full `is_default` feature ("Setting `is_default` to true makes this preset the pre-selected option on the upload form... Only one preset can be the default; saving a new default clears the flag from the previous one"), but the actual preset shape saved by the code is only `id, name, privacy, custom_users, created_at` — no `is_default` field exists anywhere in the plugin, and there is no upload-form auto-selection logic tied to any such flag. This is a planned-but-unbuilt feature described as if it ships; not a UI bug to chase, a docs correction (or a real feature gap) to flag.
+- **Edge cases:** Presets are API-only: no site screen shows them and there is no default preset (docs corrected 2026-09-28). A `custom` preset keeps its `custom_users` list.
 
-#### MV-PRV-006 — Presets: relevance to current item, surfaced in media response
+#### MV-PPV-006 — Presets: relevance to current item, surfaced in media response
 - **Edition:** Pro
 - **Who:** Media owner viewing their own item's detail data
 - **Where:** `privacy_preset_ids` field appended to every media REST response via `mvs_media_response` filter
@@ -5034,7 +5034,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Settings that change it:** none.
 - **Edge cases:** Media authored by a deleted/nonexistent user → short-circuits and returns an empty array cleanly.
 
-#### MV-PRV-007 — Album-level "inherit album privacy"
+#### MV-PPV-007 — Album-level "inherit album privacy"
 - **Edition:** Pro
 - **Who:** Album owner/moderator
 - **Where:** `inherit_album` param on `PUT /media/{id}/privacy`; enforced via the `mvs_privacy_can_view` filter at priority 5 (`PrivacyUIService::check_album_inheritance()`)
@@ -5045,7 +5045,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Settings that change it:** `mvs_album_inherit_privacy` filter (site-owner/developer opt-out only, no admin UI checkbox found — filter-only).
 - **Edge cases:** Album id resolves to a post that is NOT actually an `mvs_album` CPT (stale/corrupted meta) → inheritance check safely falls through to `null` (defers to normal privacy) rather than erroring or leaking.
 
-#### MV-PRV-008 — Flickr import sync no longer overrides privacy while locked
+#### MV-PPV-008 — Flickr import sync no longer overrides privacy while locked
 - **Edition:** Pro (Flickr connector integration)
 - **Who:** Member with a connected Flickr account; site owner controlling the lock
 - **Where:** `Integrations/Flickr/Connector.php` sync path, gated by `PrivacyUIService::user_may_choose_privacy()`
@@ -5053,19 +5053,19 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Steps:** 1) With the lock ON, import/re-sync a photo from Flickr whose Flickr-side visibility (public/friends/family) differs from the item's current MediaVerse privacy. 2) Confirm MediaVerse's privacy value is NOT overwritten by the sync while locked. 3) Turn the lock OFF and repeat — confirm privacy now DOES sync from Flickr's flags as before.
 - **Expected:** The import/sync of title, description, and tags proceeds regardless of the lock; only the PRIVACY field's overwrite is skipped when locked.
 - **UX expectation:** No visible notice to the member that their Flickr privacy setting was "ignored" — this is a silent, correct-by-design skip; don't mistake the absence of a sync as a connector failure when checking Flickr integration health while the lock is on.
-- **Settings that change it:** "Allow Users to Set Privacy" (same lock as MV-PRV-003).
+- **Settings that change it:** "Allow Users to Set Privacy" (same lock as MV-PPV-003).
 - **Edge cases:** A photo synced for the FIRST time (no prior MediaVerse privacy) while locked — confirm it lands on the site's configured Default Privacy Level rather than Flickr's flag or an empty value.
 
-#### MV-PRV-009 — GDPR export/erase covers Pro's privacy-related data
+#### MV-PPV-009 — GDPR export/erase covers Pro's privacy-related data
 - **Edition:** Pro registering into Free's data-lifecycle map
 - **Who:** Site owner running a GDPR export/erasure request; the member whose data it is
 - **Where:** `Privacy/ProMemberData.php`, hooks `mvs_member_erase_map` / `mvs_member_retain_map` / `mvs_user_data_purged`; standard wp-admin Tools > Export/Erase Personal Data
-- **Setup:** Member has push device tokens, saved collections, and (per MV-PRV-005/006) privacy presets in their account
+- **Setup:** Member has push device tokens, saved collections, and (per MV-PPV-005/006) privacy presets in their account
 - **Steps:** 1) Run a personal-data ERASE request for a member who has push tokens and collections. 2) Confirm both are removed (device tokens table entry included specifically because leaving it would let the site keep pushing notifications to a "forgotten" member's phone). 3) Run a personal-data EXPORT and confirm the privacy policy addendum text is present under Settings > Privacy, mentioning push delivery through Expo, Flickr token storage, and what is deleted vs retained on erasure.
 - **Expected:** On erasure: boosts, collections, and playback records are deleted; competition entries other members participated alongside are RETAINED with the member's name/identity removed (not deleted outright, to avoid corrupting shared competition data) — this exact policy is spelled out in the privacy-policy text Pro adds.
 - **UX expectation:** The erasure/export tools are core WP screens, not custom Pro UI — verify Pro's rows actually appear in the standard admin "Personal Data Export/Erasure" request results list, not just that the privacy-policy prose claims they will.
 - **Settings that change it:** none — this is compliance plumbing, always active when Pro is active.
-- **Edge cases:** Privacy PRESETS (user meta, MV-PRV-005): confirmed defect — `_mvs_privacy_presets` is NOT covered by anything. Pro's erase/retain map (`mvs_member_erase_map`/`mvs_member_retain_map`) is explicitly table-only by design ("the single source of truth for every member-bearing TABLE"), never touches user meta, and neither Free's nor Pro's account-deletion purge deletes this meta key either (the purge handler only ever runs `$wpdb->delete()`/`update()` against tables from that same map). No exporter or eraser is registered for it anywhere. A GDPR export/erase request or a full account-deletion purge all leave a member's saved privacy presets (including any custom "close friends" user-id lists) behind indefinitely.
+- **Edge cases:** Pro also registers its own exporter and eraser, "MediaVerse Pro settings", for per-member user meta: the export lists saved privacy presets and streak counters (never connector tokens); the eraser removes presets, streaks, video resume positions and connected-account tokens and nothing else. Check: run Tools > Export and Erase Personal Data for a member with presets and a connected Flickr account.
 
 ### Area: STO
 
@@ -5362,7 +5362,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Edge cases:** a custom term containing a comma inside it breaks the comma-split parser (no escaping mechanism).
 
 #### MV-AI-007 — Circuit breaker: trip after repeated failures, cooldown, auto-recovery
-- **Edition:** Pro (Google Vision and Rekognition only — Anthropic does NOT use this trait).
+- **Edition:** Pro (Google Vision, Rekognition and Anthropic).
 - **Who:** System-level; affects every subsequent AI call for that provider site-wide during the open window.
 - **Where:** Transient-based, keyed per provider id (`mvs_circuit_fails_google_vision`, `mvs_circuit_open_rekognition`, etc.).
 - **Setup:** A provider configured with a key that will fail (revoked key, wrong region, network block) so calls fail consistently.
@@ -5370,7 +5370,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Expected:** Step 1: on the 5th consecutive failure, the circuit "opens" — a transient is set for 3600 seconds, an error_log line is written, and the failure counter is cleared. Step 2: `call_api()` short-circuits immediately and returns null WITHOUT making any HTTP request — the provider is completely paused. Step 3: once the transient naturally expires (hard timed reopen, no half-open logic), the very next call goes through normally; any single success anywhere resets the failure counter.
 - **UX expectation:** None of this is visible anywhere in wp-admin — no "provider paused" indicator, nothing; the only trace is a PHP error log line. A member/owner cannot distinguish "circuit open" from "one-off failure" without reading the server error log — a genuine observability gap.
 - **Settings that change it:** none — `circuit_failure_threshold` (5) and `circuit_cooldown` (3600s) are hardcoded, no admin field.
-- **Edge cases:** 4 failures followed by 1 success (counter resets, circuit never opens — only CONSECUTIVE failures count); Anthropic experiencing the same outage has NO circuit breaker at all — it retries every call with no backoff. Confirmed real: `is_circuit_open()` exists only in the Google Vision and Rekognition provider classes; Anthropic's provider class has zero circuit-breaker code and, unlike every other deliberate cross-provider asymmetry in this codebase, carries no comment explaining why — this reads as an oversight (Anthropic support added later, the pattern not carried over) rather than a decision.
+- **Edge cases:** 4 failures followed by 1 success resets the counter (only consecutive failures count). Each provider has its own breaker (`mvs_circuit_open_anthropic`, `..._google_vision`, `..._rekognition`).
 
 #### MV-AI-008 — Missing/invalid credentials per provider
 - **Edition:** Pro.
@@ -5513,7 +5513,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Setup:** Flickr connected.
 - **Steps:** 1) Open "Import from Flickr" modal from the dashboard. 2) Browse/filter by album. 3) Select photos. 4) Click Import.
 - **Expected:** `import_item()` per selected remote_id; imported media gets tagged with `mvs_media_imported` action (`$media_id, 'flickr', $remote_id`) and the external-source badge metadata (external_source, external_id, external_url, external_synced) used by `external-source-badge.php`.
-- **UX expectation:** Modal header: "Import from {connector_label}" (e.g. "Import from Flickr"), with a close button (`aria-label="Close"`). Modal is `role="dialog"` `aria-modal="true"` `aria-labelledby`. Confirmed mixed: Escape-to-close IS wired (a real `keydown` listener closes the overlay). Confirmed defect: there is NO focus trap anywhere in `connector-import.js` — despite advertising `aria-modal="true"`, nothing stops Tab from moving focus out of the dialog into the page behind it, a real accessibility gap for keyboard/screen-reader users. Progress during the run is a real running indicator ("Importing X of Y…" with an updating `aria-valuenow` bar), not silent — but per-item failure display doesn't exist; failures are only reported as one aggregate count ("N failed") in the final summary, not per photo during the run.
+- **UX expectation:** Modal header "Import from {connector_label}" with a Close button (`aria-label="Close"`); `role="dialog"`, `aria-modal="true"`. On open, focus moves to Close; Tab and Shift+Tab stay inside the dialog; Escape closes it (not while an import is running); on close, focus returns to the button that opened it. Check with the keyboard only, on the dashboard Connections panel with a connected Flickr account.
 - **Settings that change it:** `mvs_connectors_enabled`; a member's `default_privacy` connector preference (`match|public|friends|members|private`, settable via `PUT .../prefs`) controls the privacy assigned to imported photos when not otherwise specified.
 - **Edge cases:** Importing a photo already imported previously (re-import) — verify Flickr's importer dedupes the same way the batch importers do, or confirm it deliberately does not (different mechanism, since this is REST-driven, not the AbstractBatchImporter dedup path). 390px — modal must remain usable, not overflow the viewport.
 
@@ -5525,7 +5525,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Steps (manual):** 1) POST export with a list of local attachment IDs. 2) Verify each uploads to Flickr via `export_item()`.
 - **Steps (auto):** 1) Enable auto-export in the connected-accounts panel. 2) Upload new media as that member. 3) Confirm it appears on Flickr without manual action.
 - **Expected:** Manual export fires `mvs_media_exported` action (`$media_id, 'flickr', $photo_id`). Auto-export is queued via Action Scheduler (`as_enqueue_async_action('mvs_connector_auto_export', [...], 'mvs-connectors')` if AS is available) with a `wp_schedule_single_event` fallback — hooked in `ConnectorManager::maybe_auto_export()` on `mvs_media_uploaded` (priority 20), and processed in `Plugin.php` by checking the member is still connected before calling `export_item()`.
-- **UX expectation:** Auto-export is asynchronous — a member should NOT see the upload UI block or wait on the Flickr round-trip; the export happens in the background (AS action group `mvs-connectors`). Confirmed defect: a failed auto-export is completely silent — the Action Scheduler handler calls `$connector->export_item()` and discards whatever it returns (including a `WP_Error`) with no logging, no dashboard notice, no activity post, nothing. A member never learns their photo failed to auto-export to Flickr; this is a real gap, not an assumption.
+- **UX expectation:** Auto-export is asynchronous — a member should NOT see the upload UI block or wait on the Flickr round-trip; the export happens in the background (AS action group `mvs-connectors`). A failed auto-export is written to MediaVerse > Logs (context `connectors`, with the media id and the error) so the owner can see why a photo never reached Flickr.
 - **Settings that change it:** the member's own `auto_export` and `default_privacy` prefs (`PUT /connectors/{id}/prefs`); `mvs_connectors_enabled` master gate.
 - **Edge cases:** Auto-export firing for a member who disconnects Flickr between upload and the AS job actually running — `is_connected($author_id)` is checked at execution time, so it should no-op cleanly rather than error. Uploading many files at once — verify each queues its own AS action rather than one action trying to batch all of them (per-media hook firing per upload).
 
@@ -5553,14 +5553,14 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 
 #### MV-IMP-012 — External-source badge and dedicated dashboard panel display
 - **Edition:** Pro
-- **Who:** Any viewer (badge on a media single view); connected member (Sync Now button only for connected users).
+- **Who:** Any viewer (badge on a media single view).
 - **Where:** `templates/partials/external-source-badge.php` (rendered on media detail views for imported items), `templates/partials/dashboard-connectors-panel.php` (dashboard tab).
 - **Setup:** A media item imported from Flickr (has `external_source`, `external_id`, `external_url`, `external_synced` metadata).
-- **Steps:** 1) View a Flickr-imported media item's single page. 2) Confirm badge text and "View original" link. 3) As the connected owner, click "Sync Now."
+- **Steps:** 1) View a Flickr-imported media item's single page as its owner and as another member. 2) Confirm the badge text, "View original" link and "Last synced" time.
 - **Expected:** Badge text: "Imported from {Flickr}" with a bolded platform label (platform label map includes `flickr`, `unsplash`, `500px` — the latter two are NOT implemented connectors in this codebase per the module map, so seeing those labels would only ever come from data, never a live connector; this is template-level future-proofing, not a bug). "Last synced: {N ago}" or "Never" if `external_synced` is empty. "Sync Now" button only rendered `if ($is_connected)`.
-- **UX expectation:** "View original" link opens in a new tab (`target="_blank" rel="noopener"`) with an outbound-link glyph. Confirmed defect: "Sync Now" is a dead button. It renders with a class (`mvs-sync-now-btn`) and the data attributes (`data-media-id`, `data-remote-id`, `data-connector`) a click handler would need, and the backend is fully built (`GET/POST` route to `sync_metadata()` exists and works) — but there is no JavaScript anywhere in the plugin that attaches a click listener to that class. Clicking "Sync Now" does nothing at all: no loading state, no success, no failure, no network request.
+- **UX expectation:** "View original" opens in a new tab (`target="_blank" rel="noopener"`) with an outbound-link glyph. There is no per-photo "Sync Now" button (removed 2026-09-28: it had no handler and showed to any viewer with their own Flickr connected); syncing is `POST /mvs-pro/v1/connectors/flickr/sync` for the member's whole library.
 - **Settings that change it:** none — purely data-driven display.
-- **Edge cases:** A non-owner, non-connected viewer sees the badge with source label and "Never"/timestamp but no Sync Now button, and no way to trigger a sync — confirm this is correct (read-only display for non-owners). 390px — badge and its meta row must stack without truncating the platform name or timestamp.
+- **Edge cases:** Every viewer sees the same read-only badge. 390px: badge and meta row stack without overflow.
 
 ---
 
@@ -5797,7 +5797,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** `templates/partials/external-source-badge.php`, loaded via `theme_or_plugin()` from `Core/Plugin.php`.
 - **Setup:** At least one Flickr-imported media item.
 - **Steps:** 1) Copy the partial into the theme override path. 2) Adjust badge styling/copy. 3) View an imported item's single page.
-- **Expected:** Theme copy renders the badge; the "Sync Now" button's `data-media-id`/`data-remote-id`/`data-connector` attributes must be preserved for the sync click-handler (MV-IMP-012) to keep working.
+- **Expected:** Theme copy renders the badge. A copy made before 2.6.0 that still prints the Sync Now button renders without it, because `$is_connected` is now always false.
 - **UX expectation:** Same override-fidelity concern.
 - **Settings that change it:** none.
 - **Edge cases:** none beyond the general override mechanism.

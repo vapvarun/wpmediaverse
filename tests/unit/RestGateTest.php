@@ -248,7 +248,6 @@ class RestGateTest extends WP_UnitTestCase {
 	 */
 	private function mode_of( string $method, string $route ): string {
 		$reflection = new \ReflectionMethod( RestGate::class, 'classify' );
-		$reflection->setAccessible( true );
 		$rule = $reflection->invoke( null, $route, $method );
 
 		return (string) $rule['mode'];
@@ -372,7 +371,6 @@ class RestGateTest extends WP_UnitTestCase {
 		wp_set_current_user( $this->bystander );
 
 		$ref = new \ReflectionMethod( RestGate::class, 'conversation_peers' );
-		$ref->setAccessible( true );
 		$peers = $ref->invoke( null, $convo_id );
 
 		$this->assertSame(
