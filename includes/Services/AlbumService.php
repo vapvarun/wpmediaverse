@@ -121,9 +121,10 @@ class AlbumService {
 	 * (album and photo privacy fully independent, how Free behaved before
 	 * 2.3.0 - Production Rule 3).
 	 *
-	 * ponytail: one repository write per photo, so the storage and activity
-	 * listeners on `mvs_media_privacy_changed` move files and update activity
-	 * as before. Batch it through Action Scheduler if very large albums time out.
+	 * Batched: one prefetch for the reads, one upsert for the set-aside
+	 * choices and one UPDATE per 500 photos for the privacy. Every photo whose
+	 * privacy changes still fires `mvs_media_privacy_changed`, so storage and
+	 * activity listeners run exactly as for a single write (Basecamp 10344644266).
 	 *
 	 * @since 2.6.0 Replaces the one-way clamp_items_privacy().
 	 *
@@ -165,7 +166,10 @@ class AlbumService {
 		}
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $media_ids );
 
+		$set_aside = array();
+		$to_change = array();
 		foreach ( $media_ids as $mid ) {
 			$mid     = (int) $mid;
 			$current = (string) $repo->get( $mid, 'privacy' );
@@ -174,16 +178,19 @@ class AlbumService {
 			}
 
 			if ( '' === (string) $repo->get( $mid, self::OWN_PRIVACY_META ) ) {
-				$repo->set( $mid, self::OWN_PRIVACY_META, $current );
+				$set_aside[ $mid ] = $current;
 			}
-
-			if ( $album_privacy === $current ) {
-				continue;
+			if ( $album_privacy !== $current ) {
+				$to_change[ $mid ] = $current;
 			}
+		}
 
-			$repo->set( $mid, 'privacy', $album_privacy );
+		$repo->set_meta_many( self::OWN_PRIVACY_META, $set_aside );
+		$changed = $repo->set_privacy_many( array_keys( $to_change ), $album_privacy );
 
-			if ( PrivacyService::privacy_to_level( $album_privacy ) > PrivacyService::privacy_to_level( $current ) ) {
+		foreach ( $changed as $mid ) {
+			$from = $to_change[ $mid ];
+			if ( PrivacyService::privacy_to_level( $album_privacy ) > PrivacyService::privacy_to_level( $from ) ) {
 				/**
 				 * Fires when an item's privacy is tightened by its album.
 				 *
@@ -194,7 +201,7 @@ class AlbumService {
 				 * @param string $to       New privacy slug.
 				 * @param int    $album_id Album that caused the change.
 				 */
-				do_action( 'mvs_media_privacy_clamped_by_album', $mid, $current, $album_privacy, $album_id );
+				do_action( 'mvs_media_privacy_clamped_by_album', $mid, $from, $album_privacy, $album_id );
 			}
 		}
 	}
@@ -209,7 +216,10 @@ class AlbumService {
 	 */
 	private function restore_own_privacy( array $media_ids ): void {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $media_ids );
 
+		$by_choice = array();
+		$had_one   = array();
 		foreach ( $media_ids as $mid ) {
 			$mid = (int) $mid;
 			$own = (string) $repo->get( $mid, self::OWN_PRIVACY_META );
@@ -217,11 +227,17 @@ class AlbumService {
 				continue;
 			}
 
+			$had_one[] = $mid;
 			if ( $own !== (string) $repo->get( $mid, 'privacy' ) ) {
-				$repo->set( $mid, 'privacy', $own );
+				$by_choice[ $own ][] = $mid;
 			}
-			$repo->delete( $mid, self::OWN_PRIVACY_META );
 		}
+
+		// One batch per privacy level; there are only a handful of levels.
+		foreach ( $by_choice as $own => $ids ) {
+			$repo->set_privacy_many( $ids, (string) $own );
+		}
+		$repo->delete_meta_many( self::OWN_PRIVACY_META, $had_one );
 	}
 
 	/**
@@ -643,6 +659,9 @@ class AlbumService {
 		);
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		// One read for every photo's row, so the existence, owner and type
+		// checks below cost no query each (Basecamp 10344644266).
+		$repo->prefetch( array_map( 'intval', $media_ids ) );
 
 		// Whose media may go in. Adding to an album repoints the item's album_id
 		// and clamps its privacy, so it is a write to the ITEM: a member may only
@@ -679,22 +698,26 @@ class AlbumService {
 			// block runs only when $added > 0. Re-adding therefore does not
 			// heal a legacy album_id of 0; only a fresh insert writes it.
 			$accepted[] = $media_id;
+		}
 
-			++$max_pos;
-			$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_album_items',
-				array(
-					'album_id' => $album_id,
-					'media_id' => $media_id,
-					'position' => $max_pos,
-					'added_at' => current_time( 'mysql', true ),
-				),
-				array( '%d', '%d', '%d', '%s' )
-			);
-
-			if ( false !== $result ) {
-				++$added;
+		// One INSERT IGNORE per 500 photos. A photo already in this album hits
+		// the unique key and is skipped, so it is not counted in $added (same
+		// as the per-row insert this replaces).
+		foreach ( array_chunk( $accepted, 500 ) as $chunk ) {
+			$rows = array();
+			$args = array();
+			$now  = current_time( 'mysql', true );
+			foreach ( $chunk as $mid ) {
+				++$max_pos;
+				$rows[] = '(%d, %d, %d, %s)';
+				array_push( $args, $album_id, $mid, $max_pos, $now );
 			}
+			$added += (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"INSERT IGNORE INTO {$wpdb->prefix}mvs_album_items (album_id, media_id, position, added_at) VALUES " . implode( ',', $rows ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+					...$args
+				)
+			);
 		}
 
 		// Store album association on each media item.
@@ -716,9 +739,7 @@ class AlbumService {
 			// album's privacy later changes. Only ACCEPTED items: this used to walk
 			// the raw input, so a skipped id (missing, not audio for a playlist,
 			// someone else's) was still pointed at the album.
-			foreach ( $accepted as $mid ) {
-				$repo->set( $mid, 'album_id', $album_id );
-			}
+			$repo->set_album_pointer_many( $accepted, $album_id );
 
 			$this->apply_album_privacy( $album_id, $accepted );
 
@@ -830,17 +851,19 @@ class AlbumService {
 			$next[ (int) $row['media_id'] ] = (int) $row['album_id'];
 		}
 
-		$homeless = array();
+		$by_album = array();
 		foreach ( $next as $mid => $next_album ) {
-			$repo->set( (int) $mid, 'album_id', $next_album );
+			$by_album[ (int) $next_album ][] = (int) $mid;
+		}
 
+		foreach ( $by_album as $next_album => $ids ) {
+			$repo->set_album_pointer_many( $ids, $next_album );
 			if ( $next_album > 0 ) {
 				// Only reachable on data from before one-album-per-photo.
-				$this->apply_album_privacy( $next_album, array( (int) $mid ) );
-			} else {
-				$homeless[] = (int) $mid;
+				$this->apply_album_privacy( $next_album, $ids );
 			}
 		}
+		$homeless = $by_album[0] ?? array();
 
 		// Out of every album: the photo's own privacy applies again.
 		$this->restore_own_privacy( $homeless );

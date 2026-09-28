@@ -86,7 +86,7 @@ class MessagingSettingsRegistrar {
 				'choices'     => array(
 					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
 					'followers' => __( 'Followers only (others go to Requests)', 'wpmediaverse' ),
-					'mutual'    => __( 'Mutual followers only', 'wpmediaverse' ),
+					'mutual'    => __( 'People the member follows back', 'wpmediaverse' ),
 					'nobody'    => __( 'Nobody (no new messages; existing conversations stay readable)', 'wpmediaverse' ),
 				),
 				'description' => __( 'Who may start a conversation with another member.', 'wpmediaverse' ),

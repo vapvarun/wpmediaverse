@@ -2413,7 +2413,12 @@ class UploadService {
 	 * @return void
 	 */
 	public static function queue_cloud_repatriation( int $media_id ): void {
-		if ( $media_id <= 0 ) {
+		// Same test run_cloud_repatriation() starts with: on local storage there
+		// is no cloud copy to bring home, so do not queue a job per photo that
+		// would only return (an album of thousands made private queued
+		// thousands of no-op jobs, Basecamp 10344644266).
+		$source = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( $media_id <= 0 || '' === $source || 'local' === $source ) {
 			return;
 		}
 

@@ -2845,6 +2845,200 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Rows written per statement by the batch writers below.
+	 *
+	 * @since 2.6.0
+	 */
+	private const BATCH_CHUNK = 500;
+
+	/**
+	 * Set one privacy on many media items.
+	 *
+	 * The batch form of set( $id, 'privacy', ... ): one read and one UPDATE per
+	 * 500 rows instead of three queries per row, for album-wide changes on
+	 * albums of thousands of photos (Basecamp 10344644266). Only rows whose
+	 * privacy actually changes are written, and each of them still fires
+	 * `mvs_media_privacy_changed`, so file placement, cloud repatriation and
+	 * activity privacy follow exactly as they do for a single write.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[]  $media_ids Media IDs.
+	 * @param string $privacy   Privacy slug.
+	 * @return int[] IDs whose privacy changed.
+	 */
+	public function set_privacy_many( array $media_ids, string $privacy ): array {
+		global $wpdb;
+
+		$changed = array();
+		foreach ( array_chunk( $this->media_ids_only( $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
+			$in  = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$old = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN ({$in}) AND ( privacy <> %s OR privacy IS NULL )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( $chunk, array( $privacy ) )
+				),
+				ARRAY_A
+			);
+			if ( empty( $old ) ) {
+				continue;
+			}
+
+			$ids = array_map( 'intval', wp_list_pluck( $old, 'media_id' ) );
+			$in  = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_index SET privacy = %s, updated_at = %s WHERE media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $privacy, current_time( 'mysql', true ) ), $ids )
+				)
+			);
+
+			$now = current_time( 'mysql', true );
+			foreach ( $old as $row ) {
+				$mid = (int) $row['media_id'];
+				// Keep a prefetched row warm with the new values instead of
+				// dropping it, so listeners reading the row cost no query.
+				if ( isset( self::$row_cache[ $mid ] ) ) {
+					self::$row_cache[ $mid ]['privacy']    = $privacy;
+					self::$row_cache[ $mid ]['updated_at'] = $now;
+				}
+				$changed[] = $mid;
+				// Same as set(): a row with no stored privacy is written, not announced.
+				if ( null !== $row['privacy'] ) {
+					/** This action is documented in includes/Repository/MediaRepository.php set(). */
+					do_action( 'mvs_media_privacy_changed', $mid, $privacy, (string) $row['privacy'] );
+				}
+			}
+		}
+
+		return $changed;
+	}
+
+	/**
+	 * Point many media items at one album (0 = no album).
+	 *
+	 * The batch form of set( $id, 'album_id', ... ): one UPDATE per 500 rows.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Media IDs.
+	 * @param int   $album_id  Album post ID, or 0.
+	 * @return void
+	 */
+	public function set_album_pointer_many( array $media_ids, int $album_id ): void {
+		global $wpdb;
+
+		$now = current_time( 'mysql', true );
+		foreach ( array_chunk( $this->media_ids_only( $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
+			$in = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_index SET album_id = %d, updated_at = %s WHERE media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $album_id, $now ), $chunk )
+				)
+			);
+			foreach ( $chunk as $mid ) {
+				if ( isset( self::$row_cache[ $mid ] ) ) {
+					self::$row_cache[ $mid ]['album_id']   = $album_id;
+					self::$row_cache[ $mid ]['updated_at'] = $now;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Write one meta key for many media items, each with its own value.
+	 *
+	 * One multi-row upsert per 500 rows instead of one REPLACE per row.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string            $key    Meta key.
+	 * @param array<int,string> $values Media ID => value.
+	 * @return void
+	 */
+	public function set_meta_many( string $key, array $values ): void {
+		global $wpdb;
+
+		$allowed = array_flip( $this->media_ids_only( array_keys( $values ) ) );
+		$values  = array_intersect_key( $values, $allowed );
+
+		foreach ( array_chunk( $values, self::BATCH_CHUNK, true ) as $chunk ) {
+			$rows = array();
+			$args = array();
+			foreach ( $chunk as $mid => $value ) {
+				$rows[] = '(%d, %s, %s)';
+				array_push( $args, (int) $mid, $key, (string) $value );
+				self::invalidate_row_cache( (int) $mid );
+			}
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"INSERT INTO {$wpdb->prefix}mvs_media_meta (media_id, meta_key, meta_value) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE meta_value = VALUES(meta_value)', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+					...$args
+				)
+			);
+		}
+	}
+
+	/**
+	 * Delete one meta key from many media items.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $key       Meta key.
+	 * @param int[]  $media_ids Media IDs.
+	 * @return void
+	 */
+	public function delete_meta_many( string $key, array $media_ids ): void {
+		global $wpdb;
+
+		foreach ( array_chunk( array_map( 'intval', $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
+			$in = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $key ), $chunk )
+				)
+			);
+			array_map( array( self::class, 'invalidate_row_cache' ), $chunk );
+		}
+	}
+
+	/**
+	 * Drop album and collection ids, which set() refuses (refuses_cpt_id()),
+	 * with one query for the whole list instead of one get_post_type() each.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Candidate IDs.
+	 * @return int[]
+	 */
+	private function media_ids_only( array $media_ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+
+		$cpt = array();
+		foreach ( array_chunk( $ids, self::BATCH_CHUNK ) as $chunk ) {
+			$in  = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$cpt = array_merge(
+				$cpt,
+				(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT ID FROM {$wpdb->posts} WHERE ID IN ({$in}) AND post_type IN ('mvs_album', 'mvs_collection')", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						...$chunk
+					)
+				)
+			);
+		}
+
+		return array_values( array_diff( $ids, array_map( 'intval', $cpt ) ) );
+	}
+
+	/**
 	 * Set multiple fields at once for a media item.
 	 *
 	 * @param int   $media_id Media ID.

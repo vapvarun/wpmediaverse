@@ -105,6 +105,19 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/albums/ALBUM_ID/items \
 
 This fires the `mvs_album_items_added` action, which triggers BuddyPress activity updates if BuddyPress is active.
 
+### Audio playlists (API only)
+
+An album can be an audio playlist: send `"type": "playlist"` when creating it. A playlist accepts only audio files (other files are skipped when added) and its album page plays the tracks in order.
+
+Playlists are created through the REST API, for the mobile app and custom integrations. The member's "New album" form on the site has no type choice on purpose: most communities only need photo albums, and one simple form keeps it that way.
+
+```bash
+curl -X POST https://yoursite.com/wp-json/mvs/v1/albums \
+  -H "X-WP-Nonce: YOUR_NONCE" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Rehearsal takes", "type": "playlist"}'
+```
+
 ## BuddyPress Activity
 
 When media is added to an album and BuddyPress is active, the `mvs_album_items_added` action updates the upload activity item to reference the album. This replaces the generic "uploaded media" activity with "uploaded media to [Album Name]".

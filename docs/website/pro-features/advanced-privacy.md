@@ -74,65 +74,51 @@ Items the authenticated user does not own are skipped. The response lists which 
 
 List the current user's saved privacy presets.
 
-**Response:**
+**Response:** an array of presets.
 
 ```json
-{
-  "presets": [
-    {
-      "id": 1,
-      "name": "Close friends only",
-      "privacy": "friends",
-      "is_default": true
-    }
-  ]
-}
+[
+  {
+    "id": "mvs_preset_66f1c2a4e1b2c3.12345678",
+    "name": "Close friends only",
+    "privacy": "custom",
+    "custom_users": [12, 45],
+    "created_at": 1790000000
+  }
+]
 ```
 
 ### POST /privacy/presets
 
-Save a new privacy preset for the current user.
+Save a new privacy preset for the current user. A member can keep up to 20.
 
 **Body:**
 
 ```json
 {
   "name": "Close friends only",
-  "privacy": "friends",
-  "is_default": true
+  "privacy": "custom",
+  "custom_users": [12, 45]
 }
 ```
 
-Setting `is_default` to `true` makes this preset the pre-selected option on the upload form. Only one preset can be the default; saving a new default clears the flag from the previous one.
+`custom_users` is only used when `privacy` is `custom`.
 
 **Response:** `201 Created` with the new preset object.
 
 ---
 
-## Bulk Privacy Updates
+## Bulk Privacy Changes
 
-Site administrators can update privacy in bulk from **Media > All Media**:
+Members change the privacy of many items at once from **My Media**: select items, pick a privacy level in the bar that appears, and apply. Photos that sit in an album keep the album's privacy until they leave it (the bar says how many).
 
-1. Select media items using the checkboxes.
-2. Open the **Bulk Actions** dropdown.
-3. Select **Change Privacy**.
-4. Choose the target privacy level and click **Apply**.
-
-![Media list table with bulk actions dropdown](../images/admin-media-list.png)
-
-This uses the same `POST /media/bulk-privacy` endpoint internally and respects the same ownership rules.
+Apps and integrations use `POST /media/bulk-privacy` above. There is no bulk privacy action on the wp-admin media list.
 
 ---
 
 ## User Privacy Presets
 
-Users can save their preferred privacy level as a named preset from the upload page. The preset they mark as default is automatically selected each time they open the upload form.
-
-Presets are stored as user meta. They are personal and not visible to other users or administrators.
-
-![Upload form showing preset selector dropdown](../images/upload-page.png)
-
----
+Presets are saved privacy choices, such as a "close friends" list, that the mobile app or an integration can offer again. They are created and listed through the REST API above; the site's own upload form does not show them.
 
 ## Developer Filter
 
