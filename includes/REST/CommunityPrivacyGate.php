@@ -308,14 +308,25 @@ class CommunityPrivacyGate {
 		 * screen needs before anyone has logged in. A site wanting the harder
 		 * line can drop it through this same filter.
 		 *
+		 * `/mvs/v1/auth/app-password` is the SAME bootstrap problem as
+		 * `/app/config`, one step later in the same flow: it is where a native
+		 * client exchanges a WordPress password for an Application Password.
+		 * Gating it is the identical catch-22 — the client needs an app
+		 * password to carry an authenticated session, and needs to be
+		 * authenticated to be issued one — so a Members Only site could read
+		 * its own `/app/config` (which advertises password login as
+		 * available) but could never actually complete it. Basecamp
+		 * 10350211493.
+		 *
 		 * @since 2.3.2
+		 * @since 2.6.0 Added `/mvs/v1/auth/app-password`.
 		 *
 		 * @param string[]         $exempt  Exempt route prefixes.
 		 * @param \WP_REST_Request $request Current request.
 		 */
 		$exempt = (array) apply_filters(
 			'mvs_rest_gate_exempt_route_prefixes',
-			array( '/mvs/v1/serve', '/mvs/v1/app/config' ),
+			array( '/mvs/v1/serve', '/mvs/v1/app/config', '/mvs/v1/auth/app-password' ),
 			$request
 		);
 

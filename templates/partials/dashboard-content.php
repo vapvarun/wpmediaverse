@@ -956,6 +956,19 @@ wp_interactivity_state(
 			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
 			?>
 		</div>
+		<?php
+		// A search that matched nothing is NOT an empty library (Coding Rule
+		// 22/23, Basecamp 10350215664) - the message has to name the search,
+		// which only the client knows, so the text is a data-wp-text binding
+		// rather than the static string above. Same icon family as explore.php's
+		// own "No results for" state, for the one member-facing search pattern.
+		?>
+		<div data-wp-bind--hidden="!state.showMediaSearchEmpty">
+			<div class="mvs-empty-state-frontend" role="status">
+				<span class="mvs-empty-state-icon" aria-hidden="true"><i data-lucide="search-x"></i></span>
+				<h3 class="mvs-empty-state-title" data-wp-text="state.mediaSearchEmptyMessage"></h3>
+			</div>
+		</div>
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreMedia">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.loadMoreMedia"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>

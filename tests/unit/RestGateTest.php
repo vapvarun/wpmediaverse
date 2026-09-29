@@ -149,6 +149,82 @@ class RestGateTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * Basecamp 10350196637 — the same "gate pointed the wrong way" class the
+	 * test above documents, alive again in ReactionController: DELETE shared
+	 * `create_item_permissions_check()` with POST, so a blocked member could
+	 * react (before being blocked) but never retract it afterward. Seeded
+	 * directly through the service, not the REST route — the blocked
+	 * relationship (set up in `set_up()`) would refuse the POST itself.
+	 */
+	public function test_blocked_member_can_still_delete_their_own_reaction(): void {
+		Plugin::container()->get( 'reactions' )->toggle( $this->media, $this->blocked, 'like' );
+
+		$this->assertNotSame(
+			403,
+			$this->status_as( $this->blocked, 'DELETE', "/mvs/v1/media/{$this->media}/reactions" )
+		);
+	}
+
+	/**
+	 * Same class, CommentController: PUT/PATCH/DELETE on an existing comment
+	 * shared the create callback, so a blocked member could never edit or
+	 * retract their own earlier comment. `RestGate` already declared this
+	 * route+methods exempt (Basecamp 10350196637's linked finding); the
+	 * controller's own permission callback had not caught up.
+	 */
+	public function test_blocked_member_can_still_delete_their_own_comment(): void {
+		$comment_id = Plugin::container()->get( 'comments' )->add( $this->media, $this->blocked, 'my own comment' );
+
+		$this->assertNotSame(
+			403,
+			$this->status_as(
+				$this->blocked,
+				'DELETE',
+				"/mvs/v1/media/{$this->media}/comments/{$comment_id}",
+				array( 'media_id' => $this->media )
+			)
+		);
+	}
+
+	public function test_blocked_member_can_still_edit_their_own_comment(): void {
+		$comment_id = Plugin::container()->get( 'comments' )->add( $this->media, $this->blocked, 'my own comment' );
+
+		$this->assertNotSame(
+			403,
+			$this->status_as(
+				$this->blocked,
+				'PUT',
+				"/mvs/v1/media/{$this->media}/comments/{$comment_id}",
+				array(
+					'media_id' => $this->media,
+					'content'  => 'edited',
+				)
+			)
+		);
+	}
+
+	/**
+	 * Basecamp 10350224617 — the profile's `media_count` used a flat
+	 * `'privacy' => 'public'` query with no viewer awareness at all, so it
+	 * always reported the same number to everyone, blocked or not. The media
+	 * LIST endpoint right below it (`get_user_media()`) was already
+	 * viewer-aware via `count_visible_by_author()`; the count now goes
+	 * through the same helper so the two can never disagree again
+	 * (Basecamp #9941246549 is the original "count vs. list disagree" bug
+	 * this helper exists to prevent).
+	 */
+	public function test_blocked_member_sees_zero_media_count_a_bystander_still_sees(): void {
+		wp_set_current_user( $this->bystander );
+		$bystander_count = rest_do_request( new WP_REST_Request( 'GET', "/mvs/v1/users/{$this->owner}" ) )->get_data()['media_count'];
+
+		wp_set_current_user( $this->blocked );
+		$blocked_count = rest_do_request( new WP_REST_Request( 'GET', "/mvs/v1/users/{$this->owner}" ) )->get_data()['media_count'];
+
+		$this->assertSame( 1, (int) $bystander_count, 'A bystander should still see the one public item.' );
+		$this->assertSame( 0, (int) $blocked_count, 'A member the author blocked should not learn how much public media the author has.' );
+	}
+
 	public function test_suspended_member_cannot_write_at_all(): void {
 		update_user_meta( $this->bystander, 'mvs_suspended', 1 );
 

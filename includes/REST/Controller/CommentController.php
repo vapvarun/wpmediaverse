@@ -127,7 +127,7 @@ class CommentController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'own_item_permissions_check' ),
 					'args'                => array(
 						'media_id'   => array(
 							'type'              => 'integer',
@@ -148,7 +148,7 @@ class CommentController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'own_item_permissions_check' ),
 					'args'                => array(
 						'media_id'   => array(
 							'type'              => 'integer',
@@ -430,6 +430,31 @@ class CommentController extends WP_REST_Controller {
 		$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked( get_current_user_id(), $author );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Permission check for editing or deleting your OWN existing comment.
+	 *
+	 * Deliberately NOT `create_item_permissions_check()` — Basecamp
+	 * 10350196637 found the same "gate pointed the wrong way" class here that
+	 * `RestGate` already declares exempt for this route: PUT/PATCH/DELETE on
+	 * `/media/\d+/comments/\d+` (`RestGate.php` line ~158), because sharing
+	 * the create callback meant a blocked member could never edit or retract
+	 * their own earlier comment. Login is still required; ownership is
+	 * enforced separately in `update_item()`/`delete_item()`, so skipping the
+	 * block gate here cannot let a blocked member touch someone else's
+	 * comment — only their own.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return bool|WP_Error
+	 */
+	public function own_item_permissions_check() {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in to comment.', 'wpmediaverse' ), array( 'status' => 401 ) );
 		}
 
 		return true;

@@ -99,7 +99,7 @@ class ReactionController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'delete_item_permissions_check' ),
 					'args'                => array(
 						'media_id' => array(
 							'type'              => 'integer',
@@ -257,6 +257,32 @@ class ReactionController extends WP_REST_Controller {
 		$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked( get_current_user_id(), $author );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Permission check for retracting your OWN reaction.
+	 *
+	 * Deliberately NOT `create_item_permissions_check()` — Basecamp
+	 * 10350196637: sharing that callback meant a blocked member could never
+	 * take their own reaction back, which is the same "gate pointed the
+	 * wrong way" class `RestGate` already exempts this route+method for
+	 * (`RestGate.php` line ~163). Login is still required; only the block
+	 * gate is skipped, matching `FollowController::unfollow_user()`'s
+	 * DELETE callback — retracting your own action is always yours to do,
+	 * even against someone who has blocked you.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request Request. Unused — signature matches
+	 *                                 `WP_REST_Controller::delete_item_permissions_check()`.
+	 * @return bool|WP_Error
+	 */
+	public function delete_item_permissions_check( $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in to react.', 'wpmediaverse' ), array( 'status' => 401 ) );
 		}
 
 		return true;

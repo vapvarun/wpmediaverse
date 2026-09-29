@@ -1269,6 +1269,16 @@ class MediaController extends WP_REST_Controller {
 		$mvs_new_size = (int) ( filesize( $file['tmp_name'] ) ?: 0 );
 		$mvs_old_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
 
+		// The SAME max-size guard as UploadService::handle(), not a mirror of
+		// it — same reason as the MIME guard above: a size cap the owner sets
+		// has to hold on every write path, not just fresh uploads. Checked
+		// against the new file's own size, not the storage delta below (a
+		// smaller replacement of an over-limit file must still be refused).
+		$mvs_size_refusal = $upload_service->reject_oversized_file( $mvs_new_size, get_current_user_id() );
+		if ( $mvs_size_refusal ) {
+			return $mvs_size_refusal;
+		}
+
 		/** This filter is documented in includes/Services/UploadService.php */
 		$mvs_replace_args = apply_filters(
 			'mvs_upload_args',

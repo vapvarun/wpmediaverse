@@ -123,28 +123,10 @@ class UploadService {
 
 		// Check file size using server-side measurement (not client-reported).
 		// One reader for the limit, shared with Pro's document ingest.
-		$max_size = \WPMediaVerse\Core\SettingsHelper::get_max_upload_size( $user_id );
-
 		$actual_size = filesize( $file['tmp_name'] );
-		if ( false === $actual_size || $actual_size > $max_size ) {
-			LoggerService::error(
-				'upload',
-				'File too large',
-				array(
-					'size'    => $actual_size,
-					'max'     => $max_size,
-					'user_id' => $user_id,
-				)
-			);
-			return new WP_Error(
-				'mvs_file_too_large',
-				sprintf(
-					/* translators: %s: max size in MB */
-					__( 'File exceeds the maximum upload size of %s MB.', 'wpmediaverse' ),
-					round( $max_size / 1048576 )
-				),
-				array( 'status' => 400 )
-			);
+		$mvs_refusal = $this->reject_oversized_file( $actual_size, $user_id );
+		if ( $mvs_refusal ) {
+			return $mvs_refusal;
 		}
 
 		// Compute SHA-256 hash.
@@ -1009,6 +991,49 @@ class UploadService {
 			return new WP_Error(
 				'mvs_unsupported_file_type',
 				__( 'This file type is not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * The SAME max-size guard as a fresh upload, callable from any write path.
+	 *
+	 * Extracted so `MediaController::replace_file()` can run the identical
+	 * check `handle()` runs — a size cap the owner sets has to hold on every
+	 * write path, not just fresh uploads. Basecamp 10350220155: replace()
+	 * called neither this nor any size check, so the cap could be bypassed by
+	 * replacing an existing item's file.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int|false $actual_size Server-side measured file size, or false
+	 *                                when it could not be measured.
+	 * @param int       $user_id     Acting user, for the per-user limit reader.
+	 * @return \WP_Error|null Error when the file must be refused, null to proceed.
+	 */
+	public function reject_oversized_file( $actual_size, int $user_id ): ?\WP_Error {
+		$max_size = \WPMediaVerse\Core\SettingsHelper::get_max_upload_size( $user_id );
+
+		if ( false === $actual_size || $actual_size > $max_size ) {
+			LoggerService::error(
+				'upload',
+				'File too large',
+				array(
+					'size'    => $actual_size,
+					'max'     => $max_size,
+					'user_id' => $user_id,
+				)
+			);
+			return new WP_Error(
+				'mvs_file_too_large',
+				sprintf(
+					/* translators: %s: max size in MB */
+					__( 'File exceeds the maximum upload size of %s MB.', 'wpmediaverse' ),
+					round( $max_size / 1048576 )
+				),
 				array( 'status' => 400 )
 			);
 		}

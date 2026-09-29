@@ -354,7 +354,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const panel = state[ getContext()?.panel ];
 			return !! panel && ! panel.items.length && ! panel.loading && ! ( panel.s || '' ).trim();
 		},
-		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading; },
+		// showMediaEmpty is the TRULY-empty-library state ("No media yet");
+		// showMediaSearchEmpty is a search that matched nothing. Basecamp
+		// 10350215664: a member with real uploads who searched a nonsense
+		// title saw "No media yet - upload your first file", which is untrue
+		// and tells them nothing about the search they just ran.
+		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading && ! ( state.media.s || '' ).trim(); },
+		get showMediaSearchEmpty() { return state.media.items.length === 0 && ! state.media.loading && !! ( state.media.s || '' ).trim(); },
+		get mediaSearchEmptyMessage() {
+			return ( state.i18n?.noResultsFor || 'No results for "%s".' ).replace( '%s', state.media.s || '' );
+		},
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
 		get showCollectionsEmpty() { return state.collections.items.length === 0 && ! state.collections.loading; },

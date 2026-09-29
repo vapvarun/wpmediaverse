@@ -193,6 +193,22 @@ class GDPRService {
 			);
 		}
 
+		// WordPress only renders a group heading in the export file when at
+		// least one item carries that `group_id` — an empty `$export_items`
+		// makes the Media Items section vanish entirely rather than show
+		// empty, so a reviewer cannot tell the exporter ran from one that
+		// never fired. Only on the genuinely empty first page: a later page
+		// of a multi-page export being empty (the tail end) is normal and
+		// the heading already appeared on page 1. Basecamp 10350231765.
+		if ( empty( $export_items ) && 1 === $page ) {
+			$export_items[] = array(
+				'group_id'    => 'wpmediaverse-media',
+				'group_label' => __( 'Media Items', 'wpmediaverse' ),
+				'item_id'     => 'mvs-media-none',
+				'data'        => array(),
+			);
+		}
+
 		return array(
 			'data' => $export_items,
 			'done' => count( $rows ) < $per_page,

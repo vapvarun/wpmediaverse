@@ -240,19 +240,17 @@ class UserController extends WP_REST_Controller {
 		$counts     = $follows->get_counts( $user_id );
 		$current_id = get_current_user_id();
 
-		// Count public media through the repository (P1.2). The raw query this
-		// replaces had already needed two corrections that its sibling twenty
-		// lines down never needed — a missing status filter, then a missing type
-		// filter — which is the argument for one implementation rather than two.
-		// The MEDIA_LIBRARY default lives in the repository, so the count and the
-		// grid beneath it cannot disagree about what a profile contains.
-		$media_count = Plugin::container()->get( 'media_repository' )->query_count(
-			array(
-				'author_id'         => (int) $user_id,
-				'status'            => 'publish',
-				'moderation_status' => 'approved',
-				'privacy'           => 'public',
-			)
+		// Viewer-aware count through the SAME canonical helper get_user_media()
+		// below uses (count_visible_by_author() -> resolve_profile_privacy_mode()),
+		// not a flat 'privacy' => 'public' query. The flat query counted every
+		// public item unconditionally, so a member the author had blocked still
+		// learned how much public media the author has — the count disagreed
+		// with the (correctly gated) media list underneath it. Basecamp
+		// 10350224617.
+		$media_count = Plugin::container()->get( 'media_repository' )->count_visible_by_author(
+			(int) $user_id,
+			$current_id,
+			array( 'moderation_status' => 'approved' )
 		);
 
 		// WP core deliberately withholds `user_login` and `user_registered`
