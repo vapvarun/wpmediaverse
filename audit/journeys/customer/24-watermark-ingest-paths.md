@@ -3,7 +3,7 @@ journey: watermark-ingest-paths
 plugin: wpmediaverse
 priority: high
 roles: [administrator, author]
-covers: [watermark-replace-file, watermark-sideload-skip, watermark-fail-closed]
+covers: [MV-WMK-009, watermark-replace-file, watermark-sideload-skip, watermark-fail-closed]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "WPMediaVerse Pro active (Pro owns the Watermarker stamp)"

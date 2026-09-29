@@ -3,7 +3,7 @@ journey: tournament-sparse-bracket-safety
 plugin: wpmediaverse-pro
 priority: critical
 roles: [administrator, member]
-covers: [tournaments, generate_bracket, sparse-bracket, both-null-skip, 9966421635]
+covers: [tournaments, generate_bracket, sparse-bracket, both-null-skip, 9966421635, MV-TRN-003, MV-TRN-004]
 prerequisites:
   - "Both plugins active; mvs_tournaments_enabled = 1"
   - "Auto-login mu-plugin available"

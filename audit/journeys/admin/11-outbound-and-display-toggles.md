@@ -3,7 +3,7 @@ journey: outbound-and-display-toggles
 plugin: wpmediaverse
 priority: high
 roles: [administrator]
-covers: [webhooks-toggle, telemetry-opt-in, chat-panel-visibility]
+covers: [webhooks-toggle, telemetry-opt-in, chat-panel-visibility, MV-SET-023]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Auto-login mu-plugin available (?autologin=1)"

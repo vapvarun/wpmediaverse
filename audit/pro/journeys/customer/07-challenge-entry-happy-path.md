@@ -3,7 +3,7 @@ journey: challenge-entry-happy-path
 plugin: wpmediaverse-pro
 priority: high
 roles: [administrator, member]
-covers: [challenges, entries, compete-hub]
+covers: [challenges, entries, compete-hub, MV-CHL-004]
 prerequisites:
   - "mvs_challenges_enabled = 1"
   - "A member who owns at least one published image"
@@ -42,6 +42,11 @@ estimated_runtime_minutes: 6
 ### 5. A member with no photos is offered a way in
 - **Action**: as a member who owns no images, open the same challenge.
 - **Expect**: no empty picker with a dead Submit — an "Upload a new photo" path instead.
+
+### 5b. Ownership and duplicate-media guards (MV-CHL-004)
+- **Action**: as a member, try to submit media owned by ANOTHER member into the challenge (`POST .../entries` with that media's id); then submit one of your own media items twice into the same challenge (once via new-upload, once via pick-existing pointing at the same resulting media id).
+- **Expect**: media you don't own is rejected with "Invalid media or not your content." A second submission of the SAME media id into the SAME challenge is rejected with "This media has already been submitted." (409, `mvs_challenge_duplicate_media`) — the duplicate check is scoped to `competition_id`, so re-submitting that same media id into a DIFFERENT (later) challenge must succeed.
+- **On fail**: `includes/Challenges/ChallengeService.php::submit_entry()` — ownership/duplicate-media checks.
 
 ### 6. Admin sees the entry
 - **Action**: back in Photo Challenges, open the challenge.

@@ -3,7 +3,7 @@ journey: storage-switch-migrate-mobile
 plugin: wpmediaverse
 priority: critical
 roles: [administrator]
-covers: [storage-management, location-based-display, private-stays-local, migrate-all, migrate-cli-variants, mobile-responsive, i18n]
+covers: [storage-management, location-based-display, private-stays-local, migrate-all, migrate-cli-variants, mobile-responsive, i18n, MV-CLI-011]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "WPMediaVerse Pro active (Storage Management lives in Pro)"

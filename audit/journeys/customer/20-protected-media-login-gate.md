@@ -3,7 +3,7 @@ journey: protected-media-login-gate
 plugin: wpmediaverse
 priority: critical
 roles: [author, subscriber, anonymous]
-covers: [protected-media-gate, privacy-gate-single, login-url-buddynext]
+covers: [MV-MED-001, MV-MED-018, MV-EXP-012, protected-media-gate, privacy-gate-single, login-url-buddynext]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "dev-auto-login mu-plugin installed"
@@ -31,6 +31,7 @@ Regressions here either leak private media, 404 legit content, or send members t
   `restFetch('media/$MEDIA_ID', {method:'POST', body:{privacy:'members'}})` as owner A,
   or `mysql_query "UPDATE wp_mvs_media_index SET privacy='members' WHERE media_id=$MEDIA_ID"`.
 - Second member: member B (`?autologin=<memberB>`), NOT the owner.
+- A SECOND, PUBLIC image owned by owner A, with slug `$PUBLIC_SLUG`, title and description set — for the positive OG-tag case (MV-EXP-012).
 
 ## Steps
 
@@ -59,6 +60,11 @@ Regressions here either leak private media, 404 legit content, or send members t
 - **Action**: `curl -s $SITE_URL/media/$SLUG/ | grep -i 'og:image'` as anonymous.
 - **Expect**: NO `og:image` / `twitter:image` meta for the members-only page (the OG block is skipped for denied viewers).
 
+### 6. A viewable public item DOES emit OG/Twitter Card meta (MV-EXP-012, positive case)
+- **Action**: `curl -s $SITE_URL/media/$PUBLIC_SLUG/ | grep -iE 'og:title|og:image|og:description|twitter:card'` as anonymous.
+- **Expect**: all four tags present, using the item's own title (`og:title`), a real thumbnail URL (`og:image` — signed if the item is shareable-but-private, direct otherwise), the description trimmed to 280 chars (`og:description`), and a `twitter:card` value. These tags must be injected on `wp_head` at priority 5, i.e. present in the raw HTML `<head>` a crawler fetches (verified via `curl`, not a client-rendered check).
+- **On fail**: `includes/Core/TemplateLoader.php::serve_single_media()` (the `if ( $can_view )` wrap around the OG block — see Fail diagnostics below); confirm the block is not accidentally gated for viewable items too.
+
 ## Pass criteria
 
 ALL hold:
@@ -67,6 +73,7 @@ ALL hold:
 3. No image URL, poster, `/wpmediaverse/` src, or OG image is emitted to the denied viewer.
 4. HTTP 403 + noindex for the gated page.
 5. Gate login link points to the BuddyNext auth page (with redirect_to), not wp-login.php.
+6. A viewable public item's page emits `og:title`/`og:image`/`og:description`/`twitter:card` in the raw HTML `<head>`.
 
 ## Fail diagnostics
 

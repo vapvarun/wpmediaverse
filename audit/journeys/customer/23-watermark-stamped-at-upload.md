@@ -3,7 +3,7 @@ journey: watermark-stamped-at-upload
 plugin: wpmediaverse
 priority: high
 roles: [administrator, author, anonymous]
-covers: [watermark-stamp-upload, watermark-admin-global]
+covers: [MV-WMK-001, MV-WMK-006, MV-WMK-007, watermark-stamp-upload, watermark-admin-global]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "WPMediaVerse Pro active (Pro owns the Watermarker stamp)"

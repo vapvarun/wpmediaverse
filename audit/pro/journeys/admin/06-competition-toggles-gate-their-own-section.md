@@ -3,7 +3,7 @@ journey: competition-toggles-gate-their-own-section
 plugin: wpmediaverse-pro
 priority: high
 roles: [administrator, member]
-covers: [competitions, feature-toggles, compete-hub, optionality]
+covers: [competitions, feature-toggles, compete-hub, optionality, MV-CHL-015, MV-TRN-016]
 prerequisites:
   - "Both plugins active; Pro licence active"
   - "Auto-login mu-plugin available"

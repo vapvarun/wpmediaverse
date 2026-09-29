@@ -3,7 +3,7 @@ journey: album-privacy-and-pagination
 plugin: wpmediaverse
 priority: critical
 roles: [author, subscriber, anonymous]
-covers: [album-privacy-pagination, album-owner-single-view, album-visitor-visibility]
+covers: [MV-ALB-009, album-privacy-pagination, album-owner-single-view, album-visitor-visibility]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "dev-auto-login mu-plugin installed"

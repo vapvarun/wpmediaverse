@@ -3,7 +3,7 @@ journey: bp-tab-assets-survive-suppression
 plugin: wpmediaverse
 priority: high
 roles: [administrator, subscriber]
-covers: [buddynext-suppression, bp-media-tab, bp-group-media-tab, load-more, frontend-presence]
+covers: [MV-BP-001, MV-BP-002, buddynext-suppression, bp-media-tab, bp-group-media-tab, load-more, frontend-presence]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "BuddyPress (or BuddyNext providing it) ACTIVE - without it these screens do not exist"
@@ -70,7 +70,23 @@ the dependent is "enqueued" passes while the script is silently absent.
 - **Expect**: `mvs-*` UI handles are still stripped there. This journey must not
   pass by disabling the sweep - only by exempting the tabs' own assets.
 
-### 6. The rule, not the list
+### 6. Member Media tab content is correct, not just its assets (MV-BP-001)
+- **Action**: on the member Media tab, switch between its "Media" (default), "Albums", and "Documents" sub-tabs (Documents only present when the documents master switch is on).
+- **Expect**: real thumbnails render for each sub-tab (never a raw page URL or a broken `<img>`), matching this member's VIEWABLE uploads for the CURRENT viewer — the same privacy rule as the standalone `/media/@user/` profile (MV-PRF-001). A stranger must see neither more nor less here than on that standalone page.
+- **Action**: with the documents master switch OFF, revisit the tab.
+- **Expect**: the "Documents" sub-tab is entirely absent (not present-but-empty).
+- **Action**: view a sub-tab with nothing to show for this viewer.
+- **Expect**: an empty state with no broken `<img>` tags — never a stub tile pointing at nothing.
+
+### 7. Group Media tab content is correct (MV-BP-002)
+- **Action**: visit `{group}/media/` for a group whose media privacy is `group`; as a group member.
+- **Expect**: group-scoped media renders correctly (real thumbnails, matching MV-BP-001's rendering bar).
+- **Action**: as a non-member of a PRIVATE group, visit the same tab.
+- **Expect**: "no media in this group" (or denied per the group's own BP visibility) — never the group's actual content.
+- **Action**: from the group tab, open a single album within it.
+- **Expect**: routes internally (not as a separate BP subnav item, since BP doesn't render nested subnavs in groups) and renders correctly.
+
+### 8. The rule, not the list
 - **Action**: add a new `wp_enqueue_script()` to `enqueue_assets()` without
   adding its handle to `TAB_ASSET_HANDLES`.
 - **Expect**: the drift check catches it. Every handle the class enqueues must

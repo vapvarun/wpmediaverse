@@ -3,7 +3,7 @@ journey: tournament-registration-window-is-honest
 plugin: wpmediaverse-pro
 priority: high
 roles: [member]
-covers: [tournaments, compete-hub, registration, dead-cta]
+covers: [tournaments, compete-hub, registration, dead-cta, MV-TRN-002]
 prerequisites:
   - "mvs_tournaments_enabled = 1"
   - "One tournament whose registration window has CLOSED but status is still active"
@@ -44,6 +44,11 @@ estimated_runtime_minutes: 5
 ### 5. The API agrees with the UI
 - **Action**: `POST /tournaments/{A}/register`.
 - **Expect**: 400 `mvs_tournament_reg_closed` — and no UI anywhere offered that action.
+
+### 6. Duplicate registration and unregister (MV-TRN-002)
+- **Action**: as a member, register for fixture B (open tournament), then try to register a second time; then unregister while registration is still open.
+- **Expect**: the second registration attempt is rejected — `mvs_tournament_already_registered` ("Already registered.", 409), inside the same row-locked transaction as the window check. Unregistering while `registration` is still open removes the member's entry and frees a slot (`spots_remaining` increments by 1 on reload); the member's name drops off the participant list without a page reload.
+- **On fail**: `includes/Tournaments/TournamentService.php::register_participant()` / `unregister_participant()`.
 
 ## Pass criteria
 

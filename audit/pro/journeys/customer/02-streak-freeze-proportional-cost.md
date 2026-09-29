@@ -3,7 +3,7 @@ journey: streak-freeze-proportional-cost
 plugin: wpmediaverse-pro
 priority: high
 roles: [member]
-covers: [streaks, freeze-cost, atomic-debit, buy-freeze, 9966423677]
+covers: [MV-BST-006, MV-BST-007, streaks, freeze-cost, atomic-debit, buy-freeze, 9966423677]
 prerequisites:
   - "Both plugins active; mvs_streaks_enabled = 1; mvs_streak_freezes_enabled = 1"
   - "WB Gamification points engine available"

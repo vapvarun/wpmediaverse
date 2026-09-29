@@ -3,7 +3,7 @@ journey: blocked-member-cannot-interact
 plugin: wpmediaverse
 priority: critical
 roles: [subscriber, subscriber]
-covers: [block-enforcement, rest-gate, safety, suspension-gate]
+covers: [MV-ACC-005, MV-ADM-015, block-enforcement, rest-gate, safety, suspension-gate]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Two subscriber members exist (the blocker and the blocked), plus one uninvolved bystander"
@@ -82,6 +82,7 @@ These must **NOT** be 403. Blocking must never become a shield for the blocker, 
 As **Bystander**, repeat 1.1–1.5 against the Blocker's media. Every one must succeed (200/201). A gate that denies everyone is not a gate; it is an outage.
 
 ### 4. A suspended member cannot write at all
+(Also the frontend-behavior half of `MV-ADM-015` — Member Moderation's admin Suspend/Restore control; this section covers the resulting frontend/API refusal, not the admin screen's own UI.)
 
 - Suspend the Bystander: **Users → hover the row → Suspend** (or tick *Suspended* on their profile screen).
 - As **Bystander**, every write must now return **403 `mvs_account_suspended`** — including writes to their *own* resources (`POST /mvs/v1/albums`, `POST /mvs/v1/media`).

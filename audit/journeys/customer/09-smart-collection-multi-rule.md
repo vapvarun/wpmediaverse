@@ -3,7 +3,7 @@ journey: smart-collection-multi-rule
 plugin: wpmediaverse
 priority: high
 roles: [subscriber]
-covers: [collections, smart-rules, dashboard-view, basecamp-9962118482]
+covers: [MV-COL-001, collections, smart-rules, dashboard-view, basecamp-9962118482]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "At least one published public image tagged with an mvs_tag term (seed demo data provides tag `nature` on media 4-10)"

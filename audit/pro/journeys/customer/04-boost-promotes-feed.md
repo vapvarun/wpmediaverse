@@ -3,7 +3,7 @@ journey: boost-promotes-feed
 plugin: wpmediaverse-pro
 priority: critical
 roles: [member]
-covers: [pro-boosts, boost-feed-promotion, boost-button-regression]
+covers: [MV-BST-001, MV-BST-002, MV-BST-003, pro-boosts, boost-feed-promotion, boost-button-regression]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Auto-login mu-plugin available (?autologin=1)"
