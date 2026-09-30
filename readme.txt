@@ -137,6 +137,7 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * New      - A Mobile App settings tab for app sign-in, branding, terms and the abuse contact.
 * New      - The member who reported something is notified when a moderator reviews it.
 * New      - A Messages switch in Settings > Messages turns private messaging off everywhere, including integrations built on MediaVerse, and keeps existing conversations.
+* New      - Albums have a settings box in wp-admin for who can see the album, its type and its cover, and collections have a matching privacy choice.
 * Improve  - Settings show only while their switch is on, and developer settings leave the screen, about 130 controls down to about 55.
 * Improve  - One Layout choice replaces the separate layout settings, and Grid Columns shows only for the grid layout.
 * Improve  - Every list has one sort control, empty lists hide search and sort, and Explore tags sit on one scrolling row.
@@ -147,6 +148,9 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Improve  - Large sites load faster with new indexes, batched reads and paginated lists.
 * Improve  - "Who can send messages: Nobody" now says what it does: no new messages, while existing conversations stay readable.
 * Improve  - On a private community, new uploads start as Members Only, and a site that becomes private later gets a one-time notice offering the switch.
+* Improve  - Album and collection editors open in the classic editor, so their settings show without opening a hidden panel, and the unused Featured Image box is gone.
+* Improve  - Admin empty states share one layout, and their icons show at the intended size.
+* Improve  - The account deletion message and email say Log in, matching the rest of the plugin, and permission messages for settings and collections say edit.
 * Fix      - Private items now look exactly like missing ones on pages, in the API and in album counts.
 * Fix      - Saving a settings tab no longer resets values that were not on the screen.
 * Fix      - Message times carry an explicit UTC value so every client shows the same clock.
@@ -157,12 +161,19 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Fix      - Reporting a message that was unsent no longer logs a warning, and your own messages still cannot be reported.
 * Fix      - Profile settings offer only the messaging choices the site allows, hide messaging and online status while Messages is off, and hide the activity-email switch when no email type is on.
 * Fix      - The chat panel's "MediaVerse pages only" choice now includes the Explore Documents page.
+* Fix      - Followers Only items are visible to the owner's followers, on the item page and in the owner's profile listing.
+* Fix      - The media player block hides its Download link when downloads are off or the owner turned them off for that item, and counts the download.
+* Fix      - MediaVerse blocks placed on an ordinary page now record views and downloads.
+* Fix      - A leftover thumbnail address on a host the file is no longer served from is ignored, so migrated sites stop pointing grids at the old host.
+* Fix      - Merging tags asks for confirmation in the styled dialog, and confirmed admin forms now submit.
 * Security - Block style fields no longer accept CSS that could inject into the page.
 * Security - Draft media is no longer returned to signed-out visitors through the API.
 * Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.
 * Dev      - Removed settings keep their saved values and filters, so no site changes behaviour on update.
 * Dev      - New filters mvs_show_favorite_button, mvs_default_media_title, mvs_email_subject, mvs_email_body, mvs_community_profile, mvs_profile_edit_redirect, mvs_show_demo_import and mvs_messaging_enabled, and new action mvs_report_resolved.
 * Dev      - Uninstall keeps member data unless the owner opts in, and a full removal also deletes media tags, categories and licence options.
+* Dev      - MediaRepository::downloads_allowed() is the one check for whether an item can be downloaded.
+* Dev      - Admin buttons use --mvs-admin-touch-min (34px), and --mvs-touch-min is no longer redefined in wp-admin.
 * Compat   - Aligned with MediaVerse Pro 2.6.0. Install both updates together.
 
 = 2.5.1 - September 2026 =
