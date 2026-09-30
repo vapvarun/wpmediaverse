@@ -374,5 +374,19 @@ const { state } = store( 'mvs/media-player', {
 				// Non-critical — silently ignore.
 			}
 		},
+		// Count the download the way the lightbox does. Best-effort: the
+		// browser has already started the file, so a failed stat must not
+		// interrupt it.
+		async trackDownload() {
+			const ctx = getContext();
+			if ( ! ctx.downloadUrl ) return;
+			try {
+				await window.mvsRest.restFetch( ctx.downloadUrl, {
+					method: 'POST',
+				} );
+			} catch ( err ) {
+				// Non-critical — silently ignore.
+			}
+		},
 	},
 } );

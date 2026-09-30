@@ -3199,6 +3199,22 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * May this item be downloaded? The site switch AND the owner's per-item
+	 * opt-out; absent per-item meta means allow.
+	 *
+	 * The one answer every Download control asks (single page, player block),
+	 * so a surface cannot ship a working button the setting promised was hidden
+	 * (Basecamp 10350019690).
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool
+	 */
+	public function downloads_allowed( int $media_id ): bool {
+		return (bool) get_option( 'mvs_allow_downloads', true )
+			&& '0' !== (string) $this->get( $media_id, 'allow_download' );
+	}
+
+	/**
 	 * Check if a media item exists in mvs_media_index.
 	 *
 	 * @param int $media_id Media ID.

@@ -516,9 +516,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 							// off still shipped a working Download on every document -
 							// pointing at the file directly, so it also walked past the
 							// 403 that endpoint returns. Basecamp 10316771960 follow-up.
-							$mvs_dl_allowed = (bool) get_option( 'mvs_allow_downloads', true )
-								&& '0' !== (string) \WPMediaVerse\Core\Plugin::container()
-									->get( 'media_repository' )->get( $mvs_media_id, 'allow_download' );
+							$mvs_dl_allowed = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->downloads_allowed( $mvs_media_id );
 							?>
 							<?php if ( '' !== $mvs_file_url && $mvs_dl_allowed ) : ?>
 								<a class="mvs-doc-download" href="<?php echo esc_url( $mvs_file_url ); ?>" download>
