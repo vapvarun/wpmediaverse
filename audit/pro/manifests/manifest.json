@@ -2477,7 +2477,8 @@
           "Boost pulls in on page 1 only, skips blocked authors and member-chosen sorts"
         ]
       },
-      "unchanged": "REST routes, AJAX actions, tables, cron, WP-CLI, Free services consumed (reports and media_repository already listed)"
+      "unchanged": "REST routes, AJAX actions, tables, cron, WP-CLI, Free services consumed (reports and media_repository already listed)",
+      "verified_against_pro_head": "47d2fc1"
     }
   },
   "category_sources": {
