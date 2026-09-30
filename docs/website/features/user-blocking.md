@@ -24,7 +24,7 @@ When you block a user, they cannot:
 - Comment on your media
 - React to your media
 
-A block works both ways for media: neither of you sees the other's media on browse pages, profiles or feeds.
+A block hides media both ways in lists: neither of you sees the other's media on browse pages, profiles or feeds. The person who blocked can still open a direct link to the blocked member's public media; the blocked member cannot open the blocker's.
 
 Blocks are stored per-user and do not require any admin action.
 

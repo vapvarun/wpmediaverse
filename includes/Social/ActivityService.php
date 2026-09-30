@@ -126,6 +126,7 @@ class ActivityService {
 
 		// Exclude blocked users if viewer is logged in.
 		$viewer_id = get_current_user_id();
+		$blocked   = array();
 		if ( $viewer_id ) {
 			$reports = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
 			$blocked = $reports->get_blocked_either_way_ids( $viewer_id );
@@ -148,6 +149,14 @@ class ActivityService {
 			->get( 'media_repository' )->explore_privacy_clause( 'mi', $viewer_id );
 		$privacy_join                                   = " LEFT JOIN {$index_table} mi ON mi.media_id = a.media_id";
 		$privacy_where                                  = " AND ( a.media_id = 0 OR a.media_id IS NULL OR {$mvs_act_priv_sql} )";
+
+		// A third party's comment or reaction on a blocked member's item still
+		// carries that item (title, link, author), so the item's AUTHOR must be
+		// outside the block too, not only the actor (Basecamp 10354827925).
+		if ( ! empty( $blocked ) ) {
+			$privacy_where      .= ' AND ( a.media_id = 0 OR a.media_id IS NULL OR mi.post_author NOT IN (' . implode( ',', array_fill( 0, count( $blocked ), '%d' ) ) . ') )';
+			$mvs_act_priv_params = array_merge( $mvs_act_priv_params, array_map( 'intval', $blocked ) );
+		}
 
 		// On an unfiltered anonymous feed (scope 'all', no blocks, param-less
 		// privacy clause) the COUNT has zero placeholders — wpdb::prepare()

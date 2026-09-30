@@ -3890,12 +3890,10 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// HAS THE AUTHOR BLOCKED THIS VIEWER?
 		//
-		// build_query_parts() already drops authors the VIEWER blocked, and
-		// that clause is shared, so a profile listing gets it too. What it
-		// cannot cover is this pair. Blocking is one-directional
-		// (docs/website/features/user-blocking.md): here the AUTHOR blocked the
-		// viewer, so get_blocked_ids($viewer) is empty and only this check
-		// fires.
+		// build_query_parts() drops authors on either side of a block with the
+		// viewer, so listings cover both pairs. This check keeps the profile
+		// grid and its count answering from one place for the pair where the
+		// AUTHOR blocked the viewer (the direction can_view() also refuses).
 		//
 		// It lives in this method because it is the ONE place query_by_author()
 		// and count_visible_by_author() both consult, so the grid and the "14
@@ -4412,9 +4410,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		// anyway) AND for moderators, who are meant to see everything. Single
 		// author listings DO reach this clause and depend on it: it is what
 		// empties the profile of an author the viewer themselves blocked, list
-		// and count alike (ProfileBlockListingTest). The reverse pair - the
-		// author blocked the viewer - is handled in
-		// resolve_profile_privacy_mode(), which this cannot see.
+		// and count alike (ProfileBlockListingTest). Since 2.6.0 it also drops
+		// authors who blocked the viewer, so Explore and feeds hide both ways.
 		$mvs_viewer = (int) $args['viewer_id'];
 		if ( $mvs_viewer > 0 ) {
 			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
