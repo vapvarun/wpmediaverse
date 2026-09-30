@@ -47,6 +47,7 @@ use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
 use WPMediaVerse\Admin\SetupWizard;
+use WPMediaVerse\Admin\AlbumMetaBox;
 use WPMediaVerse\Admin\CollectionMetaBox;
 use WPMediaVerse\Admin\IntegrationsPage;
 use WPMediaVerse\Social\ReactionService;
@@ -243,6 +244,7 @@ class Plugin {
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
 			self::$container->get( 'admin.collection_metabox' );
+			self::$container->get( 'admin.album_metabox' );
 			self::$container->get( 'admin.integrations' );
 
 			// Reorder submenu so Overview is first, then separator, then content, then tools.
@@ -759,6 +761,15 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'admin.album_metabox',
+			function ( ServiceContainer $c ) {
+				$metabox = new AlbumMetaBox( $c->get( 'albums' ) );
+				$metabox->init();
+				return $metabox;
+			}
+		);
+
+		self::$container->register(
 			'admin.collection_metabox',
 			function ( ServiceContainer $c ) {
 				$metabox = new CollectionMetaBox( $c->get( 'collections' ) );
@@ -1084,6 +1095,17 @@ class Plugin {
 	 * Albums and collections remain as CPTs (low volume, CPT is fine).
 	 */
 	public static function register_types(): void {
+		// Albums and collections keep their settings in a meta box and their
+		// description in the content box. The block editor collapses meta boxes
+		// behind a closed pane by default, which hid every real control and left
+		// the block canvas as the only thing on screen (Basecamp 10351283087).
+		add_filter(
+			'use_block_editor_for_post_type',
+			static fn( $use, $post_type ) => in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true ) ? false : $use,
+			10,
+			2
+		);
+
 		Album::register();
 		Collection::register();
 		MediaTag::register();

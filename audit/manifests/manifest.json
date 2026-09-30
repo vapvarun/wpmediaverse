@@ -2597,6 +2597,11 @@
       "file": "includes/Core/Plugin.php:542"
     },
     {
+      "key": "admin.album_metabox",
+      "class": "Admin\\AlbumMetaBox",
+      "file": "includes/Core/Plugin.php:762"
+    },
+    {
       "key": "admin.collection_metabox",
       "class": "Admin\\CollectionMetaBox",
       "file": "includes/Core/Plugin.php:549"

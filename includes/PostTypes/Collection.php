@@ -39,7 +39,7 @@ class Collection {
 			'has_archive'     => true,
 			'show_in_rest'    => true,
 			'rest_base'       => 'mvs-collections',
-			'supports'        => array( 'title', 'editor', 'author', 'thumbnail' ),
+			'supports'        => array( 'title', 'editor', 'author' ),
 			'capability_type' => 'post',
 			'map_meta_cap'    => true,
 			'rewrite'         => array( 'slug' => 'collection' ),

@@ -130,6 +130,28 @@ class CollectionMetaBox {
 		// saved unchanged.
 		$mvs_can_fill_manual = $mvs_collections_on || 'manual' === $collection_type;
 		?>
+		<?php
+		// Who may see the collection. The same two levels the front end and the
+		// API offer (CollectionService::PRIVACY_LEVELS); wp-admin had no control
+		// for a value the other two entry points both write (Basecamp
+		// 10351428179). A member's Favorites are always private, so they get the
+		// fact stated rather than a select that would be ignored.
+		$mvs_privacy = $this->service->get_privacy( $post->ID );
+		$mvs_labels  = \WPMediaVerse\Core\TemplateHelpers::privacy_labels();
+		?>
+		<p class="mvs-metabox-field">
+			<label for="mvs_collection_privacy"><strong><?php esc_html_e( 'Who can see this collection', 'wpmediaverse' ); ?></strong></label><br />
+			<?php if ( 'private' === $mvs_privacy ) : ?>
+				<?php esc_html_e( 'Only the owner. A Favorites collection is always private.', 'wpmediaverse' ); ?>
+			<?php else : ?>
+				<select id="mvs_collection_privacy" name="mvs_collection_privacy">
+					<?php foreach ( \WPMediaVerse\Services\CollectionService::PRIVACY_LEVELS as $mvs_level ) : ?>
+						<option value="<?php echo esc_attr( $mvs_level ); ?>" <?php selected( $mvs_privacy, $mvs_level ); ?>><?php echo esc_html( $mvs_labels[ $mvs_level ] ?? $mvs_level ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			<?php endif; ?>
+		</p>
+
 		<div class="mvs-metabox-type-toggle">
 			<?php if ( $mvs_can_fill_manual ) : ?>
 			<label>
@@ -314,6 +336,12 @@ class CollectionMetaBox {
 		}
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
+		}
+
+		// Privacy first: it applies to every collection type, so it must not sit
+		// behind the smart-only early return below.
+		if ( isset( $_POST['mvs_collection_privacy'] ) ) {
+			$this->service->set_privacy( $post_id, sanitize_key( wp_unslash( $_POST['mvs_collection_privacy'] ) ) );
 		}
 
 		// Save collection type.
