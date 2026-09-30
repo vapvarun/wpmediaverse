@@ -111,13 +111,13 @@
 	 *   #8a6100  white 5.54 · as a fill under white text 5.54
 	 */
 	/*
-	 * The admin density floor. `--mvs-touch-min` is 44px in frontend.css and was
-	 * simply never defined here — which is why every admin control sits at
-	 * 28-32px (Basecamp 10252222115). 34px is the density exception the design
-	 * system allows for compact admin rows, not the 40px member contract:
-	 * pointer targets, not thumbs.
+	 * The admin density floor, under its own name. `--mvs-touch-min` is the 44px
+	 * member contract in frontend.css; redefining it here at 34px gave one token
+	 * two meanings, so a call site could not say which floor it got (Basecamp
+	 * 10350403166). 34px is the density exception the design system allows for
+	 * compact admin rows (Basecamp 10252222115): pointer targets, not thumbs.
 	 */
-	--mvs-touch-min: 34px;
+	--mvs-admin-touch-min: 34px;
 	--mvs-success-strong: #00761f;
 	--mvs-warning-strong: #8a6100;
 	--mvs-danger:        #d63638;
@@ -844,8 +844,8 @@ a.mvs-stat-card:focus {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: var(--mvs-touch-min);
-	min-height: var(--mvs-touch-min);
+	min-width: var(--mvs-admin-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 	color: var(--mvs-text-muted);
 	position: absolute;
 	top: 12px;
@@ -1175,7 +1175,7 @@ a.mvs-stat-card:focus {
 	   Measured 64x18 (Basecamp 10252222115). */
 	display: inline-flex;
 	align-items: center;
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 }
 
 .mvs-setup-skip:hover {
@@ -1899,7 +1899,7 @@ a.mvs-stat-card:focus {
 	/* Was `height: 32px`. A fixed height on the base is why every variant that
 	   does not pass through --sm (--danger, --primary) sat under the floor
 	   (Basecamp 10252222115). min-height only raises, so --hero keeps its 44. */
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 	padding: 0 14px;
 	font-size: 13px;
 	font-weight: 500;
@@ -2475,14 +2475,14 @@ a.mvs-stat-card:focus {
 .mvs-admin-tab,
 .mvs-range-btn,
 .mvs-settings-nav-item {
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 }
 
 /* "Remove" beside a saved key (secret-fields.js). A bare button-link is 17px
-   tall; the admin floor is --mvs-touch-min. */
+   tall; the admin floor is --mvs-admin-touch-min. */
 .wp-core-ui .mvs-secret-remove { /* beats core .wp-core-ui .button-link */
 	display: inline-flex;
 	align-items: center;
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 	padding-inline: 4px;
 }

@@ -6558,7 +6558,10 @@ a.mvs-dashboard-card-title:hover {
 	button[class*="mvs-"],
 	[class*="mvs-"] [role="button"],
 	a[class*="mvs-btn"] {
-		min-height: var(--mvs-touch-min, 44px);
+		/* frontend.css also loads on some wp-admin screens, where the floor is
+		   the admin token (34px); the frontend never defines it, so the chain
+		   lands on the 44px member contract there. */
+		min-height: var(--mvs-admin-touch-min, var(--mvs-touch-min, 44px));
 	}
 
 	/* Icon-only controls have no text to give them width. */
