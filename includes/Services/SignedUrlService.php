@@ -933,7 +933,7 @@ class SignedUrlService {
 			PHP_URL_HOST
 		);
 
-		if ( '' !== $driver_host && 0 === strcasecmp( $driver_host, (string) wp_parse_url( $url, PHP_URL_HOST ) ) ) {
+		if ( '' !== $driver_host && $driver_host === \WPMediaVerse\Services\StorageService::host_of( $url ) ) {
 			return true;
 		}
 

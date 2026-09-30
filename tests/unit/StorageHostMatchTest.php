@@ -27,4 +27,15 @@ class StorageHostMatchTest extends WP_UnitTestCase {
 		$this->assertSame( '', StorageService::driver_name_for_url( 'https://evil.example/a.jpg?x=.b-cdn.net/' ) );
 		$this->assertSame( '', StorageService::driver_name_for_url( 'https://notb-cdn.net/a.jpg' ) );
 	}
+
+	/**
+	 * Basecamp 10355130450. PHP and browsers read these differently, so they are
+	 * refused outright rather than parsed.
+	 */
+	public function test_ambiguous_urls_have_no_host(): void {
+		$this->assertSame( '', StorageService::driver_name_for_url( 'https://evil.com\\@x.b-cdn.net/a.jpg' ) );
+		$this->assertSame( '', StorageService::driver_name_for_url( 'https://user@x.b-cdn.net/a.jpg' ) );
+		$this->assertSame( '', StorageService::driver_name_for_url( "https://x.b-cdn.net/a.jpg\n" ) );
+		$this->assertSame( '', StorageService::host_of( 'https://evil.com\\@x.b-cdn.net/a.jpg' ) );
+	}
 }
