@@ -103,7 +103,7 @@ class AppCredentials {
 		if ( ! self::is_enabled() ) {
 			return new WP_Error(
 				'mvs_app_passwords_off',
-				__( 'This site has turned off app sign-in. Ask the site owner to enable it.', 'wpmediaverse' ),
+				__( 'This site has turned off app login. Ask the site owner to enable it.', 'wpmediaverse' ),
 				array( 'status' => 403 )
 			);
 		}
@@ -149,7 +149,7 @@ class AppCredentials {
 		if ( ! wp_is_application_passwords_available_for_user( $user ) ) {
 			return new WP_Error(
 				'mvs_app_passwords_off',
-				__( 'App sign-in is not available for this account.', 'wpmediaverse' ),
+				__( 'App login is not available for this account.', 'wpmediaverse' ),
 				array( 'status' => 403 )
 			);
 		}

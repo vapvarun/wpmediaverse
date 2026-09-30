@@ -42,14 +42,14 @@ class AppSettingsRegistrar {
 		);
 		FieldRenderer::add_field(
 			'mvs_app_password_login',
-			__( 'App Sign-In', 'wpmediaverse' ),
+			__( 'App Login', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
 			$page,
 			'mvs_app',
 			array(
 				'option'      => 'mvs_app_password_login',
-				'label'       => __( 'Let members sign in to a mobile app with their WordPress password.', 'wpmediaverse' ),
-				'description' => __( 'Turn this off if every member must use the full login, for example with two-factor sign-in.', 'wpmediaverse' ),
+				'label'       => __( 'Let members log in to a mobile app with their WordPress password.', 'wpmediaverse' ),
+				'description' => __( 'Turn this off if every member must use the full login, for example with two-factor login.', 'wpmediaverse' ),
 			)
 		);
 

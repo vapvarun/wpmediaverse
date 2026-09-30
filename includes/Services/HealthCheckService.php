@@ -457,7 +457,7 @@ class HealthCheckService {
 		);
 		$result['description'] = sprintf(
 			'<p>%s</p><p>%s</p>',
-			__( 'Anyone can open a stored file directly by its address, without signing in and without a permission check. Media set to Only me, Members or Friends is affected, and so is anything a member made private after sharing it — the older address keeps working.', 'wpmediaverse' ),
+			__( 'Anyone can open a stored file directly by its address, without logging in and without a permission check. Media set to Only me, Members or Friends is affected, and so is anything a member made private after sharing it — the older address keeps working.', 'wpmediaverse' ),
 			__( 'The deny rules MediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration instead. Nothing on the site loads media by that address, so the rule is safe to add.', 'wpmediaverse' )
 		);
 		$result['actions']     = '<p>' . esc_html__( 'Add this to the site\'s nginx configuration, then reload nginx:', 'wpmediaverse' )

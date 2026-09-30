@@ -384,7 +384,7 @@ class SettingsPage {
 				'group'        => 'access',
 				'label'        => __( 'Mobile App', 'wpmediaverse' ),
 				'icon'         => 'smartphone',
-				'description'  => __( 'App sign-in and the links the mobile app shows.', 'wpmediaverse' ),
+				'description'  => __( 'App login and the links the mobile app shows.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_app',
 				'page_slug'    => self::PAGE_SLUG . '-app',
 				'section_ids'  => array( 'mvs_app' ),

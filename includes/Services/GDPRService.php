@@ -486,7 +486,7 @@ class GDPRService {
 			__( 'When you upload media to this site using MediaVerse, we store the file and its details (title, description, tags, privacy setting). Images may be processed to remove EXIF data such as location.', 'wpmediaverse' ),
 			__( 'Reactions, comments, follows, favorites and mentions are stored in our database and linked to your account.', 'wpmediaverse' ),
 			__( 'Direct messages you send, and reactions on them, are stored in our database so the people in the conversation can read them.', 'wpmediaverse' ),
-			__( 'When you are signed in and open a media item, we record that you viewed it. This is used for view counts.', 'wpmediaverse' ),
+			__( 'When you are logged in and open a media item, we record that you viewed it. This is used for view counts.', 'wpmediaverse' ),
 			__( 'If the site owner turns on AI tagging or moderation, images you upload are sent to OpenAI for analysis.', 'wpmediaverse' ),
 			__( 'If you use the mobile app and allow notifications, we store your device\'s push token so the site can send you notifications.', 'wpmediaverse' ),
 			__( 'When you ask for your data to be erased, your media, interactions, messages, view records, notifications and device tokens are deleted. A few records are kept with your name removed: reports you filed or that were filed about you (the moderation record), usage records the site owner may be required to keep, and conversations other members are still part of.', 'wpmediaverse' ),
