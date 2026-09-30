@@ -102,7 +102,7 @@ class PrivateCommunityDefault {
 	 */
 	public function handle(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You are not allowed to change this setting.', 'wpmediaverse' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( 'You are not allowed to edit this setting.', 'wpmediaverse' ), '', array( 'response' => 403 ) );
 		}
 
 		check_admin_referer( self::ACTION );

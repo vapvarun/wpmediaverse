@@ -1042,7 +1042,7 @@ class MediaController extends WP_REST_Controller {
 				&& $clean_privacy !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
 				return new WP_Error(
 					'mvs_privacy_locked',
-					__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+					__( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ),
 					array( 'status' => 403 )
 				);
 			}

@@ -143,7 +143,7 @@ class BulkController extends WP_REST_Controller {
 				}
 				// Same owner lock as the single-item update. Basecamp 10320619418.
 				if ( ! \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
-					return new WP_Error( 'mvs_privacy_locked', __( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ), array( 'status' => 403 ) );
+					return new WP_Error( 'mvs_privacy_locked', __( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ), array( 'status' => 403 ) );
 				}
 				$response = $this->bulk_change_privacy( $allowed_ids, $privacy );
 				break;

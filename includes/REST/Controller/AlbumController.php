@@ -519,7 +519,7 @@ class AlbumController extends WP_REST_Controller {
 			&& sanitize_text_field( $privacy ) !== $this->albums->get_privacy( (int) $album_id ) ) {
 			return new WP_Error(
 				'mvs_privacy_locked',
-				__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+				__( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ),
 				array( 'status' => 403 )
 			);
 		}
