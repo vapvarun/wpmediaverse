@@ -140,7 +140,7 @@ class TagManagementPage {
 
 		$base_url = admin_url( 'admin.php?page=mvs-tags' );
 		?>
-		<div class="wrap">
+		<div class="wrap wpmediaverse-admin">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></h1>
 			<a href="<?php echo esc_url( add_query_arg( 'action', 'new', $base_url ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New Tag', 'wpmediaverse' ); ?></a>
 			<a href="<?php echo esc_url( $base_url ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh', 'wpmediaverse' ); ?></a>
@@ -830,7 +830,7 @@ class TagManagementPage {
 			$merge_targets = array();
 		}
 		?>
-		<div class="wrap">
+		<div class="wrap wpmediaverse-admin">
 			<h1 class="wp-heading-inline">
 				<?php
 				printf(
@@ -962,7 +962,7 @@ class TagManagementPage {
 		$cancel_url  = admin_url( 'admin.php?page=mvs-tags' );
 		$form_action = admin_url( 'admin.php?page=mvs-tags' );
 		?>
-		<div class="wrap">
+		<div class="wrap wpmediaverse-admin">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Add New Tag', 'wpmediaverse' ); ?></h1>
 			<a href="<?php echo esc_url( $cancel_url ); ?>" class="page-title-action"><?php esc_html_e( '&larr; Back to Tags', 'wpmediaverse' ); ?></a>
 			<hr class="wp-header-end">
