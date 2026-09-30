@@ -833,11 +833,7 @@ class SignedUrlService {
 		// pointed the grid at a dead address while the original file was still
 		// here. Only a URL on the host the file's driver serves from is direct;
 		// anything else falls through to /serve (Basecamp 10350203155).
-		$driver_host = (string) wp_parse_url(
-			(string) \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id )->url( 'x.jpg' ),
-			PHP_URL_HOST
-		);
-		if ( '' === $driver_host || 0 !== strcasecmp( $driver_host, (string) wp_parse_url( $thumb_url, PHP_URL_HOST ) ) ) {
+		if ( ! $this->is_on_driver_host( $thumb_url, $media_id ) ) {
 			return '';
 		}
 
@@ -909,8 +905,35 @@ class SignedUrlService {
 		if ( ! $this->is_cloud_hosted_url( $file_url ) ) {
 			return '';
 		}
+		// Same rule as the thumbnail: a leftover URL on a host the file is not
+		// served from is not a working location. Fall through to /serve, which
+		// streams the local copy (Basecamp 10354828461).
+		if ( ! $this->is_on_driver_host( $file_url, $media_id ) ) {
+			return '';
+		}
 		/** This filter is documented in maybe_direct_cloud_thumbnail_url(). */
 		return (string) apply_filters( 'mvs_public_cloud_file_url', $file_url, $media_id, '' );
+	}
+
+	/**
+	 * Is this stored URL on the host the media's file is actually served from?
+	 *
+	 * A migrated site keeps `thumb_*` and `file_url` values that point at the
+	 * host it came from. Those are not working locations, and emitting one sends
+	 * public pages to a dead address while the file is still here. The host to
+	 * match is the one the file's own driver serves from.
+	 *
+	 * @param string $url      Stored URL.
+	 * @param int    $media_id Media ID.
+	 * @return bool
+	 */
+	private function is_on_driver_host( string $url, int $media_id ): bool {
+		$driver_host = (string) wp_parse_url(
+			(string) \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id )->url( 'x.jpg' ),
+			PHP_URL_HOST
+		);
+
+		return '' !== $driver_host && 0 === strcasecmp( $driver_host, (string) wp_parse_url( $url, PHP_URL_HOST ) );
 	}
 
 	/**
