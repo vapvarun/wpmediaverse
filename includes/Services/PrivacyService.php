@@ -209,7 +209,7 @@ class PrivacyService {
 	 * @since 2.3.0
 	 *
 	 * @param string $privacy Privacy slug.
-	 * @return int 0 public, 20 members, 40 friends, 60 group, 80 private, 90 custom.
+	 * @return int 0 public, 20 members, 30 followers, 40 friends, 60 group, 80 private, 90 custom.
 	 */
 	public static function privacy_to_level( string $privacy ): int {
 		switch ( $privacy ) {
@@ -217,6 +217,8 @@ class PrivacyService {
 				return 0;
 			case 'members':
 				return 20;
+			case 'followers':
+				return 30;
 			case 'friends':
 				return 40;
 			case 'group':
@@ -508,6 +510,9 @@ class PrivacyService {
 			case 'friends':
 				return $this->check_friends( $author_id, $user_id );
 
+			case 'followers':
+				return $this->check_followers( $author_id, $user_id );
+
 			case 'group':
 				return $this->check_group( $media_id, $user_id );
 
@@ -551,6 +556,26 @@ class PrivacyService {
 		}
 
 		return friends_check_friendship( $owner_id, $user_id );
+	}
+
+	/**
+	 * Check that the viewer follows the media owner.
+	 *
+	 * Asks FollowService, MediaVerse's own follow graph, so it needs no other
+	 * plugin. Before this case existed a `followers` item fell through to the
+	 * default deny and hid the item from the owner's own followers (Basecamp
+	 * 10350019949).
+	 *
+	 * @param int $owner_id Media owner user ID.
+	 * @param int $user_id  Requesting user ID.
+	 * @return bool
+	 */
+	private function check_followers( int $owner_id, int $user_id ): bool {
+		if ( ! $user_id || ! $owner_id ) {
+			return false;
+		}
+
+		return \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->is_following( $user_id, $owner_id );
 	}
 
 	/**

@@ -4528,6 +4528,14 @@ class MediaRepository implements MediaRepositoryInterface {
 					) {
 						$levels[] = 'friends';
 					}
+					// A follower sees the owner's followers-only items in the
+					// profile listing, as a friend sees friends-only ones.
+					if (
+						$author_id > 0
+						&& \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->is_following( $viewer_id, $author_id )
+					) {
+						$levels[] = 'followers';
+					}
 				}
 
 				/**
