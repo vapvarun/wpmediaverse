@@ -172,24 +172,58 @@ class StorageService {
 	}
 
 	/**
-	 * Infer the storage driver name from a stored file_url's host.
+	 * The host of a stored URL, or '' when it cannot be read safely.
+	 *
+	 * The one place storage-trust checks read a host from, so they cannot
+	 * disagree with each other or with the browser.
+	 *
+	 * @param string $url Stored URL.
+	 * @return string Lower-case host, or '' when absent or ambiguous.
+	 */
+	public static function host_of( string $url ): string {
+		// Parsers disagree on these, so a URL carrying one is refused rather than
+		// read: PHP reads https://evil.com\@x.b-cdn.net/ as host x.b-cdn.net, a
+		// browser treats the backslash as a slash and goes to evil.com (Basecamp
+		// 10355130450). Userinfo (user@host) is never part of a storage URL.
+		if ( preg_match( '/[\\\\\s\x00-\x1f\x7f]/', $url ) ) {
+			return '';
+		}
+
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return '';
+		}
+
+		return strtolower( (string) $parts['host'] );
+	}
+
+	/**
+	 * Infer the storage driver name from a stored URL's host.
 	 *
 	 * Matches the default cloud hostnames each driver emits. Custom CDN domains
-	 * are not covered here (return '') — callers fall back to the active driver.
+	 * are not covered here (return '') - callers fall back to the active driver.
 	 *
 	 * @param string $url Stored public URL.
 	 * @return string Driver slug (s3|bunnycdn|r2|dospaces) or '' when unknown/local.
 	 */
-	private static function driver_name_for_url( string $url ): string {
-		$patterns = array(
-			's3'       => array( '.amazonaws.com/' ),
-			'bunnycdn' => array( '.b-cdn.net/' ),
-			'r2'       => array( '.r2.cloudflarestorage.com/', '.r2.dev/' ),
-			'dospaces' => array( '.digitaloceanspaces.com/' ),
+	public static function driver_name_for_url( string $url ): string {
+		// Match the parsed HOST by suffix, never the whole URL: a substring match
+		// trusted https://oldsite.example/x/.r2.dev/a.jpg and ?x=.b-cdn.net/ as
+		// storage and emitted them on public pages (Basecamp 10355018821).
+		$host = self::host_of( $url );
+		if ( '' === $host ) {
+			return '';
+		}
+
+		$suffixes = array(
+			's3'       => array( '.amazonaws.com' ),
+			'bunnycdn' => array( '.b-cdn.net' ),
+			'r2'       => array( '.r2.cloudflarestorage.com', '.r2.dev' ),
+			'dospaces' => array( '.digitaloceanspaces.com' ),
 		);
-		foreach ( $patterns as $name => $needles ) {
-			foreach ( $needles as $needle ) {
-				if ( false !== strpos( $url, $needle ) ) {
+		foreach ( $suffixes as $name => $list ) {
+			foreach ( $list as $suffix ) {
+				if ( substr( $host, -strlen( $suffix ) ) === $suffix ) {
 					return $name;
 				}
 			}

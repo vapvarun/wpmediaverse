@@ -403,7 +403,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				// no longer fetches a moov atom per tile.
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
-			// No streamable URL (access-rules locked the file). Show the
+			// No streamable URL (the viewer may not stream the file). Show the
 			// default poster as a still image with the play overlay.
 			$img_alt = $alt;
 			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">'
@@ -598,6 +598,36 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * URL of a vendored Microsoft Fluent emoji (assets/emoji/<slug>.svg).
+	 *
+	 * Reactions render as these SVGs, the same set BuddyNext uses, so a
+	 * reaction looks the same on every platform instead of depending on the
+	 * OS emoji font (2.6.0). Unknown slugs return ''.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $slug like|love|haha|wow|sad|angry|fire.
+	 * @return string
+	 */
+	public static function emoji_url( string $slug ): string {
+		$slug = sanitize_key( $slug );
+		if ( '' === $slug || ! file_exists( MVS_PLUGIN_DIR . 'assets/emoji/' . $slug . '.svg' ) ) {
+			return '';
+		}
+		return MVS_PLUGIN_URL . 'assets/emoji/' . $slug . '.svg';
+	}
+
+	/**
+	 * Base URL of the vendored emoji folder, for stores that build
+	 * `<base><slug>.svg` client-side.
+	 *
+	 * @since 2.6.0
+	 */
+	public static function emoji_base_url(): string {
+		return MVS_PLUGIN_URL . 'assets/emoji/';
+	}
+
+	/**
 	 * Privacy level labels, in display order.
 	 *
 	 * One source for every privacy picker. Before this there were four different
@@ -619,9 +649,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$labels = array(
 			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
 			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
-			/* translators: shown for items stored at the legacy 'loggedin' level, which behaves exactly like Members. */
-			'loggedin' => __( 'Members: logged-in users only (legacy)', 'wpmediaverse' ),
-			'friends'  => __( 'Friends: BuddyPress friends only', 'wpmediaverse' ),
+			// The old 'loggedin' level behaves exactly like Members, so it reads the
+			// same; "(legacy)" was internal history shown to members.
+			'loggedin' => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'friends'  => __( 'Friends: your friends only', 'wpmediaverse' ),
 			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
 			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
 			'private'  => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
@@ -656,6 +687,53 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		return ucfirst( str_replace( '_', ' ', $privacy ) );
+	}
+
+	/**
+	 * "Used X of Y" for the signed-in member, only when a storage limit applies.
+	 *
+	 * Nothing renders for an unlimited member (the default): a usage box full
+	 * of "Unlimited" told them nothing (2.6.0 member walk).
+	 *
+	 * @since 2.6.0
+	 */
+	public static function render_storage_usage(): void {
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+		$usage = \WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->summary( $user_id );
+		if ( ! $usage['limit'] ) {
+			return;
+		}
+		printf(
+			'<p class="mvs-storage-usage" data-mvs-storage-usage>%s</p>',
+			esc_html(
+				sprintf(
+					/* translators: 1: storage used, 2: storage limit, e.g. "48 MB of 500 MB". */
+					__( 'Used %1$s of %2$s', 'wpmediaverse' ),
+					size_format( $usage['used'] ? $usage['used'] : 0, 1 ),
+					size_format( $usage['limit'], 1 )
+				)
+			)
+		);
+	}
+
+	/**
+	 * Short badge word for a privacy level: the part of its label before the
+	 * colon ("Public", "Members", "Only me"). One rule, so a level added through
+	 * mvs_privacy_labels gets a short form too; a label without a colon is used
+	 * whole.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $privacy Stored level.
+	 * @return string
+	 */
+	public static function privacy_short_label( string $privacy ): string {
+		$label = self::privacy_label( $privacy );
+		$colon = strpos( $label, ':' );
+		return false === $colon ? $label : trim( substr( $label, 0, $colon ) );
 	}
 
 	/**
@@ -1313,7 +1391,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			echo '</div>';
 		}
 
-		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
+		// Named on the link itself: an audio tile or a video with no poster
+		// renders a placeholder with no <img alt>, and the link was then an
+		// unnamed "link" to screen readers.
+		$mvs_link_name = '' !== trim( (string) $media_title ) ? (string) $media_title : __( 'View media', 'wpmediaverse' );
+		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link" aria-label="' . esc_attr( $mvs_link_name ) . '">';
 
 		$this->render_grid_thumbnail( $media_id, $size, $media_title );
 
@@ -1453,17 +1535,48 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * sent users to the rewrite instead of the real page on sites whose explore
 	 * page has a different slug (e.g. /explore-media/).
 	 *
+	 * The ONE place that answers "where is Explore". Templates in both plugins
+	 * link here instead of spelling /media/, which a mapped page now redirects
+	 * (Basecamp 10344452624).
+	 *
+	 * @since 2.6.0 public (was the private resolve_explore_url()).
+	 *
 	 * @return string
 	 */
-	private function resolve_explore_url(): string {
+	public function explore_url(): string {
 		$explore_id = (int) get_option( 'mvs_page_explore', 0 );
-		if ( $explore_id ) {
+		if ( $explore_id && 'publish' === get_post_status( $explore_id ) ) {
 			$url = get_permalink( $explore_id );
 			if ( $url ) {
 				return $url;
 			}
 		}
 		return home_url( '/media/' );
+	}
+
+	/**
+	 * The Explore search term from the current request.
+	 *
+	 * Explore searches with `q`, the same word the dashboard and the drive use,
+	 * because `s` is a RESERVED WordPress query var: on a real page (a mapped
+	 * Explore page, or the front page) `?s=` turns the request into the site's
+	 * own search. `s` is still read so old /media/?s= links keep working
+	 * (Basecamp 10344452624).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string Sanitised term, or ''.
+	 */
+	public function explore_search(): string {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view state.
+		foreach ( array( self::EXPLORE_SEARCH_PARAM, 's' ) as $key ) {
+			if ( isset( $_GET[ $key ] ) && '' !== $_GET[ $key ] ) {
+				return sanitize_text_field( wp_unslash( $_GET[ $key ] ) );
+			}
+		}
+		// phpcs:enable
+
+		return '';
 	}
 
 	/**
@@ -1565,7 +1678,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				}
 
 				$parent = array(
-					'url'   => $this->resolve_explore_url(),
+					'url'   => $this->explore_url(),
 					'label' => __( 'Explore', 'wpmediaverse' ),
 				);
 				break;
@@ -1579,7 +1692,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					);
 				} else {
 					$parent = array(
-						'url'   => $this->resolve_explore_url(),
+						'url'   => $this->explore_url(),
 						'label' => __( 'Explore', 'wpmediaverse' ),
 					);
 				}
@@ -1649,6 +1762,51 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			esc_url( $parent['url'] ),
 			esc_attr( sprintf( /* translators: %s: parent page label */ __( 'Back to %s', 'wpmediaverse' ), $label ) ),
 			esc_html( $label )
+		);
+	}
+
+	/**
+	 * The one visitor sign-in prompt: icon, one line, Log in, and Create an
+	 * account when registration is open. My Media, Upload and every other
+	 * member-only surface use this, so a visitor meets one pattern instead of
+	 * three (2.6.0 member walk).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $icon    Lucide icon name.
+	 * @param string $title   Heading, e.g. "Log in to upload".
+	 * @param string $message One plain line.
+	 * @return string Escaped HTML.
+	 */
+	public function render_login_gate( string $icon, string $title, string $message ): string {
+		// A shortcode on an ordinary page returns this before loading anything
+		// else, so the gate brings its own look and icon.
+		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_script( 'mvs-lucide' );
+
+		$return  = (string) get_permalink();
+		$actions = array(
+			array(
+				'url'     => self::login_url( $return ),
+				'label'   => __( 'Log in', 'wpmediaverse' ),
+				'variant' => 'primary',
+			),
+		);
+		if ( get_option( 'users_can_register' ) ) {
+			$actions[] = array(
+				'url'     => function_exists( 'wc_registration_url' ) ? wc_registration_url( $return ) : wp_registration_url(),
+				'label'   => __( 'Create an account', 'wpmediaverse' ),
+				'variant' => 'secondary',
+			);
+		}
+
+		return $this->render_block_empty_state(
+			array(
+				'icon'    => $icon,
+				'title'   => $title,
+				'message' => $message,
+				'actions' => $actions,
+			)
 		);
 	}
 
@@ -1723,6 +1881,15 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$order = isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
+		// "oldest" is the one-select spelling of created_at ascending (2.6.0);
+		// ?sort=created_at&order=asc and ?sort=title links keep working.
+		if ( 'oldest' === $sort ) {
+			return array(
+				'orderby' => 'created_at',
+				'order'   => 'ASC',
+			);
+		}
+
 		return array(
 			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views' ), true ) ? $sort : 'created_at',
 			'order'   => 'asc' === $order ? 'ASC' : 'DESC',
@@ -1743,13 +1910,15 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_explore_sort_toolbar( int $total_items, ?array $hidden = null ): string {
+		// Nothing to sort.
+		if ( $total_items < 1 ) {
+			return '';
+		}
 		if ( null === $hidden ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
-			$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 			$hidden = array(
-				's'            => $search,
-				'mvs_tag'      => (string) get_query_var( 'mvs_tag', '' ),
-				'mvs_category' => (string) get_query_var( 'mvs_category', '' ),
+				self::EXPLORE_SEARCH_PARAM => $this->explore_search(),
+				'mvs_tag'                  => (string) get_query_var( 'mvs_tag', '' ),
+				'mvs_category'             => (string) get_query_var( 'mvs_category', '' ),
 			);
 		}
 		$sort = $this->explore_sort();
@@ -1765,22 +1934,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
 					number_format_i18n( $total_items )
 				),
+				// One select, field and direction together (2.6.0).
 				'sort'   => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $sort['orderby'],
+					'value'   => ( 'created_at' === $sort['orderby'] && 'ASC' === $sort['order'] ) ? 'oldest' : $sort['orderby'],
 					'options' => array(
-						'created_at' => __( 'Date added', 'wpmediaverse' ),
-						'title'      => __( 'Title', 'wpmediaverse' ),
-						'views'      => __( 'Views', 'wpmediaverse' ),
+						'created_at' => __( 'Newest', 'wpmediaverse' ),
+						'oldest'     => __( 'Oldest', 'wpmediaverse' ),
+						'views'      => __( 'Most viewed', 'wpmediaverse' ),
 					),
-				),
-				'order'  => array(
-					'name'  => 'order',
-					'label' => __( 'Direction', 'wpmediaverse' ),
-					// No 'options': render_panel_toolbar() derives them from the
-					// sort field. Basecamp 10297765808.
-					'value' => strtolower( $sort['order'] ),
 				),
 				'submit' => __( 'Apply', 'wpmediaverse' ),
 			)
@@ -1820,6 +1983,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *     @type string $submit   Submit label. Omit for client-driven panels,
 	 *                            which apply on change and need no button.
 	 *     @type string $class    Extra wrapper class(es).
+	 *     @type array  $attrs    data-* / aria-* attributes on the wrapper.
 	 * }
 	 * @return string Escaped HTML.
 	 */
@@ -1829,9 +1993,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$extra  = isset( $args['class'] ) ? ' ' . (string) $args['class'] : '';
 		$submit = isset( $args['submit'] ) ? (string) $args['submit'] : '';
 
+		$wrap = $this->toolbar_attrs( $args );
 		$html = $form
-			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search">'
-			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search">';
+			? '<form class="mvs-panel-toolbar' . esc_attr( $extra ) . '" method="get" role="search"' . $wrap . '>'
+			: '<div class="mvs-panel-toolbar' . esc_attr( $extra ) . '" role="search"' . $wrap . '>';
 
 		if ( $form && ! empty( $args['hidden'] ) && is_array( $args['hidden'] ) ) {
 			foreach ( $args['hidden'] as $name => $value ) {
@@ -2083,13 +2248,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
 		$message = isset( $args['message'] ) ? (string) $args['message'] : '';
 
+		// The markup admin.css styles (icon, h3, p). The helper used to emit
+		// <p> titles with classes no stylesheet defined, so nothing used it and
+		// every admin screen hand-rolled its own (Basecamp 10350404627).
 		$html  = '<div class="mvs-empty-state-admin" role="status">';
-		$html .= '<span class="mvs-empty-state-icon" aria-hidden="true"><i data-lucide="' . esc_attr( $icon ) . '"></i></span>';
+		$html .= '<i data-lucide="' . esc_attr( $icon ) . '" aria-hidden="true"></i>';
 		if ( '' !== $title ) {
-			$html .= '<p class="mvs-empty-state-admin__title">' . esc_html( $title ) . '</p>';
+			$html .= '<h3>' . esc_html( $title ) . '</h3>';
 		}
 		if ( '' !== $message ) {
-			$html .= '<p class="mvs-empty-state-admin__message">' . esc_html( $message ) . '</p>';
+			$html .= '<p>' . esc_html( $message ) . '</p>';
 		}
 		$html .= '</div>';
 
@@ -2113,7 +2281,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		wp_interactivity_state(
 			'mvs/media-social',
 			array(
-				'i18n' => array(
+				'emojiBase' => self::emoji_base_url(),
+				'i18n'      => array(
 					// Reactions.
 					'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
 					'reactionSaveFailed'   => __( 'Could not save reaction.', 'wpmediaverse' ),
@@ -2155,17 +2324,32 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'deleteAction'         => __( 'Delete', 'wpmediaverse' ),
 					// Report.
 					'loginToReport'        => __( 'Please log in to report content.', 'wpmediaverse' ),
-					'reasonSpam'           => __( 'Spam', 'wpmediaverse' ),
-					'reasonHarassment'     => __( 'Harassment', 'wpmediaverse' ),
-					'reasonNudity'         => __( 'Nudity or sexual content', 'wpmediaverse' ),
-					'reasonViolence'       => __( 'Violence or dangerous acts', 'wpmediaverse' ),
-					'reasonCopyright'      => __( 'Copyright infringement', 'wpmediaverse' ),
-					'reasonMisinformation' => __( 'Misinformation', 'wpmediaverse' ),
-					'reasonOther'          => __( 'Other', 'wpmediaverse' ),
-					'reportPrompt'         => __( 'Why are you reporting this media?', 'wpmediaverse' ),
-					'reportSubmitted'      => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
-					'reportAlready'        => __( 'Already reported or error occurred.', 'wpmediaverse' ),
-					'reportAction'         => __( 'Report', 'wpmediaverse' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Seed PHP-translated strings for the mvs/media-player Interactivity
+	 * store's resume-playback chip.
+	 *
+	 * The store (src/blocks/media-player/view.js) is a script MODULE, so
+	 * window.wp.i18n.__() is English-locked there. We inject the translated
+	 * prefix into interactivity state; the store reads state.i18n.<key> with
+	 * an English fallback and appends the formatted timestamp itself. Called
+	 * before the first data-wp-interactive="mvs/media-player" root element in
+	 * media-single.php and the media-player block's render.php so the state
+	 * is seeded during render. Mirrors media_social_i18n_state() (Basecamp
+	 * 10073528834).
+	 *
+	 * @return void
+	 */
+	public static function media_player_i18n_state(): void {
+		wp_interactivity_state(
+			'mvs/media-player',
+			array(
+				'i18n' => array(
+					'resumedAtPrefix' => __( 'Resumed at', 'wpmediaverse' ),
 				),
 			)
 		);

@@ -4,7 +4,7 @@
 
 **Base URL:** `/wp-json/mvs/v1/`
 
-All routes below use the `mvs/v1` namespace (the messaging routes share the same namespace).
+All routes below use the `mvs/v1` namespace (the messaging routes share the same namespace). The messaging routes exist only while **Settings > Messages > Messages** is on; with it off they are not registered and answer WordPress's standard `404 rest_no_route`, so check `features.messaging` in `GET /app/config` first.
 
 **Authentication.** Reads of public data are open. Every write — and every `/me/*` route — requires an authenticated user. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )` and send cookies with `credentials: 'same-origin'`, or use a WordPress Application Password for non-browser clients.
 
@@ -17,6 +17,8 @@ All routes below use the `mvs/v1` namespace (the messaging routes share the same
 - **Capability** — a specific capability such as `upload_mvs_media`, `moderate_mvs_media`, or `manage_mvs_access`.
 
 **Update methods.** Every route documented below with `PUT` also accepts `PATCH` and `POST`. WordPress registers these three together as its "editable" method group, so all three reach the same handler with the same arguments and the same response. `PUT` is used throughout this page as the canonical form; pick whichever your HTTP client handles most comfortably.
+
+**Timestamps.** Datetime fields such as `created_at`, `updated_at` and `last_read_at` are stored in UTC and sent as `YYYY-MM-DD HH:MM:SS` with no timezone marker, the shape the mobile app and older clients parse. Every one of them also has an ISO-8601 sibling ending in `_gmt` (`created_at_gmt: "2026-09-24T17:56:07Z"`), in every `mvs/v1` response including messaging and the poll endpoint. Read the `_gmt` field: passing the bare value to JavaScript's `new Date()` reads it as the browser's local time and shifts the clock by the viewer's UTC offset. Add your own UTC keys to the list with the `mvs_rest_timestamp_keys` filter.
 
 **Rate limiting.** Many routes are throttled per user/IP (the limit is noted where it is unusually tight). Exceeding a limit returns `429 Too Many Requests`.
 
@@ -432,72 +434,7 @@ List the current user's favorites. Supports `collection_id`, `page`, `per_page`.
 
 ---
 
-## Access Control & Grants
-
-These routes manage per-media access rules and direct user grants. All require the media owner or the `manage_mvs_access` capability.
-
-### GET /media/{media_id}/rules
-
-**Auth:** Owner or `manage_mvs_access`.
-
-List the access rules attached to a media item.
-
-### POST /media/{media_id}/rules
-
-**Auth:** Owner or `manage_mvs_access`. Rate-limited to 30/min.
-
-Replace the full rule set for a media item.
-
-```json
-{
-  "rules": [
-    { "rule_type": "follower", "rule_value": "1" },
-    { "rule_type": "purchase", "rule_value": "1", "price": 4.99, "currency": "USD" }
-  ]
-}
-```
-
-Each rule's `rule_type` must be one of `AccessRulesService::RULE_TYPES`.
-
-### DELETE /media/{media_id}/rules/{rule_id}
-
-**Auth:** Owner or `manage_mvs_access`.
-
-Delete a single access rule.
-
-### POST /media/{media_id}/grant
-
-**Auth:** Owner or `manage_mvs_access`.
-
-Grant a specific user access to the media.
-
-```json
-{
-  "user_id": 55,
-  "source": "manual",
-  "expires_at": "2026-01-01T00:00:00Z"
-}
-```
-
-`source` defaults to `manual` and must be one of `AccessRulesService::GRANT_SOURCES`.
-
-### DELETE /media/{media_id}/grant/{user_id}
-
-**Auth:** Owner or `manage_mvs_access`.
-
-Revoke a user's grant.
-
-### GET /me/grants
-
-**Auth:** Authenticated.
-
-List the media the current user has been granted access to.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `per_page` | int | `20` | Items per page (max: 100) |
-| `page` | int | `1` | Page number |
-| `active_only` | bool | `true` | Exclude expired grants |
+Access rules and grants (`/media/{id}/rules`, `/media/{id}/grant`, `/me/grants`, `/access/options`) were removed in 2.6.0. Access is decided by the item's privacy; documents are shared through Pro's document sharing.
 
 ---
 
@@ -549,11 +486,21 @@ List the current user's followers.
 
 Get the current user's profile.
 
+Besides the profile fields, the response carries what a client needs to render the member's settings honestly:
+
+| Field | Meaning |
+|---|---|
+| `dm_access` | "Who can message you" as the site enforces it: the member's choice, or the site setting when that is stricter |
+| `dm_access_choices` | The values the member may pick: the site setting and everything stricter, least to most restrictive |
+| `email_activity_available` | `false` when the owner has no member email type switched on; hide the activity-email switch then |
+
+Show the messaging and online-status controls only when `features.messaging` in `GET /app/config` is `true`.
+
 ### PUT /me/profile
 
 **Auth:** Authenticated.
 
-Update profile fields.
+Update profile fields. A `dm_access` looser than the site setting is saved as the site setting, so the stored value is always one the site honours.
 
 ```json
 {
@@ -603,6 +550,18 @@ Search for users by display name or username.
 | `q` | string | (required) | Search term |
 | `per_page` | int | `10` | Results per page (max: 50) |
 
+### GET /me/storage
+
+**Auth:** Authenticated.
+
+The member's storage use and limit, in bytes: `{ "used": 52428800, "limit": 524288000 }`. `limit` is `0` when no limit applies (the default). Usage counts every item the member owns that is not in the trash, plus chat attachments sent from 2.6.0 on.
+
+### GET /users/{id}/storage and PUT /users/{id}/storage
+
+**Auth:** `edit_users`.
+
+Read or set one member's own limit. The response adds `limit_mb`: the member's own limit in MB, or `null` when they follow the site limit. Send `limit_mb` as a number (`0` = no limit for this member) or `null` to go back to the site limit.
+
 ---
 
 ## Reports & Blocking
@@ -627,6 +586,18 @@ Submit a content report against a media item.
 **Auth:** Authenticated.
 
 Report a user. Same `reason` / `details` body as media reports.
+
+### POST /comments/{id}/report
+
+**Auth:** Authenticated. Rate-limited to 10/min. **(New in 2.6.0)**
+
+Report a comment. Same `reason` / `details` body as media reports. A comment on media the caller cannot open answers `404 mvs_not_found`, the same as a missing one. Reporting your own comment answers `400 mvs_report_own`.
+
+### POST /messages/{id}/report
+
+**Auth:** Authenticated. Rate-limited to 10/min. **(New in 2.6.0)**
+
+Report a message in a conversation the caller is an active participant of. Same body as media reports. A message in any other conversation answers `404 mvs_not_found`; your own message, including one you unsent, answers `400 mvs_report_own`; with Messages turned off it answers `404 mvs_messaging_disabled`. Moderators see the message text on the Reports screen.
 
 ### POST /users/{id}/block
 
@@ -806,6 +777,27 @@ Mark notifications as read. Pass an `ids` array to mark specific notifications, 
 { "ids": [12, 13, 14] }
 ```
 
+### GET /me/mentions
+
+**Auth:** Authenticated. **(New in 2.6.0)**
+
+Where the current user was @mentioned (comments and media descriptions), newest first. Each item is the standard media object plus a `mention` object:
+
+```json
+{
+  "id": 123,
+  "title": "Harbour at dusk",
+  "mention": {
+    "context": "description",
+    "comment_id": 0,
+    "created_at": "2026-09-24 10:15:00",
+    "by": { "id": 7, "name": "Ana" }
+  }
+}
+```
+
+`by` is the comment's author for a comment mention and the media owner for a description mention. Items the caller can no longer open are left out, and `X-WP-Total` / `X-WP-TotalPages` drop with them. Supports `page` and `per_page` (max 100).
+
 ---
 
 ## Devices / push tokens
@@ -877,7 +869,7 @@ Single call a client makes before theming itself and deciding which feature surf
 }
 ```
 
-`features.messaging` is `false` when `mvs_dm_access` is `nobody`/`disabled`/`none`. Pro extends `features` with its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …) and can populate `accent_color` / `logo_url` / `login_bg_url` / `dark_mode_default` / `layout` from its Mobile App Branding settings.
+`features.messaging` is `false` when the Messages switch is off (`mvs_messaging_enabled`) or `mvs_dm_access` is `nobody`/`disabled`/`none`. Hide the app's Messages tab when it is `false`. Pro extends `features` with its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …) and can populate `accent_color` / `logo_url` / `login_bg_url` / `dark_mode_default` / `layout` from its Mobile App Branding settings.
 
 ### GET /app/interests
 
@@ -1007,6 +999,8 @@ Return the activity feed.
 
 Return a user's public activity (uploads, album creations, reactions). Supports `page`, `per_page`.
 
+The feed (`mvs_activity`) keeps 90 days by default; older events are removed by the daily retention job. Change the window with the `mvs_activity_retention_days` filter (`0` keeps everything).
+
 ---
 
 ## Messaging
@@ -1036,7 +1030,7 @@ Start a new conversation.
 | `recipient_id` | Yes | - | User ID to start (or resume) a conversation with |
 | `as_request` | No | `false` | When `true`, force the conversation to open as a pending **message request** (lands in the recipient's Requests tab and must be accepted/declined) instead of an active thread — even if the sender/recipient relationship would otherwise allow a direct thread. Lets a native app open a "message request" flow explicitly through `mvs/v1` alone (1.8.0). |
 
-**Response:** `201 Created` with the new conversation object.
+**Response:** `201 Created` with the new conversation object, or `200` with the existing one when the two members already have a direct conversation. Refusals carry an `error` code and a readable `message`: `403 cannot_message_self` (your own ID), `403 blocked`, `403 dms_disabled`, `403 account_too_new`, `429 rate_limited`, `400 invalid_recipient`.
 
 ### GET /conversations/{id}
 
@@ -1250,7 +1244,7 @@ Cancel a pending deletion request and restore the account to normal standing.
 
 ### GET /me/transactions
 
-The authenticated member's own usage ledger - upload credits consumed and granted.
+The authenticated member's own usage ledger - one row per upload.
 
 **Auth:** Authenticated.
 
@@ -1260,18 +1254,6 @@ The authenticated member's own usage ledger - upload credits consumed and grante
 | `page` | integer | `1` | Page number. |
 
 Pairs with the `[mvs_usage_history]` shortcode, which renders the same data.
-
----
-
-## Access control
-
-### GET /access/options
-
-Return the building blocks for the access-rule builder: the site's roles, and the rule types available to members.
-
-**Auth:** Authenticated.
-
-Drives the frontend edit-modal access panel, the admin sub-page, and the mobile app - all three read this one endpoint rather than hardcoding a rule-type list. Pro extends the returned rule types through the `mvs_access_rule_types_ui` filter, so a client that renders whatever this endpoint returns picks up Pro's monetization and code-grant rule types with no client change.
 
 ---
 

@@ -852,20 +852,17 @@ class ActivitySyncIntegration {
 		);
 
 		// 3. post_update activities with this id in `_mvs_media_ids` meta.
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$activity_ids = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT activity_id FROM {$wpdb->prefix}bp_activity_meta WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s OR meta_value LIKE %s OR meta_value LIKE %s )",
-				'_mvs_media_ids',
-				(string) $media_id,
-				'%,' . $wpdb->esc_like( (string) $media_id ),
-				$wpdb->esc_like( (string) $media_id ) . ',%',
-				'%,' . $wpdb->esc_like( (string) $media_id ) . ',%'
-			)
-		);
+		//
+		// Found via the structured `mvs_bp_activity_media` linkage table
+		// (indexed on media_id) rather than a `LIKE '%,123,%'` scan across
+		// the entire bp_activity_meta table — that scan grew unbounded with
+		// activity count and touched every activity meta row on every media
+		// delete regardless of whether it referenced media at all.
+		$activity_ids = \WPMediaVerse\Core\Plugin::container()
+			->get( 'integration.bp_activity_linkage' )
+			->activity_ids_for_media( $media_id );
 
-		foreach ( array_map( 'intval', (array) $activity_ids ) as $activity_id ) {
+		foreach ( $activity_ids as $activity_id ) {
 			if ( $activity_id <= 0 ) {
 				continue;
 			}

@@ -23,6 +23,11 @@ defined( 'ABSPATH' ) || exit;
  * Pro ships a richer User Reports screen (Admin\ReportManager). This page only
  * registers when Pro is inactive, so a site never shows two reports menus.
  *
+ * Since 2.6.0 the queue renders as the Reports tab of the Moderation screen,
+ * like Pro's. The `mvs-reports` page stays registered (under Moderation) so
+ * old bookmarks resolve, but it is only in the sidebar while it is the
+ * current screen.
+ *
  * @since 2.1.0
  */
 class ReportsPage {
@@ -59,6 +64,22 @@ class ReportsPage {
 
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		add_action( 'admin_post_mvs_report_status', array( $this, 'handle_status_change' ) );
+		add_filter( 'mvs_moderation_tabs', array( $this, 'add_moderation_tab' ) );
+	}
+
+	/**
+	 * Add the Reports tab to the Moderation screen.
+	 *
+	 * @param array $tabs Moderation tabs.
+	 * @return array
+	 */
+	public function add_moderation_tab( array $tabs ): array {
+		$tabs['user-reports'] = array(
+			'label'    => __( 'Reports', 'wpmediaverse' ),
+			'count'    => $this->reports->count_by_status( 'pending' ),
+			'callback' => array( $this, 'render_content' ),
+		);
+		return $tabs;
 	}
 
 	/**
@@ -71,24 +92,27 @@ class ReportsPage {
 	}
 
 	/**
-	 * Register the submenu, badged with the pending count.
+	 * Register the standalone page under Moderation, hidden unless current.
+	 *
+	 * Same pattern as Pro's ReportManager: the entry stays in the sidebar on
+	 * its own screen so get_admin_page_title() resolves, and is removed
+	 * everywhere else. The pending count lives on the Moderation tab now.
 	 */
 	public function add_menu_page(): void {
-		$pending = $this->reports->count_by_status( 'pending' );
-
-		$menu_title = __( 'Reports', 'wpmediaverse' );
-		if ( $pending > 0 ) {
-			$menu_title .= sprintf( ' <span class="awaiting-mod">%d</span>', $pending );
-		}
-
 		add_submenu_page(
-			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
+			ModerationQueue::PAGE_SLUG,
 			__( 'Reports', 'wpmediaverse' ),
-			$menu_title,
+			__( 'Reports', 'wpmediaverse' ),
 			'mvs_moderation_screen',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET inspection.
+		$current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( self::PAGE_SLUG !== $current_page ) {
+			remove_submenu_page( ModerationQueue::PAGE_SLUG, self::PAGE_SLUG );
+		}
 	}
 
 	/**
@@ -112,12 +136,15 @@ class ReportsPage {
 		$back = isset( $_POST['back_status'] ) ? sanitize_key( wp_unslash( $_POST['back_status'] ) ) : 'pending';
 		$back = in_array( $back, self::STATUSES, true ) ? $back : 'pending';
 
+		// `updated` carries the new status so the Moderation screen can say
+		// what happened (Report resolved / dismissed / reopened).
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'          => self::PAGE_SLUG,
+					'page'          => ModerationQueue::PAGE_SLUG,
+					'tab'           => 'user-reports',
 					'report_status' => $back,
-					'updated'       => '1',
+					'updated'       => $status,
 				),
 				admin_url( 'admin.php' )
 			)
@@ -126,11 +153,28 @@ class ReportsPage {
 	}
 
 	/**
-	 * Render the queue.
+	 * Render the standalone page (old `mvs-reports` bookmarks).
 	 */
 	public function render_page(): void {
 		if ( ! $this->can_moderate() ) {
 			wp_die( esc_html__( 'You are not allowed to moderate reports.', 'wpmediaverse' ), 403 );
+		}
+
+		echo '<div class="wrap wpmediaverse-admin">';
+		echo '<h1>' . esc_html__( 'Member Reports', 'wpmediaverse' ) . '</h1>';
+		$this->render_content();
+		echo '</div>';
+	}
+
+	/**
+	 * Render the queue: status tabs, the table and pagination.
+	 *
+	 * The body of the Moderation screen's Reports tab and of the standalone
+	 * page. Links always point at the Moderation tab, the queue's one home.
+	 */
+	public function render_content(): void {
+		if ( ! $this->can_moderate() ) {
+			return;
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab/paging state.
@@ -144,10 +188,14 @@ class ReportsPage {
 		$offset = ( $paged - 1 ) * self::PER_PAGE;
 		$rows   = $this->reports->list_reports( $status, self::PER_PAGE, $offset );
 
-		$base_url = add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'admin.php' ) );
+		$base_url = add_query_arg(
+			array(
+				'page' => ModerationQueue::PAGE_SLUG,
+				'tab'  => 'user-reports',
+			),
+			admin_url( 'admin.php' )
+		);
 
-		echo '<div class="wrap wpmediaverse-admin">';
-		echo '<h1>' . esc_html__( 'Member Reports', 'wpmediaverse' ) . '</h1>';
 		echo '<p class="description">' . esc_html__( 'Content and members your community has flagged for review.', 'wpmediaverse' ) . '</p>';
 
 		if ( ! ReportService::reports_enabled() ) {
@@ -173,8 +221,13 @@ class ReportsPage {
 		echo '</h2>';
 
 		if ( empty( $rows ) ) {
-			echo '<p class="mvs-reports-lead">' . esc_html__( 'Nothing here. No reports with this status.', 'wpmediaverse' ) . '</p>';
-			echo '</div>';
+			echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML.
+				array(
+					'icon'    => 'flag',
+					'title'   => __( 'No reports with this status', 'wpmediaverse' ),
+					'message' => __( 'When members report media or comments, new reports appear under Pending.', 'wpmediaverse' ),
+				)
+			);
 			return;
 		}
 
@@ -214,8 +267,6 @@ class ReportsPage {
 			);
 			echo '</div></div>';
 		}
-
-		echo '</div>';
 	}
 
 	/**
@@ -225,24 +276,7 @@ class ReportsPage {
 	 * @param string $status Current tab, so actions return here.
 	 */
 	private function render_row( object $row, string $status ): void {
-		$target_label = '';
-		$target_link  = '';
-
-		if ( 'media' === $row->target_type ) {
-			$target_link  = (string) get_permalink( (int) $row->target_id );
-			$title        = get_the_title( (int) $row->target_id );
-			$target_label = '' !== trim( (string) $title )
-				? $title
-				/* translators: %d: media ID. */
-				: sprintf( __( 'Media #%d', 'wpmediaverse' ), (int) $row->target_id );
-		} else {
-			$user         = get_userdata( (int) $row->target_id );
-			$target_link  = $user ? (string) get_author_posts_url( (int) $row->target_id ) : '';
-			$target_label = $user
-				? $user->display_name
-				/* translators: %d: user ID. */
-				: sprintf( __( 'Member #%d (deleted)', 'wpmediaverse' ), (int) $row->target_id );
-		}
+		list( $target_label, $target_link, $type_label ) = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->describe_target( (string) $row->target_type, (int) $row->target_id );
 
 		$reporter       = get_userdata( (int) $row->reporter_id );
 		$reporter_label = $reporter ? $reporter->display_name : __( 'Deleted member', 'wpmediaverse' );
@@ -257,7 +291,7 @@ class ReportsPage {
 			echo esc_html( $target_label );
 		}
 		echo '</strong><br />';
-		echo '<span class="description">' . esc_html( 'media' === $row->target_type ? __( 'Media', 'wpmediaverse' ) : __( 'Member', 'wpmediaverse' ) ) . '</span>';
+		echo '<span class="description">' . esc_html( $type_label ) . '</span>';
 		echo '</td>';
 
 		echo '<td>' . esc_html( $row->reason ) . '</td>';

@@ -22,6 +22,23 @@
 ( function () {
 	'use strict';
 
+	// Album owner: the same wrap + "Set as cover" button templates/album.php
+	// renders, so an appended image can be picked as the cover too.
+	function wrapWithSetCover( node, mediaId, label ) {
+		var wrap = document.createElement( 'div' );
+		wrap.className = 'mvs-album-item-wrap';
+		wrap.dataset.mediaId = String( mediaId );
+		var btn = document.createElement( 'button' );
+		btn.type = 'button';
+		btn.className = 'mvs-album-set-cover';
+		btn.dataset.mediaId = String( mediaId );
+		btn.innerHTML = '<span class="mvs-icon"><i data-lucide="star" aria-hidden="true"></i></span><span class="mvs-album-set-cover__label"></span>';
+		btn.lastChild.textContent = label;
+		wrap.appendChild( node );
+		wrap.appendChild( btn );
+		return wrap;
+	}
+
 	// Rebuild the flat media-id registry the lightbox uses for prev/next from
 	// whatever grid container is on the page right now (current or swapped-in).
 	function rebuildRegistry( gridContainer ) {
@@ -127,6 +144,7 @@
 			perPage: parseInt( loadMoreBtn.dataset.perPage, 10 ) || 12,
 			endpoint: loadMoreBtn.dataset.endpoint || 'media',
 			layout: loadMoreBtn.dataset.layout || 'grid',
+			setCover: loadMoreBtn.dataset.setCover || '',
 			tag: loadMoreBtn.dataset.tag || '',
 			category: loadMoreBtn.dataset.category || '',
 			search: loadMoreBtn.dataset.search || '',
@@ -184,7 +202,11 @@
 		// rendered in that order, so pages 2+ must ask for the same one.
 		var pageQuery = new URLSearchParams( window.location.search );
 		var sortKey   = pageQuery.get( 'sort' );
-		if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views' ].indexOf( sortKey ) !== -1 ) {
+		if ( 'media' === config.endpoint && 'oldest' === sortKey ) {
+			// The one-select spelling of created_at ascending (2.6.0).
+			url.searchParams.set( 'orderby', 'created_at' );
+			url.searchParams.set( 'order', 'asc' );
+		} else if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views' ].indexOf( sortKey ) !== -1 ) {
 			url.searchParams.set( 'orderby', sortKey );
 			url.searchParams.set( 'order', 'asc' === pageQuery.get( 'order' ) ? 'asc' : 'desc' );
 		}
@@ -212,6 +234,9 @@
 				if ( builder && gridContainer ) {
 					items.forEach( function ( item ) {
 						var node = builder( item, gridContainer );
+						if ( node && config.setCover && 'image' === item.media_type ) {
+							node = wrapWithSetCover( node, item.id, config.setCover );
+						}
 						if ( node ) {
 							gridContainer.appendChild( node );
 						}

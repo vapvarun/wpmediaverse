@@ -88,7 +88,7 @@ final class ConfigController extends WP_REST_Controller {
 		$features = (array) apply_filters(
 			'mvs_app_config_features',
 			array(
-				'messaging'        => ! in_array( (string) $dm_access, array( 'nobody', 'disabled', 'none' ), true ),
+				'messaging'        => \WPMediaVerse\Core\Plugin::messaging_enabled() && ! in_array( (string) $dm_access, array( 'nobody', 'disabled', 'none' ), true ),
 				'reactions'        => true,
 				'comments'         => true,
 				'favorites'        => true,
@@ -118,6 +118,12 @@ final class ConfigController extends WP_REST_Controller {
 				// app needs to know BEFORE it renders the control, so it
 				// never offers a path this site will refuse.
 				'password_login'   => \WPMediaVerse\Auth\AppCredentials::is_enabled(),
+
+				// Owner switches the app has to mirror, or it offers controls
+				// the server overrides: a Download button that 403s, a privacy
+				// picker whose choice is replaced by the site default.
+				'downloads'        => (bool) get_option( 'mvs_allow_downloads', true ),
+				'user_privacy'     => \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy(),
 			)
 		);
 

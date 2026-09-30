@@ -50,7 +50,7 @@ class AiSettingsRegistrar {
 						'rekognition'   => __( 'AWS Rekognition', 'wpmediaverse' ),
 						'anthropic'     => __( 'Claude (Anthropic)', 'wpmediaverse' ),
 					),
-					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ),
+					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ) . self::provider_status_note(),
 				)
 			);
 		} else {
@@ -89,7 +89,10 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_openai_api_key',
-				'class'       => 'mvs-ai-openai-field',
+				'constant'    => 'MVS_OPENAI_API_KEY',
+				// With Pro the key is only for OpenAI, or for Whisper captions.
+				// Without Pro the provider select has no name, so no rule.
+				'show_when'   => self::is_pro_active() ? 'mvs_ai_provider=openai|mvs_pro_settings[captions_auto]' : '',
 				'description' => sprintf(
 					/* translators: %s: link to the OpenAI API keys page. */
 					__( 'Get a key from %s (sign in, create a secret key, and make sure billing is enabled on the account). Or define the MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
@@ -98,6 +101,7 @@ class AiSettingsRegistrar {
 			)
 		);
 
+		// No field since 2.6.0: GPT-4o Mini is right for tagging and captions.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_ai',
 			'mvs_openai_model',
@@ -105,22 +109,6 @@ class AiSettingsRegistrar {
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_openai_model' ),
 				'default'           => 'gpt-4o-mini',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_openai_model',
-			__( 'OpenAI Model', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'      => 'mvs_openai_model',
-				'class'       => 'mvs-ai-openai-field',
-				'choices'     => array(
-					'gpt-4o-mini' => __( 'GPT-4o Mini (cheaper)', 'wpmediaverse' ),
-					'gpt-4o'      => __( 'GPT-4o (best quality)', 'wpmediaverse' ),
-				),
-				'description' => __( 'GPT-4o Mini is faster and cheaper. GPT-4o produces more accurate tags and descriptions.', 'wpmediaverse' ),
 			)
 		);
 
@@ -141,7 +129,7 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option' => 'mvs_ai_auto_analyze',
-				'label'  => __( 'Automatically run AI on upload (master switch for the two options below).', 'wpmediaverse' ),
+				'label'  => __( 'Run AI on every new upload.', 'wpmediaverse' ),
 			)
 		);
 
@@ -164,8 +152,9 @@ class AiSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
-				'option' => 'mvs_ai_auto_describe',
-				'label'  => __( 'Use AI to generate a description / alt text for each upload.', 'wpmediaverse' ),
+				'option'    => 'mvs_ai_auto_describe',
+				'show_when' => 'mvs_ai_auto_analyze',
+				'label'     => __( 'Use AI to generate a description / alt text for each upload.', 'wpmediaverse' ),
 			)
 		);
 
@@ -185,8 +174,9 @@ class AiSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
-				'option' => 'mvs_ai_auto_tag',
-				'label'  => __( 'Use AI to generate tags for each upload. Apply them to the taxonomy with the option below.', 'wpmediaverse' ),
+				'option'    => 'mvs_ai_auto_tag',
+				'show_when' => 'mvs_ai_auto_analyze',
+				'label'     => __( 'Use AI to generate tags for each upload. Apply them to the taxonomy with the option below.', 'wpmediaverse' ),
 			)
 		);
 
@@ -206,31 +196,13 @@ class AiSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
-				'option' => 'mvs_ai_auto_apply_tags',
-				'label'  => __( 'Automatically assign AI-generated tags to taxonomy.', 'wpmediaverse' ),
+				'option'    => 'mvs_ai_auto_apply_tags',
+				'show_when' => 'mvs_ai_auto_tag',
+				'label'     => __( 'Automatically assign AI-generated tags to taxonomy.', 'wpmediaverse' ),
 			)
 		);
 
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_auto_moderate',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_ai_auto_moderate',
-			__( 'Auto-Moderate Uploads', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option' => 'mvs_ai_auto_moderate',
-				'label'  => __( 'Check uploads for policy violations via AI.', 'wpmediaverse' ),
-			)
-		);
+		// mvs_ai_auto_moderate moved to the Moderation tab in 2.6.0.
 
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_ai',
@@ -256,7 +228,7 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_ai_monthly_budget',
-				'description' => __( 'Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is reached and resume next month. Set to 0 to disable the cap (unlimited spend) — recommended only after you have a billing alert configured on the OpenAI account itself.', 'wpmediaverse' ),
+				'description' => __( 'Monthly limit on AI calls, counted at an estimated $0.01 per call. AI stops when the estimate reaches this number and resumes next month. Real cost depends on the model, so also set a billing limit in your provider account. Set to 0 for no limit.', 'wpmediaverse' ),
 			)
 		);
 
@@ -274,6 +246,21 @@ class AiSettingsRegistrar {
 		//
 		// The default lives at the read site (AIService::track_usage()) and stays
 		// overridable through the `mvs_ai_cost_per_call` filter.
+	}
+
+	/**
+	 * A warning appended to the provider help when the selected provider has
+	 * no key, so the owner sees why AI is paused instead of being billed by a
+	 * different provider (there is no silent fallback since 2.6.0).
+	 *
+	 * @return string Leading space + sentence, or ''.
+	 */
+	private static function provider_status_note(): string {
+		$container = \WPMediaVerse\Core\Plugin::container();
+		if ( ! $container->has( 'ai' ) || $container->get( 'ai' )->get_active_provider() ) {
+			return '';
+		}
+		return ' ' . __( 'The selected provider has no API key, so AI features are paused until you add one.', 'wpmediaverse' );
 	}
 
 	/**

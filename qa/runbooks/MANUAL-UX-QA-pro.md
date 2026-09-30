@@ -24,7 +24,7 @@ Frontend (routed by Pro):
 | User profile Pro | `templates/user-profile.php` | Pro-enhanced profile |
 | Messaging | `templates/messages.php` + chat partials | DM UI (Pro owns) |
 
-Admin (Pro additions under WPMediaVerse menu):
+Admin (Pro additions under the MediaVerse menu; since 2.6.0 there is no separate Competitions top-level menu, the five competition pages sit after Stats):
 
 | Slug | Purpose |
 |------|---------|
@@ -33,8 +33,8 @@ Admin (Pro additions under WPMediaVerse menu):
 | `mvs-tournaments` | Tournament Manager |
 | `mvs-battles` | Battle Monitor |
 | `mvs-quotas` | Quota & Credits |
-| `mvs-theme-library` | Theme Library |
-| `mvs-migration` | Migration Tool |
+| `mvs-theme-library` | Challenge Themes |
+| `mvs-migration` | Migration Tool (Import; in the sidebar only when rtMedia / MediaPress / BuddyBoss data is detected or a run has started, always reachable by URL) |
 | Gamification Settings (in Settings) | XP / cooldowns / autopilot / boost config |
 | License page | EDD license UI |
 | Pro tabs in Settings | AI (Vision / Rekognition), S3, BunnyCDN, FFmpeg path |
@@ -143,6 +143,7 @@ Run the Free doc's Section 1 setup, then add:
 
 ## 8. Journey P7 — Admin Competitions Dashboard (`mvs-competitions`)
 
+- [ ] **P7.0** Menu placement. **Pass:** no "Competitions" top-level menu; Competitions, Photo Challenges, Tournaments, Photo Battles and Challenge Themes are MediaVerse submenus right after Stats (Pro 2.6.0), and a Delete / Cancel button on those pages opens the in-page confirm dialog.
 - [ ] **P7.1** Welcome modal on first visit. **Pass:** Dismiss persists (AJAX `mvs_dismiss_gamification_welcome`); no re-show after reload.
 - [ ] **P7.2** Overview counts (active battles / challenges / tournaments). **Pass:** Numbers match the frontend hub.
 - [ ] **P7.3** Quick links to each manager page. **Pass:** Clicks navigate correctly.
@@ -206,7 +207,7 @@ Run the Free doc's Section 1 setup, then add:
 
 ---
 
-## 13. Journey P12 — Theme Library (`mvs-theme-library`)
+## 13. Journey P12 — Challenge Themes (`mvs-theme-library`)
 
 - [ ] **P12.1** Default themes listed with previews.
 - [ ] **P12.2** Create theme. **Pass:** Name, description, cover image, tags, season; save.

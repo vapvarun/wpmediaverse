@@ -34,14 +34,10 @@ function gmtToMs( s ) {
 // interactivity state by TemplateHelpers::media_social_i18n_state() via
 // wp_interactivity_state(); read them as `state.i18n.<key>` with an English
 // fallback. Basecamp 10073528834.
-const REACTION_TYPES = {
-	like: '\u{1F44D}',
-	love: '\u{2764}\u{FE0F}',
-	haha: '\u{1F602}',
-	wow: '\u{1F62E}',
-	sad: '\u{1F622}',
-	angry: '\u{1F621}',
-};
+// Reactions render as the vendored Microsoft Fluent emoji SVGs (the same set as
+// BuddyNext) so they look identical on every platform; state.emojiBase is seeded
+// by TemplateHelpers::media_social_i18n_state().
+const REACTION_TYPES = [ 'like', 'love', 'haha', 'wow', 'sad', 'angry' ];
 
 const sharedUI = store( 'mvs/shared-ui' );
 
@@ -57,9 +53,9 @@ async function fetchReactions( ctx ) {
 		const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions' );
 		const data = res.data;
 		ctx.userReaction = data.user_reaction || '';
-		ctx.reactions = Object.keys( REACTION_TYPES ).map( ( type ) => ( {
+		ctx.reactions = REACTION_TYPES.map( ( type ) => ( {
 			type,
-			emoji: REACTION_TYPES[ type ],
+			icon: ( state.emojiBase || '' ) + type + '.svg',
 			count: data.counts?.[ type ] || 0,
 			active: data.user_reaction === type,
 		} ) );
@@ -100,6 +96,8 @@ async function fetchComments( ctx ) {
 					// used to hide Delete with Edit at 15 minutes, so the control was
 					// stricter than the route it drives (Basecamp 10148635942).
 					canDelete: isOwnComment || !! ctx.canModerateComments,
+					canReport: !! ( ctx.isLoggedIn && sharedUI.state.reportsEnabled && ! isOwnComment ),
+					reported: false,
 					editing: false,
 					editText: '',
 				};
@@ -168,8 +166,12 @@ const { state } = store( 'mvs/media-social', {
 		},
 		get hideCommentActions() {
 			const item = getContext().item;
-			// Show the row while EITHER control is available (never while editing).
-			return ( ! item?.canEdit && ! item?.canDelete ) || item?.editing;
+			// Show the row while ANY control is available (never while editing).
+			return ( ! item?.canEdit && ! item?.canDelete && ! item?.canReport ) || item?.editing;
+		},
+		get hideReportComment() {
+			const item = getContext().item;
+			return ! item?.canReport || item?.reported || item?.editing;
 		},
 		get hideEditComment() {
 			const item = getContext().item;
@@ -610,65 +612,25 @@ const { state } = store( 'mvs/media-social', {
 		},
 
 		/* --- Report Media --- */
-		reportMedia() {
+		async reportMedia() {
 			const ctx = getContext();
 			if ( ! ctx.isLoggedIn ) {
 				sharedUI.actions.showToast( ( state.i18n?.loginToReport || 'Please log in to report content.' ), 'error' );
 				return;
 			}
+			if ( await sharedUI.actions.promptReport( ctx.restUrl + 'media/' + ctx.mediaId + '/report' ) ) {
+				ctx.reported = true;
+			}
+		},
 
-			// Build a reason selector dropdown.
-			const reasons = [
-				{ value: 'spam', label: ( state.i18n?.reasonSpam || 'Spam' ) },
-				{ value: 'harassment', label: ( state.i18n?.reasonHarassment || 'Harassment' ) },
-				{ value: 'nudity', label: ( state.i18n?.reasonNudity || 'Nudity or sexual content' ) },
-				{ value: 'violence', label: ( state.i18n?.reasonViolence || 'Violence or dangerous acts' ) },
-				{ value: 'copyright', label: ( state.i18n?.reasonCopyright || 'Copyright infringement' ) },
-				{ value: 'misinformation', label: ( state.i18n?.reasonMisinformation || 'Misinformation' ) },
-				{ value: 'other', label: ( state.i18n?.reasonOther || 'Other' ) },
-			];
-
-			// Create a temporary select element in the DOM.
-			const select = document.createElement( 'select' );
-			select.className = 'mvs-report-reason-select';
-			reasons.forEach( ( r ) => {
-				const opt = document.createElement( 'option' );
-				opt.value = r.value;
-				opt.textContent = r.label;
-				select.appendChild( opt );
-			} );
-
-			// Inject select into confirm message area after dialog opens.
-			sharedUI.actions.showConfirm(
-				( state.i18n?.reportPrompt || 'Why are you reporting this media?' ),
-				async () => {
-					const reason = select.value || 'other';
-					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/report', {
-						method: 'POST',
-						body: { reason, details: 'Reported via media page' },
-					} );
-					if ( res.ok ) {
-						sharedUI.actions.showToast( ( state.i18n?.reportSubmitted || 'Report submitted. Thank you.' ), 'success' );
-						ctx.reported = true;
-					} else {
-						const data = res.data || {};
-						sharedUI.actions.showToast( data.message || ( state.i18n?.reportAlready || 'Already reported or error occurred.' ), 'error' );
-					}
-				},
-				( state.i18n?.reportAction || 'Report' )
-			);
-
-			// Append select to the confirm dialog message area.
-			requestAnimationFrame( () => {
-				const container = document.querySelector( '.mvs-confirm' );
-				if ( container ) {
-					container.querySelectorAll( '.mvs-report-reason-select' ).forEach( ( el ) => el.remove() );
-					const msgEl = container.querySelector( 'p' );
-					if ( msgEl ) {
-						msgEl.after( select );
-					}
-				}
-			} );
+		/* --- Report Comment --- */
+		async reportComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return;
+			if ( await sharedUI.actions.promptReport( ctx.restUrl + 'comments/' + item.id + '/report' ) ) {
+				item.reported = true;
+			}
 		},
 
 		stopPropagation( event ) {

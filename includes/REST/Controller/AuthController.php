@@ -92,7 +92,7 @@ class AuthController extends WP_REST_Controller {
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Stable per-install id, so a repeat sign-in replaces the row instead of adding another.', 'wpmediaverse' ),
+						'description'       => __( 'Stable per-install id, so a repeat login replaces the row instead of adding another.', 'wpmediaverse' ),
 					),
 				),
 			)
@@ -134,7 +134,7 @@ class AuthController extends WP_REST_Controller {
 			if ( AppCredentials::is_locked_out( $bucket ) ) {
 				return new WP_Error(
 					'mvs_too_many_attempts',
-					__( 'Too many sign-in attempts. Please wait a few minutes and try again.', 'wpmediaverse' ),
+					__( 'Too many login attempts. Please wait a few minutes and try again.', 'wpmediaverse' ),
 					array( 'status' => 429 )
 				);
 			}

@@ -30,9 +30,9 @@ Each section follows the format: what the feature does, why it matters, and who 
 
 ### Albums and Collections
 
-**What it does:** Members can organize their photos into albums (named, with cover photos and descriptions) and group albums into collections. Both are browsable from the member's dashboard and profile page.
+**What it does:** Members group their own uploads into albums (named, with cover photos and descriptions). Collections gather media from anyone on the site - saved by hand with Pro, or filled automatically by smart rules. Both are browsable from the member's dashboard and profile page.
 
-**Why it matters:** Without organization tools, a member's media library becomes a flat pile of uploads. Albums let members tell stories with their photos. Collections let power users build a portfolio or archive.
+**Why it matters:** Without organization tools, a member's media library becomes a flat pile of uploads. Albums let members tell stories with their photos. Collections let members curate the best of the whole community.
 
 **Who it is for:** Photography communities, portfolio sites, and any site where members publish content in series.
 

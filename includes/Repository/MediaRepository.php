@@ -48,7 +48,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		'mvs_album_items',
 		'mvs_notifications',
 		'mvs_activity',
-		'mvs_access_rules',
+		// Deleted by media_id alone. Safe only while every grant targets media:
+		// the column is shared with Pro folder grants (target_type 'folder', where
+		// media_id holds a FOLDER id), which nothing writes today. If folder
+		// sharing is ever built, filter this delete on target_type first, or
+		// deleting document N wipes the grants on folder N (Basecamp 10344002012).
 		'mvs_access_grants',
 		'mvs_media_spaces',
 	);
@@ -1032,6 +1036,14 @@ class MediaRepository implements MediaRepositoryInterface {
 			if ( $viewer_id > 0 ) {
 				$where[]  = "( idx.post_author = %d OR idx.privacy = 'public' OR idx.privacy = 'members' )";
 				$params[] = $viewer_id;
+
+				// Lists hide media both ways across a block (Basecamp 10355130639);
+				// the stories bar is a list.
+				$blocked = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id );
+				if ( $blocked ) {
+					$where[] = 'idx.post_author NOT IN (' . implode( ',', array_fill( 0, count( $blocked ), '%d' ) ) . ')';
+					$params  = array_merge( $params, $blocked );
+				}
 			} else {
 				$where[] = "idx.privacy = 'public'";
 			}
@@ -1150,7 +1162,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		);
 
 		if ( isset( $days[ $window ] ) ) {
-			$cond .= $wpdb->prepare( ' AND i.created_at >= DATE_SUB( NOW(), INTERVAL %d DAY )', $days[ $window ] );
+			$cond .= $wpdb->prepare( ' AND i.created_at >= DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d DAY )', $days[ $window ] );
 		}
 
 		return $cond;
@@ -1579,10 +1591,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param int[] $folder_ids Folder ids.
+	 * @param int[]  $folder_ids Folder ids.
+	 * @param string $status     `publish` (default) or `trash`.
 	 * @return array<int, int> folder_id => direct document count.
 	 */
-	public function count_documents_in_folders( array $folder_ids ): array {
+	public function count_documents_in_folders( array $folder_ids, string $status = 'publish' ): array {
 		global $wpdb;
 
 		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ) ) ) );
@@ -1595,7 +1608,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$index        = $wpdb->prefix . 'mvs_media_index';
 		$placeholders = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
-		$params       = array_merge( $type_params, $folder_ids, array( 'publish' ) );
+		$params       = array_merge( $type_params, $folder_ids, array( 'trash' === $status ? 'trash' : 'publish' ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = (array) $wpdb->get_results(
@@ -1615,6 +1628,73 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		return $counts;
+	}
+
+	/**
+	 * Document ids filed in any of a set of folders, in id order.
+	 *
+	 * The row-set behind a folder-level lifecycle step: trashing, restoring or
+	 * purging a folder's contents, and asking whether a folder holds anyone
+	 * else's files. Callers page with `after_id` so a large folder is walked in
+	 * bounded batches, never loaded whole.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $folder_ids Folder ids.
+	 * @param array $args {
+	 *     @type string $status         `publish`, `trash` or `any`. Default `publish`.
+	 *     @type int    $limit          Row cap. Default 200.
+	 *     @type int    $after_id       Keyset cursor. Default 0.
+	 *     @type int    $exclude_author Skip documents this user uploaded. Default 0.
+	 *     @type string $meta_key       Only documents carrying this meta key. Default ''.
+	 * }
+	 * @return int[]
+	 */
+	public function document_ids_in_folders( array $folder_ids, array $args = array() ): array {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ) ) ) );
+
+		if ( ! $folder_ids ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index  = $wpdb->prefix . 'mvs_media_index';
+		$meta   = $wpdb->prefix . 'mvs_media_meta';
+		$where  = array( $type_sql, 'i.folder_id IN ( ' . implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) ) . ' )', 'i.media_id > %d' );
+		$params = array_merge( $type_params, $folder_ids, array( (int) ( $args['after_id'] ?? 0 ) ) );
+		$status = (string) ( $args['status'] ?? 'publish' );
+
+		if ( 'any' !== $status ) {
+			$where[]  = 'i.status = %s';
+			$params[] = 'trash' === $status ? 'trash' : 'publish';
+		}
+
+		if ( ! empty( $args['exclude_author'] ) ) {
+			$where[]  = 'i.post_author <> %d';
+			$params[] = (int) $args['exclude_author'];
+		}
+
+		if ( ! empty( $args['meta_key'] ) ) {
+			$where[]  = "EXISTS ( SELECT 1 FROM {$meta} m WHERE m.media_id = i.media_id AND m.meta_key = %s )";
+			$params[] = (string) $args['meta_key'];
+		}
+
+		$params[] = max( 1, (int) ( $args['limit'] ?? 200 ) );
+
+		// `media_type` inside MediaTypes::in_clause() is unqualified; the index is
+		// the only table in FROM that has it, so it resolves without the alias.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT i.media_id FROM {$index} i WHERE " . implode( ' AND ', $where ) . ' ORDER BY i.media_id ASC LIMIT %d',
+				...$params
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
 	}
 
 	/**
@@ -2231,6 +2311,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		// a way to reorder it — big-site checklist item 5. Both run on indexed
 		// columns, and the sort column comes from a fixed allowlist because a
 		// column name cannot be a prepared parameter.
+		// A trash view hides documents that went to the trash WITH their folder:
+		// they come back when the folder does, and restoring one alone would put
+		// it inside a folder nobody can open.
+		if ( ! empty( $args['exclude_meta'] ) ) {
+			$meta_tbl = $wpdb->prefix . 'mvs_media_meta';
+			$where[]  = "NOT EXISTS ( SELECT 1 FROM {$meta_tbl} xm WHERE xm.media_id = {$wpdb->prefix}mvs_media_index.media_id AND xm.meta_key = %s )";
+			$params[] = (string) $args['exclude_meta'];
+		}
+
 		if ( ! empty( $args['doc_type'] ) ) {
 			list( $mime_sql, $mime_params ) = $this->document_type_clause( (string) $args['doc_type'] );
 
@@ -2403,7 +2492,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$mvs_drive_sql = $wpdb->prepare( 'SELECT DISTINCT ' . self::space_drive_tuple_sql() . " FROM {$index} WHERE {$where_sql} AND privacy = 'space'", ...$params );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$rows          = (array) $wpdb->get_results( $mvs_drive_sql, ARRAY_N );
+			$rows = (array) $wpdb->get_results( $mvs_drive_sql, ARRAY_N );
 
 			foreach ( $rows as $row ) {
 				$out['drives'][] = array( (string) $row[0], (int) $row[1], (int) $row[2], (int) $row[3] );
@@ -2764,6 +2853,200 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Rows written per statement by the batch writers below.
+	 *
+	 * @since 2.6.0
+	 */
+	private const BATCH_CHUNK = 500;
+
+	/**
+	 * Set one privacy on many media items.
+	 *
+	 * The batch form of set( $id, 'privacy', ... ): one read and one UPDATE per
+	 * 500 rows instead of three queries per row, for album-wide changes on
+	 * albums of thousands of photos (Basecamp 10344644266). Only rows whose
+	 * privacy actually changes are written, and each of them still fires
+	 * `mvs_media_privacy_changed`, so file placement, cloud repatriation and
+	 * activity privacy follow exactly as they do for a single write.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[]  $media_ids Media IDs.
+	 * @param string $privacy   Privacy slug.
+	 * @return int[] IDs whose privacy changed.
+	 */
+	public function set_privacy_many( array $media_ids, string $privacy ): array {
+		global $wpdb;
+
+		$changed = array();
+		foreach ( array_chunk( $this->media_ids_only( $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
+			$in  = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$old = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN ({$in}) AND ( privacy <> %s OR privacy IS NULL )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( $chunk, array( $privacy ) )
+				),
+				ARRAY_A
+			);
+			if ( empty( $old ) ) {
+				continue;
+			}
+
+			$ids = array_map( 'intval', wp_list_pluck( $old, 'media_id' ) );
+			$in  = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_index SET privacy = %s, updated_at = %s WHERE media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $privacy, current_time( 'mysql', true ) ), $ids )
+				)
+			);
+
+			$now = current_time( 'mysql', true );
+			foreach ( $old as $row ) {
+				$mid = (int) $row['media_id'];
+				// Keep a prefetched row warm with the new values instead of
+				// dropping it, so listeners reading the row cost no query.
+				if ( isset( self::$row_cache[ $mid ] ) ) {
+					self::$row_cache[ $mid ]['privacy']    = $privacy;
+					self::$row_cache[ $mid ]['updated_at'] = $now;
+				}
+				$changed[] = $mid;
+				// Same as set(): a row with no stored privacy is written, not announced.
+				if ( null !== $row['privacy'] ) {
+					/** This action is documented in includes/Repository/MediaRepository.php set(). */
+					do_action( 'mvs_media_privacy_changed', $mid, $privacy, (string) $row['privacy'] );
+				}
+			}
+		}
+
+		return $changed;
+	}
+
+	/**
+	 * Point many media items at one album (0 = no album).
+	 *
+	 * The batch form of set( $id, 'album_id', ... ): one UPDATE per 500 rows.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Media IDs.
+	 * @param int   $album_id  Album post ID, or 0.
+	 * @return void
+	 */
+	public function set_album_pointer_many( array $media_ids, int $album_id ): void {
+		global $wpdb;
+
+		$now = current_time( 'mysql', true );
+		foreach ( array_chunk( $this->media_ids_only( $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
+			$in = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_index SET album_id = %d, updated_at = %s WHERE media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $album_id, $now ), $chunk )
+				)
+			);
+			foreach ( $chunk as $mid ) {
+				if ( isset( self::$row_cache[ $mid ] ) ) {
+					self::$row_cache[ $mid ]['album_id']   = $album_id;
+					self::$row_cache[ $mid ]['updated_at'] = $now;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Write one meta key for many media items, each with its own value.
+	 *
+	 * One multi-row upsert per 500 rows instead of one REPLACE per row.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string            $key    Meta key.
+	 * @param array<int,string> $values Media ID => value.
+	 * @return void
+	 */
+	public function set_meta_many( string $key, array $values ): void {
+		global $wpdb;
+
+		$allowed = array_flip( $this->media_ids_only( array_keys( $values ) ) );
+		$values  = array_intersect_key( $values, $allowed );
+
+		foreach ( array_chunk( $values, self::BATCH_CHUNK, true ) as $chunk ) {
+			$rows = array();
+			$args = array();
+			foreach ( $chunk as $mid => $value ) {
+				$rows[] = '(%d, %s, %s)';
+				array_push( $args, (int) $mid, $key, (string) $value );
+				self::invalidate_row_cache( (int) $mid );
+			}
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"INSERT INTO {$wpdb->prefix}mvs_media_meta (media_id, meta_key, meta_value) VALUES " . implode( ',', $rows ) . ' ON DUPLICATE KEY UPDATE meta_value = VALUES(meta_value)', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+					...$args
+				)
+			);
+		}
+	}
+
+	/**
+	 * Delete one meta key from many media items.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $key       Meta key.
+	 * @param int[]  $media_ids Media IDs.
+	 * @return void
+	 */
+	public function delete_meta_many( string $key, array $media_ids ): void {
+		global $wpdb;
+
+		foreach ( array_chunk( array_map( 'intval', $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
+			$in = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $key ), $chunk )
+				)
+			);
+			array_map( array( self::class, 'invalidate_row_cache' ), $chunk );
+		}
+	}
+
+	/**
+	 * Drop album and collection ids, which set() refuses (refuses_cpt_id()),
+	 * with one query for the whole list instead of one get_post_type() each.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Candidate IDs.
+	 * @return int[]
+	 */
+	private function media_ids_only( array $media_ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+
+		$cpt = array();
+		foreach ( array_chunk( $ids, self::BATCH_CHUNK ) as $chunk ) {
+			$in  = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$cpt = array_merge(
+				$cpt,
+				(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT ID FROM {$wpdb->posts} WHERE ID IN ({$in}) AND post_type IN ('mvs_album', 'mvs_collection')", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						...$chunk
+					)
+				)
+			);
+		}
+
+		return array_values( array_diff( $ids, array_map( 'intval', $cpt ) ) );
+	}
+
+	/**
 	 * Set multiple fields at once for a media item.
 	 *
 	 * @param int   $media_id Media ID.
@@ -2921,6 +3204,22 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * May this item be downloaded? The site switch AND the owner's per-item
+	 * opt-out; absent per-item meta means allow.
+	 *
+	 * The one answer every Download control asks (single page, player block),
+	 * so a surface cannot ship a working button the setting promised was hidden
+	 * (Basecamp 10350019690).
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool
+	 */
+	public function downloads_allowed( int $media_id ): bool {
+		return (bool) get_option( 'mvs_allow_downloads', true )
+			&& '0' !== (string) $this->get( $media_id, 'allow_download' );
 	}
 
 	/**
@@ -3307,28 +3606,24 @@ class MediaRepository implements MediaRepositoryInterface {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count_sql, ...$params ) : $count_sql );
 
+		// trending/popular recompute a score across the WHOLE filtered set on
+		// every call (no index can back "score DESC") — expensive at 50k+ rows
+		// and identical for every viewer hitting the same filter combination
+		// within the cache window. Rank once, cache briefly, paginate by slicing.
+		if ( 'trending' === $orderby || 'popular' === $orderby ) {
+			$ids = $this->ranked_feed_page( $orderby, $where_sql, $join, $params, $per_page, $offset );
+
+			return array(
+				'ids'   => $ids,
+				'total' => $total,
+			);
+		}
+
 		$page_params   = $params;
 		$page_params[] = $per_page;
 		$page_params[] = $offset;
 
-		if ( 'trending' === $orderby ) {
-			// (reactions * 3 + comments * 5 + views) / age_hours^1.5
-			$data_sql = "SELECT i.media_id,
-				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
-				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
-				FROM {$index} i
-				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
-				WHERE {$where_sql}
-				ORDER BY trending_score DESC
-				LIMIT %d OFFSET %d";
-		} elseif ( 'popular' === $orderby ) {
-			$data_sql = "SELECT i.media_id
-				FROM {$index} i
-				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
-				WHERE {$where_sql}
-				ORDER BY COALESCE(s.views, 0) DESC
-				LIMIT %d OFFSET %d";
-		} elseif ( 'views' === $orderby ) {
+		if ( 'views' === $orderby ) {
 			$data_sql = "SELECT i.media_id
 				FROM {$index} i
 				LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join}
@@ -3352,32 +3647,67 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Aggregate row count + total bytes per file_type for a user.
+	 * Paginate a trending/popular feed from a short-lived cached ranking.
 	 *
-	 * Used by Pro's QuotaService.recalculate_usage(). Single GROUP BY that
-	 * returns one row per mime type with `cnt` and `total_size`. The caller
-	 * maps file_type -> high-level bucket (image/video/audio).
+	 * Caches the top `$cache_cap` ranked media IDs for this exact filter
+	 * combination (keyed off the WHERE/JOIN/params that already fully identify
+	 * the query) for 5 minutes, then serves pages by slicing the cached array —
+	 * no SQL at all for cache hits within the window. A page that reaches past
+	 * the cached window (deep pagination into "Trending") falls back to a
+	 * direct, single-page query rather than growing the cache unbounded.
 	 *
-	 * @since 1.3.0
+	 * ponytail: TTL-only invalidation, no cardinality cap beyond the per-key TTL.
+	 * Fine for trending/popular (score, not correctness, and it settles within
+	 * 5 minutes); would need a write-time bust if a "must reflect instantly"
+	 * ranked sort is added later.
 	 *
-	 * @param int $user_id Author ID.
-	 * @return array<int, array{file_type:string,cnt:int,total_size:int}>
+	 * @since 2.6.0
+	 *
+	 * @param string $orderby   'trending' or 'popular'.
+	 * @param string $where_sql Already-built WHERE clause (identifies the filter).
+	 * @param string $join      Extra JOIN fragment, or ''.
+	 * @param array  $params    Bound parameters for $where_sql.
+	 * @param int    $per_page  Page size.
+	 * @param int    $offset    Page offset.
+	 * @return int[] Media IDs for this page, in rank order.
 	 */
-	public function aggregate_usage_by_author( int $user_id ): array {
+	private function ranked_feed_page( string $orderby, string $where_sql, string $join, array $params, int $per_page, int $offset ): array {
 		global $wpdb;
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT file_type, COUNT(*) AS cnt, COALESCE(SUM(file_size), 0) AS total_size
-				FROM {$wpdb->prefix}mvs_media_index
-				WHERE post_author = %d
-				GROUP BY file_type",
-				$user_id
-			),
-			ARRAY_A
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$stats = $wpdb->prefix . 'mvs_media_stats';
+
+		$score_expr = 'trending' === $orderby
+			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, UTC_TIMESTAMP()), 1), 1.5))'
+			: 'COALESCE(s.views, 0)';
+
+		$cache_cap    = 300;
+		$cache_key    = 'ranked_feed_' . $orderby . '_' . md5( $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
+		$cache_args   = $params;
+		$cache_args[] = $cache_cap;
+
+		$ranked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->remember(
+			$cache_key,
+			static function () use ( $wpdb, $index, $stats, $where_sql, $join, $score_expr, $cache_args ) {
+				$sql = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d";
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$rows = (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$cache_args ) );
+				return array_map( 'intval', $rows );
+			},
+			\WPMediaVerse\Services\CacheService::TTL_MEDIUM
 		);
 
-		return is_array( $rows ) ? $rows : array();
+		if ( $offset + $per_page <= $cache_cap ) {
+			return array_slice( $ranked_ids, $offset, $per_page );
+		}
+
+		// Deep page beyond the cached window: direct query for just this page.
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = $offset;
+		$sql           = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$page_params ) ) );
 	}
 
 	/**
@@ -3568,12 +3898,10 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// HAS THE AUTHOR BLOCKED THIS VIEWER?
 		//
-		// build_query_parts() already drops authors the VIEWER blocked, and
-		// that clause is shared, so a profile listing gets it too. What it
-		// cannot cover is this pair. Blocking is one-directional
-		// (docs/website/features/user-blocking.md): here the AUTHOR blocked the
-		// viewer, so get_blocked_ids($viewer) is empty and only this check
-		// fires.
+		// build_query_parts() drops authors on either side of a block with the
+		// viewer, so listings cover both pairs. This check keeps the profile
+		// grid and its count answering from one place for the pair where the
+		// AUTHOR blocked the viewer (the direction can_view() also refuses).
 		//
 		// It lives in this method because it is the ONE place query_by_author()
 		// and count_visible_by_author() both consult, so the grid and the "14
@@ -4090,13 +4418,16 @@ class MediaRepository implements MediaRepositoryInterface {
 		// anyway) AND for moderators, who are meant to see everything. Single
 		// author listings DO reach this clause and depend on it: it is what
 		// empties the profile of an author the viewer themselves blocked, list
-		// and count alike (ProfileBlockListingTest). The reverse pair - the
-		// author blocked the viewer - is handled in
-		// resolve_profile_privacy_mode(), which this cannot see.
+		// and count alike (ProfileBlockListingTest). Since 2.6.0 it also drops
+		// authors who blocked the viewer, so Explore and feeds hide both ways.
 		$mvs_viewer = (int) $args['viewer_id'];
 		if ( $mvs_viewer > 0 ) {
 			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
-				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_ids( $mvs_viewer );
+				// Either direction: the author blocked the viewer, or the viewer
+				// blocked the author. Explore and every feed listing share this
+				// clause, and showed a blocked member the blocker's media
+				// (Basecamp 10354827925).
+				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $mvs_viewer );
 			}
 			$mvs_blocked = self::$blocked_cache[ $mvs_viewer ];
 			if ( $mvs_blocked ) {
@@ -4221,6 +4552,14 @@ class MediaRepository implements MediaRepositoryInterface {
 						&& friends_check_friendship( $author_id, $viewer_id )
 					) {
 						$levels[] = 'friends';
+					}
+					// A follower sees the owner's followers-only items in the
+					// profile listing, as a friend sees friends-only ones.
+					if (
+						$author_id > 0
+						&& \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->is_following( $viewer_id, $author_id )
+					) {
+						$levels[] = 'followers';
 					}
 				}
 
@@ -4360,10 +4699,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		$params = array();
 
 		if ( '' !== $search ) {
-			$where[]  = '(title LIKE %s OR description LIKE %s)';
-			$like     = '%' . $wpdb->esc_like( $search ) . '%';
-			$params[] = $like;
-			$params[] = $like;
+			// Indexed FULLTEXT where it can help, LIKE where it cannot (search_clause()).
+			list( $mvs_search_sql, $mvs_search_params ) = $this->search_clause( $search );
+			$where[]                                    = $mvs_search_sql;
+			$params                                     = array_merge( $params, $mvs_search_params );
 		}
 
 		// An explicit type filter wins — that is how an owner asks this screen for
@@ -4647,6 +4986,49 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Hand a member's media to another member, the way WordPress hands over posts.
+	 *
+	 * Used when an account is deleted with "Attribute all content to" (Basecamp
+	 * 10344411938). Privacy is untouched. A personal drive IS its owner, so a
+	 * `user` drive that named the old author now names the new one; team drives
+	 * keep their drive. DM attachments are left out: they live inside the
+	 * sender's messages, which are erased with the account, so the caller
+	 * deletes them with those messages (owner decision 2026-09-27).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $from Author being removed.
+	 * @param int $to   Author receiving the media.
+	 * @return int[] Media ids that moved.
+	 */
+	public function reassign_author_media( int $from, int $to ): array {
+		global $wpdb;
+
+		if ( $from <= 0 || $to <= 0 || $from === $to ) {
+			return array();
+		}
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT media_id FROM {$table} WHERE post_author = %d AND privacy <> 'dm'", $from ) ) );
+
+		if ( ! $ids ) {
+			return array();
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET drive_id = %d WHERE post_author = %d AND privacy <> 'dm' AND drive_type = 'user' AND drive_id = %d", $to, $from, $from ) );
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET post_author = %d, updated_at = %s WHERE post_author = %d AND privacy <> 'dm'", $to, current_time( 'mysql', true ), $from ) );
+		// phpcs:enable
+
+		foreach ( $ids as $id ) {
+			self::invalidate_row_cache( $id );
+		}
+
+		return $ids;
+	}
+
+	/**
 	 * Every row a member authored that lives on somebody ELSE'S drive.
 	 *
 	 * The rows a departing member must NOT take with them (§15 T1). A document
@@ -4801,10 +5183,96 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function has_fulltext_index(): bool {
 		global $wpdb;
 
+		// Schema does not change within a request; one SHOW INDEX is enough.
+		static $has = null;
+		if ( null !== $has ) {
+			return $has;
+		}
+
 		$table = $wpdb->prefix . 'mvs_media_index';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (bool) $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+		$has = (bool) $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+		return $has;
+	}
+
+	/**
+	 * InnoDB's built-in FULLTEXT stopwords. MySQL never indexes these, so a
+	 * required `+the*` matches no row at all.
+	 *
+	 * @since 2.6.0
+	 */
+	private const FULLTEXT_STOPWORDS = array( 'a', 'about', 'an', 'are', 'as', 'at', 'be', 'by', 'com', 'de', 'en', 'for', 'from', 'how', 'i', 'in', 'is', 'it', 'la', 'of', 'on', 'or', 'that', 'the', 'this', 'to', 'was', 'what', 'when', 'where', 'who', 'will', 'with', 'und', 'www' );
+
+	/**
+	 * Turn a free-text search term into a MySQL BOOLEAN MODE query.
+	 *
+	 * Every usable word becomes a required prefix match (`+word*`), so "sun
+	 * set" narrows the list rather than broadening it. Boolean-mode operator
+	 * characters are stripped first so search text is never read as syntax.
+	 *
+	 * Words FULLTEXT never indexes (shorter than 3 characters, InnoDB's
+	 * default minimum, or a stopword) are left out: required, they matched
+	 * nothing, so an exact title such as "Mountain Peak at Sunrise" or
+	 * "QA Load 17" found no rows (QA, 2.6.0). When a word is left out the
+	 * caller should also require the whole phrase with LIKE, which keeps the
+	 * result exact while FULLTEXT still does the narrowing.
+	 *
+	 * Shared by the admin media list and the REST media search.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $term Raw search term.
+	 * @return array{query:string, dropped:bool} Query ('' when nothing usable
+	 *         remains, so the caller falls back to LIKE) and whether any word
+	 *         was left out.
+	 */
+	public static function fulltext_boolean_query( string $term ): array {
+		$term  = preg_replace( '/[+\-><()~*"@\x00]+/', ' ', $term );
+		$words = preg_split( '/\s+/u', trim( (string) $term ), -1, PREG_SPLIT_NO_EMPTY );
+		$kept  = array();
+
+		foreach ( (array) $words as $word ) {
+			if ( mb_strlen( $word, 'UTF-8' ) < 3 || in_array( mb_strtolower( $word, 'UTF-8' ), self::FULLTEXT_STOPWORDS, true ) ) {
+				continue;
+			}
+			$kept[] = '+' . $word . '*';
+		}
+
+		return array(
+			'query'   => implode( ' ', $kept ),
+			'dropped' => count( $kept ) < count( (array) $words ),
+		);
+	}
+
+	/**
+	 * WHERE fragment + params for a title/description search.
+	 *
+	 * FULLTEXT when the index exists and the term has indexable words; the
+	 * whole phrase is also required with LIKE when a word had to be left out;
+	 * LIKE alone when FULLTEXT cannot help.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $search Raw search term.
+	 * @return array{0:string, 1:array<int,string>} SQL fragment and its params.
+	 */
+	public function search_clause( string $search ): array {
+		global $wpdb;
+
+		$like = '%' . $wpdb->esc_like( $search ) . '%';
+		$ft   = $this->has_fulltext_index() ? self::fulltext_boolean_query( $search ) : array(
+			'query'   => '',
+			'dropped' => true,
+		);
+
+		if ( '' === $ft['query'] ) {
+			return array( '(title LIKE %s OR description LIKE %s)', array( $like, $like ) );
+		}
+		if ( $ft['dropped'] ) {
+			return array( '(MATCH(title, description) AGAINST (%s IN BOOLEAN MODE) AND (title LIKE %s OR description LIKE %s))', array( $ft['query'], $like, $like ) );
+		}
+		return array( 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)', array( $ft['query'] ) );
 	}
 
 	/**
@@ -4847,9 +5315,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
 			return array( '1 = 1', array() );
 		}
+		// Followers-only items are listed for the author's followers, the same
+		// rule PrivacyService::can_view() applies to the single item; without it
+		// every list failed closed (Basecamp 10354828096). Served by the
+		// follower_following unique key.
+		global $wpdb;
 		return array(
-			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d)",
-			array( $viewer_id ),
+			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d"
+				. " OR ( {$prefix}privacy = 'followers' AND {$prefix}post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ) ))",
+			array( $viewer_id, $viewer_id ),
 		);
 	}
 
@@ -4858,11 +5332,19 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * subquery (previously copy-pasted verbatim across 6 listing sites).
 	 *
 	 * Returns rows that are gallery members at a non-zero position — the outer
-	 * query wraps this in `m.media_id NOT IN (...)`. Fully static: no params.
+	 * query wraps this in `<alias>.media_id NOT IN (...)`. Fully static: no
+	 * params, so any caller's alias works unchanged.
+	 *
+	 * Public since 2.6.0 so `MediaController`'s feed query (which builds its
+	 * WHERE outside the repository per the `mvs_feed_query_args` contract, see
+	 * Rule 7's note on `feed_page()`) can reuse this instead of keeping its own
+	 * copy — the two had drifted onto different "which item is the cover"
+	 * definitions (`group_position = '0'` here vs "lowest media_id in the
+	 * group" in the old inline copy).
 	 *
 	 * @return string Subquery SQL (no surrounding parentheses).
 	 */
-	private function gallery_exclude_subquery(): string {
+	public function gallery_exclude_subquery(): string {
 		global $wpdb;
 
 		$meta = $wpdb->prefix . 'mvs_media_meta';
@@ -5423,12 +5905,34 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)",
 				$days_old
 			)
 		);
 
 		return (int) $deleted;
+	}
+
+	/**
+	 * Bytes a member's files take: every item they own that is not trashed.
+	 *
+	 * Backs the fair-use storage limit (StorageLimitService). Read live, so a
+	 * delete or a trash frees the space at once. Uses the post_author index.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id Member.
+	 * @return int
+	 */
+	public function storage_used_by( int $user_id ): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COALESCE( SUM( file_size ), 0 ) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status <> 'trash'",
+				$user_id
+			)
+		);
 	}
 
 	/**

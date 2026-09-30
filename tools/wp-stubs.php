@@ -234,6 +234,7 @@ function wp_slash( $v ) { return $v; }
 function wp_normalize_path( string $p ): string { return $p; }
 function wp_parse_url( string $u, int $c = -1 ) { return \parse_url( $u, $c ); }
 function trailingslashit( string $s ): string { return rtrim( $s, '/\\' ) . '/'; }
+function set_url_scheme( string $url, ?string $scheme = null ): string { return $url; }
 function untrailingslashit( string $s ): string { return rtrim( $s, '/\\' ); }
 function path_join( string $a, string $b ): string { return rtrim( $a, '/\\' ) . '/' . ltrim( $b, '/\\' ); }
 function wp_basename( string $p, string $s = '' ): string { return basename( $p, $s ); }

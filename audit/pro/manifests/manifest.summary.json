@@ -16,12 +16,12 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 109,
+    "rest_endpoints": 98,
     "ajax": 8,
-    "admin_pages": 31,
-    "settings": 70,
-    "tables": 13,
-    "subsystems": 19,
+    "admin_pages": 30,
+    "settings": 69,
+    "tables": 10,
+    "subsystems": 18,
     "feature_toggles": 7,
     "free_services_consumed": 1,
     "free_filters_hooked": 22,
@@ -38,11 +38,11 @@
     "free_actions_hooked_baseline": 25,
     "hooks_fired_baseline": 72,
     "capabilities": 5,
-    "services": 58,
+    "services": 53,
     "post_types": 0,
     "taxonomies": 0,
     "hooks_fired_unique": 81,
-    "migrator_version": 15
+    "migrator_version": 20
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -145,7 +145,8 @@
         "services (58), subsystems, feature_toggles, templates, free_filters_hooked, free_services_consumed, extension_patterns, coding_rules, security, ci_guards, qa, static_analysis - carried forward untouched.",
         "file:line stamps outside the REST and table entries."
       ]
-    }
+    },
+    "delta_2026_09_25_v260_quota_removed": "Counts adjusted for the 2.6.0 quota-system removal: rest_endpoints -11, tables -3, admin_pages -1 (mvs-quotas), settings -1 (mvs_pro_webhook_secret), services -5 (quota.service, quota.controller, 3 quota_adapter.*), subsystems -1 (Quota), migrator_version corrected to 20 (was stale at 15). free_filters_hooked and hooks_fired_baseline/free_actions_hooked_baseline are left as-is here - three hook names were removed from manifest.json's free_filters_hooked list (mvs_quota_save_mapping, mvs_quota_render_mapping_fields, mvs_pro_quota_default_applies_to_unassigned) but this summary's distinct-Free-hook count uses a different methodology (see Pro CLAUDE.md counts table) and should be re-derived with the counting command next full refresh rather than guessed here."
   },
   "confirmed_against_free": {
     "refreshed_at": "2026-05-17T03:45:00Z"

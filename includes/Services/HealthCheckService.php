@@ -69,7 +69,68 @@ class HealthCheckService {
 			'test'  => array( $this, 'test_media_privacy' ),
 		);
 
+		$tests['direct']['wpmediaverse_template_overrides'] = array(
+			'label' => __( 'MediaVerse Template Overrides', 'wpmediaverse' ),
+			'test'  => array( $this, 'test_template_overrides' ),
+		);
+
 		return $tests;
+	}
+
+	/**
+	 * Tell the owner which theme copies of our templates are out of date.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array
+	 */
+	public function test_template_overrides(): array {
+		$outdated = \WPMediaVerse\Core\TemplateVersions::outdated();
+
+		if ( empty( $outdated ) ) {
+			return array(
+				'label'       => __( 'Your theme\'s MediaVerse templates are up to date', 'wpmediaverse' ),
+				'status'      => 'good',
+				'badge'       => array(
+					'label' => 'WPMediaVerse',
+					'color' => 'blue',
+				),
+				'description' => sprintf( '<p>%s</p>', esc_html__( 'Your theme does not override any MediaVerse template, or every copy it has matches the current version.', 'wpmediaverse' ) ),
+				'test'        => 'wpmediaverse_template_overrides',
+			);
+		}
+
+		$items = '';
+		foreach ( $outdated as $row ) {
+			$items .= sprintf(
+				'<li><code>%1$s</code> (%2$s): %3$s</li>',
+				esc_html( $row['file'] ),
+				esc_html( $row['plugin'] ),
+				esc_html(
+					'' === $row['theme_version']
+						/* translators: %s: current template version. */
+						? sprintf( __( 'your copy has no version (made before 2.6.0), current is %s', 'wpmediaverse' ), $row['plugin_version'] )
+						/* translators: 1: theme copy version, 2: current template version. */
+						: sprintf( __( 'your copy is version %1$s, current is %2$s', 'wpmediaverse' ), $row['theme_version'], $row['plugin_version'] )
+				)
+			);
+		}
+
+		return array(
+			'label'       => __( 'Your theme has outdated copies of MediaVerse templates', 'wpmediaverse' ),
+			'status'      => 'recommended',
+			'badge'       => array(
+				'label' => 'WPMediaVerse',
+				'color' => 'orange',
+			),
+			'description' => sprintf(
+				'<p>%1$s</p><ul>%2$s</ul><p>%3$s</p>',
+				esc_html__( 'Your theme replaces these MediaVerse templates with its own copies, and the copies are older than the templates in the plugin. They keep working, but they miss fixes and may not show new features correctly.', 'wpmediaverse' ),
+				$items,
+				esc_html__( 'Ask your theme developer to update them: copy the current file from the plugin\'s templates folder over the theme\'s copy in its wpmediaverse folder, then re-apply the theme\'s changes.', 'wpmediaverse' )
+			),
+			'test'        => 'wpmediaverse_template_overrides',
+		);
 	}
 
 	/**
@@ -85,7 +146,6 @@ class HealthCheckService {
 			'mvs_favorites',
 			'mvs_media_views',
 			'mvs_media_stats',
-			'mvs_access_rules',
 			'mvs_access_grants',
 			'mvs_mentions',
 			'mvs_album_items',
@@ -397,7 +457,7 @@ class HealthCheckService {
 		);
 		$result['description'] = sprintf(
 			'<p>%s</p><p>%s</p>',
-			__( 'Anyone can open a stored file directly by its address, without signing in and without a permission check. Media set to Only me, Members or Friends is affected, and so is anything a member made private after sharing it — the older address keeps working.', 'wpmediaverse' ),
+			__( 'Anyone can open a stored file directly by its address, without logging in and without a permission check. Media set to Only me, Members or Friends is affected, and so is anything a member made private after sharing it — the older address keeps working.', 'wpmediaverse' ),
 			__( 'The deny rules MediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration instead. Nothing on the site loads media by that address, so the rule is safe to add.', 'wpmediaverse' )
 		);
 		$result['actions']     = '<p>' . esc_html__( 'Add this to the site\'s nginx configuration, then reload nginx:', 'wpmediaverse' )

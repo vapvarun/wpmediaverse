@@ -3,7 +3,7 @@ journey: dm-access-setting-persists
 plugin: wpmediaverse
 priority: critical
 roles: [administrator]
-covers: [d986525, dm-access-bug, settings-duplicate-registration]
+covers: [MV-SET-024, MV-SET-021, d986525, dm-access-bug, settings-duplicate-registration]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Auto-login mu-plugin available (?autologin=1)"
@@ -12,6 +12,8 @@ estimated_runtime_minutes: 3
 ---
 
 # DM access setting persists across save (regression sentinel for `d986525`)
+
+> **Coverage cross-ref**: this journey proves `mvs_dm_access` (`MV-SET-021`, "Who can send messages") and `mvs_show_online_status` (`MV-SET-024`, "Online Status Visibility") PERSIST correctly across save/reload — the regression this file exists for. It does not test the resulting SEND/VISIBILITY behavior each value produces; that belongs to `settings/messages-tab.md` (SET-021's primary coverage) and `customer/63-messaging-lifecycle.md` / `customer/65-messaging-status-and-panel.md` (the behavior itself).
 
 **Why this journey exists**: On 2026-05-01 (commit `d986525`) a duplicate `register_setting()` in `SettingsRegistrar.php` silently rewrote the `mvs_dm_access` enum sanitizer with a bool sanitizer, plus duplicate-registered `mvs_show_online_status`. Result: choosing "Nobody" or "Mutual followers only" in the Social tab UI silently saved as "Everyone" — a privacy regression. The regression is invisible in the admin (the Settings-saved notice still appears), only visible by reloading the screen or querying the option directly. This journey saves "Nobody", reloads, and asserts the dropdown still reads "Nobody" AND that `wp_options.option_value` for `mvs_dm_access` equals `nobody`.
 

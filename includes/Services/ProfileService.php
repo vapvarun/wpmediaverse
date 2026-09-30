@@ -47,9 +47,18 @@ class ProfileService {
 	 * @var array<string,string>
 	 */
 	const META_FIELDS = array(
-		'dm_access'     => '_mvs_dm_access',
-		'online_status' => '_mvs_show_online',
+		'dm_access'      => '_mvs_dm_access',
+		'online_status'  => '_mvs_show_online',
+		'email_activity' => \WPMediaVerse\Services\EmailService::MEMBER_META,
 	);
+
+	/**
+	 * "Who can message you", least to most restrictive. The site-wide
+	 * mvs_dm_access is a ceiling: a member may only choose it or stricter.
+	 *
+	 * @var string[]
+	 */
+	const DM_RANK = array( 'everyone', 'followers', 'mutual', 'nobody' );
 
 	/**
 	 * Allowed values per meta field (first entry is the default).
@@ -57,8 +66,9 @@ class ProfileService {
 	 * @var array<string,string[]>
 	 */
 	const META_VALUES = array(
-		'dm_access'     => array( 'everyone', 'followers', 'mutual', 'nobody' ),
-		'online_status' => array( 'everyone', 'nobody' ),
+		'dm_access'      => self::DM_RANK,
+		'online_status'  => array( 'everyone', 'nobody' ),
+		'email_activity' => array( 'on', 'off' ),
 	);
 
 	/**
@@ -103,6 +113,9 @@ class ProfileService {
 			'avatar'            => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'has_custom_avatar' => $this->has_custom_avatar( $user_id ),
 			'profile_url'       => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $user_id ),
+			// Which fields the community plugin owns, and where to edit them,
+			// so an app client can hide the same inputs the web form hides.
+			'community_profile' => self::community_profile( $user_id ),
 		);
 
 		// User-level privacy settings (fall back to the site-wide option, then
@@ -110,11 +123,22 @@ class ProfileService {
 		foreach ( self::META_FIELDS as $field => $meta_key ) {
 			$stored = get_user_meta( $user_id, $meta_key, true );
 			if ( '' === $stored || false === $stored ) {
-				$option_key = 'online_status' === $field ? 'mvs_show_online_status' : 'mvs_dm_access';
-				$stored     = get_option( $option_key, self::META_VALUES[ $field ][0] );
+				$site_defaults = array(
+					'dm_access'     => 'mvs_dm_access',
+					'online_status' => 'mvs_show_online_status',
+				);
+				$stored        = isset( $site_defaults[ $field ] )
+					? get_option( $site_defaults[ $field ], self::META_VALUES[ $field ][0] )
+					: self::META_VALUES[ $field ][0];
 			}
 			$profile[ $field ] = $stored;
 		}
+
+		// What the site actually enforces, and what the member may pick, so the
+		// web form and an app render the same honest choices.
+		$profile['dm_access']               = self::effective_dm_access( $user_id );
+		$profile['dm_access_choices']       = self::dm_access_choices();
+		$profile['email_activity_available'] = \WPMediaVerse\Services\EmailService::any_type_enabled();
 
 		/**
 		 * Filters the profile data returned by the profile service.
@@ -147,6 +171,11 @@ class ProfileService {
 		 */
 		$fields = apply_filters( 'mvs_profile_update_fields', $fields, $user_id );
 
+		// A field the community plugin owns is edited there, never here - two
+		// writers to one name is how the two profiles drifted apart. Dropped
+		// server-side so a direct REST call cannot fight the community plugin.
+		$fields = array_diff_key( $fields, array_flip( self::community_profile( $user_id )['fields'] ) );
+
 		$userdata = array( 'ID' => $user_id );
 
 		foreach ( $fields as $key => $value ) {
@@ -171,6 +200,11 @@ class ProfileService {
 			$value = sanitize_key( (string) $fields[ $field ] );
 			if ( ! in_array( $value, self::META_VALUES[ $field ], true ) ) {
 				continue;
+			}
+			// A member may narrow the site setting, never widen it: a looser
+			// choice is stored as the site's own level, so "Saved" is true.
+			if ( 'dm_access' === $field ) {
+				$value = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling( (string) get_option( 'mvs_dm_access', 'everyone' ), $value, self::DM_RANK );
 			}
 			update_user_meta( $user_id, $meta_key, $value );
 			$meta_updated = true;
@@ -201,6 +235,112 @@ class ProfileService {
 		do_action( 'mvs_profile_updated', $user_id, $fields );
 
 		return true;
+	}
+
+	/**
+	 * The community plugin's profile editor, when one owns the member's name.
+	 *
+	 * One profile editor per field: when a community plugin (BuddyPress with
+	 * Extended Profiles) already edits the member's name, MediaVerse links to
+	 * it instead of offering a second form that writes the same field. Bio,
+	 * avatar and the MediaVerse-only settings stay here.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
+	 */
+	/**
+	 * "Who can message you" values a member may pick on this site: the site
+	 * setting and everything stricter.
+	 *
+	 * @since 2.6.0
+	 * @return string[]
+	 */
+	public static function dm_access_choices(): array {
+		$site  = (string) get_option( 'mvs_dm_access', 'everyone' );
+		$index = array_search( $site, self::DM_RANK, true );
+
+		// Unknown site value fails closed, like resolve_privacy_ceiling().
+		return array_slice( self::DM_RANK, false === $index ? count( self::DM_RANK ) - 1 : (int) $index );
+	}
+
+	/**
+	 * The member's "who can message you" as the site enforces it.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id Member.
+	 * @return string
+	 */
+	public static function effective_dm_access( int $user_id ): string {
+		return \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
+			(string) get_option( 'mvs_dm_access', 'everyone' ),
+			get_user_meta( $user_id, self::META_FIELDS['dm_access'], true ),
+			self::DM_RANK
+		);
+	}
+
+	/**
+	 * Labels for the "who can message you" choices this site allows.
+	 *
+	 * @since 2.6.0
+	 * @return array<string,string> value => label.
+	 */
+	public static function dm_access_options(): array {
+		$labels = array(
+			'everyone'  => __( 'Everyone', 'wpmediaverse' ),
+			'followers' => __( 'People who follow you', 'wpmediaverse' ),
+			'mutual'    => __( 'People you follow back', 'wpmediaverse' ),
+			'nobody'    => __( 'No one', 'wpmediaverse' ),
+		);
+
+		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
+	}
+
+	public static function community_profile( int $user_id ): array {
+		$profile = array(
+			'url'    => '',
+			'label'  => '',
+			'fields' => array(),
+		);
+
+		if ( $user_id && function_exists( 'bp_is_active' ) && bp_is_active( 'xprofile' ) ) {
+			$url = function_exists( 'bp_members_get_user_url' ) && function_exists( 'bp_members_get_path_chunks' )
+				? bp_members_get_user_url( $user_id, bp_members_get_path_chunks( array( bp_get_profile_slug(), 'edit' ) ) )
+				: trailingslashit( (string) bp_core_get_user_domain( $user_id ) ) . 'profile/edit/';
+
+			$profile = array(
+				'url'    => (string) $url,
+				'label'  => __( 'Edit your community profile', 'wpmediaverse' ),
+				'fields' => array( 'first_name', 'last_name', 'display_name' ),
+			);
+		}
+
+		/**
+		 * Filters which profile fields a community plugin owns.
+		 *
+		 * Return `url` + `label` + `fields` to have MediaVerse's profile forms
+		 * hide those fields, link to the community editor, and refuse to save
+		 * them. Return an empty `url` to edit everything in MediaVerse, as
+		 * before 2.6.0.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param array $profile { url, label, fields } - fields are ProfileService::ALLOWED_FIELDS keys.
+		 * @param int   $user_id User ID.
+		 */
+		$profile = (array) apply_filters( 'mvs_community_profile', $profile, $user_id );
+
+		$url = isset( $profile['url'] ) ? (string) $profile['url'] : '';
+
+		return array(
+			'url'    => $url,
+			'label'  => '' === $url ? '' : ( (string) ( $profile['label'] ?? '' ) ?: __( 'Edit your community profile', 'wpmediaverse' ) ),
+			// No link, no deferral: hiding a field with nowhere to edit it would
+			// leave the member unable to change their name at all.
+			'fields' => '' !== $url ? array_values( array_intersect( (array) ( $profile['fields'] ?? array() ), self::ALLOWED_FIELDS ) ) : array(),
+		);
 	}
 
 	/**

@@ -191,11 +191,9 @@ $media_items  = $wpdb->get_results( $wpdb->prepare( $items_sql, ...$all_params )
 // phpcs:enable
 
 // Batch-load index + all meta for the page in 2 queries so each tile renders
-// from the request cache instead of ~14 queries/tile, and prime the access-rules
-// presence cache so can_view() doesn't COUNT once per tile. (1.7.0)
+// from the request cache instead of ~14 queries/tile. (1.7.0)
 $mvs_page_ids = array_map( 'intval', array_column( $media_items, 'media_id' ) );
 \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
-\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 
 // Authors, in one pair of queries instead of a user + usermeta read per tile:
 // every tile prints a display name, an avatar and a profile link. (2.5.1)

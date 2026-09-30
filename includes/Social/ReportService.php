@@ -11,6 +11,8 @@
 
 namespace WPMediaVerse\Social;
 
+use WPMediaVerse\Services\ModerationService;
+
 defined( 'ABSPATH' ) || exit;
 
 
@@ -33,6 +35,43 @@ class ReportService {
 		'misinformation',
 		'other',
 	);
+
+	/**
+	 * Reasons with their labels, in REASONS order, for report pickers.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array<int, array{value:string, label:string}>
+	 */
+	public static function reason_labels(): array {
+		$labels = array(
+			'spam'           => __( 'Spam', 'wpmediaverse' ),
+			'harassment'     => __( 'Harassment', 'wpmediaverse' ),
+			'nudity'         => __( 'Nudity or sexual content', 'wpmediaverse' ),
+			'violence'       => __( 'Violence or dangerous acts', 'wpmediaverse' ),
+			'copyright'      => __( 'Copyright infringement', 'wpmediaverse' ),
+			'misinformation' => __( 'Misinformation', 'wpmediaverse' ),
+			'other'          => __( 'Other', 'wpmediaverse' ),
+		);
+
+		$out = array();
+		foreach ( self::REASONS as $reason ) {
+			$out[] = array(
+				'value' => $reason,
+				'label' => $labels[ $reason ],
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * What a member can report. The REST routes check each target exists and
+	 * that the reporter can see it before calling report().
+	 *
+	 * @since 2.6.0 comment and message.
+	 * @var string[]
+	 */
+	const TARGET_TYPES = array( 'media', 'user', 'comment', 'message' );
 
 	/**
 	 * Whether members may file reports on this site.
@@ -70,7 +109,7 @@ class ReportService {
 	 * @since 1.1.0
 	 *
 	 * @param int    $reporter_id Reporter user ID.
-	 * @param string $target_type 'media' or 'user'.
+	 * @param string $target_type One of TARGET_TYPES.
 	 * @param int    $target_id   Target media/user ID.
 	 * @param string $reason      Report reason.
 	 * @param string $details     Optional details.
@@ -83,7 +122,7 @@ class ReportService {
 			return false;
 		}
 
-		if ( ! in_array( $target_type, array( 'media', 'user' ), true ) ) {
+		if ( ! in_array( $target_type, self::TARGET_TYPES, true ) ) {
 			return false;
 		}
 
@@ -128,8 +167,14 @@ class ReportService {
 			$threshold = (int) get_option( 'mvs_report_auto_hide_threshold', 3 );
 			if ( $threshold > 0 ) {
 				$count = $this->get_report_count( $target_type, $target_id );
-				if ( $count >= $threshold ) {
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $target_id, 'moderation_status', 'flagged' );
+				// Through ModerationService, not a raw column write: that is what
+				// fires mvs_moderation_changed, which clears cached grids, sends the
+				// media.moderated webhook and logs the action. The raw write left a
+				// hidden tile in cached feeds and integrations never heard about it.
+				// Only once: further reports on an already-flagged item change nothing.
+				$moderation = \WPMediaVerse\Core\Plugin::container()->get( 'moderation' );
+				if ( $count >= $threshold && ModerationService::STATUS_FLAGGED !== $moderation->get_status( $target_id ) ) {
+					$moderation->set_status( $target_id, ModerationService::STATUS_FLAGGED );
 				}
 			}
 		}
@@ -148,6 +193,83 @@ class ReportService {
 		do_action( 'mvs_report_submitted', $report_id, $reporter_id, $target_type, $target_id, $reason );
 
 		return $report_id;
+	}
+
+	/**
+	 * Label, link and type name for what a report is about. Shared by Free's
+	 * Reports screen and Pro's User Reports tab, so a new target type is
+	 * described in one place.
+	 *
+	 * @since 2.6.0 comment and message targets.
+	 *
+	 * @param string $type Target type.
+	 * @param int    $id   Target id.
+	 * @return array{0:string, 1:string, 2:string} Label, link ('' for none), type name.
+	 */
+	public function describe_target( string $type, int $id ): array {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( 'media' === $type ) {
+			// A media id is a row in mvs_media_index, NOT a wp_posts ID: the two
+			// sequences collide, and get_permalink()/get_the_title() named and
+			// linked whatever post happened to share the number (a report on a
+			// photo showed a BuddyPress email template). Ask the repository.
+			$exists = $id && $repo->exists( $id );
+			$title  = $exists ? trim( (string) $repo->get( $id, 'title' ) ) : '';
+			if ( '' === $title ) {
+				$title = $exists
+					/* translators: %d: media ID. */
+					? sprintf( __( 'Media #%d', 'wpmediaverse' ), $id )
+					/* translators: %d: media ID. */
+					: sprintf( __( 'Media #%d (deleted)', 'wpmediaverse' ), $id );
+			}
+			return array( $title, $exists ? $repo->get_permalink( $id ) : '', __( 'Media', 'wpmediaverse' ) );
+		}
+
+		if ( 'comment' === $type ) {
+			$comment  = get_comment( $id );
+			$media_id = $comment ? \WPMediaVerse\Social\CommentService::comment_media_id( $id ) : 0;
+			if ( ! $comment ) {
+				/* translators: %d: comment ID. */
+				return array( sprintf( __( 'Comment #%d (deleted)', 'wpmediaverse' ), $id ), '', __( 'Comment', 'wpmediaverse' ) );
+			}
+			return array(
+				/* translators: 1: comment excerpt, 2: author name. */
+				sprintf( __( '"%1$s" by %2$s', 'wpmediaverse' ), wp_trim_words( wp_strip_all_tags( $comment->comment_content ), 20 ), $comment->comment_author ),
+				$media_id && $repo->exists( $media_id ) ? $repo->get_permalink( $media_id ) : '',
+				__( 'Comment', 'wpmediaverse' ),
+			);
+		}
+
+		if ( 'message' === $type ) {
+			// Moderators see the reported message's text here; there is no admin
+			// link into a private conversation.
+			// Reports outlive the Messages switch: with it off there is no
+			// `messaging` service, but the stored message still has to be read.
+			$container = \WPMediaVerse\Core\Plugin::container();
+			$messaging = $container->has( 'messaging' ) ? $container->get( 'messaging' ) : new \WPMediaVerse\Messaging\MessagingService();
+			$preview   = $messaging->get_message_preview( $id );
+			if ( ! $preview ) {
+				/* translators: %d: message ID. */
+				return array( sprintf( __( 'Message #%d (deleted)', 'wpmediaverse' ), $id ), '', __( 'Message', 'wpmediaverse' ) );
+			}
+			return array(
+				/* translators: 1: message excerpt, 2: sender name. */
+				sprintf( __( '"%1$s" from %2$s', 'wpmediaverse' ), $preview['content'], $preview['sender'] ),
+				'',
+				__( 'Message', 'wpmediaverse' ),
+			);
+		}
+
+		$user = get_userdata( $id );
+		return array(
+			$user
+				? $user->display_name
+				/* translators: %d: user ID. */
+				: sprintf( __( 'Member #%d (deleted)', 'wpmediaverse' ), $id ),
+			$user ? (string) get_author_posts_url( $id ) : '',
+			__( 'Member', 'wpmediaverse' ),
+		);
 	}
 
 	/**
@@ -264,6 +386,10 @@ class ReportService {
 	public function update_status( int $report_id, string $status ): bool {
 		global $wpdb;
 
+		$before = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( "SELECT reporter_id, status FROM {$wpdb->prefix}mvs_reports WHERE id = %d", $report_id )
+		);
+
 		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_reports',
 			array( 'status' => $status ),
@@ -272,7 +398,22 @@ class ReportService {
 			array( '%d' )
 		);
 
-		return false !== $updated && $updated > 0;
+		$changed = false !== $updated && $updated > 0;
+
+		if ( $changed && $before && 'pending' === (string) $before->status && in_array( $status, array( 'resolved', 'dismissed' ), true ) ) {
+			/**
+			 * Fires when a pending report is resolved or dismissed.
+			 *
+			 * @since 2.6.0
+			 *
+			 * @param int    $report_id   Report id.
+			 * @param int    $reporter_id Who reported it.
+			 * @param string $status      resolved | dismissed.
+			 */
+			do_action( 'mvs_report_resolved', $report_id, (int) $before->reporter_id, $status );
+		}
+
+		return $changed;
 	}
 
 	/**
@@ -293,6 +434,10 @@ class ReportService {
 			return true;
 		}
 
+		unset( $this->block_relations[ $blocker_id ], $this->block_relations[ $blocked_id ] );
+		// The bell's unread badge hides rows across a block; drop both cached counts.
+		wp_cache_delete( 'mvs_notif_count_' . $blocker_id, 'mvs' );
+		wp_cache_delete( 'mvs_notif_count_' . $blocked_id, 'mvs' );
 		global $wpdb;
 
 		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -330,6 +475,10 @@ class ReportService {
 	 * @return bool
 	 */
 	public function unblock_user( int $blocker_id, int $blocked_id ): bool {
+		unset( $this->block_relations[ $blocker_id ], $this->block_relations[ $blocked_id ] );
+		// The bell's unread badge hides rows across a block; drop both cached counts.
+		wp_cache_delete( 'mvs_notif_count_' . $blocker_id, 'mvs' );
+		wp_cache_delete( 'mvs_notif_count_' . $blocked_id, 'mvs' );
 		global $wpdb;
 
 		return (bool) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -352,16 +501,53 @@ class ReportService {
 	 * @return bool
 	 */
 	public function is_blocked( int $blocker_id, int $blocked_id ): bool {
-		global $wpdb;
+		// Answered from one member's block relations, loaded once per request.
+		// Privacy checks ask "did this author block the viewer?" once per tile:
+		// the viewer is the constant side, so their relations (both directions,
+		// one query) answer the whole page. It was one query per tile - 775 on
+		// an 800-item album page (2.6.0, big-site pass).
+		if ( isset( $this->block_relations[ $blocker_id ] ) ) {
+			return isset( $this->block_relations[ $blocker_id ]['blocks'][ $blocked_id ] );
+		}
 
-		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d AND blocked_id = %d",
-				$blocker_id,
-				$blocked_id
-			)
-		);
+		return isset( $this->relations_of( $blocked_id )['blocked_by'][ $blocker_id ] );
 	}
+
+	/**
+	 * A member's block relations: whom they block, and who blocks them.
+	 *
+	 * @param int $user_id Member.
+	 * @return array{blocks: array<int,bool>, blocked_by: array<int,bool>}
+	 */
+	private function relations_of( int $user_id ): array {
+		if ( ! isset( $this->block_relations[ $user_id ] ) ) {
+			global $wpdb;
+			$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare( "SELECT blocker_id, blocked_id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d OR blocked_id = %d", $user_id, $user_id )
+			);
+			$rel = array(
+				'blocks'     => array(),
+				'blocked_by' => array(),
+			);
+			foreach ( $rows as $row ) {
+				if ( (int) $row->blocker_id === $user_id ) {
+					$rel['blocks'][ (int) $row->blocked_id ] = true;
+				} else {
+					$rel['blocked_by'][ (int) $row->blocker_id ] = true;
+				}
+			}
+			$this->block_relations[ $user_id ] = $rel;
+		}
+
+		return $this->block_relations[ $user_id ];
+	}
+
+	/**
+	 * Per-request block relations, member id => relations_of() result.
+	 *
+	 * @var array<int, array{blocks: array<int,bool>, blocked_by: array<int,bool>}>
+	 */
+	private $block_relations = array();
 
 	/**
 	 * Check if either user has blocked the other (bidirectional).
@@ -373,17 +559,7 @@ class ReportService {
 	 * @return bool True if either has blocked the other.
 	 */
 	public function is_blocked_either_way( int $user_a, int $user_b ): bool {
-		global $wpdb;
-
-		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->prefix}mvs_blocks WHERE (blocker_id = %d AND blocked_id = %d) OR (blocker_id = %d AND blocked_id = %d) LIMIT 1",
-				$user_a,
-				$user_b,
-				$user_b,
-				$user_a
-			)
-		);
+		return $this->is_blocked( $user_a, $user_b ) || $this->is_blocked( $user_b, $user_a );
 	}
 
 	/**
@@ -400,6 +576,33 @@ class ReportService {
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT blocked_id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d",
+				$user_id
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * Everyone on the other side of a block with this user, in either direction.
+	 *
+	 * A block hides both members from each other. Lists that only excluded the
+	 * people a viewer blocked still showed the viewer the media of whoever
+	 * blocked THEM (Basecamp 10354827925). Both columns are indexed.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return int[]
+	 */
+	public function get_blocked_either_way_ids( int $user_id ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_blocks';
+		$ids   = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT blocked_id FROM {$table} WHERE blocker_id = %d UNION SELECT blocker_id FROM {$table} WHERE blocked_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
 				$user_id
 			)
 		);

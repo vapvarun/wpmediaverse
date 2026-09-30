@@ -203,76 +203,6 @@
         "file": "includes/Messaging/MessagingController.php:354"
       },
       {
-        "route": "/mvs/v1/access/options",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AccessController::get_options",
-        "permission": "authenticated_check",
-        "purpose": "Get access-control option choices",
-        "file": "includes/REST/Controller/AccessController.php:215"
-      },
-      {
-        "route": "/mvs/v1/me/grants",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AccessController::get_my_grants",
-        "permission": "authenticated_check",
-        "purpose": "List access grants for current user",
-        "file": "includes/REST/Controller/AccessController.php:180"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant",
-        "methods": [
-          "POST"
-        ],
-        "handler": "AccessController::grant_access",
-        "permission": "manage_permissions_check",
-        "purpose": "Grant a user access to media",
-        "file": "includes/REST/Controller/AccessController.php:125"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "AccessController::revoke_access",
-        "permission": "manage_permissions_check",
-        "purpose": "Revoke a user's access to media",
-        "file": "includes/REST/Controller/AccessController.php:157"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
-        "methods": [
-          "GET"
-        ],
-        "handler": "AccessController::get_rules",
-        "permission": "manage_permissions_check",
-        "purpose": "List access rules for a media item",
-        "file": "includes/REST/Controller/AccessController.php:53"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
-        "methods": [
-          "POST"
-        ],
-        "handler": "AccessController::set_rules",
-        "permission": "manage_permissions_check",
-        "purpose": "Set/create access rules for a media item",
-        "file": "includes/REST/Controller/AccessController.php:53"
-      },
-      {
-        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules/(?P<rule_id>[\\d]+)",
-        "methods": [
-          "DELETE"
-        ],
-        "handler": "AccessController::delete_rule",
-        "permission": "manage_permissions_check",
-        "purpose": "Delete an access rule",
-        "file": "includes/REST/Controller/AccessController.php:102"
-      },
-      {
         "route": "/mvs/v1/me",
         "methods": [
           "DELETE"
@@ -855,7 +785,7 @@
           "GET"
         ],
         "handler": "ModerationController::get_ai_usage",
-        "permission": "moderate_permissions_check",
+        "permission": "settings_permissions_check",
         "purpose": "Get AI moderation usage stats",
         "file": "includes/REST/Controller/ModerationController.php:152"
       },
@@ -1230,6 +1160,39 @@
         "permission": "closure (logged-in check)",
         "purpose": "Get suggested users to follow",
         "file": "includes/REST/Controller/UserController.php:156"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)/items",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CollectionController::get_collection_items",
+        "permission": "CollectionController::get_item_permissions_check",
+        "purpose": "List the media items in a collection (paginated, viewer-gated)",
+        "file": "includes/REST/Controller/CollectionController.php:134"
+      },
+      {
+        "route": "/mvs/v1/me/storage",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_my_storage",
+        "permission": "logged_in_check",
+        "purpose": "The member's storage used and limit in bytes (0 = no limit)",
+        "file": "includes/REST/Controller/UserController.php"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/storage",
+        "methods": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "UserController::get_user_storage / update_user_storage",
+        "permission": "manage_users_check",
+        "purpose": "Read or set a member's own storage limit in MB (admins)",
+        "file": "includes/REST/Controller/UserController.php"
       }
     ]
   },

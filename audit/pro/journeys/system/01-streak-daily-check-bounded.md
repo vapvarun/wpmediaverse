@@ -3,7 +3,10 @@ journey: streak-daily-check-bounded
 plugin: wpmediaverse-pro
 priority: high
 roles: [system]
-covers: [streaks, daily_check, bounded-cron, big-site-readiness, 9966423880]
+covers: [MV-BST-006, streaks, daily_check, bounded-cron, big-site-readiness, 9966423880]
+# Secondary note: this journey covers only the cron half of MV-BST-006 (the
+# daily_check() proactive gap-bridging path); the upload-time retroactive half
+# is covered by customer/02-streak-freeze-proportional-cost.md.
 prerequisites:
   - "Both plugins active; mvs_streaks_enabled = 1; mvs_streak_freezes_enabled = 1"
   - "WP-CLI available for seeding + invoking the cron handler"

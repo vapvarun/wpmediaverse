@@ -44,7 +44,7 @@ Both require a logged-in user. See the [Pro REST API Reference](../developer-gui
 
 ## Leaderboard
 
-`GET /mvs-pro/v1/leaderboard` powers the app's gamification screen. It's backed by the same `LeaderboardService` as the `pro-leaderboard` block, so the ranking the app shows is identical to the one on your site - ranked by reactions, upload count, or gamification XP, over all time, the last 30 days, or the last 7 days. The response includes the ranked page plus the current viewer's own rank in one round trip, so the app doesn't need a second request to show "your rank."
+`GET /mvs-pro/v1/leaderboard` powers the app's gamification screen. It's backed by the same `LeaderboardService` as the `pro-leaderboard` block, so the ranking the app shows is identical to the one on your site - ranked by reactions, upload count, or gamification points, over all time, the last 30 days, or the last 7 days. The response includes the ranked page plus the current viewer's own rank in one round trip, so the app doesn't need a second request to show "your rank."
 
 ## Requirements
 

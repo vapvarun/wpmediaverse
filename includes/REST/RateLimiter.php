@@ -29,7 +29,20 @@ class RateLimiter {
 	const DEFAULT_WINDOW = 60;
 
 	/**
+	 * wp_cache group for rate-limit counters.
+	 *
+	 * @since 2.6.0
+	 */
+	const CACHE_GROUP = 'mvs_rate_limit';
+
+	/**
 	 * Check if the current request is rate limited.
+	 *
+	 * Every write endpoint calls this, keyed per user/IP — the highest
+	 * cardinality read/write path in the plugin. On a site with an external
+	 * object cache (Redis/Memcached) this reads/writes `wp_cache_*` only, so
+	 * a busy site never touches `wp_options`. Sites without one keep the
+	 * original transient behaviour unchanged.
 	 *
 	 * @param string $action  Action identifier (e.g. 'media_create').
 	 * @param int    $limit   Max requests per window.
@@ -37,9 +50,10 @@ class RateLimiter {
 	 * @return true|WP_Error True if allowed, WP_Error if rate limited.
 	 */
 	public static function check( string $action, int $limit = self::DEFAULT_LIMIT, int $window = self::DEFAULT_WINDOW ) {
-		$key = self::get_key( $action );
+		$key        = self::get_key( $action );
+		$use_object_cache = wp_using_ext_object_cache();
 
-		$data = get_transient( $key );
+		$data = $use_object_cache ? wp_cache_get( $key, self::CACHE_GROUP ) : get_transient( $key );
 
 		if ( false === $data ) {
 			$data = array(
@@ -70,7 +84,11 @@ class RateLimiter {
 			);
 		}
 
-		set_transient( $key, $data, $window );
+		if ( $use_object_cache ) {
+			wp_cache_set( $key, $data, self::CACHE_GROUP, $window );
+		} else {
+			set_transient( $key, $data, $window );
+		}
 
 		return true;
 	}

@@ -9,6 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -27,7 +28,8 @@ $mvs_page_ids = array_filter(
 		)
 	)
 );
-$mvs_show_fab = $mvs_is_logged_in && (
+// The + button uploads, so only members who may upload get it.
+$mvs_show_fab = $mvs_is_logged_in && \WPMediaVerse\Core\Abilities::can_upload() && (
 	( ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids ) )
 	|| ! empty( $GLOBALS['mvs_current_media'] )
 	|| ! empty( $GLOBALS['mvs_is_media_archive'] )
@@ -53,36 +55,55 @@ wp_interactivity_state(
 			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 		),
 		'canModerateComments' => current_user_can( 'moderate_mvs_media' ),
+		// Report controls (media, comments, messages) all go through the
+		// shared promptReport() action, which reads these. The reasons come
+		// from ReportService, the list the REST routes validate against.
+		'reportsEnabled'      => \WPMediaVerse\Social\ReportService::reports_enabled(),
+		'reportReasons'       => \WPMediaVerse\Social\ReportService::reason_labels(),
 		'i18n'                => array(
-			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
-			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
-			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
-			'createAlbum'      => __( 'Create Album', 'wpmediaverse' ),
-			'uploadVideo'      => __( 'Upload Video', 'wpmediaverse' ),
-			'uploadAudio'      => __( 'Upload Audio', 'wpmediaverse' ),
-			'upload'           => __( 'Upload', 'wpmediaverse' ),
-			'savedRedirecting' => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
-			'settingsSaved'    => __( 'Media settings saved.', 'wpmediaverse' ),
-			'selectFiles'      => __( 'Please select files to upload.', 'wpmediaverse' ),
+			'reportPrompt'       => __( 'Why are you reporting this?', 'wpmediaverse' ),
+			'loginToReact'       => __( 'Please log in to react.', 'wpmediaverse' ),
+			'reportSubmitted'    => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
+			'reportAlready'      => __( 'Already reported or error occurred.', 'wpmediaverse' ),
+			'reportAction'       => __( 'Report', 'wpmediaverse' ),
+			'save'               => __( 'Save', 'wpmediaverse' ),
+			'saved'              => __( 'Saved', 'wpmediaverse' ),
+			'favorite'           => __( 'Favorite', 'wpmediaverse' ),
+			'favorited'          => __( 'Favorited', 'wpmediaverse' ),
+			'titleRequired'      => __( 'Title cannot be empty.', 'wpmediaverse' ),
+			'uploadMedia'        => __( 'Upload media', 'wpmediaverse' ),
+			'createGallery'      => __( 'Create Gallery Post', 'wpmediaverse' ),
+			'createAlbum'        => __( 'Create Album', 'wpmediaverse' ),
+			'uploadVideo'        => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadAudio'        => __( 'Upload Audio', 'wpmediaverse' ),
+			'upload'             => __( 'Upload', 'wpmediaverse' ),
+			'savedRedirecting'   => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+			'settingsSaved'      => __( 'Media settings saved.', 'wpmediaverse' ),
+			'selectFiles'        => __( 'Please select files to upload.', 'wpmediaverse' ),
 			/* translators: %d: number of files uploaded. */
-			'filesUploaded'    => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			'filesUploaded'      => __( '%d file(s) uploaded!', 'wpmediaverse' ),
 			/* translators: 1: uploaded count, 2: failed count. */
-			'uploadedFailed'   => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
-			'uploadFailedRetry' => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+			'uploadedFailed'     => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
+			'uploadFailedRetry'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
 			/* translators: 1: number of duplicate files, 2: existing media ID. */
 			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
-			'albumCreated'     => __( 'Album "%s" created!', 'wpmediaverse' ),
-			'failedLoad'       => __( 'Failed to load media.', 'wpmediaverse' ),
-			'failedComment'    => __( 'Failed to post comment.', 'wpmediaverse' ),
-			'linkCopied'       => __( 'Link copied!', 'wpmediaverse' ),
-			'copyFailed'       => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
-			'notDownloadable'  => __( 'This media is not available for download.', 'wpmediaverse' ),
+			'albumCreated'       => __( 'Album "%s" created!', 'wpmediaverse' ),
+			'failedLoad'         => __( 'Failed to load media.', 'wpmediaverse' ),
+			'failedComment'      => __( 'Failed to post comment.', 'wpmediaverse' ),
+			'linkCopied'         => __( 'Link copied!', 'wpmediaverse' ),
+			'copyFailed'         => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+			'notDownloadable'    => __( 'This media is not available for download.', 'wpmediaverse' ),
 			// Read by the store to name a stored level the picker does not
 			// offer. privacyChoices is what privacy_choices() offers, so the
 			// vocabulary is never restated client-side. Basecamp 10290748981.
-			'privacyLabels'    => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
-			'privacyChoices'   => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
+			'privacyLabels'      => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			// A photo in an album shows with the album's privacy (2.6.0).
+			/* translators: 1: album name, 2: privacy level. */
+			'followsAlbum'       => __( 'Follows album "%1$s" (%2$s)', 'wpmediaverse' ),
+			/* translators: 1: album name, 2: privacy level. */
+			'editFollowsAlbum'   => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
+			'privacyChoices'     => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 		),
 	)
 );
@@ -119,43 +140,12 @@ wp_interactivity_state(
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>
 		<?php
-		// When the member also has a Documents drive, the FAB opens a small menu
-		// (Media / Documents) so the drive is reachable from the global upload
-		// affordance; otherwise it keeps its single-action behaviour and opens the
-		// upload modal directly (Basecamp 10206301990). Documents availability + the
-		// drive URL come from Free's own seams — no Pro classes.
-		$mvs_fab_docs_url = '';
-		if ( $mvs_is_logged_in
-		&& \WPMediaVerse\Core\Plugin::documents_enabled()
-		&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
-		) {
-			$mvs_fab_docs_url = \WPMediaVerse\Core\DashboardSections::url( 'documents' );
-		}
+		// One tap uploads. Documents keeps its own home in the dashboard nav, so
+		// the FAB no longer opens a Media / Documents menu (it did from Basecamp
+		// 10206301990 until the 2.6.0 member-experience pass).
 		?>
 	<div class="mvs-fab-container"
-		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'
-		<?php
-		if ( '' !== $mvs_fab_docs_url ) :
-			?>
-			data-wp-on-document--click="actions.closeFabMenuOnOutside"<?php endif; ?>>
-		<?php if ( '' !== $mvs_fab_docs_url ) : ?>
-		<div class="mvs-fab-menu" hidden data-wp-bind--hidden="!state.fabMenuOpen" role="menu" aria-label="<?php esc_attr_e( 'Add', 'wpmediaverse' ); ?>">
-			<button type="button" class="mvs-fab-menu-item" role="menuitem" data-wp-on--click="actions.fabUploadMedia">
-				<?php esc_html_e( 'Upload media', 'wpmediaverse' ); ?>
-			</button>
-			<a class="mvs-fab-menu-item" role="menuitem" href="<?php echo esc_url( $mvs_fab_docs_url ); ?>">
-				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
-			</a>
-		</div>
-		<button class="mvs-fab" data-wp-on--click="actions.toggleFabMenu"
-			aria-haspopup="true" data-wp-bind--aria-expanded="state.fabMenuOpen"
-			aria-label="<?php esc_attr_e( 'Add media or open Documents', 'wpmediaverse' ); ?>">
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
-				<line x1="12" y1="5" x2="12" y2="19"></line>
-				<line x1="5" y1="12" x2="19" y2="12"></line>
-			</svg>
-		</button>
-		<?php else : ?>
+		data-wp-context='<?php echo esc_attr( (string) wp_json_encode( array( 'uploadMode' => 'photo' ) ) ); ?>'>
 		<button class="mvs-fab" data-wp-on--click="actions.openUploadModal"
 			aria-label="<?php esc_attr_e( 'Upload media', 'wpmediaverse' ); ?>">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true">
@@ -163,7 +153,6 @@ wp_interactivity_state(
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
 		</button>
-		<?php endif; ?>
 	</div>
 
 	<!-- Upload Modal Overlay. Dialog semantics, focus in/out (callbacks.uploadModalFocus), Tab trap and Escape (actions.handleLightboxKeydown). Basecamp 10320784059. -->
@@ -257,7 +246,8 @@ wp_interactivity_state(
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
 					<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
 						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
-						<div class="mvs-modal-field-row">
+						<p class="mvs-modal-note" hidden data-wp-bind--hidden="!state.uploadPrivacyFollowsAlbum" data-wp-text="state.uploadPrivacyFollowsText"></p>
+						<div class="mvs-modal-field-row" data-wp-bind--hidden="state.uploadPrivacyFollowsAlbum">
 							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 								<?php
 								// A level the picker does not offer (loggedin, space, group,
@@ -367,6 +357,8 @@ wp_interactivity_state(
 						<div class="mvs-modal-field mvs-modal-field--inline">
 							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
 							<select id="mvs-edit-privacy"
+								aria-describedby="mvs-edit-privacy-album"
+								data-wp-bind--disabled="state.editPrivacyFollowsAlbum"
 								data-wp-on--change="actions.updateEditPrivacy"
 								data-wp-bind--value="state.editModalPrivacy">
 								<?php
@@ -380,6 +372,7 @@ wp_interactivity_state(
 								<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModalPrivacy" data-wp-text="state.editModalPrivacyLabel"></option>
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
+							<p id="mvs-edit-privacy-album" class="mvs-modal-note" hidden data-wp-bind--hidden="!state.editPrivacyFollowsAlbum" data-wp-text="state.editPrivacyFollowsText"></p>
 						</div>
 						<?php endif; ?>
 						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
@@ -440,10 +433,12 @@ wp_interactivity_state(
 		?>
 		<div class="mvs-lightbox" role="dialog" aria-modal="true"
 			aria-label="<?php esc_attr_e( 'Media viewer', 'wpmediaverse' ); ?>"
-			data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreen">
+			data-wp-on--click="actions.handleModalClick" data-wp-class--mvs-lightbox--fullscreen="state.lightboxFullscreenActive">
 			<!-- Fullscreen toggle — hides the comments sidebar and expands the media. -->
+			<?php // Not for audio: there is nothing to enlarge. ?>
 			<button class="mvs-lightbox-fullscreen" data-wp-on--click="actions.toggleLightboxFullscreen"
-				data-wp-bind--aria-pressed="state.lightboxFullscreen"
+				data-wp-bind--hidden="state.lightboxHideFullscreen"
+				data-wp-bind--aria-pressed="state.lightboxFullscreenActive"
 				aria-label="<?php esc_attr_e( 'Toggle fullscreen', 'wpmediaverse' ); ?>">
 				<svg class="mvs-lightbox-fs-expand" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -466,9 +461,9 @@ wp_interactivity_state(
 
 			<!-- Image with gallery navigation -->
 			<div class="mvs-lightbox-media" data-wp-bind--hidden="state.lightboxLoading">
-				<!-- Prev arrow (gallery groups only) -->
+				<!-- Prev / next: whenever there is a neighbour, in a gallery group or in the grid it was opened from. -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--prev"
-					data-wp-bind--hidden="!state.lightboxIsGroup"
+					data-wp-bind--hidden="!state.lightboxHasPrev"
 					data-wp-on--click="actions.lightboxPrev"
 					aria-label="<?php esc_attr_e( 'Previous', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -481,6 +476,8 @@ wp_interactivity_state(
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
 				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
+				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
+				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 				<?php // A document has no displayable image, so instead of synthesising a broken <img> from its file URL the lightbox shows a doc card (glyph + title + type); the chrome below (Open / Download) still reaches the file. (Basecamp 10248528902) ?>
 				<?php // Pro's viewer when it can render the type, the download card otherwise. Basecamp 10268223516. ?>
@@ -492,9 +489,8 @@ wp_interactivity_state(
 					<span class="mvs-doc-card__meta" data-wp-text="state.lightboxDocLabel"></span>
 				</div>
 
-				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
-					data-wp-bind--hidden="!state.lightboxIsGroup"
+					data-wp-bind--hidden="!state.lightboxHasNext"
 					data-wp-on--click="actions.lightboxNext"
 					aria-label="<?php esc_attr_e( 'Next', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -527,6 +523,8 @@ wp_interactivity_state(
 					</a>
 				</div>
 
+				<h2 class="mvs-lightbox-title" data-wp-text="state.lightboxTitle" data-wp-bind--hidden="!state.lightboxTitle" hidden></h2>
+
 				<!-- Stats -->
 				<div class="mvs-lightbox-stats">
 					<span data-wp-text="state.lightboxViewsText"></span>
@@ -534,49 +532,63 @@ wp_interactivity_state(
 
 				<!-- Reactions -->
 				<div class="mvs-lightbox-reactions" role="group" aria-label="<?php esc_attr_e( 'Reactions', 'wpmediaverse' ); ?>">
-					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-reaction" data-reaction="like" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLike" data-wp-bind--aria-pressed="state.lightboxUserReactionIsLike" aria-label="<?php esc_attr_e( 'Like', 'wpmediaverse' ); ?>">
-							<span aria-hidden="true">&#x1F44D;</span> <span data-wp-text="state.lightboxReactionCount_like"></span>
+					<?php
+					// One button per reaction type, for members and visitors alike: a
+					// visitor's click asks them to log in (lightboxToggleReaction)
+					// instead of the row silently doing nothing. Icons are the
+					// vendored Fluent emoji (TemplateHelpers::emoji_url()).
+					$mvs_reaction_labels = array(
+						'like'  => __( 'Like', 'wpmediaverse' ),
+						'love'  => __( 'Love', 'wpmediaverse' ),
+						'haha'  => __( 'Haha', 'wpmediaverse' ),
+						'wow'   => __( 'Wow', 'wpmediaverse' ),
+						'sad'   => __( 'Sad', 'wpmediaverse' ),
+						'angry' => __( 'Angry', 'wpmediaverse' ),
+					);
+					foreach ( \WPMediaVerse\Social\ReactionService::TYPES as $mvs_reaction ) :
+						$mvs_state_key = ucfirst( $mvs_reaction );
+						?>
+						<button class="mvs-lightbox-reaction" type="button" data-reaction="<?php echo esc_attr( $mvs_reaction ); ?>" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIs<?php echo esc_attr( $mvs_state_key ); ?>" data-wp-bind--aria-pressed="state.lightboxUserReactionIs<?php echo esc_attr( $mvs_state_key ); ?>" aria-label="<?php echo esc_attr( $mvs_reaction_labels[ $mvs_reaction ] ?? $mvs_state_key ); ?>">
+							<img src="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::emoji_url( $mvs_reaction ) ); ?>" alt="" width="20" height="20" aria-hidden="true" /> <span data-wp-text="state.lightboxReactionCount_<?php echo esc_attr( $mvs_reaction ); ?>"></span>
 						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="love" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLove" data-wp-bind--aria-pressed="state.lightboxUserReactionIsLove" aria-label="<?php esc_attr_e( 'Love', 'wpmediaverse' ); ?>">
-							<span aria-hidden="true">&#x2764;&#xFE0F;</span> <span data-wp-text="state.lightboxReactionCount_love"></span>
-						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="haha" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsHaha" data-wp-bind--aria-pressed="state.lightboxUserReactionIsHaha" aria-label="<?php esc_attr_e( 'Haha', 'wpmediaverse' ); ?>">
-							<span aria-hidden="true">&#x1F602;</span> <span data-wp-text="state.lightboxReactionCount_haha"></span>
-						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="wow" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsWow" data-wp-bind--aria-pressed="state.lightboxUserReactionIsWow" aria-label="<?php esc_attr_e( 'Wow', 'wpmediaverse' ); ?>">
-							<span aria-hidden="true">&#x1F62E;</span> <span data-wp-text="state.lightboxReactionCount_wow"></span>
-						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="sad" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsSad" data-wp-bind--aria-pressed="state.lightboxUserReactionIsSad" aria-label="<?php esc_attr_e( 'Sad', 'wpmediaverse' ); ?>">
-							<span aria-hidden="true">&#x1F622;</span> <span data-wp-text="state.lightboxReactionCount_sad"></span>
-						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="angry" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsAngry" data-wp-bind--aria-pressed="state.lightboxUserReactionIsAngry" aria-label="<?php esc_attr_e( 'Angry', 'wpmediaverse' ); ?>">
-							<span aria-hidden="true">&#x1F621;</span> <span data-wp-text="state.lightboxReactionCount_angry"></span>
-						</button>
-					<?php else : ?>
-						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x1F44D;</span> <span data-wp-text="state.lightboxReactionCount_like"></span></span>
-						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x2764;&#xFE0F;</span> <span data-wp-text="state.lightboxReactionCount_love"></span></span>
-						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x1F602;</span> <span data-wp-text="state.lightboxReactionCount_haha"></span></span>
-						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x1F62E;</span> <span data-wp-text="state.lightboxReactionCount_wow"></span></span>
-						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x1F622;</span> <span data-wp-text="state.lightboxReactionCount_sad"></span></span>
-						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x1F621;</span> <span data-wp-text="state.lightboxReactionCount_angry"></span></span>
-					<?php endif; ?>
+					<?php endforeach; ?>
 				</div>
 
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
-					<?php if ( $mvs_is_logged_in ) : ?>
-						<?php // One icon per feature on every surface: star = Favorite, heart = Like, bookmark = Save (Basecamp 10277695437). ?>
-						<button class="mvs-lightbox-action mvs-lb-fav" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
+					<?php
+					/*
+					 * One way to keep an item: Save (2.6.0). Reactions say how you feel;
+					 * Save keeps it. Everything a member saves in Free, and everything
+					 * they ever favorited, is in their private "Favorites" collection.
+					 * With Pro, Save opens the collection picker, whose first row is
+					 * that Favorites collection.
+					 *
+					 * Filters whether the lightbox and the single media page still show
+					 * the separate Favorite (star) button they had before 2.6.0.
+					 *
+					 * @since 2.6.0
+					 *
+					 * @param bool $show Default false.
+					 */
+					$mvs_legacy_fav     = (bool) apply_filters( 'mvs_show_favorite_button', false );
+					$mvs_collections_on = (bool) apply_filters( 'mvs_collections_enabled', false );
+					?>
+					<?php if ( $mvs_is_logged_in && $mvs_legacy_fav ) : ?>
+						<button class="mvs-lightbox-action mvs-lb-fav" data-mvs-fav-toggle data-mvs-label-on="<?php esc_attr_e( 'Favorited', 'wpmediaverse' ); ?>" data-mvs-label-off="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
 							<i data-lucide="star" aria-hidden="true"></i>
 							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
-					<?php // "Save to collection" is separate from the heart; shown only when a collections backend (Pro) enables it. ?>
-					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_collections_enabled', false ) ) : ?>
+					<?php if ( $mvs_is_logged_in && $mvs_collections_on ) : ?>
 						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
 							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+						</button>
+					<?php elseif ( $mvs_is_logged_in && ! $mvs_legacy_fav ) : ?>
+						<button class="mvs-lightbox-action mvs-lb-save" type="button" data-mvs-fav-toggle data-mvs-label-on="<?php esc_attr_e( 'Saved', 'wpmediaverse' ); ?>" data-mvs-label-off="<?php esc_attr_e( 'Save', 'wpmediaverse' ); ?>" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" data-wp-bind--aria-pressed="state.lightboxIsFavorited" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save to your Favorites', 'wpmediaverse' ); ?>">
+							<i data-lucide="bookmark" aria-hidden="true"></i>
+							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxSaveLabel"></span>
 						</button>
 					<?php endif; ?>
 					<?php
@@ -701,6 +713,13 @@ wp_interactivity_state(
 											title="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>">
 											<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 										</button>
+										<button class="mvs-lightbox-comment-action" type="button"
+											data-wp-bind--hidden="state.hideLightboxReportComment"
+											data-wp-on--click="actions.reportLightboxComment"
+											aria-label="<?php esc_attr_e( 'Report comment', 'wpmediaverse' ); ?>"
+											title="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>">
+											<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+										</button>
 									</div>
 								</div>
 							</li>
@@ -736,18 +755,18 @@ wp_interactivity_state(
 	</div>
 
 	<!-- Confirm dialog — shared by every mvs/shared-ui showConfirm() caller
-	     (lightbox comment delete/edit, etc.). It lives here, in the global
-	     wp_footer frame, so it is present wherever the lightbox is. Before this
-	     it was copy-pasted into media-single/album/dashboard only, so the same
-	     confirm-driven action was inert on every other surface (Explore, profile
-	     grids): showConfirm() set state.confirmVisible with nothing bound to it. -->
+		(lightbox comment delete/edit, etc.). It lives here, in the global
+		wp_footer frame, so it is present wherever the lightbox is. Before this
+		it was copy-pasted into media-single/album/dashboard only, so the same
+		confirm-driven action was inert on every other surface (Explore, profile
+		grids): showConfirm() set state.confirmVisible with nothing bound to it. -->
 	<div class="mvs-confirm-overlay" hidden
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.confirmVisible">
 		<div class="mvs-confirm">
 			<p data-wp-text="state.confirmMessage"></p>
 			<div class="mvs-confirm-actions">
-				<button class="mvs-btn mvs-btn--secondary" type="button"
+				<button class="mvs-btn mvs-btn--secondary mvs-confirm-cancel" type="button"
 					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 				<button class="mvs-btn mvs-btn--danger" type="button"
 					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>

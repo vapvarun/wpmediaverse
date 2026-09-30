@@ -57,4 +57,17 @@ class RESTApiTest extends WP_UnitTestCase {
 
 		$this->assertGreaterThanOrEqual( 400, $response->get_status() );
 	}
+
+	public function test_ai_usage_is_for_settings_managers_not_moderators(): void {
+		$moderator = self::factory()->user->create( array( 'role' => 'editor' ) );
+		get_userdata( $moderator )->add_cap( 'moderate_mvs_media' );
+		wp_set_current_user( $moderator );
+
+		$response = rest_get_server()->dispatch( new \WP_REST_Request( 'GET', '/mvs/v1/ai/usage' ) );
+		$this->assertSame( 403, $response->get_status(), 'Site-wide AI spend is owner data.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$response = rest_get_server()->dispatch( new \WP_REST_Request( 'GET', '/mvs/v1/ai/usage' ) );
+		$this->assertSame( 200, $response->get_status() );
+	}
 }

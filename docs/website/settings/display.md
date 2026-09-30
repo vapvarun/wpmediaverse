@@ -8,10 +8,20 @@ Access these settings at **MediaVerse > Settings > Display**.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Grid Columns | 3 | Number of columns in the media grid. Applies to `[mvs_gallery]`, the Media Grid block, and the explore archive. Options: 2, 3, 4, 5 columns. |
-| Items Per Page | 12 | Number of media items loaded per page. Options: 12, 24, 48. |
-| Default Layout | Justified rows - original proportions | How media grids are laid out. **Grid - square crops** crops every thumbnail to 1:1. **Justified rows - original proportions** keeps each image's native aspect ratio and stretches each row to the full width, so rows read left to right (Flickr / Google Photos style). **List - one row per item** puts a small thumbnail beside the title. The default flipped from square crops in 1.8.0; restore it site-wide with the `mvs_default_thumbnail_style` filter. The stored values are unchanged (`square`, `original`, `list`), as is the `masonry` spelling accepted by block and shortcode attributes. |
-| Allow Downloads | On | Master toggle for the lightbox **Download** button. When off, the button is hidden site-wide and the `/mvs/v1/media/{id}/download` REST endpoint refuses requests. Per-media Allow Downloads (set in the per-media Edit modal) is still honoured when this master toggle is on. |
+| Layout | Justified rows - original proportions | How media grids look across the site. A block or shortcode can still pick its own. **Grid - square crops** crops every thumbnail to 1:1. **Justified rows - original proportions** keeps each image's shape and fills each row to the full width (Flickr / Google Photos style). **List - one row per item** puts a small thumbnail beside the title. With MediaVerse Pro the list also offers **Instagram Feed**, **Pinterest Masonry**, **Flickr Justified** and **Dribbble Shots**. |
+| Grid Columns | 3 | Columns in the square grid. Shown only when Layout is "Grid - square crops". Options: 2, 3, 4, 5 columns. |
+| Items Per Page | 12 | How many media items to show before pagination. Options: 12, 24, 48. |
+| Allow Downloads | On | Shows a Download button on media. Members can turn it off for their own items. When off, the button is hidden site-wide and the `/mvs/v1/media/{id}/download` REST endpoint refuses requests. |
+
+**How Layout is saved.** Since 2.6.0 one Layout select replaces the old "Default Layout" and Pro's "Explore and Profile Layout". A Free choice (Grid, Justified rows, List) is saved to `mvs_thumbnail_style` and also puts the Pro feed back on grid. A Pro skin is saved to `mvs_pro_feed_layout`. The stored values are unchanged (`square`, `original`, `list`), as is the `masonry` spelling accepted by block and shortcode attributes. Change the site-wide default with the `mvs_default_thumbnail_style` filter.
+
+**No longer on this screen.** Thumbnail Quality (`mvs_thumbnail_size`, default `large`), Large Image Size (`mvs_large_image_size`, default 1024) and Lightbox Image Size (`mvs_lightbox_image_source`, default `large`) have no screen control since 2.6.0. They are still registered, their defaults did not change, and a stored value keeps working. Set them in code or with WP-CLI. See the [Settings Reference](settings-reference.md#display).
+
+Saving this screen never changes a hidden or removed setting's stored value.
+
+## Stories (Pro)
+
+With MediaVerse Pro, the **Stories** switch is on this tab. The stories bar shows only with the Instagram layout. In the mobile app, stories work with any layout.
 
 ## Lightbox Toolbar
 
@@ -45,6 +55,8 @@ For video files, a poster is taken from the file's embedded cover atom (getID3);
 
 ## Watermarking: Free vs Pro
 
-MediaVerse Free ships the watermark **engine**: `WatermarkService` resolves whether an upload should be stamped and fires the `mvs_watermark_stamp_file` filter at upload time and at file-replace time (so there's no bypass via the replace endpoint), before any thumbnail or WebP/AVIF variant is cut. The underlying option schema (watermark type, text, logo, position, opacity) also ships in Free with safe defaults, all off by default.
+Watermark settings are no longer on the Display tab. Since 2.6.0 they live on **MediaVerse > Settings > Storage**, in the **Image Watermarking** section (MediaVerse Pro).
 
-What Free does **not** include is the Settings UI to configure those options, or the GD code that actually draws the mark into the image. **MediaVerse Pro** adds both: the **Watermark** section on **Media > Settings > Display**, where you pick Enable Watermark, Apply to (all uploads or specific roles), Watermark Type (Text, Image, or Both - Both stamps the logo and the @username in opposite corners), Watermark Text/Image, Position, Opacity, and Text Size/Color - and the renderer that hooks `mvs_watermark_stamp_file` to draw it. Without Pro active, the engine has nothing registered to draw with, so uploads are never watermarked.
+MediaVerse Free ships the watermark **engine**: `WatermarkService` decides whether an upload should be stamped and fires the `mvs_watermark_stamp_file` filter at upload time and at file-replace time (so there is no bypass through the replace endpoint), before any thumbnail or WebP/AVIF copy is made. The option schema (watermark type, text, logo, position, opacity) also ships in Free with safe defaults, all off.
+
+What Free does **not** include is the screen to configure those options, or the code that draws the mark into the image. **MediaVerse Pro** adds both. On the Storage tab, tick **Enable Watermark** and the other rows appear: Apply to (all uploads or selected roles), Watermark uploads from, Watermark Type (Text, Image (logo), or Logo + text), Watermark Text, Watermark Image, Position, Opacity, Text Size and Text Color. Without Pro active, nothing is registered to draw the mark, so uploads are never watermarked.

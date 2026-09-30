@@ -30,6 +30,7 @@ class NotificationService {
 		'media_mention',
 		'media_favorite',
 		'new_message',
+		'report_resolved',
 	);
 
 	/**
@@ -53,11 +54,31 @@ class NotificationService {
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
+		add_action( 'mvs_report_resolved', array( $this, 'on_report_resolved' ), 10, 3 );
 		// `mvs_message_sent` is handled by Messaging\NotificationListener (mute,
 		// coalescing, BuddyNext routing, unread-cache). This service used to
 		// ALSO hook it via on_message(), producing a second, un-muted,
 		// un-coalesced notification for every DM (audit 2026-06-04). Listener
 		// owns it; on_message() removed.
+	}
+
+	/**
+	 * Tell the reporter their report was reviewed (mvs_report_resolved).
+	 *
+	 * Deliberately says nothing about what was decided: the reporter learns
+	 * that someone looked, not what happened to another member.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int    $report_id   Report id.
+	 * @param int    $reporter_id Reporter.
+	 * @param string $status      resolved | dismissed.
+	 */
+	public function on_report_resolved( $report_id, $reporter_id, $status ): void {
+		unset( $report_id, $status );
+		if ( (int) $reporter_id ) {
+			$this->create( (int) $reporter_id, 'report_resolved', 0 );
+		}
 	}
 
 	/**
@@ -146,7 +167,12 @@ class NotificationService {
 			array( '%d', '%s', '%d', '%d', '%d', '%s' )
 		);
 
-		if ( $wpdb->insert_id ) {
+		// Read the id now: a listener on mvs_notification_created that inserts a
+		// row of its own (Pro queues an Action Scheduler job) overwrites
+		// $wpdb->insert_id, and create() returned that id instead (QA, 2.6.0).
+		$notification_id = (int) $wpdb->insert_id;
+
+		if ( $notification_id ) {
 			wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
 
 			/**
@@ -157,6 +183,7 @@ class NotificationService {
 			 *              so consumers such as BuddyNext's central notification
 			 *              center can mirror the exact notification 1:1 without
 			 *              re-deriving it from IDs (which drifts from our wording).
+			 * @since 2.6.0 Added $object_id (appended).
 			 *
 			 * @param int    $notification_id New notification ID.
 			 * @param int    $user_id         Recipient user ID.
@@ -167,11 +194,28 @@ class NotificationService {
 			 *                                the plugin's own notifications menu.
 			 * @param string $link            Deep link to the media / conversation /
 			 *                                profile the notification points at.
+			 * @param int    $object_id       The row's comment_id slot (2.6.0).
+			 * @param array  $contract_payload The BuddyNext / community notification
+			 *                                contract payload (added 2.6.0, appended so
+			 *                                every listener above keeps its declared
+			 *                                accepted_args). See
+			 *                                CommunityNotificationContract::payload().
 			 */
-			$rendered = $this->build_message_and_link( $type, $actor_id, $media_id );
-			do_action( 'mvs_notification_created', $wpdb->insert_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'] );
+			$rendered = $this->build_message_and_link( $type, $actor_id, $media_id, $comment_id );
+			do_action(
+				'mvs_notification_created',
+				$notification_id,
+				$user_id,
+				$type,
+				$actor_id,
+				$media_id,
+				$rendered['message'],
+				$rendered['link'],
+				$comment_id,
+				CommunityNotificationContract::payload( $notification_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'], $rendered['message_grouped'] )
+			);
 
-			return $wpdb->insert_id;
+			return $notification_id;
 		}
 
 		return false;
@@ -201,6 +245,10 @@ class NotificationService {
 			$where   .= ' AND type = %s';
 			$params[] = $filter;
 		}
+
+		list( $block_sql, $block_params ) = $this->block_clause( $user_id );
+		$where                           .= $block_sql;
+		$params                           = array_merge( $params, $block_params );
 
 		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -238,7 +286,12 @@ class NotificationService {
 			);
 		}
 		if ( $media_ids ) {
-			_prime_post_caches( array_unique( $media_ids ), false, false );
+			// NOT _prime_post_caches(): mvs_media_index is not CPT-backed (see
+			// Module Map), so priming the wp_posts cache primed nothing that
+			// format_notification()'s MediaRepository::get()/get_permalink()
+			// calls actually read — every notification with a media_id still
+			// ran its own query. This is the cache format_notification() reads.
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( array_unique( $media_ids ) );
 		}
 
 		$notifications = array();
@@ -249,6 +302,32 @@ class NotificationService {
 		return array(
 			'notifications' => $notifications,
 			'total'         => $total,
+		);
+	}
+
+	/**
+	 * The WHERE fragment that keeps a block out of the bell.
+	 *
+	 * Across a block, neither the other member's actions nor anything about
+	 * their items reaches the bell: those rows' title and link point at an item
+	 * that answers 404 (Basecamp 10355130639). Both block columns and the
+	 * index's post_author are indexed.
+	 *
+	 * @param int $user_id Notification recipient.
+	 * @return array{0: string, 1: int[]} SQL starting with " AND", and its params.
+	 */
+	private function block_clause( int $user_id ): array {
+		$blocked = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $user_id );
+		if ( ! $blocked ) {
+			return array( '', array() );
+		}
+
+		$in    = implode( ',', array_fill( 0, count( $blocked ), '%d' ) );
+		$index = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
+
+		return array(
+			" AND actor_id NOT IN ({$in}) AND ( media_id = 0 OR media_id IS NULL OR media_id NOT IN ( SELECT media_id FROM {$index} WHERE post_author IN ({$in}) ) )",
+			array_merge( $blocked, $blocked ),
 		);
 	}
 
@@ -268,10 +347,13 @@ class NotificationService {
 
 		global $wpdb;
 
+		// Same block rule as the list, or the badge would count rows the bell hides.
+		list( $block_sql, $block_params ) = $this->block_clause( $user_id );
+
 		$count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE user_id = %d AND read_at IS NULL",
-				$user_id
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE user_id = %d AND read_at IS NULL{$block_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_merge( array( $user_id ), $block_params )
 			)
 		);
 
@@ -374,8 +456,14 @@ class NotificationService {
 			$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		}
 
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		foreach ( $mentioned_ids as $uid ) {
 			if ( $owner && (int) $uid === $owner ) {
+				continue;
+			}
+			// A mention in a private item must not tell someone who cannot
+			// open it that it exists, or what it is called.
+			if ( ! $privacy->can_view( $media_id, (int) $uid ) ) {
 				continue;
 			}
 			$this->create( (int) $uid, 'media_mention', $actor, $media_id, $comment_id );
@@ -413,7 +501,7 @@ class NotificationService {
 
 		// Message + deep link come from the single shared builder so REST
 		// output and the mvs_notification_created hook never drift apart.
-		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id );
+		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id, (int) $row->comment_id );
 
 		return array(
 			'id'         => (int) $row->id,
@@ -443,13 +531,16 @@ class NotificationService {
 	 *
 	 * @since 1.7.0
 	 * @since 2.4.2 Public, so the BuddyPress mirror renders the same words and link.
+	 * @since 2.6.0 $object_id, the mvs_notification_link filter, and message_grouped.
 	 *
-	 * @param string $type     Notification type.
-	 * @param int    $actor_id User who triggered it.
-	 * @param int    $media_id Related media ID (0 if none).
-	 * @return array{message:string,link:string}
+	 * @param string $type      Notification type.
+	 * @param int    $actor_id  User who triggered it.
+	 * @param int    $media_id  Related media ID (0 if none).
+	 * @param int    $object_id The row's comment_id slot: a comment id, or the
+	 *                          id of whatever a custom type is about.
+	 * @return array{message:string,link:string,message_grouped:string}
 	 */
-	public function build_message_and_link( string $type, int $actor_id, int $media_id ): array {
+	public function build_message_and_link( string $type, int $actor_id, int $media_id, int $object_id = 0 ): array {
 		$actor       = get_userdata( $actor_id );
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
@@ -474,9 +565,31 @@ class NotificationService {
 			$link = \WPMediaVerse\Core\Plugin::messages_url();
 		}
 
+		/**
+		 * Filters where a notification points. Custom types (Pro competitions)
+		 * have no media or profile to link to and supply their own page here.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param string $link      Deep link, '' when none was built.
+		 * @param string $type      Notification type.
+		 * @param int    $actor_id  User who triggered it.
+		 * @param int    $media_id  Related media ID (0 if none).
+		 * @param int    $object_id The row's comment_id slot.
+		 */
+		$link = (string) apply_filters( 'mvs_notification_link', $link, $type, $actor_id, $media_id, $object_id );
+
 		return array(
-			'message' => $message,
-			'link'    => $link,
+			'message'         => $message,
+			'link'            => $link,
+			// The same words with the actor as a group, for a host bell that
+			// merges repeats: "{actor} and {others} reacted to Sunset".
+			'message_grouped' => $media_id ? $this->build_notification_message(
+				$type,
+				/* translators: {actor} and {others} are placeholders the community bell fills in. Keep them as-is. */
+				__( '{actor} and {others}', 'wpmediaverse' ),
+				$media_title
+			) : '',
 		);
 	}
 
@@ -542,6 +655,9 @@ class NotificationService {
 			case 'new_message':
 				/* translators: %s: user name */
 				return sprintf( __( '%s sent you a message', 'wpmediaverse' ), $actor_name );
+
+			case 'report_resolved':
+				return __( 'A moderator reviewed your report. Thank you for helping keep the community safe.', 'wpmediaverse' );
 
 			default:
 				/* translators: %s: user name */

@@ -6,6 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -57,27 +58,33 @@ $mvs_toolbar_state = static function ( string $slug, string $default_sort ) use 
 		's'       => $mine ? $mvs_toolbar_s : '',
 		'orderby' => ( $mine && '' !== $mvs_toolbar_orderby ) ? $mvs_toolbar_orderby : $default_sort,
 		'order'   => $mine ? $mvs_toolbar_order : 'desc',
+		// The one sort select: ascending on the panel's default field is "Oldest".
+		'sort'    => ( $mine && 'asc' === $mvs_toolbar_order && ( '' === $mvs_toolbar_orderby || $default_sort === $mvs_toolbar_orderby ) )
+			? 'oldest'
+			: ( ( $mine && '' !== $mvs_toolbar_orderby ) ? $mvs_toolbar_orderby : $default_sort ),
 	);
 };
 
+// One sort control per list: Newest / Oldest / a third order that fits.
 $mvs_sort_options_media = array(
-	'date'     => __( 'Date', 'wpmediaverse' ),
-	'trending' => __( 'Trending', 'wpmediaverse' ),
-	'popular'  => __( 'Popular', 'wpmediaverse' ),
+	'date'   => __( 'Newest', 'wpmediaverse' ),
+	'oldest' => __( 'Oldest', 'wpmediaverse' ),
+	'views'  => __( 'Most viewed', 'wpmediaverse' ),
 );
 
 $mvs_sort_options_albums      = array(
-	'date'  => __( 'Date', 'wpmediaverse' ),
-	'title' => __( 'Name', 'wpmediaverse' ),
+	'date'   => __( 'Newest', 'wpmediaverse' ),
+	'oldest' => __( 'Oldest', 'wpmediaverse' ),
+	'title'  => __( 'Name', 'wpmediaverse' ),
 );
 $mvs_sort_options_collections = $mvs_sort_options_albums;
 
 $mvs_sort_options_favorites = array(
 	// "When you saved it" is a different question from "when it was made", and
 	// for a favourites list the first one is what a member means.
-	'favorited' => __( 'Recently added', 'wpmediaverse' ),
+	'favorited' => __( 'Recently saved', 'wpmediaverse' ),
+	'oldest'    => __( 'Oldest', 'wpmediaverse' ),
 	'title'     => __( 'Name', 'wpmediaverse' ),
-	'date'      => __( 'Date created', 'wpmediaverse' ),
 );
 
 // Profile data for the header.
@@ -192,6 +199,29 @@ wp_interactivity_state(
 			// Which levels the picker OFFERS - filterable, and BP-conditional.
 			// The store must not restate this vocabulary. Basecamp 10290748981.
 			'privacyChoices'          => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
+			// How strict each level is, from PrivacyService, so the album screen can
+			// tell when a save would show photos to more people (2.6.0).
+			'privacyLevels'           => array_map(
+				array( \WPMediaVerse\Services\PrivacyService::class, 'privacy_to_level' ),
+				array_combine( array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_labels() ), array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_labels() ) )
+			),
+			/* translators: %s: album name. */
+			'inAlbum'                 => __( 'In: %s', 'wpmediaverse' ),
+			/* translators: %s: album name. */
+			'willMove'                => __( 'Moves from %s', 'wpmediaverse' ),
+			/* translators: 1: number of photos, 2: privacy level. */
+			'albumWidens'             => __( '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".', 'wpmediaverse' ),
+			'saveAnyway'              => __( 'Save anyway', 'wpmediaverse' ),
+			/* translators: %d: number of photos. */
+			'bulkAlbumDecides'        => __( '%d photo(s) are in an album and keep its privacy until they leave it.', 'wpmediaverse' ),
+			/* translators: %s: privacy level, e.g. Members. */
+			'privacyViaAlbum'         => __( '%s (album)', 'wpmediaverse' ),
+			/* translators: 1: album name, 2: privacy level. */
+			'editFollowsAlbum'        => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
+			/* translators: %d: number of photos. */
+			'photosMoved'             => __( '%d photo(s) moved from other albums.', 'wpmediaverse' ),
+			/* translators: %d: number of photos. */
+			'photosReleased'          => __( '%d photo(s) removed; each is back to its own privacy.', 'wpmediaverse' ),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
 			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),
@@ -571,11 +601,11 @@ wp_interactivity_state(
 				// found the hard way:
 				//
 				// - The section lives on its own page (`url` declared). Pro's
-				//   Compete hub — Basecamp 10264172058.
+				// Compete hub — Basecamp 10264172058.
 				// - The section's panel is server-rendered on demand and only
-				//   emitted when it IS the active section. The drive, below:
-				//   rendering it on every tab cost ~53 queries for a member with
-				//   a real drive, so it is emitted only for itself.
+				// emitted when it IS the active section. The drive, below:
+				// rendering it on every tab cost ~53 queries for a member with
+				// a real drive, so it is emitted only for itself.
 				//
 				// The JS used to name `documents` directly. That was a name-check
 				// standing in for a rule, so when Compete arrived it was not
@@ -675,6 +705,9 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_media = $mvs_toolbar_state( 'media', 'date' );
+		// Used X of Y, only when a storage limit applies (2.6.0).
+		\WPMediaVerse\Core\TemplateHelpers::render_storage_usage();
+
 		/**
 		 * Fires immediately before a dashboard panel's search/filter toolbar.
 		 *
@@ -692,6 +725,11 @@ wp_interactivity_state(
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-media',
+				// Nothing to search or sort in an empty list; kept while a search is on.
+				'attrs'  => array(
+					'data-wp-context'      => '{"panel":"media"}',
+					'data-wp-bind--hidden' => 'state.toolbarHidden',
+				),
 				// Bound, not baked. The drive's toolbar prints how many rows
 				// the view holds and these four printed nothing, so the shape
 				// they were told to copy read differently on every panel. The
@@ -712,26 +750,19 @@ wp_interactivity_state(
 				'sort'   => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $mvs_tb_media['orderby'],
+					'value'   => $mvs_tb_media['sort'],
 					'options' => $mvs_sort_options_media,
 					'attrs'   => array(
 						'data-panel'         => 'media',
 						'data-wp-on--change' => 'actions.toolbarSort',
 					),
 				),
-				'order'  => array(
-					'name'    => 'order',
-					'label'   => __( 'Direction', 'wpmediaverse' ),
-					'value'   => $mvs_tb_media['order'],
-					'attrs'   => array(
-						'data-panel'         => 'media',
-						'data-wp-on--change' => 'actions.toolbarOrder',
-					),
-				),
 			)
 		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes every value.
 		?>
 
+		<?php // Only for members who may upload (Settings > General > Who can upload media). ?>
+		<?php if ( \WPMediaVerse\Core\Abilities::can_upload() ) : ?>
 		<!-- Upload Section -->
 		<div class="mvs-dashboard-upload">
 			<div class="mvs-dashboard-dropzone"
@@ -757,20 +788,6 @@ wp_interactivity_state(
 				<input type="file" multiple accept="<?php echo esc_attr( \WPMediaVerse\Services\UploadService::accept_attribute( $mvs_allowed_mimes ) ); ?>" class="mvs-upload-file-input" style="display:none"
 					data-wp-on--change="actions.handleUploadFileSelect" />
 			</div>
-			<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-				data-wp-on--click="actions.toggleUploadFields">
-				<?php // Promise only what the panel holds: the privacy picker below is absent while the owner has locked privacy. Basecamp 10320619418. ?>
-				<span data-wp-bind--hidden="state.upload.showFields">
-					<?php
-					if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
-						esc_html_e( 'Add title, tags & privacy', 'wpmediaverse' );
-					} else {
-						esc_html_e( 'Add title & tags', 'wpmediaverse' );
-					}
-					?>
-				</span>
-				<span data-wp-bind--hidden="!state.upload.showFields"><?php esc_html_e( 'Hide fields', 'wpmediaverse' ); ?></span>
-			</button>
 			<?php
 			// Real labels, visually hidden. A placeholder is a HINT: it vanishes
 			// on the first keystroke, so a screen-reader user never hears the
@@ -778,7 +795,8 @@ wp_interactivity_state(
 			// (Basecamp 10252222135). The placeholders stay — they are useful
 			// as hints — but they are no longer carrying the label's job.
 			?>
-			<div class="mvs-dashboard-upload-fields" data-wp-bind--hidden="!state.upload.showFields">
+			<?php // Details appear once a file is picked: nothing to describe before that. ?>
+			<div class="mvs-dashboard-upload-fields" data-wp-bind--hidden="!state.upload.hasPending" hidden>
 				<label class="mvs-sr-only" for="mvs-upload-meta-title"><?php esc_html_e( 'Media title', 'wpmediaverse' ); ?></label>
 				<input type="text" id="mvs-upload-meta-title" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-title"
 					data-wp-on--input="actions.setUploadTitle" />
@@ -819,6 +837,7 @@ wp_interactivity_state(
 			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
 				data-wp-text="state.upload.status" hidden></div>
 		</div>
+		<?php endif; ?>
 
 		<!-- Media Grid -->
 		<div class="mvs-bulk-bar" data-wp-bind--hidden="!state.hasBulkSelection" hidden
@@ -901,15 +920,18 @@ wp_interactivity_state(
 							data-wp-text="state.itemTitle"></a>
 						<div class="mvs-dashboard-card-meta">
 							<span class="mvs-privacy-badge" data-wp-text="state.itemPrivacy"></span>
+							<span class="mvs-review-badge" data-wp-bind--hidden="!context.item.underReview" hidden><?php esc_html_e( 'Under review', 'wpmediaverse' ); ?></span>
+							<span class="mvs-review-badge" data-wp-bind--hidden="!context.item.notApproved" hidden><?php esc_html_e( 'Not approved', 'wpmediaverse' ); ?></span>
 						</div>
 						<?php // can_edit / can_delete come from MediaController and mirror what the REST write gates enforce, so a revoked permission removes the control instead of handing out a button that 403s. ?>
 						<div class="mvs-dashboard-card-actions">
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 								data-wp-bind--hidden="!context.item.can_edit"
 								data-wp-on--click="actions.openEditModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+							<button class="mvs-btn mvs-btn--small mvs-dashboard-card-delete" type="button"
 								data-wp-bind--hidden="!context.item.can_delete"
-								data-wp-on--click="actions.confirmDeleteMedia"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+								data-wp-on--click="actions.confirmDeleteMedia"
+								aria-label="<?php esc_attr_e( 'Delete this media', 'wpmediaverse' ); ?>" data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 						</div>
 					</div>
 				</div>
@@ -934,6 +956,19 @@ wp_interactivity_state(
 			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
 			?>
 		</div>
+		<?php
+		// A search that matched nothing is NOT an empty library (Coding Rule
+		// 22/23, Basecamp 10350215664) - the message has to name the search,
+		// which only the client knows, so the text is a data-wp-text binding
+		// rather than the static string above. Same icon family as explore.php's
+		// own "No results for" state, for the one member-facing search pattern.
+		?>
+		<div data-wp-bind--hidden="!state.showMediaSearchEmpty">
+			<div class="mvs-empty-state-frontend" role="status">
+				<span class="mvs-empty-state-icon" aria-hidden="true"><i data-lucide="search-x"></i></span>
+				<h3 class="mvs-empty-state-title" data-wp-text="state.mediaSearchEmptyMessage"></h3>
+			</div>
+		</div>
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreMedia">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.loadMoreMedia"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
@@ -946,11 +981,19 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_albums = $mvs_toolbar_state( 'albums', 'date' );
+		?>
+		<p class="mvs-panel-lead"><?php esc_html_e( 'Your own uploads, grouped by you: a trip, a project, a series.', 'wpmediaverse' ); ?></p>
+		<?php
 		/** This action is documented in templates/partials/dashboard-content.php */
 		do_action( 'mvs_dashboard_before_panel_toolbar', 'albums' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-albums',
+				// Nothing to search or sort in an empty list; kept while a search is on.
+				'attrs'  => array(
+					'data-wp-context'      => '{"panel":"albums"}',
+					'data-wp-bind--hidden' => 'state.toolbarHidden',
+				),
 				// Bound, not baked. The drive's toolbar prints how many rows
 				// the view holds and these four printed nothing, so the shape
 				// they were told to copy read differently on every panel. The
@@ -971,20 +1014,11 @@ wp_interactivity_state(
 				'sort'   => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $mvs_tb_albums['orderby'],
+					'value'   => $mvs_tb_albums['sort'],
 					'options' => $mvs_sort_options_albums,
 					'attrs'   => array(
 						'data-panel'         => 'albums',
 						'data-wp-on--change' => 'actions.toolbarSort',
-					),
-				),
-				'order'  => array(
-					'name'    => 'order',
-					'label'   => __( 'Direction', 'wpmediaverse' ),
-					'value'   => $mvs_tb_albums['order'],
-					'attrs'   => array(
-						'data-panel'         => 'albums',
-						'data-wp-on--change' => 'actions.toolbarOrder',
 					),
 				),
 			)
@@ -1007,7 +1041,7 @@ wp_interactivity_state(
 						<img data-wp-bind--hidden="!state.hasAlbumCover" data-wp-bind--src="context.item.cover_url" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"
 							data-wp-bind--hidden="state.hasAlbumCover">
-							<span class="mvs-grid-album-icon">&#128193;</span>
+							<span class="mvs-grid-album-icon" aria-hidden="true"><i data-lucide="folder"></i></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -1016,8 +1050,9 @@ wp_interactivity_state(
 						<div class="mvs-dashboard-card-actions">
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 								data-wp-on--click="actions.openAlbumModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-								data-wp-on--click="actions.confirmDeleteAlbum"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+							<button class="mvs-btn mvs-btn--small mvs-dashboard-card-delete" type="button"
+								data-wp-on--click="actions.confirmDeleteAlbum"
+								aria-label="<?php esc_attr_e( 'Delete this album', 'wpmediaverse' ); ?>" data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 						</div>
 					</div>
 				</div>
@@ -1037,7 +1072,7 @@ wp_interactivity_state(
 				array(
 					'icon'    => 'folder',
 					'title'   => __( 'No albums yet', 'wpmediaverse' ),
-					'message' => __( 'Create your first album to organize your media into collections.', 'wpmediaverse' ),
+					'message' => __( 'Create an album to group your own uploads.', 'wpmediaverse' ),
 				)
 			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
 			?>
@@ -1054,11 +1089,23 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_favorites = $mvs_toolbar_state( 'favorites', 'favorited' );
+		// Reached from Collections > Favorites, not the rail (2.6.0).
+		?>
+		<p class="mvs-panel-lead">
+			<a href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( 'collections' ) ); ?>"><?php esc_html_e( 'Collections', 'wpmediaverse' ); ?></a>
+			/ <?php esc_html_e( 'Favorites: everything you saved.', 'wpmediaverse' ); ?>
+		</p>
+		<?php
 		/** This action is documented in templates/partials/dashboard-content.php */
 		do_action( 'mvs_dashboard_before_panel_toolbar', 'favorites' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-favorites',
+				// Nothing to search or sort in an empty list; kept while a search is on.
+				'attrs'  => array(
+					'data-wp-context'      => '{"panel":"favorites"}',
+					'data-wp-bind--hidden' => 'state.toolbarHidden',
+				),
 				// Bound, not baked. The drive's toolbar prints how many rows
 				// the view holds and these four printed nothing, so the shape
 				// they were told to copy read differently on every panel. The
@@ -1069,7 +1116,7 @@ wp_interactivity_state(
 				),
 				'search' => array(
 					'name'  => 'q',
-					'label' => __( 'Search your favourites', 'wpmediaverse' ),
+					'label' => __( 'Search your favorites', 'wpmediaverse' ),
 					'value' => $mvs_tb_favorites['s'],
 					'attrs' => array(
 						'data-panel'        => 'favorites',
@@ -1079,20 +1126,11 @@ wp_interactivity_state(
 				'sort'   => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $mvs_tb_favorites['orderby'],
+					'value'   => $mvs_tb_favorites['sort'],
 					'options' => $mvs_sort_options_favorites,
 					'attrs'   => array(
 						'data-panel'         => 'favorites',
 						'data-wp-on--change' => 'actions.toolbarSort',
-					),
-				),
-				'order'  => array(
-					'name'    => 'order',
-					'label'   => __( 'Direction', 'wpmediaverse' ),
-					'value'   => $mvs_tb_favorites['order'],
-					'attrs'   => array(
-						'data-panel'         => 'favorites',
-						'data-wp-on--change' => 'actions.toolbarOrder',
 					),
 				),
 			)
@@ -1134,7 +1172,7 @@ wp_interactivity_state(
 					<div class="mvs-dashboard-card-body">
 						<div class="mvs-dashboard-card-title" data-wp-text="state.itemTitle"></div>
 						<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-							data-wp-on--click="actions.unfavorite"><?php esc_html_e( 'Unfavorite', 'wpmediaverse' ); ?></button>
+							data-wp-on--click="actions.unfavorite"><?php esc_html_e( 'Remove', 'wpmediaverse' ); ?></button>
 					</div>
 				</div>
 			</template>
@@ -1170,11 +1208,30 @@ wp_interactivity_state(
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
 		$mvs_tb_collections = $mvs_toolbar_state( 'collections', 'date' );
+		// Manual collections are filled by Pro's Save button; without it a
+		// collection is rules only, so the copy must not promise a Save.
+		$mvs_can_fill_manual = (bool) apply_filters( 'mvs_collections_enabled', false );
+		?>
+		<p class="mvs-panel-lead">
+			<?php
+			echo esc_html(
+				$mvs_can_fill_manual
+					? __( 'Media from anyone on the site: what you saved, or what your rules gather.', 'wpmediaverse' )
+					: __( 'Media from anyone on the site, gathered by rules you set.', 'wpmediaverse' )
+			);
+			?>
+		</p>
+		<?php
 		/** This action is documented in templates/partials/dashboard-content.php */
 		do_action( 'mvs_dashboard_before_panel_toolbar', 'collections' );
 		echo $mvs_tpl->render_panel_toolbar(
 			array(
 				'id'     => 'mvs-collections',
+				// Nothing to search or sort in an empty list; kept while a search is on.
+				'attrs'  => array(
+					'data-wp-context'      => '{"panel":"collections"}',
+					'data-wp-bind--hidden' => 'state.toolbarHidden',
+				),
 				// Bound, not baked. The drive's toolbar prints how many rows
 				// the view holds and these four printed nothing, so the shape
 				// they were told to copy read differently on every panel. The
@@ -1195,20 +1252,11 @@ wp_interactivity_state(
 				'sort'   => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
-					'value'   => $mvs_tb_collections['orderby'],
+					'value'   => $mvs_tb_collections['sort'],
 					'options' => $mvs_sort_options_collections,
 					'attrs'   => array(
 						'data-panel'         => 'collections',
 						'data-wp-on--change' => 'actions.toolbarSort',
-					),
-				),
-				'order'  => array(
-					'name'    => 'order',
-					'label'   => __( 'Direction', 'wpmediaverse' ),
-					'value'   => $mvs_tb_collections['order'],
-					'attrs'   => array(
-						'data-panel'         => 'collections',
-						'data-wp-on--change' => 'actions.toolbarOrder',
 					),
 				),
 			)
@@ -1236,7 +1284,8 @@ wp_interactivity_state(
 							data-wp-bind--hidden="state.hasCollectionCover">
 							<span class="mvs-grid-collection-icon"><i data-lucide="library" aria-hidden="true"></i></span>
 						</div>
-						<span class="mvs-collection-type-badge" data-wp-text="context.item.type"></span>
+						<?php // Only "Smart" says something; every other collection is filled by hand. Only smart responses carry rules. ?>
+						<span class="mvs-collection-type-badge" data-wp-bind--hidden="!context.item.rules" hidden><?php esc_html_e( 'Smart', 'wpmediaverse' ); ?></span>
 					</a>
 					<div class="mvs-dashboard-card-body">
 						<a class="mvs-dashboard-card-title" data-wp-bind--href="context.item.link"
@@ -1250,10 +1299,14 @@ wp_interactivity_state(
 							</template>
 						</div>
 						<div class="mvs-dashboard-card-actions">
+							<?php // Favorites is always there, always private: nothing to edit or delete. ?>
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+								data-wp-bind--hidden="context.item.is_favorites"
 								data-wp-on--click="actions.openEditCollection"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-								data-wp-on--click="actions.confirmDeleteCollection"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+							<button class="mvs-btn mvs-btn--small mvs-dashboard-card-delete" type="button"
+								data-wp-bind--hidden="context.item.is_favorites"
+								data-wp-on--click="actions.confirmDeleteCollection"
+								aria-label="<?php esc_attr_e( 'Delete this collection', 'wpmediaverse' ); ?>" data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 						</div>
 					</div>
 				</div>
@@ -1273,7 +1326,9 @@ wp_interactivity_state(
 				array(
 					'icon'    => 'library',
 					'title'   => __( 'No collections yet', 'wpmediaverse' ),
-					'message' => __( 'Create a smart collection to auto-organize your media!', 'wpmediaverse' ),
+					'message' => $mvs_can_fill_manual
+						? __( 'Save media you like with the Save button, or create a smart collection that fills itself.', 'wpmediaverse' )
+						: __( 'Create a smart collection that fills itself from rules you set.', 'wpmediaverse' ),
 				)
 			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
 			?>
@@ -1353,7 +1408,6 @@ wp_interactivity_state(
 					// (Pro) turns it on. Offer the type under the same switch as the
 					// button, so a site never offers a collection type it cannot fill
 					// (Basecamp 10281257827).
-					$mvs_can_fill_manual = (bool) apply_filters( 'mvs_collections_enabled', false );
 					?>
 					<div class="mvs-collection-type-toggle">
 						<?php if ( $mvs_can_fill_manual ) : ?>
@@ -1468,8 +1522,8 @@ wp_interactivity_state(
 					<?php // Hidden when the owner has locked privacy; the save still sends the current level, which the REST update accepts. Basecamp 10320619418. ?>
 					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 					<div class="mvs-field mvs-field--inline">
-						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
+						<label for="mvs-dash-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select id="mvs-dash-edit-privacy" aria-describedby="mvs-dash-edit-privacy-album" data-wp-bind--disabled="state.editPrivacyFollowsAlbum" data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
 							<?php
 							// Options come from STATE, not from privacy_options().
 							//
@@ -1491,6 +1545,7 @@ wp_interactivity_state(
 							<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModal.privacy" data-wp-text="state.editModalPrivacyLabel"></option>
 							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 						</select>
+						<p id="mvs-dash-edit-privacy-album" class="mvs-field-hint" hidden data-wp-bind--hidden="!state.editPrivacyFollowsAlbum" data-wp-text="state.editPrivacyFollowsText"></p>
 					</div>
 					<?php endif; ?>
 					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
@@ -1637,6 +1692,7 @@ wp_interactivity_state(
 									data-wp-bind--hidden="!state.showPickerAudioPlaceholder">
 									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input. ?></span>
 								</div>
+								<span class="mvs-media-picker-album" hidden data-wp-bind--hidden="!state.pickerItemAlbumLabel" data-wp-text="state.pickerItemAlbumLabel"></span>
 								<span class="mvs-media-picker-check">&#x2713;</span>
 								<button class="mvs-media-picker-cover-btn" type="button"
 									data-wp-on--click="actions.setCoverItem">
@@ -1648,6 +1704,10 @@ wp_interactivity_state(
 							</div>
 						</template>
 					</div>
+					<button type="button" class="mvs-btn mvs-btn--secondary mvs-media-picker-more" hidden
+						data-wp-bind--hidden="!state.albumModal.pickerHasMore"
+						data-wp-bind--disabled="state.albumModal.pickerLoading"
+						data-wp-on--click="actions.loadMorePickerMedia"><?php esc_html_e( 'Load more media', 'wpmediaverse' ); ?></button>
 				</div>
 			</div>
 			<div class="mvs-modal-footer">

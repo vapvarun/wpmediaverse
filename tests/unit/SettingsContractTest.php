@@ -154,6 +154,17 @@ class SettingsContractTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * R2b — The one Layout select (2.6.0) is held to R2 like every other.
+	 *
+	 * Its choices are extensible (Pro adds skins), so its whitelist is read
+	 * from the same list; this pins that it is in the checked set at all.
+	 */
+	public function test_layout_choice_is_a_contracted_select(): void {
+		$this->assertArrayHasKey( 'mvs_layout_choice', $this->select_fields );
+		$this->assertSame( array_keys( $this->select_fields['mvs_layout_choice']['choices'] ), Sanitizers::get_whitelist( 'mvs_layout_choice' ) );
+	}
+
+	/**
 	 * R4 — Type / default sanity for select-driven options.
 	 */
 	public function test_select_field_type_and_default_sanity(): void {

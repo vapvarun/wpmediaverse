@@ -22,6 +22,7 @@
  * @var int    $mvs_doc_folder   Folder being viewed, 0 for a drive root.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   2.4.0
  */
 
@@ -35,6 +36,20 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 
 ?>
 <div class="mvs-documents mvs-page">
+	<?php
+	// This page lists PUBLIC documents; a member's own drive lives in their
+	// dashboard. One link across, so the drive has one home and this page
+	// does not have to pretend to be it.
+	if ( is_user_logged_in() && (int) get_option( 'mvs_page_dashboard', 0 ) && \WPMediaVerse\Core\DashboardSections::exists( 'documents' ) ) :
+		?>
+	<p>
+		<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( 'documents' ) ); ?>">
+			<?php esc_html_e( 'Your documents', 'wpmediaverse' ); ?>
+		</a>
+	</p>
+		<?php
+	endif;
+	?>
 	<?php
 	// The same search bar and chip row Explore Media uses, with its classes, so
 	// the two pages read as one product rather than two. Documents get a type
@@ -98,7 +113,21 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 			foreach ( $mvs_doc_chips as $mvs_doc_opt => $mvs_doc_count ) :
 				?>
 				<a class="mvs-tag-cloud-item <?php echo $mvs_doc_filter === $mvs_doc_opt ? 'active' : ''; ?>"
-					href="<?php echo esc_url( add_query_arg( array_filter( array( 'doc_type' => $mvs_doc_opt, 'doc_s' => $mvs_doc_search ) ), $mvs_doc_base ) ); ?>">
+					href="
+					<?php
+					echo esc_url(
+						add_query_arg(
+							array_filter(
+								array(
+									'doc_type' => $mvs_doc_opt,
+									'doc_s'    => $mvs_doc_search,
+								)
+							),
+							$mvs_doc_base
+						)
+					);
+					?>
+							">
 					<?php echo esc_html( \WPMediaVerse\Core\DocumentTypes::label( (string) $mvs_doc_opt ) ); ?>
 				</a>
 			<?php endforeach; ?>
@@ -143,9 +172,9 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 				),
 			),
 			'order'  => array(
-				'name'    => 'order',
-				'label'   => __( 'Direction', 'wpmediaverse' ),
-				'value'   => isset( $mvs_doc_order ) ? strtolower( (string) $mvs_doc_order ) : 'desc',
+				'name'  => 'order',
+				'label' => __( 'Direction', 'wpmediaverse' ),
+				'value' => isset( $mvs_doc_order ) ? strtolower( (string) $mvs_doc_order ) : 'desc',
 			),
 			'submit' => __( 'Apply', 'wpmediaverse' ),
 		)
@@ -181,9 +210,9 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 		<ul class="mvs-documents__list">
 			<?php foreach ( $mvs_doc_items as $mvs_doc ) : ?>
 				<?php
-				$mvs_doc_id     = (int) $mvs_doc['media_id'];
-				$mvs_doc_mime   = (string) $mvs_doc['file_type'];
-				$mvs_doc_group  = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
+				$mvs_doc_id    = (int) $mvs_doc['media_id'];
+				$mvs_doc_mime  = (string) $mvs_doc['file_type'];
+				$mvs_doc_group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mvs_doc_mime );
 				// The icon map moved to DocumentTypes::icon() so the profile tab,
 				// the grid tile and the activity card answer this the same way.
 				$mvs_doc_icon   = \WPMediaVerse\Core\DocumentTypes::icon( $mvs_doc_group );

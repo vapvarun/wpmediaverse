@@ -1,59 +1,90 @@
 /**
- * Progressive disclosure for AI provider credentials on the settings AI tab.
+ * Show a settings row or card only when the control it depends on says so.
  *
- * Shows only the selected provider's key/model and hides the other providers'
- * cards, so a site owner who picks Claude sees the Anthropic fields, not the
- * OpenAI/Google/AWS ones. The OpenAI key/model rows also stay visible when
- * Whisper auto-captions is enabled, because that feature reuses the OpenAI key.
+ * One rule for the whole settings screen (Coding Rule 22): a field or section
+ * declares `show_when`, SettingsPage prints it as `data-mvs-show-when`, and this
+ * file evaluates it. Nothing here names a field.
+ *
+ * Rule syntax:
+ *   name        the checkbox `name` is ticked (a select: has a non-empty value)
+ *   name=value  the control `name` has that value
+ *   a|b         either term holds
+ *
+ * Controls are looked up in the element's own <form>. A control that is not on
+ * the form, or that sits inside something hidden by its own rule, counts as off,
+ * so rules nest without repeating their parents.
+ *
+ * Hiding is visual only: hidden inputs still post, so nothing is lost on Save.
+ *
+ * Kept at this path and handle (mvs-ai-provider-fields) so the enqueue does not
+ * change; it started life as the AI-provider toggle.
  *
  * @package WPMediaVerse
  */
 ( function () {
 	'use strict';
 
-	// Provider value (mvs_ai_provider) -> settings-card section id.
-	var PROVIDER_CARDS = {
-		google_vision: 'mvs_pro_ai_google',
-		rekognition: 'mvs_pro_ai_aws',
-		anthropic: 'mvs_pro_ai_anthropic',
-	};
+	var ATTR = 'data-mvs-show-when';
+
+	function controlIsOn( control, want, depth ) {
+		if ( ! control ) {
+			return false;
+		}
+		// Several controls share the name (radios): use the checked one.
+		if ( ! control.tagName && control.length ) {
+			var list = Array.prototype.slice.call( control );
+			control = list.filter( function ( c ) {
+				return c.checked;
+			} )[ 0 ] || list[ 0 ];
+		}
+		if ( ! visible( control, depth ) ) {
+			return false;
+		}
+		var isToggle = 'checkbox' === control.type || 'radio' === control.type;
+		if ( null === want ) {
+			return isToggle ? control.checked : '' !== control.value;
+		}
+		return ( ! isToggle || control.checked ) && control.value === want;
+	}
+
+	function ruleHolds( el, depth ) {
+		if ( depth > 10 ) {
+			return false;
+		}
+		var form = el.closest( 'form' );
+		return el.getAttribute( ATTR ).split( '|' ).some( function ( term ) {
+			var eq = term.indexOf( '=' );
+			var name = eq < 0 ? term : term.slice( 0, eq );
+			var want = eq < 0 ? null : term.slice( eq + 1 );
+			var control = form ? form.elements.namedItem( name ) : null;
+			return controlIsOn( control, want, depth + 1 );
+		} );
+	}
+
+	// An element is visible when every ancestor carrying a rule passes it.
+	function visible( el, depth ) {
+		var host = el.closest( '[' + ATTR + ']' );
+		while ( host ) {
+			if ( ! ruleHolds( host, depth + 1 ) ) {
+				return false;
+			}
+			host = host.parentElement ? host.parentElement.closest( '[' + ATTR + ']' ) : null;
+		}
+		return true;
+	}
+
+	function sync() {
+		var nodes = document.querySelectorAll( '[' + ATTR + ']' );
+		Array.prototype.forEach.call( nodes, function ( el ) {
+			el.style.display = ruleHolds( el, 0 ) ? '' : 'none';
+		} );
+	}
 
 	function init() {
-		var select = document.querySelector( 'select[name="mvs_ai_provider"]' );
-		if ( ! select ) {
+		if ( ! document.querySelector( '[' + ATTR + ']' ) ) {
 			return;
 		}
-
-		var captions = document.querySelector( 'input[name="mvs_pro_settings[captions_auto]"]' );
-
-		function sync() {
-			var provider = select.value;
-
-			// Show only the selected provider's card; hide the others.
-			Object.keys( PROVIDER_CARDS ).forEach( function ( prov ) {
-				var card = document.querySelector(
-					'.mvs-settings-card[data-section="' + PROVIDER_CARDS[ prov ] + '"]'
-				);
-				if ( card ) {
-					card.style.display = provider === prov ? '' : 'none';
-				}
-			} );
-
-			// OpenAI key/model rows live inside the shared "AI Features" card.
-			// Show them when OpenAI is the provider OR when Whisper captions are
-			// on (captions reuse the OpenAI key).
-			var captionsOn = captions ? captions.checked : false;
-			var showOpenAi = 'openai' === provider || captionsOn;
-			var rows = document.querySelectorAll( 'tr.mvs-ai-openai-field' );
-			Array.prototype.forEach.call( rows, function ( row ) {
-				row.style.display = showOpenAi ? '' : 'none';
-			} );
-		}
-
-		select.addEventListener( 'change', sync );
-		if ( captions ) {
-			captions.addEventListener( 'change', sync );
-		}
+		document.addEventListener( 'change', sync );
 		sync();
 	}
 

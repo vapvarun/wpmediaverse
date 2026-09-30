@@ -67,9 +67,9 @@ With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN whil
 | Custom privacy levels | Basic | Basic | Basic | 6 levels (Pro) |
 | Direct messaging | No | Separate plugin | No | Built-in |
 | Gamification | No | No | No | Challenges, battles, tournaments (Pro) |
-| Cloud storage | No | No | No | S3 + BunnyCDN (Pro) |
+| Cloud storage | No | No | No | S3, BunnyCDN, Cloudflare R2, DigitalOcean Spaces (Pro) |
 | AI moderation | No | No | No | OpenAI + Vision + Rekognition |
-| Upload quotas | No | No | No | Per-user packages (Pro) |
+| Storage limit | No | No | No | One optional limit per member (Free) |
 | Layout modes | 1 | 1 | 1 | 5 (grid + 4 Pro layouts) |
 
 ## Use Cases
@@ -81,7 +81,7 @@ A social network for photographers to share, discover, and compete. Users upload
 Designers, artists, and photographers use MediaVerse as their portfolio. The Dribbble layout presents work in a professional shot grid. Clients can view galleries, leave comments, and message directly.
 
 ### School or University
-Students submit media projects through the upload system. Teachers use collections to curate work. Privacy controls ensure only enrolled members see content. Quotas limit storage per student.
+Students submit media projects through the upload system. Teachers use collections to curate work. Privacy controls ensure only enrolled members see content. An optional storage limit caps each student's space.
 
 ### Company Intranet
 Employees share photos from events, marketing assets, and training videos. Group media tabs organize content by department. AI moderation flags inappropriate uploads automatically.

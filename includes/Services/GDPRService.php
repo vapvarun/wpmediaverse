@@ -193,6 +193,22 @@ class GDPRService {
 			);
 		}
 
+		// WordPress only renders a group heading in the export file when at
+		// least one item carries that `group_id` — an empty `$export_items`
+		// makes the Media Items section vanish entirely rather than show
+		// empty, so a reviewer cannot tell the exporter ran from one that
+		// never fired. Only on the genuinely empty first page: a later page
+		// of a multi-page export being empty (the tail end) is normal and
+		// the heading already appeared on page 1. Basecamp 10350231765.
+		if ( empty( $export_items ) && 1 === $page ) {
+			$export_items[] = array(
+				'group_id'    => 'wpmediaverse-media',
+				'group_label' => __( 'Media Items', 'wpmediaverse' ),
+				'item_id'     => 'mvs-media-none',
+				'data'        => array(),
+			);
+		}
+
 		return array(
 			'data' => $export_items,
 			'done' => count( $rows ) < $per_page,
@@ -461,13 +477,22 @@ class GDPRService {
 			return;
 		}
 
-		$content = sprintf(
-			'<h2>%s</h2><p>%s</p><p>%s</p><p>%s</p>',
-			__( 'MediaVerse', 'wpmediaverse' ),
-			__( 'When you upload media to this site using MediaVerse, we store the file and associated metadata (title, description, tags, privacy settings). Images may be processed for EXIF data removal.', 'wpmediaverse' ),
-			__( 'Social interactions (reactions, comments, follows, favorites) are stored in our database and linked to your user account. You can manage these through your profile settings.', 'wpmediaverse' ),
-			__( 'When you request deletion of your personal data, all media files, social interactions, and associated metadata will be permanently removed from our systems.', 'wpmediaverse' )
+		// Suggested text only: WordPress shows it to the owner under Settings >
+		// Privacy to copy into their policy. It names every place MediaVerse
+		// keeps member data or sends it, and what erasure keeps (MemberDataMap's
+		// RETAIN list), because a policy that says "everything is removed" is
+		// false for reports, usage records and shared conversations.
+		$paragraphs = array(
+			__( 'When you upload media to this site using MediaVerse, we store the file and its details (title, description, tags, privacy setting). Images may be processed to remove EXIF data such as location.', 'wpmediaverse' ),
+			__( 'Reactions, comments, follows, favorites and mentions are stored in our database and linked to your account.', 'wpmediaverse' ),
+			__( 'Direct messages you send, and reactions on them, are stored in our database so the people in the conversation can read them.', 'wpmediaverse' ),
+			__( 'When you are logged in and open a media item, we record that you viewed it. This is used for view counts.', 'wpmediaverse' ),
+			__( 'If the site owner turns on AI tagging or moderation, images you upload are sent to OpenAI for analysis.', 'wpmediaverse' ),
+			__( 'If you use the mobile app and allow notifications, we store your device\'s push token so the site can send you notifications.', 'wpmediaverse' ),
+			__( 'When you ask for your data to be erased, your media, interactions, messages, view records, notifications and device tokens are deleted. A few records are kept with your name removed: reports you filed or that were filed about you (the moderation record), usage records the site owner may be required to keep, and conversations other members are still part of.', 'wpmediaverse' ),
 		);
+
+		$content = '<h2>' . esc_html__( 'MediaVerse', 'wpmediaverse' ) . '</h2><p>' . implode( '</p><p>', array_map( 'esc_html', $paragraphs ) ) . '</p>';
 
 		wp_add_privacy_policy_content( 'WPMediaVerse', $content );
 	}
@@ -517,7 +542,7 @@ class GDPRService {
 				foreach ( $spec['columns'] as $column ) {
 					$has = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM `{$full}` LIKE %s", $column ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					if ( $has ) {
-						$where[] = $wpdb->prepare( "`{$column}` = %d", $user_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$where[] = '(' . \WPMediaVerse\Privacy\MemberDataMap::member_condition( $spec, $column, $user_id ) . ')';
 					}
 				}
 

@@ -8,25 +8,25 @@ Webhooks allow MediaVerse to send signed HTTP POST notifications to external ser
 
 ## Supported Events
 
-| Event | Triggered When |
-|-------|---------------|
-| `media.uploaded` | A new media file is successfully uploaded |
-| `media.updated` | An existing media post is saved/updated |
-| `media.deleted` | A media post is permanently deleted |
-| `media.moderated` | A media item's moderation status changes (approved, flagged, rejected) |
-| `media.reaction` | A user adds a reaction to a media item |
-| `media.comment` | A user posts a comment on a media item |
+Each webhook has an **All events** box plus one box per event. The screen shows a plain label; the value stored and sent in the `X-MVS-Event` header is the event id.
+
+| Label on screen | Event id | Triggered When |
+|-----------------|----------|---------------|
+| Media uploaded | `media.uploaded` | A new media file is successfully uploaded |
+| Media deleted | `media.deleted` | A media post is permanently deleted |
+| Moderation status changed | `media.moderated` | A media item's moderation status changes (approved, flagged, rejected) |
+| Someone reacted to media | `media.reaction` | A member adds a reaction to a media item |
+| Someone commented on media | `media.comment` | A member posts a comment on a media item |
 
 ## Adding a Webhook
 
 1. Go to **MediaVerse > Settings > Webhooks**.
-2. Click **Add Webhook**.
-3. Enter the **URL** that should receive the POST request.
-4. Select which **events** should trigger this webhook.
-5. Optionally enter a **secret key** for signature verification.
-6. Click **Save Webhooks**.
+2. Enter the **URL** that should receive the POST request.
+3. Optionally enter a **Secret** for signature verification. Leave it empty later to keep the current secret.
+4. Tick **All events**, or the events that should trigger this webhook.
+5. Click **Save Changes**.
 
-![Add webhook form with URL field and event checkboxes](../images/admin-settings-general.png)
+Events are saved only when a URL is set. Without a URL the webhook is removed and the event choice resets to "All events".
 
 ## Payload Format
 

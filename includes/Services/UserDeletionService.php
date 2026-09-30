@@ -20,11 +20,63 @@ defined( 'ABSPATH' ) || exit;
 class UserDeletionService {
 
 	/**
+	 * Action Scheduler hook that processes one batch of the media cascade.
+	 *
+	 * @since 2.6.0
+	 */
+	public const CASCADE_HOOK = 'mvs_user_deletion_cascade';
+
+	/**
+	 * Action Scheduler group, matching every other AS job in this plugin.
+	 */
+	private const AS_GROUP = 'wpmediaverse';
+
+	/**
+	 * Media items torn down per batch. A member with thousands of uploads
+	 * previously ran the whole cascade (file I/O + child-table deletes per
+	 * item) inline on the `deleted_user` request; this bounds each request
+	 * / AS run to a fixed amount of work.
+	 */
+	private const CASCADE_BATCH_SIZE = 100;
+
+	/**
 	 * Register WordPress hooks.
 	 */
 	public function init(): void {
-		add_action( 'deleted_user', array( $this, 'handle_user_deletion' ), 10, 1 );
-		add_action( 'remove_user_from_blog', array( $this, 'handle_user_removed_from_blog' ), 10, 2 );
+		// Both carry WordPress's "Attribute all content to" choice as $reassign.
+		add_action( 'deleted_user', array( $this, 'handle_user_deletion' ), 10, 2 );
+		add_action( 'remove_user_from_blog', array( $this, 'handle_user_removed_from_blog' ), 10, 3 );
+		// WordPress only offers that choice when the user owns posts, so a member
+		// with only media was never asked and lost it all.
+		add_filter( 'users_have_additional_content', array( $this, 'users_have_media' ), 10, 2 );
+		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 );
+	}
+
+	/**
+	 * Tell the Delete Users screen that these members own media.
+	 *
+	 * Makes WordPress show "Attribute all content to" for a member whose only
+	 * content is media (Basecamp 10344411938).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param bool  $has_content Answer so far.
+	 * @param int[] $user_ids    Users being deleted.
+	 * @return bool
+	 */
+	public function users_have_media( $has_content, $user_ids ): bool {
+		if ( $has_content ) {
+			return true;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		foreach ( (array) $user_ids as $user_id ) {
+			if ( $repo->author_media_ids( (int) $user_id, 1 ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -174,9 +226,14 @@ class UserDeletionService {
 	 *   2. Purge rows that reference the user directly (reactions, favorites, follows, blocks,
 	 *      reports, access grants, mentions, conversation participation, messages).
 	 *
-	 * @param int $user_id User ID being deleted.
+	 * When the admin chose "Attribute all content to", phase 1 hands the media
+	 * to that member instead, as WordPress does with posts; only DM attachments,
+	 * which live inside the erased messages, still go (Basecamp 10344411938).
+	 *
+	 * @param int      $user_id  User ID being deleted.
+	 * @param int|null $reassign Member receiving the content, or null to erase it.
 	 */
-	public function handle_user_deletion( int $user_id ): void {
+	public function handle_user_deletion( int $user_id, $reassign = null ): void {
 		if ( $user_id <= 0 ) {
 			return;
 		}
@@ -207,13 +264,27 @@ class UserDeletionService {
 		// one. Anything not reassigned falls through to the cascade unchanged.
 		$reassigned = $this->reassign_team_drive_media( $user_id );
 
+		// Phase 1a (cont.) — the admin chose "Attribute all content to": everything else
+		// the member uploaded goes to that member instead of being erased. Space
+		// files were already handed to their Space above; this takes the rest.
+		$reassign = (int) $reassign;
+		if ( $reassign > 0 && $reassign !== $user_id && get_userdata( $reassign ) ) {
+			$container  = \WPMediaVerse\Core\Plugin::container();
+			$reassigned = array_merge( $reassigned, $container->get( 'media_repository' )->reassign_author_media( $user_id, $reassign ) );
+
+			if ( $container->has( 'cache' ) ) {
+				$container->get( 'cache' )->flush_all();
+			}
+		}
+
 		if ( ! empty( $reassigned ) ) {
 			$media_ids = array_values( array_diff( $media_ids, $reassigned ) );
 		}
 
-		foreach ( $media_ids as $media_id ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
-		}
+		// Batched via Action Scheduler — a member with thousands of uploads
+		// used to run every delete_cascade() (file I/O + child-table deletes)
+		// inline on this request, big-site checklist item 3 in one hook.
+		$this->cascade_media_deletion( $user_id, $media_ids );
 
 		// Phase 1b — delete the user's albums and collections (CPTs). These were
 		// never removed, orphaning the album's mvs_album_items rows and (for
@@ -392,15 +463,78 @@ class UserDeletionService {
 	}
 
 	/**
+	 * Cascade-delete a user's media, batched via Action Scheduler when it is
+	 * available, synchronous otherwise (headless / no AS runner).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int   $user_id   Deleted user id (carried through for logging/reschedule).
+	 * @param int[] $media_ids Media ids owned by the user.
+	 */
+	private function cascade_media_deletion( int $user_id, array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			$this->schedule_cascade_batch( $user_id, array_values( array_map( 'intval', $media_ids ) ) );
+			return;
+		}
+
+		foreach ( $media_ids as $media_id ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
+		}
+	}
+
+	/**
+	 * Enqueue the next cascade batch. Idempotent by construction — each call
+	 * enqueues a fresh AS action carrying only the ids still to process.
+	 *
+	 * @param int   $user_id   Deleted user id.
+	 * @param int[] $media_ids Remaining media ids.
+	 */
+	private function schedule_cascade_batch( int $user_id, array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $media_ids ), self::AS_GROUP );
+	}
+
+	/**
+	 * Action Scheduler callback — deletes one batch of media and re-enqueues
+	 * itself for whatever remains. `delete_cascade()` is a no-op on an id
+	 * that no longer exists, so a retried/duplicated batch is harmless.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int   $user_id   Deleted user id (unused here beyond reschedule bookkeeping).
+	 * @param int[] $media_ids Media ids for this cascade run.
+	 */
+	public function process_cascade_batch( int $user_id, array $media_ids ): void {
+		$batch     = array_slice( $media_ids, 0, self::CASCADE_BATCH_SIZE );
+		$remaining = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		foreach ( $batch as $media_id ) {
+			$repo->delete_cascade( (int) $media_id );
+		}
+
+		if ( ! empty( $remaining ) ) {
+			$this->schedule_cascade_batch( $user_id, $remaining );
+		}
+	}
+
+	/**
 	 * Multisite variant — `remove_user_from_blog` fires with ( user_id, blog_id ).
 	 * Delegates to the same cascade so per-site data is cleaned when a user is
 	 * removed from an individual site without being deleted network-wide.
 	 *
-	 * @param int $user_id User being removed.
-	 * @param int $blog_id Blog ID (unused — $wpdb already scopes to the current blog).
+	 * @param int      $user_id  User being removed.
+	 * @param int      $blog_id  Blog ID (unused — $wpdb already scopes to the current blog).
+	 * @param int|null $reassign Member receiving the content, or null to erase it.
 	 */
-	public function handle_user_removed_from_blog( int $user_id, int $blog_id ): void {
+	public function handle_user_removed_from_blog( int $user_id, int $blog_id, $reassign = null ): void {
 		unset( $blog_id );
-		$this->handle_user_deletion( $user_id );
+		$this->handle_user_deletion( $user_id, $reassign );
 	}
 }

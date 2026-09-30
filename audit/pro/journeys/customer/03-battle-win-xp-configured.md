@@ -3,7 +3,7 @@ journey: battle-win-xp-configured
 plugin: wpmediaverse-pro
 roles: [administrator, member]
 priority: high
-covers: [battles, gamification, mvs_battle_win, xp_for_win, CompetePointsBridge, configured-xp]
+covers: [battles, gamification, mvs_battle_win, xp_for_win, CompetePointsBridge, configured-xp, MV-BAT-005, MV-BAT-006]
 prerequisites:
   - "Both plugins active; mvs_battles_enabled = 1"
   - "WB Gamification active (CompetePointsBridge wired)"

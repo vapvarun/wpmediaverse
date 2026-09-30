@@ -42,12 +42,14 @@ React, comment, follow, and share - MediaVerse turns your media site into a livi
 4. To edit your comment, click the pencil icon next to it (available within 15 minutes of posting)
 5. To delete your comment, click the trash icon
 
-### Saving to Favorites
+### Saving media
 
-1. Click the heart icon on any media item
-2. The item is added to your favorites list
-3. Find all your favorites under **My Media > Favorites** in your dashboard
-4. To save to a named collection instead, click the bookmark icon and choose or create a collection
+Reactions say how you feel about a photo; **Save** keeps it. There is one way to keep an item.
+
+1. Click **Save** (the bookmark icon) on any media item or in the lightbox
+2. The item goes into your private **Favorites** collection. Everything you favorited before 2.6.0 is already there.
+3. Find it under **My Media > Collections > Favorites**, or under **My Media > Favorites**
+4. With MediaVerse Pro, Save opens the collection picker: Favorites is the first row, and you can tick any of your own collections too
 
 ### Sharing Media
 
@@ -120,7 +122,9 @@ BuddyPress integration uses this to record activity and send notifications.
 
 ## Favorites
 
-Users can save media items to their favorites or to a named collection.
+Users save media items with **Save**. Saved items make up each member's private Favorites collection (a view over their favourites, always private, never deleted). The favourite REST routes below are unchanged.
+
+To bring back the separate Favorite (star) button that the lightbox and the single media page had before 2.6.0: `add_filter( 'mvs_show_favorite_button', '__return_true' );`
 
 ### REST API
 

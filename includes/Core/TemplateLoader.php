@@ -28,6 +28,155 @@ class TemplateLoader {
 	const THEME_DIR = 'wpmediaverse';
 
 	/**
+	 * Paths the My Media page used to live at, newest first (max 5).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @var string
+	 */
+	const OLD_DASHBOARD_PATHS_OPTION = 'mvs_dashboard_old_paths';
+
+	/**
+	 * Ask for the rewrite rules to be rebuilt on the next request.
+	 *
+	 * @since 2.6.0
+	 */
+	public static function queue_rewrite_flush(): void {
+		set_transient( 'mvs_flush_rewrite', true );
+	}
+
+	/**
+	 * Rebuild the rules when the My Media page's path changes.
+	 *
+	 * Its path is its slug plus every ancestor's, so a change to the page OR to
+	 * any page above it moves the dashboard.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int      $post_id Updated post.
+	 * @param \WP_Post $after   Post after the update.
+	 * @param \WP_Post $before  Post before the update.
+	 */
+	public static function flush_when_dashboard_path_changes( int $post_id, $after, $before ): void {
+		$dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
+		if ( ! $dashboard || 'page' !== $after->post_type ) {
+			return;
+		}
+
+		if ( $post_id !== $dashboard && ! in_array( $post_id, get_post_ancestors( $dashboard ), true ) ) {
+			return;
+		}
+
+		if ( $after->post_name !== $before->post_name || (int) $after->post_parent !== (int) $before->post_parent ) {
+			self::queue_rewrite_flush();
+
+			// Remember where the page used to live, the way WordPress remembers
+			// a post's old slug, so links saved elsewhere (a nav menu, a
+			// bookmark) still reach their section (Basecamp 10344452624).
+			// ponytail: an ANCESTOR's rename is not recorded (core does not
+			// either); add it if owners hit it.
+			if ( $post_id === $dashboard ) {
+				$old  = ( $before->post_parent ? get_page_uri( (int) $before->post_parent ) . '/' : '' ) . $before->post_name;
+				$list = array_values( array_diff( (array) get_option( self::OLD_DASHBOARD_PATHS_OPTION, array() ), array( $old, get_page_uri( $dashboard ) ) ) );
+				array_unshift( $list, $old );
+				update_option( self::OLD_DASHBOARD_PATHS_OPTION, array_slice( $list, 0, 5 ), false );
+			}
+		}
+	}
+
+	/**
+	 * 301 a request for an old My Media path to the page's current path.
+	 *
+	 * Only a request that is about to 404 is touched, so a page that now owns
+	 * the old address always wins.
+	 *
+	 * @since 2.6.0
+	 */
+	public function redirect_old_dashboard_path(): void {
+		if ( ! is_404() ) {
+			return;
+		}
+
+		$dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
+		$old_paths = (array) get_option( self::OLD_DASHBOARD_PATHS_OPTION, array() );
+		if ( ! $dashboard || ! $old_paths ) {
+			return;
+		}
+
+		$request = trim( (string) ( $GLOBALS['wp']->request ?? '' ), '/' );
+		foreach ( $old_paths as $old ) {
+			$old = trim( (string) $old, '/' );
+			if ( '' === $old || ( $request !== $old && 0 !== strpos( $request, $old . '/' ) ) ) {
+				continue;
+			}
+
+			$url = home_url( user_trailingslashit( get_page_uri( $dashboard ) . substr( $request, strlen( $old ) ) ) );
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET state carried over.
+			$query = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+			wp_safe_redirect( $query ? add_query_arg( urlencode_deep( $query ), $url ) : $url, 301 );
+			exit;
+		}
+	}
+
+	/**
+	 * Send /media/ to the owner's Explore page when one is mapped.
+	 *
+	 * Mapping a page as Explore left /media/ live as a second, indexable copy
+	 * of the same archive (Basecamp 10344427396). The owner's page wins; paging
+	 * and the query string (search, tag, type) carry over. Unmapped sites keep
+	 * /media/ as Explore. Singles stay at /media/<slug>/.
+	 *
+	 * @since 2.6.0
+	 */
+	public function redirect_archive_to_explore_page(): void {
+		if ( ! get_query_var( 'mvs_media_archive' ) ) {
+			return;
+		}
+
+		$page = (int) get_option( 'mvs_page_explore', 0 );
+		if ( ! $page || 'publish' !== get_post_status( $page ) ) {
+			return;
+		}
+
+		/**
+		 * Whether /media/ redirects to the mapped Explore page.
+		 *
+		 * Return false to keep /media/ serving Explore alongside the mapped page,
+		 * as it did before 2.6.0.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool $redirect Default true.
+		 * @param int  $page     Mapped Explore page id.
+		 */
+		if ( ! apply_filters( 'mvs_redirect_media_archive_to_explore_page', true, $page ) ) {
+			return;
+		}
+
+		$url   = (string) get_permalink( $page );
+		$paged = (int) get_query_var( 'paged' );
+		if ( $paged > 1 ) {
+			$url = get_option( 'permalink_structure' )
+				? trailingslashit( $url ) . user_trailingslashit( 'page/' . $paged, 'paged' )
+				: add_query_arg( 'paged', $paged, $url );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only GET filters carried to the new address.
+		$query = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+		// `s` would turn the page into the site's own search; Explore reads `q`.
+		if ( isset( $query['s'] ) ) {
+			$query[ TemplateHelpers::EXPLORE_SEARCH_PARAM ] = $query['s'];
+			unset( $query['s'] );
+		}
+		if ( $query ) {
+			$url = add_query_arg( urlencode_deep( $query ), $url );
+		}
+
+		wp_safe_redirect( $url, 301 );
+		exit;
+	}
+
+	/**
 	 * Initialize template hooks.
 	 */
 	public function init(): void {
@@ -35,9 +184,22 @@ class TemplateLoader {
 		add_action( 'init', array( $this, 'register_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 
+		// The dashboard rules are built from the mapped page's path, so mapping
+		// another page, renaming it or moving it under a parent must rebuild them.
+		add_action( 'add_option_mvs_page_dashboard', array( self::class, 'queue_rewrite_flush' ) );
+		add_action( 'update_option_mvs_page_dashboard', array( self::class, 'queue_rewrite_flush' ) );
+		add_action( 'post_updated', array( self::class, 'flush_when_dashboard_path_changes' ), 10, 3 );
+		add_action( 'template_redirect', array( $this, 'redirect_old_dashboard_path' ), 4 );
+
 		// Send off-site sections to where they actually live. Before
 		// load_media_templates, or the dead panel renders first.
 		add_action( 'template_redirect', array( $this, 'redirect_offsite_section' ), 4 );
+
+		// One Explore address: a mapped Explore page replaces /media/.
+		add_action( 'template_redirect', array( $this, 'redirect_archive_to_explore_page' ), 4 );
+
+		// The member's drive has one home: the dashboard's documents section.
+		add_action( 'template_redirect', array( $this, 'redirect_legacy_drive_query' ), 4 );
 
 		// Serve media templates via template_redirect.
 		add_action( 'template_redirect', array( $this, 'load_media_templates' ), 5 );
@@ -171,7 +333,10 @@ class TemplateLoader {
 		$mvs_dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
 
 		if ( $mvs_dashboard ) {
-			$mvs_dashboard_slug = get_post_field( 'post_name', $mvs_dashboard );
+			// The page's full PATH, not its post_name: as a child page it lives at
+			// parent/my-media/, and a rule built from `my-media` never matched, so
+			// every section 404'd (Basecamp 10344427213).
+			$mvs_dashboard_slug = get_page_uri( $mvs_dashboard );
 
 			if ( $mvs_dashboard_slug ) {
 				// RESERVED SEGMENTS FIRST. `documents/(.+?)` below matches any path,
@@ -472,6 +637,69 @@ class TemplateLoader {
 		exit;
 	}
 
+	/**
+	 * Send `?drive=my-drive|shared|recent` on the documents page to the dashboard.
+	 *
+	 * The member's drive used to answer at two addresses: the dashboard's
+	 * documents section and the public Explore Documents page with a `?drive=`
+	 * query. Same drive, two URLs, two sets of chrome - and the page title said
+	 * "Explore Documents" over a member's private files. The dashboard section
+	 * is the one home now; the old query keeps working as a 302 so bookmarks
+	 * and links already out there still land somewhere real.
+	 *
+	 * Only when the dashboard page exists and this member can see its documents
+	 * section - otherwise there is nowhere better to go, and the shortcode's own
+	 * `?drive=` branch (kept, not removed) renders as before.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return void
+	 */
+	public function redirect_legacy_drive_query(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only routing.
+		$drive = isset( $_GET['drive'] ) ? sanitize_key( wp_unslash( $_GET['drive'] ) ) : '';
+
+		if ( ! in_array( $drive, array( 'my-drive', 'shared', 'recent' ), true ) || ! is_singular() ) {
+			return;
+		}
+
+		$post = get_queried_object();
+
+		if ( ! $post instanceof \WP_Post || ! has_shortcode( (string) $post->post_content, 'mvs_documents' ) ) {
+			return;
+		}
+
+		if ( ! (int) get_option( 'mvs_page_dashboard', 0 ) || ! DashboardSections::exists( 'documents' ) ) {
+			return;
+		}
+
+		/**
+		 * Whether `?drive=` on the documents page redirects to the dashboard.
+		 *
+		 * Return false to keep rendering the drive on the documents page, as
+		 * before 2.6.0.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool   $redirect Default true.
+		 * @param string $drive    Requested drive root.
+		 */
+		if ( ! apply_filters( 'mvs_redirect_legacy_drive_query', true, $drive ) ) {
+			return;
+		}
+
+		$target = DashboardSections::url( 'documents' );
+
+		// `documents/shared/` is a real route; with plain permalinks there is no
+		// path to append, so the drive root is the honest landing.
+		if ( 'shared' === $drive && get_option( 'permalink_structure' ) ) {
+			$target = trailingslashit( $target ) . 'shared/';
+		}
+
+		wp_safe_redirect( $target, 302 );
+		exit;
+	}
+
 	public function load_media_templates(): void {
 		// Gate single album/collection privacy here (template_redirect@5), BEFORE
 		// the theme renders. The in-template gates in album.php / collection.php
@@ -631,6 +859,36 @@ class TemplateLoader {
 			return;
 		}
 
+		// Who may see this, decided BEFORE any redirect: a host redirect used to
+		// run first, so a signed-out visitor on a private photo was sent to the
+		// owner's profile, which told them whose it was (QA, 2.6.0).
+		//
+		// A viewer who cannot see the item gets one of two answers:
+		// - a signed-out visitor on an item that signing in could open
+		// (members, friends, group) gets a "Log in to view" page that names
+		// nothing: no title, owner, image or description;
+		// - everyone else (signed-in viewers, private items, documents) gets
+		// the same 404 as a missing slug, so the page cannot confirm that the
+		// item exists. A document's filename can carry a client's name, which
+		// is why documents never get the prompt.
+		$can_view = $this->can_view_media( $media );
+
+		if ( ! $can_view ) {
+			// Only a published, approved Members / Friends / Group item: signing in
+			// can open those. A private, custom-list, pending or rejected item
+			// answers like a missing one (QA, 2.6.0).
+			$mvs_signing_in_could_help = ! is_user_logged_in()
+				&& in_array( (string) ( $media['privacy'] ?? '' ), array( 'members', 'loggedin', 'friends', 'group', 'space' ), true )
+				&& in_array( (string) ( $media['moderation_status'] ?? 'approved' ), array( '', 'approved' ), true )
+				&& 'publish' === (string) ( $media['status'] ?? 'publish' )
+				&& ! in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true );
+
+			if ( ! $mvs_signing_in_could_help ) {
+				self::render_branded_404( 'media', $slug );
+				return;
+			}
+		}
+
 		/**
 		 * Let a host redirect single-media URLs somewhere else instead of rendering
 		 * the standalone page. BuddyNext uses this to send /media/{slug}/ to the
@@ -646,7 +904,7 @@ class TemplateLoader {
 		 * @param string $slug         The requested slug (or numeric id).
 		 * @param string $media_type   image|video|audio|document|legacy_document.
 		 */
-		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug, $mvs_media_type );
+		$redirect_url = $can_view ? (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug, $mvs_media_type ) : '';
 
 		// A DOCUMENT IS NOT A FEED OBJECT, so it does not follow a redirect meant
 		// for one. The filter above predates documents and was written for the
@@ -690,34 +948,6 @@ class TemplateLoader {
 			exit;
 		}
 
-		// Check privacy. A denied viewer gets the SAME single-media template and
-		// container — the template swaps the media itself for a "log in to view"
-		// message in the media slot and hides the social + comment sections. No
-		// redirect, no separate 404/gate page. The file URL, poster, OG image and
-		// download are never exposed to a denied viewer (see mvs_media_can_view;
-		// MediaUrl::file()/get_thumb_url() already return '' when the gate denies).
-		$can_view = $this->can_view_media( $media );
-
-		// Documents get a DIFFERENT refusal contract than media: 404, never
-		// 403. Media's 403-with-login-prompt page is deliberate (see the
-		// comment above `$can_view`) — a photo's privacy state is not
-		// sensitive to reveal. A document's filename can carry a client's
-		// name, so confirming "this exists but you can't see it" (what 403
-		// means) is itself the leak the checklist's must-never-happen table
-		// exists to prevent. Confirmed 2026-08-11 combo QA (F2): a
-		// revoked-grant document and a never-granted document both answered
-		// 403 here before this fix. Documents-disabled (above) and
-		// documents-refused (here) now both render the identical branded
-		// 404 — a denied viewer cannot tell "off" from "not yours to see"
-		// from "does not exist", which is the point.
-		if (
-			! $can_view
-			&& in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true )
-		) {
-			self::render_branded_404( 'media', $slug );
-			return;
-		}
-
 		// Set globals for the template.
 		$GLOBALS['mvs_current_media']  = $media;
 		$GLOBALS['mvs_media_can_view'] = $can_view;
@@ -740,9 +970,10 @@ class TemplateLoader {
 		// Set page title.
 		add_filter(
 			'document_title_parts',
-			function ( $title ) use ( $media ) {
-				$title['title'] = $media['title'] ?: __( 'Media', 'wpmediaverse' );
-				return $title;
+			function ( $title ) use ( $media, $can_view ) {
+				// The prompt page names nothing, the tab title included.
+				$mvs_page_title = $can_view ? ( $media['title'] ?: __( 'Media', 'wpmediaverse' ) ) : __( 'Log in to view', 'wpmediaverse' );
+				return self::title_parts( (array) $title, $mvs_page_title );
 			}
 		);
 
@@ -809,6 +1040,27 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Title parts for a MediaVerse route: the page title plus the site name.
+	 *
+	 * These routes are virtual, so WordPress reads them as the blog home and
+	 * drops the site name (and adds the tagline) from the tab title: a media
+	 * page showed just "Coffee Cheers". Every route filter goes through here so
+	 * they all read "Page - Site" like the theme's own pages (2.6.0).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param array  $parts Title parts from document_title_parts.
+	 * @param string $title Page title.
+	 * @return array
+	 */
+	public static function title_parts( array $parts, string $title ): array {
+		unset( $parts['tagline'] );
+		$parts['title'] = $title;
+		$parts['site']  = get_bloginfo( 'name', 'display' );
+		return $parts;
+	}
+
+	/**
 	 * Point active SEO plugins at a virtual route's real title + canonical.
 	 *
 	 * These routes emit a custom query var (mvs_media_archive / mvs_profile_user
@@ -852,14 +1104,31 @@ class TemplateLoader {
 	private function serve_media_archive(): void {
 		$GLOBALS['mvs_is_media_archive'] = true;
 
-		add_filter(
-			'document_title_parts',
-			function ( $title ) {
-				$title['title'] = __( 'Explore Media', 'wpmediaverse' );
-				return $title;
-			}
-		);
-		$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
+		// Only the virtual /media/ route needs a title of its own. A mapped
+		// Explore page is a real page: WordPress and SEO plugins already title it
+		// from the owner's page (the front-page title when it is the front page),
+		// and forcing "Explore Media" there overrode the name the owner chose
+		// (Basecamp 10344427413).
+		if ( get_query_var( 'mvs_media_archive' ) ) {
+			add_filter(
+				'document_title_parts',
+				function ( $title ) {
+					return self::title_parts( (array) $title, __( 'Explore Media', 'wpmediaverse' ) );
+				}
+			);
+			$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
+		}
+
+		// A theme copy of explore.php (or a Pro layout) from before 2.6.0 reads
+		// the search term from $_GET['s']; Explore now sends `q`. Hand the term
+		// to that old copy too, so its search keeps working. This runs after
+		// WordPress parsed the request, so it cannot turn the page into a site
+		// search. ponytail: remove in 3.0.0, once theme copies had two majors
+		// to re-copy (Production Rule 1).
+		$mvs_search = Plugin::container()->get( 'template_helpers' )->explore_search();
+		if ( '' !== $mvs_search && ! isset( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view state.
+			$_GET['s'] = $mvs_search;
+		}
 
 		$template = self::locate( 'explore.php' );
 		if ( $template ) {
@@ -897,8 +1166,7 @@ class TemplateLoader {
 			'document_title_parts',
 			function ( $title ) use ( $user ) {
 				/* translators: %s: user display name */
-				$title['title'] = sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name );
-				return $title;
+				return self::title_parts( (array) $title, sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name ) );
 			}
 		);
 		/* translators: %s: user display name */
@@ -923,11 +1191,29 @@ class TemplateLoader {
 			exit;
 		}
 
+		// One profile editor: the dashboard's profile section. This page stays
+		// (themes may override the template), but members are sent to the one
+		// home so the two forms cannot drift apart again.
+		if ( (int) get_option( 'mvs_page_dashboard', 0 ) && DashboardSections::exists( 'profile' ) ) {
+			/**
+			 * Whether /media/edit-profile/ redirects to the dashboard profile section.
+			 *
+			 * Return false to keep serving the standalone editor, as before 2.6.0.
+			 *
+			 * @since 2.6.0
+			 *
+			 * @param bool $redirect Default true.
+			 */
+			if ( apply_filters( 'mvs_profile_edit_redirect', true ) ) {
+				wp_safe_redirect( DashboardSections::url( 'profile' ), 302 );
+				exit;
+			}
+		}
+
 		add_filter(
 			'document_title_parts',
 			function ( $title ) {
-				$title['title'] = __( 'Edit Profile', 'wpmediaverse' );
-				return $title;
+				return self::title_parts( (array) $title, __( 'Edit Profile', 'wpmediaverse' ) );
 			}
 		);
 		$this->apply_seo_overrides( __( 'Edit Profile', 'wpmediaverse' ) );
@@ -1067,9 +1353,17 @@ class TemplateLoader {
 			return;
 		}
 
+		// Pages where the member is looking at one item. On phones the + upload
+		// button steps aside there (frontend.css): it covered the reactions and
+		// comment box, and viewing a post is not where people upload.
+		$is_view_page = (bool) get_query_var( 'mvs_media_slug' ) || is_singular( array( 'mvs_album', 'mvs_collection' ) );
+
 		add_filter(
 			'body_class',
-			static function ( array $classes ): array {
+			static function ( array $classes ) use ( $is_view_page ): array {
+				if ( $is_view_page ) {
+					$classes[] = 'mvs-view-page';
+				}
 				/**
 				 * Filters the body classes added to WPMediaVerse pages.
 				 *
@@ -1113,6 +1407,15 @@ class TemplateLoader {
 		global $wp_query;
 
 		$wp_query->set_404();
+		// set_404() resets the flags but leaves the queried item in place, so a
+		// theme header still printed a private album's title over "not found"
+		// (QA, 2.6.0). A hidden item must look exactly like a missing one.
+		$wp_query->posts             = array();
+		$wp_query->post              = null;
+		$wp_query->post_count        = 0;
+		$wp_query->queried_object    = null;
+		$wp_query->queried_object_id = 0;
+		$GLOBALS['post']             = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- the album must not reach the theme.
 		status_header( 404 );
 		nocache_headers();
 

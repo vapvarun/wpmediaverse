@@ -37,7 +37,6 @@ class BlockRegistrar {
 		'album-viewer',
 		'media-stats',
 		'explore-feed',
-		'lock-overlay',
 		'member-photos',
 		'pdf-viewer',
 	);

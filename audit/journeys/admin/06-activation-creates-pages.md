@@ -3,7 +3,7 @@ journey: activation-creates-pages
 plugin: wpmediaverse
 priority: critical
 roles: [administrator]
-covers: [activation-page-defaults, mvs-page-explore, mvs-page-dashboard, mvs-page-upload]
+covers: [activation-page-defaults, mvs-page-explore, mvs-page-dashboard, mvs-page-upload, MV-WIZ-005, MV-WIZ-006]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Auto-login mu-plugin available (?autologin=1)"
@@ -87,6 +87,16 @@ estimated_runtime_minutes: 2
 - **Action**: rename the upload page (e.g. WP admin → Pages → "Upload Media" → change title to "Submit a photo"), keep the shortcode, then deactivate + activate the plugin. Check `mvs_page_upload`.
 - **Expect**: option still points at the same post id (the customised page is NOT replaced).
 
+### 7. Unrelated same-titled page is never falsely adopted (MV-WIZ-005)
+
+- **Action**: Create a page titled exactly "My Media" by hand, with unrelated content and NO `[mvs_dashboard]` shortcode. Delete the `mvs_page_dashboard` option (`wp option delete mvs_page_dashboard`) so activation has to resolve the page fresh. Deactivate + reactivate the plugin.
+- **Expect**: `create_pages()`'s adoption order is: (1) existing option pointing at a live page with the shortcode, (2) a published page at the expected slug (`my-media`) carrying the shortcode, (3) a published page matching the exact title carrying the shortcode, (4) create new. The hand-made "My Media" page fails step 3 (title matches, shortcode does not), so it is skipped and a NEW page is created instead. `mvs_page_dashboard` now points at the new page, not the hand-made one, and the hand-made page's content is completely unchanged (confirm via `wp post get <its id> --field=post_content`).
+
+### 8. Activation never edits the site's navigation menu (MV-WIZ-006)
+
+- **Action**: Enable WordPress core's "Automatically add new top-level pages to this menu" option on the site's active nav menu (Appearance > Menus > Menu Options, or `wp option get nav_menu_options` shows the menu's id under `auto_add`). Delete `mvs_page_upload` and its page so activation has to create a fresh one. Deactivate + reactivate the plugin.
+- **Expect**: `create_pages()` detaches WordPress core's `_wp_auto_add_pages_to_menu` (hooked on `transition_post_status`) before creating pages and reattaches it in a `finally`-equivalent step right after the loop (Coding Rule 17). The newly created Upload page does NOT appear in that nav menu automatically, even though the core option that would normally add it is on. Confirm the hook was genuinely restored, not permanently removed: create an unrelated new page by hand (Pages > Add New > Publish) afterward and confirm WordPress's own auto-add DOES add that page to the menu — proving the detach was scoped to activation, not a lasting regression.
+
 ## Pass criteria
 
 ALL of the following hold:
@@ -96,6 +106,8 @@ ALL of the following hold:
 3. Hitting each page permalink renders the WPMediaVerse UI — not an empty WordPress page.
 4. Re-activating the plugin does NOT duplicate any of the three pages.
 5. A user-renamed page is preserved across activate/deactivate cycles.
+6. A pre-existing page sharing a target title but lacking (or having the wrong) shortcode is never adopted — activation creates a new page instead and leaves the unrelated page's content untouched.
+7. Activation never adds its created pages to a nav menu configured to auto-add new top-level pages, and WordPress's own auto-add keeps working normally for pages the plugin didn't create, immediately afterward.
 
 ## Fail diagnostics
 
@@ -105,3 +117,6 @@ ALL of the following hold:
 | Upload page rendered but no form shows | Shortcode missing or `[mvs_upload]` not registered | `includes/Shortcodes/Shortcodes.php` |
 | Re-activation creates `upload-media-2` page | Lookup-by-slug step in `create_pages()` regressed | `includes/Core/Activator.php::create_pages()` step 2 |
 | Renaming a page wipes the customisation | The "skip if existing option points at a live page" guard is broken | `includes/Core/Activator.php::create_pages()` step 1 |
+| An unrelated same-titled page gets adopted (MV-WIZ-005) | The title-match branch (step 3) dropped its shortcode check | `includes/Core/Activator.php::create_pages()` step 3 |
+| A newly created page appears in the nav menu (MV-WIZ-006) | `remove_action('transition_post_status', '_wp_auto_add_pages_to_menu', 10)` missing or its re-`add_action()` guard is skipped on an early `continue`/return | `includes/Core/Activator.php::create_pages()` |
+| Unrelated pages stop auto-adding to menus after any MediaVerse activation | The detached hook was never reattached (permanent removal, not scoped) | `includes/Core/Activator.php::create_pages()` (the `$auto_add_detached` re-`add_action()` call) |

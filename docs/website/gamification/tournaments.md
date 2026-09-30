@@ -12,7 +12,7 @@ Enter a single-elimination bracket competition - submit your best photo, survive
 - Watch the bracket fill up as other photographers register
 - Vote in active round matches - any member can vote (except in their own match)
 - Track your bracket position round by round
-- Earn XP for every match you win and a large XP prize if you win the tournament
+- Earn points for every match you win and a large point prize if you win the tournament
 
 ## How It Works (for Users)
 
@@ -35,19 +35,19 @@ Enter a single-elimination bracket competition - submit your best photo, survive
 
 ### What Happens If You Win or Lose
 
-- **Win a match:** You advance to the next round and earn **Round Win XP**
-- **Lose a match:** You are eliminated but keep any XP already earned
-- **Win the tournament:** You earn the **Winner XP** prize and a tournament champion badge
-- **Reach the final but lose:** You earn the **Runner-Up XP** prize
+- **Win a match:** You advance to the next round and earn **Round Win points**
+- **Lose a match:** You are eliminated but keep any points already earned
+- **Win the tournament:** You earn the **Winner points** prize and a tournament champion badge
+- **Reach the final but lose:** You earn the **Runner-Up points** prize
 
 ![Tournament bracket visualization showing round progression](../images/tournaments-page.png)
 
 ## For Site Owners
 
 1. Go to **MediaVerse > Settings > Gamification** and enable **Tournaments**
-2. Go to **Competitions > Tournament Manager** and click **Add Tournament**
+2. Go to **MediaVerse > Tournaments** and click **Add Tournament**
 3. Set the title, bracket size (4, 8, 16, 32, or 64 participants), registration window, and match vote duration
-4. Set XP prizes for the winner, runner-up, and each round win
+4. Set point prizes for the winner, runner-up, and each round win
 5. Click **Save** - the tournament appears on the frontend when registration opens
 6. The bracket generates automatically when registration closes
 
@@ -68,13 +68,13 @@ Seeding is random at bracket generation time.
 | **Registration** | Tournament is open - users can register with a photo |
 | **In Progress** | Registration closed - bracket generated, rounds underway |
 | **Finals** | Only two participants remain |
-| **Complete** | Winner determined, XP awarded to all placers |
+| **Complete** | Winner determined, points awarded to all placers |
 
 The system generates the bracket when the registration deadline passes (hourly Action Scheduler check). Each round's matches open for voting simultaneously. A new round begins after all matches in the current round are resolved.
 
 ## Creating a Tournament
 
-Go to **Competitions > Tournament Manager** and click **Add Tournament**.
+Go to **MediaVerse > Tournaments** and click **Add Tournament**.
 
 ![Tournament Manager create form](../images/admin-competitions.png)
 
@@ -85,9 +85,9 @@ Go to **Competitions > Tournament Manager** and click **Add Tournament**.
 | Registration Opens | Date and time users can start registering |
 | Registration Closes | Deadline for registrations - bracket generates after this |
 | Match Vote Duration | How long each round's matches are open for votes (in hours) |
-| XP - Winner | XP awarded to the tournament winner |
-| XP - Runner-Up | XP awarded to the finalist who loses |
-| XP - Round Win | XP awarded each time a participant wins a match |
+| Points - Winner | Points awarded to the tournament winner |
+| Points - Runner-Up | Points awarded to the finalist who loses |
+| Points - Round Win | Points awarded each time a participant wins a match |
 
 ## Settings Reference
 
@@ -172,7 +172,7 @@ The **My Media > Tournaments** tab shows tournaments the user is registered in, 
 
 ## Bye Handling
 
-When registrations do not fill the bracket exactly, byes are assigned before round 1 begins. A bye appears in the bracket as an automatic win - the real participant advances and their slot shows "Bye" for the opposing side. Bye participants do not earn a Round Win XP award.
+When registrations do not fill the bracket exactly, byes are assigned before round 1 begins. A bye appears in the bracket as an automatic win - the real participant advances and their slot shows "Bye" for the opposing side. Bye participants do not earn Round Win points.
 
 ## Scheduled Actions
 

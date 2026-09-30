@@ -41,11 +41,11 @@ Admin (WPMediaVerse menu):
 | `admin.php?page=mvs-settings` | Settings (8 tabs) |
 | `admin.php?page=mvs-moderation` | Moderation Queue |
 | `admin.php?page=mvs-stats` | Stats |
-| `admin.php?page=mvs-logs` | Log viewer |
+| `tools.php?page=mvs-logs` | Log viewer (Tools > MediaVerse Logs; the old `admin.php` URL redirects) |
 | `admin.php?page=mvs-media` | All Media list |
 | Setup Wizard (first-run modal) | Onboarding wizard |
 
-Pro admin adds: `mvs-competitions`, `mvs-challenges`, `mvs-tournaments`, `mvs-battles`, `mvs-quotas`, `mvs-theme-library`, `mvs-migration`, Pro settings tabs, License.
+Pro admin adds, all under the MediaVerse menu after Stats: `mvs-competitions`, `mvs-challenges`, `mvs-tournaments`, `mvs-battles`, `mvs-theme-library` (Challenge Themes); `mvs-migration` (sidebar only when a source exists); Pro settings tabs, License.
 
 > Anything outside this list (WP home, theme pages, other plugins' pages) is **out of scope**. Do not log findings for them.
 
@@ -513,9 +513,10 @@ they get walked.
       description, tags and privacy. A photo id is REFUSED here — it is not a document.
       **The slug is never regenerated from the title**: a member fixing a typo must not break every
       link they shared. Deeper coverage lives in `runbooks/DOCUMENTS-QA.md`; this is the admin half.
-- [ ] **17.2 Integrations** (`?page=mvs-integrations`) — companion cards render, the "Part of the
-      Wbcom family" header link works and is keyboard reachable, and no card claims a plugin is
-      active when it is not.
+- [ ] **17.2 Integrations** (`?page=mvs-integrations`, reached from the Overview Integrations card;
+      not in the sidebar) — companion cards render, the "Part of the Wbcom family" header link works
+      and is keyboard reachable, and no card claims a plugin is active when it is not. The Overview
+      card shows the same status per companion.
 - [ ] **17.3 Import** (`?page=mvs-migration`) — importer picker renders for rtMedia / MediaPress /
       BuddyBoss. With none of them installed the screen says so plainly rather than offering a
       button that will fail. **A refusal must not arrive as a success message** (Coding Rule 20 —

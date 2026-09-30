@@ -324,33 +324,18 @@ class Shortcodes {
 	}
 
 	/**
-	 * Render the [mvs_lock_overlay] shortcode.
+	 * The retired [mvs_lock_overlay] shortcode renders nothing.
 	 *
-	 * Usage: [mvs_lock_overlay id="123" blur="20" overlay_opacity="60" unlock_label="Restricted Content"]
+	 * MediaVerse no longer locks media behind rules (2.6.0). The shortcode stays
+	 * registered so pages that still contain it show nothing, rather than the
+	 * raw shortcode text or the media it used to cover.
 	 *
-	 * @param array|string $atts Shortcode attributes.
-	 * @return string
+	 * @deprecated 2.6.0
+	 *
+	 * @return string Always empty.
 	 */
-	public function render_lock_overlay( $atts ): string {
-		$atts = shortcode_atts(
-			array(
-				'id'              => 0,
-				'blur'            => 20,
-				'overlay_opacity' => 60,
-				'unlock_label'    => '',
-			),
-			$atts,
-			'mvs_lock_overlay'
-		);
-
-		$block_attrs = array(
-			'mediaId'        => absint( $atts['id'] ),
-			'blurAmount'     => absint( $atts['blur'] ),
-			'overlayOpacity' => absint( $atts['overlay_opacity'] ),
-			'unlockLabel'    => sanitize_text_field( $atts['unlock_label'] ),
-		);
-
-		return $this->render_block_template( 'lock-overlay', $block_attrs );
+	public function render_lock_overlay(): string {
+		return '';
 	}
 
 	/**
@@ -432,65 +417,11 @@ class Shortcodes {
 	 */
 	public function render_dashboard( $atts ): string {
 		if ( ! is_user_logged_in() ) {
-			$return_url = get_permalink();
-			$login_url  = \WPMediaVerse\Core\TemplateHelpers::login_url( $return_url );
-			$signup_url = function_exists( 'wc_registration_url' )
-				? wc_registration_url( $return_url )
-				: wp_registration_url();
-
-			ob_start();
-			?>
-			<div class="mvs-auth-gate">
-				<div class="mvs-auth-gate__card">
-					<div class="mvs-auth-gate__glyph" aria-hidden="true">
-						<i data-lucide="layout-dashboard"></i>
-					</div>
-					<h2 class="mvs-auth-gate__title">
-						<?php esc_html_e( 'Your creative space awaits', 'wpmediaverse' ); ?>
-					</h2>
-					<p class="mvs-auth-gate__lede">
-						<?php esc_html_e( 'Sign in to manage your uploads, curate albums, track stats, and follow the creators you love.', 'wpmediaverse' ); ?>
-					</p>
-					<ul class="mvs-auth-gate__benefits">
-						<li>
-							<span class="mvs-auth-gate__benefit-icon" aria-hidden="true">
-								<i data-lucide="folder-open"></i>
-							</span>
-							<span><?php esc_html_e( 'Organize uploads in albums &amp; collections', 'wpmediaverse' ); ?></span>
-						</li>
-						<li>
-							<span class="mvs-auth-gate__benefit-icon" aria-hidden="true">
-								<i data-lucide="heart"></i>
-							</span>
-							<span><?php esc_html_e( 'Save favorites and follow creators', 'wpmediaverse' ); ?></span>
-						</li>
-						<li>
-							<span class="mvs-auth-gate__benefit-icon" aria-hidden="true">
-								<i data-lucide="bar-chart-3"></i>
-							</span>
-							<span><?php esc_html_e( 'Track views, reactions and comments', 'wpmediaverse' ); ?></span>
-						</li>
-					</ul>
-					<div class="mvs-auth-gate__actions">
-						<a class="mvs-btn mvs-btn--primary mvs-auth-gate__primary" href="<?php echo esc_url( $login_url ); ?>">
-							<?php esc_html_e( 'Log in to continue', 'wpmediaverse' ); ?>
-						</a>
-						<?php if ( get_option( 'users_can_register' ) && $signup_url ) : ?>
-							<a class="mvs-auth-gate__secondary" href="<?php echo esc_url( $signup_url ); ?>">
-								<?php
-								printf(
-									/* translators: %s: emphasised "Sign up free" link text. */
-									esc_html__( 'No account yet? %s', 'wpmediaverse' ),
-									'<strong>' . esc_html__( 'Create one — it\'s free.', 'wpmediaverse' ) . '</strong>'
-								);
-								?>
-							</a>
-						<?php endif; ?>
-					</div>
-				</div>
-			</div>
-			<?php
-			return (string) ob_get_clean();
+			return \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+				'layout-dashboard',
+				__( 'Log in to see your media', 'wpmediaverse' ),
+				__( 'Your uploads, albums and saved items live here.', 'wpmediaverse' )
+			);
 		}
 
 		wp_enqueue_style( 'mvs-frontend' );
@@ -520,7 +451,6 @@ class Shortcodes {
 			'restUrl'  => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
 			'userId'   => get_current_user_id(),
-			'mediaUrl' => esc_url( home_url( '/media/' ) ),
 		);
 
 		ob_start();
@@ -538,7 +468,7 @@ class Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_block_template( string $block_name, array $attributes ): string {
-		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'lock-overlay', 'member-photos', 'pdf-viewer' );
+		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'member-photos', 'pdf-viewer' );
 		if ( ! in_array( $block_name, $allowed, true ) ) {
 			return '';
 		}
@@ -697,7 +627,11 @@ class Shortcodes {
 	 */
 	public function render_profile_edit( $atts ): string {
 		if ( ! is_user_logged_in() ) {
-			return '<p>' . esc_html__( 'Please log in to edit your profile.', 'wpmediaverse' ) . '</p>';
+			return \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+				'user-pen',
+				__( 'Log in to edit your profile', 'wpmediaverse' ),
+				__( 'Your photo, name and bio live here.', 'wpmediaverse' )
+			);
 		}
 
 		wp_enqueue_style( 'mvs-frontend' );
@@ -732,6 +666,10 @@ class Shortcodes {
 			$mvs_has_custom  = $mvs_profile_svc->has_custom_avatar( $mvs_user_id );
 		}
 
+		// Fields a community plugin owns are edited there, not here.
+		$mvs_community = \WPMediaVerse\Services\ProfileService::community_profile( (int) $mvs_user_id );
+		$mvs_deferred  = $mvs_community['fields'];
+
 		$mvs_profile_ctx = array(
 			'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 			'nonce'           => wp_create_nonce( 'wp_rest' ),
@@ -742,6 +680,7 @@ class Shortcodes {
 			'bio'             => $mvs_user->description,
 			'dmAccess'        => get_user_meta( $mvs_user_id, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
 			'onlineStatus'    => get_user_meta( $mvs_user_id, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
+			'emailActivity'   => 'off' === get_user_meta( $mvs_user_id, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 			'avatarUrl'       => $mvs_avatar_url,
 			'hasCustomAvatar' => $mvs_has_custom,
 			'saving'          => false,
@@ -764,6 +703,8 @@ class Shortcodes {
 			<div class="mvs-profile-message mvs-profile-message--error"
 				data-wp-bind--hidden="!context.errorMessage"
 				data-wp-text="context.errorMessage"></div>
+
+			<?php require MVS_PLUGIN_DIR . 'templates/partials/community-profile-notice.php'; ?>
 
 			<div class="mvs-profile-avatar-section">
 				<div class="mvs-profile-avatar-preview">
@@ -793,6 +734,7 @@ class Shortcodes {
 			</div>
 
 			<form class="mvs-profile-form" data-wp-on--submit="actions.saveProfile">
+				<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label for="mvs-first-name"><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
 					<input type="text" id="mvs-first-name"
@@ -800,7 +742,9 @@ class Shortcodes {
 						data-wp-on--input="actions.updateFirstName"
 						autocomplete="given-name" />
 				</div>
+				<?php endif; ?>
 
+				<?php if ( ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label for="mvs-last-name"><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
 					<input type="text" id="mvs-last-name"
@@ -808,7 +752,9 @@ class Shortcodes {
 						data-wp-on--input="actions.updateLastName"
 						autocomplete="family-name" />
 				</div>
+				<?php endif; ?>
 
+				<?php if ( ! in_array( 'display_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label for="mvs-display-name"><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
 					<input type="text" id="mvs-display-name"
@@ -816,6 +762,7 @@ class Shortcodes {
 						data-wp-on--input="actions.updateDisplayName"
 						autocomplete="nickname" />
 				</div>
+				<?php endif; ?>
 
 				<div class="mvs-profile-field">
 					<label for="mvs-bio"><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
@@ -843,6 +790,15 @@ class Shortcodes {
 						data-wp-on--change="actions.updateOnlineStatus">
 						<option value="everyone"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
 						<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
+					</select>
+				</div>
+				<div class="mvs-profile-field">
+					<label for="mvs-email-activity"><?php esc_html_e( 'Email me about activity', 'wpmediaverse' ); ?></label>
+					<select id="mvs-email-activity"
+						data-wp-bind--value="context.emailActivity"
+						data-wp-on--change="actions.updateEmailActivity">
+						<option value="on"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
+						<option value="off"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 					</select>
 				</div>
 
@@ -995,6 +951,11 @@ class Shortcodes {
 		// through the SAME `mvs_documents_drive_html` filter the folder branch
 		// uses, so there is one seam for "this needs Pro's drive", not two
 		// that can drift apart again.
+		//
+		// Since 2.6.0 TemplateLoader::redirect_legacy_drive_query() sends these
+		// URLs to the dashboard's documents section before this runs. The branch
+		// stays: it still answers when that redirect is filtered off, when there
+		// is no dashboard page, and for themes/embeds that call the shortcode.
 		if ( '' !== $mvs_doc_root ) {
 			$mvs_doc_root_html = (string) apply_filters(
 				'mvs_documents_drive_html',

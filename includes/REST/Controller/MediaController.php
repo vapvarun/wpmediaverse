@@ -389,7 +389,6 @@ class MediaController extends WP_REST_Controller {
 			}
 			$viewer = get_current_user_id();
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
-			\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $ids );
 			self::prime_viewer_state( $ids, $viewer );
 			$items = array();
 			foreach ( $ids as $mid ) {
@@ -432,6 +431,18 @@ class MediaController extends WP_REST_Controller {
 		// never affected -- this route hand-builds its WHERE and simply omitted it.
 		$where  = array( 'status = %s', 'moderation_status = %s' );
 		$params = array( 'publish', 'approved' );
+
+		// A member listing their OWN media also sees what is held for review
+		// (flagged, pending): "Hide until I review it" hides it from everyone
+		// else, not from its owner, who otherwise saw a count one higher than
+		// the grid and could not find their upload (QA, 2.6.0). A rejected item
+		// that stayed published is listed to its owner too, marked "Not
+		// approved", so the tab count and the grid agree.
+		$mvs_viewer_id = get_current_user_id();
+		if ( $mvs_viewer_id && (int) $author === $mvs_viewer_id ) {
+			$where[1] = "moderation_status IN ( 'approved', 'flagged', 'pending', 'rejected' )";
+			array_pop( $params );
+		}
 
 		// POSITIVE INCLUSION, never exclusion. This clause used to read
 		// media_type != '' — which answered "what do I not want today" and passed
@@ -477,14 +488,11 @@ class MediaController extends WP_REST_Controller {
 			$params                                 = array_merge( $params, $mvs_type_params );
 		}
 
-		// Privacy filtering via index table.
-		if ( ! $user_id ) {
-			$where[]  = 'privacy = %s';
-			$params[] = 'public';
-		} elseif ( ! user_can( $user_id, 'moderate_mvs_media' ) ) {
-			$where[]  = "(privacy = 'public' OR privacy = 'members' OR post_author = %d)";
-			$params[] = $user_id;
-		}
+		// Privacy filtering via index table: the one listing rule Explore and the
+		// activity feed share, so the three cannot drift apart again.
+		list( $mvs_priv_sql, $mvs_priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->explore_privacy_clause( '', (int) $user_id );
+		$where[] = $mvs_priv_sql;
+		$params  = array_merge( $params, $mvs_priv_params );
 
 		if ( $author ) {
 			$where[]  = 'post_author = %d';
@@ -545,16 +553,10 @@ class MediaController extends WP_REST_Controller {
 		// `media_search_ft` is created in Migrator::migrate_to_13.
 		$search = trim( (string) $request->get_param( 's' ) );
 		if ( '' !== $search ) {
-			$ft_term = $this->build_fulltext_search_term( $search );
-			if ( null !== $ft_term && self::has_fulltext_search_index() ) {
-				$where[]  = 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)';
-				$params[] = $ft_term;
-			} else {
-				$like     = '%' . $wpdb->esc_like( $search ) . '%';
-				$where[]  = '(title LIKE %s OR description LIKE %s)';
-				$params[] = $like;
-				$params[] = $like;
-			}
+			// One search rule for Explore and the admin list (MediaRepository::search_clause()).
+			list( $mvs_search_sql, $mvs_search_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->search_clause( $search );
+			$where[]                                    = $mvs_search_sql;
+			$params                                     = array_merge( $params, $mvs_search_params );
 		}
 
 		// Scope filter. The feed blocks (Instagram/Dribbble/Flickr/Pinterest)
@@ -575,14 +577,9 @@ class MediaController extends WP_REST_Controller {
 			$params[] = $user_id;
 		}
 
-		// Exclude media from blocked users.
+		// Exclude media from anyone on either side of a block with the viewer.
 		if ( $user_id ) {
-			$blocked_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT blocked_id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d",
-					$user_id
-				)
-			);
+			$blocked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( (int) $user_id );
 			if ( $blocked_ids ) {
 				$placeholders = implode( ',', array_fill( 0, count( $blocked_ids ), '%d' ) );
 				$where[]      = "post_author NOT IN ($placeholders)"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -599,14 +596,14 @@ class MediaController extends WP_REST_Controller {
 			// LEFT JOINs mvs_media_stats, which also has a media_id column, so an
 			// unqualified ref is ambiguous and the data query silently returns 0
 			// rows while the (stats-join-free) COUNT query still returns the total.
-			$where[] = "(i.media_id NOT IN (
-				SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
-				WHERE mm.meta_key = 'media_group' AND mm.media_id != (
-					SELECT mm2.media_id FROM {$wpdb->prefix}mvs_media_meta mm2
-					WHERE mm2.meta_key = 'media_group' AND mm2.meta_value = mm.meta_value
-					ORDER BY mm2.media_id ASC LIMIT 1
-				)
-			))";
+			//
+			// Reuses the repository's canonical definition of "non-cover gallery
+			// member" instead of keeping a second copy here — this inline copy
+			// used a different rule ("lowest media_id in the group") than
+			// `MediaRepository::gallery_exclude_subquery()` ("group_position !=
+			// '0'"), so the same media could be a cover in Explore and not in
+			// this feed, or vice versa.
+			$where[] = '(i.media_id NOT IN (' . \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_exclude_subquery() . '))';
 		}
 
 		// Filter by specific media group ID.
@@ -685,11 +682,10 @@ class MediaController extends WP_REST_Controller {
 		// for the whole page BEFORE the per-item prepare loop below, mirroring
 		// the template grids (explore.php/album.php/collection.php) since
 		// 1.7.0. Without this, prepare_item_for_response() -> get_all() and
-		// -> sign_file_url() -> can_view() -> has_active_rules() each fire one
+		// -> sign_file_url() -> can_view() each fire one
 		// query per item (this was the REST-path gap; templates were fixed).
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->prefetch( $int_ids );
-		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_ids );
 
 		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
 		// so the per-item prepare below stays query-bounded at any list size.
@@ -726,7 +722,8 @@ class MediaController extends WP_REST_Controller {
 		if ( 'public' !== $privacy ) {
 			$viewer_id = get_current_user_id();
 			if ( ! $this->privacy->can_view( $media_id, $viewer_id ) ) {
-				return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to view this media.', 'wpmediaverse' ), array( 'status' => 403 ) );
+				// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+				return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 			}
 		}
 
@@ -793,7 +790,6 @@ class MediaController extends WP_REST_Controller {
 		$int_group_ids = array_map( 'intval', $group_media_ids );
 		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->prefetch( $int_group_ids );
-		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_group_ids );
 
 		// Per member, not just the entry point: one private photo inside an
 		// otherwise public gallery used to come back with the rest.
@@ -1046,7 +1042,7 @@ class MediaController extends WP_REST_Controller {
 				&& $clean_privacy !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
 				return new WP_Error(
 					'mvs_privacy_locked',
-					__( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ),
+					__( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ),
 					array( 'status' => 403 )
 				);
 			}
@@ -1077,8 +1073,20 @@ class MediaController extends WP_REST_Controller {
 				}
 			}
 
-			$update_data['privacy'] = $clean_privacy;
-			$privacy_changed        = true;
+			// A photo in an album shows with the album's privacy; the member's
+			// choice is kept for when it leaves the album (Basecamp 10264373450).
+			// The edit screens send the CURRENT level with every save - for a
+			// photo in an album that is the album's - so an unchanged value is
+			// not a choice and must not overwrite the one set aside.
+			$current_privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+			if ( $clean_privacy === $current_privacy ) {
+				$clean_privacy = '';
+			}
+
+			if ( '' !== $clean_privacy && ! \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->keep_own_privacy_if_in_album( $media_id, $clean_privacy ) ) {
+				$update_data['privacy'] = $clean_privacy;
+				$privacy_changed        = true;
+			}
 		}
 
 		// JSON body inspection — used by the tags/categories block further
@@ -1102,6 +1110,10 @@ class MediaController extends WP_REST_Controller {
 		// Write all index/meta changes in one call.
 		if ( ! empty( $update_data ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many( $media_id, $update_data );
+		}
+
+		if ( isset( $update_data['description'] ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'mentions' )->sync_description( $media_id );
 		}
 
 		// The privacy answer this request already gave is now stale. PrivacyService
@@ -1248,6 +1260,16 @@ class MediaController extends WP_REST_Controller {
 		 */
 		$mvs_new_size = (int) ( filesize( $file['tmp_name'] ) ?: 0 );
 		$mvs_old_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
+
+		// The SAME max-size guard as UploadService::handle(), not a mirror of
+		// it — same reason as the MIME guard above: a size cap the owner sets
+		// has to hold on every write path, not just fresh uploads. Checked
+		// against the new file's own size, not the storage delta below (a
+		// smaller replacement of an over-limit file must still be refused).
+		$mvs_size_refusal = $upload_service->reject_oversized_file( $mvs_new_size, get_current_user_id() );
+		if ( $mvs_size_refusal ) {
+			return $mvs_size_refusal;
+		}
 
 		/** This filter is documented in includes/Services/UploadService.php */
 		$mvs_replace_args = apply_filters(
@@ -1607,7 +1629,8 @@ class MediaController extends WP_REST_Controller {
 		// Check view access.
 		$user_id = get_current_user_id();
 		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		global $wpdb;
@@ -1708,7 +1731,8 @@ class MediaController extends WP_REST_Controller {
 		// Privacy gate: callers without view access can't record a download.
 		$user_id = get_current_user_id();
 		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		// Per-media opt-out: owner can disable downloads on a single item
@@ -1746,8 +1770,8 @@ class MediaController extends WP_REST_Controller {
 				// renders a number rather than treating this as a failure.
 				return rest_ensure_response(
 					array(
-						'success' => true,
-						'counted' => false,
+						'success'   => true,
+						'counted'   => false,
 						// Downloads, not views. This dedup block was copied from
 						// record_view() and kept its event type and column, so a
 						// download went unrecorded whenever the same visitor had
@@ -1808,7 +1832,8 @@ class MediaController extends WP_REST_Controller {
 
 		$user_id = get_current_user_id();
 		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		global $wpdb;
@@ -1890,12 +1915,9 @@ class MediaController extends WP_REST_Controller {
 			);
 		}
 
-		return rest_ensure_response(
-			array(
-				'media_id' => $media_id,
-				'can_view' => false,
-			)
-		);
+		// Hidden looks exactly like missing: "can_view: false" confirmed that a
+		// private item exists (QA, 2.6.0).
+		return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 	}
 
 	/**
@@ -1938,7 +1960,8 @@ class MediaController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 
 		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
-			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 		return true;
 	}
@@ -1950,22 +1973,7 @@ class MediaController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function update_item_permissions_check( $request ) {
-		$media_id = (int) $request->get_param( 'id' );
-		$user_id  = get_current_user_id();
-
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
-			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
-		}
-
-		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( 'edit_mvs_medias' ) ) {
-			return true;
-		}
-
-		if ( current_user_can( 'edit_others_mvs_medias' ) ) {
-			return true;
-		}
-
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to edit this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return $this->owner_or_refuse( $request, 'edit_mvs_medias', 'edit_others_mvs_medias', __( 'You do not have permission to edit this media item.', 'wpmediaverse' ) );
 	}
 
 	/**
@@ -1975,22 +1983,43 @@ class MediaController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function delete_item_permissions_check( $request ) {
-		$media_id = (int) $request->get_param( 'id' );
-		$user_id  = get_current_user_id();
+		return $this->owner_or_refuse( $request, 'delete_mvs_medias', 'delete_others_mvs_medias', __( 'You do not have permission to delete this media item.', 'wpmediaverse' ) );
+	}
+
+	/**
+	 * The owner holding $own_cap, or anyone holding $others_cap, may act.
+	 *
+	 * Anyone else is refused, and a member who cannot even see the item gets
+	 * the missing-item answer rather than a 403 that confirms it exists.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param WP_REST_Request $request    Request.
+	 * @param string          $own_cap    Capability for the owner's own item.
+	 * @param string          $others_cap Capability for anyone's item.
+	 * @param string          $forbidden  Refusal message for a visible item.
+	 * @return true|WP_Error
+	 */
+	private function owner_or_refuse( $request, string $own_cap, string $others_cap, string $forbidden ) {
+		$media_id  = (int) $request->get_param( 'id' );
+		$user_id   = get_current_user_id();
+		$not_found = new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 
 		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
-			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			return $not_found;
 		}
 
-		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( 'delete_mvs_medias' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( $own_cap ) ) {
 			return true;
 		}
 
-		if ( current_user_can( 'delete_others_mvs_medias' ) ) {
+		if ( current_user_can( $others_cap ) ) {
 			return true;
 		}
 
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to delete this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return $this->privacy->can_view( $media_id, $user_id )
+			? new WP_Error( 'mvs_forbidden', $forbidden, array( 'status' => 403 ) )
+			: $not_found;
 	}
 
 	/**
@@ -2015,6 +2044,44 @@ class MediaController extends WP_REST_Controller {
 	private static ?int $viewer_state_primed_for = null;
 
 	/**
+	 * Engagement stats per media id, filled by prime_stats().
+	 *
+	 * @var array<int, array|null>
+	 */
+	private static $stats_map = array();
+
+	/**
+	 * Load mvs_media_stats for many media in one query.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Media ids.
+	 */
+	private static function prime_stats( array $media_ids ): void {
+		global $wpdb;
+
+		$ids = array();
+		foreach ( $media_ids as $mid ) {
+			$mid = (int) $mid;
+			if ( $mid > 0 && ! array_key_exists( $mid, self::$stats_map ) ) {
+				$ids[ $mid ]             = true;
+				self::$stats_map[ $mid ] = null;
+			}
+		}
+		if ( ! $ids ) {
+			return;
+		}
+
+		$ids          = array_keys( $ids );
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT media_id, views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id IN ({$placeholders})", $ids ), ARRAY_A );
+		foreach ( (array) $rows as $row ) {
+			self::$stats_map[ (int) $row['media_id'] ] = $row;
+		}
+	}
+
+	/**
 	 * Batch-load the current viewer's favorite + reaction state for a page of
 	 * media so prepare_item_for_response() resolves is_favorited / viewer_reaction
 	 * from a set instead of one query per tile (big-site: 2 queries/page, not 2N).
@@ -2032,12 +2099,59 @@ class MediaController extends WP_REST_Controller {
 		self::$viewer_fav_set          = array();
 		self::$viewer_reaction_map     = array();
 
+		// Page-level batches every list needs regardless of viewer: engagement
+		// stats and the authors' user records. prepare_item_for_response() ran
+		// one stats query and one user lookup per tile (2.6.0, big-site pass).
+		self::$stats_map = array();
+		self::prime_stats( $media_ids );
+		$repo    = Plugin::container()->get( 'media_repository' );
+		$authors = array();
+		foreach ( $media_ids as $mid ) {
+			$author = (int) $repo->get( (int) $mid, 'post_author' );
+			if ( $author > 0 ) {
+				$authors[ $author ] = true;
+			}
+		}
+		if ( $authors ) {
+			cache_users( array_keys( $authors ) );
+		}
+
 		if ( $viewer_id <= 0 ) {
 			return;
 		}
 
 		self::$viewer_fav_set      = Plugin::container()->get( 'favorites' )->get_favorited_set( $viewer_id, $media_ids );
 		self::$viewer_reaction_map = Plugin::container()->get( 'reactions' )->get_user_reactions_map( $viewer_id, $media_ids );
+	}
+
+	/**
+	 * The album a photo is in, for the response: id, title and privacy.
+	 *
+	 * Built from the photo's album_id (loaded with the row) and the post cache,
+	 * so a listing adds no membership query per photo.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int         $album_id    Photo's album pointer.
+	 * @param string|null $own_privacy The member's own choice, or null to omit it.
+	 * @return array<string, mixed>|null
+	 */
+	private function album_summary( int $album_id, ?string $own_privacy ): ?array {
+		$album = $album_id > 0 ? get_post( $album_id ) : null;
+		if ( ! $album || 'mvs_album' !== $album->post_type || 'trash' === $album->post_status ) {
+			return null;
+		}
+
+		$summary = array(
+			'id'      => $album_id,
+			'title'   => $album->post_title,
+			'privacy' => \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id ),
+		);
+		if ( null !== $own_privacy ) {
+			$summary['own_privacy'] = '' !== $own_privacy ? $own_privacy : null;
+		}
+
+		return $summary;
 	}
 
 	/**
@@ -2135,8 +2249,10 @@ class MediaController extends WP_REST_Controller {
 		// allow_download: per-media flag. Absent meta = default true.
 		// '0' string = explicit opt-out by the owner. The lightbox button
 		// honors both this AND the global mvs_allow_downloads setting.
+		// The site-wide switch is folded in here too, so the app never shows a
+		// Download button the /download route will refuse with a 403.
 		$allow_download_raw = isset( $all['allow_download'] ) ? (string) $all['allow_download'] : '';
-		$allow_download     = ( '0' !== $allow_download_raw );
+		$allow_download     = ( '0' !== $allow_download_raw ) && (bool) get_option( 'mvs_allow_downloads', true );
 
 		// Viewer-relative interaction state (1.9.0, additive). Resolved from the
 		// per-request prefill when a list endpoint primed it (2 queries/page),
@@ -2201,6 +2317,11 @@ class MediaController extends WP_REST_Controller {
 			'doc_icon'          => $mvs_doc_icon,
 			'doc_label'         => $mvs_doc_label,
 			'privacy'           => $privacy_value,
+			// The album this photo is in, whose privacy it shows with (2.6.0,
+			// Basecamp 10264373450), or null. own_privacy - what the member
+			// chose, back in force when the photo leaves the album - only for
+			// whoever may edit the photo.
+			'album'             => $this->album_summary( (int) ( $all['album_id'] ?? 0 ), $can_edit ? (string) ( $all['own_privacy'] ?? '' ) : null ),
 			'allow_download'    => $allow_download,
 			// Display filename — original user-provided name when the upload
 			// strategy hashed the on-disk basename (1.2.1+). Falls back to the
@@ -2312,14 +2433,17 @@ class MediaController extends WP_REST_Controller {
 			$data['album_name'] = ! empty( $all['album_name'] ) ? $all['album_name'] : null;
 		}
 
-		// Include engagement stats for card builders.
-		$stats_row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$media_id
-			),
-			ARRAY_A
-		);
+		// Include engagement stats for card builders (batched by prime_stats()
+		// when the list primed its page; one query otherwise).
+		$stats_row = array_key_exists( $media_id, self::$stats_map )
+			? self::$stats_map[ $media_id ]
+			: $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$media_id
+				),
+				ARRAY_A
+			);
 
 		$data['stats'] = array(
 			'views'     => (int) ( $stats_row['views'] ?? 0 ),
@@ -2477,59 +2601,5 @@ class MediaController extends WP_REST_Controller {
 			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 		return '127.0.0.1';
-	}
-
-	/**
-	 * Build a BOOLEAN MODE search term for MATCH/AGAINST. Returns null when
-	 * the input is too short or every token gets dropped (fall back to LIKE).
-	 *
-	 * Splits on whitespace, drops tokens shorter than the InnoDB minimum
-	 * token length (3 chars by default), strips MySQL boolean-mode operators
-	 * (`+`, `-`, `*`, `(`, `)`, `~`, `<`, `>`, `"`, `@`, NUL) and appends a
-	 * trailing `*` for prefix matching ("auto" matches "automotive"). Each
-	 * token also gets a leading `+` so the user effectively sees AND-search.
-	 *
-	 * @since 1.2.1
-	 *
-	 * @param string $search Raw search input.
-	 * @return string|null   BOOLEAN MODE term or null to indicate fallback.
-	 */
-	private static function build_fulltext_search_term( string $search ): ?string {
-		$cleaned = preg_replace( '/[+\-*()~<>"@\x00]/', ' ', $search );
-		$tokens  = preg_split( '/\s+/u', (string) $cleaned, -1, PREG_SPLIT_NO_EMPTY );
-		if ( ! $tokens ) {
-			return null;
-		}
-
-		$kept = array();
-		foreach ( $tokens as $token ) {
-			if ( mb_strlen( $token, 'UTF-8' ) < 3 ) {
-				continue;
-			}
-			$kept[] = '+' . $token . '*';
-		}
-		if ( ! $kept ) {
-			return null;
-		}
-
-		return implode( ' ', $kept );
-	}
-
-	/**
-	 * Detect whether the FULLTEXT search index exists. Cached for the
-	 * request lifetime via a static — schema doesn't change between
-	 * REST calls, so a single SHOW INDEX per request is plenty.
-	 *
-	 * @since 1.2.1
-	 */
-	private static function has_fulltext_search_index(): bool {
-		static $cached = null;
-		if ( null !== $cached ) {
-			return $cached;
-		}
-		$cached = \WPMediaVerse\Core\Plugin::container()
-			->get( 'media_repository' )
-			->has_fulltext_index();
-		return $cached;
 	}
 }

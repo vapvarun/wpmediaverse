@@ -30,6 +30,13 @@ class AlbumService {
 	public const PRIVACY_META = '_mvs_privacy';
 
 	/**
+	 * Media meta holding the member's own privacy while the photo is in an album.
+	 *
+	 * @since 2.6.0
+	 */
+	public const OWN_PRIVACY_META = 'own_privacy';
+
+	/**
 	 * Post-meta key holding an album's type (default | playlist).
 	 *
 	 * @since 2.4.0
@@ -92,86 +99,98 @@ class AlbumService {
 	public function set_privacy( int $album_id, string $privacy ): void {
 		update_post_meta( $album_id, self::PRIVACY_META, sanitize_text_field( $privacy ) );
 
-		// Cascade to the album's existing items. Privacy was inherited when an
-		// item was ADDED but never when the album's privacy CHANGED, so an owner
-		// who made an existing album private left its contents public — still in
-		// the Explore feed and individually fetchable, with no warning (Basecamp
-		// #10149366902). Same one-way clamp as the add path: it only tightens, so
-		// making an album more public never loosens an item a member set private.
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$ids  = array_map(
-			static function ( $row ) {
-				return (int) $row['media_id'];
-			},
-			$repo->album_items( $album_id )
-		);
-		$this->clamp_items_privacy( $album_id, $ids );
+		// Every photo in an album shows with the album's privacy, in BOTH
+		// directions: making an album private hides its photos, making it public
+		// again brings them back. Each photo keeps the member's own choice aside
+		// (OWN_PRIVACY_META) and gets it back when it leaves the album. Before
+		// 2.6.0 this was a one-way clamp that overwrote the photo's own choice,
+		// so re-publishing an album left every photo private forever
+		// (Basecamp 10264373450; owner decision 2026-09-27).
+		$this->apply_album_privacy( $album_id, $this->member_ids( $album_id ) );
 	}
 
 	/**
-	 * Tighten a set of the album's items to the album's privacy.
+	 * Show a set of the album's photos with the album's privacy.
 	 *
-	 * Shared by add_items() (on ADD) and set_privacy() (on CHANGE) so both carry
-	 * the album's privacy down by exactly the same rule.
+	 * Shared by add_items() (on ADD) and set_privacy() (on CHANGE) so both apply
+	 * the album's privacy by exactly the same rule. Before a photo first takes
+	 * the album's privacy, its own is set aside in OWN_PRIVACY_META, so leaving
+	 * the album restores what the member chose (restore_own_privacy()).
 	 *
-	 * Clamping is one-way and only ever tightens: an item already more restrictive
-	 * than the album keeps its own setting, and a public/empty album tightens
-	 * nothing. The `mvs_album_inherit_privacy` filter turns the whole behaviour off
-	 * (album and item privacy fully independent, how Free behaved before 2.3.0 —
-	 * Production Rule 3).
+	 * The `mvs_album_inherit_privacy` filter turns the whole behaviour off
+	 * (album and photo privacy fully independent, how Free behaved before
+	 * 2.3.0 - Production Rule 3).
 	 *
-	 * @since 2.4.0
+	 * Batched: one prefetch for the reads, one upsert for the set-aside
+	 * choices and one UPDATE per 500 photos for the privacy. Every photo whose
+	 * privacy changes still fires `mvs_media_privacy_changed`, so storage and
+	 * activity listeners run exactly as for a single write (Basecamp 10344644266).
+	 *
+	 * @since 2.6.0 Replaces the one-way clamp_items_privacy().
 	 *
 	 * @param int   $album_id  Album post ID.
-	 * @param int[] $media_ids Item media IDs to clamp.
+	 * @param int[] $media_ids Photos in the album.
 	 * @return void
 	 */
-	private function clamp_items_privacy( int $album_id, array $media_ids ): void {
+	private function apply_album_privacy( int $album_id, array $media_ids ): void {
 		if ( empty( $media_ids ) ) {
 			return;
 		}
 
 		// A member the owner has locked out of choosing privacy does not change
-		// an item's privacy through an album either: adding to an album made
-		// before the lock, or re-saving one, leaves every item at the level the
-		// owner's rules gave it. Keyed on the ACTING user, so a manager editing
-		// the album still cascades, and so does a system caller with no user
-		// (imports, WP-CLI, cron). Basecamp 10320619418.
+		// a photo's privacy through an album either. Keyed on the ACTING user,
+		// so a manager editing the album still applies it, and so does a system
+		// caller with no user (imports, WP-CLI, cron). Basecamp 10320619418.
 		$actor_id = get_current_user_id();
 		if ( $actor_id > 0 && ! PrivacyService::user_may_choose_privacy( $actor_id ) ) {
 			return;
 		}
 
 		/**
-		 * Filters whether an album's media inherits (is clamped to) its privacy.
+		 * Filters whether an album's photos take its privacy.
 		 *
 		 * @since 2.3.0
+		 * @since 2.6.0 Applies in both directions, not only when tightening.
 		 *
-		 * @param bool  $inherit   Whether to clamp. Default true.
+		 * @param bool  $inherit   Whether to apply. Default true.
 		 * @param int   $album_id  Album ID.
-		 * @param int[] $media_ids Media IDs being clamped.
+		 * @param int[] $media_ids Media IDs.
 		 */
-		$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
-		$album_privacy = $inherit ? $this->get_privacy( $album_id ) : '';
-
-		// A public or unset album tightens nothing.
-		if ( '' === $album_privacy || 'public' === $album_privacy ) {
+		if ( ! apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids ) ) {
 			return;
 		}
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$album_privacy = $this->get_privacy( $album_id );
+		if ( '' === $album_privacy ) {
+			$album_privacy = 'public';
+		}
 
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $media_ids );
+
+		$set_aside = array();
+		$to_change = array();
 		foreach ( $media_ids as $mid ) {
-			$mid           = (int) $mid;
-			$media_privacy = (string) $repo->get( $mid, 'privacy' );
-			if ( '' === $media_privacy ) {
-				$media_privacy = 'public';
+			$mid     = (int) $mid;
+			$current = (string) $repo->get( $mid, 'privacy' );
+			if ( '' === $current ) {
+				$current = 'public';
 			}
 
-			$effective = PrivacyService::more_restrictive( $album_privacy, $media_privacy );
-			if ( $effective !== $media_privacy ) {
-				$repo->set( $mid, 'privacy', $effective );
+			if ( '' === (string) $repo->get( $mid, self::OWN_PRIVACY_META ) ) {
+				$set_aside[ $mid ] = $current;
+			}
+			if ( $album_privacy !== $current ) {
+				$to_change[ $mid ] = $current;
+			}
+		}
 
+		$repo->set_meta_many( self::OWN_PRIVACY_META, $set_aside );
+		$changed = $repo->set_privacy_many( array_keys( $to_change ), $album_privacy );
+
+		foreach ( $changed as $mid ) {
+			$from = $to_change[ $mid ];
+			if ( PrivacyService::privacy_to_level( $album_privacy ) > PrivacyService::privacy_to_level( $from ) ) {
 				/**
 				 * Fires when an item's privacy is tightened by its album.
 				 *
@@ -180,11 +199,120 @@ class AlbumService {
 				 * @param int    $media_id Media ID.
 				 * @param string $from     Previous privacy slug.
 				 * @param string $to       New privacy slug.
-				 * @param int    $album_id Album that caused the clamp.
+				 * @param int    $album_id Album that caused the change.
 				 */
-				do_action( 'mvs_media_privacy_clamped_by_album', $mid, $media_privacy, $effective, $album_id );
+				do_action( 'mvs_media_privacy_clamped_by_album', $mid, $from, $album_privacy, $album_id );
 			}
 		}
+	}
+
+	/**
+	 * Give photos that left their album back the privacy the member chose.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $media_ids Photos that are no longer in any album.
+	 * @return void
+	 */
+	private function restore_own_privacy( array $media_ids ): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $media_ids );
+
+		$by_choice = array();
+		$had_one   = array();
+		foreach ( $media_ids as $mid ) {
+			$mid = (int) $mid;
+			$own = (string) $repo->get( $mid, self::OWN_PRIVACY_META );
+			if ( '' === $own ) {
+				continue;
+			}
+
+			$had_one[] = $mid;
+			if ( $own !== (string) $repo->get( $mid, 'privacy' ) ) {
+				$by_choice[ $own ][] = $mid;
+			}
+		}
+
+		// One batch per privacy level; there are only a handful of levels.
+		foreach ( $by_choice as $own => $ids ) {
+			$repo->set_privacy_many( $ids, (string) $own );
+		}
+		$repo->delete_meta_many( self::OWN_PRIVACY_META, $had_one );
+	}
+
+	/**
+	 * A member sets a privacy on a photo that sits in an album.
+	 *
+	 * The album decides what the photo shows with, so the choice is kept as the
+	 * photo's own and applied when it leaves the album. Every privacy writer
+	 * (single edit, bulk) calls this first, so none can override the album.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int    $media_id Photo.
+	 * @param string $privacy  The member's choice.
+	 * @return bool True when the photo is in an album and the choice was kept aside.
+	 */
+	public function keep_own_privacy_if_in_album( int $media_id, string $privacy ): bool {
+		$album_id = (int) ( $this->albums_for_media( $media_id )[0] ?? 0 );
+		if ( $album_id <= 0 || ! apply_filters( 'mvs_album_inherit_privacy', true, $album_id, array( $media_id ) ) ) {
+			return false;
+		}
+
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, self::OWN_PRIVACY_META, $privacy );
+
+		return true;
+	}
+
+	/**
+	 * How many of an album's photos their members set to each privacy level.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return array<string, int> Privacy slug => count.
+	 */
+	public function own_privacy_counts( int $album_id ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT mm.meta_value AS privacy, COUNT(*) AS n
+				 FROM {$wpdb->prefix}mvs_album_items ai
+				 JOIN {$wpdb->prefix}mvs_media_meta mm ON mm.media_id = ai.media_id AND mm.meta_key = %s
+				 WHERE ai.album_id = %d
+				 GROUP BY mm.meta_value",
+				self::OWN_PRIVACY_META,
+				$album_id
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+		foreach ( (array) $rows as $row ) {
+			$counts[ (string) $row['privacy'] ] = (int) $row['n'];
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Every photo in an album, from the membership table (the source of truth).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return int[]
+	 */
+	private function member_ids( int $album_id ): array {
+		global $wpdb;
+
+		return array_map(
+			'intval',
+			(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare( "SELECT media_id FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d", $album_id )
+			)
+		);
 	}
 
 	/**
@@ -395,7 +523,7 @@ class AlbumService {
 			array_filter(
 				$mvs_ids,
 				static function ( $mvs_media_id ) use ( $mvs_privacy, $mvs_viewer ) {
-					return $mvs_privacy->can_view( (int) $mvs_media_id, $mvs_viewer );
+					return $mvs_privacy->can_list( (int) $mvs_media_id, $mvs_viewer );
 				}
 			)
 		);
@@ -428,20 +556,37 @@ class AlbumService {
 	 *
 	 * @param int    $album_id Album post ID.
 	 * @param string $status   Status filter (default 'publish'). Pass '' to skip filtering.
+	 * @param int    $per_page Max rows to return. 0 (default) = unbounded, preserving
+	 *                         the original behaviour for existing callers (e.g. the
+	 *                         playlist track list, which needs every track).
+	 * @param int    $page     Page number, 1-based. Only applied when $per_page > 0.
 	 * @return array<int, array> Numerically-indexed list of media rows in album order.
 	 */
-	public function get_items_with_data( int $album_id, string $status = 'publish' ): array {
-		$items = $this->get_items( $album_id );
-		if ( empty( $items ) ) {
+	public function get_items_with_data( int $album_id, string $status = 'publish', int $per_page = 0, int $page = 1 ): array {
+		// Only what the viewer may open (viewable_item_ids(), the one rule). The
+		// album page used get_items() directly, so a private or group-only item
+		// in someone's public album showed as a broken tile with its title, and
+		// counted in "N items" (2.6.0 member walk).
+		$media_ids = $this->viewable_item_ids( $album_id );
+		if ( empty( $media_ids ) ) {
 			return array();
 		}
 
-		$media_ids = array_column( $items, 'media_id' );
-		$rows      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( $media_ids );
+		// Slice to the requested page BEFORE the batch read, so an album with
+		// thousands of items only ever hydrates the page being rendered — not
+		// every item every time the page loads.
+		if ( $per_page > 0 ) {
+			$media_ids = array_slice( $media_ids, max( 0, $page - 1 ) * $per_page, $per_page );
+			if ( empty( $media_ids ) ) {
+				return array();
+			}
+		}
+
+		$rows = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( $media_ids );
 
 		$ordered = array();
-		foreach ( $items as $item ) {
-			$mid = (int) $item['media_id'];
+		foreach ( $media_ids as $mid ) {
+			$mid = (int) $mid;
 			if ( ! isset( $rows[ $mid ] ) ) {
 				continue;
 			}
@@ -451,6 +596,31 @@ class AlbumService {
 			$ordered[] = $rows[ $mid ];
 		}
 		return $ordered;
+	}
+
+	/**
+	 * How many items of an album this viewer can open.
+	 *
+	 * The number shown on album cards. The raw count told a viewer how many
+	 * hidden items an album holds ("5 items" on a card whose album shows them
+	 * 3, QA 2.6.0). Everyone, the owner included, gets the album page's own
+	 * filter.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int      $album_id  Album post id.
+	 * @param int|null $viewer_id Viewer, or null for the current user.
+	 * @return int
+	 */
+	public function viewable_item_count( int $album_id, ?int $viewer_id = null ): int {
+		$mvs_viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+
+		// No owner shortcut: an album can hold someone else's item its owner
+		// cannot open (a friends-only photo added by a friend), and the card
+		// must match the album page (QA, 2.6.0).
+		// ponytail: loads the album's ids once per card; fine for a page of
+		// cards, add a counted privacy query if albums reach tens of thousands.
+		return count( $this->viewable_item_ids( $album_id, $mvs_viewer ) );
 	}
 
 	/**
@@ -473,9 +643,10 @@ class AlbumService {
 	 *
 	 * @param int   $album_id  Album post ID.
 	 * @param int[] $media_ids Array of media post IDs.
+	 * @param array $args      Optional. 'announce' => false skips the mvs_album_items_added action (imports). @since 2.6.0
 	 * @return int Number of items successfully added.
 	 */
-	public function add_items( int $album_id, array $media_ids ): int {
+	public function add_items( int $album_id, array $media_ids, array $args = array() ): int {
 		global $wpdb;
 
 		$is_playlist = 'playlist' === $this->get_album_type( $album_id );
@@ -488,6 +659,9 @@ class AlbumService {
 		);
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		// One read for every photo's row, so the existence, owner and type
+		// checks below cost no query each (Basecamp 10344644266).
+		$repo->prefetch( array_map( 'intval', $media_ids ) );
 
 		// Whose media may go in. Adding to an album repoints the item's album_id
 		// and clamps its privacy, so it is a write to the ITEM: a member may only
@@ -524,36 +698,50 @@ class AlbumService {
 			// block runs only when $added > 0. Re-adding therefore does not
 			// heal a legacy album_id of 0; only a fresh insert writes it.
 			$accepted[] = $media_id;
+		}
 
-			++$max_pos;
-			$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_album_items',
-				array(
-					'album_id' => $album_id,
-					'media_id' => $media_id,
-					'position' => $max_pos,
-					'added_at' => current_time( 'mysql', true ),
-				),
-				array( '%d', '%d', '%d', '%s' )
-			);
-
-			if ( false !== $result ) {
-				++$added;
+		// One INSERT IGNORE per 500 photos. A photo already in this album hits
+		// the unique key and is skipped, so it is not counted in $added (same
+		// as the per-row insert this replaces).
+		foreach ( array_chunk( $accepted, 500 ) as $chunk ) {
+			$rows = array();
+			$args = array();
+			$now  = current_time( 'mysql', true );
+			foreach ( $chunk as $mid ) {
+				++$max_pos;
+				$rows[] = '(%d, %d, %d, %s)';
+				array_push( $args, $album_id, $mid, $max_pos, $now );
 			}
+			$added += (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"INSERT IGNORE INTO {$wpdb->prefix}mvs_album_items (album_id, media_id, position, added_at) VALUES " . implode( ',', $rows ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+					...$args
+				)
+			);
 		}
 
 		// Store album association on each media item.
 		if ( $added > 0 ) {
-			// Record the album association on each item, then clamp their privacy to
-			// the album's — the same one-way tightening that set_privacy() re-applies
-			// when the album's own privacy later changes. Only ACCEPTED items: this
-			// used to walk the raw input, so a skipped id (missing, not audio for a
-			// playlist, someone else's) was still pointed at the album and clamped.
-			foreach ( $accepted as $mid ) {
-				$repo->set( $mid, 'album_id', $album_id );
-			}
+			// One album per photo (owner decision 2026-09-27): joining this album
+			// takes the photo out of any other, so "a photo in an album follows the
+			// album's privacy" always has one answer. The photo's own privacy stays
+			// set aside (OWN_PRIVACY_META) across the move.
+			$ids_in = implode( ',', array_fill( 0, count( $accepted ), '%d' ) );
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}mvs_album_items WHERE media_id IN ({$ids_in}) AND album_id <> %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					array_merge( $accepted, array( $album_id ) )
+				)
+			);
 
-			$this->clamp_items_privacy( $album_id, $accepted );
+			// Record the album association on each item, then show them with the
+			// album's privacy - the same rule set_privacy() re-applies when the
+			// album's privacy later changes. Only ACCEPTED items: this used to walk
+			// the raw input, so a skipped id (missing, not audio for a playlist,
+			// someone else's) was still pointed at the album.
+			$repo->set_album_pointer_many( $accepted, $album_id );
+
+			$this->apply_album_privacy( $album_id, $accepted );
 
 			// $actor_id (above) may be a co-collaborator, not the album owner — kept
 			// distinct from the author lookup so gamification adapters can award
@@ -576,7 +764,11 @@ class AlbumService {
 			 * @param array $media_ids Media post IDs that were added.
 			 * @param int   $added     Number of items successfully added.
 			 */
-			do_action( 'mvs_album_items_added', $album_id, $actor_id, $accepted, $added );
+			// An import files thousands of photos; announcing each one would post
+			// thousands of activity updates. Importers pass 'announce' => false.
+			if ( ! isset( $args['announce'] ) || false !== $args['announce'] ) {
+				do_action( 'mvs_album_items_added', $album_id, $actor_id, $accepted, $added );
+			}
 		}
 
 		return $added;
@@ -619,8 +811,8 @@ class AlbumService {
 	 * album's privacy and media_ids_in_album() kept returning it. Items still in
 	 * another album now point at the one they joined most recently, the rest at 0.
 	 *
-	 * Call AFTER the mvs_album_items rows are gone. Only items whose pointer
-	 * names $album_id are touched.
+	 * Call AFTER the mvs_album_items rows are gone. Photos out of every album
+	 * get their own privacy back (restore_own_privacy()).
 	 *
 	 * @since 2.5.1
 	 *
@@ -629,15 +821,13 @@ class AlbumService {
 	 * @return void
 	 */
 	private function release_items( int $album_id, array $media_ids ): void {
-		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$media_ids = array_values(
-			array_filter(
-				array_map( 'intval', $media_ids ),
-				static function ( int $mid ) use ( $repo, $album_id ): bool {
-					return $mid > 0 && (int) $repo->get( $mid, 'album_id' ) === $album_id;
-				}
-			)
-		);
+		unset( $album_id );
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Every photo that left, whatever its pointer said: the pointer is
+		// recomputed from the membership table below, so a stale one heals
+		// instead of blocking the restore (2.6.0).
+		$media_ids = array_values( array_filter( array_map( 'intval', $media_ids ) ) );
 
 		if ( empty( $media_ids ) ) {
 			return;
@@ -661,9 +851,22 @@ class AlbumService {
 			$next[ (int) $row['media_id'] ] = (int) $row['album_id'];
 		}
 
+		$by_album = array();
 		foreach ( $next as $mid => $next_album ) {
-			$repo->set( (int) $mid, 'album_id', $next_album );
+			$by_album[ (int) $next_album ][] = (int) $mid;
 		}
+
+		foreach ( $by_album as $next_album => $ids ) {
+			$repo->set_album_pointer_many( $ids, $next_album );
+			if ( $next_album > 0 ) {
+				// Only reachable on data from before one-album-per-photo.
+				$this->apply_album_privacy( $next_album, $ids );
+			}
+		}
+		$homeless = $by_album[0] ?? array();
+
+		// Out of every album: the photo's own privacy applies again.
+		$this->restore_own_privacy( $homeless );
 	}
 
 	/**
@@ -945,9 +1148,10 @@ class AlbumService {
 	public function delete_all_items( int $album_id ): int {
 		global $wpdb;
 
-		// Read the pointers before the rows go, then release them (see
-		// release_items()): deleting an album must not leave its items naming it.
-		$pointing = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->media_ids_in_album( $album_id );
+		// Read the members before the rows go, then release them (see
+		// release_items()): deleting an album must not leave its photos naming it
+		// or wearing its privacy.
+		$pointing = $this->member_ids( $album_id );
 
 		$deleted = (int) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_album_items',

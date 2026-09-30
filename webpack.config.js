@@ -12,7 +12,6 @@ const viewOnlyStores = [
 	'explore-view',
 	'shared-ui',
 	'explore-feed',
-	'lock-overlay',
 	'media-grid',
 	'media-player',
 	'media-upload',

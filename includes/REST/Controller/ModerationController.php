@@ -156,9 +156,29 @@ class ModerationController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_ai_usage' ),
-					'permission_callback' => array( $this, 'moderate_permissions_check' ),
+					'permission_callback' => array( $this, 'settings_permissions_check' ),
 				),
 			)
+		);
+	}
+
+	/**
+	 * Site-wide AI spend is owner data: the same people who see the AI Usage
+	 * panel on MediaVerse > Stats may read it, not every moderator.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return true|WP_Error
+	 */
+	public function settings_permissions_check() {
+		if ( current_user_can( 'manage_options' ) || current_user_can( 'manage_mvs_settings' ) ) {
+			return true;
+		}
+
+		return new WP_Error(
+			'mvs_rest_forbidden',
+			__( 'You do not have permission to view AI usage.', 'wpmediaverse' ),
+			array( 'status' => 403 )
 		);
 	}
 

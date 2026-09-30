@@ -1,7 +1,7 @@
 {
     "ok": true,
     "summary": {
-        "pass": 69,
+        "pass": 70,
         "fail": 0,
         "hole": 0
     },
@@ -170,6 +170,12 @@
         },
         {
             "check": "boot",
+            "entity": "/mvs/v1/collections/(?P<id>[\\d]+)/items",
+            "status": "pass",
+            "detail": "GET -> 404 (mvs_not_found)"
+        },
+        {
+            "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
             "status": "pass",
             "detail": "GET -> 404 (mvs_not_found)"
@@ -236,24 +242,6 @@
         },
         {
             "check": "boot",
-            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
-            "status": "pass",
-            "detail": "GET -> 404 (mvs_not_found)"
-        },
-        {
-            "check": "boot",
-            "entity": "/mvs/v1/me/grants",
-            "status": "pass",
-            "detail": "GET -> 200"
-        },
-        {
-            "check": "boot",
-            "entity": "/mvs/v1/access/options",
-            "status": "pass",
-            "detail": "GET -> 200"
-        },
-        {
-            "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/signed-url",
             "status": "pass",
             "detail": "GET -> 404 (mvs_not_found)"
@@ -296,6 +284,12 @@
         },
         {
             "check": "boot",
+            "entity": "/mvs/v1/me/mentions",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
             "entity": "/mvs/v1/me/notifications/count",
             "status": "pass",
             "detail": "GET -> 200"
@@ -303,6 +297,18 @@
         {
             "check": "boot",
             "entity": "/mvs/v1/me/transactions",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/storage",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/(?P<id>[\\d]+)/storage",
             "status": "pass",
             "detail": "GET -> 200"
         },

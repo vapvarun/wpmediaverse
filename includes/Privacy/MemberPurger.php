@@ -65,12 +65,8 @@ class MemberPurger {
 					continue;
 				}
 
-				$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$wpdb->prepare(
-						"DELETE FROM `{$full}` WHERE `{$column}` = %d LIMIT %d",
-						$user_id,
-						self::BATCH
-					)
+				$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- condition from MemberDataMap::member_condition(), prepared there.
+					"DELETE FROM `{$full}` WHERE " . MemberDataMap::member_condition( $spec, $column, $user_id ) . ' LIMIT ' . (int) self::BATCH
 				);
 
 				$removed += max( 0, (int) $deleted );
@@ -91,12 +87,8 @@ class MemberPurger {
 					continue;
 				}
 
-				$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$wpdb->prepare(
-						"UPDATE `{$full}` SET `{$column}` = 0 WHERE `{$column}` = %d LIMIT %d",
-						$user_id,
-						self::BATCH
-					)
+				$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- condition from MemberDataMap::member_condition(), prepared there.
+					"UPDATE `{$full}` SET `{$column}` = 0 WHERE " . MemberDataMap::member_condition( $spec, $column, $user_id ) . ' LIMIT ' . (int) self::BATCH
 				);
 
 				$retained += max( 0, (int) $updated );
@@ -148,11 +140,8 @@ class MemberPurger {
 					continue;
 				}
 
-				$left += (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$wpdb->prepare(
-						"SELECT COUNT(*) FROM `{$full}` WHERE `{$column}` = %d",
-						$user_id
-					)
+				$left += (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- condition from MemberDataMap::member_condition(), prepared there.
+					"SELECT COUNT(*) FROM `{$full}` WHERE " . MemberDataMap::member_condition( $spec, $column, $user_id )
 				);
 			}
 		}

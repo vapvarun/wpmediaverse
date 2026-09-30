@@ -109,8 +109,8 @@ class PushService {
 				$user_id,
 				$platform,
 				$token,
-				current_time( 'mysql' ),
-				current_time( 'mysql' )
+				current_time( 'mysql', true ),
+				current_time( 'mysql', true )
 			)
 		);
 

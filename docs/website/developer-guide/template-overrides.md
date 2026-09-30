@@ -27,6 +27,25 @@ wp-content/themes/your-theme/
     └── profile-edit.php       # Profile edit page
 ```
 
+## Template Versions
+
+Every template you can override has an `@version` line in its header:
+
+```php
+/**
+ * Template: Media Explore/Archive.
+ *
+ * @package WPMediaVerse
+ * @version 2.6.0
+ */
+```
+
+The version changes only when that template's markup or the variables it uses change - not on every release. When you copy a template into your theme, keep the `@version` line. When MediaVerse ships a newer version of a template you have overridden, **Tools > Site Health** shows "Your theme has outdated copies of MediaVerse templates", naming each file with your version and the current one. A copy with no `@version` line was made before 2.6.0 and is always listed.
+
+An outdated copy keeps rendering, but it misses fixes and may not show new features correctly. To update it, copy the current file from the plugin's `templates/` folder (or `wpmediaverse-pro/templates/` for Pro templates) over your theme's copy, then re-apply your changes. Site Health checks the active theme and its parent; when both override the same file, only the child theme's copy loads, so only it is checked.
+
+Admin screens (`templates/admin/`) are not overridable, so they carry no version.
+
 ## Available Templates
 
 | File | Used For |
@@ -192,6 +211,23 @@ wp-content/themes/your-theme/
     ├── challenges.php
     ├── tournaments.php
     └── compete-hub.php
+```
+
+The page bodies and Pro partials those pages and the member dashboard include are overridable at the same path, mirroring `wpmediaverse-pro/templates/` (2.6.0):
+
+```
+wp-content/themes/your-theme/
+└── wpmediaverse/
+    ├── battles-body.php
+    ├── challenges-body.php
+    ├── tournaments-body.php
+    ├── compete-hub-body.php
+    ├── admin/connector-import-modal.php     # rendered on the member dashboard
+    └── partials/
+        ├── boost-modal.php
+        ├── streak-widget.php
+        ├── dashboard-connectors-panel.php
+        └── external-source-badge.php
 ```
 
 Each page 404s if its backing feature toggle (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`) is off — Compete Hub (`/compete/`) 404s only when none of the three are enabled. Added in 1.9.0.

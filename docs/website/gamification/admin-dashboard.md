@@ -4,7 +4,7 @@
 
 
 
-The Gamification admin area is accessible at **Competitions**. It provides a unified view of all active and pending competitions, plus dedicated managers for challenges, tournaments, and battles.
+The Gamification admin area is accessible at **MediaVerse > Competitions** (Competitions, Photo Challenges, Tournaments, Photo Battles and Challenge Themes sit in the MediaVerse menu, right after Stats). It provides a unified view of all active and pending competitions, plus dedicated managers for challenges, tournaments, and battles.
 
 Gamification admin screens only appear when at least one gamification feature is enabled in Settings.
 
@@ -36,7 +36,7 @@ You can filter the table by Type and Status using the dropdowns above the table.
 
 ## Challenge Manager
 
-Go to **Competitions > Challenge Manager** to create and edit photo challenges.
+Go to **MediaVerse > Photo Challenges** to create and edit photo challenges.
 
 ![Challenge Manager list view](../images/admin-competitions.png)
 
@@ -44,17 +44,17 @@ The Challenge Manager list shows all challenges sorted by start date descending.
 
 From the edit form you can:
 
-- Change the theme, dates, and XP prize amounts for a challenge that has not yet started
+- Change the theme, dates, and point prize amounts for a challenge that has not yet started
 - View the current entry count for a challenge that is Active or in Voting
 - Manually trigger finalization before the voting deadline
 
-> You cannot edit entry windows or XP prizes after a challenge reaches Active stage. Changing dates for an Active challenge requires manually editing the database.
+> You cannot edit entry windows or point prizes after a challenge reaches Active stage. Changing dates for an Active challenge requires manually editing the database.
 
-### Theme Library
+### Challenge Themes
 
-Click **Competitions > Theme Library** to manage the pool of challenge themes used by Autopilot.
+Click **MediaVerse > Challenge Themes** to manage the pool of challenge themes used by Autopilot.
 
-![Theme Library admin page with category filter](../images/admin-competitions.png)
+![Challenge Themes admin page with category filter](../images/admin-competitions.png)
 
 | Column | Description |
 |--------|-------------|
@@ -67,13 +67,13 @@ Add a custom theme by clicking **Add Theme**. Set the name, category, and option
 
 ## Tournament Manager
 
-Go to **Competitions > Tournament Manager** to create and manage tournaments.
+Go to **MediaVerse > Tournaments** to create and manage tournaments.
 
 ![Tournament Manager showing tournament list](../images/admin-competitions.png)
 
 From the Tournament Manager you can:
 
-- Create a new tournament with bracket size, dates, and XP prizes
+- Create a new tournament with bracket size, dates, and point prizes
 - View the generated bracket for any in-progress tournament
 - Manually advance a round if the scheduled action has not yet run
 - View per-match vote counts and participant photos
@@ -84,7 +84,7 @@ Clicking a tournament title opens the admin bracket view, which mirrors the fron
 
 ## Battle Monitor
 
-Go to **Competitions > Battle Monitor** to oversee all active battles.
+Go to **MediaVerse > Photo Battles** to oversee all active battles.
 
 ![Battle Monitor table showing active battles](../images/admin-competitions.png)
 
@@ -126,19 +126,14 @@ Go to **MediaVerse > Settings > Gamification** to configure all gamification fea
 | Autopilot Day | `mvs_autopilot_day` | `monday` |
 | Autopilot Hour | `mvs_autopilot_hour` | `9` |
 
-### XP Reward Amounts
+### Point Reward Amounts
 
-These fields set the default XP prizes applied when creating new challenges and tournaments. Existing competitions are not affected when you change these values.
+Settings > Competitions has two reward fields. Points for a challenge or tournament you create by hand are set on that competition's own form. Changing these values does not change competitions that already exist.
 
-| Field | Description |
-|-------|-------------|
-| Challenge 1st Place XP | Default XP for challenge winner |
-| Challenge 2nd Place XP | Default XP for challenge runner-up |
-| Challenge 3rd Place XP | Default XP for third place |
-| Challenge Participation XP | Default XP for all entrants |
-| Tournament Winner XP | Default XP for tournament champion |
-| Tournament Runner-Up XP | Default XP for tournament finalist |
-| Tournament Round Win XP | Default XP per round win |
+| Field | Key | Description |
+|-------|-----|-------------|
+| Battle win reward (points) | `mvs_pro_battle_win_xp` | Points the winner of a photo battle earns (default 100). Shows only while Photo Battles is on. |
+| Points rewards | `mvs_autopilot_xp_1st`, `_2nd`, `_3rd`, `_participation` | Points each autopilot challenge awards for 1st, 2nd and 3rd place and to everyone who entered (defaults 200, 100, 50, 10). Shows only while Enable Autopilot is on. |
 
 ### Boost Configuration
 

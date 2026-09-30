@@ -253,38 +253,68 @@ class CacheService {
 	/**
 	 * Get tag cloud data with caching.
 	 *
+	 * @deprecated 2.6.0 Unused — every caller reads the media-index-backed cloud
+	 *             via `tag_cloud()` below (itself a cache in front of
+	 *             `MediaRepository::tag_cloud()`), which counts against the same
+	 *             table and type group the feed reads. This copy counted against
+	 *             `wp_term_taxonomy.count`, which includes documents the feed
+	 *             excludes — the exact defect `MediaRepository::tag_cloud()` was
+	 *             written to fix (Basecamp 10259632183). Kept as a caching
+	 *             delegate because it is public API on a container-registered
+	 *             service (Production Rule 1); scheduled for removal in 4.0.
+	 *
 	 * @param int $limit Max tags.
 	 * @return array
 	 */
 	public function get_tag_cloud( int $limit = 50 ): array {
-		$key = "tag_cloud_{$limit}";
-		return $this->remember(
+		_deprecated_function( __METHOD__, '2.6.0', __CLASS__ . '::tag_cloud()' );
+		return $this->tag_cloud( $limit );
+	}
+
+	/**
+	 * Tag cloud, cached.
+	 *
+	 * `MediaRepository::tag_cloud()` GROUP BYs term_relationships joined against
+	 * mvs_media_index for every page view that renders the Explore tag row
+	 * (every layout, every request) or the `/tags/cloud` REST route — at 50k+
+	 * media that join runs on every uncached request. Cardinality is small and
+	 * site-controlled (the limit comes from a site-wide filter or a REST `limit`
+	 * param clamped to 1-200, not a per-user/per-entity value), so the
+	 * persistent two-tier cache applies (Coding Rule 16).
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int      $limit Max tags (1-200).
+	 * @param string[] $types Media types to count against. Null = library default.
+	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
+	 */
+	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
+		$key = 'tagcloud2_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
+		return $this->remember_persistent(
 			$key,
-			function () use ( $limit ) {
-				$terms = get_terms(
-					array(
-						'taxonomy'   => 'mvs_tag',
-						'orderby'    => 'count',
-						'order'      => 'DESC',
-						'number'     => $limit,
-						'hide_empty' => true,
-					)
-				);
-				if ( is_wp_error( $terms ) ) {
-					return array();
-				}
-				$cloud = array();
-				foreach ( $terms as $term ) {
-					$cloud[] = array(
-						'id'    => $term->term_id,
-						'name'  => $term->name,
-						'slug'  => $term->slug,
-						'count' => $term->count,
-					);
-				}
-				return $cloud;
+			static function () use ( $limit, $types ) {
+				return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud( $limit, $types );
 			},
-			self::TTL_LONG
+			self::TTL_MEDIUM
+		);
+	}
+
+	/**
+	 * How many tags would qualify for the cloud, cached. Pairs with `tag_cloud()`.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string[]|null $types Media types to count against. Null = library default.
+	 * @return int
+	 */
+	public function tag_cloud_total( ?array $types = null ): int {
+		$key = 'tagcloudtotal2_' . ( $types ? implode( ',', $types ) : 'default' );
+		return (int) $this->remember_persistent(
+			$key,
+			static function () use ( $types ) {
+				return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud_total( $types );
+			},
+			self::TTL_MEDIUM
 		);
 	}
 
@@ -316,12 +346,24 @@ class CacheService {
 
 	/**
 	 * Invalidate tag cloud cache.
+	 *
+	 * Clears the concrete (limit, types) combinations this plugin actually
+	 * requests (404.php/explore.php "popular tags" = 5, the Explore chip row's
+	 * default and site-filterable limit = 20, and the REST route's default and
+	 * max = 20/200). TTL_MEDIUM (5 min) bounds staleness for any limit a caller
+	 * asks for outside this list — the same tradeoff the pre-2.6.0 version of
+	 * this method already made for the (then unused) legacy keys.
 	 */
 	public function invalidate_tag_cloud(): void {
-		// Clear all tag cloud variants.
+		// Legacy keys (deprecated get_tag_cloud()).
 		foreach ( array( 20, 50, 100 ) as $limit ) {
 			$this->delete( "tag_cloud_{$limit}" );
 		}
+		// Current keys (tag_cloud() / tag_cloud_total()).
+		foreach ( array( 5, 20, 50, 100, 200 ) as $limit ) {
+			$this->forget_persistent( 'tagcloud2_' . $limit . '_default' );
+		}
+		$this->forget_persistent( 'tagcloudtotal2_default' );
 	}
 
 	/**

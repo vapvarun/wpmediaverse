@@ -20,7 +20,7 @@ Last confirmed: **UNCONFIRMED — seeded 2026-09-09, needs the plugin owner's si
 | 3 | A visitor browses public media without logging in | anonymous | `/explore-media/`, single | Public feed is the acquisition surface | security/02 | Free |
 | 4 | A member sets an item private and nobody else can open it | owner + other | single, REST | Privacy is the #1 trust promise; journey `05` critical | security/05 | Free |
 | 5 | A member reacts / comments on someone else's media | member-other | single, lightbox | Social layer — the reason to pick this over the media library | customer/* | Free |
-| 6 | An owner moderates: approve, reject, handle a report | administrator | wp-admin `mvs-moderation`, `mvs-reports` | Owners must be able to police the community | admin/04 | Free |
+| 6 | An owner moderates: approve, reject, handle a report | administrator | wp-admin `mvs-moderation` (Reports is its `user-reports` tab; `mvs-reports` still resolves) | Owners must be able to police the community | admin/04 | Free |
 | 7 | A member uploads a video and it plays with the plugin's player | subscriber | single, `[mvs_player]` | Video is the headline feature vs competitors | customer/* | Free |
 | 8 | A member groups media into an album | subscriber | `album.php`, `[mvs_album]` | CPT created on activation; organisation is core | customer/* | Free |
 | 9 | Documents: upload, share with a specific member, they can open it | owner + other | `/explore-document/`, `documents.php` | Activation page; `use_mvs_documents` granted to every role; recent hot-spot | security/07, 08 | Free (share: Pro) |

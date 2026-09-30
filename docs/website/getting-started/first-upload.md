@@ -64,7 +64,7 @@ The upload form offers these privacy levels:
 | Friends | BuddyPress friends of the uploader (requires BuddyPress) |
 | Group | Members of a specific BuddyPress group (requires BuddyPress) |
 | Private | Only the uploader and administrators |
-| Custom | A specific list of user IDs (managed via API or access rules) |
+| Custom | A specific list of user IDs (managed via the API) |
 
 The default privacy level is set in **Media > Settings > General > Default Privacy Level**.
 

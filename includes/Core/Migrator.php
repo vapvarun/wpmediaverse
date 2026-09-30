@@ -14,7 +14,15 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 36;
+	const CURRENT_VERSION = 40;
+
+	/**
+	 * Tables older versions created that no current version does. Uninstall
+	 * drops them too, for a site deleted before its upgrade ran.
+	 *
+	 * @since 2.6.0
+	 */
+	const RETIRED_TABLES = array( 'mvs_access_rules' );
 
 	/**
 	 * Option recording how far the v29 drive backfill has progressed.
@@ -69,7 +77,6 @@ class Migrator {
 	public static function tables(): array {
 		return array(
 			'mvs_access_grants',
-			'mvs_access_rules',
 			'mvs_activity',
 			'mvs_album_items',
 			'mvs_blocks',
@@ -149,7 +156,8 @@ class Migrator {
 				PRIMARY KEY  (id),
 				KEY reporter_target (reporter_id, target_type, target_id),
 				KEY target (target_type, target_id),
-				KEY status (status)
+				KEY status (status),
+				KEY status_created (status, created_at)
 			) {$charset_collate};"
 		);
 
@@ -179,7 +187,8 @@ class Migrator {
 				PRIMARY KEY  (id),
 				KEY user_date (user_id, created_at),
 				KEY type_date (type, created_at),
-				KEY created_at (created_at)
+				KEY created_at (created_at),
+				KEY media_id (media_id)
 			) {$charset_collate};"
 		);
 	}
@@ -208,7 +217,9 @@ class Migrator {
 				PRIMARY KEY  (id),
 				UNIQUE KEY follower_following (follower_id, following_id),
 				KEY following_id (following_id),
-				KEY status (status)
+				KEY status (status),
+				KEY follower_created (follower_id, created_at),
+				KEY following_created (following_id, created_at)
 			) {$charset_collate};"
 		);
 
@@ -225,7 +236,9 @@ class Migrator {
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY user_unread (user_id, read_at),
-				KEY user_date (user_id, created_at)
+				KEY user_date (user_id, created_at),
+				KEY media_id (media_id),
+				KEY actor_id (actor_id)
 			) {$charset_collate};"
 		);
 	}
@@ -266,7 +279,8 @@ class Migrator {
 				PRIMARY KEY  (id),
 				UNIQUE KEY media_user (media_id, user_id),
 				KEY user_id (user_id),
-				KEY collection_id (collection_id)
+				KEY collection_id (collection_id),
+				KEY user_created (user_id, created_at)
 			) {$charset_collate};"
 		);
 
@@ -281,7 +295,8 @@ class Migrator {
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY media_user_date (media_id, user_id, created_at),
-				KEY created_at (created_at)
+				KEY created_at (created_at),
+				KEY user_id (user_id)
 			) {$charset_collate};"
 		);
 
@@ -296,22 +311,6 @@ class Migrator {
 				shares bigint(20) unsigned NOT NULL DEFAULT 0,
 				updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (media_id)
-			) {$charset_collate};"
-		);
-
-		// 5. Access rules.
-		dbDelta(
-			"CREATE TABLE {$prefix}mvs_access_rules (
-				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-				media_id bigint(20) unsigned NOT NULL,
-				rule_type varchar(50) NOT NULL,
-				rule_value text NOT NULL,
-				price decimal(10,2) DEFAULT NULL,
-				currency varchar(3) DEFAULT NULL,
-				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				PRIMARY KEY  (id),
-				KEY media_id (media_id),
-				KEY rule_type (rule_type)
 			) {$charset_collate};"
 		);
 
@@ -356,11 +355,23 @@ class Migrator {
 				added_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				UNIQUE KEY album_media (album_id, media_id),
-				KEY album_position (album_id, position)
+				KEY album_position (album_id, position),
+				KEY media_id (media_id)
 			) {$charset_collate};"
 		);
 
 		// 9. Media index — authoritative media record (no CPT dependency).
+		//
+		// No comment_count: it was written by the rtMedia importer and read by
+		// nothing, so it could only ever go stale. Comment totals are counted
+		// from wp_comments at read time. Existing installs keep the column
+		// (dbDelta never drops one, and an ALTER on a large index table is not
+		// worth a dead column).
+		//
+		// Keep comments OUT of the SQL string: dbDelta() reads every line of a
+		// CREATE TABLE as a column definition, so the "-- ..." lines that used
+		// to sit here became five failing `ALTER TABLE ... ADD COLUMN --`
+		// queries on every existing site's upgrade (shipped in 2.5.1).
 		dbDelta(
 			"CREATE TABLE {$prefix}mvs_media_index (
 				media_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -383,11 +394,6 @@ class Migrator {
 				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
 				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
 				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
-				-- No comment_count: it was written by the rtMedia importer and
-				-- read by nothing, so it could only ever go stale. Comment
-				-- totals are counted from wp_comments at read time. Existing
-				-- installs keep the column (dbDelta never drops one, and an
-				-- ALTER on a large index table is not worth a dead column).
 				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT NULL,
@@ -430,7 +436,8 @@ class Migrator {
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY level_date (level, created_at),
-				KEY context_date (context, created_at)
+				KEY context_date (context, created_at),
+				KEY created_at (created_at)
 			) {$charset_collate};"
 		);
 
@@ -2441,5 +2448,176 @@ class Migrator {
 		delete_option( 'mvs_telemetry_enabled' );
 		delete_option( 'mvs_telemetry_counters' );
 		delete_option( 'mvs_telemetry_since' );
+	}
+
+	/**
+	 * Migration v37 — big-site indexes (50k media / 10k members target).
+	 *
+	 * Several hot lookups had no matching index: per-media activity /
+	 * notification / album-item rows, per-user view history, error-log
+	 * retention deletes (`LoggerService::prune()`), the reports moderation
+	 * queue filtered by status and sorted by date, and the follow/favorite
+	 * list views (`FollowService::get_followers()` / `get_following()` both
+	 * `ORDER BY created_at DESC`; `FavoriteService::get_user_favorites()`
+	 * defaults to the same). Idempotent via `add_index_if_missing()`
+	 * (SHOW INDEX guard, same pattern as v21/v25/v27/v29) — safe to rerun.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_37(): void {
+		global $wpdb;
+
+		$prefix = $wpdb->prefix;
+
+		$this->add_index_if_missing( $prefix . 'mvs_activity', 'media_id', 'media_id (media_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_notifications', 'media_id', 'media_id (media_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_notifications', 'actor_id', 'actor_id (actor_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_album_items', 'media_id', 'media_id (media_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_media_views', 'user_id', 'user_id (user_id)' );
+		$this->add_index_if_missing( $prefix . 'mvs_error_log', 'created_at', 'created_at (created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_reports', 'status_created', 'status_created (status, created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_follows', 'follower_created', 'follower_created (follower_id, created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_follows', 'following_created', 'following_created (following_id, created_at)' );
+		$this->add_index_if_missing( $prefix . 'mvs_favorites', 'user_created', 'user_created (user_id, created_at)' );
+
+		// AI usage moved from one autoloaded array (mvs_ai_usage) to per-month,
+		// per-field rows (AIService::usage_field_option()). Carry the existing
+		// counters over, or an upgrade mid-month would reset spend to zero and
+		// let the site run past its monthly AI budget.
+		$legacy = get_option( 'mvs_ai_usage', null );
+		if ( is_array( $legacy ) ) {
+			foreach ( $legacy as $month => $fields ) {
+				if ( ! is_string( $month ) || ! preg_match( '/^\d{4}-\d{2}$/', $month ) || ! is_array( $fields ) ) {
+					continue;
+				}
+				foreach ( array( 'calls', 'success', 'failed', 'cost' ) as $field ) {
+					if ( isset( $fields[ $field ] ) ) {
+						add_option( 'mvs_ai_usage_' . $month . '_' . $field, (float) $fields[ $field ], '', false );
+					}
+				}
+			}
+			delete_option( 'mvs_ai_usage' );
+		}
+	}
+
+	/**
+	 * Migration v38 - remove per-media access rules (2.6.0).
+	 *
+	 * MediaVerse is not a membership plugin: privacy plus sharing with people
+	 * or a group is the whole access model, and the rules (role, capability,
+	 * membership, code, price) and the Lock Overlay block are gone.
+	 *
+	 * Rules could lock an item that was otherwise public, so dropping them
+	 * alone would publish it. Every item that had a rule is first set to
+	 * private (only the owner and moderators), which is never broader than
+	 * what the rules allowed; the owner can loosen it. `mvs_access_grants`
+	 * stays: document sharing reads and writes it.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_38(): void {
+		global $wpdb;
+
+		$rules = $wpdb->prefix . 'mvs_access_rules';
+
+		// A site that never had the table reads no rows here.
+		$suppressed = $wpdb->suppress_errors();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$locked = array_map( 'intval', (array) $wpdb->get_col( "SELECT DISTINCT media_id FROM {$rules}" ) );
+		$wpdb->suppress_errors( $suppressed );
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		foreach ( $locked as $media_id ) {
+			if ( $media_id <= 0 ) {
+				continue;
+			}
+			$privacy = (string) $repo->get_raw( $media_id, 'privacy' );
+			if ( in_array( $privacy, array( 'private', 'dm' ), true ) ) {
+				continue;
+			}
+			if ( '' !== (string) $repo->get_raw( $media_id, 'media_type' ) ) {
+				// Media: through the repository so the privacy-change hook runs
+				// (a public cloud copy is brought back to local storage).
+				$repo->set( $media_id, 'privacy', 'private' );
+			} else {
+				// An album or collection keeps its privacy on a type-less index row.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update( $index, array( 'privacy' => 'private' ), array( 'media_id' => $media_id ) );
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$wpdb->query( "DROP TABLE IF EXISTS {$rules}" );
+	}
+
+	/**
+	 * Migration v39 - member email defaults (2.6.0).
+	 *
+	 * A new install starts with the member emails on. A site updating to
+	 * 2.6.0 starts with them off, so an update does not suddenly email every
+	 * member; the owner turns them on in Settings > General > Emails (owner
+	 * decision). add_option() never overwrites a choice already made.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_39(): void {
+		// The stored version is still the one this run started from.
+		$fresh = 0 === (int) get_option( self::VERSION_OPTION, 0 );
+
+		foreach ( \WPMediaVerse\Services\EmailService::TYPES as $option ) {
+			add_option( $option, $fresh ? '1' : '0' );
+		}
+	}
+
+	/**
+	 * Migration v40 - one album per photo, and each photo's own privacy (2.6.0).
+	 *
+	 * A photo in an album now shows with the album's privacy in both directions,
+	 * and belongs to one album (Basecamp 10264373450). This puts existing data in
+	 * that shape without changing what anyone sees:
+	 *
+	 *  1. membership rows for albums that no longer exist are removed;
+	 *  2. a photo in several albums keeps only the one it joined last;
+	 *  3. every photo's album_id pointer is set from its membership (it had
+	 *     drifted: 0, or a deleted album, on real data);
+	 *  4. every photo in an album records its CURRENT privacy as its own, so
+	 *     leaving the album restores it.
+	 *
+	 * Nothing's privacy changes here. The old clamp only tightened, so a photo a
+	 * member set private in a public album is still private after the update;
+	 * the album rule applies the next time that album or its photos change.
+	 * An update must not publish what the owner did not ask to publish.
+	 *
+	 * @since 2.6.0
+	 */
+	private function migrate_to_40(): void {
+		global $wpdb;
+
+		$items = $wpdb->prefix . 'mvs_album_items';
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "DELETE ai FROM {$items} ai LEFT JOIN {$wpdb->posts} p ON p.ID = ai.album_id AND p.post_type = 'mvs_album' WHERE p.ID IS NULL" );
+
+		$wpdb->query(
+			"DELETE ai FROM {$items} ai
+			 JOIN {$items} newer ON newer.media_id = ai.media_id
+			  AND ( newer.added_at > ai.added_at OR ( newer.added_at = ai.added_at AND newer.id > ai.id ) )"
+		);
+
+		$wpdb->query(
+			"UPDATE {$index} m LEFT JOIN {$items} ai ON ai.media_id = m.media_id
+			 SET m.album_id = COALESCE( ai.album_id, 0 )
+			 WHERE m.album_id <> COALESCE( ai.album_id, 0 )"
+		);
+
+		$wpdb->query(
+			"INSERT IGNORE INTO {$meta} ( media_id, meta_key, meta_value )
+			 SELECT ai.media_id, 'own_privacy', IF( m.privacy = '', 'public', m.privacy )
+			 FROM {$items} ai JOIN {$index} m ON m.media_id = ai.media_id"
+		);
+		// phpcs:enable
 	}
 }

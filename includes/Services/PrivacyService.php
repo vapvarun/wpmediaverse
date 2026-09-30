@@ -209,7 +209,7 @@ class PrivacyService {
 	 * @since 2.3.0
 	 *
 	 * @param string $privacy Privacy slug.
-	 * @return int 0 public, 20 members, 40 friends, 60 group, 80 private, 90 custom.
+	 * @return int 0 public, 20 members, 30 followers, 40 friends, 60 group, 80 private, 90 custom.
 	 */
 	public static function privacy_to_level( string $privacy ): int {
 		switch ( $privacy ) {
@@ -217,6 +217,8 @@ class PrivacyService {
 				return 0;
 			case 'members':
 				return 20;
+			case 'followers':
+				return 30;
 			case 'friends':
 				return 40;
 			case 'group':
@@ -331,9 +333,8 @@ class PrivacyService {
 		// Is there a REAL media row here? A typed index row is media. The
 		// predicate is a non-empty media_type, not MediaTypes::is_known():
 		// `is_known()` tests ALL, which deliberately omits `legacy_document`,
-		// and the row that first demonstrated this bug was exactly that. This
-		// mirrors AccessRulesService, which has resolved index-first since
-		// 10073499758 - the two guards for one hazard had diverged.
+		// and the row that first demonstrated this bug was exactly that
+		// (index-first resolution, Basecamp 10073499758).
 		$in_index = $repo->exists( $media_id );
 		$typed    = $in_index && '' !== (string) $repo->get( $media_id, 'media_type' );
 
@@ -405,12 +406,11 @@ class PrivacyService {
 		// and fetch it from the API. docs/website/features/user-blocking.md
 		// promises the opposite.
 		//
-		// ONE-DIRECTIONAL, and that is the documented contract, not a
-		// simplification: docs/website/features/user-blocking.md says
-		// "Blocking is one-directional. You can still view the blocked user's
-		// public media unless you also choose to hide it." So the person who
-		// was blocked loses access to the blocker's media; the blocker keeps
-		// access to theirs. is_blocked( author, viewer ) asks exactly that,
+		// ONE-DIRECTIONAL for a single item, by design: the person who was
+		// blocked loses access to the blocker's media, while the blocker can
+		// still open a direct link to theirs. Lists hide both ways through
+		// can_list() (docs/website/features/user-blocking.md). is_blocked(
+		// author, viewer ) asks exactly the single-item question,
 		// and reusing ReportService avoids a third hand-rolled mvs_blocks
 		// query - which is how FollowService and MediaController already
 		// ended up with two different ones.
@@ -439,11 +439,21 @@ class PrivacyService {
 			if ( in_array( $moderation, array( 'flagged', 'rejected', 'pending' ), true ) ) {
 				return false;
 			}
+
+			// An unpublished item (draft, trashed) is its owner's alone. REST
+			// served a draft in full, file URL included, to signed-out visitors
+			// while its page answered 404 (QA, 2.6.0). An empty status predates
+			// the column and is treated as published.
+			$status = (string) $repo->get( $media_id, 'status' );
+			if ( '' !== $status && 'publish' !== $status ) {
+				return false;
+			}
 		}
 
 		// Same split for the privacy value itself: an album's lives in post meta,
 		// a media item's in its index row.
-		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
+		$is_post_object = $post_type && in_array( $post_type, $allowed_types, true );
+		if ( $is_post_object ) {
 			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $media_id );
 		} else {
 			$privacy = (string) $repo->get( $media_id, 'privacy' );
@@ -457,12 +467,17 @@ class PrivacyService {
 		 *
 		 * Return a non-null boolean to short-circuit the built-in check.
 		 *
+		 * Fires for MEDIA only (an mvs_media_index id), never for an album or
+		 * collection post: every listener reads the id as media, and the two
+		 * id sequences collide, so an album check used to be answered from an
+		 * unrelated photo's row (an inherit-privacy flag, a competition entry).
+		 *
 		 * @param bool|null $result   Access result. Null to use default logic.
-		 * @param int       $media_id Media post ID.
+		 * @param int       $media_id Media ID (mvs_media_index).
 		 * @param int       $user_id  User ID.
 		 * @param string    $privacy  Privacy level.
 		 */
-		$filtered = apply_filters( 'mvs_privacy_can_view', null, $media_id, $user_id, $privacy );
+		$filtered = $is_post_object ? null : apply_filters( 'mvs_privacy_can_view', null, $media_id, $user_id, $privacy );
 		if ( null !== $filtered ) {
 			return (bool) $filtered;
 		}
@@ -473,7 +488,7 @@ class PrivacyService {
 		// fail ("We couldn't find that media"). Consulted only for restrictive
 		// levels (public/members/loggedin already resolve below) and only when
 		// the messaging engine is loaded. Owner/admin were granted earlier.
-		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'space', 'custom' ), true ) ) {
+		if ( ! $is_post_object && $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'followers', 'group', 'space', 'custom' ), true ) ) {
 			$container = \WPMediaVerse\Core\Plugin::container();
 			if ( $container->has( 'messaging' ) ) {
 				$messaging = $container->get( 'messaging' );
@@ -493,6 +508,9 @@ class PrivacyService {
 
 			case 'friends':
 				return $this->check_friends( $author_id, $user_id );
+
+			case 'followers':
+				return $this->check_followers( $author_id, $user_id );
 
 			case 'group':
 				return $this->check_group( $media_id, $user_id );
@@ -540,6 +558,26 @@ class PrivacyService {
 	}
 
 	/**
+	 * Check that the viewer follows the media owner.
+	 *
+	 * Asks FollowService, MediaVerse's own follow graph, so it needs no other
+	 * plugin. Before this case existed a `followers` item fell through to the
+	 * default deny and hid the item from the owner's own followers (Basecamp
+	 * 10350019949).
+	 *
+	 * @param int $owner_id Media owner user ID.
+	 * @param int $user_id  Requesting user ID.
+	 * @return bool
+	 */
+	private function check_followers( int $owner_id, int $user_id ): bool {
+		if ( ! $user_id || ! $owner_id ) {
+			return false;
+		}
+
+		return \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->is_following( $user_id, $owner_id );
+	}
+
+	/**
 	 * Check BuddyPress group membership. Falls back to private if BP inactive.
 	 *
 	 * @param int $media_id Media post ID.
@@ -579,17 +617,18 @@ class PrivacyService {
 	 * Falls back to private when nothing answers, which is what an unbridged site
 	 * should do with a privacy level it cannot evaluate.
 	 *
+	 * A signed-out visitor is asked about too, not refused up front. Whether a
+	 * space is readable by visitors is the space's rule (an open space is), and
+	 * refusing here made photos disagree with documents on the same drive: the
+	 * post showed in Explore and the photo did not (Basecamp 10344310617).
+	 *
 	 * @since 2.4.0
 	 *
 	 * @param int $media_id Media id.
-	 * @param int $user_id  Requesting user.
+	 * @param int $user_id  Requesting user, 0 for a signed-out visitor.
 	 * @return bool
 	 */
 	private function check_space( int $media_id, int $user_id ): bool {
-		if ( ! $user_id ) {
-			return false;
-		}
-
 		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$drive_type = (string) $repo->get( $media_id, 'drive_type' );
 		$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
@@ -629,6 +668,44 @@ class PrivacyService {
 	 * Clear the per-request cache.
 	 */
 	public function flush_cache(): void {
-		$this->cache = array();
+		$this->cache         = array();
+		$this->blocked_cache = array();
+	}
+
+	/**
+	 * Either-way block lists, keyed by viewer, for can_list().
+	 *
+	 * @var array<int,int[]>
+	 */
+	private $blocked_cache = array();
+
+	/**
+	 * May this media be LISTED to the viewer (a grid, an album, a collection)?
+	 *
+	 * The can_view() check is one-directional on purpose: a blocker may still open a
+	 * direct link to the blocked member's public media. Lists hide both ways,
+	 * so a list also drops items whose author is on either side of a block with
+	 * the viewer (Basecamp 10355130639). The block list is read once per viewer.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $media_id  Media ID.
+	 * @param int $viewer_id Viewer user ID (0 = visitor).
+	 * @return bool
+	 */
+	public function can_list( int $media_id, int $viewer_id ): bool {
+		if ( ! $this->can_view( $media_id, $viewer_id ) ) {
+			return false;
+		}
+		if ( $viewer_id <= 0 ) {
+			return true;
+		}
+
+		if ( ! isset( $this->blocked_cache[ $viewer_id ] ) ) {
+			$this->blocked_cache[ $viewer_id ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id );
+		}
+
+		return ! $this->blocked_cache[ $viewer_id ]
+			|| ! in_array( (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ), $this->blocked_cache[ $viewer_id ], true );
 	}
 }

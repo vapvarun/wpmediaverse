@@ -13,10 +13,15 @@
  * Expects: $mvs_current_user, $mvs_avatar_url, $mvs_has_custom, $mvs_dash_active.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   2.4.0
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// Fields a community plugin owns are edited there, not here.
+$mvs_community = \WPMediaVerse\Services\ProfileService::community_profile( (int) $mvs_current_user->ID );
+$mvs_deferred  = $mvs_community['fields'];
 ?>
 <?php
 // `hidden` server-side unless this IS the requested section — the binding only
@@ -38,8 +43,9 @@ defined( 'ABSPATH' ) || exit;
 					'lastName'        => $mvs_current_user->last_name,
 					'displayName'     => $mvs_current_user->display_name,
 					'bio'             => $mvs_current_user->description,
-					'dmAccess'        => get_user_meta( $mvs_current_user->ID, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
+					'dmAccess'        => \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_current_user->ID ),
 					'onlineStatus'    => get_user_meta( $mvs_current_user->ID, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
+					'emailActivity'   => 'off' === get_user_meta( $mvs_current_user->ID, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 					'avatarUrl'       => $mvs_avatar_url ?: '',
 					'hasCustomAvatar' => $mvs_has_custom,
 					'uploadingAvatar' => false,
@@ -60,6 +66,8 @@ defined( 'ABSPATH' ) || exit;
 			<div class="mvs-profile-message mvs-profile-message--error"
 				data-wp-bind--hidden="!context.profileError"
 				data-wp-text="context.profileError"></div>
+
+			<?php require MVS_PLUGIN_DIR . 'templates/partials/community-profile-notice.php'; ?>
 
 			<div class="mvs-profile-avatar-section">
 				<div class="mvs-profile-avatar-preview">
@@ -85,23 +93,31 @@ defined( 'ABSPATH' ) || exit;
 			</div>
 
 			<div class="mvs-profile-form-inline">
+				<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) || ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field-row">
+					<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) ) : ?>
 					<div class="mvs-profile-field">
 						<label><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
 						<input type="text" data-wp-bind--value="context.firstName"
 							data-wp-on--input="actions.updateFirstName" />
 					</div>
+					<?php endif; ?>
+					<?php if ( ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 					<div class="mvs-profile-field">
 						<label><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
 						<input type="text" data-wp-bind--value="context.lastName"
 							data-wp-on--input="actions.updateLastName" />
 					</div>
+					<?php endif; ?>
 				</div>
+				<?php endif; ?>
+				<?php if ( ! in_array( 'display_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
 					<label><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
 					<input type="text" data-wp-bind--value="context.displayName"
 						data-wp-on--input="actions.updateDisplayName" />
 				</div>
+				<?php endif; ?>
 				<div class="mvs-profile-field">
 					<label><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
 					<textarea rows="3" maxlength="500"
@@ -109,15 +125,15 @@ defined( 'ABSPATH' ) || exit;
 						data-wp-bind--value="context.bio"></textarea>
 				</div>
 				<div class="mvs-profile-field-row">
+					<?php if ( \WPMediaVerse\Core\Plugin::messaging_enabled() ) : ?>
 					<div class="mvs-profile-field">
 						<label for="mvs-dash-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
 						<select id="mvs-dash-dm-access"
 							data-wp-bind--value="context.dmAccess"
 							data-wp-on--change="actions.updateDmAccess">
-							<option value="everyone"><?php esc_html_e( 'Everyone', 'wpmediaverse' ); ?></option>
-							<option value="followers"><?php esc_html_e( 'People who follow you', 'wpmediaverse' ); ?></option>
-							<option value="mutual"><?php esc_html_e( 'People you follow back', 'wpmediaverse' ); ?></option>
-							<option value="nobody"><?php esc_html_e( 'No one', 'wpmediaverse' ); ?></option>
+							<?php foreach ( \WPMediaVerse\Services\ProfileService::dm_access_options() as $mvs_dm_value => $mvs_dm_label ) : ?>
+								<option value="<?php echo esc_attr( $mvs_dm_value ); ?>"><?php echo esc_html( $mvs_dm_label ); ?></option>
+							<?php endforeach; ?>
 						</select>
 					</div>
 					<div class="mvs-profile-field">
@@ -129,6 +145,18 @@ defined( 'ABSPATH' ) || exit;
 							<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
 						</select>
 					</div>
+					<?php endif; ?>
+					<?php if ( \WPMediaVerse\Services\EmailService::any_type_enabled() ) : ?>
+					<div class="mvs-profile-field">
+						<label for="mvs-email-activity"><?php esc_html_e( 'Email me about activity', 'wpmediaverse' ); ?></label>
+						<select id="mvs-email-activity"
+							data-wp-bind--value="context.emailActivity"
+							data-wp-on--change="actions.updateEmailActivity">
+							<option value="on"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
+							<option value="off"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
+					<?php endif; ?>
 				</div>
 				<div class="mvs-profile-form-actions">
 					<button type="button" class="mvs-btn mvs-btn--primary mvs-btn--small"

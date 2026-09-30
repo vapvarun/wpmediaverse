@@ -35,13 +35,6 @@ class SignedUrlService {
 	const PARAM_SIZE      = 'mvs_size';
 
 	/**
-	 * Access rules service.
-	 *
-	 * @var AccessRulesService
-	 */
-	private $access_rules;
-
-	/**
 	 * Privacy service.
 	 *
 	 * @var PrivacyService
@@ -51,12 +44,10 @@ class SignedUrlService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AccessRulesService $access_rules Access rules service.
-	 * @param PrivacyService     $privacy      Privacy service.
+	 * @param PrivacyService $privacy Privacy service.
 	 */
-	public function __construct( AccessRulesService $access_rules, PrivacyService $privacy ) {
-		$this->access_rules = $access_rules;
-		$this->privacy      = $privacy;
+	public function __construct( PrivacyService $privacy ) {
+		$this->privacy = $privacy;
 	}
 
 	/**
@@ -738,18 +729,6 @@ class SignedUrlService {
 	}
 
 	/**
-	 * Check if a media item requires signed URLs.
-	 *
-	 * Media with active access rules should use signed URLs.
-	 *
-	 * @param int $media_id Media post ID.
-	 * @return bool
-	 */
-	public function requires_signed_url( int $media_id ): bool {
-		return $this->access_rules->has_active_rules( $media_id );
-	}
-
-	/**
 	 * Direct CDN URL for a public media's size-specific thumbnail, if its file
 	 * lives on cloud.
 	 *
@@ -849,6 +828,15 @@ class SignedUrlService {
 			return '';
 		}
 
+		// A stored URL on ANY other host is a leftover from a migration (an old
+		// staging site, a retired CDN), not a working thumbnail. Emitting it
+		// pointed the grid at a dead address while the original file was still
+		// here. Only a URL on the host the file's driver serves from is direct;
+		// anything else falls through to /serve (Basecamp 10350203155).
+		if ( ! $this->is_on_driver_host( $thumb_url, $media_id ) ) {
+			return '';
+		}
+
 		/**
 		 * Filter the direct public URL for a media's cloud-hosted thumbnail.
 		 *
@@ -917,8 +905,42 @@ class SignedUrlService {
 		if ( ! $this->is_cloud_hosted_url( $file_url ) ) {
 			return '';
 		}
+		// Same rule as the thumbnail: a leftover URL on a host the file is not
+		// served from is not a working location. Fall through to /serve, which
+		// streams the local copy (Basecamp 10354828461).
+		if ( ! $this->is_on_driver_host( $file_url, $media_id ) ) {
+			return '';
+		}
 		/** This filter is documented in maybe_direct_cloud_thumbnail_url(). */
 		return (string) apply_filters( 'mvs_public_cloud_file_url', $file_url, $media_id, '' );
+	}
+
+	/**
+	 * Is this stored URL on the host the media's file is actually served from?
+	 *
+	 * A migrated site keeps `thumb_*` and `file_url` values that point at the
+	 * host it came from. Those are not working locations, and emitting one sends
+	 * public pages to a dead address while the file is still here. The host to
+	 * match is the one the file's own driver serves from.
+	 *
+	 * @param string $url      Stored URL.
+	 * @param int    $media_id Media ID.
+	 * @return bool
+	 */
+	private function is_on_driver_host( string $url, int $media_id ): bool {
+		$driver_host = (string) wp_parse_url(
+			(string) \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id )->url( 'x.jpg' ),
+			PHP_URL_HOST
+		);
+
+		if ( '' !== $driver_host && $driver_host === \WPMediaVerse\Services\StorageService::host_of( $url ) ) {
+			return true;
+		}
+
+		// A known storage host (an r2.dev URL on a bucket that later got a custom
+		// domain, a b-cdn.net zone) is still a working location. Only a host no
+		// driver owns (an old staging site) is a leftover.
+		return '' !== \WPMediaVerse\Services\StorageService::driver_name_for_url( $url );
 	}
 
 	/**
@@ -949,11 +971,7 @@ class SignedUrlService {
 		}
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		if ( 'public' !== (string) $repo->get_raw( $media_id, 'privacy' ) ) {
-			return false;
-		}
-
-		return ! $this->access_rules->has_active_rules( $media_id );
+		return 'public' === (string) $repo->get_raw( $media_id, 'privacy' );
 	}
 
 	/**
@@ -1008,7 +1026,9 @@ class SignedUrlService {
 	 */
 	private function get_ttl(): int {
 		$ttl = (int) get_option( 'mvs_signed_url_ttl', self::DEFAULT_TTL );
-		return max( 60, $ttl ); // Minimum 60 seconds.
+		// At least a minute, at most a week: with no ceiling a large value made
+		// a private file's link effectively permanent once it was shared.
+		return min( WEEK_IN_SECONDS, max( 60, $ttl ) );
 	}
 
 	/**

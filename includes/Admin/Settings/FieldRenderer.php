@@ -219,11 +219,39 @@ class FieldRenderer {
 			echo '</div>';
 		}
 		echo '</div>';
+	}
 
-		printf(
-			'<p class="description">%s <code>mvs_allowed_file_types</code></p>',
-			esc_html__( 'Uploads are limited to the image, video, and audio formats WordPress supports natively. Developers can allow additional MIME types in code with the filter:', 'wpmediaverse' )
-		);
+	/**
+	 * Render "Who can upload media": one box per role, ticked from the live
+	 * upload_mvs_media capability (the option is only the transport).
+	 *
+	 * Administrators are shown ticked and locked: they can always upload, and
+	 * a disabled box posts nothing, so the sanitizer never sees them.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public static function render_upload_roles_field( array $args ): void {
+		// Sentinel: with every box unticked the list still posts.
+		printf( '<input type="hidden" name="%s[]" value="" />', esc_attr( $args['option'] ) );
+
+		echo '<div class="mvs-file-types-grid">';
+		foreach ( wp_roles()->get_names() as $slug => $label ) {
+			$role  = get_role( (string) $slug );
+			$admin = 'administrator' === $slug;
+			printf(
+				'<div class="mvs-file-types-group"><label for="%1$s"><input type="checkbox" id="%1$s" name="%2$s[]" value="%3$s" %4$s %5$s /> %6$s</label></div>',
+				esc_attr( $args['option'] . '-' . $slug ),
+				esc_attr( $args['option'] ),
+				esc_attr( (string) $slug ),
+				checked( $admin || ( $role && $role->has_cap( 'upload_mvs_media' ) ), true, false ),
+				disabled( $admin, true, false ),
+				esc_html( translate_user_role( $label ) )
+			);
+		}
+		echo '</div>';
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
 	}
 
 	/**
@@ -268,8 +296,9 @@ class FieldRenderer {
 		$default    = isset( $registered[ $args['option'] ]['default'] )
 			? $registered[ $args['option'] ]['default']
 			: '';
-		$value      = get_option( $args['option'], $default );
-		$choices    = $args['choices'] ?? array();
+		// 'value' lets a transport option show the state it writes elsewhere.
+		$value   = $args['value'] ?? get_option( $args['option'], $default );
+		$choices = $args['choices'] ?? array();
 
 		printf( '<select name="%1$s" id="%1$s">', esc_attr( $args['option'] ) );
 		foreach ( $choices as $key => $label ) {
@@ -302,11 +331,42 @@ class FieldRenderer {
 	}
 
 	/**
+	 * The "Remove" link beside a saved key.
+	 *
+	 * The hidden input stays disabled (so it is not posted) until the owner
+	 * clicks Remove; assets/js/admin/secret-fields.js flips it, and
+	 * SettingsHelper::secret_removal_requested() reads it on save. Pro renders
+	 * the same markup for its own secret fields.
+	 *
+	 * @param string $option Option name.
+	 */
+	public static function render_secret_remove_control( string $option ): void {
+		printf(
+			' <button type="button" class="button-link mvs-secret-remove" data-mvs-secret="%1$s" data-undo-label="%3$s">%2$s</button><input type="hidden" name="%4$s[]" value="%1$s" disabled />',
+			esc_attr( $option ),
+			esc_html__( 'Remove', 'wpmediaverse' ),
+			esc_attr__( 'Undo', 'wpmediaverse' ),
+			esc_attr( \WPMediaVerse\Core\SettingsHelper::REMOVE_SECRETS_FIELD )
+		);
+	}
+
+	/**
 	 * Render a password input field.
 	 *
 	 * @param array $args Field arguments.
 	 */
 	public static function render_password_field( array $args ): void {
+		// A key defined in wp-config.php wins (SettingsHelper), so the field is
+		// only information: editing it here would change nothing.
+		if ( ! empty( $args['constant'] ) && defined( $args['constant'] ) && '' !== (string) constant( $args['constant'] ) ) {
+			printf(
+				'<p class="description">%s</p>',
+				/* translators: %s: PHP constant name. */
+				esc_html( sprintf( __( 'Set in wp-config.php (%s).', 'wpmediaverse' ), $args['constant'] ) )
+			);
+			return;
+		}
+
 		$value   = get_option( $args['option'], '' );
 		$display = '';
 		if ( $value ) {
@@ -317,9 +377,11 @@ class FieldRenderer {
 			'<input type="password" name="%1$s" id="%1$s" value="%2$s" class="regular-text" autocomplete="off" placeholder="%3$s" />',
 			esc_attr( $args['option'] ),
 			'',
-			esc_attr( $display ? sprintf( 'Current: %s', $display ) : '' )
+			/* translators: %s: masked form of the stored key. */
+			esc_attr( $display ? sprintf( __( 'Current: %s', 'wpmediaverse' ), $display ) : '' )
 		);
 		if ( $value ) {
+			self::render_secret_remove_control( $args['option'] );
 			echo '<p class="description">' . esc_html__( 'Leave empty to keep the current key.', 'wpmediaverse' ) . '</p>';
 		}
 		if ( ! empty( $args['description'] ) ) {
@@ -358,12 +420,24 @@ class FieldRenderer {
 			? $registered[ $args['option'] ]['default']
 			: false;
 		$value      = get_option( $args['option'], $default );
-		printf(
-			'<label><input type="checkbox" name="%s" value="1" %s /> %s</label>',
-			esc_attr( $args['option'] ),
-			checked( $value, true, false ),
-			esc_html( $args['label'] ?? '' )
-		);
+		if ( array_key_exists( 'locked', $args ) ) {
+			// Another plugin decides this value: show its answer, and post the
+			// stored one back unchanged so saving the page never rewrites it.
+			printf(
+				'<input type="hidden" name="%1$s" value="%2$s" /><label><input type="checkbox" id="%1$s" disabled %3$s /> %4$s</label>',
+				esc_attr( $args['option'] ),
+				esc_attr( $value ? '1' : '' ),
+				checked( (bool) $args['locked'], true, false ),
+				esc_html( $args['label'] ?? '' )
+			);
+		} else {
+			printf(
+				'<label><input type="checkbox" name="%s" value="1" %s /> %s</label>',
+				esc_attr( $args['option'] ),
+				checked( $value, true, false ),
+				esc_html( $args['label'] ?? '' )
+			);
+		}
 		if ( ! empty( $args['description'] ) ) {
 			printf(
 				'<p class="description">%s</p>',
@@ -526,61 +600,109 @@ class FieldRenderer {
 
 	/**
 	 * Render the webhook configuration field.
+	 *
+	 * One block per stored webhook (or one empty block when there are none).
+	 * Only the first used to be rendered, and because the save rebuilds the
+	 * option from what was posted, every other webhook - ones added through
+	 * the REST API or code - was deleted by the next Save on this tab.
 	 */
 	public static function render_webhook_field(): void {
-		$webhooks = get_option( 'mvs_webhooks', array() );
-		$webhook  = ! empty( $webhooks[0] ) ? $webhooks[0] : array(
-			'url'    => '',
-			'secret' => '',
-			'events' => array( '*' ),
-		);
+		$webhooks = array_values( array_filter( (array) get_option( 'mvs_webhooks', array() ), 'is_array' ) );
+		if ( empty( $webhooks ) ) {
+			$webhooks = array(
+				array(
+					'url'    => '',
+					'secret' => '',
+					'events' => array( '*' ),
+				),
+			);
+		}
 
-		$all_events = \WPMediaVerse\Integrations\WebhookService::EVENTS;
+		foreach ( $webhooks as $index => $webhook ) {
+			self::render_webhook_row( (int) $index, $webhook );
+		}
 		?>
-		<fieldset>
+		<p class="description mvs-webhook-events-hint">
+			<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
+		</p>
+		<?php
+		$mvs_failures = array_slice( array_reverse( array_filter( (array) get_option( 'mvs_webhook_failures', array() ), 'is_array' ) ), 0, 10 );
+		require MVS_PLUGIN_DIR . 'templates/admin/webhook-failures.php';
+	}
+
+	/**
+	 * One webhook's URL, secret and events.
+	 *
+	 * The first row keeps the ids it always had (mvs-webhook-url, ...), so
+	 * nothing that targets them changes.
+	 *
+	 * @param int   $index   Row index in mvs_webhooks.
+	 * @param array $webhook Stored webhook.
+	 */
+	private static function render_webhook_row( int $index, array $webhook ): void {
+		$all_events = \WPMediaVerse\Integrations\WebhookService::EVENTS;
+		$suffix     = 0 === $index ? '' : '-' . $index;
+		$name       = 'mvs_webhooks[' . $index . ']';
+		$secret_id  = 'mvs_webhook_secret_' . $index;
+		$wh_secret  = (string) ( $webhook['secret'] ?? '' );
+		$wh_display = '' !== $wh_secret ? str_repeat( '*', max( 0, strlen( $wh_secret ) - 4 ) ) . substr( $wh_secret, -4 ) : '';
+		$selected   = (array) ( $webhook['events'] ?? array( '*' ) );
+		?>
+		<fieldset class="mvs-webhook-row">
 			<p>
 				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all (Basecamp 10252222135). ?>
-				<label for="mvs-webhook-url"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
-				<input type="url" name="mvs_webhooks[0][url]" id="mvs-webhook-url" class="regular-text"
+				<label for="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
+				<input type="url" name="<?php echo esc_attr( $name ); ?>[url]" id="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"
 					placeholder="https://example.com/webhook"
 				/>
 			</p>
 			<p>
-				<label for="mvs-webhook-secret"><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
-				<?php
-				$wh_secret  = $webhook['secret'] ?? '';
-				$wh_display = $wh_secret ? str_repeat( '*', max( 0, strlen( $wh_secret ) - 4 ) ) . substr( $wh_secret, -4 ) : '';
-				?>
-				<input type="password" name="mvs_webhooks[0][secret]" id="mvs-webhook-secret" class="regular-text" autocomplete="off"
+				<label for="<?php echo esc_attr( $secret_id ); ?>"><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
+				<input type="password" name="<?php echo esc_attr( $name ); ?>[secret]" id="<?php echo esc_attr( $secret_id ); ?>" class="regular-text" autocomplete="off"
 					value=""
-					placeholder="<?php echo esc_attr( $wh_display ? sprintf( 'Current: %s', $wh_display ) : esc_attr__( 'Shared secret for HMAC signing', 'wpmediaverse' ) ); ?>"
+					<?php /* translators: %s: masked form of the stored secret. */ ?>
+					placeholder="<?php echo esc_attr( '' !== $wh_display ? sprintf( __( 'Current: %s', 'wpmediaverse' ), $wh_display ) : __( 'Shared secret for signing', 'wpmediaverse' ) ); ?>"
 				/>
-				<?php if ( $wh_secret ) : ?>
+				<?php if ( '' !== $wh_secret ) : ?>
+					<?php self::render_secret_remove_control( $secret_id ); ?>
 					<span class="description"><?php esc_html_e( 'Leave empty to keep the current secret.', 'wpmediaverse' ); ?></span>
 				<?php endif; ?>
 			</p>
-			<p id="mvs-webhook-events" class="mvs-webhook-events">
+			<p id="mvs-webhook-events<?php echo esc_attr( $suffix ); ?>" class="mvs-webhook-events">
 				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />
-				<?php $selected_events = $webhook['events'] ?? array( '*' ); ?>
 				<label>
-					<input type="checkbox" name="mvs_webhooks[0][events][]" value="*"
-						<?php checked( in_array( '*', $selected_events, true ) ); ?>
+					<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[events][]" value="*"
+						<?php checked( in_array( '*', $selected, true ) ); ?>
 					/> <?php esc_html_e( 'All events', 'wpmediaverse' ); ?>
 				</label><br />
 				<?php foreach ( $all_events as $event ) : ?>
 					<label>
-						<input type="checkbox" name="mvs_webhooks[0][events][]" value="<?php echo esc_attr( $event ); ?>"
-							<?php checked( in_array( $event, $selected_events, true ) ); ?>
-						/> <code><?php echo esc_html( $event ); ?></code>
+						<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[events][]" value="<?php echo esc_attr( $event ); ?>"
+							<?php checked( in_array( $event, $selected, true ) ); ?>
+						/> <?php echo esc_html( self::webhook_event_label( $event ) ); ?>
 					</label><br />
 				<?php endforeach; ?>
 			</p>
-			<p class="description mvs-webhook-events-hint">
-				<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
-			</p>
 		</fieldset>
 		<?php
+	}
+
+	/**
+	 * Plain name for a webhook event. The stored value stays the event id.
+	 *
+	 * @param string $event Event id, e.g. media.uploaded.
+	 * @return string
+	 */
+	private static function webhook_event_label( string $event ): string {
+		$labels = array(
+			'media.uploaded'  => __( 'Media uploaded', 'wpmediaverse' ),
+			'media.deleted'   => __( 'Media deleted', 'wpmediaverse' ),
+			'media.moderated' => __( 'Moderation status changed', 'wpmediaverse' ),
+			'media.reaction'  => __( 'Someone reacted to media', 'wpmediaverse' ),
+			'media.comment'   => __( 'Someone commented on media', 'wpmediaverse' ),
+		);
+		return $labels[ $event ] ?? $event;
 	}
 
 	/**

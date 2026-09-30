@@ -78,7 +78,7 @@ class StatsService {
 
 		return (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)",
 				$days_old
 			)
 		);

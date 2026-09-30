@@ -17,6 +17,7 @@
  *   - $mvs_filter_tag  (string, optional) Current tag slug filter.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  * @since   2.4.2
  */
 
@@ -50,14 +51,18 @@ $mvs_tag_limit = max( 1, min( 200, $mvs_tag_limit ) );
 //
 // Rendering on the server makes it correct on every navigation by
 // construction, and removes a REST round-trip from every Explore load.
-$mvs_repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+// Cached (5 min): this partial renders on every Explore layout, every
+// request. CacheService::tag_cloud()/tag_cloud_total() wrap the repository's
+// GROUP BY join in a persistent cache so a 50k+ media library isn't re-scored
+// on every page view.
+$mvs_cache      = \WPMediaVerse\Core\Plugin::container()->get( 'cache' );
 $mvs_show_all   = ! empty( $_GET['mvs_all_tags'] ); // phpcs:ignore WordPress.Security.NonceVerification
-$mvs_tag_total  = $mvs_repo->tag_cloud_total();
-$mvs_tag_chips  = $mvs_repo->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 ) : $mvs_tag_limit );
+$mvs_tag_total  = $mvs_cache->tag_cloud_total();
+$mvs_tag_chips  = $mvs_cache->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 ) : $mvs_tag_limit );
 $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ) ); // phpcs:ignore WordPress.Security.NonceVerification
 ?>
-<div class="mvs-tag-cloud">
-	<a class="mvs-tag-cloud-item <?php echo '' === $mvs_active_tag && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
+<div class="mvs-tag-cloud<?php echo $mvs_show_all ? ' mvs-tag-cloud--all' : ''; ?>">
+	<a class="mvs-tag-cloud-item <?php echo '' === $mvs_active_tag && '' === \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_search() ? 'active' : ''; ?>"
 		href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
 	<span class="mvs-tag-cloud-items">
 		<?php
@@ -74,30 +79,30 @@ $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sa
 				<?php echo esc_html( $mvs_chip_name ); ?>
 			</a>
 		<?php endforeach; ?>
-		<?php
-		// The cap is correct - 121 chips above the grid buries the media, and
-		// core caps its own tag cloud too. What was missing is any route to
-		// the rest: with everything below the top N sharing a count of 1, the
-		// tie-break decided the cut, so a tag was reachable or unreachable
-		// forever based on spelling. Basecamp 10278224214.
-		if ( ! $mvs_show_all && $mvs_tag_total > count( $mvs_tag_chips ) ) :
-			?>
-			<a class="mvs-tag-cloud-item mvs-tag-cloud-item--more"
-				href="<?php echo esc_url( add_query_arg( 'mvs_all_tags', 1, $mvs_archive_url ) ); ?>">
-				<?php
-				printf(
-					/* translators: %d: number of additional tags. */
-					esc_html__( 'View all %d tags', 'wpmediaverse' ),
-					(int) $mvs_tag_total
-				);
-				?>
-			</a>
-		<?php elseif ( $mvs_show_all ) : ?>
-			<a class="mvs-tag-cloud-item mvs-tag-cloud-item--more"
-				href="<?php echo esc_url( $mvs_archive_url ); ?>">
-				<?php esc_html_e( 'Show fewer tags', 'wpmediaverse' ); ?>
-			</a>
-		<?php endif; ?>
 	</span>
+	<?php
+	// The cap is correct - 121 chips above the grid buries the media, and
+	// core caps its own tag cloud too. What was missing is any route to
+	// the rest: with everything below the top N sharing a count of 1, the
+	// tie-break decided the cut, so a tag was reachable or unreachable
+	// forever based on spelling. Basecamp 10278224214.
+	if ( ! $mvs_show_all && $mvs_tag_total > count( $mvs_tag_chips ) ) :
+		?>
+		<a class="mvs-tag-cloud-item mvs-tag-cloud-item--more"
+			href="<?php echo esc_url( add_query_arg( 'mvs_all_tags', 1, $mvs_archive_url ) ); ?>">
+			<?php
+			printf(
+				/* translators: %d: total number of tags. */
+				esc_html__( 'More tags (%d)', 'wpmediaverse' ),
+				(int) $mvs_tag_total
+			);
+			?>
+		</a>
+	<?php elseif ( $mvs_show_all ) : ?>
+		<a class="mvs-tag-cloud-item mvs-tag-cloud-item--more"
+			href="<?php echo esc_url( $mvs_archive_url ); ?>">
+			<?php esc_html_e( 'Show fewer tags', 'wpmediaverse' ); ?>
+		</a>
+	<?php endif; ?>
 </div>
 

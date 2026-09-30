@@ -8,6 +8,7 @@
  * component; rows + follow-back are filled by assets/js/frontend/member-follows.js.
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;

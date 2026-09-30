@@ -397,7 +397,9 @@
 		}
 
 		// Link wrapping image + overlay.
-		var anchor = el( 'a', 'mvs-grid-item-link', { href: link } );
+		// Named on the link: placeholder tiles (audio, video with no poster)
+		// have no <img alt> to name it. Mirrors TemplateHelpers::render_grid_item().
+		var anchor = el( 'a', 'mvs-grid-item-link', { href: link, 'aria-label': title || ( window.mvsCardBuildersI18n && window.mvsCardBuildersI18n.viewMedia ) || 'View media' } );
 
 		// Thumbnail — delegated to buildMediaThumbnail so every JS surface
 		// renders identical markup (img / <video> preview / placeholder).

@@ -22,137 +22,23 @@ Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` hea
 - **Admin** — requires `manage_options` or `manage_mvs_settings` (noted per route).
 - **HMAC** — no WordPress auth; request body is verified against an HMAC-SHA256 signature header.
 
-Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_connectors_enabled`, `mvs_stories_enabled`). When one of those features is disabled its routes are not registered. Streaks is the exception: `POST /streaks/buy-freeze` registers regardless of `mvs_streaks_enabled` and refuses at call time instead.
+Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_connectors_enabled`, `mvs_stories_enabled`). When one of those features is disabled its routes are not registered. Streaks is the exception: `GET /me/streak` and `POST /streaks/buy-freeze` register regardless of `mvs_streaks_enabled` and refuses at call time instead.
 
 ---
 
-## Quota & Credits
+## Storage Limits
 
-User-facing quota summaries plus admin package/credit management and the signed external top-up webhook.
+Quota packages, credits, the paid-credit webhook and the `mvs-pro/v1` quota/package/credit
+routes documented on this page in earlier versions were all removed in 2.6.0 - MediaVerse is
+not a membership/commerce plugin.
 
-### GET /me/quota
-
-Return the current user's quota summary (per-type usage and limits for image, video, audio).
-
-**Auth:** User
-
----
-
-### GET /me/quota/check
-
-Lightweight pre-upload check: can the current user upload a given media type (and optional file size) right now?
-
-**Auth:** User
-
-**Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `media_type` | string | Yes | — | One of `image`, `video`, `audio` |
-| `file_size` | int | No | `0` | Size in bytes, for storage-limit checks |
-
-**Response:**
-
-```json
-{ "can_upload": true, "reason": "" }
-```
-
----
-
-### GET /me/credits/history
-
-Return the current user's credit transaction history.
-
-**Auth:** User
-
----
-
-### GET /users/{user_id}/quota
-
-Get a specific user's quota summary.
-
-**Auth:** Admin
-
----
-
-### POST /users/{user_id}/package
-
-Assign a quota package to a user.
-
-**Auth:** Admin
-
-**Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `package_id` | int | Yes | Package to assign |
-
----
-
-### POST /users/{user_id}/credits
-
-Grant extra upload credits to a user for a specific media type.
-
-**Auth:** Admin
-
-**Body:**
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `media_type` | string | Yes | — | One of `image`, `video`, `audio` |
-| `amount` | int | Yes | — | Credits to add (min `1`) |
-| `note` | string | No | `""` | Optional ledger note |
-
----
-
-### GET /packages
-
-List all quota packages.
-
-**Auth:** Admin
-
----
-
-### POST /packages
-
-Create a quota package.
-
-**Auth:** Admin
-
-**Body:**
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | string | Yes | — | Package name |
-| `image_limit` | int | No | `0` | Image upload limit (0 = none) |
-| `video_limit` | int | No | `0` | Video upload limit |
-| `audio_limit` | int | No | `0` | Audio upload limit |
-| `storage_bytes` | int | No | `0` | Storage cap in bytes |
-| `is_default` | bool | No | `false` | Whether this is the default package |
-
----
-
-### PUT /packages/{id}
-
-Update a quota package.
-
-**Auth:** Admin
-
----
-
-### DELETE /packages/{id}
-
-Delete a quota package.
-
-**Auth:** Admin
-
----
-
-### POST /credits/webhook
-
-External credit top-up endpoint. Used by integrations that grant credits from an outside system.
-
-**Auth:** HMAC — the request is **not** cookie/capability authenticated. The handler verifies the `X-MVS-Signature` header against `hash_hmac( 'sha256', $body, $secret )` using `hash_equals()`. Requests with an invalid or missing signature are rejected.
+Storage limits are a **free-plugin** feature: one optional per-member MB allowance, not a Pro
+package system. Set it on **Settings > General > "Fair-use storage limit per member (MB)"**
+(0 = no limit); a site owner can give one member a different limit on that member's wp-admin
+profile (blank there means "use the site limit", 0 means "no limit for this member"). It is
+enforced on every upload path, including Pro's document uploads, through the free `mvs/v1`
+API - see `GET /me/storage` and `GET`/`PUT /users/{id}/storage` in the
+[main REST API reference](rest-api.md).
 
 ---
 
@@ -438,7 +324,19 @@ Return the current user's point balance and the boost cost/limit settings.
 
 ## Streaks
 
-> Unlike the other gamification areas, this route registers whether or not `mvs_streaks_enabled` is on.
+> Unlike the other gamification areas, these routes register whether or not `mvs_streaks_enabled` is on.
+
+### GET /me/streak
+
+The current user's upload streak. **(New in 2.6.0)** `enabled` is the site's Streaks switch, so an app can hide the streak when the owner has turned it off.
+
+**Auth:** User
+
+**Response:**
+
+```json
+{ "current_streak": 4, "longest_streak": 9, "last_upload_date": "2026-09-23", "freezes": 1, "enabled": true }
+```
 
 ### POST /streaks/buy-freeze
 
@@ -856,6 +754,27 @@ Run an incremental delta sync of recently changed items.
 
 ---
 
+### PUT /connectors/{id}/prefs
+
+Save the current user's preferences for one connector. **(New in 2.6.0)** An unknown connector id answers `404 mvs_connector_not_found`.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `auto_export` | bool | No | Export new uploads to this platform automatically |
+| `default_privacy` | string | No | `match`, `public`, `friends`, `members` or `private` |
+
+**Response:**
+
+```json
+{ "updated": { "auto_export": "1" } }
+```
+
+---
+
 ## Stories **(New in 1.9.0)**
 
 WhatsApp-style ephemeral stories. Story state is stored as free media meta (`is_story` / `story_started_at` / `story_expires_at`). There is no separate story-views table: a story view **is** a media view, so receipts are written to the free `mvs_media_views` table and "seen by" is derived from those rows, window-scoped to the story's active period via `story_started_at` and excluding the author. Replying to a story reuses the existing free DM routes — there is no separate reply endpoint here. Requires `mvs_stories_enabled`.
@@ -980,6 +899,8 @@ Site name, description, icon, and auth discovery come from the core WordPress `/
 
 Register (or refresh) the current user's device push token so the app can deliver push notifications.
 
+Since 2.6.0 the token is stored in MediaVerse's single device registry, the same one `/mvs/v1/me/devices` uses. A token already registered to another member is refused (`"registered": false`), never moved. Pushes follow the `mvs_push_should_send` filter.
+
 **Auth:** User
 
 **Body:**
@@ -987,8 +908,7 @@ Register (or refresh) the current user's device push token so the app can delive
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `expo_push_token` | string | Yes | - | The device's Expo push token |
-| `platform` | string | No | `""` | One of `""`, `ios`, `android`, `web` |
-| `device_name` | string | No | `""` | Human-readable device label |
+| `platform` | string | Yes | - | One of `ios`, `android`, `web` (required since 2.6.0) |
 
 **Response:**
 
@@ -1163,7 +1083,7 @@ Optional `doc_type` behaves exactly as on upload.
 
 ### POST /documents/{id}/restore
 
-Restore a trashed document.
+Restore a trashed document. Refused with `409 mvs_document_folder_trashed` while the folder it is in is still in the trash: restore the folder, which brings the document back with it.
 
 **Auth:** Owner/Admin. Write-gated.
 
@@ -1237,6 +1157,17 @@ List folders in a drive.
 | `orderby` | string | `name` | One of `name`, `created_at`, `updated_at` |
 | `order` | string | `ASC` | Sort direction |
 
+Every folder in the response carries **`can_manage`** (bool): whether the viewer may rename, move, re-privacy, trash, restore or delete that folder (see *Who can change a folder* below). The response header **`X-MVS-Can-Create-Folder: 1|0`** says whether the viewer may create a folder in this drive. Render controls from these rather than re-deriving the rules.
+
+With `status=trashed` the list holds only the folders the viewer may restore, and each row also carries:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `trashed_at` | string | When it was trashed, UTC |
+| `trashed_by` | int | Who trashed it; `0` for the system (for example a deleted space) |
+| `purge_at` | string\|null | When it will be deleted permanently, UTC ISO-8601; `null` while the trash is kept forever |
+| `item_count` | int | Subfolders plus documents inside |
+
 ---
 
 ### POST /folders
@@ -1265,7 +1196,7 @@ Get a single folder.
 
 Rename, re-parent, or re-privacy a folder.
 
-**Auth:** Owner/Admin. Write-gated.
+**Auth:** A viewer the folder reports `can_manage: true` to. Write-gated.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -1277,17 +1208,30 @@ Rename, re-parent, or re-privacy a folder.
 
 ### DELETE /folders/{id}
 
-Trash a folder.
+Trash a folder, its subfolders and every document in them. The documents are trashed through the normal document trash, so every trash hook fires; on a large folder the first 200 go in the request and the rest in background batches. The folder's name is free again at once.
 
-**Auth:** Owner/Admin. Write-gated.
+With **`force=true`**, permanently delete a folder that is **already in the trash**, with its subfolders, documents and files. Returns `{ "folder_id", "deleted", "queued" }`; `queued: true` means a very large folder is finishing in the background. A live folder is refused with `409 mvs_folder_not_trashed`. `mvs_folder_before_purge` fires first.
+
+**Auth:** `can_manage`. Write-gated.
 
 ---
 
 ### POST /folders/{id}/restore
 
-Restore a trashed folder.
+Restore a trashed folder, the subfolders trashed with it, and the documents it took to the trash. A document trashed on its own beforehand stays in the trash. If a live sibling took the name meanwhile, the folder comes back as `Name (restored)`.
 
-**Auth:** Owner/Admin. Write-gated.
+**Auth:** `can_manage`. Write-gated.
+
+---
+
+### Who can change a folder
+
+| Viewer | Create | Rename / move / privacy / trash | Restore / force delete |
+|---|---|---|---|
+| Drive owner, site admin (`own`) | Yes | Any folder | Any folder |
+| Space moderator (answered by the host, e.g. BuddyNext, through `mvs_document_can_moderate_space`) | Yes | Any folder | Any folder |
+| Other writer on the drive (a space member) | Yes | Folders they created that hold nothing anyone else added | Folders they created and trashed themselves |
+| Reader | No | No | No |
 
 ---
 

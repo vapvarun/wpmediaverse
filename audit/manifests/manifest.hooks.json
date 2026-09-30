@@ -1,65 +1,6 @@
 {
   "hooks_fired": [
     {
-      "name": "mvs_access_granted",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $grant_id",
-        "int $media_id",
-        "int $user_id",
-        "string $source"
-      ],
-      "where": "includes/Services/AccessRulesService.php:451",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_revoked",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "int $media_id",
-        "int $user_id"
-      ],
-      "where": "includes/Services/AccessRulesService.php:487",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_created",
-      "type": "action",
-      "args_count": 4,
-      "args_signature": [
-        "int $rule_id",
-        "int $media_id",
-        "string $rule_type",
-        "mixed $rule_value"
-      ],
-      "where": "includes/Services/AccessRulesService.php:106",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_deleted",
-      "type": "action",
-      "args_count": 3,
-      "args_signature": [
-        "int $rule_id",
-        "int $media_id",
-        "string $rule_type"
-      ],
-      "where": "includes/Services/AccessRulesService.php:185",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_types_ui",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "array $rule_types"
-      ],
-      "where": "includes/Services/AccessRulesService.php:280",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_account_deletion_cancelled",
       "type": "action",
       "args_count": 1,
@@ -132,6 +73,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_activity_retention_days",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $days"
+      ],
+      "where": "includes/Services/ViewRetentionService.php:70",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_activity_types",
       "type": "filter",
       "args_count": 1,
@@ -197,6 +148,17 @@
         "int $media_id"
       ],
       "where": "includes/Services/AIService.php:292",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_provider_fallback",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $fallback",
+        "string $provider_id"
+      ],
+      "where": "includes/Services/AIService.php:164",
       "consumed_by": []
     },
     {
@@ -740,6 +702,40 @@
       "added": "2.3.2"
     },
     {
+      "name": "mvs_community_notification_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $types"
+      ],
+      "where": "includes/Social/CommunityNotificationContract.php:93",
+      "consumed_by": [
+        "CommunityNotificationContract::declare_types (the declared list, also read by BuddyNext for its settings catalogue)"
+      ]
+    },
+    {
+      "name": "mvs_community_notification_removed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "string $object_type",
+        "int $object_id"
+      ],
+      "where": "includes/Social/CommunityNotificationContract.php:66",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_community_profile",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $profile",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php:266",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_conversation_created",
       "type": "action",
       "args_count": 3,
@@ -831,6 +827,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_default_media_title",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $title",
+        "string $original_name"
+      ],
+      "where": "includes/Services/FilenameStrategy.php:270",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_default_privacy",
       "type": "filter",
       "args_count": 1,
@@ -847,7 +854,7 @@
       "args_signature": [
         "string $style"
       ],
-      "where": "includes/Core/SettingsHelper.php:188",
+      "where": "includes/Core/SettingsHelper.php:242",
       "consumed_by": []
     },
     {
@@ -1165,6 +1172,16 @@
       ]
     },
     {
+      "name": "mvs_documents_admin_after_list",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/admin/documents.php:349",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/DocumentOrphansPanel.php::render"
+      ]
+    },
+    {
       "name": "mvs_documents_drive_html",
       "type": "filter",
       "args_count": 3,
@@ -1184,6 +1201,30 @@
         "bool $enabled"
       ],
       "where": "includes/Core/Plugin.php:1943",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_email_body",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $body",
+        "string $type",
+        "int $user_id"
+      ],
+      "where": "includes/Services/EmailService.php:179",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_email_subject",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $subject",
+        "string $type",
+        "int $user_id"
+      ],
+      "where": "includes/Services/EmailService.php:168",
       "consumed_by": []
     },
     {
@@ -1314,7 +1355,7 @@
       "args_signature": [
         "string $note"
       ],
-      "where": "includes/Admin/Settings/SettingsRegistrar.php:586",
+      "where": "includes/Admin/Settings/DisplaySettingsRegistrar.php:65",
       "consumed_by": [
         "wpmediaverse-pro/includes/Core/Plugin.php::grid_columns_scope_note"
       ]
@@ -1378,6 +1419,42 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_layout_choices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $choices"
+      ],
+      "where": "includes/Core/SettingsHelper.php:265",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/LayoutSetting.php::choices"
+      ]
+    },
+    {
+      "name": "mvs_layout_saved",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "string $value"
+      ],
+      "where": "includes/Admin/Settings/Sanitizers.php:365",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/LayoutSetting.php::saved"
+      ]
+    },
+    {
+      "name": "mvs_layout_selected",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $layout"
+      ],
+      "where": "includes/Core/SettingsHelper.php:290",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Admin/LayoutSetting.php::selected"
+      ]
+    },
+    {
       "name": "mvs_loaded",
       "type": "action",
       "args_count": 1,
@@ -1416,6 +1493,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_log_social_events",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $log_social_events"
+      ],
+      "where": "includes/Services/LoggerService.php:42",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_login_url",
       "type": "filter",
       "args_count": 2,
@@ -1441,7 +1528,7 @@
         "int $max_size",
         "int $user_id"
       ],
-      "where": "includes/Services/UploadService.php:123",
+      "where": "includes/Core/SettingsHelper.php:446",
       "consumed_by": []
     },
     {
@@ -1871,6 +1958,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_messaging_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php:3264",
+      "consumed_by": [],
+      "note": "Added by targeted delta 2026-09-26 - Messages master switch."
+    },
+    {
       "name": "mvs_messaging_poll_intervals",
       "type": "filter",
       "args_signature": [],
@@ -1900,6 +1998,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_moderation_hide_sets_private",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $sets_private",
+        "int $media_id"
+      ],
+      "where": "includes/Services/ModerationService.php:142",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_moderation_tabs",
       "type": "filter",
       "args_count": 1,
@@ -1920,7 +2029,7 @@
     {
       "name": "mvs_notification_created",
       "type": "action",
-      "args_count": 7,
+      "args_count": 9,
       "args_signature": [
         "int $notification_id",
         "int $user_id",
@@ -1928,7 +2037,9 @@
         "int $actor_id",
         "int $media_id",
         "string $message",
-        "string $link"
+        "string $link",
+        "int $object_id",
+        "array $contract_payload"
       ],
       "where": "includes/Social/NotificationService.php:172",
       "consumed_by": []
@@ -1940,6 +2051,22 @@
       "args_count": 0,
       "where": "includes/Social/NotificationService.php:128",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_link",
+      "type": "filter",
+      "args_count": 5,
+      "args_signature": [
+        "string $link",
+        "string $type",
+        "int $actor_id",
+        "int $media_id",
+        "int $object_id"
+      ],
+      "where": "includes/Social/NotificationService.php:492",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Competitions/CompetitionUrl.php"
+      ]
     },
     {
       "name": "mvs_notification_message",
@@ -2134,6 +2261,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_profile_edit_redirect",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $redirect"
+      ],
+      "where": "includes/Core/TemplateLoader.php:1027",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_profile_privacy_levels",
       "type": "filter",
       "args_count": 3,
@@ -2300,6 +2437,28 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_redirect_legacy_drive_query",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $redirect",
+        "string $drive"
+      ],
+      "where": "includes/Core/TemplateLoader.php:525",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_redirect_media_archive_to_explore_page",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $redirect",
+        "int $page"
+      ],
+      "where": "includes/Core/TemplateLoader.php:97",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_registration_url",
       "type": "filter",
       "args_count": 2,
@@ -2314,6 +2473,20 @@
       "args_count": 0,
       "where": "includes/Admin/MediaListPage.php:1059",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_report_resolved",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $report_id",
+        "int $reporter_id",
+        "string $status"
+      ],
+      "where": "includes/Social/ReportService.php:409",
+      "consumed_by": [
+        "includes/Social/NotificationService.php"
+      ]
     },
     {
       "name": "mvs_report_submitted",
@@ -2597,6 +2770,26 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_show_demo_import",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $show"
+      ],
+      "where": "includes/Admin/OverviewPage.php:269",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_show_favorite_button",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $show"
+      ],
+      "where": "templates/partials/shared-ui-frame.php",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_show_online_status",
       "type": "filter",
       "args_count": 3,
@@ -2657,6 +2850,17 @@
           "kind": "add_filter_listener"
         }
       ]
+    },
+    {
+      "name": "mvs_storage_limit_bytes",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $bytes",
+        "int $user_id"
+      ],
+      "where": "includes/Services/StorageLimitService.php:79",
+      "consumed_by": []
     },
     {
       "name": "mvs_storage_repair_enabled",
@@ -2728,6 +2932,18 @@
       ],
       "where": "includes/REST/Controller/TagController.php:307",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_template_roots",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $roots"
+      ],
+      "where": "includes/Core/TemplateVersions.php:41",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Core/Plugin.php"
+      ]
     },
     {
       "name": "mvs_template_variables",

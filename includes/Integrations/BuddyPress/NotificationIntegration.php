@@ -39,6 +39,11 @@ class NotificationIntegration {
 	private const IN_APP_ONLY = array( 'new_message' );
 
 	/**
+	 * BP notification meta key holding the MediaVerse row's object id (2.6.0).
+	 */
+	private const OBJECT_META = 'mvs_object_id';
+
+	/**
 	 * BP component_action for a notification type.
 	 *
 	 * By rule, not by list: a new type (including every Pro type registered
@@ -76,7 +81,7 @@ class NotificationIntegration {
 			return;
 		}
 
-		add_action( 'mvs_notification_created', array( $this, 'on_notification_created' ), 10, 5 );
+		add_action( 'mvs_notification_created', array( $this, 'on_notification_created' ), 10, 8 );
 		add_action( 'mvs_media_deleted', array( $this, 'cleanup_notifications' ), 10, 2 );
 		add_filter( 'bp_notifications_get_registered_components', array( $this, 'register_notification_component' ) );
 		add_filter( 'bp_notifications_get_notifications_for_user', array( $this, 'format_notifications' ), 10, 8 );
@@ -95,8 +100,13 @@ class NotificationIntegration {
 	 * @param string $type            Notification type (e.g. media_reaction).
 	 * @param int    $actor_id        User who triggered the event.
 	 * @param int    $media_id        Related media ID (0 if none).
+	 * @param string $message         Unused.
+	 * @param string $link            Unused.
+	 * @param int    $object_id       The row's comment_id slot. Kept as BP meta
+	 *                                (item_id holds the media id, and a media id
+	 *                                and a competition id can be the same number).
 	 */
-	public function on_notification_created( int $notification_id, int $user_id, string $type, int $actor_id, int $media_id ): void {
+	public function on_notification_created( int $notification_id, int $user_id, string $type, int $actor_id, int $media_id, string $message = '', string $link = '', int $object_id = 0 ): void {
 		unset( $notification_id );
 
 		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_notifications_add_notification' ) ) {
@@ -137,7 +147,7 @@ class NotificationIntegration {
 			}
 		}
 
-		bp_notifications_add_notification(
+		$bp_id = bp_notifications_add_notification(
 			array(
 				'user_id'           => $user_id,
 				'item_id'           => $media_id,
@@ -146,6 +156,9 @@ class NotificationIntegration {
 				'component_action'  => self::bp_action( $type ),
 			)
 		);
+		if ( $bp_id && $object_id > 0 ) {
+			bp_notifications_update_meta( (int) $bp_id, self::OBJECT_META, $object_id );
+		}
 	}
 
 	/**
@@ -266,7 +279,7 @@ class NotificationIntegration {
 		$media_id = (int) $item_id;
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$rendered = \WPMediaVerse\Core\Plugin::container()->get( 'notifications' )
-			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0 );
+			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0, (int) bp_notifications_get_meta( (int) $id, self::OBJECT_META ) );
 		$text     = $rendered['message'];
 		$link     = '' !== $rendered['link'] ? $rendered['link'] : bp_get_notifications_permalink();
 

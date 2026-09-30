@@ -4,7 +4,7 @@ MediaVerse connects with 12+ third-party services and plugins out of the box. No
 
 ## Integrations Admin Page (1.8.0)
 
-Go to **MediaVerse > Integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
+Open the **Integrations** card on the **MediaVerse** Overview screen and click **View integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
 
 - **Install free** - installs and activates the companion plugin's free version in one click, without leaving the page.
 - **Learn more** - links out to the product's page on the Wbcom store.
@@ -18,16 +18,13 @@ This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom p
 |-------------|--------|-------------|:----:|:---:|
 | **BuddyPress** | Free | Profile media tabs, group media, activity stream, notifications | Yes | Yes |
 | **BuddyNext** | Free | Enhanced member directory and profile blocks | Yes | Yes |
-| **WB Gamification** | Free (separate plugin) | XP points, badges, leaderboards for competitions (optional - competitions run without it, only points need it) | -- | Yes |
+| **WB Gamification** | Free (separate plugin) | Points, badges, leaderboards for competitions (optional - competitions run without it, only points need it) | -- | Yes |
 | **Amazon S3** | Pro | Store all media files on S3 with CDN delivery | -- | Yes |
 | **BunnyCDN** | Pro | Store and deliver media via BunnyCDN edge network | -- | Yes |
 | **OpenAI** | Free | AI content moderation, auto-tagging, description generation | Yes | Yes |
 | **Google Cloud Vision** | Pro | Advanced image labeling, object detection, safe search | -- | Yes |
 | **AWS Rekognition** | Pro | Face detection, content moderation, celebrity recognition | -- | Yes |
 | **OpenAI Whisper** | Pro | Automatic video/audio transcription to WebVTT captions | -- | Yes |
-| **MemberPress** | Pro | Auto-assign quota packages based on membership level | -- | Yes |
-| **Paid Memberships Pro** | Pro | Auto-assign quota packages based on PMPro level | -- | Yes |
-| **WooCommerce** | Pro | Sell upload quota packages as WooCommerce products | -- | Yes |
 | **WordPress Webhooks** | Free | Send real-time HTTP notifications on media events | Yes | Yes |
 
 ## Community & Social
@@ -57,11 +54,11 @@ If you use the BuddyNext theme, MediaVerse detects it automatically and enhances
 
 ### wb-gamification **(Pro)**
 
-**This integration requires the separate, free WB Gamification plugin.** Points (XP) are only earned or spent when WB Gamification is installed and active. Without it, the competition features still run fully - members can create and enter Challenges, Battles, and Tournaments, vote, and see winners - but no points are awarded for wins or streaks, and the point-spending controls (such as Media Boosts) stay hidden. Every MediaVerse award/spend path is guarded, so Pro works correctly whether or not WB Gamification is present.
+**This integration requires the separate, free WB Gamification plugin.** Points are only earned or spent when WB Gamification is installed and active. Without it, the competition features still run fully - members can create and enter Challenges, Battles, and Tournaments, vote, and see winners - but no points are awarded for wins or streaks, and the point-spending controls (such as Media Boosts) stay hidden. Every MediaVerse award/spend path is guarded, so Pro works correctly whether or not WB Gamification is present.
 
 When WB Gamification is active, MediaVerse Pro feeds it points for these competition outcomes via the `wb_gam_points_for_action` filter:
 
-| Action | When | Default XP |
+| Action | When | Default points |
 |--------|------|-----------|
 | Win a challenge (1st) | First place in a challenge | 200 |
 | Win a challenge (2nd) | Second place | 100 |
@@ -71,7 +68,7 @@ When WB Gamification is active, MediaVerse Pro feeds it points for these competi
 | Win a tournament | Tournament champion | configurable |
 | Reach a streak milestone | Hit a daily-upload streak threshold | configurable |
 
-Challenge XP values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - MediaVerse Pro only tells it which competition outcome occurred.
+Challenge point values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - MediaVerse Pro only tells it which competition outcome occurred.
 
 Get the free plugin: [WB Gamification](https://wbcomdesigns.com/downloads/wordpress-gamification-plugin/).
 
@@ -162,33 +159,13 @@ Automatic speech-to-text transcription for video and audio uploads:
 
 **Setup:** Enable at **Media > Settings > Video > Auto-Captions** (uses the same OpenAI API key).
 
-## Monetization
+## Storage Limits
 
-### MemberPress **(Pro)**
-
-Automatically assign upload quota packages based on MemberPress membership levels.
-
-**How it works:**
-1. Create quota packages in **Media > Quotas** (e.g., "Free: 50 photos", "Premium: unlimited")
-2. Map each MemberPress membership to a quota package
-3. When a user purchases or is assigned a membership, their quota updates automatically
-4. When a membership expires, the user reverts to the default package
-
-### Paid Memberships Pro **(Pro)**
-
-Same automatic package assignment, but using PMPro membership levels instead of MemberPress.
-
-### WooCommerce **(Pro)**
-
-Sell upload quota packages as WooCommerce products:
-
-**How it works:**
-1. Create quota packages in **Media > Quotas**
-2. Create a WooCommerce product and map it to a quota package
-3. When a customer completes checkout, their quota package activates
-4. If the order is refunded or cancelled, the package reverts to default
-
-This lets you sell storage tiers directly from your WooCommerce store.
+MediaVerse is not a membership/commerce plugin, so it has no MemberPress, Paid Memberships Pro
+or WooCommerce integration for upload quotas - that whole system (packages, credits,
+membership-plugin mapping) was removed in 2.6.0. What replaces it is one optional storage
+allowance: set a **Fair-use storage limit per member (MB)** on **Settings > General** (0 = no
+limit), and optionally override it for one member on their wp-admin profile.
 
 ## Webhooks
 
@@ -267,9 +244,8 @@ Registered in `BlockRegistrar::BLOCKS`:
 | Album Viewer | Display an album with its media items |
 | Media Stats | Display a media statistics dashboard |
 | Explore Feed | A discover/explore feed showing trending and recent media |
-| Lock Overlay | Paywall overlay on gated media, with blurred preview and unlock prompt |
 | Member Photos | A member's photos. Auto-detects the displayed BuddyPress member, the post author, or the current user |
-| PDF Viewer | Embed a PDF inline using the browser's native viewer, under the same privacy and access rules as other media |
+| PDF Viewer | Embed a PDF inline using the browser's native viewer, under the same privacy as other media |
 
 There is no Profile Edit block - profile editing ships as the `[mvs_profile_edit]` shortcode only.
 
@@ -293,7 +269,6 @@ All registered in `Shortcodes\Shortcodes` (Free):
 | `[mvs_profile_edit]` | Inline profile editing form |
 | `[mvs_documents]` | A document drive listing (renders through Pro's Documents engine) |
 | `[mvs_explore_feed]` | Explore feed with search, tags and pagination |
-| `[mvs_lock_overlay]` | Paywall overlay on gated media |
 | `[mvs_member_photos]` | A member's photos |
 | `[mvs_pdf_viewer]` | Inline PDF viewer |
 | `[mvs_usage_history]` | The member's storage/usage history |

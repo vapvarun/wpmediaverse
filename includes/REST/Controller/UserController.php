@@ -68,6 +68,43 @@ class UserController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /me/storage — the member's storage use and limit (0 = no limit).
+		register_rest_route(
+			$this->namespace,
+			'/me/storage',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_my_storage' ),
+				'permission_callback' => array( $this, 'logged_in_check' ),
+			)
+		);
+
+		// GET|PUT /users/{id}/storage — a member's storage and their own limit,
+		// for site admins (the same control as the wp-admin profile field).
+		register_rest_route(
+			$this->namespace,
+			'/users/(?P<id>[\d]+)/storage',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_user_storage' ),
+					'permission_callback' => array( $this, 'manage_users_check' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'update_user_storage' ),
+					'permission_callback' => array( $this, 'manage_users_check' ),
+					'args'                => array(
+						'limit_mb' => array(
+							'description' => __( 'Limit in MB, 0 for no limit, or null to use the site limit.', 'wpmediaverse' ),
+							'type'        => array( 'integer', 'null' ),
+							'minimum'     => 0,
+						),
+					),
+				),
+			)
+		);
+
 		// GET /users/{id} — public profile.
 		// PUBLIC_OK: returns display name, bio, avatar, follower/following/
 		// public-media counts to anonymous viewers. The `username`
@@ -203,19 +240,17 @@ class UserController extends WP_REST_Controller {
 		$counts     = $follows->get_counts( $user_id );
 		$current_id = get_current_user_id();
 
-		// Count public media through the repository (P1.2). The raw query this
-		// replaces had already needed two corrections that its sibling twenty
-		// lines down never needed — a missing status filter, then a missing type
-		// filter — which is the argument for one implementation rather than two.
-		// The MEDIA_LIBRARY default lives in the repository, so the count and the
-		// grid beneath it cannot disagree about what a profile contains.
-		$media_count = Plugin::container()->get( 'media_repository' )->query_count(
-			array(
-				'author_id'         => (int) $user_id,
-				'status'            => 'publish',
-				'moderation_status' => 'approved',
-				'privacy'           => 'public',
-			)
+		// Viewer-aware count through the SAME canonical helper get_user_media()
+		// below uses (count_visible_by_author() -> resolve_profile_privacy_mode()),
+		// not a flat 'privacy' => 'public' query. The flat query counted every
+		// public item unconditionally, so a member the author had blocked still
+		// learned how much public media the author has — the count disagreed
+		// with the (correctly gated) media list underneath it. Basecamp
+		// 10350224617.
+		$media_count = Plugin::container()->get( 'media_repository' )->count_visible_by_author(
+			(int) $user_id,
+			$current_id,
+			array( 'moderation_status' => 'approved' )
 		);
 
 		// WP core deliberately withholds `user_login` and `user_registered`
@@ -555,5 +590,68 @@ class UserController extends WP_REST_Controller {
 		update_user_meta( get_current_user_id(), $notices[ $key ], 1 );
 
 		return rest_ensure_response( array( 'dismissed' => $key ) );
+	}
+
+	/**
+	 * Admin-only gate for the storage routes.
+	 *
+	 * @return bool|WP_Error
+	 */
+	public function manage_users_check() {
+		if ( ! current_user_can( 'edit_users' ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to manage members.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * GET /me/storage.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_my_storage(): WP_REST_Response {
+		return rest_ensure_response( \WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->summary( get_current_user_id() ) );
+	}
+
+	/**
+	 * GET /users/{id}/storage.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_user_storage( $request ) {
+		$user_id = (int) $request['id'];
+		if ( ! get_userdata( $user_id ) ) {
+			return new WP_Error( 'mvs_user_not_found', __( 'User not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+		$own = get_user_meta( $user_id, \WPMediaVerse\Services\StorageLimitService::USER_META, true );
+
+		return rest_ensure_response(
+			array_merge(
+				\WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->summary( $user_id ),
+				array( 'limit_mb' => ( '' === $own ) ? null : (int) $own )
+			)
+		);
+	}
+
+	/**
+	 * PUT /users/{id}/storage.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function update_user_storage( $request ) {
+		$user_id = (int) $request['id'];
+		if ( ! get_userdata( $user_id ) ) {
+			return new WP_Error( 'mvs_user_not_found', __( 'User not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+		$limit = $request->get_param( 'limit_mb' );
+		if ( null === $limit ) {
+			delete_user_meta( $user_id, \WPMediaVerse\Services\StorageLimitService::USER_META );
+		} else {
+			update_user_meta( $user_id, \WPMediaVerse\Services\StorageLimitService::USER_META, absint( $limit ) );
+		}
+
+		return $this->get_user_storage( $request );
 	}
 }

@@ -149,6 +149,19 @@ function filterFiles( files, ctx ) {
 	return valid;
 }
 
+function formatBytes( bytes ) {
+	const units = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
+	let value = Number( bytes ) || 0;
+	let unit = 0;
+	while ( value >= 1024 && unit < units.length - 1 ) {
+		value /= 1024;
+		unit++;
+	}
+	// One decimal, like the server's size_format( $bytes, 1 ), so the line reads
+	// the same before and after an upload.
+	return `${ unit ? value.toFixed( 1 ) : value } ${ units[ unit ] }`;
+}
+
 const { state, actions } = store( 'mvs/media-upload', {
 	state: {
 		get isDragOver() {
@@ -303,31 +316,6 @@ const { state, actions } = store( 'mvs/media-upload', {
 			let duplicateCount = 0;
 			let lastDuplicateId = 0;
 
-			// Pre-upload quota check (Pro only — endpoint may not exist).
-			try {
-				// Anchor on the mvs/v1 namespace so the swap can't match inside
-				// the host (e.g. "//mediaverse.local" contains "/media").
-				const quotaCheckUrl = ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs-pro/v1/me/quota/check' );
-				const file = files[ 0 ];
-				const mimeType = file.type || 'image/jpeg';
-				const mediaType = mimeType.startsWith( 'video/' ) ? 'video' : ( mimeType.startsWith( 'audio/' ) ? 'audio' : 'image' );
-				const checkResp = await window.mvsRest.restFetch(
-					quotaCheckUrl + `?media_type=${ mediaType }&file_size=${ file.size }`
-				);
-				if ( checkResp.ok ) {
-					const checkData = checkResp.data;
-					if ( checkData.can_upload === false ) {
-						ctx.uploading = false;
-						ctx.uploadMessage = '';
-						ctx.uploadError = checkData.reason || ( state.i18n?.uploadLimitReached || 'Upload limit reached. Please upgrade your plan.' );
-						return;
-					}
-				}
-				// 404 = Pro not active, skip check.
-			} catch {
-				// Pro endpoint not available — proceed without check.
-			}
-
 			// Tie a multi-file selection together so the BuddyPress activity
 			// sync emits ONE carousel item instead of one feed row per file.
 			// The upload modal (shared-ui) has always sent this; this block and
@@ -375,6 +363,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 					if ( resp.ok ) {
 						successCount++;
 						const mediaData = resp.data;
+						ctx.lastLink = ( mediaData && mediaData.link ) || '';
 						if ( mediaData && mediaData.duplicate_warning ) {
 							duplicateCount++;
 							lastDuplicateId = mediaData.existing_media_id || 0;
@@ -400,6 +389,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 
 			ctx.uploading = false;
 			ctx.uploadMessage = '';
+			// "View it" only makes sense for a single file; several go to My Media.
+			if ( successCount !== 1 ) {
+				ctx.lastLink = '';
+			}
 			if ( successCount === files.length ) {
 				ctx.successMessage = ( state.i18n?.uploadSuccess || '%d file(s) uploaded successfully!' ).replace( '%d', successCount );
 			} else if ( successCount > 0 ) {
@@ -445,51 +438,21 @@ const { state, actions } = store( 'mvs/media-upload', {
 					fileInput.value = '';
 				}
 			}
-			// Refresh quota widget if present.
-		const quotaWidget = document.querySelector( '.mvs-quota-widget' );
-		if ( quotaWidget && successCount > 0 ) {
-			try {
-				const quotaResp = await window.mvsRest.restFetch(
-					ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs-pro/v1/me/quota/check' ) + '?media_type=image&file_size=0'
-				);
-				if ( quotaResp.ok ) {
-					const quotaData = quotaResp.data;
-					const summary = quotaData.summary;
-					if ( summary ) {
-						const rows = quotaWidget.querySelectorAll( '.mvs-quota-row' );
-						const typeMap = [ 'image', 'video', 'audio' ];
-						rows.forEach( ( row, i ) => {
-							const type = typeMap[ i ];
-							const data = summary[ type ];
-							if ( ! data ) {
-								return;
-							}
-							const countEl = row.querySelector( '.mvs-quota-count' );
-							if ( countEl && ! data.unlimited ) {
-								countEl.textContent = `${ data.used } / ${ data.total }`;
-							}
-							const fillEl = row.querySelector( '.mvs-quota-fill' );
-							if ( fillEl && ! data.unlimited && data.total > 0 ) {
-								fillEl.style.width = `${ Math.min( 100, Math.round( ( data.used / data.total ) * 100 ) ) }%`;
-							}
-						} );
-						// Update storage row (last row).
-						if ( summary.storage && ! summary.storage.unlimited && rows.length > typeMap.length ) {
-							const storageRow = rows[ typeMap.length ];
-							const countEl = storageRow.querySelector( '.mvs-quota-count' );
-							if ( countEl ) {
-								const usedMB = ( summary.storage.used / ( 1024 * 1024 ) ).toFixed( 0 );
-								const limitGB = ( summary.storage.limit / ( 1024 * 1024 * 1024 ) ).toFixed( 0 );
-								countEl.textContent = `${ usedMB } MB / ${ limitGB } GB`;
-							}
-						}
+			// "Used X of Y" (shown only when a storage limit applies) follows
+			// the upload without a reload.
+			const usageLine = document.querySelector( '[data-mvs-storage-usage]' );
+			if ( usageLine && successCount > 0 ) {
+				try {
+					const usage = await window.mvsRest.restFetch( ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs/v1/me/storage' ) );
+					if ( usage.ok && usage.data && usage.data.limit ) {
+						usageLine.textContent = ( state.i18n?.storageUsed || 'Used %1$s of %2$s' )
+							.replace( '%1$s', formatBytes( usage.data.used ) )
+							.replace( '%2$s', formatBytes( usage.data.limit ) );
 					}
+				} catch {
+					// Usage refresh is non-critical.
 				}
-			} catch {
-				// Quota refresh is non-critical.
 			}
-		}
-		setTimeout( () => { ctx.successMessage = ''; }, 8000 );
 		},
 	},
 } );

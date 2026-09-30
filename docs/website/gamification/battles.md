@@ -31,7 +31,7 @@ Challenge any photographer on the site to a head-to-head photo duel - your best 
 3. Once both photos are submitted, the battle opens for community voting
 4. The VS layout shows both photos side by side with a vote button under each
 5. Any logged-in member (except participants) can cast one vote
-6. When the voting period ends, the winner is announced automatically and XP is awarded
+6. When the voting period ends, the winner is announced automatically and points are awarded
 
 ![Photo Battles frontend page showing VS layout](../images/battles-page.png)
 
@@ -44,7 +44,7 @@ Go to **My Media > Battles** to see all your battles with win/loss/pending statu
 1. Go to **MediaVerse > Settings > Gamification** and enable **Photo Battles**
 2. Battles are self-service - users challenge each other directly, no admin involvement required
 3. Submit and vote windows are currently 48 hours each
-4. Monitor all active battles from **Competitions**
+4. Monitor all active battles from **MediaVerse > Photo Battles**
 
 ## Lifecycle
 
@@ -54,7 +54,7 @@ Go to **My Media > Battles** to see all your battles with win/loss/pending statu
 | **Accepted** | Opponent accepted - both users can now submit their battle photo |
 | **Submitting** | Both users have 48 hours (default) to submit photos |
 | **Voting** | Both photos submitted - community votes for 48 hours (default) |
-| **Resolved** | Vote deadline passed - winner determined, XP awarded |
+| **Resolved** | Vote deadline passed - winner determined, points awarded |
 | **Declined** | Opponent declined the challenge - battle closed |
 | **Expired** | Submit or vote deadline passed with incomplete participation |
 
@@ -74,7 +74,7 @@ The opponent receives a MediaVerse notification and, if BuddyPress notifications
 
 After the opponent accepts, both users have 48 hours to submit their battle photo. Each participant selects one photo from their media library or uploads a new one.
 
-If either participant does not submit within the deadline, the battle expires and no XP is awarded.
+If either participant does not submit within the deadline, the battle expires and no points are awarded.
 
 ## Voting
 

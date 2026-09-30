@@ -215,8 +215,22 @@ class SettingsHelper {
 	 * @return string 'square' or 'original'.
 	 */
 	public static function get_thumbnail_style(): string {
-		$allowed = self::GRID_LAYOUTS;
+		$default = self::default_thumbnail_style();
+		$style   = (string) get_option( 'mvs_thumbnail_style', $default );
+		return in_array( $style, self::GRID_LAYOUTS, true ) ? $style : $default;
+	}
 
+	/**
+	 * The grid layout a site that has not chosen one gets.
+	 *
+	 * One reader for the filter, shared by get_thumbnail_style() and the
+	 * registered default of mvs_thumbnail_style, so the two cannot disagree.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string One of self::GRID_LAYOUTS.
+	 */
+	public static function default_thumbnail_style(): string {
 		/**
 		 * Filter the default grid layout for sites that have not chosen one.
 		 *
@@ -226,12 +240,54 @@ class SettingsHelper {
 		 *                        or 'list' (one row per item).
 		 */
 		$default = (string) apply_filters( 'mvs_default_thumbnail_style', 'original' );
-		if ( ! in_array( $default, $allowed, true ) ) {
-			$default = 'original';
-		}
+		return in_array( $default, self::GRID_LAYOUTS, true ) ? $default : 'original';
+	}
 
-		$style = (string) get_option( 'mvs_thumbnail_style', $default );
-		return in_array( $style, $allowed, true ) ? $style : $default;
+	/**
+	 * Every choice the one "Layout" setting offers, value => label.
+	 *
+	 * Free offers its three grid layouts; Pro adds its platform skins through
+	 * the filter. The same list is the setting's sanitizer whitelist.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return array<string, string>
+	 */
+	public static function layout_choices(): array {
+		/**
+		 * Filter the choices of the Settings > Display "Layout" select.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param array<string, string> $choices Value => label.
+		 */
+		return (array) apply_filters(
+			'mvs_layout_choices',
+			array(
+				'square'   => __( 'Grid - square crops', 'wpmediaverse' ),
+				'original' => __( 'Justified rows - original proportions', 'wpmediaverse' ),
+				'list'     => __( 'List - one row per item', 'wpmediaverse' ),
+			)
+		);
+	}
+
+	/**
+	 * The layout the "Layout" setting currently shows as selected.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string A key of layout_choices().
+	 */
+	public static function selected_layout(): string {
+		/**
+		 * Filter which layout choice reads as selected. Pro answers with its
+		 * platform skin when one is active.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param string $layout The Free grid layout in use.
+		 */
+		return (string) apply_filters( 'mvs_layout_selected', self::get_thumbnail_style() );
 	}
 
 	/**
@@ -322,23 +378,43 @@ class SettingsHelper {
 	 * @return string The configured API key, or '' when not set.
 	 */
 	public static function get_openai_api_key(): string {
-		$key = (string) get_option( 'mvs_openai_api_key', '' );
+		// The wp-config constant wins over a key saved in the database (since
+		// 2.6.0). Before, a stale DB key outranked it, so an owner who moved the
+		// key into wp-config.php kept being billed on the old one.
+		$key = defined( 'MVS_OPENAI_API_KEY' ) && '' !== (string) MVS_OPENAI_API_KEY
+			? (string) MVS_OPENAI_API_KEY
+			: (string) get_option( 'mvs_openai_api_key', '' );
 
 		/**
-		 * Filter the OpenAI API key after it is loaded from options.
+		 * Filter the OpenAI API key after it is resolved (constant, then option).
 		 *
-		 * Mirrors Services\OpenAIProvider::get_api_key() — kept here so cross-
-		 * plugin readers go through the same filter chain.
-		 *
-		 * @param string $key API key from options.
+		 * @param string $key API key.
 		 */
-		$key = (string) apply_filters( 'mvs_openai_api_key', $key );
+		return (string) apply_filters( 'mvs_openai_api_key', $key );
+	}
 
-		if ( '' === $key && defined( 'MVS_OPENAI_API_KEY' ) ) {
-			$key = (string) MVS_OPENAI_API_KEY;
-		}
+	/**
+	 * Name of the POST field that carries "remove this saved key" requests.
+	 */
+	public const REMOVE_SECRETS_FIELD = 'mvs_remove_secrets';
 
-		return $key;
+	/**
+	 * Whether the owner clicked "Remove" on a saved key in the settings form.
+	 *
+	 * Read inside a Settings API save, after options.php has verified the
+	 * nonce and capability. Shared by Free's password fields and Pro's secret
+	 * fields so both halves clear a key the same way.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	public static function secret_removal_requested( string $option ): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php verified the nonce before any sanitize callback runs.
+		$requested = isset( $_POST[ self::REMOVE_SECRETS_FIELD ] ) ? (array) wp_unslash( $_POST[ self::REMOVE_SECRETS_FIELD ] ) : array();
+
+		return in_array( $option, array_map( 'sanitize_key', $requested ), true );
 	}
 
 	/**
@@ -359,7 +435,14 @@ class SettingsHelper {
 	public static function get_max_upload_size( int $user_id = 0 ): int {
 		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
 
-		/** This filter is documented in includes/Services/UploadService.php */
+		/**
+		 * Filters the maximum upload file size in bytes.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $max_size Maximum upload size in bytes.
+		 * @param int $user_id  Uploading user ID.
+		 */
 		return (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
 	}
 

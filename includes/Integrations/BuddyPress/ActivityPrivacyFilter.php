@@ -11,7 +11,7 @@
  *     40 = friends-only      visible only to BP friends of the author
  *     60 = group-only        set automatically for group uploads (auto)
  *     80 = private           visible only to the author + admins
- *     90 = custom            access enforced via mvs_access_rules (auto)
+ *     90 = custom            only the members listed on the item
  *
  * The filter rewrites every BP activity SELECT (legacy + modern paths)
  * to add a LEFT JOIN on bp_activity_meta and a WHERE clause that excludes

@@ -23,8 +23,8 @@
     "mvs_collection": { "id_att": "id" },
     "mvs_lock_overlay": {
       "id_att": "id",
-      "discloses": [ "title", "slug" ],
-      "reason": "The block IS the teaser for gated content: an editor places it naming one item so a visitor can be told what is behind the lock and offered a way in. The title and the login-redirect permalink are the product. The file, the signed URL and the thumbnail are not, and are still asserted absent. OPEN QUESTION for the owner: it teases items with no access rule and so no unlock path, where the teaser reveals a private title for nothing."
+      "discloses": [],
+      "reason": "Retired in 2.6.0 with media access rules: the shortcode stays registered so old pages render nothing instead of the raw shortcode text, and it outputs nothing."
     },
     "mvs_gallery": {
       "id_att": null,
@@ -54,11 +54,6 @@
     "mvs/album-viewer": { "id_att": "albumId" },
     "mvs/media-player": { "id_att": "mediaId" },
     "mvs/pdf-viewer": { "id_att": "mediaId" },
-    "mvs/lock-overlay": {
-      "id_att": "mediaId",
-      "discloses": [ "title", "slug" ],
-      "reason": "Same renderer as [mvs_lock_overlay]; see the reason there."
-    },
     "mvs/media-grid": {
       "id_att": null,
       "user_att": "userId",

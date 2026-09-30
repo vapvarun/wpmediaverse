@@ -18,13 +18,13 @@ You can block a user from two places:
 
 When you block a user, they cannot:
 
-- View your media items (media items are hidden from them on all browse pages and their direct URLs return a 403)
+- View your media items (media items are hidden from them on all browse pages and their direct links show as not found)
 - Send you direct messages (your profile shows no Message button for them; any existing conversation is locked)
 - Follow you (the Follow button is removed for them)
 - Comment on your media
 - React to your media
 
-Blocking is one-directional. You can still view the blocked user's public media unless you also choose to hide it.
+A block hides media both ways in lists: neither of you sees the other's media on browse pages, profiles or feeds. The person who blocked can still open a direct link to the blocked member's public media; the blocked member cannot open the blocker's.
 
 Blocks are stored per-user and do not require any admin action.
 

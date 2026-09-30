@@ -6,6 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -116,7 +117,7 @@ $mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strto
 $mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_media_id );
 
 // Archive URL (base media page).
-$mvs_archive_url = home_url( '/media/' );
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 ?>
 <div class="mvs-single-media mvs-page">
 	<?php
@@ -129,6 +130,11 @@ $mvs_archive_url = home_url( '/media/' );
 	);
 	?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
+		<?php
+		// A visitor who has to sign in sees nothing about the item: no title,
+		// owner, avatar or date (TemplateLoader::serve_single_media()).
+		if ( $mvs_can_view ) :
+			?>
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
 				<div class="mvs-media-author-info">
@@ -306,21 +312,18 @@ $mvs_archive_url = home_url( '/media/' );
 				</p>
 			<?php endif; ?>
 		</header>
+		<?php endif; ?>
 
 		<div class="mvs-media-content">
 			<?php if ( ! $mvs_can_view ) : ?>
 				<div class="mvs-media-gate">
 					<div class="mvs-media-gate__glyph" aria-hidden="true"><i data-lucide="lock"></i></div>
-					<?php if ( is_user_logged_in() ) : ?>
-						<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is private', 'wpmediaverse' ); ?></p>
-						<p class="mvs-media-gate__lede"><?php esc_html_e( 'You don\'t have permission to view this media. It may be limited to the owner, their connections, or a specific group.', 'wpmediaverse' ); ?></p>
-					<?php else : ?>
-						<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is for members', 'wpmediaverse' ); ?></p>
-						<p class="mvs-media-gate__lede"><?php esc_html_e( 'Log in to view this media.', 'wpmediaverse' ); ?></p>
-						<a class="mvs-btn mvs-btn--primary mvs-media-gate__cta" href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
-							<?php esc_html_e( 'Log in to view', 'wpmediaverse' ); ?>
-						</a>
-					<?php endif; ?>
+					<?php // Only signed-out visitors reach this; anyone else who cannot view gets a 404. ?>
+					<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is for members', 'wpmediaverse' ); ?></p>
+					<p class="mvs-media-gate__lede"><?php esc_html_e( 'Log in to view this media.', 'wpmediaverse' ); ?></p>
+					<a class="mvs-btn mvs-btn--primary mvs-media-gate__cta" href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
+						<?php esc_html_e( 'Log in to view', 'wpmediaverse' ); ?>
+					</a>
 				</div>
 			<?php elseif ( $is_image ) : ?>
 				<div class="mvs-media-image">
@@ -346,6 +349,9 @@ $mvs_archive_url = home_url( '/media/' );
 				if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) {
 					$mvs_video_aspect_style = sprintf( ' style="aspect-ratio:%d/%d;"', (int) $mvs_width, (int) $mvs_height );
 				}
+				// Resume playback (Pro, signed-in members only) — seed the
+				// store's translated chip prefix once per render.
+				\WPMediaVerse\Core\TemplateHelpers::media_player_i18n_state();
 				?>
 				<div class="mvs-media-video"
 					data-wp-interactive="mvs/media-player"
@@ -363,6 +369,13 @@ $mvs_archive_url = home_url( '/media/' );
 							// on empty analyticsUrl when Pro is inactive.
 							'analyticsUrl' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $mvs_media_id . '/events' ) ) : '',
 							'sessionId'    => defined( 'MVS_PRO_VERSION' ) ? substr( wp_generate_uuid4(), 0, 32 ) : '',
+							// Resume playback (Pro, signed-in members only). Empty
+							// string short-circuits every resume action in the store.
+							'resumeUrl'    => ( defined( 'MVS_PRO_VERSION' ) && is_user_logged_in() )
+								? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $mvs_media_id . '/resume' ) )
+								: '',
+							'resumeShown'  => false,
+							'resumeLabel'  => '',
 						)
 					);
 					?>
@@ -383,9 +396,16 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-on--play="actions.onPlay"
 						data-wp-on--pause="actions.onPause"
 						data-wp-on--seeked="actions.onSeek"
-						data-wp-on--ended="actions.onComplete">
+						data-wp-on--ended="actions.onComplete"
+						data-wp-on--loadedmetadata="actions.onLoadedMetadata"
+						data-wp-init="actions.initResume"
+						data-wp-on--timeupdate="actions.onTimeUpdate">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</video>
+					<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
+						<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>
+						<button type="button" class="mvs-resume-chip__btn" data-wp-on--click="actions.onResumeStartOver"><?php esc_html_e( 'Start over', 'wpmediaverse' ); ?></button>
+					</div>
 				</div>
 			<?php elseif ( $is_audio ) : ?>
 				<div class="mvs-media-audio"
@@ -496,9 +516,7 @@ $mvs_archive_url = home_url( '/media/' );
 							// off still shipped a working Download on every document -
 							// pointing at the file directly, so it also walked past the
 							// 403 that endpoint returns. Basecamp 10316771960 follow-up.
-							$mvs_dl_allowed = (bool) get_option( 'mvs_allow_downloads', true )
-								&& '0' !== (string) \WPMediaVerse\Core\Plugin::container()
-									->get( 'media_repository' )->get( $mvs_media_id, 'allow_download' );
+							$mvs_dl_allowed = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->downloads_allowed( $mvs_media_id );
 							?>
 							<?php if ( '' !== $mvs_file_url && $mvs_dl_allowed ) : ?>
 								<a class="mvs-doc-download" href="<?php echo esc_url( $mvs_file_url ); ?>" download>
@@ -580,56 +598,56 @@ $mvs_archive_url = home_url( '/media/' );
 			}
 
 			$mvs_social_ctx = array(
-				'mediaId'            => $mvs_media_id,
-				'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-				'nonce'              => wp_create_nonce( 'wp_rest' ),
-				'isLoggedIn'         => is_user_logged_in(),
-				'currentUserId'      => $mvs_current_user_id,
+				'mediaId'             => $mvs_media_id,
+				'restUrl'             => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'               => wp_create_nonce( 'wp_rest' ),
+				'isLoggedIn'          => is_user_logged_in(),
+				'currentUserId'       => $mvs_current_user_id,
 				// Server-resolved edit window (seconds). The client used to hardcode
 				// 15 minutes while the server read the filterable
 				// mvs_comment_edit_window option, so any site that changed it got a
 				// UI that hid Edit while the API still allowed it — or offered Edit
 				// that then 403'd.
-				'commentEditWindow'  => (int) apply_filters(
+				'commentEditWindow'   => (int) apply_filters(
 					'mvs_comment_edit_window',
 					(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 				),
 				// A moderator may delete anyone's comment (the DELETE route allows it),
 				// so the Delete control shows on others' comments too — matching the API.
 				'canModerateComments' => current_user_can( 'moderate_mvs_media' ),
-				'isOwner'            => $mvs_is_owner,
-				'authorId'           => $mvs_author_id,
-				'isFollowing'        => false,
-				'type'               => 'media',
-				'archiveUrl'         => esc_url( $mvs_archive_url ),
-				'initialTitle'       => $mvs_title,
-				'initialDesc'        => $mvs_desc,
-				'initialPrivacy'     => $current_privacy,
-				'initialTags'        => $mvs_tag_names,
-				'reactions'          => array(),
-				'userReaction'       => '',
-				'isFavorite'         => $mvs_is_favorited,
-				'reported'           => $mvs_has_reported,
-				'comments'           => array(),
-				'commentText'        => '',
-				'viewCount'          => '',
-				'editVisible'        => false,
-				'editTitle'          => $mvs_title,
-				'editDesc'           => $mvs_desc,
-				'editPrivacy'        => $current_privacy,
+				'isOwner'             => $mvs_is_owner,
+				'authorId'            => $mvs_author_id,
+				'isFollowing'         => false,
+				'type'                => 'media',
+				'archiveUrl'          => esc_url( $mvs_archive_url ),
+				'initialTitle'        => $mvs_title,
+				'initialDesc'         => $mvs_desc,
+				'initialPrivacy'      => $current_privacy,
+				'initialTags'         => $mvs_tag_names,
+				'reactions'           => array(),
+				'userReaction'        => '',
+				'isFavorite'          => $mvs_is_favorited,
+				'reported'            => $mvs_has_reported,
+				'comments'            => array(),
+				'commentText'         => '',
+				'viewCount'           => '',
+				'editVisible'         => false,
+				'editTitle'           => $mvs_title,
+				'editDesc'            => $mvs_desc,
+				'editPrivacy'         => $current_privacy,
 				// Off by default — title edits leave the URL slug alone.
-				'editRegenerateSlug' => false,
+				'editRegenerateSlug'  => false,
 				// Empty at SSR so the data-wp-each <template> matches hydration; the
 				// store's callbacks.init() fills editTags from initialTags (above).
-				'editTags'           => array(),
-				'tagInput'           => '',
-				'tagResults'         => array(),
-				'tagDropdownVisible' => false,
-				'saving'             => false,
+				'editTags'            => array(),
+				'tagInput'            => '',
+				'tagResults'          => array(),
+				'tagDropdownVisible'  => false,
+				'saving'              => false,
 				// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
 				// Previously this had a leading 🔗 emoji which rendered alongside the
 				// lucide SVG as a double-icon (card #6).
-				'shareLabel'         => __( 'Share', 'wpmediaverse' ),
+				'shareLabel'          => __( 'Share', 'wpmediaverse' ),
 			);
 			?>
 
@@ -642,7 +660,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<!-- Previously split across .mvs-social-bar + sticky .mvs-social-actions; the sticky -->
 			<!-- bar overlapped the chat FAB on mobile and wasted vertical space. -->
 			<div class="mvs-social-bar">
-				<div class="mvs-reactions<?php echo ! is_user_logged_in() ? ' mvs-reactions--readonly' : ''; ?>"
+				<div class="mvs-reactions"
 					role="group" aria-label="<?php esc_attr_e( 'Reactions', 'wpmediaverse' ); ?>">
 					<template data-wp-each="context.reactions">
 						<?php
@@ -658,13 +676,25 @@ $mvs_archive_url = home_url( '/media/' );
 							data-wp-bind--data-reaction-type="context.item.type"
 							data-wp-bind--aria-label="context.item.type"
 							data-wp-on--click="actions.toggleReaction">
-							<span class="mvs-reaction-emoji" data-wp-text="context.item.emoji"></span>
-							<span class="mvs-count" data-wp-text="context.item.count"></span>
+							<img class="mvs-reaction-emoji" data-wp-bind--src="context.item.icon" alt="" width="20" height="20" />
+							<span class="mvs-count" data-wp-text="context.item.count" data-wp-bind--hidden="!context.item.count"></span>
 						</button>
 					</template>
 				</div>
 				<div class="mvs-social-bar__actions">
-					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
+					<?php
+					// One way to keep an item: Save (2.6.0). Without Pro it saves to the
+					// member's Favorites; with Pro the collection picker below does, and
+					// its first row is Favorites. This filter is documented in
+					// templates/partials/shared-ui-frame.php.
+					$mvs_legacy_fav     = (bool) apply_filters( 'mvs_show_favorite_button', false );
+					$mvs_collections_on = (bool) apply_filters( 'mvs_collections_enabled', false );
+					$mvs_keep_icon      = $mvs_legacy_fav ? 'star' : 'bookmark';
+					$mvs_keep_label     = $mvs_legacy_fav ? __( 'Favorite', 'wpmediaverse' ) : __( 'Save', 'wpmediaverse' );
+					$mvs_keep_login     = $mvs_legacy_fav ? __( 'Log in to favorite', 'wpmediaverse' ) : __( 'Log in to save', 'wpmediaverse' );
+					$mvs_show_keep      = $mvs_legacy_fav || ! $mvs_collections_on;
+					?>
+					<?php if ( $mvs_show_keep && is_user_logged_in() && ! $mvs_is_owner ) : ?>
 						<?php
 						// aria-pressed, and a label that changes with the state. Only the
 						// CSS class moved before, so a screen-reader user could not tell
@@ -678,25 +708,25 @@ $mvs_archive_url = home_url( '/media/' );
 							data-wp-bind--aria-pressed="context.isFavorite"
 							data-wp-bind--aria-label="state.favoriteLabel"
 							data-wp-on--click="actions.toggleFavorite"
-							data-mvs-tooltip="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>"
+							data-mvs-tooltip="<?php echo esc_attr( $mvs_keep_label ); ?>"
 							aria-pressed="false"
 							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">
-							<i data-lucide="star" aria-hidden="true"></i>
-							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
+							<i data-lucide="<?php echo esc_attr( $mvs_keep_icon ); ?>" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php echo esc_html( $mvs_keep_label ); ?></span>
 						</button>
-					<?php elseif ( ! is_user_logged_in() ) : ?>
+					<?php elseif ( $mvs_show_keep && ! is_user_logged_in() ) : ?>
 						<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-btn--icon-collapse mvs-login-prompt"
-							data-mvs-tooltip="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
-							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
-							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">
-							<i data-lucide="star" aria-hidden="true"></i>
-							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
+							data-mvs-tooltip="<?php echo esc_attr( $mvs_keep_login ); ?>"
+							title="<?php echo esc_attr( $mvs_keep_login ); ?>"
+							aria-label="<?php echo esc_attr( $mvs_keep_login ); ?>">
+							<i data-lucide="<?php echo esc_attr( $mvs_keep_icon ); ?>" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php echo esc_html( $mvs_keep_label ); ?></span>
 						</a>
 					<?php endif; ?>
 					<?php
 					// "Save to collection" is separate from the heart (a like). Rendered
 					// only when a collections backend (Pro) enables it via the filter.
-					if ( is_user_logged_in() && apply_filters( 'mvs_collections_enabled', false ) ) :
+					if ( is_user_logged_in() && $mvs_collections_on ) :
 						?>
 						<button class="mvs-collect-btn mvs-btn--icon-collapse" type="button"
 							data-mvs-collections-trigger
@@ -917,6 +947,10 @@ $mvs_archive_url = home_url( '/media/' );
 									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
 										data-wp-bind--hidden="state.hideDeleteComment"
 										data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-bind--hidden="state.hideReportComment"
+										data-wp-on--click="actions.reportComment"
+										aria-label="<?php esc_attr_e( 'Report comment', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></button>
 								</div>
 							</div><!-- /.mvs-comment-body-wrap -->
 						</li>

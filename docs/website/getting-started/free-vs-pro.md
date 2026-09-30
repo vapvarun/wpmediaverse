@@ -71,14 +71,9 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Media Boosts (spend points for visibility) | -- | Yes |
 | Upload Streaks with milestones | -- | Yes |
 | Weekly Autopilot (auto-create challenges) | -- | Yes |
-| XP integration with wb-gamification | -- | Yes |
-| **Quotas & Monetization** | | |
-| Per-user upload quotas (count + storage) | -- | Yes |
-| Quota packages (Free, Premium, etc.) | -- | Yes |
-| MemberPress integration | -- | Yes |
-| Paid Memberships Pro integration | -- | Yes |
-| WooCommerce integration | -- | Yes |
-| Credit transaction log | -- | Yes |
+| Points integration with wb-gamification | -- | Yes |
+| **Storage Limits** | | |
+| Fair-use storage limit per member (MB), site-wide + per-member override | Yes | Yes (inherited) |
 | **User Profiles** | | |
 | Public profile page (/media/@username/) | Yes | Yes |
 | Follow / Message buttons | Yes | Yes |
@@ -89,11 +84,10 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Media list with bulk actions | Yes | Yes |
 | Settings (general, display, social, AI) | Yes | Yes |
 | Competitions dashboard | -- | Yes |
-| Challenge manager with theme library | -- | Yes |
+| Challenge manager with challenge themes | -- | Yes |
 | Tournament bracket manager | -- | Yes |
 | Battle monitor | -- | Yes |
 | Video analytics dashboard | -- | Yes |
-| Quota & credits management | -- | Yes |
 | Media stats & insights | -- | Yes |
 | **BuddyPress Integration** | | |
 | Profile media tab | Yes | Yes |
@@ -101,7 +95,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Activity stream media | Yes | Yes |
 | Notifications (likes, comments, follows) | Yes | Yes |
 | **Gutenberg Blocks** | | |
-| Core blocks (Media Grid, Player, Album, Upload, Stats, Explore Feed, Lock Overlay, Member Photos, PDF Viewer) | Yes (9) | Yes (inherited) |
+| Core blocks (Media Grid, Player, Album, Upload, Stats, Explore Feed, Member Photos, PDF Viewer) | Yes (8) | Yes (inherited) |
 | Pro feature blocks (Tournament, Challenge, Battle, Leaderboard, Compete Hub) | -- | Yes (5) |
 | Pro feed-layout blocks (Instagram, Flickr, Pinterest, Dribbble) | -- | Yes (4) |
 | Pro list blocks (Tournaments List, Challenges List, Battles Active) | -- | Yes (3) |
@@ -124,9 +118,6 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | **Integrations** | | |
 | BuddyPress 12+ | Yes | Yes |
 | wb-gamification | -- | Yes |
-| MemberPress | -- | Yes |
-| Paid Memberships Pro | -- | Yes |
-| WooCommerce | -- | Yes |
 | OpenAI (moderation + captions) | Yes | Yes |
 | Google Cloud Vision | -- | Yes |
 | AWS Rekognition | -- | Yes |
@@ -167,7 +158,6 @@ MediaVerse Pro is for sites that need professional-grade features:
 - **Scale** - Offload media to S3 or BunnyCDN for global CDN delivery and unlimited storage
 - **Video intelligence** - Chapters, auto-captions, and engagement analytics
 - **Engagement** - Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
-- **Monetization** - Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
 - **Privacy** - A picker UI for all six privacy levels, plus saved presets and bulk privacy management
 - **AI** - Google Vision, AWS Rekognition, and Claude (Anthropic) for auto-tagging and advanced content moderation
 - **Migration** - Import from rtMedia, MediaPress, or BuddyBoss with one WP-CLI command

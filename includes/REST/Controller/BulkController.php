@@ -143,7 +143,7 @@ class BulkController extends WP_REST_Controller {
 				}
 				// Same owner lock as the single-item update. Basecamp 10320619418.
 				if ( ! \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
-					return new WP_Error( 'mvs_privacy_locked', __( 'Privacy is set by the site owner, so it cannot be changed here.', 'wpmediaverse' ), array( 'status' => 403 ) );
+					return new WP_Error( 'mvs_privacy_locked', __( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ), array( 'status' => 403 ) );
 				}
 				$response = $this->bulk_change_privacy( $allowed_ids, $privacy );
 				break;
@@ -303,7 +303,7 @@ class BulkController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Bulk add items to an album (items stay in any other album).
+	 * Bulk move items into an album (a photo belongs to one album, so it leaves any other).
 	 *
 	 * @param int[] $media_ids Media IDs.
 	 * @param int   $album_id  Target album ID.
@@ -318,6 +318,10 @@ class BulkController extends WP_REST_Controller {
 		// Verify the current user owns or can edit the target album.
 		$album_user_id = get_current_user_id();
 		if ( (int) $album->post_author !== $album_user_id && ! current_user_can( 'edit_others_mvs_medias' ) ) {
+			// A member who cannot even see the album gets the missing-album answer.
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $album_id, $album_user_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
+				return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			}
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to add items to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
@@ -347,17 +351,27 @@ class BulkController extends WP_REST_Controller {
 		global $wpdb;
 		$updated = 0;
 
+		$albums        = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$album_decides = 0;
 		foreach ( $media_ids as $media_id ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', $privacy );
+			// In an album: the album decides; the choice is kept for when it leaves.
+			if ( $albums->keep_own_privacy_if_in_album( (int) $media_id, $privacy ) ) {
+				++$album_decides;
+			} else {
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', $privacy );
+			}
 			++$updated;
 		}
 
 		return rest_ensure_response(
 			array(
-				'action'    => 'change_privacy',
-				'privacy'   => $privacy,
-				'processed' => $updated,
-				'total'     => count( $media_ids ),
+				'action'        => 'change_privacy',
+				'privacy'       => $privacy,
+				'processed'     => $updated,
+				'total'         => count( $media_ids ),
+				// Items in an album keep showing with the album's privacy; the
+				// choice applies when they leave it (2.6.0).
+				'album_decides' => $album_decides,
 			)
 		);
 	}

@@ -3,14 +3,14 @@
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-Group your photos into beautiful collections - tell a story, document a trip, or organize your portfolio with a single shareable album.
+Group your own uploads into an album - tell a story, document a trip, or build a portfolio you can share with one link.
 
 ## What You Can Do
 
 - Create albums to organize related photos and videos together
 - Add photos from your existing media library to any album
 - Set a cover photo that represents the album
-- Control album privacy independently from individual photo privacy
+- Set one privacy for a whole album: every photo in it follows the album
 - Share albums with friends or keep them private
 - Embed any album on a page using a block or shortcode
 
@@ -36,16 +36,18 @@ Group your photos into beautiful collections - tell a story, document a trip, or
 
 ## Album Privacy
 
-Albums have their own privacy level, and media **added to a non-public album inherits it**.
+One rule: **a photo in an album shows with the album's privacy. A photo in no album shows with its own.**
 
-When you add a media item to an album, its privacy is clamped to the more restrictive of the two. Adding a public photo to a Private album makes that photo private, so it stops appearing in Explore and in other members' feeds. The clamp only ever tightens: an item that is already more restrictive than its album keeps its own setting, and a public album never changes anything.
+- Make an album **Private** and every photo in it stops appearing in Explore and in other members' feeds. Make it **Public** again and they come back.
+- The album decides even when it is more open than a photo's own setting. Before you make an album more public, MediaVerse tells you how many photos in it are set to be more private, and asks you to confirm.
+- Each photo remembers its own privacy. Take it out of the album, or delete the album, and the photo goes back to the privacy you set for it.
+- A photo belongs to **one album**. Picking a photo that is already in another album moves it; the album screen shows which album each photo is in ("In: Holiday") and says "Moves from Holiday" once you pick it.
+- While a photo is in an album, its privacy setting on the Edit screen is shown but locked, with a note naming the album. Choose the album in the upload screen and the privacy choice is replaced by "Follows album ...".
+- Badges show the privacy that applies, marked "(album)".
 
-Two things this does **not** do:
+Updating to 2.6.0 changes nothing you can see: each photo's current privacy is recorded as its own, and the album rule applies the next time you change that album or its photos.
 
-- Changing an album's privacy later does not re-apply to items already inside it. Only the moment of adding clamps.
-- Removing an item from an album does not restore its previous privacy.
-
-Site owners who want album and item privacy to stay fully independent (the behaviour before 2.3.0) can return `false` from the `mvs_album_inherit_privacy` filter.
+Site owners who want album and photo privacy to stay fully independent (the behaviour before 2.3.0) can return `false` from the `mvs_album_inherit_privacy` filter.
 
 If a user can see the album but not a specific media item (because the item's privacy is more restrictive still), that item is hidden from the album view.
 
@@ -102,6 +104,19 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/albums/ALBUM_ID/items \
 ```
 
 This fires the `mvs_album_items_added` action, which triggers BuddyPress activity updates if BuddyPress is active.
+
+### Audio playlists (API only)
+
+An album can be an audio playlist: send `"type": "playlist"` when creating it. A playlist accepts only audio files (other files are skipped when added) and its album page plays the tracks in order.
+
+Playlists are created through the REST API, for the mobile app and custom integrations. The member's "New album" form on the site has no type choice on purpose: most communities only need photo albums, and one simple form keeps it that way.
+
+```bash
+curl -X POST https://yoursite.com/wp-json/mvs/v1/albums \
+  -H "X-WP-Nonce: YOUR_NONCE" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Rehearsal takes", "type": "playlist"}'
+```
 
 ## BuddyPress Activity
 

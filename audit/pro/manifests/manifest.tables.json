@@ -26,11 +26,6 @@
       "file": "includes/Core/Migrator.php:692"
     },
     {
-      "name": "{prefix}mvs_credit_log",
-      "purpose": "Credit/quota transaction ledger",
-      "file": "includes/Core/Migrator.php:571"
-    },
-    {
       "name": "{prefix}mvs_play_events",
       "purpose": "Video play + heatmap analytics events",
       "file": "includes/Core/Migrator.php:590"
@@ -54,16 +49,6 @@
       "name": "{prefix}mvs_pro_push_devices",
       "purpose": "Native push device registry (Expo tokens per user/device)",
       "file": "includes/Core/Migrator.php:367"
-    },
-    {
-      "name": "{prefix}mvs_pro_webhook_events",
-      "note": "Pro-owned. CREATE at includes/Core/Migrator.php:399. Missing from the 2.2.0-branch generation.",
-      "file": "includes/Core/Migrator.php:399"
-    },
-    {
-      "name": "{prefix}mvs_quota_packages",
-      "purpose": "Upload/storage quota package definitions",
-      "file": "includes/Core/Migrator.php:553"
     }
   ],
   "generated": {

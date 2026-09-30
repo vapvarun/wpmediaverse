@@ -221,6 +221,38 @@ class ActivityMediaLinkage {
 		return $count > 0;
 	}
 
+	/**
+	 * BP activity ids that reference a media item — the indexed reverse
+	 * lookup this table exists to make possible.
+	 *
+	 * Added for `ActivitySyncIntegration::clean_activities_for_media()`,
+	 * which previously found these via a `LIKE '%,123,%'` scan across the
+	 * entire `bp_activity_meta` table on every media delete — unindexed and
+	 * unbounded by activity count. `media_id` carries its own KEY (Migrator
+	 * v12); `object_type` scopes the shared table (Migrator v16 opened it up
+	 * to non-BP objects, e.g. `bn_post`) so a numeric id collision with
+	 * another object type can never be mistaken for a BP activity.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $media_id Media id.
+	 * @return int[] Distinct activity ids (no ordering promised).
+	 */
+	public function activity_ids_for_media( int $media_id ): array {
+		if ( $media_id <= 0 ) {
+			return array();
+		}
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT activity_id FROM {$wpdb->prefix}mvs_bp_activity_media WHERE media_id = %d AND object_type = 'bp_activity'",
+				$media_id
+			)
+		);
+		return array_map( 'intval', (array) $ids );
+	}
+
 	// -------------------------------------------------------------------------
 	// Private helpers
 	// -------------------------------------------------------------------------

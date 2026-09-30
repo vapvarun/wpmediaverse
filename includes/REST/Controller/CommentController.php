@@ -127,7 +127,7 @@ class CommentController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'own_item_permissions_check' ),
 					'args'                => array(
 						'media_id'   => array(
 							'type'              => 'integer',
@@ -148,7 +148,7 @@ class CommentController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'own_item_permissions_check' ),
 					'args'                => array(
 						'media_id'   => array(
 							'type'              => 'integer',
@@ -291,20 +291,29 @@ class CommentController extends WP_REST_Controller {
 		$media_id   = $request->get_param( 'media_id' );
 		$user_id    = get_current_user_id();
 
-		$comment = get_comment( $comment_id );
-		if ( ! $comment ) {
-			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		// Editing publishes new words onto the other member's item, so a block
+		// refuses it, and says so (owner decision on Basecamp 10350196637).
+		// Asked only for the caller's own comment on this item, so it cannot be
+		// used to probe other items.
+		$own = $this->visible_comment( (int) $comment_id, (int) $media_id, true );
+		if ( ! is_wp_error( $own ) && (int) $own->user_id === $user_id ) {
+			$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked(
+				$user_id,
+				(int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( (int) $media_id )
+			);
+			if ( $blocked instanceof WP_Error ) {
+				return $blocked;
+			}
+		}
+
+		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id );
+		if ( is_wp_error( $comment ) ) {
+			return $comment;
 		}
 
 		// Verify ownership.
 		if ( (int) $comment->user_id !== $user_id ) {
 			return new WP_Error( 'mvs_forbidden', __( 'You can only edit your own comments.', 'wpmediaverse' ), array( 'status' => 403 ) );
-		}
-
-		// Verify comment belongs to media. Media comments are detached from the
-		// post-ID space (comment_post_ID = 0); the owning media id is in meta.
-		if ( \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id ) !== (int) $media_id ) {
-			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
 		// Edit window — option-driven with filter override. Option is declared in
@@ -379,11 +388,9 @@ class CommentController extends WP_REST_Controller {
 		$comment_id = $request->get_param( 'comment_id' );
 		$media_id   = $request->get_param( 'media_id' );
 
-		// Verify the comment belongs to the specified media item (media id lives
-		// in comment meta; comment_post_ID is 0 for detached media comments).
-		$comment = get_comment( $comment_id );
-		if ( $comment && \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id ) !== (int) $media_id ) {
-			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id, true );
+		if ( is_wp_error( $comment ) ) {
+			return $comment;
 		}
 
 		$result = $this->comments->delete( $comment_id, get_current_user_id() );
@@ -393,6 +400,36 @@ class CommentController extends WP_REST_Controller {
 		}
 
 		return new WP_REST_Response( null, 204 );
+	}
+
+	/**
+	 * A MediaVerse comment on this media item that the caller can see.
+	 *
+	 * Missing, on another media item, or on media the caller cannot view all
+	 * answer the same 404, so the route cannot confirm a hidden comment exists
+	 * (same shape as ReportController::report_comment). Media comments are
+	 * detached from the post-ID space; the owning media id is in comment meta.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $comment_id Comment id.
+	 * @param int $media_id   Media id from the route.
+	 * @return \WP_Comment|WP_Error
+	 */
+	private function visible_comment( int $comment_id, int $media_id, bool $own_ok = false ) {
+		$comment = get_comment( $comment_id );
+
+		// Deleting your OWN comment needs no view access (Basecamp 10350196637):
+		// a blocked member can retract what they wrote.
+		$own = $own_ok && $comment && (int) $comment->user_id === get_current_user_id();
+
+		if ( ! $comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type
+			|| \WPMediaVerse\Social\CommentService::comment_media_id( $comment_id ) !== $media_id
+			|| ( ! $own && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		return $comment;
 	}
 
 	/**
@@ -412,6 +449,31 @@ class CommentController extends WP_REST_Controller {
 		$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked( get_current_user_id(), $author );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Permission check for editing or deleting your OWN existing comment.
+	 *
+	 * Deliberately NOT `create_item_permissions_check()` — Basecamp
+	 * 10350196637 found the same "gate pointed the wrong way" class here that
+	 * `RestGate` already declares exempt for this route: PUT/PATCH/DELETE on
+	 * `/media/\d+/comments/\d+` (`RestGate.php` line ~158), because sharing
+	 * the create callback meant a blocked member could never edit or retract
+	 * their own earlier comment. Login is still required; ownership is
+	 * enforced separately in `update_item()`/`delete_item()`, so skipping the
+	 * block gate here cannot let a blocked member touch someone else's
+	 * comment — only their own.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return bool|WP_Error
+	 */
+	public function own_item_permissions_check() {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in to comment.', 'wpmediaverse' ), array( 'status' => 401 ) );
 		}
 
 		return true;

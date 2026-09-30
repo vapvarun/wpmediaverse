@@ -246,14 +246,15 @@ class PrivacyLockTest extends WP_UnitTestCase {
 		$this->albums()->add_items( $last, array( $id ) );
 		$this->assertSame( $last, (int) $this->repo()->get( $id, 'album_id' ) );
 
-		// Deleting the album it points at falls back to the album it is still in.
+		// One album per photo (2.6.0): joining Last took it out of First.
+		$this->assertSame( array( $last ), $this->albums()->albums_for_media( $id ) );
+		$this->assertFalse( $this->albums()->remove_item( $first, $id ), 'It is no longer in First.' );
+
+		// Deleting the album it is in leaves it in no album, pointer cleared.
 		$this->albums()->delete_all_items( $last );
 		wp_delete_post( $last, true );
-		$this->assertSame( $first, (int) $this->repo()->get( $id, 'album_id' ) );
-
-		// Leaving its last album clears the pointer.
-		$this->assertTrue( $this->albums()->remove_item( $first, $id ) );
 		$this->assertSame( 0, (int) $this->repo()->get( $id, 'album_id' ) );
+		$this->assertSame( array(), $this->albums()->albums_for_media( $id ) );
 	}
 
 	/**

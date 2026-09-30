@@ -35,7 +35,6 @@ use WPMediaVerse\REST\Controller\StatsController;
 use WPMediaVerse\REST\Controller\AdminController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
-use WPMediaVerse\REST\Controller\AccessController;
 use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Services\WatermarkService;
@@ -48,6 +47,7 @@ use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
 use WPMediaVerse\Admin\SetupWizard;
+use WPMediaVerse\Admin\AlbumMetaBox;
 use WPMediaVerse\Admin\CollectionMetaBox;
 use WPMediaVerse\Admin\IntegrationsPage;
 use WPMediaVerse\Social\ReactionService;
@@ -56,7 +56,6 @@ use WPMediaVerse\Social\FavoriteService;
 use WPMediaVerse\Social\MentionService;
 use WPMediaVerse\Social\ShareService;
 use WPMediaVerse\Services\StatsService;
-use WPMediaVerse\Services\AccessRulesService;
 use WPMediaVerse\Integrations\BuddyPress\BuddyPressManager;
 use WPMediaVerse\Integrations\WebhookService;
 use WPMediaVerse\Services\CacheService;
@@ -240,10 +239,12 @@ class Plugin {
 				self::$container->get( 'admin.reports' );
 			}
 			self::$container->get( 'admin.member_moderation' );
+			self::$container->get( 'admin.private_default' );
 			self::$container->get( 'admin.stats' );
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
 			self::$container->get( 'admin.collection_metabox' );
+			self::$container->get( 'admin.album_metabox' );
 			self::$container->get( 'admin.integrations' );
 
 			// Reorder submenu so Overview is first, then separator, then content, then tools.
@@ -287,6 +288,12 @@ class Plugin {
 		// Schedules the grace-period sweep.
 		self::$container->get( 'account_deletion' )->init();
 
+		// Fair-use storage limit: keeps each member's cached usage current.
+		self::$container->get( 'storage_limit' )->init();
+
+		// Member emails: the minimal set the owner switches on (2.6.0).
+		self::$container->get( 'emails' )->init();
+
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
 			self::$container->get( 'moderation' );
@@ -328,6 +335,11 @@ class Plugin {
 			1
 		);
 
+		// can_view() memoises per request; a privacy change must not keep
+		// answering with the old level (a bulk "make private" followed by a
+		// listing in the same request listed the items to everyone).
+		add_action( 'mvs_media_privacy_changed', array( self::$container->get( 'privacy' ), 'flush_cache' ), 1, 0 );
+
 		// Storage re-localization on privacy escalation. When a media row
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or
@@ -359,10 +371,6 @@ class Plugin {
 			6,
 			3
 		);
-
-		// Access rules privacy filter (priority 20 — after default privacy at 10).
-		$access_rules = self::$container->get( 'access_rules' );
-		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
 		// NOTE: the dashboard's Documents tab is no longer registered here. It
 		// began as a registry LINK out to the documents page, and became a real
@@ -441,6 +449,7 @@ class Plugin {
 		add_action( 'wp_enqueue_scripts', array( self::class, 'register_bp_shared_styles' ), 1 );
 
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
+		add_filter( 'render_block', array( self::class, 'enqueue_rest_client_for_block' ), 10, 2 );
 
 		// Auto-pair the mvs-confirm stylesheet whenever its script is enqueued.
 		// Runs late so any enqueue made by integrations (BP profile/group tabs,
@@ -700,12 +709,34 @@ class Plugin {
 			}
 		);
 
+		self::$container->register(
+			'emails',
+			function () {
+				return new \WPMediaVerse\Services\EmailService();
+			}
+		);
+
+		// One optional storage allowance per member (2.6.0).
+		self::$container->register(
+			'storage_limit',
+			function () {
+				return new \WPMediaVerse\Services\StorageLimitService();
+			}
+		);
+
 		// The trigger for the suspension gate. Without it, a moderator can read a
 		// report and resolve it, but has no way to act on the member who caused it.
 		self::$container->register(
 			'admin.member_moderation',
 			function () {
 				return new MemberModeration();
+			}
+		);
+
+		self::$container->register(
+			'admin.private_default',
+			function () {
+				return new \WPMediaVerse\Admin\PrivateCommunityDefault();
 			}
 		);
 
@@ -731,6 +762,15 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'admin.album_metabox',
+			function ( ServiceContainer $c ) {
+				$metabox = new AlbumMetaBox( $c->get( 'albums' ) );
+				$metabox->init();
+				return $metabox;
+			}
+		);
+
+		self::$container->register(
 			'admin.collection_metabox',
 			function ( ServiceContainer $c ) {
 				$metabox = new CollectionMetaBox( $c->get( 'collections' ) );
@@ -747,16 +787,9 @@ class Plugin {
 		);
 
 		self::$container->register(
-			'access_rules',
-			function () {
-				return new AccessRulesService();
-			}
-		);
-
-		self::$container->register(
 			'signed_urls',
 			function ( ServiceContainer $c ) {
-				return new SignedUrlService( $c->get( 'access_rules' ), $c->get( 'privacy' ) );
+				return new SignedUrlService( $c->get( 'privacy' ) );
 			}
 		);
 
@@ -850,6 +883,7 @@ class Plugin {
 			wp_schedule_event( time(), 'daily', 'mvs_purge_old_views' );
 		}
 		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge' ) );
+		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge_activity' ) );
 
 		// Wire LoggerService into key operations.
 		\WPMediaVerse\Services\LoggerService::register_hooks();
@@ -878,6 +912,9 @@ class Plugin {
 			function () {
 				$service = new NotificationService();
 				$service->init();
+				// Eager: a host reads the declared-types filter as soon as it boots,
+				// and the removal hook must be live before any media is deleted.
+				\WPMediaVerse\Social\CommunityNotificationContract::register();
 				return $service;
 			}
 		);
@@ -891,6 +928,14 @@ class Plugin {
 		// Eager: the dispatch must be hooked before any notification is created
 		// (notifications fire outside REST too), so bind it now rather than lazily.
 		self::$container->get( 'push' )->register();
+
+		// @mentions in a new upload's description (edits: MediaController).
+		add_action(
+			'mvs_media_uploaded',
+			static function ( $media_id ) {
+				self::$container->get( 'mentions' )->sync_description( (int) $media_id );
+			}
+		);
 
 		self::$container->register(
 			'reports',
@@ -907,6 +952,12 @@ class Plugin {
 				return $service;
 			}
 		);
+
+		// Boot the listeners now: resolved only while registering REST routes,
+		// their init() hooks never existed on admin, cron or CLI requests, so a
+		// report resolved from Pro's Reports screen notified nobody.
+		self::$container->get( 'notifications' );
+		self::$container->get( 'activity' );
 
 		self::$container->register(
 			'profile',
@@ -996,7 +1047,6 @@ class Plugin {
 		$collections  = self::$container->get( 'collections' );
 		$moderation   = self::$container->get( 'moderation' );
 		$ai           = self::$container->get( 'ai' );
-		$access_rules = self::$container->get( 'access_rules' );
 		$signed_urls  = self::$container->get( 'signed_urls' );
 
 		$follows       = self::$container->get( 'follows' );
@@ -1019,7 +1069,6 @@ class Plugin {
 			new StatsController( $stats, $privacy ),
 			new TagController(),
 			new ModerationController( $moderation, $ai ),
-			new AccessController( $access_rules ),
 			new SignedUrlController( $signed_urls, $privacy ),
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),
@@ -1047,6 +1096,17 @@ class Plugin {
 	 * Albums and collections remain as CPTs (low volume, CPT is fine).
 	 */
 	public static function register_types(): void {
+		// Albums and collections keep their settings in a meta box and their
+		// description in the content box. The block editor collapses meta boxes
+		// behind a closed pane by default, which hid every real control and left
+		// the block canvas as the only thing on screen (Basecamp 10351283087).
+		add_filter(
+			'use_block_editor_for_post_type',
+			static fn( $use, $post_type ) => in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true ) ? false : $use,
+			10,
+			2
+		);
+
 		Album::register();
 		Collection::register();
 		MediaTag::register();
@@ -1263,6 +1323,27 @@ class Plugin {
 	// — every emission site automatically gets a signed URL.
 
 	// Note: ensure_media_rows methods removed — media is created directly in custom tables.
+
+	/**
+	 * Load the shared REST client whenever an mvs/* block renders.
+	 *
+	 * Block view scripts are modules and call window.mvsRest, a classic script
+	 * that enqueue_frontend_assets() loads only on MediaVerse's own pages. A block
+	 * placed on any ordinary page therefore had no client: view and download
+	 * tracking silently did nothing (Basecamp 10350019690). One filter here fixes
+	 * every block rather than each render.php remembering to ask.
+	 *
+	 * @param string $content Rendered block HTML, passed through untouched.
+	 * @param array  $block   Parsed block.
+	 * @return string
+	 */
+	public static function enqueue_rest_client_for_block( $content, $block ) {
+		if ( 0 === strpos( (string) ( $block['blockName'] ?? '' ), 'mvs/' ) ) {
+			wp_enqueue_script( 'mvs-rest' );
+		}
+
+		return $content;
+	}
 
 	/**
 	 * Enqueue frontend styles and scripts on MVS pages.
@@ -1852,9 +1933,9 @@ class Plugin {
 	 * Reorder the WPMediaVerse submenu for a logical admin experience.
 	 *
 	 * Groups (Wbcom Rule 2): Overview → Content → Moderation → Insights →
-	 * Tools → Settings last. Pro extends this list via its own reorder when
-	 * active; Free must still order every slug it registers so items like
-	 * Documents / Tags / Logs do not land in a random middle bucket.
+	 * Settings last. Pro extends this list via its own reorder when active;
+	 * Free must still order every slug it shows in the sidebar so items like
+	 * Documents / Tags do not land in a random middle bucket.
 	 */
 	public static function reorder_submenu(): void {
 		global $submenu;
@@ -1875,15 +1956,12 @@ class Plugin {
 			'edit.php?post_type=mvs_collection',
 			'mvs-tags',
 			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_album',
-			// Moderation / trust & safety queues.
+			// Moderation / trust & safety (reports are a Moderation tab).
 			'mvs-moderation',
-			'mvs-reports',
 			// Insights.
 			'mvs-stats',
-			// Tools.
-			'mvs-integrations',
-			'mvs-logs',
-			// Config — always last.
+			// Config — always last. Logs live under Tools, and Integrations
+			// is reached from the Overview card, so neither is listed here.
 			'mvs-settings',
 		);
 
@@ -2373,7 +2451,28 @@ class Plugin {
 	 * Initialize the DM/messaging engine.
 	 */
 	private static function init_messaging(): void {
+		// Turning Messages on or off adds or removes the /messages/ rewrite rule.
+		foreach ( array( 'add_option_', 'update_option_' ) as $prefix ) {
+			add_action(
+				$prefix . \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION,
+				static function () {
+					set_transient( 'mvs_flush_rewrite', true );
+				}
+			);
+		}
+
 		$messaging_service = new \WPMediaVerse\Messaging\MessagingService();
+		$listener          = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
+
+		if ( ! self::messaging_enabled() ) {
+			// Off: the engine never boots, so nothing listens (no routes, panel,
+			// page or `messaging` service - BuddyNext reads that as "no messaging").
+			// Members' stored messages stay exportable and erasable.
+			$listener->init_privacy();
+			add_action( 'admin_bar_menu', array( self::class, 'messages_off_admin_note' ), 100 );
+			return;
+		}
+
 		$transport         = apply_filters(
 			'mvs_messaging_transport',
 			new \WPMediaVerse\Messaging\RestPollingTransport()
@@ -2382,7 +2481,6 @@ class Plugin {
 
 		add_action( 'rest_api_init', array( $controller, 'register_routes' ) );
 
-		$listener = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
 		$listener->init();
 
 		// Register the service in the container for other components.
@@ -2543,14 +2641,25 @@ class Plugin {
 
 		$user   = wp_get_current_user();
 		$config = array(
-			'restBase'    => esc_url_raw( rest_url( 'mvs/v1' ) ),
-			'nonce'       => wp_create_nonce( 'wp_rest' ),
-			'currentUser' => array(
+			'restBase'       => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			// Fluent emoji folder: known reaction characters render as the same
+			// SVGs as media reactions (messaging.js EMOJI_FILES).
+			'emojiBase'      => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
+			// Group DM management (create/rename/add/remove/leave) lives in Pro's
+			// GroupController. Free renders group threads on its own (title,
+			// roster, sender names via /mvs/v1/me/conversations), but only Pro
+			// exposes the management routes — so this key is empty on a Free-only
+			// site and messaging.js hides "New group" + roster controls
+			// accordingly. Same empty-string-when-Pro-absent pattern as
+			// templates/media-single.php's analyticsUrl.
+			'groupsRestBase' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
+			'nonce'          => wp_create_nonce( 'wp_rest' ),
+			'currentUser'    => array(
 				'id'           => $user->ID,
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
 			),
-			'transport'   => apply_filters(
+			'transport'      => apply_filters(
 				'mvs_messaging_transport',
 				new \WPMediaVerse\Messaging\RestPollingTransport()
 			)->get_client_config(),
@@ -2558,41 +2667,65 @@ class Plugin {
 			// source (gettext-style). The module can't import @wordpress/i18n and
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
 			// the store reads these instead. Basecamp 10073528834.
-			'i18n'        => array(
-				'Request failed'               => __( 'Request failed', 'wpmediaverse' ),
-				'Could not open conversation.' => __( 'Could not open conversation.', 'wpmediaverse' ),
-				'Could not share media.'       => __( 'Could not share media.', 'wpmediaverse' ),
-				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
+			'i18n'           => array(
+				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
+				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
+				'Could not share media.'               => __( 'Could not share media.', 'wpmediaverse' ),
+				'Upload failed'                        => __( 'Upload failed', 'wpmediaverse' ),
 				/* translators: %s: file name */
-				'Uploading %s…'                => __( 'Uploading %s…', 'wpmediaverse' ),
+				'Uploading %s…'                        => __( 'Uploading %s…', 'wpmediaverse' ),
 				'Only image, video, and audio files can be shared in messages.' => __( 'Only image, video, and audio files can be shared in messages.', 'wpmediaverse' ),
-				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
-				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
-				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),
+				'Microphone access denied'             => __( 'Microphone access denied', 'wpmediaverse' ),
+				'You reacted. Tap to remove.'          => __( 'You reacted. Tap to remove.', 'wpmediaverse' ),
+				'Reacted'                              => __( 'Reacted', 'wpmediaverse' ),
 				// Sidebar preview placeholders for attachment-only messages —
 				// mirror MessagingService::build_message_preview() (card 10127764989).
-				'Voice message'                => __( 'Voice message', 'wpmediaverse' ),
-				'Photo'                        => __( 'Photo', 'wpmediaverse' ),
-				'Video'                        => __( 'Video', 'wpmediaverse' ),
-				'Audio'                        => __( 'Audio', 'wpmediaverse' ),
-				'File'                         => __( 'File', 'wpmediaverse' ),
-				'Shared a media'               => __( 'Shared a media', 'wpmediaverse' ),
-				'Attachment'                   => __( 'Attachment', 'wpmediaverse' ),
+				'Voice message'                        => __( 'Voice message', 'wpmediaverse' ),
+				'Photo'                                => __( 'Photo', 'wpmediaverse' ),
+				'Video'                                => __( 'Video', 'wpmediaverse' ),
+				'Audio'                                => __( 'Audio', 'wpmediaverse' ),
+				'File'                                 => __( 'File', 'wpmediaverse' ),
+				'Shared a media'                       => __( 'Shared a media', 'wpmediaverse' ),
+				'Attachment'                           => __( 'Attachment', 'wpmediaverse' ),
 				// Day separators in the message thread (2.3.0).
-				'Today'                        => __( 'Today', 'wpmediaverse' ),
-				'Yesterday'                    => __( 'Yesterday', 'wpmediaverse' ),
+				'Today'                                => __( 'Today', 'wpmediaverse' ),
+				'Yesterday'                            => __( 'Yesterday', 'wpmediaverse' ),
 				// Mute control + voice-recording capability notice (2.3.0).
-				'Mute notifications'           => __( 'Mute notifications', 'wpmediaverse' ),
-				'Unmute notifications'         => __( 'Unmute notifications', 'wpmediaverse' ),
+				'Mute notifications'                   => __( 'Mute notifications', 'wpmediaverse' ),
+				'Unmute notifications'                 => __( 'Unmute notifications', 'wpmediaverse' ),
 				'Voice messages need a secure (https) connection.' => __( 'Voice messages need a secure (https) connection.', 'wpmediaverse' ),
 				// Chat header presence (2.5.1). Whole phrases, not glued
 				// fragments: "Active " + date + " ago" produced "Active
 				// 12/09/2026 ago" and could not be translated. Basecamp 10320657271.
-				'Online'                       => __( 'Online', 'wpmediaverse' ),
+				'Online'                               => __( 'Online', 'wpmediaverse' ),
 				/* translators: %s: a relative time in the page language, such as "5 minutes ago". */
-				'Active %s'                    => __( 'Active %s', 'wpmediaverse' ),
+				'Active %s'                            => __( 'Active %s', 'wpmediaverse' ),
 				/* translators: %s: a date, formatted for the viewer's locale. */
-				'Active on %s'                 => __( 'Active on %s', 'wpmediaverse' ),
+				'Active on %s'                         => __( 'Active on %s', 'wpmediaverse' ),
+				// Group DMs (2.6.0).
+				'New Message'                          => __( 'New Message', 'wpmediaverse' ),
+				'New Group'                            => __( 'New Group', 'wpmediaverse' ),
+				'New group'                            => __( 'New group', 'wpmediaverse' ),
+				'Group name (optional)'                => __( 'Group name (optional)', 'wpmediaverse' ),
+				'Create'                               => __( 'Create', 'wpmediaverse' ),
+				'Cancel'                               => __( 'Cancel', 'wpmediaverse' ),
+				'Group info'                           => __( 'Group info', 'wpmediaverse' ),
+				'Rename'                               => __( 'Rename', 'wpmediaverse' ),
+				'Save'                                 => __( 'Save', 'wpmediaverse' ),
+				'Members'                              => __( 'Members', 'wpmediaverse' ),
+				'Admin'                                => __( 'Admin', 'wpmediaverse' ),
+				'Add people'                           => __( 'Add people', 'wpmediaverse' ),
+				'Search users…'                        => __( 'Search users…', 'wpmediaverse' ),
+				'Remove member'                        => __( 'Remove member', 'wpmediaverse' ),
+				'Remove this member from the group?'   => __( 'Remove this member from the group?', 'wpmediaverse' ),
+				'Remove'                               => __( 'Remove', 'wpmediaverse' ),
+				'Leave group'                          => __( 'Leave group', 'wpmediaverse' ),
+				'Leave this group? You will no longer receive its messages.' => __( 'Leave this group? You will no longer receive its messages.', 'wpmediaverse' ),
+				'Leave'                                => __( 'Leave', 'wpmediaverse' ),
+				/* translators: %d: number of active group members. */
+				'%d members'                           => __( '%d members', 'wpmediaverse' ),
+				'A group can have at most 50 members.' => __( 'A group can have at most 50 members.', 'wpmediaverse' ),
+				'Could not create the group.'          => __( 'Could not create the group.', 'wpmediaverse' ),
 			),
 		);
 
@@ -3139,6 +3272,7 @@ JS;
 			array(
 				(int) get_option( 'mvs_page_dashboard', 0 ),
 				(int) get_option( 'mvs_page_explore', 0 ),
+				(int) get_option( 'mvs_page_explore_documents', 0 ),
 				(int) get_option( 'mvs_page_upload', 0 ),
 			)
 		);
@@ -3163,6 +3297,57 @@ JS;
 	 */
 	private static function is_bp_page(): bool {
 		return function_exists( 'is_buddypress' ) && is_buddypress();
+	}
+
+	/**
+	 * Whether private messaging is on (Settings > Messages, filterable).
+	 *
+	 * @since 2.6.0
+	 * @return bool
+	 */
+	public static function messaging_enabled(): bool {
+		/**
+		 * Whether private messaging is on for this site.
+		 *
+		 * Defaults to the Settings > Messages switch. Off, the messaging engine
+		 * does not boot at all; stored conversations are kept.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool $enabled Whether messaging is on.
+		 */
+		return (bool) apply_filters(
+			'mvs_messaging_enabled',
+			(bool) get_option( \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION, true )
+		);
+	}
+
+	/**
+	 * Tell an administrator why /messages/ is a 404 while Messages is off.
+	 *
+	 * An admin-bar item, so it reaches only people who can change the setting
+	 * and needs no front-end styles of its own.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param \WP_Admin_Bar $bar Admin bar.
+	 * @return void
+	 */
+	public static function messages_off_admin_note( $bar ): void {
+		global $wp;
+
+		if ( ! is_404() || ! current_user_can( 'manage_options' ) || self::messages_slug() !== trim( (string) ( $wp->request ?? '' ), '/' ) ) {
+			return;
+		}
+
+		$bar->add_node(
+			array(
+				'id'    => 'mvs-messages-off',
+				'title' => esc_html__( 'Messages is turned off', 'wpmediaverse' ),
+				'href'  => admin_url( 'admin.php?page=' . \WPMediaVerse\Admin\Settings\SettingsPage::PAGE_SLUG ) . '#social',
+				'meta'  => array( 'title' => esc_attr__( 'Turn it on in Settings > Messages', 'wpmediaverse' ) ),
+			)
+		);
 	}
 
 	/**
@@ -3236,6 +3421,13 @@ JS;
 				if ( apply_filters( 'mvs_buddynext_active', false ) ) {
 					return;
 				}
+
+				add_filter(
+					'document_title_parts',
+					static function ( $parts ) {
+						return \WPMediaVerse\Core\TemplateLoader::title_parts( (array) $parts, __( 'Messages', 'wpmediaverse' ) );
+					}
+				);
 
 				$template = \WPMediaVerse\Core\TemplateLoader::locate( 'messages.php' );
 				if ( ! $template ) {

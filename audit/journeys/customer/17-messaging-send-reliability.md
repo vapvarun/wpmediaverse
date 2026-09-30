@@ -3,7 +3,7 @@ journey: messaging-send-reliability
 plugin: wpmediaverse
 priority: critical
 roles: [member]
-covers: [messaging-send-reliability, dm-failed-retry, dm-empty-states]
+covers: [MV-MSG-004, MV-MSG-009, messaging-send-reliability, dm-failed-retry, dm-empty-states]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Auto-login mu-plugin available (?autologin=<login>)"
@@ -23,6 +23,8 @@ path and its empty/loading states:
 - A brand-new conversation rendered a blank message panel (no empty state), and the
   conversation list showed "No conversations yet" while it was still loading. Now a
   `showThreadEmpty` / `showListEmpty` / `loadingConversations` state covers each.
+
+> **Coverage cross-ref**: steps 3-5 exercise the send/failure/retry path that is `MV-MSG-004`'s core assertion, and step 1's loading/empty-state check is adjacent to `MV-MSG-009` (read/unread badge) — both are covered more fully by `customer/63-messaging-lifecycle.md` and `customer/65-messaging-status-and-panel.md` respectively; this file's existing steps already substantively cover the send/reliability slice, so no new steps were added here.
 
 ## Setup
 

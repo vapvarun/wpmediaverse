@@ -177,6 +177,11 @@ final class MemberDataMap {
 			// stays.
 			'mvs_reports'           => array(
 				'columns' => array( 'reporter_id', 'target_id' ),
+				// target_id is a member only on a report ABOUT a member; on a
+				// media, comment or message report it is that item's id, and
+				// erasing member #42 used to zero every report on media #42
+				// (and export them to member #42).
+				'scope'   => array( 'target_id' => array( 'target_type', 'user' ) ),
 				'label'   => __( 'Reports', 'wpmediaverse' ),
 				'reason'  => 'Moderation evidence. A member must not be able to erase the report another member filed about them, and the moderator needs the record of why they acted.',
 				'basis'   => 'Legitimate interest (safety of other users, integrity of the moderation record). Rows are anonymised: reporter_id / target_id set to 0.',
@@ -234,6 +239,33 @@ final class MemberDataMap {
 	 *
 	 * @return string[]
 	 */
+	/**
+	 * SQL condition for "this column holds this member" in a mapped table.
+	 *
+	 * A spec may carry `scope` => [ column => [ type_column, value ] ] for a
+	 * column that holds a member id only on some rows (mvs_reports.target_id).
+	 * Every reader of the map - purge, residue, export - builds its WHERE here,
+	 * so none of them can forget the scope.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param array  $spec    Map entry.
+	 * @param string $column  Column.
+	 * @param int    $user_id Member.
+	 * @return string Prepared condition.
+	 */
+	public static function member_condition( array $spec, string $column, int $user_id ): string {
+		global $wpdb;
+
+		$sql = $wpdb->prepare( "`{$column}` = %d", $user_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- column comes from the fixed map.
+		if ( isset( $spec['scope'][ $column ] ) ) {
+			list( $type_column, $value ) = $spec['scope'][ $column ];
+			$sql                        .= $wpdb->prepare( " AND `{$type_column}` = %s", $value ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- column comes from the fixed map.
+		}
+
+		return $sql;
+	}
+
 	public static function all_tables(): array {
 		return array_merge(
 			array_keys( self::erase_map() ),

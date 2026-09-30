@@ -63,6 +63,9 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_user_unfollowed` | action | Free | 1.0 |
 | `mvs_media_shared` | action | Free | 1.0 |
 | `mvs_report_submitted` | action | Free | 1.0 |
+| `mvs_report_resolved` | action | Free | 2.6.0 |
+| `mvs_email_subject` | filter | Free | 2.6.0 |
+| `mvs_email_body` | filter | Free | 2.6.0 |
 | `mvs_user_blocked` | action | Free | 1.0 |
 | `mvs_tags_merged` | action | Free | 1.0 |
 | `mvs_activity_types` | filter | Free | 1.0 |
@@ -72,6 +75,11 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_notification_data` | filter | Free | 1.1 |
 | `mvs_notification_types` | filter | Free | 1.0 |
 | `mvs_notification_message` | filter | Free | 1.0 |
+| `mvs_notification_link` | filter | Free | 2.6 |
+| `mvs_community_notification_types` | filter | Free | 2.6.0 |
+| `mvs_community_notification_visible` | filter | Free | 2.6.0 |
+| `mvs_community_notification_removed` | action | Free | 2.6.0 |
+| `mvs_activity_retention_days` | filter | Free | 2.6 |
 | `mvs_push_send` | action | Free | 2.4.0 |
 | `mvs_push_should_send` | filter | Free | 2.4.0 |
 | `mvs_conversation_created` | action | Free | 1.0 |
@@ -90,6 +98,10 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_dm_allowed_file_types` | filter | Free | 1.0 |
 | `mvs_messaging_poll_intervals` | filter | Free | 1.0 |
 | `mvs_messaging_transport` | filter | Free | 1.0 |
+| `mvs_messaging_enabled` | filter | Free | 2.6.0 |
+| `mvs_folder_trash_retention_days` | filter | Pro | 2.6.0 |
+| `mvs_folder_before_purge` | action | Pro | 2.6.0 |
+| `mvs_document_folder_deleted` | action | Pro | 2.6.0 |
 | `mvs_show_online_status` | filter | Free | 1.0 |
 | `mvs_dm_max_upload_size` | filter | Free | 1.0 |
 | `mvs_settings_sidebar_after` | action | Free | 1.0 |
@@ -107,7 +119,9 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_user_data_purged` | action | Free | 1.2 |
 | `mvs_media_flagged` | action | Free | 1.0 |
 | `mvs_moderation_changed` | action | Free | 1.0 |
+| `mvs_moderation_hide_sets_private` | filter | Free | 2.6 |
 | `mvs_should_ai_analyze` | filter | Free | 1.1 |
+| `mvs_ai_provider_fallback` | filter | Free | 2.6 |
 | `mvs_ai_result` | filter | Free | 1.1 |
 | `mvs_ai_moderation_result` | filter | Free | 1.1 |
 | `mvs_openai_api_key` | filter | Free | 1.0 |
@@ -136,12 +150,13 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_user_profile_url` | filter | Free | 1.0 |
 | `mvs_profile_data` | filter | Free | 1.0 |
 | `mvs_profile_update_fields` | filter | Free | 1.0 |
+| `mvs_community_profile` | filter | Free | 2.6.0 |
+| `mvs_profile_edit_redirect` | filter | Free | 2.6.0 |
+| `mvs_redirect_legacy_drive_query` | filter | Free | 2.6.0 |
+| `mvs_default_media_title` | filter | Free | 2.6.0 |
+| `mvs_show_favorite_button` | filter | Free | 2.6.0 |
 | `mvs_avatar_allowed_types` | filter | Free | 1.0 |
 | `mvs_avatar_max_size` | filter | Free | 1.0 |
-| `mvs_access_rule_created` | action | Free | 1.0 |
-| `mvs_access_rule_deleted` | action | Free | 1.0 |
-| `mvs_access_granted` | action | Free | 1.0 |
-| `mvs_access_revoked` | action | Free | 1.0 |
 | `mvs_story_created` | action | Pro | 1.0 (moved from Free in 1.9.0) |
 | `mvs_story_expired` | action | Pro | 1.0 (moved from Free in 1.9.0) |
 | `mvs_privacy_can_view` | filter | Free | 1.0 |
@@ -156,17 +171,6 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_layout_modes` | filter | Pro | 1.0 |
 | `mvs_layout_template_map` | filter | Pro | 1.0 |
 | `mvs_layout_config` | filter | Pro | 1.1 |
-| `mvs_pro_credits_added` | action | Pro | 1.0 |
-| `mvs_pro_woo_package_assigned` | action | Pro | 1.0 |
-| `mvs_pro_woo_package_reverted` | action | Pro | 1.0 |
-| `mvs_pro_memberpress_package_assigned` | action | Pro | 1.0 |
-| `mvs_pro_memberpress_package_reverted` | action | Pro | 1.0 |
-| `mvs_pro_pmpro_package_assigned` | action | Pro | 1.0 |
-| `mvs_pro_pmpro_package_reverted` | action | Pro | 1.0 |
-| `mvs_quota_render_mapping_fields` | action | Pro | 1.0 |
-| `mvs_quota_save_mapping` | action | Pro | 1.0 |
-| `mvs_pro_before_quota_check` | filter | Pro | 1.1 |
-| `mvs_pro_quota_source` | filter | Pro | 1.1 |
 | `mvs_challenge_created` | action | Pro | 1.0 |
 | `mvs_challenge_entry_submitted` | action | Pro | 1.0 |
 | `mvs_challenge_finalized` | action | Pro | 1.0 |
@@ -186,6 +190,9 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_challenge_activated` | action | Pro | 1.5.0 |
 | `mvs_challenge_voting_started` | action | Pro | 1.5.0 |
 | `mvs_battle_cancelled` | action | Pro | 1.5.0 |
+| `mvs_battle_expired` | action | Pro | 2.6.0 |
+| `mvs_battle_submit_hours` | filter | Pro | 2.6.0 |
+| `mvs_battle_vote_hours` | filter | Pro | 2.6.0 |
 | `mvs_tournament_cancelled` | action | Pro | 1.5.0 |
 | `mvs_tournament_updated` | action | Pro | 1.5.0 |
 | `mvs_competition_status_changed` | action | Pro | 1.5.0 |
@@ -261,14 +268,15 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 15. [Video Processing (Pro)](#15-video-processing-pro)
 16. [Analytics (Pro)](#16-analytics-pro)
 17. [Layout System (Pro)](#17-layout-system-pro)
-18. [Quota System (Pro)](#18-quota-system-pro)
 19. [Competitions (Pro)](#19-competitions-pro)
 21. [Connectors (Pro)](#21-connectors-pro)
 22. [Common Recipes](#22-common-recipes)
 23. [Additional Hooks Reference](#23-additional-hooks-reference)
 
-> There is no section 20 — a retired section left the gap. Heading numbers are
-> kept as-is so existing deep links to sections 21-23 keep working.
+> There is no section 18 or 20 - retired sections left the gaps (18 was the
+> quota system, removed 2.6.0; storage limits are now Free's one per-member
+> MB allowance, see Settings > General). Heading numbers are kept as-is so
+> existing deep links to sections 19, 21-23 keep working.
 
 ---
 
@@ -582,6 +590,7 @@ add_action( 'mvs_dashboard_panels', function() {
 | `mvs_template_variables` | filter | Filter template variables before render | `$args` (array), `$template_name` (string) | 1.1 |
 | `mvs_body_classes` | filter | Filter MVS body CSS classes | `$classes` (array) | 1.1 |
 | `mvs_reserved_media_paths` | filter | Filter reserved URL paths under `/media/` | `$paths` (array) | 1.0 |
+| `mvs_redirect_legacy_drive_query` | filter | Whether `?drive=my-drive\|shared\|recent` on the Explore Documents page redirects (302) to the dashboard documents section. Return `false` to keep rendering the drive on that page. | `$redirect` (bool), `$drive` (string) | 2.6.0 |
 
 ---
 
@@ -714,13 +723,13 @@ These filters back the `GET /app/config` response consumed by the native mobile 
 
 #### `mvs_app_config_features`
 
-Filters the `features` boolean map returned by `GET /app/config`. Free seeds its always-on capabilities plus the messaging gate (derived from `mvs_dm_access`); Pro filters in its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …).
+Filters the `features` boolean map returned by `GET /app/config`. Free seeds its always-on capabilities plus the messaging gate (derived from the Messages switch and `mvs_dm_access`); Pro filters in its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …).
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity` (all `true` except `messaging`, which follows `mvs_dm_access`) |
+| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity` (all `true` except `messaging`, which is `false` when the Messages switch is off or `mvs_dm_access` is `nobody`) |
 
 **Returns:** `array<string,bool>`
 
@@ -994,6 +1003,9 @@ document.addEventListener( 'mvs-collections-click', ( event ) => {
 | `mvs_user_unfollowed` | action | Follow relationship removed | `$follower_id`, `$following_id` | 1.0 |
 | `mvs_media_shared` | action | Media shared to external platform | `$media_id`, `$user_id`, `$platform` | 1.0 |
 | `mvs_report_submitted` | action | Content report filed | `$report_id`, `$reporter_id`, `$target_type`, `$target_id`, `$reason` | 1.0 |
+| `mvs_report_resolved` | action | A pending report was resolved or dismissed (the reporter is notified that it was reviewed) | `$report_id`, `$reporter_id`, `$status` (`resolved` or `dismissed`) | 2.6.0 |
+| `mvs_email_subject` | filter | Subject of a member email | `$subject` (string), `$type` (`battle_invite`, `document_shared`, `report_resolved`, `account_deletion`), `$user_id` (int) | 2.6.0 |
+| `mvs_email_body` | filter | Plain-text body of a member email | `$body` (string), `$type`, `$user_id` (int) | 2.6.0 |
 | `mvs_user_blocked` | action | User blocked another user | `$blocker_id`, `$blocked_id` | 1.0 |
 | `mvs_tags_merged` | action | Two tags merged | `$source_id`, `$target_id`, `$posts` | 1.0 |
 | `mvs_activity_types` | filter | Register activity feed types | `$types` (array) | 1.0 |
@@ -1016,6 +1028,10 @@ Fires after a notification is stored in the database. Use this to push notificat
 | `$type` | string | Notification type slug (e.g., `comment`, `follow`) |
 | `$actor_id` | int | User who triggered the notification |
 | `$media_id` | int | Related media post ID (0 if not media-related) |
+| `$message` | string | Rendered text, as the notifications menu shows it (1.7.0) |
+| `$link` | string | Where the notification points (1.7.0) |
+| `$object_id` | int | The row's `comment_id` slot: a comment id, or a competition id for Pro competition types (2.6.0) |
+| `$contract_payload` | array | The BuddyNext / community notification contract payload, or `array()` when this notification is not community-bell material (2.6.0). See [Community Notification Contract](#community-notification-contract-260) below. |
 
 ```php
 /**
@@ -1081,6 +1097,40 @@ add_filter( 'mvs_should_send_notification', function( bool $should_send, int $us
     return $should_send;
 }, 10, 5 );
 ```
+
+---
+
+### Community Notification Contract (2.6.0)
+
+A host community plugin (BuddyNext) is a display + push layer — it never re-implements this plugin's own rules. Every dispatch that reaches `mvs_notification_created` with a real member recipient (a `$user_id` that is not the actor) carries a shared payload as the hook's 9th argument, built ONCE by `WPMediaVerse\Social\CommunityNotificationContract::payload()` from the SAME `$message`/`$link` the hook's 6th/7th arguments already carry — never a second render of the notification text.
+
+Four of this plugin's own types are a HOST's screen, not this plugin's: `new_follower`, `media_comment`, `media_favorite` and `new_message` already have their own first-class surface in a community plugin, so a host tells this plugin to skip creating those entirely (`mvs_should_send_notification`) and sends its own bell row, email and push. The contract payload is never built for those four either way. `report_resolved` names no media and links nowhere a host's bell could deep-link to, so it is never declared or sent through the contract — it stays a plugin-native-only notification. That leaves **`media_reaction`** and **`media_mention`** as the types a host actually receives.
+
+**Only declared types carry a payload.** `payload()` sends a type only when it appears in `mvs_community_notification_types`, so a type another plugin adds to `mvs_notification_types` (Pro's battles, challenges, tournaments and shared documents) stays out of the host bell until it is declared with its own object mapping.
+
+**`$contract_payload` shape** (empty `array()` when not applicable):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `recipient_id` | int | Same as `$user_id`. |
+| `type` | string | Same as `$type`. |
+| `actor_id` | int | Same as `$actor_id`. |
+| `object_type` | string | `media` when `$media_id > 0`, else `''`. |
+| `object_id` | int | Same as `$media_id`. |
+| `message` | string | Plain-text `$message`, stripped of markup. |
+| `url` | string | Same as `$link`. |
+| `context` | array | `{ type: 'media', id: $media_id }` when there is a media item. |
+| `notification_id` | int | Same as `$notification_id`. |
+| `group_key` | string | `{type}_{media_id}` when there is a media item, so repeats on one item merge into one bell row. |
+| `message_grouped` | string | The same words with the actor as `{actor} and {others}` (for example "{actor} and {others} reacted to Sunset"); the host fills in the names. |
+
+Three more seams complete the contract, all registered by `CommunityNotificationContract::register()`:
+
+| Hook | Type | Args | Purpose |
+|------|------|------|---------|
+| `mvs_community_notification_types` | filter | `(array $types)` → `array` | Declares `media_reaction` and `media_mention` (`slug => {label, description, default_on}`), so a host lists one settings switch per type. |
+| `mvs_community_notification_visible` | filter | `(array $visible, int $viewer_id, array $targets)` → `array` | Per-viewer visibility for a page of bell rows, answered through the SAME `PrivacyService::can_view()` every other privacy decision in this plugin uses — never a second access rule. |
+| `mvs_community_notification_removed` | action | `(string $object_type, int $object_id)` | Fired on `mvs_media_deleted` (permanent delete only — trash/restore is a visibility question, answered by the filter above, not removal). |
 
 ---
 
@@ -1152,10 +1202,31 @@ add_filter( 'mvs_push_should_send', function( bool $should_send, int $user_id, a
 | `mvs_notification_data` | Filter notification data array before insert | `$data` (array), `$type` (string) | 1.1 |
 | `mvs_notification_types` | Filter the list of allowed notification type slugs | `$types` (array) | 1.0 |
 | `mvs_notification_message` | Override the rendered message label for a notification type. Return a non-null string to replace the default | `$label` (string\|null), `$type` (string), `$actor_name` (string), `$media_title` (string) | 1.0 |
+| `mvs_notification_link` | Where a notification points. Custom types with no media or profile (Pro competitions) supply their page here. `$object_id` is the row's `comment_id` slot | `$link` (string), `$type` (string), `$actor_id` (int), `$media_id` (int), `$object_id` (int) | 2.6 |
+| `mvs_activity_retention_days` | Days of activity feed (`mvs_activity`, the `/feed` route) kept by the daily retention job. `0` keeps everything | `$days` (int, default 90) | 2.6 |
 
 ---
 
 ## 8. Direct Messages
+
+### `mvs_messaging_enabled` **(New in 2.6.0)**
+
+Whether private messaging is on for the site. Defaults to the **Settings > Messages > Messages** switch (`mvs_messaging_enabled` option, on unless the owner turned it off). When it returns `false` the messaging engine does not boot at all: no `mvs/v1` messaging routes, no chat panel or /messages/ page, no Message buttons, no Pro group chat, and no `messaging` service in the container, which is how integrations such as BuddyNext know to hide their own Messages pages. Stored conversations are kept, and WordPress personal-data export and erase for messages stay registered.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$enabled` | bool | Whether messaging is on |
+
+```php
+/**
+ * Keep messaging off on a staging copy whatever the setting says.
+ */
+add_filter( 'mvs_messaging_enabled', function ( bool $enabled ): bool {
+    return 'staging' === wp_get_environment_type() ? false : $enabled;
+} );
+```
+
+The filter is read once per request, early in plugin boot, so hook it from a must-use plugin or your plugin's main file, not from a template.
 
 ### `mvs_can_send_message`
 
@@ -1375,6 +1446,21 @@ add_action( 'mvs_dashboard_widgets', function() {
 
 ## 10. AI & Moderation
 
+### `mvs_moderation_hide_sets_private`
+
+Whether a site whose AI action is still stored as the retired `hide` value also forces flagged media to private. Since 2.6.0 flagging only hides the item until review, and approving it restores it as the member left it. Return `true` to bring back the old behaviour; note that approving does not restore the original privacy.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$sets_private` | bool | Default `false` |
+| `$media_id` | int | Media ID |
+
+```php
+add_filter( 'mvs_moderation_hide_sets_private', '__return_true' );
+```
+
 ### `mvs_moderation_changed`
 
 Fires when a media item's moderation status changes via the REST API or admin UI.
@@ -1408,6 +1494,21 @@ add_action( 'mvs_moderation_changed', function( int $media_id, string $status, s
 ```
 
 ---
+
+### `mvs_ai_provider_fallback`
+
+Whether AI falls back to another provider that has a key when the selected provider has none. Default `false` since 2.6.0 (before, a site set to Claude or Google with no key was silently billed by OpenAI).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$fallback` | bool | Default `false` |
+| `$provider_id` | string | Selected provider id |
+
+```php
+add_filter( 'mvs_ai_provider_fallback', '__return_true' );
+```
 
 ### `mvs_should_ai_analyze` **(New in 1.1)**
 
@@ -2170,6 +2271,10 @@ add_filter( 'mvs_user_display_name', function( string $name, int $user_id ) {
 | `mvs_avatar_deleted` | action | Avatar removed | `$user_id` | 1.0 |
 | `mvs_profile_data` | filter | Filter profile data in REST response | `$data` (array), `$user_id` | 1.0 |
 | `mvs_profile_update_fields` | filter | Filter allowed profile update fields | `$fields` (array), `$user_id` | 1.0 |
+| `mvs_community_profile` | filter | Which profile fields a community plugin owns. Return `url`, `label` and `fields` (keys from `first_name`, `last_name`, `display_name`, `description`); MediaVerse hides those inputs, links to `url`, and drops them on save. BuddyPress with Extended Profiles answers for the name fields by default. Return an empty `url` to edit everything in MediaVerse. | `$profile` (array), `$user_id` (int) | 2.6.0 |
+| `mvs_profile_edit_redirect` | filter | Whether `/media/edit-profile/` redirects (302) to the dashboard profile section. Return `false` to keep the standalone editor. | `$redirect` (bool) | 2.6.0 |
+| `mvs_default_media_title` | filter | Title given to an upload the member did not title (default: readable text from the file name, e.g. "Magnific feel the beat"). Return `sanitize_file_name( pathinfo( $original_name, PATHINFO_FILENAME ) )` for the pre-2.6.0 slug-style titles. | `$title` (string), `$original_name` (string) | 2.6.0 |
+| `mvs_show_favorite_button` | filter | Show the separate Favorite (star) button in the lightbox and on the single media page, as before 2.6.0. Default `false`: Save is the one way to keep an item. | `$show` (bool) | 2.6.0 |
 | `mvs_avatar_allowed_types` | filter | Filter allowed avatar MIME types | `$types` (array), `$user_id` | 1.0 |
 | `mvs_avatar_max_size` | filter | Max avatar file size in bytes | `$bytes` (int), default `2 * MB_IN_BYTES` | 1.0 |
 
@@ -2291,13 +2396,31 @@ add_action( 'mvs_media_privacy_changed', function( int $media_id, string $new_pr
 
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
-| `mvs_access_rule_created` | action | Access rule created for a media item | `$rule_id`, `$media_id`, `$rule_type`, `$rule_value` | 1.0 |
-| `mvs_access_rule_deleted` | action | Access rule removed | `$rule_id`, `$media_id`, `$rule_type` | 1.0 |
-| `mvs_access_granted` | action | User granted access to restricted media | `$grant_id`, `$media_id`, `$user_id`, `$source` | 1.0 |
-| `mvs_access_revoked` | action | User access revoked | `$media_id`, `$user_id` | 1.0 |
 | `mvs_album_items_added` | action | Media added to an album | `$album_id`, `$actor_id`, `$media_ids`, `$added` (signature changed in 1.2.3) | 1.0 |
 
 > **Stories moved to Pro in 1.9.0.** `mvs_story_created` and `mvs_story_expired` now fire from `WPMediaVersePro\Stories\StoryService` — see [Stories (Pro)](../pro-features/stories.md). The free plugin no longer ships a `StoryService`; the upload block's "Also share as a story" toggle only renders when the `mvs_stories_enabled` option is on, which Pro sets when it registers the feature.
+
+---
+
+### Document folder trash **(Pro, New in 2.6.0)**
+
+| Hook | Type | Description | Parameters |
+|---|---|---|---|
+| `mvs_folder_trash_retention_days` | filter | Days a trashed folder is kept before it and its contents are permanently deleted. `0` keeps the trash forever | `$days` (int), default `30` |
+| `mvs_folder_before_purge` | action | Fires once before a folder, its subfolders and their documents are permanently deleted, by the automatic purge or a force delete | `$folder_id` (int), `$document_ids` (int[]) |
+| `mvs_document_folder_deleted` | action | Fires after the folder and its contents are gone | `$folder_id` (int) |
+
+```php
+// Keep trashed folders for 90 days instead of 30.
+add_filter( 'mvs_folder_trash_retention_days', fn() => 90 );
+
+// Record what a purge is about to remove.
+add_action( 'mvs_folder_before_purge', function ( int $folder_id, array $document_ids ) {
+    error_log( sprintf( 'Purging folder %d with %d documents', $folder_id, count( $document_ids ) ) );
+}, 10, 2 );
+```
+
+The purge is one scheduled job per trashed folder at its expiry (Action Scheduler, WP-Cron as a fallback), not a daily sweep.
 
 ---
 
@@ -2524,91 +2647,6 @@ add_filter( 'mvs_active_layout', function( string $slug ) {
 
 ---
 
-## 18. Quota System (Pro)
-
-### `mvs_pro_quota_source` **(Pro)** **(New in 1.1)**
-
-Filters the quota package assigned to a user. Use this to integrate a custom membership or LMS plugin.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$package` | array\|null | Package definition or `null` for the site default |
-| `$user_id` | int | User ID |
-
-**Returns:** `array|null`
-
-```php
-/**
- * Assign quota from a custom LMS based on course enrollment.
- *
- * @since 1.1
- *
- * @param array|null $package Quota package definition.
- * @param int        $user_id User ID.
- * @return array|null
- */
-add_filter( 'mvs_pro_quota_source', function( $package, int $user_id ) {
-    $course_id = my_lms_get_active_course( $user_id );
-    if ( $course_id ) {
-        return my_lms_get_quota_for_course( $course_id );
-    }
-    return $package;
-}, 10, 2 );
-```
-
----
-
-### `mvs_pro_before_quota_check` **(Pro)** **(New in 1.1)**
-
-Fires before quota enforcement runs. Return a `WP_Error` to reject the action before quota is checked.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `$args` | array | Quota check args (media_type, count) |
-| `$user_id` | int | User ID |
-
-**Returns:** `array|WP_Error`
-
-```php
-/**
- * Block uploads during a scheduled maintenance window.
- *
- * @since 1.1
- *
- * @param array $args    Quota check arguments.
- * @param int   $user_id User ID.
- * @return array|WP_Error
- */
-add_filter( 'mvs_pro_before_quota_check', function( $args, int $user_id ) {
-    if ( get_option( 'my_plugin_maintenance_mode' ) ) {
-        return new WP_Error( 'maintenance', __( 'Uploads are paused for maintenance.', 'my-plugin' ) );
-    }
-    return $args;
-}, 10, 2 );
-```
-
----
-
-### Additional Quota Hooks
-
-| Hook | Type | Description | Parameters | Since |
-|------|------|-------------|------------|-------|
-| `mvs_pro_credits_added` | action | Credits added to user quota | `$user_id`, `$media_type`, `$amount`, `$source` | 1.0 |
-| `mvs_pro_woo_package_assigned` | action | WooCommerce order assigns a quota package | `$user_id`, `$product_id`, `$package_id`, `$order_status` | 1.0 |
-| `mvs_pro_woo_package_reverted` | action | WooCommerce order cancelled, package reverted | `$user_id`, `$default`, `$order_status` | 1.0 |
-| `mvs_pro_memberpress_package_assigned` | action | MemberPress membership assigns package | `$user_id`, `$membership_id`, `$package_id` | 1.0 |
-| `mvs_pro_memberpress_package_reverted` | action | MemberPress membership expired, reverted | `$user_id`, `$default` | 1.0 |
-| `mvs_pro_pmpro_package_assigned` | action | PMPro level assigns package | `$user_id`, `$level_id`, `$package_id` | 1.0 |
-| `mvs_pro_pmpro_package_reverted` | action | PMPro level cancelled, reverted | `$user_id`, `$default` | 1.0 |
-| `mvs_quota_render_mapping_fields` | action | Admin quota page renders mapping UI | none | 1.0 |
-| `mvs_quota_save_mapping` | action | Admin saves quota mapping | none | 1.0 |
-
----
-
 ## 19. Competitions (Pro)
 
 ### Challenges
@@ -2651,6 +2689,9 @@ add_action( 'mvs_challenge_winner_named', function( int $challenge_id, int $user
 | `mvs_battle_accepted` | action | Opponent accepts battle | `$battle_id`, `$user_id` | 1.0 |
 | `mvs_battle_resolved` | action | Battle voting ends, winner determined | `$battle_id`, `$winner_id`, `$loser_id` | 1.0 |
 | `mvs_battle_cancelled` | action | Battle cancelled | `$battle_id` | 1.5.0 |
+| `mvs_battle_expired` | action | A pending or submitting battle passed its deadline and was closed without a winner | `$battle_id`, `$previous_status` (pending, accepted or active) | 2.6.0 |
+| `mvs_battle_submit_hours` | filter | Hours both sides get to submit (default 48) | `$hours` (int) | 2.6.0 |
+| `mvs_battle_vote_hours` | filter | Hours voting stays open (default 48) | `$hours` (int) | 2.6.0 |
 
 ---
 
@@ -2922,30 +2963,29 @@ add_action( 'mvs_notification_created', function( int $notification_id, int $use
 
 ---
 
-### Recipe 5: Custom quota from an LMS plugin (Pro)
+### Recipe 5: Custom storage limit from an LMS plugin
 
-Use `mvs_pro_quota_source` to assign quota packages based on LearnDash course enrollment.
+The quota-package system this recipe used to show (`mvs_pro_quota_source`) was removed in
+2.6.0. Storage is now one per-member MB allowance (`mvs_storage_limit_mb` option + user meta),
+with a single filter seam, `mvs_storage_limit_bytes`, for a site that wants the limit to come
+from somewhere else.
 
 ```php
 /**
- * Map LearnDash course enrollment to MVS quota packages.
+ * Map LearnDash course enrollment to a member's storage limit.
  *
- * @since 1.1
+ * @since 2.6.0
  *
- * @param array|null $package Current quota package or null for site default.
- * @param int        $user_id User ID.
- * @return array|null
+ * @param int $bytes   Limit in bytes (0 = no limit).
+ * @param int $user_id Member.
+ * @return int
  */
-add_filter( 'mvs_pro_quota_source', function( $package, int $user_id ) {
-    // Check if the user is enrolled in the "Pro Creator" course (ID: 123).
+add_filter( 'mvs_storage_limit_bytes', function( $bytes, int $user_id ) {
+    // A member enrolled in the "Pro Creator" course (ID: 123) gets 10 GB.
     if ( function_exists( 'sfwd_lms_has_access' ) && sfwd_lms_has_access( 123, $user_id ) ) {
-        return [
-            'photo_limit' => 500,
-            'video_limit' => 50,
-            'label'       => 'Pro Creator',
-        ];
+        return 10 * GB_IN_BYTES;
     }
-    return $package;
+    return $bytes;
 }, 10, 2 );
 ```
 
@@ -3087,7 +3127,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 |------|------|-----------|-------------|
 | `mvs_apply_exif_orientation` | filter | `true, $file_path, $mime` | Filters whether EXIF orientation is applied on upload. Escape hatch for sites that already normalise orientation upstream (some CDNs and phone-upload apps do) and would otherwise pay for the re-encode twice. Since 2.3.0. |
 | `mvs_filename_strategy_upgrade_default` | filter | `self::DEFAULT_FRESH` | Filter the default filename strategy applied when a site has not explicitly chosen one. Defaults to 'hashed' since 1.6.0. |
-| `mvs_hold_uploads_for_moderation` | filter | `false, $user_id` | Filter: hold ALL new uploads for manual moderation before they go live. Default false - members publish immediately (the engagement-first default for this community platform; the only standing limit on a member is their Pro storage/upload quota). |
+| `mvs_hold_uploads_for_moderation` | filter | `false, $user_id` | Filter: hold ALL new uploads for manual moderation before they go live. Default false - members publish immediately (the engagement-first default for this community platform; the only standing limit on a member is their optional storage allowance). |
 | `mvs_media_files_orphaned` | action | `$media_id, $orphaned_files` | Fires with every relative file path owned by a media item that is about to be torn down, so a cleanup listener can delete the bytes from disk and cloud asynchronously. |
 | `mvs_media_replaced` | action | `$media_id, $file_data, get_current_user_id(), $media_type` | Fires after a file replacement has been fully processed. Use this hook (not mvs_media_uploaded) for replace-specific reactions such as re-generating captions or a poster. |
 | `mvs_watermark_stamp_file` | filter | `false, $path, $mime, $user_id` | Stamp the admin watermark into bytes a member is publishing right now. THE RULE, stated once: stamp what the member publishes now; never re-process what is already in the library. |
@@ -3135,12 +3175,11 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_viewer_thumbnail_ttl` | filter | `HOUR_IN_SECONDS, $media_id, $viewer_id, $size` | Filter the viewer-aware thumbnail TTL (seconds). Default 1 hour; the /serve endpoint re-checks privacy per request, so this is only a cache horizon, not a credential lifetime. |
 | `mvs_viewer_url_ttl` | filter | `HOUR_IN_SECONDS, $media_id, $viewer_id` | Filter the viewer-aware full-file URL TTL (seconds). Default 1 hour; the /serve endpoint re-checks privacy per request, so this is only a cache horizon, not a credential lifetime. |
 
-### Social, moderation and access rules
+### Social and moderation
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
 | `mvs_explore_tag_cloud_limit` | filter | `20` | How many tags the Explore tag cloud requests. A community with a handful of curated tags and one with hundreds want different numbers, so this is not hardcoded. Clamped to 1-200, the range the `/tags/cloud` endpoint itself accepts. Honoured by both the Free Explore template and the Pro layout partial. Since 2.3.0. |
-| `mvs_access_rule_types_ui` | filter | `$rule_types` | Filter the access-rule types offered in the rule-builder UIs. Pro hooks here to add monetization / code-grant rule types. |
 | `mvs_ai_cost_per_call` | filter | `(float) get_option( 'mvs_ai_cost_per_call', 0.01 ), $provider_id` | Filter the estimated per-call AI cost used for budget tracking. |
 | `mvs_comment_duplicate_window` | filter | `60, $media_id, $user_id` | Filters the duplicate-comment window, in seconds. Wide enough to absorb a double-click or a retry on a slow connection, short enough that deliberately repeating yourself later still works. |
 | `mvs_feed_media_ids` | filter | `$int_ids, $request` | Filter the final list of media IDs returned by the feed query. Allows Pro to reorder results (e.g. |
@@ -3163,10 +3202,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_pro_compete_summary_cache_ttl` **(Pro)** | filter | `MINUTE_IN_SECONDS` | Compete summary cache TTL in seconds. Set to 0 to disable caching. |
 | `mvs_pro_inject_compete_nav` **(Pro)** | filter | `false ) ) { add_filter( 'wp_nav_menu_items', array( self::class, 'inject_compete_nav_link'` | See the call site. |
 | `mvs_pro_leaderboard_cache_ttl` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | Leaderboard cache TTL in seconds. Set to 0 to disable caching. |
-| `mvs_pro_quota_default_applies_to_unassigned` **(Pro)** | filter | `false, $user_id` | The default package is assigned to NEW users at registration and is NOT applied retroactively to users without an explicit assignment, so marking or changing the default never silently re-quotas existing members (the reported bug). Unassigned = unlimited: quota is a soft blocker for selling premi... |
-| `mvs_pro_quota_package_unassigned` **(Pro)** | action | `$user_id, $source` | Fires after a lapsed subscription clears a user's quota package assignment. |
-| `mvs_pro_quota_revert_to_default_on_end` **(Pro)** | filter | `false, $user_id, $source ) ) { $default = $this->get_default_package(` | Filters whether a lapsed subscription reverts the user to the default package (pre-1.6.0 behaviour) instead of clearing the assignment. |
-| `mvs_pro_quota_widget_visible` **(Pro)** | filter | `$visible, $summary` | Filters whether the quota usage widget renders for the current user. |
+| `mvs_storage_limit_bytes` | filter | `$bytes, $user_id` | Free. A member's storage limit in bytes (0 = no limit) - the one seam for sourcing the limit from somewhere else, e.g. a membership or LMS plugin. Replaces the quota-package hooks removed in 2.6.0. |
 
 ### Documents (2.4.0)
 
@@ -3198,7 +3234,6 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_document_anon_links` | filter | `$default, $media_id` | Whether anonymous share links may be minted for this document. |
 | `mvs_document_can_grant` | filter | `$default, $drive_type, $drive_id, $user_id` | Whether this member may share documents on this drive with someone else. |
 | `mvs_pro_document_extraction_enabled` **(Pro)** | filter | `$enabled` | Whether document text extraction runs. |
-| `mvs_pro_document_quota_precheck` **(Pro)** | filter | `null, $user_id, $size` | Quota verdict before a document upload is accepted. Return a `WP_Error` to refuse. |
 | `mvs_pro_zip_reader_available` **(Pro)** | filter | `true` | Whether `ext-zip` is treated as present. Exists so the download-card fallback path is testable on a machine that has the extension. |
 | `mvs_redirect_documents` | filter | `false, $media_id, $redirect_url` | Whether a document permalink may be redirected away from its own page. Default false — a document renders its own page. True restores the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for documents too. |
 | `mvs_media_feed_allows_documents` | filter | `false` | Production Rule 3 escape hatch: `__return_true` restores the pre-2.4.0 behaviour where `GET /media?media_type=document` returned document rows. |

@@ -49,7 +49,7 @@ class SuggestionService {
 			foreach ( $container->get( 'follows' )->get_following_ids( $viewer_id ) as $fid ) {
 				$exclude[ (int) $fid ] = true;
 			}
-			foreach ( $container->get( 'reports' )->get_blocked_ids( $viewer_id ) as $bid ) {
+			foreach ( $container->get( 'reports' )->get_blocked_either_way_ids( $viewer_id ) as $bid ) {
 				$exclude[ (int) $bid ] = true;
 			}
 		}

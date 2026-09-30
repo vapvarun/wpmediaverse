@@ -46,4 +46,4 @@ estimated_runtime_minutes: 4
 
 ### 5. Opt-out filter
 - **Action**: `add_filter('mvs_stable_public_urls','__return_false')` (mu-plugin), re-check step 2.
-- **Expect**: public URL reverts to a rolling `now+ttl` expiry — the escape hatch works.
+- **Expect**: public URL reverts to a rolling `now+ttl` expiry — the escape hatch works. (`ttl` is `mvs_signed_url_ttl`, default 3600; it has no settings-screen control since 2.6.0, so change it with `wp option update mvs_signed_url_ttl <seconds>` and confirm a Storage-tab save leaves it unchanged.)

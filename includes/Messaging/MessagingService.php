@@ -181,7 +181,7 @@ class MessagingService {
 		$messages = array(
 			'blocked'                => __( 'You can no longer message this member.', 'wpmediaverse' ),
 			'dms_disabled'           => __( 'This member isn’t accepting messages right now.', 'wpmediaverse' ),
-			'mutual_follow_required' => __( 'This member only accepts messages from people they are connected with.', 'wpmediaverse' ),
+			'mutual_follow_required' => __( 'This member only accepts messages from people they follow back.', 'wpmediaverse' ),
 			'connections_only'       => __( 'This member only accepts messages from their connections.', 'wpmediaverse' ),
 			'account_too_new'        => __( 'Your account is too new to message this member yet.', 'wpmediaverse' ),
 			'cannot_message_self'    => __( 'You can’t send a message to yourself.', 'wpmediaverse' ),
@@ -290,6 +290,17 @@ class MessagingService {
 	 */
 	public function find_or_create_conversation( int $user_a, int $user_b, array $args = array() ): array {
 		global $wpdb;
+
+		// Before the lookup: with one user on both sides of the self-join below,
+		// any of their direct conversations matched, so "message myself" opened
+		// a conversation with somebody else.
+		if ( $user_a === $user_b ) {
+			return array(
+				'conversation_id' => 0,
+				'created'         => false,
+				'status'          => 'cannot_message_self',
+			);
+		}
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -594,9 +605,28 @@ class MessagingService {
 	 * @return array
 	 */
 	private function enrich_conversations( array $conversations, int $user_id ): array {
+		if ( empty( $conversations ) ) {
+			return $conversations;
+		}
+
+		$conversation_ids = array_map(
+			static function ( $conv ) {
+				return (int) $conv->id;
+			},
+			$conversations
+		);
+
+		// Batched for the whole page — one IN() query for participants, one
+		// UNION query for unread counts, instead of 3 queries PER conversation
+		// (big-site checklist item 3: the inbox used to scale query count with
+		// conversation count).
+		$participants_by_conversation = $this->get_participants_for_conversations( $conversation_ids );
+		$unread_by_conversation       = $this->batch_unread_counts( $conversations, $user_id );
+
 		foreach ( $conversations as &$conv ) {
-			$conv->participants         = $this->get_participants( (int) $conv->id );
-			$conv->unread_count         = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
+			$cid                        = (int) $conv->id;
+			$conv->participants         = $participants_by_conversation[ $cid ] ?? array();
+			$conv->unread_count         = $unread_by_conversation[ $cid ] ?? 0;
 			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
 			$this->suppress_cleared_preview( $conv );
@@ -604,6 +634,125 @@ class MessagingService {
 		unset( $conv );
 
 		return $conversations;
+	}
+
+	/**
+	 * Participants for every conversation on a page, in one query.
+	 *
+	 * Replaces `get_participants()` called once per conversation. Also primes
+	 * the WP user + usermeta cache for every distinct participant in one pass
+	 * (`cache_users()`) so the per-user enrichment below (online status,
+	 * avatar, display name) hits cache instead of re-introducing the same N+1
+	 * one level down — participant count scales with conversation count for
+	 * 1:1 DMs just as directly as the conversation count itself.
+	 *
+	 * Same per-row shape as `get_participants()`; `get_participants()` itself
+	 * is untouched and still returns every participant status for a single
+	 * conversation.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $conversation_ids Conversation ids on the page.
+	 * @return array<int,array> Participants keyed by conversation_id.
+	 */
+	private function get_participants_for_conversations( array $conversation_ids ): array {
+		$conversation_ids = array_values( array_unique( array_map( 'intval', $conversation_ids ) ) );
+		if ( empty( $conversation_ids ) ) {
+			return array();
+		}
+
+		global $wpdb;
+		$part_table   = $wpdb->prefix . 'mvs_conversation_participants';
+		$placeholders = implode( ',', array_fill( 0, count( $conversation_ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT conversation_id, user_id, role, status, last_read_at FROM {$part_table} WHERE conversation_id IN ({$placeholders})",
+				$conversation_ids
+			)
+		);
+
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$user_ids = array_values( array_unique( array_map( 'intval', wp_list_pluck( $rows, 'user_id' ) ) ) );
+		cache_users( $user_ids );
+
+		$by_conversation = array();
+		foreach ( $rows as $row ) {
+			$user = get_userdata( (int) $row->user_id );
+			if ( ! $user ) {
+				continue;
+			}
+			$by_conversation[ (int) $row->conversation_id ][] = array(
+				'id'           => (int) $row->user_id,
+				'role'         => isset( $row->role ) ? (string) $row->role : 'member',
+				'display_name' => $user->display_name,
+				'avatar_url'   => get_avatar_url( $row->user_id, array( 'size' => 96 ) ),
+				'profile_url'  => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $row->user_id ),
+				'status'       => $row->status,
+				'last_read_at' => $row->last_read_at,
+				'is_online'    => $this->is_user_online( (int) $row->user_id ),
+				'last_active'  => $this->get_last_active( (int) $row->user_id ),
+			);
+		}
+
+		return $by_conversation;
+	}
+
+	/**
+	 * Unread counts for every conversation on a page, in one query.
+	 *
+	 * Each conversation has its own `last_read_at` / `cleared_up_to`
+	 * threshold (already present on the joined row from `get_conversations()`
+	 * / `get_conversation()`), so this is a bounded UNION ALL of one
+	 * per-conversation subquery rather than a single GROUP BY — still exactly
+	 * ONE round trip regardless of page size, replacing the 2 queries
+	 * `get_conversation_unread_count()` ran per conversation.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param object[] $conversations Conversation rows carrying last_read_at + cleared_up_to.
+	 * @param int      $user_id       Viewer.
+	 * @return array<int,int> Unread counts keyed by conversation_id.
+	 */
+	private function batch_unread_counts( array $conversations, int $user_id ): array {
+		if ( empty( $conversations ) ) {
+			return array();
+		}
+
+		global $wpdb;
+		$msg_table = $wpdb->prefix . 'mvs_messages';
+
+		$selects = array();
+		$params  = array();
+		foreach ( $conversations as $conv ) {
+			$conversation_id = (int) $conv->id;
+			$cleared_up_to   = (int) ( $conv->cleared_up_to ?? 0 );
+			$last_read       = (string) ( $conv->last_read_at ?? '' );
+
+			if ( '' === $last_read ) {
+				$selects[] = 'SELECT %d AS conversation_id, COUNT(*) AS cnt FROM ' . $msg_table
+					. ' WHERE conversation_id = %d AND sender_id != %d AND deleted_for_all = 0 AND id > %d';
+				$params    = array_merge( $params, array( $conversation_id, $conversation_id, $user_id, $cleared_up_to ) );
+			} else {
+				$selects[] = 'SELECT %d AS conversation_id, COUNT(*) AS cnt FROM ' . $msg_table
+					. ' WHERE conversation_id = %d AND sender_id != %d AND created_at > %s AND deleted_for_all = 0 AND id > %d';
+				$params    = array_merge( $params, array( $conversation_id, $conversation_id, $user_id, $last_read, $cleared_up_to ) );
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( implode( ' UNION ALL ', $selects ), $params ), ARRAY_A );
+
+		$counts = array();
+		foreach ( (array) $rows as $row ) {
+			$counts[ (int) $row['conversation_id'] ] = (int) $row['cnt'];
+		}
+
+		return $counts;
 	}
 
 	/**
@@ -1546,19 +1695,27 @@ class MessagingService {
 		// 'request_pending' is intentionally left untouched so the message-request
 		// gate still holds; the sender was already verified active/request_pending
 		// above, so this only reactivates recipients.
-		$wpdb->update(
-			$part_table,
-			array(
-				'status'      => 'active',
-				'is_archived' => 0,
-			),
-			array(
-				'conversation_id' => $conversation_id,
-				'status'          => 'left',
-			),
-			array( '%s', '%d' ),
-			array( '%d', '%s' )
-		);
+		//
+		// Group conversations are excluded: leaving a group is a deliberate
+		// membership choice (MessagingService::leave_conversation()), and the
+		// next message from any other member must not silently re-add someone
+		// who left. 'removed' is untouched by this query already (only 'left'
+		// rows match), so a removed member is never reactivated either way.
+		if ( 'group' !== $participant->type ) {
+			$wpdb->update(
+				$part_table,
+				array(
+					'status'      => 'active',
+					'is_archived' => 0,
+				),
+				array(
+					'conversation_id' => $conversation_id,
+					'status'          => 'left',
+				),
+				array( '%s', '%d' ),
+				array( '%d', '%s' )
+			);
+		}
 
 		// A new message also un-archives the thread for participants who had
 		// archived it. Archiving means "done with this for now", not "never
@@ -1865,6 +2022,14 @@ class MessagingService {
 
 		// phpcs:enable
 
+		// Batched for the whole page — one query for every message's
+		// reactions, one user-cache prime for every distinct sender, instead
+		// of a reactions query PER message and a fresh user lookup per sender
+		// (big-site checklist item 3: threads scaled query count with
+		// message count).
+		$reactions_by_message = $this->get_reactions_for_messages( wp_list_pluck( $messages, 'id' ) );
+		cache_users( array_values( array_unique( array_map( 'intval', wp_list_pluck( $messages, 'sender_id' ) ) ) ) );
+
 		// Enrich messages.
 		foreach ( $messages as &$msg ) {
 			// Hide content for deleted messages (unsent for everyone, or
@@ -1886,7 +2051,7 @@ class MessagingService {
 			$msg->created_at_gmt = self::to_iso8601( (string) $msg->created_at );
 
 			// Get reactions.
-			$msg->reactions = $this->get_message_reactions( (int) $msg->id );
+			$msg->reactions = $reactions_by_message[ (int) $msg->id ] ?? array();
 
 			// Get parent message preview for reply-to.
 			if ( $msg->parent_id ) {
@@ -1939,21 +2104,25 @@ class MessagingService {
 		}
 
 		if ( $msg->deleted_for_all ) {
+			// Same keys as a live preview: without sender_id, reporting an unsent
+			// message warned and skipped the "your own message" check.
 			return array(
-				'id'      => (int) $msg->id,
-				'content' => 'This message was deleted',
-				'sender'  => '',
-				'type'    => 'text',
+				'id'        => (int) $msg->id,
+				'content'   => 'This message was deleted',
+				'sender'    => '',
+				'sender_id' => (int) $msg->sender_id,
+				'type'      => 'text',
 			);
 		}
 
 		$sender = get_userdata( (int) $msg->sender_id );
 
 		return array(
-			'id'      => (int) $msg->id,
-			'content' => mb_substr( wp_strip_all_tags( $msg->content ), 0, 100 ),
-			'sender'  => $sender ? $sender->display_name : '',
-			'type'    => $msg->message_type,
+			'id'        => (int) $msg->id,
+			'content'   => mb_substr( wp_strip_all_tags( $msg->content ), 0, 100 ),
+			'sender'    => $sender ? $sender->display_name : '',
+			'sender_id' => (int) $msg->sender_id,
+			'type'      => $msg->message_type,
 		);
 	}
 
@@ -1993,9 +2162,10 @@ class MessagingService {
 		// group-conversation work (tracked separately) - until then a recipient
 		// gets a clear 403 rather than a confusing 400.
 		if ( (int) $row->sender_id !== $user_id ) {
+			// Outside the conversation the message does not exist, or ids are probeable.
 			return array(
 				'success' => false,
-				'error'   => 'not_sender',
+				'error'   => '' === $this->get_participant_role( (int) $row->conversation_id, $user_id ) ? 'not_found' : 'not_sender',
 			);
 		}
 
@@ -2194,9 +2364,10 @@ class MessagingService {
 		}
 
 		if ( (int) $msg->sender_id !== $user_id ) {
+			// Outside the conversation the message does not exist, or ids are probeable.
 			return array(
 				'success' => false,
-				'error'   => 'not_sender',
+				'error'   => '' === $this->get_participant_role( (int) $msg->conversation_id, $user_id ) ? 'not_found' : 'not_sender',
 			);
 		}
 
@@ -2547,6 +2718,51 @@ class MessagingService {
 		}
 
 		return $reactions;
+	}
+
+	/**
+	 * Reactions for every message on a page, in one query.
+	 *
+	 * Replaces `get_message_reactions()` called once per message. Same
+	 * per-emoji shape, grouped by message_id.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int[] $message_ids Message ids on the page.
+	 * @return array<int,array> Reactions keyed by message_id.
+	 */
+	private function get_reactions_for_messages( array $message_ids ): array {
+		$message_ids = array_values( array_unique( array_map( 'intval', $message_ids ) ) );
+		if ( empty( $message_ids ) ) {
+			return array();
+		}
+
+		global $wpdb;
+		$react_table  = $wpdb->prefix . 'mvs_message_reactions';
+		$placeholders = implode( ',', array_fill( 0, count( $message_ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT message_id, emoji, GROUP_CONCAT(user_id) as user_ids, COUNT(*) as count, MAX(created_at) as reacted_at
+				FROM {$react_table}
+				WHERE message_id IN ({$placeholders})
+				GROUP BY message_id, emoji",
+				$message_ids
+			)
+		);
+
+		$by_message = array();
+		foreach ( (array) $rows as $row ) {
+			$by_message[ (int) $row->message_id ][] = array(
+				'emoji'      => $row->emoji,
+				'count'      => (int) $row->count,
+				'user_ids'   => array_map( 'intval', explode( ',', $row->user_ids ) ),
+				'reacted_at' => (string) $row->reacted_at,
+			);
+		}
+
+		return $by_message;
 	}
 
 	// -------------------------------------------------------------------------

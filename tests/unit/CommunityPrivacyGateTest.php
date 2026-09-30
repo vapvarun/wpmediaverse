@@ -275,6 +275,23 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Basecamp 10350211493 — the SAME bootstrap exemption, one step later in
+	 * the same flow: `/app/config` tells the app password login is available,
+	 * but a Members Only community still 401'd the very next call that
+	 * exchanges a password for the Application Password the app needs to do
+	 * anything else. `/app/config` readable + `/auth/app-password` gated was
+	 * a dead end, not a smaller hole.
+	 */
+	public function test_app_password_route_is_exempt_so_password_login_can_complete(): void {
+		add_filter( 'mvs_rest_require_auth', '__return_true' );
+		wp_set_current_user( 0 );
+
+		$result = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'POST', '/mvs/v1/auth/app-password' ) );
+
+		$this->assertNull( $result, 'A private community must still let a member exchange a password for an Application Password.' );
+	}
+
+	/**
 	 * Everything else on the namespace is still gated.
 	 *
 	 * The exemption must be a hole exactly one route wide.

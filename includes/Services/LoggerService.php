@@ -23,61 +23,77 @@ class LoggerService {
 
 	/**
 	 * Register action hooks for automatic logging of key operations.
+	 *
+	 * Social events (reactions, comments, favorites) are gated behind
+	 * `mvs_log_social_events` (default false, since 2.6.0): on an active
+	 * community these fire on nearly every page view and drove `mvs_error_log`
+	 * growth far faster than errors/warnings ever would, at `info` level
+	 * nobody reads. Errors and warnings (moderation, upload) are unaffected.
 	 */
 	public static function register_hooks(): void {
-		// Reaction added.
-		add_action(
-			'mvs_reaction_added',
-			function ( int $media_id, int $user_id, string $type ): void {
-				self::info(
-					'social',
-					sprintf( 'Reaction added: %s on media #%d', $type, $media_id ),
-					array(
-						'media_id' => $media_id,
-						'user_id'  => $user_id,
-						'type'     => $type,
-					)
-				);
-			},
-			10,
-			3
-		);
+		/**
+		 * Whether social interactions (reactions, comments, favorites) are
+		 * written to the log at `info` level.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param bool $log_social_events Default false.
+		 */
+		if ( apply_filters( 'mvs_log_social_events', false ) ) {
+			// Reaction added.
+			add_action(
+				'mvs_reaction_added',
+				function ( int $media_id, int $user_id, string $type ): void {
+					self::info(
+						'social',
+						sprintf( 'Reaction added: %s on media #%d', $type, $media_id ),
+						array(
+							'media_id' => $media_id,
+							'user_id'  => $user_id,
+							'type'     => $type,
+						)
+					);
+				},
+				10,
+				3
+			);
 
-		// Comment created.
-		add_action(
-			'mvs_comment_created',
-			function ( int $media_id, int $user_id, int $comment_id ): void {
-				self::info(
-					'social',
-					sprintf( 'Comment #%d on media #%d', $comment_id, $media_id ),
-					array(
-						'comment_id' => $comment_id,
-						'media_id'   => $media_id,
-						'user_id'    => $user_id,
-					)
-				);
-			},
-			10,
-			3
-		);
+			// Comment created.
+			add_action(
+				'mvs_comment_created',
+				function ( int $media_id, int $user_id, int $comment_id ): void {
+					self::info(
+						'social',
+						sprintf( 'Comment #%d on media #%d', $comment_id, $media_id ),
+						array(
+							'comment_id' => $comment_id,
+							'media_id'   => $media_id,
+							'user_id'    => $user_id,
+						)
+					);
+				},
+				10,
+				3
+			);
 
-		// Favorite toggled.
-		add_action(
-			'mvs_favorite_toggled',
-			function ( int $media_id, int $user_id, string $action ): void {
-				self::info(
-					'social',
-					sprintf( 'Media #%d %s by user #%d', $media_id, $action, $user_id ),
-					array(
-						'media_id' => $media_id,
-						'user_id'  => $user_id,
-						'action'   => $action,
-					)
-				);
-			},
-			10,
-			3
-		);
+			// Favorite toggled.
+			add_action(
+				'mvs_favorite_toggled',
+				function ( int $media_id, int $user_id, string $action ): void {
+					self::info(
+						'social',
+						sprintf( 'Media #%d %s by user #%d', $media_id, $action, $user_id ),
+						array(
+							'media_id' => $media_id,
+							'user_id'  => $user_id,
+							'action'   => $action,
+						)
+					);
+				},
+				10,
+				3
+			);
+		}
 
 		// Media upload success.
 		add_action(
@@ -309,6 +325,11 @@ class LoggerService {
 
 	/**
 	 * Prune old log entries (>30 days).
+	 *
+	 * Batched like `ViewRetentionService::purge_table()`: one unbounded
+	 * `DELETE` locks the table for the full duration of the sweep, which on
+	 * a busy site with a large backlog (retention just tightened, or a cron
+	 * miss) blocks every `LoggerService::log()` insert until it finishes.
 	 */
 	public static function prune(): void {
 		global $wpdb;
@@ -316,12 +337,20 @@ class LoggerService {
 		$table  = $wpdb->prefix . 'mvs_error_log';
 		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( self::PRUNE_DAYS * DAY_IN_SECONDS ) );
 
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"DELETE FROM {$table} WHERE created_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$cutoff
-			)
+		$sql = $wpdb->prepare(
+			"DELETE FROM {$table} WHERE created_at < %s LIMIT 5000", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$cutoff
 		);
+
+		// Loop in 5k batches up to a safety cap so a large backlog drains
+		// over multiple runs instead of holding the table for one long DELETE.
+		for ( $i = 0; $i < 20; $i++ ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared -- $sql is built by $wpdb->prepare() above.
+			$rows = (int) $wpdb->query( $sql );
+			if ( $rows <= 0 ) {
+				break;
+			}
+		}
 	}
 
 	/**

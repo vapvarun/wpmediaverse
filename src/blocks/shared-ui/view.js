@@ -214,10 +214,16 @@ function mapLightboxComment( c ) {
 		content: c.content,
 		canEdit: !! ( isOwn && age < editWindow ),
 		canDelete: !! ( isOwn || canModerate ),
+		canReport: !! ( state.reportsEnabled && state.currentUserId && ! isOwn ),
+		reported: false,
 		editing: false,
 		editText: '',
 	};
 }
+
+// Set by lightboxPrev when it steps back into the previous grid tile, so a
+// gallery entered backwards opens on its last photo.
+let enterGroupAtEnd = false;
 
 const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
@@ -245,9 +251,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		tagQuery: '',
 		tagResults: [],
 		tagVisible: false,
-
-		// --- FAB menu (only when the member also has a Documents drive) ---
-		fabMenuOpen: false,
 
 		// --- Upload Modal (flat) ---
 		uploadModalVisible: false,
@@ -298,6 +301,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		privacyLabelFor( stored ) {
 			return ( state.i18n?.privacyLabels || {} )[ stored ] || stored;
 		},
+		// Short word in running text: "Members", not "Members: logged-in users
+		// only" - the same rule as TemplateHelpers::privacy_short_label().
+		privacyShortLabel( stored ) {
+			return String( state.privacyLabelFor( stored ) ).split( ':' )[ 0 ].trim();
+		},
 		get hideUploadMetaFields() {
 			return state.uploadModalUploading;
 		},
@@ -308,6 +316,39 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// "Create new album" chosen in the "Add to album" select (value -1).
 			return state.uploadModalAlbum === -1;
 		},
+		/*
+		 * A photo in an album shows with the album's privacy (2.6.0, Basecamp
+		 * 10264373450), so a privacy picker next to an album would offer a
+		 * choice that is ignored. Where an album decides, the picker becomes a
+		 * plain sentence saying which album and what that means.
+		 */
+		get uploadAlbumChosen() {
+			const id = state.uploadModalAlbum;
+			return id > 0 ? ( state.userAlbums || [] ).find( ( a ) => a.id === id ) || null : null;
+		},
+		get uploadPrivacyFollowsAlbum() {
+			return !! state.uploadAlbumChosen;
+		},
+		get uploadPrivacyFollowsText() {
+			const album = state.uploadAlbumChosen;
+			return album ? state.followsAlbumText( album ) : '';
+		},
+		get editPrivacyFollowsAlbum() {
+			return !! state.editModalAlbum;
+		},
+		get editPrivacyFollowsText() {
+			const album = state.editModalAlbum;
+			return album
+				? ( state.i18n?.editFollowsAlbum || 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.' )
+					.replace( '%1$s', album.title || '' )
+					.replace( '%2$s', state.privacyShortLabel( album.privacy || 'public' ) )
+				: '';
+		},
+		followsAlbumText( album ) {
+			return ( state.i18n?.followsAlbum || 'Follows album "%1$s" (%2$s)' )
+				.replace( '%1$s', album.title || '' )
+				.replace( '%2$s', state.privacyShortLabel( album.privacy || 'public' ) );
+		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
 			// while title empty".
@@ -316,7 +357,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get uploadModalHeading() {
 			const titles = {
-				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
+				// The + button's default mode accepts every type (auto-detect).
+				photo: ( state.i18n?.uploadMedia || 'Upload media' ),
 				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
 				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
 				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
@@ -392,6 +434,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalTitle: '',
 		editModalDescription: '',
 		editModalPrivacy: 'public',
+		editModalAlbum: null, // { id, title, privacy } when the photo is in an album
 		editModalAllowDownload: true,
 		// Off by default — title edits leave the URL slug alone. The user
 		// can opt in via the "Update URL slug from title" checkbox; the
@@ -528,6 +571,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 			return d.thumbnail_url || '';
 		},
+		// Audio: cover art (embedded ID3 art becomes the thumbnail variants) and
+		// no fullscreen, since there is nothing to enlarge.
+		get lightboxAudioCoverUrl() {
+			const d = state.lightboxMediaData;
+			return d?.media_type === 'audio' ? ( d.large_url || d.thumbnail_url || '' ) : '';
+		},
+		get lightboxHideFullscreen() {
+			return state.lightboxMediaData?.media_type === 'audio';
+		},
+		get lightboxFullscreenActive() {
+			return state.lightboxFullscreen && ! state.lightboxHideFullscreen;
+		},
 		get lightboxFileType() {
 			return state.lightboxMediaData?.file_type || '';
 		},
@@ -583,7 +638,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxFavoriteLabel() {
 			// Icon is rendered separately via Lucide (data-lucide="star"); label is plain text.
-			return state.lightboxIsFavorited ? 'Favorited' : 'Favorite';
+			return state.lightboxIsFavorited ? ( state.i18n?.favorited || 'Favorited' ) : ( state.i18n?.favorite || 'Favorite' );
+		},
+		get lightboxSaveLabel() {
+			return state.lightboxIsFavorited ? ( state.i18n?.saved || 'Saved' ) : ( state.i18n?.save || 'Save' );
 		},
 		get lightboxHasComments() {
 			return state.lightboxComments.length > 0;
@@ -594,7 +652,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// Per-comment action visibility (in the data-wp-each loop, item = comment).
 		get hideLightboxCommentActions() {
 			const item = getContext().item;
-			return ( ! item?.canEdit && ! item?.canDelete ) || item?.editing;
+			return ( ! item?.canEdit && ! item?.canDelete && ! item?.canReport ) || item?.editing;
+		},
+		get hideLightboxReportComment() {
+			const item = getContext().item;
+			return ! item?.canReport || item?.reported || item?.editing;
 		},
 		get hideLightboxEditComment() {
 			const item = getContext().item;
@@ -641,13 +703,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return ( state.lightboxCurrentIndex + 1 ) + ' / ' + state.lightboxGroupItems.length;
 		},
 		get lightboxHasPrev() {
-			if ( state.lightboxGroupItems.length > 1 ) return true;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
 			const idx = gridIds.indexOf( state.lightboxMediaId );
 			return idx > 0;
 		},
 		get lightboxHasNext() {
-			if ( state.lightboxGroupItems.length > 1 ) return true;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
 			const idx = gridIds.indexOf( state.lightboxMediaId );
 			return idx >= 0 && idx < gridIds.length - 1;
@@ -682,6 +744,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.confirmCallback = callback;
 			state.confirmButtonLabel = buttonLabel;
 			state.confirmVisible = true;
+			// The confirm button is the dangerous one, so Cancel takes focus:
+			// an Enter pressed without reading never destroys or exposes anything.
+			window.requestAnimationFrame( () => {
+				document.querySelector( '.mvs-confirm-overlay:not([hidden]) .mvs-confirm-cancel' )?.focus();
+			} );
 		},
 		handleConfirmYes() {
 			const cb = state.confirmCallback;
@@ -694,6 +761,51 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		handleConfirmCancel() {
 			state.confirmVisible = false;
 			state.confirmCallback = null;
+		},
+
+		// --- Report ---
+		// One report flow for everything a member can report (media, comments,
+		// messages): the confirm dialog with a reason picker, then POST to the
+		// target's /report route. Reasons come from the server (ReportService).
+		// Resolves true when the report was filed.
+		promptReport( url ) {
+			return new Promise( ( resolve ) => {
+				const select = document.createElement( 'select' );
+				select.className = 'mvs-report-reason-select';
+				select.setAttribute( 'aria-label', state.i18n?.reportPrompt || 'Why are you reporting this?' );
+				( state.reportReasons || [] ).forEach( ( r ) => {
+					const opt = document.createElement( 'option' );
+					opt.value = r.value;
+					opt.textContent = r.label;
+					select.appendChild( opt );
+				} );
+
+				actions.showConfirm(
+					state.i18n?.reportPrompt || 'Why are you reporting this?',
+					async () => {
+						const res = await window.mvsRest.restFetch( url, {
+							method: 'POST',
+							body: { reason: select.value || 'other' },
+						} );
+						if ( res.ok ) {
+							actions.showToast( state.i18n?.reportSubmitted || 'Report submitted. Thank you.', 'success' );
+						} else {
+							actions.showToast( res.data?.message || state.i18n?.reportAlready || 'Already reported or error occurred.', 'error' );
+						}
+						resolve( !! res.ok );
+					},
+					state.i18n?.reportAction || 'Report'
+				);
+
+				// The dialog renders on the next frame; put the picker under its message.
+				requestAnimationFrame( () => {
+					const container = document.querySelector( '.mvs-confirm' );
+					if ( container ) {
+						container.querySelectorAll( '.mvs-report-reason-select' ).forEach( ( el ) => el.remove() );
+						container.querySelector( 'p' )?.after( select );
+					}
+				} );
+			} );
 		},
 
 		// --- Tag Autocomplete ---
@@ -733,24 +845,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.tagResults = [];
 		},
 
-		// --- FAB menu ---
+		// --- FAB ---
+		// 2.6.0 dropped the Media / Documents menu: one tap uploads. Kept for a
+		// theme copy of shared-ui-frame.php that still binds the old toggle.
 		toggleFabMenu() {
-			state.fabMenuOpen = ! state.fabMenuOpen;
-		},
-		fabUploadMedia() {
-			state.fabMenuOpen = false;
-			// Sibling actions are called through the captured `actions` proxy, not
-			// `this` — inside an Interactivity action `this` does not resolve the
-			// store's actions, so `this.openUploadModal()` was a silent no-op and
-			// the FAB menu's "Upload media" did nothing (Basecamp 10240363216).
 			actions.openUploadModal();
-		},
-		closeFabMenuOnOutside( event ) {
-			// data-wp-on-document--click fires for every click, including the FAB
-			// toggle itself — only close when the click landed OUTSIDE the FAB.
-			if ( state.fabMenuOpen && event.target && ! event.target.closest( '.mvs-fab-container' ) ) {
-				state.fabMenuOpen = false;
-			}
 		},
 
 		// --- Upload Modal ---
@@ -847,6 +946,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalTitle = data.title || '';
 				state.editModalDescription = data.description || '';
 				state.editModalPrivacy = data.privacy || 'public';
+				state.editModalAlbum = data.album || null;
 				state.editModalAllowDownload = data.allow_download !== false;
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
@@ -859,6 +959,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalTitle = '';
 			state.editModalDescription = '';
 			state.editModalPrivacy = 'public';
+			state.editModalAlbum = null;
 			state.editModalAllowDownload = true;
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
@@ -1144,7 +1245,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const rows = Array.isArray( res.data ) ? res.data : [];
 				state.userAlbums = rows
 					.filter( ( a ) => a && ( a.can_edit || a.is_owner ) )
-					.map( ( a ) => ( { id: a.id, title: a.title || 'Untitled' } ) );
+					.map( ( a ) => ( { id: a.id, title: a.title || 'Untitled', privacy: a.privacy || 'public' } ) );
 			} catch {
 				state.userAlbums = [];
 			}
@@ -1438,15 +1539,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' );
 					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
+						const start = enterGroupAtEnd ? groupData.length - 1 : 0;
 						state.lightboxGroupItems = groupData;
-						state.lightboxCurrentIndex = 0;
-						state.lightboxMediaData = groupData[ 0 ];
+						state.lightboxCurrentIndex = start;
+						state.lightboxMediaData = groupData[ start ];
 						loadLightboxMedia();
 					}
 				}
+				enterGroupAtEnd = false;
 
 				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
 			} catch {
+				enterGroupAtEnd = false;
 				state.lightboxLoading = false;
 				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
@@ -1519,6 +1623,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const ctx = getContext();
 			const type = event.target.closest( '[data-reaction]' )?.dataset.reaction;
 			if ( ! type || ! state.lightboxMediaId ) return;
+			if ( ! state.currentUserId ) {
+				actions.showToast( state.i18n?.loginToReact || 'Please log in to react.', 'error' );
+				return;
+			}
 			const isActive = state.lightboxUserReaction === type;
 			try {
 				await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/reactions', {
@@ -1692,6 +1800,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} );
 		},
 
+		async reportLightboxComment() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return;
+			if ( await actions.promptReport( ctx.restUrl + 'comments/' + item.id + '/report' ) ) {
+				item.reported = true;
+			}
+		},
+
 		/**
 		 * Open the edit modal for the item currently shown in the lightbox.
 		 *
@@ -1821,10 +1938,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				// Stat increment failure is non-blocking — the download still happened.
 			}
 		},
+		// A gallery steps through its photos, then its edges hand over to the
+		// neighbouring grid tile. It used to wrap, so Next cycled one gallery
+		// forever once prev/next were always visible (QA, 2.6.0).
 		lightboxPrev() {
-			if ( state.lightboxGroupItems.length > 1 ) {
-				let idx = state.lightboxCurrentIndex - 1;
-				if ( idx < 0 ) idx = state.lightboxGroupItems.length - 1;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) {
+				const idx = state.lightboxCurrentIndex - 1;
 				state.lightboxCurrentIndex = idx;
 				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
 				return;
@@ -1832,13 +1951,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const gridIds = window.mvsGridRegistry || [];
 			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
 			if ( currentIdx > 0 ) {
+				enterGroupAtEnd = true; // Going back into a gallery starts at its last photo.
 				actions.openLightboxById( gridIds[ currentIdx - 1 ] );
 			}
 		},
 		lightboxNext() {
-			if ( state.lightboxGroupItems.length > 1 ) {
-				let idx = state.lightboxCurrentIndex + 1;
-				if ( idx >= state.lightboxGroupItems.length ) idx = 0;
+			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) {
+				const idx = state.lightboxCurrentIndex + 1;
 				state.lightboxCurrentIndex = idx;
 				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
 				return;
@@ -1906,8 +2025,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} else {
 						actions.closeLightbox();
 					}
-				} else if ( state.fabMenuOpen ) {
-					state.fabMenuOpen = false;
 				}
 			} else if ( state.lightboxVisible ) {
 				// Not while the member is typing. This handler is bound with
@@ -1929,7 +2046,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.lightboxPrev();
 				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {
 					actions.lightboxNext();
-				} else if ( event.key === 'f' || event.key === 'F' ) {
+				} else if ( ( event.key === 'f' || event.key === 'F' ) && ! state.lightboxHideFullscreen ) {
 					state.lightboxFullscreen = ! state.lightboxFullscreen;
 				}
 			}
@@ -2163,3 +2280,38 @@ window.mvsOpenEditModal = function ( mediaId ) {
 window.mvsSharedUI = {
 	showToast: ( message, type ) => actions.showToast( message, type ),
 };
+
+// Swipe between items on touch. One listener for every lightbox: it clicks
+// the visible prev/next button, so the Interactivity lightbox and the BP
+// clone (whose buttons have their own delegated handlers) move the same way.
+// ponytail: a swipe that starts on a <video>/<audio> is left to the player's
+// scrubber; add a dedicated swipe zone if members ask for it there too.
+( () => {
+	let startX = 0;
+	let startY = 0;
+	let stage = null;
+
+	document.addEventListener( 'touchstart', ( event ) => {
+		stage = null;
+		if ( event.touches.length !== 1 ) return;
+		const target = event.target instanceof Element ? event.target : null;
+		const media = target?.closest( '.mvs-lightbox-media' );
+		if ( ! media || target.closest( 'video, audio' ) ) return;
+		stage = media;
+		startX = event.touches[ 0 ].clientX;
+		startY = event.touches[ 0 ].clientY;
+	}, { passive: true } );
+
+	document.addEventListener( 'touchend', ( event ) => {
+		if ( ! stage || ! event.changedTouches.length ) return;
+		const dx = event.changedTouches[ 0 ].clientX - startX;
+		const dy = event.changedTouches[ 0 ].clientY - startY;
+		const media = stage;
+		stage = null;
+		if ( Math.abs( dx ) < 50 || Math.abs( dx ) <= Math.abs( dy ) ) return;
+		// Swiping left shows the next item; mirrored in right-to-left layouts.
+		const rtl = 'rtl' === document.documentElement.dir;
+		const next = ( dx < 0 ) !== rtl;
+		media.querySelector( next ? '.mvs-lightbox-nav--next:not([hidden])' : '.mvs-lightbox-nav--prev:not([hidden])' )?.click();
+	}, { passive: true } );
+} )();

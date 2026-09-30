@@ -111,13 +111,13 @@
 	 *   #8a6100  white 5.54 · as a fill under white text 5.54
 	 */
 	/*
-	 * The admin density floor. `--mvs-touch-min` is 44px in frontend.css and was
-	 * simply never defined here — which is why every admin control sits at
-	 * 28-32px (Basecamp 10252222115). 34px is the density exception the design
-	 * system allows for compact admin rows, not the 40px member contract:
-	 * pointer targets, not thumbs.
+	 * The admin density floor, under its own name. `--mvs-touch-min` is the 44px
+	 * member contract in frontend.css; redefining it here at 34px gave one token
+	 * two meanings, so a call site could not say which floor it got (Basecamp
+	 * 10350403166). 34px is the density exception the design system allows for
+	 * compact admin rows (Basecamp 10252222115): pointer targets, not thumbs.
 	 */
-	--mvs-touch-min: 34px;
+	--mvs-admin-touch-min: 34px;
 	--mvs-success-strong: #00761f;
 	--mvs-warning-strong: #8a6100;
 	--mvs-danger:        #d63638;
@@ -580,7 +580,7 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text-muted);
 }
 
-.mvs-empty-state [data-lucide] {
+.wpmediaverse-admin .mvs-empty-state [data-lucide] {
 	width: 48px;
 	height: 48px;
 	stroke-width: 1;
@@ -844,8 +844,8 @@ a.mvs-stat-card:focus {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: var(--mvs-touch-min);
-	min-height: var(--mvs-touch-min);
+	min-width: var(--mvs-admin-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 	color: var(--mvs-text-muted);
 	position: absolute;
 	top: 12px;
@@ -1175,54 +1175,11 @@ a.mvs-stat-card:focus {
 	   Measured 64x18 (Basecamp 10252222115). */
 	display: inline-flex;
 	align-items: center;
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 }
 
 .mvs-setup-skip:hover {
 	color: var(--mvs-accent);
-}
-
-.mvs-setup-pages-list {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	margin-bottom: 16px;
-}
-
-.mvs-setup-page-card {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 12px 16px;
-	border: 1px solid var(--mvs-border-light);
-	border-radius: var(--mvs-radius-md);
-	background: var(--mvs-surface-2);
-}
-
-.mvs-setup-page-card [data-lucide] {
-	color: var(--mvs-accent);
-	width: 24px;
-	height: 24px;
-	stroke-width: 1.5;
-}
-
-.mvs-setup-page-info {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.mvs-setup-page-info span {
-	font-size: 12px;
-	color: var(--mvs-text-muted);
-}
-
-.mvs-setup-page-info code {
-	font-size: 12px;
-	background: var(--mvs-bg);
-	padding: 1px 4px;
-	border-radius: 2px;
 }
 
 .mvs-setup-role-list {
@@ -1298,9 +1255,11 @@ a.mvs-stat-card:focus {
 }
 
 /* Hide WP's auto-generated duplicate "Settings saved" notices on our settings page.
-   We render a single notice below the Save button instead. */
-.wpmediaverse-admin > .wrap > .notice,
-.wpmediaverse-admin .mvs-settings-page-header .notice {
+   We render a single notice below the Save button instead. MediaVerse's own
+   notices (.mvs-notice) stay visible: this also hid the Pro "needs WB
+   Gamification" notice, which WordPress moves into the header. */
+.wpmediaverse-admin > .wrap > .notice:not(.mvs-notice),
+.wpmediaverse-admin .mvs-settings-page-header .notice:not(.mvs-notice) {
 	display: none;
 }
 
@@ -1737,7 +1696,7 @@ a.mvs-stat-card:focus {
 .mvs-media-badge--pending { background: var(--mvs-warn); }
 .mvs-media-badge--trash { background: var(--mvs-danger); }
 
-/* Semantic variants used by the optimization column and detail page. */
+/* Semantic variants used by the media Details view and the AI column. */
 .mvs-media-badge--success { background: var(--mvs-success-strong); }
 .mvs-media-badge--danger { background: var(--mvs-danger); }
 .mvs-media-badge--neutral { background: var(--mvs-text-secondary); }
@@ -1750,16 +1709,8 @@ a.mvs-stat-card:focus {
 	width: 2.2em;
 }
 
-.mvs-col-id {
-	width: 60px;
-}
-
 .mvs-col-thumb {
 	width: 60px;
-}
-
-.mvs-col-optimization {
-	width: 130px;
 }
 
 /* The Title column claims its share by width, not by pinning the others.
@@ -1770,10 +1721,6 @@ a.mvs-stat-card:focus {
    Keyed on the column's own class, it survives a column being added. */
 .mvs-admin-widget .wp-list-table .column-primary {
 	width: 26%;
-}
-
-.mvs-admin-widget .wp-list-table td.mvs-col-id {
-	color: var(--mvs-text-secondary);
 }
 
 .mvs-thumb {
@@ -1903,13 +1850,20 @@ a.mvs-stat-card:focus {
 	text-align: center;
 }
 
+/* WP 7.1 makes list-table rows flex at <=782px; an empty-state cell has to
+   fill its row or the centred panel shrinks to its content and sits
+   off-centre (Basecamp 10350404627). */
+.wpmediaverse-admin .wp-list-table tr.no-items > td {
+	flex: 1 1 100%;
+}
+
 .mvs-empty-state-admin {
 	text-align: center;
 	padding: 40px 20px;
 	color: var(--mvs-text-secondary);
 }
 
-.mvs-empty-state-admin [data-lucide] {
+.wpmediaverse-admin .mvs-empty-state-admin [data-lucide] {
 	width: 48px;
 	height: 48px;
 	stroke-width: 1;
@@ -1937,8 +1891,6 @@ a.mvs-stat-card:focus {
 .mvs-form-inline { display: inline; }
 .mvs-text-muted { color: var(--mvs-text-muted); }
 .mvs-text-secondary { color: var(--mvs-text-secondary); margin: 0; }
-.mvs-text-danger { color: var(--mvs-danger); }
-.mvs-text-success { color: var(--mvs-success); }
 .mvs-mt-0 { margin-top: 0; }
 .mvs-setup-finish-form { margin-top: 24px; }
 
@@ -1954,7 +1906,7 @@ a.mvs-stat-card:focus {
 	/* Was `height: 32px`. A fixed height on the base is why every variant that
 	   does not pass through --sm (--danger, --primary) sat under the floor
 	   (Basecamp 10252222115). min-height only raises, so --hero keeps its 44. */
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 	padding: 0 14px;
 	font-size: 13px;
 	font-weight: 500;
@@ -2143,6 +2095,9 @@ a.mvs-stat-card:focus {
 .mvs-moderation-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
 .mvs-moderation-thumb-placeholder { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: var(--mvs-bg); border-radius: var(--mvs-radius-sm); color: var(--mvs-border); }
 .mvs-form-inline-spaced { display: inline; margin-left: 4px; }
+/* A table wider than its container scrolls inside this wrapper instead of
+   pushing the whole admin page sideways (Basecamp 10354828173). */
+.mvs-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .mvs-moderation-table { width: 100%; border-spacing: 0; }
 .mvs-moderation-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--mvs-border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mvs-text-muted); }
 .mvs-moderation-table td { padding: 8px 12px; border-bottom: 1px solid var(--mvs-bg); vertical-align: middle; }
@@ -2360,6 +2315,16 @@ a.mvs-stat-card:focus {
 	color: #b32d2e;
 }
 
+/* Recent failed deliveries under the webhook rows. Long URLs wrap instead of
+   widening the table on narrow screens. */
+.mvs-webhook-failures {
+	margin-block-start: var(--mvs-space-md, 16px);
+}
+
+.mvs-webhook-failures__url {
+	overflow-wrap: anywhere;
+}
+
 /* Access Rules mini-page — per-media rule management (view=access). The
    actions column stays narrow and end-aligned so Remove links line up. */
 .mvs-access-rules-table__actions {
@@ -2520,5 +2485,14 @@ a.mvs-stat-card:focus {
 .mvs-admin-tab,
 .mvs-range-btn,
 .mvs-settings-nav-item {
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
+}
+
+/* "Remove" beside a saved key (secret-fields.js). A bare button-link is 17px
+   tall; the admin floor is --mvs-admin-touch-min. */
+.wp-core-ui .mvs-secret-remove { /* beats core .wp-core-ui .button-link */
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--mvs-admin-touch-min);
+	padding-inline: 4px;
 }

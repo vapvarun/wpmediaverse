@@ -78,7 +78,7 @@ class Sanitizers {
 		'mvs_items_per_page'         => array( 12, 24, 48 ),
 		'mvs_ai_provider'            => array( 'openai', 'google_vision', 'rekognition', 'anthropic' ),
 		'mvs_openai_model'           => array( 'gpt-4o-mini', 'gpt-4o' ),
-		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject', 'delete' ),
+		'mvs_moderation_auto_action' => array( 'flag', 'reject', 'delete' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
 		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
@@ -96,6 +96,11 @@ class Sanitizers {
 	 * @return array<int, mixed>|null Allowed values, or null if not whitelisted.
 	 */
 	public static function get_whitelist( string $option ): ?array {
+		// The Layout choices are extensible (Pro adds its skins), so they are
+		// read from the same list the select draws, not frozen here.
+		if ( 'mvs_layout_choice' === $option ) {
+			return array_keys( \WPMediaVerse\Core\SettingsHelper::layout_choices() );
+		}
 		return self::WHITELISTS[ $option ] ?? null;
 	}
 
@@ -198,7 +203,19 @@ class Sanitizers {
 
 		$result = array_values( array_unique( array_merge( $custom_stored, $kept_known ) ) );
 
-		// Present-but-empty (and no custom types) = remove all -> ''.
+		// Nothing ticked is refused, not stored. '' used to mean "default" to
+		// the field (all eight boxes shown ticked) and "nothing" to the upload
+		// path (every upload rejected), so the screen said one thing and the
+		// site did the other. Keep the previous choice and say why.
+		if ( empty( $result ) ) {
+			add_settings_error(
+				'mvs_allowed_file_types',
+				'mvs_allowed_file_types_empty',
+				__( 'Pick at least one file type. With none ticked, members could not upload anything, so the previous selection was kept.', 'wpmediaverse' )
+			);
+			return $stored;
+		}
+
 		return implode( ',', $result );
 	}
 
@@ -209,9 +226,12 @@ class Sanitizers {
 	 * @return string
 	 */
 	public static function sanitize_password_option( $value ): string {
+		$option = str_replace( 'sanitize_option_', '', current_filter() );
+		if ( \WPMediaVerse\Core\SettingsHelper::secret_removal_requested( $option ) ) {
+			return '';
+		}
 		$value = sanitize_text_field( $value );
 		if ( '' === $value ) {
-			$option = str_replace( 'sanitize_option_', '', current_filter() );
 			return get_option( $option, '' );
 		}
 		return $value;
@@ -252,18 +272,22 @@ class Sanitizers {
 		}
 
 		$sanitized = array();
-		foreach ( $input as $webhook ) {
+		foreach ( $input as $index => $webhook ) {
 			$url = isset( $webhook['url'] ) ? esc_url_raw( $webhook['url'] ) : '';
 			if ( empty( $url ) ) {
 				continue;
 			}
+			// "Remove" beside this row's saved secret (FieldRenderer::render_webhook_row).
+			$remove_secret = \WPMediaVerse\Core\SettingsHelper::secret_removal_requested( 'mvs_webhook_secret_' . (int) $index );
 
 			$events = isset( $webhook['events'] ) && is_array( $webhook['events'] )
 				? array_map( 'sanitize_text_field', $webhook['events'] )
 				: array( '*' );
 
 			$secret = isset( $webhook['secret'] ) ? sanitize_text_field( $webhook['secret'] ) : '';
-			if ( '' === $secret && isset( $existing_secrets[ $url ] ) ) {
+			if ( $remove_secret ) {
+				$secret = '';
+			} elseif ( '' === $secret && isset( $existing_secrets[ $url ] ) ) {
 				$secret = $existing_secrets[ $url ];
 			}
 
@@ -311,6 +335,60 @@ class Sanitizers {
 	}
 
 	/**
+	 * Sanitize the one "Layout" choice (a transport option, never read).
+	 *
+	 * A Free grid layout is written to mvs_thumbnail_style, the option every
+	 * grid reads; mvs_layout_saved lets Pro store its platform skin. An unknown
+	 * value changes nothing.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string The saved choice.
+	 */
+	public static function sanitize_layout_choice( $value ): string {
+		$value = is_string( $value ) ? $value : '';
+		if ( ! in_array( $value, (array) self::get_whitelist( 'mvs_layout_choice' ), true ) ) {
+			return \WPMediaVerse\Core\SettingsHelper::selected_layout();
+		}
+		if ( in_array( $value, \WPMediaVerse\Core\SettingsHelper::GRID_LAYOUTS, true ) ) {
+			update_option( 'mvs_thumbnail_style', $value );
+		}
+
+		/**
+		 * Fires when the Settings > Display "Layout" choice is saved.
+		 *
+		 * @since 2.6.0
+		 *
+		 * @param string $value A key of SettingsHelper::layout_choices().
+		 */
+		do_action( 'mvs_layout_saved', $value );
+
+		return $value;
+	}
+
+	/**
+	 * Sanitize "Who can upload media" (a transport option).
+	 *
+	 * The state is the upload_mvs_media capability, written through
+	 * MediaCapabilities so the choice survives version-bump re-grants. Roles
+	 * whose state does not change are left alone, and a value that is not a
+	 * list (the field was not on the form) changes nothing.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param mixed $value Submitted role slugs.
+	 * @return string[] Roles holding the capability afterwards.
+	 */
+	public static function sanitize_upload_roles( $value ): array {
+		$caps = \WPMediaVerse\Capabilities\MediaCapabilities::class;
+		if ( ! is_array( $value ) ) {
+			return $caps::roles_with_cap( 'upload_mvs_media' );
+		}
+		return $caps::apply_role_selection( 'upload_mvs_media', array_values( array_filter( array_map( 'sanitize_key', $value ) ) ) );
+	}
+
+	/**
 	 * Sanitize thumbnail size choice. Whitelist must stay in lockstep with the
 	 * dropdown choices in SettingsRegistrar::register_display_settings()
 	 * AND consumers in TemplateHelpers/SettingsHelper.
@@ -320,7 +398,8 @@ class Sanitizers {
 	 */
 	public static function sanitize_thumbnail_size( $value ): string {
 		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_thumbnail_size'], true ) ? $value : self::WHITELISTS['mvs_thumbnail_size'][0];
+		// Fall back to the registered default ('large'), not the first choice.
+		return in_array( $value, self::WHITELISTS['mvs_thumbnail_size'], true ) ? $value : 'large';
 	}
 
 	/**
@@ -414,6 +493,11 @@ class Sanitizers {
 	 */
 	public static function sanitize_moderation_auto_action( $value ): string {
 		$value = is_string( $value ) ? $value : '';
+		// 'hide' is retired (it now does what 'flag' does); a site still set to
+		// it is saved back as 'flag'. ModerationService still reads a stored 'hide'.
+		if ( 'hide' === $value ) {
+			return 'flag';
+		}
 		return in_array( $value, self::WHITELISTS['mvs_moderation_auto_action'], true ) ? $value : 'flag';
 	}
 

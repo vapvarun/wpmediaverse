@@ -54,7 +54,7 @@
 	color: var(--mvs-accent, #2271b1);
 	/* A call to action on its own line is a control, not a link in a sentence:
 	   18px tall before this (Basecamp 10252222115). */
-	min-height: var(--mvs-touch-min);
+	min-height: var(--mvs-admin-touch-min);
 }
 .mvs-fam-header__link:hover { text-decoration: underline; }
 .mvs-fam-header__link [data-lucide] { width: 14px; height: 14px; }

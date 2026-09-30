@@ -280,7 +280,7 @@ class PermissionsManager {
 		}
 
 		if ( ! $this->current_user_can_save() ) {
-			wp_die( esc_html__( 'You do not have permission to change these settings.', 'wpmediaverse' ) );
+			wp_die( esc_html__( 'You do not have permission to edit these settings.', 'wpmediaverse' ) );
 		}
 
 		$roles_updated = $this->process_role_caps_save();

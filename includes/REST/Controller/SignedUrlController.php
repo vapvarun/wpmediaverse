@@ -152,10 +152,11 @@ class SignedUrlController extends WP_REST_Controller {
 		$url = $this->signed_urls->generate( $media_id, $user_id, $ttl ? $ttl : 0, $download );
 
 		if ( ! $url ) {
+			// Hidden looks exactly like missing (QA, 2.6.0).
 			return new WP_Error(
-				'mvs_forbidden',
-				__( 'You do not have access to this media item.', 'wpmediaverse' ),
-				array( 'status' => 403 )
+				'mvs_not_found',
+				__( 'Media item not found.', 'wpmediaverse' ),
+				array( 'status' => 404 )
 			);
 		}
 
@@ -234,12 +235,13 @@ class SignedUrlController extends WP_REST_Controller {
 			);
 		}
 
-		// Verify the user can view this media item.
+		// Verify the user can view this media item. Same answer as a missing
+		// item: a 403 confirmed that a private item exists (QA, 2.6.0).
 		if ( ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
 			return new WP_Error(
-				'mvs_forbidden',
-				__( 'You do not have access to this media item.', 'wpmediaverse' ),
-				array( 'status' => 403 )
+				'mvs_not_found',
+				__( 'Media item not found.', 'wpmediaverse' ),
+				array( 'status' => 404 )
 			);
 		}
 

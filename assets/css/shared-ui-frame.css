@@ -67,8 +67,11 @@
 	height: var(--mvs-fab-diameter);
 	padding: 0;
 	border-radius: 50%;
-	background: var(--mvs-primary);
-	color: #fff;
+	/* The contrast-safe button pair every primary button uses. A fixed white
+	   icon on --mvs-primary went pale-on-pale in dark mode, where the primary
+	   turns light. */
+	background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+	color: var(--mvs-btn-primary-fg, #fff);
 	border: none;
 	cursor: pointer;
 	display: flex;
@@ -81,7 +84,7 @@
 .mvs-fab:hover {
 	transform: scale(1.1);
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-	background: var(--mvs-primary-hover);
+	background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover));
 }
 
 .mvs-fab:active {
@@ -103,49 +106,6 @@
  * accessibility tree. Basecamp 10320784115. */
 body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container {
 	visibility: hidden;
-}
-
-/* FAB menu — shown above the button when the member also has a Documents drive. */
-.mvs-fab-menu {
-	position: absolute;
-	right: 0;
-	bottom: calc(56px + var(--mvs-space-3));
-	display: flex;
-	flex-direction: column;
-	gap: var(--mvs-space-1);
-	min-width: 168px;
-	padding: var(--mvs-space-2);
-	background: var(--mvs-surface);
-	border: 1px solid var(--mvs-border-light);
-	border-radius: var(--mvs-radius-md);
-	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-}
-
-.mvs-fab-menu[hidden] {
-	display: none;
-}
-
-.mvs-fab-menu-item {
-	display: block;
-	width: 100%;
-	min-height: var(--mvs-touch-min);
-	box-sizing: border-box;
-	padding: var(--mvs-space-2) var(--mvs-space-3);
-	text-align: start;
-	background: none;
-	border: none;
-	border-radius: var(--mvs-radius-sm);
-	color: var(--mvs-text);
-	font-size: var(--mvs-font-md);
-	line-height: var(--mvs-touch-min);
-	text-decoration: none;
-	cursor: pointer;
-}
-
-.mvs-fab-menu-item:hover,
-.mvs-fab-menu-item:focus-visible {
-	background: var(--mvs-bg-subtle);
-	color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
 /* ─── Modal Overlay ─── */
@@ -554,6 +514,13 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	.mvs-modal-row .mvs-modal-field--checkbox {
 		padding-bottom: 0;
 	}
+}
+
+.mvs-modal-note {
+	margin: 0 0 12px;
+	font-size: 0.875rem;
+	line-height: 1.45;
+	color: var(--mvs-text-secondary);
 }
 
 .mvs-modal-field-row {

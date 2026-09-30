@@ -90,6 +90,9 @@ $mvs_classes = trim(
 );
 $wrapper  = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 $rest_url = esc_url( rest_url( 'mvs/v1/media/' . $media_id . '/view' ) );
+// The block's Download link follows the same site switch and per-item opt-out
+// as every other Download control (Basecamp 10350019690).
+$show_dl = $show_dl && \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->downloads_allowed( $media_id );
 $nonce    = wp_create_nonce( 'wp_rest' );
 
 // Pro analytics — wire the player to POST play/pause/seek/complete events to
@@ -103,6 +106,14 @@ $mvs_analytics_url = $mvs_pro_active
 $mvs_session_id   = $mvs_pro_active
 	? substr( wp_generate_uuid4(), 0, 32 )
 	: '';
+
+// Resume playback (Pro, signed-in members only) — empty string short-circuits
+// every resume action in the store. Seed the store's translated chip prefix
+// once per render.
+$mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
+	? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $media_id . '/resume' ) )
+	: '';
+\WPMediaVerse\Core\TemplateHelpers::media_player_i18n_state();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-player"
@@ -112,10 +123,14 @@ $mvs_session_id   = $mvs_pro_active
 		array(
 			'mediaId'      => $media_id,
 			'restUrl'      => $rest_url,
+			'downloadUrl'  => esc_url_raw( rest_url( 'mvs/v1/media/' . $media_id . '/download' ) ),
 			'nonce'        => $nonce,
 			'playing'      => false,
 			'analyticsUrl' => $mvs_analytics_url,
 			'sessionId'    => $mvs_session_id,
+			'resumeUrl'    => $mvs_resume_url,
+			'resumeShown'  => false,
+			'resumeLabel'  => '',
 		)
 	);
 	?>
@@ -123,18 +138,27 @@ $mvs_session_id   = $mvs_pro_active
 	data-wp-init="actions.trackView"
 >
 	<?php if ( $is_video ) : ?>
-		<video class="mvs-player-video"
-			controls
-			<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
-			<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
-			preload="metadata"
-			data-wp-on--play="actions.onPlay"
-			data-wp-on--pause="actions.onPause"
-			data-wp-on--seeked="actions.onSeek"
-			data-wp-on--ended="actions.onComplete"
-		>
-			<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
-		</video>
+		<div class="mvs-player-video-wrap">
+			<video class="mvs-player-video"
+				controls
+				<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
+				<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
+				preload="metadata"
+				data-wp-on--play="actions.onPlay"
+				data-wp-on--pause="actions.onPause"
+				data-wp-on--seeked="actions.onSeek"
+				data-wp-on--ended="actions.onComplete"
+				data-wp-on--loadedmetadata="actions.onLoadedMetadata"
+				data-wp-init="actions.initResume"
+				data-wp-on--timeupdate="actions.onTimeUpdate"
+			>
+				<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
+			</video>
+			<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
+				<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>
+				<button type="button" class="mvs-resume-chip__btn" data-wp-on--click="actions.onResumeStartOver"><?php esc_html_e( 'Start over', 'wpmediaverse' ); ?></button>
+			</div>
+		</div>
 	<?php elseif ( $is_audio ) : ?>
 		<div class="mvs-player-audio-wrap">
 			<div class="mvs-player-audio-title"><?php echo esc_html( $media_title ); ?></div>
@@ -155,7 +179,7 @@ $mvs_session_id   = $mvs_pro_active
 
 	<?php if ( $show_dl ) : ?>
 		<div class="mvs-player-actions">
-			<a href="<?php echo esc_url( $file_url ); ?>" download class="mvs-download-btn">
+			<a href="<?php echo esc_url( $file_url ); ?>" download class="mvs-download-btn" data-wp-on--click="actions.trackDownload">
 				<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 			</a>
 		</div>

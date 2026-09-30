@@ -3,7 +3,7 @@ journey: watermark-ingest-paths
 plugin: wpmediaverse
 priority: high
 roles: [administrator, author]
-covers: [watermark-replace-file, watermark-sideload-skip, watermark-fail-closed]
+covers: [MV-WMK-009, watermark-replace-file, watermark-sideload-skip, watermark-fail-closed]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "WPMediaVerse Pro active (Pro owns the Watermarker stamp)"
@@ -37,6 +37,7 @@ never agreed to alter. Do not "fix" it by adding a call.
 ## Setup
 
 - Admin (`?autologin=1`).
+- The watermark options belong to the Storage tab's option group (`mvs_settings_storage`) since 2.6.0; a Display-tab save must leave all of them unchanged.
 - Enable + scope watermark to all uploads:
   ```sql
   UPDATE wp_options SET option_value='1'    WHERE option_name='mvs_watermark_enabled';

@@ -168,8 +168,19 @@ class RouteAuthorityTest extends WP_UnitTestCase {
 			)
 		);
 
-		$album = (int) $albums->create( $this->owner, array( 'title' => 'Album probe', 'privacy' => 'public' ) );
+		$album = (int) $albums->create(
+			$this->owner,
+			array(
+				'title'   => 'Album probe',
+				'privacy' => 'public',
+			)
+		);
+		// A public album still holding a private photo: the shape upgraded sites keep
+		// (v40 never loosens) and the mvs_album_inherit_privacy escape hatch makes.
+		// The 2.6.0 album rule would publish the photo, so switch it off here.
+		add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 		$albums->add_items( $album, array( $private ) );
+		remove_filter( 'mvs_album_inherit_privacy', '__return_false' );
 
 		wp_set_current_user( 0 );
 

@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.5.1
+Stable tag: 2.6.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -24,7 +24,7 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 
 * **Custom Table Architecture** - 23 indexed tables keep media, albums, social activity and messages out of WordPress core data
 * **Media Uploads** - Drag & drop with MIME validation, EXIF stripping, duplicate detection, thumbnail generation
-* **Albums & Collections** - Ordered albums with cover images, smart collections with auto-curation rules
+* **Albums & Collections** - Albums group a member's own uploads (ordered, with a cover); collections gather media from anyone on the site, by smart rules or (with Pro) a Save button
 * **Social Layer** - Reactions (6 types), threaded comments, favorites, @mentions, follow/unfollow, sharing
 * **Direct Messaging** - Text, media and voice messaging between members, with read state and typing indicators, and no third-party service needed
 * **AI Moderation** - OpenAI scans uploads automatically. Flag, hide, reject, or delete before they go public
@@ -41,13 +41,12 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 
 **Pro Adds**
 
-* 5 layout modes (Grid, Instagram, Pinterest, Flickr, Dribbble)
+* 4 more layouts: Instagram, Pinterest, Flickr and Dribbble
 * Photo Challenges, 1v1 Battles, Tournament Brackets
 * Points, Streaks, Boosts gamification engine
 * Member document drives with folders, sharing, search, trash and in-page previews
 * Amazon S3, BunnyCDN, Cloudflare R2 and DigitalOcean Spaces cloud storage drivers
-* Auto-captions via Whisper AI
-* Per-user storage quotas (MemberPress, WooCommerce, PMPro integration)
+* Video chapters and Whisper AI captions for the MediaVerse mobile app and the REST API (the web player does not show them yet)
 * Stories, leaderboards, and a Flickr import connector
 * Google Vision, AWS Rekognition, and Claude (Anthropic) moderation
 * Migration importers (rtMedia, MediaPress, BuddyBoss)
@@ -106,7 +105,6 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 * `[mvs_explore_feed]` - Explore feed
 * `[mvs_member_photos]` - One member's photos
 * `[mvs_pdf_viewer id="789"]` - PDF viewer
-* `[mvs_lock_overlay]` - Locked-media overlay
 * `[mvs_usage_history]` - Member usage history
 
 == Screenshots ==
@@ -120,7 +118,73 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 7. **BuddyPress Profile** - Media tab on user profiles with album support.
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
+== Credits ==
+
+Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
+
 == Changelog ==
+
+= 2.6.0 - September 2026 =
+
+A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My Media, fewer settings, and member emails you choose.
+
+* New      - Save keeps an item; everything a member saves, and everything they favorited before, is in their private Favorites collection.
+* New      - The lightbox shows previous and next whenever there is a neighbour, supports swipe on touch, shows the item title, and shows cover art behind audio.
+* New      - Member emails for photo battle invites, shared documents and reviewed reports, each switched on in Settings > General > Emails.
+* New      - Members turn activity emails off with one profile switch or the unsubscribe link, and the account deletion confirmation is always sent.
+* New      - An optional storage limit per member, unlimited by default, with a per-member override on the user's profile.
+* New      - A "Who can upload media" role picker on Settings > General, and upload controls hide for members who cannot upload.
+* New      - A Mobile App settings tab for app sign-in, branding, terms and the abuse contact.
+* New      - The member who reported something is notified when a moderator reviews it.
+* New      - A Messages switch in Settings > Messages turns private messaging off everywhere, including integrations built on MediaVerse, and keeps existing conversations.
+* New      - Albums have a settings box in wp-admin for who can see the album, its type and its cover, and collections have a matching privacy choice.
+* Improve  - Settings show only while their switch is on, and developer settings leave the screen, about 130 controls down to about 55.
+* Improve  - One Layout choice replaces the separate layout settings, and Grid Columns shows only for the grid layout.
+* Improve  - Every list has one sort control, empty lists hide search and sort, and Explore tags sit on one scrolling row.
+* Improve  - Upload details appear after a file is picked, the + button uploads in one tap, and untitled uploads get a readable title from the file name.
+* Improve  - Logs moved under Tools, Integrations is a card on Overview, Reports is a Moderation tab, and the AI Flagged tab hides when it is not in use.
+* Improve  - Old profile editor and document links open the member's My Media pages, and BuddyPress sites edit names on the community profile.
+* Improve  - Albums and Collections each say what they hold, and settings use plain words throughout.
+* Improve  - Large sites load faster with new indexes, batched reads and paginated lists.
+* Improve  - "Who can send messages: Nobody" now says what it does: no new messages, while existing conversations stay readable.
+* Improve  - On a private community, new uploads start as Members Only, and a site that becomes private later gets a one-time notice offering the switch.
+* Improve  - Album and collection editors open in the classic editor, so their settings show without opening a hidden panel, and the unused Featured Image box is gone.
+* Improve  - Admin empty states share one layout, and their icons show at the intended size.
+* Improve  - The account deletion message and email say Log in, matching the rest of the plugin, and permission messages for settings and collections say edit.
+* Improve  - Admin, app and member messages say log in for the site's own login.
+* Fix      - Private items now look exactly like missing ones on pages, in the API and in album counts.
+* Fix      - Saving a settings tab no longer resets values that were not on the screen.
+* Fix      - Message times carry an explicit UTC value so every client shows the same clock.
+* Fix      - The + button no longer covers the last controls on a page.
+* Fix      - Search finds exact titles, and merging tags removes the old tag.
+* Fix      - Usage history, space links and device tokens are stored in UTC on hosts whose database or site clock is not UTC, and trending and view retention compare in UTC.
+* Fix      - Starting a conversation with yourself is refused instead of opening one of your other conversations.
+* Fix      - Reporting a message that was unsent no longer logs a warning, and your own messages still cannot be reported.
+* Fix      - Profile settings offer only the messaging choices the site allows, hide messaging and online status while Messages is off, and hide the activity-email switch when no email type is on.
+* Fix      - The chat panel's "MediaVerse pages only" choice now includes the Explore Documents page.
+* Fix      - Followers Only items are visible to the owner's followers, on the item page and in the owner's profile listing.
+* Fix      - The media player block hides its Download link when downloads are off or the owner turned them off for that item, and counts the download.
+* Fix      - MediaVerse blocks placed on an ordinary page now record views and downloads.
+* Fix      - A leftover thumbnail address on a host the file is no longer served from is ignored, so migrated sites stop pointing grids at the old host.
+* Fix      - Merging tags asks for confirmation in the styled dialog, and confirmed admin forms now submit.
+* Fix      - Followers Only items appear for the owner's followers in lists, Explore and activity, not only on the item page.
+* Fix      - A block hides media both ways in every list, and people who blocked you are no longer suggested.
+* Fix      - A blocked member can still remove their own reaction, comment and favorite, and cannot edit a comment on the other member's item.
+* Fix      - Removing a favorite no longer adds one when the item was not favorited.
+* Fix      - A pinned album cover is kept when the album is saved from wp-admin.
+* Fix      - The Moderation AI Flagged table scrolls inside its panel on phones instead of moving the page.
+* Fix      - A block also hides the other member's items in albums, collections and notifications, and the notification badge counts the same rows the list shows.
+* Fix      - Tags, Log Viewer and Reports empty states are centred on phones and say what to do next, and each tag row opens its Edit and Delete actions on a phone.
+* Security - Block style fields no longer accept CSS that could inject into the page.
+* Security - Draft media is no longer returned to signed-out visitors through the API.
+* Security - A stored media address that browsers and WordPress read as two different hosts is never trusted as storage.
+* Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.
+* Dev      - Removed settings keep their saved values and filters, so no site changes behaviour on update.
+* Dev      - New filters mvs_show_favorite_button, mvs_default_media_title, mvs_email_subject, mvs_email_body, mvs_community_profile, mvs_profile_edit_redirect, mvs_show_demo_import and mvs_messaging_enabled, and new action mvs_report_resolved.
+* Dev      - Uninstall keeps member data unless the owner opts in, and a full removal also deletes media tags, categories and licence options.
+* Dev      - MediaRepository::downloads_allowed() is the one check for whether an item can be downloaded.
+* Dev      - Admin buttons use --mvs-admin-touch-min (34px), and --mvs-touch-min is no longer redefined in wp-admin.
+* Compat   - Aligned with MediaVerse Pro 2.6.0. Install both updates together.
 
 = 2.5.1 - September 2026 =
 
@@ -829,6 +893,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.6.0 =
+Contains security fixes. Block style fields accepted CSS that could inject into the page, and draft media could be read through the API by signed-out visitors. Update together with WPMediaVerse Pro 2.6.0.
 
 = 2.5.1 =
 Contains security fixes. A public album or collection listed the private items inside it to people who cannot open them, gallery data for a private item was returned to anyone who asked, and a private community could be read by typing its address with different capitalisation. Update as soon as you can, together with WPMediaVerse Pro 2.5.1.

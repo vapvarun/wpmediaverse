@@ -93,6 +93,11 @@ class ProfileController extends WP_REST_Controller {
 							'enum'              => ProfileService::META_VALUES['online_status'],
 							'sanitize_callback' => 'sanitize_key',
 						),
+						'email_activity' => array(
+							'type'              => 'string',
+							'enum'              => ProfileService::META_VALUES['email_activity'],
+							'sanitize_callback' => 'sanitize_key',
+						),
 					),
 				),
 			)

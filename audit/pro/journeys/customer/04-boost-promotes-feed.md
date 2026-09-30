@@ -3,13 +3,14 @@ journey: boost-promotes-feed
 plugin: wpmediaverse-pro
 priority: critical
 roles: [member]
-covers: [pro-boosts, boost-feed-promotion, boost-button-regression]
+covers: [MV-BST-001, MV-BST-002, MV-BST-003, pro-boosts, boost-feed-promotion, boost-button-regression]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "Auto-login mu-plugin available (?autologin=1)"
   - "WPMediaVerse Pro active; mvs_boosts_enabled = '1'"
   - "Free wb-gamification (points backend) active — Plugin::points_backend_available() === true"
-  - "Feed layout set to instagram (mvs_pro_feed_layout = 'instagram')"
+  - "Feed layout set to instagram (mvs_pro_feed_layout = 'instagram'). Since 2.6.0 set it with Settings > Display > Layout = Instagram Feed (the one Layout select), or `wp option update mvs_pro_feed_layout instagram`"
+  - "Settings > Competitions: the Boost Pricing card only shows while Media Boosts is ticked"
   - "Test member owns >=1 published public media and has enough points for one boost"
 estimated_runtime_minutes: 5
 ---

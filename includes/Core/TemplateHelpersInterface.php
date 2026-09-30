@@ -22,6 +22,17 @@ defined( 'ABSPATH' ) || exit;
 interface TemplateHelpersInterface {
 
 	/**
+	 * Query parameter Explore searches with. See explore_search().
+	 *
+	 * On the interface so Pro can name it without touching a Free class.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @var string
+	 */
+	public const EXPLORE_SEARCH_PARAM = 'q';
+
+	/**
 	 * Get a signed thumbnail URL for a media item at the requested size.
 	 *
 	 * @param int      $media_id Media ID.
@@ -164,4 +175,22 @@ interface TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_panel_toolbar( array $args = array() ): string;
+
+	/**
+	 * Where Explore lives: the mapped Explore page, else /media/.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string
+	 */
+	public function explore_url(): string;
+
+	/**
+	 * The Explore search term (`q`, or a legacy `s`) from the current request.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return string
+	 */
+	public function explore_search(): string;
 }

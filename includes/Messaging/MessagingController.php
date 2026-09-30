@@ -10,6 +10,7 @@ namespace WPMediaVerse\Messaging;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\StorageLimitService;
 use WP_REST_Controller;
 use WP_REST_Server;
 use WP_REST_Request;
@@ -983,6 +984,13 @@ class MessagingController extends WP_REST_Controller {
 			return new WP_REST_Response( array( 'message' => 'File too large.' ), 400 );
 		}
 
+		// The member's fair-use storage limit covers chat attachments too.
+		$mvs_storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' );
+		$mvs_refused = $mvs_storage->check( get_current_user_id(), (int) $file['size'] );
+		if ( $mvs_refused ) {
+			return new WP_REST_Response( array( 'message' => $mvs_refused->get_error_message() ), 413 );
+		}
+
 		// Temporarily grant upload_files so wp_handle_upload works.
 		$grant_cap = function ( $allcaps ) {
 			$allcaps['upload_files'] = true;
@@ -1017,6 +1025,10 @@ class MessagingController extends WP_REST_Controller {
 		}
 
 		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $upload['file'] ) );
+
+		// Counted toward the sender's storage limit (StorageLimitService).
+		update_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META, (int) filesize( $upload['file'] ) );
+		$mvs_storage->forget_usage( get_current_user_id() );
 
 		remove_filter( 'user_has_cap', $grant_cap );
 

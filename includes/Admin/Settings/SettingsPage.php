@@ -47,6 +47,7 @@ class SettingsPage {
 		// Must run before options.php resolves its gate, which happens on
 		// admin_init, so register these early rather than on admin_menu.
 		add_action( 'admin_init', array( $this, 'register_option_page_capabilities' ), 1 );
+		SettingsSaveGuard::register();
 		add_action( 'admin_menu', array( $this, 'cleanup_admin_menu' ), 999 );
 		add_action( 'admin_init', array( $this->registrar, 'register_all' ) );
 		add_action( 'admin_init', array( $this, 'track_settings_changes' ) );
@@ -182,12 +183,13 @@ class SettingsPage {
 		delete_transient( 'mvs_old_storage_driver_' . $user_id );
 
 		if ( false !== $old_driver && $old_driver !== $new_driver ) {
+			$drivers = SettingsRegistrar::storage_driver_choices();
 			printf(
 				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
 				sprintf(
-					/* translators: %s: new storage driver name */
-					esc_html__( 'Storage driver changed to %s. New uploads will use this driver.', 'wpmediaverse' ),
-					'<strong>' . esc_html( ucfirst( $new_driver ) ) . '</strong>'
+					/* translators: %s: where files are now stored, e.g. "Amazon S3" */
+					esc_html__( 'New uploads now go to %s.', 'wpmediaverse' ),
+					'<strong>' . esc_html( $drivers[ $new_driver ] ?? $new_driver ) . '</strong>'
 				)
 			);
 		}
@@ -313,10 +315,10 @@ class SettingsPage {
 				'group'        => 'general',
 				'label'        => __( 'General', 'wpmediaverse' ),
 				'icon'         => 'settings',
-				'description'  => __( 'Upload limits, file types, privacy defaults, and page assignments.', 'wpmediaverse' ),
+				'description'  => __( 'Uploads, privacy defaults, emails and pages.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_general',
 				'page_slug'    => self::PAGE_SLUG . '-general',
-				'section_ids'  => array( 'mvs_general', 'mvs_pages' ),
+				'section_ids'  => array( 'mvs_general', 'mvs_emails', 'mvs_pages' ),
 				'is_pro'       => false,
 				'priority'     => 10,
 			),
@@ -324,7 +326,7 @@ class SettingsPage {
 				'group'        => 'media',
 				'label'        => __( 'Display', 'wpmediaverse' ),
 				'icon'         => 'images',
-				'description'  => __( 'Grid layout, columns, thumbnails, and feed preferences.', 'wpmediaverse' ),
+				'description'  => __( 'How media grids look.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_display',
 				'page_slug'    => self::PAGE_SLUG . '-display',
 				'section_ids'  => array( 'mvs_display' ),
@@ -333,9 +335,9 @@ class SettingsPage {
 			),
 			'social'      => array(
 				'group'        => 'general',
-				'label'        => __( 'Messaging', 'wpmediaverse' ),
+				'label'        => __( 'Messages', 'wpmediaverse' ),
 				'icon'         => 'message-circle',
-				'description'  => __( 'Direct messaging privacy and spam prevention.', 'wpmediaverse' ),
+				'description'  => __( 'Who can message whom, and where the chat appears.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_social',
 				'page_slug'    => self::PAGE_SLUG . '-social',
 				'section_ids'  => array( 'mvs_messaging' ),
@@ -368,24 +370,26 @@ class SettingsPage {
 				'group'        => 'safety',
 				'label'        => __( 'Moderation', 'wpmediaverse' ),
 				'icon'         => 'shield',
-				'description'  => __( 'Content policies, reporting, and legal/safety links.', 'wpmediaverse' ),
+				'description'  => __( 'Member reports, AI moderation and community guidelines.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_moderation',
 				'page_slug'    => self::PAGE_SLUG . '-moderation',
 				'section_ids'  => array( 'mvs_moderation' ),
 				'is_pro'       => false,
 				'priority'     => 55,
 			),
-			'permissions' => array(
+			// No 'permissions' entry since 2.6.0: "Who can upload media" on
+			// General answers the question owners ask. The matrix renderer
+			// and its admin_post save handler stay for anything linking there.
+			'app'         => array(
 				'group'        => 'access',
-				'label'        => __( 'Permissions', 'wpmediaverse' ),
-				'icon'         => 'users',
-				'description'  => __( 'Role-based access control for media features.', 'wpmediaverse' ),
-				'option_group' => '',
-				'page_slug'    => '',
-				'section_ids'  => array(),
+				'label'        => __( 'Mobile App', 'wpmediaverse' ),
+				'icon'         => 'smartphone',
+				'description'  => __( 'App login and the links the mobile app shows.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_app',
+				'page_slug'    => self::PAGE_SLUG . '-app',
+				'section_ids'  => array( 'mvs_app' ),
 				'is_pro'       => false,
-				'priority'     => 70,
-				'renderer'     => 'permissions',
+				'priority'     => 72,
 			),
 			'webhooks'    => array(
 				'group'        => 'access',
@@ -487,6 +491,19 @@ class SettingsPage {
 				'strategy'  => 'defer',
 			)
 		);
+
+		// "Remove" link beside saved keys (Free and Pro secret fields).
+		wp_enqueue_script(
+			'mvs-secret-fields',
+			MVS_PLUGIN_URL . 'assets/js/admin/secret-fields.js',
+			array( 'wp-i18n' ),
+			\WPMediaVerse\Core\Plugin::asset_version( 'assets/js/admin/secret-fields.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_set_script_translations( 'mvs-secret-fields', 'wpmediaverse', MVS_PLUGIN_DIR . 'languages' );
 
 		// Progressive disclosure for AI provider credentials (show only the
 		// selected provider's key/model).
@@ -602,7 +619,15 @@ class SettingsPage {
 								}
 								?>
 								<?php settings_fields( $section['option_group'] ); ?>
-								<?php $this->render_section_cards( $section, $section_id ); ?>
+								<?php
+								// Posts the names this form rendered, so a Save never resets a
+								// setting that was not on screen (SettingsSaveGuard).
+								SettingsSaveGuard::render_with_manifest(
+									function () use ( $section, $section_id ) {
+										$this->render_section_cards( $section, $section_id );
+									}
+								);
+								?>
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
 									<?php
@@ -655,7 +680,7 @@ class SettingsPage {
 		if ( count( $ids ) <= 1 ) {
 			// Single card: use the sidebar item's label as card header.
 			?>
-			<div class="mvs-settings-card" data-section="<?php echo esc_attr( $ids[0] ?? '' ); ?>">
+			<div class="mvs-settings-card" data-section="<?php echo esc_attr( $ids[0] ?? '' ); ?>"<?php self::print_show_when( $wp_settings_sections[ $page_slug ][ $ids[0] ?? '' ]['show_when'] ?? '' ); ?>>
 				<div class="mvs-settings-card__head">
 					<p class="mvs-settings-card__title">
 						<?php echo esc_html( strtoupper( $section['label'] ) ); ?>
@@ -693,7 +718,7 @@ class SettingsPage {
 				$desc_html = '<p>' . esc_html( $section['description'] ) . '</p>';
 			}
 			?>
-			<div class="mvs-settings-card" data-section="<?php echo esc_attr( $sid ); ?>">
+			<div class="mvs-settings-card" data-section="<?php echo esc_attr( $sid ); ?>"<?php self::print_show_when( $wp_section['show_when'] ?? '' ); ?>>
 				<div class="mvs-settings-card__head">
 					<p class="mvs-settings-card__title">
 						<?php echo esc_html( strtoupper( $title ) ); ?>
@@ -735,7 +760,9 @@ class SettingsPage {
 				if ( ! empty( $field['args']['class'] ) ) {
 					$class = ' class="' . esc_attr( $field['args']['class'] ) . '"';
 				}
-				echo '<tr' . $class . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $class is " class=\"...\"" assembled with esc_attr() above (line 612); no raw user input.
+				echo '<tr' . $class; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $class is " class=\"...\"" assembled with esc_attr() above; no raw user input.
+				self::print_show_when( $field['args']['show_when'] ?? '' );
+				echo '>';
 				if ( ! empty( $field['title'] ) ) {
 					echo '<th scope="row">';
 					if ( ! empty( $field['args']['label_for'] ) ) {
@@ -749,6 +776,20 @@ class SettingsPage {
 				call_user_func( $field['callback'], $field['args'] );
 				echo '</td></tr>';
 			}
+		}
+	}
+
+	/**
+	 * Print a row's or card's show/hide rule for assets/js/admin/ai-provider-fields.js.
+	 *
+	 * A field declares it as the `show_when` arg, a section as the `show_when`
+	 * key of add_settings_section()'s $args. Syntax: `name`, `name=value`, `a|b`.
+	 *
+	 * @param string $rule Rule, or '' for none.
+	 */
+	private static function print_show_when( string $rule ): void {
+		if ( '' !== $rule ) {
+			echo ' data-mvs-show-when="' . esc_attr( $rule ) . '"';
 		}
 	}
 
@@ -794,27 +835,18 @@ class SettingsPage {
 	 */
 	private function get_pro_features_for_tab( string $tab ): array {
 		$features = array(
-			'general'  => array(
+			'general' => array(
 				__( 'Amazon S3 cloud storage for unlimited scalability', 'wpmediaverse' ),
 				__( 'BunnyCDN integration for global content delivery', 'wpmediaverse' ),
 				__( 'Image watermarking with custom position and opacity', 'wpmediaverse' ),
-				__( 'Advanced privacy controls per media item', 'wpmediaverse' ),
 			),
-			'display'  => array(
-				__( 'Custom player skins and branding', 'wpmediaverse' ),
+			'display' => array(
 				__( 'Video chapters and resume playback', 'wpmediaverse' ),
 				__( 'Auto-generated video captions (Whisper AI)', 'wpmediaverse' ),
 			),
-			'ai'       => array(
+			'ai'      => array(
 				__( 'Google Vision AI provider', 'wpmediaverse' ),
 				__( 'AWS Rekognition AI provider', 'wpmediaverse' ),
-				__( 'AI provider fallback chains and comparison mode', 'wpmediaverse' ),
-				__( 'Per-category moderation thresholds', 'wpmediaverse' ),
-			),
-			'webhooks' => array(
-				__( 'Multiple webhook endpoints', 'wpmediaverse' ),
-				__( 'Webhook delivery logs and retry management', 'wpmediaverse' ),
-				__( 'Custom webhook event filters', 'wpmediaverse' ),
 			),
 		);
 

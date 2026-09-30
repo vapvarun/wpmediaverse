@@ -157,7 +157,9 @@ class FavoriteController extends WP_REST_Controller {
 		$media_id = $request->get_param( 'media_id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+		// Hidden looks exactly like missing.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id )
+			|| ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, $user_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -184,12 +186,34 @@ class FavoriteController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		// Favorite only media you can view (permission check is login-only).
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+		// Favorite only media you can view (permission check is login-only). An
+		// existing favourite can always be REMOVED: the toggle then only takes it
+		// back, which a blocked member must be able to do (Basecamp 10350196637).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() )
+			&& ! $this->favorites->is_favorited( (int) $media_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// DELETE only removes. It shares this toggle with POST, so a DELETE on an
+		// item that was not favourited used to ADD it, and DELETE is exempt from
+		// the block gate: a blocked member could favourite the blocker's item.
+		if ( 'DELETE' === $request->get_method() && ! $this->favorites->is_favorited( (int) $media_id, get_current_user_id() ) ) {
+			return rest_ensure_response(
+				array(
+					'media_id'  => $media_id,
+					'action'    => 'none',
+					'favorited' => false,
+					'count'     => $this->favorites->get_count( $media_id ),
+				)
+			);
+		}
+
 		$collection_id = $request->get_param( 'collection_id' );
+		// The Favorites collection IS the favourites list, so targeting it is a
+		// plain favourite: can_view() rules, not the collection rule.
+		if ( $collection_id && \WPMediaVerse\Social\FavoriteService::favorites_owner( (int) $collection_id ) ) {
+			$collection_id = 0;
+		}
 
 		// Favouriting and collecting are different questions. can_view() above
 		// is the right gate for a favourite - anything you may look at, you may
@@ -236,6 +260,9 @@ class FavoriteController extends WP_REST_Controller {
 	 */
 	public function get_my_favorites( $request ) {
 		$collection_id = $request->get_param( 'collection_id' );
+		if ( $collection_id && \WPMediaVerse\Social\FavoriteService::favorites_owner( (int) $collection_id ) ) {
+			$collection_id = 0; // The Favorites collection lists every favourite.
+		}
 		$per_page      = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page          = \WPMediaVerse\REST\Pagination::resolve_page( $request );
 
@@ -264,6 +291,10 @@ class FavoriteController extends WP_REST_Controller {
 		$mvs_privacy  = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		$mvs_viewer   = get_current_user_id();
 		$mvs_filtered = 0;
+		// Prefetch the page BEFORE the existence/privacy loop: exists() and
+		// can_view() read the prefetched rows, so the loop no longer runs two
+		// queries per favourite (2.6.0, big-site pass).
+		$repo->prefetch( array_map( 'intval', array_column( $result['items'], 'media_id' ) ) );
 
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];

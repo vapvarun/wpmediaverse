@@ -60,6 +60,41 @@ class MVS_CSS {
 		return in_array( $mvs_unit, array( 'px', 'em', 'rem', '%', 'vh', 'vw', 'pt' ), true ) ? $mvs_unit : $default;
 	}
 
+	/**
+	 * A text-valued style attribute, or '' when it is not a legal value.
+	 *
+	 * The same break-out class as unit(): these went through
+	 * sanitize_text_field() only, which keeps ; { } and url(, so an Author could
+	 * store `a;} body{display:none}` and blank every page the block appeared on
+	 * (QA, 2.6.0). Each kind now has its own allowlist or shape.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param string $kind font-weight | text-transform | color | font-family.
+	 * @param mixed  $raw  Attribute value as supplied by the block.
+	 * @return string
+	 */
+	private static function style_value( string $kind, $raw ): string {
+		$mvs_value = is_scalar( $raw ) ? trim( (string) $raw ) : '';
+
+		switch ( $kind ) {
+			case 'font-weight':
+				return (bool) preg_match( '/^(normal|bold|lighter|bolder|[1-9]00)$/', $mvs_value ) ? $mvs_value : '';
+			case 'text-transform':
+				return in_array( $mvs_value, array( 'none', 'uppercase', 'lowercase', 'capitalize' ), true ) ? $mvs_value : '';
+			case 'color':
+				return (bool) preg_match( '/^(#[0-9a-f]{3,8}|(rgb|rgba|hsl|hsla)\([0-9.,%\s\/]+\)|var\(--[a-z0-9_-]+\)|[a-z]+)$/i', $mvs_value ) ? $mvs_value : '';
+			case 'font-family':
+				if ( preg_match( '/^var\(--[a-z0-9_-]+\)$/i', $mvs_value ) ) {
+					return $mvs_value;
+				}
+				// Family names: letters, digits, spaces, commas, quotes, hyphens.
+				return trim( (string) preg_replace( '/[^a-z0-9 ,\'"_-]/i', '', $mvs_value ) );
+		}
+
+		return '';
+	}
+
 	public static function generate( $unique_id, $attrs ) {
 		if ( empty( $unique_id ) || ! is_scalar( $unique_id ) ) {
 			// A non-scalar id reached sanitize_html_class() and emitted a PHP
@@ -195,7 +230,8 @@ class MVS_CSS {
 			$v = intval( $attrs['shadowVertical'] ?? 4 );
 			$b = absint( $attrs['shadowBlur'] ?? 8 );
 			$s = intval( $attrs['shadowSpread'] ?? 0 );
-			$c = sanitize_text_field( $attrs['shadowColor'] ?? 'rgba(0,0,0,0.12)' );
+			$c = self::style_value( 'color', $attrs['shadowColor'] ?? '' );
+			$c = '' !== $c ? $c : 'rgba(0,0,0,0.12)';
 
 			$desktop[] = sprintf( 'box-shadow: %dpx %dpx %dpx %dpx %s;', $h, $v, $b, $s, $c );
 		}
@@ -215,13 +251,15 @@ class MVS_CSS {
 		}
 
 		// Font family.
-		if ( ! empty( $attrs['fontFamily'] ) ) {
-			$desktop[] = sprintf( 'font-family: %s;', sanitize_text_field( $attrs['fontFamily'] ) );
+		$mvs_font_family = self::style_value( 'font-family', $attrs['fontFamily'] ?? '' );
+		if ( '' !== $mvs_font_family ) {
+			$desktop[] = sprintf( 'font-family: %s;', $mvs_font_family );
 		}
 
 		// Font weight.
-		if ( ! empty( $attrs['fontWeight'] ) ) {
-			$desktop[] = sprintf( 'font-weight: %s;', sanitize_text_field( $attrs['fontWeight'] ) );
+		$mvs_font_weight = self::style_value( 'font-weight', $attrs['fontWeight'] ?? '' );
+		if ( '' !== $mvs_font_weight ) {
+			$desktop[] = sprintf( 'font-weight: %s;', $mvs_font_weight );
 		}
 
 		// Line height.
@@ -237,8 +275,9 @@ class MVS_CSS {
 		}
 
 		// Text transform.
-		if ( ! empty( $attrs['textTransform'] ) ) {
-			$desktop[] = sprintf( 'text-transform: %s;', sanitize_text_field( $attrs['textTransform'] ) );
+		$mvs_text_transform = self::style_value( 'text-transform', $attrs['textTransform'] ?? '' );
+		if ( '' !== $mvs_text_transform ) {
+			$desktop[] = sprintf( 'text-transform: %s;', $mvs_text_transform );
 		}
 
 		// Build CSS.

@@ -8,6 +8,7 @@
  * Override by copying to your-theme/wpmediaverse/album.php
  *
  * @package WPMediaVerse
+ * @version 2.6.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -19,7 +20,7 @@ do_action( 'mvs_before_content' );
 require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Archive URL (base media page).
-$mvs_archive_url = home_url( '/media/' );
+$mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url();
 ?>
 <div class="mvs-single-album">
 	<?php
@@ -43,25 +44,34 @@ $mvs_archive_url = home_url( '/media/' );
 			return;
 		}
 
-		// Media items in album order, status=publish only. Routes through
-		// AlbumService + MediaRepository::get_batch so the request-scope
-		// cache + privacy invariants apply uniformly.
-		$items = \WPMediaVerse\Core\Plugin::container()
-			->get( 'albums' )
-			->get_items_with_data( $mvs_album_id, 'publish' );
-
-		$item_ids = array_column( $items, 'media_id' );
-		?>
-
-		<?php
 		// Post meta is authoritative for both. Reading the mvs_media_index row keyed
 		// on the album's post ID returns whatever media item happens to share that
 		// ID, which defaulted a private album to 'public' — and, because this value
 		// seeds editPrivacy below, republished it on the next title edit.
-		$mvs_albums    = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-		$album_privacy = $mvs_albums->get_privacy( $mvs_album_id );
-		$album_type    = $mvs_albums->get_album_type( $mvs_album_id );
+		$mvs_albums         = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$album_privacy      = $mvs_albums->get_privacy( $mvs_album_id );
+		$album_type         = $mvs_albums->get_album_type( $mvs_album_id );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
+		$mvs_is_playlist    = 'playlist' === $album_type;
+
+		// Media items in album order, status=publish only. Routes through
+		// AlbumService + MediaRepository::get_batch so the request-scope
+		// cache + privacy invariants apply uniformly.
+		//
+		// Playlists render every track (a track list needs to be complete for
+		// playback), but the grid is paginated: an album is unbounded, and
+		// hydrating every item on every page load does not scale past a few
+		// hundred (the "big-site" target for this plugin is 50k+ media).
+		// GET /albums/{id}/items (the same route AlbumController already
+		// exposes) serves the Load More button below. The true (privacy-
+		// filtered) total is read separately — matches the same double-call
+		// AlbumController::prepare_album_response() already makes for
+		// media_count vs items.
+		$mvs_album_per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
+		$mvs_album_total    = $mvs_is_playlist ? 0 : count( $mvs_albums->viewable_item_ids( $mvs_album_id ) );
+		$items              = $mvs_albums->get_items_with_data( $mvs_album_id, 'publish', $mvs_is_playlist ? 0 : $mvs_album_per_page, 1 );
+
+		$item_ids = array_column( $items, 'media_id' );
 		?>
 
 		<?php
@@ -92,17 +102,27 @@ $mvs_archive_url = home_url( '/media/' );
 							<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><span><?php echo esc_html( get_the_author() ); ?></span>
 						<?php endif; ?>
 					</span>
+					<?php $mvs_display_count = $mvs_is_playlist ? count( $items ) : $mvs_album_total; ?>
 					<span class="mvs-collection-meta-text">
 						<?php
 						printf(
 							/* translators: %d: number of items */
-							esc_html( _n( '%d item', '%d items', count( $items ), 'wpmediaverse' ) ),
-							count( $items )
+							esc_html( _n( '%d item', '%d items', $mvs_display_count, 'wpmediaverse' ) ),
+							$mvs_display_count
 						);
 						?>
 					</span>
-					<span class="mvs-collection-type-badge"><?php echo esc_html( $album_type ? $album_type : 'album' ); ?></span>
-					<span class="mvs-privacy-badge"><?php echo esc_html( ucfirst( $album_privacy ) ); ?></span>
+					<?php
+					// Only what a viewer can use: "Playlist" when it is one, and the
+					// privacy word when it is not public. "DEFAULT" and the raw slug
+					// were internal values.
+					if ( 'playlist' === $album_type ) :
+						?>
+						<span class="mvs-collection-type-badge"><?php esc_html_e( 'Playlist', 'wpmediaverse' ); ?></span>
+					<?php endif; ?>
+					<?php if ( 'public' !== $album_privacy ) : ?>
+						<span class="mvs-privacy-badge"><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_short_label( (string) $album_privacy ) ); ?></span>
+					<?php endif; ?>
 
 				</div>
 				<?php if ( get_the_content() ) : ?>
@@ -302,7 +322,6 @@ $mvs_archive_url = home_url( '/media/' );
 					// Batch index + all meta for the page in 2 queries so each tile renders from the request cache. (1.7.0)
 					$mvs_page_ids = array_map( 'intval', array_column( $items, 'media_id' ) );
 					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
-					\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 				?>
 				<?php
 				// Same emitter Explore and the media-grid block use, so Default
@@ -312,7 +331,7 @@ $mvs_archive_url = home_url( '/media/' );
 				// Basecamp 10297763824.
 				$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
 				?>
-				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>">
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container>
 					<?php
 					foreach ( $items as $item_row ) :
 						$media_id = (int) $item_row['media_id'];
@@ -348,6 +367,33 @@ $mvs_archive_url = home_url( '/media/' );
 					endforeach;
 					?>
 				</div>
+				<?php if ( $mvs_album_total > count( $items ) ) : ?>
+					<?php
+					// Load More items via GET /albums/{id}/items. For the owner the
+					// button carries the "Set as cover" label, and load-more.js wraps
+					// each appended image the way the loop above does, so every item
+					// in the album stays pickable as the cover (album-cover.js is
+					// delegated and picks the new buttons up).
+					?>
+					<div class="mvs-load-more">
+						<button type="button" class="mvs-load-more-btn"
+							data-rest-url="<?php echo esc_attr( rest_url( 'mvs/v1/' ) ); ?>"
+							data-nonce="<?php echo esc_attr( wp_create_nonce( 'wp_rest' ) ); ?>"
+							data-page="1"
+							data-per-page="<?php echo esc_attr( $mvs_album_per_page ); ?>"
+							data-endpoint="albums/<?php echo (int) $mvs_album_id; ?>/items"
+							data-layout="grid"
+							<?php if ( $mvs_is_album_owner ) : ?>
+							data-set-cover="<?php esc_attr_e( 'Set as cover', 'wpmediaverse' ); ?>"
+							<?php endif; ?>>
+							<span class="mvs-load-more-label"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
+							<span class="mvs-load-more-spinner"></span>
+						</button>
+					</div>
+					<p class="mvs-load-more-end" hidden>
+						<?php esc_html_e( "You're all caught up!", 'wpmediaverse' ); ?>
+					</p>
+				<?php endif; ?>
 			<?php else : ?>
 				<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>
 			<?php endif; ?>

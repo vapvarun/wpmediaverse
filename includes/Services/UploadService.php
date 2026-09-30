@@ -122,38 +122,11 @@ class UploadService {
 		}
 
 		// Check file size using server-side measurement (not client-reported).
-		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
-
-		/**
-		 * Filters the maximum upload file size in bytes.
-		 *
-		 * @since 1.1.0
-		 *
-		 * @param int $max_size Maximum upload size in bytes.
-		 * @param int $user_id  Uploading user ID.
-		 */
-		$max_size = (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
-
+		// One reader for the limit, shared with Pro's document ingest.
 		$actual_size = filesize( $file['tmp_name'] );
-		if ( false === $actual_size || $actual_size > $max_size ) {
-			LoggerService::error(
-				'upload',
-				'File too large',
-				array(
-					'size'    => $actual_size,
-					'max'     => $max_size,
-					'user_id' => $user_id,
-				)
-			);
-			return new WP_Error(
-				'mvs_file_too_large',
-				sprintf(
-					/* translators: %s: max size in MB */
-					__( 'File exceeds the maximum upload size of %s MB.', 'wpmediaverse' ),
-					round( $max_size / 1048576 )
-				),
-				array( 'status' => 400 )
-			);
+		$mvs_refusal = $this->reject_oversized_file( $actual_size, $user_id );
+		if ( $mvs_refusal ) {
+			return $mvs_refusal;
 		}
 
 		// Compute SHA-256 hash.
@@ -228,7 +201,8 @@ class UploadService {
 		/**
 		 * Filters the upload arguments before processing.
 		 *
-		 * Pro uses this to enforce quota limits. Return a WP_Error to reject.
+		 * The storage limit (StorageLimitService) refuses here, as can any
+		 * add-on. Return a WP_Error to reject.
 		 *
 		 * @since 1.1.0
 		 *
@@ -476,7 +450,7 @@ class UploadService {
 
 		$file_url = $driver->url( $dest_path );
 
-		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
+		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : FilenameStrategy::title_from( (string) $file['name'] );
 
 		// Determine status. MediaVerse is a community/engagement platform: any
 		// logged-in member's upload publishes immediately by default.
@@ -1017,6 +991,49 @@ class UploadService {
 			return new WP_Error(
 				'mvs_unsupported_file_type',
 				__( 'This file type is not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * The SAME max-size guard as a fresh upload, callable from any write path.
+	 *
+	 * Extracted so `MediaController::replace_file()` can run the identical
+	 * check `handle()` runs — a size cap the owner sets has to hold on every
+	 * write path, not just fresh uploads. Basecamp 10350220155: replace()
+	 * called neither this nor any size check, so the cap could be bypassed by
+	 * replacing an existing item's file.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int|false $actual_size Server-side measured file size, or false
+	 *                                when it could not be measured.
+	 * @param int       $user_id     Acting user, for the per-user limit reader.
+	 * @return \WP_Error|null Error when the file must be refused, null to proceed.
+	 */
+	public function reject_oversized_file( $actual_size, int $user_id ): ?\WP_Error {
+		$max_size = \WPMediaVerse\Core\SettingsHelper::get_max_upload_size( $user_id );
+
+		if ( false === $actual_size || $actual_size > $max_size ) {
+			LoggerService::error(
+				'upload',
+				'File too large',
+				array(
+					'size'    => $actual_size,
+					'max'     => $max_size,
+					'user_id' => $user_id,
+				)
+			);
+			return new WP_Error(
+				'mvs_file_too_large',
+				sprintf(
+					/* translators: %s: max size in MB */
+					__( 'File exceeds the maximum upload size of %s MB.', 'wpmediaverse' ),
+					round( $max_size / 1048576 )
+				),
 				array( 'status' => 400 )
 			);
 		}
@@ -2421,7 +2438,12 @@ class UploadService {
 	 * @return void
 	 */
 	public static function queue_cloud_repatriation( int $media_id ): void {
-		if ( $media_id <= 0 ) {
+		// Same test run_cloud_repatriation() starts with: on local storage there
+		// is no cloud copy to bring home, so do not queue a job per photo that
+		// would only return (an album of thousands made private queued
+		// thousands of no-op jobs, Basecamp 10344644266).
+		$source = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( $media_id <= 0 || '' === $source || 'local' === $source ) {
 			return;
 		}
 

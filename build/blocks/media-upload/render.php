@@ -14,26 +14,27 @@ defined( 'ABSPATH' ) || exit;
 // Logged-out: show a "Log in to upload" CTA instead of a blank gap on the page.
 if ( ! is_user_logged_in() ) {
 	// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML; the __()/wp_login_url() values are data it escapes.
-	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
-		array(
-			'icon'    => 'upload',
-			'title'   => __( 'Log in to upload', 'wpmediaverse' ),
-			'message' => __( 'You need an account to share media.', 'wpmediaverse' ),
-			'actions' => array(
-				array(
-					'url'     => wp_login_url( get_permalink() ),
-					'label'   => __( 'Log in', 'wpmediaverse' ),
-					'variant' => 'primary',
-				),
-			),
-		)
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_login_gate(
+		'upload',
+		__( 'Log in to upload', 'wpmediaverse' ),
+		__( 'You need an account to share media.', 'wpmediaverse' )
 	);
 	// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;
 }
 
-// Logged-in without the upload capability: stay silent (no broken affordance).
-if ( ! current_user_can( 'upload_mvs_media' ) ) {
+// Signed in but not allowed to upload (Settings > General > Who can upload
+// media): say so instead of a blank page (Coding Rule 11).
+if ( ! \WPMediaVerse\Core\Abilities::can_upload() ) {
+	// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+		array(
+			'icon'    => 'upload-cloud',
+			'title'   => __( 'Uploading is not open to your account', 'wpmediaverse' ),
+			'message' => __( 'Ask the site owner if you should be able to share media here.', 'wpmediaverse' ),
+		)
+	);
+	// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;
 }
 
@@ -100,7 +101,6 @@ wp_interactivity_state(
 			'uploadNFiles'       => __( 'Upload %d files', 'wpmediaverse' ),
 			/* translators: %d: number of files. */
 			'uploadingNFiles'    => __( 'Uploading %d file(s)...', 'wpmediaverse' ),
-			'uploadLimitReached' => __( 'Upload limit reached. Please upgrade your plan.', 'wpmediaverse' ),
 			/* translators: %1$d: current file number, %2$d: total number of files. */
 			'uploadingProgress'  => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
 			/* translators: %s: file name. */
@@ -116,6 +116,8 @@ wp_interactivity_state(
 			'allowedFallback'    => __( 'images, videos, and audio files', 'wpmediaverse' ),
 			/* translators: %1$s: rejected file names, %2$s: supported formats. */
 			'fileTypeNotAllowed' => __( 'File type not allowed: %1$s. Supported formats: %2$s.', 'wpmediaverse' ),
+			/* translators: 1: storage used, 2: storage limit, e.g. "48 MB of 500 MB". */
+			'storageUsed'        => __( 'Used %1$s of %2$s', 'wpmediaverse' ),
 		),
 	)
 );
@@ -132,6 +134,8 @@ wp_interactivity_state(
 			'uploading'      => false,
 			'uploadError'    => '',
 			'successMessage' => '',
+			'lastLink'       => '',
+			'myMediaUrl'     => get_option( 'mvs_page_dashboard' ) ? (string) get_permalink( (int) get_option( 'mvs_page_dashboard' ) ) : '',
 			'hasPending'     => false,
 			'pendingCount'   => 0,
 			'files'          => array(),
@@ -143,6 +147,7 @@ wp_interactivity_state(
 	?>
 	'
 >
+	<?php \WPMediaVerse\Core\TemplateHelpers::render_storage_usage(); ?>
 	<div class="mvs-upload-dropzone"
 		data-wp-on--click="actions.handleClick"
 		data-wp-on--dragover="actions.handleDragOver"
@@ -194,8 +199,8 @@ wp_interactivity_state(
 			?>
 		</p>
 	<?php endif; ?>
-	<!-- Optional metadata fields -->
-	<div class="mvs-upload-fields">
+	<!-- Optional metadata fields: they appear once a file is picked. -->
+	<div class="mvs-upload-fields" data-wp-bind--hidden="!state.hasPending" hidden>
 		<input type="text" class="mvs-upload-title-input"
 			placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
 			aria-label="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
@@ -228,5 +233,9 @@ wp_interactivity_state(
 	</div>
 	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
 		<p data-wp-text="state.successText"></p>
+		<p class="mvs-upload-success__next">
+			<a data-wp-bind--href="context.lastLink" data-wp-bind--hidden="!context.lastLink" hidden><?php esc_html_e( 'View it', 'wpmediaverse' ); ?></a>
+			<a data-wp-bind--href="context.myMediaUrl" data-wp-bind--hidden="!context.myMediaUrl" hidden><?php esc_html_e( 'Go to My Media', 'wpmediaverse' ); ?></a>
+		</p>
 	</div>
 </div>

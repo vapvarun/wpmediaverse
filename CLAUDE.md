@@ -8,24 +8,24 @@
 >
 > **Counts live in the manifest, not in this file.** Every bare number here has rotted at least once. Ask the code:
 >
-> | What | Command | 2026-09-01 |
+> | What | Command | 2026-09-27 |
 > |---|---|---|
-> | REST endpoints | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` | 122 |
-> | REST controllers | `ls includes/REST/Controller/*.php \| wc -l` | 25 |
-> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 274 |
+> | REST endpoints | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` | 118 |
+> | REST controllers | `ls includes/REST/Controller/*.php \| wc -l` | 24 |
+> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 291 |
 > | Plugin AJAX actions | `grep -rhoE "add_action\( *'wp_ajax_mvs_[a-z_]+'" includes/ \| sort -u \| wc -l` | 2 (`mvs_import_demo_data`, `mvs_cleanup_demo_data`) - the looser `grep -rho "wp_ajax_mvs_[a-z_]*"` returns 3, counting a bare prefix inside a comment |
 > | Admin page registrations | `grep -rn 'add_menu_page(\|add_submenu_page(' includes/ \| grep -vc 'function \|\*'` | 12 call sites (the manifest's `admin_pages: 22` counts rendered surfaces: these 12 plus 2 CPT menu entries and 8 settings tabs) |
-> | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 39 distinct options (51 `register_setting()` calls) |
-> | Custom tables | `grep -c 'CREATE TABLE' includes/Core/Migrator.php` | 23 distinct names (24 statements) |
-> | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 9 registered, 13 `block.json` (4 Interactivity-only) |
-> | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 53 |
+> | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 31 distinct literal options (41 real `register_setting()` calls; a naive `grep -c` also matches doc-comment mentions of the function name, inflating to 44). 3 of the 41 calls are foreach loops expanding to 12 more options, mostly behind class constants - full expansion gives 48 distinct settings, see manifest.summary.json |
+> | Custom tables | `grep -c 'CREATE TABLE' includes/Core/Migrator.php` | 23 distinct names (24 real statements; the naive count returns 25 because it also matches a comment at Migrator.php:372 describing dbDelta's column-parsing behavior) |
+> | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 8 registered, 12 `block.json` (4 Interactivity-only) |
+> | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 55 |
 > | WP-CLI subcommands | `grep -c 'public function ' includes/CLI/Commands.php` | 20 |
-> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 32 |
+> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 40 (2026-09-27) |
 >
 > 2.4.0 added 4 hooks (the manifest gained 20 more on 2026-09-01 that shipped undocumented): `mvs_media_trashed` / `mvs_media_restored` (actions) and `mvs_has_custom_avatar` / `mvs_media_drive_access` (filters) — all four verified present.
 >
-> **Reconciled 2026-09-01.** That delta was applied in the same pass: `manifest.summary.json`
-> now carries `admin_pages: 22`, `settings: 52`, `services: 54`, `wp_cli: 22`, `rest_endpoints: 122`,
+> **Reconciled 2026-09-27.** That delta was applied in the same pass: `manifest.summary.json`
+> now carries `admin_pages: 22`, `settings: 47`, `services: 55`, `wp_cli: 22`, `rest_endpoints: 118`,
 > matching the commands above. Where a number here and a number there still differ, the
 > summary says which unit it counted - read its `counts_note` before assuming drift.
 
@@ -33,7 +33,7 @@
 
 | Key | Value |
 |-----|-------|
-| Version | 2.5.1 |
+| Version | 2.6.0 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
@@ -42,7 +42,7 @@
 | `vendor/` | Dev and build tooling ONLY. Gitignored, not in the release zip, never loaded at runtime. |
 | Text Domain | `wpmediaverse` |
 | Custom Tables | 23 (prefixed `mvs_`) |
-| REST Controllers | 25 files in `includes/REST/Controller/` (24 extend `WP_REST_Controller`; `AccountController` is a plain class), plus `Messaging\MessagingController`. Namespace `mvs/v1`. |
+| REST Controllers | 24 files in `includes/REST/Controller/` (23 extend `WP_REST_Controller`; `AccountController` is a plain class), plus `Messaging\MessagingController`. Namespace `mvs/v1`. |
 | Pro Extension Hook | `mvs_loaded` (fires with `ServiceContainer`) |
 | Build | `npx grunt dist` |
 | Entry Point | `wpmediaverse.php` -> `Plugin::init()` |
@@ -59,7 +59,7 @@ Every namespace under `includes/` is listed. Class lists are complete as of 2026
 |-----------|---------------|-------------|
 | `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade, type vocabularies | `Plugin`, `ServiceContainer`, `Migrator`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers` (+`TemplateHelpersInterface`), `Abilities`, `SettingsHelper`, `MediaUrl`, `MediaTypes`, `DocumentTypes`, `DashboardSections`, `Dates` (+ `Loader`, **deprecated 2.4.0**, never used, removal 4.0.0) |
 | `Admin\` | WP admin pages, moderation queue, member moderation | `OverviewPage`, `StatsPage`, `ModerationQueue`, `MemberModeration`, `ReportsPage`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage`, `DocumentListPage`, `IntegrationsPage`, `TagManagementPage` |
-| `Admin\Settings\` | Settings page (6 focused classes) | `SettingsPage`, `SettingsRegistrar`, `AiSettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
+| `Admin\Settings\` | Settings page (8 focused classes) | `SettingsPage`, `SettingsRegistrar`, `GeneralSettingsRegistrar`, `AiSettingsRegistrar`, `MessagingSettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
 | `REST\Controller\` | REST API endpoints | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController`, `AdminController`, `AuthController`, `ConfigController`, `InterestsController`, `TransactionController`, `AccountController`, `DeviceController` |
 | `REST\` | Middleware, gates, pagination | `RateLimiter`, `RestGate`, `RestGuards`, `CommunityPrivacyGate`, `Pagination` |
 | `Services\` | Business logic, storage, AI, caching, URL signing, variant pipeline, poster generation | `UploadService`, `StorageService`, `StorageRouter`, `MediaVariantWriter`, `VariantSpec`, `PosterService`, `FilenameStrategy`, `ImageOptimizationService`, `PrivacyService`, `AlbumService`, `CollectionService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AdminAggregatesService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `TelemetryService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `TransactionService`, `LocalDriver`, `CloudOps`, `StorageCleanupService`, `StorageRepairService`, `CptIdCollisionService`, `AccountDeletionService`, `UserDeletionService`, `ViewRetentionService` (+ `StorageDriverInterface`, `AIProviderInterface`) |
@@ -121,6 +121,7 @@ To re-enumerate the whole table:
 | `admin.moderation` | `ModerationQueue` |
 | `admin.reports` | `ReportsPage` |
 | `admin.member_moderation` | `MemberModeration` |
+| `admin.private_default` | `PrivateCommunityDefault` |
 | `admin.stats` | `StatsPage` |
 | `admin.logs` | `LogViewerPage` |
 | `admin.setup_wizard` | `SetupWizard` |
@@ -152,7 +153,7 @@ To re-enumerate the whole table:
 | `template_helpers` | `TemplateHelpers` |
 | `messaging` | `MessagingService` (registered in `init_messaging()`) |
 
-**53 keys as of 2026-09-01** — re-run the grep above rather than trusting that number.
+**55 keys as of 2026-09-27** — re-run the grep above rather than trusting that number.
 The `stories` key is **gone** (removed with `StoryService` in 1.8.1). Plus a non-container static
 helper: `Core\MediaUrl` (single read-side URL facade for non-REST callers; replaces the never-built
 `Services\MediaUrl` referenced before 1.5.0). `VariantSpec` is a value object (not
@@ -163,7 +164,7 @@ container-registered) consumed by the upload pipeline.
 ## Custom Tables (23)
 
 All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
-(`Migrator::CURRENT_VERSION` is 32). Re-enumerate with
+(`Migrator::CURRENT_VERSION` is 40 as of 2026-09-27). Re-enumerate with
 `grep -o 'CREATE TABLE[^(]*mvs_[a-z_]*' includes/Core/Migrator.php | sort -u`.
 
 | Table | Purpose |
@@ -180,7 +181,6 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | `mvs_notifications` | User notification queue |
 | `mvs_reports` | Content/user abuse reports |
 | `mvs_blocks` | User block list |
-| `mvs_access_rules` | Per-media access control rules |
 | `mvs_access_grants` | Granted access tokens |
 | `mvs_album_items` | Album-to-media mapping |
 | `mvs_error_log` | Internal error/debug log |
@@ -190,7 +190,8 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | `mvs_message_reactions` | Reactions on DM messages |
 | `mvs_transactions` | Credit/monetization transactions |
 | `mvs_bp_activity_media` | BuddyPress activity-to-media mapping |
-| `mvs_device_tokens` | Registered push device tokens (`/me/devices`, Migrator v30) |
+| `mvs_device_tokens` | The ONE push device registry (`/me/devices`, Migrator v30). Pro's `/mvs-pro/v1/push/register-device` writes here too, and Pro's Expo sender reads it on `mvs_push_send`. |
+| `mvs_media_spaces` | Links one document into more than one space without a copy (Migrator v33, `Repository/MediaSpaceRepository.php`) |
 
 ---
 
@@ -278,7 +279,12 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
     plugins, and say in the commit what the sweep covered and what it did not. A fix
     with no sweep note is half a fix. (2026-09-03.)
 
+24. **Changing an overridable template bumps its `@version`.** Every template a theme can override (`templates/**` except `templates/admin/`) carries `@version` in its header; it moves to the release that ships a markup or variable change, and ONLY then. Site Health (`TemplateVersions` + `HealthCheckService::test_template_overrides()`) compares a theme's copy against it, so an unbumped change hides a stale copy from the owner. A template that stops reading or sending a request value is exactly such a change (the `s` -> `q` Explore search, Basecamp 10344452624). Enforced by `bin/template-version-check.sh` (local-CI stage 1.9), mutation-tested both ways. Pro registers its folder through `mvs_template_roots`. (Basecamp 10344471983, 2026-09-27.)
+
+25. **Every feature has a catalog entry, written in the same commit.** `qa/inventory/FUNCTIONALITY-CATALOG.md` is the one file handed to testers and outside QA tools. A change that adds, removes or changes a feature, setting, screen, REST route, WP-CLI command or template adds or edits its entry (`MV-<AREA>-<NNN>`: who, where, setup, steps, expected, UX expectation, settings, edge cases) in the same commit, Free and Pro alike. Write facts read from the code, never a guess; if something cannot be confirmed, write a `Check:` line for the tester. A feature with no entry is a feature nobody tests. (2026-09-27.)
+
 **Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
+
 
 ---
 
@@ -309,7 +315,7 @@ These rules protect 50+ production customer sites. They are mechanically enforce
 
 ## Known Debt (Do Not Worsen)
 
-> **Debt criterion (2026-05-03 update):** A file lands here only when it has a CONCRETE structural problem — duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at WPMediaVerse's scale (53 container services, 25 REST controllers, Free + Pro pair), files in the 1k–3k range are normal and healthy as long as they're focused on one responsibility. The team splits at ~2.5k+ when a file's scope genuinely outgrows one class (BP manager was 2,811; Settings was 2,401 — both already split).
+> **Debt criterion (2026-05-03 update):** A file lands here only when it has a CONCRETE structural problem — duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at WPMediaVerse's scale (55 container services, 24 REST controllers, Free + Pro pair), files in the 1k–3k range are normal and healthy as long as they're focused on one responsibility. The team splits at ~2.5k+ when a file's scope genuinely outgrows one class (BP manager was 2,811; Settings was 2,401 — both already split).
 
 **Line counts below are `wc -l` as of 2026-09-01.** Re-measure before quoting one; the previous
 set in this table was 6–18 months stale and understated four files by more than 2×.
@@ -319,7 +325,7 @@ set in this table was 6–18 months stale and understated four files by more tha
 | `includes/Integrations/BuddyPress/` | (was 2,811-line manager mixing 7 unrelated BP integration concerns) | DONE — split; `BuddyPressManager.php` is now 118 lines and the namespace holds 11 focused classes |
 | `includes/Admin/Settings/` | (was 2,401-line registrar with 7 settings groups + UI + sanitizers in one) | DONE — split into 6 classes (except `SettingsRegistrar.php`, see below) |
 | `includes/Integrations/BuddyPress/ProfileTabIntegration.php` ↔ `GroupTabIntegration.php` | (was 80% duplicate method bodies between the two siblings) | DONE 2026-05-03 (Phase 5 P2.4) — `BaseBPTabIntegration` extracted; subclasses now hold only context-specific overrides. |
-| `includes/Admin/Settings/SettingsRegistrar.php` | Consolidates the remaining settings groups (general+storage, display, moderation, webhooks, messaging, pages). The AI group was extracted to `AiSettingsRegistrar` in 1.4.0 (1,168 → 914) — follow that pattern for the others when next touched. | **OPEN, and GROWING — 1,190 lines** (2026-09-01), i.e. above the pre-extraction size. The debt tax (Rule 15) has not been honoured on this file. Next edit must extract a group, not add one. |
+| `includes/Admin/Settings/SettingsRegistrar.php` | (was 1,189 lines holding every settings group) | DONE 2026-09-26 - AI, General (2.6.0) and Messages (2.6.0, with the master switch) each moved to their own registrar; `SettingsRegistrar.php` is 494 lines (storage, display, moderation, webhooks, pages). Next group added gets its own registrar too. |
 | `includes/Services/UploadService.php` | (was 1,482 lines mixing 4 concerns: validation, type detection, storage routing, progress tracking) | **OPEN, and GROWING — 2,217 lines** (2026-09-01). 1.5.0 did extract `MediaVariantWriter` / `StorageRouter` / `PosterService` (1,482 → 1,211), but the file has since grown past where it started. `ValidatorService` and `ProgressTrackerService` were never created — they do not exist in `includes/Services/`. |
 | `includes/REST/Controller/MediaController.php::replace_file` | ~260-line method that orchestrates its own ingest instead of calling `UploadService::handle()`. Every step that can drift has already been pulled into a shared seam — `FilenameStrategy::pick()`, `apply_exif_orientation()`, `watermark->stamp_new_upload()`, `process_stored_file()` — so the two paths no longer duplicate *logic*; what remains is the orchestration shell, and it genuinely differs (replace UPDATES an existing row and must not reset stats or mint a new media_id, `handle()` CREATES one). | **STILL OPEN.** The 2026-08-06 decision (Basecamp 10156642711) deferred this to 2.4.0; 2.4.0 is the current version and the method was not collapsed. Re-decide rather than re-defer: collapsing the shell means teaching `handle()` an update mode, a behaviour change on the upload path that Production Rule 7 forbids in a patch. Debt tax applies now: no new inline ingest logic in this method — extract a seam and call it from both sides. |
 
@@ -340,8 +346,8 @@ was written, and is worth a look for a genuine seam next time someone is in it.
 |-----|-------|
 | Framework | PHPUnit 9.6 + yoast/phpunit-polyfills 2.x |
 | Test dir | `tests/unit/` |
-| Test files | 53 as of 2026-09-01. This line has been wrong twice (it said 11, then 42) because a hardcoded count rots the moment anyone adds a file — run `ls tests/unit/*.php \| wc -l` rather than trusting it. |
-| Suite size | 450 tests / 1,027 assertions / 1 skipped, green on 2026-09-01. Same caveat — `composer test:unit` is the number. |
+| Test files | 99 as of 2026-09-27. This line has been wrong twice (it said 11, then 42) because a hardcoded count rots the moment anyone adds a file — run `ls tests/unit/*.php \| wc -l` rather than trusting it. |
+| Suite size | 703 tests / 1,815 assertions / 2 skipped, green on 2026-09-27. Same caveat — `composer test:unit` is the number. |
 | Coverage | Not precisely measured; grown substantially past the old ~10% estimate given the file-count growth above — re-measure with `phpunit --coverage-text` before quoting a number |
 | Run | `./vendor/bin/phpunit` or `composer test:unit` (also stage 2.4 of local-CI, see below) |
 | Config | `phpunit.xml.dist` |
@@ -417,6 +423,7 @@ All QA lives in `qa/` — single home for Free + Pro. Pro has no `qa/` directory
 | `qa/runbooks/MANUAL-UX-QA-free.md` | Free manual UX walkthrough |
 | `qa/runbooks/MANUAL-UX-QA-pro.md` | Pro manual UX walkthrough |
 | `qa/rules/` | Organization rules — CSS, NAMING, PHP, PROCESS, RENDER-STATE |
+| `qa/inventory/FUNCTIONALITY-CATALOG.md` | Every Free + Pro feature for testers and outside QA tools: who, where, steps, expected, UX expectation; plus the presentation bar and code-organization audit |
 | `qa/inventory/WHAT-TO-CHECK.md` | Flat list — surfaces, actions, settings, data stores, contracts |
 | `qa/audits/` | Dated audits (a11y, doc-drift, etc.) |
 | `qa/runs/` | Append-only final run reports + `FINDINGS-HISTORY.md`. Drafts, raw debug logs and screenshots go to `app/qa-artifacts/`, never the repo |
@@ -465,10 +472,11 @@ What the gate runs (in order, see `bin/local-ci.sh`):
 | 1.6b Erasure coverage | `php bin/check-erasure.php` | a user-keyed table that is neither ERASE nor RETAIN in the privacy map | ✅ exits 0 |
 | 1.7 Template-style | `bin/template-style-check.sh` | inline cosmetic CSS / hardcoded hex in markup (Coding Rule 19) | ✅ exits 0 |
 | 1.8 Dead-template check | `bin/dead-template-check.sh` | orphan templates nothing loads | ✅ exits 0 |
+| 1.9 Template versioning | `bin/template-version-check.sh` | an overridable template without `@version`, or changed since the last tag without a bump (Coding Rule 24) | ✅ exits 0 (added 2026-09-27) |
 | 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific Rules 1–8 (1 native cap checks, 2 REST `__return_true` allowlist, 3 admin aggregates via `AdminAggregatesService`, 4 no per-entity transients, 5 REST `per_page` declares a `maximum`, 6 no refusal-as-success, 7 no direct `mvs_media_index` query outside `MediaRepository`, 8 no exec-family call in shipped source) | ✅ all 8 pass. Rule 7 (added 2026-08-11, **hard `violation()` since 2026-08-15**): all 32 tracked call sites migrated across `CLI/Commands.php` (11), `Services/CloudOps.php` (8), `Services/CptIdCollisionService.php` (6), `REST/Controller/MediaController.php` (4) and `Services/StorageRepairService.php` (3). Mutation-tested — a planted leak fails the script with exit 1. Allowlist is the repository layer (`Repository/MediaRepository.php`, `Repository/MediaIntegrityRepository.php`) plus `Core/Migrator.php` and `Services/AdminAggregatesService.php`, each with a written architectural reason. Rule 8 (2026-08-30) enforces Coding Rule 21 — 0 hits. |
 | 2.2 Architecture | `../wpmediaverse-pro/bin/architecture-checks.sh` (falls back to a local `bin/` copy; skipped if neither is checked out) | Free/Pro contract invariants | ✅ runs from the Free side too — this row previously said "(Pro only)", which is wrong |
 | 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 (skipped with a warning if `/tmp/wordpress-tests-lib` is absent) |
-| 2.4 Full unit suite | `composer test:unit` | Every PHPUnit test in the plugin | ✅ green 2026-09-01 — 450 tests / 1,027 assertions / 1 skipped. Added 2026-08-11, mirroring the gap closed on Pro the same day (Basecamp #10184313297). **Known rare flake, still unexplained:** `CptIdCollisionTest.php` showed 2 order-dependent failures ("Linkage C") on 1 of 8 full-suite runs measured 2026-08-11. Confirmed NOT Pro's root cause (`MediaRepository::reset_test_cache()`) — no Free test file truncates `mvs_media_index`. Targeted repros did not reproduce it. **No speculative fix applied** — a guessed fix with a ~1-in-8 signal to validate against would be indistinguishable from dead code. See `plan/2026-08-11-pro-competitions-test-triage-plan.md`'s closing note. |
+| 2.4 Full unit suite | `composer test:unit` | Every PHPUnit test in the plugin | ✅ green 2026-09-27 — 703 tests / 1,815 assertions / 2 skipped. Added 2026-08-11, mirroring the gap closed on Pro the same day (Basecamp #10184313297). **Known rare flake, still unexplained:** `CptIdCollisionTest.php` showed 2 order-dependent failures ("Linkage C") on 1 of 8 full-suite runs measured 2026-08-11. Confirmed NOT Pro's root cause (`MediaRepository::reset_test_cache()`) — no Free test file truncates `mvs_media_index`. Targeted repros did not reproduce it. **No speculative fix applied** — a guessed fix with a ~1-in-8 signal to validate against would be indistinguishable from dead code. See `plan/2026-08-11-pro-competitions-test-triage-plan.md`'s closing note. |
 | 2.4 wppqa baseline | freshness check on `audit/runs/*wppqa-baseline*.md` | a missing or >14-day-old bug-finder baseline (blocks the push) | ✅ latest is `2026-08-28-wppqa-baseline-SUMMARY.md`. Tag "2.4" is shared with the unit suite in `local-ci.sh` — two different stages, same label. |
 | 2.5 UX audit | `bin/ux-audit.sh` → `audit/ux-audit-<date>.md` | ux-foundation drift; block-severity findings fail the gate, advisory ones only print | ✅ exits 0 |
 | 3.1 Manifest | `jq` on `audit/manifests/manifest.json` | manifest validity + freshness (warns past 30 days) | ✅ exits 0 |

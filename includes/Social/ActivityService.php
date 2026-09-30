@@ -126,9 +126,10 @@ class ActivityService {
 
 		// Exclude blocked users if viewer is logged in.
 		$viewer_id = get_current_user_id();
+		$blocked   = array();
 		if ( $viewer_id ) {
 			$reports = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
-			$blocked = $reports->get_blocked_ids( $viewer_id );
+			$blocked = $reports->get_blocked_either_way_ids( $viewer_id );
 			if ( ! empty( $blocked ) ) {
 				$block_placeholders = implode( ',', array_fill( 0, count( $blocked ), '%d' ) );
 				$where             .= " AND a.user_id NOT IN ({$block_placeholders})"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -148,6 +149,14 @@ class ActivityService {
 			->get( 'media_repository' )->explore_privacy_clause( 'mi', $viewer_id );
 		$privacy_join                                   = " LEFT JOIN {$index_table} mi ON mi.media_id = a.media_id";
 		$privacy_where                                  = " AND ( a.media_id = 0 OR a.media_id IS NULL OR {$mvs_act_priv_sql} )";
+
+		// A third party's comment or reaction on a blocked member's item still
+		// carries that item (title, link, author), so the item's AUTHOR must be
+		// outside the block too, not only the actor (Basecamp 10354827925).
+		if ( ! empty( $blocked ) ) {
+			$privacy_where      .= ' AND ( a.media_id = 0 OR a.media_id IS NULL OR mi.post_author NOT IN (' . implode( ',', array_fill( 0, count( $blocked ), '%d' ) ) . ') )';
+			$mvs_act_priv_params = array_merge( $mvs_act_priv_params, array_map( 'intval', $blocked ) );
+		}
 
 		// On an unfiltered anonymous feed (scope 'all', no blocks, param-less
 		// privacy clause) the COUNT has zero placeholders — wpdb::prepare()
@@ -170,6 +179,27 @@ class ActivityService {
 				...$params
 			)
 		);
+
+		// Prime caches in bulk before formatting — format_activity() calls
+		// get_userdata() and MediaRepository::get_all() per row, which without
+		// this is N+1 (a fresh query per row per lookup at 50k+ media / 10k
+		// members). cache_users() primes core's user cache; prefetch() primes
+		// the repository's request-scope row+meta cache (mvs_media_index is not
+		// a CPT, so core's own post-cache priming would prime nothing useful).
+		$actor_ids = array();
+		$media_ids = array();
+		foreach ( $rows as $row ) {
+			$actor_ids[] = (int) $row->user_id;
+			if ( $row->media_id ) {
+				$media_ids[] = (int) $row->media_id;
+			}
+		}
+		if ( $actor_ids ) {
+			cache_users( array_unique( $actor_ids ) );
+		}
+		if ( $media_ids ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( array_unique( $media_ids ) );
+		}
 
 		$activities = array();
 		foreach ( $rows as $row ) {

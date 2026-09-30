@@ -8,35 +8,24 @@ After you activate MediaVerse, a short wizard guides you through the only settin
 
 A quick overview of what MediaVerse does - uploads and albums, the social layer (reactions, comments, favorites, follows), AI moderation and privacy controls, and optional BuddyPress integration. Click **Let's Get Started** to continue, or **Skip setup** to jump straight to the dashboard.
 
-## Step 2: Pages
-
-The wizard confirms the three frontend pages that were created automatically on activation:
-
-| Page | Default slug | Purpose |
-|------|--------------|---------|
-| Explore Media | `/explore-media/` | Public gallery where visitors browse all media |
-| My Media | `/my-media/` | Personal dashboard for users to manage their uploads |
-| Upload Media | `/upload-media/` | Frontend upload form, linked from the Explore page header |
-
-If any page is missing, the wizard flags it and asks you to reactivate the plugin. Click **Continue** when the pages are in place.
-
-## Step 3: Display
+## Step 2: Display
 
 Configure how media appears on your site.
 
-![Setup wizard display step showing grid column and items-per-page options](../images/admin-settings-display.png)
+![Setup wizard display step showing items-per-page and layout options](../images/admin-settings-display.png)
 
 | Option | Choices | Default |
 |--------|---------|---------|
-| Grid Columns | 2, 3, 4 | 3 |
-| Items Per Page | 12, 24, 48 | 24 |
-| Thumbnail Style | Square (cropped), Original proportions | Square |
+| Items Per Page | 12, 24, 48 | 12 |
+| Default Layout | Grid (square crops), Justified rows (original proportions), List (one row per item) | Grid |
 
-You can change these any time later under **Media > Settings**.
+Grid columns are not part of the wizard. You can set them, and change the options above, any time under **MediaVerse > Settings > Display**.
 
-## Step 4: Done
+The frontend pages (Explore Media, My Media, Upload Media) are created automatically when you activate the plugin, so the wizard no longer has a step for them. The **Frontend Pages** panel on the MediaVerse Overview screen shows whether each one is in place.
 
-The wizard marks setup as complete (the `mvs_setup_complete` option) and redirects you to the **Media Overview** dashboard.
+## Step 3: Done
+
+The wizard marks setup as complete (the `mvs_setup_complete` option) and takes you to the **MediaVerse Overview** screen.
 
 From here you can:
 - Upload your first media file
@@ -45,7 +34,7 @@ From here you can:
 
 ## Role Capabilities
 
-The wizard itself does not configure roles. On activation, MediaVerse adds default media capabilities to the Administrator, Editor, Author, Contributor, and Subscriber roles. You can review and change these at any time in **Media > Settings**.
+The wizard itself does not configure roles. On activation, MediaVerse adds default media capabilities to the Administrator, Editor, Author, Contributor, and Subscriber roles. You can review and change these at any time in **MediaVerse > Settings**.
 
 ## Skipping the Wizard
 

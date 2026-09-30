@@ -3,7 +3,7 @@ journey: explore-browse-mobile
 plugin: wpmediaverse
 priority: critical
 roles: [subscriber, anonymous]
-covers: [explore-grid, search-filter, single-media, lightbox, mobile-responsive, i18n, touch-target-floor]
+covers: [MV-EXP-001, MV-EXP-002, MV-EXP-003, MV-EXP-004, MV-EXP-005, MV-EXP-006, MV-EXP-007, MV-EXP-008, MV-MED-014, explore-grid, search-filter, single-media, lightbox, mobile-responsive, i18n, touch-target-floor]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "At least 6 public media items exist (mixed image / video / audio)"
@@ -34,17 +34,42 @@ estimated_runtime_minutes: 8
 - **Expect**: grid updates to matching items; clearing search restores the full grid.
 - **On fail**: explore search JS + `mvs_explore_query_args` filter path.
 
-### 3. Open a single media item
+### 3. Legacy `?s=` search still works on `/media/` (MV-EXP-003)
+- **Action**: `playwright_navigate $SITE_URL/media/?s=<known-title-fragment>` directly (no mapped Explore page set).
+- **Expect**: identical result set to `?q=<same-fragment>` — `TemplateHelpers::explore_search()` reads `$_GET['mvs_q']`/`q` first, then falls back to `$_GET['s']`, so an old bookmarked `?s=` link still filters the grid rather than triggering WordPress's own site search.
+- **On fail**: `includes/Core/TemplateHelpers.php::explore_search()`.
+
+### 4. Filter by category (MV-EXP-005)
+- **Action**: click a category link/chip (or navigate `$SITE_URL/media/?mvs_category=<slug>`).
+- **Expect**: grid narrows to items assigned that category only; an unknown category slug shows a "not found"/empty state, not the unfiltered grid.
+- **On fail**: `templates/explore.php`, `includes/Repository/MediaRepository.php::query()` (`mvs_category` clause).
+
+### 5. Sort control (MV-EXP-006)
+- **Action**: change the "Sort by" select to "Oldest", click Apply; repeat with "Most viewed".
+- **Expect**: this is a plain GET form submit, not auto-apply on select — changing the dropdown alone does not resort until Apply is clicked. "Oldest" produces `created_at` ascending; "Most viewed" produces `views` descending; the URL reflects `sort`/`order` so it is bookmarkable. Navigating to a tampered `?sort=nonsense` falls back to Newest (`created_at` DESC) rather than erroring — confirmed in `TemplateHelpers::explore_sort()`.
+- **On fail**: `includes/Core/TemplateHelpers.php::explore_sort()`.
+
+### 6. Load More pagination (MV-EXP-007)
+- **Action**: with more than one page of media, scroll to the bottom and click "Load More" (`.mvs-load-more-btn`) once, then rapidly double-click it.
+- **Expect**: the button gains `.is-loading` while its `fetch()` is in flight (no full page reload — check the Network panel shows an XHR/fetch to `mvs/v1/media`, not a document navigation); the next page's items append below the existing grid without duplicates even after the double-click; the button disappears once the last page is reached. Also verify `$SITE_URL/media/page/2/` loads directly with HTTP 200 (server-rendered pagination, not a soft-404).
+- **On fail**: `assets/js/frontend/load-more.js`.
+
+### 7. Explore search autocomplete (MV-EXP-008)
+- **Action**: in the Explore Feed block's search box, type 1 character, wait, confirm no dropdown/network call; type a 2nd character of a term matching several titles; wait ~300ms.
+- **Expect**: no request fires below 2 characters. At 2+ characters, after a 250ms debounce, a dropdown of up to 8 title matches appears (`suggestions.length <= 8`). `ArrowDown`/`ArrowUp` move `suggestionHighlight` (assert the highlighted option gets a visible highlight class, not just internal state); `Enter` navigates to the highlighted suggestion; `Escape` closes the dropdown and clears the highlight. Typing quickly (5+ keystrokes within the debounce window) fires far fewer than 5 requests.
+- **On fail**: `src/blocks/explore-feed/view.js` (`suggestions`/`suggestionHighlight` getters/actions).
+
+### 8. Open a single media item
 - **Action**: click an image card.
 - **Expect**: single-media view (or modal) shows the full image (`naturalWidth > 0`), title, author, and reaction/comment affordances.
 - **On fail**: `templates/media-single.php`, `TemplateHelpers::picture_or_img`.
 
-### 4. Lightbox
+### 9. Lightbox (MV-MED-014)
 - **Action**: trigger the lightbox; navigate next/prev.
 - **Expect**: lightbox opens, image loads, next/prev work, close works; ESC closes.
 - **On fail**: interactivity-API lightbox getters.
 
-### 5. Responsive check — mobile 390px (REQUIRED)
+### 10. Responsive check — mobile 390px (REQUIRED)
 - **Action**: `playwright_resize 390 844`, reload Explore, screenshot; open search, a single item, and the lightbox at 390px, screenshot each.
 - **Expect**: `document.documentElement.scrollWidth - window.innerWidth <= 1` on Explore, single view, and lightbox; grid reflows to 1-2 columns; search box + filter tabs reachable without horizontal scroll; nothing clipped.
 - **Expect (tap targets)**: **zero** MediaVerse-owned interactive elements measure under the plugin's own floor. Read the floor from the page rather than hardcoding it, and scope to our namespace so a theme's or the admin bar's controls are not counted:
@@ -82,12 +107,12 @@ estimated_runtime_minutes: 8
   > offender, the 40x40 icon-only profile avatar link, which was fixed in the same
   > pass by growing its hit area rather than scaling the avatar.
 
-### 6. Translation-readiness
+### 11. Translation-readiness
 - **Action**: grep `templates/explore.php`, `templates/media-single.php`, and the explore/lightbox JS for visible strings.
 - **Expect**: all labels ("Search media", "No results", filter names, "by", reaction labels) wrapped in `__()/esc_html__()` with domain `wpmediaverse`; JS strings localized, not inlined.
 - **On fail**: the template/JS emitting the literal.
 
-### 7. Anonymous parity
+### 12. Anonymous parity
 - **Action**: repeat steps 1 + 5 logged-out.
 - **Expect**: public media still renders for anonymous visitors at both viewports; private/members items are absent.
 

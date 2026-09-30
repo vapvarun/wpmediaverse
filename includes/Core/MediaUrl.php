@@ -19,7 +19,7 @@ use WPMediaVerse\Services\VariantSpec;
  * `TemplateHelpers::get_thumb_url()` (the canonical path) or jumped straight
  * to `SignedUrlService::generate_thumbnail()` (5 known direct-call sites in
  * explore.php / media-single.php / Shortcodes.php / CollectionController.php /
- * lock-overlay/render.php).
+ * the since-removed lock-overlay block).
  *
  * Phase 3 introduces MediaUrl, has `TemplateHelpers::get_thumb_url()` delegate
  * to it, and migrates the 5 direct callers. The size-key → meta-key map (today
