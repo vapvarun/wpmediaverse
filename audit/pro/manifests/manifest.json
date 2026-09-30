@@ -2478,7 +2478,7 @@
         ]
       },
       "unchanged": "REST routes, AJAX actions, tables, cron, WP-CLI, Free services consumed (reports and media_repository already listed)",
-      "verified_against_pro_head": "47d2fc1"
+      "verified_against_pro_head": "78a0e0e"
     }
   },
   "category_sources": {
