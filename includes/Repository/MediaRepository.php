@@ -5310,9 +5310,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
 			return array( '1 = 1', array() );
 		}
+		// Followers-only items are listed for the author's followers, the same
+		// rule PrivacyService::can_view() applies to the single item; without it
+		// every list failed closed (Basecamp 10354828096). Served by the
+		// follower_following unique key.
+		global $wpdb;
 		return array(
-			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d)",
-			array( $viewer_id ),
+			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d"
+				. " OR ( {$prefix}privacy = 'followers' AND {$prefix}post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ) ))",
+			array( $viewer_id, $viewer_id ),
 		);
 	}
 

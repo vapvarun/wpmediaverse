@@ -488,14 +488,11 @@ class MediaController extends WP_REST_Controller {
 			$params                                 = array_merge( $params, $mvs_type_params );
 		}
 
-		// Privacy filtering via index table.
-		if ( ! $user_id ) {
-			$where[]  = 'privacy = %s';
-			$params[] = 'public';
-		} elseif ( ! user_can( $user_id, 'moderate_mvs_media' ) ) {
-			$where[]  = "(privacy = 'public' OR privacy = 'members' OR post_author = %d)";
-			$params[] = $user_id;
-		}
+		// Privacy filtering via index table: the one listing rule Explore and the
+		// activity feed share, so the three cannot drift apart again.
+		list( $mvs_priv_sql, $mvs_priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->explore_privacy_clause( '', (int) $user_id );
+		$where[] = $mvs_priv_sql;
+		$params  = array_merge( $params, $mvs_priv_params );
 
 		if ( $author ) {
 			$where[]  = 'post_author = %d';
