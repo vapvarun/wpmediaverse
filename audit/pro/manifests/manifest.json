@@ -2238,9 +2238,9 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-09-01T00:00:00Z",
-    "from": "targeted delta 2026-09-01 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.4.0",
+    "at": "2026-09-30T00:00:00Z",
+    "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
+    "branch": "2.6.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -2461,7 +2461,24 @@
     "delta_2026_09_25_v260_readme_docs_pro": "2.6.0 readme/docs pass: MVS_PRO_MIN_FREE raised to 2.6.0 (lockstep); Documents SearchService reads the space links through free_service('media_space_repository'); docblocks on 31 competition hooks (names/args unchanged). No route, hook, option or table added.",
     "delta_2026_09_28_v260_catalog_findings": "2.6.0 (2026-09-28): ProMemberData registers wp_privacy_personal_data_exporters/erasers entry wpmediaverse-pro-settings (export_meta/erase_meta over Lifecycle::USER_META_KEYS + USER_META_PREFIXES; tokens never exported). Anthropic AIProvider uses AI\\CircuitBreaker (provider key anthropic). ConnectorManager::auto_export() (public static) logs failed exports via LoggerService context connectors; the mvs_connector_auto_export job calls it. external-source-badge.php no longer renders Sync Now; $is_connected is always false. connector-import.js manages focus (open, Tab trap, restore).",
     "delta_2026_09_27_v260_hidden_answers_like_missing": "2.6.0 existence masking (hand-verified). A caller who may not VIEW an item now gets the same status and code as for a missing id on: PUT /media/{id}/privacy (item_owner_or_admin), GET/POST/PUT/DELETE /media/{id}/captions + /captions/status + /captions/generate (can_read now privacy-checked; can_modify reuses it), GET /media/{id}/chapters (message aligned), GET/POST/DELETE /media/{id}/resume, POST /media/{id}/events, PATCH/DELETE /folders/{id} + /restore, POST/PATCH /folders parent, GET /documents folder, PATCH /documents/{id} folder, document ingest folder_id, POST/DELETE /documents/{id}/spaces (SpaceLinkService::require_document now checks can_view), POST /documents/bulk (invisible item => outcome gone). New public PermissionService::can_see_folder( $folder, $user_id ), used by FolderController::get_item_permissions_check and every folder-target check. Caption files renamed to <id>-<hash>.vtt (TranscriptionService::vtt_file_name, Pro Migrator v22). Visible-but-not-owned still answers 403.",
-    "delta_2026_09_27_v260_template_versioning_album_import": "2.6.0 (2026-09-27): nine frontend templates made theme-overridable via LayoutManager::theme_or_plugin() (battles/challenges/tournaments/compete-hub bodies, boost-modal, streak-widget, dashboard-connectors-panel, external-source-badge, admin/connector-import-modal); all frontend templates carry @version. LayoutManager::render_with_query_vars() replaces three render_template() copies. Plugin::explore_url()/explore_search() (free_service wrappers). AlbumMarkerLookupTrait::add_to_album() calls Free AlbumService::add_items() quietly, replacing four raw-insert copies. Consumes Free filter mvs_template_roots. DriveContract::DECLARED gains mvs_document_folder_trashed, mvs_folder_restore_failed, mvs_folder_purge_unavailable. No route, option or table added."
+    "delta_2026_09_27_v260_template_versioning_album_import": "2.6.0 (2026-09-27): nine frontend templates made theme-overridable via LayoutManager::theme_or_plugin() (battles/challenges/tournaments/compete-hub bodies, boost-modal, streak-widget, dashboard-connectors-panel, external-source-badge, admin/connector-import-modal); all frontend templates carry @version. LayoutManager::render_with_query_vars() replaces three render_template() copies. Plugin::explore_url()/explore_search() (free_service wrappers). AlbumMarkerLookupTrait::add_to_album() calls Free AlbumService::add_items() quietly, replacing four raw-insert copies. Consumes Free filter mvs_template_roots. DriveContract::DECLARED gains mvs_document_folder_trashed, mvs_folder_restore_failed, mvs_folder_purge_unavailable. No route, option or table added.",
+    "refresh_2026_09_30": {
+      "scope": "targeted (2.6.0 fix pass: documents downloads, Boost placement, competition routes and login links, admin touch token)",
+      "added": {
+        "public_methods": [
+          "Documents\\\\DocumentUrls::may_download",
+          "Frontend\\\\GamificationTemplateLoader::use_resolved_template (template_include, priority 100)"
+        ],
+        "refusal_codes": [
+          "mvs_downloads_disabled (DriveContract::DECLARED, 403 on the document download route)"
+        ],
+        "behaviour": [
+          "Competition routes render via template_include instead of include+exit",
+          "Boost pulls in on page 1 only, skips blocked authors and member-chosen sorts"
+        ]
+      },
+      "unchanged": "REST routes, AJAX actions, tables, cron, WP-CLI, Free services consumed (reports and media_repository already listed)"
+    }
   },
   "category_sources": {
     "rest": [
