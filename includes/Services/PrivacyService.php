@@ -406,12 +406,11 @@ class PrivacyService {
 		// and fetch it from the API. docs/website/features/user-blocking.md
 		// promises the opposite.
 		//
-		// ONE-DIRECTIONAL, and that is the documented contract, not a
-		// simplification: docs/website/features/user-blocking.md says
-		// "Blocking is one-directional. You can still view the blocked user's
-		// public media unless you also choose to hide it." So the person who
-		// was blocked loses access to the blocker's media; the blocker keeps
-		// access to theirs. is_blocked( author, viewer ) asks exactly that,
+		// ONE-DIRECTIONAL for a single item, by design: the person who was
+		// blocked loses access to the blocker's media, while the blocker can
+		// still open a direct link to theirs. Lists hide both ways through
+		// can_list() (docs/website/features/user-blocking.md). is_blocked(
+		// author, viewer ) asks exactly the single-item question,
 		// and reusing ReportService avoids a third hand-rolled mvs_blocks
 		// query - which is how FollowService and MediaController already
 		// ended up with two different ones.

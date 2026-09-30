@@ -141,7 +141,7 @@ class MessagingSettingsRegistrar {
 					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
 					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Where the floating chat icon appears for signed-in members.', 'wpmediaverse' ),
+				'description' => __( 'Where the floating chat icon appears for logged-in members.', 'wpmediaverse' ),
 			)
 		);
 

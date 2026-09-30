@@ -224,8 +224,8 @@ class ReportsPage {
 			echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML.
 				array(
 					'icon'    => 'flag',
-					'title'   => __( 'Nothing here', 'wpmediaverse' ),
-					'message' => __( 'No reports with this status.', 'wpmediaverse' ),
+					'title'   => __( 'No reports with this status', 'wpmediaverse' ),
+					'message' => __( 'When members report media or comments, new reports appear under Pending.', 'wpmediaverse' ),
 				)
 			);
 			return;

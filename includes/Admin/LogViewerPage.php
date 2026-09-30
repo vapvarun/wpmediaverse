@@ -212,7 +212,7 @@ class LogViewerPage {
 			<div class="mvs-admin-widget">
 				<div class="mvs-widget-body mvs-widget-body--flush">
 					<?php if ( empty( $result['items'] ) ) : ?>
-						<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'file-text', 'title' => __( 'No Log Entries', 'wpmediaverse' ), 'message' => __( 'No log entries found.', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
+						<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'file-text', 'title' => __( 'No log entries', 'wpmediaverse' ), 'message' => __( 'MediaVerse records events here as they happen. If you filtered the list, clear the filters.', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
 					<?php else : ?>
 						<table class="mvs-log-table striped">
 							<thead>
