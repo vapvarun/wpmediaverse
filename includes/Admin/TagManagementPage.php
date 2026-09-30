@@ -330,11 +330,17 @@ class TagManagementPage {
 			<th class="check-column">
 				<input type="checkbox" name="tag_ids[]" value="<?php echo esc_attr( (string) $tag->term_id ); ?>" />
 			</th>
-			<td class="column-primary">
+			<td class="column-primary has-row-actions">
 				<strong><a href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $tag->name ); ?></a></strong>
+				<?php
+				// Core's phone-width list-table pattern: below 782px Count and Actions
+				// collapse, and this button (wired by core's common.js) expands the
+				// row so Edit and Delete stay reachable (Basecamp 10355019169).
+				?>
+				<button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e( 'Show more details', 'wpmediaverse' ); ?></span></button>
 			</td>
-			<td class="column-count"><?php echo esc_html( (string) $tag->count ); ?></td>
-			<td class="column-actions">
+			<td class="column-count" data-colname="<?php esc_attr_e( 'Count', 'wpmediaverse' ); ?>"><?php echo esc_html( (string) $tag->count ); ?></td>
+			<td class="column-actions" data-colname="<?php esc_attr_e( 'Actions', 'wpmediaverse' ); ?>">
 				<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a>
 				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" data-mvs-confirm="<?php echo esc_attr__( 'Are you sure you want to delete this tag?', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
 			</td>
