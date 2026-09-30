@@ -828,6 +828,19 @@ class SignedUrlService {
 			return '';
 		}
 
+		// A stored URL on ANY other host is a leftover from a migration (an old
+		// staging site, a retired CDN), not a working thumbnail. Emitting it
+		// pointed the grid at a dead address while the original file was still
+		// here. Only a URL on the host the file's driver serves from is direct;
+		// anything else falls through to /serve (Basecamp 10350203155).
+		$driver_host = (string) wp_parse_url(
+			(string) \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id )->url( 'x.jpg' ),
+			PHP_URL_HOST
+		);
+		if ( '' === $driver_host || 0 !== strcasecmp( $driver_host, (string) wp_parse_url( $thumb_url, PHP_URL_HOST ) ) ) {
+			return '';
+		}
+
 		/**
 		 * Filter the direct public URL for a media's cloud-hosted thumbnail.
 		 *
