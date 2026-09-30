@@ -449,6 +449,7 @@ class Plugin {
 		add_action( 'wp_enqueue_scripts', array( self::class, 'register_bp_shared_styles' ), 1 );
 
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
+		add_filter( 'render_block', array( self::class, 'enqueue_rest_client_for_block' ), 10, 2 );
 
 		// Auto-pair the mvs-confirm stylesheet whenever its script is enqueued.
 		// Runs late so any enqueue made by integrations (BP profile/group tabs,
@@ -1322,6 +1323,27 @@ class Plugin {
 	// — every emission site automatically gets a signed URL.
 
 	// Note: ensure_media_rows methods removed — media is created directly in custom tables.
+
+	/**
+	 * Load the shared REST client whenever an mvs/* block renders.
+	 *
+	 * Block view scripts are modules and call window.mvsRest, a classic script
+	 * that enqueue_frontend_assets() loads only on MediaVerse's own pages. A block
+	 * placed on any ordinary page therefore had no client: view and download
+	 * tracking silently did nothing (Basecamp 10350019690). One filter here fixes
+	 * every block rather than each render.php remembering to ask.
+	 *
+	 * @param string $content Rendered block HTML, passed through untouched.
+	 * @param array  $block   Parsed block.
+	 * @return string
+	 */
+	public static function enqueue_rest_client_for_block( $content, $block ) {
+		if ( 0 === strpos( (string) ( $block['blockName'] ?? '' ), 'mvs/' ) ) {
+			wp_enqueue_script( 'mvs-rest' );
+		}
+
+		return $content;
+	}
 
 	/**
 	 * Enqueue frontend styles and scripts on MVS pages.
