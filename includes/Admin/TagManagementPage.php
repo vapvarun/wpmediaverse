@@ -246,11 +246,7 @@ class TagManagementPage {
 				<?php if ( empty( $tags ) ) : ?>
 					<tr>
 						<td colspan="4">
-							<div class="mvs-empty-state-admin">
-								<i data-lucide="tag"></i>
-								<h3><?php esc_html_e( 'No Tags Found', 'wpmediaverse' ); ?></h3>
-								<p><?php esc_html_e( 'No tags found.', 'wpmediaverse' ); ?></p>
-							</div>
+							<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'tag', 'title' => __( 'No Tags Found', 'wpmediaverse' ), 'message' => __( 'No tags found.', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
 						</td>
 					</tr>
 				<?php else : ?>
@@ -942,7 +938,7 @@ class TagManagementPage {
 					);
 					?>
 				</p>
-				<form method="post" action="<?php echo esc_url( $form_action ); ?>" onsubmit="return confirm( '<?php echo esc_js( __( 'Merge this tag into the selected tag? This cannot be undone.', 'wpmediaverse' ) ); ?>' );">
+				<form method="post" action="<?php echo esc_url( $form_action ); ?>" data-mvs-confirm="<?php echo esc_attr__( 'Merge this tag into the selected tag? This cannot be undone.', 'wpmediaverse' ); ?>">
 					<?php wp_nonce_field( 'mvs_merge_tags_' . $tag_id, '_wpnonce' ); ?>
 					<input type="hidden" name="source_tag_id" value="<?php echo esc_attr( (string) $tag_id ); ?>" />
 					<input type="hidden" name="form_action" value="merge_tags" />

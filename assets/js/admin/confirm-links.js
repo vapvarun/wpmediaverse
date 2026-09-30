@@ -59,9 +59,18 @@
 			return;
 		}
 		e.preventDefault();
+		var submitter = e.submitter;
 		ask( msg, function () {
 			form.dataset.mvsConfirmed = '1';
-			form.submit();
+			// form.submit() is shadowed by any control named "submit" - which
+			// is what WordPress's submit_button() emits - and throws. Re-fire
+			// through requestSubmit so the clicked button's value still posts;
+			// the flag above lets it past this handler.
+			if ( form.requestSubmit ) {
+				form.requestSubmit( submitter || undefined );
+			} else {
+				HTMLFormElement.prototype.submit.call( form );
+			}
 		} );
 	} );
 } )();
