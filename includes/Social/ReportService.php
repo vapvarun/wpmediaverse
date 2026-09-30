@@ -576,4 +576,31 @@ class ReportService {
 
 		return array_map( 'intval', $ids );
 	}
+
+	/**
+	 * Everyone on the other side of a block with this user, in either direction.
+	 *
+	 * A block hides both members from each other. Lists that only excluded the
+	 * people a viewer blocked still showed the viewer the media of whoever
+	 * blocked THEM (Basecamp 10354827925). Both columns are indexed.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return int[]
+	 */
+	public function get_blocked_either_way_ids( int $user_id ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_blocks';
+		$ids   = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT blocked_id FROM {$table} WHERE blocker_id = %d UNION SELECT blocker_id FROM {$table} WHERE blocked_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				$user_id
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
 }

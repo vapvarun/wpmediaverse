@@ -24,7 +24,7 @@ When you block a user, they cannot:
 - Comment on your media
 - React to your media
 
-Blocking is one-directional. You can still view the blocked user's public media unless you also choose to hide it.
+A block works both ways for media: neither of you sees the other's media on browse pages, profiles or feeds.
 
 Blocks are stored per-user and do not require any admin action.
 

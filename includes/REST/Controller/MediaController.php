@@ -580,14 +580,9 @@ class MediaController extends WP_REST_Controller {
 			$params[] = $user_id;
 		}
 
-		// Exclude media from blocked users.
+		// Exclude media from anyone on either side of a block with the viewer.
 		if ( $user_id ) {
-			$blocked_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT blocked_id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d",
-					$user_id
-				)
-			);
+			$blocked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( (int) $user_id );
 			if ( $blocked_ids ) {
 				$placeholders = implode( ',', array_fill( 0, count( $blocked_ids ), '%d' ) );
 				$where[]      = "post_author NOT IN ($placeholders)"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

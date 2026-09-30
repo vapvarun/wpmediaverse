@@ -128,7 +128,7 @@ class ActivityService {
 		$viewer_id = get_current_user_id();
 		if ( $viewer_id ) {
 			$reports = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
-			$blocked = $reports->get_blocked_ids( $viewer_id );
+			$blocked = $reports->get_blocked_either_way_ids( $viewer_id );
 			if ( ! empty( $blocked ) ) {
 				$block_placeholders = implode( ',', array_fill( 0, count( $blocked ), '%d' ) );
 				$where             .= " AND a.user_id NOT IN ({$block_placeholders})"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

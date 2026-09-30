@@ -4418,7 +4418,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		$mvs_viewer = (int) $args['viewer_id'];
 		if ( $mvs_viewer > 0 ) {
 			if ( ! isset( self::$blocked_cache[ $mvs_viewer ] ) ) {
-				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_ids( $mvs_viewer );
+				// Either direction: the author blocked the viewer, or the viewer
+				// blocked the author. Explore and every feed listing share this
+				// clause, and showed a blocked member the blocker's media
+				// (Basecamp 10354827925).
+				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $mvs_viewer );
 			}
 			$mvs_blocked = self::$blocked_cache[ $mvs_viewer ];
 			if ( $mvs_blocked ) {
