@@ -522,7 +522,7 @@ class CollectionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to modify this collection.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to edit this collection.', 'wpmediaverse' ), array( 'status' => 403 ) );
 	}
 
 	/**
