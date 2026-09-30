@@ -186,9 +186,26 @@ class FavoriteController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		// Favorite only media you can view (permission check is login-only).
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+		// Favorite only media you can view (permission check is login-only). An
+		// existing favourite can always be REMOVED: the toggle then only takes it
+		// back, which a blocked member must be able to do (Basecamp 10350196637).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() )
+			&& ! $this->favorites->is_favorited( (int) $media_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// DELETE only removes. It shares this toggle with POST, so a DELETE on an
+		// item that was not favourited used to ADD it, and DELETE is exempt from
+		// the block gate: a blocked member could favourite the blocker's item.
+		if ( 'DELETE' === $request->get_method() && ! $this->favorites->is_favorited( (int) $media_id, get_current_user_id() ) ) {
+			return rest_ensure_response(
+				array(
+					'media_id'  => $media_id,
+					'action'    => 'none',
+					'favorited' => false,
+					'count'     => $this->favorites->get_count( $media_id ),
+				)
+			);
 		}
 
 		$collection_id = $request->get_param( 'collection_id' );

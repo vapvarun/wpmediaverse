@@ -226,15 +226,20 @@ class ReactionController extends WP_REST_Controller {
 	public function delete_item( $request ) {
 		$media_id = $request->get_param( 'media_id' );
 
-		// Hidden looks exactly like missing.
-		if ( ! $this->media_exists( $media_id ) || ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+		if ( ! $this->media_exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Removing your OWN reaction needs no view access: a member the author
+		// blocked can no longer view the item but must still be able to take it back,
+		// and retracting leaks nothing (Basecamp 10350196637). Only a caller who
+		// removed nothing is told anything, and hidden still looks like missing.
 		$removed = $this->reactions->remove( $media_id, get_current_user_id() );
 
 		if ( ! $removed ) {
-			return new WP_Error( 'mvs_no_reaction', __( 'No reaction to remove.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			return \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() )
+				? new WP_Error( 'mvs_no_reaction', __( 'No reaction to remove.', 'wpmediaverse' ), array( 'status' => 404 ) )
+				: new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		return new WP_REST_Response( null, 204 );

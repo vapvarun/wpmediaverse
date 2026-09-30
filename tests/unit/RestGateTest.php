@@ -187,10 +187,15 @@ class RestGateTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_blocked_member_can_still_edit_their_own_comment(): void {
+	/**
+	 * Owner decision (2026-09-30, Basecamp 10350196637): a blocked member may
+	 * DELETE their own comment but not EDIT it, because editing publishes new
+	 * text onto the blocker's item.
+	 */
+	public function test_blocked_member_cannot_edit_their_own_comment(): void {
 		$comment_id = Plugin::container()->get( 'comments' )->add( $this->media, $this->blocked, 'my own comment' );
 
-		$this->assertNotSame(
+		$this->assertSame(
 			403,
 			$this->status_as(
 				$this->blocked,

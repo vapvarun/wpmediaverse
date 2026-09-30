@@ -291,6 +291,21 @@ class CommentController extends WP_REST_Controller {
 		$media_id   = $request->get_param( 'media_id' );
 		$user_id    = get_current_user_id();
 
+		// Editing publishes new words onto the other member's item, so a block
+		// refuses it, and says so (owner decision on Basecamp 10350196637).
+		// Asked only for the caller's own comment on this item, so it cannot be
+		// used to probe other items.
+		$own = $this->visible_comment( (int) $comment_id, (int) $media_id, true );
+		if ( ! is_wp_error( $own ) && (int) $own->user_id === $user_id ) {
+			$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked(
+				$user_id,
+				(int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( (int) $media_id )
+			);
+			if ( $blocked instanceof WP_Error ) {
+				return $blocked;
+			}
+		}
+
 		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id );
 		if ( is_wp_error( $comment ) ) {
 			return $comment;
@@ -373,7 +388,7 @@ class CommentController extends WP_REST_Controller {
 		$comment_id = $request->get_param( 'comment_id' );
 		$media_id   = $request->get_param( 'media_id' );
 
-		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id );
+		$comment = $this->visible_comment( (int) $comment_id, (int) $media_id, true );
 		if ( is_wp_error( $comment ) ) {
 			return $comment;
 		}
@@ -401,12 +416,16 @@ class CommentController extends WP_REST_Controller {
 	 * @param int $media_id   Media id from the route.
 	 * @return \WP_Comment|WP_Error
 	 */
-	private function visible_comment( int $comment_id, int $media_id ) {
+	private function visible_comment( int $comment_id, int $media_id, bool $own_ok = false ) {
 		$comment = get_comment( $comment_id );
+
+		// Deleting your OWN comment needs no view access (Basecamp 10350196637):
+		// a blocked member can retract what they wrote.
+		$own = $own_ok && $comment && (int) $comment->user_id === get_current_user_id();
 
 		if ( ! $comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type
 			|| \WPMediaVerse\Social\CommentService::comment_media_id( $comment_id ) !== $media_id
-			|| ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
+			|| ( ! $own && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
