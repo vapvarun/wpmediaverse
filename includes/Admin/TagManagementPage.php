@@ -244,9 +244,30 @@ class TagManagementPage {
 			</thead>
 			<tbody>
 				<?php if ( empty( $tags ) ) : ?>
-					<tr>
-						<td colspan="4">
-							<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'tag', 'title' => __( 'No Tags Found', 'wpmediaverse' ), 'message' => __( 'No tags found.', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
+					<?php
+					// `no-items` + `colspanchange` are core's own empty-row classes: without
+					// them core's phone-width list-table CSS shrank this cell to one
+					// column and pushed the message off-centre (Basecamp 10350404627).
+					$mvs_searching = '' !== ( isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+					?>
+					<tr class="no-items">
+						<td class="colspanchange" colspan="4">
+							<?php
+							// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML.
+							echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state(
+								$mvs_searching
+									? array(
+										'icon'    => 'search',
+										'title'   => __( 'No tags match your search', 'wpmediaverse' ),
+										'message' => __( 'Try a different word, or clear the search.', 'wpmediaverse' ),
+									)
+									: array(
+										'icon'    => 'tag',
+										'title'   => __( 'No tags yet', 'wpmediaverse' ),
+										'message' => __( 'Tags appear here once members add them to their media. You can also add one with Add New Tag.', 'wpmediaverse' ),
+									)
+							);
+							?>
 						</td>
 					</tr>
 				<?php else : ?>

@@ -1850,6 +1850,13 @@ a.mvs-stat-card:focus {
 	text-align: center;
 }
 
+/* WP 7.1 makes list-table rows flex at <=782px; an empty-state cell has to
+   fill its row or the centred panel shrinks to its content and sits
+   off-centre (Basecamp 10350404627). */
+.wpmediaverse-admin .wp-list-table tr.no-items > td {
+	flex: 1 1 100%;
+}
+
 .mvs-empty-state-admin {
 	text-align: center;
 	padding: 40px 20px;
