@@ -181,15 +181,23 @@ class StorageService {
 	 * @return string Driver slug (s3|bunnycdn|r2|dospaces) or '' when unknown/local.
 	 */
 	public static function driver_name_for_url( string $url ): string {
-		$patterns = array(
-			's3'       => array( '.amazonaws.com/' ),
-			'bunnycdn' => array( '.b-cdn.net/' ),
-			'r2'       => array( '.r2.cloudflarestorage.com/', '.r2.dev/' ),
-			'dospaces' => array( '.digitaloceanspaces.com/' ),
+		// Match the parsed HOST by suffix, never the whole URL: a substring match
+		// trusted https://oldsite.example/x/.r2.dev/a.jpg and ?x=.b-cdn.net/ as
+		// storage and emitted them on public pages (Basecamp 10355018821).
+		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		if ( '' === $host ) {
+			return '';
+		}
+
+		$suffixes = array(
+			's3'       => array( '.amazonaws.com' ),
+			'bunnycdn' => array( '.b-cdn.net' ),
+			'r2'       => array( '.r2.cloudflarestorage.com', '.r2.dev' ),
+			'dospaces' => array( '.digitaloceanspaces.com' ),
 		);
-		foreach ( $patterns as $name => $needles ) {
-			foreach ( $needles as $needle ) {
-				if ( false !== strpos( $url, $needle ) ) {
+		foreach ( $suffixes as $name => $list ) {
+			foreach ( $list as $suffix ) {
+				if ( substr( $host, -strlen( $suffix ) ) === $suffix ) {
 					return $name;
 				}
 			}
