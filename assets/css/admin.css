@@ -2088,6 +2088,9 @@ a.mvs-stat-card:focus {
 .mvs-moderation-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
 .mvs-moderation-thumb-placeholder { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: var(--mvs-bg); border-radius: var(--mvs-radius-sm); color: var(--mvs-border); }
 .mvs-form-inline-spaced { display: inline; margin-left: 4px; }
+/* A table wider than its container scrolls inside this wrapper instead of
+   pushing the whole admin page sideways (Basecamp 10354828173). */
+.mvs-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .mvs-moderation-table { width: 100%; border-spacing: 0; }
 .mvs-moderation-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--mvs-border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mvs-text-muted); }
 .mvs-moderation-table td { padding: 8px 12px; border-bottom: 1px solid var(--mvs-bg); vertical-align: middle; }

@@ -359,6 +359,8 @@ class ModerationQueue {
 						</form>
 						<?php // Bulk form closed here. The table's checkboxes join it via the HTML5 form="" attribute, so the per-row Approve/Reject forms below are NOT nested inside it (nested forms are invalid HTML and the browser drops them, which silently killed the per-row buttons). ?>
 
+						<?php // The wrapper scrolls, not the page: at 390px this table is 613px wide. ?>
+						<div class="mvs-table-scroll">
 						<table class="mvs-moderation-table striped">
 							<thead>
 								<tr>
@@ -383,6 +385,7 @@ class ModerationQueue {
 								<?php endforeach; ?>
 							</tbody>
 						</table>
+						</div>
 
 
 					<?php
