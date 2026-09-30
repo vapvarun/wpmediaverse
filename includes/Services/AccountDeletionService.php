@@ -182,7 +182,7 @@ class AccountDeletionService {
 			'grace_days'    => $grace,
 			'message'       => sprintf(
 				/* translators: %s: date the account will be deleted. */
-				__( 'Your account will be permanently deleted on %s. Sign in before then to cancel.', 'wpmediaverse' ),
+				__( 'Your account will be permanently deleted on %s. Log in before then to cancel.', 'wpmediaverse' ),
 				date_i18n( get_option( 'date_format' ), $when )
 			),
 		);

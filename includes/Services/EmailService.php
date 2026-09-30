@@ -141,7 +141,7 @@ class EmailService {
 		$subject = sprintf( __( 'Your %s account is scheduled for deletion', 'wpmediaverse' ), $site );
 		$body    = sprintf(
 			/* translators: 1: date the account will be deleted, 2: login URL. */
-			__( "Your account and everything you uploaded will be permanently deleted on %1\$s.\n\nIf you did not ask for this, or you changed your mind, sign in before then to cancel:\n%2\$s", 'wpmediaverse' ),
+			__( "Your account and everything you uploaded will be permanently deleted on %1\$s.\n\nIf you did not ask for this, or you changed your mind, log in before then to cancel:\n%2\$s", 'wpmediaverse' ),
 			$date,
 			wp_login_url()
 		);
