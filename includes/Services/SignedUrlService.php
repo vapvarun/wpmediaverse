@@ -933,7 +933,14 @@ class SignedUrlService {
 			PHP_URL_HOST
 		);
 
-		return '' !== $driver_host && 0 === strcasecmp( $driver_host, (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		if ( '' !== $driver_host && 0 === strcasecmp( $driver_host, (string) wp_parse_url( $url, PHP_URL_HOST ) ) ) {
+			return true;
+		}
+
+		// A known storage host (an r2.dev URL on a bucket that later got a custom
+		// domain, a b-cdn.net zone) is still a working location. Only a host no
+		// driver owns (an old staging site) is a leftover.
+		return '' !== \WPMediaVerse\Services\StorageService::driver_name_for_url( $url );
 	}
 
 	/**

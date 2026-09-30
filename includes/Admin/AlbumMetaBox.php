@@ -88,6 +88,14 @@ class AlbumMetaBox {
 		$total  = $this->albums->get_item_count( $post->ID );
 		$pinned = $this->albums->get_cover_media_id( $post->ID );
 		$items  = $total > 0 ? $this->albums->get_items_with_data( $post->ID, 'publish', self::COVER_CHOICES ) : array();
+		// A pinned cover past the first page must stay an option, or saving any
+		// other field would submit "Automatic" and clear it.
+		if ( $pinned && ! in_array( $pinned, array_map( 'intval', array_column( $items, 'media_id' ) ), true ) ) {
+			$row = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( array( $pinned ) )[ $pinned ] ?? null;
+			if ( $row ) {
+				array_unshift( $items, $row );
+			}
+		}
 
 		wp_nonce_field( 'mvs_album_settings', 'mvs_album_settings_nonce' );
 		?>

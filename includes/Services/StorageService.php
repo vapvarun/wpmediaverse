@@ -180,7 +180,7 @@ class StorageService {
 	 * @param string $url Stored public URL.
 	 * @return string Driver slug (s3|bunnycdn|r2|dospaces) or '' when unknown/local.
 	 */
-	private static function driver_name_for_url( string $url ): string {
+	public static function driver_name_for_url( string $url ): string {
 		$patterns = array(
 			's3'       => array( '.amazonaws.com/' ),
 			'bunnycdn' => array( '.b-cdn.net/' ),

@@ -489,7 +489,7 @@ class PrivacyService {
 		// fail ("We couldn't find that media"). Consulted only for restrictive
 		// levels (public/members/loggedin already resolve below) and only when
 		// the messaging engine is loaded. Owner/admin were granted earlier.
-		if ( ! $is_post_object && $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'space', 'custom' ), true ) ) {
+		if ( ! $is_post_object && $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'followers', 'group', 'space', 'custom' ), true ) ) {
 			$container = \WPMediaVerse\Core\Plugin::container();
 			if ( $container->has( 'messaging' ) ) {
 				$messaging = $container->get( 'messaging' );
