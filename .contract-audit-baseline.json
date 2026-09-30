@@ -1,6 +1,6 @@
 {
   "generated": "2026-09-03",
-  "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.\n\n2026-09-03 (2.4.1 retag): 12 further errors triaged individually, none bulk-baselined. ELEVEN were verified false positives and are suppressed below with the mechanism that hides them from the audit — in every case the write or the fire happens through a class constant, a dynamically-built key, or a scheduler (wp_schedule_event / as_enqueue_async_action) rather than a string literal in a do_action/update_option call. The TWELFTH was a REAL BUG and was fixed, not suppressed: 'user_meta-read-never-written:_mvs_extra_document_credits' was correct — QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which deliberately excludes documents) instead of SUMMARY_TYPES (the metered list, which includes them), so document credits could never be granted while deduct_credit() had no such guard and would spend them. See the comment at that guard.",
+  "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.\n\n2026-09-03 (2.4.1 retag): 12 further errors triaged individually, none bulk-baselined. ELEVEN were verified false positives and are suppressed below with the mechanism that hides them from the audit — in every case the write or the fire happens through a class constant, a dynamically-built key, or a scheduler (wp_schedule_event / as_enqueue_async_action) rather than a string literal in a do_action/update_option call. The TWELFTH was a REAL BUG and was fixed, not suppressed: 'user_meta-read-never-written:_mvs_extra_document_credits' was correct — QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which deliberately excludes documents) instead of SUMMARY_TYPES (the metered list, which includes them), so document credits could never be granted while deduct_credit() had no such guard and would spend them. See the comment at that guard.\n\n2026-09-30 (2.6.0 gate): 9 errors triaged individually, none bulk-baselined. Four constant-fired Action Scheduler hooks and one constant meta_input write are scanner limits; one filter is a documented host seam; four option reads are settings with no screen that read safe defaults and pre-date 2.5.1.",
   "suppressions": [
     {
       "id": "ajax-action-no-handler:mvs_media_upload",
@@ -125,6 +125,42 @@
     {
       "id": "hook-consumed-never-fired:mvs_document_space_drive_trash",
       "reason": "Fired by Action Scheduler: SpaceDriveCleanup::trash_drive() queues as_enqueue_async_action( self::CONTINUE_HOOK ) when a deleted space's drive exceeds one run; the audit does not resolve the class constant."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_document_folder_trash_contents",
+      "reason": "False positive. Pro fires it through Action Scheduler with the class constant: FolderService::enqueue( self::TRASH_CONTENTS_HOOK, ... ) (FolderService.php:1678). The scanner cannot resolve constant hook names. Verified 2026-09-30."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_document_folder_restore_contents",
+      "reason": "False positive. Fired via FolderService::enqueue( self::RESTORE_CONTENTS_HOOK, ... ) (FolderService.php:1744), an Action Scheduler job keyed by the class constant. Verified 2026-09-30."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_document_folder_purge",
+      "reason": "False positive. Fired via FolderService::enqueue( self::PURGE_HOOK, ... ) (FolderService.php:1805, :1926), an Action Scheduler job keyed by the class constant. Verified 2026-09-30."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_community_notification_visible",
+      "reason": "Intentional seam, not dead code. MediaVerse registers this filter as part of the community notification contract; the HOST application (BuddyNext) applies it to answer per-viewer visibility for a page of bell rows. Documented in docs/website/developer-guide/hooks-filters.md. Verified 2026-09-30."
+    },
+    {
+      "id": "post_meta-read-never-written:_mvs_favorites_collection",
+      "reason": "False positive. Written when the Favorites collection is created: wp_insert_post( meta_input => [ self::FAVORITES_META => 1 ] ) in FavoriteService::favorites_collection_id() (FavoriteService.php:85). The scanner does not follow the class constant into meta_input. Verified 2026-09-30."
+    },
+    {
+      "id": "option-read-never-written:mvs_optimize_originals",
+      "reason": "Intentional. A setting with no screen, read with a safe default (off: a lossy re-encode must not run unless opted in). Owners set it via a filter or WP-CLI. Pre-dates 2.5.1 (May 2026); no runtime break. Verified 2026-09-30."
+    },
+    {
+      "id": "option-read-never-written:mvs_generate_webp",
+      "reason": "Intentional. A setting with no screen, read with default on. Pre-dates 2.5.1; no runtime break. Verified 2026-09-30."
+    },
+    {
+      "id": "option-read-never-written:mvs_generate_avif",
+      "reason": "Intentional. A setting with no screen, read with default off (AVIF encoding is 10x slower). Pre-dates 2.5.1; no runtime break. Verified 2026-09-30."
+    },
+    {
+      "id": "option-read-never-written:mvs_view_retention_days",
+      "reason": "Intentional. A retention setting with no screen, read with its default. Pre-dates 2.5.1 (May 2026); no runtime break. Verified 2026-09-30."
     }
   ]
 }
