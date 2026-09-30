@@ -6083,7 +6083,9 @@
       "Services/SignedUrlService.php::generate_thumbnail"
     ],
     "always_sign_filter": "Core/Plugin.php::maybe_sign_file_url (mvs_media_response priority 10)",
-    "rate_limit_middleware": "REST/RateLimiter.php"
+    "rate_limit_middleware": "REST/RateLimiter.php",
+    "storage_trust": "Services/StorageService.php::host_of (one host reader for SignedUrlService::is_on_driver_host and driver_name_for_url; refuses backslash, whitespace, control chars, userinfo)",
+    "list_privacy": "Services/PrivacyService.php::can_list (can_view + either-way block list; used by AlbumService::viewable_item_ids and FavoriteService::get_collection_media_ids)"
   },
   "ci_guards": {
     "script": "bin/ci-local.sh",
@@ -6120,9 +6122,9 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-09-01T00:00:00Z",
-    "from": "targeted delta 2026-09-01 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.4.0",
+    "at": "2026-09-30T00:00:00Z",
+    "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
+    "branch": "2.6.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -6631,7 +6633,26 @@
     "delta_2026_09_25_v260_readme_docs": "2.6.0 readme/docs pass: Pro/Free docs document the mvs/pro-document-embed and mvs/pro-document-list blocks; mvs_cloud_direct_public_urls marked inert (registered, read by nothing). No route, hook, option or table added.",
     "delta_2026_09_28_v260_community_notification_contract": "2.6.0 (2026-09-28, PR #60 + review): new Social\\CommunityNotificationContract (register() wired with the notifications service). mvs_notification_created gains a 9th arg, the contract payload, sent ONLY for types declared on mvs_community_notification_types (media_reaction, media_mention); payload carries group_key {type}_{media_id} and message_grouped. Filters mvs_community_notification_types (fired by payload(), answered by declare_types) and mvs_community_notification_visible (PrivacyService::can_view); action mvs_community_notification_removed on mvs_media_deleted. NotificationService::build_message_and_link() returns message_grouped too. Host: BuddyNext 1.2.2 IntegrationNotificationListener.",
     "delta_2026_09_28_v260_playlist_api_only": "2.6.0 (2026-09-28, owner decision): playlist albums (album type `playlist`, audio only) are created through REST only (POST /mvs/v1/albums type=playlist). Documented Rule-18 exception: the member New-album form deliberately offers no type choice; album.php renders playlists; admin sees them as ordinary albums. Also: AlbumService batches album-wide privacy and pointer writes (MediaRepository::set_privacy_many / set_meta_many / delete_meta_many / set_album_pointer_many, still firing mvs_media_privacy_changed per changed row); UploadService::queue_cloud_repatriation skips on local storage.",
-    "delta_2026_09_27_v260_album_rule_members_only_explore": "2.6.0 (2026-09-27): options mvs_members_only (Settings > General, answers mvs_rest_require_auth at priority 1; a host plugin's answer wins) and mvs_dashboard_old_paths (old My Media paths, 301 on 404). Filters mvs_redirect_media_archive_to_explore_page and mvs_template_roots (both in manifest.hooks.json). Core\\\\TemplateVersions + Site Health test wpmediaverse_template_overrides. TemplateHelpersInterface gains explore_url(), explore_search() and EXPLORE_SEARCH_PARAM ('q'). Media meta own_privacy; AlbumService two-way album privacy, one album per photo, add_items($album, $ids, $args) 'announce'; MediaRepository::reassign_author_media(). REST: media responses add album {id,title,privacy[,own_privacy]}; single album GET adds own_privacy_counts (editors); bulk change_privacy adds album_decides. users_have_additional_content answered for media-only members. Migrator v40. No route or table added."
+    "delta_2026_09_27_v260_album_rule_members_only_explore": "2.6.0 (2026-09-27): options mvs_members_only (Settings > General, answers mvs_rest_require_auth at priority 1; a host plugin's answer wins) and mvs_dashboard_old_paths (old My Media paths, 301 on 404). Filters mvs_redirect_media_archive_to_explore_page and mvs_template_roots (both in manifest.hooks.json). Core\\\\TemplateVersions + Site Health test wpmediaverse_template_overrides. TemplateHelpersInterface gains explore_url(), explore_search() and EXPLORE_SEARCH_PARAM ('q'). Media meta own_privacy; AlbumService two-way album privacy, one album per photo, add_items($album, $ids, $args) 'announce'; MediaRepository::reassign_author_media(). REST: media responses add album {id,title,privacy[,own_privacy]}; single album GET adds own_privacy_counts (editors); bulk change_privacy adds album_decides. users_have_additional_content answered for media-only members. Migrator v40. No route or table added.",
+    "refresh_2026_09_30": {
+      "scope": "targeted (2.6.0 fix pass: privacy/blocks, storage trust, admin editors, downloads)",
+      "added": {
+        "services_added": [
+          "admin.album_metabox (Admin\\\\AlbumMetaBox)"
+        ],
+        "public_methods": [
+          "MediaRepository::downloads_allowed",
+          "PrivacyService::can_list",
+          "StorageService::host_of",
+          "ReportService::get_blocked_either_way_ids",
+          "Plugin::enqueue_rest_client_for_block (render_block filter)"
+        ],
+        "post_type_changes": [
+          "mvs_album and mvs_collection: classic editor, no thumbnail support"
+        ]
+      },
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks (3.1b hook manifests match)"
+    }
   },
   "category_sources": {
     "rest": [

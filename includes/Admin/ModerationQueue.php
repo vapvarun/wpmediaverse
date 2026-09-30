@@ -334,7 +334,15 @@ class ModerationQueue {
 		<div class="mvs-admin-widget">
 			<div class="mvs-widget-body mvs-widget-body--flush">
 				<?php if ( empty( $result['items'] ) ) : ?>
-					<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'shield-check', 'title' => __( 'Queue is Clear', 'wpmediaverse' ), 'message' => __( 'No items in this queue. All clear!', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
+					<?php
+					echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state(
+						array(
+							'icon'    => 'shield-check',
+							'title'   => __( 'Queue is Clear', 'wpmediaverse' ),
+							'message' => __( 'No items in this queue. All clear!', 'wpmediaverse' ),
+						)
+					); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. 
+					?>
 				<?php else : ?>
 					<form method="post" id="mvs-moderation-bulk-form">
 						<?php wp_nonce_field( 'mvs_moderation_bulk', 'mvs_moderation_bulk_nonce' ); ?>

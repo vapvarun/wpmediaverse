@@ -173,8 +173,11 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Fix      - Removing a favorite no longer adds one when the item was not favorited.
 * Fix      - A pinned album cover is kept when the album is saved from wp-admin.
 * Fix      - The Moderation AI Flagged table scrolls inside its panel on phones instead of moving the page.
+* Fix      - A block also hides the other member's items in albums, collections and notifications, and the notification badge counts the same rows the list shows.
+* Fix      - Tags, Log Viewer and Reports empty states are centred on phones and say what to do next, and each tag row opens its Edit and Delete actions on a phone.
 * Security - Block style fields no longer accept CSS that could inject into the page.
 * Security - Draft media is no longer returned to signed-out visitors through the API.
+* Security - A stored media address that browsers and WordPress read as two different hosts is never trusted as storage.
 * Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.
 * Dev      - Removed settings keep their saved values and filters, so no site changes behaviour on update.
 * Dev      - New filters mvs_show_favorite_button, mvs_default_media_title, mvs_email_subject, mvs_email_body, mvs_community_profile, mvs_profile_edit_redirect, mvs_show_demo_import and mvs_messaging_enabled, and new action mvs_report_resolved.

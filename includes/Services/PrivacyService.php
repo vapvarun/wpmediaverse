@@ -629,7 +629,7 @@ class PrivacyService {
 	 * @return bool
 	 */
 	private function check_space( int $media_id, int $user_id ): bool {
-		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$drive_type = (string) $repo->get( $media_id, 'drive_type' );
 		$drive_id   = (int) $repo->get( $media_id, 'drive_id' );
 
@@ -682,7 +682,7 @@ class PrivacyService {
 	/**
 	 * May this media be LISTED to the viewer (a grid, an album, a collection)?
 	 *
-	 * can_view() is one-directional on purpose: a blocker may still open a
+	 * The can_view() check is one-directional on purpose: a blocker may still open a
 	 * direct link to the blocked member's public media. Lists hide both ways,
 	 * so a list also drops items whose author is on either side of a block with
 	 * the viewer (Basecamp 10355130639). The block list is read once per viewer.

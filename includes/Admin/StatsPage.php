@@ -306,7 +306,15 @@ class StatsPage {
 							</tbody>
 						</table>
 					<?php else : ?>
-						<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'bar-chart-3', 'title' => __( 'No Stats Yet', 'wpmediaverse' ), 'message' => __( 'Views will appear once users start browsing media.', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
+						<?php
+						echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state(
+							array(
+								'icon'    => 'bar-chart-3',
+								'title'   => __( 'No Stats Yet', 'wpmediaverse' ),
+								'message' => __( 'Views will appear once users start browsing media.', 'wpmediaverse' ),
+							)
+						); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. 
+						?>
 					<?php endif; ?>
 				</div>
 			</div>
