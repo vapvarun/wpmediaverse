@@ -151,6 +151,7 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Improve  - Album and collection editors open in the classic editor, so their settings show without opening a hidden panel, and the unused Featured Image box is gone.
 * Improve  - Admin empty states share one layout, and their icons show at the intended size.
 * Improve  - The account deletion message and email say Log in, matching the rest of the plugin, and permission messages for settings and collections say edit.
+* Improve  - Admin, app and member messages say log in for the site's own login.
 * Fix      - Private items now look exactly like missing ones on pages, in the API and in album counts.
 * Fix      - Saving a settings tab no longer resets values that were not on the screen.
 * Fix      - Message times carry an explicit UTC value so every client shows the same clock.
@@ -166,6 +167,12 @@ A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My 
 * Fix      - MediaVerse blocks placed on an ordinary page now record views and downloads.
 * Fix      - A leftover thumbnail address on a host the file is no longer served from is ignored, so migrated sites stop pointing grids at the old host.
 * Fix      - Merging tags asks for confirmation in the styled dialog, and confirmed admin forms now submit.
+* Fix      - Followers Only items appear for the owner's followers in lists, Explore and activity, not only on the item page.
+* Fix      - A block hides media both ways in every list, and people who blocked you are no longer suggested.
+* Fix      - A blocked member can still remove their own reaction, comment and favorite, and cannot edit a comment on the other member's item.
+* Fix      - Removing a favorite no longer adds one when the item was not favorited.
+* Fix      - A pinned album cover is kept when the album is saved from wp-admin.
+* Fix      - The Moderation AI Flagged table scrolls inside its panel on phones instead of moving the page.
 * Security - Block style fields no longer accept CSS that could inject into the page.
 * Security - Draft media is no longer returned to signed-out visitors through the API.
 * Dev      - Per-media access rules and the Lock Overlay block were removed; MediaVerse is not a membership plugin.
