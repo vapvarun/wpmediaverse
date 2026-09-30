@@ -246,6 +246,10 @@ class NotificationService {
 			$params[] = $filter;
 		}
 
+		list( $block_sql, $block_params ) = $this->block_clause( $user_id );
+		$where                           .= $block_sql;
+		$params                           = array_merge( $params, $block_params );
+
 		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -302,6 +306,32 @@ class NotificationService {
 	}
 
 	/**
+	 * The WHERE fragment that keeps a block out of the bell.
+	 *
+	 * Across a block, neither the other member's actions nor anything about
+	 * their items reaches the bell: those rows' title and link point at an item
+	 * that answers 404 (Basecamp 10355130639). Both block columns and the
+	 * index's post_author are indexed.
+	 *
+	 * @param int $user_id Notification recipient.
+	 * @return array{0: string, 1: int[]} SQL starting with " AND", and its params.
+	 */
+	private function block_clause( int $user_id ): array {
+		$blocked = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $user_id );
+		if ( ! $blocked ) {
+			return array( '', array() );
+		}
+
+		$in    = implode( ',', array_fill( 0, count( $blocked ), '%d' ) );
+		$index = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
+
+		return array(
+			" AND actor_id NOT IN ({$in}) AND ( media_id = 0 OR media_id IS NULL OR media_id NOT IN ( SELECT media_id FROM {$index} WHERE post_author IN ({$in}) ) )",
+			array_merge( $blocked, $blocked ),
+		);
+	}
+
+	/**
 	 * Get unread notification count for a user.
 	 *
 	 * @since 1.1.0
@@ -317,10 +347,13 @@ class NotificationService {
 
 		global $wpdb;
 
+		// Same block rule as the list, or the badge would count rows the bell hides.
+		list( $block_sql, $block_params ) = $this->block_clause( $user_id );
+
 		$count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE user_id = %d AND read_at IS NULL",
-				$user_id
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE user_id = %d AND read_at IS NULL{$block_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_merge( array( $user_id ), $block_params )
 			)
 		);
 

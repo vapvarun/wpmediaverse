@@ -669,6 +669,44 @@ class PrivacyService {
 	 * Clear the per-request cache.
 	 */
 	public function flush_cache(): void {
-		$this->cache = array();
+		$this->cache         = array();
+		$this->blocked_cache = array();
+	}
+
+	/**
+	 * Either-way block lists, keyed by viewer, for can_list().
+	 *
+	 * @var array<int,int[]>
+	 */
+	private $blocked_cache = array();
+
+	/**
+	 * May this media be LISTED to the viewer (a grid, an album, a collection)?
+	 *
+	 * can_view() is one-directional on purpose: a blocker may still open a
+	 * direct link to the blocked member's public media. Lists hide both ways,
+	 * so a list also drops items whose author is on either side of a block with
+	 * the viewer (Basecamp 10355130639). The block list is read once per viewer.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $media_id  Media ID.
+	 * @param int $viewer_id Viewer user ID (0 = visitor).
+	 * @return bool
+	 */
+	public function can_list( int $media_id, int $viewer_id ): bool {
+		if ( ! $this->can_view( $media_id, $viewer_id ) ) {
+			return false;
+		}
+		if ( $viewer_id <= 0 ) {
+			return true;
+		}
+
+		if ( ! isset( $this->blocked_cache[ $viewer_id ] ) ) {
+			$this->blocked_cache[ $viewer_id ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id );
+		}
+
+		return ! $this->blocked_cache[ $viewer_id ]
+			|| ! in_array( (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ), $this->blocked_cache[ $viewer_id ], true );
 	}
 }

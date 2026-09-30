@@ -356,7 +356,7 @@ class FavoriteService {
 			array_filter(
 				$ids,
 				static function ( $media_id ) use ( $privacy, $viewer ) {
-					return $privacy->can_view( (int) $media_id, $viewer );
+					return $privacy->can_list( (int) $media_id, $viewer );
 				}
 			)
 		);

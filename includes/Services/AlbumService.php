@@ -523,7 +523,7 @@ class AlbumService {
 			array_filter(
 				$mvs_ids,
 				static function ( $mvs_media_id ) use ( $mvs_privacy, $mvs_viewer ) {
-					return $mvs_privacy->can_view( (int) $mvs_media_id, $mvs_viewer );
+					return $mvs_privacy->can_list( (int) $mvs_media_id, $mvs_viewer );
 				}
 			)
 		);

@@ -435,6 +435,9 @@ class ReportService {
 		}
 
 		unset( $this->block_relations[ $blocker_id ], $this->block_relations[ $blocked_id ] );
+		// The bell's unread badge hides rows across a block; drop both cached counts.
+		wp_cache_delete( 'mvs_notif_count_' . $blocker_id, 'mvs' );
+		wp_cache_delete( 'mvs_notif_count_' . $blocked_id, 'mvs' );
 		global $wpdb;
 
 		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -473,6 +476,9 @@ class ReportService {
 	 */
 	public function unblock_user( int $blocker_id, int $blocked_id ): bool {
 		unset( $this->block_relations[ $blocker_id ], $this->block_relations[ $blocked_id ] );
+		// The bell's unread badge hides rows across a block; drop both cached counts.
+		wp_cache_delete( 'mvs_notif_count_' . $blocker_id, 'mvs' );
+		wp_cache_delete( 'mvs_notif_count_' . $blocked_id, 'mvs' );
 		global $wpdb;
 
 		return (bool) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

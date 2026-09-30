@@ -1036,6 +1036,14 @@ class MediaRepository implements MediaRepositoryInterface {
 			if ( $viewer_id > 0 ) {
 				$where[]  = "( idx.post_author = %d OR idx.privacy = 'public' OR idx.privacy = 'members' )";
 				$params[] = $viewer_id;
+
+				// Lists hide media both ways across a block (Basecamp 10355130639);
+				// the stories bar is a list.
+				$blocked = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id );
+				if ( $blocked ) {
+					$where[] = 'idx.post_author NOT IN (' . implode( ',', array_fill( 0, count( $blocked ), '%d' ) ) . ')';
+					$params  = array_merge( $params, $blocked );
+				}
 			} else {
 				$where[] = "idx.privacy = 'public'";
 			}
