@@ -221,7 +221,13 @@ class ReportsPage {
 		echo '</h2>';
 
 		if ( empty( $rows ) ) {
-			echo '<p class="mvs-reports-lead">' . esc_html__( 'Nothing here. No reports with this status.', 'wpmediaverse' ) . '</p>';
+			echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML.
+				array(
+					'icon'    => 'flag',
+					'title'   => __( 'Nothing here', 'wpmediaverse' ),
+					'message' => __( 'No reports with this status.', 'wpmediaverse' ),
+				)
+			);
 			return;
 		}
 

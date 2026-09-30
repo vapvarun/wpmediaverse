@@ -2248,13 +2248,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
 		$message = isset( $args['message'] ) ? (string) $args['message'] : '';
 
+		// The markup admin.css styles (icon, h3, p). The helper used to emit
+		// <p> titles with classes no stylesheet defined, so nothing used it and
+		// every admin screen hand-rolled its own (Basecamp 10350404627).
 		$html  = '<div class="mvs-empty-state-admin" role="status">';
-		$html .= '<span class="mvs-empty-state-icon" aria-hidden="true"><i data-lucide="' . esc_attr( $icon ) . '"></i></span>';
+		$html .= '<i data-lucide="' . esc_attr( $icon ) . '" aria-hidden="true"></i>';
 		if ( '' !== $title ) {
-			$html .= '<p class="mvs-empty-state-admin__title">' . esc_html( $title ) . '</p>';
+			$html .= '<h3>' . esc_html( $title ) . '</h3>';
 		}
 		if ( '' !== $message ) {
-			$html .= '<p class="mvs-empty-state-admin__message">' . esc_html( $message ) . '</p>';
+			$html .= '<p>' . esc_html( $message ) . '</p>';
 		}
 		$html .= '</div>';
 

@@ -306,11 +306,7 @@ class StatsPage {
 							</tbody>
 						</table>
 					<?php else : ?>
-						<div class="mvs-empty-state">
-							<i data-lucide="bar-chart-3"></i>
-							<h3><?php esc_html_e( 'No Stats Yet', 'wpmediaverse' ); ?></h3>
-							<p><?php esc_html_e( 'Views will appear once users start browsing media.', 'wpmediaverse' ); ?></p>
-						</div>
+						<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_admin_empty_state( array( 'icon' => 'bar-chart-3', 'title' => __( 'No Stats Yet', 'wpmediaverse' ), 'message' => __( 'Views will appear once users start browsing media.', 'wpmediaverse' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped HTML. ?>
 					<?php endif; ?>
 				</div>
 			</div>

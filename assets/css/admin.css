@@ -580,7 +580,7 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text-muted);
 }
 
-.mvs-empty-state [data-lucide] {
+.wpmediaverse-admin .mvs-empty-state [data-lucide] {
 	width: 48px;
 	height: 48px;
 	stroke-width: 1;
@@ -1856,7 +1856,7 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text-secondary);
 }
 
-.mvs-empty-state-admin [data-lucide] {
+.wpmediaverse-admin .mvs-empty-state-admin [data-lucide] {
 	width: 48px;
 	height: 48px;
 	stroke-width: 1;
