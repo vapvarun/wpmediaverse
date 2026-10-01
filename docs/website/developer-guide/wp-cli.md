@@ -279,7 +279,7 @@ wp mvs sync-activity-privacy
 
 ## wp mvs relocalize-private
 
-Heal pre-1.4.0 non-public media rows whose stored URL meta still points at a prior cloud bucket. When media uploaded to a cloud driver (S3 / BunnyCDN / R2 / DigitalOcean Spaces) was later switched to a restricted privacy level (members / friends / private / group / custom), the URL meta was not relocalized, so `SignedUrlService` 403s on every read because the cloud URL fails its `wpmediaverse/` containment check. The 1.4.0 listener fixes this going forward; this command heals older rows (Basecamp #9925110293).
+Heal pre-1.4.0 non-public media rows whose stored URL meta still points at a prior cloud bucket. When media uploaded to a cloud driver (S3 / BunnyCDN / R2 / DigitalOcean Spaces) was later switched to a restricted privacy level (members / friends / private / group / custom), the URL meta was not relocalized, so `SignedUrlService` 403s on every read because the cloud URL fails its `wpmediaverse/` containment check. The 1.4.0 listener fixes this going forward; this command heals older rows.
 
 Safe to re-run - rows that already have local URLs are skipped.
 
