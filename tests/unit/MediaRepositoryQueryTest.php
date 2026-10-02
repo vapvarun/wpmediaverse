@@ -494,6 +494,22 @@ class MediaRepositoryQueryTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_tag_cloud_omits_tags_carried_only_by_non_public_media(): void {
+		$public  = $this->make_media( array( 'privacy' => 'public' ) );
+		$private = $this->make_media( array( 'privacy' => 'private' ) );
+		$members = $this->make_media( array( 'privacy' => 'members' ) );
+
+		wp_set_object_terms( $public, array( 'open-tag' ), 'mvs_tag' );
+		wp_set_object_terms( $private, array( 'private-only-tag' ), 'mvs_tag' );
+		wp_set_object_terms( $members, array( 'members-only-tag' ), 'mvs_tag' );
+
+		$slugs = wp_list_pluck( $this->repo()->tag_cloud( 200 ), 'slug' );
+
+		$this->assertContains( 'open-tag', $slugs );
+		$this->assertNotContains( 'private-only-tag', $slugs, 'The shared cloud named a tag used only on private media (Basecamp 10335795450).' );
+		$this->assertNotContains( 'members-only-tag', $slugs );
+	}
+
 	public function test_tag_cloud_returns_document_tags_when_asked_for_them(): void {
 		$doc = $this->make_media( array( 'media_type' => 'document' ) );
 		wp_set_object_terms( $doc, array( 'contracts' ), 'mvs_tag' );

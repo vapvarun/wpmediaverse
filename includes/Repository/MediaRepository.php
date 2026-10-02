@@ -5403,6 +5403,10 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$types                          = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+		// The cloud is one cached list for every viewer, so it counts only what
+		// anyone may see: a tag used only on private items is not shown (Basecamp
+		// 10335795450).
+		list( $public_sql )             = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT COUNT(*) FROM (
 				SELECT t.term_id
@@ -5414,6 +5418,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				  AND tt.taxonomy = 'mvs_tag'
 				  AND m.status = 'publish'
 				  AND m.moderation_status = 'approved'
+				  AND {$public_sql}
 				GROUP BY t.term_id
 			) AS qualifying";
 
@@ -5428,6 +5433,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		$types = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+		// The cloud is one cached list for every viewer, so it counts only what
+		// anyone may see: a tag used only on private items is not shown (Basecamp
+		// 10335795450).
+		list( $public_sql )             = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT t.term_id, t.name, t.slug, COUNT(*) AS media_count
 			FROM {$wpdb->term_relationships} tr
@@ -5438,6 +5447,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			WHERE {$type_sql}
 			AND m.status = 'publish'
 			AND m.moderation_status = 'approved'
+			AND {$public_sql}
 			GROUP BY t.term_id, t.name, t.slug
 			ORDER BY media_count DESC, MAX(m.created_at) DESC, t.name ASC
 			LIMIT %d";
