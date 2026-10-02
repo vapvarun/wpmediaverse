@@ -312,6 +312,14 @@ class GeneralSettingsRegistrar {
 				__( 'Report reviewed', 'wpmediaverse' ),
 				__( 'A moderator resolved or dismissed a report the member filed. The email does not say what was decided.', 'wpmediaverse' ),
 			),
+			\WPMediaVerse\Services\EmailService::TYPES['new_follower']    => array(
+				__( 'New follower', 'wpmediaverse' ),
+				__( 'Someone started following the member.', 'wpmediaverse' ),
+			),
+			\WPMediaVerse\Services\EmailService::TYPES['media_comment']   => array(
+				__( 'Comment on their media', 'wpmediaverse' ),
+				__( 'Someone commented on a photo, video or file the member posted.', 'wpmediaverse' ),
+			),
 		);
 
 		foreach ( $emails as $option => $copy ) {
