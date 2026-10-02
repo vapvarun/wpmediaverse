@@ -44,7 +44,9 @@ class MediaTag {
 			// the single Tags screen. Leaving show_in_menu on produced two "Tags"
 			// entries under WPMediaVerse (custom page + edit-tags.php).
 			'show_in_menu'          => false,
-			'show_in_rest'          => true,
+			// No core wp/v2 route: it listed every tag name, including tags used
+			// only on private items. mvs/v1/tags is the API (2.6.1).
+			'show_in_rest'          => false,
 			'show_admin_column'     => true,
 			'rewrite'               => array( 'slug' => 'media-tag' ),
 			'update_count_callback' => array( __CLASS__, 'update_term_count' ),

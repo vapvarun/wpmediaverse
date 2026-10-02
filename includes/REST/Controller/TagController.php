@@ -203,6 +203,16 @@ class TagController extends WP_REST_Controller {
 			$args['search'] = $search;
 		}
 
+		// A visitor sees only tags on public items; a signed-in member keeps the
+		// full list for autocomplete (Basecamp 10335795450). Same public-only,
+		// cached (and write-invalidated) query as the Explore tag cloud.
+		// ponytail: the 200 most-used public media tags; page the tag cloud
+		// query if visitors ever need to search past them.
+		if ( ! is_user_logged_in() ) {
+			$public = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->tag_cloud( 200 );
+			$args['include'] = array_map( 'intval', wp_list_pluck( $public, 'term_id' ) ) ?: array( 0 );
+		}
+
 		$terms = get_terms( $args );
 
 		if ( is_wp_error( $terms ) ) {
