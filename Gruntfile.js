@@ -35,6 +35,8 @@ module.exports = function( grunt ) {
 					exclude: [ 'dist/.*', 'node_modules/.*', 'vendor/.*', 'libs/.*', 'tests/.*' ],
 					potHeaders: {
 						poedit: true,
+						// Not on wordpress.org; the default bug address there is a 404.
+						'report-msgid-bugs-to': 'https://wbcomdesigns.com/support/',
 						'x-poedit-keywordslist': true,
 					},
 				},
