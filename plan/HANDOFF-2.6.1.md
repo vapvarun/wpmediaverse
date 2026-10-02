@@ -30,11 +30,10 @@ the cards are the source of truth, this file is the index.
 | 9765027990 | new_follower + media_comment emails (owner switches, off by default) | Free aeb843b8 |
 | 9937716241 | Trending via cached `ranked_feed_page()` in `query()`; Type filter on feeds | Free 1cac4365 |
 
-## Waiting on the owner
+## Owner decisions (2026-10-02), done
 
-- BuddyNext also emails new followers and comments on MediaVerse events, so with the new switches on a BuddyNext member gets two emails (card 9765027990).
-
-- GET /mvs/v1/tags and /wp/v2/mvs_tag list tag names used only on private items (by design since a 2026-05-01 triage). Recommendation on card 10335795450: visitors see only tags on public items; signed-in uploaders keep the full list.
+- On BuddyNext sites BuddyNext sends MediaVerse activity emails; MediaVerse emails only standalone (`EmailService::host_sends()`, Free 5a5e734c). BuddyNext gaps filed: BN card 10364576620.
+- Visitors see only tags on public items in GET /mvs/v1/tags; members keep the full list; /wp/v2/mvs_tag off (Free 334a093a).
 
 ## Gotchas
 
