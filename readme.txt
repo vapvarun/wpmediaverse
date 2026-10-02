@@ -138,13 +138,21 @@ Private albums and tags stay private everywhere, Explore gains Trending and a ty
 * Improve  - WordPress's password and private options no longer show for albums and collections; who can see an album is set in Album Settings.
 * Improve  - MediaVerse warns when MediaVerse Pro is older than 2.6.0.
 * Improve  - Product links point to the new store pages.
+* Improve  - When members cannot choose privacy, the upload modal, My Media and the upload page say who will see their uploads, and the setting's help text matches.
+* Improve  - The lightbox Save button shows Saved while the item is in the member's Favorites.
+* Improve  - The upload page shows the picked file and its thumbnail instead of the drop prompt.
+* Improve  - My Media shows a member's media sooner on phones: a one-line profile row and no duplicate drag-and-drop box beside the upload button.
+* Improve  - On a BuddyNext site, BuddyNext's profile editor is the one place to edit a profile.
+* Improve  - Album privacy prompts name the photos they affect, and changing an album to a stricter privacy asks first.
 * Fix      - Editing a media item whose ID matches an album or collection now saves.
 * Fix      - The plugin package no longer ships unused block files and the styles of the removed Lock Overlay.
+* Fix      - The Settings saved confirmation shows at the top of the tab, and on phones it scrolls into view.
 * Security - Private albums and collections no longer appear to visitors or other members on the Albums and Collections pages or through WordPress's built-in REST routes.
 * Security - The tag cloud and the public tag list show only tags used on public items.
+* Security - Duplicate-upload checks compare only with the member's own uploads, and the notice no longer shows another item's ID.
 * Dev      - New PrivacyService::query_listable_spaces() for album and collection lists, TemplateHelpers::alt_text(), and an alt field on media REST responses.
 * Dev      - The wp/v2 routes for mvs-albums, mvs-collections and mvs_tag are removed; use the mvs/v1 routes.
-* Dev      - Templates updated: cpt-archive.php and partials/shared-ui-frame.php (2.6.1).
+* Dev      - Templates updated to 2.6.1: cpt-archive.php, partials/shared-ui-frame.php and partials/dashboard-content.php.
 * Compat   - Aligned with MediaVerse Pro 2.6.1. Install both updates together.
 
 = 2.6.0 - September 2026 =
