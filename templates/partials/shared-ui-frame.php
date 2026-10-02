@@ -589,9 +589,10 @@ wp_interactivity_state(
 						</button>
 					<?php endif; ?>
 					<?php if ( $mvs_is_logged_in && $mvs_collections_on ) : ?>
-						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
+						<?php // Shows saved while the item is in the member's Favorites, like the Free button (Basecamp 10364776932). ?>
+						<button class="mvs-lightbox-action mvs-lb-save" type="button" data-wp-on--click="actions.lightboxOpenCollections" data-wp-class--active="state.lightboxIsFavorited" data-wp-bind--aria-pressed="state.lightboxIsFavorited" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
-							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxSaveLabel"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( $mvs_is_logged_in && ! $mvs_legacy_fav ) : ?>
 						<button class="mvs-lightbox-action mvs-lb-save" type="button" data-mvs-fav-toggle data-mvs-label-on="<?php esc_attr_e( 'Saved', 'wpmediaverse' ); ?>" data-mvs-label-off="<?php esc_attr_e( 'Save', 'wpmediaverse' ); ?>" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" data-wp-bind--aria-pressed="state.lightboxIsFavorited" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save to your Favorites', 'wpmediaverse' ); ?>">

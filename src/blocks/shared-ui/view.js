@@ -21,6 +21,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 // them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
 let toastTimer = null;
 let tagSearchTimer = null;
+let savedListenerAdded = false;
 
 /**
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s" with no zone)
@@ -1716,6 +1717,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// can open. No-op if Pro is not present.
 		lightboxOpenCollections() {
 			if ( ! state.lightboxMediaId ) return;
+			// The picker announces each change; re-read the saved state so the
+			// Save button fills or empties (Basecamp 10364776932).
+			if ( ! savedListenerAdded ) {
+				savedListenerAdded = true;
+				document.addEventListener( 'mvs-collections-changed', async ( e ) => {
+					const id = e.detail?.mediaId;
+					if ( ! id || id !== state.lightboxMediaId ) return;
+					const restUrl = window.mvsBpActions?.restUrl || ( window.location.origin + '/wp-json/mvs/v1/' );
+					try {
+						const f = await window.mvsRest.restFetch( restUrl + 'media/' + id + '/favorite' );
+						if ( f.ok ) state.lightboxIsFavorited = !! f.data.favorited;
+					} catch {}
+				} );
+			}
 			const ref = getElement()?.ref;
 			( ref || document.body ).dispatchEvent(
 				new CustomEvent( 'mvs-collections-click', {
