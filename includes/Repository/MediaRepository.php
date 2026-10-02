@@ -762,7 +762,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Per-request memo for is_cpt_id() so the guard costs at most one lookup per ID.
+	 * Per-request memo of IDs refuses_cpt_id() has allowed, so the common case
+	 * costs one lookup per ID.
 	 *
 	 * @since 2.4.0
 	 * @var array<int,bool>
@@ -800,12 +801,10 @@ class MediaRepository implements MediaRepositoryInterface {
 			return false;
 		}
 
-		if ( ! isset( self::$cpt_id_memo[ $media_id ] ) ) {
-			$type                           = get_post_type( $media_id );
-			self::$cpt_id_memo[ $media_id ] = ( 'mvs_album' === $type || 'mvs_collection' === $type );
-		}
-
-		if ( ! self::$cpt_id_memo[ $media_id ] ) {
+		// Only "allowed" is remembered: a media row created later in the same
+		// request (insert, then set_many) turns a refusal into an allow.
+		if ( isset( self::$cpt_id_memo[ $media_id ] ) || ! empty( $this->media_ids_only( array( $media_id ) ) ) ) {
+			self::$cpt_id_memo[ $media_id ] = true;
 			return false;
 		}
 
@@ -3016,6 +3015,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Drop album and collection ids, which set() refuses (refuses_cpt_id()),
 	 * with one query for the whole list instead of one get_post_type() each.
 	 *
+	 * The two ID spaces overlap: a real media item can share its ID with an
+	 * album. Its row is in the index and an album's never is, so an ID is
+	 * dropped only when it has no media row (Basecamp 10355752606: edits to
+	 * such a media item were silently thrown away).
+	 *
 	 * @since 2.6.0
 	 *
 	 * @param int[] $media_ids Candidate IDs.
@@ -3036,7 +3040,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				$cpt,
 				(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prepare(
-						"SELECT ID FROM {$wpdb->posts} WHERE ID IN ({$in}) AND post_type IN ('mvs_album', 'mvs_collection')", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						"SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$wpdb->prefix}mvs_media_index i ON i.media_id = p.ID WHERE p.ID IN ({$in}) AND p.post_type IN ('mvs_album', 'mvs_collection') AND i.media_id IS NULL", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						...$chunk
 					)
 				)
