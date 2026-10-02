@@ -2240,7 +2240,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.0",
+    "branch": "2.6.1",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -3999,5 +3999,18 @@
       "where": "includes/Admin/ProSettings.php"
     }
   ],
-  "storage_drivers_note": "All four are selected through the Free `mvs_storage_driver` filter; the switch lives at includes/Core/Plugin.php:1143-1150."
+  "storage_drivers_note": "All four are selected through the Free `mvs_storage_driver` filter; the switch lives at includes/Core/Plugin.php:1143-1150.",
+  "refresh_2026_10_02": {
+    "scope": "targeted (2.6.1)",
+    "verified_against_pro_head": "2ea7272",
+    "added": {
+      "public_methods": [
+        "FolderService::dequeue()"
+      ]
+    },
+    "changed": [
+      "FolderService: delete_permanently() and restore() cancel the folder purge job",
+      "assets/css/admin.css: dead Quota Page rule removed"
+    ]
+  }
 }

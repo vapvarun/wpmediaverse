@@ -6957,14 +6957,19 @@
     "hooks_note": "NOT re-enumerated on 2026-09-01: manifest.hooks.json is owned by a separate pass this cycle. Value carried forward unverified."
   },
   "refresh_2026_10_02": {
-    "scope": "targeted (2.6.1: album/collection list privacy)",
+    "scope": "targeted (2.6.1: list privacy, media/album ID overlap, MIN_PRO, album admin, build cleanup)",
     "added": {
       "public_methods": [
         "PrivacyService::query_listable_spaces()"
       ]
     },
     "changed": [
-      "mvs_album and mvs_collection: show_in_rest false (wp/v2/mvs-albums and wp/v2/mvs-collections removed)"
+      "mvs_album and mvs_collection: show_in_rest false (wp/v2/mvs-albums and wp/v2/mvs-collections removed)",
+      "MediaRepository::refuses_cpt_id()/media_ids_only(): refuse only an album/collection ID with no media row (media sharing an album ID can be edited)",
+      "MVS_MIN_PRO 2.6.0 (BootGuardTest pins it to MVS_VERSION minor)",
+      "Plugin::register_types(): wp_insert_post_data drops album password and private status; admin.css hides WP visibility controls on album/collection screens",
+      "AlbumMetaBox: album type is a select (default, playlist; custom values kept)",
+      "Packaging: build/blocks/blocks excluded (Gruntfile copy:dist, .distignore, build-release.sh check); Lock Overlay CSS removed"
     ]
   }
 }
