@@ -110,7 +110,24 @@ class AlbumMetaBox {
 
 		<p class="mvs-metabox-field">
 			<label for="mvs_album_type"><strong><?php esc_html_e( 'Album type', 'wpmediaverse' ); ?></strong></label><br />
-			<input type="text" id="mvs_album_type" name="mvs_album_type" class="regular-text" value="<?php echo esc_attr( $type ); ?>" />
+			<?php
+			// Only these two change behaviour (a playlist takes audio only). A
+			// custom value set through the API stays selectable, so saving the
+			// album does not erase it (Basecamp 10354828394).
+			$type_choices = array(
+				'default'  => __( 'Standard album', 'wpmediaverse' ),
+				'playlist' => __( 'Playlist (audio only)', 'wpmediaverse' ),
+			);
+			$type         = '' !== $type ? $type : 'default';
+			if ( ! isset( $type_choices[ $type ] ) ) {
+				$type_choices[ $type ] = $type;
+			}
+			?>
+			<select id="mvs_album_type" name="mvs_album_type">
+				<?php foreach ( $type_choices as $slug => $label ) : ?>
+					<option value="<?php echo esc_attr( (string) $slug ); ?>" <?php selected( $type, (string) $slug ); ?>><?php echo esc_html( (string) $label ); ?></option>
+				<?php endforeach; ?>
+			</select>
 		</p>
 
 		<p class="mvs-metabox-field">

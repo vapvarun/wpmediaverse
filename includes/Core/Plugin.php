@@ -1107,6 +1107,25 @@ class Plugin {
 			2
 		);
 
+		// Who sees an album is its MediaVerse privacy (Album Settings box). A
+		// WordPress password or private status is invisible to every MediaVerse
+		// list and only hid the album, even from its owner, while its privacy
+		// said otherwise. admin.css hides those controls; this covers any other
+		// save path (Basecamp 10354828394). Collections keep their status: the
+		// Favorites collection is private by design.
+		add_filter(
+			'wp_insert_post_data',
+			static function ( $data ) {
+				if ( 'mvs_album' === ( $data['post_type'] ?? '' ) ) {
+					$data['post_password'] = '';
+					if ( 'private' === ( $data['post_status'] ?? '' ) ) {
+						$data['post_status'] = 'publish';
+					}
+				}
+				return $data;
+			}
+		);
+
 		Album::register();
 		Collection::register();
 		MediaTag::register();

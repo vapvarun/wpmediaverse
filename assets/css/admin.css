@@ -152,6 +152,15 @@
 	display: none !important;
 }
 
+/* WordPress's password / private visibility does nothing for albums and
+   collections; their privacy is the Settings box (Basecamp 10354828394). */
+.post-type-mvs_album .inline-edit-row .inline-edit-group:has(.inline-edit-password-input),
+.post-type-mvs_collection .inline-edit-row .inline-edit-group:has(.inline-edit-password-input),
+.post-type-mvs_album #visibility,
+.post-type-mvs_collection #visibility {
+	display: none;
+}
+
 /* ==========================================================================
    Page Header
    ========================================================================== */
