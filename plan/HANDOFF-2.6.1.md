@@ -48,7 +48,7 @@ the cards are the source of truth, this file is the index.
 | 10364778286 | On BuddyNext sites the Edit profile section and banner step aside; starting tab via `DashboardSections::resolve()` | Free 9fdcd353 |
 | 10364776389 | Album prompts name photos; stricter album privacy asks first | Free 73df8a04 |
 
-Waiting on BuddyNext: Report opener on `#report` (BN 10364838835; MV card 10364778043 in Not now), signup terms checkbox (BN 10364779324), onboarding, bottom-bar +, profile Media drop zone, delete mirrors, battle/document emails + bell (BN 10364576620). Gamification toasts (WP Gamification 10364780414), Reign logo (Reign 10364780720).
+Waiting on BuddyNext: Report opener on `#report` (BN 10364838835; MV card 10364778043 in Not now), onboarding, bottom-bar +, profile Media drop zone, delete mirrors, battle/document emails + bell (BN 10364576620). Gamification toasts (WP Gamification 10364780414), Reign logo (Reign 10364780720).
 Polish left in Bugs: Documents drive (10364778512), lightbox/visitor polish (10364778707), admin polish (10364778984).
 
 ## Gotchas
