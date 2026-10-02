@@ -297,58 +297,10 @@ class AlbumController extends WP_REST_Controller {
 
 		$user_id = get_current_user_id();
 
-		// Enforce privacy at the SQL level so the pagination totals
-		// (X-WP-Total / X-WP-TotalPages) reflect only the albums this viewer may
-		// see. The previous per-item can_view() filter ran AFTER the query, so
-		// found_posts over-reported and paginated visitors hit empty/short pages
-		// ("albums not visible to visitors", Basecamp 10071400189).
-		//
-		// Album privacy lives in post meta (AlbumService::PRIVACY_META). LEFT JOIN it
-		// and express the same rule explore_privacy_clause() applies to media:
-		// public, or members-level to a logged-in viewer, or the viewer's own.
-		// private / friends / group / custom are owner-only in the list, matching how
-		// media explore treats them.
-		//
-		// Before 2.4.0 this joined mvs_media_index on wp_posts.ID, because album
-		// privacy was stored there at media_id = <album post ID>. That is the defect
-		// this release removes: the album ID collided with a real media_id, so the
-		// clause could filter an album by an unrelated PHOTO's privacy. Migrator v26
-		// writes _mvs_privacy for every existing album before this path can run
-		// (Plugin::init() runs migrations on every load), so the meta is always
-		// present; a missing value still falls back to public, which is the documented
-		// default and matches the previous behaviour for albums with no index row.
-		//
-		// THIS CLAUSE IS THE ONLY PRIVACY GATE ON THIS ENDPOINT. The per-item
-		// can_view() re-check was removed deliberately (see below) — do not weaken it.
-		global $wpdb;
-		$privacy_meta = AlbumService::PRIVACY_META;
-
-		if ( $user_id && user_can( $user_id, 'moderate_mvs_media' ) ) {
-			$priv_fragment = '1 = 1';
-		} elseif ( $user_id ) {
-			$priv_fragment = $wpdb->prepare(
-				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				(int) $user_id
-			);
-		} else {
-			$priv_fragment = "( mvpriv.meta_value IS NULL OR mvpriv.meta_value = 'public' )";
-		}
-
-		$join_cb  = static function ( $join ) use ( $wpdb, $privacy_meta ) {
-			return $join . $wpdb->prepare(
-				" LEFT JOIN {$wpdb->postmeta} mvpriv ON mvpriv.post_id = {$wpdb->posts}.ID AND mvpriv.meta_key = %s ", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$privacy_meta
-			);
-		};
-		$where_cb = static function ( $where ) use ( $priv_fragment ) {
-			return $where . " AND {$priv_fragment}";
-		};
-
-		add_filter( 'posts_join', $join_cb );
-		add_filter( 'posts_where', $where_cb );
-		$query = new \WP_Query( $args );
-		remove_filter( 'posts_join', $join_cb );
-		remove_filter( 'posts_where', $where_cb );
+		// The only privacy gate on this endpoint: the rule is in SQL so the
+		// totals match what the viewer sees (Basecamp 10071400189). Same helper
+		// as the /album/ archive and the BuddyPress albums tab.
+		$query = PrivacyService::query_listable_spaces( $args, (int) $user_id );
 
 		// Privacy is fully enforced by the SQL clause above (public / members /
 		// own via wp_posts.post_author; private/friends/group/custom are owner-

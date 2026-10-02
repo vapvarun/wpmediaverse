@@ -251,6 +251,61 @@ class PrivacyService {
 	}
 
 	/**
+	 * Run a WP_Query for albums or collections, keeping only the ones the viewer
+	 * may see in a list.
+	 *
+	 * The rule lives in SQL so found_posts and pagination count only visible
+	 * rows (Basecamp 10071400189). Privacy is the post meta both CPTs share
+	 * (AlbumService::PRIVACY_META): public for everyone, members-level for any
+	 * logged-in viewer, anything else only for its author. Moderators see all.
+	 * wp_posts.post_author is the authoritative author; the index author on
+	 * album rows is unreliable, which is why can_view() is not used per row.
+	 *
+	 * Every album or collection list goes through here (Basecamp 10360879667:
+	 * the /album/ archive and the BuddyPress albums tab listed private albums).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param array $args    WP_Query arguments.
+	 * @param int   $user_id Viewer ID, 0 for a visitor.
+	 * @return \WP_Query
+	 */
+	public static function query_listable_spaces( array $args, int $user_id ): \WP_Query {
+		global $wpdb;
+
+		if ( $user_id && user_can( $user_id, 'moderate_mvs_media' ) ) {
+			return new \WP_Query( $args );
+		}
+
+		if ( $user_id ) {
+			$fragment = $wpdb->prepare(
+				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
+			);
+		} else {
+			$fragment = "( mvpriv.meta_value IS NULL OR mvpriv.meta_value = 'public' )";
+		}
+
+		$join_cb  = static function ( $join ) use ( $wpdb ) {
+			return $join . $wpdb->prepare(
+				" LEFT JOIN {$wpdb->postmeta} mvpriv ON mvpriv.post_id = {$wpdb->posts}.ID AND mvpriv.meta_key = %s ", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				AlbumService::PRIVACY_META
+			);
+		};
+		$where_cb = static function ( $where ) use ( $fragment ) {
+			return $where . " AND {$fragment}";
+		};
+
+		add_filter( 'posts_join', $join_cb );
+		add_filter( 'posts_where', $where_cb );
+		$query = new \WP_Query( $args );
+		remove_filter( 'posts_join', $join_cb );
+		remove_filter( 'posts_where', $where_cb );
+
+		return $query;
+	}
+
+	/**
 	 * Effective privacy for a media item — most restrictive of its own privacy
 	 * and its parent album's.
 	 *

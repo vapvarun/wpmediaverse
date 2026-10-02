@@ -2133,12 +2133,16 @@
     {
       "name": "mvs_album",
       "file": "includes/PostTypes/Album.php:49",
-      "show_in_menu": "wpmediaverse"
+      "show_in_menu": "wpmediaverse",
+      "show_in_rest": false,
+      "rest_note": "No core wp/v2 route since 2.6.1 (it leaked private items); mvs/v1 is the API."
     },
     {
       "name": "mvs_collection",
       "file": "includes/PostTypes/Collection.php:49",
-      "show_in_menu": "wpmediaverse"
+      "show_in_menu": "wpmediaverse",
+      "show_in_rest": false,
+      "rest_note": "No core wp/v2 route since 2.6.1 (it leaked private items); mvs/v1 is the API."
     }
   ],
   "taxonomies": [
@@ -6085,7 +6089,8 @@
     "always_sign_filter": "Core/Plugin.php::maybe_sign_file_url (mvs_media_response priority 10)",
     "rate_limit_middleware": "REST/RateLimiter.php",
     "storage_trust": "Services/StorageService.php::host_of (one host reader for SignedUrlService::is_on_driver_host and driver_name_for_url; refuses backslash, whitespace, control chars, userinfo)",
-    "list_privacy": "Services/PrivacyService.php::can_list (can_view + either-way block list; used by AlbumService::viewable_item_ids and FavoriteService::get_collection_media_ids)"
+    "list_privacy": "Services/PrivacyService.php::can_list (can_view + either-way block list; used by AlbumService::viewable_item_ids and FavoriteService::get_collection_media_ids)",
+    "space_list_privacy": "Services/PrivacyService.php::query_listable_spaces (album/collection lists: AlbumController::get_items, templates/cpt-archive.php, BaseBPTabIntegration::albums_content)"
   },
   "ci_guards": {
     "script": "bin/ci-local.sh",
@@ -6124,7 +6129,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.0",
+    "branch": "2.6.1",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -6950,5 +6955,16 @@
     "admin_pages": 22,
     "migrator_version": 30,
     "hooks_note": "NOT re-enumerated on 2026-09-01: manifest.hooks.json is owned by a separate pass this cycle. Value carried forward unverified."
+  },
+  "refresh_2026_10_02": {
+    "scope": "targeted (2.6.1: album/collection list privacy)",
+    "added": {
+      "public_methods": [
+        "PrivacyService::query_listable_spaces()"
+      ]
+    },
+    "changed": [
+      "mvs_album and mvs_collection: show_in_rest false (wp/v2/mvs-albums and wp/v2/mvs-collections removed)"
+    ]
   }
 }
