@@ -124,6 +124,29 @@ Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui
 
 == Changelog ==
 
+= 2.6.1 - October 2026 =
+
+Private albums and tags stay private everywhere, Explore gains Trending and a type filter, and lists keep loading as you scroll.
+
+* New      - Explore offers a Trending sort and a filter for photos, videos or audio, ranked the same way as the app.
+* New      - Lists load the next pages as you scroll; after three pages a Load More button keeps the site footer in reach.
+* New      - The upload modal suggests matching tags as you type.
+* New      - Member emails for a new follower and for a comment on their media, each switched on in Settings > General > Emails.
+* Improve  - On a BuddyNext site, BuddyNext sends the member emails for MediaVerse activity, so a member gets one email per event.
+* Improve  - A photo has the same alt text in the grid, the lightbox and newly loaded cards, using its AI description when there is one.
+* Improve  - Album type is a choice of Standard album or Playlist instead of a free-text field.
+* Improve  - WordPress's password and private options no longer show for albums and collections; who can see an album is set in Album Settings.
+* Improve  - MediaVerse warns when MediaVerse Pro is older than 2.6.0.
+* Improve  - Product links point to the new store pages.
+* Fix      - Editing a media item whose ID matches an album or collection now saves.
+* Fix      - The plugin package no longer ships unused block files and the styles of the removed Lock Overlay.
+* Security - Private albums and collections no longer appear to visitors or other members on the Albums and Collections pages or through WordPress's built-in REST routes.
+* Security - The tag cloud and the public tag list show only tags used on public items.
+* Dev      - New PrivacyService::query_listable_spaces() for album and collection lists, TemplateHelpers::alt_text(), and an alt field on media REST responses.
+* Dev      - The wp/v2 routes for mvs-albums, mvs-collections and mvs_tag are removed; use the mvs/v1 routes.
+* Dev      - Templates updated: cpt-archive.php and partials/shared-ui-frame.php (2.6.1).
+* Compat   - Aligned with MediaVerse Pro 2.6.1. Install both updates together.
+
 = 2.6.0 - September 2026 =
 
 A simpler MediaVerse: one way to keep an item, a clearer lightbox, a lighter My Media, fewer settings, and member emails you choose.
