@@ -1903,9 +1903,25 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		return array(
-			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views' ), true ) ? $sort : 'created_at',
+			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views', 'trending' ), true ) ? $sort : 'created_at',
 			'order'   => 'asc' === $order ? 'ASC' : 'DESC',
 		);
+	}
+
+	/**
+	 * Media type the visitor filtered Explore to (?mvs_type=), or '' for all.
+	 *
+	 * @since 2.6.1
+	 * @return string image|video|audio|''.
+	 */
+	public function explore_type(): string {
+		// Feeds only: a profile counts and lists through its own author query.
+		if ( get_query_var( 'mvs_profile_user' ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view filter on a GET page.
+		$type = isset( $_GET['mvs_type'] ) ? sanitize_key( wp_unslash( $_GET['mvs_type'] ) ) : '';
+		return in_array( $type, MediaTypes::MEDIA_LIBRARY, true ) ? $type : '';
 	}
 
 	/**
@@ -1946,13 +1962,27 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
 					number_format_i18n( $total_items )
 				),
+				'filters' => get_query_var( 'mvs_profile_user' ) ? array() : array(
+					array(
+						'name'    => 'mvs_type',
+						'label'   => __( 'Type', 'wpmediaverse' ),
+						'value'   => $this->explore_type(),
+						'options' => array(
+							''      => __( 'All types', 'wpmediaverse' ),
+							'image' => __( 'Photos', 'wpmediaverse' ),
+							'video' => __( 'Videos', 'wpmediaverse' ),
+							'audio' => __( 'Audio', 'wpmediaverse' ),
+						),
+					),
+				),
 				// One select, field and direction together (2.6.0).
-				'sort'   => array(
+				'sort'    => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
 					'value'   => ( 'created_at' === $sort['orderby'] && 'ASC' === $sort['order'] ) ? 'oldest' : $sort['orderby'],
 					'options' => array(
 						'created_at' => __( 'Newest', 'wpmediaverse' ),
+						'trending'   => __( 'Trending', 'wpmediaverse' ),
 						'oldest'     => __( 'Oldest', 'wpmediaverse' ),
 						'views'      => __( 'Most viewed', 'wpmediaverse' ),
 					),

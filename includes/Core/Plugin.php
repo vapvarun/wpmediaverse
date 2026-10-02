@@ -294,6 +294,18 @@ class Plugin {
 		// Member emails: the minimal set the owner switches on (2.6.0).
 		self::$container->get( 'emails' )->init();
 
+		// Explore's Type filter (?mvs_type=) for the Grid and every Pro feed
+		// layout, applied where both build their query (2.6.1).
+		$mvs_apply_type = static function ( $args ) {
+			$type = self::$container->get( 'template_helpers' )->explore_type();
+			if ( '' !== $type && is_array( $args ) ) {
+				$args['media_types'] = array( $type );
+			}
+			return $args;
+		};
+		add_filter( 'mvs_explore_query_args', $mvs_apply_type );
+		add_filter( 'mvs_feed_query_args', $mvs_apply_type );
+
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
 			self::$container->get( 'moderation' );

@@ -211,9 +211,14 @@
 			// The one-select spelling of created_at ascending (2.6.0).
 			url.searchParams.set( 'orderby', 'created_at' );
 			url.searchParams.set( 'order', 'asc' );
-		} else if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views' ].indexOf( sortKey ) !== -1 ) {
+		} else if ( 'media' === config.endpoint && sortKey && [ 'created_at', 'title', 'views', 'trending' ].indexOf( sortKey ) !== -1 ) {
 			url.searchParams.set( 'orderby', sortKey );
 			url.searchParams.set( 'order', 'asc' === pageQuery.get( 'order' ) ? 'asc' : 'desc' );
+		}
+		// And the type the toolbar filtered to.
+		var typeKey = pageQuery.get( 'mvs_type' );
+		if ( 'media' === config.endpoint && [ 'image', 'video', 'audio' ].indexOf( typeKey ) !== -1 ) {
+			url.searchParams.set( 'media_type', typeKey );
 		}
 
 		window.mvsRest.restFetch( url.toString() )

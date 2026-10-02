@@ -3673,27 +3673,29 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array  $params    Bound parameters for $where_sql.
 	 * @param int    $per_page  Page size.
 	 * @param int    $offset    Page offset.
+	 * @param string $alias     Index alias the WHERE fragments use: 'i' (REST feed) or 'm' (query()). @since 2.6.1
 	 * @return int[] Media IDs for this page, in rank order.
 	 */
-	private function ranked_feed_page( string $orderby, string $where_sql, string $join, array $params, int $per_page, int $offset ): array {
+	private function ranked_feed_page( string $orderby, string $where_sql, string $join, array $params, int $per_page, int $offset, string $alias = 'i' ): array {
 		global $wpdb;
 
-		$index = $wpdb->prefix . 'mvs_media_index';
+		$alias = 'm' === $alias ? 'm' : 'i';
+		$index = $wpdb->prefix . 'mvs_media_index ' . $alias;
 		$stats = $wpdb->prefix . 'mvs_media_stats';
 
 		$score_expr = 'trending' === $orderby
-			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, UTC_TIMESTAMP()), 1), 1.5))'
+			? "((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, {$alias}.created_at, UTC_TIMESTAMP()), 1), 1.5))"
 			: 'COALESCE(s.views, 0)';
 
 		$cache_cap    = 300;
-		$cache_key    = 'ranked_feed_' . $orderby . '_' . md5( $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
+		$cache_key    = 'ranked_feed_' . $orderby . '_' . md5( $alias . '|' . $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
 		$cache_args   = $params;
 		$cache_args[] = $cache_cap;
 
 		$ranked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->remember(
 			$cache_key,
-			static function () use ( $wpdb, $index, $stats, $where_sql, $join, $score_expr, $cache_args ) {
-				$sql = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d";
+			static function () use ( $wpdb, $index, $stats, $where_sql, $join, $score_expr, $cache_args, $alias ) {
+				$sql = "SELECT {$alias}.media_id FROM {$index} LEFT JOIN {$stats} s ON {$alias}.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d";
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$rows = (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$cache_args ) );
 				return array_map( 'intval', $rows );
@@ -3709,7 +3711,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$page_params   = $params;
 		$page_params[] = $per_page;
 		$page_params[] = $offset;
-		$sql           = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
+		$sql           = "SELECT {$alias}.media_id FROM {$index} LEFT JOIN {$stats} s ON {$alias}.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$page_params ) ) );
 	}
@@ -4028,6 +4030,14 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$args  = $this->normalize_query_args( $args );
 		$parts = $this->build_query_parts( $args );
+
+		// Trending: the REST feed's ranked, cached path, so Explore and the app
+		// rank the same way and a big site does not score every row per view.
+		if ( 'trending' === $args['orderby'] ) {
+			$ids  = $this->ranked_feed_page( 'trending', $parts['where'], $parts['join'], $parts['params'], max( 1, (int) $args['limit'] ), max( 0, (int) $args['offset'] ), 'm' );
+			$rows = $this->get_batch( $ids );
+			return array_values( array_filter( array_map( static fn( $id ) => $rows[ $id ] ?? null, $ids ) ) );
+		}
 
 		$orderby = in_array( $args['orderby'], self::QUERY_ORDERBY_ALLOWED, true ) ? $args['orderby'] : 'created_at';
 		$order   = 'ASC' === strtoupper( (string) $args['order'] ) ? 'ASC' : 'DESC';
