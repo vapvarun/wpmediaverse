@@ -299,6 +299,12 @@ class GeneralSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-general'
 		);
 
+		// BuddyNext owns these emails on its sites, so the section (which renders
+		// only with fields) is left empty and does not show.
+		if ( \WPMediaVerse\Services\EmailService::host_sends() ) {
+			return;
+		}
+
 		$emails = array(
 			\WPMediaVerse\Services\EmailService::TYPES['battle_invite']   => array(
 				__( 'Photo battle invites', 'wpmediaverse' ),
