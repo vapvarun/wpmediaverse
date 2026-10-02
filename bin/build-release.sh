@@ -369,6 +369,12 @@ step "6. grunt dist (Free)"
 	&& ./node_modules/.bin/grunt dist > /dev/null 2>&1 ) || { fail "Free grunt dist failed"; exit 21; }
 FREE_ZIP="$FREE_ROOT/dist/${FREE_SLUG}-${VERSION}.zip"
 [ -f "$FREE_ZIP" ] || { fail "Free zip not produced at $FREE_ZIP"; exit 40; }
+# Legacy wp-scripts output that no block.json loads; it shipped 18 dead files
+# up to 2.6.0 (Basecamp 10355538303). The copy task excludes it; this proves it.
+if unzip -Z1 "$FREE_ZIP" | grep -q "^${FREE_SLUG}/build/blocks/blocks/"; then
+	fail "Free zip contains build/blocks/blocks/ (legacy build output). Check the copy:dist excludes."
+	exit 40
+fi
 ok "Free zip: $FREE_ZIP"
 
 if [ "$FREE_ONLY" -eq 0 ]; then

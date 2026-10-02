@@ -165,6 +165,11 @@ module.exports = function( grunt ) {
 							// .distignore way had no autoloader: HTTP 500 on every page, including
 							// the Plugins screen. One rule now, and no list to maintain.
 							'!vendor/**',
+
+							// Legacy wp-scripts output left on build machines; no block.json
+							// loads it (.gitignore says the same). Shipped 18 dead files up
+							// to 2.6.0, including the removed Lock Overlay (Basecamp 10355538303).
+							'!build/blocks/blocks/**',
 						],
 						dest: 'dist/wpmediaverse/',
 					},
