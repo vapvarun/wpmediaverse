@@ -214,7 +214,15 @@ wp_interactivity_state(
 			'willMove'                => __( 'Moves from %s', 'wpmediaverse' ),
 			/* translators: 1: number of photos, 2: privacy level. */
 			'albumWidens'             => __( '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".', 'wpmediaverse' ),
-			'saveAnyway'              => __( 'Save anyway', 'wpmediaverse' ),
+			/* translators: %s: album privacy, e.g. "Public". */
+			'showThemAs'              => __( 'Show them as "%s"', 'wpmediaverse' ),
+			/* translators: %s: quoted photo titles. */
+			'photosAffected'          => __( 'Photos: %s.', 'wpmediaverse' ),
+			/* translators: %d: number of further photos. */
+			'andNMore'                => __( 'and %d more', 'wpmediaverse' ),
+			/* translators: 1: number of photos, 2: album privacy, e.g. "Only me". */
+			'albumNarrows'            => __( 'Changing this album to "%2$s" makes its %1$d photo(s) show as "%2$s" while they are in it.', 'wpmediaverse' ),
+			'changeAlbumPrivacy'      => __( 'Change album privacy', 'wpmediaverse' ),
 			/* translators: %d: number of photos. */
 			'bulkAlbumDecides'        => __( '%d photo(s) are in an album and keep its privacy until they leave it.', 'wpmediaverse' ),
 			/* translators: %s: privacy level, e.g. Members. */

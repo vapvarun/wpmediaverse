@@ -1782,15 +1782,17 @@ const { state, actions } = store( 'mvs/dashboard', {
 				} catch { /* no count: save without the prompt rather than block it */ }
 			}
 
+			const names = [];
 			state.albumModal.pickerItems
 				.filter( ( item ) => toAdd.includes( item.id ) )
 				.forEach( ( item ) => {
 					if ( state.privacyLevel( item.privacy ) > next ) {
 						count += 1;
+						names.push( item.title || ( state.i18n?.untitled || 'Untitled' ) );
 					}
 				} );
 
-			return count;
+			return { count, names };
 		},
 
 		togglePickerItem( event ) {
@@ -1853,25 +1855,56 @@ const { state, actions } = store( 'mvs/dashboard', {
 				( item ) => pendingAdd.includes( item.id ) && item.album && item.album.id !== state.albumModal.albumId
 			).length;
 
+			const albumLabel = String( state.privacyLabelFor( state.albumModal.privacy ) ).split( ':' )[ 0 ].trim();
 			if ( ! state.albumModal.loosenConfirmed ) {
 				const widened = await actions.countWidenedPhotos( ctx, state.albumModal.isEdit ? state.albumModal.albumId : 0, pendingAdd );
-				if ( widened > 0 ) {
+				if ( widened.count > 0 ) {
 					state.albumModal.saving = false;
-					const label = String( state.privacyLabelFor( state.albumModal.privacy ) ).split( ':' )[ 0 ].trim();
+					// Name the photos it affects and say what the button does;
+					// Cancel keeps focus (Basecamp 10364776389).
+					const shown = widened.names.slice( 0, 3 ).map( ( n ) => '"' + n + '"' ).join( ', ' );
+					const more = widened.names.length > 3
+						? ' ' + ( state.i18n?.andNMore || 'and %d more' ).replace( '%d', widened.names.length - 3 )
+						: '';
+					const named = shown ? ' ' + ( state.i18n?.photosAffected || 'Photos: %s.' ).replace( '%s', shown + more ) : '';
 					sharedUI.actions.showConfirm(
 						( state.i18n?.albumWidens || '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
-							.replace( '%1$d', widened )
-							.replace( /%2\$s/g, label ),
+							.replace( '%1$d', widened.count )
+							.replace( /%2\$s/g, albumLabel ) + named,
 						() => {
 							state.albumModal.loosenConfirmed = true;
 							actions.saveAlbum( ctx );
 						},
-						state.i18n?.saveAnyway || 'Save anyway'
+						( state.i18n?.showThemAs || 'Show them as "%s"' ).replace( '%s', albumLabel )
 					);
 					return;
 				}
 			}
 			state.albumModal.loosenConfirmed = false;
+
+			// A stricter album privacy changes how every photo in it shows; ask
+			// first instead of hiding them silently (Basecamp 10364776389).
+			const itemCount = state.albumModal.selectedIds.length;
+			if (
+				! state.albumModal.narrowConfirmed &&
+				state.albumModal.isEdit &&
+				itemCount > 0 &&
+				state.privacyLevel( state.albumModal.privacy ) > state.privacyLevel( state.albumModal.originalPrivacy )
+			) {
+				state.albumModal.saving = false;
+				sharedUI.actions.showConfirm(
+					( state.i18n?.albumNarrows || 'Changing this album to "%2$s" makes its %1$d photo(s) show as "%2$s" while they are in it.' )
+						.replace( '%1$d', itemCount )
+						.replace( /%2\$s/g, albumLabel ),
+					() => {
+						state.albumModal.narrowConfirmed = true;
+						actions.saveAlbum( ctx );
+					},
+					state.i18n?.changeAlbumPrivacy || 'Change album privacy'
+				);
+				return;
+			}
+			state.albumModal.narrowConfirmed = false;
 
 			try {
 				let albumId = state.albumModal.albumId;
