@@ -1909,6 +1909,28 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * When members cannot choose privacy, the line that tells them who will see
+	 * their upload instead of a missing control (Basecamp 10364776646).
+	 *
+	 * @since 2.6.1
+	 * @return string Escaped HTML, or '' when the member chooses per upload.
+	 */
+	public static function fixed_privacy_note(): string {
+		if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
+			return '';
+		}
+		$level  = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
+		$labels = self::privacy_labels();
+		return '<p class="mvs-modal-note mvs-privacy-fixed">' . esc_html(
+			sprintf(
+				/* translators: %s: privacy label, e.g. "Members: logged-in users only". */
+				__( '%s. The site owner sets this for every upload.', 'wpmediaverse' ),
+				$labels[ $level ] ?? $level
+			)
+		) . '</p>';
+	}
+
+	/**
 	 * Media type the visitor filtered Explore to (?mvs_type=), or '' for all.
 	 *
 	 * @since 2.6.1

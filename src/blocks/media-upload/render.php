@@ -186,6 +186,8 @@ wp_interactivity_state(
 				<?php endif; ?>
 				<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 			</select>
+		<?php elseif ( ! empty( $attributes['showPrivacy'] ) ) : ?>
+			<?php echo \WPMediaVerse\Core\TemplateHelpers::fixed_privacy_note(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by the helper. ?>
 		<?php endif; ?>
 	</div>
 	<?php if ( '' !== $mvs_docs_url ) : ?>

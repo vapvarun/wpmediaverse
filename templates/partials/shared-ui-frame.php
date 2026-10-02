@@ -261,6 +261,8 @@ wp_interactivity_state(
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
+						<?php else : ?>
+							<?php echo \WPMediaVerse\Core\TemplateHelpers::fixed_privacy_note(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by the helper. ?>
 						<?php endif; ?>
 						<details class="mvs-modal-details">
 							<summary class="mvs-modal-details__summary"><?php esc_html_e( 'Add details', 'wpmediaverse' ); ?></summary>
