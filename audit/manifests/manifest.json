@@ -6969,7 +6969,9 @@
       "MVS_MIN_PRO 2.6.0 (BootGuardTest pins it to MVS_VERSION minor)",
       "Plugin::register_types(): wp_insert_post_data drops album password and private status; admin.css hides WP visibility controls on album/collection screens",
       "AlbumMetaBox: album type is a select (default, playlist; custom values kept)",
-      "Packaging: build/blocks/blocks excluded (Gruntfile copy:dist, .distignore, build-release.sh check); Lock Overlay CSS removed"
+      "Packaging: build/blocks/blocks excluded (Gruntfile copy:dist, .distignore, build-release.sh check); Lock Overlay CSS removed",
+      "MediaRepository::tag_cloud()/tag_cloud_total(): public items only; CacheService tag cloud keys v3",
+      "Plugin URI + Get Pro link: wbcomdesigns.com/downloads/; makepot report-msgid-bugs-to wbcomdesigns.com/support/"
     ]
   }
 }
