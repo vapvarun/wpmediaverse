@@ -22,6 +22,9 @@
 ( function () {
 	'use strict';
 
+	// Auto-load observer (set up at the bottom), re-armed after each page.
+	var autoObserver = null;
+
 	// Album owner: the same wrap + "Set as cover" button templates/album.php
 	// renders, so an appended image can be picked as the cover too.
 	function wrapWithSetCover( node, mediaId, label ) {
@@ -177,6 +180,8 @@
 		// call showEnd() on error, which would falsely read "You're all caught up".
 		function showError() {
 			loadMoreBtn.classList.remove( 'is-loading' );
+			// No auto-retry loop: the retry is a deliberate tap.
+			loadMoreBtn.dataset.autoFailed = '1';
 			var msg = ( window.wp && window.wp.i18n )
 				? window.wp.i18n.__( 'Couldn’t load more. Tap to retry.', 'wpmediaverse' )
 				: 'Couldn’t load more. Tap to retry.';
@@ -256,9 +261,48 @@
 				}
 
 				loadMoreBtn.classList.remove( 'is-loading' );
+
+				// Re-arm: if the button is still in view (a short page), the
+				// observer only fires again after a fresh observe().
+				delete loadMoreBtn.dataset.autoFailed;
+				if ( autoObserver ) {
+					autoObserver.unobserve( loadMoreBtn );
+					autoObserver.observe( loadMoreBtn );
+				}
 			} )
 			.catch( function () {
 				showError();
 			} );
 	} );
+
+	// --- Auto-load: press Load More as it nears the viewport. The button stays
+	// as the keyboard and no-IntersectionObserver fallback. Basecamp 9941211270.
+	// Only the first AUTO_PAGES pages load by themselves; after that the button
+	// takes over so the footer stays reachable on a long feed.
+	var AUTO_PAGES = 3;
+	if ( 'IntersectionObserver' in window ) {
+		autoObserver = new IntersectionObserver(
+			function ( entries ) {
+				entries.forEach( function ( entry ) {
+					var btn = entry.target;
+					var start = parseInt( btn.dataset.page, 10 ) || 1;
+					var at    = parseInt( btn.dataset.currentPage, 10 ) || start;
+					if ( entry.isIntersecting && at < start + AUTO_PAGES && ! btn.classList.contains( 'is-loading' ) && ! btn.dataset.autoFailed ) {
+						btn.click();
+					}
+				} );
+			},
+			{ rootMargin: '400px 0px' }
+		);
+
+		var watchButtons = function () {
+			autoObserver.disconnect();
+			document.querySelectorAll( '.mvs-load-more-btn' ).forEach( function ( btn ) {
+				autoObserver.observe( btn );
+			} );
+		};
+		watchButtons();
+		// Client-side navigation swaps the region, and with it the button.
+		document.addEventListener( 'mvs:navigated', watchButtons );
+	}
 }() );
