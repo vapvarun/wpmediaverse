@@ -8849,6 +8849,41 @@ a.mvs-dashboard-tab:focus-visible {
     }
 }
 
+/* My Media on a phone: the member's media comes first (Basecamp 10364777801).
+   The profile card becomes a one-line row, and the page leaves room under the
+   floating upload button so it never covers the last item. */
+@media (max-width: 640px) {
+    .mvs-dashboard-rail-head {
+        gap: var(--mvs-space-2);
+        padding: 0;
+        border: 0;
+        background: none;
+    }
+
+    .mvs-dashboard-rail-head__avatar {
+        width: 28px;
+        height: 28px;
+    }
+
+    .mvs-dashboard-rail-head__id {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 var(--mvs-space-2);
+    }
+
+    body:has(.mvs-fab-container) .mvs-dashboard {
+        padding-bottom: calc(var(--mvs-fab-bottom, 80px) + var(--mvs-fab-diameter, 48px) + var(--mvs-space-2, 8px));
+    }
+
+    /* The floating upload button is the phone's upload control; an idle
+       drag-and-drop box above the grid duplicated it (drag does nothing on a
+       touchscreen). It still shows while files wait for details or upload. */
+    body:has(.mvs-fab-container) .mvs-dashboard-upload:not(.is-pending):not(.is-busy) {
+        display: none;
+    }
+}
+
 /* A group that earned no heading still gets its break. Drawn on the item that
    starts it, because the rail is a flat list of items — there is no element
    standing for "the group" to hang a border on.

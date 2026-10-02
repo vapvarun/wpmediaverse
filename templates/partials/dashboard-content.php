@@ -764,7 +764,7 @@ wp_interactivity_state(
 		<?php // Only for members who may upload (Settings > General > Who can upload media). ?>
 		<?php if ( \WPMediaVerse\Core\Abilities::can_upload() ) : ?>
 		<!-- Upload Section -->
-		<div class="mvs-dashboard-upload">
+		<div class="mvs-dashboard-upload" data-wp-class--is-pending="state.upload.hasPending" data-wp-class--is-busy="state.upload.uploading">
 			<div class="mvs-dashboard-dropzone"
 				data-wp-class--mvs-drag-active="state.upload.dragOver"
 				data-wp-on--click="actions.handleUploadClick"
