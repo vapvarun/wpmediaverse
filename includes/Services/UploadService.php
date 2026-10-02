@@ -135,7 +135,7 @@ class UploadService {
 		// Duplicate detection.
 		$duplicate_action = get_option( 'mvs_duplicate_action', 'warn' );
 		if ( 'allow' !== $duplicate_action ) {
-			$existing = $this->find_by_hash( $hash );
+			$existing = $this->find_by_hash( $hash, $user_id );
 			if ( $existing ) {
 				if ( 'skip' === $duplicate_action ) {
 					return new WP_Error(
@@ -2361,12 +2361,10 @@ class UploadService {
 	 * @param string $hash SHA-256 hash.
 	 * @return int|null Existing media ID or null.
 	 */
-	private function find_by_hash( string $hash ): ?int {
-		global $wpdb;
-
+	private function find_by_hash( string $hash, int $user_id ): ?int {
 		$media_id = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
-			->find_by_hash( (string) $hash );
+			->find_by_hash( (string) $hash, $user_id );
 
 		return $media_id ? (int) $media_id : null;
 	}

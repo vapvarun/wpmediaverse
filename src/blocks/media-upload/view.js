@@ -403,9 +403,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 				ctx.successMessage = '';
 			}
 			if ( duplicateCount > 0 ) {
-				ctx.uploadError = ( state.i18n?.duplicatesDetected || '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.' )
-					.replace( '%1$d', duplicateCount )
-					.replace( '%2$d', lastDuplicateId );
+				// A note beside the success, not a red error next to a green one.
+				ctx.successMessage = ( ctx.successMessage ? ctx.successMessage + ' ' : '' )
+					+ ( state.i18n?.duplicatesDetected || 'You had already uploaded %1$d of these files.' )
+						.replace( '%1$d', duplicateCount );
 			}
 
 			// Bring the notice to the member. The error box sits at the bottom of

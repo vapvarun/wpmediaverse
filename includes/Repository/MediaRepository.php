@@ -4936,21 +4936,29 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param string $hash sha256 of the stored file.
+	 * @param string $hash      sha256 of the stored file.
+	 * @param int    $author_id Only this member's media (0 = anyone's). An
+	 *                          upload passes the uploader: another member's
+	 *                          file, private or not, is none of their business
+	 *                          (Basecamp 10364776039). @since 2.6.1
 	 * @return int|null
 	 */
-	public function find_by_hash( string $hash ): ?int {
+	public function find_by_hash( string $hash, int $author_id = 0 ): ?int {
 		global $wpdb;
 
 		if ( '' === $hash ) {
 			return null;
 		}
 
+		$sql  = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s";
+		$args = array( $hash );
+		if ( $author_id > 0 ) {
+			$sql   .= ' AND post_author = %d';
+			$args[] = $author_id;
+		}
+
 		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1",
-				$hash
-			)
+			$wpdb->prepare( $sql . ' LIMIT 1', ...$args ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 
 		return $id ? (int) $id : null;

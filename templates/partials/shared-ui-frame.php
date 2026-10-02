@@ -86,7 +86,7 @@ wp_interactivity_state(
 			'uploadedFailed'     => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
 			'uploadFailedRetry'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
 			/* translators: 1: number of duplicate files, 2: existing media ID. */
-			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
+			'duplicatesDetected' => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
 			'albumCreated'       => __( 'Album "%s" created!', 'wpmediaverse' ),
 			'failedLoad'         => __( 'Failed to load media.', 'wpmediaverse' ),

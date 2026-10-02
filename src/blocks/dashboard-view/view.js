@@ -1009,10 +1009,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const duplicateNote = duplicates > 0
 				? ' ' + (
 					state.i18n?.duplicatesDetected ||
-						'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+						'You had already uploaded %1$d of these files.'
 				)
 					.replace( '%1$d', duplicates )
-					.replace( '%2$d', lastDuplicateId )
 				: '';
 			if ( uploaded === 0 ) {
 				sharedUI.actions.showToast( lastError || ( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ), 'error' );

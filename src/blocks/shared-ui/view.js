@@ -1432,10 +1432,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} else if ( state.uploadModalDuplicates > 0 ) {
 					msg = uploadedMsg + ' ' + (
 						state.i18n?.duplicatesDetected ||
-							'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+							'You had already uploaded %1$d of these files.'
 					)
-						.replace( '%1$d', state.uploadModalDuplicates )
-						.replace( '%2$d', state.uploadModalLastDuplicateId );
+						.replace( '%1$d', state.uploadModalDuplicates );
 					toastType = 'warning';
 				} else {
 					msg = uploadedMsg;

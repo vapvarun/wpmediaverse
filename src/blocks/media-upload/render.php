@@ -112,7 +112,7 @@ wp_interactivity_state(
 			/* translators: %1$d: number uploaded, %2$d: total number of files. */
 			'uploadPartial'      => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
 			/* translators: %1$d: number of duplicate files, %2$d: existing media ID. */
-			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
+			'duplicatesDetected' => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
 			'allowedFallback'    => __( 'images, videos, and audio files', 'wpmediaverse' ),
 			/* translators: %1$s: rejected file names, %2$s: supported formats. */
 			'fileTypeNotAllowed' => __( 'File type not allowed: %1$s. Supported formats: %2$s.', 'wpmediaverse' ),

@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -250,7 +250,7 @@ wp_interactivity_state(
 			/* translators: %d: number of files uploaded. */
 			'filesUploaded'           => __( '%d file(s) uploaded!', 'wpmediaverse' ),
 			/* translators: 1: number of duplicate files, 2: existing media ID. */
-			'duplicatesDetected'      => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
+			'duplicatesDetected'      => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
 			'fileReplaced'            => __( 'File replaced!', 'wpmediaverse' ),
 			'replaceFailed'           => __( 'Replace failed.', 'wpmediaverse' ),
 			// Edit media.
