@@ -35,6 +35,22 @@ the cards are the source of truth, this file is the index.
 - On BuddyNext sites BuddyNext sends MediaVerse activity emails; MediaVerse emails only standalone (`EmailService::host_sends()`, Free 5a5e734c). BuddyNext gaps filed: BN card 10364576620.
 - Visitors see only tags on public items in GET /mvs/v1/tags; members keep the full list; /wp/v2/mvs_tag off (Free 334a093a).
 
+## Friction walk (2026-10-02), fixed (Ready for Testing)
+
+| Card | Change | Commit |
+|---|---|---|
+| 10364776039 | Duplicate check scoped to the uploader (`find_by_hash( $hash, $author )`), no foreign ID | Free 2dfaa272 |
+| 10364776646 | `TemplateHelpers::fixed_privacy_note()` on 3 upload surfaces; help text follows the setting | Free f6bcf987 |
+| 10364777243 | Settings saved notice at the top of the tab, scrolled into view on phones | Free e9acfd93 |
+| 10364776932 | Lightbox Save shows Saved (Favorites); picker emits `mvs-collections-changed` | Free f97c01f1, Pro cae177e |
+| 10364777491 | Upload page shows the picked file + thumbnail | Free 5699d45e |
+| 10364777801 | My Media at 390: compact profile row, idle dropzone hidden beside the FAB, one-line streak | Free ca449b4f, Pro 35bf0b8 |
+| 10364778286 | On BuddyNext sites the Edit profile section and banner step aside; starting tab via `DashboardSections::resolve()` | Free 9fdcd353 |
+| 10364776389 | Album prompts name photos; stricter album privacy asks first | Free 73df8a04 |
+
+Waiting on BuddyNext: Report opener on `#report` (BN 10364838835; MV card 10364778043 in Not now), signup terms checkbox (BN 10364779324), onboarding, bottom-bar +, profile Media drop zone, delete mirrors, battle/document emails + bell (BN 10364576620). Gamification toasts (WP Gamification 10364780414), Reign logo (Reign 10364780720).
+Polish left in Bugs: Documents drive (10364778512), lightbox/visitor polish (10364778707), admin polish (10364778984).
+
 ## Gotchas
 
 - Run PHPUnit with `WP_TESTS_DIR=$HOME/.wp-tests-lib` (what local CI uses). `/tmp/wordpress-tests-lib` is shared with other plugins and may point at a stopped database.
