@@ -28,7 +28,7 @@ define( 'MVS_MIN_PHP', '7.4' );
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
 // on the free plugin in the other direction.
-define( 'MVS_MIN_PRO', '2.1.0' );
+define( 'MVS_MIN_PRO', '2.6.0' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );
