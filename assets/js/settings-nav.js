@@ -116,6 +116,16 @@
 			}
 		} );
 
+		// On a phone the section menu stacks above the form, so bring the
+		// confirmation of the visible tab into view (Basecamp 10364777243).
+		// After the hash tab has been shown, or every notice still reads hidden.
+		window.addEventListener( 'load', () => {
+			const shown = [ ...notices ].find( ( n ) => n.offsetParent !== null );
+			if ( shown && shown.getBoundingClientRect().top > window.innerHeight ) {
+				shown.scrollIntoView( { block: 'center' } );
+			}
+		} );
+
 		setTimeout( dismissAll, 5000 );
 
 		// Strip the save flags from the URL (keeps the section hash).
