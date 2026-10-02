@@ -9,7 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -273,6 +273,12 @@ wp_interactivity_state(
 							</div>
 							<div class="mvs-modal-field">
 								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
+							</div>
+							<div class="mvs-tag-pills" data-mvs-tag-complete data-wp-bind--hidden="!state.tagVisible" role="group" aria-label="<?php esc_attr_e( 'Matching tags', 'wpmediaverse' ); ?>">
+								<span class="mvs-tag-pills__label"><?php esc_html_e( 'Matching tags:', 'wpmediaverse' ); ?></span>
+								<template data-wp-each="state.tagResults">
+									<button type="button" class="mvs-tag-pill" data-wp-on--click="actions.addUploadTag" data-wp-bind--data-mvs-tag-name="context.item"><span data-wp-text="context.item"></span></button>
+								</template>
 							</div>
 							<div class="mvs-modal-field">
 								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" data-wp-bind--value="state.uploadModalAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">

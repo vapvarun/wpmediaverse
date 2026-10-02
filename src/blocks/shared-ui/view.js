@@ -922,9 +922,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const tag = wrap?.getAttribute( 'data-mvs-tag-name' );
 			if ( ! tag ) return;
 			const current = ( state.uploadModalTags || '' ).split( ',' ).map( ( s ) => s.trim() ).filter( Boolean );
-			if ( current.includes( tag ) ) return;
-			current.push( tag );
+			// A matching-tags pill completes the word being typed, so it replaces
+			// it (search matches anywhere in a name: "la" suggests "island").
+			if ( wrap.closest( '[data-mvs-tag-complete]' ) && current.length && ! /,\s*$/.test( state.uploadModalTags || '' ) ) {
+				current.pop();
+			}
+			actions.hideTagAutocomplete();
+			if ( ! current.includes( tag ) ) {
+				current.push( tag );
+			}
 			state.uploadModalTags = current.join( ', ' );
+
+			// Back to the field, cursor at the end, so the member keeps typing.
+			const field = document.querySelector( '[data-wp-on--input="actions.updateUploadTags"]' );
+			if ( field ) {
+				requestAnimationFrame( () => {
+					field.focus();
+					field.setSelectionRange( field.value.length, field.value.length );
+				} );
+			}
 		},
 		async openEditModal( mediaId ) {
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
@@ -1219,6 +1235,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateUploadTags( event ) {
 			state.uploadModalTags = event.target.value;
+			// Suggest tags for the word being typed, as pills under the field
+			// (Basecamp 10124085450). Same search the edit modal uses.
+			const typing = state.uploadModalTags.split( ',' ).pop().trim();
+			actions.searchTags( typing, window.mvsBpActions?.restUrl || ( window.location.origin + '/wp-json/mvs/v1/' ) );
 		},
 		updateUploadPrivacy( event ) {
 			state.uploadModalPrivacy = event.target.value;
