@@ -180,9 +180,12 @@ wp_interactivity_state(
 		// Which tab the URL asked for. Seeded server-side so that landing on
 		// /my-media/documents/ paints the right panel on first render rather
 		// than flashing Media and correcting itself once the module loads.
+		// Through resolve(), like the server-rendered tabs, so a section that is
+		// not offered here (Edit profile on a BuddyNext site) falls back to the
+		// first one instead of opening anyway.
 		'activeTab' => get_query_var( 'mvs_doc_view' )
 			? 'documents'
-			: ( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
+			: \WPMediaVerse\Core\DashboardSections::resolve( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
 		'i18n'      => array(
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
@@ -327,7 +330,8 @@ wp_interactivity_state(
 	// meta now, so a member who closed it never sees it again on any device.
 	$mvs_prompt_dismissed = (bool) get_user_meta( $mvs_current_user->ID, '_mvs_profile_prompt_dismissed', true );
 
-	if ( $mvs_profile_incomplete && ! $mvs_prompt_dismissed ) :
+	// BuddyNext owns the profile and its completion meter on its sites (Basecamp 10364778286).
+	if ( $mvs_profile_incomplete && ! $mvs_prompt_dismissed && ! apply_filters( 'mvs_buddynext_active', false ) ) :
 		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon"><i data-lucide="user-round" aria-hidden="true"></i></span>

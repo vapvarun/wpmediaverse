@@ -355,7 +355,7 @@ final class DashboardSections {
 		$repo = Plugin::container()->get( 'media_repository' );
 		$user = get_current_user_id();
 
-		return array(
+		$sections = array(
 			'media'       => array(
 				'label'     => __( 'Media', 'wpmediaverse' ),
 				'group'     => 'library',
@@ -402,5 +402,14 @@ final class DashboardSections {
 				'endpoints' => 'mvs/v1/profile',
 			),
 		);
+
+		// On a BuddyNext site BuddyNext owns the profile editor, so MediaVerse's
+		// steps aside instead of being a second place to edit one profile
+		// (owner decision 2026-10-02, Basecamp 10364778286).
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			unset( $sections['profile'] );
+		}
+
+		return $sections;
 	}
 }
