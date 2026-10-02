@@ -19,16 +19,20 @@ the cards are the source of truth, this file is the index.
 | 10073529518 (code part) | .pot bug address = wbcomdesigns.com/support/ | same |
 | 10335795450 (tag item) | Tag cloud counts public items only | Free 811037b7 |
 
-## Left in 2.6.1 (Ready for Development)
+## Features done (Ready for Testing)
 
-- 9937716241 Explore Trending sort + media-type filter. NOTE: larger than the card says. Trending exists in `MediaRepository::feed_page()` (REST), not in `query()`, which the Explore template uses; it needs the ranked path wired into `query()` or the template.
-- 9941211270 Explore auto-load (IntersectionObserver on the existing loadMore(), keep the button).
-- 10124085450 Upload-modal tag autocomplete (reuse media-social/view.js handler).
-- 10252887530 One primary action on member empty states.
-- 9822979354 Lightbox alt text from the REST payload.
-- 9765027990 New-follower and comment emails on the existing switch.
+| Card | Change | Commit |
+|---|---|---|
+| 9941211270 | Load More auto-loads 3 pages, then the button (shared load-more.js lists; My Media dashboard unchanged) | Free 15f3bbfc |
+| 10124085450 | Upload modal 'Matching tags' pills, focus returns to the field | Free b293ba79 |
+| 9822979354 | One alt (`TemplateHelpers::alt_text()`) for grid, lightbox (REST `alt`) and JS cards | Free bbbd5de0 |
+| 10252887530 | Empty states already had adjacent actions; Compete copy fixed | Pro df20308 |
+| 9765027990 | new_follower + media_comment emails (owner switches, off by default) | Free aeb843b8 |
+| 9937716241 | Trending via cached `ranked_feed_page()` in `query()`; Type filter on feeds | Free 1cac4365 |
 
 ## Waiting on the owner
+
+- BuddyNext also emails new followers and comments on MediaVerse events, so with the new switches on a BuddyNext member gets two emails (card 9765027990).
 
 - GET /mvs/v1/tags and /wp/v2/mvs_tag list tag names used only on private items (by design since a 2026-05-01 triage). Recommendation on card 10335795450: visitors see only tags on public items; signed-in uploaders keep the full list.
 

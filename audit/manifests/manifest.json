@@ -6960,7 +6960,9 @@
     "scope": "targeted (2.6.1: list privacy, media/album ID overlap, MIN_PRO, album admin, build cleanup)",
     "added": {
       "public_methods": [
-        "PrivacyService::query_listable_spaces()"
+        "PrivacyService::query_listable_spaces()",
+        "TemplateHelpers::alt_text()",
+        "TemplateHelpers::explore_type()"
       ]
     },
     "changed": [
@@ -6971,7 +6973,12 @@
       "AlbumMetaBox: album type is a select (default, playlist; custom values kept)",
       "Packaging: build/blocks/blocks excluded (Gruntfile copy:dist, .distignore, build-release.sh check); Lock Overlay CSS removed",
       "MediaRepository::tag_cloud()/tag_cloud_total(): public items only; CacheService tag cloud keys v3",
-      "Plugin URI + Get Pro link: wbcomdesigns.com/downloads/; makepot report-msgid-bugs-to wbcomdesigns.com/support/"
+      "Plugin URI + Get Pro link: wbcomdesigns.com/downloads/; makepot report-msgid-bugs-to wbcomdesigns.com/support/",
+      "MediaRepository::query(): orderby trending via ranked_feed_page(alias m)",
+      "REST media item: alt field",
+      "EmailService TYPES: new_follower, media_comment (options mvs_email_new_follower, mvs_email_media_comment)",
+      "mvs_explore_query_args / mvs_feed_query_args: type filter callback in Plugin::init()",
+      "load-more.js: auto-load (3 pages), trending + mvs_type passthrough"
     ]
   }
 }
