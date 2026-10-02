@@ -37,7 +37,7 @@ function buildThumbnailNodes( item ) {
 	const mediaType = item.media_type || '';
 	const thumbUrl = item.thumbnail_url || '';
 	const fileUrl = item.file_url || '';
-	const alt = item.title || '';
+	const alt = item.alt || item.title || '';
 	const nodes = [];
 
 	// Video-first, mirroring PHP media_thumbnail() / card-builders

@@ -157,7 +157,7 @@
 
 	function buildMediaThumbnail( item, opts ) {
 		opts = opts || {};
-		var alt       = opts.alt || item.title || '';
+		var alt       = opts.alt || item.alt || item.title || '';
 		var showPlay  = opts.showPlay !== false;
 		var mediaType = item.media_type || '';
 		var thumbUrl  = item.thumbnail_url || '';

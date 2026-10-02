@@ -589,6 +589,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';
 		},
+		// Same alt as the grid card (Basecamp 9822979354).
+		get lightboxAlt() {
+			return state.lightboxMediaData?.alt || state.lightboxMediaData?.title || '';
+		},
 		get lightboxDescription() {
 			return state.lightboxMediaData?.description || '';
 		},

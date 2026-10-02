@@ -318,6 +318,18 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string esc_attr-escaped alt text.
 	 */
 	public function resolve_alt_text( int $media_id ): string {
+		return esc_attr( $this->alt_text( $media_id ) );
+	}
+
+	/**
+	 * The same alt text, unescaped, for JSON (the lightbox reads it from REST).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Plain alt text.
+	 */
+	public function alt_text( int $media_id ): string {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$alt  = (string) $repo->get( $media_id, 'ai_description' );
 		if ( '' === trim( $alt ) ) {
@@ -332,9 +344,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		 * @param string $alt      Resolved alt (AI description or title).
 		 * @param int    $media_id Media ID.
 		 */
-		$alt = (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
-
-		return esc_attr( $alt );
+		return (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
 	}
 
 	public function media_thumbnail( int $media_id, array $args = array() ): string {
@@ -1397,7 +1407,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$mvs_link_name = '' !== trim( (string) $media_title ) ? (string) $media_title : __( 'View media', 'wpmediaverse' );
 		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link" aria-label="' . esc_attr( $mvs_link_name ) . '">';
 
-		$this->render_grid_thumbnail( $media_id, $size, $media_title );
+		// No alt passed: media_thumbnail() resolves it (AI description, else
+		// title), the same text the lightbox and the JS cards use.
+		$this->render_grid_thumbnail( $media_id, $size );
 
 		// Gallery badge showing item count.
 		if ( $is_gallery && $group_count > 1 ) {

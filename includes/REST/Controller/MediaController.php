@@ -2305,6 +2305,8 @@ class MediaController extends WP_REST_Controller {
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
+			// The grid's alt text (AI description, else title), for the lightbox.
+			'alt'               => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->alt_text( $media_id ),
 			'description'       => ! empty( $all['description'] ) ? $all['description'] : '',
 			'author'            => $author_id_raw,
 			'date'              => ! empty( $all['created_at'] ) ? $all['created_at'] : '',
