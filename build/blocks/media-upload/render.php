@@ -113,6 +113,8 @@ wp_interactivity_state(
 			'uploadPartial'      => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
 			/* translators: %1$d: number of duplicate files, %2$d: existing media ID. */
 			'duplicatesDetected' => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
+			/* translators: %d: number of files picked, followed by their names. */
+			'filesPicked'        => __( '%d files: ', 'wpmediaverse' ),
 			'allowedFallback'    => __( 'images, videos, and audio files', 'wpmediaverse' ),
 			/* translators: %1$s: rejected file names, %2$s: supported formats. */
 			'fileTypeNotAllowed' => __( 'File type not allowed: %1$s. Supported formats: %2$s.', 'wpmediaverse' ),
@@ -162,7 +164,9 @@ wp_interactivity_state(
 				<line x1="12" y1="3" x2="12" y2="15"></line>
 			</svg>
 		</div>
-		<p class="mvs-upload-text"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
+		<p class="mvs-upload-text" data-wp-bind--hidden="state.hasPending"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
+		<img class="mvs-upload-picked-thumb" alt="" hidden data-wp-bind--hidden="!state.pickedThumb" data-wp-bind--src="state.pickedThumb" />
+		<p class="mvs-upload-picked" hidden data-wp-bind--hidden="!state.hasPending" data-wp-text="state.pickedLabel"></p>
 		<input type="file" class="mvs-upload-input" multiple
 			aria-label="<?php esc_attr_e( 'Choose files to upload', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.handleFileSelect"

@@ -35,6 +35,31 @@
 	margin-bottom: 4px;
 }
 
+/* What the member picked (Basecamp 10364777491). */
+.mvs-upload-picked-thumb {
+	display: block;
+	inline-size: 96px;
+	block-size: 96px;
+	margin: 0 auto 8px;
+	object-fit: cover;
+	border-radius: var(--mvs-radius-sm, 8px);
+	border: 1px solid var(--mvs-border-light);
+}
+
+.mvs-upload-picked-thumb[hidden],
+.mvs-upload-picked[hidden],
+.mvs-upload-text[hidden] {
+	display: none;
+}
+
+.mvs-upload-picked {
+	font-size: 1.05em;
+	font-weight: 600;
+	color: var(--mvs-text);
+	margin-bottom: 4px;
+	overflow-wrap: anywhere;
+}
+
 .mvs-upload-input {
 	display: none;
 }

@@ -190,6 +190,17 @@ const { state, actions } = store( 'mvs/media-upload', {
 		get hasPending() {
 			return !! getContext().hasPending;
 		},
+		// What the member picked, shown in the drop area (Basecamp 10364777491).
+		get pickedLabel() {
+			const ctx = getContext();
+			const names = ctx.pendingNames || [];
+			return names.length === 1
+				? names[ 0 ]
+				: ( state.i18n?.filesPicked || '%d files: ' ).replace( '%d', names.length ) + names.join( ', ' );
+		},
+		get pickedThumb() {
+			return getContext().pickedThumb || '';
+		},
 		get pendingLabel() {
 			const n = getContext().pendingCount || 0;
 			return n === 1
@@ -256,6 +267,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			ctx.pendingFiles = files;
 			ctx.pendingCount = files.length;
+			ctx.pendingNames = files.map( ( f ) => f.name );
+			if ( ctx.pickedThumb ) URL.revokeObjectURL( ctx.pickedThumb );
+			const firstImage = files.find( ( f ) => /^image\//.test( f.type ) );
+			ctx.pickedThumb = firstImage ? URL.createObjectURL( firstImage ) : '';
 			ctx.hasPending = true;
 			ctx.successMessage = '';
 		},
@@ -270,6 +285,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 		cancelPending() {
 			const ctx = getContext();
 			ctx.pendingFiles = [];
+			if ( ctx.pickedThumb ) URL.revokeObjectURL( ctx.pickedThumb );
+			ctx.pickedThumb = '';
+			ctx.pendingNames = [];
 			ctx.pendingCount = 0;
 			ctx.hasPending = false;
 			ctx.uploadError = '';
@@ -307,6 +325,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 			// Leave the review step now that the upload is confirmed.
 			ctx.hasPending = false;
 			ctx.pendingFiles = [];
+			if ( ctx.pickedThumb ) URL.revokeObjectURL( ctx.pickedThumb );
+			ctx.pickedThumb = '';
+			ctx.pendingNames = [];
 			ctx.pendingCount = 0;
 			ctx.uploading = true;
 			ctx.successMessage = '';
