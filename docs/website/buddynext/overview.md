@@ -29,6 +29,10 @@ MediaVerse exposes the seams; BuddyNext consumes them:
 - **Space media.** Media uploaded into a space is announced in that space's feed.
 - **Notifications.** Reactions, comments, mentions and follows raise BuddyNext notifications.
 
+## My Media on BuddyNext sites
+
+The Edit profile section and the "Complete your profile" banner are not shown in My Media. Members edit their profile in BuddyNext. On phones My Media shows media first, with a compact profile row, and hides the drag-and-drop box where the floating upload button exists.
+
 ## Turning it on and off
 
 The bridge is wired whenever both plugins are active. Each surface is gated by the per-aspect **Integrations** toggle in BuddyNext, which is the single source of truth - there is no separate master switch.

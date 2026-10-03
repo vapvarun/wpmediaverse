@@ -984,6 +984,12 @@ document.addEventListener( 'mvs-collections-click', ( event ) => {
 } );
 ```
 
+**`mvs-collections-changed`** (2.6.1). The Pro collection picker dispatches this `CustomEvent` on `document` after a successful add or remove, with `detail: { mediaId }`. The lightbox listens for it to re-read the item's saved state. A custom picker can dispatch it to keep the Save button in sync.
+
+```js
+document.dispatchEvent( new CustomEvent( 'mvs-collections-changed', { detail: { mediaId: 123 } } ) );
+```
+
 ---
 
 ### Additional Social Hooks
@@ -1004,7 +1010,7 @@ document.addEventListener( 'mvs-collections-click', ( event ) => {
 | `mvs_media_shared` | action | Media shared to external platform | `$media_id`, `$user_id`, `$platform` | 1.0 |
 | `mvs_report_submitted` | action | Content report filed | `$report_id`, `$reporter_id`, `$target_type`, `$target_id`, `$reason` | 1.0 |
 | `mvs_report_resolved` | action | A pending report was resolved or dismissed (the reporter is notified that it was reviewed) | `$report_id`, `$reporter_id`, `$status` (`resolved` or `dismissed`) | 2.6.0 |
-| `mvs_email_subject` | filter | Subject of a member email | `$subject` (string), `$type` (`battle_invite`, `document_shared`, `report_resolved`, `account_deletion`), `$user_id` (int) | 2.6.0 |
+| `mvs_email_subject` | filter | Subject of a member email | `$subject` (string), `$type` (`battle_invite`, `document_shared`, `report_resolved`, `new_follower`, `media_comment`, `account_deletion`), `$user_id` (int) | 2.6.0 |
 | `mvs_email_body` | filter | Plain-text body of a member email | `$body` (string), `$type`, `$user_id` (int) | 2.6.0 |
 | `mvs_user_blocked` | action | User blocked another user | `$blocker_id`, `$blocked_id` | 1.0 |
 | `mvs_tags_merged` | action | Two tags merged | `$source_id`, `$target_id`, `$posts` | 1.0 |

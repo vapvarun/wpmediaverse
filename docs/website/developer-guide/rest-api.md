@@ -76,6 +76,8 @@ List media items. Returns only rows the caller is allowed to see.
 }
 ```
 
+**Alt text (2.6.1).** Every media object includes `alt` (string): the AI description when there is one, otherwise the title. Change it with the `mvs_media_alt_text` filter.
+
 **Viewer-aware fields.** Every media item carries three fields resolved against the requesting user, not cached statically: `can_edit` (bool — `true` when the viewer is the author or has `manage_options`), `is_favorited` (bool), and `viewer_reaction` (string reaction slug, or `null` if the viewer hasn't reacted). All three are `false`/`null` for anonymous requests. List endpoints batch-load this state per page (`MediaController::prime_viewer_state()`) rather than querying per row.
 
 ### POST /media
@@ -697,7 +699,9 @@ Aggregate statistics across the current user's own media.
 
 **Auth:** Public.
 
-List / autocomplete `mvs_tag` terms.
+List / autocomplete `mvs_tag` terms. Since 2.6.1, logged-out visitors get only tags used on public items (top 200 by use); signed-in members get the full list.
+
+> **Removed in 2.6.1:** the core routes `/wp/v2/mvs-albums`, `/wp/v2/mvs-collections` and `/wp/v2/mvs_tag`. Use the `mvs/v1` albums, collections and tags routes. `/wp/v2/mvs_category` remains.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

@@ -50,6 +50,8 @@ The upload modal no longer asks you to pick a media type tab first - drop in an 
 
 When uploading into an album, you can create a brand-new album right from the upload modal instead of leaving to create one first, then switching back to upload into it (2.0.0).
 
+While you type in **Tags**, the modal shows "Matching tags" pills that complete the word you are typing. The full upload page shows the picked file's thumbnail and name.
+
 ## Bulk Album Upload (1.2.0)
 
 When uploading multiple files at once into an album, MediaVerse now creates **one** activity entry for the whole batch ("Varun uploaded 3 photos to album Portrait Series") with a thumbnail grid, instead of one separate activity per file. Single-file uploads and ad-hoc photo posts retain their existing per-post behaviour.

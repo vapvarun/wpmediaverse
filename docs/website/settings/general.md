@@ -11,9 +11,9 @@ Access these settings at **MediaVerse > Settings > General**.
 | Fair-use storage limit per member (MB) | 0 (no limit) | How much each member can store in total, across every file type. Stops one account from filling the server; leave at 0 unless you need it. Give one member a different limit on their user profile (Users > edit a member > "Storage limit for this member"): blank uses this site limit, 0 means no limit for them. A member over the limit sees "You have used X of Y. Delete something to upload more." Site administrators are never limited. |
 | Max Upload Size | 100 MB | Maximum file size per upload. Enter value in MB. The plugin reads this setting server-side - WordPress's `upload_max_filesize` PHP ini value also applies. |
 | Allowed File Types | JPEG, PNG, GIF, WebP, MP4, WebM, MP3, OGG | Tick the file formats members can upload. |
-| Default Privacy Level | Public | The privacy level given to new uploads when the member does not choose one. Options: Public, Members Only, Private. |
-| Allow Users to Set Privacy | On | Members choose who sees each upload. Off: every upload uses the default above. |
-| Duplicate Detection | Warn (allow upload) | What happens when a member uploads a file that already exists (same SHA-256 hash). Options: Warn (allow upload), Block the upload, Allow (no check). |
+| Default Privacy Level | Public | The privacy level given to new uploads when the member does not choose one, or to every upload when "Allow Users to Set Privacy" is off. Options: Public, Members Only, Private. |
+| Allow Users to Set Privacy | On | Members choose who sees each upload. Off: every upload uses the default above, and members see a line in the upload modal, My Media and the upload page, for example "Public: anyone can see. The site owner sets this for every upload." |
+| Duplicate Detection | Warn (allow upload) | What happens when a member uploads a file they already uploaded (same SHA-256 hash). A file another member uploaded is not a duplicate. The notice says "You had already uploaded N of these files." Options: Warn (allow upload), Block the upload, Allow (no check). |
 | Remove location from photos | On | Removes the GPS location from uploaded photos. Only the GPS position is removed. Camera details and photo credits stay. Applies to new uploads. |
 | Who can upload media | Every standard role (new install) | One checkbox per role. Members of the ticked roles can upload. Administrators can always upload, so their box is shown ticked and locked. Unticking a role deletes nothing: media that role already uploaded stays. |
 | Remove Data on Delete | Off | Deletes all MediaVerse data when the plugin is deleted. Uploaded files and the pages MediaVerse created are kept. Leave this off if you might reinstall. |
@@ -22,13 +22,17 @@ Access these settings at **MediaVerse > Settings > General**.
 
 ## Emails Section
 
-MediaVerse emails members about the few things they would otherwise miss while away. Each email is one checkbox. On a new install they start on; on a site updating to 2.6.0 they start off, so turn on the ones you want.
+MediaVerse emails members about the few things they would otherwise miss while away. Each email is one checkbox. On a new install they start on. On a site that updates, each email starts off the first time it appears (the original three in 2.6.0, New follower and Comment on their media in 2.6.1), so turn on the ones you want.
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | Photo battle invites | On (new install) / Off (update) | Someone challenged the member to a photo battle (MediaVerse Pro). |
 | Documents shared with a member | On (new install) / Off (update) | Someone shared a document with the member (MediaVerse Pro). |
 | Report reviewed | On (new install) / Off (update) | A moderator resolved or dismissed a report the member filed. The email does not say what was decided. |
+| New follower | On (new install) / Off (update) | Someone started following the member. |
+| Comment on their media | On (new install) / Off (update) | Someone commented on a photo, video or file the member posted. |
+
+> **BuddyNext sites:** when BuddyNext is active, MediaVerse sends none of its activity emails and this section does not appear. BuddyNext sends member emails for MediaVerse activity, and members choose them in BuddyNext's notification settings. The account deletion confirmation is always sent.
 
 Account deletion confirmations are always sent: they are how a member learns that someone with their password asked to delete the account.
 

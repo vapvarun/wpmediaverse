@@ -42,6 +42,8 @@ Every template you can override has an `@version` line in its header:
 
 The version changes only when that template's markup or the variables it uses change - not on every release. When you copy a template into your theme, keep the `@version` line. When MediaVerse ships a newer version of a template you have overridden, **Tools > Site Health** shows "Your theme has outdated copies of MediaVerse templates", naming each file with your version and the current one. A copy with no `@version` line was made before 2.6.0 and is always listed.
 
+In 2.6.1, `cpt-archive.php`, `partials/shared-ui-frame.php` and `partials/dashboard-content.php` (Free) and `compete-hub-body.php` (Pro) are at `@version 2.6.1`.
+
 An outdated copy keeps rendering, but it misses fixes and may not show new features correctly. To update it, copy the current file from the plugin's `templates/` folder (or `wpmediaverse-pro/templates/` for Pro templates) over your theme's copy, then re-apply your changes. Site Health checks the active theme and its parent; when both override the same file, only the child theme's copy loads, so only it is checked.
 
 Admin screens (`templates/admin/`) are not overridable, so they carry no version.

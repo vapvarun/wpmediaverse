@@ -38,7 +38,7 @@ Rows marked "no screen control since 2.6.0 (set in code/WP-CLI)" are still regis
 | `mvs_generate_avif` | Create AVIF copies - no screen control since 2.6.0 (set in code/WP-CLI) | boolean | `false` |
 | `mvs_cloud_direct_public_urls` | *(no settings field; inert since 1.4.0 - public cloud media is served directly automatically, this value is ignored)* | boolean | `false` |
 
-`mvs_duplicate_action` accepts `warn` (allow the upload and warn), `skip` (shown as "Block the upload") or `allow` (skip the hash check entirely). `mvs_strip_exif` removes only the GPS location from new uploads; camera details and photo credits stay, and files already stored are not rewritten.
+Duplicate detection checks only the member's own uploads; a file another member uploaded is not a duplicate. `mvs_duplicate_action` accepts `warn` (allow the upload and warn), `skip` (shown as "Block the upload") or `allow` (skip the hash check entirely). `mvs_strip_exif` removes only the GPS location from new uploads; camera details and photo credits stay, and files already stored are not rewritten.
 
 `mvs_storage_driver` accepts `local`, `s3`, `bunnycdn`, `r2` or `dospaces`. Cloud drivers need MediaVerse Pro.
 
@@ -140,6 +140,8 @@ Note the pairing: `mvs_ai_auto_tag` decides whether tags are *generated*, and `m
 | `mvs_email_battle_invite` | Photo battle invites | boolean | `false` (a new install turns it on) |
 | `mvs_email_document_shared` | Documents shared with a member | boolean | `false` (a new install turns it on) |
 | `mvs_email_report_outcome` | Report reviewed | boolean | `false` (a new install turns it on) |
+| `mvs_email_new_follower` | New follower | boolean | `false` (a new install turns it on) |
+| `mvs_email_media_comment` | Comment on their media | boolean | `false` (a new install turns it on) |
 
 ### Pages
 
