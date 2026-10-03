@@ -18,6 +18,13 @@ defined( 'ABSPATH' ) || exit;
 class SignedUrlService {
 
 	/**
+	 * Expiry of the signed URL being served, for the private cache lifetime.
+	 *
+	 * @var int
+	 */
+	private int $serving_expires = 0;
+
+	/**
 	 * Default URL expiration in seconds (1 hour).
 	 *
 	 * @var int
@@ -289,8 +296,9 @@ class SignedUrlService {
 	 * @param array $params Validated URL parameters.
 	 */
 	public function serve( array $params ): void {
-		$expired  = false;
-		$media_id = $this->validate_signature( $params, $expired );
+		$this->serving_expires = (int) ( $params[ self::PARAM_EXPIRES ] ?? 0 );
+		$expired               = false;
+		$media_id              = $this->validate_signature( $params, $expired );
 
 		if ( ! $media_id ) {
 			status_header( 403 );
@@ -689,7 +697,13 @@ class SignedUrlService {
 			return $bucket + YEAR_IN_SECONDS;
 		}
 
-		return time() + $ttl;
+		// Non-public: a window of half the TTL keeps the URL identical across page
+		// views inside it, so a member's browser can reuse the image instead of
+		// fetching it through PHP on every page. Every link still expires within
+		// $ttl (between $ttl/2 and $ttl from minting); a rolling time() + $ttl
+		// made each render a new URL and the browser cache useless.
+		$window = max( 60, intdiv( $ttl, 2 ) );
+		return intdiv( time(), $window ) * $window + $ttl;
 	}
 
 	/**
@@ -721,6 +735,24 @@ class SignedUrlService {
 			if ( $max_age > 0 ) {
 				header( 'Cache-Control: public, max-age=' . $max_age );
 				header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $max_age ) . ' GMT' );
+				return;
+			}
+		} else {
+			/**
+			 * Browser-only cache lifetime (seconds) for non-public media.
+			 *
+			 * Defaults to the rest of the signed URL's life: the same browser may
+			 * reuse the bytes it was already allowed to fetch, no shared cache may
+			 * store them, and nothing outlives the link. Return 0 for no-store.
+			 *
+			 * @since 2.6.1
+			 *
+			 * @param int    $max_age Seconds until the signed URL expires.
+			 * @param string $privacy Media privacy level.
+			 */
+			$max_age = (int) apply_filters( 'mvs_private_media_max_age', max( 0, $this->serving_expires - time() ), $privacy );
+			if ( $max_age > 0 ) {
+				header( 'Cache-Control: private, max-age=' . $max_age );
 				return;
 			}
 		}
@@ -1346,6 +1378,24 @@ class SignedUrlService {
 		// was just written by the upload pipeline / watermarker).
 		clearstatcache( true, $file_path );
 		$file_size = filesize( $file_path );
+
+		// Validators, so a browser holding this exact file revalidates with a 304
+		// instead of downloading it again. The path is part of the tag because
+		// content negotiation can serve a WebP or AVIF sibling for the same URL.
+		$mtime = (int) filemtime( $file_path );
+		$etag  = '"' . md5( $file_path . '|' . $mtime . '|' . $file_size ) . '"';
+		header( 'ETag: ' . $etag );
+		header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s', $mtime ) . ' GMT' );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared verbatim, never output.
+		$if_none_match = isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) ? trim( wp_unslash( (string) $_SERVER['HTTP_IF_NONE_MATCH'] ) ) : '';
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- parsed by strtotime, never output.
+		$if_modified = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ? strtotime( wp_unslash( (string) $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ) : false;
+		if ( ! isset( $_SERVER['HTTP_RANGE'] )
+			&& ( ( '' !== $if_none_match && in_array( $etag, array_map( 'trim', explode( ',', $if_none_match ) ), true ) )
+				|| ( '' === $if_none_match && false !== $if_modified && $if_modified >= $mtime ) ) ) {
+			status_header( 304 );
+			exit;
+		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		if ( isset( $_SERVER['HTTP_RANGE'] ) ) {

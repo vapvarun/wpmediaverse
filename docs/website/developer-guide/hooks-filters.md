@@ -226,6 +226,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_broadcast_thumbnail_ttl` | filter | Free | 1.5.0 |
 | `mvs_stable_public_urls` | filter | Free | 1.7.0 |
 | `mvs_public_media_max_age` | filter | Free | 1.7.0 |
+| `mvs_private_media_max_age` | filter | Free | 2.6.1 |
 | `mvs_public_local_thumbnail_url` | filter | Free | 1.7.0 |
 | `mvs_public_local_file_url` | filter | Free | 1.7.0 |
 | `mvs_suppress_bp_comment_notification` | filter | Free | 2.0.0 |
@@ -1984,6 +1985,27 @@ add_filter( 'mvs_stable_public_urls', '__return_false' );
 ```php
 add_filter( 'mvs_public_media_max_age', function( int $max_age, string $privacy ) : int {
     return DAY_IN_SECONDS; // Shorter cache window for a fast-moving feed.
+}, 10, 2 );
+```
+
+---
+
+#### `mvs_private_media_max_age`
+
+`Cache-Control: private, max-age` (seconds) sent by `/serve` for media that is not public (members, followers, private, space, DM). The default is the rest of the signed URL's life, so a member's own browser reuses an image it was already allowed to see while no shared cache stores it and nothing outlives the link. Responses also carry an `ETag` and `Last-Modified`, so a revalidation is a `304`. Return `0` for `no-store`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$max_age` | int | Seconds until the signed URL expires |
+| `$privacy` | string | Media privacy level |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_private_media_max_age', function( int $max_age, string $privacy ) : int {
+    return 'dm' === $privacy ? 0 : $max_age; // Never keep message attachments in the browser cache.
 }, 10, 2 );
 ```
 
