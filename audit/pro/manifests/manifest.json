@@ -4002,7 +4002,7 @@
   "storage_drivers_note": "All four are selected through the Free `mvs_storage_driver` filter; the switch lives at includes/Core/Plugin.php:1143-1150.",
   "refresh_2026_10_02": {
     "scope": "targeted (2.6.1)",
-    "verified_against_pro_head": "2ea7272",
+    "verified_against_pro_head": "6b5e70c",
     "added": {
       "public_methods": [
         "FolderService::dequeue()"
@@ -4010,7 +4010,10 @@
     },
     "changed": [
       "FolderService: delete_permanently() and restore() cancel the folder purge job",
-      "assets/css/admin.css: dead Quota Page rule removed"
+      "assets/css/admin.css: dead Quota Page rule removed",
+      "collection-picker.js dispatches mvs-collections-changed after a toggle",
+      "gamification.css: streak stats hidden below 640px",
+      "compete-hub-body.php 2.6.1: My Activity empty copy"
     ]
   }
 }

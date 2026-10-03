@@ -6962,7 +6962,8 @@
       "public_methods": [
         "PrivacyService::query_listable_spaces()",
         "TemplateHelpers::alt_text()",
-        "TemplateHelpers::explore_type()"
+        "TemplateHelpers::explore_type()",
+        "TemplateHelpers::fixed_privacy_note()"
       ]
     },
     "changed": [
@@ -6978,7 +6979,13 @@
       "REST media item: alt field",
       "EmailService TYPES: new_follower, media_comment (options mvs_email_new_follower, mvs_email_media_comment)",
       "mvs_explore_query_args / mvs_feed_query_args: type filter callback in Plugin::init()",
-      "load-more.js: auto-load (3 pages), trending + mvs_type passthrough"
+      "load-more.js: auto-load (3 pages), trending + mvs_type passthrough",
+      "MediaRepository::find_by_hash( $hash, $author_id = 0 ): uploads match only the uploader's media",
+      "SettingsPage: settings saved notice at the top of the tab (settings-nav.js scrolls it into view on phones)",
+      "Lightbox Save binds the Favorites state; listens for mvs-collections-changed (dispatched by Pro collection-picker.js)",
+      "DashboardSections::core_sections(): no profile section when BuddyNext is active; client activeTab via resolve()",
+      "Dashboard album prompts: named photos, stricter album privacy asks first",
+      "EmailService::host_sends(): no activity emails or switches when BuddyNext is active"
     ]
   }
 }
