@@ -1627,6 +1627,15 @@ a.mvs-stat-card:focus {
 
 	.mvs-settings-sidebar {
 		width: 100%;
+		/*
+		 * `width: 100%` plus padding under `content-box` overflowed the page
+		 * sideways: at 390 (Basecamp 10252222077, fixed then only below 782px)
+		 * and again at 820 and 900 (Basecamp 10369216133). Set here, it covers
+		 * every stacked width. `min-width: 0` keeps the nav scrolling inside
+		 * itself rather than stretching this box.
+		 */
+		box-sizing: border-box;
+		min-width: 0;
 		height: auto;
 		position: static;
 		border-right: none;
@@ -2126,25 +2135,11 @@ a.mvs-stat-card:focus {
 	.mvs-settings-sidebar {
 		width: 100%;
 		/*
-		 * `width: 100%` + horizontal padding under the default `content-box`
-		 * is what overflowed here: 368px resolved width + 12px padding either
-		 * side = 392px in a 390px viewport, scrolling the whole admin page
-		 * sideways (Basecamp 10252222077). `border-box` folds the padding back
-		 * inside the 100%.
-		 *
-		 * `min-width: 0` keeps the nav scrolling inside itself rather than
-		 * stretching this box, since a flex item otherwise refuses to shrink
-		 * below its content.
-		 *
-		 * NOTE, deliberately not fixed here: 350 of 359 MediaVerse admin
-		 * elements are `content-box`, so this is one instance of a class.
-		 * Only this one overflows today — measured — and flipping the box
-		 * model globally across 18 admin screens is the kind of invisible,
-		 * wide-blast-radius change that breaks sites nobody can see. That
-		 * belongs in its own pass with per-screen verification.
+		 * box-sizing and min-width come from the 960px block above. 350 of
+		 * 359 MediaVerse admin elements are `content-box`; flipping the box
+		 * model globally across 18 admin screens belongs in its own pass with
+		 * per-screen verification.
 		 */
-		box-sizing: border-box;
-		min-width: 0;
 		border-right: none;
 		border-bottom: 1px solid var(--mvs-admin-border);
 	}
