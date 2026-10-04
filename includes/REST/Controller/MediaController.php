@@ -1288,9 +1288,11 @@ class MediaController extends WP_REST_Controller {
 			return $mvs_replace_args;
 		}
 
-		// Store new file.
+		// Store new file, on the driver this item's PRIVACY allows: a members or
+		// private item's replacement must never land on a public cloud bucket
+		// (get_driver_for_privacy() is the single enforcement point for that).
 		$storage  = Plugin::container()->get( 'storage' );
-		$driver   = $storage->get_driver();
+		$driver   = $storage->get_driver_for_media( $media_id );
 		$dest_sub = gmdate( 'Y/m' );
 		// Route through FilenameStrategy exactly like the primary upload path
 		// (UploadService::handle) so the configured strategy — hashed by
@@ -1345,16 +1347,10 @@ class MediaController extends WP_REST_Controller {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
 
-		// Delete the old file from every tier it may live on. Not the active
-		// driver alone: uploads land on local disk and are copied to the cloud
-		// afterwards, so a cloud-only delete left the local copy behind, and a
-		// local-only path (Pro documents) must never be sent to a cloud driver.
-		// delete_everywhere() handles both. The equality guard keeps a
-		// same-named replacement from deleting the file just stored.
-		$old_path = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-		if ( '' !== $old_path && $old_path !== $dest_path ) {
-			$storage->delete_everywhere( $old_path );
-		}
+		// Every file the old version owns (original, sizes, WebP/AVIF, poster),
+		// read before the rows below are rewritten. Whatever the new version no
+		// longer uses is deleted once the pipeline has run (end of this method).
+		$old_paths = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_stored_file_paths( $media_id );
 
 		// Update media index with new file data.
 		//
@@ -1518,6 +1514,25 @@ class MediaController extends WP_REST_Controller {
 		 * @param string $media_type Resolved media type ('image' | 'video' | 'audio' | 'document').
 		 */
 		do_action( 'mvs_media_replaced', $media_id, $file_data, get_current_user_id(), $media_type );
+
+		// Reclaim the files the old version owned and the new one does not use.
+		// Replace is how members take an image down, and since 2.6.1 an old size
+		// URL is served straight from disk, so the old sizes must go, not only
+		// the original. Comparing against the paths stored now keeps anything the
+		// new version still uses (a same-named file, a kept video cover). Deleted
+		// here and now from local and cloud (delete_everywhere); a delete that
+		// fails goes to the storage-cleanup cycle, which retries.
+		$mvs_dropped = array_diff( $old_paths, \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_stored_file_paths( $media_id ) );
+		$mvs_failed  = array();
+		foreach ( $mvs_dropped as $mvs_path ) {
+			if ( ! $storage->delete_everywhere( (string) $mvs_path ) ) {
+				$mvs_failed[] = (string) $mvs_path;
+			}
+		}
+		if ( $mvs_failed ) {
+			/** This action is documented in includes/Repository/MediaRepository.php */
+			do_action( 'mvs_media_files_orphaned', $media_id, $mvs_failed );
+		}
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
