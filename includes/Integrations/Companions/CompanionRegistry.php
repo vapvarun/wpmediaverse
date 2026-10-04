@@ -68,7 +68,9 @@ final class CompanionRegistry {
 						'basename' => 'jetonomy/jetonomy.php',
 					),
 					'store_url' => 'https://wbcomdesigns.com/downloads/jetonomy/',
-					'unlocks'   => __( 'Media attachments and previews inside Jetonomy discussion posts.', 'wpmediaverse' ),
+					// No 'unlocks': MediaVerse adds nothing inside Jetonomy today. The
+					// line promised attachments in discussion posts that no plugin
+					// implements (card 10369218031). Add it back with the feature.
 				),
 				'wb-gamification' => array(
 					'label'     => __( 'WB Gamification', 'wpmediaverse' ),
