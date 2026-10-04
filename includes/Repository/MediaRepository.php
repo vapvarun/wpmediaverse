@@ -1108,8 +1108,12 @@ class MediaRepository implements MediaRepositoryInterface {
 			$viewer_id = isset( $args['viewer_id'] ) ? (int) $args['viewer_id'] : 0;
 
 			if ( $viewer_id > 0 ) {
-				$where[]  = "( idx.post_author = %d OR idx.privacy = 'public' OR idx.privacy = 'members' )";
-				$params[] = $viewer_id;
+				// The shared member rule, so followers-only stories reach followers
+				// (card 10355187431). Not explore_privacy_clause(): its moderator
+				// override would fill a moderator's stories bar with private stories.
+				list( $mvs_privacy_sql, $mvs_privacy_params ) = $this->member_privacy_clause( 'idx', $viewer_id );
+				$where[]                                      = $mvs_privacy_sql;
+				$params                                       = array_merge( $params, $mvs_privacy_params );
 
 				// Lists hide media both ways across a block (Basecamp 10355130639);
 				// the stories bar is a list.
@@ -5412,6 +5416,27 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
 			return array( '1 = 1', array() );
 		}
+		return $this->member_privacy_clause( $alias, $viewer_id );
+	}
+
+	/**
+	 * What a logged-in member may see in a list, with no moderator override:
+	 * public and members items, their own, and followers-only items of people
+	 * they follow.
+	 *
+	 * Social surfaces such as the stories bar use this for everyone, moderators
+	 * included: a moderator's stories bar shows what any member's would, not
+	 * every private story on the site.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param string $alias     Table alias ('' for bare columns).
+	 * @param int    $viewer_id Logged-in viewer (> 0).
+	 * @return array{0:string,1:array} SQL fragment and its params.
+	 */
+	public function member_privacy_clause( string $alias, int $viewer_id ): array {
+		$alias  = preg_replace( '/[^a-zA-Z0-9_]/', '', $alias );
+		$prefix = '' !== $alias ? $alias . '.' : '';
 		// Followers-only items are listed for the author's followers, the same
 		// rule PrivacyService::can_view() applies to the single item; without it
 		// every list failed closed (Basecamp 10354828096). Served by the
