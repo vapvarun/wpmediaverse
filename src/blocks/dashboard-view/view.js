@@ -6,7 +6,7 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext, getElement } from '@wordpress/interactivity';
+import { store, getContext, getElement, withScope } from '@wordpress/interactivity';
 
 /**
  * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
@@ -804,7 +804,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			if ( tabBtn.href && plainClick ) {
 				event.preventDefault();
-				window.history.pushState( {}, '', tabBtn.href );
+				// The section rides in the history entry so Back and Forward can
+				// put it back (callbacks.init listens for popstate). The current
+				// state is kept: WordPress's Interactivity runtime stamps it with
+				// wpInteractivityId and reloads on a popstate whose entry lacks it.
+				window.history.pushState(
+					{ ...window.history.state, mvsTab: tab },
+					'',
+					tabBtn.href
+				);
 			} else if ( tabBtn.href ) {
 				// Let the browser handle it.
 				return;
@@ -812,13 +820,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 				window.location.hash = tab;
 			}
 
+			actions.openSection( tab, getContext(), tabBtn );
+		},
+
+		/**
+		 * Show a section and load its data the first time it opens. Shared by a
+		 * tab click and by browser Back/Forward, so the two can never disagree
+		 * about what opening a section means.
+		 *
+		 * @param {string}       tab    Section key (data-tab).
+		 * @param {Object}       ctx    Block context.
+		 * @param {Element|null} tabBtn The rail item, when there is one.
+		 */
+		openSection( tab, ctx, tabBtn ) {
 			state.activeTab = tab;
+			ctx.editingProfile = 'profile' === tab;
 			// Mobile §5.2: scroll the tapped tab into view so users can see what's
 			// next when the strip overflows. Center inline keeps neighbours visible.
 			if ( tabBtn && typeof tabBtn.scrollIntoView === 'function' ) {
 				tabBtn.scrollIntoView( { inline: 'center', block: 'nearest', behavior: 'smooth' } );
 			}
-			const ctx = getContext();
 			if ( tab === 'media' && state.media.items.length === 0 ) {
 				actions.loadMedia( ctx );
 			} else if ( tab === 'albums' && state.albums.items.length === 0 ) {
@@ -1325,7 +1346,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const railLink = document.querySelector( `.mvs-dashboard-tab[data-tab="${ state.activeTab }"]` );
 
 			if ( railLink?.href ) {
-				window.history.pushState( {}, '', railLink.href );
+				window.history.pushState(
+					{ ...window.history.state, mvsTab: state.activeTab },
+					'',
+					railLink.href
+				);
 			}
 		},
 
@@ -1692,7 +1717,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			// replaceState, not pushState: typing in a search box must not bury
 			// the previous page under one history entry per keystroke.
-			window.history.replaceState( {}, '', url.toString() );
+			// Keep the entry's state (Interactivity's wpInteractivityId, the
+			// section for Back/Forward); only the address changes.
+			window.history.replaceState(
+				window.history.state,
+				'',
+				url.toString()
+			);
 
 			actions[ PANELS[ slug ].loader ]( ctx, 1 );
 		},
@@ -2491,6 +2522,64 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		init() {
 			const ctx = getContext();
+
+			// Back and Forward. The tabs write the address with pushState, so the
+			// browser moves through those entries without reloading; without this
+			// the address changed and the screen did not (card 10369327095). The
+			// section comes from the history entry, or, for the entry the page
+			// loaded with, from the rail link whose address matches. Anything else
+			// (a section on its own page, an address no rail item owns) reloads,
+			// so the screen always matches the address.
+			window.addEventListener(
+				'popstate',
+				withScope( ( event ) => {
+					const railItem = ( key ) =>
+						document.querySelector(
+							`.mvs-dashboard-tab[data-tab="${ key }"]`
+						);
+					const trim = ( path ) => path.replace( /\/+$/, '' );
+					const here = trim( window.location.pathname );
+					const owner = Array.from(
+						document.querySelectorAll(
+							'.mvs-dashboard-tab[data-tab][href]'
+						)
+					).find(
+						( link ) =>
+							trim( new URL( link.href ).pathname ) === here
+					);
+					// A tab without an address switches by #hash, which fires popstate too.
+					const hashTab = window.location.hash.replace( '#', '' );
+					const byHash =
+						hashTab && railItem( hashTab ) ? hashTab : '';
+					// The dashboard's own root (/my-media/) shows the default section,
+					// whose rail link carries its own address (/my-media/media/).
+					const firstLink = document.querySelector(
+						'.mvs-dashboard-tab[data-tab][href]'
+					);
+					const root = firstLink
+						? trim( new URL( firstLink.href ).pathname ).replace(
+								/\/[^/]*$/,
+								''
+						  )
+						: null;
+					const atRoot =
+						null !== root && here === root ? 'media' : '';
+					const tab =
+						event.state?.mvsTab ||
+						byHash ||
+						owner?.dataset.tab ||
+						atRoot;
+					const tabBtn = tab ? railItem( tab ) : null;
+
+					if ( ! tab || tabBtn?.dataset.mvsNavigate ) {
+						window.location.reload();
+						return;
+					}
+
+					actions.openSection( tab, ctx, tabBtn );
+				} )
+			);
+
 			// Apply admin default privacy to upload state.
 			if ( ctx.defaultPrivacy ) {
 				state.upload.privacy = ctx.defaultPrivacy;
