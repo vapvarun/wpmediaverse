@@ -181,6 +181,19 @@ final class MediaFileRotator {
 			}
 		}
 		self::move_sets( $media_id, $sets );
+
+		/**
+		 * Fires after an item's links were revoked (privacy tightened, or an
+		 * approved item taken down), so add-ons that keep their own files for
+		 * the item (captions, transcripts) can move them to new names too.
+		 * Fires even when no media file moved: the item's own files may live on
+		 * a cloud driver while the add-on's files are local.
+		 *
+		 * @since 2.6.1
+		 *
+		 * @param int $media_id Media id.
+		 */
+		do_action( 'mvs_media_files_rotated', $media_id );
 	}
 
 	/**
