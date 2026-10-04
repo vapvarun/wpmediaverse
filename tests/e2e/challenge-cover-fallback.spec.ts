@@ -26,7 +26,8 @@ import { expect, test, Page } from '@playwright/test';
  *
  * This spec encodes the contract:
  *   - Each card belongs to exactly one of those two states.
- *   - Has-cover: the inner <img> has a non-empty src that contains a mvs_sig
+ *   - Has-cover: the inner <img> has a non-empty src that is signed (mvs_sig)
+ *     or a direct random-named capability URL (2.6.1+); was: contains a mvs_sig
  *     token (i.e. went through MediaRepository::get → SignedUrlService).
  *   - Placeholder: the inner <img> has `src=""` AND `hidden=""` AND the
  *     wrapper has the `--placeholder` class. (`<img src="">` without the
@@ -92,9 +93,10 @@ test.describe('challenge cover fallback (Pro-paired)', () => {
 					);
 					continue;
 				}
-				if (!/mvs_sig=/.test(card.imgSrc)) {
+				// Signed /serve, or a direct capability URL (random file name, 2.6.1+).
+				if (!/mvs_sig=/.test(card.imgSrc) && !/\/wpmediaverse\/.*\/[0-9a-f]{16,}(-\d+x\d+)?\.[a-z0-9]+$/i.test(card.imgSrc)) {
 					violations.push(
-						`Card #${card.index} cover URL is not signed: ${card.imgSrc.slice(0, 120)}`
+						`Card #${card.index} cover URL is neither signed nor a capability URL: ${card.imgSrc.slice(0, 120)}`
 					);
 				}
 			}

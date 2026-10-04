@@ -284,11 +284,7 @@ class LocalDriver implements StorageDriverInterface {
 	 * Ensure the base upload directory has .htaccess and index.php protection.
 	 */
 	private function ensure_protection_files(): void {
-		$htaccess = $this->base_dir . '.htaccess';
-		if ( ! file_exists( $htaccess ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			file_put_contents( $htaccess, "Order deny,allow\nDeny from all\n" );
-		}
+		DirectDelivery::ensure_htaccess( $this->base_dir );
 
 		$index = $this->base_dir . 'index.php';
 		if ( ! file_exists( $index ) ) {

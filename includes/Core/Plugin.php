@@ -489,6 +489,10 @@ class Plugin {
 		// hook, so a page created here is covered by the flush rather than
 		// waiting for the next version to be reachable.
 		add_action( 'init', array( Activator::class, 'maybe_upgrade' ), 98 );
+		// Direct media delivery: re-probe daily from admin page loads and cron only
+		// (never a visitor's request); the probe also upgrades the folder .htaccess.
+		add_action( 'wp_loaded', array( \WPMediaVerse\Services\DirectDelivery::class, 'maybe_probe' ) );
+		\WPMediaVerse\Services\MediaFileRotator::register();
 
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();

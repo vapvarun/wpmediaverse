@@ -811,7 +811,10 @@ class UploadService {
 			if ( ! wp_mkdir_p( $wpmv_base . $subdir ) ) {
 				return '';
 			}
-			$dest_path = $subdir . '/' . $media_id . '-' . sanitize_file_name( basename( $source_path ) );
+			// Random stem, like every upload: '<media_id>-<original name>' was
+			// guessable, which matters now media can be served without /serve.
+			$import_ext = strtolower( (string) pathinfo( $source_path, PATHINFO_EXTENSION ) );
+			$dest_path  = $subdir . '/' . bin2hex( random_bytes( 8 ) ) . ( '' !== $import_ext ? '.' . sanitize_key( $import_ext ) : '' );
 		}
 
 		$local_full = $wpmv_base . $dest_path;
@@ -834,6 +837,11 @@ class UploadService {
 
 		$repo->set( $media_id, 'file_path', $dest_path );
 		$repo->set( $media_id, 'file_url', $driver->url( $dest_path ) );
+		// Downloads name the file from original_filename; keep the source's name
+		// now that the stored one is random (never overwrite one already set).
+		if ( '' === (string) $repo->get_raw( $media_id, 'original_filename' ) ) {
+			$repo->set( $media_id, 'original_filename', sanitize_file_name( basename( $source_path ) ) );
+		}
 		$this->process_stored_file( $media_id, $dest_path, $media_type, $mime );
 
 		return $dest_path;

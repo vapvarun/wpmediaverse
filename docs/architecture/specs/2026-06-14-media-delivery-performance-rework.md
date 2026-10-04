@@ -17,6 +17,35 @@ Owner: Varun. Target: 1.7.0 (Free; Pro inherits). Driver focus: **local / shared
 - **Phase B — owner chose "keep one dir, optimize /serve only"** (NOT the split-storage rework). No storage restructure / no file moves / no migration on the 50+ installs. Reduce per-image cost within the existing proxy + lean on Card #4 caching. See revised Phase B.
 - **Phase C (srcset)** — deferred until/unless Phase B makes URLs cheap.
 
+## Decision update (2026-10-04): direct delivery from the one folder
+
+A customer's small community ran 70 PHP workers: every image and video went
+through `/serve`, a full WordPress boot each (measured 160-220 queries and
+~200ms per image on a family site). Phase B's caching helps repeat views only,
+and most visitors are logged in viewing members-only media, which `/serve`
+never let browsers cache. The owner chose **capability URLs from the existing
+single folder** (still no restructure, no moves, no migration):
+
+- Media is served straight by the web server from `uploads/wpmediaverse/`;
+  privacy rests on unguessable file names, the model large social CDNs use.
+  URLs are still only minted for viewers who pass `can_view()`.
+- **Fail-safe by default.** Direct URLs are used only when (1) a probe proves
+  the folder is web-reachable on this site, (2) the file's name is random
+  (16+ hex), and (3) the item is not a DM attachment, document, SVG or
+  download. Everything else keeps today's signed `/serve` URL. Filter
+  `mvs_direct_media_delivery` turns the whole path off.
+- **Apache:** the folder's `.htaccess` changes from deny-all to "deny unless
+  the name is a random media name", so readable legacy names, posters and
+  imports stay blocked. **nginx:** a site that added the old deny rule fails
+  the probe and keeps `/serve`; Site Health explains how to opt in.
+- **Revocation:** when an item's privacy is tightened (or it is trashed or
+  flagged), its files are renamed to a new random stem, so a copied direct
+  link stops working. Existing files are never renamed in bulk.
+- New posters and imports get random names (no more `posters/<id>.jpg`).
+
+Supersedes the 2026-06-14 "keep /serve for everything" choice for local
+media; Phase B's caching stays for everything still on `/serve`.
+
 ## Why this exists
 
 The team has reported 3× that media pages load slowly and "PHP rendering eats 2-3s extra per image" on shared hosting. We kept fixing individual cards (thumbnail size, cache headers) without profiling the whole flow. This plan is the complete fix, replacing the band-aids.

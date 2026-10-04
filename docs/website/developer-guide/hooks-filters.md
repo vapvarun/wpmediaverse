@@ -227,6 +227,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_stable_public_urls` | filter | Free | 1.7.0 |
 | `mvs_public_media_max_age` | filter | Free | 1.7.0 |
 | `mvs_private_media_max_age` | filter | Free | 2.6.1 |
+| `mvs_direct_media_delivery` | filter | Free | 2.6.1 |
 | `mvs_public_local_thumbnail_url` | filter | Free | 1.7.0 |
 | `mvs_public_local_file_url` | filter | Free | 1.7.0 |
 | `mvs_suppress_bp_comment_notification` | filter | Free | 2.0.0 |
@@ -2007,6 +2008,24 @@ add_filter( 'mvs_public_media_max_age', function( int $max_age, string $privacy 
 add_filter( 'mvs_private_media_max_age', function( int $max_age, string $privacy ) : int {
     return 'dm' === $privacy ? 0 : $max_age; // Never keep message attachments in the browser cache.
 }, 10, 2 );
+```
+
+---
+
+#### `mvs_direct_media_delivery`
+
+Whether local photos, video and audio are sent straight by the web server instead of through `/serve`. Defaults to the result of MediaVerse's own check (run on admin page loads and cron, at most daily) that the server sends a random-named file from `uploads/wpmediaverse/`. Even when true, only files with MediaVerse's random names, viewed by someone allowed to see them, get direct addresses; message attachments, documents, SVGs and downloads always use `/serve`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ok` | bool | Whether the server check passed |
+
+**Returns:** `bool`
+
+```php
+add_filter( 'mvs_direct_media_delivery', '__return_false' ); // Keep every file on signed /serve links.
 ```
 
 ---

@@ -387,6 +387,70 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Every stored relative file path of one media item: file_path plus each
+	 * `*_path` meta value (size variants, WebP/AVIF siblings, posters).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $media_id Media id.
+	 * @return string[]
+	 */
+	public function stored_file_paths( int $media_id ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$meta = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s",
+				$media_id,
+				'%' . $wpdb->esc_like( '_path' )
+			)
+		);
+		return array_values( array_filter( array_merge( array( (string) $this->get_raw( $media_id, 'file_path' ) ), array_map( 'strval', $meta ) ) ) );
+	}
+
+	/**
+	 * Rewrite a file-name stem in every stored path and URL of one media item.
+	 *
+	 * Used after its files were renamed on disk (MediaFileRotator): file_path and
+	 * file_url in the index row, and every meta value (thumb_*, *_path, *_webp,
+	 * *_avif, original_*) that carries the old stem. Stems are 16+ random hex
+	 * characters, so a plain REPLACE cannot touch an unrelated value.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $old_stem Old random stem.
+	 * @param string $new_stem New random stem.
+	 * @return void
+	 */
+	public function replace_in_file_paths( int $media_id, string $old_stem, string $new_stem ): void {
+		global $wpdb;
+		$like = '%' . $wpdb->esc_like( $old_stem ) . '%';
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_media_index SET file_path = REPLACE( file_path, %s, %s ), file_url = REPLACE( file_url, %s, %s ) WHERE media_id = %d",
+				$old_stem,
+				$new_stem,
+				$old_stem,
+				$new_stem,
+				$media_id
+			)
+		);
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_media_meta SET meta_value = REPLACE( meta_value, %s, %s ) WHERE media_id = %d AND meta_value LIKE %s",
+				$old_stem,
+				$new_stem,
+				$media_id,
+				$like
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		self::invalidate_row_cache( $media_id );
+	}
+
+	/**
 	 * Drop a media's cached row. Called on every set / set_many / delete.
 	 *
 	 * @since 1.2.1
@@ -5424,7 +5488,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// The cloud is one cached list for every viewer, so it counts only what
 		// anyone may see: a tag used only on private items is not shown (Basecamp
 		// 10335795450).
-		list( $public_sql )             = $this->explore_privacy_clause( 'm', 0 );
+		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT COUNT(*) FROM (
 				SELECT t.term_id
@@ -5454,7 +5518,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// The cloud is one cached list for every viewer, so it counts only what
 		// anyone may see: a tag used only on private items is not shown (Basecamp
 		// 10335795450).
-		list( $public_sql )             = $this->explore_privacy_clause( 'm', 0 );
+		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT t.term_id, t.name, t.slug, COUNT(*) AS media_count
 			FROM {$wpdb->term_relationships} tr

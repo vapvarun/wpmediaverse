@@ -18,6 +18,15 @@ defined( 'ABSPATH' ) || exit;
 class SignedUrlService {
 
 	/**
+	 * Thumbnail size => its meta key (`<key>_path` holds the stored path).
+	 */
+	private const THUMB_META = array(
+		'large'     => 'thumb_large',
+		'medium'    => 'thumb_medium',
+		'thumbnail' => 'thumb_thumb',
+	);
+
+	/**
 	 * Expiry of the signed URL being served, for the private cache lifetime.
 	 *
 	 * @var int
@@ -78,6 +87,9 @@ class SignedUrlService {
 		// the gated path (Content-Disposition headers + download counters).
 		if ( ! $download ) {
 			$direct = $this->maybe_direct_cloud_url( $media_id );
+			if ( '' === $direct ) {
+				$direct = $this->direct_url( $media_id, $user_id );
+			}
 			if ( '' !== $direct ) {
 				return $direct;
 			}
@@ -154,6 +166,11 @@ class SignedUrlService {
 		// chain here so we only sign URLs that will actually resolve to bytes.
 		if ( ! $this->has_resolvable_thumbnail( $media_id ) ) {
 			return false;
+		}
+
+		$direct = $this->direct_url( $media_id, $user_id, $size, ! $skip_privacy_check );
+		if ( '' !== $direct ) {
+			return $direct;
 		}
 
 		$expires = $this->resolve_expiry( $media_id, $ttl ?: $this->get_ttl() );
@@ -465,40 +482,53 @@ class SignedUrlService {
 	 * @param string $size     Requested size (large|medium|thumbnail).
 	 */
 	/**
-	 * First candidate that points at an image (a valid poster), skipping empties
-	 * and any video/audio variant. Pre-1.6.0 video rows wrote the source .mp4
-	 * into thumb_<size>_path for upscale-skipped sizes; serving that as a
-	 * thumbnail produces a broken poster (Basecamp #9952600334).
+	 * The file's own URL, when this viewer may see it and it can be served
+	 * directly by the web server (see DirectDelivery), else ''.
 	 *
-	 * @param string[] $candidates Ordered paths or URLs.
-	 * @return string First image candidate, or '' when none qualify.
+	 * '' sends the caller on to the signed /serve URL, exactly as before. Only
+	 * local files with MediaVerse's random names qualify; message attachments,
+	 * documents and SVGs (served with a sandbox CSP) always stay signed.
+	 *
+	 * @param int    $media_id Media id.
+	 * @param int    $user_id  Viewer the URL is for.
+	 * @param string $size     '' for the file itself, else a thumbnail size.
+	 * @param bool   $checked  Whether can_view() already passed for this viewer.
+	 * @return string
 	 */
-	private static function first_image_path( array $candidates ): string {
-		foreach ( $candidates as $candidate ) {
-			if ( '' === $candidate ) {
-				continue;
-			}
-			$path = (string) ( wp_parse_url( $candidate, PHP_URL_PATH ) ?: $candidate );
-			$ext  = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
-			if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif' ), true ) ) {
-				return $candidate;
-			}
+	private function direct_url( int $media_id, int $user_id, string $size = '', bool $checked = true ): string {
+		if ( ! DirectDelivery::enabled() ) {
+			return '';
 		}
-		return '';
+		// /serve re-checks the viewer when the file is fetched; a direct URL
+		// cannot, so the check must have happened before the URL is handed out.
+		if ( ! $checked && ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return '';
+		}
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( 'dm' === (string) $repo->get_raw( $media_id, 'privacy' ) || 'image/svg+xml' === (string) $repo->get_raw( $media_id, 'file_type' ) ) {
+			return '';
+		}
+		$rel_path = '' === $size ? (string) $repo->get_raw( $media_id, 'file_path' ) : $this->thumbnail_rel_path( $media_id, $size );
+		if ( '' === $rel_path || '/' === $rel_path[0] || ! DirectDelivery::is_random_name( $rel_path ) ) {
+			return '';
+		}
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id );
+		return $driver instanceof LocalDriver ? $driver->url( $rel_path ) : '';
 	}
 
-	private function serve_thumbnail( int $media_id, string $size, string $privacy = '' ): void {
-		// Internal: signing service serves the underlying file from disk —
-		// must use the raw stored URL, not a signed-URL re-emission.
-		$rel_path  = '';
-		$thumb_url = '';
-
-		$size_map = array(
-			'large'     => 'thumb_large',
-			'medium'    => 'thumb_medium',
-			'thumbnail' => 'thumb_thumb',
-		);
-		$meta_key = $size_map[ $size ] ?? 'thumb_large';
+	/**
+	 * The stored path of a media item's thumbnail for a size, by path meta.
+	 *
+	 * One answer for both /serve and direct delivery, so they always mean the same
+	 * file: the requested size, then medium, then thumb; for an image with none,
+	 * the original. Never a video file for a still.
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $size     'large' | 'medium' | 'thumbnail' (anything else: large).
+	 * @return string Path relative to uploads/wpmediaverse/, or ''.
+	 */
+	private function thumbnail_rel_path( int $media_id, string $size ): string {
+		$meta_key = self::THUMB_META[ $size ] ?? 'thumb_large';
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		// Path-meta first (1.4.0+, driver-agnostic). Fall back through
@@ -523,6 +553,48 @@ class SignedUrlService {
 				$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
 			}
 		}
+		return $rel_path;
+	}
+
+	/**
+	 * First candidate that points at an image (a valid poster), skipping empties
+	 * and any video/audio variant. Pre-1.6.0 video rows wrote the source .mp4
+	 * into thumb_<size>_path for upscale-skipped sizes; serving that as a
+	 * thumbnail produces a broken poster (Basecamp #9952600334).
+	 *
+	 * @param string[] $candidates Ordered paths or URLs.
+	 * @return string First image candidate, or '' when none qualify.
+	 */
+	private static function first_image_path( array $candidates ): string {
+		foreach ( $candidates as $candidate ) {
+			if ( '' === $candidate ) {
+				continue;
+			}
+			$path = (string) ( wp_parse_url( $candidate, PHP_URL_PATH ) ?: $candidate );
+			$ext  = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
+			if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif' ), true ) ) {
+				return $candidate;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Stream a thumbnail size of a media item from disk (the /serve path).
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $size     'large' | 'medium' | 'thumbnail'.
+	 * @param string $privacy  Media privacy, for the cache headers.
+	 * @return void
+	 */
+	private function serve_thumbnail( int $media_id, string $size, string $privacy = '' ): void {
+		// Internal: signing service serves the underlying file from disk —
+		// must use the raw stored URL, not a signed-URL re-emission.
+		$thumb_url = '';
+		$meta_key  = self::THUMB_META[ $size ] ?? 'thumb_large';
+
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$rel_path = $this->thumbnail_rel_path( $media_id, $size );
 
 		// Legacy URL fallback for pre-migration rows. Same image-only guard:
 		// a video URL stored in thumb_large must not win over the medium /

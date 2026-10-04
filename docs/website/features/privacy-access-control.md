@@ -67,24 +67,31 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/media/123/grant \
 
 Access grants can have optional expiry dates. Expired grants are cleaned up via `wp mvs cleanup-expired` or via cron.
 
-## Signed URLs for Private Files
+## How Media Files Are Delivered
 
-For media stored with a non-public privacy level, MediaVerse can generate time-limited signed URLs:
+Since 2.6.1, photos, video and audio are sent straight by your web server, without loading WordPress for each file. This keeps busy pages fast and uses far fewer PHP workers.
 
-```bash
-curl https://yoursite.com/wp-json/mvs/v1/media/123/signed-url \
-  -H "X-WP-Nonce: NONCE"
-```
+Each stored file has a long random name (16 random characters) that cannot be guessed, and MediaVerse only gives the address to people allowed to see the item. When an item becomes more private (for example Public to Members, or Members to Only me), or is trashed, flagged or rejected, its files get new names, so any address shared earlier stops working. Making an item more public keeps its names.
 
-Response:
-```json
-{
-  "url": "https://yoursite.com/wp-content/uploads/wpmediaverse/2025/03/photo.jpg?token=abc123&expires=1743000000",
-  "expires_at": "2025-03-27T13:00:00Z"
-}
-```
+Some files always go through a permission check on every request, using a time-limited signed link (`/wp-json/mvs/v1/serve`):
 
-The signed URL TTL defaults to 3600 seconds (1 hour) and is configurable in **Media > Settings > Storage > Signed URL Expiry (seconds)**.
+- message (DM) attachments
+- documents and SVG images
+- downloads, so download counts and file names stay correct
+- files saved before 2.6.1 under a readable name, such as older video covers
+
+### It turns itself on only when it is safe
+
+After updating, MediaVerse checks once (on the next admin page load, then daily) that your web server sends a random-named test file from `wp-content/uploads/wpmediaverse/`. Until that check passes, every file keeps using signed links, exactly as before. Existing links keep working either way.
+
+- **Apache and LiteSpeed:** MediaVerse updates the folder's `.htaccess` so only random-named media files are served directly; everything else stays blocked. A `.htaccess` you edited yourself is never changed.
+- **nginx:** nginx does not read `.htaccess`. **Tools > Site Health** shows the rule to add to your server configuration when it is needed, for example when an older MediaVerse rule blocks the whole folder.
+
+To keep every file on signed links, add `add_filter( 'mvs_direct_media_delivery', '__return_false' );` to a small plugin.
+
+### Signed link lifetime
+
+Signed links last 1 hour by default (**Media > Settings > Storage > Signed URL Expiry (seconds)**). Links for non-public media stay the same for half of that time, so browsers can reuse a downloaded file instead of fetching it again.
 
 ## Filtering Privacy Access in Code
 

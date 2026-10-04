@@ -316,11 +316,7 @@ class Activator {
 			return;
 		}
 
-		$htaccess = $mvs_dir . '.htaccess';
-		if ( ! file_exists( $htaccess ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			file_put_contents( $htaccess, "Order deny,allow\nDeny from all\n" );
-		}
+		\WPMediaVerse\Services\DirectDelivery::ensure_htaccess( $mvs_dir );
 
 		$index = $mvs_dir . 'index.php';
 		if ( ! file_exists( $index ) ) {
