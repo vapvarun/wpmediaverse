@@ -1967,6 +1967,24 @@ body.dark-mode .mvs-skeleton::after {
     color: inherit;
 }
 
+/* Album and collection cards carry a title AND the owner in this row. Side by
+   side, a phone-width card (about 157px) squeezed the owner to a single letter
+   (card 10368642855). The title takes its own line and the owner sits below,
+   on every width; rows without a title (media cards) are unchanged. */
+.mvs-grid-item-info:has(.mvs-grid-item-title-link) {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
+.mvs-grid-item-info .mvs-grid-item-title-link {
+    flex: 1 1 100%;
+    order: -1;
+    min-width: 0;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+
 .mvs-grid-item-author-link:hover .mvs-grid-item-author,
 .mvs-grid-item-author-link:focus-visible .mvs-grid-item-author {
     color: var(--mvs-primary-text, var(--mvs-text));
