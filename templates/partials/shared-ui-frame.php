@@ -60,9 +60,13 @@ wp_interactivity_state(
 		// from ReportService, the list the REST routes validate against.
 		'reportsEnabled'      => \WPMediaVerse\Social\ReportService::reports_enabled(),
 		'reportReasons'       => \WPMediaVerse\Social\ReportService::reason_labels(),
+		// Where a visitor goes to log in and come back to this page: the same
+		// URL as the lightbox's 'Log in to comment' link.
+		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
 		'i18n'                => array(
 			'reportPrompt'       => __( 'Why are you reporting this?', 'wpmediaverse' ),
 			'loginToReact'       => __( 'Please log in to react.', 'wpmediaverse' ),
+			'logIn'              => __( 'Log in', 'wpmediaverse' ),
 			'reportSubmitted'    => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
 			'reportAlready'      => __( 'Already reported or error occurred.', 'wpmediaverse' ),
 			'reportAction'       => __( 'Report', 'wpmediaverse' ),
@@ -171,6 +175,10 @@ wp_interactivity_state(
 
 			<!-- Modal Body -->
 			<div class="mvs-modal-body">
+				<!-- Why nothing went up (quota, size, type): in the window, not only a toast. -->
+				<p class="mvs-upload-modal-error" role="alert" hidden
+					data-wp-bind--hidden="!state.uploadModalError"
+					data-wp-text="state.uploadModalError"></p>
 				<!-- Dropzone -->
 				<div class="mvs-modal-dropzone" data-wp-on--click="actions.handleUploadClick"
 					data-wp-on--drop="actions.handleUploadDrop"
@@ -778,6 +786,8 @@ wp_interactivity_state(
 				<button class="mvs-btn mvs-btn--secondary mvs-confirm-cancel" type="button"
 					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 				<button class="mvs-btn mvs-btn--danger" type="button"
+					data-wp-class--mvs-btn--danger="!state.confirmPrimary"
+					data-wp-class--mvs-btn--primary="state.confirmPrimary"
 					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
 			</div>
 		</div>

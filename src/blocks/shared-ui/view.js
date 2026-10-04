@@ -266,6 +266,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalDuplicates: 0,
 		uploadModalLastDuplicateId: 0,
 		uploadModalLastError: '',
+		uploadModalError: '', // Why nothing went up, shown inside the window.
 		uploadModalTitle: '',
 		uploadModalDescription: '',
 		uploadModalTags: '',
@@ -744,10 +745,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 
 		// --- Confirm ---
-		showConfirm( msg, callback, buttonLabel = 'Confirm' ) {
+		// tone 'primary' for an invitation (Log in); the default 'danger' is for
+		// the destructive confirms this dialog was built for.
+		showConfirm( msg, callback, buttonLabel = 'Confirm', tone = 'danger' ) {
 			state.confirmMessage = msg;
 			state.confirmCallback = callback;
 			state.confirmButtonLabel = buttonLabel;
+			state.confirmPrimary = 'primary' === tone;
 			state.confirmVisible = true;
 			// The confirm button is the dangerous one, so Cancel takes focus:
 			// an Enter pressed without reading never destroys or exposes anything.
@@ -872,6 +876,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
+			state.uploadModalError = '';
 			state.uploadModalTitle = '';
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
@@ -897,6 +902,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
+			state.uploadModalError = '';
 			state.uploadModalAlbum = 0;
 			state.uploadModalNewAlbumName = '';
 			document.body.style.overflow = '';
@@ -1287,6 +1293,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			state.uploadModalUploading = true;
+			state.uploadModalError = '';
 			state.uploadModalTotal = files.length;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
@@ -1447,11 +1454,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					window.location.reload();
 				}, state.uploadModalDuplicates > 0 ? 2500 : 800 );
 			} else {
-				actions.showToast(
-					state.uploadModalLastError ||
-						( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ),
-					'error'
-				);
+				// Nothing went up (over quota, too large, wrong type): say why IN the
+				// window the member is looking at, not only in a toast that is gone
+				// in three seconds (card 10364778707). Stays until the next try; the
+				// box is role=alert, so it is announced without a duplicate toast.
+				state.uploadModalError = state.uploadModalLastError ||
+					( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' );
 			}
 		},
 
@@ -1648,7 +1656,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const type = event.target.closest( '[data-reaction]' )?.dataset.reaction;
 			if ( ! type || ! state.lightboxMediaId ) return;
 			if ( ! state.currentUserId ) {
-				actions.showToast( state.i18n?.loginToReact || 'Please log in to react.', 'error' );
+				// A way in, not just a refusal: the same login page the
+				// 'Log in to comment' link opens, back to this page after
+				// (card 10364778707). Nothing navigates until they choose to.
+				if ( state.loginUrl ) {
+					actions.showConfirm(
+						state.i18n?.loginToReact || 'Please log in to react.',
+						() => { window.location.href = state.loginUrl; },
+						state.i18n?.logIn || 'Log in',
+						'primary'
+					);
+				} else {
+					actions.showToast( state.i18n?.loginToReact || 'Please log in to react.', 'error' );
+				}
 				return;
 			}
 			const isActive = state.lightboxUserReaction === type;
