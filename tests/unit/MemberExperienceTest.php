@@ -25,7 +25,9 @@ class MemberExperienceTest extends WP_UnitTestCase {
 		$this->assertSame( '', $tpl->render_explore_sort_toolbar( 0 ), 'An empty list still offered sorting.' );
 
 		$html = $tpl->render_explore_sort_toolbar( 5 );
-		$this->assertSame( 1, substr_count( $html, '<select' ), 'The list has more than one sort control.' );
+		// One SORT control; the media-type filter beside it (Explore, 2.6.1) is not a sort.
+		$this->assertSame( 1, substr_count( $html, 'name="sort"' ), 'The list has more than one sort control.' );
+		$this->assertStringContainsString( 'name="mvs_type"', $html );
 		$this->assertStringNotContainsString( 'name="order"', $html );
 		$this->assertStringContainsString( 'Newest', $html );
 		$this->assertStringContainsString( 'Oldest', $html );
