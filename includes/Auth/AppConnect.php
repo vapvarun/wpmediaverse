@@ -102,7 +102,8 @@ class AppConnect {
 	 * @return array<string, mixed>
 	 */
 	public static function bridge_info(): array {
-		if ( class_exists( '\BuddyNext\App\AppConnectService' ) ) {
+		// BuddyNext running (the family rule) with the app-connect service.
+		if ( defined( 'BUDDYNEXT_VERSION' ) && method_exists( '\BuddyNext\App\AppConnectService', 'connect_url' ) && method_exists( '\BuddyNext\App\AppConnectService', 'schemes' ) ) {
 			$info = array(
 				'owner'           => 'buddynext',
 				'connect_url'     => (string) \BuddyNext\App\AppConnectService::connect_url(),

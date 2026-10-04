@@ -872,7 +872,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	public static function login_url( string $redirect = '' ): string {
 		$url = '';
 
-		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+		// BuddyNext RUNNING (the family rule), and new enough to have the method.
+		// class_exists() alone can autoload the class with BuddyNext inactive.
+		if ( defined( 'BUDDYNEXT_VERSION' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
 			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
 			if ( '' !== $bn ) {
 				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
@@ -909,7 +911,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	public static function registration_url( string $redirect = '' ): string {
 		$url = '';
 
-		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+		// BuddyNext RUNNING (the family rule), and new enough to have the method.
+		// class_exists() alone can autoload the class with BuddyNext inactive.
+		if ( defined( 'BUDDYNEXT_VERSION' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
 			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
 			if ( '' !== $bn ) {
 				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
