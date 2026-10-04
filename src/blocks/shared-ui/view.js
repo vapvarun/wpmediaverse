@@ -1936,10 +1936,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		lightboxReport() {
-			// Navigate to the single media page where the full report dialog lives.
-			const url = state.lightboxMediaData?.link;
-			if ( url ) {
-				window.location.href = url + '#report';
+			// Report in place, with the same reason picker every MediaVerse
+			// report uses, filed to this item's queue (BuddyNext's own lightbox
+			// posts to the same route). It used to navigate to the item's page
+			// with #report, which nothing handled: the member landed on a page
+			// with no form and nothing was reported (card 10369223794).
+			const id = state.lightboxMediaData?.id;
+			if ( id ) {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				actions.promptReport( `${ restUrl }media/${ id }/report` );
 			}
 		},
 		async lightboxDownload() {
