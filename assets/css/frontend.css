@@ -2638,11 +2638,11 @@ body.dark-mode .mvs-skeleton::after {
         /* Edge-fade so users see there are more tabs to swipe to. */
         -webkit-mask-image: linear-gradient(to right,
             black 0,
-            black calc(100% - 24px),
+            black calc(100% - 40px),
             transparent 100%);
         mask-image: linear-gradient(to right,
             black 0,
-            black calc(100% - 24px),
+            black calc(100% - 40px),
             transparent 100%);
     }
 
@@ -2650,6 +2650,10 @@ body.dark-mode .mvs-skeleton::after {
 
     .mvs-dashboard-tabs > .mvs-dashboard-tab {
         scroll-snap-align: start;
+        /* 24px a side pushed the next tab wholly off a phone screen, so the
+           edge fade had nothing to fade and the strip looked finished
+           (card 10364777801). Tighter tabs let the next one show, cut. */
+        padding-inline: 14px;
     }
 }
 

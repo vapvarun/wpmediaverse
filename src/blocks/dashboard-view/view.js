@@ -318,6 +318,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get editModalTitleMissing() {
 			return '' === String( state.editModal.title || '' ).trim();
 		},
+		// Rail highlight, one getter for every rail item (slug from context):
+		// active when its section is showing, or the showing section belongs to
+		// it (Favorites under Collections, card 10364777801). Panels keep the
+		// per-slug getters below; this one is for the rail only.
+		get isActiveRail() {
+			const slug = getContext()?.railSlug;
+			const tab = state.activeTab || 'media';
+			return !! slug && ( tab === slug || state.railParents?.[ tab ] === slug );
+		},
 		get isMediaTab() { return ( state.activeTab || 'media' ) === 'media'; },
 		get isAlbumsTab() { return ( state.activeTab || 'media' ) === 'albums'; },
 		get isFavoritesTab() { return ( state.activeTab || 'media' ) === 'favorites'; },

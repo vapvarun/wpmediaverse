@@ -183,6 +183,9 @@ wp_interactivity_state(
 		// Through resolve(), like the server-rendered tabs, so a section that is
 		// not offered here (Edit profile on a BuddyNext site) falls back to the
 		// first one instead of opening anyway.
+		// Sections reached from another panel (Favorites, from Collections)
+		// highlight that panel's rail item; same map the server uses below.
+		'railParents' => \WPMediaVerse\Core\DashboardSections::rail_parents(),
 		'activeTab' => get_query_var( 'mvs_doc_view' )
 			? 'documents'
 			: \WPMediaVerse\Core\DashboardSections::resolve( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
@@ -596,10 +599,11 @@ wp_interactivity_state(
 				++$mvs_dash_item;
 				$mvs_dash_count = \WPMediaVerse\Core\DashboardSections::count( $mvs_dash_slug );
 
-				// The client store exposes is<Slug>Tab getters for the sections it
-				// knows. One it does not know still highlights server-side; it
-				// simply will not re-highlight without a page load.
-				$mvs_dash_binding = 'state.is' . ucfirst( $mvs_dash_slug ) . 'Tab';
+				// Active when it is the section showing, or the section showing
+				// belongs to it (Favorites under Collections). The client getter
+				// isActiveRail reads this item's slug from context, so every rail
+				// item re-highlights after an in-page switch, Pro's included.
+				$mvs_dash_is_active = $mvs_dash_slug === \WPMediaVerse\Core\DashboardSections::rail_slug( $mvs_dash_active );
 
 				// DOES THIS DOCUMENT CONTAIN A PANEL FOR THIS SECTION?
 				//
@@ -629,12 +633,15 @@ wp_interactivity_state(
 				$mvs_dash_has_panel = ! \WPMediaVerse\Core\DashboardSections::is_offsite( $mvs_dash_slug )
 					&& ( 'documents' !== $mvs_dash_slug || 'documents' === $mvs_dash_active );
 				?>
-				<a class="mvs-dashboard-tab<?php echo $mvs_dash_slug === $mvs_dash_active ? ' active' : ''; ?><?php echo $mvs_dash_starts_group ? ' mvs-dashboard-tab--group-start' : ''; ?>"
+				<a class="mvs-dashboard-tab<?php echo $mvs_dash_is_active ? ' active' : ''; ?><?php echo $mvs_dash_starts_group ? ' mvs-dashboard-tab--group-start' : ''; ?>"
 					data-tab="<?php echo esc_attr( $mvs_dash_slug ); ?>"
 					role="tab"
+					aria-selected="<?php echo $mvs_dash_is_active ? 'true' : 'false'; ?>"
 					href="<?php echo esc_url( $mvs_dash_url ); ?>"
 					<?php echo $mvs_dash_has_panel ? '' : ' data-mvs-navigate="1"'; ?>
-					data-wp-class--active="<?php echo esc_attr( $mvs_dash_binding ); ?>"
+					data-wp-context="<?php echo esc_attr( (string) wp_json_encode( array( 'railSlug' => $mvs_dash_slug ) ) ); ?>"
+					data-wp-class--active="state.isActiveRail"
+					data-wp-bind--aria-selected="state.isActiveRail"
 					data-wp-on--click="actions.switchTab">
 					<span class="mvs-dashboard-tab__label"><?php echo esc_html( $mvs_dash_section['label'] ); ?></span>
 					<?php if ( null !== $mvs_dash_count ) : ?>
