@@ -493,6 +493,7 @@ class Plugin {
 		// (never a visitor's request); the probe also upgrades the folder .htaccess.
 		add_action( 'wp_loaded', array( \WPMediaVerse\Services\DirectDelivery::class, 'maybe_probe' ) );
 		\WPMediaVerse\Services\MediaFileRotator::register();
+		add_action( 'wp_loaded', array( \WPMediaVerse\Services\MediaFileRotator::class, 'maybe_start_legacy' ) );
 
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();

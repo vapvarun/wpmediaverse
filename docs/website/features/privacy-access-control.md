@@ -78,7 +78,9 @@ Some files always go through a permission check on every request, using a time-l
 - message (DM) attachments
 - documents and SVG images
 - downloads, so download counts and file names stay correct
-- files saved before 2.6.1 under a readable name, such as older video covers
+- files saved under a readable name, if the site chose to keep original file names (the `mvs_filename_strategy` option)
+
+Files saved before 2.6.1 under readable names (older video covers, imported files, uploads kept under their own names) are given random names automatically after the update, in the background, newest first. Nothing is needed from you, and links shared earlier keep working. Until an item is converted it keeps using signed links. Deleting a video now also removes its cover's source image, which older versions left on disk.
 
 ### It turns itself on only when it is safe
 

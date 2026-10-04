@@ -106,6 +106,7 @@ class PosterService {
 			return null;
 		}
 
+		$this->record_source( $media_id, $path );
 		return $path;
 	}
 
@@ -117,7 +118,7 @@ class PosterService {
 	 * The source `$tmp_path` is moved (copy + unlink) into place — this
 	 * matches the pre-1.5.0 inline behavior at `MediaController:649-657`.
 	 *
-	 * @param int    $media_id Media ID (unused since 2.6.1: posters get random names).
+	 * @param int    $media_id Media ID (records the source path).
 	 * @param string $tmp_path Absolute path to the uploaded tmpfile.
 	 * @return string|null Absolute path of the staged poster, or null on failure.
 	 */
@@ -132,6 +133,26 @@ class PosterService {
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		@unlink( $tmp_path );
+		$this->record_source( $media_id, $dest );
 		return $dest;
+	}
+
+	/**
+	 * Record the cover's source image as one of the item's files.
+	 *
+	 * The sizes made from it are recorded under thumb_*_path, but the source
+	 * itself was recorded nowhere, so deleting a video left it on disk forever
+	 * and no rename or cloud move could find it. A `*_path` key puts it in
+	 * MediaRepository::get_stored_file_paths(), which every one of those uses.
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $abs      Absolute path of the staged source.
+	 * @return void
+	 */
+	private function record_source( int $media_id, string $abs ): void {
+		$base = trailingslashit( wp_upload_dir()['basedir'] ) . 'wpmediaverse/';
+		if ( 0 === strpos( $abs, $base ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'poster_source_path', substr( $abs, strlen( $base ) ) );
+		}
 	}
 }

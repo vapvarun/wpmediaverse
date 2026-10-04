@@ -386,69 +386,80 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 	}
 
-	/**
-	 * Every stored relative file path of one media item: file_path plus each
-	 * `*_path` meta value (size variants, WebP/AVIF siblings, posters).
-	 *
-	 * @since 2.6.1
-	 *
-	 * @param int $media_id Media id.
-	 * @return string[]
-	 */
-	public function stored_file_paths( int $media_id ): array {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$meta = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s",
-				$media_id,
-				'%' . $wpdb->esc_like( '_path' )
-			)
-		);
-		return array_values( array_filter( array_merge( array( (string) $this->get_raw( $media_id, 'file_path' ) ), array_map( 'strval', $meta ) ) ) );
-	}
 
 	/**
-	 * Rewrite a file-name stem in every stored path and URL of one media item.
+	 * Point every stored path and URL of one media item at renamed files.
 	 *
-	 * Used after its files were renamed on disk (MediaFileRotator): file_path and
-	 * file_url in the index row, and every meta value (thumb_*, *_path, *_webp,
-	 * *_avif, original_*) that carries the old stem. Stems are 16+ random hex
-	 * characters, so a plain REPLACE cannot touch an unrelated value.
+	 * Used after its files were renamed on disk (MediaFileRotator). Matches whole
+	 * relative paths, as an exact value or as the end of a URL, never a fragment,
+	 * so a short legacy name such as `posters/12.jpg` cannot touch
+	 * `posters/112.jpg` or anything else.
 	 *
 	 * @since 2.6.1
 	 *
-	 * @param int    $media_id Media id.
-	 * @param string $old_stem Old random stem.
-	 * @param string $new_stem New random stem.
+	 * @param int                   $media_id Media id.
+	 * @param array<string, string> $map      Old relative path => new relative path.
 	 * @return void
 	 */
-	public function replace_in_file_paths( int $media_id, string $old_stem, string $new_stem ): void {
+	public function replace_file_paths( int $media_id, array $map ): void {
 		global $wpdb;
-		$like = '%' . $wpdb->esc_like( $old_stem ) . '%';
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query(
-			$wpdb->prepare(
-				"UPDATE {$wpdb->prefix}mvs_media_index SET file_path = REPLACE( file_path, %s, %s ), file_url = REPLACE( file_url, %s, %s ) WHERE media_id = %d",
-				$old_stem,
-				$new_stem,
-				$old_stem,
-				$new_stem,
-				$media_id
-			)
-		);
-		$wpdb->query(
-			$wpdb->prepare(
-				"UPDATE {$wpdb->prefix}mvs_media_meta SET meta_value = REPLACE( meta_value, %s, %s ) WHERE media_id = %d AND meta_value LIKE %s",
-				$old_stem,
-				$new_stem,
-				$media_id,
-				$like
-			)
-		);
+		foreach ( $map as $old => $new ) {
+			$len  = mb_strlen( (string) $old );
+			$tail = '%/' . $wpdb->esc_like( (string) $old );
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_index
+					    SET file_path = IF( file_path = %s, %s, file_path ),
+					        file_url  = IF( file_url LIKE %s, CONCAT( LEFT( file_url, CHAR_LENGTH( file_url ) - %d ), %s ), file_url )
+					  WHERE media_id = %d",
+					$old,
+					$new,
+					$tail,
+					$len,
+					$new,
+					$media_id
+				)
+			);
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_meta
+					    SET meta_value = CONCAT( LEFT( meta_value, CHAR_LENGTH( meta_value ) - %d ), %s )
+					  WHERE media_id = %d AND ( meta_value = %s OR meta_value LIKE %s )",
+					$len,
+					$new,
+					$media_id,
+					$old,
+					$tail
+				)
+			);
+		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		self::invalidate_row_cache( $media_id );
 	}
+
+	/**
+	 * Media ids below a cursor, newest first (keyset pagination).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $cursor Exclusive upper bound on media_id; 0 starts at the newest.
+	 * @param int $limit  Maximum ids to return.
+	 * @return int[]
+	 */
+	public function media_ids_before( int $cursor, int $limit = 50 ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id < %d ORDER BY media_id DESC LIMIT %d",
+				$cursor > 0 ? $cursor : PHP_INT_MAX,
+				max( 1, min( 500, $limit ) )
+			)
+		);
+		return array_map( 'intval', $ids );
+	}
+
 
 	/**
 	 * Drop a media's cached row. Called on every set / set_many / delete.

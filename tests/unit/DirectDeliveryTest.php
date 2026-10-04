@@ -192,7 +192,7 @@ class DirectDeliveryTest extends WP_UnitTestCase {
 		$repo->set( $id, 'privacy', 'private' );
 		MediaFileRotator::flush(); // Runs on shutdown in a real request.
 
-		$paths = $repo->stored_file_paths( $id );
+		$paths = $repo->get_stored_file_paths( $id );
 		$this->assertCount( 3, $paths );
 		foreach ( $paths as $path ) {
 			$this->assertStringNotContainsString( $stem, $path );
@@ -201,10 +201,10 @@ class DirectDeliveryTest extends WP_UnitTestCase {
 		$this->assertFileDoesNotExist( $this->base . '2026/10/' . $stem . '.jpg', 'The old address is gone.' );
 		$this->assertSame( array(), glob( $this->base . '2026/10/' . $stem . '*' ), 'No sibling left behind.' );
 
-		$before = $repo->stored_file_paths( $id );
+		$before = $repo->get_stored_file_paths( $id );
 		$repo->set( $id, 'privacy', 'public' );
 		MediaFileRotator::flush();
-		$this->assertSame( $before, $repo->stored_file_paths( $id ), 'Widening keeps the names.' );
+		$this->assertSame( $before, $repo->get_stored_file_paths( $id ), 'Widening keeps the names.' );
 	}
 
 	/**
@@ -215,16 +215,16 @@ class DirectDeliveryTest extends WP_UnitTestCase {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		$approved = $this->media( 'public' );
-		$before   = $repo->stored_file_paths( $approved );
+		$before   = $repo->get_stored_file_paths( $approved );
 		MediaFileRotator::on_moderation_changed( $approved, 'flagged', 'approved' );
 		MediaFileRotator::flush();
-		$this->assertNotSame( $before, $repo->stored_file_paths( $approved ) );
+		$this->assertNotSame( $before, $repo->get_stored_file_paths( $approved ) );
 
 		$pending = $this->media( 'public' );
-		$before  = $repo->stored_file_paths( $pending );
+		$before  = $repo->get_stored_file_paths( $pending );
 		MediaFileRotator::on_moderation_changed( $pending, 'rejected', 'pending' );
 		MediaFileRotator::flush();
-		$this->assertSame( $before, $repo->stored_file_paths( $pending ) );
+		$this->assertSame( $before, $repo->get_stored_file_paths( $pending ) );
 	}
 
 	/**
@@ -278,5 +278,136 @@ class DirectDeliveryTest extends WP_UnitTestCase {
 			? count( as_get_scheduled_actions( array( 'hook' => MediaFileRotator::HOOK, 'status' => 'pending' ), 'ids' ) )
 			: count( array_filter( (array) _get_cron_array(), static fn( $e ) => isset( $e[ MediaFileRotator::HOOK ] ) ) );
 		$this->assertSame( 1, $queued, 'One background chunk for 25 items.' );
+	}
+
+	/**
+	 * Create a file under uploads/wpmediaverse/.
+	 *
+	 * @param string $rel Relative path.
+	 */
+	private function put_file( string $rel ): void {
+		wp_mkdir_p( dirname( $this->base . $rel ) );
+		file_put_contents( $this->base . $rel, 'x' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+	}
+
+	/**
+	 * Replacing a whole path never touches a longer path that contains it.
+	 */
+	public function test_replace_file_paths_is_exact(): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$id   = $this->media( 'public' );
+		$repo->set( $id, 'a_path', 'photo.jpg' );
+		$repo->set( $id, 'b_path', '2026/10/my-photo.jpg' );
+		$repo->set( $id, 'b_url', 'http://example.org/wp-content/uploads/wpmediaverse/2026/10/my-photo.jpg' );
+		$repo->set( $id, 'a_url', 'http://example.org/wp-content/uploads/wpmediaverse/photo.jpg' );
+
+		$repo->replace_file_paths( $id, array( 'photo.jpg' => '2026/10/abcdef0123456789.jpg' ) );
+
+		$this->assertSame( '2026/10/abcdef0123456789.jpg', $repo->get_raw( $id, 'a_path' ) );
+		$this->assertSame( 'http://example.org/wp-content/uploads/wpmediaverse/2026/10/abcdef0123456789.jpg', $repo->get_raw( $id, 'a_url' ) );
+		$this->assertSame( '2026/10/my-photo.jpg', $repo->get_raw( $id, 'b_path' ), 'A path that merely ends the same way is untouched.' );
+		$this->assertSame( 'http://example.org/wp-content/uploads/wpmediaverse/2026/10/my-photo.jpg', $repo->get_raw( $id, 'b_url' ) );
+	}
+
+	/**
+	 * A pre-2.6.1 cover (posters/<id>*) moves into posters/YYYY/MM/ under a
+	 * random name, source image included; another id's cover is not touched.
+	 */
+	public function test_legacy_poster_is_converted(): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$id   = $this->media( 'public' );
+		foreach ( array( '', '-1024x576', '-300x169' ) as $size ) {
+			$this->put_file( "posters/{$id}{$size}.jpg" );
+		}
+		$this->put_file( "posters/{$id}0.jpg" ); // Media {$id}0's cover: must stay.
+		$repo->set( $id, 'thumb_large_path', "posters/{$id}-1024x576.jpg" );
+		$repo->set( $id, 'thumb_large', "http://example.org/wp-content/uploads/wpmediaverse/posters/{$id}-1024x576.jpg" );
+		$repo->set( $id, 'thumb_thumb_path', "posters/{$id}-300x169.jpg" );
+
+		$this->assertTrue( \WPMediaVerse\Services\MediaFileRotator::convert_legacy( $id ) );
+
+		$large = (string) $repo->get_raw( $id, 'thumb_large_path' );
+		$this->assertMatchesRegularExpression( '~^posters/\d{4}/\d{2}/[0-9a-f]{16}-1024x576\.jpg$~', $large );
+		$this->assertFileExists( $this->base . $large );
+		$this->assertStringEndsWith( '/wpmediaverse/' . $large, (string) $repo->get_raw( $id, 'thumb_large' ) );
+		$this->assertFileExists( $this->base . dirname( $large ) . '/' . strtok( basename( $large ), '-' ) . '.jpg', 'Cover source moved too.' );
+		$this->assertSame( array(), glob( $this->base . "posters/{$id}{.jpg,-*}", GLOB_BRACE ), 'No old cover left.' );
+		$this->assertFileExists( $this->base . "posters/{$id}0.jpg" );
+		$source = (string) $repo->get_raw( $id, 'poster_source_path' );
+		$this->assertMatchesRegularExpression( '~^posters/\d{4}/\d{2}/[0-9a-f]{16}\.jpg$~', $source, 'The moved cover source is now recorded.' );
+		$this->assertFileExists( $this->base . $source );
+	}
+
+	/**
+	 * A readable-named original and the sizes its meta records get a random
+	 * name; a lookalike file the item does not record, and documents, stay.
+	 */
+	public function test_legacy_original_is_converted_without_touching_neighbours(): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$id   = $this->media( 'public', '', array( 'file_path' => '2026/10/my-holiday.jpg' ) );
+		$this->put_file( '2026/10/my-holiday.jpg' );
+		$this->put_file( '2026/10/my-holiday-300x200.jpg' );
+		$this->put_file( '2026/10/my-holiday-640x480.jpg' ); // Not recorded by this item.
+		$repo->set( $id, 'thumb_medium_path', '2026/10/my-holiday-300x200.jpg' );
+		$repo->delete( $id, 'thumb_medium_webp_path' );
+
+		$this->assertTrue( \WPMediaVerse\Services\MediaFileRotator::convert_legacy( $id ) );
+
+		$this->assertTrue( DirectDelivery::is_random_name( (string) $repo->get_raw( $id, 'file_path' ) ) );
+		$this->assertTrue( DirectDelivery::is_random_name( (string) $repo->get_raw( $id, 'thumb_medium_path' ) ) );
+		$this->assertFileDoesNotExist( $this->base . '2026/10/my-holiday.jpg' );
+		$this->assertFileExists( $this->base . '2026/10/my-holiday-640x480.jpg', 'A file this item does not record is never moved.' );
+		$this->assertSame( 'my-holiday.jpg', (string) $repo->get_raw( $id, 'original_filename' ) );
+
+		$doc = $this->media( 'public', '', array( 'file_path' => '2026/10/contract.pdf', 'file_type' => 'application/pdf' ) );
+		$this->put_file( '2026/10/contract.pdf' );
+		$this->assertFalse( \WPMediaVerse\Services\MediaFileRotator::convert_legacy( $doc ), 'Documents keep their names.' );
+	}
+
+	/**
+	 * The job walks newest first, remembers where it is, and finishes.
+	 */
+	public function test_legacy_job_newest_first_and_finishes(): void {
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$older = $this->media( 'public', '', array( 'file_path' => '2026/10/older-photo.jpg' ) );
+		$newer = $this->media( 'public', '', array( 'file_path' => '2026/10/newer-photo.jpg' ) );
+		$this->put_file( '2026/10/older-photo.jpg' );
+		$this->put_file( '2026/10/newer-photo.jpg' );
+		$ids = $repo->media_ids_before( 0, 2 );
+		$this->assertSame( array( $newer, $older ), $ids, 'Newest first.' );
+
+		delete_option( \WPMediaVerse\Services\MediaFileRotator::LEGACY_OPTION );
+		$runs = 0;
+		do {
+			\WPMediaVerse\Services\MediaFileRotator::run_legacy_batch();
+			$state = get_option( \WPMediaVerse\Services\MediaFileRotator::LEGACY_OPTION );
+		} while ( empty( $state['done'] ) && ++$runs < 500 );
+		$this->assertTrue( $state['done'], 'The job finishes.' );
+
+		$this->assertGreaterThanOrEqual( 2, $state['converted'] );
+		$this->assertTrue( DirectDelivery::is_random_name( (string) $repo->get_raw( $older, 'file_path' ) ) );
+		$this->assertTrue( DirectDelivery::is_random_name( (string) $repo->get_raw( $newer, 'file_path' ) ) );
+		$before = $state;
+		\WPMediaVerse\Services\MediaFileRotator::run_legacy_batch();
+		$this->assertSame( $before, get_option( \WPMediaVerse\Services\MediaFileRotator::LEGACY_OPTION ), 'A finished job does nothing.' );
+	}
+
+	/**
+	 * A staged cover source is one of the item's files, so delete cleanup,
+	 * renames and cloud moves all find it (it used to be left on disk forever).
+	 */
+	public function test_cover_source_is_recorded(): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$id   = $this->media( 'public' );
+		$abs  = ( new \WPMediaVerse\Services\PosterService() )->stage_bytes(
+			$id,
+			array(
+				'data' => 'x',
+				'mime' => 'image/jpeg',
+			)
+		);
+		$rel  = (string) $repo->get_raw( $id, 'poster_source_path' );
+		$this->assertStringEndsWith( $rel, (string) $abs );
+		$this->assertContains( $rel, $repo->get_stored_file_paths( $id ) );
 	}
 }

@@ -451,6 +451,16 @@ class HealthCheckService {
 			return $result;
 		}
 
+		$legacy    = (array) get_option( MediaFileRotator::LEGACY_OPTION, array() );
+		$converted = ! empty( $legacy['done'] ) && 'hashed' === FilenameStrategy::resolve_strategy();
+
+		if ( $probe['public'] && $converted ) {
+			// Every media file has a random name now; guessing an address
+			// finds nothing private, so the rule is only extra protection.
+			$result['actions'] = '<p>' . esc_html__( 'Optional extra protection for nginx:', 'wpmediaverse' ) . '</p>' . $rule;
+			return $result;
+		}
+
 		if ( $probe['public'] ) {
 			// Files with readable names (made before 2.6.1: video covers named
 			// after the media id, imports, uploads kept under their own names)
@@ -461,10 +471,13 @@ class HealthCheckService {
 			$result['badge']['color'] = 'red';
 			$result['description']    = sprintf(
 				'<p>%s</p><p>%s</p>',
-				__( 'Files saved under readable names, such as video covers made before MediaVerse 2.6.1 or files kept under their original names, can be opened by anyone who guesses the address, without a permission check.', 'wpmediaverse' ),
+				empty( $legacy['done'] )
+					/* translators: %d: number of media items converted so far. */
+					? sprintf( __( 'MediaVerse is giving files saved before 2.6.1 under readable names (such as older video covers) random names in the background, newest first: %d items so far. Until it finishes, those files can be opened by anyone who guesses the address.', 'wpmediaverse' ), (int) ( $legacy['converted'] ?? 0 ) )
+					: __( 'This site is set to save uploads under their original names (the mvs_filename_strategy option), so they can be opened by anyone who guesses the address, without a permission check.', 'wpmediaverse' ),
 				__( 'The rules MediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration. It keeps fast delivery for files with random names.', 'wpmediaverse' )
 			);
-			$result['actions']        = $rule;
+			$result['actions'] = $rule;
 			return $result;
 		}
 

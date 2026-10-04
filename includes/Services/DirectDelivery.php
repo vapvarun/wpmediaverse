@@ -104,7 +104,7 @@ final class DirectDelivery {
 	 * @return void
 	 */
 	public static function maybe_probe(): void {
-		if ( ! ( wp_doing_cron() || ( is_admin() && ! wp_doing_ajax() ) ) ) {
+		if ( ! self::is_scheduling_request() ) {
 			return;
 		}
 		$state = get_option( self::OPTION, array() );
@@ -112,6 +112,16 @@ final class DirectDelivery {
 			return;
 		}
 		self::probe();
+	}
+
+	/**
+	 * Admin page loads and cron only: where loopback probes and job checks may
+	 * run without costing a visitor's request.
+	 *
+	 * @return bool
+	 */
+	public static function is_scheduling_request(): bool {
+		return wp_doing_cron() || ( is_admin() && ! wp_doing_ajax() );
 	}
 
 	/**
