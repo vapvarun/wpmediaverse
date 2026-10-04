@@ -6502,6 +6502,40 @@ a.mvs-dashboard-card-title:hover {
     border: none;
 }
 
+/* On a phone the prompt is one line: what to do and the link to do it. The
+   explanation is for wider screens; three lines of it pushed a member's first
+   photo to the bottom edge of a 390x844 screen (card 10364777801). */
+@media (max-width: 640px) {
+
+	.mvs-profile-prompt {
+		padding-block: 2px;
+		padding-inline: 12px 4px;
+		margin-bottom: 8px;
+	}
+
+	/* The action never shrinks or hides: the line is "what" + "Edit Profile".
+	   On a screen too narrow for both, the link wraps under the sentence
+	   rather than being cut off. */
+	.mvs-profile-prompt-text {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		column-gap: 8px;
+		min-width: 0;
+	}
+
+	.mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn {
+		flex-shrink: 0;
+	}
+
+	/* The icon is decoration; its width is what lets the sentence and the
+	   link share one line at 390. */
+	.mvs-profile-prompt-icon,
+	.mvs-profile-prompt-more {
+		display: none;
+	}
+}
+
 /* ==========================================================================
    34b. Touch target floor — one rule, not a list
    ========================================================================== */

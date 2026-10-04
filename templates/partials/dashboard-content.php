@@ -347,7 +347,8 @@ wp_interactivity_state(
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon"><i data-lucide="user-round" aria-hidden="true"></i></span>
 		<span class="mvs-profile-prompt-text">
-			<?php esc_html_e( 'Complete your profile. Add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
+			<?php esc_html_e( 'Complete your profile.', 'wpmediaverse' ); ?>
+			<span class="mvs-profile-prompt-more"><?php esc_html_e( 'Add an avatar and bio to help others find you.', 'wpmediaverse' ); ?></span>
 			<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
 				type="button"
 				data-wp-on--click="actions.toggleProfileEdit">
