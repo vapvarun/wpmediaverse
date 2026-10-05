@@ -1258,6 +1258,9 @@ class MediaController extends WP_REST_Controller {
 		 * freed, so only growth counts against the storage limit. A same-size
 		 * replacement consumes nothing; a smaller one is always allowed.
 		 */
+		// Same index-first rewrite as a fresh upload (UploadService::handle()).
+		\WPMediaVerse\Services\Mp4Faststart::apply( $file['tmp_name'], (string) $mime );
+
 		$mvs_new_size = (int) ( filesize( $file['tmp_name'] ) ?: 0 );
 		$mvs_old_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
 

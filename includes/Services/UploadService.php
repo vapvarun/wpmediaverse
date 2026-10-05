@@ -169,6 +169,11 @@ class UploadService {
 			$this->strip_exif( $file['tmp_name'] );
 		}
 
+		// MP4/MOV with its index at the end: move it to the front so playback
+		// starts before the whole file arrives, even where a host cache keeps
+		// Range requests from PHP. Pure PHP, no ffmpeg; same size, same samples.
+		Mp4Faststart::apply( $file['tmp_name'], $mime );
+
 		// Determine media type from MIME.
 		$media_type = $this->get_media_type( $mime );
 

@@ -190,6 +190,27 @@ wp mvs backfill-activity-thumbnails --dry-run
 
 ---
 
+## wp mvs faststart
+
+Move the index (the `moov` box) to the front of MP4, MOV and M4A files already in the library. A file with its index at the end can only start playing once it has fully downloaded wherever the server cannot answer Range requests, which happens behind some host page caches. New uploads and replaced files get this automatically. It needs no ffmpeg: only the box order and offsets change, never the video or audio itself. Local files only; safe to re-run.
+
+```bash
+# How many files need it.
+wp mvs faststart --dry-run
+
+# Fix them.
+wp mvs faststart
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Count the files that need it without writing anything |
+| `--batch=<n>` | `200` | Rows to pull per query when walking the index |
+
+---
+
 ## wp mvs regenerate-thumbnails
 
 Rebuild thumbnail variants for images already in the library, so images uploaded before a size change pick up the new dimensions. Reads each original from its local path, so it is a local-disk operation - for cloud-only originals use `wp mvs cloud-thumbs-backfill` instead. Keyset-paginated over `media_id` and safe to re-run.

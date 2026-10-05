@@ -6068,6 +6068,12 @@
       "handler": "Commands::regenerate_thumbnails",
       "file": "includes/CLI/Commands.php:526",
       "note": "Rebuilds the large/medium/thumb rungs from the current mvs_thumbnail_sizes spec. Local-disk only (use cloud-thumbs-backfill for cloud-only originals). Flags: --only-missing, --dry-run, --batch=<n>."
+    },
+    {
+      "command": "wp mvs faststart",
+      "handler": "Commands::faststart",
+      "file": "includes/CLI/Commands.php",
+      "note": "Moves the moov index to the front of existing MP4/MOV/M4A files (Services\\Mp4Faststart, pure PHP, no ffmpeg) so they start playing before fully downloading where Range never reaches PHP. New uploads and replacements get it automatically. Local files only; safe to re-run. Flags: --dry-run, --batch=<n>."
     }
   ],
   "storage_drivers": [
