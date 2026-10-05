@@ -388,7 +388,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				// The + button's default mode accepts every type (auto-detect).
 				photo: ( state.i18n?.uploadMedia || 'Upload media' ),
 				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
-				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
+				video: state.uploadModalFiles.length > 1
+					? ( state.i18n?.uploadVideos || 'Upload Videos' )
+					: ( state.i18n?.uploadVideo || 'Upload Video' ),
 				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
 			};
 			return titles[ state.uploadModalMode ] || ( state.i18n?.upload || 'Upload' );
@@ -1171,14 +1173,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.showToast( rejected + ' file(s) skipped — upload one media type at a time.', 'error' );
 			}
 			if ( ! valid.length ) return;
-			if ( group === 'image/' ) {
-				// Images append (so picking more turns a photo into a gallery).
-				const existing = state.uploadModalFiles.filter( ( f ) => ( f.type || '' ).startsWith( 'image/' ) );
-				state.uploadModalFiles = [ ...existing, ...valid ];
-			} else {
-				// One video / one audio per post.
-				state.uploadModalFiles = [ valid[ valid.length - 1 ] ];
-			}
+			// Picking more adds to the same kind (images become a gallery; videos
+			// and audio upload as separate items). This kept only the LAST video,
+			// silently: a member who chose three videos got one, with no word about
+			// the other two, while My Media and the upload block took all three.
+			const existing = state.uploadModalFiles.filter( ( f ) => ( f.type || '' ).startsWith( group ) );
+			state.uploadModalFiles = [ ...existing, ...valid ];
 			state.uploadModalMode = actions.detectMode();
 			actions.generatePreviews();
 		},
@@ -1384,7 +1384,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.uploadModalProgress = 0;
 				const fd = new FormData();
 				fd.append( 'file', files[ i ] );
-				if ( state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
+				// One title fits one item or one gallery; separate videos must not all
+				// share it (same rule as My Media).
+				if ( state.uploadModalTitle && ( 1 === files.length || mediaGroup ) ) fd.append( 'title', state.uploadModalTitle );
 				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
 				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
 				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );

@@ -79,6 +79,7 @@ wp_interactivity_state(
 			'createGallery'      => __( 'Create Gallery Post', 'wpmediaverse' ),
 			'createAlbum'        => __( 'Create Album', 'wpmediaverse' ),
 			'uploadVideo'        => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadVideos'       => __( 'Upload Videos', 'wpmediaverse' ),
 			'uploadAudio'        => __( 'Upload Audio', 'wpmediaverse' ),
 			'upload'             => __( 'Upload', 'wpmediaverse' ),
 			'savedRedirecting'   => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
