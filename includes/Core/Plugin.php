@@ -3448,6 +3448,18 @@ JS;
 			}
 		);
 
+		// A main query carrying only our flag reads to WordPress as the blog home:
+		// is_home() went true, body_class printed "home blog", and themes styled
+		// /messages/ as the front page (BuddyX slid its header under the admin bar).
+		add_action(
+			'parse_query',
+			static function ( \WP_Query $query ) {
+				if ( $query->is_main_query() && $query->get( 'mvs_messages_page' ) ) {
+					$query->is_home = false;
+				}
+			}
+		);
+
 		add_action(
 			'template_redirect',
 			function () {
@@ -3477,8 +3489,17 @@ JS;
 					$template = MVS_PLUGIN_DIR . 'templates/messages.php';
 				}
 				if ( file_exists( $template ) ) {
-					include $template;
-					exit;
+					// Render through template_include like every other MediaVerse
+					// route, not `include; exit;` here: exiting inside
+					// template_redirect skipped every later callback themes and
+					// builders hang on it (Basecamp 10285448527).
+					add_filter(
+						'template_include',
+						static function () use ( $template ) {
+							return $template;
+						},
+						100
+					);
 				}
 			}
 		);
