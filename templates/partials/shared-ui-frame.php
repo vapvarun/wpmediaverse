@@ -500,10 +500,15 @@ wp_interactivity_state(
 					<img data-wp-bind--src="state.lightboxImageSrc" alt="" data-wp-bind--alt="state.lightboxAlt" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
-				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden>
+				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" data-wp-on--error="actions.lightboxVideoError" hidden>
 					<?php // Captions from REST (Pro's captions_url); no src means no track. ?>
 					<track kind="captions" default label="<?php esc_attr_e( 'Captions', 'wpmediaverse' ); ?>" data-wp-bind--src="state.lightboxCaptionsUrl" data-wp-bind--srclang="state.lightboxCaptionsLang" />
 				</video>
+				<?php // Shown instead of a video the browser cannot play, so a member sees why and can still get the file. ?>
+				<div class="mvs-lightbox-media-error" role="status" data-wp-bind--hidden="!state.lightboxVideoFailed" hidden>
+					<p><?php esc_html_e( 'This video cannot play here.', 'wpmediaverse' ); ?></p>
+					<a class="mvs-btn--secondary" data-wp-bind--href="state.lightboxVideoUrl" download target="_blank" rel="noopener"><?php esc_html_e( 'Download it instead', 'wpmediaverse' ); ?></a>
+				</div>
 				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
 				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>

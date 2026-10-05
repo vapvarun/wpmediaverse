@@ -286,6 +286,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalPreviews: [],
 		uploadModalUploading: false,
 		uploadModalProgress: 0,
+		lightboxFailedUrl: '',
 		uploadModalTotal: 0,
 		uploadModalDone: 0,
 		uploadModalFailed: 0,
@@ -589,7 +590,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return ! state.lightboxImageUrl;
 		},
 		get lightboxHideVideo() {
-			return state.lightboxMediaData?.media_type !== 'video';
+			return state.lightboxMediaData?.media_type !== 'video' || state.lightboxVideoFailed;
+		},
+		// The browser could not play this video. Keyed on the URL that failed, so
+		// opening another item clears it without any reset bookkeeping.
+		get lightboxVideoFailed() {
+			return '' !== state.lightboxVideoUrl && state.lightboxFailedUrl === state.lightboxVideoUrl;
 		},
 		get lightboxHideAudio() {
 			return state.lightboxMediaData?.media_type !== 'audio';
@@ -1134,6 +1140,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} catch ( err ) {
 				state.editModalError = err.message || 'Could not save. Try again.';
 				state.editModalSaving = false;
+			}
+		},
+		// A blank player told a member nothing; show why and offer the file.
+		lightboxVideoError() {
+			if ( 'video' === state.lightboxMediaData?.media_type && state.lightboxVideoUrl ) {
+				state.lightboxFailedUrl = state.lightboxVideoUrl;
 			}
 		},
 		handleUploadClick() {

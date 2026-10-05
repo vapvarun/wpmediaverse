@@ -1133,3 +1133,28 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
         transition-duration: 0.01ms !important;
     }
 }
+
+/* A video the browser could not play: message + download instead of a blank
+   player. The lightbox stage is dark in both themes. */
+.mvs-lightbox-media-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 32px 20px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.92); /* on the fixed dark overlay, like its rgba(0, 0, 0, 0.92) */
+}
+
+.mvs-lightbox-media-error[hidden] {
+	display: none !important;
+}
+
+.mvs-lightbox-media-error p {
+	margin: 0;
+	font-size: 16px;
+}
+
+.mvs-lightbox-media-error a {
+	text-decoration: none;
+}
