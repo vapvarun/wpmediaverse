@@ -2293,7 +2293,9 @@ const { state: mvsState } = store( 'mvs', {
 			// (the "close reveals the wrong page" / "overlay blocks clicks"
 			// regression). Author and other links inside a card are not
 			// .mvs-grid-item-link, so they still client-navigate normally.
-			if ( link.classList.contains( 'mvs-grid-item-link' ) ) return;
+			// The list is load-more.js's (window.mvsMediaTileLink), so every
+			// layout's tile link is covered, load-more tiles included.
+			if ( link.matches( window.mvsMediaTileLink || '.mvs-grid-item-link' ) ) return;
 			const rawHref = link.getAttribute( 'href' );
 			if ( ! rawHref || '#' === rawHref.charAt( 0 ) ) return;
 			if ( event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||

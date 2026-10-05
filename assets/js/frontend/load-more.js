@@ -58,6 +58,12 @@
 		window.mvsGridRegistry = ids;
 	}
 
+	// The links that open the lightbox instead of navigating, in every layout.
+	// Published so the client-nav handler (shared-ui navigate) skips exactly
+	// these: with one list, a layout added here can't be half-claimed by both.
+	var MEDIA_TILE_LINK = '.mvs-grid-item-link, .mvs-flickr-item__link, .mvs-dribbble-card__image, .mvs-pinterest-card__image';
+	window.mvsMediaTileLink = MEDIA_TILE_LINK;
+
 	// --- Delegated lightbox open: any [data-media-id] click inside a grid. ---
 	document.addEventListener( 'click', function ( e ) {
 		// If the IAPI navigate action on #mvs-app already claimed this click
@@ -82,15 +88,7 @@
 		// etc.). Only intercept the card itself or its primary media link.
 		var clickedLink = e.target.closest( 'a' );
 		if ( clickedLink && clickedLink !== card ) {
-			var mediaLinkClasses = [
-				'mvs-grid-item-link',
-				'mvs-flickr-item__link',
-				'mvs-dribbble-card__image',
-			];
-			var isMediaLink = mediaLinkClasses.some( function ( cls ) {
-				return clickedLink.classList.contains( cls );
-			} );
-			if ( ! isMediaLink ) {
+			if ( ! clickedLink.matches( MEDIA_TILE_LINK ) ) {
 				return; // author / navigation link — let it through.
 			}
 		}

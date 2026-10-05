@@ -483,7 +483,7 @@
 	 * Build a Pinterest-layout card.
 	 *
 	 * Structure:
-	 *   div.mvs-pinterest-card[data-media-id][role=button][tabindex=0]
+	 *   div.mvs-pinterest-card[data-media-id] > a.mvs-pinterest-card__image
 	 *     div.mvs-pinterest-card__img-wrap
 	 *       img
 	 *     div.mvs-pinterest-card__body
@@ -509,16 +509,17 @@
 
 		var root = el( 'div', 'mvs-pinterest-card', {
 			'data-media-id': mediaId,
-			role: 'button',
-			tabindex: '0',
-			'aria-label': title,
 		} );
 
 		// Image wrap \u2014 delegate to the canonical thumbnail builder so a video
 		// renders a first-frame <video> preview (poster fallback) exactly like
 		// the server-side pinterest/feed-body.php (media_thumbnail). This keeps
 		// page 1 and load-more pages identical for poster-less videos.
-		var imgWrap = el( 'div', 'mvs-pinterest-card__img-wrap' );
+		// A real link (keyboard + no-JS); load-more.js opens the lightbox from it.
+		var imgWrap = el( 'a', 'mvs-pinterest-card__img-wrap mvs-pinterest-card__image', {
+			href: item.link || item.permalink || '#',
+			'aria-label': title || ( window.mvsCardBuildersI18n && window.mvsCardBuildersI18n.viewMedia ) || 'View media',
+		} );
 		buildMediaThumbnail( item, { alt: item.alt || title } ).forEach( function ( node ) {
 			imgWrap.appendChild( node );
 		} );
