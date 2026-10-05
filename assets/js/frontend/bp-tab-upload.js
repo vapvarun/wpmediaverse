@@ -26,6 +26,22 @@
 		return document.getElementById( id );
 	}
 
+	/**
+	 * Upload-progress callback that adds the percent of the current file sent to
+	 * the "Uploading N of M" line, so a large video visibly moves.
+	 *
+	 * @param {HTMLElement} statusEl Status line.
+	 * @param {number}      current  1-based file number.
+	 * @param {number}      total    Files in this batch.
+	 * @return {Function} ( loaded, bytes ) callback for mvsRest.restFetch.
+	 */
+	function progressLine( statusEl, current, total ) {
+		return function ( loaded, bytes ) {
+			var pct = bytes ? Math.min( 100, Math.round( ( loaded / bytes ) * 100 ) ) : 0;
+			statusEl.textContent = format( i18n.uploading, { '%1$d': current, '%2$d': total } ) + ' ' + pct + '%';
+		};
+	}
+
 	function format( tmpl, map ) {
 		var out = tmpl || '';
 		Object.keys( map ).forEach( function ( token ) {
@@ -238,7 +254,8 @@
 			appendVideoPoster( fd, files[ done ], function () {
 				window.mvsRest.restFetch( restUrl + 'media', {
 					method: 'POST',
-					body: fd
+					body: fd,
+					onUploadProgress: progressLine( statusEl, done + 1, total )
 				} ).then( function ( r ) {
 					if ( ! r.ok ) {
 						failed++;
@@ -311,7 +328,8 @@
 			appendVideoPoster( fd, files[ done ], function () {
 				window.mvsRest.restFetch( uploadUrl, {
 					method: 'POST',
-					body: fd
+					body: fd,
+					onUploadProgress: progressLine( statusEl, done + 1, total )
 				} ).then( function ( r ) {
 					if ( r.ok && r.data && r.data.id ) {
 						uploadedIds.push( r.data.id );

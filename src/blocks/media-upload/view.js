@@ -174,6 +174,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			return ctx.uploading ? ( ctx.uploadMessage || ( state.i18n?.uploading || 'Uploading...' ) ) : '';
 		},
+		get uploadPercentText() {
+			const ctx = getContext();
+			return ctx.uploading ? ( ctx.uploadPercent || 0 ) + '%' : '';
+		},
 		get hasSuccess() {
 			const ctx = getContext();
 			return ! ctx.uploading && !! ctx.successMessage;
@@ -341,6 +345,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 			ctx.pendingNames = [];
 			ctx.pendingCount = 0;
 			ctx.uploading = true;
+			ctx.uploadPercent = 0;
 			ctx.successMessage = '';
 			ctx.uploadError = '';
 			ctx.uploadMessage = ( state.i18n?.uploadingNFiles || 'Uploading %d file(s)...' ).replace( '%d', files.length );
@@ -391,6 +396,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 					const resp = await window.mvsRest.restFetch( ctx.restUrl, {
 						method: 'POST',
 						body: formData,
+						// Overall percent: finished files plus the share of this one sent.
+						onUploadProgress: ( loaded, total ) => {
+							ctx.uploadPercent = Math.min( 100, Math.round( ( ( i + ( total ? loaded / total : 0 ) ) / files.length ) * 100 ) );
+						},
 					} );
 					if ( resp.ok ) {
 						successCount++;

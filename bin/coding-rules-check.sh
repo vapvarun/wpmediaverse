@@ -86,6 +86,7 @@ check_unauthenticated_rest_allowlist() {
         'FollowController.php'       # GET /users/{id}/followers + /following — public follow graph
         # HMAC-signed credential / capability discovery
         'SignedUrlController.php'    # GET /serve — HMAC signature on URL is the credential (S3 pre-signed pattern)
+        'ServerFileOffload.php'      # GET /offload-probe/{token} — loopback probe; 32-hex single-use token maps only to the probe's own throwaway file
         'Abilities.php'              # 4 discovery entries — readonly metadata, execute_callback=noop
         # Public app bootstrap reads (consumed pre-auth by the BuddyNext mobile app)
         'ConfigController.php'       # GET /app/config — public branding + feature flags, read before login by design

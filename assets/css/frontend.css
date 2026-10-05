@@ -9205,3 +9205,32 @@ a.mvs-dashboard-tab:focus-visible {
 .mvs-social-bar .mvs-reaction-btn.active .mvs-count {
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
+
+/* Upload progress (media-upload block, My Media dashboard): a native <progress>
+   plus the percent sent, so a large video visibly moves instead of a bare
+   "Uploading..." line. */
+.mvs-upload-progress__bar {
+	height: 6px;
+	accent-color: var(--mvs-primary);
+}
+
+.mvs-upload-progress__percent {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.mvs-dashboard-upload-progress {
+	display: flex;
+	align-items: center;
+	gap: var(--mvs-space-2, 8px);
+	margin-top: var(--mvs-space-2, 8px);
+}
+
+.mvs-dashboard-upload-progress[hidden] {
+	display: none;
+}
+
+.mvs-dashboard-upload-progress .mvs-upload-progress__bar {
+	flex: 1 1 auto;
+	min-width: 0;
+}

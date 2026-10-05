@@ -861,6 +861,10 @@ wp_interactivity_state(
 			</div>
 			<div class="mvs-dashboard-upload-status" role="status" data-wp-bind--hidden="!state.upload.uploading"
 				data-wp-text="state.upload.status" hidden></div>
+			<div class="mvs-dashboard-upload-progress" data-wp-bind--hidden="!state.upload.uploading" hidden>
+				<progress class="mvs-upload-progress__bar" max="100" value="0" data-wp-bind--value="state.upload.percent" aria-label="<?php esc_attr_e( 'Upload progress', 'wpmediaverse' ); ?>"></progress>
+				<span class="mvs-upload-progress__percent" aria-hidden="true" data-wp-text="state.uploadPercentText"></span>
+			</div>
 		</div>
 		<?php endif; ?>
 

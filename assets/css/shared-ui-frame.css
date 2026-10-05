@@ -420,6 +420,13 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	color: var(--mvs-text-secondary);
 }
 
+.mvs-modal-progress-percent {
+	margin-inline-start: 6px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--mvs-text);
+}
+
 /* ─── Fields ─── */
 .mvs-modal-fields[hidden] {
 	display: none !important;

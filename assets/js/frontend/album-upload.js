@@ -200,6 +200,10 @@
 				return window.mvsRest.restFetch( uploadUrl, {
 					method: 'POST',
 					body: fd,
+					// Percent of this file sent: a large video takes a while.
+					onUploadProgress: function ( loaded, bytes ) {
+						statusEl.textContent = uploadingLabel( done + 1, total ) + ' ' + ( bytes ? Math.min( 100, Math.round( ( loaded / bytes ) * 100 ) ) : 0 ) + '%';
+					},
 				} );
 			} ).then( function ( r ) {
 				var data = r.data;

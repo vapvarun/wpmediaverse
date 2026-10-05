@@ -214,10 +214,11 @@
 	 * @param {File}   file  File to upload.
 	 * @param {Object} btn   Attach-media button (for the disabled state).
 	 * @param {Array}  slots Result array, one entry per selected file.
-	 * @param {number} index This file's position in the member's selection.
+	 * @param {number}   index      This file's position in the member's selection.
+	 * @param {Function} onProgress Optional; called with ( index, shareSent 0-1 ).
 	 * @return {Promise}
 	 */
-	function uploadFile( file, btn, slots, index ) {
+	function uploadFile( file, btn, slots, index, onProgress ) {
 		// The caller already trimmed the selection to the remaining allowance,
 		// so this no longer needs to re-check attachedMedia.length — and must
 		// not, because with concurrent uploads that count is still 0 for every
@@ -255,7 +256,10 @@
 
 			return window.mvsRest.restFetch( restUrl + 'media?context=activity', {
 				method: 'POST',
-				body: fd
+				body: fd,
+				onUploadProgress: onProgress ? function( loaded, total ) {
+					onProgress( index, total ? loaded / total : 0 );
+				} : undefined
 			} ).then( function( r ) {
 				var data = r.data || {};
 				// restFetch does NOT throw on HTTP 4xx/5xx, so an unsupported
@@ -390,12 +394,28 @@
 		var slots       = new Array( files.length );
 		var nextIndex   = 0;
 
+		// Percent of all selected bytes sent, across the concurrent uploads, so a
+		// large video visibly moves instead of a bare "Uploading..." line.
+		var totalBytes = 0;
+		var sentBytes  = [];
+		for ( var b = 0; b < files.length; b++ ) {
+			totalBytes  += files[ b ].size || 0;
+			sentBytes[ b ] = 0;
+		}
+		function onProgress( index, share ) {
+			sentBytes[ index ] = share * ( files[ index ].size || 0 );
+			var sent = sentBytes.reduce( function( sum, n ) { return sum + n; }, 0 );
+			var pct  = totalBytes ? Math.min( 100, Math.round( ( sent / totalBytes ) * 100 ) ) : 0;
+			/* translators: %d: number of files being uploaded. */
+			uploadingText.textContent = sprintf( __( 'Uploading %d files...', 'wpmediaverse' ), files.length ) + ' ' + pct + '%';
+		}
+
 		function runNext() {
 			if ( nextIndex >= files.length ) {
 				return Promise.resolve();
 			}
 			var index = nextIndex++;
-			return uploadFile( files[ index ], btn, slots, index ).then( runNext );
+			return uploadFile( files[ index ], btn, slots, index, onProgress ).then( runNext );
 		}
 
 		var workers = [];

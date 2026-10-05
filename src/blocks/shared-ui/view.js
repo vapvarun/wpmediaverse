@@ -424,8 +424,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return 'Uploading ' + ( state.uploadModalDone + 1 ) + ' of ' + state.uploadModalTotal + '...';
 		},
 		get uploadProgressWidth() {
-			if ( ! state.uploadModalTotal ) return '0%';
-			return Math.round( ( state.uploadModalDone / state.uploadModalTotal ) * 100 ) + '%';
+			return state.uploadProgressPercent + '%';
+		},
+		// Files finished plus how much of the current one has been sent, so a
+		// single large video moves the bar instead of sitting at 0% until done.
+		get uploadProgressPercent() {
+			if ( ! state.uploadModalTotal ) return 0;
+			return Math.min( 100, Math.round( ( ( state.uploadModalDone + state.uploadModalProgress ) / state.uploadModalTotal ) * 100 ) );
+		},
+		get uploadProgressPercentText() {
+			return state.uploadModalUploading ? state.uploadProgressPercent + '%' : '';
 		},
 
 		// --- Lightbox (flat) ---
@@ -1373,6 +1381,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
+				state.uploadModalProgress = 0;
 				const fd = new FormData();
 				fd.append( 'file', files[ i ] );
 				if ( state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
@@ -1404,6 +1413,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					const res = await window.mvsRest.restFetch( uploadUrl, {
 						method: 'POST',
 						body: fd,
+						// Share (0-1) of the current file sent so far.
+						onUploadProgress: ( loaded, total ) => {
+							state.uploadModalProgress = total ? loaded / total : 0;
+						},
 					} );
 					if ( res.ok ) {
 						const mediaData = res.data;
@@ -1430,6 +1443,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.uploadModalFailed++;
 				}
 				state.uploadModalDone = i + 1;
+				state.uploadModalProgress = 0;
 			}
 
 			// "Add to album" (chosen in Add details) — link the uploads to that

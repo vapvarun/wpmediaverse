@@ -107,6 +107,20 @@
 
 .mvs-upload-progress {
 	margin-top: 16px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 8px;
+}
+
+.mvs-upload-progress p {
+	flex: 1 0 100%;
+	margin: 0;
+}
+
+.mvs-upload-progress__bar {
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
 .mvs-upload-success {

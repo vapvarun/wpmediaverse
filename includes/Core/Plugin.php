@@ -2680,10 +2680,10 @@ class Plugin {
 
 		$user   = wp_get_current_user();
 		$config = array(
-			'restBase'       => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			'restBase'           => esc_url_raw( rest_url( 'mvs/v1' ) ),
 			// Fluent emoji folder: known reaction characters render as the same
 			// SVGs as media reactions (messaging.js EMOJI_FILES).
-			'emojiBase'      => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
+			'emojiBase'          => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
 			// Group DM management (create/rename/add/remove/leave) lives in Pro's
 			// GroupController. Free renders group threads on its own (title,
 			// roster, sender names via /mvs/v1/me/conversations), but only Pro
@@ -2691,14 +2691,18 @@ class Plugin {
 			// site and messaging.js hides "New group" + roster controls
 			// accordingly. Same empty-string-when-Pro-absent pattern as
 			// templates/media-single.php's analyticsUrl.
-			'groupsRestBase' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
-			'nonce'          => wp_create_nonce( 'wp_rest' ),
-			'currentUser'    => array(
+			'groupsRestBase'     => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
+			// Checked before upload, so an over-limit video is refused at once
+			// instead of after the member waits for the whole file to send.
+			'attachmentMaxBytes' => \WPMediaVerse\Messaging\MessagingController::max_attachment_size(),
+			'attachmentTooLarge' => \WPMediaVerse\Messaging\MessagingController::attachment_too_large_message(),
+			'nonce'              => wp_create_nonce( 'wp_rest' ),
+			'currentUser'        => array(
 				'id'           => $user->ID,
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
 			),
-			'transport'      => apply_filters(
+			'transport'          => apply_filters(
 				'mvs_messaging_transport',
 				new \WPMediaVerse\Messaging\RestPollingTransport()
 			)->get_client_config(),
@@ -2706,7 +2710,7 @@ class Plugin {
 			// source (gettext-style). The module can't import @wordpress/i18n and
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
 			// the store reads these instead. Basecamp 10073528834.
-			'i18n'           => array(
+			'i18n'               => array(
 				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
 				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
 				'Could not share media.'               => __( 'Could not share media.', 'wpmediaverse' ),

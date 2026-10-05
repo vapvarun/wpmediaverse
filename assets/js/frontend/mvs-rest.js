@@ -179,11 +179,18 @@
 		var timeoutMs = init.mvsTimeoutMs;
 		delete init.mvsTimeoutMs;
 
+		// Upload progress ( loaded, total ) switches the transport to XHR.
+		var onProgress = init.mvsOnUploadProgress;
+		delete init.mvsOnUploadProgress;
+		var send = ( 'function' === typeof onProgress && 'function' === typeof XMLHttpRequest )
+			? function ( u, i ) { return xhrFetch( u, i, onProgress ); }
+			: function ( u, i ) { return fetch( u, i ); };
+
 		// A caller managing its own signal owns the cancellation story too, and
 		// very old browsers have no AbortController — both fall through to a
 		// plain fetch rather than being broken by this.
 		if ( init.signal || typeof AbortController === 'undefined' ) {
-			return fetch( url, init );
+			return send( url, init );
 		}
 
 		if ( ! timeoutMs ) {
@@ -207,7 +214,7 @@
 
 		init.signal = controller.signal;
 
-		return fetch( url, init ).then(
+		return send( url, init ).then(
 			function ( response ) {
 				clearTimeout( timer );
 				return response;
@@ -217,6 +224,57 @@
 				throw err;
 			}
 		);
+	}
+
+	/**
+	 * fetch() with upload progress, for file uploads.
+	 *
+	 * fetch() cannot report how much of a request body has been sent, so a
+	 * large video showed no progress and members thought nothing was
+	 * happening. XHR can; its reply is wrapped in a standard Response so
+	 * parseBody, the nonce retry and the timeout all work unchanged.
+	 *
+	 * @param {string}   url        Request URL.
+	 * @param {Object}   init       fetch-style init (method, headers, body, signal).
+	 * @param {Function} onProgress Called with ( loadedBytes, totalBytes ).
+	 * @return {Promise<Response>} Rejects like fetch(): TypeError on network failure, AbortError on abort.
+	 */
+	function xhrFetch( url, init, onProgress ) {
+		return new Promise( function ( resolve, reject ) {
+			var xhr = new XMLHttpRequest();
+			xhr.open( init.method || 'GET', url, true );
+			xhr.withCredentials = true;
+			Object.keys( init.headers || {} ).forEach( function ( h ) {
+				xhr.setRequestHeader( h, init.headers[ h ] );
+			} );
+			xhr.upload.onprogress = function ( e ) {
+				if ( e.lengthComputable ) {
+					onProgress( e.loaded, e.total );
+				}
+			};
+			xhr.onload = function () {
+				var headers = new Headers();
+				xhr.getAllResponseHeaders().trim().split( /[\r\n]+/ ).forEach( function ( line ) {
+					var at = line.indexOf( ':' );
+					if ( at > 0 ) {
+						headers.append( line.slice( 0, at ).trim(), line.slice( at + 1 ).trim() );
+					}
+				} );
+				resolve( new Response( xhr.responseText, { status: xhr.status, statusText: xhr.statusText, headers: headers } ) );
+			};
+			xhr.onerror = function () {
+				reject( new TypeError( 'network_error' ) );
+			};
+			xhr.onabort = function () {
+				reject( new DOMException( 'Aborted', 'AbortError' ) );
+			};
+			if ( init.signal ) {
+				init.signal.addEventListener( 'abort', function () {
+					xhr.abort();
+				} );
+			}
+			xhr.send( typeof init.body === 'undefined' ? null : init.body );
+		} );
 	}
 
 	/**
@@ -301,7 +359,8 @@
 			method: method,
 			credentials: 'same-origin',
 			headers: headers,
-			signal: opts.signal
+			signal: opts.signal,
+			mvsOnUploadProgress: opts.onUploadProgress
 		};
 		if ( typeof body !== 'undefined' && method !== 'GET' && method !== 'HEAD' ) {
 			init.body = body;

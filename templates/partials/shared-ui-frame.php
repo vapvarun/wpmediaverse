@@ -244,11 +244,19 @@ wp_interactivity_state(
 
 				<!-- Upload progress -->
 				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading" hidden>
-					<div class="mvs-modal-progress-bar">
+					<div class="mvs-modal-progress-bar"
+						role="progressbar"
+						aria-label="<?php esc_attr_e( 'Upload progress', 'wpmediaverse' ); ?>"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						data-wp-bind--aria-valuenow="state.uploadProgressPercent">
 						<div class="mvs-modal-progress-fill"
 							data-wp-style--width="state.uploadProgressWidth"></div>
 					</div>
-					<p class="mvs-modal-progress-text" role="status" data-wp-text="state.uploadProgressText"></p>
+					<p class="mvs-modal-progress-text">
+						<span role="status" data-wp-text="state.uploadProgressText"></span>
+						<span class="mvs-modal-progress-percent" aria-hidden="true" data-wp-text="state.uploadProgressPercentText"></span>
+					</p>
 				</div>
 
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->

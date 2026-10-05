@@ -199,6 +199,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			dragOver: false,
 			uploading: false,
 			status: '',
+			percent: 0,
 			title: '',
 			description: '',
 			tags: '',
@@ -307,6 +308,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			categories: [],
 		},
 		// Derived state
+		get uploadPercentText() {
+			return state.upload.uploading ? state.upload.percent + '%' : '';
+		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
 			// while title empty". A disabled Save is the feedback — pairing it
@@ -970,6 +974,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 
 			state.upload.uploading = true;
+			state.upload.percent = 0;
 			const total = files.length;
 			let uploaded = 0;
 			let lastError = '';
@@ -1014,6 +1019,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media', {
 						method: 'POST',
 						body: formData,
+						// Overall percent: finished files plus the share of this one sent.
+						onUploadProgress: ( loaded, bytes ) => {
+							state.upload.percent = Math.min( 100, Math.round( ( ( i + ( bytes ? loaded / bytes : 0 ) ) / total ) * 100 ) );
+						},
 					} );
 					if ( res.ok ) {
 						uploaded++;

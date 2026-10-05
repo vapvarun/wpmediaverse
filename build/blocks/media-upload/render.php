@@ -134,6 +134,7 @@ wp_interactivity_state(
 			'restUrl'        => $rest_url,
 			'nonce'          => $nonce,
 			'uploading'      => false,
+			'uploadPercent'  => 0,
 			'uploadError'    => '',
 			'successMessage' => '',
 			'lastLink'       => '',
@@ -239,6 +240,8 @@ wp_interactivity_state(
 	</div>
 	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading" hidden>
 		<p role="status" data-wp-text="state.uploadStatus"></p>
+		<progress class="mvs-upload-progress__bar" max="100" value="0" data-wp-bind--value="context.uploadPercent" aria-label="<?php esc_attr_e( 'Upload progress', 'wpmediaverse' ); ?>"></progress>
+		<span class="mvs-upload-progress__percent" aria-hidden="true" data-wp-text="state.uploadPercentText"></span>
 	</div>
 	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
 		<p role="status" data-wp-text="state.successText"></p>
