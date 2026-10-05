@@ -37,8 +37,11 @@ final class Mp4Faststart {
 	/** Container boxes on the path from moov to the chunk offset tables. */
 	private const CONTAINERS = array( 'moov', 'trak', 'mdia', 'minf', 'stbl' );
 
-	/** Largest moov read into memory (indexes are kilobytes to a few MB). */
-	private const MAX_MOOV = 64 * 1024 * 1024;
+	/** Largest moov read into memory (real indexes are kilobytes to a few MB). */
+	private const MAX_MOOV = 16 * 1024 * 1024;
+
+	/** Real files nest moov > trak > mdia > minf > stbl: never descend deeper. */
+	private const MAX_DEPTH = 5;
 
 	/**
 	 * Rewrite the file in place with moov first, when it is not already.
@@ -182,13 +185,7 @@ final class Mp4Faststart {
 	 */
 	private static function shift_offsets( string $moov, int $delta ): ?string {
 		$ok = true;
-		self::walk(
-			$moov,
-			0,
-			strlen( $moov ),
-			$delta,
-			$ok
-		);
+		self::walk( $moov, 0, strlen( $moov ), $delta, $ok, 0 );
 		return $ok ? $moov : null;
 	}
 
@@ -200,9 +197,15 @@ final class Mp4Faststart {
 	 * @param int    $end   End offset.
 	 * @param int    $delta Offset shift.
 	 * @param bool   $ok    Cleared on overflow or a malformed box.
+	 * @param int    $depth Container depth (bounded: a crafted file could nest
+	 *                      thousands of containers and exhaust the stack).
 	 * @return void
 	 */
-	private static function walk( string &$buf, int $start, int $end, int $delta, bool &$ok ): void {
+	private static function walk( string &$buf, int $start, int $end, int $delta, bool &$ok, int $depth ): void {
+		if ( $depth > self::MAX_DEPTH ) {
+			$ok = false;
+			return;
+		}
 		$pos = $start;
 		while ( $ok && $pos + 8 <= $end ) {
 			$len  = unpack( 'N', substr( $buf, $pos, 4 ) )[1];
@@ -219,8 +222,8 @@ final class Mp4Faststart {
 				return;
 			}
 			if ( in_array( $type, self::CONTAINERS, true ) ) {
-				self::walk( $buf, $pos + $head, $pos + $len, $delta, $ok );
-			} elseif ( 'stco' === $type || 'co64' === $type ) {
+				self::walk( $buf, $pos + $head, $pos + $len, $delta, $ok, $depth + 1 );
+			} elseif ( ( 'stco' === $type || 'co64' === $type ) && $len >= $head + 8 ) {
 				$count = unpack( 'N', substr( $buf, $pos + $head + 4, 4 ) )[1];
 				$width = 'stco' === $type ? 4 : 8;
 				$at    = $pos + $head + 8;
@@ -228,18 +231,19 @@ final class Mp4Faststart {
 					$ok = false;
 					return;
 				}
-				for ( $i = 0; $i < $count; $i++, $at += $width ) {
-					if ( 4 === $width ) {
-						$value = unpack( 'N', substr( $buf, $at, 4 ) )[1] + $delta;
-						if ( $value > 0xFFFFFFFF ) {
+				if ( $count > 0 ) {
+					// One unpack, one pack, one write per table: patching entry by
+					// entry copied the whole moov per entry (quadratic on a crafted
+					// table).
+					$values = array_values( unpack( ( 4 === $width ? 'N' : 'J' ) . '*', substr( $buf, $at, $count * $width ) ) );
+					foreach ( $values as $i => $value ) {
+						$values[ $i ] = (int) $value + $delta;
+						if ( 4 === $width && $values[ $i ] > 0xFFFFFFFF ) {
 							$ok = false; // Would need co64; leave the file alone.
 							return;
 						}
-						$buf = substr_replace( $buf, pack( 'N', $value ), $at, 4 );
-					} else {
-						$value = (int) unpack( 'J', substr( $buf, $at, 8 ) )[1] + $delta;
-						$buf   = substr_replace( $buf, pack( 'J', $value ), $at, 8 );
 					}
+					$buf = substr_replace( $buf, pack( ( 4 === $width ? 'N' : 'J' ) . '*', ...$values ), $at, $count * $width );
 				}
 			}
 			$pos += $len;

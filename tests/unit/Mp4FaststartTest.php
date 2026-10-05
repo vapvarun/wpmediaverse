@@ -114,6 +114,34 @@ class Mp4FaststartTest extends WP_UnitTestCase {
 		$this->assertSame( 'SAMPLE-C', substr( $bytes, $new, 8 ) );
 	}
 
+	public function test_crafted_files_cannot_exhaust_the_stack_or_cpu(): void {
+		$ftyp = $this->box( 'ftyp', 'isom' );
+		$mdat = $this->box( 'mdat', 'data' );
+
+		// 20,000 nested containers: rejected, not recursed into.
+		$nest = '';
+		for ( $i = 0; $i < 20000; $i++ ) {
+			$nest = $this->box( 'trak', $nest );
+		}
+		$deep   = $this->write( $ftyp . $mdat . $this->box( 'moov', $nest ) );
+		$before = md5_file( $deep );
+		$this->assertFalse( Mp4Faststart::apply( $deep, 'video/mp4' ) );
+		$this->assertSame( $before, md5_file( $deep ) );
+
+		// Just past the real hierarchy depth: the cap, not luck, rejects it.
+		$eight = '';
+		for ( $i = 0; $i < 8; $i++ ) {
+			$eight = $this->box( 'trak', $eight );
+		}
+		$this->assertFalse( Mp4Faststart::apply( $this->write( $ftyp . $mdat . $this->box( 'moov', $eight ) ), 'video/mp4' ) );
+
+		// A 300,000-entry offset table is patched in one pass, not per entry.
+		$big   = $this->write( $ftyp . $mdat . $this->moov( range( 20, 20 + 299999 ) ) );
+		$start = microtime( true );
+		$this->assertTrue( Mp4Faststart::apply( $big, 'video/mp4' ) );
+		$this->assertLessThan( 2.0, microtime( true ) - $start, 'Linear, not quadratic, in the table size.' );
+	}
+
 	public function test_files_it_cannot_safely_rewrite_are_untouched(): void {
 		$ftyp = $this->box( 'ftyp', 'isom' );
 		$mdat = $this->box( 'mdat', 'data' );
