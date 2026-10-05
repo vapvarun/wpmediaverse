@@ -248,7 +248,7 @@ wp_interactivity_state(
 						<div class="mvs-modal-progress-fill"
 							data-wp-style--width="state.uploadProgressWidth"></div>
 					</div>
-					<p class="mvs-modal-progress-text" data-wp-text="state.uploadProgressText"></p>
+					<p class="mvs-modal-progress-text" role="status" data-wp-text="state.uploadProgressText"></p>
 				</div>
 
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
@@ -414,7 +414,7 @@ wp_interactivity_state(
 					</div>
 					<?php endif; ?>
 					<div class="mvs-modal-error" data-wp-bind--hidden="!state.editModalError">
-						<p data-wp-text="state.editModalError"></p>
+						<p role="alert" data-wp-text="state.editModalError"></p>
 					</div>
 				</div>
 			</div>
@@ -482,7 +482,7 @@ wp_interactivity_state(
 					data-wp-bind--hidden="!state.lightboxHasPrev"
 					data-wp-on--click="actions.lightboxPrev"
 					aria-label="<?php esc_attr_e( 'Previous', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
 				</button>
 
 				<picture data-wp-bind--hidden="state.lightboxHideImage">
@@ -509,7 +509,7 @@ wp_interactivity_state(
 					data-wp-bind--hidden="!state.lightboxHasNext"
 					data-wp-on--click="actions.lightboxNext"
 					aria-label="<?php esc_attr_e( 'Next', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
 				</button>
 
 				<!-- Position indicator (e.g. "2 / 4") -->
@@ -705,6 +705,7 @@ wp_interactivity_state(
 
 									<div class="mvs-lightbox-comment-edit" data-wp-bind--hidden="state.hideLightboxCommentEditForm">
 										<textarea class="mvs-lightbox-comment-edit-input" rows="2"
+											aria-label="<?php esc_attr_e( 'Edit comment', 'wpmediaverse' ); ?>"
 											data-wp-bind--value="context.item.editText"
 											data-wp-on--input="actions.updateLightboxEditText"></textarea>
 										<div class="mvs-lightbox-comment-edit-actions">
@@ -780,8 +781,8 @@ wp_interactivity_state(
 	<div class="mvs-confirm-overlay" hidden
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.confirmVisible">
-		<div class="mvs-confirm">
-			<p data-wp-text="state.confirmMessage"></p>
+		<div class="mvs-confirm" role="alertdialog" aria-modal="true" aria-labelledby="mvs-confirm-message">
+			<p id="mvs-confirm-message" data-wp-text="state.confirmMessage"></p>
 			<div class="mvs-confirm-actions">
 				<button class="mvs-btn mvs-btn--secondary mvs-confirm-cancel" type="button"
 					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>

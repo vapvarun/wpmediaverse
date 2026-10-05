@@ -156,6 +156,32 @@ function lightboxRememberTrigger() {
  * Without this the trap is only half-built: focus starts inside but the first
  * Tab past the last control walks straight out into the page behind.
  */
+// Who opened the edit modal / the confirm, so focus can go back on close.
+let editReturnFocus = null;
+let confirmReturnFocus = null;
+
+/**
+ * Put focus back on the control that opened a dialog, if it is still there.
+ *
+ * @param {Element|null} el Opener.
+ */
+function focusWhenShown( selector, tries = 10 ) {
+	const el = document.querySelector( selector );
+	if ( el && el.getClientRects().length ) {
+		el.focus();
+	} else if ( tries > 0 ) {
+		window.requestAnimationFrame( () => focusWhenShown( selector, tries - 1 ) );
+	}
+}
+
+function returnFocus( el ) {
+	window.requestAnimationFrame( () => {
+		if ( el && document.contains( el ) && el.getClientRects().length ) {
+			el.focus();
+		}
+	} );
+}
+
 function dialogTrapTab( event, selector ) {
 	const items = dialogFocusables( selector );
 
@@ -753,6 +779,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.confirmButtonLabel = buttonLabel;
 			state.confirmPrimary = 'primary' === tone;
 			state.confirmVisible = true;
+			confirmReturnFocus = document.activeElement;
 			// The confirm button is the dangerous one, so Cancel takes focus:
 			// an Enter pressed without reading never destroys or exposes anything.
 			window.requestAnimationFrame( () => {
@@ -763,6 +790,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const cb = state.confirmCallback;
 			state.confirmVisible = false;
 			state.confirmCallback = null;
+			returnFocus( confirmReturnFocus );
 			if ( typeof cb === 'function' ) {
 				cb();
 			}
@@ -770,6 +798,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		handleConfirmCancel() {
 			state.confirmVisible = false;
 			state.confirmCallback = null;
+			returnFocus( confirmReturnFocus );
 		},
 
 		// --- Report ---
@@ -959,7 +988,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const id = parseInt( mediaId, 10 );
 			if ( ! id ) return;
 			state.editModalMediaId = id;
+			// lightboxEdit() presets the tile behind the lightbox; anything else
+			// returns focus to the control that opened the modal.
+			if ( ! editReturnFocus ) {
+				editReturnFocus = document.activeElement;
+			}
 			state.editModalVisible = true;
+			// Focus into the dialog once it renders (Close is there even while it loads).
+			focusWhenShown( '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-close' );
 			state.editModalLoading = true;
 			state.editModalError = '';
 			document.body.style.overflow = 'hidden';
@@ -992,6 +1028,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalError = '';
 			state.editModalSaving = false;
 			document.body.style.overflow = '';
+			returnFocus( editReturnFocus );
+			editReturnFocus = null;
 		},
 		updateEditTitle() {
 			state.editModalTitle = getElement().ref?.value || '';
@@ -1882,6 +1920,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! mediaId ) {
 				return;
 			}
+			// The edit modal takes over the lightbox's return target (the tile
+			// it was opened from), so closing the lightbox doesn't pull focus
+			// back to the grid behind the modal.
+			editReturnFocus = lightboxReturnFocus;
+			lightboxReturnFocus = null;
 			actions.closeLightbox();
 			await actions.openEditModal( mediaId );
 		},
@@ -2067,6 +2110,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Tab is trapped BEFORE the Escape branch and before the typing
 			// guard, because it applies whether or not the member is in a
 			// field — a text input inside the dialog is still inside it.
+			// Topmost dialog first: the confirm sits over the edit modal, which
+			// can sit over the lightbox.
+			if ( event.key === 'Tab' && state.confirmVisible ) {
+				dialogTrapTab( event, '.mvs-confirm-overlay:not([hidden]) .mvs-confirm' );
+				return;
+			}
+			if ( event.key === 'Tab' && state.editModalVisible ) {
+				dialogTrapTab( event, '.mvs-edit-modal' );
+				return;
+			}
 			if ( event.key === 'Tab' && state.lightboxVisible ) {
 				dialogTrapTab( event, '.mvs-lightbox' );
 				return;
@@ -2077,7 +2130,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			if ( event.key === 'Escape' ) {
-				if ( state.editModalVisible ) {
+				if ( state.confirmVisible ) {
+					actions.handleConfirmCancel();
+				} else if ( state.editModalVisible ) {
 					actions.closeEditModal();
 				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();

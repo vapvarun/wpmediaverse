@@ -1113,3 +1113,16 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-details[open] .mvs-modal-details__summary::before{content:"\2212";margin-inline-end:6px}
 .mvs-modal-details>.mvs-modal-field{margin-top:10px}
 .mvs-modal-album-select,.mvs-modal-privacy{width:100%}
+
+/* Respect prefers-reduced-motion. This sheet can load without frontend.css
+   (host-theme pages), so it carries its own rule, scoped to the shell. */
+@media (prefers-reduced-motion: reduce) {
+
+    .mvs-app-shell *,
+    .mvs-app-shell *::before,
+    .mvs-app-shell *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
