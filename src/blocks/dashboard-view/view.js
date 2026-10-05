@@ -868,6 +868,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( input ) input.click();
 		},
 
+		// The empty library's "Upload media" button: the same file picker as the dropzone.
+		openFilePicker( event ) {
+			const root = event.target.closest( '[data-wp-interactive]' );
+			const input = root && root.querySelector( '.mvs-dashboard-dropzone .mvs-upload-file-input' );
+			if ( input ) input.click();
+		},
+
 		// role="button" gives the dropzone a Tab stop, not Enter/Space.
 		handleUploadKeydown( event ) {
 			if ( 'Enter' === event.key || ' ' === event.key ) {

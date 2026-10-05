@@ -1838,7 +1838,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *     @type string $icon    Lucide icon name. Default 'image'.
 	 *     @type string $title   Heading (optional).
 	 *     @type string $message Body line (optional).
-	 *     @type array  $actions List of [ 'url' => , 'label' => , 'variant' => ] buttons.
+	 *     @type array  $actions List of [ 'url' | 'on_click' => , 'label' => , 'variant' => ] links, or buttons bound to an Interactivity action.
 	 *     @type string $class   Extra wrapper class(es).
 	 * }
 	 * @return string Escaped HTML.
@@ -1861,16 +1861,25 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		if ( ! empty( $actions ) ) {
 			$html .= '<div class="mvs-empty-state-actions">';
 			foreach ( $actions as $action ) {
-				if ( empty( $action['url'] ) || empty( $action['label'] ) ) {
+				if ( empty( $action['label'] ) || ( empty( $action['url'] ) && empty( $action['on_click'] ) ) ) {
 					continue;
 				}
 				$variant = isset( $action['variant'] ) ? (string) $action['variant'] : 'primary';
-				$html   .= sprintf(
-					'<a href="%1$s" class="mvs-btn mvs-btn--%2$s">%3$s</a>',
-					esc_url( $action['url'] ),
-					esc_attr( $variant ),
-					esc_html( $action['label'] )
-				);
+				// 'on_click' (an Interactivity action such as 'actions.openFilePicker')
+				// renders a button for in-page actions; 'url' renders a link.
+				$html .= empty( $action['on_click'] )
+					? sprintf(
+						'<a href="%1$s" class="mvs-btn mvs-btn--%2$s">%3$s</a>',
+						esc_url( $action['url'] ),
+						esc_attr( $variant ),
+						esc_html( $action['label'] )
+					)
+					: sprintf(
+						'<button type="button" class="mvs-btn mvs-btn--%1$s" data-wp-on--click="%2$s">%3$s</button>',
+						esc_attr( $variant ),
+						esc_attr( (string) $action['on_click'] ),
+						esc_html( $action['label'] )
+					);
 			}
 			$html .= '</div>';
 		}

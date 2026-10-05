@@ -973,6 +973,16 @@ wp_interactivity_state(
 					'icon'    => 'image',
 					'title'   => __( 'No media yet', 'wpmediaverse' ),
 					'message' => __( 'Upload your first photo, video or audio file to get started.', 'wpmediaverse' ),
+					// The first thing a new member sees: one visible way to start,
+					// not only the icon-only floating button (card 10252887530).
+					'actions' => \WPMediaVerse\Core\Abilities::can_upload()
+						? array(
+							array(
+								'label'    => __( 'Upload media', 'wpmediaverse' ),
+								'on_click' => 'actions.openFilePicker',
+							),
+						)
+						: array(),
 				)
 			); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes.
 			?>
