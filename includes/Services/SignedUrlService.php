@@ -1469,6 +1469,12 @@ class SignedUrlService {
 			exit;
 		}
 
+		// Every decision is made; when the web server has proven it can, it
+		// sends the bytes (Range included) and this worker is freed.
+		if ( ServerFileOffload::send( $file_path ) ) {
+			exit;
+		}
+
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
 			$range = sanitize_text_field( wp_unslash( $_SERVER['HTTP_RANGE'] ) );

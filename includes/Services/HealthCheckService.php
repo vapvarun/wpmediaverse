@@ -69,6 +69,13 @@ class HealthCheckService {
 			'test'  => array( $this, 'test_pages' ),
 		);
 
+		if ( '' !== ServerFileOffload::configured_mode() ) {
+			$tests['direct']['wpmediaverse_serve_offload'] = array(
+				'label' => __( 'MediaVerse file streaming offload', 'wpmediaverse' ),
+				'test'  => array( $this, 'test_serve_offload' ),
+			);
+		}
+
 		$tests['direct']['wpmediaverse_media_privacy'] = array(
 			'label' => __( 'MediaVerse Media Privacy', 'wpmediaverse' ),
 			'test'  => array( $this, 'test_media_privacy' ),
@@ -405,6 +412,52 @@ class HealthCheckService {
 	 */
 	public function nginx_rule(): string {
 		return DirectDelivery::nginx_rule();
+	}
+
+	/**
+	 * Is the configured web-server offload working?
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return array
+	 */
+	public function test_serve_offload(): array {
+		$mode   = ServerFileOffload::configured_mode();
+		$active = '' !== ServerFileOffload::active_mode();
+		$state  = (array) get_option( ServerFileOffload::OPTION, array() );
+
+		$result = array(
+			'label'       => __( 'The web server sends protected files', 'wpmediaverse' ),
+			'status'      => 'good',
+			'badge'       => array(
+				'label' => __( 'Performance', 'wpmediaverse' ),
+				'color' => 'blue',
+			),
+			'description' => '<p>' . esc_html__( 'Messages, documents and downloads are still checked by MediaVerse on every request, then handed to the web server to send, so no PHP worker is held for the transfer.', 'wpmediaverse' ) . '</p>',
+			'actions'     => '',
+			'test'        => 'wpmediaverse_serve_offload',
+		);
+
+		if ( $active ) {
+			return $result;
+		}
+
+		$result['status']         = 'recommended';
+		$result['badge']['color'] = 'orange';
+		$result['label']          = __( 'File streaming offload is configured but not working yet', 'wpmediaverse' );
+		$result['description']    = '<p>' . esc_html(
+			sprintf(
+				/* translators: 1: offload mode, 2: HTTP status of the last probe. */
+				__( 'MVS_SERVE_OFFLOAD is set to %1$s, but the last check did not get the file back from the web server (HTTP %2$s). Files are streamed by PHP as before until it works.', 'wpmediaverse' ),
+				$mode,
+				(string) (int) ( $state['status'] ?? 0 )
+			)
+		) . '</p>';
+		$result['actions']        = 'x-accel' === $mode
+			? '<p>' . esc_html__( 'Add this to the site\'s nginx server block and reload nginx:', 'wpmediaverse' ) . '</p><pre class="mvs-health-snippet"><code>' . esc_html( ServerFileOffload::nginx_location() ) . '</code></pre>'
+			: '<p>' . esc_html__( 'Enable mod_xsendfile and add "XSendFile On" and "XSendFilePath" for the uploads folder to the Apache configuration.', 'wpmediaverse' ) . '</p>';
+
+		return $result;
 	}
 
 	/**
