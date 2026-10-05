@@ -11,15 +11,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Fires before the dashboard content is rendered.
- *
- * Pro uses this to display the quota usage widget.
- *
- * @since 1.1.0
- */
-do_action( 'mvs_dashboard_before_content' );
-
 // Grid column count from the display setting, clamped to supported range.
 $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
 
@@ -319,6 +310,19 @@ wp_interactivity_state(
 	// they are typing in, which is the bug the lightbox shipped (10249014961).
 	?>
 	data-wp-on-document--keydown="actions.bulkKeydown">
+
+	<?php
+	/**
+	 * Fires at the top of the dashboard, before its content.
+	 *
+	 * Inside the dashboard container (since 2.6.1) so anything rendered here
+	 * shares the content's edges; it used to fire outside it and Pro's streak
+	 * panel sat 20px wider than everything below it.
+	 *
+	 * @since 1.1.0
+	 */
+	do_action( 'mvs_dashboard_before_content' );
+	?>
 
 
 	<?php
