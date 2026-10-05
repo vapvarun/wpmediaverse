@@ -6,7 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  */
 
 defined( 'ABSPATH' ) || exit;

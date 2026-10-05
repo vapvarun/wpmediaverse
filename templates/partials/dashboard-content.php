@@ -517,9 +517,8 @@ wp_interactivity_state(
 	// screen. In the rail it is a line, and it is beside the sections it
 	// belongs to rather than stacked on top of them.
 	//
-	// NOT a tablist child: `role="tablist"` means its children are tabs, and an
-	// avatar and a link out to the community profile are not tabs. It sits
-	// before the nav, in the same rail column.
+	// Not inside the section nav: an avatar and a link out to the community
+	// profile are not sections. It sits before the nav, in the same rail column.
 	$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
 	?>
 	<?php
@@ -563,7 +562,8 @@ wp_interactivity_state(
 		</div>
 	</div>
 
-	<nav class="mvs-dashboard-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Your library', 'wpmediaverse' ); ?>">
+	<?php // A navigation of section links (some leave the page), so aria-current, not tab roles. ?>
+	<nav class="mvs-dashboard-tabs" aria-label="<?php esc_attr_e( 'Your library', 'wpmediaverse' ); ?>">
 		<?php
 		// Rendered from the SECTION REGISTRY, not from hardcoded markup. Eight
 		// sections built eight ways is eight things to keep in step — which is
@@ -641,13 +641,12 @@ wp_interactivity_state(
 				?>
 				<a class="mvs-dashboard-tab<?php echo $mvs_dash_is_active ? ' active' : ''; ?><?php echo $mvs_dash_starts_group ? ' mvs-dashboard-tab--group-start' : ''; ?>"
 					data-tab="<?php echo esc_attr( $mvs_dash_slug ); ?>"
-					role="tab"
-					aria-selected="<?php echo $mvs_dash_is_active ? 'true' : 'false'; ?>"
+					aria-current="<?php echo $mvs_dash_is_active ? 'true' : 'false'; ?>"
 					href="<?php echo esc_url( $mvs_dash_url ); ?>"
 					<?php echo $mvs_dash_has_panel ? '' : ' data-mvs-navigate="1"'; ?>
 					data-wp-context="<?php echo esc_attr( (string) wp_json_encode( array( 'railSlug' => $mvs_dash_slug ) ) ); ?>"
 					data-wp-class--active="state.isActiveRail"
-					data-wp-bind--aria-selected="state.isActiveRail"
+					data-wp-bind--aria-current="state.isActiveRail"
 					data-wp-on--click="actions.switchTab">
 					<span class="mvs-dashboard-tab__label"><?php echo esc_html( $mvs_dash_section['label'] ); ?></span>
 					<?php if ( null !== $mvs_dash_count ) : ?>
@@ -699,7 +698,7 @@ wp_interactivity_state(
 	?>
 	<?php if ( '' !== $mvs_dash_drive && 'documents' === $mvs_dash_active ) : ?>
 		<!-- Documents Panel -->
-		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'documents' ) ); ?>>
+		<div class="mvs-dashboard-panel" data-wp-bind--hidden="!state.isDocumentsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'documents' ) ); ?>>
 			<?php
 			// The drive, rendered server-side into the panel: folders, upload,
 			// filters and the per-row controls, on the same screen.
@@ -724,7 +723,7 @@ wp_interactivity_state(
 	<?php endif; ?>
 
 	<!-- My Media Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isMediaTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'media' ) ); ?>>
+	<div class="mvs-dashboard-panel" data-wp-bind--hidden="!state.isMediaTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'media' ) ); ?>>
 		<!-- Search / filter toolbar. Above the upload block per Basecamp 10226435631. -->
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
@@ -860,7 +859,7 @@ wp_interactivity_state(
 					</button>
 				</div>
 			</div>
-			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
+			<div class="mvs-dashboard-upload-status" role="status" data-wp-bind--hidden="!state.upload.uploading"
 				data-wp-text="state.upload.status" hidden></div>
 		</div>
 		<?php endif; ?>
@@ -1012,7 +1011,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- My Albums Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'albums' ) ); ?>>
+	<div class="mvs-dashboard-panel" data-wp-bind--hidden="!state.isAlbumsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'albums' ) ); ?>>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -1120,7 +1119,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- My Favorites Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isFavoritesTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'favorites' ) ); ?>>
+	<div class="mvs-dashboard-panel" data-wp-bind--hidden="!state.isFavoritesTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'favorites' ) ); ?>>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -1239,7 +1238,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- My Collections Panel -->
-	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'collections' ) ); ?>>
+	<div class="mvs-dashboard-panel" data-wp-bind--hidden="!state.isCollectionsTab"<?php echo esc_attr( $mvs_dash_panel_hidden( 'collections' ) ); ?>>
 		<?php
 		// The SAME toolbar the document drive renders, from the same helper.
 		// Client-driven here, so it applies on change and needs no Apply button.
@@ -1615,10 +1614,10 @@ wp_interactivity_state(
 						</div>
 						<div class="mvs-tag-autocomplete" data-wp-bind--hidden="!state.editModal.tagDropdownVisible">
 							<template data-wp-each="state.editModal.tagResults">
-								<div class="mvs-tag-autocomplete-item"
+								<button type="button" class="mvs-tag-autocomplete-item"
 									data-wp-bind--data-tag-name="context.item"
 									data-wp-text="context.item"
-									data-wp-on--click="actions.selectEditTag"></div>
+									data-wp-on--click="actions.selectEditTag"></button>
 							</template>
 						</div>
 					</div>

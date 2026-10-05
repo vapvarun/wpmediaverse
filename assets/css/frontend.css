@@ -3349,6 +3349,12 @@ a.mvs-dashboard-card-title:hover {
     cursor: text;
 }
 
+/* The tag input inside has no border or outline of its own; the box shows focus. */
+.mvs-tag-pills:focus-within {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
 .mvs-tag-pill {
     display: inline-flex;
     align-items: center;
@@ -3411,12 +3417,20 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-tag-autocomplete-item {
+    display: block;
+    width: 100%;
     padding: 8px 12px;
-    cursor: pointer;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
     font-size: 0.9em;
+    text-align: start;
+    cursor: pointer;
 }
 
-.mvs-tag-autocomplete-item:hover {
+.mvs-tag-autocomplete-item:hover,
+.mvs-tag-autocomplete-item:focus-visible {
     background: var(--mvs-info-bg);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
@@ -4761,10 +4775,18 @@ a.mvs-dashboard-card-title:hover {
     transition: border-color 0.2s;
 }
 
+.mvs-collection-search-input:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
 .mvs-collection-search-input:focus {
-    outline: none;
     border-color: var(--mvs-primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.mvs-collection-search-input:focus:not(:focus-visible) {
+    outline: none;
 }
 
 .mvs-collection-search-btn {
@@ -6087,7 +6109,9 @@ a.mvs-dashboard-card-title:hover {
     box-shadow: none;
 }
 
-.mvs-search-field input#mvs-search-input:focus {
+/* Mouse focus stays clean; keyboard focus keeps the ring below. A plain
+   :focus here outranked the :focus-visible rule and hid the ring entirely. */
+.mvs-search-field input#mvs-search-input:focus:not(:focus-visible) {
     outline: none;
 }
 
