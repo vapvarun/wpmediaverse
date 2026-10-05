@@ -17,7 +17,7 @@ use WPMediaVerse\Core\Plugin;
 class CaptionsTrackTest extends WP_UnitTestCase {
 
 	private function track( $captions ): string {
-		$cb = static fn() => $captions;
+		$cb   = static fn() => $captions;
 		add_filter( 'mvs_media_captions', $cb );
 		$html = Plugin::container()->get( 'template_helpers' )->captions_track( 123 );
 		remove_filter( 'mvs_media_captions', $cb );
@@ -26,14 +26,24 @@ class CaptionsTrackTest extends WP_UnitTestCase {
 	}
 
 	public function test_captions_render_a_track_with_their_language(): void {
-		$html = $this->track( array( 'url' => 'https://example.org/c/123.vtt', 'lang' => 'en-GB' ) );
+		$html = $this->track(
+			array(
+				'url'  => 'https://example.org/c/123.vtt',
+				'lang' => 'en-GB',
+			)
+		);
 
 		$this->assertStringContainsString( '<track kind="captions" src="https://example.org/c/123.vtt" srclang="en-GB"', $html );
 		$this->assertStringContainsString( 'default', $html );
 	}
 
 	public function test_a_non_language_value_is_left_out(): void {
-		$html = $this->track( array( 'url' => 'https://example.org/c/123.vtt', 'lang' => 'manual' ) );
+		$html = $this->track(
+			array(
+				'url'  => 'https://example.org/c/123.vtt',
+				'lang' => 'manual',
+			)
+		);
 
 		$this->assertStringNotContainsString( 'srclang', $html );
 	}
