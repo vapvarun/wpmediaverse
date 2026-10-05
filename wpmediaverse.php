@@ -210,49 +210,8 @@ add_action(
 	}
 );
 
-// Auto-activate the preset license key on first load so downloads work.
-add_action(
-	'admin_init',
-	function () {
-		$preset_key = 'wbcomfree7a9c2e5d1f8b4c6a3e0d9b2f7c1a8e44';
-		$option     = 'wpmediaverse_license_key';
-		$activated  = 'wpmediaverse_preset_activated';
-
-		if ( get_option( $activated ) ) {
-			return;
-		}
-
-		update_option( $option, $preset_key, false );
-
-		$response = wp_remote_post(
-			'https://wbcomdesigns.com',
-			array(
-				'timeout' => 15,
-				'body'    => array(
-					'edd_action' => 'activate_license',
-					'license'    => $preset_key,
-					'item_id'    => 1660826,
-					'url'        => home_url(),
-				),
-			)
-		);
-
-		if ( ! is_wp_error( $response ) ) {
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
-			if ( 'valid' === ( $body['license'] ?? '' ) ) {
-				update_option( $activated, 1, false );
-				update_option(
-					$option . '_allow_tracking',
-					array(
-						'allowed'   => true,
-						'timestamp' => time(),
-					),
-					false
-				);
-			}
-		}
-	}
-);
+// Activate the preset licence key once, with backoff (see PresetActivation).
+WPMediaVerse\Core\PresetActivation::register();
 
 // Activation.
 register_activation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Activator', 'activate' ) );

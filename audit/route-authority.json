@@ -400,6 +400,14 @@
       "object_id": false,
       "writes": false
     },
+    "GET /mvs/v1/offload-probe/(?P<token>[a-f0-9]{32})": {
+      "audience": "public",
+      "permission_callback": "__return_true",
+      "object_id": false,
+      "writes": false,
+      "reason": "Loopback probe for the opt-in X-Accel-Redirect/X-Sendfile offload; it has no session. The path carries a 32-hex single-use token that maps (via a one-minute transient) to a random file of 64 random bytes the probe itself just wrote; an unknown token, or offload not configured, answers 404 mvs_offload_probe. PHP sends headers only, never member content.",
+      "probe": "none - the token is not an object id and only ever resolves to the probe's own throwaway file."
+    },
     "GET /mvs/v1/serve": {
       "audience": "public",
       "permission_callback": "__return_true",
