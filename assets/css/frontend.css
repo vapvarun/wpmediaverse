@@ -1698,7 +1698,11 @@ body.dark-mode .mvs-skeleton::after {
        (PHP) and window.mvsCardBuilders (JS). The 1.5 fallback is the same
        landscape default Flickr uses when an item has no stored dimensions -
        album and collection covers, for instance. */
-    flex-grow: var(--mvs-ar, 1.5);
+    /* x100 keeps every tile's share in proportion but makes each line's total
+       grow factor at least 1. Flexbox hands out only that FRACTION of the free
+       space when a line's factors sum below 1, so a portrait (ratio 0.56) that
+       wrapped onto a line alone filled 56% of it and left a ragged gap. */
+    flex-grow: calc(var(--mvs-ar, 1.5) * 100);
     flex-shrink: 1;
     flex-basis: calc(var(--mvs-ar, 1.5) * var(--mvs-grid-row-height));
     min-width: 120px;
@@ -3133,8 +3137,16 @@ a.mvs-dashboard-card-title:hover {
         flex-basis: 100%;
     }
 
+    /* The count takes its own line and the selects share the next one in equal
+       parts. Natural widths put the count and ONE select on a row and dropped
+       the other select alone underneath at a different width. */
+    .mvs-panel-toolbar__count {
+        flex-basis: 100%;
+    }
+
     .mvs-panel-toolbar__select {
-        flex: 1 1 auto;
+        flex: 1 1 0;
+        min-width: 7rem;
     }
 
 }
@@ -3701,6 +3713,20 @@ a.mvs-dashboard-card-title:hover {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 4px;
+    /* Fade the trailing edge so a chip cut by the scroller reads as "more to
+       scroll", not as a chip broken under the More tags link beside it. */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
+[dir="rtl"] .mvs-tag-cloud-items {
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+}
+
+.mvs-tag-cloud--all .mvs-tag-cloud-items {
+    -webkit-mask-image: none;
+    mask-image: none;
 }
 
 .mvs-tag-cloud-items::-webkit-scrollbar {
