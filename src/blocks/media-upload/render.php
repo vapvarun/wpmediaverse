@@ -151,14 +151,17 @@ wp_interactivity_state(
 >
 	<?php \WPMediaVerse\Core\TemplateHelpers::render_storage_usage(); ?>
 	<div class="mvs-upload-dropzone"
+		role="button" tabindex="0"
+		aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>"
 		data-wp-on--click="actions.handleClick"
+		data-wp-on--keydown="actions.handleKeydown"
 		data-wp-on--dragover="actions.handleDragOver"
 		data-wp-on--dragleave="actions.handleDragLeave"
 		data-wp-on--drop="actions.handleDrop"
 		data-wp-class--mvs-dragover="state.isDragOver"
 	>
 		<div class="mvs-upload-icon">
-			<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+			<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
 				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 				<polyline points="17 8 12 3 7 8"></polyline>
 				<line x1="12" y1="3" x2="12" y2="15"></line>
@@ -231,14 +234,14 @@ wp_interactivity_state(
 		</div>
 	</div>
 	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>
-		<p data-wp-text="state.errorMessage"></p>
+		<p role="alert" data-wp-text="state.errorMessage"></p>
 		<button type="button" class="mvs-upload-error__dismiss" data-wp-on--click="actions.dismissError" aria-label="<?php esc_attr_e( 'Dismiss error', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading" hidden>
-		<p data-wp-text="state.uploadStatus"></p>
+		<p role="status" data-wp-text="state.uploadStatus"></p>
 	</div>
 	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
-		<p data-wp-text="state.successText"></p>
+		<p role="status" data-wp-text="state.successText"></p>
 		<p class="mvs-upload-success__next">
 			<a data-wp-bind--href="context.lastLink" data-wp-bind--hidden="!context.lastLink" hidden><?php esc_html_e( 'View it', 'wpmediaverse' ); ?></a>
 			<a data-wp-bind--href="context.myMediaUrl" data-wp-bind--hidden="!context.myMediaUrl" hidden><?php esc_html_e( 'Go to My Media', 'wpmediaverse' ); ?></a>

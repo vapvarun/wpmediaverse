@@ -5085,8 +5085,29 @@ a.mvs-dashboard-card-title:hover {
     user-select: none;
 }
 
+.mvs-notification-bell-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
 .mvs-notification-bell-icon {
+    display: inline-flex;
     font-size: 1.4em;
+}
+
+.mvs-notification-bell-icon svg {
+    width: 1em;
+    height: 1em;
 }
 
 .mvs-notification-badge {
@@ -6585,7 +6606,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-comment-form button:focus-visible,
 .mvs-comment-form textarea:focus-visible,
 .mvs-tag-cloud-item:focus-visible,
-.mvs-notification-bell:focus-visible,
+.mvs-notification-bell-toggle:focus-visible,
 .mvs-modal-close:focus-visible,
 .mvs-dashboard-dropzone:focus-visible,
 .mvs-load-more-btn:focus-visible {
@@ -7832,6 +7853,11 @@ a.mvs-dashboard-card-title:hover {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+}
+
+.mvs-replace-file-label:focus-within {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
 }
 
 .mvs-replace-file-hint {

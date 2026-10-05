@@ -399,11 +399,16 @@ wp_interactivity_state(
 	<?php if ( $mvs_show_dashboard_bell ) : ?>
 	<div class="mvs-dashboard-header">
 		<?php if ( $mvs_show_dashboard_bell ) : ?>
-		<div class="mvs-notification-bell" data-wp-on--click="actions.toggleNotifications"
-			role="button" tabindex="0" aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
-			<span class="mvs-notification-bell-icon">&#128276;</span>
-			<span class="mvs-notification-badge" data-wp-bind--hidden="!state.notifications.count"
-				data-wp-text="state.notifications.count" hidden></span>
+		<div class="mvs-notification-bell">
+			<?php // A real button (Enter/Space, aria-expanded); the dropdown is its sibling, not nested inside it. ?>
+			<button type="button" class="mvs-notification-bell-toggle"
+				data-wp-on--click="actions.toggleNotifications"
+				aria-expanded="false" data-wp-bind--aria-expanded="state.notifications.visible"
+				aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
+				<span class="mvs-notification-bell-icon" aria-hidden="true"><i data-lucide="bell"></i></span>
+				<span class="mvs-notification-badge" data-wp-bind--hidden="!state.notifications.count"
+					data-wp-text="state.notifications.count" hidden></span>
+			</button>
 			<div class="mvs-notification-dropdown" data-wp-bind--hidden="!state.notifications.visible"
 				data-wp-on--click="actions.stopPropagation" hidden>
 				<div class="mvs-notification-dropdown-header">
@@ -1398,18 +1403,18 @@ wp_interactivity_state(
 			</div>
 			<div class="mvs-modal-body">
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-					<input type="text" data-wp-bind--value="state.collectionModal.title"
+					<label for="mvs-dash-collection-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+					<input id="mvs-dash-collection-title" type="text" data-wp-bind--value="state.collectionModal.title"
 						data-wp-on--input="actions.setCollectionTitle" />
 				</div>
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-					<textarea data-wp-bind--value="state.collectionModal.description"
+					<label for="mvs-dash-collection-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+					<textarea id="mvs-dash-collection-description" data-wp-bind--value="state.collectionModal.description"
 						data-wp-on--input="actions.setCollectionDesc" rows="2"></textarea>
 				</div>
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Visibility', 'wpmediaverse' ); ?></label>
-					<select data-wp-bind--value="state.collectionModal.privacy"
+					<label for="mvs-dash-collection-privacy"><?php esc_html_e( 'Visibility', 'wpmediaverse' ); ?></label>
+					<select id="mvs-dash-collection-privacy" data-wp-bind--value="state.collectionModal.privacy"
 						data-wp-on--change="actions.setCollectionPrivacy">
 						<?php
 						// Two static options, rendered server-side. NOT
@@ -1444,12 +1449,14 @@ wp_interactivity_state(
 						<?php if ( $mvs_can_fill_manual ) : ?>
 						<button type="button" class="mvs-toggle-btn"
 							data-wp-class--active="state.isManualType"
+							data-wp-bind--aria-pressed="state.isManualType"
 							data-wp-on--click="actions.setCollectionTypeManual">
 							<?php esc_html_e( 'Manual', 'wpmediaverse' ); ?>
 						</button>
 						<?php endif; ?>
 						<button type="button" class="mvs-toggle-btn"
 							data-wp-class--active="state.isSmartType"
+							data-wp-bind--aria-pressed="state.isSmartType"
 							data-wp-on--click="actions.setCollectionTypeSmart">
 							<?php esc_html_e( 'Smart', 'wpmediaverse' ); ?>
 						</button>
@@ -1468,7 +1475,7 @@ wp_interactivity_state(
 					<div class="mvs-rules-list">
 						<template data-wp-each--rule="state.collectionModal.rules">
 							<div class="mvs-rule-row" data-wp-bind--data-rule-index="context.rule.index">
-								<select class="mvs-rule-key" data-wp-on--change="actions.setRuleKey">
+								<select class="mvs-rule-key" data-wp-on--change="actions.setRuleKey" aria-label="<?php esc_attr_e( 'Rule field', 'wpmediaverse' ); ?>">
 									<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
 									<option value="media_type" data-wp-bind--selected="state.isRuleKeyMediaType"><?php esc_html_e( 'Media Type', 'wpmediaverse' ); ?></option>
 									<option value="tag" data-wp-bind--selected="state.isRuleKeyTag"><?php esc_html_e( 'Tag', 'wpmediaverse' ); ?></option>
@@ -1480,7 +1487,7 @@ wp_interactivity_state(
 								</select>
 
 								<!-- Value input: changes based on rule key -->
-								<select class="mvs-rule-value" data-wp-on--change="actions.setRuleValue"
+								<select class="mvs-rule-value" data-wp-on--change="actions.setRuleValue" aria-label="<?php esc_attr_e( 'Rule value', 'wpmediaverse' ); ?>"
 									data-wp-bind--hidden="!state.isRuleSelectType">
 									<template data-wp-each--opt="state.ruleValueOptions">
 										<option data-wp-bind--value="context.opt.value"
@@ -1488,13 +1495,13 @@ wp_interactivity_state(
 											data-wp-text="context.opt.label"></option>
 									</template>
 								</select>
-								<input type="text" class="mvs-rule-value-text" data-wp-on--change="actions.setRuleValue"
+								<input type="text" class="mvs-rule-value-text" data-wp-on--change="actions.setRuleValue" aria-label="<?php esc_attr_e( 'Rule value', 'wpmediaverse' ); ?>"
 									data-wp-bind--hidden="state.isRuleSelectType"
 									data-wp-bind--value="context.rule.value"
 									data-wp-bind--type="state.ruleInputType"
 									data-wp-bind--placeholder="state.ruleInputPlaceholder" />
 
-								<button type="button" class="mvs-rule-remove" data-wp-on--click="actions.removeRule">&times;</button>
+								<button type="button" class="mvs-rule-remove" data-wp-on--click="actions.removeRule" aria-label="<?php esc_attr_e( 'Remove rule', 'wpmediaverse' ); ?>"><span aria-hidden="true">&times;</span></button>
 							</div>
 						</template>
 					</div>
@@ -1534,8 +1541,8 @@ wp_interactivity_state(
 			</div>
 			<div class="mvs-modal-body">
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-					<input type="text" data-wp-bind--value="state.editModal.title"
+					<label for="mvs-dash-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+					<input id="mvs-dash-edit-title" type="text" data-wp-bind--value="state.editModal.title"
 						data-wp-on--input="actions.setEditTitle"
 						aria-describedby="mvs-edit-title-hint"
 						data-wp-bind--aria-invalid="state.editModalTitleMissing" />
@@ -1543,8 +1550,8 @@ wp_interactivity_state(
 						data-wp-bind--hidden="!state.editModalTitleMissing"><?php esc_html_e( 'Title cannot be empty.', 'wpmediaverse' ); ?></span>
 				</div>
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-					<textarea data-wp-bind--value="state.editModal.description"
+					<label for="mvs-dash-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+					<textarea id="mvs-dash-edit-description" data-wp-bind--value="state.editModal.description"
 						data-wp-on--input="actions.setEditDesc"></textarea>
 				</div>
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
@@ -1597,10 +1604,11 @@ wp_interactivity_state(
 									<span data-wp-text="context.item"></span>
 									<button type="button" class="mvs-tag-pill-remove"
 										data-wp-bind--data-tag-name="context.item"
-										data-wp-on--click="actions.removeEditTag">&times;</button>
+										data-wp-on--click="actions.removeEditTag"
+										aria-label="<?php esc_attr_e( 'Remove this tag', 'wpmediaverse' ); ?>"><span aria-hidden="true">&times;</span></button>
 								</span>
 							</template>
-							<input type="text" class="mvs-tag-text-input" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
+							<input type="text" class="mvs-tag-text-input" aria-label="<?php esc_attr_e( 'Add tags', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
 								data-wp-bind--value="state.editModal.tagInput"
 								data-wp-on--input="actions.updateEditTagInput"
 								data-wp-on--keydown="actions.addEditTag" />
@@ -1618,8 +1626,9 @@ wp_interactivity_state(
 			</div>
 				<div class="mvs-replace-file-row">
 					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-replace-file-label">
-					&#8635; <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
-					<input type="file" hidden data-wp-on--change="actions.handleReplaceFile" />
+					<span aria-hidden="true">&#8635;</span> <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
+					<?php // Visually hidden, not `hidden`: a hidden input can't take keyboard focus. ?>
+					<input type="file" class="mvs-sr-only" data-wp-on--change="actions.handleReplaceFile" />
 				</label>
 					<span class="mvs-replace-file-hint"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
 			</div>
@@ -1651,13 +1660,13 @@ wp_interactivity_state(
 			</div>
 			<div class="mvs-modal-body">
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-					<input type="text" data-wp-bind--value="state.albumModal.title"
+					<label for="mvs-dash-album-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+					<input id="mvs-dash-album-title" type="text" data-wp-bind--value="state.albumModal.title"
 						data-wp-on--input="actions.setAlbumTitle" />
 				</div>
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-					<textarea data-wp-bind--value="state.albumModal.description"
+					<label for="mvs-dash-album-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+					<textarea id="mvs-dash-album-description" data-wp-bind--value="state.albumModal.description"
 						data-wp-on--input="actions.setAlbumDesc"></textarea>
 				</div>
 				<?php
@@ -1668,8 +1677,8 @@ wp_interactivity_state(
 				if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) :
 					?>
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
+					<label for="mvs-dash-album-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+					<select id="mvs-dash-album-privacy" data-wp-bind--value="state.albumModal.privacy" data-wp-on--change="actions.setAlbumPrivacy">
 						<?php
 						// Options come from STATE, not from privacy_options().
 						//
@@ -1708,7 +1717,10 @@ wp_interactivity_state(
 								data-wp-bind--data-picker-id="context.item.id"
 								data-wp-class--selected="state.isPickerSelected"
 								data-wp-class--mvs-media-picker-cover="state.isPickerCover"
-								data-wp-on--click="actions.togglePickerItem">
+								role="button" tabindex="0"
+								aria-pressed="false" data-wp-bind--aria-pressed="state.isPickerSelected"
+								data-wp-on--click="actions.togglePickerItem"
+								data-wp-on--keydown="actions.pickerItemKeydown">
 								<img data-wp-bind--hidden="!state.showPickerImage" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.alt" loading="lazy" />
 								<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 									data-wp-bind--hidden="!state.showPickerVideoPreview"

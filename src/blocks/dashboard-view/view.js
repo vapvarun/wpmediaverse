@@ -1842,6 +1842,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return { count, names };
 		},
 
+		// Picker items are role="button": Enter/Space toggle like a click.
+		pickerItemKeydown( event ) {
+			if ( event.target !== event.currentTarget ) return;
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.togglePickerItem( event );
+			}
+		},
+
 		togglePickerItem( event ) {
 			// Don't toggle selection when clicking "Set Cover" button.
 			if ( event.target.closest( '.mvs-media-picker-cover-btn' ) ) return;

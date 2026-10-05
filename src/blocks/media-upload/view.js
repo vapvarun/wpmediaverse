@@ -210,8 +210,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 	},
 	actions: {
 		handleClick( event ) {
-			// Don't trigger if clicking the file input itself, privacy select, or metadata fields.
-			if ( event.target.closest( 'input, select, textarea' ) ) {
+			// Don't trigger from the controls inside the dropzone (the file input,
+			// privacy select, metadata fields, Confirm/Cancel).
+			if ( event.target.closest( 'input, select, textarea, button, a' ) ) {
 				return;
 			}
 			const dropzone = event.target.closest( '.mvs-upload-dropzone' );
@@ -221,6 +222,16 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const fileInput = dropzone.querySelector( '.mvs-upload-input' );
 			if ( fileInput ) {
 				fileInput.click();
+			}
+		},
+		// role="button" gives the dropzone a Tab stop; Enter/Space open the picker.
+		handleKeydown( event ) {
+			if ( event.target !== event.currentTarget ) {
+				return;
+			}
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.handleClick( event );
 			}
 		},
 		handleDragOver( event ) {
