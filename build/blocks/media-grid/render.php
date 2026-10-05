@@ -280,6 +280,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				$mvs_grid_lightbox   = array(
 					'id'                => $item_id,
 					'title'             => $item_title,
+					'alt'               => $mvs_grid_helpers->alt_text( $item_id ),
 					'description'       => $item['description'] ?? '',
 					'media_type'        => $mvs_grid_media_type,
 					'file_url'          => $mvs_grid_file_url ?: ( $item['file_url'] ?? '' ),
@@ -314,7 +315,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( $item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the ratio. ?>
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
-					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
+					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
 							<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>

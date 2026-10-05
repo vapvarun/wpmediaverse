@@ -30,7 +30,7 @@ import { store, getContext } from '@wordpress/interactivity';
 function buildThumbnailNodes( item ) {
 	const builders = window.mvsCardBuilders;
 	if ( builders && typeof builders.buildThumbnail === 'function' ) {
-		return builders.buildThumbnail( item, { alt: item.title || '' } );
+		return builders.buildThumbnail( item, { alt: item.alt || item.title || '' } );
 	}
 
 	// Fallback mirror of TemplateHelpers::media_thumbnail() type handling.

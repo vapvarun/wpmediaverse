@@ -114,10 +114,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				<div class="mvs-grid-item"<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( $item_row ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the ratio. ?>>
 					<a href="<?php echo esc_url( $permalink ); ?>">
 						<?php
-						echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
-							$media_id,
-							array( 'alt' => esc_attr( $item_title ) )
-						);
+						echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail( $media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper resolves the alt text and emits escaped markup.
 						?>
 					</a>
 					<div class="mvs-grid-item-overlay">

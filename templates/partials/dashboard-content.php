@@ -921,7 +921,7 @@ wp_interactivity_state(
 					</button>
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openMediaLightbox">
-						<img data-wp-bind--hidden="!state.showMediaImage" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.showMediaImage" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.alt" loading="lazy" />
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showMediaVideoPreview"
 							data-wp-bind--poster="state.mediaThumbUrl"
@@ -1172,7 +1172,7 @@ wp_interactivity_state(
 				<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openFavLightbox">
-						<img data-wp-bind--hidden="!state.showFavImage" data-wp-bind--src="state.favThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.showFavImage" data-wp-bind--src="state.favThumbUrl" alt="" data-wp-bind--alt="context.item.alt" loading="lazy" />
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showFavVideoPreview"
 							data-wp-bind--poster="state.favThumbUrl"
@@ -1709,7 +1709,7 @@ wp_interactivity_state(
 								data-wp-class--selected="state.isPickerSelected"
 								data-wp-class--mvs-media-picker-cover="state.isPickerCover"
 								data-wp-on--click="actions.togglePickerItem">
-								<img data-wp-bind--hidden="!state.showPickerImage" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+								<img data-wp-bind--hidden="!state.showPickerImage" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.alt" loading="lazy" />
 								<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 									data-wp-bind--hidden="!state.showPickerVideoPreview"
 									data-wp-bind--poster="state.pickerThumbUrl"

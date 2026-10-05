@@ -403,7 +403,7 @@
 
 		// Thumbnail — delegated to buildMediaThumbnail so every JS surface
 		// renders identical markup (img / <video> preview / placeholder).
-		buildMediaThumbnail( item, { alt: title } ).forEach( function ( node ) {
+		buildMediaThumbnail( item, { alt: item.alt || title } ).forEach( function ( node ) {
 			anchor.appendChild( node );
 		} );
 
@@ -519,7 +519,7 @@
 		// the server-side pinterest/feed-body.php (media_thumbnail). This keeps
 		// page 1 and load-more pages identical for poster-less videos.
 		var imgWrap = el( 'div', 'mvs-pinterest-card__img-wrap' );
-		buildMediaThumbnail( item, { alt: title } ).forEach( function ( node ) {
+		buildMediaThumbnail( item, { alt: item.alt || title } ).forEach( function ( node ) {
 			imgWrap.appendChild( node );
 		} );
 		root.appendChild( imgWrap );
@@ -634,7 +634,7 @@
 		// first-frame <video> preview, matching flickr/feed-body.php
 		// (media_thumbnail), so load-more pages match page 1 for poster-less
 		// videos.
-		buildMediaThumbnail( item, { alt: title, showPlay: false } ).forEach( function ( node ) {
+		buildMediaThumbnail( item, { alt: item.alt || title, showPlay: false } ).forEach( function ( node ) {
 			root.appendChild( node );
 		} );
 
@@ -732,7 +732,7 @@
 		// first-frame <video> preview (with the play icon the builder adds),
 		// matching dribbble/feed-body.php (media_thumbnail). Load-more pages now
 		// match page 1 for poster-less videos.
-		buildMediaThumbnail( item, { alt: title } ).forEach( function ( node ) {
+		buildMediaThumbnail( item, { alt: item.alt || title } ).forEach( function ( node ) {
 			imageLink.appendChild( node );
 		} );
 

@@ -153,7 +153,6 @@ class MediaDisplayHelper {
 			$media_id,
 			array(
 				'size'      => $size,
-				'alt'       => esc_attr( $title ),
 				'show_play' => true,
 				'ttl'       => YEAR_IN_SECONDS,
 				'user_id'   => 0,
@@ -177,7 +176,6 @@ class MediaDisplayHelper {
 					$media_id,
 					array(
 						'size'      => $size,
-						'alt'       => esc_attr( $title ),
 						'show_play' => true,
 						'ttl'       => 0,
 						'user_id'   => $current_user_id,
