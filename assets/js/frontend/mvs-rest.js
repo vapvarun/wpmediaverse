@@ -260,7 +260,9 @@
 						headers.append( line.slice( 0, at ).trim(), line.slice( at + 1 ).trim() );
 					}
 				} );
-				resolve( new Response( xhr.responseText, { status: xhr.status, statusText: xhr.statusText, headers: headers } ) );
+				// 204/205/304 must not carry a body, or the Response constructor throws.
+				var body = [ 204, 205, 304 ].indexOf( xhr.status ) !== -1 ? null : xhr.responseText;
+				resolve( new Response( body, { status: xhr.status, statusText: xhr.statusText, headers: headers } ) );
 			};
 			xhr.onerror = function () {
 				reject( new TypeError( 'network_error' ) );
