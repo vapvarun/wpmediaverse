@@ -135,12 +135,7 @@ class MessagingSettingsRegistrar {
 			'mvs_messaging',
 			array(
 				'option'      => 'mvs_chat_panel_visibility',
-				'choices'     => array(
-					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
-					'mvs_pages'  => __( 'MediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
-					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
-					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
-				),
+				'choices'     => \WPMediaVerse\Core\SettingsHelper::chat_panel_choices(),
 				'description' => __( 'Where the floating chat icon appears for logged-in members.', 'wpmediaverse' ),
 			)
 		);

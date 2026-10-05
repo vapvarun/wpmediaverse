@@ -46,8 +46,8 @@ class AdminAggregatesService {
 		'admin_total_views',
 		'admin_total_reactions',
 		'admin_total_favorites',
-		'admin_pending_moderation',
 		'admin_storage_size_bytes',
+		'admin_privacy_in_use',
 		'admin_recent_media_5',
 	);
 
@@ -136,19 +136,6 @@ class AdminAggregatesService {
 			'admin_total_albums',
 			static function (): int {
 				return (int) wp_count_posts( 'mvs_album' )->publish;
-			}
-		);
-	}
-
-	/**
-	 * Total media awaiting moderation.
-	 */
-	public function pending_moderation(): int {
-		return (int) $this->cache->remember_persistent(
-			'admin_pending_moderation',
-			static function (): int {
-				global $wpdb;
-				return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE moderation_status = 'pending'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 			}
 		);
 	}
@@ -477,6 +464,27 @@ class AdminAggregatesService {
 	}
 
 	/**
+	 * Privacy levels stored on at least one media item.
+	 *
+	 * The All Media filter offers only these, instead of a fixed list that
+	 * showed Friends and Group on sites with no friends or groups.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return string[] Privacy slugs.
+	 */
+	public function privacy_levels_in_use(): array {
+		return (array) $this->cache->remember_persistent(
+			'admin_privacy_in_use',
+			static function (): array {
+				global $wpdb;
+				$levels = (array) $wpdb->get_col( "SELECT DISTINCT privacy FROM {$wpdb->prefix}mvs_media_index" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+				return array_values( array_filter( array_map( 'strval', $levels ) ) );
+			}
+		);
+	}
+
+	/**
 	 * Bulk getter for the admin Overview cards. Existing UI shape preserved
 	 * so the page stays a one-call site without losing the cache benefit.
 	 *
@@ -487,7 +495,10 @@ class AdminAggregatesService {
 			'total_media'        => $this->total_media(),
 			'total_documents'    => $this->total_documents(),
 			'total_albums'       => $this->total_albums(),
-			'pending_moderation' => $this->pending_moderation(),
+			// Live, from the queue's own counts (same rule as the menu badge).
+			'pending_moderation' => \WPMediaVerse\Services\ModerationService::needs_review(
+				\WPMediaVerse\Core\Plugin::container()->get( 'moderation' )->get_counts()
+			),
 			'total_views'        => $this->total_views(),
 			'storage_used'       => $this->storage_used_human(),
 		);

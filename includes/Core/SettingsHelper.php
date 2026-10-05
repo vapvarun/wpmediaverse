@@ -244,6 +244,32 @@ class SettingsHelper {
 	}
 
 	/**
+	 * The chat panel visibility choices (also the sanitizer's whitelist).
+	 *
+	 * One list for the select and the sanitizer, like layout_choices().
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return array<string, string>
+	 */
+	public static function chat_panel_choices(): array {
+		$choices = array(
+			'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
+			'mvs_pages'  => __( 'MediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
+		);
+
+		// Only means something with BuddyPress. Still offered (and accepted) when
+		// a site already saved it, so nobody's setting changes under them.
+		if ( function_exists( 'buddypress' ) || 'bp_pages' === get_option( 'mvs_chat_panel_visibility' ) ) {
+			$choices['bp_pages'] = __( 'BuddyPress pages only (member + group)', 'wpmediaverse' );
+		}
+
+		$choices['disabled'] = __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' );
+
+		return $choices;
+	}
+
+	/**
 	 * Every choice the one "Layout" setting offers, value => label.
 	 *
 	 * Free offers its three grid layouts; Pro adds its platform skins through

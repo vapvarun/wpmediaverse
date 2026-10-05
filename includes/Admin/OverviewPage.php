@@ -222,7 +222,7 @@ class OverviewPage {
 				?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-moderation' ) ); ?>" class="mvs-stat-card <?php echo esc_attr( $pending_class ); ?>">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['pending_moderation'] ) ); ?></span>
-					<span class="mvs-stat-label"><?php esc_html_e( 'Pending Review', 'wpmediaverse' ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Needs review', 'wpmediaverse' ); ?></span>
 				</a>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-stats' ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['total_views'] ) ); ?></span>
@@ -302,20 +302,32 @@ class OverviewPage {
 										<div class="mvs-import-progress-bar mvs-progress-bar" id="mvs-import-progress-bar"></div>
 									</div>
 								</div>
-							<?php elseif ( $mvs_seeded ) : ?>
-								<?php if ( current_user_can( 'manage_mvs_settings' ) ) : ?>
-									<div class="mvs-demo-cleanup mvs-section-divider">
-										<button type="button" class="mvs-btn mvs-btn--danger" id="mvs-cleanup-demo-btn"
-											data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_cleanup_demo' ) ); ?>">
-											<i data-lucide="trash-2"></i>
-											<?php esc_html_e( 'Delete Demo Data', 'wpmediaverse' ); ?>
-										</button>
-										<span id="mvs-cleanup-demo-status" class="mvs-status-inline"></span>
-									</div>
-								<?php endif; ?>
 							<?php endif; ?>
 						</div>
 					</div>
+
+					<?php
+					// Removing demo content is destructive, so it is not a Quick Link:
+					// it gets its own widget that says what it removes.
+					?>
+					<?php if ( $mvs_seeded && current_user_can( 'manage_mvs_settings' ) ) : ?>
+						<div class="mvs-admin-widget mvs-widget-spaced">
+							<div class="mvs-widget-header">
+								<h2><?php esc_html_e( 'Demo content', 'wpmediaverse' ); ?></h2>
+							</div>
+							<div class="mvs-widget-body mvs-demo-cleanup">
+								<p class="mvs-demo-desc">
+									<?php esc_html_e( 'Remove the sample members and media the demo import added. Your own content is not touched.', 'wpmediaverse' ); ?>
+								</p>
+								<button type="button" class="mvs-btn mvs-btn--danger" id="mvs-cleanup-demo-btn"
+									data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_cleanup_demo' ) ); ?>">
+									<i data-lucide="trash-2"></i>
+									<?php esc_html_e( 'Delete Demo Data', 'wpmediaverse' ); ?>
+								</button>
+								<span id="mvs-cleanup-demo-status" class="mvs-status-inline"></span>
+							</div>
+						</div>
+					<?php endif; ?>
 
 					<?php // Frontend Pages Widget. ?>
 					<div class="mvs-admin-widget mvs-widget-spaced">

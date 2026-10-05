@@ -46,7 +46,7 @@ class ModerationQueue {
 			$counts = $this->moderation->get_counts();
 			set_transient( 'mvs_moderation_counts', $counts, 60 );
 		}
-		$badge = $counts['flagged'];
+		$badge = \WPMediaVerse\Services\ModerationService::needs_review( (array) $counts );
 
 		$menu_title = __( 'Moderation', 'wpmediaverse' );
 		if ( $badge > 0 ) {

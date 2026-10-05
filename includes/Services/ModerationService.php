@@ -257,6 +257,21 @@ class ModerationService {
 	 *
 	 * @return array{pending: int, flagged: int, rejected: int}
 	 */
+	/**
+	 * Items waiting for a moderator: AI/threshold flagged plus pending review.
+	 *
+	 * The one number for the menu badge and the Overview card, so they can
+	 * no longer disagree (one counted flagged, the other pending).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param array $counts Counts from get_counts().
+	 * @return int
+	 */
+	public static function needs_review( array $counts ): int {
+		return (int) ( $counts['flagged'] ?? 0 ) + (int) ( $counts['pending'] ?? 0 );
+	}
+
 	public function get_counts(): array {
 		return \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )

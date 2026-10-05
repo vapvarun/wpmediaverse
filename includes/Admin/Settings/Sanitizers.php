@@ -81,7 +81,6 @@ class Sanitizers {
 		'mvs_moderation_auto_action' => array( 'flag', 'reject', 'delete' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
-		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
 		'mvs_filename_strategy'      => array( 'original_sanitized', 'hashed' ),
 	);
 
@@ -100,6 +99,10 @@ class Sanitizers {
 		// read from the same list the select draws, not frozen here.
 		if ( 'mvs_layout_choice' === $option ) {
 			return array_keys( \WPMediaVerse\Core\SettingsHelper::layout_choices() );
+		}
+		// The BuddyPress-only choice exists only with BuddyPress (or when saved).
+		if ( 'mvs_chat_panel_visibility' === $option ) {
+			return array_keys( \WPMediaVerse\Core\SettingsHelper::chat_panel_choices() );
 		}
 		return self::WHITELISTS[ $option ] ?? null;
 	}
@@ -585,7 +588,7 @@ class Sanitizers {
 	 */
 	public static function sanitize_chat_panel_visibility( $value ): string {
 		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_chat_panel_visibility'], true ) ? $value : 'everywhere';
+		return in_array( $value, (array) self::get_whitelist( 'mvs_chat_panel_visibility' ), true ) ? $value : 'everywhere';
 	}
 
 	/**
