@@ -379,13 +379,13 @@
 .mvs-member-photos-preview__hint {
 	margin: 2px 0 0;
 	font-size: 11px;
-	color: #999;
+	color: var(--mvs-text-secondary, #646970);
 }
 
 .mvs-member-photos-preview__caption {
 	text-align: center;
 	font-size: 12px;
-	color: #999;
+	color: var(--mvs-text-secondary, #646970);
 	margin-top: 12px;
 	margin-bottom: 0;
 }

@@ -324,7 +324,8 @@
     /* Text */
     --mvs-text: var(--reign-site-body-text-color, var(--global-title-color, var(--text-1, #1e1e1e)));
     --mvs-text-secondary: var(--reign-site-alternate-text-color, var(--global-font-color, var(--text-2, #646970)));
-    --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, var(--text-3, #a7aaad)));
+    /* Fallback #767676: 4.5:1 on white (AA), still a step lighter than secondary. Was #a7aaad, 2.3:1. */
+    --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, var(--text-3, #767676)));
 
     /* ── Borders: THREE TIERS, ONE JOB EACH ─────────────────────────────────
        Before 2.4.0 every box drew the same line: a text input, the card holding
@@ -6412,7 +6413,7 @@ a.mvs-dashboard-card-title:hover {
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--mvs-text-muted, #a7aaad);
+    color: var(--mvs-text-muted, #767676);
 }
 
 .mvs-empty-state-frontend--404 .mvs-empty-state-tags {
