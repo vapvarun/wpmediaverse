@@ -102,6 +102,22 @@ const { state } = store( 'mvs/explore-feed', {
 			const ctx = getContext();
 			return ctx.suggestionsOpen && Array.isArray( ctx.suggestions ) && ctx.suggestions.length > 0;
 		},
+		// Arrow keys move suggestionHighlight; these make that visible and
+		// announced (aria-selected + aria-activedescendant). Options are
+		// id'd by position, which is what the highlight counts.
+		get suggestionId() {
+			const ctx = getContext();
+			return 'mvs-explore-sugg-' + ( ctx.suggestions || [] ).indexOf( ctx.item );
+		},
+		get isSuggestionHighlighted() {
+			const ctx = getContext();
+			return ( ctx.suggestions || [] ).indexOf( ctx.item ) === ( ctx.suggestionHighlight ?? -1 );
+		},
+		get activeSuggestionId() {
+			const ctx = getContext();
+			const idx = ctx.suggestionHighlight ?? -1;
+			return state.hasSuggestions && idx >= 0 ? 'mvs-explore-sugg-' + idx : null;
+		},
 	},
 	actions: {
 		setFilter() {
