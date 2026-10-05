@@ -153,6 +153,7 @@ $mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
 				data-wp-on--timeupdate="actions.onTimeUpdate"
 			>
 				<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
+				<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->captions_track( $media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes. ?>
 			</video>
 			<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
 				<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>

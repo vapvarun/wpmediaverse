@@ -304,6 +304,43 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Inner HTML ready for echo.
 	 */
 	/**
+	 * The <track> for a video's captions, or '' when it has none.
+	 *
+	 * Captions are made by Pro (or any provider); Free asks through
+	 * `mvs_media_captions` so every player renders the same track.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Escaped <track> markup, or ''.
+	 */
+	public function captions_track( int $media_id ): string {
+		/**
+		 * Filter the captions for a video.
+		 *
+		 * @since 2.6.1
+		 *
+		 * @param array|null $captions { url: WebVTT file URL, lang: BCP 47 code }, or null.
+		 * @param int        $media_id Media ID.
+		 */
+		$captions = apply_filters( 'mvs_media_captions', null, $media_id );
+
+		if ( ! is_array( $captions ) || empty( $captions['url'] ) ) {
+			return '';
+		}
+
+		$lang = (string) ( $captions['lang'] ?? '' );
+		$lang = preg_match( '/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i', $lang ) ? $lang : '';
+
+		return sprintf(
+			'<track kind="captions" src="%1$s"%2$s label="%3$s" default />',
+			esc_url( (string) $captions['url'] ),
+			'' !== $lang ? ' srclang="' . esc_attr( $lang ) . '"' : '',
+			esc_attr__( 'Captions', 'wpmediaverse' )
+		);
+	}
+
+	/**
 	 * Resolve the best alt text for a media image: prefer the AI-generated
 	 * description, fall back to the title. Pre-escaped (esc_attr) for direct
 	 * use in an alt="" attribute.

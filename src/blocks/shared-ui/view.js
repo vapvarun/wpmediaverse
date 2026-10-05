@@ -587,6 +587,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxVideoUrl() {
 			return state.lightboxMediaData?.file_url || '';
 		},
+		// null removes the attribute, so a video without captions gets no track source.
+		get lightboxCaptionsUrl() {
+			return state.lightboxMediaData?.captions_url || null;
+		},
+		get lightboxCaptionsLang() {
+			return state.lightboxMediaData?.captions_lang || null;
+		},
 		get lightboxPosterUrl() {
 			// Poster for the lightbox <video>, matching what media-single.php
 			// already does. Without it the player shows a black rectangle while

@@ -401,6 +401,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						data-wp-init="actions.initResume"
 						data-wp-on--timeupdate="actions.onTimeUpdate">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
+						<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->captions_track( $mvs_media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes. ?>
 					</video>
 					<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
 						<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>

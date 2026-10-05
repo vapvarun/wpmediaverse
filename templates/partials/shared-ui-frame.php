@@ -491,7 +491,10 @@ wp_interactivity_state(
 					<img data-wp-bind--src="state.lightboxImageSrc" alt="" data-wp-bind--alt="state.lightboxAlt" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
-				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
+				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden>
+					<?php // Captions from REST (Pro's captions_url); no src means no track. ?>
+					<track kind="captions" default label="<?php esc_attr_e( 'Captions', 'wpmediaverse' ); ?>" data-wp-bind--src="state.lightboxCaptionsUrl" data-wp-bind--srclang="state.lightboxCaptionsLang" />
+				</video>
 				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
 				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
