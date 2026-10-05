@@ -118,8 +118,8 @@
 	margin: 0;
 }
 
-.mvs-upload-progress__bar {
-	flex: 1 1 auto;
+.mvs-upload-progress .mvs-upload-progress__bar {
+	flex: 1 1 0;
 	min-width: 0;
 }
 
