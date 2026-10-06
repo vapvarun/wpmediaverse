@@ -7,7 +7,7 @@ MediaVerse provides **13** shortcodes for embedding media features in pages, pos
 
 ## [mvs_gallery]
 
-Displays a filterable media grid. Columns and items-per-page come from **Media > Settings > Display** and cannot be overridden by shortcode attributes.
+Displays a filterable media grid. Columns and items-per-page come from **MediaVerse > Settings > Display** and cannot be overridden by shortcode attributes.
 
 ```
 [mvs_gallery]

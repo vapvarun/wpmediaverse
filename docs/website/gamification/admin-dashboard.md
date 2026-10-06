@@ -25,7 +25,7 @@ The first time you open it, a short welcome panel explains how competitions work
 
 ## Challenge Manager
 
-Go to **MediaVerse > Photo Challenges** to create and edit photo challenges.
+Go to **MediaVerse > Competitions** and open the **Photo Challenges** tab to create and edit photo challenges.
 
 ![Challenge Manager list view](../images/admin-competitions.png)
 
