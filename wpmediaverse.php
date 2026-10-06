@@ -211,7 +211,9 @@ add_action(
 );
 
 // Activate the preset licence key once, with backoff (see PresetActivation).
-WPMediaVerse\Core\PresetActivation::register();
+// Hooked, not called here: this file must stay loadable on its own (static
+// analysis and other tools include it without WordPress's class loading).
+add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\PresetActivation', 'register' ), 1 );
 
 // Activation.
 register_activation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Activator', 'activate' ) );
