@@ -977,6 +977,11 @@ class Commands {
 	 * [--limit=<n>]
 	 * : Stop after this many rows (testing / batched runs).
 	 *
+	 * [--include-non-public]
+	 * : Also migrate media that is not public. Only use this when the
+	 *   destination bucket is private: in a public bucket anyone with the
+	 *   URL can open the file. Default: only public media moves.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp mvs migrate-storage --from=local --to=s3 --dry-run

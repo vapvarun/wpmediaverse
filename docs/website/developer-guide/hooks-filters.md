@@ -177,6 +177,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_battle_created` | action | Pro | 1.0 |
 | `mvs_battle_accepted` | action | Pro | 1.0 |
 | `mvs_battle_resolved` | action | Pro | 1.0 |
+| `mvs_battle_drawn` | action | Pro | 2.6.1 |
 | `mvs_tournament_created` | action | Pro | 1.0 |
 | `mvs_tournament_started` | action | Pro | 1.0 |
 | `mvs_tournament_match_resolved` | action | Pro | 1.0 |
@@ -2738,7 +2739,8 @@ add_action( 'mvs_challenge_winner_named', function( int $challenge_id, int $user
 |------|------|-------------|------------|-------|
 | `mvs_battle_created` | action | Battle created | `$competition_id`, `$challenger_id`, `$opponent_id` | 1.0 |
 | `mvs_battle_accepted` | action | Opponent accepts battle | `$battle_id`, `$user_id` | 1.0 |
-| `mvs_battle_resolved` | action | Battle voting ends, winner determined | `$battle_id`, `$winner_id`, `$loser_id` | 1.0 |
+| `mvs_battle_resolved` | action | Battle voting ends with a winner (not fired for a draw) | `$battle_id`, `$winner_id`, `$loser_id` | 1.0 |
+| `mvs_battle_drawn` | action | Battle voting ends with equal votes, including none; no winner and no win reward | `$battle_id`, `$challenger_id`, `$opponent_id` | 2.6.1 |
 | `mvs_battle_cancelled` | action | Battle cancelled | `$battle_id` | 1.5.0 |
 | `mvs_battle_expired` | action | A pending or submitting battle passed its deadline and was closed without a winner | `$battle_id`, `$previous_status` (pending, accepted or active) | 2.6.0 |
 | `mvs_battle_submit_hours` | filter | Hours both sides get to submit (default 48) | `$hours` (int) | 2.6.0 |

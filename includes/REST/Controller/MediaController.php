@@ -2583,7 +2583,9 @@ class MediaController extends WP_REST_Controller {
 			),
 			'scope'        => array(
 				'type'              => 'string',
-				'enum'              => array( 'public', 'all' ),
+				// self = my uploads, followers = people I follow. Both need a
+				// signed-in viewer; a visitor gets the public list.
+				'enum'              => array( 'public', 'all', 'self', 'followers' ),
 				'default'           => 'all',
 				'sanitize_callback' => 'sanitize_text_field',
 			),

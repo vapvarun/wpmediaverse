@@ -991,7 +991,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @since 2.4.0
 	 * @var string[]
 	 */
-	public const PRIVACY_ORDER = array( 'public', 'members', 'loggedin', 'friends', 'space', 'group', 'private' );
+	public const PRIVACY_ORDER = array( 'public', 'members', 'loggedin', 'followers', 'friends', 'space', 'group', 'private' );
 
 	/**
 	 * How closed a privacy value is. Higher is more restrictive.

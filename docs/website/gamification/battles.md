@@ -32,7 +32,7 @@ You cannot challenge yourself, and you cannot start a second battle with someone
 2. Once both photos are submitted, the battle opens for community voting
 3. The VS layout shows both photos side by side with a **Vote for this photo** button under each
 4. Any logged-in member except the two players can cast one vote
-5. When the voting period ends, the winner is announced automatically and points are awarded. If the votes are tied, the challenger wins
+5. When the voting period ends, the winner is announced automatically and points are awarded. If the votes are tied (including a battle nobody voted in), the battle is a draw: nobody wins and no points are awarded
 
 ![Photo Battles frontend page showing VS layout](../images/battles-page.png)
 
@@ -78,7 +78,7 @@ If either player does not submit within the deadline, the battle expires and no 
 
 ## Voting
 
-Once both photos are submitted, the battle moves to Voting. Any logged-in member can vote for one photo. The two players cannot vote in their own battle. Each member can cast one vote per battle. A battle ends with the higher vote count, and a tie goes to the challenger.
+Once both photos are submitted, the battle moves to Voting. Any logged-in member can vote for one photo. The two players cannot vote in their own battle. Each member can cast one vote per battle. A battle ends with the higher vote count. Equal votes is a draw: there is no winner, no win points are given, and both players are told it was a draw.
 
 ## Settings Reference
 

@@ -694,15 +694,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 */
 	public static function privacy_labels(): array {
 		$labels = array(
-			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
-			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'public'    => __( 'Public: anyone can see', 'wpmediaverse' ),
+			'members'   => __( 'Members: logged-in users only', 'wpmediaverse' ),
 			// The old 'loggedin' level behaves exactly like Members, so it reads the
 			// same; "(legacy)" was internal history shown to members.
-			'loggedin' => __( 'Members: logged-in users only', 'wpmediaverse' ),
-			'friends'  => __( 'Friends: your friends only', 'wpmediaverse' ),
-			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
-			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
-			'private'  => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
+			'loggedin'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'followers' => __( 'Followers: people who follow you', 'wpmediaverse' ),
+			'friends'   => __( 'Friends: your friends only', 'wpmediaverse' ),
+			'space'     => __( 'Space: people in this space', 'wpmediaverse' ),
+			'group'     => __( 'Group: members of this group', 'wpmediaverse' ),
+			'private'   => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
 		);
 
 		/**
@@ -793,6 +794,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * twice. `friends` needs BuddyPress' friends component, or it has no
 	 * semantics distinct from members.
 	 *
+	 * This is the one list of choosable levels: the web pickers print it and Pro
+	 * builds the REST `privacy_options` from it, so no surface offers a level
+	 * another refuses.
+	 *
 	 * @since 2.4.2
 	 *
 	 * @return array<string,string> Privacy slug => label, in display order.
@@ -800,8 +805,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	public static function privacy_choices(): array {
 		$labels  = self::privacy_labels();
 		$choices = array(
-			'public'  => $labels['public'],
-			'members' => $labels['members'],
+			'public'    => $labels['public'],
+			'members'   => $labels['members'],
+			// Following is part of Free and always on, so this level always has
+			// people to mean. It was enforced on read and refused on save.
+			'followers' => $labels['followers'],
 		);
 
 		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
@@ -2025,11 +2033,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		return $this->render_panel_toolbar(
 			array(
-				'id'     => 'mvs-explore',
-				'form'   => true,
-				'class'  => 'mvs-explore__controls',
-				'hidden' => array_filter( $hidden ),
-				'count'  => sprintf(
+				'id'      => 'mvs-explore',
+				'form'    => true,
+				'class'   => 'mvs-explore__controls',
+				'hidden'  => array_filter( $hidden ),
+				'count'   => sprintf(
 					/* translators: %s: number of media items. */
 					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
 					number_format_i18n( $total_items )
@@ -2059,7 +2067,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 						'views'      => __( 'Most viewed', 'wpmediaverse' ),
 					),
 				),
-				'submit' => __( 'Apply', 'wpmediaverse' ),
+				'submit'  => __( 'Apply', 'wpmediaverse' ),
 			)
 		);
 	}

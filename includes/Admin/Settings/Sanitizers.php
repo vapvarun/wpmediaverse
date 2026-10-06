@@ -70,7 +70,6 @@ class Sanitizers {
 	private const WHITELISTS = array(
 		'mvs_default_privacy'        => array( 'public', 'members', 'private' ),
 		'mvs_duplicate_action'       => array( 'warn', 'skip', 'allow' ),
-		'mvs_storage_driver'         => array( 'local', 's3', 'bunnycdn', 'r2', 'dospaces' ),
 		'mvs_thumbnail_style'        => array( 'square', 'original', 'list' ),
 		'mvs_thumbnail_size'         => array( 'medium', 'large', 'full' ),
 		'mvs_lightbox_image_source'  => array( 'original', 'large', 'medium', 'auto' ),
@@ -99,6 +98,11 @@ class Sanitizers {
 		// read from the same list the select draws, not frozen here.
 		if ( 'mvs_layout_choice' === $option ) {
 			return array_keys( \WPMediaVerse\Core\SettingsHelper::layout_choices() );
+		}
+		// Storage drivers are extensible (mvs_storage_driver_choices): a custom
+		// driver must survive a save of the Storage tab.
+		if ( 'mvs_storage_driver' === $option ) {
+			return array_keys( SettingsRegistrar::storage_driver_choices() );
 		}
 		// The BuddyPress-only choice exists only with BuddyPress (or when saved).
 		if ( 'mvs_chat_panel_visibility' === $option ) {
@@ -455,8 +459,12 @@ class Sanitizers {
 	 * @return string Sanitized driver.
 	 */
 	public static function sanitize_storage_driver( $value ): string {
-		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_storage_driver'], true ) ? $value : 'local';
+		// Not posted: the field is locked on this screen, so keep what is stored
+		// rather than dropping a working driver back to local.
+		if ( ! is_string( $value ) ) {
+			$value = (string) get_option( 'mvs_storage_driver', 'local' );
+		}
+		return in_array( $value, array_keys( SettingsRegistrar::storage_driver_choices() ), true ) ? $value : 'local';
 	}
 
 	/**

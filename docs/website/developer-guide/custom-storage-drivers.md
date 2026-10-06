@@ -166,7 +166,16 @@ Then set the active driver to your slug so `StorageService` picks it:
 wp option update mvs_storage_driver my_s3_compatible
 ```
 
-The Storage tab in wp-admin only lists the built-in drivers (`local`, `s3`, `bunnycdn`, `r2`, `dospaces`) and there is no filter to add a slug to it. Switch to a custom driver with `wp option update` or `update_option()` as above; submitting the Storage tab afterwards puts the option back on one of the listed drivers.
+To let the site owner pick the driver on the Storage tab in wp-admin, add its slug and a label to the list of choices:
+
+```php
+add_filter( 'mvs_storage_driver_choices', function ( $choices ) {
+    $choices['my_s3_compatible'] = 'My S3-compatible host';
+    return $choices;
+} );
+```
+
+The select and its save both read that list, so the driver appears under **Where files are stored** and stays selected when the tab is saved. A slug that is not in the list is put back to `local` when the Storage tab is saved, so add it to the list before pointing the option at it.
 
 ## Local Driver Reference
 

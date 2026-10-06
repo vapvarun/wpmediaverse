@@ -97,7 +97,7 @@ class PrivacyService {
 					'strval',
 					(array) apply_filters(
 						'mvs_privacy_levels',
-						array( 'public', 'members', 'loggedin', 'friends', 'group', 'space', 'private', 'dm', 'custom' )
+						array( 'public', 'members', 'loggedin', 'followers', 'friends', 'group', 'space', 'private', 'dm', 'custom' )
 					)
 				)
 			)

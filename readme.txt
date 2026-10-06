@@ -46,7 +46,8 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * Points, Streaks, Boosts gamification engine
 * Member document drives with folders, sharing, search, trash and in-page previews
 * Amazon S3, BunnyCDN, Cloudflare R2 and DigitalOcean Spaces cloud storage drivers
-* Video chapters and Whisper AI captions for the MediaVerse mobile app and the REST API (the web player does not show them yet)
+* Whisper AI captions on the web player, the MediaVerse mobile app and the REST API
+* Video chapters for the MediaVerse mobile app and the REST API (the web player does not show chapters yet)
 * Stories, leaderboards, and a Flickr import connector
 * Google Vision, AWS Rekognition, and Claude (Anthropic) moderation
 * Migration importers (rtMedia, MediaPress, BuddyBoss)
@@ -89,7 +90,7 @@ Yes. Copy any template from `wpmediaverse/templates/` to `your-theme/wpmediavers
 
 = How do I import from rtMedia? =
 
-The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Migration in the admin.
+The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Import in the admin.
 
 = What are the shortcodes? =
 
