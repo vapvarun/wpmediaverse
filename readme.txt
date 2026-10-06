@@ -172,6 +172,8 @@ Faster media delivery, videos that start sooner, upload progress, a Followers pr
 * Fix      - A refused upload keeps its message in the upload window, and visitors who try to react are offered a way to log in.
 * Fix      - A custom storage driver stays selected when the Storage tab is saved.
 * Fix      - The Integrations screen no longer promises Jetonomy attachments.
+* Fix      - The bulk Set privacy bars offer the same levels as every other picker, and an unknown level is refused.
+* Fix      - Confirmation dialogs in wp-admin show the action's own button label instead of a red Confirm for actions that delete nothing.
 * Security - Private albums and collections no longer appear to visitors or other members on the Albums and Collections pages or through WordPress's built-in REST routes.
 * Security - The tag cloud and the public tag list show only tags used on public items.
 * Security - Duplicate-upload checks compare only with the member's own uploads, and the notice no longer shows another item's ID.

@@ -880,10 +880,7 @@ wp_interactivity_state(
 			<label class="mvs-bulk-privacy-label">
 				<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 				<select class="mvs-bulk-privacy" data-wp-on--change="actions.setBulkPrivacy">
-					<?php // Bulk deliberately offers only the three unambiguous levels; friends is per-item. ?>
-					<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
-					<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
-					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
+					<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); // The one list every picker prints. ?>
 				</select>
 			</label>
 			<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.applyBulkPrivacy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>

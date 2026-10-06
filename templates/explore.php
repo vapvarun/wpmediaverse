@@ -7,7 +7,7 @@
  * Override by copying to your-theme/wpmediaverse/explore.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -427,10 +427,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<label class="mvs-bulk-privacy-label">
 					<span class="screen-reader-text"><?php esc_html_e( 'Set privacy for selected', 'wpmediaverse' ); ?></span>
 					<select class="mvs-bulk-privacy" data-wp-on--change="actions.setExploreBulkPrivacy">
-						<?php // Bulk deliberately offers only the three unambiguous levels; friends is per-item. ?>
-						<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
-						<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
+						<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); // The one list every picker prints. ?>
 					</select>
 				</label>
 				<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary" data-wp-on--click="actions.exploreBulkPrivacy" data-wp-bind--disabled="state.bulkBusy"><?php esc_html_e( 'Set privacy', 'wpmediaverse' ); ?></button>
@@ -630,6 +627,17 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<p><?php esc_html_e( 'Nothing matches this filter right now. Browse everything, or pick another tag.', 'wpmediaverse' ); ?></p>
 				<div class="mvs-empty-state-actions">
 					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
+						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
+					</a>
+				</div>
+			</div>
+		<?php elseif ( '' !== \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_type() ) : ?>
+			<div class="mvs-empty-state-frontend">
+				<span class="mvs-empty-state-icon"><i data-lucide="search-x" aria-hidden="true"></i></span>
+				<h3><?php esc_html_e( 'Nothing of this type yet', 'wpmediaverse' ); ?></h3>
+				<p><?php esc_html_e( 'Choose another type above, or browse everything.', 'wpmediaverse' ); ?></p>
+				<div class="mvs-empty-state-actions">
+					<a href="<?php echo esc_url( remove_query_arg( 'mvs_type' ) ); ?>" class="mvs-btn mvs-btn--primary">
 						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
 					</a>
 				</div>

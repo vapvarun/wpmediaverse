@@ -603,7 +603,7 @@ class MediaController extends WP_REST_Controller {
 			// `MediaRepository::gallery_exclude_subquery()` ("group_position !=
 			// '0'"), so the same media could be a cover in Explore and not in
 			// this feed, or vice versa.
-			$where[] = '(i.media_id NOT IN (' . \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_exclude_subquery() . '))';
+			$where[] = '(i.media_id NOT IN (' . \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_exclude_subquery( ( $media_type && MediaTypes::is_known( (string) $media_type ) ) ? (string) $media_type : '' ) . '))';
 		}
 
 		// Filter by specific media group ID.

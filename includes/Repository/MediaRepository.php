@@ -4535,7 +4535,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		if ( ! empty( $args['exclude_non_cover_group'] ) ) {
-			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
+			$mvs_one_type = ( is_array( $args['media_types'] ) && 1 === count( $args['media_types'] ) ) ? (string) reset( $args['media_types'] ) : '';
+			$where[]      = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery( $mvs_one_type ) . ')';
 		}
 
 		// Every listing this repository serves — explore, the BuddyPress profile
@@ -5464,18 +5465,36 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * definitions (`group_position = '0'` here vs "lowest media_id in the
 	 * group" in the old inline copy).
 	 *
+	 * A listing narrowed to one media type passes that type: a member then stays
+	 * hidden only while its cover is of that type too. A batch of two videos and
+	 * one audio has a video cover, and without this the audio could never be
+	 * found under Audio (2.6.1).
+	 *
+	 * @param string $cover_type Media type the listing is narrowed to, or '' for none.
 	 * @return string Subquery SQL (no surrounding parentheses).
 	 */
-	public function gallery_exclude_subquery(): string {
+	public function gallery_exclude_subquery( string $cover_type = '' ): string {
 		global $wpdb;
 
 		$meta = $wpdb->prefix . 'mvs_media_meta';
-
-		return "SELECT mm1.media_id FROM {$meta} mm1
+		$sql  = "SELECT mm1.media_id FROM {$meta} mm1
 			INNER JOIN {$meta} mm2 ON mm1.media_id = mm2.media_id
 			WHERE mm1.meta_key = 'media_group'
 			AND mm2.meta_key = 'group_position'
 			AND mm2.meta_value != '0'";
+
+		if ( '' === $cover_type || ! MediaTypes::is_known( $cover_type ) ) {
+			return $sql;
+		}
+
+		// is_known() leaves a fixed slug, so it is safe to inline.
+		return $sql . " AND EXISTS (
+				SELECT 1 FROM {$meta} c1
+				INNER JOIN {$meta} c2 ON c2.media_id = c1.media_id AND c2.meta_key = 'group_position' AND c2.meta_value = '0'
+				INNER JOIN {$this->index_table()} ci ON ci.media_id = c1.media_id
+				WHERE c1.meta_key = 'media_group' AND c1.meta_value = mm1.meta_value
+				AND ci.media_type = '" . esc_sql( $cover_type ) . "'
+			)";
 	}
 
 	/**

@@ -2018,8 +2018,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_explore_sort_toolbar( int $total_items, ?array $hidden = null ): string {
-		// Nothing to sort.
-		if ( $total_items < 1 ) {
+		// Nothing to sort. A Type filter that matched nothing keeps the bar, so
+		// the visitor can change it back.
+		if ( $total_items < 1 && '' === $this->explore_type() ) {
 			return '';
 		}
 		if ( null === $hidden ) {

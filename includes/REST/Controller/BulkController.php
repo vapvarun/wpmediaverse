@@ -142,6 +142,11 @@ class BulkController extends WP_REST_Controller {
 					return new WP_Error( 'mvs_missing_privacy', __( 'privacy is required for change_privacy.', 'wpmediaverse' ), array( 'status' => 400 ) );
 				}
 				// Same owner lock as the single-item update. Basecamp 10320619418.
+				// The same list a single-item save checks: an unknown level is refused, not stored.
+				if ( ! in_array( $privacy, \WPMediaVerse\Services\PrivacyService::supported_levels(), true ) ) {
+					return new WP_Error( 'mvs_privacy_unsupported', __( 'That privacy level is not available on this site.', 'wpmediaverse' ), array( 'status' => 400 ) );
+				}
+
 				if ( ! \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
 					return new WP_Error( 'mvs_privacy_locked', __( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ), array( 'status' => 403 ) );
 				}

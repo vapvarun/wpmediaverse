@@ -15,7 +15,7 @@
 ( function () {
 	'use strict';
 
-	function ask( msg, proceed ) {
+	function ask( msg, proceed, el ) {
 		// mvsConfirm is enqueued as a hard dependency wherever this script
 		// runs (admin All Media + Tags surfaces). If it's somehow absent
 		// fail closed — admin-ux-rulebook Rule 10 bans the native confirm
@@ -23,7 +23,13 @@
 		if ( typeof window.mvsConfirm !== 'function' ) {
 			return;
 		}
-		window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
+		// The element names its own button and tone (a "Start Now" is not a
+		// delete); without either it is treated as destructive, as before.
+		var data = ( el && el.dataset ) || {};
+		window.mvsConfirm( msg, {
+			tone: data.mvsConfirmTone || 'destructive',
+			confirmLabel: data.mvsConfirmButton || undefined,
+		} ).then( function ( ok ) {
 			if ( ok ) {
 				proceed();
 			}
@@ -33,6 +39,10 @@
 	document.addEventListener( 'click', function ( e ) {
 		var link = e.target.closest ? e.target.closest( 'a[data-mvs-confirm]' ) : null;
 		if ( ! link ) {
+			return;
+		}
+		// MediaVerse Pro's own admin dialog owns its .mvs-confirm-action links.
+		if ( link.classList.contains( 'mvs-confirm-action' ) && document.getElementById( 'mvs-confirm-dialog' ) ) {
 			return;
 		}
 		var msg = link.getAttribute( 'data-mvs-confirm' );
@@ -46,7 +56,7 @@
 			if ( href ) {
 				window.location.href = href;
 			}
-		} );
+				}, link );
 	} );
 
 	document.addEventListener( 'submit', function ( e ) {
@@ -71,6 +81,6 @@
 			} else {
 				HTMLFormElement.prototype.submit.call( form );
 			}
-		} );
+				}, form );
 	} );
 } )();

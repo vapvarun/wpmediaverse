@@ -6450,7 +6450,7 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-secondary, #646970);
 }
 
-.mvs-empty-state-frontend--404 .mvs-empty-state-actions {
+.mvs-empty-state-frontend .mvs-empty-state-actions {
     display: flex;
     justify-content: center;
     margin-bottom: 24px;
@@ -6471,7 +6471,7 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-muted, #767676);
 }
 
-.mvs-empty-state-frontend--404 .mvs-empty-state-tags {
+.mvs-empty-state-frontend .mvs-empty-state-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
