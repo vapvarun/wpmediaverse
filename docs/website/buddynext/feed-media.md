@@ -8,7 +8,8 @@ When a member uploads to MediaVerse, BuddyNext publishes a card into the communi
 |---|---|
 | Photo | A native BuddyNext photo post carrying the media ids, rendered as a grid |
 | Video, audio | A typed `media` card linking to the item |
-| Document | A typed document card, resolved per viewer |
+| Document uploaded to a drive | Nothing. Filing a document is not announced to the community |
+| Document a member attaches to a post | A document card, resolved per viewer |
 | Private or members-only upload | Nothing. Only public uploads are announced |
 
 ## The card stores a reference, not a snapshot
@@ -34,7 +35,13 @@ A file with no artwork still produces a valid card - it simply renders compact, 
 
 ## Publishing is deferred
 
-Cards are published through a scheduled action a couple of minutes after upload rather than inline, so a large upload is not slowed by feed work. A card appearing a short time after the upload is expected behaviour, not a fault.
+Cards are published through a scheduled action about two minutes after upload rather than inline, so a large upload is not slowed by feed work. A card appearing a short time after the upload is expected behaviour, not a fault.
+
+If the member already posted the upload from the BuddyNext composer, no second card is added.
+
+## Turning it off
+
+The **Media** entry under BuddyNext Integrations controls whether uploads are announced in the feed. With it off, uploads stay in MediaVerse and nothing is published.
 
 ## Withdrawal
 

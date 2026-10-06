@@ -2,22 +2,23 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-MediaVerse Pro gives members a dedicated **Save** control for adding a media item to any number of their named [collections](../features/collections.md), separate from the favorite (heart) button. Favoriting stays a one-tap like; saving to a collection is a deliberate, multi-select action with its own picker.
+MediaVerse Pro makes the **Save** control open a picker, so members can add a media item to any number of their named [collections](../features/collections.md). Since 2.6.0, Save is the one way to keep an item. Reactions say how you feel; Save keeps the item.
 
 ![Media item with Save button and collection picker](../images/single-media.jpg)
 
 ## Save vs. Favorite
 
-- **Favorite (heart)** - a one-tap like. No picker, no confirmation, and it is not a collection membership.
-- **Save (bookmark)** - opens the collection picker. It appears next to the heart wherever media actions render (single media page, lightbox, feed cards) once Pro is active, and only for logged-in users.
+- **Without Pro**, Save puts the item straight into the member's private **Favorites** collection. Everything a member favorited before 2.6.0 is in that collection too.
+- **With Pro**, Save opens the collection picker. Its first row is that Favorites collection, followed by the member's other named collections. The button shows **Saved** while the item is in Favorites.
+- Save appears wherever media actions render (single media page, lightbox, feed cards) and only for logged-in users.
 
 ## How It Works (for Users)
 
 1. Click **Save** (bookmark icon) on a media item.
-2. The picker lists your named collections with a checkbox per row - check to add the item, uncheck to remove it.
+2. The picker lists your Favorites collection first, then your other named collections, with a checkbox per row - check to add the item, uncheck to remove it.
 3. Each toggle saves automatically the moment you click it; there is no separate confirm button.
 4. Every row shows its own state inline: **Saving...**, then **Saved** or **Removed**. If a save fails, the row shows an inline error with a retry option.
-5. Don't have the right collection yet? Type a name in **+ New collection** and click **Create** - the name is validated (blank names are rejected).
+5. Don't have the right collection yet? Type a name in the **+ New collection** box and click **Create** - blank names are rejected.
 6. Click **View your collections** at the bottom of the picker to jump straight to the **My Media** dashboard **Collections** tab.
 
 ## Named Collections Only
@@ -31,7 +32,7 @@ The picker is fully keyboard and screen-reader accessible:
 - The popover carries `aria-labelledby` pointing at its title.
 - **Escape** closes the picker and returns focus to the Save button that opened it - keyboard users are never stranded.
 - Per-row status text (Saving/Saved/Removed) is announced via `aria-live="polite"`.
-- Loading, empty ("No collections yet, create one below"), and error states are all handled explicitly; errors carry `role="alert"`.
+- Loading, empty ("No collections yet. Create one below."), and error states are all handled explicitly; errors carry `role="alert"`.
 
 ## Where "View Your Collections" Goes
 

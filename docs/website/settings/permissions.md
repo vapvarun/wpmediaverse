@@ -21,8 +21,9 @@ MediaVerse still registers these WordPress capabilities:
 | `delete_mvs_media` | Delete own media posts |
 | `delete_others_mvs_media` | Delete media posts created by other users |
 | `moderate_mvs_media` | Access the moderation queue and approve/reject media |
-| `manage_mvs_settings` | Manage MediaVerse settings (a finer-grained grant checked by settings actions; the admin menu itself gates on core `manage_options`) |
+| `manage_mvs_settings` | Manage MediaVerse settings (opens the MediaVerse Settings, Overview and Logs screens without full `manage_options`) |
 | `manage_mvs_access` | Manage custom access grants for private media |
+| `use_mvs_documents` | Use the document library (MediaVerse Pro). Every member role has it by default |
 | `read_mvs_media` | View media (used for private media visibility checks) |
 | `publish_mvs_media` | Publish media posts immediately (without pending review) |
 
@@ -44,5 +45,5 @@ A role editor plugin works too.
 ## Important Notes
 
 - The `moderate_mvs_media` capability grants access to the moderation queue and the ability to see all media regardless of privacy level.
-- The MediaVerse admin pages (Settings, Moderation, Logs and so on) are registered against the core `manage_options` capability. `manage_mvs_settings` can be given to other roles that should manage MediaVerse without full `manage_options` access.
+- The MediaVerse admin pages are open to administrators (core `manage_options`). Settings, Overview and Logs also open for a role that has `manage_mvs_settings`; Moderation, All Media and Tags also open for a role that has `moderate_mvs_media`. By default administrators have both, and editors have `moderate_mvs_media`.
 - Capabilities are stored in the WordPress `wp_user_roles` option and persist after plugin deactivation.

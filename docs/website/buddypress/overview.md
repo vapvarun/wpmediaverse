@@ -13,7 +13,7 @@ MediaVerse integrates with BuddyPress to add media features directly into the Bu
 
 ## Requirements
 
-- BuddyPress 12.0+
+- BuddyPress (BuddyBoss, which is BuddyPress-compatible, also works)
 - MediaVerse 1.0.0+
 
 ## What the Integration Adds
@@ -23,7 +23,7 @@ MediaVerse integrates with BuddyPress to add media features directly into the Bu
 | Activity | Records activity on media upload, comment, and album additions |
 | Member Profiles | Adds a **Media** tab showing the member's uploads |
 | Groups | Adds a **Media** tab in group navigation |
-| Notifications | Sends notifications for reactions, comments, and @mentions |
+| Notifications | Adds MediaVerse notifications to the BuddyPress bell: reactions, comments, @mentions, follows, favourites and more |
 | Activity Post Form | Adds a media attach button to the activity update form |
 
 ## Activation Check

@@ -57,7 +57,7 @@ The Terms of Service URL and Abuse Contact Email moved from this tab to **Settin
 
 ## Moderation Queue
 
-Administrators with the `moderate_mvs_media` capability can review flagged media at **MediaVerse > Media Moderation** (renamed from "Moderation" in 2.0.0 to avoid ambiguity with the general WordPress term).
+Administrators with the `moderate_mvs_media` capability can review flagged media at **MediaVerse > Moderation**.
 
 ![Moderation queue with pending media items](../images/admin-moderation.jpg)
 

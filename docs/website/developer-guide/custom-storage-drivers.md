@@ -59,9 +59,9 @@ interface StorageDriverInterface {
      * Download a stored file to a local destination path.
      *
      * REQUIRED for two flows:
-     *   1. The `wp mvs migrate-storage` CLI command — copies media between
+     *   1. The `wp mvs migrate-storage` CLI command - copies media between
      *      drivers without losing files.
-     *   2. Thumbnail generation in cloud mode — images stored on S3/BunnyCDN
+     *   2. Thumbnail generation in cloud mode - images stored on S3/BunnyCDN
      *      must be pulled to a local temp file before `wp_get_image_editor()`
      *      can resize them.
      *
@@ -128,7 +128,7 @@ class MyS3CompatibleDriver implements StorageDriverInterface {
 
 ## Registering Your Driver
 
-`StorageService::get_driver()` resolves the active driver by passing the configured driver name through the **singular** `mvs_storage_driver` filter and expecting a driver **instance** back. The filter receives two arguments — the current driver (`null` until something supplies one) and the configured driver name — and your callback returns your driver instance only when the name matches your slug, otherwise it returns `$driver` unchanged:
+`StorageService::get_driver()` resolves the active driver by passing the configured driver name through the **singular** `mvs_storage_driver` filter and expecting a driver **instance** back. The filter receives two arguments - the current driver (`null` until something supplies one) and the configured driver name - and your callback returns your driver instance only when the name matches your slug, otherwise it returns `$driver` unchanged:
 
 ```php
 add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
@@ -138,7 +138,7 @@ add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
 
 If no filter returns a `StorageDriverInterface` instance, `StorageService` falls back to the built-in `LocalDriver`.
 
-This is exactly how MediaVerse Pro registers its own drivers — its callback `switch`es on `$name` and returns the matching driver (`s3`, `bunnycdn`, `r2`, `dospaces`):
+This is exactly how MediaVerse Pro registers its own drivers - its callback `switch`es on `$name` and returns the matching driver (`s3`, `bunnycdn`, `r2`, `dospaces`):
 
 ```php
 // Simplified from MediaVerse Pro. Each integration namespaces its own
@@ -166,7 +166,7 @@ Then set the active driver to your slug so `StorageService` picks it:
 wp option update mvs_storage_driver my_s3_compatible
 ```
 
-(Or add your slug to the settings-page dropdown via a separate filter so site owners can switch to it from the admin UI.)
+The Storage tab in wp-admin only lists the built-in drivers (`local`, `s3`, `bunnycdn`, `r2`, `dospaces`) and there is no filter to add a slug to it. Switch to a custom driver with `wp option update` or `update_option()` as above; submitting the Storage tab afterwards puts the option back on one of the listed drivers.
 
 ## Local Driver Reference
 
@@ -186,7 +186,7 @@ Files are served from:
 
 ## Signed URLs and Private Delivery
 
-Your driver does **not** generate signed URLs — that is `SignedUrlService`'s job. The flow is:
+Your driver does **not** generate signed URLs - that is `SignedUrlService`'s job. The flow is:
 
 1. A read-side caller asks `Core\MediaUrl::thumb()` / `::file()` (or `SignedUrlService` directly) for a URL.
 2. `SignedUrlService::generate()` / `::generate_thumbnail()` runs the privacy check (`PrivacyService::can_view()`), then either:
@@ -199,7 +199,7 @@ There is **no** `mvs_generate_signed_url` filter. The public extension points th
 | Filter | Args | When it fires |
 |--------|------|---------------|
 | `mvs_serve_public_cloud_direct` | `(bool $enabled, int $media_id)` | Gate the "serve public cloud media directly" behavior on/off per media. |
-| `mvs_public_cloud_thumbnail_url` | `(string $url, int $media_id, string $size)` | Final say on the public thumbnail URL for cloud-hosted media — return a presigned/CDN URL here. |
+| `mvs_public_cloud_thumbnail_url` | `(string $url, int $media_id, string $size)` | Final say on the public thumbnail URL for cloud-hosted media - return a presigned/CDN URL here. |
 | `mvs_public_cloud_file_url` | `(string $url, int $media_id, string $context)` | Final say on the public full-file URL for cloud-hosted media. |
 
 ```php
@@ -214,7 +214,7 @@ add_filter( 'mvs_public_cloud_thumbnail_url', function( string $url, int $media_
 }, 10, 3 );
 ```
 
-Private and restricted media is never eligible for the direct-cloud path — `StorageService::get_driver_for_privacy()` keeps non-public media on local disk, and `/serve` re-checks `can_view()` on every request. So these filters only affect **public** media.
+Private and restricted media is never eligible for the direct-cloud path - `StorageService::get_driver_for_privacy()` keeps non-public media on local disk, and `/serve` re-checks `can_view()` on every request. So these filters only affect **public** media.
 
 ## Viewer-Aware Full-File URLs (2.0.0)
 
@@ -253,4 +253,4 @@ if ( '' === $url ) {
 }
 ```
 
-Like every other read-side URL helper in this plugin, do not hand-build the path or call `SignedUrlService` directly — `get_url_for_viewer()` runs the same privacy check and driver resolution as `Core\MediaUrl` (see [Template Overrides — Getting Media URLs](template-overrides.md#getting-media-urls-in-a-template-mediaurl)), just parameterized by an explicit viewer instead of the current user. Custom storage drivers do not need to implement anything extra for this to work — it composes `StorageService` + `SignedUrlService` the same way the rest of the read path does.
+Like every other read-side URL helper in this plugin, do not hand-build the path or call `SignedUrlService` directly - `get_url_for_viewer()` runs the same privacy check and driver resolution as `Core\MediaUrl` (see [Template Overrides - Getting Media URLs](template-overrides.md#getting-media-urls-in-a-template-mediaurl)), just parameterized by an explicit viewer instead of the current user. Custom storage drivers do not need to implement anything extra for this to work - it composes `StorageService` + `SignedUrlService` the same way the rest of the read path does.

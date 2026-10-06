@@ -28,10 +28,10 @@ Share photos, videos, and audio with your community - no admin access needed, st
 
 ## For Site Owners
 
-1. Go to **Media > Settings > General** and confirm the allowed file types match what your community needs
-2. Add the upload form to any page: in the block editor, insert the **MediaVerse: Media Upload** block; in the classic editor, add `[mvs_upload]`
+1. Go to **MediaVerse > Settings > General** and confirm the allowed file types match what your community needs
+2. Add the upload form to any page: in the block editor, insert the **Media Upload** block; in the classic editor, add `[mvs_upload]`
 3. Set the default privacy level and maximum file size for your site
-4. Enable **Strip EXIF Data** (on by default) to automatically remove GPS coordinates from photos before storage
+4. Keep **Remove location from photos** on (it is on by default) to strip GPS coordinates from photos before storage
 5. Users see the upload form immediately on that page when logged in
 
 ## Supported File Formats
@@ -42,13 +42,30 @@ Share photos, videos, and audio with your community - no admin access needed, st
 | Video | MP4, WebM |
 | Audio | MP3 (MPEG), OGG |
 
-Customize allowed types in **Media > Settings > General**.
+Customize allowed types in **MediaVerse > Settings > General**.
+
+## Upload Settings
+
+These are on **MediaVerse > Settings > General**.
+
+| Setting | What it does | Default |
+|---------|--------------|---------|
+| Max Upload Size | Largest single file a member can upload. | 100 MB |
+| Fair-use storage limit per member (MB) | Total storage one member can use, across all file types. You can give one member a different limit on their user profile. Administrators are never limited. | 0 (no limit) |
+| Allowed File Types | The image, video and audio formats members can upload. | JPEG, PNG, GIF, WebP, MP4, WebM, MP3, OGG |
+| Who can upload media | Roles that can upload. Administrators can always upload. Unticking a role deletes nothing. | - |
+| Default Privacy Level | Privacy given to new uploads: Public, Members Only or Private. | Public (Members Only on a private community) |
+| Allow Users to Set Privacy | Lets members pick the privacy of each upload. When off, every upload uses the default. | On |
+| Duplicate Detection | What happens when a member uploads a file that already exists: Warn (allow upload), Block the upload, or Allow (no check). | Warn |
+| Remove location from photos | Removes GPS position from new photo uploads. | On |
 
 ## Upload Modal (1.9.0, 2.0.0)
 
 The upload modal no longer asks you to pick a media type tab first - drop in an image, video, or audio file and MediaVerse auto-detects the type (1.9.0).
 
 When uploading into an album, you can create a brand-new album right from the upload modal instead of leaving to create one first, then switching back to upload into it (2.0.0).
+
+Since 2.6.1 you can pick several videos or audio files at once and they upload together, and a progress bar shows how much of each file has been sent.
 
 While you type in **Tags**, the modal shows "Matching tags" pills that complete the word you are typing. The full upload page shows the picked file's thumbnail and name.
 
@@ -72,7 +89,7 @@ When you change the title, the URL slug stays stable by default. Tick the new **
 
 ## Adding the Upload Form
 
-**Gutenberg Block:** Add the **MediaVerse: Media Upload** block to any page or post.
+**Gutenberg Block:** Add the **Media Upload** block to any page or post.
 
 **Shortcode:**
 ```
@@ -91,13 +108,14 @@ Every upload goes through these checks in order:
 
 1. **MIME type check** - file content is inspected (not just the extension) against your allowed types list.
 2. **File size check** - measured server-side against `mvs_max_upload_size` (default 100 MB).
-3. **Extension block list** - blocks PHP, shell, and other executable extensions even if the MIME passes.
-4. **Double extension block** - rejects filenames like `photo.php.jpg`.
-5. **Duplicate detection** - computes a SHA-256 hash and compares against existing uploads. Behavior depends on your **Duplicate Detection** setting (warn, skip, or allow).
+3. **Duplicate detection** - computes a SHA-256 hash and compares against existing uploads. Behavior depends on your **Duplicate Detection** setting (warn, skip, or allow).
+4. **Extension block list** - blocks PHP, shell, and other executable extensions even if the MIME passes.
+5. **Double extension block** - rejects filenames like `photo.php.jpg`.
+6. **Storage limit** - refuses the upload if it would take the member over their fair-use storage limit (when one is set).
 
 ## EXIF Stripping
 
-When **Strip EXIF Data** is enabled (default), GPS coordinates and device metadata are removed from JPEG images before storage. Non-GPS EXIF data (camera model, focal length) is retained.
+When **Remove location from photos** is enabled (default), the GPS position is removed from uploaded photos before storage. Other details (camera model, focal length, photo credits) are kept.
 
 ## Storage Path
 

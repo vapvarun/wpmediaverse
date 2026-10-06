@@ -5,8 +5,6 @@
 
 MediaVerse integrates with the WordPress privacy tools built into **Tools > Export Personal Data** and **Tools > Erase Personal Data**. No configuration is required. The integration is active whenever the plugin is active.
 
-The privacy functionality lives in `GDPRService.php`.
-
 
 ## What Gets Exported
 
@@ -15,25 +13,35 @@ When an administrator runs a personal data export for a user, MediaVerse adds th
 | Data Group | What Is Included |
 |------------|-----------------|
 | Media uploads | File URLs, titles, descriptions, privacy level, upload date |
-| Comments | All comments the user posted on media items |
-| Reactions | Each reaction (emoji, media item, timestamp) |
+| Reactions | Each reaction (type, media item, date) |
 | Favorites | Each media item the user saved as a favorite |
-| Direct messages | All conversation participants and message content |
-| Follow relationships | List of users the subject follows and users following the subject |
+| Following | The users the subject follows |
+| Everything else MediaVerse stores about the member | One section per data type, such as media views, activity, access grants, mentions, blocks, notifications, push device tokens, conversations, messages, message reactions, the usage ledger and the error log. With MediaVerse Pro active, its member data is included too. |
+
+Data that is kept after erasure (see below) is exported too, with the reason it is kept written next to it.
 
 The export respects the WordPress standard format. Each group appears as a named section in the downloadable HTML and JSON files.
 
 ## What Gets Erased
 
-When an administrator runs a personal data erasure for a user, MediaVerse removes:
+When an administrator runs a personal data erasure for a user, MediaVerse removes the member's data from every place it keeps it, including:
 
-- All media items uploaded by that user (files and database records)
-- All comments posted by that user on media items
-- All reactions and favorites
-- All direct message conversations and messages where the user is a participant
-- All follow relationships (both directions)
+- Media uploads (files and database records), media views and activity
+- Favorites, reactions, mentions and access grants
+- Follows and blocks
+- Notifications and push device tokens
+- Messages, message reactions and the conversations the member is in
+- The error log entries about the member
 
-Erasure is permanent and cannot be undone. Media items that belong to BuddyPress groups are also removed.
+Erasure is permanent and cannot be undone. WordPress is told the request is finished only when nothing is left to remove.
+
+A few records are kept, with the member's name removed, and the erasure result says so:
+
+| Kept record | Why |
+|-------------|-----|
+| Reports filed by or about the member | Moderation evidence. |
+| Usage ledger | Records the site owner may be legally required to keep. |
+| Conversations the member started that other members are still part of | Erasing the creator must not delete the thread for everyone else. |
 
 > Before erasing, WordPress asks the user to confirm the request via email. MediaVerse erasure only runs after that confirmation is received.
 
@@ -43,10 +51,11 @@ MediaVerse registers suggested privacy policy text via `wp_add_privacy_policy_co
 
 The suggested text describes:
 
-- What media metadata is collected and stored
-- How direct messages are stored and for how long
-- What follow data is retained
-- How to request export or erasure
+- What media details and photo location data are collected and stored
+- That reactions, comments, follows, favorites, mentions and direct messages are stored
+- That views are recorded, and that images are sent to OpenAI if you turn on AI tagging or moderation
+- That push device tokens are stored for the mobile app
+- What erasure removes and what it keeps
 
 You are not required to use the suggested text verbatim. Review it and incorporate the relevant parts into your site's privacy policy.
 

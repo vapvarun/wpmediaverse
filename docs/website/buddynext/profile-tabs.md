@@ -6,6 +6,12 @@ A member's uploads are reachable from their BuddyNext profile, so browsing someo
 
 BuddyNext owns the profile layout. MediaVerse supplies the media and the per-viewer privacy decisions; BuddyNext decides where the tab sits and how it is labelled.
 
+The profile has a **Media** tab with a gallery and an Albums section. It shows whenever MediaVerse is active and the **Media** entry under BuddyNext Integrations is on.
+
+## Files tab (MediaVerse Pro)
+
+With MediaVerse Pro, a member also gets a **Files** tab with their own document drive. Only the owner sees it, on their own profile.
+
 ## What the tab shows
 
 Only media the person viewing is allowed to see. The same privacy rules that govern Explore apply here:

@@ -6,15 +6,15 @@
 
 All routes below use the `mvs/v1` namespace (the messaging routes share the same namespace). The messaging routes exist only while **Settings > Messages > Messages** is on; with it off they are not registered and answer WordPress's standard `404 rest_no_route`, so check `features.messaging` in `GET /app/config` first.
 
-**Authentication.** Reads of public data are open. Every write — and every `/me/*` route — requires an authenticated user. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )` and send cookies with `credentials: 'same-origin'`, or use a WordPress Application Password for non-browser clients.
+**Authentication.** Reads of public data are open. Every write - and every `/me/*` route - requires an authenticated user. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )` and send cookies with `credentials: 'same-origin'`, or use a WordPress Application Password for non-browser clients.
 
-**Private-community gate (2.2.0).** When the host community is private, the *entire* `mvs/v1` surface — including public reads — requires authentication, and with Pro active the `mvs-pro/v1` namespace is covered by the same gate. Unauthenticated requests get `401` with code `mvs_community_private`. The gate is off by default and controlled by three filters: `mvs_rest_require_auth` (return `true` to arm the gate; BuddyNext arms it automatically when its private-community mode is on), `mvs_rest_can_access` (defaults to `is_user_logged_in()`; override to allow specific unauthenticated callers, e.g. a trusted server-to-server integration), and `mvs_rest_gated_route_prefixes` (the covered route prefixes; Pro appends its own namespace here, and sites can add more).
+**Private-community gate (2.2.0).** When the host community is private, the *entire* `mvs/v1` surface - including public reads - requires authentication, and with Pro active the `mvs-pro/v1` namespace is covered by the same gate. Unauthenticated requests get `401` with code `mvs_community_private`. The gate is off by default and controlled by three filters: `mvs_rest_require_auth` (return `true` to arm the gate; BuddyNext arms it automatically when its private-community mode is on), `mvs_rest_can_access` (defaults to `is_user_logged_in()`; override to allow specific unauthenticated callers, e.g. a trusted server-to-server integration), and `mvs_rest_gated_route_prefixes` (the covered route prefixes; Pro appends its own namespace here, and sites can add more).
 
 **Authorization model.** Three levels are used throughout:
 
-- **Public** — no auth; privacy is enforced inside the query so private rows never leak.
-- **Authenticated** — any logged-in user (`is_user_logged_in()`).
-- **Capability** — a specific capability such as `upload_mvs_media`, `moderate_mvs_media`, or `manage_mvs_access`.
+- **Public** - no auth; privacy is enforced inside the query so private rows never leak.
+- **Authenticated** - any logged-in user (`is_user_logged_in()`).
+- **Capability** - a specific capability such as `upload_mvs_media`, `moderate_mvs_media`, or `manage_mvs_access`.
 
 **Update methods.** Every route documented below with `PUT` also accepts `PATCH` and `POST`. WordPress registers these three together as its "editable" method group, so all three reach the same handler with the same arguments and the same response. `PUT` is used throughout this page as the canonical form; pick whichever your HTTP client handles most comfortably.
 
@@ -43,8 +43,10 @@ List media items. Returns only rows the caller is allowed to see.
 | `slug` | string | (none) | Fetch a single item by post slug |
 | `tag` | string | (all) | Filter by `mvs_tag` slug |
 | `category` | string | (all) | Filter by `mvs_category` slug |
-| `orderby` | string | `date` | Sort: `date`, `trending`, `popular` (filterable via `mvs_feed_sort_options`) |
-| `scope` | string | `public` | `public` or `all` (owner/privileged callers) |
+| `orderby` | string | `date` | Sort: `date`, `trending`, `popular`, `created_at`, `title`, `views` (filterable via `mvs_feed_sort_options`) |
+| `order` | string | `desc` | `asc` or `desc` |
+| `include` | int[] | `[]` | Return only these media IDs |
+| `scope` | string | `all` | `all` returns everything the caller may see; `public` limits the list to public items; `self` returns the caller's own uploads; `followers` returns media from members the caller follows. `self` and `followers` need a logged-in caller |
 | `s` | string | (none) | Full-text search term |
 | `group_covers` | bool | `false` | Collapse gallery groups to a single cover item |
 
@@ -78,11 +80,11 @@ List media items. Returns only rows the caller is allowed to see.
 
 **Alt text (2.6.1).** Every media object includes `alt` (string): the AI description when there is one, otherwise the title. Change it with the `mvs_media_alt_text` filter.
 
-**Viewer-aware fields.** Every media item carries three fields resolved against the requesting user, not cached statically: `can_edit` (bool — `true` when the viewer is the author or has `manage_options`), `is_favorited` (bool), and `viewer_reaction` (string reaction slug, or `null` if the viewer hasn't reacted). All three are `false`/`null` for anonymous requests. List endpoints batch-load this state per page (`MediaController::prime_viewer_state()`) rather than querying per row.
+**Viewer-aware fields.** Every media item carries three fields resolved against the requesting user, not cached statically: `can_edit` (bool - `true` when the viewer is the author or has `manage_options`), `is_favorited` (bool), and `viewer_reaction` (string reaction slug, or `null` if the viewer hasn't reacted). All three are `false`/`null` for anonymous requests. List endpoints batch-load this state per page (`MediaController::prime_viewer_state()`) rather than querying per row.
 
 ### POST /media
 
-**Auth:** Capability — `upload_mvs_media` (or `manage_options`).
+**Auth:** Capability - `upload_mvs_media` (or `manage_options`).
 
 Upload a new media file.
 
@@ -108,9 +110,9 @@ Get a single media item.
 
 ### PUT /media/{id}
 
-**Auth:** Capability — owner with `edit_mvs_medias`, or `edit_others_mvs_medias`.
+**Auth:** Capability - owner with `edit_mvs_medias`, or `edit_others_mvs_medias`.
 
-Update a media item.
+Update a media item. Also accepts `slug`, `allow_download` (bool), `tags` (array) and `categories` (array).
 
 **Body (JSON):**
 
@@ -124,13 +126,13 @@ Update a media item.
 
 ### DELETE /media/{id}
 
-**Auth:** Capability — owner with `delete_mvs_medias`, or `delete_others_mvs_medias`.
+**Auth:** Capability - owner with `delete_mvs_medias`, or `delete_others_mvs_medias`.
 
 Delete a media item and its stored file.
 
 ### POST /media/{id}/replace
 
-**Auth:** Capability — same as `PUT /media/{id}` (edit permission).
+**Auth:** Capability - same as `PUT /media/{id}` (edit permission).
 
 Replace the underlying file of an existing media item while keeping its ID, comments, reactions, and stats. Send the new file as `multipart/form-data` with a `file` field.
 
@@ -190,7 +192,7 @@ Generate a time-limited signed URL for a private file. The signed URL points at 
 
 ### GET /serve
 
-**Auth:** Public — the HMAC signature on the URL is the credential (analogue of an S3 pre-signed URL). For non-public media the handler also re-checks `can_view` per request.
+**Auth:** Public - the HMAC signature on the URL is the credential (analogue of an S3 pre-signed URL). For non-public media the handler also re-checks `can_view` per request.
 
 Stream the underlying file (full file or a thumbnail variant) for a validated signed URL. Drains output buffers and disables `zlib.output_compression` before streaming so byte counts match `Content-Length`. Honours `Range:` headers for video/audio.
 
@@ -217,7 +219,7 @@ List the current user's own media, including private and pending items. Accepts 
 
 **Auth:** Public (privacy enforced in query).
 
-List albums. Supports `page`, `per_page`, `author`, `orderby`, `order`.
+List albums. Supports `page`, `per_page`, `author`, `album_type` (`default` or `playlist`), `s` (search), `orderby` (`date` or `title`) and `order` (`asc` or `desc`).
 
 ### POST /albums
 
@@ -241,19 +243,25 @@ Get an album with its media list.
 
 ### PUT /albums/{id}
 
-**Auth:** Authenticated — owner / edit permission.
+**Auth:** Authenticated - owner / edit permission.
 
-Update an album.
+Update an album. Besides the album fields, `cover_media_id` (int, `0` clears it) sets the cover.
+
+### GET /albums/{id}/items
+
+**Auth:** Public (privacy enforced in query).
+
+List the media in an album, paged: `page` (default `1`) and `per_page` (default `20`, max 100).
 
 ### DELETE /albums/{id}
 
-**Auth:** Authenticated — owner / delete permission.
+**Auth:** Authenticated - owner / delete permission.
 
 Delete an album (does not delete the media items it contains).
 
 ### PUT /albums/{id}/reorder
 
-**Auth:** Authenticated — owner / edit permission.
+**Auth:** Authenticated - owner / edit permission.
 
 Reorder the items inside an album.
 
@@ -263,7 +271,7 @@ Reorder the items inside an album.
 
 ### POST /albums/{id}/items
 
-**Auth:** Authenticated — owner / edit permission.
+**Auth:** Authenticated - owner / edit permission.
 
 Add media to an album.
 
@@ -273,13 +281,13 @@ Add media to an album.
 
 ### DELETE /albums/{id}/items/{media_id}
 
-**Auth:** Authenticated — owner / edit permission.
+**Auth:** Authenticated - owner / edit permission.
 
 Remove a single media item from an album.
 
 ### PUT /albums/{id}/cover
 
-**Auth:** Authenticated — owner / edit permission.
+**Auth:** Authenticated - owner / edit permission.
 
 Set the album cover.
 
@@ -294,6 +302,8 @@ Set the album cover.
 ### GET /collections
 
 **Auth:** Authenticated. Returns the current user's collections.
+
+Supports `page`, `per_page` (max 100), `s` (search), `orderby` (`date` or `title`) and `order` (`asc` or `desc`).
 
 ### POST /collections
 
@@ -318,19 +328,25 @@ Get a collection with its resolved item list.
 
 ### PUT /collections/{id}
 
-**Auth:** Authenticated — owner only.
+**Auth:** Authenticated - owner only.
 
-Update a collection.
+Update a collection. `privacy` is `public` or `members`.
+
+### GET /collections/{id}/items
+
+**Auth:** Public (privacy check in permission callback).
+
+List the items of a collection, paged: `page` (default `1`) and `per_page` (default `20`, max 100).
 
 ### DELETE /collections/{id}
 
-**Auth:** Authenticated — owner only.
+**Auth:** Authenticated - owner only.
 
 Delete a collection.
 
 ### PUT /collections/{id}/rules
 
-**Auth:** Authenticated — owner only.
+**Auth:** Authenticated - owner only.
 
 Set the smart-collection rules used to resolve its items.
 
@@ -396,13 +412,13 @@ List comments. Supports `page`, `per_page` (max 100).
 
 ### PUT /media/{id}/comments/{comment_id}
 
-**Auth:** Authenticated — owner (within the edit window) or `moderate_mvs_media`.
+**Auth:** Authenticated - owner (within the edit window) or `moderate_mvs_media`.
 
-Edit a comment.
+Edit a comment. Body: `content` (string, required).
 
 ### DELETE /media/{id}/comments/{comment_id}
 
-**Auth:** Authenticated — owner or `moderate_mvs_media`.
+**Auth:** Authenticated - owner or `moderate_mvs_media`.
 
 Delete a comment.
 
@@ -432,7 +448,7 @@ Remove the item from favorites.
 
 **Auth:** Authenticated.
 
-List the current user's favorites. Supports `collection_id`, `page`, `per_page`.
+List the current user's favorites. Supports `collection_id`, `s` (search), `page`, `per_page`, `orderby` (`favorited` default, `title`, `date`) and `order` (`asc` or `desc`, default `desc`).
 
 ---
 
@@ -458,25 +474,25 @@ Unfollow a user.
 
 **Auth:** Public.
 
-List a user's followers (display name + avatar).
+List a user's followers (display name + avatar). Supports `page` and `per_page` (default `20`, max 100).
 
 ### GET /users/{id}/following
 
 **Auth:** Public.
 
-List who a user follows.
+List who a user follows. Supports `page` and `per_page` (default `20`, max 100).
 
 ### GET /me/following
 
 **Auth:** Authenticated.
 
-List who the current user follows.
+List who the current user follows. Supports `page` and `per_page` (default `20`, max 100).
 
 ### GET /me/followers
 
 **Auth:** Authenticated.
 
-List the current user's followers.
+List the current user's followers. Supports `page` and `per_page` (default `20`, max 100).
 
 ---
 
@@ -512,6 +528,8 @@ Update profile fields. A `dm_access` looser than the site setting is saved as th
   "description": "Photographer"
 }
 ```
+
+Also accepted: `dm_access` (`everyone`, `followers`, `mutual` or `nobody`), `online_status` (`everyone` or `nobody`, who can see when you are online) and `email_activity` (`on` or `off`).
 
 ### POST /me/avatar
 
@@ -623,11 +641,11 @@ List the users the current user has blocked.
 
 ## Moderation
 
-All moderation routes require the `moderate_mvs_media` capability.
+All moderation routes require the `moderate_mvs_media` capability, except `GET /ai/usage`, which requires `manage_options` or `manage_mvs_settings`.
 
 ### GET /moderation
 
-List flagged / pending media items. Supports collection params (`page`, `per_page`).
+List media items in the moderation queue. Supports `status` (`pending`, `flagged` default, or `rejected`), `page` and `per_page` (max 100).
 
 > The route is `/moderation`, not `/moderation/queue`. Earlier revisions of this page showed `/moderation/queue`, which returns `404`.
 
@@ -670,10 +688,11 @@ Perform a bulk action on multiple media items.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `action` | Yes | One of `delete`, `move_to_album`, `change_privacy` |
+| `action` | Yes | One of `delete`, `move_to_album`, `change_privacy`, `add_tags` |
 | `media_ids` | Yes | Array of media IDs (max 100) |
 | `album_id` | When `action=move_to_album` | Destination album ID |
 | `privacy` | When `action=change_privacy` | New privacy value |
+| `tags` | When `action=add_tags` | Array of tags to add |
 
 ---
 
@@ -711,7 +730,7 @@ List / autocomplete `mvs_tag` terms. Since 2.6.1, logged-out visitors get only t
 
 ### POST /tags
 
-**Auth:** Capability — `create_tag_permissions_check` (any user who can upload media).
+**Auth:** Capability - `create_tag_permissions_check` (any user who can upload media).
 
 Create a new tag. Body: `name` (required), optional `slug`.
 
@@ -723,7 +742,7 @@ Return top tags with usage counts for a tag cloud. Optional `limit` (default 50,
 
 ### POST /tags/merge
 
-**Auth:** Capability — admin (`moderate_mvs_media`).
+**Auth:** Capability - admin (`moderate_mvs_media`).
 
 Merge one tag into another. All media on `source_id` are re-tagged with `target_id` and `source_id` is deleted.
 
@@ -733,7 +752,7 @@ Merge one tag into another. All media on `source_id` are re-tagged with `target_
 
 ### PUT /tags/{id}
 
-**Auth:** Capability — admin.
+**Auth:** Capability - admin.
 
 Rename a tag.
 
@@ -743,7 +762,7 @@ Rename a tag.
 
 ### DELETE /tags/{id}
 
-**Auth:** Capability — admin.
+**Auth:** Capability - admin.
 
 Delete a tag.
 
@@ -806,7 +825,7 @@ Where the current user was @mentioned (comments and media descriptions), newest 
 
 ## Devices / push tokens
 
-Register a member's device so the site can deliver push notifications for new in-app notifications. Added in 2.4.0. Both routes require an authenticated member and upsert into the `mvs_device_tokens` table. This is the Free generic device-token surface, backed by `Social/PushService.php`; when a new in-app notification is created, `PushService` fires the action `mvs_push_send( int $user_id, array $tokens, array $payload )` for a push-delivery integration to send, gated by the filter `mvs_push_should_send` (return `false` to suppress). Pro's Expo push at `POST /mvs-pro/v1/push/register-device` (table `mvs_pro_push_devices`) is separate and additional — neither replaces the other.
+Register a member's device so the site can deliver push notifications for new in-app notifications. Added in 2.4.0. Both routes require an authenticated member and upsert into the `mvs_device_tokens` table. This is the Free generic device-token surface, backed by `Social/PushService.php`; when a new in-app notification is created, `PushService` fires the action `mvs_push_send( int $user_id, array $tokens, array $payload )` for a push-delivery integration to send, gated by the filter `mvs_push_should_send` (return `false` to suppress). Pro's Expo push at `POST /mvs-pro/v1/push/register-device` (table `mvs_pro_push_devices`) is separate and additional - neither replaces the other.
 
 ### POST /me/devices
 
@@ -847,7 +866,7 @@ Added in 1.9.0 to support a native mobile/headless client: a public pre-login co
 
 **Auth:** Public.
 
-Single call a client makes before theming itself and deciding which feature surfaces to mount. Returns only what the core `/wp-json/` index cannot express (branding + feature flags) — site name, description, icon, and auth come from the core index, never restated here.
+Single call a client makes before theming itself and deciding which feature surfaces to mount. Returns only what the core `/wp-json/` index cannot express (branding + feature flags) - site name, description, icon, and auth come from the core index, never restated here.
 
 **Response:**
 
@@ -879,7 +898,7 @@ Single call a client makes before theming itself and deciding which feature surf
 
 **Auth:** Public.
 
-Available interest chips for the onboarding picker — the top 40 `mvs_category` terms by usage count, each with a representative public cover thumbnail. Cached (transient, default 1 hour, filterable via `mvs_app_interests_cache_ttl`).
+Available interest chips for the onboarding picker - the top 40 `mvs_category` terms by usage count, each with a representative public cover thumbnail. Cached (transient, default 1 hour, filterable via `mvs_app_interests_cache_ttl`).
 
 **Response:**
 
@@ -921,7 +940,7 @@ Save the current user's interest picks. Only valid `mvs_category` term IDs are k
 
 **Auth:** Authenticated.
 
-"People you may know" — ranked creators (popularity + interest overlap with the viewer's picks), excluding the viewer, users they already follow, and blocked users. Each result carries up to 3 sample public-media thumbnails for the suggestion card.
+"People you may know" - ranked creators (popularity + interest overlap with the viewer's picks), excluding the viewer, users they already follow, and blocked users. Each result carries up to 3 sample public-media thumbnails for the suggestion card.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -1032,7 +1051,7 @@ Start a new conversation.
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `recipient_id` | Yes | - | User ID to start (or resume) a conversation with |
-| `as_request` | No | `false` | When `true`, force the conversation to open as a pending **message request** (lands in the recipient's Requests tab and must be accepted/declined) instead of an active thread — even if the sender/recipient relationship would otherwise allow a direct thread. Lets a native app open a "message request" flow explicitly through `mvs/v1` alone (1.8.0). |
+| `as_request` | No | `false` | When `true`, force the conversation to open as a pending **message request** (lands in the recipient's Requests tab and must be accepted/declined) instead of an active thread - even if the sender/recipient relationship would otherwise allow a direct thread. Lets a native app open a "message request" flow explicitly through `mvs/v1` alone (1.8.0). |
 
 **Response:** `201 Created` with the new conversation object, or `200` with the existing one when the two members already have a direct conversation. Refusals carry an `error` code and a readable `message`: `403 cannot_message_self` (your own ID), `403 blocked`, `403 dms_disabled`, `403 account_too_new`, `429 rate_limited`, `400 invalid_recipient`.
 
@@ -1099,11 +1118,11 @@ Send a typing-indicator event (no persistent storage; fires a real-time event on
 
 ### POST /conversations/{id}/accept
 
-Accept a message request — moves the conversation from **Requests** to **All**.
+Accept a message request - moves the conversation from **Requests** to **All**.
 
 ### POST /conversations/{id}/decline
 
-Decline a message request — removes the conversation from the inbox.
+Decline a message request - removes the conversation from the inbox.
 
 ### DELETE /messages/{id}
 

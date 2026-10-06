@@ -18,10 +18,10 @@ MediaVerse stores all media in dedicated custom tables, completely separate from
 | Table | Purpose |
 |-------|---------|
 | `mvs_media_index` | Core media record - title, author, file URL, privacy, status, timestamps |
-| `mvs_media_meta` | Sparse key-value metadata (thumbnails, EXIF, groups) |
-| `mvs_media_stats` | Views, reactions, comments, favorites - one row per media |
+| `mvs_media_meta` | Sparse key-value metadata (thumbnail paths, gallery groups, AI descriptions) |
+| `mvs_media_stats` | Views, downloads, reactions, comments and shares - one row per media |
 | `mvs_reactions` | Individual emoji reactions with user attribution |
-| `mvs_favorites` | User favorites / saved items |
+| `mvs_favorites` | Items a member has saved (their Favorites) |
 | `mvs_follows` | User follow relationships |
 | `mvs_conversations` | Direct message conversations |
 | `mvs_messages` | Individual chat messages |
@@ -49,11 +49,13 @@ MediaVerse stores all media in dedicated custom tables, completely separate from
 MediaVerse stores **database records** in custom tables. The actual **files** (images, videos, audio) are stored in the standard WordPress uploads directory:
 
 ```
-wp-content/uploads/wpmediaverse/2026/03/photo-name.jpg
-wp-content/uploads/wpmediaverse/2026/03/photo-name-300x200.jpg  (thumbnail)
-wp-content/uploads/wpmediaverse/2026/03/photo-name-1024x768.jpg (large)
-wp-content/uploads/wpmediaverse/2026/03/photo-name-150x150.jpg  (square)
+wp-content/uploads/wpmediaverse/2026/03/3f9a1c7e5b2d4a60.jpg          (original)
+wp-content/uploads/wpmediaverse/2026/03/3f9a1c7e5b2d4a60-1024x683.jpg  (large)
+wp-content/uploads/wpmediaverse/2026/03/3f9a1c7e5b2d4a60-300x200.jpg   (medium)
+wp-content/uploads/wpmediaverse/2026/03/3f9a1c7e5b2d4a60-150x150.jpg   (small square)
 ```
+
+New uploads get a random file name, so the address does not reveal the original name. MediaVerse makes three smaller sizes of every image.
 
 With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN while database records remain local.
 
@@ -64,44 +66,44 @@ With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN whil
 | Storage | wp_posts + postmeta | wp_posts + postmeta | wp_posts + postmeta | Custom tables |
 | Requires BuddyPress | Yes | Yes (BuddyBoss) | Yes | No (optional) |
 | Standalone mode | No | No | No | Yes |
-| Custom privacy levels | Basic | Basic | Basic | 6 levels (Pro) |
+| Privacy levels | Basic | Basic | Basic | Public, Members, Friends, Group, Only me |
 | Direct messaging | No | Separate plugin | No | Built-in |
 | Gamification | No | No | No | Challenges, battles, tournaments (Pro) |
 | Cloud storage | No | No | No | S3, BunnyCDN, Cloudflare R2, DigitalOcean Spaces (Pro) |
-| AI moderation | No | No | No | OpenAI + Vision + Rekognition |
+| AI moderation | No | No | No | OpenAI (Free); Google Vision, AWS Rekognition, Claude (Pro) |
 | Storage limit | No | No | No | One optional limit per member (Free) |
-| Layout modes | 1 | 1 | 1 | 5 (grid + 4 Pro layouts) |
+| Layout modes | 1 | 1 | 1 | 7 (3 Free + 4 Pro) |
 
 ## Use Cases
 
 ### Photography Community
-A social network for photographers to share, discover, and compete. Users upload photos, follow each other, enter weekly challenges, and battle head-to-head. The Pinterest or Instagram layout creates a visual-first experience.
+A social network for photographers to share, discover, and compete. Users upload photos, follow each other, enter weekly challenges, and battle head-to-head. The Pinterest or Instagram layout (Pro) creates a visual-first experience.
 
 ### Portfolio Showcase
-Designers, artists, and photographers use MediaVerse as their portfolio. The Dribbble layout presents work in a professional shot grid. Clients can view galleries, leave comments, and message directly.
+Designers, artists, and photographers use MediaVerse as their portfolio. The Dribbble layout (Pro) presents work in a professional shot grid. Clients can view galleries, leave comments, and message directly.
 
 ### School or University
 Students submit media projects through the upload system. Teachers use collections to curate work. Privacy controls ensure only enrolled members see content. An optional storage limit caps each student's space.
 
 ### Company Intranet
-Employees share photos from events, marketing assets, and training videos. Group media tabs organize content by department. AI moderation flags inappropriate uploads automatically.
+Employees share photos from events, marketing assets, and training videos. Group media tabs organize content by department. AI moderation, once you turn it on, flags inappropriate uploads automatically.
 
 ### BuddyPress Community
-Add a rich media layer to any BuddyPress social network. Members get media tabs on profiles and groups, uploads appear in the activity stream, and followers see new content in their feed. Everything works out of the box - activate BuddyPress and the integration is automatic.
+Add a rich media layer to any BuddyPress social network. Members get media tabs on profiles and groups, uploads appear in the activity stream, and followers see new content in their feed. Everything works out of the box - activate BuddyPress and the integration is automatic. On a BuddyNext community the same features are built in; see [BuddyNext Integration](../buddynext/overview.md).
 
 ## Frequently Asked Questions
 
 ### Will my media appear in the WordPress Media Library?
-No. MediaVerse media is managed through its own admin pages (**Media > All Media**) and frontend dashboard (**My Media**). This is intentional - it keeps the WordPress Media Library clean for your theme images, post attachments, and other site assets.
+No. MediaVerse media is managed through its own admin pages (**MediaVerse > All Media**) and frontend dashboard (**My Media**). This is intentional - it keeps the WordPress Media Library clean for your theme images, post attachments, and other site assets.
 
 ### Can I use MediaVerse without BuddyPress?
 Yes. MediaVerse is a standalone plugin. It creates its own pages (/explore-media/, /my-media/, /upload-media/) and works on any WordPress site. BuddyPress integration activates automatically when BuddyPress is installed but is completely optional.
 
 ### What happens to my data if I deactivate the plugin?
-Deactivation stops all plugin functionality but your data stays intact in the database. Reactivating restores everything. Deleting the plugin (uninstall) removes all custom tables and data permanently.
+Deactivation stops all plugin functionality but your data stays intact in the database. Reactivating restores everything. Deleting the plugin keeps your data too, unless you turned on **Remove Data on Delete** under **MediaVerse > Settings > General**. With that on, deleting the plugin removes the custom tables, albums, messages and settings. Uploaded files and the pages MediaVerse created are never deleted.
 
 ### Can I migrate from rtMedia / MediaPress / BuddyBoss?
-Yes. MediaVerse Pro includes WP-CLI migration tools that import media records, preserving original upload dates, author attribution, and file URLs. See [Migration Tools](../developer-guide/migration-tools.md).
+Yes. MediaVerse Pro includes WP-CLI migration tools that import media records, preserving original upload dates, author attribution, and file URLs. Pro also adds an **Import** screen under the MediaVerse menu when it finds media from one of those plugins. See [Migration Tools](../developer-guide/migration-tools.md).
 
 ### How does search work?
 MediaVerse has its own search system that queries the `mvs_media_index` table directly. It searches titles and descriptions. Tags and categories use WordPress taxonomies for filtering.

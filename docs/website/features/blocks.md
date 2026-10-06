@@ -3,7 +3,7 @@
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-MediaVerse registers **8** Gutenberg blocks under the **MediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
+MediaVerse registers **8** Gutenberg blocks. In the inserter, Media Upload, Media Grid, Media Player, Album Viewer and Explore Feed sit under **Media**, Member Photos and PDF Viewer under **MediaVerse**, and Media Stats under **Widgets**. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
 
 ![Gutenberg block inserter showing the MediaVerse block category](../images/admin-overview.png)
 
@@ -17,7 +17,7 @@ MediaVerse registers **8** Gutenberg blocks under the **MediaVerse** block categ
 | Album Viewer | `mvs/album-viewer` | Displays a single album's media in a grid |
 | Member Photos | `mvs/member-photos` | Auto-detects the user (explicit `userId` → BuddyPress displayed user → post author → current user) and renders their media grid |
 | PDF Viewer | `mvs/pdf-viewer` | Browser-native PDF embed using the `#view=FitH` URL fragment. Configurable height, optional toolbar, five distinct empty states |
-| Media Stats | `mvs/media-stats` | Site-wide or per-user media statistics |
+| Media Stats | `mvs/media-stats` | Site-wide media statistics |
 | Explore Feed | `mvs/explore-feed` | Infinite-scroll explore feed (all public media) with search autocomplete |
 
 *Story Viewer is not in this list of 8. The block source and the server-side `StoryService` that used to ship here were relocated to Pro in 1.9.0 along with a complete Stories feature (create-flow toggle, viewer, REST API, view receipts). See [Stories (Pro)](../pro-features/stories.md).*
@@ -48,6 +48,7 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 ![Media Grid block showing filter controls and grid layout](../images/explore-feed.png)
 
 **Block Settings:**
+- Layout - site default (follows **MediaVerse > Settings > Display**), grid, justified rows or list; with MediaVerse Pro the Pro layouts are also offered
 - Media Type Filter (image/video/audio/all)
 - Category Filter
 - Tag Filter
@@ -57,7 +58,7 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 - Lightbox (default: on)
 - Show Reactions (default: on)
 
-Grid columns and pagination inherit from **Media > Settings > Display**.
+Grid columns and pagination inherit from **MediaVerse > Settings > Display**.
 
 **Sorting (1.2.0):** Most Popular and Most Reactions sorts join the `mvs_media_stats` table to rank by aggregate engagement. Random sort reshuffles each page load.
 
@@ -96,8 +97,10 @@ The Member Photos block renders a single member's media grid. The block resolves
 
 **Block Settings:**
 - User ID (optional - leave empty to auto-detect)
+- Media Type filter
 - Items Per Page
-- Sort Order - same options as Media Grid
+- Show Header
+- Show Actions
 
 ## PDF Viewer Block
 
@@ -121,7 +124,7 @@ The PDF Viewer block embeds a PDF using the browser's native viewer via the `#vi
 
 ## Explore Feed Block
 
-The Explore Feed block provides an infinite-scroll feed of all public media. It supports URL-based filtering via `?mvs_tag=slug` and `?s=search-term` query parameters.
+The Explore Feed block provides an infinite-scroll feed of all public media. Its settings are Layout (site default unless chosen), Columns, Items Per Page, Show Type Filters and Show Search. It supports URL-based filtering via `?mvs_tag=slug` and `?s=search-term` query parameters.
 
 **Search autocomplete (1.2.0):** the search input now shows a type-ahead dropdown - top eight title matches, debounced 250 ms, full keyboard navigation (Arrow keys, Enter, Escape) and ARIA combobox semantics for screen reader users.
 
@@ -136,6 +139,6 @@ Four directories under `src/blocks/` carry a `block.json` but are **not** regist
 | `mvs/media-social` | Social interactions store for single media and album pages |
 | `mvs/shared-ui` | Shared UI store - toasts, confirm dialogs, tag autocomplete |
 
-Each declares `"supports": { "inserter": false }` in its `block.json`, and none of them is passed to `register_block_type()`, so none appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a `block.json` count of the source tree (13) is not mistaken for a registered-block count (8).
+Each declares `"supports": { "inserter": false }` in its `block.json`, and none of them is passed to `register_block_type()`, so none appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a `block.json` count of the source tree (12) is not mistaken for a registered-block count (8).
 
 > **Do not remove these from a custom build.** The dashboard, explore and single-media templates bind to these stores by name. Dropping one leaves the matching interface inert - buttons render but nothing responds.

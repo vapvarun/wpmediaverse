@@ -16,12 +16,12 @@ Group your own uploads into an album - tell a story, document a trip, or build a
 
 ## How It Works (for Users)
 
-1. Go to your media dashboard and click **Create Album**
+1. Go to your media dashboard, open **Albums** and click **Create Album**
 2. Give your album a title and optional description
-3. Choose a privacy level: public, members only, friends, or private
-4. Click **Add Media** to pick photos from your uploads - select as many as you like
-5. Drag photos in the album to reorder them. Click the star on any photo to set it as the cover
-6. Click **Save Album** - your album is live and appears on your profile
+3. Choose a privacy level: Public, Members, Friends (only when BuddyPress friends is active), or Only me
+4. Under **Select Media**, click thumbnails to pick photos from your uploads - select as many as you like. Click **Set Cover** on a photo to make it the cover
+5. Click **Create** - your album is live and appears on your profile
+6. To change it later, open **Edit Album**, adjust the details or the media, and click **Save**. On the album page, **Add Media** adds more photos
 7. To share your album, copy the album link from the album page and send it to anyone
 
 ![Album creation form with title field and privacy selector](../images/dashboard-media.png)
@@ -29,10 +29,10 @@ Group your own uploads into an album - tell a story, document a trip, or build a
 ## For Site Owners
 
 1. Albums are enabled by default once MediaVerse is activated
-2. To embed a specific album on a page, use the **MediaVerse: Album Viewer** block in the block editor - select the album from the block sidebar
+2. To embed a specific album on a page, use the **Album Viewer** block in the block editor - select the album from the block sidebar
 3. Or use the shortcode `[mvs_album id="123"]` where `123` is the album's post ID
 4. Users manage their own albums from their media dashboard
-5. Admins can view and delete any album from **Media > Albums** in wp-admin
+5. Admins can view and delete any album from **MediaVerse > Albums** in wp-admin
 6. In the **Album Settings** box, **Album type** is a choice: Standard album or Playlist (audio only). A custom type set through the API stays selectable.
 7. WordPress's password and private options are hidden for albums and collections. Who can see an album is its privacy in Album Settings.
 
@@ -58,7 +58,7 @@ If a user can see the album but not a specific media item (because the item's pr
 
 ## Displaying an Album
 
-**Gutenberg Block:** Add the **MediaVerse: Album Viewer** block, then select an album from the block settings.
+**Gutenberg Block:** Add the **Album Viewer** block, then select an album from the block settings.
 
 **Shortcode:**
 ```
@@ -85,6 +85,8 @@ If a user can see the album but not a specific media item (because the item's pr
 | `GET` | `/mvs/v1/albums/{id}/items` | List album media |
 | `POST` | `/mvs/v1/albums/{id}/items` | Add media to album |
 | `DELETE` | `/mvs/v1/albums/{id}/items/{media_id}` | Remove media from album |
+| `PUT` | `/mvs/v1/albums/{id}/reorder` | Change the order of the media in an album |
+| `PUT` | `/mvs/v1/albums/{id}/cover` | Set the album cover |
 
 ### Creating an Album via API
 

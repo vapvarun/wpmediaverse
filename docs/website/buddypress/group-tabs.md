@@ -23,11 +23,11 @@ The group media tab displays media that was:
 - Uploaded with `privacy=group` and `group_id={this-group-id}`.
 - Reassigned to the group via the `mvs_media_group_assigned` action.
 
-Privacy applies within the group: only group members can view the tab content.
+Privacy applies to each item. Visitors see the group's public media, signed-in members also see members-only media, and media set to **group** privacy is visible only to members of that group. The tab also has an **Albums** section for albums that belong to the group.
 
 ## Assigning Media to a Group
 
-When uploading, set the `privacy` to `group` and provide the `group_id`:
+When uploading, set the `privacy` to `group` and provide the `group_id`. The uploader must be a member of that group; otherwise the group is ignored:
 
 ```bash
 curl -X POST https://yoursite.com/wp-json/mvs/v1/media \

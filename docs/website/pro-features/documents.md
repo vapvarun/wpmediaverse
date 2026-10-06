@@ -21,9 +21,9 @@ Beside their own drive members get:
 
 - Create folders and nest them, rename them, move them, and move documents between them
 - Select several documents and folders and move them in one go
-- Set privacy per document: only me, members, this space, or anyone with the link
+- Set privacy per document: **Only me**, **All site members** or **Anyone**. On a space drive there is also **Everyone on this drive**
 - Set privacy on a folder and have everything inside it follow
-- Share a document with a specific member or with a whole role, choose whether they can view or edit, and withdraw that access later
+- Share a document with a specific member, choose whether they can view or edit, and withdraw that access later. Sharing with a whole role is not available; use the **All site members** privacy level instead
 - Create a link that opens without signing in, when the site allows it
 - Download any document straight from its row
 
@@ -80,7 +80,7 @@ Downloads always work, whatever the type.
 
 ## One File, Several Spaces
 
-A file can be linked into more than one space without being uploaded again. The file stays
+A file can be linked into more than one space without being uploaded again. MediaVerse has no screen for this; BuddyNext's Files tab offers it, and apps can use the API. The file stays
 on its owner's drive; the space gets a link to it, and that space's members can open it.
 
 - **Who may link:** anyone who can write to the target space (member, moderator or owner)
@@ -126,12 +126,13 @@ Settings live at **MediaVerse > Settings > Documents**:
 
 | Setting | What it does |
 |---------|--------------|
+| Enable Documents | Turns the whole feature on or off. Default: on. Off hides the Documents tab, the admin screens and the document API; nothing is deleted |
 | Who can use documents | Which roles get a document library at all. Every role has it to begin with, including roles other plugins add |
-| Maximum size | Upload ceiling in MB. `0` follows the server's own limit |
-| Accepted types | Which document types this site takes |
-| Default privacy | What a newly uploaded document starts as |
-| Anonymous links | Whether share links can open without signing in |
-| Index for search | Whether uploads are text-extracted so drive search can find them |
+| Maximum document size | Upload ceiling in MB. Default `0`, which follows the server's own limit |
+| Allowed file types | Which document types this site takes. All types are on to begin with |
+| New documents start as | What a newly uploaded document starts as. Default: Only me |
+| Share links that work without logging in | Whether members can create links that open without signing in. Default: off. Turning it off also closes links already handed out |
+| Search inside documents | Whether uploads are text-extracted in the background so drive search can find them. Default: on. PDFs are not text-extracted, so a PDF is found by its title or tags only |
 
 Turning documents off for a role **hides the surfaces without deleting a single file**. Turning it back on brings every drive back exactly as it was.
 
@@ -183,6 +184,8 @@ gives the same result in a classic editor.
 | `GET` | `/mvs-pro/v1/documents/{id}/download` | Download the file |
 | `GET` | `/mvs-pro/v1/documents/{id}/preview` | Render the document |
 | `GET` | `/mvs-pro/v1/me/shared` | Documents shared with me |
+| `POST`/`DELETE` | `/mvs-pro/v1/documents/{id}/spaces` and `.../spaces/{space_id}` | Link a document into a space, or remove the link |
+| `POST` | `/mvs-pro/v1/documents/link` | Link a document into a space from a pasted URL, slug or id |
 | `GET` | `/mvs-pro/v1/drives` | Drives this member can reach |
 | `GET`/`POST` | `/mvs-pro/v1/folders` | List or create folders |
 | `POST`/`DELETE` | `/mvs-pro/v1/folders/{id}` | Rename, move or trash a folder. `DELETE ...?force=true` permanently deletes a folder that is already in the trash |

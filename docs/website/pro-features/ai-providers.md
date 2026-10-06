@@ -12,12 +12,12 @@ MediaVerse Pro adds Google Cloud Vision, AWS Rekognition, and Claude (Anthropic)
 
 | Provider | Auto-Tag | Content Moderation | Configuration Location |
 |----------|----------|--------------------|----------------------|
-| OpenAI Vision (free + Pro) | Yes | Yes | Media > Settings > AI & Moderation |
-| Google Cloud Vision | Yes | Yes | Media > Settings > AI & Moderation > Google Vision |
-| AWS Rekognition | Yes | Yes | Media > Settings > AI & Moderation > AWS Rekognition |
-| Claude (Anthropic) | Yes | Yes | Media > Settings > AI & Moderation > Claude |
+| OpenAI (GPT-4 Vision) (free + Pro) | Yes | Yes | MediaVerse > Settings > AI |
+| Google Vision | Yes | Yes | MediaVerse > Settings > AI, Google Cloud Vision section |
+| AWS Rekognition | Yes | Yes | MediaVerse > Settings > AI, AWS Rekognition section |
+| Claude (Anthropic) | Yes | Yes | MediaVerse > Settings > AI, Anthropic (Claude) section |
 
-Only one provider is active at a time. Select it under **Media > Settings > AI & Moderation > Provider**.
+Only one provider is active at a time. Select it under **MediaVerse > Settings > AI > AI Provider**. The section for the chosen provider appears once you select it.
 
 ---
 
@@ -26,13 +26,13 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 ### Requirements
 
 - A Google Cloud project with the Cloud Vision API enabled
-- An API key or service account with `roles/cloudvision.user`
+- A Google Cloud API key (created in the Google Cloud Console, under APIs and services, Credentials)
 
 ### Settings
 
 | Option | Option Key | Description |
 |--------|-----------|-------------|
-| Vision API Key | `mvs_pro_google_vision_key` | Google Cloud API key |
+| Google Cloud API Key | `mvs_pro_google_vision_key` | Google Cloud API key. The project must have the Cloud Vision API enabled and billing on |
 
 ![Google Vision settings section with API key field](../images/admin-settings-general.png)
 
@@ -55,9 +55,9 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 
 | Option | Option Key | Description |
 |--------|-----------|-------------|
-| Access Key ID | `mvs_pro_aws_access_key` | AWS IAM access key ID |
-| Secret Access Key | `mvs_pro_aws_secret_key` | AWS IAM secret access key |
-| Region | `mvs_pro_aws_region` | AWS region, e.g. `us-east-1` |
+| AWS Access Key ID | `mvs_pro_aws_access_key` | AWS IAM access key ID |
+| AWS Secret Access Key | `mvs_pro_aws_secret_key` | AWS IAM secret access key |
+| AWS Region | `mvs_pro_aws_region` | Pick from the regions where Rekognition is available. Default `us-east-1` |
 
 ![AWS Rekognition settings section](../images/admin-settings-general.png)
 
@@ -79,9 +79,10 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 | Option | Option Key | Description |
 |--------|-----------|-------------|
 | Anthropic API Key | `mvs_pro_anthropic_key` | Your Anthropic API key |
-| Claude Model | `mvs_pro_anthropic_model` | Vision-capable model used for analysis, tagging, and moderation. Choices: **Claude Haiku 4.5** (fast & low cost, recommended, default), **Claude Sonnet 4.6** (stronger judgment), **Claude Opus 4.8** (most capable) |
 
-![Claude settings section with API key and model fields](../images/admin-settings-general.png)
+The model is **Claude Haiku 4.5**, chosen for tagging speed and cost. Since 2.6.0 there is no model picker on the screen; a site that picked Claude Sonnet 4.6 or Claude Opus 4.8 before then keeps that choice.
+
+![Claude settings section with API key field](../images/admin-settings-general.png)
 
 ### What Claude Returns
 
@@ -100,14 +101,19 @@ While the circuit is open, calls to that provider are skipped. The failure count
 
 ## Auto-Tagging Behaviour
 
-All providers map their returned labels to `mvs_tag` taxonomy terms. Terms are created if they do not exist. Auto-tagging and the confidence/threshold controls that govern it are configured through the free plugin's AI settings (Auto-Apply Tags and the moderation thresholds under **Media > Settings > AI & Moderation**) - the Pro providers feed into that same pipeline rather than adding their own tag-confidence option keys.
+All providers map their returned labels to `mvs_tag` taxonomy terms. Terms are created if they do not exist. Auto-tagging and the confidence/threshold controls that govern it are configured through the free plugin's AI settings (Auto-Apply Tags under **MediaVerse > Settings > AI**, and the flag settings under **MediaVerse > Settings > Moderation**) - the Pro providers feed into that same pipeline rather than adding their own tag-confidence option keys.
 
 ---
 
-## Content Moderation Thresholds
+## Content Moderation Settings
 
-Each safety category has an independent threshold. When a category's confidence score meets or exceeds the threshold, the moderation action configured in **When AI Flags Content** is applied.
+Moderation settings are shared by every provider and live on **MediaVerse > Settings > Moderation**:
 
-Configure thresholds at **Media > Settings > AI & Moderation > Moderation Thresholds**.
+- **AI Moderation** - check new uploads with AI and act on what it flags.
+- **When AI Flags Content** - what happens to a flagged upload, such as hiding it until you review it.
+- **AI Flag Criteria** - which content categories the AI flags.
+- **Custom Flag Terms** - extra terms the AI should also flag.
+
+The separate **Auto-Hide Threshold** setting on that tab counts member reports, not AI scores.
 
 ![Moderation threshold sliders for content categories](../images/admin-settings-general.png)

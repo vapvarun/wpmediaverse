@@ -7,23 +7,23 @@ When BuddyPress Notifications is active, MediaVerse sends in-app notifications f
 
 ## Notification Types
 
-| Event | NotificationService Type | BP Component Action | Who Gets Notified |
-|-------|--------------------------|---------------------|-------------------|
-| Someone reacts to your media | `media_reaction` | `mvs_new_reaction` | Media owner |
-| Someone comments on your media | `media_comment` | `mvs_new_comment` | Media owner |
-| Someone @mentions you in a comment | `media_mention` | `mvs_new_mention` | Each mentioned user |
+| Event | Who Gets Notified |
+|-------|-------------------|
+| Someone reacts to your media | Media owner |
+| Someone comments on your media | Media owner |
+| Someone @mentions you in a comment | Each mentioned user |
+| Someone follows you | The member followed |
+| Someone favourites your media | Media owner |
+| A moderator reviews a report you filed | The member who filed it |
+| MediaVerse Pro events, such as photo battle invites and competition results | The member concerned |
 
-`NotificationIntegration` subscribes to the single `mvs_notification_created` signal emitted by `NotificationService::create()` and mirrors these three types into BuddyPress via `bp_notifications_add_notification()`. It does not listen on raw plugin hooks (which previously caused duplicate notifications).
+Every MediaVerse notification type is mirrored into the BuddyPress bell, except direct messages. Messages keep their own unread badge on the chat button.
+
+MediaVerse sends each notification once. It does not listen on several separate events for the same action, which would produce duplicates.
 
 ## Notification Registration
 
-MediaVerse registers `wpmediaverse` as a BuddyPress notification component via the `bp_notifications_get_registered_components` filter.
-
-Notification format strings are registered via:
-
-```php
-add_filter( 'bp_notifications_get_notifications_for_user', ... );
-```
+MediaVerse registers itself as a BuddyPress notification component, so its notifications appear in the member's BuddyPress notification list and bell. The wording and link are the same as in MediaVerse's own notification list.
 
 ## Notification Format
 
@@ -31,15 +31,18 @@ Notifications appear in the BuddyPress notification bell with these formats:
 
 | Type | Format |
 |------|--------|
-| Reaction | **Username** reacted to your media |
-| Comment | **Username** commented on your media |
+| Reaction | **Username** reacted to **[media title]** (or "to your media" when it has no title) |
+| Comment | **Username** commented on **[media title]** (or "on your media") |
 | Mention | **Username** mentioned you |
+| Follow | **Username** started following you |
+| Favourite | **Username** favorited **[media title]** (or "your media") |
+| Report reviewed | A moderator reviewed your report. Thank you for helping keep the community safe. |
 
 ![BuddyPress notification dropdown showing MediaVerse notifications](../images/bp-profile-media.jpg)
 
 ## Notification Filters (BP Nouveau)
 
-In BuddyPress Nouveau, notification filter links are registered via `bp_nouveau_notifications_init_filters` to allow users to filter their notification list by MediaVerse notifications.
+In BuddyPress Nouveau, members can filter their notification list by **Media Reactions**, **Media Comments** and **Media Mentions**.
 
 ## Reading Notifications via REST API
 
@@ -79,6 +82,6 @@ See [`mvs_suppress_bp_comment_notification`](../developer-guide/hooks-filters.md
 
 ## 1.2.0 update - single notification surface
 
-When BuddyPress is active, every MediaVerse notification is mirrored to BuddyPress via `bp_notifications_add_notification`, and the standalone dashboard `.mvs-notification-bell` markup is suppressed. This means BP-active sites see one bell - the BP nav bell - instead of two competing bells rendering the same notifications.
+When BuddyPress Notifications is active, MediaVerse notifications are mirrored to BuddyPress, and the standalone MediaVerse dashboard bell is hidden. This means BP-active sites see one bell - the BP nav bell - instead of two competing bells rendering the same notifications.
 
 This is automatic. No setting to flip, no filter to add. If BuddyPress is deactivated, the standalone MediaVerse bell returns automatically.

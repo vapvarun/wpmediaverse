@@ -5,7 +5,7 @@
 
 MediaVerse provides privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
 
-The six levels below are the ones the upload form offers. The full vocabulary a write is allowed to store is `PrivacyService::supported_levels()` - as of 2.4.0 `public`, `members`, `loggedin`, `friends`, `group`, `space`, `private`, `dm` and `custom`, filterable through `mvs_privacy_levels`. A level not in that list is refused at the edge rather than stored and silently ignored.
+The upload form offers four of them: **Public**, **Members**, **Friends** (only when the BuddyPress friends component is active) and **Only me** (`private`). The others apply to media inside a group or space, or are set by add-ons. The full vocabulary a write is allowed to store is `PrivacyService::supported_levels()` - as of 2.4.0 `public`, `members`, `loggedin`, `friends`, `group`, `space`, `private`, `dm` and `custom`, filterable through `mvs_privacy_levels`. A level not in that list is refused at the edge rather than stored and silently ignored.
 
 ## Privacy Levels
 
@@ -51,21 +51,9 @@ curl -X PUT https://yoursite.com/wp-json/mvs/v1/media/123 \
   -d '{"privacy": "private"}'
 ```
 
-## Custom Access Grants
+## Custom Access Lists
 
-For `custom` privacy, grant access to specific users:
-
-```bash
-curl -X POST https://yoursite.com/wp-json/mvs/v1/media/123/grant \
-  -H "X-WP-Nonce: NONCE" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": 55,
-    "expires_at": "2026-01-01T00:00:00Z"
-  }'
-```
-
-Access grants can have optional expiry dates. Expired grants are cleaned up via `wp mvs cleanup-expired` or via cron.
+`custom` privacy limits a media item to a list of specific people, each with an optional expiry date. The free plugin checks that list when someone opens the item, but has no screen or endpoint for building one. MediaVerse Pro uses the same list for document sharing. Expired entries are cleaned up by cron or with `wp mvs cleanup-expired`.
 
 ## How Media Files Are Delivered
 
@@ -93,7 +81,7 @@ To keep every file on signed links, add `add_filter( 'mvs_direct_media_delivery'
 
 ### Signed link lifetime
 
-Signed links last 1 hour by default (**Media > Settings > Storage > Signed URL Expiry (seconds)**). Links for non-public media stay the same for half of that time, so browsers can reuse a downloaded file instead of fetching it again.
+Signed links last 1 hour by default (the `mvs_signed_url_ttl` option, in seconds; there is no screen for it). Links for non-public media stay the same for half of that time, so browsers can reuse a downloaded file instead of fetching it again.
 
 ## Filtering Privacy Access in Code
 

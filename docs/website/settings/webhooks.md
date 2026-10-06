@@ -28,6 +28,10 @@ Each webhook has an **All events** box plus one box per event. The screen shows 
 
 Events are saved only when a URL is set. Without a URL the webhook is removed and the event choice resets to "All events".
 
+The **Moderation status changed** payload also carries a `mod_status` field with the new status. Reaction and comment payloads carry `media_id`, `user_id` and the reaction type or comment text instead of the media fields shown below. Deleted payloads carry only `media_id` and `author`.
+
+Recent failed deliveries are listed under **Recent failed deliveries** at the bottom of the Webhooks tab (the last 10).
+
 ## Payload Format
 
 All webhook payloads are sent as JSON via HTTP POST with these headers:

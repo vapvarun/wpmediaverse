@@ -288,7 +288,11 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 
 Fires after the free plugin is fully initialized and the DI container is ready. Use this instead of `plugins_loaded` when you need access to MediaVerse services.
 
-**Parameters:** none
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$container` | `ServiceContainer` | The service container |
 
 ```php
 /**
@@ -731,7 +735,7 @@ Filters the `features` boolean map returned by `GET /app/config`. Free seeds its
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity` (all `true` except `messaging`, which is `false` when the Messages switch is off or `mvs_dm_access` is `nobody`) |
+| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity`, `reporting`, `blocking`, `account_deletion`, `password_login`, `downloads`, `user_privacy`. Most are `true`; `messaging` is `false` when the Messages switch is off or `mvs_dm_access` is `nobody`, and `reporting`, `password_login`, `downloads` and `user_privacy` follow their own settings. |
 
 **Returns:** `array<string,bool>`
 
@@ -746,7 +750,7 @@ add_filter( 'mvs_app_config_features', function( array $features ) : array {
 
 #### `mvs_app_config_branding`
 
-Filters the white-label branding array returned by `GET /app/config`. No Free setting drives this — Pro's Mobile App Branding settings (accent color, logo, login background, dark-mode default) populate it. Do not add site name/description/icon here; those come from the core `/wp-json/` index.
+Filters the white-label branding array returned by `GET /app/config`. No Free setting drives this - Pro's Mobile App Branding settings (accent color, logo, login background, dark-mode default) populate it. Do not add site name/description/icon here; those come from the core `/wp-json/` index.
 
 **Parameters:**
 
@@ -978,7 +982,7 @@ Gates whether the lightbox and single-media page render a separate "Save to coll
 add_filter( 'mvs_collections_enabled', '__return_true' );
 ```
 
-**Frontend companion.** In the shared-ui lightbox (Interactivity API store), the Save button calls the `actions.lightboxOpenCollections` action, which dispatches a `mvs-collections-click` `CustomEvent` (bubbling) carrying `detail: { mediaId }`. A collections backend listens for this event on the document to open its own picker UI — the lightbox itself has no picker.
+**Frontend companion.** In the shared-ui lightbox (Interactivity API store), the Save button calls the `actions.lightboxOpenCollections` action, which dispatches a `mvs-collections-click` `CustomEvent` (bubbling) carrying `detail: { mediaId }`. A collections backend listens for this event on the document to open its own picker UI - the lightbox itself has no picker.
 
 ```js
 document.addEventListener( 'mvs-collections-click', ( event ) => {
@@ -1110,9 +1114,9 @@ add_filter( 'mvs_should_send_notification', function( bool $should_send, int $us
 
 ### Community Notification Contract (2.6.0)
 
-A host community plugin (BuddyNext) is a display + push layer — it never re-implements this plugin's own rules. Every dispatch that reaches `mvs_notification_created` with a real member recipient (a `$user_id` that is not the actor) carries a shared payload as the hook's 9th argument, built ONCE by `WPMediaVerse\Social\CommunityNotificationContract::payload()` from the SAME `$message`/`$link` the hook's 6th/7th arguments already carry — never a second render of the notification text.
+A host community plugin (BuddyNext) is a display + push layer - it never re-implements this plugin's own rules. Every dispatch that reaches `mvs_notification_created` with a real member recipient (a `$user_id` that is not the actor) carries a shared payload as the hook's 9th argument, built ONCE by `WPMediaVerse\Social\CommunityNotificationContract::payload()` from the SAME `$message`/`$link` the hook's 6th/7th arguments already carry - never a second render of the notification text.
 
-Four of this plugin's own types are a HOST's screen, not this plugin's: `new_follower`, `media_comment`, `media_favorite` and `new_message` already have their own first-class surface in a community plugin, so a host tells this plugin to skip creating those entirely (`mvs_should_send_notification`) and sends its own bell row, email and push. The contract payload is never built for those four either way. `report_resolved` names no media and links nowhere a host's bell could deep-link to, so it is never declared or sent through the contract — it stays a plugin-native-only notification. That leaves **`media_reaction`** and **`media_mention`** as the types a host actually receives.
+Four of this plugin's own types are a HOST's screen, not this plugin's: `new_follower`, `media_comment`, `media_favorite` and `new_message` already have their own first-class surface in a community plugin, so a host tells this plugin to skip creating those entirely (`mvs_should_send_notification`) and sends its own bell row, email and push. The contract payload is never built for those four either way. `report_resolved` names no media and links nowhere a host's bell could deep-link to, so it is never declared or sent through the contract - it stays a plugin-native-only notification. That leaves **`media_reaction`** and **`media_mention`** as the types a host actually receives.
 
 **Only declared types carry a payload.** `payload()` sends a type only when it appears in `mvs_community_notification_types`, so a type another plugin adds to `mvs_notification_types` (Pro's battles, challenges, tournaments and shared documents) stays out of the host bell until it is declared with its own object mapping.
 
@@ -1137,8 +1141,8 @@ Three more seams complete the contract, all registered by `CommunityNotification
 | Hook | Type | Args | Purpose |
 |------|------|------|---------|
 | `mvs_community_notification_types` | filter | `(array $types)` → `array` | Declares `media_reaction` and `media_mention` (`slug => {label, description, default_on}`), so a host lists one settings switch per type. |
-| `mvs_community_notification_visible` | filter | `(array $visible, int $viewer_id, array $targets)` → `array` | Per-viewer visibility for a page of bell rows, answered through the SAME `PrivacyService::can_view()` every other privacy decision in this plugin uses — never a second access rule. |
-| `mvs_community_notification_removed` | action | `(string $object_type, int $object_id)` | Fired on `mvs_media_deleted` (permanent delete only — trash/restore is a visibility question, answered by the filter above, not removal). |
+| `mvs_community_notification_visible` | filter | `(array $visible, int $viewer_id, array $targets)` → `array` | Per-viewer visibility for a page of bell rows, answered through the SAME `PrivacyService::can_view()` every other privacy decision in this plugin uses - never a second access rule. |
+| `mvs_community_notification_removed` | action | `(string $object_type, int $object_id)` | Fired on `mvs_media_deleted` (permanent delete only - trash/restore is a visibility question, answered by the filter above, not removal). |
 
 ---
 
@@ -1581,7 +1585,7 @@ add_filter( 'mvs_openai_api_key', function( string $key ) {
 
 ### `mvs_ai_moderation_terms` **(New in 1.8.0)**
 
-Supplies the full list of moderation terms — the enabled built-in categories (nudity, violence, hate, self-harm, drugs, spam) plus the owner's custom flag terms — to AI providers that don't read Free's options directly. Unusually for a filter, **Free is the consumer that registers the default callback**, not the one that calls `apply_filters()`: `Core\Plugin` does `add_filter( 'mvs_ai_moderation_terms', array( AIService::class, 'get_moderation_terms' ) )` so any provider (Pro's Claude/Anthropic provider calls `apply_filters( 'mvs_ai_moderation_terms', self::CATEGORIES )`) gets the site's real moderation criteria back instead of building its own hardcoded prompt.
+Supplies the full list of moderation terms - the enabled built-in categories (nudity, violence, hate, self-harm, drugs, spam) plus the owner's custom flag terms - to AI providers that don't read Free's options directly. Unusually for a filter, **Free is the consumer that registers the default callback**, not the one that calls `apply_filters()`: `Core\Plugin` does `add_filter( 'mvs_ai_moderation_terms', array( AIService::class, 'get_moderation_terms' ) )` so any provider (Pro's Claude/Anthropic provider calls `apply_filters( 'mvs_ai_moderation_terms', self::CATEGORIES )`) gets the site's real moderation criteria back instead of building its own hardcoded prompt.
 
 **Parameters:**
 
@@ -1589,7 +1593,7 @@ Supplies the full list of moderation terms — the enabled built-in categories (
 |-----------|------|-------------|
 | `$terms` | string[] | Default term list passed in by the caller (e.g. a provider's own fallback category constant) |
 
-**Returns:** `string[]` — Free's registered callback ignores the incoming default and always returns `AIService::get_moderation_terms()` (enabled categories + `mvs_ai_moderation_custom_terms`, comma-split, deduped).
+**Returns:** `string[]` - Free's registered callback ignores the incoming default and always returns `AIService::get_moderation_terms()` (enabled categories + `mvs_ai_moderation_custom_terms`, comma-split, deduped).
 
 ```php
 /**
@@ -1656,7 +1660,7 @@ add_filter(
 
 ### `mvs_storage_driver`
 
-Resolves the storage driver **instance** for a given driver slug. This is the registration point for custom drivers: the filter receives the current driver (`null` until something supplies one) and the configured driver name, and your callback returns a `StorageDriverInterface` instance only when the name matches your slug — otherwise it returns the incoming `$driver` unchanged. If no listener returns an instance, `StorageService` falls back to the built-in `LocalDriver`. See [Custom Storage Drivers](custom-storage-drivers.md) for the full contract.
+Resolves the storage driver **instance** for a given driver slug. This is the registration point for custom drivers: the filter receives the current driver (`null` until something supplies one) and the configured driver name, and your callback returns a `StorageDriverInterface` instance only when the name matches your slug - otherwise it returns the incoming `$driver` unchanged. If no listener returns an instance, `StorageService` falls back to the built-in `LocalDriver`. See [Custom Storage Drivers](custom-storage-drivers.md) for the full contract.
 
 **Parameters:**
 
@@ -1949,7 +1953,7 @@ add_filter( 'mvs_broadcast_thumbnail_ttl', function( int $ttl, int $media_id, st
 
 ### Render-Stable Public URLs (1.7.0)
 
-Public media is served through signed `/serve` URLs like everything else, but a fresh signature on every page render defeats browser and CDN caching. These four filters, all in `SignedUrlService`, control the render-stable/cacheable URL behavior for **public** media only — private/restricted media always keeps its rolling, per-request signature.
+Public media is served through signed `/serve` URLs like everything else, but a fresh signature on every page render defeats browser and CDN caching. These four filters, all in `SignedUrlService`, control the render-stable/cacheable URL behavior for **public** media only - private/restricted media always keeps its rolling, per-request signature.
 
 #### `mvs_stable_public_urls`
 
@@ -2051,7 +2055,7 @@ Local-storage escape hatch for public media. By default, public files stored on 
 | `$media_id` | int | Media ID |
 | `$rel_path` | string | Relative storage path |
 
-**Returns:** `string` — non-empty to bypass `/serve`.
+**Returns:** `string` - non-empty to bypass `/serve`.
 
 ```php
 add_filter( 'mvs_public_local_file_url', function( string $url, int $media_id, string $rel_path ) : string {
@@ -2065,7 +2069,7 @@ add_filter( 'mvs_public_local_file_url', function( string $url, int $media_id, s
 
 #### `mvs_cloudops_allow_non_public_to_cloud`
 
-Controls whether a non-public (private/restricted) media item is allowed to be migrated to a cloud driver during a `CloudOps` migration. Default `false` — only public media is cloud-eligible, so private files stay on local disk. Return `true` to opt a specific item in.
+Controls whether a non-public (private/restricted) media item is allowed to be migrated to a cloud driver during a `CloudOps` migration. Default `false` - only public media is cloud-eligible, so private files stay on local disk. Return `true` to opt a specific item in.
 
 **Parameters:**
 
@@ -2089,7 +2093,7 @@ add_filter( 'mvs_cloudops_allow_non_public_to_cloud', function( bool $allow, int
 
 #### `mvs_default_thumbnail_style`
 
-Filters the default grid thumbnail style for sites that have not explicitly saved the `mvs_thumbnail_style` option. The default flipped from `square` to `original` (justified rows) in 1.8.0 so Explore and the media-grid show every image at its native aspect ratio instead of a center-cropped square. Use this filter to restore the old uniform-crop default without touching the site's saved option — an explicitly saved option always wins over the filtered default, since `register_setting()` only runs on `admin_init` and the frontend relies on this resolved default.
+Filters the default grid thumbnail style for sites that have not explicitly saved the `mvs_thumbnail_style` option. The default flipped from `square` to `original` (justified rows) in 1.8.0 so Explore and the media-grid show every image at its native aspect ratio instead of a center-cropped square. Use this filter to restore the old uniform-crop default without touching the site's saved option - an explicitly saved option always wins over the filtered default, since `register_setting()` only runs on `admin_init` and the frontend relies on this resolved default.
 
 **Parameters:**
 
@@ -2124,7 +2128,7 @@ Filters the thumbnail size rung (`medium` or `large`) served for grid/justified-
 | `$key` | string | Resolved rung, `'medium'` or `'large'` |
 | `$configured` | string | The raw `mvs_thumbnail_size` setting value |
 
-**Returns:** `string` — must resolve to `'medium'` or `'large'`; any other value falls back to `'large'`.
+**Returns:** `string` - must resolve to `'medium'` or `'large'`; any other value falls back to `'large'`.
 
 ```php
 /**
@@ -2147,7 +2151,7 @@ add_filter( 'mvs_grid_thumb_size_key', function( string $key, string $configured
 
 #### `mvs_storage_repair_enabled`
 
-Owner escape hatch for the automatic post-update storage repair pass (`Services\StorageRepairService`). The repair heals two pre-1.8.0 inconsistencies without deleting or moving anything — absolute file paths left over from a plugin migration (rtMedia / MediaPress / BuddyBoss), and thumbnails stranded on local disk after an older "Migrate all" — copying files into the library and correcting `file_path`/`file_url` only. It runs opt-out (default `true`), in bounded Action Scheduler batches, and is idempotent/resumable. Also gates `wp mvs repair-storage` (see [WP-CLI Commands](wp-cli.md)).
+Owner escape hatch for the automatic post-update storage repair pass (`Services\StorageRepairService`). The repair heals two pre-1.8.0 inconsistencies without deleting or moving anything - absolute file paths left over from a plugin migration (rtMedia / MediaPress / BuddyBoss), and thumbnails stranded on local disk after an older "Migrate all" - copying files into the library and correcting `file_path`/`file_url` only. It runs opt-out (default `true`), in bounded Action Scheduler batches, and is idempotent/resumable. Also gates `wp mvs repair-storage` (see [WP-CLI Commands](wp-cli.md)).
 
 **Parameters:**
 
@@ -2199,7 +2203,7 @@ add_filter( 'mvs_filename_strategy', function( string $strategy, int $user_id ) 
 | `mvs_media_deleted` | action | Media permanently deleted | `$media_id`, `$author_id`, `$permalink` (since 1.9.0) | 1.0 |
 | `mvs_media_trashed` | action | Media moved to the trash. Same three arguments as `mvs_media_deleted`, so one listener can withdraw a mirror on either event | `$media_id`, `$author_id`, `$permalink` | 2.4.0 |
 | `mvs_media_restored` | action | Media restored from the trash. Paired with `mvs_media_trashed` so a withdrawn mirror can be re-added | `$media_id`, `$author_id`, `$permalink` | 2.4.0 |
-| `mvs_watermark_enabled` | filter | Enable/disable watermark per media item | `$enabled` (bool), `$media_id` | 1.0 |
+| `mvs_watermark_enabled` | filter | Enable/disable watermarking at runtime | `$enabled` (bool) | 1.0 |
 | `mvs_cloud_thumbnail_url` | filter | Override the cloud URL stored for a generated thumbnail size at upload time. Return non-empty to use a custom URL | `$url` (string, empty), `$size_name` (string), `$media_id` (int) | 1.3.0 |
 | `mvs_thumbnail_sizes` | filter | Filter the size definitions array used for thumbnail generation | `$sizes` (array) | 1.3.0 |
 | `mvs_thumbnail_size_resolved` | filter | Filter the resolved default thumbnail size key | `$size` (string) | 1.3.0 |
@@ -2216,9 +2220,9 @@ add_filter( 'mvs_filename_strategy', function( string $strategy, int $user_id ) 
 
 Whether a member has an avatar **they chose**, as opposed to a site default or a generated placeholder. Defaults to whether MediaVerse's own avatar store has one.
 
-For avatar providers other than MediaVerse. Without it, `has_custom_avatar` answers "is there a row in OUR store", so a member who set their picture in another plugin is reported as having none while their real photograph is being served beside it — and anything gating on the flag (an upload-a-photo nudge, a profile-completion check) asks them for a picture they already have.
+For avatar providers other than MediaVerse. Without it, `has_custom_avatar` answers "is there a row in OUR store", so a member who set their picture in another plugin is reported as having none while their real photograph is being served beside it - and anything gating on the flag (an upload-a-photo nudge, a profile-completion check) asks them for a picture they already have.
 
-**Answer `true` only for a picture the member actually supplied.** Never for a site default or a generated initials placeholder — a seam that returns `true` for everyone is as useless as the bug it replaces, because nothing can then tell the two apart. This cannot be resolved by reading the avatar chain: core's `found_avatar` is set by placeholder generators too.
+**Answer `true` only for a picture the member actually supplied.** Never for a site default or a generated initials placeholder - a seam that returns `true` for everyone is as useless as the bug it replaces, because nothing can then tell the two apart. This cannot be resolved by reading the avatar chain: core's `found_avatar` is set by placeholder generators too.
 
 **Parameters:**
 
@@ -2323,7 +2327,7 @@ add_filter( 'mvs_user_display_name', function( string $name, int $user_id ) {
 | `mvs_default_media_title` | filter | Title given to an upload the member did not title (default: readable text from the file name, e.g. "Magnific feel the beat"). Return `sanitize_file_name( pathinfo( $original_name, PATHINFO_FILENAME ) )` for the pre-2.6.0 slug-style titles. | `$title` (string), `$original_name` (string) | 2.6.0 |
 | `mvs_show_favorite_button` | filter | Show the separate Favorite (star) button in the lightbox and on the single media page, as before 2.6.0. Default `false`: Save is the one way to keep an item. | `$show` (bool) | 2.6.0 |
 | `mvs_avatar_allowed_types` | filter | Filter allowed avatar MIME types | `$types` (array), `$user_id` | 1.0 |
-| `mvs_avatar_max_size` | filter | Max avatar file size in bytes | `$bytes` (int), default `2 * MB_IN_BYTES` | 1.0 |
+| `mvs_avatar_max_size` | filter | Max avatar file size in bytes | `$bytes` (int), default `2 * MB_IN_BYTES`, `$user_id` | 1.0 |
 
 ---
 
@@ -2331,11 +2335,11 @@ add_filter( 'mvs_user_display_name', function( string $name, int $user_id ) {
 
 ### `mvs_media_drive_access`
 
-How much access a member has to a shared drive **for media**. Media and documents are two different things a member can put on a drive, and until 2.4.0 one filter answered for both — so a bridge could not allow photos in a Space while keeping files behind that Space's own files setting.
+How much access a member has to a shared drive **for media**. Media and documents are two different things a member can put on a drive, and until 2.4.0 one filter answered for both - so a bridge could not allow photos in a Space while keeping files behind that Space's own files setting.
 
 Defaults to whatever `mvs_document_drive_access` answered, so leaving this alone keeps existing behaviour exactly.
 
-**This is a privacy boundary, not a placement hint.** The same answer governs both gates: which drive an upload lands on, AND who may read media already scoped to that drive. Answering `write` for someone who is not a member would expose that drive's media to them. The two gates share one resolver deliberately — if they disagreed, media would be stored scoped to a drive its own members could not open.
+**This is a privacy boundary, not a placement hint.** The same answer governs both gates: which drive an upload lands on, AND who may read media already scoped to that drive. Answering `write` for someone who is not a member would expose that drive's media to them. The two gates share one resolver deliberately - if they disagreed, media would be stored scoped to a drive its own members could not open.
 
 **Parameters:**
 
@@ -2445,7 +2449,7 @@ add_action( 'mvs_media_privacy_changed', function( int $media_id, string $new_pr
 |------|------|-------------|------------|-------|
 | `mvs_album_items_added` | action | Media added to an album | `$album_id`, `$actor_id`, `$media_ids`, `$added` (signature changed in 1.2.3) | 1.0 |
 
-> **Stories moved to Pro in 1.9.0.** `mvs_story_created` and `mvs_story_expired` now fire from `WPMediaVersePro\Stories\StoryService` — see [Stories (Pro)](../pro-features/stories.md). The free plugin no longer ships a `StoryService`; the upload block's "Also share as a story" toggle only renders when the `mvs_stories_enabled` option is on, which Pro sets when it registers the feature.
+> **Stories moved to Pro in 1.9.0.** `mvs_story_created` and `mvs_story_expired` now fire from `WPMediaVersePro\Stories\StoryService` - see [Stories (Pro)](../pro-features/stories.md). The free plugin no longer ships a `StoryService`; the upload block's "Also share as a story" toggle only renders when the `mvs_stories_enabled` option is on, which Pro sets when it registers the feature.
 
 ---
 
@@ -2505,7 +2509,7 @@ add_filter( 'mvs_buddynext_active', function( bool $active ) {
 
 ### `mvs_strip_dead_bp_links` **(New in 1.7.1)**
 
-Opt-in gate for cleaning up dead BuddyPress component links (`/members/`, `/groups/`, `/activity/`) from the site's nav menus when BuddyPress is inactive. **Off by default** — per Coding Rule #17, MediaVerse never edits a site owner's authored navigation on its own. Only enable this on a site where you specifically want the plugin to drop menu items that would 404 once BuddyPress is gone. The cleanup never removes an item that resolves to a real published page, and it fully bails when a sibling community plugin (detected via `mvs_buddynext_active`) owns those routes as live pages.
+Opt-in gate for cleaning up dead BuddyPress component links (`/members/`, `/groups/`, `/activity/`) from the site's nav menus when BuddyPress is inactive. **Off by default** - per Coding Rule #17, MediaVerse never edits a site owner's authored navigation on its own. Only enable this on a site where you specifically want the plugin to drop menu items that would 404 once BuddyPress is gone. The cleanup never removes an item that resolves to a real published page, and it fully bails when a sibling community plugin (detected via `mvs_buddynext_active`) owns those routes as live pages.
 
 **Parameters:**
 
@@ -2596,7 +2600,7 @@ add_filter( 'mvs_suppress_bp_comment_notification', '__return_false' );
 > process it), so the `mvs_pro_transcode_*` hooks no longer exist. The player
 > uses the original file; posters come from the embedded cover atom or a
 > default SVG. `mvs_pro_poster_frame` went with the transcoding pipeline and no
-> longer exists either — filter the fallback poster with the Free
+> longer exists either - filter the fallback poster with the Free
 > [`mvs_default_video_poster_url`](#mvs_default_video_poster_url) instead. The
 > hooks below cover the video features that remain.
 
@@ -2800,6 +2804,7 @@ The competitions cron tick (`CompetitionsScheduler`) fires these process-stage a
 
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
+| `mvs_resolve_expired_battles` | action | Resolve battles past their deadline | none | 1.0 |
 | `mvs_activate_scheduled_challenges` | action | Activate challenges whose start time has passed | none | 1.5.0 |
 | `mvs_close_challenge_entries` | action | Close entry submission for challenges that hit the entry deadline | none | 1.5.0 |
 | `mvs_finalize_expired_challenges` | action | Finalize challenges whose voting window has ended | none | 1.5.0 |
@@ -3154,7 +3159,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 |------|------|-----------|-------------|
 | `mvs_app_config_legal` | filter | `$legal` | Filter the legal/safety URLs handed to native clients. A site with no privacy policy set returns null for it, and the client falls back to its own. |
 | `mvs_app_connect_bridge` | filter | `$info` | Filter the resolved app-connect bridge for this site. Tests use it to simulate the BuddyNext-active path; a site with an unusual auth topology can point the app at its own door. |
-| `mvs_app_connect_schemes` | filter | `array( AppAuthorizeAccess::app_scheme()` | Filter the custom URL schemes the MediaVerse app-connect flow may deliver a credential to. Every scheme here can RECEIVE an Application Password — add a scheme only for an app you ship, never a wildcard. |
+| `mvs_app_connect_schemes` | filter | `array( AppAuthorizeAccess::app_scheme()` | Filter the custom URL schemes the MediaVerse app-connect flow may deliver a credential to. Every scheme here can RECEIVE an Application Password - add a scheme only for an app you ship, never a wildcard. |
 | `mvs_app_credential_issued` | action | `$user->ID, $app_id, $app_name` | Fires after a member exchanges their password for an app credential. The credential itself is deliberately NOT passed. |
 | `mvs_app_page_ids` | filter | `$ids )` | Filters the pages that render with the plugin's full-bleed app template. A site owner can add a page (e.g. |
 | `mvs_app_password_login_enabled` | filter | `$on` | Filter whether members may exchange a WordPress password for an Application Password. |
@@ -3164,7 +3169,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_rest_gate_denied` | action | `$route, $method, $actor, $reason` | Fires when the write gate denies a request. |
 | `mvs_rest_gate_map` | filter | `$map` | Filter the REST write-gate route map. The seam Pro uses to classify its own routes, so Pro never edits a Free file. |
 | `mvs_rest_gate_resolve_targets` | filter | `array(), $resolver, $rule, $request` | Resolve targets for a custom gate resolver. Lets Pro (and third parties) supply resolvers for their own routes without touching this file. |
-| `mvs_rest_gate_unresolved` | action | `$route, $method, $actor` | See the call site. |
+| `mvs_rest_gate_unresolved` | action | `$route, $method, $actor` | Fires when a gated route's resolver finds no target, so the gate passes. Use it to log a resolver that silently fails to look. |
 | `mvs_rest_timestamp_keys` | filter | `array( 'created_at', 'updated_at', 'date', 'added_at', 'last_activity_at', 'last_read_at',` | Filters the response keys that receive an ISO-8601 `<key>_gmt` sibling. Pro / add-ons extend this to cover their own UTC timestamp fields. |
 | `mvs_user_is_suspended` | filter | `$suspended, $actor` | Filter whether a member is suspended and barred from every write. The seam for third-party moderation/suspension plugins. |
 
@@ -3186,15 +3191,15 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_album_deleted` | action | `$post_id` | Fires after an album's custom-table rows are cleaned on permanent delete. |
 | `mvs_album_inherit_privacy` | filter | `true, $album_id, $media_ids` | Filters whether media added to an album inherits the album's privacy. A member who creates a Private album and uploads into it expects the contents to be private. |
 | `mvs_collection_deleted` | action | `$post_id` | Fires when a collection is permanently deleted. |
-| `mvs_collection_media_ids` | filter | `array_map( 'absint', (array) $media_ids ), $collection_id, (int) $atts['per_page']` | See the call site. |
+| `mvs_collection_media_ids` | filter | `$ids, $collection_id, $limit` | Filters the media IDs of a manual collection. Free returns the single-collection favorites; Pro unions in its multi-collection memberships. |
 
 ### Messaging
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
-| `mvs_dm_unarchive_on_activity` | filter | `true, $conversation_id, $sender_id ) ) { $wpdb->update( $part_table, array( 'is_archived' ` | See the call site. |
+| `mvs_dm_unarchive_on_activity` | filter | `true, $conversation_id, $sender_id` | Whether a new message moves an archived conversation back to the recipient's inbox. Return false to keep archived threads archived. |
 | `mvs_group_conversation_created` | action | `$conv_id, $creator_id, $all_ids, $opts` | Fires when a group conversation is created. |
-| `mvs_message_content_check` | filter | `true, $content, $sender_id, $conversation_id` | See the call site. |
+| `mvs_message_content_check` | filter | `true, $content, $sender_id, $conversation_id` | Content-moderation seam for direct messages. Return a `WP_Error` to block the send. |
 | `mvs_participant_added` | action | `$conversation_id, $user_id, $role` | Fires when a participant is added to a conversation. |
 | `mvs_participant_removed` | action | `$conversation_id, $user_id` | Fires when a participant is removed from a conversation. |
 
@@ -3202,7 +3207,7 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
-| `mvs_frontend_presence_keep_handles` | filter | `array( 'mvs-rest'` | See the call site. |
+| `mvs_frontend_presence_keep_handles` | filter | `array( 'mvs-rest' )` | Script and style handles that stay enqueued when MediaVerse suppresses its own front-end UI. Add a handle here when another module depends on it. |
 | `mvs_login_url` | filter | `$url, $redirect` | Filters the login URL MediaVerse links to across every surface. |
 | `mvs_media_alt_text` | filter | `$alt, $media_id` | Filter the resolved alt text for a media image. |
 | `mvs_media_single_actions` | action | `$mvs_media_id, $mvs_author_id, $mvs_is_owner` | Owner / add-on actions for the single-media social bar. The canonical media view every feed layout links to, so it is the one place an add-on can surface a per-media owner action (e.g. |
@@ -3210,15 +3215,32 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_registration_url` | filter | `$url, $redirect` | Filters the registration URL MediaVerse links to. |
 | `mvs_seo_title_separator` | filter | `'-'` | Point active SEO plugins at a virtual route's real title + canonical. These routes emit a custom query var (mvs_media_archive / mvs_profile_user / mvs_edit_profile), so WP mis-reads the main query as the blog home and Yoast / Rank Math print the Posts page's title + canonical (e.g. |
 | `mvs_settings_render_` | action | `. $section['renderer'], $section` | Fires to render custom settings section content. |
-| `mvs_single_media_redirect` | filter | `'', (int) $media['media_id'], (string) $slug` | Let a host redirect single-media URLs somewhere else instead of rendering the standalone page. BuddyNext uses this to send /media/{slug}/ to the activity the media was posted in, so media lives in the community feed rather than as a separate public page. |
+| `mvs_single_media_redirect` | filter | `'', (int) $media['media_id'], (string) $slug, $mvs_media_type` | Let a host redirect single-media URLs somewhere else instead of rendering the standalone page. BuddyNext uses this to send /media/{slug}/ to the activity the media was posted in, so media lives in the community feed rather than as a separate public page. |
 | `mvs_suppress_frontend_ui` | filter | `$suppressed` | Whether MediaVerse must NOT paint its own front-end UI on this request. The single source of truth for the frontend-presence policy. |
+| `mvs_direction_labels` | filter | `$labels, $field` | The ascending and descending labels shown for a sort field in sort controls. |
+| `mvs_gallery_layout_html` | filter | `'', $mvs_layout, $block_attrs` | Renders a gallery layout that Free does not provide. Pro answers; an empty string makes Free fall back to its own grid. |
+| `mvs_grid_columns_scope_note` | filter | `''` | Text appended to the description of the grid columns setting under Settings > Display. |
+| `mvs_layout_choices` | filter | `$choices` | The choices (value => label) of the Layout select under Settings > Display. |
+| `mvs_layout_selected` | filter | `self::get_thumbnail_style()` | Which Layout choice reads as selected in Settings > Display. Pro answers with its platform skin when one is active. |
+| `mvs_layout_saved` | action | `$value` | Fires when the Settings > Display Layout choice is saved. `$value` is a key of the layout choices. |
+| `mvs_privacy_choices` | filter | `$choices` | The privacy levels (slug => label) offered in a privacy picker. |
+| `mvs_privacy_labels` | filter | `$labels` | The display label (slug => label) for every privacy level. |
+| `mvs_messages_slug` | filter | `'messages'` | The route slug of the standalone messages page, without slashes. Flush permalinks after changing it. |
+| `mvs_messages_url` | filter | `home_url( '/' . self::messages_slug() . '/' )` | The absolute URL of the standalone messages page that every messages link reads. |
+| `mvs_media_captions` | filter | `null, $media_id` | The captions for a video as `array( 'url' => WebVTT URL, 'lang' => BCP 47 code )`, or null when there are none. |
+| `mvs_media_shared_summary` | filter | `'', (int) $mvs_media_id` | A short summary of who an item is shared with, shown beside the privacy chip on the single media page. An empty string renders nothing. |
+| `mvs_redirect_media_archive_to_explore_page` | filter | `true, $page` | Whether `/media/` redirects to the mapped Explore page. Return false to keep serving Explore at `/media/` too. |
+| `mvs_shared_ui_frame` | action | - | Fires when the shared UI frame (and with it the lightbox) is printed. Enqueue the stylesheet of anything that renders into the lightbox here. |
+| `mvs_template_roots` | filter | `array( MVS_PLUGIN_DIR . 'templates/' => 'WP MediaVerse' )` | Template folders (absolute path with trailing slash => plugin name) whose files a theme can override. Used by the template-version check. |
+| `wpmediaverse_client_nav_enabled` | filter | `true` | Whether client-side navigation between MediaVerse pages is on. |
+| `wpmediaverse_client_nav_deny_paths` | filter | `array()` | URL paths that client-side navigation must load as full page requests. |
 
 ### Serving, URLs and caching
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
-| `mvs_serve_expired_public_urls` | filter | `true, $media_id` | See the call site. |
-| `mvs_user_avatar_url` | filter | `isset( $args['url'] ) ? (string) $args['url'] : '', $user_id, $size` | MV-scoped avatar seam. Because every get_avatar()/get_avatar_url() call passes through pre_get_avatar_data, hooking this one filter lets BuddyNext (or any integration) override the avatar image for a user everywhere MediaVerse renders it — templates, blocks, and REST payloads alike — without touc... |
+| `mvs_serve_expired_public_urls` | filter | `true, $media_id` | Whether `/serve` still honours an expired but correctly signed URL for public media. Return false to refuse it. |
+| `mvs_user_avatar_url` | filter | `isset( $args['url'] ) ? (string) $args['url'] : '', $user_id, $size` | MV-scoped avatar seam. Because every get_avatar()/get_avatar_url() call passes through pre_get_avatar_data, hooking this one filter lets BuddyNext (or any integration) override the avatar image for a user everywhere MediaVerse renders it - templates, blocks, and REST payloads alike - without touc... |
 | `mvs_viewer_thumbnail_ttl` | filter | `HOUR_IN_SECONDS, $media_id, $viewer_id, $size` | Filter the viewer-aware thumbnail TTL (seconds). Default 1 hour; the /serve endpoint re-checks privacy per request, so this is only a cache horizon, not a credential lifetime. |
 | `mvs_viewer_url_ttl` | filter | `HOUR_IN_SECONDS, $media_id, $viewer_id` | Filter the viewer-aware full-file URL TTL (seconds). Default 1 hour; the /serve endpoint re-checks privacy per request, so this is only a cache horizon, not a credential lifetime. |
 
@@ -3230,13 +3252,13 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 | `mvs_ai_cost_per_call` | filter | `(float) get_option( 'mvs_ai_cost_per_call', 0.01 ), $provider_id` | Filter the estimated per-call AI cost used for budget tracking. |
 | `mvs_comment_duplicate_window` | filter | `60, $media_id, $user_id` | Filters the duplicate-comment window, in seconds. Wide enough to absorb a double-click or a retry on a slow connection, short enough that deliberately repeating yourself later still works. |
 | `mvs_feed_media_ids` | filter | `$int_ids, $request` | Filter the final list of media IDs returned by the feed query. Allows Pro to reorder results (e.g. |
-| `mvs_reports_enabled` | filter | `$enabled` | See the call site. |
+| `mvs_reports_enabled` | filter | `$enabled` | Whether members can report media, comments, messages and users. Also read by the report REST routes. |
 
 ### BuddyPress integration
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
-| `mvs_activity_max_tags` | filter | `15` | See the call site. |
+| `mvs_activity_max_tags` | filter | `15` | Maximum number of tags applied to media from one activity post. |
 | `mvs_activity_media_ids` | filter | `$ids, $activity_id, $activity` | Filter the resolved media IDs for an activity, before linkage rows are written. Composer / group-post integrations should hook here to surface MVS media IDs they've collected from the form, instead of forcing this service to regex-parse saved content. |
 | `mvs_object_media_set` | action | `$object_type, $object_id, $media_ids` | Fires after an object's media linkage has been (re)written. |
 
@@ -3244,11 +3266,12 @@ Hooks marked **(Pro)** are fired by MediaVerse Pro and never run when only Free 
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
-| `mvs_boosts_store_enqueued` **(Pro)** | action | - | See the call site. |
+| `mvs_boosts_store_enqueued` **(Pro)** | action | - | Fires once per page after the boosts Interactivity store is enqueued and the boost modal is queued for the footer. |
 | `mvs_pro_captions_reaped` **(Pro)** | action | `$media_id` | Fires when the reaper fails a stalled captions job. |
 | `mvs_pro_compete_summary_cache_ttl` **(Pro)** | filter | `MINUTE_IN_SECONDS` | Compete summary cache TTL in seconds. Set to 0 to disable caching. |
-| `mvs_pro_inject_compete_nav` **(Pro)** | filter | `false ) ) { add_filter( 'wp_nav_menu_items', array( self::class, 'inject_compete_nav_link'` | See the call site. |
+| `mvs_pro_inject_compete_nav` **(Pro)** | filter | `false` | Return true to add the Compete link to the primary menu automatically. Default false, so no link is injected. |
 | `mvs_pro_leaderboard_cache_ttl` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | Leaderboard cache TTL in seconds. Set to 0 to disable caching. |
+| `mvs_pro_competitions_enabled` **(Pro)** | filter | `'1' === get_option( 'mvs_competitions_enabled', '0' )` | Whether the competitions master switch is on. Each competition type also needs its own toggle. |
 | `mvs_storage_limit_bytes` | filter | `$bytes, $user_id` | Free. A member's storage limit in bytes (0 = no limit) - the one seam for sourcing the limit from somewhere else, e.g. a membership or LMS plugin. Replaces the quota-package hooks removed in 2.6.0. |
 
 ### Documents (2.4.0)
@@ -3271,9 +3294,10 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_document_viewer_html` **(Pro)** | filter | `'', $media_id, $mime` | Viewer markup for a document. Markup must be fully escaped. Returning `''` keeps the honest download fallback. |
 | `mvs_document_location_label` | filter | `'', $media_id` | Human-readable folder location for a document. Folders are a Pro concept, so Free renders nothing when nobody answers. |
 | `mvs_document_privacy_labels` | filter | `$labels, $context` | Privacy value to label map, so the drive, the settings default and the admin editor cannot offer three different names for one setting. `$context` is `self` or `owner`. |
+| `mvs_document_admin_panels` | filter | `'', $media_id, $row` | Markup for the facts column of the single-document admin screen (preview link, download link, drive location). Pro answers; markup must be escaped. |
 | `mvs_document_admin_main_panels` | filter | `'', $media_id, $row` | Markup appended to the admin single-document screen's main column. Must be escaped. Companion slot to `mvs_document_admin_panels` (the facts column). |
 | `mvs_document_pdf_height` **(Pro)** | filter | `'', $media_id` | CSS height for the inline PDF viewer. `'auto'` fits the content; `''` keeps the stylesheet default (`min(80vh, 800px)`). |
-| `mvs_document_preview_bytes` **(Pro)** | filter | `self::PREVIEW_BYTES, $doc_type, $path` | How many bytes of a text-ish document are read for the preview. Default 64 KB, clamped to `MAX_BYTES` — the ceiling is a memory guard, not a display preference. |
+| `mvs_document_preview_bytes` **(Pro)** | filter | `self::PREVIEW_BYTES, $doc_type, $path` | How many bytes of a text-ish document are read for the preview. Default 64 KB, clamped to `MAX_BYTES` - the ceiling is a memory guard, not a display preference. |
 | `mvs_document_max_depth` **(Pro)** | filter | `12` | Maximum folder nesting depth. The default keeps the worst-case path inside the 150-byte `subtree` index prefix. |
 | `mvs_document_replaced_ttl` **(Pro)** | filter | `30 * DAY_IN_SECONDS` | How long a replaced document's previous file stays recoverable. |
 | `mvs_document_strip_metadata` **(Pro)** | filter | `true, $path` | Whether to strip metadata from an uploaded Office/ZIP document. Return false where the stored bytes must stay identical to what was uploaded (signed originals). |
@@ -3282,7 +3306,7 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_document_can_grant` | filter | `$default, $drive_type, $drive_id, $user_id` | Whether this member may share documents on this drive with someone else. |
 | `mvs_pro_document_extraction_enabled` **(Pro)** | filter | `$enabled` | Whether document text extraction runs. |
 | `mvs_pro_zip_reader_available` **(Pro)** | filter | `true` | Whether `ext-zip` is treated as present. Exists so the download-card fallback path is testable on a machine that has the extension. |
-| `mvs_redirect_documents` | filter | `false, $media_id, $redirect_url` | Whether a document permalink may be redirected away from its own page. Default false — a document renders its own page. True restores the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for documents too. |
+| `mvs_redirect_documents` | filter | `false, $media_id, $redirect_url` | Whether a document permalink may be redirected away from its own page. Default false - a document renders its own page. True restores the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for documents too. |
 | `mvs_media_feed_allows_documents` | filter | `false` | Production Rule 3 escape hatch: `__return_true` restores the pre-2.4.0 behaviour where `GET /media?media_type=document` returned document rows. |
 | `mvs_media_library_types` | filter | `MediaTypes::MEDIA_LIBRARY` | The type group treated as "media library". Escape hatch for a site that ran pre-1.2.3 with PDFs enabled and would rather show those rows than hide them. |
 | `mvs_document_folder_created` **(Pro)** | action | `$folder_id, $args` | Fires after a folder is created. |
@@ -3300,6 +3324,11 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_document_default_privacy` **(Pro)** | filter | `$default, $context` | The privacy a new document defaults to. `$context` carries `drive_type`, `drive_id` and `folder_id` (may be empty). |
 | `mvs_document_row_actions` | filter | `'', $media_id, $trashed` | Extra row actions on the admin Documents list. Markup must be escaped. |
 | `mvs_profile_documents_html` | filter | `'', $owner_id, $viewer_id` | Renders the Documents tab on a BuddyPress profile. Free renders its empty state when nobody answers. |
+| `mvs_profile_documents_count` | filter | `0, (int) $displayed_user_id, get_current_user_id()` | The number of the profile owner's documents the viewer may see, shown as the Documents tab badge. Pro answers; 0 shows no badge. |
+| `mvs_documents_admin_after_list` | action | - | Fires below the admin Documents list, outside its forms. Pro prints its maintenance tools here. |
+| `mvs_document_can_moderate_space` **(Pro)** | filter | `false, $drive_id, $user_id` | Whether the viewer may moderate the files of a space. Answered by the BuddyNext bridge; stays false when nobody answers. |
+| `mvs_document_linked_to_space` **(Pro)** | action | `$media_id, $space_id, $user_id` | Fires after a document is linked into a space. |
+| `mvs_document_unlinked_from_space` **(Pro)** | action | `$media_id, $space_id, $user_id` | Fires after a document is unlinked from a space. |
 | `mvs_media_drive` | filter | `array( 'user', 0 ), $user_id, $args` | Which drive a new media item is bound to, as `array( $drive_type, $drive_id )`. Frozen contract, mirrored in Pro's `DriveContract::FILTER_MEDIA_DRIVE`. The binding is admitted only when the drive-access bridge grants `write` or `own` (the same gate documents use); anything else falls back to the personal drive. |
 
 ### Dashboard, permissions and privacy vocabulary (2.4.0)
@@ -3313,7 +3342,7 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_can_comment` | filter | `true, $media_id, $user_id` | Whether this member may comment on this item. Checked both by `CommentService` (which returns a 403) and by the single-media template (which hides the form). |
 | `mvs_media_type_for_mime` | filter | `$type, $mime` | The media type resolved for an uploaded MIME. |
 | `mvs_dismissible_notices` | filter | `$notices` | The dismissible in-app banners, as banner key => user-meta key. |
-| `mvs_has_custom_avatar` | filter | `$has, $user_id` | Whether a member has a real uploaded avatar. Do not read `bp_get_user_has_avatar()` instead — it answers true for everyone once any plugin generates avatars. |
+| `mvs_has_custom_avatar` | filter | `$has, $user_id` | Whether a member has a real uploaded avatar. Do not read `bp_get_user_has_avatar()` instead - it answers true for everyone once any plugin generates avatars. |
 
 ### Private community gate and app config
 
@@ -3324,21 +3353,23 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_rest_gate_exempt_route_prefixes` | filter | `array( '/mvs/v1/serve', '/mvs/v1/app/config' ), $request` | Route prefixes the private-community REST gate never blocks. `/app/config` is exempt because a login screen needs branding, feature flags and legal URLs before anyone has logged in. Since 2.3.2. |
 | `mvs_app_config` | filter | `$config` | The whole `/app/config` payload after Free has assembled it. Pro adds its `documents` block here so the app never hardcodes the format list, the size ceiling or the preview tiers. Since 2.4.0. |
 
-### Watermarking and webhook signing (Pro)
+### Watermarking (Pro)
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
 | `mvs_watermark_text_position` **(Pro)** | filter | `self::opposite_corner( $position ), $config` | Where the text stamp goes when the watermark type is `both`. Defaults to the corner opposite the image stamp. |
 | `mvs_watermark_text_opacity` **(Pro)** | filter | `$opacity, $config` | Opacity of the text stamp when the watermark type is `both`. |
-| `mvs_pro_webhook_require_timestamp` **(Pro)** | filter | `false` | Demand a signed timestamp inside the webhook body. Default false, because senders integrated before this release omit it and Production Rule 3 forbids breaking them silently. |
-| `mvs_pro_webhook_timestamp_tolerance` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | How far a signed webhook timestamp may drift from now. |
-| `mvs_pro_webhook_replay_window` **(Pro)** | filter | `5 * MINUTE_IN_SECONDS` | How long a delivered webhook event ID is refused as a replay. |
-| `mvs_pro_webhook_event_ttl` **(Pro)** | filter | `30 * DAY_IN_SECONDS` | How long seen webhook event IDs are retained. |
 
 ### Other
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
 | `mvs_media_privacy_clamped_by_album` | action | `$mid, $media_privacy, $effective, $album_id` | Fires when an item's privacy is tightened by its album. |
+| `mvs_view_dedup_window` | filter | `30 * MINUTE_IN_SECONDS` | Seconds during which repeat views of one item by the same visitor are ignored. |
+| `mvs_log_social_events` | filter | `false` | Whether reactions, comments and favorites are written to the log at info level. Off by default. |
+| `mvs_media_files_rotated` | action | `$media_id` | Fires after an item's file links were revoked (privacy tightened or an approved item taken down), so add-ons holding their own files for it can rename them too. |
+| `mvs_media_may_join_collection` | filter | `$allowed, $media_id, $curator_id` | Whether a media item may be added to a collection. Default allows image, video and audio items that are public or the curator's own. |
+| `mvs_show_demo_import` | filter | `0 === count_published()` | Whether the Overview page offers the demo content import. Default true only while the site has no published media. |
+| `wpmediaverse_companions` | filter | `$companions` | The catalog (slug => entry) of companion plugins the installer and admin screen list. |
 | `mvs_default_privacy` | filter | `$privacy` | The privacy value a new item defaults to when the member has not chosen one. |
 

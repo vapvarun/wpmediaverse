@@ -7,20 +7,20 @@ Save and curate media from anyone on your site into personal boards - like Pinte
 
 ## What You Can Do
 
-- Save any public media item to a personal collection with one click (requires MediaVerse Pro)
+- Save any public media item with one click: to your Favorites on the free plugin, or to a collection of your choice with MediaVerse Pro
 - Create multiple collections for different themes or moods (e.g., "Travel Inspiration", "Black and White")
 - Let smart rules fill a collection automatically, or (with MediaVerse Pro) curate one by hand
 - Smart collections stay fresh automatically - tag a rule once and the collection updates itself
-- Share collections publicly or keep them private
+- Show a collection to everyone (Public) or only to logged-in members (Members)
 - Browse your saved collections from your media dashboard
 
 ## How It Works (for Users)
 
-> Steps 1-4 use the **Save** button, which comes with MediaVerse Pro. On a free-only site, create a smart collection from **My Media > Collections** instead.
+> Steps 2-4 use the collection picker that **Save** opens, which comes with MediaVerse Pro. On a free-only site, **Save** puts the item straight into your private Favorites collection, and you can create a smart collection from **My Media > Collections**.
 
 1. When you find a photo you love, click the **Save** button (bookmark icon) below it
 2. Choose an existing collection from the dropdown, or click **New Collection** to create one
-3. Give your new collection a name and choose a privacy level, then click **Create**
+3. Give your new collection a name and choose who can see it (Public or Members), then click **Create**
 4. The photo is added instantly - you'll see the bookmark icon turn solid to confirm
 5. Find all your collections under **My Media > Collections** in your dashboard
 6. To manage a collection, open it and click **Edit** to rename it, reorder items, or remove ones you no longer want
@@ -31,10 +31,10 @@ Save and curate media from anyone on your site into personal boards - like Pinte
 ## For Site Owners
 
 1. Collections are available to all users with upload access once MediaVerse is activated
-2. To embed a collection on any page, use `[mvs_collection id="456"]` or the **MediaVerse: Collection Viewer** block
+2. To embed a collection on any page, use `[mvs_collection id="456"]` (there is no Collection block)
 3. Smart collections are especially useful for curated showcase pages - create a smart collection filtered by a tag and embed it on your homepage
-4. Manage all collections from **Media > Collections** in wp-admin
-5. Use the **Collection Settings** meta box on any collection post to switch between manual and smart mode and configure smart rules
+4. Manage all collections from **MediaVerse > Collections** in wp-admin
+5. Use the **Collection Settings** meta box on any collection post to set its smart rules
 
 ## Collection Types
 
@@ -69,6 +69,8 @@ If no `id` is provided, the shortcode outputs an error message. If the collectio
 | `GET` | `/mvs/v1/collections/{id}` | Get collection with resolved items |
 | `PUT` | `/mvs/v1/collections/{id}` | Update collection |
 | `DELETE` | `/mvs/v1/collections/{id}` | Delete collection |
+| `GET` | `/mvs/v1/collections/{id}/items` | List the media in a collection, paginated |
+| `PUT` | `/mvs/v1/collections/{id}/rules` | Set the smart rules |
 
 ### Creating a Smart Collection via API
 
@@ -78,17 +80,16 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/collections \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Nature Photos",
-    "type": "smart",
-    "rules": {
-      "tags": ["nature", "landscape"],
-      "media_type": "image"
-    },
+    "rules": [
+      { "key": "tag", "value": "nature" },
+      { "key": "media_type", "value": "image" }
+    ],
     "privacy": "public"
   }'
 ```
 
 ## Collection Meta Box
 
-In the WordPress admin, each `mvs_collection` post has a **Collection Settings** meta box that lets you set the collection type and define smart rules without using the API.
+In the WordPress admin, each `mvs_collection` post has a **Collection Settings** meta box that lets you define smart rules without using the API. The available rules are media type, tag, category, author, date after, date before and privacy. Saving any rule makes the collection a smart collection.
 
 ![Collection meta box in WordPress admin](../images/admin-media-list.png)

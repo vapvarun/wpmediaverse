@@ -4,19 +4,23 @@
 
 MediaVerse Pro adds WhatsApp-style ephemeral stories: mark any upload as a story and it is visible to your followers for a limited time, then disappears automatically.
 
+> Stories on MediaVerse's own pages and in the mobile app work today. A fuller stories front end, and stories inside BuddyNext, are planned for a later release and are not part of this one.
+
 ## How Stories Work
 
-1. Enable the feature at **MediaVerse > Settings > Gamification**, "Stories" checkbox (sets `mvs_stories_enabled`, off by default). Once enabled, the free upload block shows an **"Also share as a story"** checkbox next to the tag input, and the `mvs/pro-stories` block renders its bar to visitors.
-2. On upload (or afterward via REST), a media item is marked as a story with an expiry - 24 hours by default, configurable from 1 to 168 hours.
-3. Viewers see active stories from people they follow (plus their own) in a horizontal, tap-to-advance carousel with a segmented progress bar per story.
-4. A view receipt is recorded the first time a viewer opens a story. The author can see who has viewed it ("seen by").
-5. Stories are pruned automatically by an hourly cron; the author can also end one early, and a site owner can force-expire any story from the admin.
+1. Turn the feature on at **MediaVerse > Settings > Display > Stories** (tick **Enabled**). It is off by default. Once enabled, every upload form shows an **"Also share as a story (visible for 24 hours)"** checkbox, and the Stories block renders its bar.
+2. A member ticks that box when uploading. The upload becomes a story that lasts 24 hours. Photos, video and audio can be stories. (An app or API client can choose a different length, from 1 to 168 hours.)
+3. Viewers see active stories from people they follow, plus their own, in a horizontal bar. Selecting one opens a full-screen viewer that advances on tap, with a progress bar per story. The viewer works with the keyboard.
+4. A view is recorded when a viewer opens a story. The author's own views are not counted.
+5. Stories are removed automatically by an hourly job. A site owner can end any story early from **MediaVerse > Stories**.
 
-Replying to a story reuses the existing free direct-message routes - there is no separate "reply to story" endpoint.
+Who can see a story follows the media's privacy. The author always sees their own. Other members see stories set to Public, and Members-only stories when they are signed in. Private items never appear.
+
+The Instagram layout shows the stories bar at the top of the feed. The bar appears only with that layout; on other layouts, place the Stories block on a page. In the mobile app, stories work with any layout.
 
 ## Gutenberg Block
 
-**`mvs/pro-stories`** renders the stories bar and the fullscreen viewer, built entirely on the WordPress Interactivity API. Logged-in visitors also see a "Your story" add tile at the start of the bar - picking an image uploads it and posts it as a story in place, no separate upload flow needed.
+**`mvs/pro-stories`** renders the stories bar and the fullscreen viewer, built entirely on the WordPress Interactivity API. Logged-in visitors also see a "Your story" add tile at the start of the bar - picking an image uploads it and posts it as a story in place, no separate upload flow needed. The add tile accepts images only; to post video or audio as a story, use the upload form checkbox.
 
 **Block Settings:**
 
@@ -25,11 +29,13 @@ Replying to a story reuses the existing free direct-message routes - there is no
 | `count` | `30` | Number of authors' stories to load in the bar |
 | `avatarSize` | `64` (px) | Avatar circle diameter |
 
-The block renders nothing when `mvs_stories_enabled` is off, and shows only the "Your story" add tile (no bar) for a logged-in viewer whose network has no active stories yet. Anonymous visitors see nothing when there are no active stories.
+The block renders nothing when Stories is not enabled, and shows only the "Your story" add tile (no bar) for a logged-in viewer whose network has no active stories yet. Anonymous visitors see nothing when there are no active stories.
 
 ## Admin
 
-**MediaVerse > Stories** lists every active story site-wide (author, media, expiry, view count) with a **Force expire** row action for moderation. This is the backend leg of the frontend (upload toggle + block) / REST feature - a site owner never needs direct DB access to pull down a story.
+**MediaVerse > Stories** lists every active story site-wide with its author, title, status, expiry time and **Seen by** count, and a **Force expire** action for moderation. Only users who can manage MediaVerse settings see this screen. A site owner never needs database access to pull down a story.
+
+The "seen by" names, ending your own story early and a custom story length are available through the API and the mobile app. The website's viewer does not show them.
 
 ## Where Story State Lives
 
