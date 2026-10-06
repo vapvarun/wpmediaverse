@@ -1,15 +1,23 @@
 <?php
 /**
- * One-time activation of the free preset licence key, with backoff.
+ * One-time activation of the baked-in preset licence key against the store.
  *
- * The free plugin activates a shared preset key so update downloads work. The
- * old hook posted to the store on every admin_init until the reply was 'valid':
- * any error, timeout, 403 or final "invalid" reply meant another POST on the
- * next admin request, and admin_init also fires on admin-ajax.php, so Heartbeat
- * repeated it every few minutes. One site sent 933 requests in 23 hours.
+ * Update downloads are authorised by a preset key that must be activated once
+ * per site. The activation is a remote POST to wbcomdesigns.com, so it must
+ * never run on the owner's admin page load: the original code fired a blocking
+ * wp_remote_post( timeout: 15 ) on EVERY admin_init until it succeeded, adding
+ * up to 15s to every wp-admin page forever when the store was unreachable.
  *
- * Now it runs on real admin page loads only, waits RETRY_AFTER after any reply
- * the store did not answer, and treats every real store answer as final.
+ * The same class ships in every Wbcom free plugin (standard:
+ * docs/standards/preset-licence-activation.md); only the names, the key and
+ * the item id differ. Keep them in step.
+ *
+ * This class moves the call into a background single event, bounds the retries
+ * so a firewalled host stops trying after a day, and — when it does give up —
+ * shows the owner an admin notice explaining why with a Retry button, instead of
+ * failing silently forever. It deliberately writes NO tracking-consent option:
+ * usage tracking is the EDD SDK's own opt-in (default off, toggled by the owner
+ * on the licence screen). Forcing it on here was consent the owner never gave.
  *
  * @package WPMediaVerse
  * @since   2.6.1
@@ -22,43 +30,184 @@ namespace WPMediaVerse\Core;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Bounded preset-key activation.
+ * Background preset-key activation with a bounded retry and an owner notice.
  */
 final class PresetActivation {
 
-	/** Store reply once known: 1 when valid, else the store's licence status. */
-	public const OPT_DONE = 'wpmediaverse_preset_activated';
+	/** Cron hook that runs the remote activation call. */
+	public const HOOK = 'wpmediaverse_activate_preset_key';
 
-	/** Set while waiting after an unanswered attempt. */
-	public const RETRY_TRANSIENT = 'wpmediaverse_preset_retry';
+	/** Set to 1 once the store confirms activation. */
+	public const OPT_ACTIVATED = 'wpmediaverse_preset_activated';
 
-	/** Wait this long after a network error, 403 or non-JSON reply. */
-	public const RETRY_AFTER = 12 * HOUR_IN_SECONDS;
+	/** Running count of failed attempts (cleared on success). */
+	public const OPT_ATTEMPTS = 'wpmediaverse_preset_activation_attempts';
 
-	/** The baked-in free preset key. */
+	/** UTC timestamp of the last failed attempt, set once we give up. */
+	public const OPT_GAVE_UP = 'wpmediaverse_preset_activation_gave_up';
+
+	/**
+	 * The store's own reason when it ANSWERED and refused (expired, disabled,
+	 * no_activations_left, invalid...). Empty when the store was never reached.
+	 */
+	public const OPT_REFUSED = 'wpmediaverse_preset_activation_refused';
+
+	/** The admin-post action for the owner's manual retry. */
+	public const RETRY_ACTION = 'wpmediaverse_retry_preset_activation';
+
+	/**
+	 * One-shot transient carrying a manual retry's outcome ('ok'|'fail') across the
+	 * post-retry redirect, so the notice reports success/failure. Without it a retry
+	 * on a cron-ENABLED firewalled host was silent: run() reschedules (attempts<24)
+	 * WITHOUT setting OPT_GAVE_UP, so the gave_up-gated notice vanished and the owner
+	 * could not tell the retry failed.
+	 */
+	private const RETRY_RESULT_TRANSIENT = 'wpmediaverse_preset_retry_result';
+
+	/**
+	 * Give up after this many failures (~a day at hourly backoff).
+	 *
+	 * The hourly-x24-then-stop back-off is OWNER-ACCEPTED: a
+	 * firewalled host retries quietly for about a day, then surfaces the actionable
+	 * give-up notice rather than hammering the store forever. Do not shorten it into
+	 * an aggressive retry loop.
+	 */
+	private const MAX_ATTEMPTS = 24;
+
+	/**
+	 * Remote timeout, seconds. Short: this is a fire-and-forget authorisation.
+	 *
+	 * The bounded 5s blocking call on the owner's admin page (inline path only, at
+	 * most once per admin load until give-up) is OWNER-ACCEPTED —
+	 * the trade for surfacing the failure immediately on a dead-cron host. Keep it
+	 * short; do not raise it back toward the original 15s.
+	 */
+	private const TIMEOUT = 5;
+
+	/**
+	 * An armed event overdue by more than this is treated as a dead cron.
+	 *
+	 * A working WP-Cron (even a slow one) fires a due single event within minutes,
+	 * so an hour of grace never false-positives a healthy host; a blocked-loopback
+	 * host leaves the same timestamp overdue forever.
+	 */
+	private const OVERDUE_GRACE = HOUR_IN_SECONDS;
+
+	/** The baked-in Free preset key. */
 	private const PRESET_KEY = 'wbcomfree7a9c2e5d1f8b4c6a3e0d9b2f7c1a8e44';
 
 	/** EDD item id for MediaVerse Free. */
 	private const ITEM_ID = 1660826;
 
 	/**
-	 * Hook the attempt onto admin page loads.
+	 * Wire the schedule, the background runner, the failure notice and the retry.
 	 *
 	 * @return void
 	 */
 	public static function register(): void {
-		add_action( 'admin_init', array( self::class, 'maybe_activate' ) );
+		add_action( 'admin_init', array( self::class, 'maybe_schedule' ) );
+		// Wrap run() so the cron callback returns nothing — run() now returns bool
+		// (consumed by the manual retry), and an action callback must not return.
+		add_action(
+			self::HOOK,
+			static function (): void {
+				self::run();
+			}
+		);
+		add_action( 'admin_notices', array( self::class, 'maybe_render_notice' ) );
+		add_action( 'admin_post_' . self::RETRY_ACTION, array( self::class, 'handle_retry' ) );
 	}
 
 	/**
-	 * Try the activation when it is due: not done, not waiting, and a real
-	 * wp-admin page load (never admin-ajax/Heartbeat or cron).
+	 * Schedule the background attempt from an admin page — but never do the work
+	 * here. Returns early once activated, AND once we have given up, so a
+	 * firewalled host does not re-arm a fresh event on every admin page load (the
+	 * bug the bounded-retry was supposed to fix but did not: admin_init used to
+	 * check only the activated flag, so giving up in the runner was undone by the
+	 * very next page view). After giving up, only an explicit Retry re-arms.
 	 *
 	 * @return void
 	 */
-	public static function maybe_activate(): void {
-		if ( get_option( self::OPT_DONE ) || wp_doing_ajax() || wp_doing_cron() || get_transient( self::RETRY_TRANSIENT ) ) {
+	public static function maybe_schedule(): void {
+		if ( get_option( self::OPT_ACTIVATED ) || get_option( self::OPT_GAVE_UP ) ) {
 			return;
+		}
+
+		// A cron that cannot fire is the card's own silent-failure case: a scheduled
+		// single event never fires, so run() never executes, OPT_GAVE_UP is never
+		// written, and the owner sees nothing forever. cron_is_disabled() catches
+		// both shapes of it — DISABLE_WP_CRON with no system cron, AND a blocked
+		// loopback that armed the event and left it overdue (constant undefined).
+		// Drive the attempt INLINE from this admin request instead. run() sets
+		// OPT_GAVE_UP on failure under a dead cron (see run()), so the next admin_init
+		// early-returns above and this runs at most once per load — and the give-up
+		// notice (admin_notices, later this same request) surfaces immediately.
+		if ( self::cron_is_disabled() ) {
+			self::run();
+			return;
+		}
+
+		if ( ! wp_next_scheduled( self::HOOK ) ) {
+			wp_schedule_single_event( time() + 30, self::HOOK );
+		}
+	}
+
+	/**
+	 * Whether WP-Cron cannot be relied on to fire this activation event.
+	 *
+	 * Two ways it cannot fire: DISABLE_WP_CRON is set with no system cron behind it,
+	 * OR the loopback that drives WP-Cron is blocked — the constant is undefined, the
+	 * event arms, and then nothing ever runs it. The second case has no constant to
+	 * read, so it is detected from the symptom: an armed event whose scheduled time
+	 * is more than OVERDUE_GRACE in the past never fired, which on a working host is
+	 * impossible (a due single event fires within minutes). Either way the caller
+	 * runs the attempt inline and run() gives up on the first failure instead of
+	 * scheduling a retry that would never fire.
+	 *
+	 * @return bool
+	 */
+	private static function cron_is_disabled(): bool {
+		$disabled = defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON;
+
+		if ( ! $disabled ) {
+			$next = wp_next_scheduled( self::HOOK );
+			// A single event is unscheduled by WP just before it fires, so inside a
+			// real cron run wp_next_scheduled() is already false here — this only
+			// trips for an event that armed and then sat there unfired.
+			if ( false !== $next && $next < ( time() - self::OVERDUE_GRACE ) ) {
+				$disabled = true;
+			}
+		}
+
+		/**
+		 * Whether WP-Cron cannot be relied on to fire a scheduled event.
+		 *
+		 * Defaults to the DISABLE_WP_CRON constant OR a detected dead cron (an armed
+		 * event overdue past the grace window). A site that sets DISABLE_WP_CRON but
+		 * DOES run a real system cron can return false to keep the scheduled-event
+		 * path (and its bounded hourly retry) instead of the inline give-up.
+		 *
+		 * @since 2.6.1
+		 *
+		 * @param bool $disabled True when a scheduled event cannot be relied on.
+		 */
+		return (bool) apply_filters( 'wpmediaverse_wp_cron_disabled', $disabled );
+	}
+
+	/**
+	 * Perform the remote activation in the cron request. On success, mark
+	 * activated and clear the retry state. A refusal from the store is final. When
+	 * the store did not answer, increment the bounded counter and reschedule hourly
+	 * until the ceiling, then stop and record that we gave up so the notice can
+	 * surface it.
+	 *
+	 * @return bool True when the licence is (or is now) activated; false on a
+	 *              failed attempt. Used by the owner's manual retry to report the
+	 *              outcome; the cron/action callers ignore it.
+	 */
+	public static function run(): bool {
+		if ( get_option( self::OPT_ACTIVATED ) ) {
+			return true;
 		}
 
 		update_option( 'wpmediaverse_license_key', self::PRESET_KEY, false );
@@ -66,7 +215,7 @@ final class PresetActivation {
 		$response = wp_remote_post(
 			'https://wbcomdesigns.com',
 			array(
-				'timeout' => 5,
+				'timeout' => self::TIMEOUT,
 				'body'    => array(
 					'edd_action' => 'activate_license',
 					'license'    => self::PRESET_KEY,
@@ -79,14 +228,160 @@ final class PresetActivation {
 		$body   = is_wp_error( $response ) ? null : json_decode( wp_remote_retrieve_body( $response ), true );
 		$status = is_array( $body ) ? (string) ( $body['license'] ?? '' ) : '';
 
-		// No store answer (network error, firewall 403, HTML, 5xx): wait, then retry.
-		if ( '' === $status ) {
-			set_transient( self::RETRY_TRANSIENT, 1, self::RETRY_AFTER );
+		if ( 'valid' === $status ) {
+			update_option( self::OPT_ACTIVATED, 1, false );
+			delete_option( self::OPT_ATTEMPTS );
+			delete_option( self::OPT_GAVE_UP );
+			delete_option( self::OPT_REFUSED );
+			return true;
+		}
+
+		// The store answered and said no. Asking again cannot change that answer,
+		// so this is final: stop now, keep the store's reason for the notice, and
+		// leave the next attempt to the owner's Retry. Retrying a refusal is what
+		// turned one expired key into a flood of requests from old releases.
+		if ( '' !== $status ) {
+			$reason = sanitize_key( (string) ( $body['error'] ?? '' ) );
+			update_option( self::OPT_REFUSED, '' !== $reason ? $reason : sanitize_key( $status ), false );
+			update_option( self::OPT_GAVE_UP, time(), false );
+			return false;
+		}
+
+		// No answer at all (network error, firewall page, 5xx): worth trying again.
+		delete_option( self::OPT_REFUSED );
+
+		$attempts = (int) get_option( self::OPT_ATTEMPTS, 0 ) + 1;
+		update_option( self::OPT_ATTEMPTS, $attempts, false );
+
+		// On a DISABLE_WP_CRON host there is no reliable auto-retry — a rescheduled
+		// event would never fire — so a single failure gives up NOW rather than
+		// pretending 24 hourly retries will happen. The owner sees the actionable
+		// notice on this same admin load and can Retry manually.
+		if ( ! self::cron_is_disabled() && $attempts < self::MAX_ATTEMPTS ) {
+			if ( ! wp_next_scheduled( self::HOOK ) ) {
+				wp_schedule_single_event( time() + HOUR_IN_SECONDS, self::HOOK );
+			}
+			return false;
+		}
+
+		// Ceiling reached (or no cron to retry with): stop, and record when so the
+		// owner notice can explain. maybe_schedule() now sees OPT_GAVE_UP and will not
+		// silently re-arm.
+		update_option( self::OPT_GAVE_UP, time(), false );
+		return false;
+	}
+
+	/**
+	 * Show the owner an actionable notice when activation has given up, so a
+	 * permanent silent failure (firewalled host, DISABLE_WP_CRON with no system
+	 * cron) is visible and recoverable instead of leaving the licence screen
+	 * unexplained.
+	 *
+	 * @return void
+	 */
+	public static function maybe_render_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		// A store answer is final: 'valid', or invalid/disabled/expired/
-		// no_activations_left, which retrying cannot change.
-		update_option( self::OPT_DONE, 'valid' === $status ? 1 : $status, false );
+		// A just-completed manual retry stamps its outcome; consume it once.
+		$retry_result = get_transient( self::RETRY_RESULT_TRANSIENT );
+		if ( false !== $retry_result ) {
+			delete_transient( self::RETRY_RESULT_TRANSIENT );
+		}
+
+		// Report a successful retry so the owner is not left guessing whether their
+		// click worked.
+		if ( 'ok' === $retry_result ) {
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				esc_html__( 'MediaVerse is now authorised to download plugin updates.', 'wpmediaverse' )
+			);
+			return;
+		}
+
+		if ( get_option( self::OPT_ACTIVATED ) ) {
+			return;
+		}
+
+		$gave_up      = (int) get_option( self::OPT_GAVE_UP, 0 );
+		$retry_failed = ( 'fail' === $retry_result );
+
+		// Show the actionable notice when activation has given up OR a manual retry
+		// just failed. The second case is the round-4 fix: on a cron-ENABLED
+		// firewalled host a failed run() reschedules WITHOUT setting OPT_GAVE_UP, so
+		// the gave_up-gated notice would vanish and the owner could not tell the
+		// retry failed.
+		if ( $gave_up <= 0 && ! $retry_failed ) {
+			return;
+		}
+
+		$when = $gave_up > 0
+			? sprintf(
+				/* translators: %s: human-readable time difference, e.g. "2 hours". */
+				__( 'last tried %s ago', 'wpmediaverse' ),
+				human_time_diff( $gave_up, time() )
+			)
+			: __( 'the retry just failed', 'wpmediaverse' );
+		$retry_url = wp_nonce_url(
+			add_query_arg( 'action', self::RETRY_ACTION, admin_url( 'admin-post.php' ) ),
+			self::RETRY_ACTION
+		);
+
+		$refused = (string) get_option( self::OPT_REFUSED, '' );
+		$message = '' !== $refused
+			? sprintf(
+				/* translators: 1: the store's reason, e.g. "expired". 2: "last tried X ago". */
+				__( 'wbcomdesigns.com did not authorise plugin updates for MediaVerse on this site (reason: %1$s, %2$s). Updates will not download until this is resolved. Updating MediaVerse to the latest version usually fixes it; if it does not, contact Wbcom Designs support.', 'wpmediaverse' ),
+				$refused,
+				$when
+			)
+			: sprintf(
+				/* translators: %s: "last tried X ago". */
+				__( 'MediaVerse could not reach wbcomdesigns.com to authorise plugin updates (%s). Updates will not download until this succeeds. If this host blocks outgoing connections, allow requests to wbcomdesigns.com, then retry.', 'wpmediaverse' ),
+				$when
+			);
+
+		printf(
+			'<div class="notice notice-warning"><p>%1$s</p><p><a class="button button-primary" href="%2$s">%3$s</a></p></div>',
+			esc_html( $message ),
+			esc_url( $retry_url ),
+			esc_html__( 'Retry activation now', 'wpmediaverse' )
+		);
+	}
+
+	/**
+	 * Owner-triggered retry: clear the give-up latch and run the activation
+	 * immediately (in this request is fine — it is the owner's own click, and the 5s
+	 * timeout bounds it), then redirect back.
+	 *
+	 * The running attempt count is deliberately PRESERVED across a retry. Deleting it
+	 * reset the counter on every click, so a host that stays blocked could be retried
+	 * forever without ever re-latching the MAX_ATTEMPTS give-up state — the give-up
+	 * notice appeared once and then vanished on the next click. Keeping the count lets
+	 * a still-blocked host reach (or immediately re-reach) give-up: run() re-arms the
+	 * latch as soon as attempts is at the ceiling. A genuine success still clears the
+	 * count via run()'s own success branch.
+	 *
+	 * @return void
+	 */
+	public static function handle_retry(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'wpmediaverse' ), 403 );
+		}
+		check_admin_referer( self::RETRY_ACTION );
+
+		// Clear only the give-up latch so run() actually attempts again; the attempt
+		// count carries over so repeated retries still converge on give-up.
+		delete_option( self::OPT_GAVE_UP );
+		$ok = self::run();
+
+		// Record the outcome across the redirect so maybe_render_notice() can report
+		// it — a failed retry on a cron-enabled host reschedules without OPT_GAVE_UP,
+		// so the outcome would otherwise be invisible.
+		set_transient( self::RETRY_RESULT_TRANSIENT, $ok ? 'ok' : 'fail', MINUTE_IN_SECONDS );
+
+		wp_safe_redirect( wp_get_referer() ? wp_get_referer() : admin_url() );
+		exit;
 	}
 }

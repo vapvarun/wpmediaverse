@@ -1,123 +1,157 @@
 <?php
 /**
- * The preset licence key is activated with backoff, never in a loop.
+ * A refusal from the store is final; silence from the store is retried.
  *
  * @package WPMediaVerse
  */
 
 namespace WPMediaVerse\Tests\Unit;
 
-use WP_UnitTestCase;
 use WPMediaVerse\Core\PresetActivation;
+use WP_UnitTestCase;
 
 /**
- * Card 10370576415: one site sent 933 activation POSTs in 23h because every
- * non-valid reply retried on the next admin_init (Heartbeat included).
+ * The shared preset-activation model (docs/standards/preset-licence-activation.md):
+ * the store saying "expired" or "invalid" cannot change by asking again, so it is
+ * never retried automatically. Only no answer at all (network error, firewall
+ * page) gets the bounded hourly retry. Basecamp 10375332367: old releases retried
+ * every refusal and flooded the store.
+ *
+ * @covers \WPMediaVerse\Core\PresetActivation::run
+ * @covers \WPMediaVerse\Core\PresetActivation::maybe_render_notice
  */
 class PresetActivationTest extends WP_UnitTestCase {
 
 	/**
-	 * Store requests seen by the stub.
+	 * Requests sent to the store.
 	 *
 	 * @var int
 	 */
-	private int $calls = 0;
+	private int $requests = 0;
+
+	/**
+	 * What the store answers with: an array for wp_remote_post, or a WP_Error.
+	 *
+	 * @var array<string,mixed>|\WP_Error
+	 */
+	private $answer;
+
+	public function set_up(): void {
+		parent::set_up();
+		$this->forget();
+		add_filter( 'pre_http_request', array( $this, 'store' ), 10, 3 );
+	}
 
 	public function tear_down(): void {
-		remove_all_filters( 'pre_http_request' );
-		remove_all_filters( 'wp_doing_ajax' );
-		delete_option( PresetActivation::OPT_DONE );
-		delete_transient( PresetActivation::RETRY_TRANSIENT );
+		remove_filter( 'pre_http_request', array( $this, 'store' ), 10 );
+		$this->forget();
 		parent::tear_down();
 	}
 
+	private function forget(): void {
+		foreach ( array( PresetActivation::OPT_ACTIVATED, PresetActivation::OPT_ATTEMPTS, PresetActivation::OPT_GAVE_UP, PresetActivation::OPT_REFUSED ) as $option ) {
+			delete_option( $option );
+		}
+		wp_clear_scheduled_hook( PresetActivation::HOOK );
+	}
+
 	/**
-	 * Answer every store request with $reply (array response or WP_Error).
+	 * Stand in for wbcomdesigns.com.
 	 *
-	 * @param mixed $reply Stubbed response.
+	 * @param mixed  $pre  Short-circuit value.
+	 * @param array  $args Request args.
+	 * @param string $url  Request URL.
+	 * @return mixed
 	 */
-	private function store_replies( $reply ): void {
-		add_filter(
-			'pre_http_request',
-			function () use ( $reply ) {
-				++$this->calls;
-				return $reply;
-			}
-		);
+	public function store( $pre, $args, $url ) {
+		if ( false === strpos( (string) $url, 'wbcomdesigns.com' ) ) {
+			return $pre;
+		}
+		++$this->requests;
+		return $this->answer;
 	}
 
-	private function json( array $body, int $code = 200 ): array {
+	private function json( array $body ): array {
 		return array(
-			'headers'  => array(),
-			'body'     => wp_json_encode( $body ),
-			'response' => array(
-				'code'    => $code,
-				'message' => '',
-			),
-			'cookies'  => array(),
+			'response' => array( 'code' => 200 ),
+			'body'     => (string) wp_json_encode( $body ),
 		);
 	}
 
-	public function test_valid_reply_activates_once(): void {
-		$this->store_replies( $this->json( array( 'license' => 'valid' ) ) );
-
-		PresetActivation::maybe_activate();
-		PresetActivation::maybe_activate();
-
-		$this->assertSame( 1, $this->calls );
-		$this->assertSame( 1, (int) get_option( PresetActivation::OPT_DONE ) );
-	}
-
-	public function test_definitive_store_answer_is_final(): void {
-		$this->store_replies(
-			$this->json(
-				array(
-					'license' => 'invalid',
-					'error'   => 'no_activations_left',
-				)
+	public function test_a_refusal_is_final_and_names_its_reason(): void {
+		$this->answer = $this->json(
+			array(
+				'success' => false,
+				'license' => 'invalid',
+				'error'   => 'expired',
 			)
 		);
 
-		PresetActivation::maybe_activate();
-		PresetActivation::maybe_activate();
+		$this->assertFalse( PresetActivation::run() );
 
-		$this->assertSame( 1, $this->calls, 'A store answer is never retried.' );
-		$this->assertSame( 'invalid', get_option( PresetActivation::OPT_DONE ) );
+		$this->assertSame( 1, $this->requests );
+		$this->assertSame( 'expired', get_option( PresetActivation::OPT_REFUSED ) );
+		$this->assertGreaterThan( 0, (int) get_option( PresetActivation::OPT_GAVE_UP, 0 ), 'Stopped at once.' );
+		$this->assertFalse( wp_next_scheduled( PresetActivation::HOOK ), 'No automatic retry of a refusal.' );
+
+		// Admin page loads after that send nothing more.
+		PresetActivation::maybe_schedule();
+		PresetActivation::maybe_schedule();
+		$this->assertSame( 1, $this->requests );
+		$this->assertFalse( wp_next_scheduled( PresetActivation::HOOK ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		ob_start();
+		PresetActivation::maybe_render_notice();
+		$notice = (string) ob_get_clean();
+		$this->assertStringContainsString( 'reason: expired', $notice );
+		$this->assertStringContainsString( 'Retry activation now', $notice );
 	}
 
-	public function test_unanswered_attempt_waits_before_retrying(): void {
-		foreach ( array(
-			new \WP_Error( 'http_request_failed', 'timeout' ),
-			array(
-				'headers'  => array(),
-				'body'     => '<html>403</html>',
-				'response' => array(
-					'code'    => 403,
-					'message' => '',
-				),
-				'cookies'  => array(),
-			),
-		) as $reply ) {
-			$this->calls = 0;
-			remove_all_filters( 'pre_http_request' );
-			delete_transient( PresetActivation::RETRY_TRANSIENT );
-			$this->store_replies( $reply );
+	public function test_no_answer_is_retried_within_the_bound(): void {
+		$this->answer = array(
+			'response' => array( 'code' => 403 ),
+			'body'     => '<html>Blocked by firewall</html>',
+		);
 
-			PresetActivation::maybe_activate();
-			PresetActivation::maybe_activate();
+		// A host whose cron works (the test environment switches WP-Cron off).
+		add_filter( 'wpmediaverse_wp_cron_disabled', '__return_false' );
+		$ran = PresetActivation::run();
+		remove_filter( 'wpmediaverse_wp_cron_disabled', '__return_false' );
+		$this->assertFalse( $ran );
 
-			$this->assertSame( 1, $this->calls, 'Second admin load inside the wait sends nothing.' );
-			$this->assertFalse( get_option( PresetActivation::OPT_DONE ), 'Not final: retried after the wait.' );
-			$this->assertNotFalse( get_transient( PresetActivation::RETRY_TRANSIENT ) );
-		}
+		$this->assertSame( '', (string) get_option( PresetActivation::OPT_REFUSED, '' ), 'The store never answered.' );
+		$this->assertSame( 1, (int) get_option( PresetActivation::OPT_ATTEMPTS ) );
+		$this->assertSame( 0, (int) get_option( PresetActivation::OPT_GAVE_UP, 0 ) );
+		$this->assertNotFalse( wp_next_scheduled( PresetActivation::HOOK ), 'One retry is queued, an hour out.' );
 	}
 
-	public function test_never_runs_on_ajax_requests(): void {
-		$this->store_replies( $this->json( array( 'license' => 'valid' ) ) );
-		add_filter( 'wp_doing_ajax', '__return_true' );
+	public function test_valid_clears_an_earlier_refusal(): void {
+		update_option( PresetActivation::OPT_REFUSED, 'expired', false );
+		update_option( PresetActivation::OPT_GAVE_UP, time(), false );
+		$this->answer = $this->json( array( 'license' => 'valid' ) );
 
-		PresetActivation::maybe_activate();
+		$this->assertTrue( PresetActivation::run() );
 
-		$this->assertSame( 0, $this->calls, 'Heartbeat/admin-ajax never pings the store.' );
+		$this->assertSame( 1, (int) get_option( PresetActivation::OPT_ACTIVATED ) );
+		$this->assertFalse( get_option( PresetActivation::OPT_REFUSED ) );
+		$this->assertFalse( get_option( PresetActivation::OPT_GAVE_UP ) );
+	}
+
+	/**
+	 * An admin page load only queues the background attempt. Every release up
+	 * to 2.6.0 posted to the store on each admin request; one site sent 933
+	 * requests in 23 hours.
+	 */
+	public function test_an_admin_page_load_queues_the_attempt_and_sends_nothing(): void {
+		$this->answer = $this->json( array( 'license' => 'valid' ) );
+
+		add_filter( 'wpmediaverse_wp_cron_disabled', '__return_false' );
+		PresetActivation::maybe_schedule();
+		PresetActivation::maybe_schedule();
+		remove_filter( 'wpmediaverse_wp_cron_disabled', '__return_false' );
+
+		$this->assertSame( 0, $this->requests );
+		$this->assertNotFalse( wp_next_scheduled( PresetActivation::HOOK ) );
 	}
 }
