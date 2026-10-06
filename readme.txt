@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.6.0
+Stable tag: 2.6.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -954,6 +954,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.6.1 =
+Contains security fixes. Private albums and collections were listed to visitors, and the tag cloud named tags used only on private media. This release also stops the plugin contacting the licence server on every admin request. Update together with WPMediaVerse Pro 2.6.1.
 
 = 2.6.0 =
 Contains security fixes. Block style fields accepted CSS that could inject into the page, and draft media could be read through the API by signed-out visitors. Update together with WPMediaVerse Pro 2.6.0.
