@@ -127,12 +127,19 @@ Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui
 
 = 2.6.1 - October 2026 =
 
-Private albums and tags stay private everywhere, Explore gains Trending and a type filter, and lists keep loading as you scroll.
+Faster media delivery, videos that start sooner, upload progress, a Followers privacy level, and private albums and tags that stay private everywhere.
 
 * New      - Explore offers a Trending sort and a filter for photos, videos or audio, ranked the same way as the app.
 * New      - Lists load the next pages as you scroll; after three pages a Load More button keeps the site footer in reach.
 * New      - The upload modal suggests matching tags as you type.
 * New      - Member emails for a new follower and for a comment on their media, each switched on in Settings > General > Emails.
+* New      - Media files are served straight by the web server under unguessable names when the server allows it, so pages no longer load WordPress for every image.
+* New      - Uploads show how much of each file has been sent, and several videos or audio files can be uploaded together.
+* New      - MP4 videos start playing sooner: the index is moved to the front on upload, and wp mvs faststart does the same for existing files.
+* New      - Video captions show on every web player.
+* New      - Followers is a privacy level members can choose: only people who follow them see the item.
+* New      - Optional hand-off of protected downloads to the web server (nginx X-Accel-Redirect or Apache X-Sendfile), off until a check proves the server supports it.
+* New      - An empty My Media library offers an Upload media button.
 * Improve  - On a BuddyNext site, BuddyNext sends the member emails for MediaVerse activity, so a member gets one email per event.
 * Improve  - A photo has the same alt text in the grid, the lightbox and newly loaded cards, using its AI description when there is one.
 * Improve  - Album type is a choice of Standard album or Playlist instead of a free-text field.
@@ -145,15 +152,37 @@ Private albums and tags stay private everywhere, Explore gains Trending and a ty
 * Improve  - My Media shows a member's media sooner on phones: a one-line profile row and no duplicate drag-and-drop box beside the upload button.
 * Improve  - On a BuddyNext site, BuddyNext's profile editor is the one place to edit a profile.
 * Improve  - Album privacy prompts name the photos they affect, and changing an album to a stricter privacy asks first.
+* Improve  - The free licence is activated in the background, stops trying after a day when the store cannot be reached, and tells the owner why with a Retry button.
+* Improve  - Members-only media can be reused from the member's own browser cache instead of being fetched again on every page.
+* Improve  - Keyboard use, visible focus and screen-reader labels are improved across the upload block, My Media, the lightbox and Explore search.
+* Improve  - The front-end accent colour follows the site's theme colour.
+* Improve  - Explore and grid rows line up at every width, and Settings no longer scrolls sideways on tablets.
+* Improve  - The admin Overview and the Moderation menu badge show one Needs review number that includes member reports.
+* Improve  - Delete Demo Data has its own box that says what it removes, and setup wording names the community plugin the site runs.
+* Improve  - A video that cannot play says so and offers the file instead of stalling silently.
+* Improve  - Report in the lightbox opens the report form in place.
+* Improve  - In My Media the active tab is always marked, and the browser Back and Forward buttons switch sections.
 * Fix      - Editing a media item whose ID matches an album or collection now saves.
 * Fix      - The plugin package no longer ships unused block files and the styles of the removed Lock Overlay.
 * Fix      - The Settings saved confirmation shows at the top of the tab, and on phones it scrolls into view.
+* Fix      - The plugin no longer contacts the licence server on every admin request.
+* Fix      - Replacing a file removes the old version completely and keeps private items off public cloud storage.
+* Fix      - Followers-only stories reach followers.
+* Fix      - The Messages page is no longer treated as the blog home.
+* Fix      - A refused upload keeps its message in the upload window, and visitors who try to react are offered a way to log in.
+* Fix      - A custom storage driver stays selected when the Storage tab is saved.
+* Fix      - The Integrations screen no longer promises Jetonomy attachments.
 * Security - Private albums and collections no longer appear to visitors or other members on the Albums and Collections pages or through WordPress's built-in REST routes.
 * Security - The tag cloud and the public tag list show only tags used on public items.
 * Security - Duplicate-upload checks compare only with the member's own uploads, and the notice no longer shows another item's ID.
+* Security - Tightening an item's privacy gives its files new names, so links shared earlier stop working.
+* Security - A crafted MP4 upload can no longer make the server do unbounded work.
 * Dev      - New PrivacyService::query_listable_spaces() for album and collection lists, TemplateHelpers::alt_text(), and an alt field on media REST responses.
 * Dev      - The wp/v2 routes for mvs-albums, mvs-collections and mvs_tag are removed; use the mvs/v1 routes.
 * Dev      - Templates updated to 2.6.1: cpt-archive.php, partials/shared-ui-frame.php and partials/dashboard-content.php.
+* Dev      - New filters mvs_storage_driver_choices and mvs_serve_offload, and action mvs_media_files_rotated.
+* Dev      - GET /mvs/v1/media lists self and followers as scope values; wp mvs migrate-storage documents --include-non-public.
+* Dev      - New standard docs/standards/preset-licence-activation.md describes the shared licence activation model.
 * Compat   - Aligned with MediaVerse Pro 2.6.1. Install both updates together.
 
 = 2.6.0 - September 2026 =

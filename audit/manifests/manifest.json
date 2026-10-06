@@ -6993,5 +6993,57 @@
       "Dashboard album prompts: named photos, stricter album privacy asks first",
       "EmailService::host_sends(): no activity emails or switches when BuddyNext is active"
     ]
+  },
+  "refresh_2026_10_07": {
+    "scope": "targeted (2.6.1 work of 3 to 6 October: delivery, video, uploads, privacy, licence, storage, moderation count)",
+    "added": {
+      "services_added": [
+        "Services\\DirectDelivery (capability-URL delivery, probe-gated)",
+        "Services\\MediaFileRotator (rename files when privacy tightens)",
+        "Services\\Mp4Faststart (moov-first rewrite, pure PHP)",
+        "Services\\ServerFileOffload (X-Accel-Redirect / X-Sendfile, probe-gated)",
+        "Core\\PresetActivation (shared preset licence activation model)"
+      ],
+      "public_methods": [
+        "PrivacyService::supported_levels now includes followers",
+        "TemplateHelpers::privacy_choices offers followers",
+        "MediaRepository::PRIVACY_ORDER includes followers",
+        "SettingsRegistrar::storage_driver_choices (filterable)",
+        "ModerationService::get_counts returns reports; needs_review counts them",
+        "ReportService clears the cached moderation badge on report and status change"
+      ],
+      "hooks_added": [
+        "mvs_direct_media_delivery",
+        "mvs_media_captions",
+        "mvs_media_files_rotated",
+        "mvs_private_media_max_age",
+        "mvs_serve_offload",
+        "mvs_serve_offload_nginx_prefix",
+        "mvs_storage_driver_choices",
+        "wpmediaverse_wp_cron_disabled"
+      ],
+      "wp_cli": [
+        "wp mvs faststart [--dry-run] [--batch=<n>]",
+        "wp mvs migrate-storage: --include-non-public is now documented in help"
+      ],
+      "admin_actions": [
+        "admin_post_wpmediaverse_retry_preset_activation (audit/admin-action-authority.json)"
+      ],
+      "rest": [
+        "GET /mvs/v1/media scope enum: public, all, self, followers",
+        "GET /mvs/v1/offload-probe/{token} (loopback probe, single-use token)"
+      ],
+      "options": [
+        "wpmediaverse_preset_activation_attempts",
+        "wpmediaverse_preset_activation_gave_up",
+        "wpmediaverse_preset_activation_refused",
+        "mvs_direct_delivery",
+        "mvs_serve_offload"
+      ],
+      "cron": [
+        "wpmediaverse_activate_preset_key (single event; cleared on deactivation)"
+      ]
+    },
+    "unchanged": "tables, capabilities, shortcodes, blocks registered, post types"
   }
 }

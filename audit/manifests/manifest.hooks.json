@@ -702,6 +702,17 @@
       "added": "2.3.2"
     },
     {
+      "name": "mvs_community_notification_removed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "string $object_type",
+        "int $object_id"
+      ],
+      "where": "includes/Social/CommunityNotificationContract.php:66",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_community_notification_types",
       "type": "filter",
       "args_count": 1,
@@ -712,17 +723,6 @@
       "consumed_by": [
         "CommunityNotificationContract::declare_types (the declared list, also read by BuddyNext for its settings catalogue)"
       ]
-    },
-    {
-      "name": "mvs_community_notification_removed",
-      "type": "action",
-      "args_count": 2,
-      "args_signature": [
-        "string $object_type",
-        "int $object_id"
-      ],
-      "where": "includes/Social/CommunityNotificationContract.php:66",
-      "consumed_by": []
     },
     {
       "name": "mvs_community_profile",
@@ -865,6 +865,16 @@
         "string $default"
       ],
       "where": "includes/Core/TemplateHelpers.php:535",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_direct_media_delivery",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $ok"
+      ],
+      "where": "includes/Services/DirectDelivery.php:88",
       "consumed_by": []
     },
     {
@@ -1543,6 +1553,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_media_captions",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array|null $captions",
+        "int $media_id"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:326",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_media_deleted",
       "type": "action",
       "args_count": 2,
@@ -1604,6 +1625,16 @@
         "array $orphaned_files"
       ],
       "where": "includes/Repository/MediaRepository.php:2250",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_files_rotated",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $media_id"
+      ],
+      "where": "includes/Services/MediaFileRotator.php:196",
       "consumed_by": []
     },
     {
@@ -2214,6 +2245,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_private_media_max_age",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $max_age",
+        "string $privacy"
+      ],
+      "where": "includes/Services/SignedUrlService.php:825",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_document_extraction_enabled",
       "type": "filter",
       "args_count": 1,
@@ -2654,6 +2696,26 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_serve_offload",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $mode"
+      ],
+      "where": "includes/Services/ServerFileOffload.php:90",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_serve_offload_nginx_prefix",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $prefix"
+      ],
+      "where": "includes/Services/ServerFileOffload.php:139",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_serve_public_cloud_direct",
       "type": "filter",
       "args_count": 2,
@@ -2850,6 +2912,16 @@
           "kind": "add_filter_listener"
         }
       ]
+    },
+    {
+      "name": "mvs_storage_driver_choices",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $choices"
+      ],
+      "where": "includes/Admin/Settings/SettingsRegistrar.php:133",
+      "consumed_by": []
     },
     {
       "name": "mvs_storage_limit_bytes",
@@ -3218,6 +3290,16 @@
       "args_signature": [],
       "args_count": 0,
       "where": "includes/Integrations/Companions/CompanionRegistry.php:46",
+      "consumed_by": []
+    },
+    {
+      "name": "wpmediaverse_wp_cron_disabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $disabled"
+      ],
+      "where": "includes/Core/PresetActivation.php:194",
       "consumed_by": []
     }
   ],

@@ -1,7 +1,7 @@
 {
     "ok": true,
     "summary": {
-        "pass": 70,
+        "pass": 71,
         "fail": 0,
         "hole": 0
     },
@@ -386,6 +386,12 @@
         },
         {
             "check": "boot",
+            "entity": "/mvs/v1/offload-probe/(?P<token>[a-f0-9]{32})",
+            "status": "pass",
+            "detail": "GET -> 404 (rest_no_route)"
+        },
+        {
+            "check": "boot",
             "entity": "/mvs/v1/me/conversations",
             "status": "pass",
             "detail": "GET -> 200"
@@ -394,13 +400,13 @@
             "check": "boot",
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404"
         },
         {
             "check": "boot",
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404"
         },
         {
             "check": "boot",
@@ -412,7 +418,7 @@
             "check": "boot",
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)/media",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404"
         },
         {
             "check": "boot",

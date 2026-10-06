@@ -4015,5 +4015,29 @@
       "gamification.css: streak stats hidden below 640px",
       "compete-hub-body.php 2.6.1: My Activity empty copy"
     ]
+  },
+  "refresh_2026_10_07": {
+    "scope": "targeted (2.6.1 work of 3 to 6 October)",
+    "added": {
+      "hooks_added": [
+        "mvs_battle_drawn"
+      ],
+      "public_methods": [
+        "PrivacyUIService::offered_levels (built from Free's privacy_choices)",
+        "BattleService::resolve returns draw; format_battle_row returns is_draw"
+      ],
+      "notification_types": [
+        "battle_draw"
+      ],
+      "ui": [
+        "challenge vote toggle (unvote)",
+        "stories add-tile status line",
+        "Competitions admin menu with tabs"
+      ]
+    },
+    "changed": {
+      "mvs_battle_resolved": "fires only with a winner"
+    },
+    "unchanged": "REST routes, tables, settings, cron"
   }
 }

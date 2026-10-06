@@ -110,6 +110,29 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_battle_drawn",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$battle_id",
+        "$challenger_id",
+        "$opponent_id"
+      ],
+      "where": "includes/Battles/BattleService.php:570",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Battles/BattleNotificationListener.php",
+          "kind": "add_action"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/REST/CompeteSummaryController.php",
+          "kind": "add_action"
+        }
+      ]
+    },
+    {
       "name": "mvs_battle_expired",
       "type": "action",
       "args_count": 2,
@@ -132,7 +155,8 @@
         "$loser_id"
       ],
       "where": "includes/Battles/BattleService.php:502",
-      "consumed_by": []
+      "consumed_by": [],
+      "note": "Fires only when a battle has a winner (2.6.1); a draw fires mvs_battle_drawn."
     },
     {
       "name": "mvs_battle_submit_hours",

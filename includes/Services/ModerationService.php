@@ -278,10 +278,13 @@ class ModerationService {
 	 */
 	public function get_counts(): array {
 		$container = \WPMediaVerse\Core\Plugin::container();
-		$counts    = $container->get( 'media_repository' )->moderation_counts( array( 'pending', 'flagged', 'rejected' ) );
+		$media     = $container->get( 'media_repository' )->moderation_counts( array( 'pending', 'flagged', 'rejected' ) );
 
-		$counts['reports'] = (int) $container->get( 'reports' )->count_by_status( 'pending' );
-
-		return $counts;
+		return array(
+			'pending'  => (int) ( $media['pending'] ?? 0 ),
+			'flagged'  => (int) ( $media['flagged'] ?? 0 ),
+			'rejected' => (int) ( $media['rejected'] ?? 0 ),
+			'reports'  => (int) $container->get( 'reports' )->count_by_status( 'pending' ),
+		);
 	}
 }
