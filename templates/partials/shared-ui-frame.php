@@ -283,7 +283,7 @@ wp_interactivity_state(
 						<?php endif; ?>
 						<details class="mvs-modal-details">
 							<summary class="mvs-modal-details__summary"><?php esc_html_e( 'Add details', 'wpmediaverse' ); ?></summary>
-							<div class="mvs-modal-field">
+							<div class="mvs-modal-field" data-wp-bind--hidden="state.uploadTitleUnused">
 								<?php // A placeholder is a hint that vanishes on the first keystroke, so it cannot be the field's name. The Tags input below already had an aria-label; these two were missed (Basecamp 10252222135). ?>
 								<input type="text" aria-label="<?php esc_attr_e( 'Media title', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
 							</div>
@@ -507,7 +507,10 @@ wp_interactivity_state(
 				<?php // Shown instead of a video the browser cannot play, so a member sees why and can still get the file. ?>
 				<div class="mvs-lightbox-media-error" role="status" data-wp-bind--hidden="!state.lightboxVideoFailed" hidden>
 					<p><?php esc_html_e( 'This video cannot play here.', 'wpmediaverse' ); ?></p>
-					<a class="mvs-btn--secondary" data-wp-bind--href="state.lightboxVideoUrl" download target="_blank" rel="noopener"><?php esc_html_e( 'Download it instead', 'wpmediaverse' ); ?></a>
+					<?php // Same gates as the Download button: the site option and the item's own setting. ?>
+					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
+						<a class="mvs-btn--secondary" data-wp-bind--href="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideDownload" download target="_blank" rel="noopener"><?php esc_html_e( 'Download it instead', 'wpmediaverse' ); ?></a>
+					<?php endif; ?>
 				</div>
 				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
 				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />

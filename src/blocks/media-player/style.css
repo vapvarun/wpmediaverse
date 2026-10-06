@@ -122,3 +122,24 @@
 	background: var(--mvs-primary-hover);
 	color: var(--mvs-surface);
 }
+
+/* Shown instead of a video the browser cannot play (single media page + block). */
+.mvs-player-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--mvs-space-md, 12px);
+	padding: var(--mvs-space-xl, 32px) var(--mvs-space-lg, 20px);
+	text-align: center;
+	border: 1px solid var(--mvs-border, currentColor);
+	border-radius: var(--mvs-radius-md, 8px);
+	color: var(--mvs-text, inherit);
+}
+
+.mvs-player-error[hidden] {
+	display: none !important;
+}
+
+.mvs-player-error p {
+	margin: 0;
+}

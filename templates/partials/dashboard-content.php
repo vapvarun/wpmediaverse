@@ -1637,6 +1637,7 @@ wp_interactivity_state(
 					<?php // Visually hidden, not `hidden`: a hidden input can't take keyboard focus. ?>
 					<input type="file" class="mvs-sr-only" data-wp-on--change="actions.handleReplaceFile" />
 				</label>
+					<span class="mvs-replace-progress" role="status" aria-live="polite" data-wp-bind--hidden="!state.editModal.replaceProgress" data-wp-text="state.editModal.replaceProgress" hidden></span>
 					<span class="mvs-replace-file-hint"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
 			</div>
 			<div class="mvs-modal-footer">

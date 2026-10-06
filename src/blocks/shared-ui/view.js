@@ -422,6 +422,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get hasFiles() {
 			return state.uploadModalFiles.length > 0;
 		},
+		// One title only names one thing: a single file, or a gallery post. For
+		// several separate items it is not sent, so the field is not offered.
+		get uploadTitleUnused() {
+			return state.uploadModalFiles.length > 1 && state.uploadModalMode !== 'gallery';
+		},
 		get uploadProgressText() {
 			if ( ! state.uploadModalUploading ) return '';
 			return 'Uploading ' + ( state.uploadModalDone + 1 ) + ' of ' + state.uploadModalTotal + '...';
@@ -1662,6 +1667,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		noop() {},
 		async lightboxLoadSocial( ctx, mediaId ) {
+			// Every opener runs through here: forget a previous "cannot play" so a
+			// reopened item (network back, or a different file) gets a fresh try.
+			state.lightboxFailedUrl = '';
 			// Record the view. Fire-and-forget, exactly as media-social does on the
 			// single-media page. The view POST was wired into that page and into
 			// the BP activity driver, but never into the IA lightbox - so opening

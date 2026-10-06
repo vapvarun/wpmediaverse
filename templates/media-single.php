@@ -363,6 +363,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 							'restUrl'      => esc_url_raw( rest_url( 'mvs/v1/media/' . $mvs_media_id . '/view' ) ),
 							'nonce'        => wp_create_nonce( 'wp_rest' ),
 							'playing'      => false,
+							// True once the browser reports it cannot play the file.
+							'failed'       => false,
 							// Pro analytics — mirror the media-player block so the
 							// primary media page also records play/pause/seek/complete
 							// events. The shared mvs/media-player store short-circuits
@@ -388,7 +390,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					?>
 					<?php echo $mvs_video_aspect_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped above. ?>
 				>
-					<video controls preload="metadata"
+					<video controls preload="metadata" data-wp-bind--hidden="context.failed"
 						<?php if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) : ?>
 							width="<?php echo (int) $mvs_width; ?>" height="<?php echo (int) $mvs_height; ?>"
 						<?php endif; ?>
@@ -400,9 +402,16 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						data-wp-on--loadedmetadata="actions.onLoadedMetadata"
 						data-wp-init="actions.initResume"
 						data-wp-on--timeupdate="actions.onTimeUpdate">
-						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
+						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" data-wp-on--error="actions.onSourceError" />
 						<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->captions_track( $mvs_media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes. ?>
 					</video>
+					<?php // As in the lightbox: a file the browser cannot play says so instead of a black player. ?>
+					<div class="mvs-player-error" role="status" hidden data-wp-bind--hidden="!context.failed">
+						<p><?php esc_html_e( 'This video cannot play here.', 'wpmediaverse' ); ?></p>
+						<?php if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->downloads_allowed( (int) $mvs_media_id ) ) : ?>
+							<a class="mvs-btn--secondary" href="<?php echo esc_url( $mvs_file_url ); ?>" download target="_blank" rel="noopener"><?php esc_html_e( 'Download it instead', 'wpmediaverse' ); ?></a>
+						<?php endif; ?>
+					</div>
 					<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
 						<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>
 						<button type="button" class="mvs-resume-chip__btn" data-wp-on--click="actions.onResumeStartOver"><?php esc_html_e( 'Start over', 'wpmediaverse' ); ?></button>
@@ -419,6 +428,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 							'restUrl'      => esc_url_raw( rest_url( 'mvs/v1/media/' . $mvs_media_id . '/view' ) ),
 							'nonce'        => wp_create_nonce( 'wp_rest' ),
 							'playing'      => false,
+							// True once the browser reports it cannot play the file.
+							'failed'       => false,
 							// Pro analytics — mirror the media-player block so the
 							// primary media page also records play/pause/seek/complete
 							// events. The shared mvs/media-player store short-circuits

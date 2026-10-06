@@ -182,8 +182,17 @@
 		// Upload progress ( loaded, total ) switches the transport to XHR.
 		var onProgress = init.mvsOnUploadProgress;
 		delete init.mvsOnUploadProgress;
+		// Set once the timeout is armed: progress restarts it (see below).
+		var rearm = null;
 		var send = ( 'function' === typeof onProgress && 'function' === typeof XMLHttpRequest )
-			? function ( u, i ) { return xhrFetch( u, i, onProgress ); }
+			? function ( u, i ) {
+				return xhrFetch( u, i, function ( loaded, total ) {
+					if ( rearm ) {
+						rearm();
+					}
+					onProgress( loaded, total );
+				} );
+			}
 			: function ( u, i ) { return fetch( u, i ); };
 
 		// A caller managing its own signal owns the cancellation story too, and
@@ -211,6 +220,16 @@
 		var timer      = setTimeout( function () {
 			controller.abort();
 		}, timeoutMs );
+		// With progress, the limit is on silence, not on the whole transfer: every
+		// chunk sent restarts it, so a large video on a slow line is never cut off
+		// mid-upload while a stalled one still fails. Without progress events
+		// (plain fetch) it stays a total limit.
+		rearm = function () {
+			clearTimeout( timer );
+			timer = setTimeout( function () {
+				controller.abort();
+			}, timeoutMs );
+		};
 
 		init.signal = controller.signal;
 

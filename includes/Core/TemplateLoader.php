@@ -1330,6 +1330,7 @@ class TemplateLoader {
 			|| (bool) get_query_var( 'mvs_profile_user' )
 			|| (bool) get_query_var( 'mvs_media_archive' )
 			|| (bool) get_query_var( 'mvs_media_slug' )
+			|| (bool) get_query_var( 'mvs_messages_page' )
 		);
 
 		// Shortcode pages (e.g. dashboard): match current page ID against any mvs_page_* option.

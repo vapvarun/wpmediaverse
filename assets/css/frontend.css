@@ -7919,7 +7919,16 @@ a.mvs-dashboard-card-title:hover {
 .mvs-replace-file-hint {
     color: var(--mvs-text-secondary);
     font-size: 12px;
-    margin-left: 8px;
+    margin-inline-start: 8px;
+}
+
+/* Replace File upload progress, beside the button. */
+.mvs-replace-progress {
+	font-size: var(--mvs-font-sm, 13px);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--mvs-text-secondary, currentColor);
+	margin-inline-start: var(--mvs-space-sm, 8px);
 }
 
 /* Album cover hint inside FAB upload modal (album mode, files selected). */

@@ -225,6 +225,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// re-opening the panel shows what the member actually chose.
 			regenerateSlug: false,
 			saving: false,
+			// "42%" while a Replace File upload is sending, '' otherwise.
+			replaceProgress: '',
 		},
 		// Albums
 		albums: {
@@ -1254,6 +1256,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! mediaId ) return;
 
 			state.editModal.saving = true;
+			state.editModal.replaceProgress = '0%';
 			const formData = new FormData();
 			formData.append( 'file', file );
 
@@ -1261,6 +1264,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
 					method: 'POST',
 					body: formData,
+					// A replacement video can be large: show how much has been sent.
+					onUploadProgress: ( loaded, total ) => {
+						state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
+					},
 				} );
 				if ( res.ok ) {
 					const updated = res.data;
@@ -1277,6 +1284,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				sharedUI.actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
 			}
 			state.editModal.saving = false;
+			state.editModal.replaceProgress = '';
 		},
 
 		async saveEdit() {

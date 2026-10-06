@@ -101,6 +101,17 @@ class Mp4FaststartTest extends WP_UnitTestCase {
 		$this->assertFalse( Mp4Faststart::apply( $file, 'video/mp4' ), 'Already faststart: left alone.' );
 	}
 
+	public function test_the_rewritten_file_keeps_its_mode(): void {
+		$ftyp = $this->box( 'ftyp', 'isom' );
+		$mdat = $this->box( 'mdat', 'zzSAMPLE-Czz' );
+		$file = $this->write( $ftyp . $mdat . $this->moov( array( strlen( $ftyp ) + 10 ) ) );
+		chmod( $file, 0640 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+
+		$this->assertTrue( Mp4Faststart::apply( $file, 'video/mp4' ) );
+		clearstatcache();
+		$this->assertSame( 0640, fileperms( $file ) & 0777 );
+	}
+
 	public function test_co64_tables_are_shifted_too(): void {
 		$ftyp = $this->box( 'ftyp', 'isom' );
 		$mdat = $this->box( 'mdat', 'zzSAMPLE-Czz' );
@@ -145,6 +156,13 @@ class Mp4FaststartTest extends WP_UnitTestCase {
 	public function test_files_it_cannot_safely_rewrite_are_untouched(): void {
 		$ftyp = $this->box( 'ftyp', 'isom' );
 		$mdat = $this->box( 'mdat', 'data' );
+
+		// A second mdat after the moov: its chunks do not move, so shifting their
+		// offsets would point them at the wrong bytes. Left exactly as uploaded.
+		$split  = $this->write( $ftyp . $mdat . $this->moov( array( 20 ) ) . $this->box( 'mdat', 'more' ) );
+		$before = md5_file( $split );
+		$this->assertFalse( Mp4Faststart::apply( $split, 'video/mp4' ) );
+		$this->assertSame( $before, md5_file( $split ) );
 
 		// A 32-bit offset that would overflow after the shift.
 		$overflow = $this->write( $ftyp . $mdat . $this->moov( array( 0xFFFFFFF0 ) ) );

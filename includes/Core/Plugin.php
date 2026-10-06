@@ -1576,6 +1576,11 @@ class Plugin {
 				array( array( 'id' => '@wordpress/interactivity' ) ),
 				self::asset_version( 'src/blocks/media-player/view.js' )
 			);
+			// ...and its stylesheet, for the player's shared states (e.g. the
+			// "cannot play" notice) that the template renders with the same markup.
+			if ( wp_style_is( 'mvs-media-player-style', 'registered' ) ) {
+				wp_enqueue_style( 'mvs-media-player-style' );
+			}
 
 			wp_enqueue_style(
 				'mvs-shared-ui-frame',
@@ -3448,14 +3453,21 @@ JS;
 			}
 		);
 
-		// A main query carrying only our flag reads to WordPress as the blog home:
-		// is_home() went true, body_class printed "home blog", and themes styled
-		// /messages/ as the front page (BuddyX slid its header under the admin bar).
+		// A main query carrying only our route vars reads to WordPress as the blog
+		// home: is_home() went true, body_class printed "home blog", and themes
+		// styled the page as the front page (BuddyX slid its header under the admin
+		// bar). True of every virtual route, not just /messages/.
 		add_action(
 			'parse_query',
 			static function ( \WP_Query $query ) {
-				if ( $query->is_main_query() && $query->get( 'mvs_messages_page' ) ) {
-					$query->is_home = false;
+				if ( ! $query->is_main_query() ) {
+					return;
+				}
+				foreach ( array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) as $var ) {
+					if ( $query->get( $var ) ) {
+						$query->is_home = false;
+						return;
+					}
 				}
 			}
 		);

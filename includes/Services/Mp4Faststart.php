@@ -43,6 +43,9 @@ final class Mp4Faststart {
 	/** Real files nest moov > trak > mdia > minf > stbl: never descend deeper. */
 	private const MAX_DEPTH = 5;
 
+	/** Chunk-offset entries patched per slice, so a large table never becomes one huge array. */
+	private const SLICE = 65536;
+
 	/**
 	 * Rewrite the file in place with moov first, when it is not already.
 	 *
@@ -99,9 +102,22 @@ final class Mp4Faststart {
 		fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 
 		clearstatcache( true, $tmp );
+		// The rewritten file replaces the original, so it keeps the original's mode
+		// (and owner, when run as root from WP-CLI), or a CLI run could leave a
+		// file the web server cannot read.
+		$perms = fileperms( $path );
+		$owner = fileowner( $path );
+		$group = filegroup( $path );
 		if ( ! $ok || filesize( $tmp ) !== filesize( $path ) || ! @rename( $tmp, $path ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged
 			wp_delete_file( $tmp );
 			return false;
+		}
+		if ( false !== $perms ) {
+			@chmod( $path, $perms & 0777 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		}
+		if ( function_exists( 'posix_geteuid' ) && 0 === posix_geteuid() && false !== $owner ) {
+			@chown( $path, $owner ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_chown
+			@chgrp( $path, $group ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_chgrp
 		}
 		clearstatcache( true, $path );
 		return true;
@@ -130,6 +146,15 @@ final class Mp4Faststart {
 		$mdat  = self::first( $boxes, 'mdat' );
 		if ( null === $moov || null === $mdat || $moov['offset'] < $mdat['offset'] || null !== self::first( $boxes, 'moof' ) || $moov['size'] > self::MAX_MOOV ) {
 			return null;
+		}
+		// Every mdat must sit before the moov: the rewrite shifts every chunk
+		// offset by the moov's size, which is only right for data that moves. A
+		// chunk in an mdat after the moov stays put and would be pointed at the
+		// wrong bytes, so such a file is left exactly as uploaded.
+		foreach ( $boxes as $box ) {
+			if ( 'mdat' === $box['type'] && $box['offset'] > $moov['offset'] ) {
+				return null;
+			}
 		}
 		return array( $boxes, $moov );
 	}
@@ -232,18 +257,24 @@ final class Mp4Faststart {
 					return;
 				}
 				if ( $count > 0 ) {
-					// One unpack, one pack, one write per table: patching entry by
+					// One write per table, built slice by slice: patching entry by
 					// entry copied the whole moov per entry (quadratic on a crafted
-					// table).
-					$values = array_values( unpack( ( 4 === $width ? 'N' : 'J' ) . '*', substr( $buf, $at, $count * $width ) ) );
-					foreach ( $values as $i => $value ) {
-						$values[ $i ] = (int) $value + $delta;
-						if ( 4 === $width && $values[ $i ] > 0xFFFFFFFF ) {
-							$ok = false; // Would need co64; leave the file alone.
-							return;
+					// table), and one unpack of a 16 MB table made a 4M-entry array.
+					$fmt     = 4 === $width ? 'N' : 'J';
+					$patched = '';
+					for ( $from = 0; $from < $count; $from += self::SLICE ) {
+						$n      = min( self::SLICE, $count - $from );
+						$values = array_values( unpack( $fmt . '*', substr( $buf, $at + $from * $width, $n * $width ) ) );
+						foreach ( $values as $i => $value ) {
+							$values[ $i ] = (int) $value + $delta;
+							if ( 4 === $width && $values[ $i ] > 0xFFFFFFFF ) {
+								$ok = false; // Would need co64; leave the file alone.
+								return;
+							}
 						}
+						$patched .= pack( $fmt . '*', ...$values );
 					}
-					$buf = substr_replace( $buf, pack( ( 4 === $width ? 'N' : 'J' ) . '*', ...$values ), $at, $count * $width );
+					$buf = substr_replace( $buf, $patched, $at, $count * $width );
 				}
 			}
 			$pos += $len;

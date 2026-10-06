@@ -1033,6 +1033,10 @@ class MessagingController extends WP_REST_Controller {
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 
 		$upload = wp_handle_upload( $file, array( 'test_form' => false ) );
+		// A DM video is served through PHP, the case index-first exists for.
+		if ( is_array( $upload ) && ! empty( $upload['file'] ) && ! empty( $upload['type'] ) ) {
+			\WPMediaVerse\Services\Mp4Faststart::apply( (string) $upload['file'], (string) $upload['type'] );
+		}
 
 		if ( isset( $upload['error'] ) ) {
 			remove_filter( 'user_has_cap', $grant_cap );

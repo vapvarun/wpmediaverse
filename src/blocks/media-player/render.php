@@ -126,6 +126,7 @@ $mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
 			'downloadUrl'  => esc_url_raw( rest_url( 'mvs/v1/media/' . $media_id . '/download' ) ),
 			'nonce'        => $nonce,
 			'playing'      => false,
+			'failed'       => false,
 			'analyticsUrl' => $mvs_analytics_url,
 			'sessionId'    => $mvs_session_id,
 			'resumeUrl'    => $mvs_resume_url,
@@ -141,6 +142,7 @@ $mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
 		<div class="mvs-player-video-wrap">
 			<video class="mvs-player-video"
 				controls
+				data-wp-bind--hidden="context.failed"
 				<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
 				<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
 				preload="metadata"
@@ -152,9 +154,16 @@ $mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
 				data-wp-init="actions.initResume"
 				data-wp-on--timeupdate="actions.onTimeUpdate"
 			>
-				<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
+				<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" data-wp-on--error="actions.onSourceError" />
 				<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->captions_track( $media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes. ?>
 			</video>
+			<?php // A file the browser cannot play says so instead of a black player. ?>
+			<div class="mvs-player-error" role="status" hidden data-wp-bind--hidden="!context.failed">
+				<p><?php esc_html_e( 'This video cannot play here.', 'wpmediaverse' ); ?></p>
+				<?php if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->downloads_allowed( (int) $media_id ) ) : ?>
+					<a class="mvs-btn--secondary" href="<?php echo esc_url( $file_url ); ?>" download target="_blank" rel="noopener"><?php esc_html_e( 'Download it instead', 'wpmediaverse' ); ?></a>
+				<?php endif; ?>
+			</div>
 			<div class="mvs-resume-chip" hidden data-wp-bind--hidden="!context.resumeShown">
 				<span class="mvs-resume-chip__label" role="status" data-wp-text="context.resumeLabel"></span>
 				<button type="button" class="mvs-resume-chip__btn" data-wp-on--click="actions.onResumeStartOver"><?php esc_html_e( 'Start over', 'wpmediaverse' ); ?></button>

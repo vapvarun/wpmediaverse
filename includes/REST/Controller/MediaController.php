@@ -1258,9 +1258,6 @@ class MediaController extends WP_REST_Controller {
 		 * freed, so only growth counts against the storage limit. A same-size
 		 * replacement consumes nothing; a smaller one is always allowed.
 		 */
-		// Same index-first rewrite as a fresh upload (UploadService::handle()).
-		\WPMediaVerse\Services\Mp4Faststart::apply( $file['tmp_name'], (string) $mime );
-
 		$mvs_new_size = (int) ( filesize( $file['tmp_name'] ) ?: 0 );
 		$mvs_old_size = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_size' );
 
@@ -1315,6 +1312,10 @@ class MediaController extends WP_REST_Controller {
 		// place. Mirrors UploadService::handle(), where dup detection matches the
 		// upload as the user supplied it rather than the post-encode bytes.
 		$source_hash = (string) hash_file( 'sha256', $file['tmp_name'] );
+
+		// Same index-first rewrite as a fresh upload (UploadService::handle()),
+		// after the source hash, so a re-upload of the original still matches.
+		\WPMediaVerse\Services\Mp4Faststart::apply( $file['tmp_name'], (string) $mime );
 
 		// Normalise EXIF orientation before ANY of the re-encode steps below,
 		// exactly as UploadService::handle() does for a fresh upload. This path
