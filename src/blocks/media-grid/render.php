@@ -95,7 +95,8 @@ if ( $media_type ) {
 	);
 }
 
-$where  = "WHERE m.status = 'publish' AND {$mvs_type_sql}";
+// Approved only, as Explore does: a flagged, rejected or pending item is not listed.
+$where  = "WHERE m.status = 'publish' AND m.moderation_status = 'approved' AND {$mvs_type_sql}";
 $joins  = '';
 $params = $mvs_type_params;
 
@@ -283,7 +284,8 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					'alt'               => $mvs_grid_helpers->alt_text( $item_id ),
 					'description'       => $item['description'] ?? '',
 					'media_type'        => $mvs_grid_media_type,
-					'file_url'          => $mvs_grid_file_url ?: ( $item['file_url'] ?? '' ),
+					// No stored-path fallback: when the viewer may not have the file, they get no link to it.
+					'file_url'          => $mvs_grid_file_url ?: '',
 					'file_type'         => $item['file_type'] ?? '',
 					'thumbnail_url'     => $mvs_grid_thumb_url,
 					'lightbox_url'      => $mvs_grid_lightbox_url,

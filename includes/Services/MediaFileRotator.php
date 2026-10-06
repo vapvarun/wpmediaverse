@@ -44,6 +44,13 @@ final class MediaFileRotator {
 	private const INLINE = 10;
 
 	/**
+	 * The privacy levels whose audiences nest: each one contains the next.
+	 *
+	 * @var string[]
+	 */
+	private const NESTED_LEVELS = array( 'public', 'members', 'loggedin' );
+
+	/**
 	 * Background hook for one batch of the legacy-name conversion.
 	 */
 	public const LEGACY_HOOK = 'mvs_convert_legacy_media_names';
@@ -129,10 +136,10 @@ final class MediaFileRotator {
 	}
 
 	/**
-	 * Rotate when the new privacy is narrower than the old one.
+	 * Rotate when the change can take the item away from anyone.
 	 *
-	 * Widening (private to public) needs no rotation: everyone who had the URL
-	 * may still see the item.
+	 * Widening onto an open level (private to public) needs no rotation:
+	 * everyone who had the URL may still see the item.
 	 *
 	 * @param int    $media_id    Media id.
 	 * @param string $new_privacy New privacy.
@@ -140,7 +147,15 @@ final class MediaFileRotator {
 	 * @return void
 	 */
 	public static function on_privacy_changed( int $media_id, string $new_privacy, string $old_privacy = '' ): void {
-		if ( self::rank( $new_privacy ) > self::rank( '' === $old_privacy ? 'public' : $old_privacy ) ) {
+		$old_privacy = '' === $old_privacy ? 'public' : $old_privacy;
+		if ( $new_privacy === $old_privacy ) {
+			return;
+		}
+		// Only the open levels nest (public > members > loggedin), so only a move
+		// onto one of them from something narrower is a pure widening. Any other
+		// change (followers to friends, custom to private) drops somebody.
+		$widened = in_array( $new_privacy, self::NESTED_LEVELS, true ) && self::rank( $new_privacy ) < self::rank( $old_privacy );
+		if ( ! $widened ) {
 			self::queue( $media_id );
 		}
 	}

@@ -175,7 +175,8 @@ Faster media delivery, videos that start sooner, upload progress, a Followers pr
 * Security - Private albums and collections no longer appear to visitors or other members on the Albums and Collections pages or through WordPress's built-in REST routes.
 * Security - The tag cloud and the public tag list show only tags used on public items.
 * Security - Duplicate-upload checks compare only with the member's own uploads, and the notice no longer shows another item's ID.
-* Security - Tightening an item's privacy gives its files new names, so links shared earlier stop working.
+* Security - Changing who can see an item gives its files new names whenever anyone loses access, so links shared earlier stop working.
+* Security - The Media Grid block lists approved items only and never shows a file address for an item the viewer may not open.
 * Security - A crafted MP4 upload can no longer make the server do unbounded work.
 * Dev      - New PrivacyService::query_listable_spaces() for album and collection lists, TemplateHelpers::alt_text(), and an alt field on media REST responses.
 * Dev      - The wp/v2 routes for mvs-albums, mvs-collections and mvs_tag are removed; use the mvs/v1 routes.
@@ -956,7 +957,7 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 == Upgrade Notice ==
 
 = 2.6.1 =
-Contains security fixes. Private albums and collections were listed to visitors, and the tag cloud named tags used only on private media. This release also stops the plugin contacting the licence server on every admin request. Update together with WPMediaVerse Pro 2.6.1.
+Contains security fixes. Private albums and collections were listed to visitors, the tag cloud named tags used only on private media, and the Media Grid block could list an item a moderator had removed. This release also stops the plugin contacting the licence server on every admin request. Update together with WPMediaVerse Pro 2.6.1.
 
 = 2.6.0 =
 Contains security fixes. Block style fields accepted CSS that could inject into the page, and draft media could be read through the API by signed-out visitors. Update together with WPMediaVerse Pro 2.6.0.

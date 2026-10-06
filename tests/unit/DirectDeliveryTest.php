@@ -208,6 +208,46 @@ class DirectDeliveryTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Audiences that do not nest (followers and friends, a custom list and only
+	 * me) drop somebody either way, so a move between them renames the files.
+	 */
+	public function test_sideways_privacy_change_rotates(): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		foreach ( array( array( 'friends', 'followers' ), array( 'custom', 'private' ), array( 'private', 'followers' ) ) as $move ) {
+			$id     = $this->media( $move[0] );
+			$before = $repo->get_stored_file_paths( $id );
+			MediaFileRotator::on_privacy_changed( $id, $move[1], $move[0] );
+			MediaFileRotator::flush();
+			$this->assertNotSame( $before, $repo->get_stored_file_paths( $id ), $move[0] . ' to ' . $move[1] );
+		}
+
+		$id     = $this->media( 'followers' );
+		$before = $repo->get_stored_file_paths( $id );
+		MediaFileRotator::on_privacy_changed( $id, 'members', 'followers' );
+		MediaFileRotator::on_privacy_changed( $id, 'members', 'members' );
+		MediaFileRotator::flush();
+		$this->assertSame( $before, $repo->get_stored_file_paths( $id ), 'Opening up to all members keeps the names.' );
+	}
+
+	/**
+	 * The Media Grid block lists approved items only, and never prints a stored
+	 * file address for an item the viewer may not have.
+	 */
+	public function test_media_grid_hides_unapproved_items_and_their_files(): void {
+		$stem   = bin2hex( random_bytes( 8 ) );
+		$shown  = $this->media( 'public' );
+		$hidden = $this->media( 'public', $stem, array( 'moderation_status' => 'rejected' ) );
+
+		wp_set_current_user( 0 );
+		$html = do_blocks( '<!-- wp:mvs/media-grid {"perPage":50} /-->' );
+
+		$this->assertStringContainsString( 'data-media-id="' . $shown . '"', $html, 'The approved item is in the grid.' );
+		$this->assertStringNotContainsString( 'data-media-id="' . $hidden . '"', $html, 'A rejected item is not listed.' );
+		$this->assertStringNotContainsString( $stem, $html, 'Nor is its file name printed.' );
+	}
+
+	/**
 	 * An approved item that is flagged or rejected is revoked; an item that was
 	 * never approved was never shown, so it is not renamed.
 	 */

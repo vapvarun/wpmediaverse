@@ -88,7 +88,12 @@ final class Mp4Faststart {
 		$insert = null !== $ftyp ? $ftyp['offset'] + $ftyp['size'] : 0;
 
 		$tmp = $path . '.faststart';
-		$out = fopen( $tmp, 'wb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		// Remove a leftover (unlink drops a planted link, not its target), then
+		// 'x': never write through a name somebody else put there.
+		if ( file_exists( $tmp ) || is_link( $tmp ) ) {
+			wp_delete_file( $tmp );
+		}
+		$out = fopen( $tmp, 'xb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $out ) {
 			fclose( $in ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			return false;
