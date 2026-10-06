@@ -253,15 +253,14 @@ class ModerationService {
 	}
 
 	/**
-	 * Get queue counts by status.
-	 *
-	 * @return array{pending: int, flagged: int, rejected: int}
-	 */
-	/**
-	 * Items waiting for a moderator: AI/threshold flagged plus pending review.
+	 * Everything waiting for a moderator: media flagged by AI or a threshold,
+	 * media pending review, and member reports nobody has acted on.
 	 *
 	 * The one number for the menu badge and the Overview card, so they can
-	 * no longer disagree (one counted flagged, the other pending).
+	 * no longer disagree (one counted flagged, the other pending). A member's
+	 * report is the thing an owner most needs telling about, and it lives in
+	 * its own table: counting media alone showed "0 Needs review" with five
+	 * reports waiting.
 	 *
 	 * @since 2.6.1
 	 *
@@ -269,12 +268,20 @@ class ModerationService {
 	 * @return int
 	 */
 	public static function needs_review( array $counts ): int {
-		return (int) ( $counts['flagged'] ?? 0 ) + (int) ( $counts['pending'] ?? 0 );
+		return (int) ( $counts['flagged'] ?? 0 ) + (int) ( $counts['pending'] ?? 0 ) + (int) ( $counts['reports'] ?? 0 );
 	}
 
+	/**
+	 * Get queue counts: media by moderation status, plus pending member reports.
+	 *
+	 * @return array{pending: int, flagged: int, rejected: int, reports: int}
+	 */
 	public function get_counts(): array {
-		return \WPMediaVerse\Core\Plugin::container()
-			->get( 'media_repository' )
-			->moderation_counts( array( 'pending', 'flagged', 'rejected' ) );
+		$container = \WPMediaVerse\Core\Plugin::container();
+		$counts    = $container->get( 'media_repository' )->moderation_counts( array( 'pending', 'flagged', 'rejected' ) );
+
+		$counts['reports'] = (int) $container->get( 'reports' )->count_by_status( 'pending' );
+
+		return $counts;
 	}
 }

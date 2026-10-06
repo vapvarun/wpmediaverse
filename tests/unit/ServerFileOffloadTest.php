@@ -83,11 +83,13 @@ class ServerFileOffloadTest extends WP_UnitTestCase {
 	public function test_nginx_location_aliases_the_uploads_folder(): void {
 		$block = ServerFileOffload::nginx_location();
 
-		$this->assertStringContainsString( 'location /mvs-internal-files/ {', $block );
+		// ^~ so the image, CSS and font regex locations cannot take the redirect.
+		$this->assertStringContainsString( 'location ^~ /mvs-internal-files/ {', $block );
 		$this->assertStringContainsString( 'internal;', $block );
 		// nginx drops PHP's security headers on the redirect; the block adds them.
 		$this->assertStringContainsString( 'add_header X-Content-Type-Options "nosniff" always;', $block );
 		$this->assertStringContainsString( 'add_header Content-Security-Policy "' . ServerFileOffload::PROBE_CSP . '" always;', $block );
-		$this->assertStringContainsString( 'alias ' . trailingslashit( wp_upload_dir()['basedir'] ) . ';', $block );
+		// Quoted: a path with a space is otherwise two arguments and fails nginx -t.
+		$this->assertStringContainsString( 'alias "' . trailingslashit( wp_upload_dir()['basedir'] ) . '";', $block );
 	}
 }

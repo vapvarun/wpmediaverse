@@ -59,6 +59,15 @@ final class ServerFileOffload {
 	public const PROBE_CSP = "default-src 'none'; sandbox";
 
 	/**
+	 * Extensions the probe hands over, each of which must come back. Ones a
+	 * stock nginx config already has a regex location for, and that MediaVerse
+	 * really serves this way: a photo, and an SVG (always served through PHP).
+	 *
+	 * @var string[]
+	 */
+	private const PROBE_EXTENSIONS = array( 'jpg', 'svg' );
+
+	/**
 	 * The mode the owner asked for, or '' when offload is not configured.
 	 *
 	 * @return string 'x-accel', 'x-sendfile' or ''.
@@ -140,13 +149,19 @@ final class ServerFileOffload {
 	public static function nginx_location(): string {
 		$upload = wp_upload_dir();
 
+		// `^~`: a plain prefix location loses to the regex locations nearly every
+		// WordPress nginx config has for images, CSS and fonts, and the redirect
+		// for a .jpg or .svg would fall through to WordPress. The alias is quoted
+		// because an uploads path with a space is otherwise two arguments, which
+		// fails `nginx -t` and takes the site down on reload.
+		//
 		// nginx forwards only a few upstream headers on an internal redirect, so
 		// the security headers PHP sets (SVGs, documents) are added here. A CSP
 		// on an embedded image or video has no effect; it only sandboxes a file
 		// opened directly. The probe refuses offload without them.
-		return 'location ' . self::nginx_prefix() . " {\n"
+		return 'location ^~ ' . self::nginx_prefix() . " {\n"
 			. "\tinternal;\n"
-			. "\talias " . trailingslashit( (string) $upload['basedir'] ) . ";\n"
+			. "\talias \"" . addcslashes( trailingslashit( (string) $upload['basedir'] ), '"\\' ) . "\";\n"
 			. "\tadd_header X-Content-Type-Options \"nosniff\" always;\n"
 			. "\tadd_header Content-Security-Policy \"" . self::PROBE_CSP . "\" always;\n"
 			. '}';
@@ -191,35 +206,18 @@ final class ServerFileOffload {
 		$dir    = empty( $upload['error'] ) ? trailingslashit( $upload['basedir'] ) . 'wpmediaverse/' : '';
 
 		if ( '' !== $result['mode'] && '' !== $dir && wp_mkdir_p( $dir ) ) {
-			$file  = $dir . bin2hex( random_bytes( 12 ) ) . '.bin';
-			$bytes = random_bytes( 64 );
-			$token = bin2hex( random_bytes( 16 ) );
-
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			if ( false !== file_put_contents( $file, $bytes ) ) {
-				set_transient( self::TOKEN_PREFIX . $token, $file, MINUTE_IN_SECONDS );
-				$response = wp_remote_get(
-					rest_url( 'mvs/v1/offload-probe/' . $token ),
-					array(
-						'timeout'     => 5,
-						'sslverify'   => false,
-						'redirection' => 0,
-					)
-				);
-				delete_transient( self::TOKEN_PREFIX . $token );
-				wp_delete_file( $file );
-
-				if ( ! is_wp_error( $response ) ) {
-					$result['status'] = (int) wp_remote_retrieve_response_code( $response );
-					// The bytes, AND the security headers: SVGs and documents rely on
-					// nosniff + a sandbox CSP, and nginx drops PHP's on the redirect
-					// unless its location adds them. No headers, no offload.
-					$csp          = (string) wp_remote_retrieve_header( $response, 'content-security-policy' );
-					$nosniff      = 'nosniff' === strtolower( trim( (string) wp_remote_retrieve_header( $response, 'x-content-type-options' ) ) );
-					$result['ok'] = 200 === $result['status']
-						&& wp_remote_retrieve_body( $response ) === $bytes
-						&& $nosniff
-						&& false !== strpos( $csp, 'sandbox' );
+			// One file per extension, and every one must come back. A typical
+			// nginx config has regex locations for images, CSS and fonts (SVG
+			// among them); without `^~` on the internal location those win the
+			// redirect and the real download fails. A probe file with a neutral
+			// extension passed on exactly that setup, so the probe uses the
+			// extensions real media has.
+			foreach ( self::PROBE_EXTENSIONS as $extension ) {
+				$one              = self::probe_one( $dir, $extension );
+				$result['status'] = $one['status'];
+				$result['ok']     = $one['ok'];
+				if ( ! $one['ok'] ) {
+					break;
 				}
 			}
 		}
@@ -227,6 +225,57 @@ final class ServerFileOffload {
 		update_option( self::OPTION, $result, true );
 
 		return $result;
+	}
+
+	/**
+	 * Hand one random file over to the web server and check what comes back.
+	 *
+	 * @param string $dir       Folder for the probe file, with a trailing slash.
+	 * @param string $extension File extension to probe with.
+	 * @return array{ok: bool, status: int}
+	 */
+	private static function probe_one( string $dir, string $extension ): array {
+		$one   = array(
+			'ok'     => false,
+			'status' => 0,
+		);
+		$file  = $dir . bin2hex( random_bytes( 12 ) ) . '.' . $extension;
+		$bytes = random_bytes( 64 );
+		$token = bin2hex( random_bytes( 16 ) );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		if ( false === file_put_contents( $file, $bytes ) ) {
+			return $one;
+		}
+
+		set_transient( self::TOKEN_PREFIX . $token, $file, MINUTE_IN_SECONDS );
+		$response = wp_remote_get(
+			rest_url( 'mvs/v1/offload-probe/' . $token ),
+			array(
+				'timeout'     => 5,
+				'sslverify'   => false,
+				'redirection' => 0,
+			)
+		);
+		delete_transient( self::TOKEN_PREFIX . $token );
+		wp_delete_file( $file );
+
+		if ( is_wp_error( $response ) ) {
+			return $one;
+		}
+
+		$one['status'] = (int) wp_remote_retrieve_response_code( $response );
+		// The bytes, AND the security headers: SVGs and documents rely on
+		// nosniff + a sandbox CSP, and nginx drops PHP's on the redirect
+		// unless its location adds them. No headers, no offload.
+		$csp       = (string) wp_remote_retrieve_header( $response, 'content-security-policy' );
+		$nosniff   = 'nosniff' === strtolower( trim( (string) wp_remote_retrieve_header( $response, 'x-content-type-options' ) ) );
+		$one['ok'] = 200 === $one['status']
+			&& wp_remote_retrieve_body( $response ) === $bytes
+			&& $nosniff
+			&& false !== strpos( $csp, 'sandbox' );
+
+		return $one;
 	}
 
 	/**
