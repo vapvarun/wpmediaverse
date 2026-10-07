@@ -5,7 +5,7 @@
 
 MediaVerse provides privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
 
-The upload form offers four of them: **Public**, **Members**, **Friends** (only when the BuddyPress friends component is active) and **Only me** (`private`). The others apply to media inside a group or space, or are set by add-ons. The full vocabulary a write is allowed to store is `PrivacyService::supported_levels()` - as of 2.4.0 `public`, `members`, `loggedin`, `friends`, `group`, `space`, `private`, `dm` and `custom`, filterable through `mvs_privacy_levels`. A level not in that list is refused at the edge rather than stored and silently ignored.
+The upload form offers up to five of them: **Public**, **Members**, **Followers**, **Friends** (only when the BuddyPress friends component is active) and **Only me** (`private`). The others apply to media inside a group or space, or are set by add-ons. The full vocabulary a write is allowed to store is `PrivacyService::supported_levels()` - as of 2.6.1 `public`, `members`, `loggedin`, `followers`, `friends`, `group`, `space`, `private`, `dm` and `custom`, filterable through `mvs_privacy_levels`. A level not in that list is refused at the edge rather than stored and silently ignored.
 
 ## Privacy Levels
 
@@ -13,6 +13,7 @@ The upload form offers four of them: **Public**, **Members**, **Friends** (only 
 |-------|-------|-------------|
 | Public | `public` | Everyone, including logged-out visitors |
 | Members Only | `members` | Any logged-in WordPress user |
+| Followers | `followers` | People who follow the media owner. Followers is always available, since following is part of the free plugin |
 | Friends | `friends` | BuddyPress friends of the media owner (requires BuddyPress active) |
 | Group | `group` | Members of a specific BuddyPress group (requires BuddyPress active) |
 | Private | `private` | Only the media owner and users with `moderate_mvs_media` |

@@ -6,6 +6,7 @@ MediaVerse 2.6.1 tightens privacy, makes Explore easier to browse, and clears up
 
 ## Privacy
 
+- Followers is a new privacy level members can choose: only people who follow them see the item. See [Privacy & Access Control](../features/privacy-access-control.md).
 - Private and members-only albums and collections are listed on the /album/ and /collection/ pages only to people allowed to see them.
 - The tag cloud counts only public items, and the tag list shows logged-out visitors only tags used on public items.
 - Duplicate detection checks only the member's own uploads. A file another member uploaded is not a duplicate, and the notice says "You had already uploaded N of these files."
