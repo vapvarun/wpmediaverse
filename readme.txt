@@ -182,7 +182,7 @@ Faster media delivery, videos that start sooner, upload progress, a Followers pr
 * Security - A crafted MP4 upload can no longer make the server do unbounded work.
 * Dev      - New PrivacyService::query_listable_spaces() for album and collection lists, TemplateHelpers::alt_text(), and an alt field on media REST responses.
 * Dev      - The wp/v2 routes for mvs-albums, mvs-collections and mvs_tag are removed; use the mvs/v1 routes.
-* Dev      - Templates updated to 2.6.1: cpt-archive.php, partials/shared-ui-frame.php and partials/dashboard-content.php.
+* Dev      - Templates updated to 2.6.1: explore.php, cpt-archive.php, partials/shared-ui-frame.php and partials/dashboard-content.php.
 * Dev      - New filters mvs_storage_driver_choices and mvs_serve_offload, and action mvs_media_files_rotated.
 * Dev      - GET /mvs/v1/media lists self and followers as scope values; wp mvs migrate-storage documents --include-non-public.
 * Dev      - New standard docs/standards/preset-licence-activation.md describes the shared licence activation model.
