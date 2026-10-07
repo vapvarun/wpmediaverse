@@ -36,6 +36,18 @@
           "title": "Setup Wizard"
         },
         {
+          "slug": "first-upload",
+          "title": "Your First Upload"
+        },
+        {
+          "slug": "integrations",
+          "title": "Integrations"
+        },
+        {
+          "slug": "free-vs-pro",
+          "title": "Free vs Pro Comparison"
+        },
+        {
           "slug": "whats-new-2-6-1",
           "title": "What's New in 2.6.1"
         },
@@ -78,20 +90,9 @@
         {
           "slug": "whats-new-1-2-0",
           "title": "What's New in 1.2.0"
-        },
-        {
-          "slug": "first-upload",
-          "title": "Your First Upload"
-        },
-        {
-          "slug": "free-vs-pro",
-          "title": "Free vs Pro Comparison"
-        },
-        {
-          "slug": "integrations",
-          "title": "Integrations"
         }
-      ]
+      ],
+      "description": "Install MediaVerse, run the setup wizard, make your first upload, and compare Free and Pro."
     },
     {
       "name": "Settings",
@@ -128,7 +129,8 @@
           "slug": "settings-reference",
           "title": "Settings Reference"
         }
-      ]
+      ],
+      "description": "Every admin setting, in the order you configure them, plus the full option reference."
     },
     {
       "name": "Features",
@@ -193,7 +195,8 @@
           "slug": "user-blocking",
           "title": "User Blocking & Reporting"
         }
-      ]
+      ],
+      "description": "What members and admins can do: uploads, albums, collections, blocks, privacy, messages and moderation."
     },
     {
       "name": "BuddyNext Integration",
@@ -222,7 +225,8 @@
           "slug": "notifications",
           "title": "Notifications"
         }
-      ]
+      ],
+      "description": "How MediaVerse appears in BuddyNext feeds, profiles, spaces and notifications."
     },
     {
       "name": "BuddyPress Integration",
@@ -251,7 +255,8 @@
           "slug": "notifications",
           "title": "Notifications"
         }
-      ]
+      ],
+      "description": "How MediaVerse appears in BuddyPress activity, profiles, groups and notifications."
     },
     {
       "name": "Pro Features",
@@ -316,7 +321,8 @@
           "slug": "mobile-app",
           "title": "Mobile App"
         }
-      ]
+      ],
+      "description": "What MediaVerse Pro adds: cloud storage, watermarking, stronger privacy, layouts, documents, video tools and the mobile app."
     },
     {
       "name": "Gamification",
@@ -353,7 +359,8 @@
           "slug": "admin-dashboard",
           "title": "Admin Dashboard"
         }
-      ]
+      ],
+      "description": "Streaks, boosts, challenges, battles and tournaments that keep members uploading."
     },
     {
       "name": "Developer Guide",
@@ -390,7 +397,8 @@
           "slug": "migration-tools",
           "title": "Migration Tools"
         }
-      ]
+      ],
+      "description": "Build on MediaVerse: the REST APIs, hooks and filters, template overrides, WP-CLI and storage drivers."
     },
     {
       "name": "FAQ",
@@ -403,7 +411,8 @@
           "slug": "general-faq",
           "title": "Frequently Asked Questions"
         }
-      ]
+      ],
+      "description": "Quick answers to the questions site owners ask most before and after installing MediaVerse."
     },
     {
       "name": "Troubleshooting",
@@ -416,7 +425,8 @@
           "slug": "common-issues",
           "title": "Common Issues"
         }
-      ]
+      ],
+      "description": "Fixes for the problems members and admins run into most often."
     }
   ]
 }
