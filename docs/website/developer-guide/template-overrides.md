@@ -42,6 +42,8 @@ Every template you can override has an `@version` line in its header:
 
 The version changes only when that template's markup or the variables it uses change - not on every release. When you copy a template into your theme, keep the `@version` line. When MediaVerse ships a newer version of a template you have overridden, **Tools > Site Health** shows "Your theme has outdated copies of MediaVerse templates", naming each file with your version and the current one. A copy with no `@version` line was made before 2.6.0 and is always listed.
 
+In 2.6.1, `cpt-archive.php`, `media-single.php`, `partials/shared-ui-frame.php`, `partials/dashboard-content.php` and `partials/profile-edit-panel.php` (Free) are at `@version 2.6.1`. In Pro, so are `battles-body.php`, `challenges-body.php`, `tournaments-body.php`, `compete-hub-body.php`, `partials/dashboard-connectors-panel.php`, `layouts/instagram/partials/feed-card.php`, `layouts/partials/profile-grid.php`, `layouts/pinterest/profile.php` and the `feed-body.php` of the Pinterest, Dribbble and Flickr layouts.
+
 An outdated copy keeps rendering, but it misses fixes and may not show new features correctly. To update it, copy the current file from the plugin's `templates/` folder (or `wpmediaverse-pro/templates/` for Pro templates) over your theme's copy, then re-apply your changes. Site Health checks the active theme and its parent; when both override the same file, only the child theme's copy loads, so only it is checked.
 
 Admin screens (`templates/admin/`) are not overridable, so they carry no version.
@@ -64,7 +66,7 @@ Admin screens (`templates/admin/`) are not overridable, so they carry no version
 
 ## Available Partials
 
-Template partials live in `templates/partials/` and are loaded with `TemplateLoader::get_template()` or `TemplateLoader::locate()`, passing `partials` as the second (subdirectory) argument:
+Template partials live in `templates/partials/`. `TemplateLoader::get_template()` takes the subdirectory as part of the file name, and `TemplateLoader::locate()` takes it as an optional second argument:
 
 ```php
 WPMediaVerse\Core\TemplateLoader::get_template( 'partials/usage-history.php', array(
@@ -75,7 +77,7 @@ WPMediaVerse\Core\TemplateLoader::get_template( 'partials/usage-history.php', ar
 $path = WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' );
 ```
 
-Override a partial at `wp-content/themes/your-theme/wpmediaverse/partials/<file>.php`. The partials shipped today include `dashboard-content.php`, `usage-history.php`, `shared-ui-frame.php`, `profile-actions.php`, `profile-edit-panel.php`, `follows-modal.php`, `blocked-members.php`, and the `chat-*.php` messaging set.
+Override a partial at `wp-content/themes/your-theme/wpmediaverse/partials/<file>.php`. The partials shipped today are `dashboard-content.php`, `usage-history.php`, `shared-ui-frame.php`, `profile-actions.php`, `profile-actions-js.php`, `profile-edit-panel.php`, `follows-modal.php`, `blocked-members.php`, `community-profile-notice.php`, `explore-tag-cloud.php`, `router-region-open.php`, `router-region-close.php`, and the `chat-*.php` messaging set (`chat-composer`, `chat-conversation`, `chat-list`, `chat-media-card`, `chat-message`, `chat-new`, `chat-panel`).
 
 ## Using TemplateLoader in Custom Code
 
@@ -94,9 +96,9 @@ $path = TemplateLoader::locate( 'explore.php' );
 
 ## Getting Media URLs in a Template (MediaUrl)
 
-When you write a custom template you almost always need a media URL — a thumbnail for a grid card, or the full file for a lightbox. **Do not hand-build these URLs** from `wp_upload_dir()` and **do not call `SignedUrlService` directly.** A raw upload path breaks the moment a site enables cloud storage or marks media private, and calling the signing service directly means re-implementing the privacy gate.
+When you write a custom template you almost always need a media URL - a thumbnail for a grid card, or the full file for a lightbox. **Do not hand-build these URLs** from `wp_upload_dir()` and **do not call `SignedUrlService` directly.** A raw upload path breaks the moment a site enables cloud storage or marks media private, and calling the signing service directly means re-implementing the privacy gate.
 
-Since 1.5.0 the read-side facade `WPMediaVerse\Core\MediaUrl` is the single entry point. It resolves the active storage driver, runs the privacy check, and returns either a signed `/serve` URL or a direct CDN URL — whichever is correct for that media's privacy and the current driver.
+Since 1.5.0 the read-side facade `WPMediaVerse\Core\MediaUrl` is the single entry point. It resolves the active storage driver, runs the privacy check, and returns either a signed `/serve` URL or a direct CDN URL - whichever is correct for that media's privacy and the current driver.
 
 ```php
 use WPMediaVerse\Core\MediaUrl;
@@ -116,7 +118,7 @@ if ( $thumb ) {
 }
 ```
 
-Both methods return an **empty string** when the service isn't ready (very early bootstrap) or when the viewer's identity is rejected by the privacy gate — always guard the return value before printing, as shown above.
+Both methods return an **empty string** when the service isn't ready (very early bootstrap) or when the viewer's identity is rejected by the privacy gate - always guard the return value before printing, as shown above.
 
 ### Public static methods
 
@@ -165,11 +167,11 @@ $webp_key = MediaUrl::variant_meta_key( 'large', VariantSpec::FORMAT_WEBP ); // 
 $webp_url = get_post_meta( $media_id, $webp_key, true );
 ```
 
-> **Note:** `TemplateHelpers::get_thumb_url()` is now a one-line delegate to `MediaUrl::thumb()`, so existing templates that already use it keep working unchanged — `MediaUrl` is simply the canonical name to reach for in new code.
+> **Note:** `TemplateHelpers::get_thumb_url()` is now a one-line delegate to `MediaUrl::thumb()`, so existing templates that already use it keep working unchanged - `MediaUrl` is simply the canonical name to reach for in new code.
 
 ## Pro Layout Templates **(Pro)**
 
-When a Pro feed layout (Instagram, Pinterest, Flickr, or Dribbble) is active (`mvs_pro_feed_layout` setting), `Frontend\Layouts\LayoutManager` hooks the same `mvs_locate_template` filter chain described above to swap in the layout's own `explore.php` / `user-profile.php` replacements. Because it hooks the same filter, a **child-theme override you already placed under `wpmediaverse/` wins automatically** — `LayoutManager::override_template()` checks whether the resolved path already lives inside the active theme before forcing the layout file, so `wp-content/themes/your-theme/wpmediaverse/explore.php` (or `user-profile.php`) is honored over any layout's version, exactly like Free templates.
+When a Pro feed layout (Instagram, Pinterest, Flickr, or Dribbble) is active (`mvs_pro_feed_layout` setting), `Frontend\Layouts\LayoutManager` hooks the same `mvs_locate_template` filter chain described above to swap in the layout's own `explore.php` / `user-profile.php` replacements. Because it hooks the same filter, a **child-theme override you already placed under `wpmediaverse/` wins automatically** - `LayoutManager::override_template()` checks whether the resolved path already lives inside the active theme before forcing the layout file, so `wp-content/themes/your-theme/wpmediaverse/explore.php` (or `user-profile.php`) is honored over any layout's version, exactly like Free templates.
 
 | Free template name | Overridden by (per layout) | Layout template directory |
 |---------------------|----------------------------|----------------------------|
@@ -189,13 +191,15 @@ wp-content/themes/your-theme/
                 └── feed-card.php
 ```
 
-Ship an override at that path (mirroring `wp-content/plugins/wpmediaverse-pro/templates/layouts/{slug}/...`) and it is read in preference to the plugin's copy — no filter needed.
+The partials shared by every layout live in `layouts/partials/` and use the same lookup: `explore-filters.php`, `feed-empty-state.php`, `profile-grid.php`, `profile-header.php` and `profile-stats.php`.
+
+Ship an override at that path (mirroring `wp-content/plugins/wpmediaverse-pro/templates/layouts/{slug}/...`) and it is read in preference to the plugin's copy - no filter needed.
 
 Third-party hooks for customizing a layout without a template override: `mvs_layout_modes` (register additional layout modes), `mvs_active_layout` (force the active layout slug), `mvs_layout_template_map` (remap which layout file backs each free template name), `mvs_layout_config` (filter a layout's config array), `mvs_before_layout_render` (fires before a layout template loads). See [Hooks & Filters Reference](hooks-filters.md#17-layout-system-pro).
 
 ## Compete-Page Templates **(Pro)**
 
-The gamification frontend pages (`GamificationTemplateLoader`) are theme-overridable through the SAME `WPMediaVerse\Core\TemplateLoader::locate()` call the free plugin uses — so the `wpmediaverse/` child-theme directory convention applies here too, with no separate lookup path:
+The gamification frontend pages (`GamificationTemplateLoader`) are theme-overridable through the SAME `WPMediaVerse\Core\TemplateLoader::locate()` call the free plugin uses - so the `wpmediaverse/` child-theme directory convention applies here too, with no separate lookup path:
 
 | Route | Query var | Template file |
 |-------|-----------|----------------|
@@ -230,7 +234,7 @@ wp-content/themes/your-theme/
         └── external-source-badge.php
 ```
 
-Each page 404s if its backing feature toggle (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`) is off — Compete Hub (`/compete/`) 404s only when none of the three are enabled. Added in 1.9.0.
+Each page 404s if its backing feature toggle (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`) is off - Compete Hub (`/compete/`) 404s only when none of the three are enabled. Added in 1.9.0.
 
 ## Filtering the Template Path
 

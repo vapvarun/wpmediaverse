@@ -23,6 +23,14 @@ Saving this screen never changes a hidden or removed setting's stored value.
 
 With MediaVerse Pro, the **Stories** switch is on this tab. The stories bar shows only with the Instagram layout. In the mobile app, stories work with any layout.
 
+## Explore Sort, Type Filter and Loading
+
+The Explore page has a sort control with four choices: Newest, Trending, Oldest and Most viewed. Trending ranks items by recent reactions, comments and views. It is the same ranking as `orderby=trending` in the REST feed.
+
+A **Type** filter (All types, Photos, Videos, Audio) shows on Explore and on the Pro feed layouts. Profiles have the sort but no type filter.
+
+Lists with a **Load More** button (Explore, the front-page feed, profiles and album pages) load the next pages as you scroll for 3 pages, then show the Load More button so the site footer stays reachable. The My Media dashboard keeps its own Load More button.
+
 ## Lightbox Toolbar
 
 The full-screen lightbox includes a toolbar with three quick-action buttons.
@@ -34,6 +42,8 @@ The full-screen lightbox includes a toolbar with three quick-action buttons.
 | Share | Uses `navigator.share` where supported, falls back to copying the URL to the clipboard, falls back to a toast error. No `window.prompt()` fallback. |
 
 All three buttons carry `aria-label` text and `:focus-visible` outlines for keyboard users.
+
+The **Save** button shows "Saved" (filled) while the item is in the member's Favorites. The image's alt text is the AI description when there is one, otherwise the title, the same as on grid cards.
 
 ![Lightbox with toolbar showing download, fullscreen, share, and reaction controls](../images/lightbox.png)
 

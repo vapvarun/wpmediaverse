@@ -28,12 +28,17 @@ class HealthCheckService {
 	 * Deliberately NOT a dotfile. Most nginx configurations carry a blanket
 	 * `location ~ /\.` deny rule, so a hidden canary answers 404 on exactly the
 	 * hosts this probe exists to catch and the directory reads as protected when
-	 * it is wide open. Matches Pro's `Documents\StorageResolver::CANARY`.
+	 * it is wide open.
+	 *
+	 * An image since 2.6.1, not `.txt`: the files at risk are images (old video
+	 * covers, uploads kept under their own names), and a site's static-file block
+	 * such as `location ~* \.(jpg|png)$` can serve images while still refusing
+	 * `.txt`, which made the old canary report "private" on an open folder.
 	 *
 	 * @since 2.4.0
 	 * @var string
 	 */
-	public const CANARY = 'mvs-access-probe.txt';
+	public const CANARY = 'mvs-access-probe.jpg';
 
 	/**
 	 * Register hooks.
@@ -63,6 +68,13 @@ class HealthCheckService {
 			'label' => __( 'MediaVerse Required Pages', 'wpmediaverse' ),
 			'test'  => array( $this, 'test_pages' ),
 		);
+
+		if ( '' !== ServerFileOffload::configured_mode() ) {
+			$tests['direct']['wpmediaverse_serve_offload'] = array(
+				'label' => __( 'MediaVerse file streaming offload', 'wpmediaverse' ),
+				'test'  => array( $this, 'test_serve_offload' ),
+			);
+		}
 
 		$tests['direct']['wpmediaverse_media_privacy'] = array(
 			'label' => __( 'MediaVerse Media Privacy', 'wpmediaverse' ),
@@ -399,7 +411,53 @@ class HealthCheckService {
 	 * @return string
 	 */
 	public function nginx_rule(): string {
-		return "location ~* /wp-content/uploads/wpmediaverse/ {\n\tdeny all;\n\treturn 403;\n}";
+		return DirectDelivery::nginx_rule();
+	}
+
+	/**
+	 * Is the configured web-server offload working?
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return array
+	 */
+	public function test_serve_offload(): array {
+		$mode   = ServerFileOffload::configured_mode();
+		$active = '' !== ServerFileOffload::active_mode();
+		$state  = (array) get_option( ServerFileOffload::OPTION, array() );
+
+		$result = array(
+			'label'       => __( 'The web server sends protected files', 'wpmediaverse' ),
+			'status'      => 'good',
+			'badge'       => array(
+				'label' => __( 'Performance', 'wpmediaverse' ),
+				'color' => 'blue',
+			),
+			'description' => '<p>' . esc_html__( 'Messages, documents and downloads are still checked by MediaVerse on every request, then handed to the web server to send, so no PHP worker is held for the transfer.', 'wpmediaverse' ) . '</p>',
+			'actions'     => '',
+			'test'        => 'wpmediaverse_serve_offload',
+		);
+
+		if ( $active ) {
+			return $result;
+		}
+
+		$result['status']         = 'recommended';
+		$result['badge']['color'] = 'orange';
+		$result['label']          = __( 'File streaming offload is configured but not working yet', 'wpmediaverse' );
+		$result['description']    = '<p>' . esc_html(
+			sprintf(
+				/* translators: 1: offload mode, 2: HTTP status of the last probe. */
+				__( 'MVS_SERVE_OFFLOAD is set to %1$s, but the last check did not get the file back from the web server (HTTP %2$s). Files are streamed by PHP as before until it works.', 'wpmediaverse' ),
+				$mode,
+				(string) (int) ( $state['status'] ?? 0 )
+			)
+		) . '</p>';
+		$result['actions']        = 'x-accel' === $mode
+			? '<p>' . esc_html__( 'Add this to the site\'s nginx server block and reload nginx:', 'wpmediaverse' ) . '</p><pre class="mvs-health-snippet"><code>' . esc_html( ServerFileOffload::nginx_location() ) . '</code></pre>'
+			: '<p>' . esc_html__( 'Enable mod_xsendfile and add "XSendFile On" and "XSendFilePath" for the uploads folder to the Apache configuration.', 'wpmediaverse' ) . '</p>';
+
+		return $result;
 	}
 
 	/**
@@ -413,10 +471,15 @@ class HealthCheckService {
 	 * @return array
 	 */
 	public function test_media_privacy(): array {
-		$probe = $this->probe_public_access();
+		$probe    = $this->probe_public_access();
+		$delivery = get_option( DirectDelivery::OPTION, array() );
+		$delivery = is_array( $delivery ) ? $delivery : array();
+		$direct   = DirectDelivery::enabled();
+		$rule     = '<p>' . esc_html__( 'Add this to the site\'s nginx configuration (replacing any older MediaVerse rule), then reload nginx:', 'wpmediaverse' )
+			. '</p><pre class="mvs-health-snippet"><code>' . esc_html( $this->nginx_rule() ) . '</code></pre>';
 
 		$result = array(
-			'label'       => __( 'Media files are private', 'wpmediaverse' ),
+			'label'       => __( 'Media is private and served fast', 'wpmediaverse' ),
 			'status'      => 'good',
 			'badge'       => array(
 				'label' => __( 'Security', 'wpmediaverse' ),
@@ -424,44 +487,75 @@ class HealthCheckService {
 			),
 			'description' => sprintf(
 				'<p>%s</p>',
-				__( 'Stored media cannot be downloaded by guessing its address. Every request goes through a permission check.', 'wpmediaverse' )
+				__( 'Photos, video and audio are sent straight by the web server. Each file has a long random name that cannot be guessed, and MediaVerse only gives the address to people allowed to see the item. When an item is made more private, its files get new names, so earlier addresses stop working. Messages, documents and downloads always go through a permission check.', 'wpmediaverse' )
 			),
 			'actions'     => '',
 			'test'        => 'wpmediaverse_media_privacy',
 		);
 
 		if ( ! $probe['checked'] ) {
-			$result['status']      = 'recommended';
-			$result['label']       = __( 'Media privacy could not be confirmed', 'wpmediaverse' );
-			$result['badge']       = array(
-				'label' => __( 'Security', 'wpmediaverse' ),
+			$result['status']         = 'recommended';
+			$result['label']          = __( 'Media privacy could not be confirmed', 'wpmediaverse' );
+			$result['badge']['color'] = 'orange';
+			$result['description']    = sprintf(
+				'<p>%s</p>',
+				__( 'MediaVerse could not reach this site over HTTP to check whether stored media is readable by anyone. This usually means loopback requests are blocked. The protection rules are in place, but on nginx they are ignored, so this is worth confirming by hand.', 'wpmediaverse' )
+			);
+			return $result;
+		}
+
+		$legacy    = (array) get_option( MediaFileRotator::LEGACY_OPTION, array() );
+		$converted = ! empty( $legacy['done'] ) && 'hashed' === FilenameStrategy::resolve_strategy();
+
+		if ( $probe['public'] && $converted ) {
+			// Every media file has a random name now; guessing an address
+			// finds nothing private, so the rule is only extra protection.
+			$result['actions'] = '<p>' . esc_html__( 'Optional extra protection for nginx:', 'wpmediaverse' ) . '</p>' . $rule;
+			return $result;
+		}
+
+		if ( $probe['public'] ) {
+			// Files with readable names (made before 2.6.1: video covers named
+			// after the media id, imports, uploads kept under their own names)
+			// can be fetched by guessing. The rule closes that and keeps the
+			// fast path for random names.
+			$result['status']         = 'critical';
+			$result['label']          = __( 'Some media files can be downloaded by guessing their address', 'wpmediaverse' );
+			$result['badge']['color'] = 'red';
+			$result['description']    = sprintf(
+				'<p>%s</p><p>%s</p>',
+				empty( $legacy['done'] )
+					/* translators: %d: number of media items converted so far. */
+					? sprintf( __( 'MediaVerse is giving files saved before 2.6.1 under readable names (such as older video covers) random names in the background, newest first: %d items so far. Until it finishes, those files can be opened by anyone who guesses the address.', 'wpmediaverse' ), (int) ( $legacy['converted'] ?? 0 ) )
+					: __( 'This site is set to save uploads under their original names (the mvs_filename_strategy option), so they can be opened by anyone who guesses the address, without a permission check.', 'wpmediaverse' ),
+				__( 'The rules MediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration. It keeps fast delivery for files with random names.', 'wpmediaverse' )
+			);
+			$result['actions'] = $rule;
+			return $result;
+		}
+
+		if ( ! $direct ) {
+			$result['label'] = __( 'Media is private but sent through PHP, which is slower', 'wpmediaverse' );
+			$result['badge'] = array(
+				'label' => __( 'Performance', 'wpmediaverse' ),
 				'color' => 'orange',
 			);
+			if ( ! empty( $delivery['ok'] ) ) {
+				// The probe passed; code turned the fast path off on purpose.
+				$result['description'] = sprintf(
+					'<p>%s</p>',
+					__( 'Direct delivery is turned off by the mvs_direct_media_delivery filter, so every photo and video is sent through WordPress. This is safe but uses more server resources.', 'wpmediaverse' )
+				);
+				return $result;
+			}
+			$result['status']      = 'recommended';
 			$result['description'] = sprintf(
-				'<p>%s</p>',
-				__( 'MediaVerse could not reach this site over HTTP to check whether stored media is readable by anyone. This usually means loopback requests are blocked. The deny rules are in place, but on nginx they are ignored, so this is worth confirming by hand.', 'wpmediaverse' )
+				'<p>%s</p><p>%s</p>',
+				__( 'Every photo and video is sent through WordPress, one PHP request per file. On busy pages this can use many PHP workers. Files are already given random names, so the web server can send them directly and safely.', 'wpmediaverse' ),
+				__( 'The web server refused a test file with a random name. This usually means an older rule denies the whole MediaVerse folder, such as the nginx rule MediaVerse used to recommend. Replace it with the rule below; files with readable names stay protected.', 'wpmediaverse' )
 			);
-
-			return $result;
+			$result['actions']     = $rule;
 		}
-
-		if ( ! $probe['public'] ) {
-			return $result;
-		}
-
-		$result['status']      = 'critical';
-		$result['label']       = __( 'Media files can be downloaded by anyone with the link', 'wpmediaverse' );
-		$result['badge']       = array(
-			'label' => __( 'Security', 'wpmediaverse' ),
-			'color' => 'red',
-		);
-		$result['description'] = sprintf(
-			'<p>%s</p><p>%s</p>',
-			__( 'Anyone can open a stored file directly by its address, without logging in and without a permission check. Media set to Only me, Members or Friends is affected, and so is anything a member made private after sharing it — the older address keeps working.', 'wpmediaverse' ),
-			__( 'The deny rules MediaVerse writes are only read by Apache and IIS. This server appears to be nginx, which ignores them, so the rule has to be added to the server configuration instead. Nothing on the site loads media by that address, so the rule is safe to add.', 'wpmediaverse' )
-		);
-		$result['actions']     = '<p>' . esc_html__( 'Add this to the site\'s nginx configuration, then reload nginx:', 'wpmediaverse' )
-			. '</p><pre class="mvs-health-snippet"><code>' . esc_html( $this->nginx_rule() ) . '</code></pre>';
 
 		return $result;
 	}

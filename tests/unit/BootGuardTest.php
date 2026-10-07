@@ -64,6 +64,24 @@ class BootGuardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * MVS_MIN_PRO moves with each minor release.
+	 *
+	 * Free and Pro release in lockstep, and Free warns when Pro is older than
+	 * MVS_MIN_PRO. 2.6.0 shipped with it still at 2.1.0, so Free 2.6.0 with Pro
+	 * 2.5.1 raised no notice while the old Pro storage screen read a table 2.6.0
+	 * had removed (Basecamp 10355536157).
+	 */
+	public function test_minimum_pro_matches_this_minor_release(): void {
+		$minor = static fn( string $v ): string => implode( '.', array_slice( explode( '.', $v ), 0, 2 ) );
+
+		$this->assertSame(
+			$minor( MVS_VERSION ),
+			$minor( MVS_MIN_PRO ),
+			'Bump MVS_MIN_PRO to this release\'s x.y.0 together with MVS_VERSION.'
+		);
+	}
+
+	/**
 	 * The incomplete-package notice names the problem and reassures about data.
 	 *
 	 * Someone reading this is looking at a site that just broke. The two things

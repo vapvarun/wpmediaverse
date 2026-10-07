@@ -13,7 +13,7 @@
  * Expects: $mvs_current_user, $mvs_avatar_url, $mvs_has_custom, $mvs_dash_active.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  * @since   2.4.0
  */
 
@@ -29,7 +29,7 @@ $mvs_deferred  = $mvs_community['fields'];
 // form paints on first load and then vanishes. Same reason the documents panel
 // carries one.
 ?>
-<div class="mvs-dashboard-panel mvs-dashboard-profile-edit-form" role="tabpanel"
+<div class="mvs-dashboard-panel mvs-dashboard-profile-edit-form"
 	data-wp-bind--hidden="!state.isProfileTab"
 	<?php echo ( isset( $mvs_dash_active ) && 'profile' === $mvs_dash_active ) ? '' : 'hidden'; ?>>
 			<div data-wp-interactive="mvs/profile-edit"

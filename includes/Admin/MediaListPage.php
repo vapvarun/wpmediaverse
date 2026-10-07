@@ -206,8 +206,16 @@ class MediaListPage {
 							</select>
 							<select name="privacy">
 								<option value=""><?php esc_html_e( 'All Privacy', 'wpmediaverse' ); ?></option>
-								<?php foreach ( array( 'public', 'members', 'private', 'friends', 'group' ) as $p ) : ?>
-									<option value="<?php echo esc_attr( $p ); ?>" <?php selected( $privacy_filter, $p ); ?>><?php echo esc_html( ucfirst( $p ) ); ?></option>
+								<?php
+								// Only levels this site's media actually uses (plus the active filter).
+								$mvs_privacy_labels = \WPMediaVerse\Core\TemplateHelpers::privacy_labels();
+								$mvs_privacy_in_use = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->privacy_levels_in_use();
+								if ( '' !== $privacy_filter ) {
+									$mvs_privacy_in_use[] = $privacy_filter;
+								}
+								foreach ( array_unique( $mvs_privacy_in_use ) as $p ) :
+									?>
+									<option value="<?php echo esc_attr( $p ); ?>" <?php selected( $privacy_filter, $p ); ?>><?php echo esc_html( $mvs_privacy_labels[ $p ] ?? ucfirst( $p ) ); ?></option>
 								<?php endforeach; ?>
 							</select>
 							<?php submit_button( __( 'Filter', 'wpmediaverse' ), '', 'filter_action', false ); ?>

@@ -316,6 +316,11 @@ const { state } = store( 'mvs/media-player', {
 		 *
 		 * @param {Event} event `loadedmetadata` — target is the <video>.
 		 */
+		// The browser could not play the file (codec, damage): show why and offer
+		// it instead of a black player. Fired by the <source>, not the <video>.
+		onSourceError() {
+			getContext().failed = true;
+		},
 		onLoadedMetadata( event ) {
 			applyResume( getContext(), event.target );
 		},

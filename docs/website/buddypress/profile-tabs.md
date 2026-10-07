@@ -31,7 +31,7 @@ The Media tab displays the profile owner's published media items in a paginated 
 
 ## Sub-tabs
 
-As of 2.4.0 the profile **Media** tab has three sub-tabs:
+The profile **Media** tab has up to three sub-tabs. The Documents sub-tab only appears when documents are switched on (MediaVerse Pro):
 
 | Sub-tab | URL |
 |---------|-----|
@@ -62,13 +62,13 @@ These URLs are handled by the `TemplateLoader` and use the `explore.php` templat
 
 ## User Profile Edit Page
 
-Logged-in users can edit their avatar and profile details at:
+Members edit their profile details in the **Edit profile** section of the My Media dashboard (on a BuddyNext site, in BuddyNext). The old address below sends them there:
 
 ```
 /media/edit-profile/
 ```
 
-Or use the `[mvs_profile_edit]` shortcode on any page.
+The `[mvs_profile_edit]` shortcode still works on any page.
 
 ## Disabling the Profile Tab
 

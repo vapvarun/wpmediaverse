@@ -292,7 +292,8 @@ abstract class BaseBPTabIntegration {
 		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
 
-		$query = new \WP_Query( $this->get_albums_query_args( $per_page, $paged ) );
+		// Only albums this viewer may see; the single-album view gates the same way.
+		$query = \WPMediaVerse\Services\PrivacyService::query_listable_spaces( $this->get_albums_query_args( $per_page, $paged ), get_current_user_id() );
 
 		if ( ! $query->have_posts() ) {
 			$this->render_empty_albums();

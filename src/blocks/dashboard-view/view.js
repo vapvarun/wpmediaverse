@@ -6,7 +6,7 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext, getElement } from '@wordpress/interactivity';
+import { store, getContext, getElement, withScope } from '@wordpress/interactivity';
 
 /**
  * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
@@ -199,6 +199,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			dragOver: false,
 			uploading: false,
 			status: '',
+			percent: 0,
 			title: '',
 			description: '',
 			tags: '',
@@ -224,6 +225,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// re-opening the panel shows what the member actually chose.
 			regenerateSlug: false,
 			saving: false,
+			// "42%" while a Replace File upload is sending, '' otherwise.
+			replaceProgress: '',
 		},
 		// Albums
 		albums: {
@@ -307,6 +310,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			categories: [],
 		},
 		// Derived state
+		get uploadPercentText() {
+			return state.upload.uploading ? state.upload.percent + '%' : '';
+		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
 			// while title empty". A disabled Save is the feedback — pairing it
@@ -317,6 +323,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		get editModalTitleMissing() {
 			return '' === String( state.editModal.title || '' ).trim();
+		},
+		// Rail highlight, one getter for every rail item (slug from context):
+		// active when its section is showing, or the showing section belongs to
+		// it (Favorites under Collections, card 10364777801). Panels keep the
+		// per-slug getters below; this one is for the rail only.
+		get isActiveRail() {
+			const slug = getContext()?.railSlug;
+			const tab = state.activeTab || 'media';
+			return !! slug && ( tab === slug || state.railParents?.[ tab ] === slug );
 		},
 		get isMediaTab() { return ( state.activeTab || 'media' ) === 'media'; },
 		get isAlbumsTab() { return ( state.activeTab || 'media' ) === 'albums'; },
@@ -795,7 +810,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			if ( tabBtn.href && plainClick ) {
 				event.preventDefault();
-				window.history.pushState( {}, '', tabBtn.href );
+				// The section rides in the history entry so Back and Forward can
+				// put it back (callbacks.init listens for popstate). The current
+				// state is kept: WordPress's Interactivity runtime stamps it with
+				// wpInteractivityId and reloads on a popstate whose entry lacks it.
+				window.history.pushState(
+					{ ...window.history.state, mvsTab: tab },
+					'',
+					tabBtn.href
+				);
 			} else if ( tabBtn.href ) {
 				// Let the browser handle it.
 				return;
@@ -803,13 +826,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 				window.location.hash = tab;
 			}
 
+			actions.openSection( tab, getContext(), tabBtn );
+		},
+
+		/**
+		 * Show a section and load its data the first time it opens. Shared by a
+		 * tab click and by browser Back/Forward, so the two can never disagree
+		 * about what opening a section means.
+		 *
+		 * @param {string}       tab    Section key (data-tab).
+		 * @param {Object}       ctx    Block context.
+		 * @param {Element|null} tabBtn The rail item, when there is one.
+		 */
+		openSection( tab, ctx, tabBtn ) {
 			state.activeTab = tab;
+			ctx.editingProfile = 'profile' === tab;
 			// Mobile §5.2: scroll the tapped tab into view so users can see what's
 			// next when the strip overflows. Center inline keeps neighbours visible.
 			if ( tabBtn && typeof tabBtn.scrollIntoView === 'function' ) {
 				tabBtn.scrollIntoView( { inline: 'center', block: 'nearest', behavior: 'smooth' } );
 			}
-			const ctx = getContext();
 			if ( tab === 'media' && state.media.items.length === 0 ) {
 				actions.loadMedia( ctx );
 			} else if ( tab === 'albums' && state.albums.items.length === 0 ) {
@@ -835,6 +871,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const dropzone = event.target.closest( '.mvs-dashboard-dropzone' );
 			if ( ! dropzone ) return;
 			const input = dropzone.querySelector( '.mvs-upload-file-input' );
+			if ( input ) input.click();
+		},
+
+		// The empty library's "Upload media" button: the same file picker as the dropzone.
+		openFilePicker( event ) {
+			const root = event.target.closest( '[data-wp-interactive]' );
+			const input = root && root.querySelector( '.mvs-dashboard-dropzone .mvs-upload-file-input' );
 			if ( input ) input.click();
 		},
 
@@ -933,6 +976,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 
 			state.upload.uploading = true;
+			state.upload.percent = 0;
 			const total = files.length;
 			let uploaded = 0;
 			let lastError = '';
@@ -977,6 +1021,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media', {
 						method: 'POST',
 						body: formData,
+						// Overall percent: finished files plus the share of this one sent.
+						onUploadProgress: ( loaded, bytes ) => {
+							state.upload.percent = Math.min( 100, Math.round( ( ( i + ( bytes ? loaded / bytes : 0 ) ) / total ) * 100 ) );
+						},
 					} );
 					if ( res.ok ) {
 						uploaded++;
@@ -1009,10 +1057,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const duplicateNote = duplicates > 0
 				? ' ' + (
 					state.i18n?.duplicatesDetected ||
-						'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+						'You had already uploaded %1$d of these files.'
 				)
 					.replace( '%1$d', duplicates )
-					.replace( '%2$d', lastDuplicateId )
 				: '';
 			if ( uploaded === 0 ) {
 				sharedUI.actions.showToast( lastError || ( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ), 'error' );
@@ -1209,6 +1256,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! mediaId ) return;
 
 			state.editModal.saving = true;
+			state.editModal.replaceProgress = '0%';
 			const formData = new FormData();
 			formData.append( 'file', file );
 
@@ -1216,6 +1264,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
 					method: 'POST',
 					body: formData,
+					// A replacement video can be large: show how much has been sent.
+					onUploadProgress: ( loaded, total ) => {
+						state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
+					},
 				} );
 				if ( res.ok ) {
 					const updated = res.data;
@@ -1232,6 +1284,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				sharedUI.actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
 			}
 			state.editModal.saving = false;
+			state.editModal.replaceProgress = '';
 		},
 
 		async saveEdit() {
@@ -1317,7 +1370,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const railLink = document.querySelector( `.mvs-dashboard-tab[data-tab="${ state.activeTab }"]` );
 
 			if ( railLink?.href ) {
-				window.history.pushState( {}, '', railLink.href );
+				window.history.pushState(
+					{ ...window.history.state, mvsTab: state.activeTab },
+					'',
+					railLink.href
+				);
 			}
 		},
 
@@ -1684,7 +1741,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			// replaceState, not pushState: typing in a search box must not bury
 			// the previous page under one history entry per keystroke.
-			window.history.replaceState( {}, '', url.toString() );
+			// Keep the entry's state (Interactivity's wpInteractivityId, the
+			// section for Back/Forward); only the address changes.
+			window.history.replaceState(
+				window.history.state,
+				'',
+				url.toString()
+			);
 
 			actions[ PANELS[ slug ].loader ]( ctx, 1 );
 		},
@@ -1783,15 +1846,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 				} catch { /* no count: save without the prompt rather than block it */ }
 			}
 
+			const names = [];
 			state.albumModal.pickerItems
 				.filter( ( item ) => toAdd.includes( item.id ) )
 				.forEach( ( item ) => {
 					if ( state.privacyLevel( item.privacy ) > next ) {
 						count += 1;
+						names.push( item.title || ( state.i18n?.untitled || 'Untitled' ) );
 					}
 				} );
 
-			return count;
+			return { count, names };
+		},
+
+		// Picker items are role="button": Enter/Space toggle like a click.
+		pickerItemKeydown( event ) {
+			if ( event.target !== event.currentTarget ) return;
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.togglePickerItem( event );
+			}
 		},
 
 		togglePickerItem( event ) {
@@ -1854,25 +1928,56 @@ const { state, actions } = store( 'mvs/dashboard', {
 				( item ) => pendingAdd.includes( item.id ) && item.album && item.album.id !== state.albumModal.albumId
 			).length;
 
+			const albumLabel = String( state.privacyLabelFor( state.albumModal.privacy ) ).split( ':' )[ 0 ].trim();
 			if ( ! state.albumModal.loosenConfirmed ) {
 				const widened = await actions.countWidenedPhotos( ctx, state.albumModal.isEdit ? state.albumModal.albumId : 0, pendingAdd );
-				if ( widened > 0 ) {
+				if ( widened.count > 0 ) {
 					state.albumModal.saving = false;
-					const label = String( state.privacyLabelFor( state.albumModal.privacy ) ).split( ':' )[ 0 ].trim();
+					// Name the photos it affects and say what the button does;
+					// Cancel keeps focus (Basecamp 10364776389).
+					const shown = widened.names.slice( 0, 3 ).map( ( n ) => '"' + n + '"' ).join( ', ' );
+					const more = widened.names.length > 3
+						? ' ' + ( state.i18n?.andNMore || 'and %d more' ).replace( '%d', widened.names.length - 3 )
+						: '';
+					const named = shown ? ' ' + ( state.i18n?.photosAffected || 'Photos: %s.' ).replace( '%s', shown + more ) : '';
 					sharedUI.actions.showConfirm(
 						( state.i18n?.albumWidens || '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
-							.replace( '%1$d', widened )
-							.replace( /%2\$s/g, label ),
+							.replace( '%1$d', widened.count )
+							.replace( /%2\$s/g, albumLabel ) + named,
 						() => {
 							state.albumModal.loosenConfirmed = true;
 							actions.saveAlbum( ctx );
 						},
-						state.i18n?.saveAnyway || 'Save anyway'
+						( state.i18n?.showThemAs || 'Show them as "%s"' ).replace( '%s', albumLabel )
 					);
 					return;
 				}
 			}
 			state.albumModal.loosenConfirmed = false;
+
+			// A stricter album privacy changes how every photo in it shows; ask
+			// first instead of hiding them silently (Basecamp 10364776389).
+			const itemCount = state.albumModal.selectedIds.length;
+			if (
+				! state.albumModal.narrowConfirmed &&
+				state.albumModal.isEdit &&
+				itemCount > 0 &&
+				state.privacyLevel( state.albumModal.privacy ) > state.privacyLevel( state.albumModal.originalPrivacy )
+			) {
+				state.albumModal.saving = false;
+				sharedUI.actions.showConfirm(
+					( state.i18n?.albumNarrows || 'Changing this album to "%2$s" makes its %1$d photo(s) show as "%2$s" while they are in it.' )
+						.replace( '%1$d', itemCount )
+						.replace( /%2\$s/g, albumLabel ),
+					() => {
+						state.albumModal.narrowConfirmed = true;
+						actions.saveAlbum( ctx );
+					},
+					state.i18n?.changeAlbumPrivacy || 'Change album privacy'
+				);
+				return;
+			}
+			state.albumModal.narrowConfirmed = false;
 
 			try {
 				let albumId = state.albumModal.albumId;
@@ -2450,6 +2555,64 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		init() {
 			const ctx = getContext();
+
+			// Back and Forward. The tabs write the address with pushState, so the
+			// browser moves through those entries without reloading; without this
+			// the address changed and the screen did not (card 10369327095). The
+			// section comes from the history entry, or, for the entry the page
+			// loaded with, from the rail link whose address matches. Anything else
+			// (a section on its own page, an address no rail item owns) reloads,
+			// so the screen always matches the address.
+			window.addEventListener(
+				'popstate',
+				withScope( ( event ) => {
+					const railItem = ( key ) =>
+						document.querySelector(
+							`.mvs-dashboard-tab[data-tab="${ key }"]`
+						);
+					const trim = ( path ) => path.replace( /\/+$/, '' );
+					const here = trim( window.location.pathname );
+					const owner = Array.from(
+						document.querySelectorAll(
+							'.mvs-dashboard-tab[data-tab][href]'
+						)
+					).find(
+						( link ) =>
+							trim( new URL( link.href ).pathname ) === here
+					);
+					// A tab without an address switches by #hash, which fires popstate too.
+					const hashTab = window.location.hash.replace( '#', '' );
+					const byHash =
+						hashTab && railItem( hashTab ) ? hashTab : '';
+					// The dashboard's own root (/my-media/) shows the default section,
+					// whose rail link carries its own address (/my-media/media/).
+					const firstLink = document.querySelector(
+						'.mvs-dashboard-tab[data-tab][href]'
+					);
+					const root = firstLink
+						? trim( new URL( firstLink.href ).pathname ).replace(
+								/\/[^/]*$/,
+								''
+						  )
+						: null;
+					const atRoot =
+						null !== root && here === root ? 'media' : '';
+					const tab =
+						event.state?.mvsTab ||
+						byHash ||
+						owner?.dataset.tab ||
+						atRoot;
+					const tabBtn = tab ? railItem( tab ) : null;
+
+					if ( ! tab || tabBtn?.dataset.mvsNavigate ) {
+						window.location.reload();
+						return;
+					}
+
+					actions.openSection( tab, ctx, tabBtn );
+				} )
+			);
+
 			// Apply admin default privacy to upload state.
 			if ( ctx.defaultPrivacy ) {
 				state.upload.privacy = ctx.defaultPrivacy;

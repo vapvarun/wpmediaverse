@@ -38,7 +38,7 @@ Rows marked "no screen control since 2.6.0 (set in code/WP-CLI)" are still regis
 | `mvs_generate_avif` | Create AVIF copies - no screen control since 2.6.0 (set in code/WP-CLI) | boolean | `false` |
 | `mvs_cloud_direct_public_urls` | *(no settings field; inert since 1.4.0 - public cloud media is served directly automatically, this value is ignored)* | boolean | `false` |
 
-`mvs_duplicate_action` accepts `warn` (allow the upload and warn), `skip` (shown as "Block the upload") or `allow` (skip the hash check entirely). `mvs_strip_exif` removes only the GPS location from new uploads; camera details and photo credits stay, and files already stored are not rewritten.
+Duplicate detection checks only the member's own uploads; a file another member uploaded is not a duplicate. `mvs_duplicate_action` accepts `warn` (allow the upload and warn), `skip` (shown as "Block the upload") or `allow` (skip the hash check entirely). `mvs_strip_exif` removes only the GPS location from new uploads; camera details and photo credits stay, and files already stored are not rewritten.
 
 `mvs_storage_driver` accepts `local`, `s3`, `bunnycdn`, `r2` or `dospaces`. Cloud drivers need MediaVerse Pro.
 
@@ -47,11 +47,12 @@ Rows marked "no screen control since 2.6.0 (set in code/WP-CLI)" are still regis
 | Option key | Setting label | Type | Default |
 |---|---|---|---|
 | `mvs_default_privacy` | Default Privacy Level | string | `public` (`members` on a private community) |
+| `mvs_members_only` | Members Only | boolean | `false` |
 | `mvs_allow_user_privacy` | Allow Users to Set Privacy | boolean | `true` |
 | `mvs_upload_roles` | Who can upload media | array | *(empty array)* |
 | `mvs_allow_downloads` | Allow Downloads (Display tab) | boolean | `true` |
 
-`mvs_default_privacy` is the level applied when the uploader makes no choice. A fresh install on a private community (one that answers `mvs_rest_require_auth` with `true`, such as BuddyNext's private mode) starts at `members`, because public files can be opened by anyone holding the file address. A site that becomes private later keeps its saved value, and administrators see a one-time notice on MediaVerse screens offering to switch to Members Only. When `mvs_allow_user_privacy` is off, the privacy select is removed from the upload form and every upload takes the default.
+`mvs_default_privacy` is the level applied when the uploader makes no choice. A fresh install on a private community (one that answers `mvs_rest_require_auth` with `true`, such as BuddyNext's private mode) starts at `members`, because public files can be opened by anyone holding the file address. A site that becomes private later keeps its saved value, and administrators see a one-time notice on MediaVerse screens offering to switch to Members Only. `mvs_members_only` sends visitors who are not logged in to the login page and makes the API refuse them. When a community plugin answers `mvs_rest_require_auth`, its answer wins and the screen shows it instead of a switch. When `mvs_allow_user_privacy` is off, the privacy select is removed from the upload form and every upload takes the default.
 
 `mvs_upload_roles` is only the transport for the "Who can upload media" checkboxes. The real state is the `upload_mvs_media` capability on each role: saving the field adds or removes that capability, and the field reads the roles back. Administrators can always upload. Reading this option does not tell you who can upload; check the roles instead.
 
@@ -59,7 +60,7 @@ Rows marked "no screen control since 2.6.0 (set in code/WP-CLI)" are still regis
 
 | Option key | Setting label | Type | Default |
 |---|---|---|---|
-| `mvs_app_password_login` | App Sign-In | boolean | `true` |
+| `mvs_app_password_login` | App Login | boolean | `true` |
 | `mvs_terms_url` | Terms of Service URL | string | *(empty)* |
 | `mvs_abuse_contact_email` | Abuse Contact Email | string | *(empty - uses the site admin email)* |
 | `mvs_eula_url` | EULA URL - no screen control since 2.6.0 (set in code/WP-CLI) | string | *(empty - standard Apple licence)* |
@@ -140,6 +141,8 @@ Note the pairing: `mvs_ai_auto_tag` decides whether tags are *generated*, and `m
 | `mvs_email_battle_invite` | Photo battle invites | boolean | `false` (a new install turns it on) |
 | `mvs_email_document_shared` | Documents shared with a member | boolean | `false` (a new install turns it on) |
 | `mvs_email_report_outcome` | Report reviewed | boolean | `false` (a new install turns it on) |
+| `mvs_email_new_follower` | New follower | boolean | `false` (a new install turns it on) |
+| `mvs_email_media_comment` | Comment on their media | boolean | `false` (a new install turns it on) |
 
 ### Pages
 
@@ -166,6 +169,7 @@ Registered by `Admin\ProSettings` and `Admin\GamificationSettings`. All Pro opti
 
 | Option key | Setting label | Type | Default |
 |---|---|---|---|
+| `mvs_competitions_enabled` | Competitions (Competitions tab; master switch for the four types below) | string | `0` |
 | `mvs_stories_enabled` | Stories (Display tab) | string | `0` |
 | `mvs_connectors_enabled` | Turn on Flickr import (Flickr import tab) | string | `0` |
 | `mvs_streaks_enabled` | Enable Streaks | string | `0` |
@@ -209,7 +213,7 @@ On the Competitions tab each competition type row shows only while Competitions 
 | `mvs_autopilot_voting_days` | Voting Period (Days) | integer | `3` |
 | `mvs_autopilot_max_entries` | Max Entries per User | integer | `1` |
 
-Autopilot creates the next themed challenge from Challenge Themes on the configured day and hour. `mvs_autopilot_entry_days` and `mvs_autopilot_voting_days` set the length of each phase, so a challenge's full cycle is the sum of the two. Weekly Autopilot shows only while Photo Challenges is on, and these rows only while Enable Autopilot is on. The autopilot points awards (`mvs_autopilot_xp_*`) sit under **Points rewards**.
+Autopilot creates the next themed challenge from Challenge Themes on the configured day and hour. `mvs_autopilot_entry_days` and `mvs_autopilot_voting_days` set the length of each phase, so a challenge's full cycle is the sum of the two. Weekly Autopilot shows only while Photo Challenges is on, and these rows only while Enable Autopilot is on. The autopilot points awards sit under **Points rewards**: `mvs_autopilot_xp_1st` (200), `mvs_autopilot_xp_2nd` (100), `mvs_autopilot_xp_3rd` (50) and `mvs_autopilot_xp_participation` (10, everyone who entered).
 
 ### Flickr import and layout
 

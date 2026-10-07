@@ -3,11 +3,11 @@
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 
-MediaVerse provides **12** shortcodes for embedding media features in pages, posts, and classic editor content.
+MediaVerse provides **13** shortcodes for embedding media features in pages, posts, and classic editor content.
 
 ## [mvs_gallery]
 
-Displays a filterable media grid. Columns and items-per-page come from **Media > Settings > Display** and cannot be overridden by shortcode attributes.
+Displays a filterable media grid. Columns and items-per-page come from **MediaVerse > Settings > Display** and cannot be overridden by shortcode attributes.
 
 ```
 [mvs_gallery]
@@ -19,7 +19,8 @@ Displays a filterable media grid. Columns and items-per-page come from **Media >
 | `type` | (all types) | Filter by media type: `image`, `video`, or `audio` |
 | `category` | (all) | Filter by `mvs_category` slug |
 | `tag` | (all) | Filter by `mvs_tag` slug |
-| `user_id` | (all authors) | Filter to a single author. Pair with `orderby="popular"` for a "Top media by this member" embed. |
+| `user_id` | (all authors) | Filter to a single author. Pair with `orderby="popular"` for a "Top media by this member" embed. On a BuddyPress profile page it defaults to the member whose profile you are viewing. |
+| `layout` | (site default layout) | `grid`, `masonry`, `list`, `square` or `original`. With MediaVerse Pro active, the Pro layouts `pinterest`, `flickr`, `dribbble` and `instagram` also work. An unknown value falls back to the grid. |
 | `orderby` | `date` | Sort order: `date`, `title`, `views`, `popular`, `reactions`, or `random`. |
 | `order` | `desc` | Sort direction: `asc` or `desc`. |
 
@@ -90,7 +91,7 @@ Displays site-wide media statistics.
 
 ## [mvs_dashboard]
 
-Displays a personal media dashboard for the logged-in user. Shows the user's own uploads, albums, and stats. Redirects to login if the user is not logged in.
+Displays a personal media dashboard for the logged-in user. Shows the user's own uploads, albums, and stats. Shows a "Log in to see your media" prompt if the visitor is not logged in.
 
 ```
 [mvs_dashboard]
@@ -115,7 +116,7 @@ Displays a collection by ID. Works for both manual and smart collections.
 
 ## [mvs_profile_edit]
 
-Displays a profile edit form for the logged-in user, allowing them to update their first name, last name, display name, bio, and avatar. Redirects to login if not logged in.
+Displays a profile edit form for the logged-in user, allowing them to update their first name, last name, display name, bio, and avatar. Shows a "Log in to edit your profile" prompt if the visitor is not logged in.
 
 ```
 [mvs_profile_edit]
@@ -131,12 +132,12 @@ Embeds the explore archive - infinite-scroll public media feed with filter chips
 
 ```
 [mvs_explore_feed]
-[mvs_explore_feed layout="grid" columns="3" per_page="12" filters="true" search="true"]
+[mvs_explore_feed layout="masonry" columns="3" per_page="12" filters="true" search="true"]
 ```
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `layout` | `grid` | Feed layout. |
+| `layout` | (site default layout) | Feed layout. Leave empty to follow the site's Default Layout setting. |
 | `columns` | `3` | Grid columns. |
 | `per_page` | `12` | Items per page. |
 | `filters` | `true` | Show the filter chips. |
@@ -179,7 +180,7 @@ Embeds a PDF using the browser-native viewer (the `#view=FitH` URL fragment). No
 | `height` | `600` | Viewer height in pixels. Range: 200–1400. |
 | `toolbar` | `true` | Show or hide the browser PDF toolbar. `true` to show, `false` to hide. |
 
-## Usage History
+## [mvs_usage_history]
 
 > Free. Requires a logged-in visitor - renders nothing for guests.
 
@@ -192,13 +193,13 @@ Shows the current member's own upload history, one row per upload. Useful on an 
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `limit` | `20` | Number of ledger rows to show, most recent first. |
+| `limit` | `20` | Number of rows to show, most recent first. Between 1 and 100. |
 
 ## [mvs_documents]
 
 > Free shortcode, Pro engine. With the Documents master toggle off it renders nothing (an administrator sees a one-line notice saying why). Folder listings need Pro; without it an editor sees "Folder listings need MediaVerse Pro" and a visitor sees nothing.
 
-Lists the current member's documents. Paginates through the `doc_page` query parameter and accepts a `doc_type` query parameter that overrides the `type` attribute.
+Lists the site's public documents, one row each with a type chip, owner and date. Paginates through the `doc_page` query parameter and accepts a `doc_type` query parameter that overrides the `type` attribute.
 
 ```
 [mvs_documents]

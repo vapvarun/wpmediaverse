@@ -10,22 +10,22 @@ MediaVerse Pro powers a native mobile app for your community. Pro supplies the a
 
 Brand the app for your own community: your logo, your accent color, your login screen. Every member who connects the app to your site sees your brand, not a generic MediaVerse skin.
 
-Go to **Media > Settings > Display > Mobile App Branding**.
+Go to **MediaVerse > Settings > Mobile App**.
 
 | Option | Option Key | Default | Description |
 |--------|-----------|---------|-------------|
-| Accent Color | `mvs_app_accent_color` | `#7C3AED` | Primary brand color for buttons, links, and active states in the app |
+| Accent Color | `mvs_app_accent_color` | Empty | Primary brand color for buttons, links, and active states in the app, as a hex code such as `#7C3AED`. Leave it empty and the app uses its own color |
 | App Logo | `mvs_app_logo_id` | (none) | Media Library attachment shown on the app login screen. PNG with transparency recommended. Falls back to the site name as text when empty |
 | Login Background | `mvs_app_login_bg_id` | (none) | Optional full-bleed image behind the app login screen. Plain background when empty |
-| Default to Dark Mode | `mvs_app_dark_mode_default` | Off | New installs open in dark mode; members can still switch |
+| Default to Dark Mode | `mvs_app_dark_mode_default` | Off | The app opens in dark mode for new installs; members can still switch |
 
 ## Feed Layout
 
-The app mirrors the feed layout you picked for the web Explore page - grid, Instagram, Pinterest, Flickr, or Dribbble - so the app matches the browsing experience you configured. This is the same `mvs_pro_feed_layout` setting on **Media > Settings > Display > Feed Layout** described in [Layout Modes](layout-modes.md); there is no separate app-only layout setting.
+The app mirrors the feed layout you picked for the web Explore page - grid, Instagram, Pinterest, Flickr, or Dribbble - so the app matches the browsing experience you configured. This is the same **Layout** setting on **MediaVerse > Settings > Display** described in [Layout Modes](layout-modes.md); there is no separate app-only layout setting.
 
 ## Feature Flags
 
-The app also learns which competitive and video features are switched on for your site - battles, challenges, tournaments, boosts, streaks, and stories - so it only mounts the screens you've actually enabled. Each flag mirrors the matching admin toggle (e.g. `mvs_challenges_enabled`); there is nothing extra to configure for the app itself.
+The app also learns which competitive features are switched on for your site - battles, challenges, tournaments, boosts, streaks, and stories - so it only mounts the screens you've actually enabled. Each flag mirrors the matching admin switch; there is nothing extra to configure for the app itself.
 
 ## How the App Gets This (Developers)
 
@@ -35,7 +35,7 @@ Full request/response details for `/app/config` plus the Pro-only push and leade
 
 ## Push Notifications
 
-Once a member is logged in, the app registers its Expo push token with your site so it can push notifications for events like new messages, challenge results, and battle/tournament outcomes.
+Once a member is logged in, the app registers its Expo push token with your site. Pro then sends the notifications MediaVerse creates for that member to the device, and skips conversations the member has muted. Push needs no setting; it does nothing until a device registers.
 
 - `POST /mvs-pro/v1/push/register-device` - register (or refresh) a device token for the current user.
 - `DELETE /mvs-pro/v1/push/register-device` - remove a device token (e.g. on logout).
@@ -44,9 +44,9 @@ Both require a logged-in user. See the [Pro REST API Reference](../developer-gui
 
 ## Leaderboard
 
-`GET /mvs-pro/v1/leaderboard` powers the app's gamification screen. It's backed by the same `LeaderboardService` as the `pro-leaderboard` block, so the ranking the app shows is identical to the one on your site - ranked by reactions, upload count, or gamification points, over all time, the last 30 days, or the last 7 days. The response includes the ranked page plus the current viewer's own rank in one round trip, so the app doesn't need a second request to show "your rank."
+`GET /mvs-pro/v1/leaderboard` powers the app's gamification screen. It's backed by the same ranking as the Leaderboard block, so the ranking the app shows is identical to the one on your site - ranked by reactions, upload count, or gamification points, over all time, the last 30 days, or the last 7 days. The points ranking needs the free WB Gamification plugin and is empty without it. The response includes the ranked page plus the current viewer's own rank in one round trip. The own-rank value is not available for the points ranking.
 
 ## Requirements
 
 - MediaVerse Pro 1.9.0 or higher.
-- A native or headless client (e.g. the official MediaVerse app) that calls `/app/config`, the push routes, and the leaderboard route.
+- A native or headless client (such as the MediaVerse mobile app) that calls `/app/config`, the push routes, and the leaderboard route.

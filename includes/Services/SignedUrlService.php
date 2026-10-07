@@ -18,6 +18,22 @@ defined( 'ABSPATH' ) || exit;
 class SignedUrlService {
 
 	/**
+	 * Thumbnail size => its meta key (`<key>_path` holds the stored path).
+	 */
+	private const THUMB_META = array(
+		'large'     => 'thumb_large',
+		'medium'    => 'thumb_medium',
+		'thumbnail' => 'thumb_thumb',
+	);
+
+	/**
+	 * Expiry of the signed URL being served, for the private cache lifetime.
+	 *
+	 * @var int
+	 */
+	private int $serving_expires = 0;
+
+	/**
 	 * Default URL expiration in seconds (1 hour).
 	 *
 	 * @var int
@@ -71,6 +87,9 @@ class SignedUrlService {
 		// the gated path (Content-Disposition headers + download counters).
 		if ( ! $download ) {
 			$direct = $this->maybe_direct_cloud_url( $media_id );
+			if ( '' === $direct ) {
+				$direct = $this->direct_url( $media_id, $user_id );
+			}
 			if ( '' !== $direct ) {
 				return $direct;
 			}
@@ -147,6 +166,11 @@ class SignedUrlService {
 		// chain here so we only sign URLs that will actually resolve to bytes.
 		if ( ! $this->has_resolvable_thumbnail( $media_id ) ) {
 			return false;
+		}
+
+		$direct = $this->direct_url( $media_id, $user_id, $size, ! $skip_privacy_check );
+		if ( '' !== $direct ) {
+			return $direct;
 		}
 
 		$expires = $this->resolve_expiry( $media_id, $ttl ?: $this->get_ttl() );
@@ -289,8 +313,9 @@ class SignedUrlService {
 	 * @param array $params Validated URL parameters.
 	 */
 	public function serve( array $params ): void {
-		$expired  = false;
-		$media_id = $this->validate_signature( $params, $expired );
+		$this->serving_expires = (int) ( $params[ self::PARAM_EXPIRES ] ?? 0 );
+		$expired               = false;
+		$media_id              = $this->validate_signature( $params, $expired );
 
 		if ( ! $media_id ) {
 			status_header( 403 );
@@ -457,40 +482,53 @@ class SignedUrlService {
 	 * @param string $size     Requested size (large|medium|thumbnail).
 	 */
 	/**
-	 * First candidate that points at an image (a valid poster), skipping empties
-	 * and any video/audio variant. Pre-1.6.0 video rows wrote the source .mp4
-	 * into thumb_<size>_path for upscale-skipped sizes; serving that as a
-	 * thumbnail produces a broken poster (Basecamp #9952600334).
+	 * The file's own URL, when this viewer may see it and it can be served
+	 * directly by the web server (see DirectDelivery), else ''.
 	 *
-	 * @param string[] $candidates Ordered paths or URLs.
-	 * @return string First image candidate, or '' when none qualify.
+	 * '' sends the caller on to the signed /serve URL, exactly as before. Only
+	 * local files with MediaVerse's random names qualify; message attachments,
+	 * documents and SVGs (served with a sandbox CSP) always stay signed.
+	 *
+	 * @param int    $media_id Media id.
+	 * @param int    $user_id  Viewer the URL is for.
+	 * @param string $size     '' for the file itself, else a thumbnail size.
+	 * @param bool   $checked  Whether can_view() already passed for this viewer.
+	 * @return string
 	 */
-	private static function first_image_path( array $candidates ): string {
-		foreach ( $candidates as $candidate ) {
-			if ( '' === $candidate ) {
-				continue;
-			}
-			$path = (string) ( wp_parse_url( $candidate, PHP_URL_PATH ) ?: $candidate );
-			$ext  = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
-			if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif' ), true ) ) {
-				return $candidate;
-			}
+	private function direct_url( int $media_id, int $user_id, string $size = '', bool $checked = true ): string {
+		if ( ! DirectDelivery::enabled() ) {
+			return '';
 		}
-		return '';
+		// /serve re-checks the viewer when the file is fetched; a direct URL
+		// cannot, so the check must have happened before the URL is handed out.
+		if ( ! $checked && ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return '';
+		}
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( 'dm' === (string) $repo->get_raw( $media_id, 'privacy' ) || 'image/svg+xml' === (string) $repo->get_raw( $media_id, 'file_type' ) ) {
+			return '';
+		}
+		$rel_path = '' === $size ? (string) $repo->get_raw( $media_id, 'file_path' ) : $this->thumbnail_rel_path( $media_id, $size );
+		if ( '' === $rel_path || '/' === $rel_path[0] || ! DirectDelivery::is_random_name( $rel_path ) ) {
+			return '';
+		}
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_location( $media_id );
+		return $driver instanceof LocalDriver ? $driver->url( $rel_path ) : '';
 	}
 
-	private function serve_thumbnail( int $media_id, string $size, string $privacy = '' ): void {
-		// Internal: signing service serves the underlying file from disk —
-		// must use the raw stored URL, not a signed-URL re-emission.
-		$rel_path  = '';
-		$thumb_url = '';
-
-		$size_map = array(
-			'large'     => 'thumb_large',
-			'medium'    => 'thumb_medium',
-			'thumbnail' => 'thumb_thumb',
-		);
-		$meta_key = $size_map[ $size ] ?? 'thumb_large';
+	/**
+	 * The stored path of a media item's thumbnail for a size, by path meta.
+	 *
+	 * One answer for both /serve and direct delivery, so they always mean the same
+	 * file: the requested size, then medium, then thumb; for an image with none,
+	 * the original. Never a video file for a still.
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $size     'large' | 'medium' | 'thumbnail' (anything else: large).
+	 * @return string Path relative to uploads/wpmediaverse/, or ''.
+	 */
+	private function thumbnail_rel_path( int $media_id, string $size ): string {
+		$meta_key = self::THUMB_META[ $size ] ?? 'thumb_large';
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		// Path-meta first (1.4.0+, driver-agnostic). Fall back through
@@ -515,6 +553,48 @@ class SignedUrlService {
 				$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
 			}
 		}
+		return $rel_path;
+	}
+
+	/**
+	 * First candidate that points at an image (a valid poster), skipping empties
+	 * and any video/audio variant. Pre-1.6.0 video rows wrote the source .mp4
+	 * into thumb_<size>_path for upscale-skipped sizes; serving that as a
+	 * thumbnail produces a broken poster (Basecamp #9952600334).
+	 *
+	 * @param string[] $candidates Ordered paths or URLs.
+	 * @return string First image candidate, or '' when none qualify.
+	 */
+	private static function first_image_path( array $candidates ): string {
+		foreach ( $candidates as $candidate ) {
+			if ( '' === $candidate ) {
+				continue;
+			}
+			$path = (string) ( wp_parse_url( $candidate, PHP_URL_PATH ) ?: $candidate );
+			$ext  = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
+			if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif' ), true ) ) {
+				return $candidate;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Stream a thumbnail size of a media item from disk (the /serve path).
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $size     'large' | 'medium' | 'thumbnail'.
+	 * @param string $privacy  Media privacy, for the cache headers.
+	 * @return void
+	 */
+	private function serve_thumbnail( int $media_id, string $size, string $privacy = '' ): void {
+		// Internal: signing service serves the underlying file from disk —
+		// must use the raw stored URL, not a signed-URL re-emission.
+		$thumb_url = '';
+		$meta_key  = self::THUMB_META[ $size ] ?? 'thumb_large';
+
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$rel_path = $this->thumbnail_rel_path( $media_id, $size );
 
 		// Legacy URL fallback for pre-migration rows. Same image-only guard:
 		// a video URL stored in thumb_large must not win over the medium /
@@ -689,7 +769,13 @@ class SignedUrlService {
 			return $bucket + YEAR_IN_SECONDS;
 		}
 
-		return time() + $ttl;
+		// Non-public: a window of half the TTL keeps the URL identical across page
+		// views inside it, so a member's browser can reuse the image instead of
+		// fetching it through PHP on every page. Every link still expires within
+		// $ttl (between $ttl/2 and $ttl from minting); a rolling time() + $ttl
+		// made each render a new URL and the browser cache useless.
+		$window = max( 60, intdiv( $ttl, 2 ) );
+		return intdiv( time(), $window ) * $window + $ttl;
 	}
 
 	/**
@@ -721,6 +807,24 @@ class SignedUrlService {
 			if ( $max_age > 0 ) {
 				header( 'Cache-Control: public, max-age=' . $max_age );
 				header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $max_age ) . ' GMT' );
+				return;
+			}
+		} else {
+			/**
+			 * Browser-only cache lifetime (seconds) for non-public media.
+			 *
+			 * Defaults to the rest of the signed URL's life: the same browser may
+			 * reuse the bytes it was already allowed to fetch, no shared cache may
+			 * store them, and nothing outlives the link. Return 0 for no-store.
+			 *
+			 * @since 2.6.1
+			 *
+			 * @param int    $max_age Seconds until the signed URL expires.
+			 * @param string $privacy Media privacy level.
+			 */
+			$max_age = (int) apply_filters( 'mvs_private_media_max_age', max( 0, $this->serving_expires - time() ), $privacy );
+			if ( $max_age > 0 ) {
+				header( 'Cache-Control: private, max-age=' . $max_age );
 				return;
 			}
 		}
@@ -1346,6 +1450,30 @@ class SignedUrlService {
 		// was just written by the upload pipeline / watermarker).
 		clearstatcache( true, $file_path );
 		$file_size = filesize( $file_path );
+
+		// Validators, so a browser holding this exact file revalidates with a 304
+		// instead of downloading it again. The path is part of the tag because
+		// content negotiation can serve a WebP or AVIF sibling for the same URL.
+		$mtime = (int) filemtime( $file_path );
+		$etag  = '"' . md5( $file_path . '|' . $mtime . '|' . $file_size ) . '"';
+		header( 'ETag: ' . $etag );
+		header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s', $mtime ) . ' GMT' );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared verbatim, never output.
+		$if_none_match = isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) ? trim( wp_unslash( (string) $_SERVER['HTTP_IF_NONE_MATCH'] ) ) : '';
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- parsed by strtotime, never output.
+		$if_modified = isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ? strtotime( wp_unslash( (string) $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ) : false;
+		if ( ! isset( $_SERVER['HTTP_RANGE'] )
+			&& ( ( '' !== $if_none_match && in_array( $etag, array_map( 'trim', explode( ',', $if_none_match ) ), true ) )
+				|| ( '' === $if_none_match && false !== $if_modified && $if_modified >= $mtime ) ) ) {
+			status_header( 304 );
+			exit;
+		}
+
+		// Every decision is made; when the web server has proven it can, it
+		// sends the bytes (Range included) and this worker is freed.
+		if ( ServerFileOffload::send( $file_path ) ) {
+			exit;
+		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		if ( isset( $_SERVER['HTTP_RANGE'] ) ) {

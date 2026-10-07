@@ -46,6 +46,38 @@ class MessagingController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Largest file a message attachment may be, in bytes.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return int
+	 */
+	public static function max_attachment_size(): int {
+		/**
+		 * Filter the largest file a message attachment may be, in bytes.
+		 *
+		 * @param int $bytes Default 10 MB.
+		 */
+		return (int) apply_filters( 'mvs_dm_max_upload_size', 10 * MB_IN_BYTES );
+	}
+
+	/**
+	 * What a member is told when an attachment is over the limit. Shared by the
+	 * server check and the browser's check before upload, so both say the same.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return string
+	 */
+	public static function attachment_too_large_message(): string {
+		return sprintf(
+			/* translators: %s: size limit, e.g. "10 MB". */
+			__( 'That file is too big to send in a message. The limit is %s.', 'wpmediaverse' ),
+			size_format( self::max_attachment_size() )
+		);
+	}
+
+	/**
 	 * Register routes.
 	 */
 	public function register_routes(): void {
@@ -978,10 +1010,8 @@ class MessagingController extends WP_REST_Controller {
 			return new WP_REST_Response( array( 'message' => 'File type not allowed.' ), 400 );
 		}
 
-		// Max 10 MB.
-		$max_size = apply_filters( 'mvs_dm_max_upload_size', 10 * MB_IN_BYTES );
-		if ( $file['size'] > $max_size ) {
-			return new WP_REST_Response( array( 'message' => 'File too large.' ), 400 );
+		if ( $file['size'] > self::max_attachment_size() ) {
+			return new WP_REST_Response( array( 'message' => self::attachment_too_large_message() ), 400 );
 		}
 
 		// The member's fair-use storage limit covers chat attachments too.
@@ -1003,6 +1033,10 @@ class MessagingController extends WP_REST_Controller {
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 
 		$upload = wp_handle_upload( $file, array( 'test_form' => false ) );
+		// A DM video is served through PHP, the case index-first exists for.
+		if ( is_array( $upload ) && ! empty( $upload['file'] ) && ! empty( $upload['type'] ) ) {
+			\WPMediaVerse\Services\Mp4Faststart::apply( (string) $upload['file'], (string) $upload['type'] );
+		}
 
 		if ( isset( $upload['error'] ) ) {
 			remove_filter( 'user_has_cap', $grant_cap );

@@ -94,6 +94,20 @@ class SettingsRegistrar {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * The cloud drivers WPMediaVerse Pro provides, driver => plain label.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function cloud_driver_choices(): array {
+		return array(
+			's3'       => __( 'Amazon S3', 'wpmediaverse' ),
+			'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
+			'r2'       => __( 'Cloudflare R2', 'wpmediaverse' ),
+			'dospaces' => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
+		);
+	}
+
+	/**
 	 * Where files can be stored, driver => plain label.
 	 *
 	 * Public so the "storage changed" notice names the place, not the slug.
@@ -101,13 +115,22 @@ class SettingsRegistrar {
 	 * @return array<string, string>
 	 */
 	public static function storage_driver_choices(): array {
-		return array(
-			'local'    => __( 'This server (WordPress uploads)', 'wpmediaverse' ),
-			's3'       => __( 'Amazon S3', 'wpmediaverse' ),
-			'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
-			'r2'       => __( 'Cloudflare R2', 'wpmediaverse' ),
-			'dospaces' => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
-		);
+		$choices = array(
+			'local' => __( 'This server (WordPress uploads)', 'wpmediaverse' ),
+		) + self::cloud_driver_choices();
+
+		/**
+		 * Filter the storage drivers an owner can pick, driver slug => label.
+		 *
+		 * The Storage tab's select and its save both read this list. Add the slug
+		 * of a driver registered through the `mvs_storage_driver` filter and it
+		 * can be picked on the screen and survives a save.
+		 *
+		 * @since 2.6.1
+		 *
+		 * @param array<string, string> $choices Driver slug => label.
+		 */
+		return (array) apply_filters( 'mvs_storage_driver_choices', $choices );
 	}
 
 	/**
@@ -135,7 +158,10 @@ class SettingsRegistrar {
 			)
 		);
 		$choices = self::storage_driver_choices();
-		if ( self::is_pro_active() ) {
+		// Without Pro its cloud drivers cannot be used, so they are shown locked.
+		// A driver a site registered itself can be picked either way.
+		$usable = self::is_pro_active() ? $choices : array_diff_key( $choices, self::cloud_driver_choices() );
+		if ( count( $usable ) > 1 ) {
 			FieldRenderer::add_field(
 				'mvs_storage_driver',
 				__( 'Where files are stored', 'wpmediaverse' ),
@@ -144,7 +170,7 @@ class SettingsRegistrar {
 				'mvs_storage',
 				array(
 					'option'      => 'mvs_storage_driver',
-					'choices'     => $choices,
+					'choices'     => $usable,
 					'description' => __( 'New uploads go here. Cloud storage needs the account details below.', 'wpmediaverse' ),
 				)
 			);

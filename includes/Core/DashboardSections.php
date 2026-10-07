@@ -87,6 +87,7 @@ final class DashboardSections {
 		 *         'url'        => '',            // defaults to /<page>/<slug>/
 		 *         'endpoints'  => 'mvs-pro/v1/documents',
 		 *         'nav'        => true,          // false = not on the rail (still routable)
+		 *         'parent'     => '',            // rail item to mark active when nav is false
 		 *     )
 		 *
 		 * @since 2.4.0
@@ -263,6 +264,42 @@ final class DashboardSections {
 	}
 
 	/**
+	 * The rail item to mark active for a section: its declared parent, or the
+	 * section itself. Favorites has no rail item of its own (it is reached from
+	 * Collections), so on /my-media/favorites/ Collections is the active tab
+	 * rather than none (card 10364777801).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param string $slug Section slug.
+	 * @return string
+	 */
+	public static function rail_slug( string $slug ): string {
+		$parent = (string) ( self::all()[ $slug ]['parent'] ?? '' );
+
+		return '' !== $parent && self::exists( $parent ) ? $parent : $slug;
+	}
+
+	/**
+	 * Section slug => the rail item it highlights, for sections that declare a
+	 * parent. Handed to the client store so the rail re-highlights after an
+	 * in-page switch the same way the server marked it.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @return array<string,string>
+	 */
+	public static function rail_parents(): array {
+		$map = array();
+		foreach ( self::all() as $slug => $section ) {
+			if ( self::rail_slug( (string) $slug ) !== $slug ) {
+				$map[ (string) $slug ] = self::rail_slug( (string) $slug );
+			}
+		}
+		return $map;
+	}
+
+	/**
 	 * Whether a section lives on its own page rather than in a dashboard panel.
 	 *
 	 * A section that declares its own `url` is rendered somewhere else — Pro's
@@ -341,6 +378,8 @@ final class DashboardSections {
 			'endpoints'  => isset( $section['endpoints'] ) ? (string) $section['endpoints'] : '',
 			// False: routable, but reached from another panel, not the rail.
 			'nav'        => ! isset( $section['nav'] ) || (bool) $section['nav'],
+			// The rail item a section without its own (nav false) belongs to.
+			'parent'     => isset( $section['parent'] ) ? sanitize_key( (string) $section['parent'] ) : '',
 		);
 	}
 
@@ -355,7 +394,7 @@ final class DashboardSections {
 		$repo = Plugin::container()->get( 'media_repository' );
 		$user = get_current_user_id();
 
-		return array(
+		$sections = array(
 			'media'       => array(
 				'label'     => __( 'Media', 'wpmediaverse' ),
 				'group'     => 'library',
@@ -384,6 +423,7 @@ final class DashboardSections {
 				'order'     => 60,
 				'endpoints' => 'mvs/v1/favorites',
 				'nav'       => false,
+				'parent'    => 'collections',
 			),
 			// Editing your profile was a button on a card above the rail, which
 			// cost every member ~110px of vertical space on every visit to say
@@ -402,5 +442,14 @@ final class DashboardSections {
 				'endpoints' => 'mvs/v1/profile',
 			),
 		);
+
+		// On a BuddyNext site BuddyNext owns the profile editor, so MediaVerse's
+		// steps aside instead of being a second place to edit one profile
+		// (owner decision 2026-10-02, Basecamp 10364778286).
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			unset( $sections['profile'] );
+		}
+
+		return $sections;
 	}
 }

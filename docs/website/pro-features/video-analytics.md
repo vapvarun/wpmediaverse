@@ -10,7 +10,7 @@ MediaVerse Pro records play events for every video, builds per-video heatmaps, a
 
 ## How Event Tracking Works
 
-The player fires events to the REST API as viewers interact with a video. Events are rate-limited to one event per second per session to prevent flooding. Anonymous viewers are tracked by session ID; authenticated users are tracked by user ID.
+The Media Player block fires events to the REST API as viewers interact with a video. Events are rate-limited to one event per second per session to prevent flooding. Anonymous viewers are tracked by session ID; authenticated users are tracked by user ID.
 
 ### Tracked Events
 
@@ -29,7 +29,7 @@ Events are written to the `mvs_play_events` database table.
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | bigint | Auto-increment primary key |
-| `media_id` | bigint | The `mvs_media` post ID |
+| `media_id` | bigint | The media item's ID |
 | `user_id` | bigint | WordPress user ID, or `NULL` for anonymous |
 | `session_id` | varchar(64) | Unique session identifier |
 | `event_type` | varchar(20) | Event type: `play`, `pause`, `seek`, `complete`, `buffer` |
@@ -93,6 +93,6 @@ Two site-wide routes require the `manage_mvs_settings` capability:
 
 ## Viewing Analytics in WP Admin
 
-Pro adds a **Video Analytics** tab to the **Media > Stats** page (the `AnalyticsDashboard`, injected via the `mvs_stats_tabs` filter). It includes a per-media detail view with the full heatmap, retention curve, and drop-off table.
+Pro adds a **Video Analytics** tab to the **MediaVerse > Stats** page. It includes a per-media detail view with the full heatmap, retention curve, and drop-off table.
 
 ![Video Analytics tab on the Stats page with retention curve](../images/admin-stats.png)

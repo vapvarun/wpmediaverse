@@ -83,6 +83,14 @@ interface TemplateHelpersInterface {
 	public function media_thumbnail( int $media_id, array $args = array() ): string;
 
 	/**
+	 * The <track> for a video's captions, or '' when it has none.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Escaped <track> markup, or ''.
+	 */
+	public function captions_track( int $media_id ): string;
+
+	/**
 	 * SVG icon — play indicator overlaid on video thumbnails.
 	 */
 	public function icon_play_svg(): string;

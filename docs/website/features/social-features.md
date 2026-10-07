@@ -22,7 +22,7 @@ React, comment, follow, and share - MediaVerse turns your media site into a livi
 1. Visit any member's profile page
 2. Click **Follow** - their public uploads now appear in your feed
 3. To stop following, click **Unfollow** on their profile
-4. See everyone you follow under **My Media > Following**
+4. See everyone you follow by clicking the following count on your profile
 
 ### Reacting to Media
 
@@ -60,9 +60,9 @@ Reactions say how you feel about a photo; **Save** keeps it. There is one way to
 ## For Site Owners
 
 1. All social features are enabled by default
-2. Configure reaction types and moderation in **Media > Settings > Social**
-3. Set the comment edit window (default: 15 minutes) in **Media > Settings > Social**
-4. Set the auto-hide threshold: when a media item receives a certain number of reports, it is automatically hidden and sent to the moderation queue
+2. The reaction types are fixed: like, love, haha, wow, sad and angry
+3. Members can edit their own comments for 15 minutes after posting. There is no admin setting for this
+4. Turn member reporting on or off, and set the auto-hide threshold (when a media item receives that many reports it is hidden and sent to the moderation queue), in **MediaVerse > Settings > Moderation**
 5. BuddyPress notifications fire automatically for reactions, comments, and mentions when BuddyPress is active
 
 ## Explore Feed Scope Filters (2.0.0)
@@ -171,4 +171,4 @@ Users can report inappropriate media content.
 |--------|----------|-------------|
 | `POST` | `/mvs/v1/media/{id}/report` | Submit a content report |
 
-When the number of reports for a single media item reaches the **Auto-Hide Threshold** (set in AI & Moderation settings), the media is automatically hidden and added to the moderation queue.
+When the number of reports for a single media item reaches the **Auto-Hide Threshold** (set in **MediaVerse > Settings > Moderation**, default 3), the media is automatically hidden and added to the moderation queue.

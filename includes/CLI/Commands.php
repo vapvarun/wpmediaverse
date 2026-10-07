@@ -505,6 +505,85 @@ class Commands {
 	}
 
 	/**
+	 * Move the index (moov) to the front of existing MP4 / MOV / M4A files.
+	 *
+	 * New uploads get this automatically (Services\Mp4Faststart). Files uploaded
+	 * before 2.6.1 with their index at the end only start playing once the whole
+	 * file has downloaded wherever the server cannot answer Range requests (a
+	 * host page cache that keeps Range from PHP). Pure PHP, no ffmpeg: only the
+	 * box order and chunk offsets change, never a sample. Local files only;
+	 * keyset-paginated and safe to re-run (finished files are skipped).
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Count the files that need it without writing anything.
+	 *
+	 * [--batch=<n>]
+	 * : Rows to pull per query. Default 200.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs faststart --dry-run
+	 *     wp mvs faststart
+	 *
+	 * @subcommand faststart
+	 */
+	public function faststart( $args, $assoc_args ) {
+		unset( $args );
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$batch   = max( 1, (int) Utils\get_flag_value( $assoc_args, 'batch', 200 ) );
+		$filters = array(
+			'media_types' => array( 'video', 'audio' ),
+			'status'      => '',
+		);
+		$repo    = $this->repo();
+		$total   = $repo->query_count( $filters );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No video or audio media found. Nothing to do.' );
+			return;
+		}
+
+		$progress = Utils\make_progress_bar( $dry_run ? 'Checking files' : 'Moving indexes', $total );
+		$fixed    = 0;
+		$skipped  = 0;
+		$failed   = 0;
+		$last_id  = 0;
+		do {
+			$rows = $repo->query(
+				array_merge(
+					$filters,
+					array(
+						'id_after' => $last_id,
+						'limit'    => $batch,
+						'orderby'  => 'media_id',
+						'order'    => 'ASC',
+					)
+				)
+			);
+			foreach ( $rows as $row ) {
+				$media_id = (int) $row['media_id'];
+				$last_id  = $media_id;
+				$path     = $repo->get_filesystem_path( $media_id );
+				if ( null === $path || ! \WPMediaVerse\Services\Mp4Faststart::needs( $path ) ) {
+					++$skipped; // Cloud-only, not MP4, or already index-first.
+				} elseif ( $dry_run ) {
+					++$fixed;
+				} elseif ( \WPMediaVerse\Services\Mp4Faststart::apply( $path, (string) $repo->get( $media_id, 'file_type' ) ) ) {
+					++$fixed;
+				} else {
+					++$failed;
+					WP_CLI::warning( "Could not rewrite media {$media_id}." );
+				}
+				$progress->tick();
+			}
+		} while ( ! empty( $rows ) );
+		$progress->finish();
+
+		WP_CLI::success( sprintf( '%s %d file(s); skipped %d; failed %d.', $dry_run ? 'Would fix' : 'Fixed', $fixed, $skipped, $failed ) );
+	}
+
+	/**
 	 * Regenerate image thumbnail size variants for existing media.
 	 *
 	 * Re-runs UploadService::generate_thumbnails() for every image in
@@ -897,6 +976,11 @@ class Commands {
 	 *
 	 * [--limit=<n>]
 	 * : Stop after this many rows (testing / batched runs).
+	 *
+	 * [--include-non-public]
+	 * : Also migrate media that is not public. Only use this when the
+	 *   destination bucket is private: in a public bucket anyone with the
+	 *   URL can open the file. Default: only public media moves.
 	 *
 	 * ## EXAMPLES
 	 *

@@ -65,24 +65,11 @@ The **Attach Media** button appears in the BuddyPress activity post form for mem
 
 Users select previously uploaded media or upload new files inline. The media IDs are attached to the activity via `bp_activity_posted_update` / `bp_groups_posted_update`.
 
-## BuddyNext: Media Links Open Their Activity Post (2.0.0)
+## BuddyNext Is a Separate Path
 
-When the BuddyNext theme is active, MediaVerse media stops behaving like a separate public page by default. Clicking a media item, or visiting its `/media/{slug}/` URL directly, redirects (HTTP 301) to the BuddyPress activity entry the media was originally posted in - so a photo lives in the community feed, not as a standalone URL alongside it.
+BuddyPress and BuddyNext are alternatives. If your site runs BuddyNext, media links open the BuddyNext post the media was shared in, and BuddyNext publishes the feed cards. See [BuddyNext Integration](../buddynext/overview.md) and [Feed Media](../buddynext/feed-media.md).
 
-This is implemented through a single filter MediaVerse exposes for any host to use:
-
-```php
-apply_filters( 'mvs_single_media_redirect', '', $media_id, $slug );
-```
-
-Return a URL to redirect `/media/{slug}/` there instead of rendering the native single-media page; return `''` (the default) to render the native page. Standalone MediaVerse installs (no BuddyNext) always return `''`, so this only changes behavior when BuddyNext is active and hooks the filter.
-
-If you prefer a dedicated, standalone page per media item even with BuddyNext active, BuddyNext ships its own settings toggle to switch back to that mode - check BuddyNext's own settings screen for the exact option, since it lives in the theme, not in MediaVerse.
-
-MediaVerse also exposes filterable seams so BuddyNext (or any profile system) can point member links and avatars at its own profile/avatar URLs instead of MediaVerse's standalone `/media/@handle/` profile:
-
-- `mvs_user_profile_url` (`$url`, `$user_id`) - overrides the profile link used across grids, cards, notifications, and share text.
-- `mvs_user_avatar_url` (`$url`, `$user_id`, `$size`) - overrides the avatar image URL.
+On any community plugin, MediaVerse lets the host point member links and avatars at its own profile pages, instead of MediaVerse's standalone `/media/@handle/` profile. On BuddyPress sites, member links in grids, cards, notifications and share text already go to the BuddyPress member profile.
 
 ## Allowed HTML Tags in Activity
 

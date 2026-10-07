@@ -1,8 +1,11 @@
 {
+  "product": "MediaVerse",
+  "productType": "plugin",
+  "shortId": "mvs",
   "product_slug": "wpmediaverse",
   "product_name": "MediaVerse",
   "product_type": "plugin",
-  "version": "2.5.0",
+  "version": "2.6.1",
   "description": "Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.",
   "author": "Wbcom Designs",
   "author_url": "https://wbcomdesigns.com/",
@@ -14,134 +17,405 @@
   "requires_php": "7.4",
   "sections": [
     {
+      "name": "Getting Started",
+      "folder": "getting-started",
       "slug": "getting-started",
       "title": "Getting Started",
       "icon": "rocket",
       "pages": [
-        { "slug": "why-wpmediaverse", "title": "Why MediaVerse" },
-        { "slug": "installation", "title": "Installation" },
-        { "slug": "setup-wizard", "title": "Setup Wizard" },
-        { "slug": "whats-new-2-6-0", "title": "What's New in 2.6.0" },
-        { "slug": "whats-new-2-5-0", "title": "What's New in 2.5.0" },
-        { "slug": "whats-new-2-3-0", "title": "What's New in 2.3.0" },
-        { "slug": "whats-new-2-2-0", "title": "What's New in 2.2.0" },
-        { "slug": "whats-new-2-0-0", "title": "What's New in 2.0.0" },
-        { "slug": "whats-new-1-9-0", "title": "What's New in 1.9.0" },
-        { "slug": "whats-new-1-8-0", "title": "What's New in 1.8.0" },
-        { "slug": "whats-new-1-5-0", "title": "What's New in 1.5.0" },
-        { "slug": "whats-new-1-4-0", "title": "What's New in 1.4.0" },
-        { "slug": "whats-new-1-2-0", "title": "What's New in 1.2.0" },
-        { "slug": "first-upload", "title": "Your First Upload" },
-        { "slug": "free-vs-pro", "title": "Free vs Pro Comparison" },
-        { "slug": "integrations", "title": "Integrations" }
+        {
+          "slug": "why-wpmediaverse",
+          "title": "Why MediaVerse"
+        },
+        {
+          "slug": "installation",
+          "title": "Installation"
+        },
+        {
+          "slug": "setup-wizard",
+          "title": "Setup Wizard"
+        },
+        {
+          "slug": "whats-new-2-6-1",
+          "title": "What's New in 2.6.1"
+        },
+        {
+          "slug": "whats-new-2-6-0",
+          "title": "What's New in 2.6.0"
+        },
+        {
+          "slug": "whats-new-2-5-0",
+          "title": "What's New in 2.5.0"
+        },
+        {
+          "slug": "whats-new-2-3-0",
+          "title": "What's New in 2.3.0"
+        },
+        {
+          "slug": "whats-new-2-2-0",
+          "title": "What's New in 2.2.0"
+        },
+        {
+          "slug": "whats-new-2-0-0",
+          "title": "What's New in 2.0.0"
+        },
+        {
+          "slug": "whats-new-1-9-0",
+          "title": "What's New in 1.9.0"
+        },
+        {
+          "slug": "whats-new-1-8-0",
+          "title": "What's New in 1.8.0"
+        },
+        {
+          "slug": "whats-new-1-5-0",
+          "title": "What's New in 1.5.0"
+        },
+        {
+          "slug": "whats-new-1-4-0",
+          "title": "What's New in 1.4.0"
+        },
+        {
+          "slug": "whats-new-1-2-0",
+          "title": "What's New in 1.2.0"
+        },
+        {
+          "slug": "first-upload",
+          "title": "Your First Upload"
+        },
+        {
+          "slug": "free-vs-pro",
+          "title": "Free vs Pro Comparison"
+        },
+        {
+          "slug": "integrations",
+          "title": "Integrations"
+        }
       ]
     },
     {
+      "name": "Settings",
+      "folder": "settings",
       "slug": "settings",
       "title": "Settings",
       "icon": "admin-generic",
       "pages": [
-        { "slug": "general", "title": "General Settings" },
-        { "slug": "display", "title": "Display Settings" },
-        { "slug": "permissions", "title": "Permissions" },
-        { "slug": "ai-moderation", "title": "AI & Moderation" },
-        { "slug": "webhooks", "title": "Webhooks" },
-        { "slug": "social", "title": "Social & Messaging Settings" },
-        { "slug": "settings-reference", "title": "Settings Reference" }
+        {
+          "slug": "general",
+          "title": "General Settings"
+        },
+        {
+          "slug": "display",
+          "title": "Display Settings"
+        },
+        {
+          "slug": "permissions",
+          "title": "Permissions"
+        },
+        {
+          "slug": "ai-moderation",
+          "title": "AI & Moderation"
+        },
+        {
+          "slug": "webhooks",
+          "title": "Webhooks"
+        },
+        {
+          "slug": "social",
+          "title": "Social & Messaging Settings"
+        },
+        {
+          "slug": "settings-reference",
+          "title": "Settings Reference"
+        }
       ]
     },
     {
+      "name": "Features",
+      "folder": "features",
       "slug": "features",
       "title": "Features",
       "icon": "star-filled",
       "pages": [
-        { "slug": "media-upload", "title": "Media Upload" },
-        { "slug": "image-optimization", "title": "Image Optimization" },
-        { "slug": "albums", "title": "Albums" },
-        { "slug": "collections", "title": "Collections" },
-        { "slug": "stories", "title": "Stories" },
-        { "slug": "social-features", "title": "Social Features" },
-        { "slug": "interests-onboarding", "title": "Interests & Personalized Onboarding" },
-        { "slug": "direct-messages", "title": "Direct Messages" },
-        { "slug": "privacy-access-control", "title": "Privacy & Access Control" },
-        { "slug": "ai-moderation", "title": "AI Moderation" },
-        { "slug": "shortcodes", "title": "Shortcodes" },
-        { "slug": "blocks", "title": "Gutenberg Blocks" },
-        { "slug": "gdpr-privacy", "title": "GDPR & Privacy Compliance" },
-        { "slug": "user-blocking", "title": "User Blocking & Reporting" }
+        {
+          "slug": "media-upload",
+          "title": "Media Upload"
+        },
+        {
+          "slug": "image-optimization",
+          "title": "Image Optimization"
+        },
+        {
+          "slug": "albums",
+          "title": "Albums"
+        },
+        {
+          "slug": "collections",
+          "title": "Collections"
+        },
+        {
+          "slug": "stories",
+          "title": "Stories"
+        },
+        {
+          "slug": "social-features",
+          "title": "Social Features"
+        },
+        {
+          "slug": "interests-onboarding",
+          "title": "Interests & Personalized Onboarding"
+        },
+        {
+          "slug": "direct-messages",
+          "title": "Direct Messages"
+        },
+        {
+          "slug": "privacy-access-control",
+          "title": "Privacy & Access Control"
+        },
+        {
+          "slug": "ai-moderation",
+          "title": "AI Moderation"
+        },
+        {
+          "slug": "shortcodes",
+          "title": "Shortcodes"
+        },
+        {
+          "slug": "blocks",
+          "title": "Gutenberg Blocks"
+        },
+        {
+          "slug": "gdpr-privacy",
+          "title": "GDPR & Privacy Compliance"
+        },
+        {
+          "slug": "user-blocking",
+          "title": "User Blocking & Reporting"
+        }
       ]
     },
     {
+      "name": "BuddyNext Integration",
+      "folder": "buddynext",
       "slug": "buddynext",
       "title": "BuddyNext Integration",
       "icon": "users",
       "pages": [
-        { "slug": "overview", "title": "Overview" },
-        { "slug": "profile-tabs", "title": "Profile Media" },
-        { "slug": "space-tabs", "title": "Space Media" },
-        { "slug": "feed-media", "title": "Feed Media" },
-        { "slug": "notifications", "title": "Notifications" }
+        {
+          "slug": "overview",
+          "title": "Overview"
+        },
+        {
+          "slug": "profile-tabs",
+          "title": "Profile Media"
+        },
+        {
+          "slug": "space-tabs",
+          "title": "Space Media"
+        },
+        {
+          "slug": "feed-media",
+          "title": "Feed Media"
+        },
+        {
+          "slug": "notifications",
+          "title": "Notifications"
+        }
       ]
     },
     {
+      "name": "BuddyPress Integration",
+      "folder": "buddypress",
       "slug": "buddypress",
       "title": "BuddyPress Integration",
       "icon": "groups",
       "pages": [
-        { "slug": "overview", "title": "Overview" },
-        { "slug": "profile-tabs", "title": "Profile Media Tab" },
-        { "slug": "group-tabs", "title": "Group Media Tab" },
-        { "slug": "activity-media", "title": "Activity Stream Media" },
-        { "slug": "notifications", "title": "Notifications" }
+        {
+          "slug": "overview",
+          "title": "Overview"
+        },
+        {
+          "slug": "profile-tabs",
+          "title": "Profile Media Tab"
+        },
+        {
+          "slug": "group-tabs",
+          "title": "Group Media Tab"
+        },
+        {
+          "slug": "activity-media",
+          "title": "Activity Stream Media"
+        },
+        {
+          "slug": "notifications",
+          "title": "Notifications"
+        }
       ]
     },
     {
+      "name": "Pro Features",
+      "folder": "pro-features",
       "slug": "pro-features",
       "title": "Pro Features",
       "icon": "awards",
       "pages": [
-        { "slug": "overview", "title": "Pro Overview" },
-        { "slug": "layout-modes", "title": "Layout Modes" },
-        { "slug": "connected-accounts", "title": "Connected Accounts (Flickr Import)" },
-        { "slug": "cloud-storage", "title": "Cloud Storage (S3, BunnyCDN & R2)" },
-        { "slug": "video-chapters", "title": "Video Chapters & Resume" },
-        { "slug": "auto-captions", "title": "Auto Captions & Transcription" },
-        { "slug": "watermarking", "title": "Watermarking" },
-        { "slug": "video-analytics", "title": "Video Analytics & Heatmaps" },
-        { "slug": "ai-providers", "title": "AI Providers (Vision & Rekognition)" },
-        { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" },
-        { "slug": "stories", "title": "Stories" },
-        { "slug": "collections", "title": "Save to Collections (Pro Picker)" },
-        { "slug": "documents", "title": "Document Library" },
-        { "slug": "mobile-app", "title": "Mobile App" }
+        {
+          "slug": "overview",
+          "title": "Pro Overview"
+        },
+        {
+          "slug": "layout-modes",
+          "title": "Layout Modes"
+        },
+        {
+          "slug": "connected-accounts",
+          "title": "Connected Accounts (Flickr Import)"
+        },
+        {
+          "slug": "cloud-storage",
+          "title": "Cloud Storage (S3, BunnyCDN & R2)"
+        },
+        {
+          "slug": "video-chapters",
+          "title": "Video Chapters & Resume"
+        },
+        {
+          "slug": "auto-captions",
+          "title": "Auto Captions & Transcription"
+        },
+        {
+          "slug": "watermarking",
+          "title": "Watermarking"
+        },
+        {
+          "slug": "video-analytics",
+          "title": "Video Analytics & Heatmaps"
+        },
+        {
+          "slug": "ai-providers",
+          "title": "AI Providers (Vision & Rekognition)"
+        },
+        {
+          "slug": "advanced-privacy",
+          "title": "Advanced Privacy Controls"
+        },
+        {
+          "slug": "stories",
+          "title": "Stories"
+        },
+        {
+          "slug": "collections",
+          "title": "Save to Collections (Pro Picker)"
+        },
+        {
+          "slug": "documents",
+          "title": "Document Library"
+        },
+        {
+          "slug": "mobile-app",
+          "title": "Mobile App"
+        }
       ]
     },
     {
+      "name": "Gamification",
+      "folder": "gamification",
       "slug": "gamification",
       "title": "Gamification",
       "icon": "superhero",
       "pages": [
-        { "slug": "overview", "title": "Gamification Overview" },
-        { "slug": "challenges", "title": "Photo Challenges" },
-        { "slug": "battles", "title": "Photo Battles" },
-        { "slug": "tournaments", "title": "Tournaments" },
-        { "slug": "boosts", "title": "Media Boosts" },
-        { "slug": "streaks", "title": "Upload Streaks" },
-        { "slug": "admin-dashboard", "title": "Admin Dashboard" }
+        {
+          "slug": "overview",
+          "title": "Gamification Overview"
+        },
+        {
+          "slug": "challenges",
+          "title": "Photo Challenges"
+        },
+        {
+          "slug": "battles",
+          "title": "Photo Battles"
+        },
+        {
+          "slug": "tournaments",
+          "title": "Tournaments"
+        },
+        {
+          "slug": "boosts",
+          "title": "Media Boosts"
+        },
+        {
+          "slug": "streaks",
+          "title": "Upload Streaks"
+        },
+        {
+          "slug": "admin-dashboard",
+          "title": "Admin Dashboard"
+        }
       ]
     },
     {
+      "name": "Developer Guide",
+      "folder": "developer-guide",
       "slug": "developer-guide",
       "title": "Developer Guide",
       "icon": "editor-code",
       "pages": [
-        { "slug": "rest-api", "title": "REST API Reference" },
-        { "slug": "pro-rest-api", "title": "Pro REST API Reference" },
-        { "slug": "hooks-filters", "title": "Hooks & Filters" },
-        { "slug": "template-overrides", "title": "Template Overrides" },
-        { "slug": "custom-storage-drivers", "title": "Custom Storage Drivers" },
-        { "slug": "wp-cli", "title": "WP-CLI Commands" },
-        { "slug": "migration-tools", "title": "Migration Tools" }
+        {
+          "slug": "rest-api",
+          "title": "REST API Reference"
+        },
+        {
+          "slug": "pro-rest-api",
+          "title": "Pro REST API Reference"
+        },
+        {
+          "slug": "hooks-filters",
+          "title": "Hooks & Filters"
+        },
+        {
+          "slug": "template-overrides",
+          "title": "Template Overrides"
+        },
+        {
+          "slug": "custom-storage-drivers",
+          "title": "Custom Storage Drivers"
+        },
+        {
+          "slug": "wp-cli",
+          "title": "WP-CLI Commands"
+        },
+        {
+          "slug": "migration-tools",
+          "title": "Migration Tools"
+        }
+      ]
+    },
+    {
+      "name": "FAQ",
+      "folder": "faq",
+      "slug": "faq",
+      "title": "FAQ",
+      "icon": "editor-help",
+      "pages": [
+        {
+          "slug": "general-faq",
+          "title": "Frequently Asked Questions"
+        }
+      ]
+    },
+    {
+      "name": "Troubleshooting",
+      "folder": "troubleshooting",
+      "slug": "troubleshooting",
+      "title": "Troubleshooting",
+      "icon": "sos",
+      "pages": [
+        {
+          "slug": "common-issues",
+          "title": "Common Issues"
+        }
       ]
     }
   ]

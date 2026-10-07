@@ -10,7 +10,7 @@ MediaVerse Pro extends the free plugin's privacy levels with album-level inherit
 
 ## Privacy Levels
 
-The six levels available in both free and Pro versions:
+The privacy levels MediaVerse stores. The upload form offers Public, Members Only, Friends (only when BuddyPress Friends is active) and Private. Group applies to uploads made inside a BuddyPress group, and Custom is set through the API. A further **Space** level is used by BuddyNext spaces.
 
 | Level | Value | Who Can View |
 |-------|-------|-------------|
@@ -35,6 +35,20 @@ Site owners can opt out with the `mvs_album_inherit_privacy` filter:
 
 ```php
 add_filter( 'mvs_album_inherit_privacy', '__return_false' );
+```
+
+---
+
+## REST API
+
+**Base URL:** `/wp-json/mvs-pro/v1/`
+
+### PUT /media/{id}/privacy
+
+Change the privacy of one media item. Requires the media owner or an administrator. When the site owner has switched off "Allow Users to Set Privacy", members get a `403` (`mvs_privacy_locked`); sending the level the item already has still succeeds.
+
+**Body:**
+
 ```json
 {
   "privacy": "group",
@@ -48,7 +62,7 @@ add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 
 ### POST /media/bulk-privacy
 
-Update privacy for multiple media items in one request. Requires the user to be logged in; items the user does not own are skipped. Accepts up to 100 media IDs per request.
+Update privacy for multiple media items in one request. Requires the user to be logged in; items the user does not own are skipped. Accepts up to 100 media IDs per request. Refused with `403` while members are not allowed to set privacy.
 
 **Body:**
 

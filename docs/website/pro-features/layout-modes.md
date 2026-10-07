@@ -24,11 +24,11 @@ Transform your media community's look with one click - choose the visual style t
 
 ## How to Switch Layouts (for Site Owners)
 
-1. Go to **Media > Settings > Display**
-2. Find the **Feed Layout** option and select your preferred mode
-3. Click **Save Settings** - the explore page and all profile media tabs update immediately
+1. Go to **MediaVerse > Settings > Display**
+2. Find the **Layout** option and select your preferred mode: **Instagram Feed**, **Pinterest Masonry**, **Flickr Justified** or **Dribbble Shots**. The free layouts, such as the square grid, are in the same list.
+3. Click **Save Changes** - the explore page and all profile media tabs update immediately
 
-The setting is stored in the `mvs_pro_feed_layout` option.
+Choosing a free layout puts the feed back on the plain grid.
 
 ## What Changes for Users When You Switch Layouts
 
@@ -56,8 +56,8 @@ Perfect for photo-sharing communities and daily uploads.
 
 The Instagram layout renders a vertical card feed. Each post shows the author avatar, full-width photo, reaction/comment/share buttons, like count, caption, and inline comment box - identical to the Instagram experience.
 
-- Recent uploaders appear as circular avatars above the feed (links to their profiles)
-- Each card has heart, comment, share, and bookmark buttons
+- When [Stories](stories.md) is switched on, the stories bar appears above the feed
+- Each card has heart, comment, share, and favorite buttons (and a Boost button when boosts are on)
 - Clicking "Expand" opens the lightbox with the full media detail view
 - Other users' posts show a "Following" button in the card header
 
@@ -128,7 +128,7 @@ Each layout ships as its own block and shortcode, so you can mix layouts across 
 
 ## Overriding the Active Layout in Code
 
-The global active-layout slug (read from the `mvs_pro_feed_layout` option) passes through the `mvs_active_layout` filter, so you can switch it by context:
+The active layout passes through the `mvs_active_layout` filter, so you can switch it by context:
 
 ```php
 add_filter( 'mvs_active_layout', function( $layout ) {

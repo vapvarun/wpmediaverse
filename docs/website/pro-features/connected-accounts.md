@@ -2,7 +2,7 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-Connect an external photo platform to MediaVerse and move media in both directions - **import** existing photos and albums into your media library, and **auto-push** new uploads back out to that platform. In 1.5.0 the only built-in connector is **Flickr**, with full import, export, album browsing, and metadata sync support.
+Connect an external photo platform to MediaVerse and move media in both directions - **import** existing photos and albums into your media library, and **auto-push** new uploads back out to that platform. The only built-in connector is **Flickr**. Members can import photos and auto-push new uploads from the website. Exporting a single item and metadata sync are available through the API.
 
 The connector framework is pluggable, so additional platforms can be added by developers in the future. This page covers the Flickr connector as it ships today.
 
@@ -13,7 +13,7 @@ Once a member connects their Flickr account, they can:
 - **Import** photos and videos from their Flickr photostream or from a specific album (set) into MediaVerse.
 - **Export** (auto-push) - automatically copy every new MediaVerse upload to their Flickr account.
 - **Browse albums** - pick a Flickr album to import from or push exports into.
-- **Sync metadata** - pull the latest title, description, tags, and privacy from Flickr back into the local media record (delta sync).
+- **Sync metadata** (API only) - pull the latest title, description, tags, and privacy from Flickr back into the local media record (delta sync). There is no button for this on the website.
 
 Privacy is mapped both ways. A Flickr "public/friends/family/private" visibility maps to the matching MediaVerse privacy level on import, and the member can choose how MediaVerse privacy maps back to Flickr on export.
 
@@ -23,16 +23,16 @@ Privacy is mapped both ways. A Flickr "public/friends/family/private" visibility
 
 There are two separate roles in this feature, and it helps to keep them apart:
 
-1. **Site owner (admin)** - enables the feature and optionally provides a **plugin-level Flickr app key/secret** so members can connect with one click. This is done once, in **MediaVerse > Settings**.
-2. **Member (user)** - connects *their own* Flickr account through an OAuth flow on the same settings page, then imports/exports their photos. Each user authorizes their own account; the connection (access token) is stored per user.
+1. **Site owner (admin)** - enables the feature and optionally provides a **plugin-level Flickr app key/secret** so members can connect with one click. This is done once, in **MediaVerse > Settings > Flickr import**.
+2. **Member (user)** - connects *their own* Flickr account through an OAuth flow from the **Connectors** tab of their My Media page, then imports their photos and turns on auto-push. Each user authorizes their own account; the connection (access token) is stored per user.
 
 ---
 
 ## Step 1 - Enable Connected Accounts (Admin)
 
 1. In WordPress admin, go to **MediaVerse > Settings**.
-2. In the settings sidebar, open the **Connected Accounts** tab (under the **Advanced** group).
-3. Check **Enable Platform Connectors feature**.
+2. In the settings sidebar, open the **Flickr import** tab (under **Access & Integrations**).
+3. Tick **Turn on Flickr import**.
 4. Click **Save Changes**.
 
 When the feature is disabled, no connectors load and the connector REST endpoints are not registered.
@@ -52,7 +52,7 @@ Providing a built-in Flickr API key/secret lets your members connect with a sing
 
 ### Enter the credentials in MediaVerse
 
-1. Back in **MediaVerse > Settings > Connected Accounts**.
+1. Back in **MediaVerse > Settings > Flickr import**.
 2. Paste the key into **Flickr Plugin API Key**.
 3. Paste the secret into **Flickr Plugin API Secret**.
 4. Click **Save Changes**.
@@ -65,7 +65,7 @@ If you leave these two fields empty, the one-click **Connect with Flickr** butto
 
 ## Step 3 - Connect a Flickr Account (Member)
 
-The connect flow runs on the same **Connected Accounts** settings tab. Each registered platform shows as a card.
+Members connect from the **Connectors** tab on their My Media page. Each registered platform shows as a card. The site owner sees the same kind of card on **MediaVerse > Settings > Flickr import**, for their own account.
 
 ### With the plugin-level key (one click)
 
@@ -77,7 +77,7 @@ The connect flow runs on the same **Connected Accounts** settings tab. Each regi
 
 If your site has no plugin-level key - or a member wants a dedicated rate limit - they can use their own Flickr app:
 
-1. On the Flickr card, click **Use your own API key (recommended for heavy usage)**.
+1. On the Flickr card, open **Use your own API key** (on the settings screen it reads **Use your own API key (recommended for heavy usage)**).
 2. Create a Flickr app at [flickr.com/services/apps](https://www.flickr.com/services/apps/create/) (same steps as above) and copy the Key and Secret.
 3. Enter the **Flickr API Key** and **Flickr API Secret** in the expanded fields.
 4. Click **Connect with My Key** and complete the Flickr authorization.
@@ -94,10 +94,10 @@ The OAuth authorization returns an access token that is **encrypted before being
 
 After connecting, the member can browse and import their Flickr media.
 
-1. On the connected Flickr card, open the import dialog.
-2. Choose to browse the **whole photostream** or a single **album (set)**.
-3. Select the photos to import.
-4. Confirm the import.
+1. On the connected Flickr card, click **Import from Flickr**.
+2. Browse **All Photos**, or use **Filter by album** to pick a single album (set).
+3. Select the photos to import. **Select All** and **Deselect All** help with long lists.
+4. Click **Import Selected**.
 
 For each photo, MediaVerse:
 
@@ -116,25 +116,25 @@ Exporting copies a MediaVerse media item up to the member's Flickr account.
 
 ### Auto-push
 
-On a connected Flickr card, the member can toggle **Auto-push new uploads > Enable**. With this on, every new MediaVerse upload by that member is automatically exported to Flickr. When Action Scheduler is available the export runs in the background; otherwise it runs inline at upload time.
+On the member's connected Flickr card, the member ticks **Auto-push my new uploads** (on the settings screen, **Auto-push new uploads > Enable**). With this on, every new MediaVerse upload by that member is automatically exported to Flickr. When Action Scheduler is available the export runs in the background; otherwise it runs inline at upload time.
 
 ### Default privacy on Flickr
 
-The card has a **Default privacy on Flickr** selector that controls how exported media is made visible on Flickr:
+The Flickr card on **MediaVerse > Settings > Flickr import** has a **Default privacy on Flickr** selector that controls how exported media is made visible on Flickr. It is not on the member's Connectors tab:
 
 | Option | Effect on Flickr |
 |--------|------------------|
 | Match MediaVerse | Use the media item's own privacy, mapped to Flickr |
 | Public | Always public on Flickr |
 | Friends | Visible to Flickr friends |
-| Friends + Family | Visible to Flickr friends and family |
+| Friends + Family | Visible to Flickr friends and family (MediaVerse "members" level) |
 | Private | Private on Flickr |
 
-If a member set a **default album**, exported photos are also added to that Flickr album. Like import, export deduplicates - a media item already exported to Flickr is reported as "skipped" rather than uploaded again.
+If a default Flickr album is stored for the member (it can only be set through the API; there is no field for it on the screens), exported photos are also added to that album. Like import, export deduplicates - a media item already exported to Flickr is reported as "skipped" rather than uploaded again.
 
 ---
 
-## Step 6 - Sync Metadata (Delta Sync)
+## Step 6 - Sync Metadata (Delta Sync, API only)
 
 The Flickr connector supports **delta sync**: pulling the latest title, description, tags, and privacy from Flickr back into the matching local media records. This is useful when a member edits photo metadata on Flickr and wants MediaVerse to reflect those edits. Sync only touches media that originated from (or was exported to) Flickr for that member, and records a "last synced" timestamp.
 
@@ -142,7 +142,7 @@ The Flickr connector supports **delta sync**: pulling the latest title, descript
 
 ## Test the Connection
 
-A connected card has a **Test Connection** button. It runs a live check against Flickr's identity endpoint (`flickr.test.login`) and confirms the stored token still works. The result is cached for 15 minutes to avoid hammering the API. If the token has been revoked on Flickr's side, the test reports the failure and the member can reconnect.
+The Flickr card on **MediaVerse > Settings > Flickr import** has a **Test Connection** button. It runs a live check against Flickr's identity endpoint (`flickr.test.login`) and confirms the stored token still works. The result is cached for 15 minutes to avoid hammering the API. If the token has been revoked on Flickr's side, the test reports the failure and the member can reconnect.
 
 ---
 
@@ -154,11 +154,11 @@ Click **Disconnect** on a connected card to remove the local connection. This cl
 
 ## Settings
 
-These options live on **MediaVerse > Settings > Connected Accounts** and are stored in `wp_options`.
+These options live on **MediaVerse > Settings > Flickr import** and are stored in `wp_options`.
 
 | Setting | Option key | Default | Description |
 |---------|-----------|---------|-------------|
-| Enable Platform Connectors feature | `mvs_connectors_enabled` | `0` (off) | Master switch for the whole Connected Accounts feature. When off, no connectors load and the REST endpoints are not registered. |
+| Turn on Flickr import | `mvs_connectors_enabled` | `0` (off) | Master switch for the whole Connected Accounts feature. When off, no connectors load and the REST endpoints are not registered. |
 | Flickr Plugin API Key | `mvs_pro_connector_flickr_app_key` | _(empty)_ | Site-wide Flickr app key for one-click member connection. Leave empty to require each member to supply their own. |
 | Flickr Plugin API Secret | `mvs_pro_connector_flickr_app_secret` | _(empty)_ | Site-wide Flickr app secret. Masked field - an empty re-save keeps the existing value. |
 
@@ -169,10 +169,10 @@ Per-member preferences (auto-push toggle, default privacy, the member's own key,
 ## Troubleshooting
 
 **The "Connect with Flickr" button is missing.**
-The plugin-level Flickr key/secret are empty. Either add them under **Connected Accounts** (Step 2) or have the member use **Use your own API key** instead.
+The plugin-level Flickr key/secret are empty. Either add them under **Flickr import** (Step 2) or have the member use **Use your own API key** instead.
 
 **No connector cards appear at all.**
-The feature is off. Enable **Platform Connectors feature** and save (Step 1).
+The feature is off. Tick **Turn on Flickr import** and save (Step 1).
 
 **"Flickr OAuth token mismatch or session expired."**
 The connect flow took longer than the 5-minute request-token window, or it was started in one browser tab and finished in another. Start the connect again from the Flickr card.

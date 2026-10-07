@@ -37,8 +37,10 @@ class Collection {
 			'labels'          => $labels,
 			'public'          => true,
 			'has_archive'     => true,
-			'show_in_rest'    => true,
-			'rest_base'       => 'mvs-collections',
+			// No core wp/v2 route: it listed and returned private items to anyone
+			// (Basecamp 10360879667). The classic editor does not need it, and
+			// mvs/v1 is the privacy-aware API for albums and collections.
+			'show_in_rest'    => false,
 			'supports'        => array( 'title', 'editor', 'author' ),
 			'capability_type' => 'post',
 			'map_meta_cap'    => true,

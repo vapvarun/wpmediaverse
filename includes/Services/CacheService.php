@@ -289,7 +289,7 @@ class CacheService {
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
-		$key = 'tagcloud2_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
+		$key = 'tagcloud3_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
 		return $this->remember_persistent(
 			$key,
 			static function () use ( $limit, $types ) {
@@ -308,7 +308,7 @@ class CacheService {
 	 * @return int
 	 */
 	public function tag_cloud_total( ?array $types = null ): int {
-		$key = 'tagcloudtotal2_' . ( $types ? implode( ',', $types ) : 'default' );
+		$key = 'tagcloudtotal3_' . ( $types ? implode( ',', $types ) : 'default' );
 		return (int) $this->remember_persistent(
 			$key,
 			static function () use ( $types ) {
@@ -361,9 +361,9 @@ class CacheService {
 		}
 		// Current keys (tag_cloud() / tag_cloud_total()).
 		foreach ( array( 5, 20, 50, 100, 200 ) as $limit ) {
-			$this->forget_persistent( 'tagcloud2_' . $limit . '_default' );
+			$this->forget_persistent( 'tagcloud3_' . $limit . '_default' );
 		}
-		$this->forget_persistent( 'tagcloudtotal2_default' );
+		$this->forget_persistent( 'tagcloudtotal3_default' );
 	}
 
 	/**

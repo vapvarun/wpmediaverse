@@ -174,6 +174,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			return ctx.uploading ? ( ctx.uploadMessage || ( state.i18n?.uploading || 'Uploading...' ) ) : '';
 		},
+		get uploadPercentText() {
+			const ctx = getContext();
+			return ctx.uploading ? ( ctx.uploadPercent || 0 ) + '%' : '';
+		},
 		get hasSuccess() {
 			const ctx = getContext();
 			return ! ctx.uploading && !! ctx.successMessage;
@@ -190,6 +194,17 @@ const { state, actions } = store( 'mvs/media-upload', {
 		get hasPending() {
 			return !! getContext().hasPending;
 		},
+		// What the member picked, shown in the drop area (Basecamp 10364777491).
+		get pickedLabel() {
+			const ctx = getContext();
+			const names = ctx.pendingNames || [];
+			return names.length === 1
+				? names[ 0 ]
+				: ( state.i18n?.filesPicked || '%d files: ' ).replace( '%d', names.length ) + names.join( ', ' );
+		},
+		get pickedThumb() {
+			return getContext().pickedThumb || '';
+		},
 		get pendingLabel() {
 			const n = getContext().pendingCount || 0;
 			return n === 1
@@ -199,8 +214,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 	},
 	actions: {
 		handleClick( event ) {
-			// Don't trigger if clicking the file input itself, privacy select, or metadata fields.
-			if ( event.target.closest( 'input, select, textarea' ) ) {
+			// Don't trigger from the controls inside the dropzone (the file input,
+			// privacy select, metadata fields, Confirm/Cancel).
+			if ( event.target.closest( 'input, select, textarea, button, a' ) ) {
 				return;
 			}
 			const dropzone = event.target.closest( '.mvs-upload-dropzone' );
@@ -210,6 +226,16 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const fileInput = dropzone.querySelector( '.mvs-upload-input' );
 			if ( fileInput ) {
 				fileInput.click();
+			}
+		},
+		// role="button" gives the dropzone a Tab stop; Enter/Space open the picker.
+		handleKeydown( event ) {
+			if ( event.target !== event.currentTarget ) {
+				return;
+			}
+			if ( 'Enter' === event.key || ' ' === event.key ) {
+				event.preventDefault();
+				actions.handleClick( event );
 			}
 		},
 		handleDragOver( event ) {
@@ -256,6 +282,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			ctx.pendingFiles = files;
 			ctx.pendingCount = files.length;
+			ctx.pendingNames = files.map( ( f ) => f.name );
+			if ( ctx.pickedThumb ) URL.revokeObjectURL( ctx.pickedThumb );
+			const firstImage = files.find( ( f ) => /^image\//.test( f.type ) );
+			ctx.pickedThumb = firstImage ? URL.createObjectURL( firstImage ) : '';
 			ctx.hasPending = true;
 			ctx.successMessage = '';
 		},
@@ -270,6 +300,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 		cancelPending() {
 			const ctx = getContext();
 			ctx.pendingFiles = [];
+			if ( ctx.pickedThumb ) URL.revokeObjectURL( ctx.pickedThumb );
+			ctx.pickedThumb = '';
+			ctx.pendingNames = [];
 			ctx.pendingCount = 0;
 			ctx.hasPending = false;
 			ctx.uploadError = '';
@@ -307,8 +340,12 @@ const { state, actions } = store( 'mvs/media-upload', {
 			// Leave the review step now that the upload is confirmed.
 			ctx.hasPending = false;
 			ctx.pendingFiles = [];
+			if ( ctx.pickedThumb ) URL.revokeObjectURL( ctx.pickedThumb );
+			ctx.pickedThumb = '';
+			ctx.pendingNames = [];
 			ctx.pendingCount = 0;
 			ctx.uploading = true;
+			ctx.uploadPercent = 0;
 			ctx.successMessage = '';
 			ctx.uploadError = '';
 			ctx.uploadMessage = ( state.i18n?.uploadingNFiles || 'Uploading %d file(s)...' ).replace( '%d', files.length );
@@ -359,6 +396,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 					const resp = await window.mvsRest.restFetch( ctx.restUrl, {
 						method: 'POST',
 						body: formData,
+						// Overall percent: finished files plus the share of this one sent.
+						onUploadProgress: ( loaded, total ) => {
+							ctx.uploadPercent = Math.min( 100, Math.round( ( ( i + ( total ? loaded / total : 0 ) ) / files.length ) * 100 ) );
+						},
 					} );
 					if ( resp.ok ) {
 						successCount++;
@@ -403,9 +444,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 				ctx.successMessage = '';
 			}
 			if ( duplicateCount > 0 ) {
-				ctx.uploadError = ( state.i18n?.duplicatesDetected || '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.' )
-					.replace( '%1$d', duplicateCount )
-					.replace( '%2$d', lastDuplicateId );
+				// A note beside the success, not a red error next to a green one.
+				ctx.successMessage = ( ctx.successMessage ? ctx.successMessage + ' ' : '' )
+					+ ( state.i18n?.duplicatesDetected || 'You had already uploaded %1$d of these files.' )
+						.replace( '%1$d', duplicateCount );
 			}
 
 			// Bring the notice to the member. The error box sits at the bottom of

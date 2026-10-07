@@ -3,7 +3,7 @@
 > Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
 
 
-MediaVerse registers its commands under the `wp mvs` namespace. Pro adds its own subcommands to that same namespace (`import-*`, `competitions *`) plus one command of its own, `wp mvs-pro cert`.
+MediaVerse registers its commands under the `wp mvs` namespace. Pro adds its own subcommands to that same namespace (`import-*`, `seed-documents`, `competitions *`) plus its own `wp mvs-pro` namespace (`cert` and `documents reclaim-orphans`).
 
 ## wp mvs stats
 
@@ -24,8 +24,8 @@ wp mvs stats
 | Total Views       | 9841  |
 | Total Reactions   | 512   |
 | Total Favorites   | 203   |
-| DB Version        | 5     |
-| Plugin Version    | 1.0.0 |
+| DB Version        | 40    |
+| Plugin Version    | 2.6.1 |
 +-------------------+-------+
 ```
 
@@ -139,14 +139,14 @@ wp mvs cache-flush
 **Output:**
 
 ```
-Success: MediaVerse caches flushed.
+Success: All MediaVerse caches flushed.
 ```
 
 ---
 
 ## wp mvs moderation-stats
 
-Display the current moderation queue statistics broken down by status.
+Display the current moderation queue statistics broken down by status. Only statuses that have at least one row are listed; a library with no media prints `No media found in the index.`
 
 ```bash
 wp mvs moderation-stats
@@ -158,9 +158,9 @@ wp mvs moderation-stats
 +----------+-------+
 | Status   | Count |
 +----------+-------+
-| Pending  | 14    |
-| Approved | 3281  |
-| Rejected | 57    |
+| pending  | 14    |
+| approved | 3281  |
+| rejected | 57    |
 +----------+-------+
 ```
 
@@ -187,6 +187,27 @@ wp mvs backfill-activity-thumbnails --dry-run
 |--------|---------|-------------|
 | `--source=<source>` | `all` | Only backfill activities from a specific migration source: `rtmedia`, `mediapress`, `buddyboss`, or `all` |
 | `--dry-run` | off | Count eligible records without updating them |
+
+---
+
+## wp mvs faststart
+
+Move the index (the `moov` box) to the front of MP4, MOV and M4A files already in the library. A file with its index at the end can only start playing once it has fully downloaded wherever the server cannot answer Range requests, which happens behind some host page caches. New uploads and replaced files get this automatically. It needs no ffmpeg: only the box order and offsets change, never the video or audio itself. Local files only; safe to re-run.
+
+```bash
+# How many files need it.
+wp mvs faststart --dry-run
+
+# Fix them.
+wp mvs faststart
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Count the files that need it without writing anything |
+| `--batch=<n>` | `200` | Rows to pull per query when walking the index |
 
 ---
 
@@ -589,7 +610,7 @@ It takes the same `[<check>]` argument (`all`, `contract`, `boot`) and the same 
 
 ## wp mvs competitions tick **(Pro)**
 
-Run one competitions scheduler tick immediately, instead of waiting for the recurring Action Scheduler job. A tick fires every competition transition hook once - activating scheduled challenges, closing challenge entries, finalizing expired challenges, starting registered tournaments, and resolving expired matches - so any challenge or tournament whose deadline has passed advances right away. Useful for debugging on a site where Action Scheduler / WP-Cron is not firing, or to force an immediate state advance after editing competition rows.
+Run one competitions scheduler tick immediately, instead of waiting for the recurring Action Scheduler job. A tick fires every competition transition hook once - resolving expired battles, activating scheduled challenges, closing challenge entries, finalizing expired challenges, starting registered tournaments, and resolving expired matches - so any challenge or tournament whose deadline has passed advances right away. Useful for debugging on a site where Action Scheduler / WP-Cron is not firing, or to force an immediate state advance after editing competition rows.
 
 Requires MediaVerse Pro with a competition feature enabled (challenges, tournaments, or battles).
 
@@ -624,6 +645,59 @@ This command takes no options or arguments.
 ```
 Success: Recomputed 3 competition(s).
 ```
+
+---
+
+## wp mvs import-rtmedia, import-mediapress, import-buddyboss **(Pro)**
+
+Import media from rtMedia, MediaPress or BuddyBoss Platform. All three share `--dry-run`, `--batch-size=<size>` (default `50`), `--skip-albums` and `--offset=<offset>` (default `0`); `import-buddyboss` adds `--source=<source>` (`media`, `document`, `video` or `all`, default `all`). Options, field mapping and examples are on the [Migration Tools](migration-tools.md) page.
+
+---
+
+## wp mvs seed-documents **(Pro)**
+
+Seed a document fixture for measuring the document library at scale. It creates documents and folders through the service layer (never raw SQL) and tags every row it creates, so `--cleanup` removes only what a previous run made.
+
+Added in 2.4.0.
+
+```bash
+wp mvs seed-documents --members=100 --docs-per=20 --depth=12
+wp mvs seed-documents --members=25 --docs-per=1200 --format=text
+wp mvs seed-documents --cleanup
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--members=<n>` | `5` | How many members get a drive |
+| `--docs-per=<n>` | `20` | Documents per member |
+| `--depth=<n>` | `3` | Folder nesting depth per drive; clamped below the configured maximum folder depth |
+| `--format=<pdf\|text>` | `pdf` | What the seeded documents are. PDFs are not text-extracted, so use `text` to measure search |
+| `--cleanup` | off | Remove everything a previous run created, then stop |
+
+---
+
+## wp mvs-pro documents reclaim-orphans **(Pro)**
+
+Find document files on disk that no document owns, and delete them. These are left behind by documents deleted before 2.5.1. The command always reports first; without `--dry-run` it then asks before deleting. Files changed in the last hour, files not named the way MediaVerse names documents, symlinks and the directory's protection files are never touched.
+
+Added in 2.5.1.
+
+```bash
+wp mvs-pro documents reclaim-orphans --dry-run
+wp mvs-pro documents reclaim-orphans --scope=<segment>/2025/03 --dry-run
+wp mvs-pro documents reclaim-orphans --yes
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Report what would be deleted, delete nothing |
+| `--batch=<n>` | `500` | Files checked against the library per query |
+| `--scope=<subdir>` | whole tree | Only walk this folder under `uploads/wpmediaverse-documents/`. A path that resolves outside document storage is refused |
+| `--yes` | off | Delete without asking for confirmation |
 
 ---
 

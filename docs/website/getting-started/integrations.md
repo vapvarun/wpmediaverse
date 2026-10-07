@@ -1,31 +1,34 @@
 # Integrations
 
-MediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware - configure credentials in settings and the integration activates.
+MediaVerse connects with other plugins and outside services out of the box. No custom code, no middleware - configure credentials in settings and the integration activates.
 
 ## Integrations Admin Page (1.8.0)
 
-Open the **Integrations** card on the **MediaVerse** Overview screen and click **View integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
+Open the **Integrations** card on the **MediaVerse** Overview screen and click **View integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside MediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, inactive**, or **Not installed**).
 
-- **Install free** - installs and activates the companion plugin's free version in one click, without leaving the page.
+- **Install free** - installs and activates the companion plugin's free version in one click, without leaving the page. If the plugin is already installed but off, the button reads **Activate**.
 - **Learn more** - links out to the product's page on the Wbcom store.
 - Every companion plugin works standalone - installing one from this page does not tie it to MediaVerse, and MediaVerse simply lights up the matching integration when it detects the companion is active.
 
-This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom products); it's separate from the third-party service integrations (AI providers, cloud storage) documented below, which are configured under **Settings**.
+This page lists BuddyNext, Jetonomy, WB Gamification, Learnomy, WP Career Board and Listora; it's separate from the third-party service integrations (AI providers, cloud storage) documented below, which are configured under **Settings**.
 
 ## Integration Map
 
 | Integration | Plugin | What It Does | Free | Pro |
 |-------------|--------|-------------|:----:|:---:|
 | **BuddyPress** | Free | Profile media tabs, group media, activity stream, notifications | Yes | Yes |
-| **BuddyNext** | Free | Enhanced member directory and profile blocks | Yes | Yes |
+| **BuddyNext** | Free (separate plugin) | Feed cards, profile and space media tabs, notifications and emails for media | Yes | Yes |
 | **WB Gamification** | Free (separate plugin) | Points, badges, leaderboards for competitions (optional - competitions run without it, only points need it) | -- | Yes |
 | **Amazon S3** | Pro | Store all media files on S3 with CDN delivery | -- | Yes |
 | **BunnyCDN** | Pro | Store and deliver media via BunnyCDN edge network | -- | Yes |
 | **OpenAI** | Free | AI content moderation, auto-tagging, description generation | Yes | Yes |
-| **Google Cloud Vision** | Pro | Advanced image labeling, object detection, safe search | -- | Yes |
-| **AWS Rekognition** | Pro | Face detection, content moderation, celebrity recognition | -- | Yes |
+| **Google Cloud Vision** | Pro | Image labeling and safe-search checks | -- | Yes |
+| **AWS Rekognition** | Pro | Object and scene labeling, content moderation | -- | Yes |
 | **OpenAI Whisper** | Pro | Automatic video/audio transcription to WebVTT captions | -- | Yes |
-| **WordPress Webhooks** | Free | Send real-time HTTP notifications on media events | Yes | Yes |
+| **Claude (Anthropic)** | Pro | Image analysis, tagging and content moderation | -- | Yes |
+| **Cloudflare R2** | Pro | Store media on Cloudflare R2 | -- | Yes |
+| **DigitalOcean Spaces** | Pro | Store media on DigitalOcean Spaces | -- | Yes |
+| **Webhooks** | Free | Send real-time HTTP notifications on media events | Yes | Yes |
 
 ## Community & Social
 
@@ -50,7 +53,14 @@ See [BuddyPress Integration](../buddypress/overview.md) for full details.
 
 ### BuddyNext
 
-If you use the BuddyNext theme, MediaVerse detects it automatically and enhances the member directory with media counts and the profile layout with media grid blocks. As of 2.0.0, BuddyNext also changes how individual media links behave - see [Activity Stream Media](../buddypress/activity-media.md#buddynext-media-links-open-their-activity-post-200) for details.
+BuddyNext is a separate community plugin, not a theme. When it is active, MediaVerse works with it automatically:
+
+- A public upload publishes a card into the BuddyNext feed.
+- Members get a Media tab on their BuddyNext profile, and space owners can switch on Media and Files tabs for a space.
+- BuddyNext sends the notifications and emails for media activity, and MediaVerse sends none of its own activity emails, so a member gets one email per event.
+- MediaVerse hides its own chat panel and Messages page, which BuddyNext already provides, and My Media drops its Edit profile section.
+
+BuddyNext and BuddyPress are alternatives. Run one or the other. See [BuddyNext Integration](../buddynext/overview.md) and [Activity Stream Media](../buddypress/activity-media.md#buddynext-is-a-separate-path).
 
 ### wb-gamification **(Pro)**
 
@@ -81,11 +91,11 @@ Offload every upload to an S3 bucket. Files are served from S3 directly (or via 
 **What you get:**
 - Unlimited storage (pay-as-you-go with AWS)
 - Global CDN delivery when paired with CloudFront
-- Signed URLs for private/members-only media
+- Private and members-only media is served through signed addresses
 - Automatic retry (3 attempts) on upload failure
 - Connection test button in admin to verify credentials
 
-**Setup:** Paste your bucket name, region, access key, and secret key into **Media > Settings > Storage > Amazon S3**. Click "Test Connection" to verify. New uploads go to S3 immediately.
+**Setup:** Go to **MediaVerse > Settings > Storage**, choose **Amazon S3** under **Where files are stored**, and enter your bucket name, region, access key ID, secret access key and an optional CloudFront / CDN domain. Click **Test S3 Connection** to verify. New uploads go to S3 immediately.
 
 **Security:** Store credentials in `wp-config.php` instead of the database:
 ```php
@@ -100,16 +110,14 @@ See [Cloud Storage](../pro-features/cloud-storage.md) for IAM policy and full se
 Store and deliver media through BunnyCDN's global edge network.
 
 **What you get:**
-- 114 edge locations worldwide
-- Automatic image optimization
-- Per-request pricing (no minimum commitment)
-- Simpler setup than AWS (one API key)
+- Delivery from BunnyCDN's edge network
+- Simpler setup than AWS (one storage zone and one pull zone)
 
-**Setup:** Enter your storage zone name, API key, and CDN hostname into **Media > Settings > Storage > BunnyCDN**.
+**Setup:** Go to **MediaVerse > Settings > Storage**, choose **BunnyCDN**, and enter the storage zone name, storage zone password, storage region and pull zone hostname. Click **Test BunnyCDN Connection** to verify. Cloudflare R2 and DigitalOcean Spaces are set up the same way on that screen.
 
 ### Custom Storage Drivers
 
-MediaVerse uses a `StorageDriverInterface` that any developer can implement. Build drivers for Google Cloud Storage, DigitalOcean Spaces, Wasabi, Backblaze B2, or any S3-compatible service.
+MediaVerse uses a `StorageDriverInterface` that any developer can implement. Build drivers for Google Cloud Storage, Wasabi, Backblaze B2, or any other service.
 
 See [Custom Storage Drivers](../developer-guide/custom-storage-drivers.md) for the interface spec.
 
@@ -122,9 +130,9 @@ Built into the free plugin. Uses the OpenAI API for:
 - **Content moderation** - Automatically flag inappropriate uploads before they appear on the site
 - **Auto-tagging** - AI suggests relevant tags based on image content
 - **Description generation** - Generate alt text and descriptions for accessibility
-- **Monthly budget cap** - Set a dollar limit to prevent unexpected API costs
+- **Monthly budget cap** - **Monthly AI Budget ($)** stops AI calls when the estimate reaches the limit (default 10, 0 means no limit)
 
-**Setup:** Paste your OpenAI API key into **Media > Settings > AI & Moderation**.
+**Setup:** Paste your OpenAI API key into **MediaVerse > Settings > AI**. You can also define `MVS_OPENAI_API_KEY` in `wp-config.php`. Turn on **Auto-Analyze Uploads** there for tags and descriptions, and **AI Moderation** under **MediaVerse > Settings > Moderation** to check uploads.
 
 ### Google Cloud Vision **(Pro)**
 
@@ -132,39 +140,44 @@ Adds Google's image analysis capabilities:
 
 - **Label detection** - Identify objects, locations, activities in photos
 - **Safe search** - Detect explicit, violent, or medical content
-- **Text detection** - Extract text from images (OCR)
-- Circuit breaker pattern prevents API hammering on failures
+- **Image properties** - Details such as dominant colors
+- A circuit breaker pauses calls after repeated failures
 
-**Setup:** Paste your Google Cloud API key into **Media > Settings > AI & Moderation > Google Vision**.
+**Setup:** Go to **MediaVerse > Settings > AI**, set **AI Provider** to **Google Vision**, and paste your Google Cloud API key.
 
 ### AWS Rekognition **(Pro)**
 
 Adds Amazon's image and video analysis:
 
-- **Object and scene detection** - Identify objects with confidence scores
-- **Face detection** - Detect faces with attributes (smile, glasses, age range)
+- **Object and scene detection** - Identify objects and scenes with confidence scores
 - **Content moderation** - Flag suggestive, violent, or explicit content
-- Circuit breaker pattern with automatic recovery
+- A circuit breaker pauses calls after repeated failures
 
-**Setup:** Uses the same AWS credentials as S3 storage, or set separate credentials in **Media > Settings > AI & Moderation > AWS Rekognition**.
+**Setup:** Go to **MediaVerse > Settings > AI**, set **AI Provider** to **AWS Rekognition**, and enter an AWS access key ID, secret access key and region. These are separate from your S3 storage credentials. The IAM user needs the AmazonRekognitionReadOnlyAccess policy.
+
+### Claude (Anthropic) **(Pro)**
+
+Adds Claude as an AI provider for image analysis, tagging and content moderation.
+
+**Setup:** Go to **MediaVerse > Settings > AI**, set **AI Provider** to **Claude (Anthropic)**, and enter your API key.
 
 ### OpenAI Whisper **(Pro)**
 
 Automatic speech-to-text transcription for video and audio uploads:
 
 - Generates WebVTT caption files
-- Captions are searchable and displayed as subtitles in the video player
-- Process runs asynchronously via Action Scheduler
-- Supports 50+ languages
+- Captions show as subtitles in the video players
+- Transcription runs in the background
+- Choose a default language (12 languages) or Auto-detect
 
-**Setup:** Enable at **Media > Settings > Video > Auto-Captions** (uses the same OpenAI API key).
+**Setup:** Go to **MediaVerse > Settings > AI**, find **Auto-Captions & Transcription**, and turn on **Auto-generate on Upload**. It uses the same OpenAI API key as the OpenAI provider.
 
 ## Storage Limits
 
 MediaVerse is not a membership/commerce plugin, so it has no MemberPress, Paid Memberships Pro
 or WooCommerce integration for upload quotas - that whole system (packages, credits,
 membership-plugin mapping) was removed in 2.6.0. What replaces it is one optional storage
-allowance: set a **Fair-use storage limit per member (MB)** on **Settings > General** (0 = no
+allowance: set a **Fair-use storage limit per member (MB)** on **MediaVerse > Settings > General** (0 = no
 limit), and optionally override it for one member on their wp-admin profile.
 
 ## Webhooks
@@ -177,8 +190,7 @@ MediaVerse can send real-time HTTP POST notifications to external services when 
 | Media deleted | Media ID |
 | Comment posted | Comment ID, media ID, author, content |
 | Reaction added | Media ID, user ID, reaction type |
-| Report submitted | Media ID, reporter ID, reason |
-| Moderation changed | Media ID, old status, new status |
+| Moderation status changed | Media ID and the new moderation status |
 
 **Use cases:**
 - Notify a Slack channel when new media is uploaded
@@ -186,7 +198,7 @@ MediaVerse can send real-time HTTP POST notifications to external services when 
 - Sync media metadata to an external CMS or DAM
 - Log moderation actions to an audit system
 
-**Setup:** Add webhook URLs at **Media > Settings > Webhooks**. Each webhook can filter by event type.
+**Setup:** Add webhook URLs at **MediaVerse > Settings > Webhooks**. Each webhook can filter by event type.
 
 See [Webhooks](../settings/webhooks.md) for payload formats and authentication.
 
@@ -194,11 +206,13 @@ See [Webhooks](../settings/webhooks.md) for payload formats and authentication.
 
 ### Site Health
 
-MediaVerse registers 3 custom tests in **Tools > Site Health**:
+MediaVerse adds these tests to **Tools > Site Health**:
 
-- **Database tables** - Verifies all custom tables exist and have the expected schema
-- **Upload directory** - Checks that the wpmediaverse upload directory is writable
-- **Required pages** - Confirms Dashboard, Explore, and Upload pages are assigned
+- **MediaVerse Database Tables** - Verifies all custom tables exist
+- **MediaVerse Upload Directory** - Checks that the wpmediaverse upload directory is writable
+- **MediaVerse Required Pages** - Confirms the Dashboard, Explore, and Upload pages are assigned
+- **MediaVerse Media Privacy** - Checks that private files cannot be fetched directly by their address
+- **MediaVerse Template Overrides** - Warns when your theme has outdated copies of MediaVerse templates
 
 ### GDPR / Privacy Tools
 
@@ -210,7 +224,7 @@ See [GDPR & Privacy Compliance](../features/gdpr-privacy.md).
 
 ### REST API
 
-MediaVerse exposes 50+ REST endpoints in the free plugin and 30+ additional endpoints in Pro, all under the `mvs/v1` and `mvs-pro/v1` namespaces. Any external application, mobile app, or headless frontend can consume the full API.
+MediaVerse exposes 100+ REST endpoints in the free plugin and 90+ additional endpoints in Pro, all under the `mvs/v1` and `mvs-pro/v1` namespaces. Any external application, mobile app, or headless frontend can consume the full API.
 
 See [REST API Reference](../developer-guide/rest-api.md) and [Pro REST API Reference](../developer-guide/pro-rest-api.md).
 
@@ -220,13 +234,13 @@ CLI commands for automation, migration, and maintenance:
 
 ```
 wp mvs stats              # Show media stats
-wp mvs migrate            # Run database migrations
-wp mvs reindex            # Rebuild media index
+wp mvs migrate            # Run or check database migrations
+wp mvs reindex            # Make sure every media item has a stats row
 wp mvs cache-flush        # Flush all caches
 wp mvs prune-views        # Clean old view records
-wp mvs cleanup-expired    # Remove expired stories/tokens
+wp mvs cleanup-expired    # Remove expired access grants
 wp mvs moderation-stats   # Show moderation queue stats
-wp mvs optimize           # Losslessly optimize an image
+wp mvs optimize <id>      # Optimize one media item's image
 wp mvs migrate-storage    # Migrate files between storage drivers
 ```
 
@@ -234,7 +248,7 @@ See [WP-CLI Commands](../developer-guide/wp-cli.md).
 
 ### Gutenberg Blocks
 
-Registered in `BlockRegistrar::BLOCKS`:
+Registered by the free plugin (in the **MediaVerse** block category):
 
 | Block | Description |
 |-------|-------------|
@@ -255,7 +269,7 @@ See [Gutenberg Blocks](../features/blocks.md).
 
 For classic editor and page builders:
 
-All registered in `Shortcodes\Shortcodes` (Free):
+Free shortcodes:
 
 | Shortcode | Description |
 |-----------|-------------|

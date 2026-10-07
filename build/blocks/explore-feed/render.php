@@ -112,6 +112,7 @@ wp_interactivity_state(
 				placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
 				aria-label="<?php esc_attr_e( 'Search media', 'wpmediaverse' ); ?>"
 				data-wp-bind--aria-expanded="state.hasSuggestions"
+				data-wp-bind--aria-activedescendant="state.activeSuggestionId"
 				data-wp-on--input="actions.handleSearch"
 				data-wp-on--keydown="actions.handleSearchKeydown"
 				data-wp-on--blur="actions.closeSuggestions"
@@ -124,6 +125,8 @@ wp_interactivity_state(
 				<template data-wp-each="context.suggestions">
 					<li class="mvs-explore-suggestion"
 						role="option"
+						data-wp-bind--id="state.suggestionId"
+						aria-selected="false" data-wp-bind--aria-selected="state.isSuggestionHighlighted"
 						data-wp-on--click="actions.selectSuggestion">
 						<img class="mvs-explore-suggestion__thumb"
 							data-wp-bind--src="context.item.thumb"
@@ -150,6 +153,7 @@ wp_interactivity_state(
 				<button class="mvs-explore-filter-btn"
 					data-wp-on--click="actions.setFilter"
 					data-wp-class--active="state.isActiveFilter"
+					data-wp-bind--aria-pressed="state.isActiveFilter"
 					data-wp-context='<?php echo wp_json_encode( array( 'filterValue' => $value ) ); ?>'
 				>
 					<?php echo esc_html( $label ); ?>
@@ -175,7 +179,7 @@ wp_interactivity_state(
 				?>
 				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id ) ); ?>"<?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->grid_item_ar_style( $item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper esc_attr()s the ratio. ?>>
 					<a href="<?php echo esc_url( $permalink ); ?>">
-						<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
+						<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					</a>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>

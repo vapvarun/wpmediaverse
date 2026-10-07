@@ -22,6 +22,8 @@
 /vendor
 /dist
 /build/.phpcs-cache
+# Legacy wp-scripts output that no block.json loads (see .gitignore).
+/build/blocks/blocks
 /.phpunit.result.cache
 /.phpunit.cache
 

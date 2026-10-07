@@ -25,20 +25,20 @@ If you need the original files kept pristine, do not enable watermarking - keep 
 
 ## Enabling watermarks
 
-Go to **Media > Settings > Display > Image Watermarking** and configure the options below.
+Go to **MediaVerse > Settings > Storage**, find the **Image Watermarking** section, and configure the options below. (Before 2.6.0 these were on the Display tab.)
 
 | Option | Option Key | Default | Description |
 |--------|-----------|---------|-------------|
 | Enable Watermark | `mvs_watermark_enabled` | `0` | Stamp a watermark onto uploaded images |
 | Apply to | `mvs_watermark_apply` | `all` | `all` = every uploaded image; `roles` = only images uploaded by the roles selected below |
 | Watermark uploads from | `mvs_watermark_roles` | (none) | The uploader roles to watermark. Only used when **Apply to** is `roles`; with none selected, nothing is watermarked |
-| Watermark Type | `mvs_watermark_type` | `text` | `text` to overlay a text string, `image` to overlay a logo, or `both` to stamp the logo and the `@username` text in opposite corners |
+| Watermark Type | `mvs_watermark_type` | `text` | **Text** overlays a text string, **Image (logo)** overlays a logo, **Logo + text** stamps the logo and the `@username` text in opposite corners |
 | Watermark Text | `mvs_watermark_text` | site title | The text to overlay (used when type is `text`); defaults to your site name. Supports the `{site}` and `{username}` tokens |
 | Watermark Image | `mvs_watermark_image_id` | `0` | WordPress attachment ID of the logo image (used when type is `image`) |
 | Position | `mvs_watermark_position` | `bottom-right` | Where on the image to place the watermark |
-| Opacity | `mvs_watermark_opacity` | `40` | Watermark opacity, 0 (transparent) to 100 (opaque) |
-| Text Size | `mvs_watermark_font_size` | `24` | Base font size for text watermarks (px); scales with the image |
-| Text Colour | `mvs_watermark_color` | `#ffffff` | Hex colour for text watermarks |
+| Opacity (%) | `mvs_watermark_opacity` | `40` | Watermark opacity, 0 (transparent) to 100 (opaque) |
+| Text Size | `mvs_watermark_font_size` | `24` | Base size for text watermarks, calibrated for an image about 1000px wide; scales with the image |
+| Text Color | `mvs_watermark_color` | `#ffffff` | Hex colour for text watermarks |
 
 ![Watermark position selector showing position options](../images/admin-settings-display.png)
 
@@ -58,11 +58,11 @@ Watermarking is controlled by **Apply to**, not by a photo's privacy level:
 | `center` | Centred on the image |
 | `bottom-left` | Bottom-left corner with padding |
 | `bottom-right` | Bottom-right corner with padding (default) |
-| `tile` | Repeated across the whole image |
+| `tile` | Repeated across the whole image (labelled **Tiled** on the screen) |
 
 ## Text watermarks
 
-When **Watermark Type** is `text`, MediaVerse Pro renders the string in **Watermark Text**. Two tokens are supported:
+When **Watermark Type** is **Text**, MediaVerse Pro renders the string in **Watermark Text**. Two tokens are supported:
 
 - `{site}` - your site name.
 - `{username}` - the uploader's public handle (their `user_nicename`, e.g. `@jane`). It never uses the WordPress login name.
@@ -77,11 +77,11 @@ add_filter( 'mvs_watermark_font_path', function ( $path, $config ) {
 
 ## Logo watermarks
 
-When **Watermark Type** is `image`, select an image from your WordPress Media Library using the **Watermark Image** field (its attachment ID is stored in `mvs_watermark_image_id`). MediaVerse Pro scales the logo to roughly 20% of the base image width before compositing. A PNG with a transparent background is recommended.
+When **Watermark Type** is **Image (logo)**, select an image from your WordPress Media Library using the **Watermark Image** field (its attachment ID is stored in `mvs_watermark_image_id`). MediaVerse Pro scales the logo to roughly 20% of the base image width before compositing. A PNG with a transparent background is recommended.
 
 ## Both (logo and text)
 
-When **Watermark Type** is `both`, MediaVerse Pro stamps the logo watermark and the `@username` text watermark together, placed in opposite corners so they do not overlap. Both draws use the same opacity, font, and image settings described above.
+When **Watermark Type** is **Logo + text**, MediaVerse Pro stamps the logo watermark and the `@username` text watermark together, placed in opposite corners so they do not overlap. With the Center or Tiled position there is no opposite corner, so the text goes bottom-left. With no logo image selected, the logo is skipped. Both draws use the same opacity, font, and image settings described above.
 
 ## For developers
 

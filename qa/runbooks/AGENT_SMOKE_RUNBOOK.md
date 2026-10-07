@@ -478,6 +478,13 @@ Each row is a repro of a past customer-impacting bug. These rows stay specific o
 | D.block-empty-state-silent | `lock-overlay/render.php` returned bare on both guards (no mediaId, and media not in the index), so the block vanished from the page with no explanation - the exact case `qa/rules/RENDER-STATE-RULES.md` uses as its worked BAD example, never fixed in the file it named. | Render `<!-- wp:mvs/lock-overlay {"mediaId":0} /-->` as a user WITH `edit_posts`: output is non-empty and contains `mvs-empty-state-frontend` plus "Select a media item to protect". Repeat with `mediaId` set to an id absent from `mvs_media_index`: output names "no longer exists". Repeat BOTH as an anonymous visitor: output is exactly 0 bytes (a configuration hint must never reach a reader). Sibling check: `media-player`, `pdf-viewer`, `album-viewer`, `member-photos` and Pro's `pro-tournament`/`pro-challenge`/`pro-battle` all still pair every bare return with an editor-only notice. |
 
 | D.bp-tab-asset-sweep | On a BuddyNext site the suppression sweep (`Plugin::enforce_frontend_presence`, `wp_enqueue_scripts@PHP_INT_MAX`) deregisters every enqueued `mvs-*` handle except those `mvs_frontend_presence_keep_handles` protects. The profile callback protected 2 handles while the tab enqueued 6, and `GroupTabIntegration` registered the filter NOT AT ALL. Load More rendered with its script stripped; group tabs lost even their stylesheets. | With BuddyNext active, open `/members/<user>/media/` and `/groups/<slug>/media/`. Assert every handle in `BaseBPTabIntegration::TAB_ASSET_HANDLES` is still `wp_script_is()`/`wp_style_is()` registered AND enqueued after the sweep - all 9, including the transitive deps `mvs-card-builders`, `mvs-confirm`, `mvs-dropzone`. Deregistering a dep does not only remove it: the dependent still reports `enqueued` and then prints ZERO bytes, so checking the dependent's flag alone passes while the script is silently absent. Click Load More and assert a second page arrives; click a delete action and assert the styled confirm modal appears (`bp-actions.js` fails closed when `window.mvsConfirm` is missing, so a stripped `mvs-confirm` disables delete with no error). |
+| D.grid-lists-unapproved | The Media Grid block listed flagged, rejected and pending items and printed their stored file address when the viewer was refused a signed link (2.6.1) | Reject a public approved item as an admin; as a visitor load a page with the grid: the item is not listed and its file name is nowhere in the page HTML. Approve it again: it is listed, under a new file name. |
+| D.sideways-privacy-keeps-name | File names changed only when privacy moved down one ordered list, so followers to private (and other non-nested moves) left old links working (2.6.1) | followers to private, private to followers, public to followers each give a new file name and the old URL answers 404; private to public keeps the name. |
+| D.type-filter-hides-batch | Explore's Type filter hid an item uploaded in a batch whose cover was another type (2.6.1) | Upload 2 videos + 1 audio together; `/explore-media/?mvs_type=audio` lists the audio, `?mvs_type=video` and no filter show the batch as one tile; `GET /mvs/v1/media?media_type=audio&group_covers=1` returns the audio. |
+| D.type-filter-empty-dead-end | A Type filter with no results said the site had no media and removed the Type and Sort selects (2.6.1) | A type with zero items keeps both selects, reads "Nothing of this type yet" and offers Browse all media, at 1280 and 390. |
+| D.bulk-privacy-one-list | The bulk Set privacy bars offered three hard-coded levels and the bulk route stored any text as a level (2.6.1) | Both bars (My Media, Explore) offer public, members, followers, private; applying Followers stores `followers`; `POST /mvs/v1/media/bulk` `change_privacy` with a made-up level answers 400 `mvs_privacy_unsupported` and changes nothing. |
+| D.admin-confirm-own-label | Free's admin confirm handler showed a red Confirm for every `data-mvs-confirm` link, including Pro's Start Now (2.6.1) | Start Now / End Entries / Finalize Now open ONE dialog with their own button label and no destructive style; Cancel Challenge and Delete Permanently stay destructive. |
+| D.finished-battle-countdown | A completed or drawn battle showed "1d 23h left" (Pro 2.6.1) | Completed tab of `/media/battles/`: no "left" text on finished battles; a running battle still shows it. |
 
 Every customer-visible fix from this point on ships with a new D row OR a graduation-to-C move of an existing D row that stayed clean for 2 releases.
 
@@ -656,3 +663,19 @@ Every customer-visible bug fix ships with:
 3. Both land in the same PR as the fix.
 
 After 2 clean releases of a D row, the row graduates into C/E and the D row is marked `graduated`.
+
+## Drift recorded by the 2.6.1 walk (reconcile before the next release)
+
+The 2.6.1 walk found rows above that no longer describe the shipped product. They are listed here as observed on a standalone site (no BuddyNext, no BuddyPress); check each against the code before rewriting the row.
+
+- A2: 33 tables in total (23 Free + 10 Pro), not 36.
+- C.anon.single-media: `/media/<slug>/` rendered 200 with no redirect to `/p/<id>/`.
+- C.admin.plugin-pages: there is no Quota & Credits admin page; the licence is under Settings > License; Settings has 12 tabs, not 8.
+- E.group-dm: `/mvs-pro/v1/groups/{id}/messages` does not exist; group chat uses `/mvs/v1/conversations/{id}/messages`, and `POST /mvs-pro/v1/groups` takes `participant_ids`.
+- Notification types are `media_comment` and `media_mention`, not `new_comment` and `new_mention`. The reaction POST field is `reaction_type`.
+- Shortcodes take `id=`; Free registers 14 shortcodes and 8 blocks.
+- D.block-empty-state-silent names the retired Lock Overlay block.
+- C.member.lightbox-edit-modal: the Edit modal has no allow_download control and never had one.
+- C.member.lightbox: there is no separate heart; Save reads Saved only for Favorites.
+- C.member.public-media-cacheable and C.member.signed-url: with direct delivery a public URL is the stable file URL with the web server's cache headers; test the signed route with `mvs_direct_media_delivery` returning false.
+- Free All Media: Trash acts at once with no dialog (reversible); Delete Permanently asks first.

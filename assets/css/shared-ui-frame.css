@@ -420,6 +420,13 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	color: var(--mvs-text-secondary);
 }
 
+.mvs-modal-progress-percent {
+	margin-inline-start: 6px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--mvs-text);
+}
+
 /* ─── Fields ─── */
 .mvs-modal-fields[hidden] {
 	display: none !important;
@@ -1107,9 +1114,47 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 /* Simplified upload modal — "Add details" disclosure + full-width selects. */
 .mvs-modal-details{border-top:1px solid var(--mvs-border,#e2e4e7);margin-top:10px;padding-top:6px}
-.mvs-modal-details__summary{cursor:pointer;font-weight:600;padding:8px 0;list-style:none;color:var(--mvs-accent,#7c3aed)}
+.mvs-modal-details__summary{cursor:pointer;font-weight:600;padding:8px 0;list-style:none;color:var(--mvs-primary-text,var(--mvs-primary,#2271b1))}
 .mvs-modal-details__summary::-webkit-details-marker{display:none}
 .mvs-modal-details__summary::before{content:"+";margin-inline-end:6px}
 .mvs-modal-details[open] .mvs-modal-details__summary::before{content:"\2212";margin-inline-end:6px}
 .mvs-modal-details>.mvs-modal-field{margin-top:10px}
 .mvs-modal-album-select,.mvs-modal-privacy{width:100%}
+
+/* Respect prefers-reduced-motion. This sheet can load without frontend.css
+   (host-theme pages), so it carries its own rule, scoped to the shell. */
+@media (prefers-reduced-motion: reduce) {
+
+    .mvs-app-shell *,
+    .mvs-app-shell *::before,
+    .mvs-app-shell *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* A video the browser could not play: message + download instead of a blank
+   player. The lightbox stage is dark in both themes. */
+.mvs-lightbox-media-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 32px 20px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.92); /* on the fixed dark overlay, like its rgba(0, 0, 0, 0.92) */
+}
+
+.mvs-lightbox-media-error[hidden] {
+	display: none !important;
+}
+
+.mvs-lightbox-media-error p {
+	margin: 0;
+	font-size: 16px;
+}
+
+.mvs-lightbox-media-error a {
+	text-decoration: none;
+}

@@ -264,6 +264,23 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A real media item that shares its ID with an album can still be edited.
+	 * The guard refuses only an ID with no media row (Basecamp 10355752606).
+	 */
+	public function test_media_sharing_an_album_id_can_be_edited(): void {
+		$album_id = self::factory()->post->create( array( 'post_type' => 'mvs_album' ) );
+		$this->seed_media_row_at( $album_id, self::factory()->user->create(), 'Before' );
+
+		$this->repo->set( $album_id, 'title', 'After set' );
+		$this->assertSame( 'After set', (string) $this->repo->get( $album_id, 'title' ) );
+
+		$this->repo->set_many( $album_id, array( 'title' => 'After set_many', 'privacy' => 'members' ) );
+		\WPMediaVerse\Repository\MediaRepository::reset_test_cache();
+		$this->assertSame( 'After set_many', (string) $this->repo->get( $album_id, 'title' ) );
+		$this->assertSame( 'members', (string) $this->repo->get( $album_id, 'privacy' ) );
+	}
+
+	/**
 	 * The analyser must report a collision when one exists, and must never write.
 	 */
 	public function test_analyser_detects_a_collision_without_writing(): void {

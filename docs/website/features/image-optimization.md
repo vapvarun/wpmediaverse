@@ -8,13 +8,13 @@ tier: free
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-MediaVerse automatically reduces image file sizes at upload time. No extra plugin is required. Originals are never made larger: if re-encoding produces no gain, the original file is kept untouched.
+MediaVerse can reduce image file sizes at upload time and creates WebP copies for faster loading. No extra plugin is required. Originals are never made larger: if re-encoding produces no gain, the original file is kept untouched.
 
 ## What It Does
 
 When a JPEG, PNG, or GIF is uploaded:
 
-1. The file is re-encoded at high quality with embedded camera metadata stripped.
+1. If **Compress uploaded images** is on (it is off by default), the file is re-encoded at high quality.
 2. The result is compared to the original. If it is smaller, the smaller file is committed. If not, the original is kept.
 3. A WebP copy is generated alongside the original and every thumbnail size (on by default).
 4. An AVIF copy can optionally be generated for even smaller file sizes (off by default; slower to encode).
@@ -33,28 +33,31 @@ This format negotiation applies across the explore grid, BuddyPress activity str
 
 ## Settings
 
-Access these settings at **Media > Settings > Storage**.
+Access the setting at **MediaVerse > Settings > Storage**.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Compress uploaded images | On | Re-encodes JPEG, PNG, and GIF originals to remove camera metadata and reduce file size. Works alongside EWWW, Imagify, Smush, and ShortPixel. |
-| Create WebP copies for faster loading | On | Saves a WebP copy next to every original and thumbnail. WebP files are typically 25 to 35 percent smaller than JPEG. |
-| Create AVIF copies for the smallest possible files | Off | Saves an AVIF copy next to every original and thumbnail. AVIF is around 30 to 50 percent smaller than WebP. Encoding is much slower than WebP. Requires Imagick with libheif, or GD on PHP 8.1+ with libavif. |
+| Compress uploaded images | Off | Makes new images 10-30% smaller. JPEGs lose a little quality. |
 
-Toggling any setting takes effect on the next upload. Settings do not retroactively process existing media.
+Removing the GPS location from photos is a separate setting, **Remove location from photos**, on **MediaVerse > Settings > General**.
 
-## Admin: Optimization Column
+WebP copies are created automatically whenever your server can write WebP (on by default), and AVIF copies are off by default. Neither has a screen in the settings; developers can change them with the `mvs_generate_webp` and `mvs_generate_avif` options. AVIF is around 30 to 50 percent smaller than WebP, but encoding is much slower and needs Imagick with libheif, or GD on PHP 8.1+ with libavif.
 
-The **Optimization** column on the **Media > All Media** list shows the result for each image:
+Changing a setting takes effect on the next upload. Settings do not retroactively process existing media.
+
+## Admin: Optimization Details
+
+On **MediaVerse > All Media**, click **Details** under an image to open its details page. The **Optimization** section shows a status badge:
 
 | Badge | Meaning |
 |-------|---------|
-| `-23%` (green) | The original was re-encoded and reduced by that percentage. |
-| `WebP ready` (green) | No lossless gain on the original, but a WebP copy was generated. |
-| `No lossless gain` (grey) | Re-encoding did not reduce the file and WebP was not generated. |
-| `Not optimized` | The image has not been through the optimization pipeline yet. |
+| Optimized | The original was re-encoded and made smaller. Original size, size after optimization and space saved are shown. |
+| WebP copy created | No gain on the original, but a WebP copy was generated. |
+| No size gain | Re-encoding did not make the file smaller. |
+| Not optimized | The image has not been through the optimization pipeline yet. |
+| Could not optimize | Optimization failed. Try again with **Re-optimize**. |
 
-Each image row also has two row actions: **Optimize** (re-runs the optimization pipeline for that image) and **Details** (opens a detail page at `?page=mvs-media&view=details&media_id=N` showing file sizes, savings percentage, and variant URLs).
+The **Actions** section has a **Re-optimize** button that runs the optimization again for that image. The page also lists the WebP copies of each size.
 
 ## Bulk Optimization and WP-CLI
 

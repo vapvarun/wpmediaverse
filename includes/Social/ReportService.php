@@ -179,6 +179,9 @@ class ReportService {
 			}
 		}
 
+		// The admin menu badge counts pending reports and is cached for a minute.
+		delete_transient( 'mvs_moderation_counts' );
+
 		/**
 		 * Fires after a report is submitted.
 		 *
@@ -399,6 +402,10 @@ class ReportService {
 		);
 
 		$changed = false !== $updated && $updated > 0;
+
+		if ( $changed ) {
+			delete_transient( 'mvs_moderation_counts' );
+		}
 
 		if ( $changed && $before && 'pending' === (string) $before->status && in_array( $status, array( 'resolved', 'dismissed' ), true ) ) {
 			/**

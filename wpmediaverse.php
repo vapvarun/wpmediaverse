@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: MediaVerse
- * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
+ * Plugin URI:  https://wbcomdesigns.com/downloads/mediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     2.6.0
+ * Version:     2.6.1
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '2.6.0' );
+define( 'MVS_VERSION', '2.6.1' );
 // Kept in step with the `Requires PHP` header above by `BootGuardTest`. WordPress
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
@@ -28,7 +28,7 @@ define( 'MVS_MIN_PHP', '7.4' );
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
 // on the free plugin in the other direction.
-define( 'MVS_MIN_PRO', '2.1.0' );
+define( 'MVS_MIN_PRO', '2.6.0' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );
@@ -210,49 +210,10 @@ add_action(
 	}
 );
 
-// Auto-activate the preset license key on first load so downloads work.
-add_action(
-	'admin_init',
-	function () {
-		$preset_key = 'wbcomfree7a9c2e5d1f8b4c6a3e0d9b2f7c1a8e44';
-		$option     = 'wpmediaverse_license_key';
-		$activated  = 'wpmediaverse_preset_activated';
-
-		if ( get_option( $activated ) ) {
-			return;
-		}
-
-		update_option( $option, $preset_key, false );
-
-		$response = wp_remote_post(
-			'https://wbcomdesigns.com',
-			array(
-				'timeout' => 15,
-				'body'    => array(
-					'edd_action' => 'activate_license',
-					'license'    => $preset_key,
-					'item_id'    => 1660826,
-					'url'        => home_url(),
-				),
-			)
-		);
-
-		if ( ! is_wp_error( $response ) ) {
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
-			if ( 'valid' === ( $body['license'] ?? '' ) ) {
-				update_option( $activated, 1, false );
-				update_option(
-					$option . '_allow_tracking',
-					array(
-						'allowed'   => true,
-						'timestamp' => time(),
-					),
-					false
-				);
-			}
-		}
-	}
-);
+// Activate the preset licence key once, with backoff (see PresetActivation).
+// Hooked, not called here: this file must stay loadable on its own (static
+// analysis and other tools include it without WordPress's class loading).
+add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\PresetActivation', 'register' ), 1 );
 
 // Activation.
 register_activation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Activator', 'activate' ) );

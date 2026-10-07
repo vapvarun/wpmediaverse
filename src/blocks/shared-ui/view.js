@@ -21,6 +21,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 // them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
 let toastTimer = null;
 let tagSearchTimer = null;
+let savedListenerAdded = false;
 
 /**
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s" with no zone)
@@ -155,6 +156,32 @@ function lightboxRememberTrigger() {
  * Without this the trap is only half-built: focus starts inside but the first
  * Tab past the last control walks straight out into the page behind.
  */
+// Who opened the edit modal / the confirm, so focus can go back on close.
+let editReturnFocus = null;
+let confirmReturnFocus = null;
+
+/**
+ * Put focus back on the control that opened a dialog, if it is still there.
+ *
+ * @param {Element|null} el Opener.
+ */
+function focusWhenShown( selector, tries = 10 ) {
+	const el = document.querySelector( selector );
+	if ( el && el.getClientRects().length ) {
+		el.focus();
+	} else if ( tries > 0 ) {
+		window.requestAnimationFrame( () => focusWhenShown( selector, tries - 1 ) );
+	}
+}
+
+function returnFocus( el ) {
+	window.requestAnimationFrame( () => {
+		if ( el && document.contains( el ) && el.getClientRects().length ) {
+			el.focus();
+		}
+	} );
+}
+
 function dialogTrapTab( event, selector ) {
 	const items = dialogFocusables( selector );
 
@@ -259,12 +286,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalPreviews: [],
 		uploadModalUploading: false,
 		uploadModalProgress: 0,
+		lightboxFailedUrl: '',
 		uploadModalTotal: 0,
 		uploadModalDone: 0,
 		uploadModalFailed: 0,
 		uploadModalDuplicates: 0,
 		uploadModalLastDuplicateId: 0,
 		uploadModalLastError: '',
+		uploadModalError: '', // Why nothing went up, shown inside the window.
 		uploadModalTitle: '',
 		uploadModalDescription: '',
 		uploadModalTags: '',
@@ -360,7 +389,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				// The + button's default mode accepts every type (auto-detect).
 				photo: ( state.i18n?.uploadMedia || 'Upload media' ),
 				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
-				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
+				video: state.uploadModalFiles.length > 1
+					? ( state.i18n?.uploadVideos || 'Upload Videos' )
+					: ( state.i18n?.uploadVideo || 'Upload Video' ),
 				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
 			};
 			return titles[ state.uploadModalMode ] || ( state.i18n?.upload || 'Upload' );
@@ -391,13 +422,26 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get hasFiles() {
 			return state.uploadModalFiles.length > 0;
 		},
+		// One title only names one thing: a single file, or a gallery post. For
+		// several separate items it is not sent, so the field is not offered.
+		get uploadTitleUnused() {
+			return state.uploadModalFiles.length > 1 && state.uploadModalMode !== 'gallery';
+		},
 		get uploadProgressText() {
 			if ( ! state.uploadModalUploading ) return '';
 			return 'Uploading ' + ( state.uploadModalDone + 1 ) + ' of ' + state.uploadModalTotal + '...';
 		},
 		get uploadProgressWidth() {
-			if ( ! state.uploadModalTotal ) return '0%';
-			return Math.round( ( state.uploadModalDone / state.uploadModalTotal ) * 100 ) + '%';
+			return state.uploadProgressPercent + '%';
+		},
+		// Files finished plus how much of the current one has been sent, so a
+		// single large video moves the bar instead of sitting at 0% until done.
+		get uploadProgressPercent() {
+			if ( ! state.uploadModalTotal ) return 0;
+			return Math.min( 100, Math.round( ( ( state.uploadModalDone + state.uploadModalProgress ) / state.uploadModalTotal ) * 100 ) );
+		},
+		get uploadProgressPercentText() {
+			return state.uploadModalUploading ? state.uploadProgressPercent + '%' : '';
 		},
 
 		// --- Lightbox (flat) ---
@@ -551,13 +595,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return ! state.lightboxImageUrl;
 		},
 		get lightboxHideVideo() {
-			return state.lightboxMediaData?.media_type !== 'video';
+			return state.lightboxMediaData?.media_type !== 'video' || state.lightboxVideoFailed;
+		},
+		// The browser could not play this video. Keyed on the URL that failed, so
+		// opening another item clears it without any reset bookkeeping.
+		get lightboxVideoFailed() {
+			return '' !== state.lightboxVideoUrl && state.lightboxFailedUrl === state.lightboxVideoUrl;
 		},
 		get lightboxHideAudio() {
 			return state.lightboxMediaData?.media_type !== 'audio';
 		},
 		get lightboxVideoUrl() {
 			return state.lightboxMediaData?.file_url || '';
+		},
+		// null removes the attribute, so a video without captions gets no track source.
+		get lightboxCaptionsUrl() {
+			return state.lightboxMediaData?.captions_url || null;
+		},
+		get lightboxCaptionsLang() {
+			return state.lightboxMediaData?.captions_lang || null;
 		},
 		get lightboxPosterUrl() {
 			// Poster for the lightbox <video>, matching what media-single.php
@@ -588,6 +644,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';
+		},
+		// Same alt as the grid card (Basecamp 9822979354).
+		get lightboxAlt() {
+			return state.lightboxMediaData?.alt || state.lightboxMediaData?.title || '';
 		},
 		get lightboxDescription() {
 			return state.lightboxMediaData?.description || '';
@@ -739,11 +799,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 
 		// --- Confirm ---
-		showConfirm( msg, callback, buttonLabel = 'Confirm' ) {
+		// tone 'primary' for an invitation (Log in); the default 'danger' is for
+		// the destructive confirms this dialog was built for.
+		showConfirm( msg, callback, buttonLabel = 'Confirm', tone = 'danger' ) {
 			state.confirmMessage = msg;
 			state.confirmCallback = callback;
 			state.confirmButtonLabel = buttonLabel;
+			state.confirmPrimary = 'primary' === tone;
 			state.confirmVisible = true;
+			confirmReturnFocus = document.activeElement;
 			// The confirm button is the dangerous one, so Cancel takes focus:
 			// an Enter pressed without reading never destroys or exposes anything.
 			window.requestAnimationFrame( () => {
@@ -754,6 +818,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const cb = state.confirmCallback;
 			state.confirmVisible = false;
 			state.confirmCallback = null;
+			returnFocus( confirmReturnFocus );
 			if ( typeof cb === 'function' ) {
 				cb();
 			}
@@ -761,6 +826,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		handleConfirmCancel() {
 			state.confirmVisible = false;
 			state.confirmCallback = null;
+			returnFocus( confirmReturnFocus );
 		},
 
 		// --- Report ---
@@ -867,6 +933,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
+			state.uploadModalError = '';
 			state.uploadModalTitle = '';
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
@@ -892,6 +959,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
+			state.uploadModalError = '';
 			state.uploadModalAlbum = 0;
 			state.uploadModalNewAlbumName = '';
 			document.body.style.overflow = '';
@@ -922,9 +990,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const tag = wrap?.getAttribute( 'data-mvs-tag-name' );
 			if ( ! tag ) return;
 			const current = ( state.uploadModalTags || '' ).split( ',' ).map( ( s ) => s.trim() ).filter( Boolean );
-			if ( current.includes( tag ) ) return;
-			current.push( tag );
+			// A matching-tags pill completes the word being typed, so it replaces
+			// it (search matches anywhere in a name: "la" suggests "island").
+			if ( wrap.closest( '[data-mvs-tag-complete]' ) && current.length && ! /,\s*$/.test( state.uploadModalTags || '' ) ) {
+				current.pop();
+			}
+			actions.hideTagAutocomplete();
+			if ( ! current.includes( tag ) ) {
+				current.push( tag );
+			}
 			state.uploadModalTags = current.join( ', ' );
+
+			// Back to the field, cursor at the end, so the member keeps typing.
+			const field = document.querySelector( '[data-wp-on--input="actions.updateUploadTags"]' );
+			if ( field ) {
+				requestAnimationFrame( () => {
+					field.focus();
+					field.setSelectionRange( field.value.length, field.value.length );
+				} );
+			}
 		},
 		async openEditModal( mediaId ) {
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
@@ -932,7 +1016,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const id = parseInt( mediaId, 10 );
 			if ( ! id ) return;
 			state.editModalMediaId = id;
+			// lightboxEdit() presets the tile behind the lightbox; anything else
+			// returns focus to the control that opened the modal.
+			if ( ! editReturnFocus ) {
+				editReturnFocus = document.activeElement;
+			}
 			state.editModalVisible = true;
+			// Focus into the dialog once it renders (Close is there even while it loads).
+			focusWhenShown( '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-close' );
 			state.editModalLoading = true;
 			state.editModalError = '';
 			document.body.style.overflow = 'hidden';
@@ -965,6 +1056,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalError = '';
 			state.editModalSaving = false;
 			document.body.style.overflow = '';
+			returnFocus( editReturnFocus );
+			editReturnFocus = null;
 		},
 		updateEditTitle() {
 			state.editModalTitle = getElement().ref?.value || '';
@@ -1054,6 +1147,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalSaving = false;
 			}
 		},
+		// A blank player told a member nothing; show why and offer the file.
+		lightboxVideoError() {
+			if ( 'video' === state.lightboxMediaData?.media_type && state.lightboxVideoUrl ) {
+				state.lightboxFailedUrl = state.lightboxVideoUrl;
+			}
+		},
 		handleUploadClick() {
 			const input = document.getElementById( 'mvs-modal-file-input' );
 			if ( input ) {
@@ -1091,14 +1190,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.showToast( rejected + ' file(s) skipped — upload one media type at a time.', 'error' );
 			}
 			if ( ! valid.length ) return;
-			if ( group === 'image/' ) {
-				// Images append (so picking more turns a photo into a gallery).
-				const existing = state.uploadModalFiles.filter( ( f ) => ( f.type || '' ).startsWith( 'image/' ) );
-				state.uploadModalFiles = [ ...existing, ...valid ];
-			} else {
-				// One video / one audio per post.
-				state.uploadModalFiles = [ valid[ valid.length - 1 ] ];
-			}
+			// Picking more adds to the same kind (images become a gallery; videos
+			// and audio upload as separate items). This kept only the LAST video,
+			// silently: a member who chose three videos got one, with no word about
+			// the other two, while My Media and the upload block took all three.
+			const existing = state.uploadModalFiles.filter( ( f ) => ( f.type || '' ).startsWith( group ) );
+			state.uploadModalFiles = [ ...existing, ...valid ];
 			state.uploadModalMode = actions.detectMode();
 			actions.generatePreviews();
 		},
@@ -1219,6 +1316,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateUploadTags( event ) {
 			state.uploadModalTags = event.target.value;
+			// Suggest tags for the word being typed, as pills under the field
+			// (Basecamp 10124085450). Same search the edit modal uses.
+			const typing = state.uploadModalTags.split( ',' ).pop().trim();
+			actions.searchTags( typing, window.mvsBpActions?.restUrl || ( window.location.origin + '/wp-json/mvs/v1/' ) );
 		},
 		updateUploadPrivacy( event ) {
 			state.uploadModalPrivacy = event.target.value;
@@ -1262,6 +1363,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			state.uploadModalUploading = true;
+			state.uploadModalError = '';
 			state.uploadModalTotal = files.length;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
@@ -1296,9 +1398,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
+				state.uploadModalProgress = 0;
 				const fd = new FormData();
 				fd.append( 'file', files[ i ] );
-				if ( state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
+				// One title fits one item or one gallery; separate videos must not all
+				// share it (same rule as My Media).
+				if ( state.uploadModalTitle && ( 1 === files.length || mediaGroup ) ) fd.append( 'title', state.uploadModalTitle );
 				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
 				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
 				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );
@@ -1327,6 +1432,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					const res = await window.mvsRest.restFetch( uploadUrl, {
 						method: 'POST',
 						body: fd,
+						// Share (0-1) of the current file sent so far.
+						onUploadProgress: ( loaded, total ) => {
+							state.uploadModalProgress = total ? loaded / total : 0;
+						},
 					} );
 					if ( res.ok ) {
 						const mediaData = res.data;
@@ -1353,6 +1462,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.uploadModalFailed++;
 				}
 				state.uploadModalDone = i + 1;
+				state.uploadModalProgress = 0;
 			}
 
 			// "Add to album" (chosen in Add details) — link the uploads to that
@@ -1408,10 +1518,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} else if ( state.uploadModalDuplicates > 0 ) {
 					msg = uploadedMsg + ' ' + (
 						state.i18n?.duplicatesDetected ||
-							'%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.'
+							'You had already uploaded %1$d of these files.'
 					)
-						.replace( '%1$d', state.uploadModalDuplicates )
-						.replace( '%2$d', state.uploadModalLastDuplicateId );
+						.replace( '%1$d', state.uploadModalDuplicates );
 					toastType = 'warning';
 				} else {
 					msg = uploadedMsg;
@@ -1423,11 +1532,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					window.location.reload();
 				}, state.uploadModalDuplicates > 0 ? 2500 : 800 );
 			} else {
-				actions.showToast(
-					state.uploadModalLastError ||
-						( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ),
-					'error'
-				);
+				// Nothing went up (over quota, too large, wrong type): say why IN the
+				// window the member is looking at, not only in a toast that is gone
+				// in three seconds (card 10364778707). Stays until the next try; the
+				// box is role=alert, so it is announced without a duplicate toast.
+				state.uploadModalError = state.uploadModalLastError ||
+					( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' );
 			}
 		},
 
@@ -1557,6 +1667,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		noop() {},
 		async lightboxLoadSocial( ctx, mediaId ) {
+			// Every opener runs through here: forget a previous "cannot play" so a
+			// reopened item (network back, or a different file) gets a fresh try.
+			state.lightboxFailedUrl = '';
 			// Record the view. Fire-and-forget, exactly as media-social does on the
 			// single-media page. The view POST was wired into that page and into
 			// the BP activity driver, but never into the IA lightbox - so opening
@@ -1624,7 +1737,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const type = event.target.closest( '[data-reaction]' )?.dataset.reaction;
 			if ( ! type || ! state.lightboxMediaId ) return;
 			if ( ! state.currentUserId ) {
-				actions.showToast( state.i18n?.loginToReact || 'Please log in to react.', 'error' );
+				// A way in, not just a refusal: the same login page the
+				// 'Log in to comment' link opens, back to this page after
+				// (card 10364778707). Nothing navigates until they choose to.
+				if ( state.loginUrl ) {
+					actions.showConfirm(
+						state.i18n?.loginToReact || 'Please log in to react.',
+						() => { window.location.href = state.loginUrl; },
+						state.i18n?.logIn || 'Log in',
+						'primary'
+					);
+				} else {
+					actions.showToast( state.i18n?.loginToReact || 'Please log in to react.', 'error' );
+				}
 				return;
 			}
 			const isActive = state.lightboxUserReaction === type;
@@ -1693,6 +1818,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// can open. No-op if Pro is not present.
 		lightboxOpenCollections() {
 			if ( ! state.lightboxMediaId ) return;
+			// The picker announces each change; re-read the saved state so the
+			// Save button fills or empties (Basecamp 10364776932).
+			if ( ! savedListenerAdded ) {
+				savedListenerAdded = true;
+				document.addEventListener( 'mvs-collections-changed', async ( e ) => {
+					const id = e.detail?.mediaId;
+					if ( ! id || id !== state.lightboxMediaId ) return;
+					const restUrl = window.mvsBpActions?.restUrl || ( window.location.origin + '/wp-json/mvs/v1/' );
+					try {
+						const f = await window.mvsRest.restFetch( restUrl + 'media/' + id + '/favorite' );
+						if ( f.ok ) state.lightboxIsFavorited = !! f.data.favorited;
+					} catch {}
+				} );
+			}
 			const ref = getElement()?.ref;
 			( ref || document.body ).dispatchEvent(
 				new CustomEvent( 'mvs-collections-click', {
@@ -1824,6 +1963,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! mediaId ) {
 				return;
 			}
+			// The edit modal takes over the lightbox's return target (the tile
+			// it was opened from), so closing the lightbox doesn't pull focus
+			// back to the grid behind the modal.
+			editReturnFocus = lightboxReturnFocus;
+			lightboxReturnFocus = null;
 			actions.closeLightbox();
 			await actions.openEditModal( mediaId );
 		},
@@ -1898,10 +2042,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		lightboxReport() {
-			// Navigate to the single media page where the full report dialog lives.
-			const url = state.lightboxMediaData?.link;
-			if ( url ) {
-				window.location.href = url + '#report';
+			// Report in place, with the same reason picker every MediaVerse
+			// report uses, filed to this item's queue (BuddyNext's own lightbox
+			// posts to the same route). It used to navigate to the item's page
+			// with #report, which nothing handled: the member landed on a page
+			// with no form and nothing was reported (card 10369223794).
+			const id = state.lightboxMediaData?.id;
+			if ( id ) {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				actions.promptReport( `${ restUrl }media/${ id }/report` );
 			}
 		},
 		async lightboxDownload() {
@@ -2003,6 +2153,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Tab is trapped BEFORE the Escape branch and before the typing
 			// guard, because it applies whether or not the member is in a
 			// field — a text input inside the dialog is still inside it.
+			// Topmost dialog first: the confirm sits over the edit modal, which
+			// can sit over the lightbox.
+			if ( event.key === 'Tab' && state.confirmVisible ) {
+				dialogTrapTab( event, '.mvs-confirm-overlay:not([hidden]) .mvs-confirm' );
+				return;
+			}
+			if ( event.key === 'Tab' && state.editModalVisible ) {
+				dialogTrapTab( event, '.mvs-edit-modal' );
+				return;
+			}
 			if ( event.key === 'Tab' && state.lightboxVisible ) {
 				dialogTrapTab( event, '.mvs-lightbox' );
 				return;
@@ -2013,7 +2173,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			if ( event.key === 'Escape' ) {
-				if ( state.editModalVisible ) {
+				if ( state.confirmVisible ) {
+					actions.handleConfirmCancel();
+				} else if ( state.editModalVisible ) {
 					actions.closeEditModal();
 				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();
@@ -2229,7 +2391,9 @@ const { state: mvsState } = store( 'mvs', {
 			// (the "close reveals the wrong page" / "overlay blocks clicks"
 			// regression). Author and other links inside a card are not
 			// .mvs-grid-item-link, so they still client-navigate normally.
-			if ( link.classList.contains( 'mvs-grid-item-link' ) ) return;
+			// The list is load-more.js's (window.mvsMediaTileLink), so every
+			// layout's tile link is covered, load-more tiles included.
+			if ( link.matches( window.mvsMediaTileLink || '.mvs-grid-item-link' ) ) return;
 			const rawHref = link.getAttribute( 'href' );
 			if ( ! rawHref || '#' === rawHref.charAt( 0 ) ) return;
 			if ( event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||

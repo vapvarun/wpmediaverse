@@ -67,7 +67,8 @@ If a member has restricted who can message them to followers only, your message 
 3. **Who can send messages** sets who may start a conversation: everyone, followers, mutual followers, or nobody. Nobody stops new messages while members keep reading the conversations they already have.
 4. A member can make their own setting stricter than the site's (for example, mutual followers only), never looser.
 5. Set a **Minimum Account Age** (in days) to stop brand-new accounts from sending messages.
-6. The chat panel appears automatically for signed-in members, no shortcode needed. **Chat Panel Visibility** limits where it shows. How often the chat checks for new messages is set in code, see Transport below.
+6. The chat panel appears automatically for signed-in members, no shortcode needed. **Chat Panel Visibility** limits where it shows: everywhere (default), MediaVerse pages only, BuddyPress pages only (when BuddyPress is active), or never (members use only the /messages/ page).
+7. **Online Status Visibility** sets who can see that a member is online: everyone (default), followers only, or nobody. How often the chat checks for new messages is set in code, see Transport below.
 
 Messaging yourself is refused with "You can't send a message to yourself".
 
@@ -121,7 +122,7 @@ There are three ways to start or open a conversation:
 
 ## Privacy Settings
 
-Each user controls their DM privacy from their account settings. Admins set the site-wide defaults at **Media > Settings > Social**.
+Each user controls their DM privacy from their account settings. Admins set the site-wide defaults at **MediaVerse > Settings > Messages**. A member's own choice can be stricter than the site setting, never looser.
 
 | Option | Key | Values |
 |--------|-----|--------|
@@ -286,7 +287,7 @@ Soft-delete a message. Requires ownership of the message. The message record is 
 
 ### DELETE /messages/{id}/unsend
 
-Hard-delete a message. Only available within the edit window (default: 5 minutes after sending). Requires ownership of the message. The message record is permanently removed.
+Hard-delete a message. Only available within 15 minutes after sending. Requires ownership of the message. The message record is permanently removed.
 
 **Response:** `204 No Content`
 

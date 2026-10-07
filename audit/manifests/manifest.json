@@ -2133,12 +2133,16 @@
     {
       "name": "mvs_album",
       "file": "includes/PostTypes/Album.php:49",
-      "show_in_menu": "wpmediaverse"
+      "show_in_menu": "wpmediaverse",
+      "show_in_rest": false,
+      "rest_note": "No core wp/v2 route since 2.6.1 (it leaked private items); mvs/v1 is the API."
     },
     {
       "name": "mvs_collection",
       "file": "includes/PostTypes/Collection.php:49",
-      "show_in_menu": "wpmediaverse"
+      "show_in_menu": "wpmediaverse",
+      "show_in_rest": false,
+      "rest_note": "No core wp/v2 route since 2.6.1 (it leaked private items); mvs/v1 is the API."
     }
   ],
   "taxonomies": [
@@ -6064,6 +6068,12 @@
       "handler": "Commands::regenerate_thumbnails",
       "file": "includes/CLI/Commands.php:526",
       "note": "Rebuilds the large/medium/thumb rungs from the current mvs_thumbnail_sizes spec. Local-disk only (use cloud-thumbs-backfill for cloud-only originals). Flags: --only-missing, --dry-run, --batch=<n>."
+    },
+    {
+      "command": "wp mvs faststart",
+      "handler": "Commands::faststart",
+      "file": "includes/CLI/Commands.php",
+      "note": "Moves the moov index to the front of existing MP4/MOV/M4A files (Services\\Mp4Faststart, pure PHP, no ffmpeg) so they start playing before fully downloading where Range never reaches PHP. New uploads and replacements get it automatically. Local files only; safe to re-run. Flags: --dry-run, --batch=<n>."
     }
   ],
   "storage_drivers": [
@@ -6085,7 +6095,8 @@
     "always_sign_filter": "Core/Plugin.php::maybe_sign_file_url (mvs_media_response priority 10)",
     "rate_limit_middleware": "REST/RateLimiter.php",
     "storage_trust": "Services/StorageService.php::host_of (one host reader for SignedUrlService::is_on_driver_host and driver_name_for_url; refuses backslash, whitespace, control chars, userinfo)",
-    "list_privacy": "Services/PrivacyService.php::can_list (can_view + either-way block list; used by AlbumService::viewable_item_ids and FavoriteService::get_collection_media_ids)"
+    "list_privacy": "Services/PrivacyService.php::can_list (can_view + either-way block list; used by AlbumService::viewable_item_ids and FavoriteService::get_collection_media_ids)",
+    "space_list_privacy": "Services/PrivacyService.php::query_listable_spaces (album/collection lists: AlbumController::get_items, templates/cpt-archive.php, BaseBPTabIntegration::albums_content)"
   },
   "ci_guards": {
     "script": "bin/ci-local.sh",
@@ -6124,7 +6135,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.0",
+    "branch": "2.6.1",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -6950,5 +6961,89 @@
     "admin_pages": 22,
     "migrator_version": 30,
     "hooks_note": "NOT re-enumerated on 2026-09-01: manifest.hooks.json is owned by a separate pass this cycle. Value carried forward unverified."
+  },
+  "refresh_2026_10_02": {
+    "scope": "targeted (2.6.1: list privacy, media/album ID overlap, MIN_PRO, album admin, build cleanup)",
+    "added": {
+      "public_methods": [
+        "PrivacyService::query_listable_spaces()",
+        "TemplateHelpers::alt_text()",
+        "TemplateHelpers::explore_type()",
+        "TemplateHelpers::fixed_privacy_note()"
+      ]
+    },
+    "changed": [
+      "mvs_album and mvs_collection: show_in_rest false (wp/v2/mvs-albums and wp/v2/mvs-collections removed)",
+      "MediaRepository::refuses_cpt_id()/media_ids_only(): refuse only an album/collection ID with no media row (media sharing an album ID can be edited)",
+      "MVS_MIN_PRO 2.6.0 (BootGuardTest pins it to MVS_VERSION minor)",
+      "Plugin::register_types(): wp_insert_post_data drops album password and private status; admin.css hides WP visibility controls on album/collection screens",
+      "AlbumMetaBox: album type is a select (default, playlist; custom values kept)",
+      "Packaging: build/blocks/blocks excluded (Gruntfile copy:dist, .distignore, build-release.sh check); Lock Overlay CSS removed",
+      "MediaRepository::tag_cloud()/tag_cloud_total(): public items only; CacheService tag cloud keys v3",
+      "Plugin URI + Get Pro link: wbcomdesigns.com/downloads/; makepot report-msgid-bugs-to wbcomdesigns.com/support/",
+      "MediaRepository::query(): orderby trending via ranked_feed_page(alias m)",
+      "REST media item: alt field",
+      "EmailService TYPES: new_follower, media_comment (options mvs_email_new_follower, mvs_email_media_comment)",
+      "mvs_explore_query_args / mvs_feed_query_args: type filter callback in Plugin::init()",
+      "load-more.js: auto-load (3 pages), trending + mvs_type passthrough",
+      "MediaRepository::find_by_hash( $hash, $author_id = 0 ): uploads match only the uploader's media",
+      "SettingsPage: settings saved notice at the top of the tab (settings-nav.js scrolls it into view on phones)",
+      "Lightbox Save binds the Favorites state; listens for mvs-collections-changed (dispatched by Pro collection-picker.js)",
+      "DashboardSections::core_sections(): no profile section when BuddyNext is active; client activeTab via resolve()",
+      "Dashboard album prompts: named photos, stricter album privacy asks first",
+      "EmailService::host_sends(): no activity emails or switches when BuddyNext is active"
+    ]
+  },
+  "refresh_2026_10_07": {
+    "scope": "targeted (2.6.1 work of 3 to 6 October: delivery, video, uploads, privacy, licence, storage, moderation count)",
+    "added": {
+      "services_added": [
+        "Services\\DirectDelivery (capability-URL delivery, probe-gated)",
+        "Services\\MediaFileRotator (rename files when privacy tightens)",
+        "Services\\Mp4Faststart (moov-first rewrite, pure PHP)",
+        "Services\\ServerFileOffload (X-Accel-Redirect / X-Sendfile, probe-gated)",
+        "Core\\PresetActivation (shared preset licence activation model)"
+      ],
+      "public_methods": [
+        "PrivacyService::supported_levels now includes followers",
+        "TemplateHelpers::privacy_choices offers followers",
+        "MediaRepository::PRIVACY_ORDER includes followers",
+        "SettingsRegistrar::storage_driver_choices (filterable)",
+        "ModerationService::get_counts returns reports; needs_review counts them",
+        "ReportService clears the cached moderation badge on report and status change"
+      ],
+      "hooks_added": [
+        "mvs_direct_media_delivery",
+        "mvs_media_captions",
+        "mvs_media_files_rotated",
+        "mvs_private_media_max_age",
+        "mvs_serve_offload",
+        "mvs_serve_offload_nginx_prefix",
+        "mvs_storage_driver_choices",
+        "wpmediaverse_wp_cron_disabled"
+      ],
+      "wp_cli": [
+        "wp mvs faststart [--dry-run] [--batch=<n>]",
+        "wp mvs migrate-storage: --include-non-public is now documented in help"
+      ],
+      "admin_actions": [
+        "admin_post_wpmediaverse_retry_preset_activation (audit/admin-action-authority.json)"
+      ],
+      "rest": [
+        "GET /mvs/v1/media scope enum: public, all, self, followers",
+        "GET /mvs/v1/offload-probe/{token} (loopback probe, single-use token)"
+      ],
+      "options": [
+        "wpmediaverse_preset_activation_attempts",
+        "wpmediaverse_preset_activation_gave_up",
+        "wpmediaverse_preset_activation_refused",
+        "mvs_direct_delivery",
+        "mvs_serve_offload"
+      ],
+      "cron": [
+        "wpmediaverse_activate_preset_key (single event; cleared on deactivation)"
+      ]
+    },
+    "unchanged": "tables, capabilities, shortcodes, blocks registered, post types"
   }
 }

@@ -172,7 +172,10 @@ class GeneralSettingsRegistrar {
 					'members' => __( 'Members Only', 'wpmediaverse' ),
 					'private' => __( 'Private', 'wpmediaverse' ),
 				),
-				'description' => __( 'New uploads default to this privacy level. Users can change per upload.', 'wpmediaverse' ),
+				// Says what actually happens with the setting below (Basecamp 10364776646).
+				'description' => get_option( 'mvs_allow_user_privacy' )
+					? __( 'New uploads start at this level; members can change it per upload.', 'wpmediaverse' )
+					: __( 'Every new upload gets this level; members cannot change it while "Let members choose" is off.', 'wpmediaverse' ),
 			)
 		);
 
@@ -299,6 +302,12 @@ class GeneralSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-general'
 		);
 
+		// BuddyNext owns these emails on its sites, so the section (which renders
+		// only with fields) is left empty and does not show.
+		if ( \WPMediaVerse\Services\EmailService::host_sends() ) {
+			return;
+		}
+
 		$emails = array(
 			\WPMediaVerse\Services\EmailService::TYPES['battle_invite']   => array(
 				__( 'Photo battle invites', 'wpmediaverse' ),
@@ -311,6 +320,14 @@ class GeneralSettingsRegistrar {
 			\WPMediaVerse\Services\EmailService::TYPES['report_resolved'] => array(
 				__( 'Report reviewed', 'wpmediaverse' ),
 				__( 'A moderator resolved or dismissed a report the member filed. The email does not say what was decided.', 'wpmediaverse' ),
+			),
+			\WPMediaVerse\Services\EmailService::TYPES['new_follower']    => array(
+				__( 'New follower', 'wpmediaverse' ),
+				__( 'Someone started following the member.', 'wpmediaverse' ),
+			),
+			\WPMediaVerse\Services\EmailService::TYPES['media_comment']   => array(
+				__( 'Comment on their media', 'wpmediaverse' ),
+				__( 'Someone commented on a photo, video or file the member posted.', 'wpmediaverse' ),
 			),
 		);
 

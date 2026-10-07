@@ -66,4 +66,36 @@ class FollowersPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertFalse( $this->can_view( $this->follower ) );
 	}
+
+	/**
+	 * The level can be chosen and saved, not only read: it is in the one list of
+	 * choosable levels, the accepted levels, and the tightening order, and a
+	 * REST save takes it (Basecamp 10374860312: offered by Pro, refused here).
+	 */
+	public function test_the_owner_can_choose_and_save_the_level(): void {
+		$this->assertArrayHasKey( 'followers', \WPMediaVerse\Core\TemplateHelpers::privacy_choices() );
+		$this->assertContains( 'followers', \WPMediaVerse\Services\PrivacyService::supported_levels() );
+		$repo = \WPMediaVerse\Repository\MediaRepository::class;
+		$this->assertGreaterThan( $repo::privacy_rank( 'members' ), $repo::privacy_rank( 'followers' ) );
+		$this->assertLessThan( $repo::privacy_rank( 'private' ), $repo::privacy_rank( 'followers' ) );
+
+		Plugin::container()->get( 'media_repository' )->set( $this->media_id, 'privacy', 'public' );
+		wp_set_current_user( $this->owner );
+		$request = new \WP_REST_Request( 'PUT', '/mvs/v1/media/' . $this->media_id );
+		$request->set_body_params( array( 'privacy' => 'followers' ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'followers', $response->get_data()['privacy'] );
+	}
+
+	/**
+	 * Every level a picker offers is one a save accepts.
+	 */
+	public function test_every_choosable_level_is_an_accepted_level(): void {
+		$this->assertSame(
+			array(),
+			array_diff( array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ), \WPMediaVerse\Services\PrivacyService::supported_levels() )
+		);
+	}
 }

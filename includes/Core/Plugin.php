@@ -294,6 +294,18 @@ class Plugin {
 		// Member emails: the minimal set the owner switches on (2.6.0).
 		self::$container->get( 'emails' )->init();
 
+		// Explore's Type filter (?mvs_type=) for the Grid and every Pro feed
+		// layout, applied where both build their query (2.6.1).
+		$mvs_apply_type = static function ( $args ) {
+			$type = self::$container->get( 'template_helpers' )->explore_type();
+			if ( '' !== $type && is_array( $args ) ) {
+				$args['media_types'] = array( $type );
+			}
+			return $args;
+		};
+		add_filter( 'mvs_explore_query_args', $mvs_apply_type );
+		add_filter( 'mvs_feed_query_args', $mvs_apply_type );
+
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
 			self::$container->get( 'moderation' );
@@ -477,6 +489,14 @@ class Plugin {
 		// hook, so a page created here is covered by the flush rather than
 		// waiting for the next version to be reachable.
 		add_action( 'init', array( Activator::class, 'maybe_upgrade' ), 98 );
+		// Direct media delivery: re-probe daily from admin page loads and cron only
+		// (never a visitor's request); the probe also upgrades the folder .htaccess.
+		add_action( 'wp_loaded', array( \WPMediaVerse\Services\DirectDelivery::class, 'maybe_probe' ) );
+		// Opt-in web-server offload for /serve (X-Accel-Redirect / X-Sendfile).
+		add_action( 'wp_loaded', array( \WPMediaVerse\Services\ServerFileOffload::class, 'maybe_probe' ) );
+		add_action( 'rest_api_init', array( \WPMediaVerse\Services\ServerFileOffload::class, 'register_route' ) );
+		\WPMediaVerse\Services\MediaFileRotator::register();
+		add_action( 'wp_loaded', array( \WPMediaVerse\Services\MediaFileRotator::class, 'maybe_start_legacy' ) );
 
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();
@@ -1107,6 +1127,25 @@ class Plugin {
 			2
 		);
 
+		// Who sees an album is its MediaVerse privacy (Album Settings box). A
+		// WordPress password or private status is invisible to every MediaVerse
+		// list and only hid the album, even from its owner, while its privacy
+		// said otherwise. admin.css hides those controls; this covers any other
+		// save path (Basecamp 10354828394). Collections keep their status: the
+		// Favorites collection is private by design.
+		add_filter(
+			'wp_insert_post_data',
+			static function ( $data ) {
+				if ( 'mvs_album' === ( $data['post_type'] ?? '' ) ) {
+					$data['post_password'] = '';
+					if ( 'private' === ( $data['post_status'] ?? '' ) ) {
+						$data['post_status'] = 'publish';
+					}
+				}
+				return $data;
+			}
+		);
+
 		Album::register();
 		Collection::register();
 		MediaTag::register();
@@ -1537,6 +1576,11 @@ class Plugin {
 				array( array( 'id' => '@wordpress/interactivity' ) ),
 				self::asset_version( 'src/blocks/media-player/view.js' )
 			);
+			// ...and its stylesheet, for the player's shared states (e.g. the
+			// "cannot play" notice) that the template renders with the same markup.
+			if ( wp_style_is( 'mvs-media-player-style', 'registered' ) ) {
+				wp_enqueue_style( 'mvs-media-player-style' );
+			}
 
 			wp_enqueue_style(
 				'mvs-shared-ui-frame',
@@ -2641,10 +2685,10 @@ class Plugin {
 
 		$user   = wp_get_current_user();
 		$config = array(
-			'restBase'       => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			'restBase'           => esc_url_raw( rest_url( 'mvs/v1' ) ),
 			// Fluent emoji folder: known reaction characters render as the same
 			// SVGs as media reactions (messaging.js EMOJI_FILES).
-			'emojiBase'      => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
+			'emojiBase'          => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
 			// Group DM management (create/rename/add/remove/leave) lives in Pro's
 			// GroupController. Free renders group threads on its own (title,
 			// roster, sender names via /mvs/v1/me/conversations), but only Pro
@@ -2652,14 +2696,18 @@ class Plugin {
 			// site and messaging.js hides "New group" + roster controls
 			// accordingly. Same empty-string-when-Pro-absent pattern as
 			// templates/media-single.php's analyticsUrl.
-			'groupsRestBase' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
-			'nonce'          => wp_create_nonce( 'wp_rest' ),
-			'currentUser'    => array(
+			'groupsRestBase'     => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
+			// Checked before upload, so an over-limit video is refused at once
+			// instead of after the member waits for the whole file to send.
+			'attachmentMaxBytes' => \WPMediaVerse\Messaging\MessagingController::max_attachment_size(),
+			'attachmentTooLarge' => \WPMediaVerse\Messaging\MessagingController::attachment_too_large_message(),
+			'nonce'              => wp_create_nonce( 'wp_rest' ),
+			'currentUser'        => array(
 				'id'           => $user->ID,
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
 			),
-			'transport'      => apply_filters(
+			'transport'          => apply_filters(
 				'mvs_messaging_transport',
 				new \WPMediaVerse\Messaging\RestPollingTransport()
 			)->get_client_config(),
@@ -2667,7 +2715,7 @@ class Plugin {
 			// source (gettext-style). The module can't import @wordpress/i18n and
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
 			// the store reads these instead. Basecamp 10073528834.
-			'i18n'           => array(
+			'i18n'               => array(
 				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
 				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
 				'Could not share media.'               => __( 'Could not share media.', 'wpmediaverse' ),
@@ -3405,6 +3453,25 @@ JS;
 			}
 		);
 
+		// A main query carrying only our route vars reads to WordPress as the blog
+		// home: is_home() went true, body_class printed "home blog", and themes
+		// styled the page as the front page (BuddyX slid its header under the admin
+		// bar). True of every virtual route, not just /messages/.
+		add_action(
+			'parse_query',
+			static function ( \WP_Query $query ) {
+				if ( ! $query->is_main_query() ) {
+					return;
+				}
+				foreach ( array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) as $var ) {
+					if ( $query->get( $var ) ) {
+						$query->is_home = false;
+						return;
+					}
+				}
+			}
+		);
+
 		add_action(
 			'template_redirect',
 			function () {
@@ -3434,8 +3501,17 @@ JS;
 					$template = MVS_PLUGIN_DIR . 'templates/messages.php';
 				}
 				if ( file_exists( $template ) ) {
-					include $template;
-					exit;
+					// Render through template_include like every other MediaVerse
+					// route, not `include; exit;` here: exiting inside
+					// template_redirect skipped every later callback themes and
+					// builders hang on it (Basecamp 10285448527).
+					add_filter(
+						'template_include',
+						static function () use ( $template ) {
+							return $template;
+						},
+						100
+					);
 				}
 			}
 		);

@@ -30,14 +30,14 @@ import { store, getContext } from '@wordpress/interactivity';
 function buildThumbnailNodes( item ) {
 	const builders = window.mvsCardBuilders;
 	if ( builders && typeof builders.buildThumbnail === 'function' ) {
-		return builders.buildThumbnail( item, { alt: item.title || '' } );
+		return builders.buildThumbnail( item, { alt: item.alt || item.title || '' } );
 	}
 
 	// Fallback mirror of TemplateHelpers::media_thumbnail() type handling.
 	const mediaType = item.media_type || '';
 	const thumbUrl = item.thumbnail_url || '';
 	const fileUrl = item.file_url || '';
-	const alt = item.title || '';
+	const alt = item.alt || item.title || '';
 	const nodes = [];
 
 	// Video-first, mirroring PHP media_thumbnail() / card-builders
@@ -101,6 +101,22 @@ const { state } = store( 'mvs/explore-feed', {
 		get hasSuggestions() {
 			const ctx = getContext();
 			return ctx.suggestionsOpen && Array.isArray( ctx.suggestions ) && ctx.suggestions.length > 0;
+		},
+		// Arrow keys move suggestionHighlight; these make that visible and
+		// announced (aria-selected + aria-activedescendant). Options are
+		// id'd by position, which is what the highlight counts.
+		get suggestionId() {
+			const ctx = getContext();
+			return 'mvs-explore-sugg-' + ( ctx.suggestions || [] ).indexOf( ctx.item );
+		},
+		get isSuggestionHighlighted() {
+			const ctx = getContext();
+			return ( ctx.suggestions || [] ).indexOf( ctx.item ) === ( ctx.suggestionHighlight ?? -1 );
+		},
+		get activeSuggestionId() {
+			const ctx = getContext();
+			const idx = ctx.suggestionHighlight ?? -1;
+			return state.hasSuggestions && idx >= 0 ? 'mvs-explore-sugg-' + idx : null;
 		},
 	},
 	actions: {

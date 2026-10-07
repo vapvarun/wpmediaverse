@@ -1,6 +1,6 @@
 # Pro REST API Reference
 
-> Endpoints marked **(Pro)** require MediaVerse Pro. Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later — check your installed Pro version if a route 404s.
+> Endpoints marked **(Pro)** require MediaVerse Pro. Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later - check your installed Pro version if a route 404s.
 
 **Base URL:** `/wp-json/mvs-pro/v1/`
 
@@ -8,7 +8,7 @@ MediaVerse Pro registers its own REST namespace, `mvs-pro/v1`, alongside the fre
 
 Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` header with a nonce from `wp_create_nonce( 'wp_rest' )` and include `credentials: 'same-origin'` so the request is tied to the logged-in user. Application Passwords (WP 5.6+) work for mobile/headless clients.
 
-> **Note (2.2.0):** the free plugin's private-community gate (`mvs_rest_require_auth`) covers `mvs-pro/v1` too — Pro appends its namespace via the `mvs_rest_gated_route_prefixes` filter, so on a private community even Pro's public reads (e.g. tournament brackets) require login. Each route additionally enforces its own permission callback as listed below.
+> **Note (2.2.0):** the free plugin's private-community gate (`mvs_rest_require_auth`) covers `mvs-pro/v1` too - Pro appends its namespace via the `mvs_rest_gated_route_prefixes` filter, so on a private community even Pro's public reads (e.g. tournament brackets) require login. Each route additionally enforces its own permission callback as listed below.
 
 **Update methods.** Every route documented below with `PUT` also accepts `PATCH` and `POST` - WordPress registers those three together as its "editable" method group, so all three reach the same handler with the same arguments and the same response. `PUT` is used as the canonical form throughout this page.
 
@@ -16,11 +16,11 @@ Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` hea
 
 **Permission conventions used below:**
 
-- **Public** — no authentication required (`__return_true` or open read). Some are rate-limited inside the service.
-- **User** — any logged-in user (`is_user_logged_in`).
-- **Owner/Admin** — the media owner or a user who can edit others' media.
-- **Admin** — requires `manage_options` or `manage_mvs_settings` (noted per route).
-- **HMAC** — no WordPress auth; request body is verified against an HMAC-SHA256 signature header.
+- **Public** - no authentication required (`__return_true` or open read). Some are rate-limited inside the service.
+- **User** - any logged-in user (`is_user_logged_in`).
+- **Owner/Admin** - the media owner or a user who can edit others' media.
+- **Admin** - requires `manage_options` or `manage_mvs_settings` (noted per route).
+- **HMAC** - no WordPress auth; request body is verified against an HMAC-SHA256 signature header.
 
 Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_connectors_enabled`, `mvs_stories_enabled`). When one of those features is disabled its routes are not registered. Streaks is the exception: `GET /me/streak` and `POST /streaks/buy-freeze` register regardless of `mvs_streaks_enabled` and refuses at call time instead.
 
@@ -56,7 +56,7 @@ Update the privacy level of a single media item. Pro-only because it supports th
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `privacy` | string | Yes | — | Privacy level (validated against the configured set) |
+| `privacy` | string | Yes | - | Privacy level (validated against the configured set) |
 | `custom_users` | int[] | No | `[]` | User IDs allowed to view, when privacy is "Specific People" |
 | `inherit_album` | bool | No | `false` | When true, the item follows its album's privacy |
 
@@ -95,13 +95,13 @@ Save a new privacy preset for reuse.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `name` | string | Yes | — | Preset name (≤100 chars) |
-| `privacy` | string | Yes | — | Privacy level to store |
+| `name` | string | Yes | - | Preset name (≤100 chars) |
+| `privacy` | string | Yes | - | Privacy level to store |
 | `custom_users` | int[] | No | `[]` | User IDs to include when privacy is "Specific People" |
 
 ---
 
-## Video — Chapters & Resume
+## Video - Chapters & Resume
 
 ### GET /media/{id}/chapters
 
@@ -226,10 +226,10 @@ Record a video play/heatmap event. Public and rate-limited inside the service; m
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `event_type` | string | Yes | — | One of the allowed event types |
-| `position` | number | Yes | — | Playhead position in seconds (≥ 0) |
+| `event_type` | string | Yes | - | One of the allowed event types |
+| `position` | number | Yes | - | Playhead position in seconds (≥ 0) |
 | `duration` | number | No | `0` | Segment duration in seconds (≥ 0) |
-| `session_id` | string | Yes | — | Player session identifier (1–64 chars) |
+| `session_id` | string | Yes | - | Player session identifier (1–64 chars) |
 
 ---
 
@@ -303,7 +303,7 @@ Create a boost for a media item. Returns `201` with the new `boost_id`.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `media_id` | int | Yes | — | Media item to boost |
+| `media_id` | int | Yes | - | Media item to boost |
 | `impressions_target` | int | No | `500` | Target number of impressions |
 
 ---
@@ -452,6 +452,11 @@ Get finalized results for a challenge.
 
 **Auth:** Public
 
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | `1` | Page number |
+| `per_page` | int | `100` | Rows per page (1-100) |
+
 ---
 
 ## Battles
@@ -478,7 +483,7 @@ Create (challenge a user to) a battle.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `opponent_id` | int | Yes | — | The user being challenged |
+| `opponent_id` | int | Yes | - | The user being challenged |
 | `theme` | string | No | `""` | Optional battle theme |
 
 ---
@@ -777,7 +782,7 @@ Save the current user's preferences for one connector. **(New in 2.6.0)** An unk
 
 ## Stories **(New in 1.9.0)**
 
-WhatsApp-style ephemeral stories. Story state is stored as free media meta (`is_story` / `story_started_at` / `story_expires_at`). There is no separate story-views table: a story view **is** a media view, so receipts are written to the free `mvs_media_views` table and "seen by" is derived from those rows, window-scoped to the story's active period via `story_started_at` and excluding the author. Replying to a story reuses the existing free DM routes — there is no separate reply endpoint here. Requires `mvs_stories_enabled`.
+WhatsApp-style ephemeral stories. Story state is stored as free media meta (`is_story` / `story_started_at` / `story_expires_at`). There is no separate story-views table: a story view **is** a media view, so receipts are written to the free `mvs_media_views` table and "seen by" is derived from those rows, window-scoped to the story's active period via `story_started_at` and excluding the author. Replying to a story reuses the existing free DM routes - there is no separate reply endpoint here. Requires `mvs_stories_enabled`.
 
 ### GET /stories
 
@@ -815,7 +820,7 @@ Mark a media item as a story.
 
 ### DELETE /media/{id}/story
 
-End a story early. The media itself is untouched — only the story designation is cleared.
+End a story early. The media itself is untouched - only the story designation is cleared.
 
 **Auth:** Owner/Admin
 
@@ -825,7 +830,7 @@ End a story early. The media itself is untouched — only the story designation 
 
 ### POST /stories/{id}/view
 
-Record a view receipt for the current user. The author's own views are never recorded — "seen by" counts the audience, not the owner.
+Record a view receipt for the current user. The author's own views are never recorded - "seen by" counts the audience, not the owner.
 
 **Auth:** User (subject to the media's normal privacy check)
 
@@ -891,7 +896,7 @@ The single call a native/headless client makes before theming itself and decidin
 }
 ```
 
-Site name, description, icon, and auth discovery come from the core WordPress `/wp-json/` index, not this route - `/app/config` only carries what the core index cannot express: branding and feature flags. `accent_color`, `logo_url`, `login_bg_url`, and `dark_mode_default` are `null`/`false` unless Pro's white-label branding settings are configured (see [Mobile App](../pro-features/mobile-app.md)). `layout` mirrors the site owner's `mvs_pro_feed_layout` choice (`grid` when Pro is inactive). The `features` map is Free's always-on capabilities plus Pro's toggle-driven flags (`battles`, `challenges`, `tournaments`, `boosts`, `streaks`, `video`, `stories`) — each Pro flag is only `true` when its matching admin toggle is on.
+Site name, description, icon, and auth discovery come from the core WordPress `/wp-json/` index, not this route - `/app/config` only carries what the core index cannot express: branding and feature flags. `accent_color`, `logo_url`, `login_bg_url`, and `dark_mode_default` are `null`/`false` unless Pro's white-label branding settings are configured (see [Mobile App](../pro-features/mobile-app.md)). `layout` mirrors the site owner's `mvs_pro_feed_layout` choice (`grid` when Pro is inactive). The `features` map is Free's always-on capabilities plus Pro's toggle-driven flags (`battles`, `challenges`, `tournaments`, `boosts`, `streaks`, `video`, `stories`) - each Pro flag is only `true` when its matching admin toggle is on.
 
 ---
 
@@ -978,6 +983,12 @@ Dismiss the gamification first-run welcome banner (site-wide option).
 
 **Auth:** Admin (`manage_mvs_settings`)
 
+### POST /admin/gamification-notice/dismiss
+
+Dismiss the gamification admin notice for the current user (stored as user meta, so it does not hide the notice for other admins). Returns `{ "dismissed": true }`.
+
+**Auth:** Admin (`manage_mvs_settings`)
+
 ---
 
 ## Documents, Folders & Drives **(New in 2.4.0)**
@@ -1016,7 +1027,7 @@ Full-text search across the documents the caller can see.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `q` | string | Yes | — | Search term |
+| `q` | string | Yes | - | Search term |
 | `drive` | string | No | (all visible drives) | Scope to one drive, e.g. `space:7` |
 | `page` | int | No | `1` | Page number |
 | `per_page` | int | No | `20` | Results per page (max 50) |
@@ -1062,7 +1073,7 @@ Create a document. Send the file as `multipart/form-data`.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `doc_type` | string | No | — | The type the caller believes this is. A disagreement with the actual file is refused, never silently corrected. Omit it to make no claim |
+| `doc_type` | string | No | - | The type the caller believes this is. A disagreement with the actual file is refused, never silently corrected. Omit it to make no claim |
 | `folder` | int | No | `0` | Folder to file into. A folder carries its own drive and wins over `drive` |
 | `drive` | string | No | (your own drive) | Drive to upload into at the root, as `type:id` - only consulted when `folder` is `0` |
 | `title` | string | No | (filename) | Document title |
@@ -1086,6 +1097,49 @@ Optional `doc_type` behaves exactly as on upload.
 Restore a trashed document. Refused with `409 mvs_document_folder_trashed` while the folder it is in is still in the trash: restore the folder, which brings the document back with it.
 
 **Auth:** Owner/Admin. Write-gated.
+
+---
+
+### POST /documents/link
+
+Link an existing file into a Space by pasting its link, slug or numeric ID. Backs the "Link file" control in a Space's Files tab.
+
+**Auth:** User with documents enabled (`mvs_documents_unavailable` otherwise). Write access to the Space and edit access to the file are proved inside the service. Write-gated.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ref` | string | Yes | A media ID, a slug, or a `/media/{slug}/` URL |
+| `space_id` | int | Yes | The Space to link into (minimum 1) |
+
+**Response:** the linked document, the same shape as `GET /documents/{id}`. A reference that does not resolve to a document the caller may read answers `404 mvs_document_not_found` with a message the control can show. Linking an already-linked file is a no-op that still succeeds.
+
+---
+
+### POST /documents/{id}/spaces
+
+Link this document into a Space. Fires `mvs_document_linked_to_space`.
+
+**Auth:** User with documents enabled. The caller needs write access to the Space and edit access to the document. Write-gated.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `space_id` | int | Yes | The Space to link into (minimum 1) |
+
+**Response:** the refreshed document. Refusals: `404 mvs_document_not_found` (no Space given), `404 mvs_drive_not_found` (the caller cannot write to that Space), `403 mvs_document_forbidden` (the caller cannot edit the document), `409 mvs_document_forbidden` (the document already lives in that Space).
+
+---
+
+### DELETE /documents/{id}/spaces/{space_id}
+
+Remove this document from a Space. The file itself is untouched. Fires `mvs_document_unlinked_from_space`.
+
+**Auth:** User with documents enabled, and either a moderator of the Space or someone who can edit the document. Write-gated.
+
+**Response:**
+
+```json
+{ "linked": false, "media_id": 123, "space_id": 7 }
+```
 
 ---
 
@@ -1178,7 +1232,7 @@ Create a folder.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `name` | string | Yes | — | Folder name |
+| `name` | string | Yes | - | Folder name |
 | `drive` | string | No | (your own drive) | Drive token |
 | `parent` | int | No | `0` | Parent folder ID |
 
@@ -1252,11 +1306,11 @@ Grant a user or a role access to a document.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `grantee_type` | string | `user` | `user` or `role` |
-| `user_id` | int | — | The member to grant to, when `grantee_type` is `user` |
-| `user_login` | string | — | Alternative to `user_id` - a person types a name, not a row ID |
-| `role` | string | — | The role to grant to, when `grantee_type` is `role` |
+| `user_id` | int | - | The member to grant to, when `grantee_type` is `user` |
+| `user_login` | string | - | Alternative to `user_id` - a person types a name, not a row ID |
+| `role` | string | - | The role to grant to, when `grantee_type` is `role` |
 | `permission` | string | `view` | One of `view`, `comment`, `edit` |
-| `expires_at` | string | — | Optional expiry |
+| `expires_at` | string | - | Optional expiry |
 
 ---
 
@@ -1269,7 +1323,7 @@ Mint an anonymous share link for a document.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `permission` | string | `view` | One of `view`, `comment`, `edit` |
-| `expires_at` | string | — | Optional expiry |
+| `expires_at` | string | - | Optional expiry |
 
 ---
 
@@ -1355,6 +1409,10 @@ Fires `mvs_group_conversation_created`.
 Update a group - in practice, rename it.
 
 **Auth:** Group admin.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | The new group title |
 
 Also accepts `PATCH` and `POST`.
 

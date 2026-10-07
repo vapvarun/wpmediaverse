@@ -11,7 +11,7 @@
  * Override by copying to your-theme/wpmediaverse/cpt-archive.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -35,7 +35,8 @@ $mvs_posts_pp    = 24; // big-site readiness: bounded, never unbounded.
 // -----------------------------------------------------------------------
 $mvs_paged = max( 1, (int) get_query_var( 'paged', 1 ) );
 
-$mvs_archive_query = new WP_Query(
+// Only the albums or collections this viewer may see (Basecamp 10360879667).
+$mvs_archive_query = \WPMediaVerse\Services\PrivacyService::query_listable_spaces(
 	array(
 		'post_type'              => $mvs_cpt,
 		'post_status'            => 'publish',
@@ -46,7 +47,8 @@ $mvs_archive_query = new WP_Query(
 		'update_post_term_cache' => false,
 		'orderby'                => 'date',
 		'order'                  => 'DESC',
-	)
+	),
+	get_current_user_id()
 );
 
 $mvs_total_pages = $mvs_archive_query->max_num_pages;

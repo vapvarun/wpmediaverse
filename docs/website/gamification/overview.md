@@ -4,16 +4,16 @@
 
 
 
-MediaVerse Gamification turns your media community into a competitive platform. Users earn points, enter photo competitions, challenge each other to battles, and boost their media visibility - all integrated with the wb-gamification plugin's points and reward engine.
+MediaVerse Gamification turns your media community into a competitive platform. Members enter photo challenges and tournaments, challenge each other to battles, build upload streaks, and boost their media visibility. Points come from the separate free **WB Gamification** plugin.
 
-Gamification requires **MediaVerse Pro** and the **wb-gamification plugin** (active and configured). All gamification features are disabled by default. Enable each feature individually at **MediaVerse > Settings > Gamification**.
+Gamification is part of **MediaVerse Pro**. Competitions run without WB Gamification, but points are only earned and spent when it is active. Everything is off by default. Turn it on at **MediaVerse > Settings > Competitions**: tick **Competitions** first, then choose which types to switch on.
 
 ![Gamification overview in MediaVerse admin settings](../images/admin-settings-gamification.png)
 
 ## Requirements
 
-- MediaVerse Pro 1.0.0+
-- wb-gamification plugin (active)
+- MediaVerse Pro
+- WB Gamification plugin (active) for points. Needed for earning points, and for Media Boosts and streak freezes, which spend points
 - WordPress 6.5+
 - PHP 7.4+
 
@@ -21,11 +21,14 @@ Gamification requires **MediaVerse Pro** and the **wb-gamification plugin** (act
 
 | Feature | Description | Setting Key |
 |---------|-------------|-------------|
-| Photo Challenges | Themed weekly competitions with voting | `mvs_challenges_enabled` |
+| Competitions (master switch) | Nothing below exists on the site until this is on | `mvs_competitions_enabled` |
+| Photo Challenges | Themed competitions with voting | `mvs_challenges_enabled` |
 | Photo Battles | 1v1 head-to-head media matchups | `mvs_battles_enabled` |
 | Tournaments | Single-elimination bracket competitions | `mvs_tournaments_enabled` |
 | Media Boosts | Spend points to increase media visibility | `mvs_boosts_enabled` |
-| Upload Streaks | Track consecutive daily uploads | `mvs_streaks_enabled` |
+| Upload Streaks | Track consecutive daily uploads (has its own switch, outside the master switch) | `mvs_streaks_enabled` |
+
+While **Competitions** is off, MediaVerse adds no competition pages, links, admin menus or scheduled jobs.
 
 ## Competition Types
 
@@ -33,7 +36,7 @@ All three competition types share a unified database schema. Each type follows i
 
 ### Challenges
 
-Themed weekly competitions. Admin creates a challenge with a theme, entry window, and voting window. Users submit a photo, community votes, winners earn point prizes.
+Themed competitions. An admin (or Autopilot) creates a challenge with a theme, an entry window, and a voting window. Members submit photos, the community votes, and the top three earn point prizes.
 
 ### Battles
 
@@ -41,7 +44,7 @@ Themed weekly competitions. Admin creates a challenge with a theme, entry window
 
 ### Tournaments
 
-Single-elimination brackets for 4 to 64 participants. Users register, the system seeds the bracket, rounds proceed by community vote until a winner is determined.
+Single-elimination brackets for 4 to 64 participants. Members register, the bracket is seeded at random when registration closes, and each round is decided by community vote until a champion is found.
 
 ## Database Schema
 
@@ -57,30 +60,28 @@ The `mvs_competitions.type` column distinguishes between `challenge`, `battle`, 
 
 ## Points Integration
 
-Points are not awarded by MediaVerse itself - the separate free **wb-gamification** plugin is the points engine. MediaVerse ships an integration manifest that registers 15 gamification actions (photo upload, album creation, likes/comments/follows/favorites received and given, bookmarks, battle win, challenge participation, challenge placing, tournament round win, tournament win, and streak milestones).
+Points are not awarded by MediaVerse itself. The separate free **WB Gamification** plugin is the points engine. WB Gamification ships the MediaVerse integration: it registers 15 actions, with its own default point values, which you manage in WB Gamification. They cover a photo upload, adding items to an album, likes, comments, follows and favorites received, writing a comment, following a member, bookmarking a photo, winning a battle, entering a challenge, placing in a challenge, winning a tournament round, winning a tournament, and reaching a streak milestone.
 
-![wb-gamification manifest showing MediaVerse actions and point values](../images/admin-settings-gamification.png)
+MediaVerse fires the matching events as members use the site, and WB Gamification awards the points. The prizes you set on a challenge, a tournament or the battle reward are applied through the `wb_gam_points_for_action` filter, so the points a member earns match the prize shown on the page.
 
-As members interact with the site and competitions, MediaVerse fires the matching action hooks - for example `mvs_media_uploaded`, `mvs_battle_resolved`, `mvs_challenge_winner_named`, `mvs_tournament_finalized`, and `mvs_streak_milestone` - and wb-gamification awards the points configured for each action. The per-competition point prizes you set on a challenge or tournament are honored through the `wb_gam_points_for_action` filter, so the points a member earns match the prize shown in the UI.
-
-> Without the wb-gamification plugin active, competitions still run end to end - members enter, vote, and win - but no points are earned or spent. Install and activate wb-gamification to enable the points and rewards layer.
+> Without WB Gamification active, competitions still run end to end - members enter, vote, and win - but no points are earned or spent, Media Boosts cannot be bought, and streak freezes cannot be bought.
 
 ## Frontend Pages
 
 | URL | Description |
 |-----|-------------|
 | `/media/challenges/` | Browse and enter photo challenges |
-| `/media/battles/` | View active and completed battles |
+| `/media/battles/` | Start, accept, submit to and vote on battles |
 | `/media/tournaments/` | Browse tournaments and view brackets |
-| `/compete/` | Unified competition hub showing all active competitions |
+| `/compete/` | Compete hub: your points, your activity and results, the active challenge, open tournaments and the battle arena |
 
-The My Media dashboard adds **Challenges**, **Battles**, and **Tournaments** tabs showing the logged-in user's entries, results, and active matches.
+The My Media dashboard has no competition tabs. Members reach their competition activity on the Compete hub, which has a **Back to My Media** link.
 
 ![My Media dashboard with competition tabs](../images/dashboard-media.png)
 
 ## Scheduled Actions
 
-All competition lifecycle transitions run via Action Scheduler on an hourly recurrence. No competition state changes happen in real time - transitions occur at the next hourly tick after a deadline passes.
+Competition lifecycle changes are not real time. One recurring job runs about every 5 minutes and moves each competition on once a deadline has passed. Boost expiry runs hourly, and the streak check runs once a day.
 
 | Scheduled Action | Trigger Condition |
 |-----------------|------------------|
@@ -90,7 +91,7 @@ All competition lifecycle transitions run via Action Scheduler on an hourly recu
 | `mvs_resolve_expired_battles` | Battle vote deadline reached |
 | `mvs_start_registered_tournaments` | Tournament registration deadline reached |
 | `mvs_resolve_expired_matches` | Match vote deadline reached |
-| `mvs_expire_boosts` | Boost impression target or duration reached |
+| `mvs_expire_boosts` | Boost impression target or duration reached (hourly) |
 | `mvs_daily_streak_check` | Daily at 2 AM - break streaks for missed uploads |
 
-> Action Scheduler must be running for gamification to function. If you use a managed host that blocks WP-Cron, configure Action Scheduler with a server-level cron trigger.
+> Action Scheduler must be running for competitions to move on. If your host blocks WP-Cron, configure Action Scheduler with a server-level cron trigger.

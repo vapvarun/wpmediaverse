@@ -226,7 +226,18 @@ class SetupWizard {
 				<li><i data-lucide="image"></i> <?php esc_html_e( 'Group your uploads into albums and gather media into collections', 'wpmediaverse' ); ?></li>
 				<li><i data-lucide="users"></i> <?php esc_html_e( 'Social features: reactions, comments, favorites, follows', 'wpmediaverse' ); ?></li>
 				<li><i data-lucide="shield"></i> <?php esc_html_e( 'AI-powered moderation and privacy controls', 'wpmediaverse' ); ?></li>
-				<li><i data-lucide="message-square"></i> <?php esc_html_e( 'Optional BuddyPress integration', 'wpmediaverse' ); ?></li>
+				<?php
+				// Name the community plugin this site actually runs (BuddyNext owns
+				// the community when present), not BuddyPress on every site.
+				if ( defined( 'BUDDYNEXT_VERSION' ) ) {
+					$mvs_community_line = __( 'Built into your BuddyNext community', 'wpmediaverse' );
+				} elseif ( function_exists( 'buddypress' ) ) {
+					$mvs_community_line = __( 'Works inside your BuddyPress community', 'wpmediaverse' );
+				} else {
+					$mvs_community_line = __( 'Works with BuddyNext or BuddyPress when you add a community', 'wpmediaverse' );
+				}
+				?>
+				<li><i data-lucide="message-square"></i> <?php echo esc_html( $mvs_community_line ); ?></li>
 			</ul>
 			<p><?php esc_html_e( 'This quick setup will help you configure the essentials. You can change any setting later.', 'wpmediaverse' ); ?></p>
 			<div class="mvs-setup-actions">

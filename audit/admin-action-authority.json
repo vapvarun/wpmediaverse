@@ -100,6 +100,17 @@
       "writes": true,
       "get_reachable": false,
       "source": "wpmediaverse/includes/Admin/OverviewPage.php:648"
+    },
+    "admin_post_wpmediaverse_retry_preset_activation": {
+      "surface": "admin_post",
+      "callback": "WPMediaVerse\\Core\\PresetActivation::handle_retry",
+      "audience": "admin",
+      "capability": "manage_options",
+      "nonce_action": "wpmediaverse_retry_preset_activation",
+      "nonce_field": "_wpnonce",
+      "writes": true,
+      "get_reachable": true,
+      "source": "wpmediaverse/includes/Core/PresetActivation.php:368"
     }
   }
 }

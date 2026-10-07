@@ -617,6 +617,18 @@ class SettingsPage {
 									self::$printed_settings_errors = true;
 									settings_errors();
 								}
+								// The confirmation sits at the top, where the page reloads;
+								// below the Save button it was far below the fold (Basecamp
+								// 10364777243). Never claim success when part of the
+								// submission was rejected (Basecamp 10281548802).
+								if ( isset( $_GET['settings-updated'] ) && ! self::$has_settings_error ) : // phpcs:ignore WordPress.Security.NonceVerification
+									?>
+									<div class="mvs-save-notice" role="status">
+										<p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p>
+										<button type="button" class="mvs-save-notice__dismiss" aria-label="<?php esc_attr_e( 'Dismiss this notice', 'wpmediaverse' ); ?>">&times;</button>
+									</div>
+									<?php
+								endif;
 								?>
 								<?php settings_fields( $section['option_group'] ); ?>
 								<?php
@@ -630,18 +642,6 @@ class SettingsPage {
 								?>
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
-									<?php
-									// Never claim success when part of the submission was
-									// rejected - the owner pressed Save, the value reverted,
-									// and a green "Settings saved." is the opposite of what
-									// happened. Basecamp 10281548802.
-									if ( isset( $_GET['settings-updated'] ) && ! self::$has_settings_error ) : // phpcs:ignore WordPress.Security.NonceVerification
-										?>
-										<div class="mvs-save-notice">
-											<p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p>
-											<button type="button" class="mvs-save-notice__dismiss" aria-label="<?php esc_attr_e( 'Dismiss this notice', 'wpmediaverse' ); ?>">&times;</button>
-										</div>
-									<?php endif; ?>
 								</div>
 							</form>
 						<?php endif; ?>
@@ -803,7 +803,7 @@ class SettingsPage {
 	 * @param string $active_tab Current tab slug.
 	 */
 	private function render_pro_upsell( string $active_tab ): void {
-		$pro_url  = 'https://store.wbcomdesigns.com/wpmediaverse-pro/';
+		$pro_url  = 'https://wbcomdesigns.com/downloads/mediaverse-pro/';
 		$features = $this->get_pro_features_for_tab( $active_tab );
 
 		if ( empty( $features ) ) {

@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.6.0
+Stable tag: 2.6.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,7 +12,7 @@ The media layer your community site is missing. Custom database tables, AI moder
 
 == Description ==
 
-**[Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2)** | **[Get Pro](https://store.wbcomdesigns.com/wpmediaverse-pro/)** | **[Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/)**
+**[Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2)** | **[Get Pro](https://wbcomdesigns.com/downloads/mediaverse-pro/)** | **[Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/)**
 
 MediaVerse is a complete media platform for WordPress - built on custom database tables, not wp_posts. Your community gets photo uploads, albums, reactions, comments, follows, direct messaging, AI moderation, and a full lightbox experience. Your site stays fast no matter how many uploads come in.
 
@@ -46,7 +46,8 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * Points, Streaks, Boosts gamification engine
 * Member document drives with folders, sharing, search, trash and in-page previews
 * Amazon S3, BunnyCDN, Cloudflare R2 and DigitalOcean Spaces cloud storage drivers
-* Video chapters and Whisper AI captions for the MediaVerse mobile app and the REST API (the web player does not show them yet)
+* Whisper AI captions on the web player, the MediaVerse mobile app and the REST API
+* Video chapters for the MediaVerse mobile app and the REST API (the web player does not show chapters yet)
 * Stories, leaderboards, and a Flickr import connector
 * Google Vision, AWS Rekognition, and Claude (Anthropic) moderation
 * Migration importers (rtMedia, MediaPress, BuddyBoss)
@@ -89,7 +90,7 @@ Yes. Copy any template from `wpmediaverse/templates/` to `your-theme/wpmediavers
 
 = How do I import from rtMedia? =
 
-The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Migration in the admin.
+The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedia` (or `import-mediapress` / `import-buddyboss`), with `--dry-run` first to preview, or use MediaVerse > Import in the admin.
 
 = What are the shortcodes? =
 
@@ -123,6 +124,69 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
 
 == Changelog ==
+
+= 2.6.1 - October 2026 =
+
+Faster media delivery, videos that start sooner, upload progress, a Followers privacy level, and private albums and tags that stay private everywhere.
+
+* New      - Explore offers a Trending sort and a filter for photos, videos or audio, ranked the same way as the app.
+* New      - Lists load the next pages as you scroll; after three pages a Load More button keeps the site footer in reach.
+* New      - The upload modal suggests matching tags as you type.
+* New      - Member emails for a new follower and for a comment on their media, each switched on in Settings > General > Emails.
+* New      - Media files are served straight by the web server under unguessable names when the server allows it, so pages no longer load WordPress for every image.
+* New      - Uploads show how much of each file has been sent, and several videos or audio files can be uploaded together.
+* New      - MP4 videos start playing sooner: the index is moved to the front on upload, and wp mvs faststart does the same for existing files.
+* New      - Video captions show on every web player.
+* New      - Followers is a privacy level members can choose: only people who follow them see the item.
+* New      - Optional hand-off of protected downloads to the web server (nginx X-Accel-Redirect or Apache X-Sendfile), off until a check proves the server supports it.
+* New      - An empty My Media library offers an Upload media button.
+* Improve  - On a BuddyNext site, BuddyNext sends the member emails for MediaVerse activity, so a member gets one email per event.
+* Improve  - A photo has the same alt text in the grid, the lightbox and newly loaded cards, using its AI description when there is one.
+* Improve  - Album type is a choice of Standard album or Playlist instead of a free-text field.
+* Improve  - WordPress's password and private options no longer show for albums and collections; who can see an album is set in Album Settings.
+* Improve  - MediaVerse warns when MediaVerse Pro is older than 2.6.0.
+* Improve  - Product links point to the new store pages.
+* Improve  - When members cannot choose privacy, the upload modal, My Media and the upload page say who will see their uploads, and the setting's help text matches.
+* Improve  - The lightbox Save button shows Saved while the item is in the member's Favorites.
+* Improve  - The upload page shows the picked file and its thumbnail instead of the drop prompt.
+* Improve  - My Media shows a member's media sooner on phones: a one-line profile row and no duplicate drag-and-drop box beside the upload button.
+* Improve  - On a BuddyNext site, BuddyNext's profile editor is the one place to edit a profile.
+* Improve  - Album privacy prompts name the photos they affect, and changing an album to a stricter privacy asks first.
+* Improve  - The free licence is activated in the background, stops trying after a day when the store cannot be reached, and tells the owner why with a Retry button.
+* Improve  - Members-only media can be reused from the member's own browser cache instead of being fetched again on every page.
+* Improve  - Keyboard use, visible focus and screen-reader labels are improved across the upload block, My Media, the lightbox and Explore search.
+* Improve  - The front-end accent colour follows the site's theme colour.
+* Improve  - Explore and grid rows line up at every width, and Settings no longer scrolls sideways on tablets.
+* Improve  - The admin Overview and the Moderation menu badge show one Needs review number that includes member reports.
+* Improve  - Delete Demo Data has its own box that says what it removes, and setup wording names the community plugin the site runs.
+* Improve  - A video that cannot play says so and offers the file instead of stalling silently.
+* Improve  - Report in the lightbox opens the report form in place.
+* Improve  - In My Media the active tab is always marked, and the browser Back and Forward buttons switch sections.
+* Fix      - Editing a media item whose ID matches an album or collection now saves.
+* Fix      - The plugin package no longer ships unused block files and the styles of the removed Lock Overlay.
+* Fix      - The Settings saved confirmation shows at the top of the tab, and on phones it scrolls into view.
+* Fix      - The plugin no longer contacts the licence server on every admin request.
+* Fix      - Replacing a file removes the old version completely and keeps private items off public cloud storage.
+* Fix      - Followers-only stories reach followers.
+* Fix      - The Messages page is no longer treated as the blog home.
+* Fix      - A refused upload keeps its message in the upload window, and visitors who try to react are offered a way to log in.
+* Fix      - A custom storage driver stays selected when the Storage tab is saved.
+* Fix      - The Integrations screen no longer promises Jetonomy attachments.
+* Fix      - The bulk Set privacy bars offer the same levels as every other picker, and an unknown level is refused.
+* Fix      - Confirmation dialogs in wp-admin show the action's own button label instead of a red Confirm for actions that delete nothing.
+* Security - Private albums and collections no longer appear to visitors or other members on the Albums and Collections pages or through WordPress's built-in REST routes.
+* Security - The tag cloud and the public tag list show only tags used on public items.
+* Security - Duplicate-upload checks compare only with the member's own uploads, and the notice no longer shows another item's ID.
+* Security - Changing who can see an item gives its files new names whenever anyone loses access, so links shared earlier stop working.
+* Security - The Media Grid block lists approved items only and never shows a file address for an item the viewer may not open.
+* Security - A crafted MP4 upload can no longer make the server do unbounded work.
+* Dev      - New PrivacyService::query_listable_spaces() for album and collection lists, TemplateHelpers::alt_text(), and an alt field on media REST responses.
+* Dev      - The wp/v2 routes for mvs-albums, mvs-collections and mvs_tag are removed; use the mvs/v1 routes.
+* Dev      - Templates updated to 2.6.1: explore.php, cpt-archive.php, partials/shared-ui-frame.php and partials/dashboard-content.php.
+* Dev      - New filters mvs_storage_driver_choices and mvs_serve_offload, and action mvs_media_files_rotated.
+* Dev      - GET /mvs/v1/media lists self and followers as scope values; wp mvs migrate-storage documents --include-non-public.
+* Dev      - New standard docs/standards/preset-licence-activation.md describes the shared licence activation model.
+* Compat   - Aligned with MediaVerse Pro 2.6.1. Install both updates together.
 
 = 2.6.0 - September 2026 =
 
@@ -893,6 +957,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.6.1 =
+Contains security fixes. Private albums and collections were listed to visitors, the tag cloud named tags used only on private media, and the Media Grid block could list an item a moderator had removed. This release also stops the plugin contacting the licence server on every admin request. Update together with WPMediaVerse Pro 2.6.1.
 
 = 2.6.0 =
 Contains security fixes. Block style fields accepted CSS that could inject into the page, and draft media could be read through the API by signed-out visitors. Update together with WPMediaVerse Pro 2.6.0.

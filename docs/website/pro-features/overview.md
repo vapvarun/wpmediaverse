@@ -4,7 +4,7 @@
 
 
 
-MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video analytics, chapters and auto-captions, AI providers, and granular privacy controls.
+MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, document drives, photo competitions, video analytics, chapters and auto-captions, AI providers, and granular privacy controls.
 
 > Pro does not transcode video. The FFmpeg pipeline was removed in 2.4.0 - MediaVerse embeds media, it does not process it. The player uses the original file.
 
@@ -14,7 +14,7 @@ MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage
 
 ## Requirements
 
-- MediaVerse (free) 2.0.0 or higher installed and activated (Pro halts with an admin notice on older Free)
+- MediaVerse (free) 2.6.0 or higher installed and activated (Pro halts with an admin notice on older Free). Free and Pro are released together at the same version, so update both at once
 - WordPress 6.5+
 - PHP 7.4+
 - MySQL 5.7+ or MariaDB 10.4+
@@ -25,7 +25,7 @@ MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage
 2. Go to **Plugins > Add New Plugin > Upload Plugin**.
 3. Upload the `wpmediaverse-pro.zip` file and click **Install Now**.
 4. Click **Activate Plugin**.
-5. Go to **Media > License** and enter your license key.
+5. Go to **MediaVerse > Settings > License** and enter your license key.
 6. Click **Activate License**.
 
 ![Media License settings page with activation status](../images/admin-overview.png)
@@ -40,7 +40,7 @@ When an update is available, WordPress shows it in the standard **Plugins** scre
 
 ## 1.2.0: All Pro features now Gutenberg blocks
 
-Every Pro feature now ships as a first-class Gutenberg block - drop-in, configurable in the editor, no shortcodes-as-the-only-option. Each block has a matching `[mvs_pro_*]` shortcode for classic editor and template-tag use.
+Every Pro feature ships as a Gutenberg block, configurable in the editor. The competition, layout and leaderboard blocks have a matching `[mvs_pro_*]` shortcode for the classic editor. The Stories block has no shortcode. Documents have their own `[mvs_document]` shortcode.
 
 | Block | Handle | Notes |
 |-------|--------|-------|
@@ -57,19 +57,23 @@ Every Pro feature now ships as a first-class Gutenberg block - drop-in, configur
 | Leaderboard | `mvs/pro-leaderboard` | Top performers across competitions. |
 | Compete Hub | `mvs/pro-compete-hub` | Combined challenges + battles + tournaments dashboard. |
 | Stories | `mvs/pro-stories` | 24-hour ephemeral stories bar + fullscreen viewer, with a same-screen "Your story" upload tile. Added in 1.9.0. |
+| Document | `mvs/pro-document-embed` | Embeds one document. See [Documents](documents.md). |
+| Document List | `mvs/pro-document-list` | Lists documents. See [Documents](documents.md). |
 
 **Layout flexibility:** because each layout (Instagram, Flickr, Pinterest, Dribbble) is its own block, admins can mix layouts on different pages - e.g. a Pinterest feed on the home page and an Instagram feed on a member directory - instead of being locked to one site-wide layout setting.
 
-### MigrationPage admin restructure
+### Migration page
 
-The migration tool admin page is now a generic shell that hosts per-platform cards (rtMedia, MediaPress, BuddyBoss). Two pre-existing detection bugs were fixed in the same pass: the **Imported** count was always `0` regardless of actual progress, and the MediaPress dedup query was running against an undefined `$wpdb`. Migrations now report accurate counts and skip already-imported items correctly.
+The migration tool admin page has one card per platform (rtMedia, MediaPress, BuddyBoss). Each card shows accurate imported counts and skips items that were already imported.
 
 ## Pro Feature Categories
 
 | Category | Page | What It Adds |
 |----------|------|--------------|
 | Layout Modes | [layout-modes.md](layout-modes.md) | Instagram, Pinterest, Flickr, and Dribbble feed layouts |
-| Cloud Storage | [cloud-storage.md](cloud-storage.md) | Amazon S3 and BunnyCDN storage drivers |
+| Cloud Storage | [cloud-storage.md](cloud-storage.md) | Amazon S3, BunnyCDN, Cloudflare R2 and DigitalOcean Spaces storage drivers |
+| Documents | [documents.md](documents.md) | Member document drives with folders, sharing, search and previews |
+| Photo competitions | [Competitions overview](../gamification/overview.md) | Photo challenges, battles, tournaments, boosts and streaks |
 | Video Chapters | [video-chapters.md](video-chapters.md) | Chapter markers and resume playback |
 | Auto-Captions | [auto-captions.md](auto-captions.md) | OpenAI Whisper transcription and WebVTT captions |
 | Watermarking | [watermarking.md](watermarking.md) | GD-based text and logo watermarks on media |
@@ -85,19 +89,17 @@ The migration tool admin page is now a generic shell that hosts per-platform car
 
 Pro adds a **Reports** view that surfaces user-submitted abuse reports on media and members - the complaints your community files, as opposed to the free [Moderation Queue](../features/ai-moderation.md), which is about AI/auto-flagged content awaiting an approve/reject decision.
 
-- **Where:** **MediaVerse > Moderation**, in the **User Reports** tab. (It is also reachable directly at `admin.php?page=mvs-reports`.)
+- **Where:** **MediaVerse > Moderation**, in the **User Reports** tab.
 - **Who:** any user with the `moderate_mvs_media` capability.
 - **What it lists:** every report row - date, reporter, target type (media or user), the target, the reason code, and a details excerpt. A status filter switches between **Pending**, **Resolved**, and **Dismissed**, each with a live count.
 - **Actions:** on a pending report you can **Resolve** (mark handled) or **Dismiss** (no action needed). Both are nonce-protected and capability-checked.
-
-> **Note for the parent agent:** this section documents the Pro Reports admin page inline. If the docs site wants it discoverable on its own, it could later be split into a dedicated `pro-features/reports.md` page - the content above is self-contained and ready to lift out.
 
 ## License Management
 
 | Setting | Location | Description |
 |---------|----------|-------------|
-| License Key | Media > License | Your product license key from wbcomdesigns.com |
-| Activation Status | Media > License | Shows active, inactive, or expired |
-| Deactivate License | Media > License | Release the activation to use on another site |
+| License Key | MediaVerse > Settings > License | Your product license key from wbcomdesigns.com |
+| Activation Status | MediaVerse > Settings > License | Shows active, inactive, or expired |
+| Deactivate License | MediaVerse > Settings > License | Release the activation to use on another site |
 
 A single license activates one site. Purchase additional activations from your account dashboard if you need to run Pro on multiple sites.

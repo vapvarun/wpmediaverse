@@ -304,6 +304,43 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Inner HTML ready for echo.
 	 */
 	/**
+	 * The <track> for a video's captions, or '' when it has none.
+	 *
+	 * Captions are made by Pro (or any provider); Free asks through
+	 * `mvs_media_captions` so every player renders the same track.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Escaped <track> markup, or ''.
+	 */
+	public function captions_track( int $media_id ): string {
+		/**
+		 * Filter the captions for a video.
+		 *
+		 * @since 2.6.1
+		 *
+		 * @param array|null $captions { url: WebVTT file URL, lang: BCP 47 code }, or null.
+		 * @param int        $media_id Media ID.
+		 */
+		$captions = apply_filters( 'mvs_media_captions', null, $media_id );
+
+		if ( ! is_array( $captions ) || empty( $captions['url'] ) ) {
+			return '';
+		}
+
+		$lang = (string) ( $captions['lang'] ?? '' );
+		$lang = preg_match( '/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i', $lang ) ? $lang : '';
+
+		return sprintf(
+			'<track kind="captions" src="%1$s"%2$s label="%3$s" default />',
+			esc_url( (string) $captions['url'] ),
+			'' !== $lang ? ' srclang="' . esc_attr( $lang ) . '"' : '',
+			esc_attr__( 'Captions', 'wpmediaverse' )
+		);
+	}
+
+	/**
 	 * Resolve the best alt text for a media image: prefer the AI-generated
 	 * description, fall back to the title. Pre-escaped (esc_attr) for direct
 	 * use in an alt="" attribute.
@@ -318,6 +355,18 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string esc_attr-escaped alt text.
 	 */
 	public function resolve_alt_text( int $media_id ): string {
+		return esc_attr( $this->alt_text( $media_id ) );
+	}
+
+	/**
+	 * The same alt text, unescaped, for JSON (the lightbox reads it from REST).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Plain alt text.
+	 */
+	public function alt_text( int $media_id ): string {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$alt  = (string) $repo->get( $media_id, 'ai_description' );
 		if ( '' === trim( $alt ) ) {
@@ -332,9 +381,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		 * @param string $alt      Resolved alt (AI description or title).
 		 * @param int    $media_id Media ID.
 		 */
-		$alt = (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
-
-		return esc_attr( $alt );
+		return (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
 	}
 
 	public function media_thumbnail( int $media_id, array $args = array() ): string {
@@ -647,15 +694,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 */
 	public static function privacy_labels(): array {
 		$labels = array(
-			'public'   => __( 'Public: anyone can see', 'wpmediaverse' ),
-			'members'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'public'    => __( 'Public: anyone can see', 'wpmediaverse' ),
+			'members'   => __( 'Members: logged-in users only', 'wpmediaverse' ),
 			// The old 'loggedin' level behaves exactly like Members, so it reads the
 			// same; "(legacy)" was internal history shown to members.
-			'loggedin' => __( 'Members: logged-in users only', 'wpmediaverse' ),
-			'friends'  => __( 'Friends: your friends only', 'wpmediaverse' ),
-			'space'    => __( 'Space: people in this space', 'wpmediaverse' ),
-			'group'    => __( 'Group: members of this group', 'wpmediaverse' ),
-			'private'  => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
+			'loggedin'  => __( 'Members: logged-in users only', 'wpmediaverse' ),
+			'followers' => __( 'Followers: people who follow you', 'wpmediaverse' ),
+			'friends'   => __( 'Friends: your friends only', 'wpmediaverse' ),
+			'space'     => __( 'Space: people in this space', 'wpmediaverse' ),
+			'group'     => __( 'Group: members of this group', 'wpmediaverse' ),
+			'private'   => __( 'Only me: hidden from everyone else', 'wpmediaverse' ),
 		);
 
 		/**
@@ -746,6 +794,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * twice. `friends` needs BuddyPress' friends component, or it has no
 	 * semantics distinct from members.
 	 *
+	 * This is the one list of choosable levels: the web pickers print it and Pro
+	 * builds the REST `privacy_options` from it, so no surface offers a level
+	 * another refuses.
+	 *
 	 * @since 2.4.2
 	 *
 	 * @return array<string,string> Privacy slug => label, in display order.
@@ -753,8 +805,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	public static function privacy_choices(): array {
 		$labels  = self::privacy_labels();
 		$choices = array(
-			'public'  => $labels['public'],
-			'members' => $labels['members'],
+			'public'    => $labels['public'],
+			'members'   => $labels['members'],
+			// Following is part of Free and always on, so this level always has
+			// people to mean. It was enforced on read and refused on save.
+			'followers' => $labels['followers'],
 		);
 
 		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
@@ -862,7 +917,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	public static function login_url( string $redirect = '' ): string {
 		$url = '';
 
-		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+		// BuddyNext RUNNING (the family rule), and new enough to have the method.
+		// class_exists() alone can autoload the class with BuddyNext inactive.
+		if ( defined( 'BUDDYNEXT_VERSION' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
 			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
 			if ( '' !== $bn ) {
 				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
@@ -899,7 +956,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	public static function registration_url( string $redirect = '' ): string {
 		$url = '';
 
-		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+		// BuddyNext RUNNING (the family rule), and new enough to have the method.
+		// class_exists() alone can autoload the class with BuddyNext inactive.
+		if ( defined( 'BUDDYNEXT_VERSION' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
 			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
 			if ( '' !== $bn ) {
 				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
@@ -1397,7 +1456,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$mvs_link_name = '' !== trim( (string) $media_title ) ? (string) $media_title : __( 'View media', 'wpmediaverse' );
 		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link" aria-label="' . esc_attr( $mvs_link_name ) . '">';
 
-		$this->render_grid_thumbnail( $media_id, $size, $media_title );
+		// No alt passed: media_thumbnail() resolves it (AI description, else
+		// title), the same text the lightbox and the JS cards use.
+		$this->render_grid_thumbnail( $media_id, $size );
 
 		// Gallery badge showing item count.
 		if ( $is_gallery && $group_count > 1 ) {
@@ -1822,7 +1883,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *     @type string $icon    Lucide icon name. Default 'image'.
 	 *     @type string $title   Heading (optional).
 	 *     @type string $message Body line (optional).
-	 *     @type array  $actions List of [ 'url' => , 'label' => , 'variant' => ] buttons.
+	 *     @type array  $actions List of [ 'url' | 'on_click' => , 'label' => , 'variant' => ] links, or buttons bound to an Interactivity action.
 	 *     @type string $class   Extra wrapper class(es).
 	 * }
 	 * @return string Escaped HTML.
@@ -1845,16 +1906,25 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		if ( ! empty( $actions ) ) {
 			$html .= '<div class="mvs-empty-state-actions">';
 			foreach ( $actions as $action ) {
-				if ( empty( $action['url'] ) || empty( $action['label'] ) ) {
+				if ( empty( $action['label'] ) || ( empty( $action['url'] ) && empty( $action['on_click'] ) ) ) {
 					continue;
 				}
 				$variant = isset( $action['variant'] ) ? (string) $action['variant'] : 'primary';
-				$html   .= sprintf(
-					'<a href="%1$s" class="mvs-btn mvs-btn--%2$s">%3$s</a>',
-					esc_url( $action['url'] ),
-					esc_attr( $variant ),
-					esc_html( $action['label'] )
-				);
+				// 'on_click' (an Interactivity action such as 'actions.openFilePicker')
+				// renders a button for in-page actions; 'url' renders a link.
+				$html .= empty( $action['on_click'] )
+					? sprintf(
+						'<a href="%1$s" class="mvs-btn mvs-btn--%2$s">%3$s</a>',
+						esc_url( $action['url'] ),
+						esc_attr( $variant ),
+						esc_html( $action['label'] )
+					)
+					: sprintf(
+						'<button type="button" class="mvs-btn mvs-btn--%1$s" data-wp-on--click="%2$s">%3$s</button>',
+						esc_attr( $variant ),
+						esc_attr( (string) $action['on_click'] ),
+						esc_html( $action['label'] )
+					);
 			}
 			$html .= '</div>';
 		}
@@ -1891,9 +1961,47 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		return array(
-			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views' ), true ) ? $sort : 'created_at',
+			'orderby' => in_array( $sort, array( 'created_at', 'title', 'views', 'trending' ), true ) ? $sort : 'created_at',
 			'order'   => 'asc' === $order ? 'ASC' : 'DESC',
 		);
+	}
+
+	/**
+	 * When members cannot choose privacy, the line that tells them who will see
+	 * their upload instead of a missing control (Basecamp 10364776646).
+	 *
+	 * @since 2.6.1
+	 * @return string Escaped HTML, or '' when the member chooses per upload.
+	 */
+	public static function fixed_privacy_note(): string {
+		if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) {
+			return '';
+		}
+		$level  = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
+		$labels = self::privacy_labels();
+		return '<p class="mvs-modal-note mvs-privacy-fixed">' . esc_html(
+			sprintf(
+				/* translators: %s: privacy label, e.g. "Members: logged-in users only". */
+				__( '%s. The site owner sets this for every upload.', 'wpmediaverse' ),
+				$labels[ $level ] ?? $level
+			)
+		) . '</p>';
+	}
+
+	/**
+	 * Media type the visitor filtered Explore to (?mvs_type=), or '' for all.
+	 *
+	 * @since 2.6.1
+	 * @return string image|video|audio|''.
+	 */
+	public function explore_type(): string {
+		// Feeds only: a profile counts and lists through its own author query.
+		if ( get_query_var( 'mvs_profile_user' ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view filter on a GET page.
+		$type = isset( $_GET['mvs_type'] ) ? sanitize_key( wp_unslash( $_GET['mvs_type'] ) ) : '';
+		return in_array( $type, MediaTypes::MEDIA_LIBRARY, true ) ? $type : '';
 	}
 
 	/**
@@ -1910,8 +2018,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_explore_sort_toolbar( int $total_items, ?array $hidden = null ): string {
-		// Nothing to sort.
-		if ( $total_items < 1 ) {
+		// Nothing to sort. A Type filter that matched nothing keeps the bar, so
+		// the visitor can change it back.
+		if ( $total_items < 1 && '' === $this->explore_type() ) {
 			return '';
 		}
 		if ( null === $hidden ) {
@@ -1925,27 +2034,41 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		return $this->render_panel_toolbar(
 			array(
-				'id'     => 'mvs-explore',
-				'form'   => true,
-				'class'  => 'mvs-explore__controls',
-				'hidden' => array_filter( $hidden ),
-				'count'  => sprintf(
+				'id'      => 'mvs-explore',
+				'form'    => true,
+				'class'   => 'mvs-explore__controls',
+				'hidden'  => array_filter( $hidden ),
+				'count'   => sprintf(
 					/* translators: %s: number of media items. */
 					_n( '%s item', '%s items', $total_items, 'wpmediaverse' ),
 					number_format_i18n( $total_items )
 				),
+				'filters' => get_query_var( 'mvs_profile_user' ) ? array() : array(
+					array(
+						'name'    => 'mvs_type',
+						'label'   => __( 'Type', 'wpmediaverse' ),
+						'value'   => $this->explore_type(),
+						'options' => array(
+							''      => __( 'All types', 'wpmediaverse' ),
+							'image' => __( 'Photos', 'wpmediaverse' ),
+							'video' => __( 'Videos', 'wpmediaverse' ),
+							'audio' => __( 'Audio', 'wpmediaverse' ),
+						),
+					),
+				),
 				// One select, field and direction together (2.6.0).
-				'sort'   => array(
+				'sort'    => array(
 					'name'    => 'sort',
 					'label'   => __( 'Sort by', 'wpmediaverse' ),
 					'value'   => ( 'created_at' === $sort['orderby'] && 'ASC' === $sort['order'] ) ? 'oldest' : $sort['orderby'],
 					'options' => array(
 						'created_at' => __( 'Newest', 'wpmediaverse' ),
+						'trending'   => __( 'Trending', 'wpmediaverse' ),
 						'oldest'     => __( 'Oldest', 'wpmediaverse' ),
 						'views'      => __( 'Most viewed', 'wpmediaverse' ),
 					),
 				),
-				'submit' => __( 'Apply', 'wpmediaverse' ),
+				'submit'  => __( 'Apply', 'wpmediaverse' ),
 			)
 		);
 	}

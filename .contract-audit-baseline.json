@@ -1,6 +1,6 @@
 {
-  "generated": "2026-09-03",
-  "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.\n\n2026-09-03 (2.4.1 retag): 12 further errors triaged individually, none bulk-baselined. ELEVEN were verified false positives and are suppressed below with the mechanism that hides them from the audit — in every case the write or the fire happens through a class constant, a dynamically-built key, or a scheduler (wp_schedule_event / as_enqueue_async_action) rather than a string literal in a do_action/update_option call. The TWELFTH was a REAL BUG and was fixed, not suppressed: 'user_meta-read-never-written:_mvs_extra_document_credits' was correct — QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which deliberately excludes documents) instead of SUMMARY_TYPES (the metered list, which includes them), so document credits could never be granted while deduct_credit() had no such guard and would spend them. See the comment at that guard.\n\n2026-09-30 (2.6.0 gate): 9 errors triaged individually, none bulk-baselined. Four constant-fired Action Scheduler hooks and one constant meta_input write are scanner limits; one filter is a documented host seam; four option reads are settings with no screen that read safe defaults and pre-date 2.5.1.",
+  "generated": "2026-10-07",
+  "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.\n\n2026-09-03 (2.4.1 retag): 12 further errors triaged individually, none bulk-baselined. ELEVEN were verified false positives and are suppressed below with the mechanism that hides them from the audit — in every case the write or the fire happens through a class constant, a dynamically-built key, or a scheduler (wp_schedule_event / as_enqueue_async_action) rather than a string literal in a do_action/update_option call. The TWELFTH was a REAL BUG and was fixed, not suppressed: 'user_meta-read-never-written:_mvs_extra_document_credits' was correct — QuotaService::add_credits() guarded on MEDIA_TYPES (the MIME-detectable list, which deliberately excludes documents) instead of SUMMARY_TYPES (the metered list, which includes them), so document credits could never be granted while deduct_credit() had no such guard and would spend them. See the comment at that guard.\n\n2026-09-30 (2.6.0 gate): 9 errors triaged individually, none bulk-baselined. Four constant-fired Action Scheduler hooks and one constant meta_input write are scanner limits; one filter is a documented host seam; four option reads are settings with no screen that read safe defaults and pre-date 2.5.1.\n\n2026-10-07 (2.6.1 gate): two job hooks added by the 2.6.1 file rotation, each verified as scheduler-fired.",
   "suppressions": [
     {
       "id": "ajax-action-no-handler:mvs_media_upload",
@@ -161,6 +161,14 @@
     {
       "id": "option-read-never-written:mvs_view_retention_days",
       "reason": "Intentional. A retention setting with no screen, read with its default. Pre-dates 2.5.1 (May 2026); no runtime break. Verified 2026-09-30."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_rotate_media_files",
+      "reason": "False positive. A background-job hook: it is queued by name through a class constant (MediaFileRotator::HOOK) on Action Scheduler or WP-Cron, which fires it. The scanner looks for do_action() with a literal. Verified 2026-10-07."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_convert_legacy_media_names",
+      "reason": "False positive. A background-job hook: it is queued by name through a class constant (MediaFileRotator::LEGACY_HOOK) on Action Scheduler or WP-Cron, which fires it. The scanner looks for do_action() with a literal. Verified 2026-10-07."
     }
   ]
 }

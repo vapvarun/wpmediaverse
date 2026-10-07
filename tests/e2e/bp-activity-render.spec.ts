@@ -58,7 +58,7 @@ test.describe('BP activity media rendering (broadcast-TTL contract)', () => {
 		expect(broken, `broken activity images: ${broken.join('\n')}`).toEqual([]);
 	});
 
-	test('at least one activity image is signed with broadcast TTL (mvs_uid=0, expiry > 30d)', async ({ page }) => {
+	test('activity images never expire: broadcast-TTL signed (mvs_uid=0, expiry > 30d) or a capability URL', async ({ page }) => {
 		await visitActivity(page);
 
 		const activitySrcs = await page.locator('.mvs-activity-media img').evaluateAll((imgs) =>
@@ -66,6 +66,8 @@ test.describe('BP activity media rendering (broadcast-TTL contract)', () => {
 		);
 
 		const broadcastUrls = activitySrcs.filter((src) => {
+			// 2.6.1+: a direct file with MediaVerse's random name never expires.
+			if (/\/wp-content\/uploads\/wpmediaverse\/.*\/[0-9a-f]{16,}(-\d+x\d+)?\.[a-z0-9]+$/i.test(src)) return true;
 			if (!isMvsServeUrl(src)) return false;
 			const params = parseMvsParams(src);
 			const uid = params.get('mvs_uid');
@@ -76,7 +78,7 @@ test.describe('BP activity media rendering (broadcast-TTL contract)', () => {
 
 		expect(
 			broadcastUrls.length,
-			`expected at least one broadcast-TTL signed URL in activity HTML; activity srcs: ${activitySrcs.join('\n')}`
+			`expected at least one long-lived (broadcast-signed or capability) URL in activity HTML; activity srcs: ${activitySrcs.join('\n')}`
 		).toBeGreaterThan(0);
 	});
 

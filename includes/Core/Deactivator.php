@@ -30,6 +30,8 @@ class Deactivator {
 		'mvs_purge_old_views',
 		'mvs_process_account_deletions',
 		'mvs_story_cleanup',
+		// A switched-off plugin asks the store nothing; activation re-arms it.
+		PresetActivation::HOOK,
 	);
 
 	/**

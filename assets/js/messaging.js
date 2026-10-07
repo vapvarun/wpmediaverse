@@ -295,6 +295,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		selectedAttachment: null,
 		attachmentPreview: null,
 		uploadingAttachment: false,
+		attachmentPercent: 0,
 		attachmentName: '',
 		pollingSince: new Date().toISOString(),
 		pollingTimer: null,
@@ -366,7 +367,9 @@ const { state, actions } = store( 'mvs/messaging', {
 
 		get attachmentChipLabel() {
 			if ( state.uploadingAttachment ) {
-				return __( 'Uploading %s…' ).replace( '%s', state.attachmentName );
+				// Percent sent: a large video takes a while and a bare spinner
+				// looked like nothing was happening.
+				return __( 'Uploading %s…' ).replace( '%s', state.attachmentName ) + ' ' + state.attachmentPercent + '%';
 			}
 			if ( state.selectedAttachment && ! state.attachmentPreview ) {
 				return state.selectedAttachment.name || '';
@@ -1501,6 +1504,13 @@ const { state, actions } = store( 'mvs/messaging', {
 					return;
 				}
 
+				// Over the attachment limit: say so now, not after the whole file
+				// has been sent and refused (a 60 MB video took over a minute).
+				if ( config.attachmentMaxBytes && file.size > config.attachmentMaxBytes ) {
+					actions.showToast( config.attachmentTooLarge || __( 'File too large.' ) );
+					return;
+				}
+
 				// Preview.
 				if ( type === 'image' ) {
 					const reader = new FileReader();
@@ -1525,11 +1535,17 @@ const { state, actions } = store( 'mvs/messaging', {
 			// flight, the stale response must not re-attach the file.
 			const requestId = ++attachmentRequestId;
 			state.uploadingAttachment = true;
+			state.attachmentPercent = 0;
 
 			try {
 				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
 					method: 'POST',
 					body: formData,
+					onUploadProgress: ( loaded, total ) => {
+						if ( requestId === attachmentRequestId ) {
+							state.attachmentPercent = total ? Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) : 0;
+						}
+					},
 				} );
 				const data = res.data;
 

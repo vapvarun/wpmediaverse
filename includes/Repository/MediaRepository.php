@@ -386,6 +386,81 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 	}
 
+
+	/**
+	 * Point every stored path and URL of one media item at renamed files.
+	 *
+	 * Used after its files were renamed on disk (MediaFileRotator). Matches whole
+	 * relative paths, as an exact value or as the end of a URL, never a fragment,
+	 * so a short legacy name such as `posters/12.jpg` cannot touch
+	 * `posters/112.jpg` or anything else.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int                   $media_id Media id.
+	 * @param array<string, string> $map      Old relative path => new relative path.
+	 * @return void
+	 */
+	public function replace_file_paths( int $media_id, array $map ): void {
+		global $wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		foreach ( $map as $old => $new ) {
+			$len  = mb_strlen( (string) $old );
+			$tail = '%/' . $wpdb->esc_like( (string) $old );
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_index
+					    SET file_path = IF( file_path = %s, %s, file_path ),
+					        file_url  = IF( file_url LIKE %s, CONCAT( LEFT( file_url, CHAR_LENGTH( file_url ) - %d ), %s ), file_url )
+					  WHERE media_id = %d",
+					$old,
+					$new,
+					$tail,
+					$len,
+					$new,
+					$media_id
+				)
+			);
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_meta
+					    SET meta_value = CONCAT( LEFT( meta_value, CHAR_LENGTH( meta_value ) - %d ), %s )
+					  WHERE media_id = %d AND ( meta_value = %s OR meta_value LIKE %s )",
+					$len,
+					$new,
+					$media_id,
+					$old,
+					$tail
+				)
+			);
+		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		self::invalidate_row_cache( $media_id );
+	}
+
+	/**
+	 * Media ids below a cursor, newest first (keyset pagination).
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param int $cursor Exclusive upper bound on media_id; 0 starts at the newest.
+	 * @param int $limit  Maximum ids to return.
+	 * @return int[]
+	 */
+	public function media_ids_before( int $cursor, int $limit = 50 ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id < %d ORDER BY media_id DESC LIMIT %d",
+				$cursor > 0 ? $cursor : PHP_INT_MAX,
+				max( 1, min( 500, $limit ) )
+			)
+		);
+		return array_map( 'intval', $ids );
+	}
+
+
 	/**
 	 * Drop a media's cached row. Called on every set / set_many / delete.
 	 *
@@ -762,7 +837,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Per-request memo for is_cpt_id() so the guard costs at most one lookup per ID.
+	 * Per-request memo of IDs refuses_cpt_id() has allowed, so the common case
+	 * costs one lookup per ID.
 	 *
 	 * @since 2.4.0
 	 * @var array<int,bool>
@@ -800,12 +876,10 @@ class MediaRepository implements MediaRepositoryInterface {
 			return false;
 		}
 
-		if ( ! isset( self::$cpt_id_memo[ $media_id ] ) ) {
-			$type                           = get_post_type( $media_id );
-			self::$cpt_id_memo[ $media_id ] = ( 'mvs_album' === $type || 'mvs_collection' === $type );
-		}
-
-		if ( ! self::$cpt_id_memo[ $media_id ] ) {
+		// Only "allowed" is remembered: a media row created later in the same
+		// request (insert, then set_many) turns a refusal into an allow.
+		if ( isset( self::$cpt_id_memo[ $media_id ] ) || ! empty( $this->media_ids_only( array( $media_id ) ) ) ) {
+			self::$cpt_id_memo[ $media_id ] = true;
 			return false;
 		}
 
@@ -917,7 +991,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @since 2.4.0
 	 * @var string[]
 	 */
-	public const PRIVACY_ORDER = array( 'public', 'members', 'loggedin', 'friends', 'space', 'group', 'private' );
+	public const PRIVACY_ORDER = array( 'public', 'members', 'loggedin', 'followers', 'friends', 'space', 'group', 'private' );
 
 	/**
 	 * How closed a privacy value is. Higher is more restrictive.
@@ -1034,8 +1108,12 @@ class MediaRepository implements MediaRepositoryInterface {
 			$viewer_id = isset( $args['viewer_id'] ) ? (int) $args['viewer_id'] : 0;
 
 			if ( $viewer_id > 0 ) {
-				$where[]  = "( idx.post_author = %d OR idx.privacy = 'public' OR idx.privacy = 'members' )";
-				$params[] = $viewer_id;
+				// The shared member rule, so followers-only stories reach followers
+				// (card 10355187431). Not explore_privacy_clause(): its moderator
+				// override would fill a moderator's stories bar with private stories.
+				list( $mvs_privacy_sql, $mvs_privacy_params ) = $this->member_privacy_clause( 'idx', $viewer_id );
+				$where[]                                      = $mvs_privacy_sql;
+				$params                                       = array_merge( $params, $mvs_privacy_params );
 
 				// Lists hide media both ways across a block (Basecamp 10355130639);
 				// the stories bar is a list.
@@ -3016,6 +3094,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Drop album and collection ids, which set() refuses (refuses_cpt_id()),
 	 * with one query for the whole list instead of one get_post_type() each.
 	 *
+	 * The two ID spaces overlap: a real media item can share its ID with an
+	 * album. Its row is in the index and an album's never is, so an ID is
+	 * dropped only when it has no media row (Basecamp 10355752606: edits to
+	 * such a media item were silently thrown away).
+	 *
 	 * @since 2.6.0
 	 *
 	 * @param int[] $media_ids Candidate IDs.
@@ -3036,7 +3119,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				$cpt,
 				(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prepare(
-						"SELECT ID FROM {$wpdb->posts} WHERE ID IN ({$in}) AND post_type IN ('mvs_album', 'mvs_collection')", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						"SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$wpdb->prefix}mvs_media_index i ON i.media_id = p.ID WHERE p.ID IN ({$in}) AND p.post_type IN ('mvs_album', 'mvs_collection') AND i.media_id IS NULL", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						...$chunk
 					)
 				)
@@ -3669,27 +3752,29 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array  $params    Bound parameters for $where_sql.
 	 * @param int    $per_page  Page size.
 	 * @param int    $offset    Page offset.
+	 * @param string $alias     Index alias the WHERE fragments use: 'i' (REST feed) or 'm' (query()). @since 2.6.1
 	 * @return int[] Media IDs for this page, in rank order.
 	 */
-	private function ranked_feed_page( string $orderby, string $where_sql, string $join, array $params, int $per_page, int $offset ): array {
+	private function ranked_feed_page( string $orderby, string $where_sql, string $join, array $params, int $per_page, int $offset, string $alias = 'i' ): array {
 		global $wpdb;
 
-		$index = $wpdb->prefix . 'mvs_media_index';
+		$alias = 'm' === $alias ? 'm' : 'i';
+		$index = $wpdb->prefix . 'mvs_media_index ' . $alias;
 		$stats = $wpdb->prefix . 'mvs_media_stats';
 
 		$score_expr = 'trending' === $orderby
-			? '((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, UTC_TIMESTAMP()), 1), 1.5))'
+			? "((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0)) / POWER(GREATEST(TIMESTAMPDIFF(HOUR, {$alias}.created_at, UTC_TIMESTAMP()), 1), 1.5))"
 			: 'COALESCE(s.views, 0)';
 
 		$cache_cap    = 300;
-		$cache_key    = 'ranked_feed_' . $orderby . '_' . md5( $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
+		$cache_key    = 'ranked_feed_' . $orderby . '_' . md5( $alias . '|' . $where_sql . '|' . $join . '|' . wp_json_encode( $params ) );
 		$cache_args   = $params;
 		$cache_args[] = $cache_cap;
 
 		$ranked_ids = \WPMediaVerse\Core\Plugin::container()->get( 'cache' )->remember(
 			$cache_key,
-			static function () use ( $wpdb, $index, $stats, $where_sql, $join, $score_expr, $cache_args ) {
-				$sql = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d";
+			static function () use ( $wpdb, $index, $stats, $where_sql, $join, $score_expr, $cache_args, $alias ) {
+				$sql = "SELECT {$alias}.media_id FROM {$index} LEFT JOIN {$stats} s ON {$alias}.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d";
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$rows = (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$cache_args ) );
 				return array_map( 'intval', $rows );
@@ -3705,7 +3790,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$page_params   = $params;
 		$page_params[] = $per_page;
 		$page_params[] = $offset;
-		$sql           = "SELECT i.media_id FROM {$index} i LEFT JOIN {$stats} s ON i.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
+		$sql           = "SELECT {$alias}.media_id FROM {$index} LEFT JOIN {$stats} s ON {$alias}.media_id = s.media_id{$join} WHERE {$where_sql} ORDER BY {$score_expr} DESC LIMIT %d OFFSET %d";
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( $sql, ...$page_params ) ) );
 	}
@@ -4024,6 +4109,14 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$args  = $this->normalize_query_args( $args );
 		$parts = $this->build_query_parts( $args );
+
+		// Trending: the REST feed's ranked, cached path, so Explore and the app
+		// rank the same way and a big site does not score every row per view.
+		if ( 'trending' === $args['orderby'] ) {
+			$ids  = $this->ranked_feed_page( 'trending', $parts['where'], $parts['join'], $parts['params'], max( 1, (int) $args['limit'] ), max( 0, (int) $args['offset'] ), 'm' );
+			$rows = $this->get_batch( $ids );
+			return array_values( array_filter( array_map( static fn( $id ) => $rows[ $id ] ?? null, $ids ) ) );
+		}
 
 		$orderby = in_array( $args['orderby'], self::QUERY_ORDERBY_ALLOWED, true ) ? $args['orderby'] : 'created_at';
 		$order   = 'ASC' === strtoupper( (string) $args['order'] ) ? 'ASC' : 'DESC';
@@ -4442,7 +4535,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		if ( ! empty( $args['exclude_non_cover_group'] ) ) {
-			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
+			$mvs_one_type = ( is_array( $args['media_types'] ) && 1 === count( $args['media_types'] ) ) ? (string) reset( $args['media_types'] ) : '';
+			$where[]      = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery( $mvs_one_type ) . ')';
 		}
 
 		// Every listing this repository serves — explore, the BuddyPress profile
@@ -4922,21 +5016,29 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param string $hash sha256 of the stored file.
+	 * @param string $hash      sha256 of the stored file.
+	 * @param int    $author_id Only this member's media (0 = anyone's). An
+	 *                          upload passes the uploader: another member's
+	 *                          file, private or not, is none of their business
+	 *                          (Basecamp 10364776039). @since 2.6.1
 	 * @return int|null
 	 */
-	public function find_by_hash( string $hash ): ?int {
+	public function find_by_hash( string $hash, int $author_id = 0 ): ?int {
 		global $wpdb;
 
 		if ( '' === $hash ) {
 			return null;
 		}
 
+		$sql  = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s";
+		$args = array( $hash );
+		if ( $author_id > 0 ) {
+			$sql   .= ' AND post_author = %d';
+			$args[] = $author_id;
+		}
+
 		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1",
-				$hash
-			)
+			$wpdb->prepare( $sql . ' LIMIT 1', ...$args ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 
 		return $id ? (int) $id : null;
@@ -5315,6 +5417,27 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
 			return array( '1 = 1', array() );
 		}
+		return $this->member_privacy_clause( $alias, $viewer_id );
+	}
+
+	/**
+	 * What a logged-in member may see in a list, with no moderator override:
+	 * public and members items, their own, and followers-only items of people
+	 * they follow.
+	 *
+	 * Social surfaces such as the stories bar use this for everyone, moderators
+	 * included: a moderator's stories bar shows what any member's would, not
+	 * every private story on the site.
+	 *
+	 * @since 2.6.1
+	 *
+	 * @param string $alias     Table alias ('' for bare columns).
+	 * @param int    $viewer_id Logged-in viewer (> 0).
+	 * @return array{0:string,1:array} SQL fragment and its params.
+	 */
+	public function member_privacy_clause( string $alias, int $viewer_id ): array {
+		$alias  = preg_replace( '/[^a-zA-Z0-9_]/', '', $alias );
+		$prefix = '' !== $alias ? $alias . '.' : '';
 		// Followers-only items are listed for the author's followers, the same
 		// rule PrivacyService::can_view() applies to the single item; without it
 		// every list failed closed (Basecamp 10354828096). Served by the
@@ -5342,18 +5465,36 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * definitions (`group_position = '0'` here vs "lowest media_id in the
 	 * group" in the old inline copy).
 	 *
+	 * A listing narrowed to one media type passes that type: a member then stays
+	 * hidden only while its cover is of that type too. A batch of two videos and
+	 * one audio has a video cover, and without this the audio could never be
+	 * found under Audio (2.6.1).
+	 *
+	 * @param string $cover_type Media type the listing is narrowed to, or '' for none.
 	 * @return string Subquery SQL (no surrounding parentheses).
 	 */
-	public function gallery_exclude_subquery(): string {
+	public function gallery_exclude_subquery( string $cover_type = '' ): string {
 		global $wpdb;
 
 		$meta = $wpdb->prefix . 'mvs_media_meta';
-
-		return "SELECT mm1.media_id FROM {$meta} mm1
+		$sql  = "SELECT mm1.media_id FROM {$meta} mm1
 			INNER JOIN {$meta} mm2 ON mm1.media_id = mm2.media_id
 			WHERE mm1.meta_key = 'media_group'
 			AND mm2.meta_key = 'group_position'
 			AND mm2.meta_value != '0'";
+
+		if ( '' === $cover_type || ! MediaTypes::is_known( $cover_type ) ) {
+			return $sql;
+		}
+
+		// is_known() leaves a fixed slug, so it is safe to inline.
+		return $sql . " AND EXISTS (
+				SELECT 1 FROM {$meta} c1
+				INNER JOIN {$meta} c2 ON c2.media_id = c1.media_id AND c2.meta_key = 'group_position' AND c2.meta_value = '0'
+				INNER JOIN {$this->index_table()} ci ON ci.media_id = c1.media_id
+				WHERE c1.meta_key = 'media_group' AND c1.meta_value = mm1.meta_value
+				AND ci.media_type = '" . esc_sql( $cover_type ) . "'
+			)";
 	}
 
 	/**
@@ -5399,6 +5540,10 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$types                          = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+		// The cloud is one cached list for every viewer, so it counts only what
+		// anyone may see: a tag used only on private items is not shown (Basecamp
+		// 10335795450).
+		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT COUNT(*) FROM (
 				SELECT t.term_id
@@ -5410,6 +5555,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				  AND tt.taxonomy = 'mvs_tag'
 				  AND m.status = 'publish'
 				  AND m.moderation_status = 'approved'
+				  AND {$public_sql}
 				GROUP BY t.term_id
 			) AS qualifying";
 
@@ -5424,6 +5570,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		$types = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
+		// The cloud is one cached list for every viewer, so it counts only what
+		// anyone may see: a tag used only on private items is not shown (Basecamp
+		// 10335795450).
+		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT t.term_id, t.name, t.slug, COUNT(*) AS media_count
 			FROM {$wpdb->term_relationships} tr
@@ -5434,6 +5584,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			WHERE {$type_sql}
 			AND m.status = 'publish'
 			AND m.moderation_status = 'approved'
+			AND {$public_sql}
 			GROUP BY t.term_id, t.name, t.slug
 			ORDER BY media_count DESC, MAX(m.created_at) DESC, t.name ASC
 			LIMIT %d";

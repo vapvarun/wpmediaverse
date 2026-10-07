@@ -2,11 +2,11 @@
 
 MediaVerse 1.5.0 closes two privacy and access bugs around non-public media, heals video posters that were stored with the wrong path before this version, and unifies the upload-and-serve pipeline so the underlying bug pattern cannot recur. There are no new customer-facing features; this is a correctness and robustness release.
 
-> **Included in Free.** Every item on this page applies to the free version. Pro picks up these fixes automatically because Pro builds on top of free — Pro 1.5.0 itself ships no code changes, it is a lockstep version bump. Install both updates together when running Pro.
+> **Included in Free.** Every item on this page applies to the free version. Pro picks up these fixes automatically because Pro builds on top of free - Pro 1.5.0 itself ships no code changes, it is a lockstep version bump. Install both updates together when running Pro.
 
 ## Non-public uploads render their own thumbnails
 
-Members, Friends, Only Me, Group, and Custom-access media no longer return a 403 for their own thumbnails after upload. The owner, and any viewer who has been granted access, now sees the thumbnail correctly — on local storage and on every cloud driver (BunnyCDN, S3, R2, Spaces).
+Members, Friends, Only Me, Group, and Custom-access media no longer return a 403 for their own thumbnails after upload. The owner, and any viewer who has been granted access, now sees the thumbnail correctly - on local storage and on every cloud driver (BunnyCDN, S3, R2, Spaces).
 
 ## Private uploads leave zero public footprint
 
@@ -17,7 +17,7 @@ Private media is now fully invisible to everyone except its owner:
 - The profile media tab badge no longer counts private items when someone else is viewing.
 - The Explore grid stays clean of private media.
 
-Other non-public levels (Members, Friends, Group, Custom) keep their normal audience-discovery behavior — this change is specifically about media marked **Private**.
+Other non-public levels (Members, Friends, Group, Custom) keep their normal audience-discovery behavior - this change is specifically about media marked **Private**.
 
 ## Legacy video posters heal automatically
 
@@ -39,7 +39,7 @@ Thumbnails embedded in long-lived surfaces (notification emails, RSS) are minted
 
 ## Under the hood
 
-The upload and read pipeline is now backed by five focused services — `MediaUrl`, `VariantSpec`, `StorageRouter`, `MediaVariantWriter`, and `PosterService`. Existing methods are kept as shims for at least two releases per the deprecation policy, so custom code calling the old paths keeps working.
+The upload and read pipeline is now backed by five focused services - `MediaUrl`, `VariantSpec`, `StorageRouter`, `MediaVariantWriter`, and `PosterService`. Existing methods are kept as shims for at least two releases per the deprecation policy, so custom code calling the old paths keeps working.
 
 ## Upgrade notes
 

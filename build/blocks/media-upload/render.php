@@ -112,7 +112,9 @@ wp_interactivity_state(
 			/* translators: %1$d: number uploaded, %2$d: total number of files. */
 			'uploadPartial'      => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
 			/* translators: %1$d: number of duplicate files, %2$d: existing media ID. */
-			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
+			'duplicatesDetected' => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
+			/* translators: %d: number of files picked, followed by their names. */
+			'filesPicked'        => __( '%d files: ', 'wpmediaverse' ),
 			'allowedFallback'    => __( 'images, videos, and audio files', 'wpmediaverse' ),
 			/* translators: %1$s: rejected file names, %2$s: supported formats. */
 			'fileTypeNotAllowed' => __( 'File type not allowed: %1$s. Supported formats: %2$s.', 'wpmediaverse' ),
@@ -132,6 +134,7 @@ wp_interactivity_state(
 			'restUrl'        => $rest_url,
 			'nonce'          => $nonce,
 			'uploading'      => false,
+			'uploadPercent'  => 0,
 			'uploadError'    => '',
 			'successMessage' => '',
 			'lastLink'       => '',
@@ -149,20 +152,25 @@ wp_interactivity_state(
 >
 	<?php \WPMediaVerse\Core\TemplateHelpers::render_storage_usage(); ?>
 	<div class="mvs-upload-dropzone"
+		role="button" tabindex="0"
+		aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>"
 		data-wp-on--click="actions.handleClick"
+		data-wp-on--keydown="actions.handleKeydown"
 		data-wp-on--dragover="actions.handleDragOver"
 		data-wp-on--dragleave="actions.handleDragLeave"
 		data-wp-on--drop="actions.handleDrop"
 		data-wp-class--mvs-dragover="state.isDragOver"
 	>
 		<div class="mvs-upload-icon">
-			<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+			<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
 				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 				<polyline points="17 8 12 3 7 8"></polyline>
 				<line x1="12" y1="3" x2="12" y2="15"></line>
 			</svg>
 		</div>
-		<p class="mvs-upload-text"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
+		<p class="mvs-upload-text" data-wp-bind--hidden="state.hasPending"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
+		<img class="mvs-upload-picked-thumb" alt="" hidden data-wp-bind--hidden="!state.pickedThumb" data-wp-bind--src="state.pickedThumb" />
+		<p class="mvs-upload-picked" hidden data-wp-bind--hidden="!state.hasPending" data-wp-text="state.pickedLabel"></p>
 		<input type="file" class="mvs-upload-input" multiple
 			aria-label="<?php esc_attr_e( 'Choose files to upload', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.handleFileSelect"
@@ -172,20 +180,12 @@ wp_interactivity_state(
 		if ( $show_privacy ) :
 			$default_privacy = get_option( 'mvs_default_privacy', 'public' );
 			?>
-			<?php
-			// 4 privacy levels — backed by ActivityPrivacyFilter's viewer-side
-			// gating (1.2.1+). Friends Only only shown when BP friends component
-			// is active (otherwise the level has no distinct semantics vs Members).
-			$show_friends = function_exists( 'bp_is_active' ) && bp_is_active( 'friends' );
-			?>
+			<?php // The same list every picker prints (TemplateHelpers::privacy_choices()). ?>
 			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy" aria-label="<?php esc_attr_e( 'Who can see this media', 'wpmediaverse' ); ?>">
-				<option value="public" <?php selected( $default_privacy, 'public' ); ?>><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
-				<option value="members" <?php selected( $default_privacy, 'members' ); ?>><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
-				<?php if ( $show_friends ) : ?>
-					<option value="friends" <?php selected( $default_privacy, 'friends' ); ?>><?php esc_html_e( 'Friends: BuddyPress friends only', 'wpmediaverse' ); ?></option>
-				<?php endif; ?>
-				<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
+				<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options( (string) $default_privacy ); ?>
 			</select>
+		<?php elseif ( ! empty( $attributes['showPrivacy'] ) ) : ?>
+			<?php echo \WPMediaVerse\Core\TemplateHelpers::fixed_privacy_note(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by the helper. ?>
 		<?php endif; ?>
 	</div>
 	<?php if ( '' !== $mvs_docs_url ) : ?>
@@ -225,14 +225,16 @@ wp_interactivity_state(
 		</div>
 	</div>
 	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>
-		<p data-wp-text="state.errorMessage"></p>
+		<p role="alert" data-wp-text="state.errorMessage"></p>
 		<button type="button" class="mvs-upload-error__dismiss" data-wp-on--click="actions.dismissError" aria-label="<?php esc_attr_e( 'Dismiss error', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading" hidden>
-		<p data-wp-text="state.uploadStatus"></p>
+		<p role="status" data-wp-text="state.uploadStatus"></p>
+		<progress class="mvs-upload-progress__bar" max="100" value="0" data-wp-bind--value="context.uploadPercent" aria-label="<?php esc_attr_e( 'Upload progress', 'wpmediaverse' ); ?>"></progress>
+		<span class="mvs-upload-progress__percent" aria-hidden="true" data-wp-text="state.uploadPercentText"></span>
 	</div>
 	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
-		<p data-wp-text="state.successText"></p>
+		<p role="status" data-wp-text="state.successText"></p>
 		<p class="mvs-upload-success__next">
 			<a data-wp-bind--href="context.lastLink" data-wp-bind--hidden="!context.lastLink" hidden><?php esc_html_e( 'View it', 'wpmediaverse' ); ?></a>
 			<a data-wp-bind--href="context.myMediaUrl" data-wp-bind--hidden="!context.myMediaUrl" hidden><?php esc_html_e( 'Go to My Media', 'wpmediaverse' ); ?></a>

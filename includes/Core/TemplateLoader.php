@@ -874,11 +874,11 @@ class TemplateLoader {
 		$can_view = $this->can_view_media( $media );
 
 		if ( ! $can_view ) {
-			// Only a published, approved Members / Friends / Group item: signing in
+			// Only a published, approved Members / Followers / Friends / Group item: signing in
 			// can open those. A private, custom-list, pending or rejected item
 			// answers like a missing one (QA, 2.6.0).
 			$mvs_signing_in_could_help = ! is_user_logged_in()
-				&& in_array( (string) ( $media['privacy'] ?? '' ), array( 'members', 'loggedin', 'friends', 'group', 'space' ), true )
+				&& in_array( (string) ( $media['privacy'] ?? '' ), array( 'members', 'loggedin', 'followers', 'friends', 'group', 'space' ), true )
 				&& in_array( (string) ( $media['moderation_status'] ?? 'approved' ), array( '', 'approved' ), true )
 				&& 'publish' === (string) ( $media['status'] ?? 'publish' )
 				&& ! in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true );
@@ -1330,6 +1330,7 @@ class TemplateLoader {
 			|| (bool) get_query_var( 'mvs_profile_user' )
 			|| (bool) get_query_var( 'mvs_media_archive' )
 			|| (bool) get_query_var( 'mvs_media_slug' )
+			|| (bool) get_query_var( 'mvs_messages_page' )
 		);
 
 		// Shortcode pages (e.g. dashboard): match current page ID against any mvs_page_* option.

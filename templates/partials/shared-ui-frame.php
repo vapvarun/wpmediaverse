@@ -9,7 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -60,9 +60,13 @@ wp_interactivity_state(
 		// from ReportService, the list the REST routes validate against.
 		'reportsEnabled'      => \WPMediaVerse\Social\ReportService::reports_enabled(),
 		'reportReasons'       => \WPMediaVerse\Social\ReportService::reason_labels(),
+		// Where a visitor goes to log in and come back to this page: the same
+		// URL as the lightbox's 'Log in to comment' link.
+		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
 		'i18n'                => array(
 			'reportPrompt'       => __( 'Why are you reporting this?', 'wpmediaverse' ),
 			'loginToReact'       => __( 'Please log in to react.', 'wpmediaverse' ),
+			'logIn'              => __( 'Log in', 'wpmediaverse' ),
 			'reportSubmitted'    => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
 			'reportAlready'      => __( 'Already reported or error occurred.', 'wpmediaverse' ),
 			'reportAction'       => __( 'Report', 'wpmediaverse' ),
@@ -75,6 +79,7 @@ wp_interactivity_state(
 			'createGallery'      => __( 'Create Gallery Post', 'wpmediaverse' ),
 			'createAlbum'        => __( 'Create Album', 'wpmediaverse' ),
 			'uploadVideo'        => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadVideos'       => __( 'Upload Videos', 'wpmediaverse' ),
 			'uploadAudio'        => __( 'Upload Audio', 'wpmediaverse' ),
 			'upload'             => __( 'Upload', 'wpmediaverse' ),
 			'savedRedirecting'   => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
@@ -86,7 +91,7 @@ wp_interactivity_state(
 			'uploadedFailed'     => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
 			'uploadFailedRetry'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
 			/* translators: 1: number of duplicate files, 2: existing media ID. */
-			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
+			'duplicatesDetected' => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
 			'albumCreated'       => __( 'Album "%s" created!', 'wpmediaverse' ),
 			'failedLoad'         => __( 'Failed to load media.', 'wpmediaverse' ),
@@ -171,6 +176,10 @@ wp_interactivity_state(
 
 			<!-- Modal Body -->
 			<div class="mvs-modal-body">
+				<!-- Why nothing went up (quota, size, type): in the window, not only a toast. -->
+				<p class="mvs-upload-modal-error" role="alert" hidden
+					data-wp-bind--hidden="!state.uploadModalError"
+					data-wp-text="state.uploadModalError"></p>
 				<!-- Dropzone -->
 				<div class="mvs-modal-dropzone" data-wp-on--click="actions.handleUploadClick"
 					data-wp-on--drop="actions.handleUploadDrop"
@@ -236,11 +245,19 @@ wp_interactivity_state(
 
 				<!-- Upload progress -->
 				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading" hidden>
-					<div class="mvs-modal-progress-bar">
+					<div class="mvs-modal-progress-bar"
+						role="progressbar"
+						aria-label="<?php esc_attr_e( 'Upload progress', 'wpmediaverse' ); ?>"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						data-wp-bind--aria-valuenow="state.uploadProgressPercent">
 						<div class="mvs-modal-progress-fill"
 							data-wp-style--width="state.uploadProgressWidth"></div>
 					</div>
-					<p class="mvs-modal-progress-text" data-wp-text="state.uploadProgressText"></p>
+					<p class="mvs-modal-progress-text">
+						<span role="status" data-wp-text="state.uploadProgressText"></span>
+						<span class="mvs-modal-progress-percent" aria-hidden="true" data-wp-text="state.uploadProgressPercentText"></span>
+					</p>
 				</div>
 
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
@@ -261,10 +278,12 @@ wp_interactivity_state(
 								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
 							</select>
 						</div>
+						<?php else : ?>
+							<?php echo \WPMediaVerse\Core\TemplateHelpers::fixed_privacy_note(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by the helper. ?>
 						<?php endif; ?>
 						<details class="mvs-modal-details">
 							<summary class="mvs-modal-details__summary"><?php esc_html_e( 'Add details', 'wpmediaverse' ); ?></summary>
-							<div class="mvs-modal-field">
+							<div class="mvs-modal-field" data-wp-bind--hidden="state.uploadTitleUnused">
 								<?php // A placeholder is a hint that vanishes on the first keystroke, so it cannot be the field's name. The Tags input below already had an aria-label; these two were missed (Basecamp 10252222135). ?>
 								<input type="text" aria-label="<?php esc_attr_e( 'Media title', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
 							</div>
@@ -273,6 +292,12 @@ wp_interactivity_state(
 							</div>
 							<div class="mvs-modal-field">
 								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
+							</div>
+							<div class="mvs-tag-pills" data-mvs-tag-complete data-wp-bind--hidden="!state.tagVisible" role="group" aria-label="<?php esc_attr_e( 'Matching tags', 'wpmediaverse' ); ?>">
+								<span class="mvs-tag-pills__label"><?php esc_html_e( 'Matching tags:', 'wpmediaverse' ); ?></span>
+								<template data-wp-each="state.tagResults">
+									<button type="button" class="mvs-tag-pill" data-wp-on--click="actions.addUploadTag" data-wp-bind--data-mvs-tag-name="context.item"><span data-wp-text="context.item"></span></button>
+								</template>
 							</div>
 							<div class="mvs-modal-field">
 								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" data-wp-bind--value="state.uploadModalAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">
@@ -398,7 +423,7 @@ wp_interactivity_state(
 					</div>
 					<?php endif; ?>
 					<div class="mvs-modal-error" data-wp-bind--hidden="!state.editModalError">
-						<p data-wp-text="state.editModalError"></p>
+						<p role="alert" data-wp-text="state.editModalError"></p>
 					</div>
 				</div>
 			</div>
@@ -466,16 +491,27 @@ wp_interactivity_state(
 					data-wp-bind--hidden="!state.lightboxHasPrev"
 					data-wp-on--click="actions.lightboxPrev"
 					aria-label="<?php esc_attr_e( 'Previous', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
 				</button>
 
 				<picture data-wp-bind--hidden="state.lightboxHideImage">
 					<source type="image/avif" data-wp-bind--srcset="state.lightboxImageAvifUrl" data-wp-bind--hidden="state.lightboxHideImageAvif" />
 					<source type="image/webp" data-wp-bind--srcset="state.lightboxImageWebpUrl" data-wp-bind--hidden="state.lightboxHideImageWebp" />
-					<img data-wp-bind--src="state.lightboxImageSrc" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
+					<img data-wp-bind--src="state.lightboxImageSrc" alt="" data-wp-bind--alt="state.lightboxAlt" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
-				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
+				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" data-wp-on--error="actions.lightboxVideoError" hidden>
+					<?php // Captions from REST (Pro's captions_url); no src means no track. ?>
+					<track kind="captions" default label="<?php esc_attr_e( 'Captions', 'wpmediaverse' ); ?>" data-wp-bind--src="state.lightboxCaptionsUrl" data-wp-bind--srclang="state.lightboxCaptionsLang" />
+				</video>
+				<?php // Shown instead of a video the browser cannot play, so a member sees why and can still get the file. ?>
+				<div class="mvs-lightbox-media-error" role="status" data-wp-bind--hidden="!state.lightboxVideoFailed" hidden>
+					<p><?php esc_html_e( 'This video cannot play here.', 'wpmediaverse' ); ?></p>
+					<?php // Same gates as the Download button: the site option and the item's own setting. ?>
+					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
+						<a class="mvs-btn--secondary" data-wp-bind--href="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideDownload" download target="_blank" rel="noopener"><?php esc_html_e( 'Download it instead', 'wpmediaverse' ); ?></a>
+					<?php endif; ?>
+				</div>
 				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
 				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
@@ -493,7 +529,7 @@ wp_interactivity_state(
 					data-wp-bind--hidden="!state.lightboxHasNext"
 					data-wp-on--click="actions.lightboxNext"
 					aria-label="<?php esc_attr_e( 'Next', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
 				</button>
 
 				<!-- Position indicator (e.g. "2 / 4") -->
@@ -581,9 +617,10 @@ wp_interactivity_state(
 						</button>
 					<?php endif; ?>
 					<?php if ( $mvs_is_logged_in && $mvs_collections_on ) : ?>
-						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
+						<?php // Shows saved while the item is in the member's Favorites, like the Free button (Basecamp 10364776932). ?>
+						<button class="mvs-lightbox-action mvs-lb-save" type="button" data-wp-on--click="actions.lightboxOpenCollections" data-wp-class--active="state.lightboxIsFavorited" data-wp-bind--aria-pressed="state.lightboxIsFavorited" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
-							<span class="mvs-lightbox-action__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+							<span class="mvs-lightbox-action__label" data-wp-text="state.lightboxSaveLabel"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( $mvs_is_logged_in && ! $mvs_legacy_fav ) : ?>
 						<button class="mvs-lightbox-action mvs-lb-save" type="button" data-mvs-fav-toggle data-mvs-label-on="<?php esc_attr_e( 'Saved', 'wpmediaverse' ); ?>" data-mvs-label-off="<?php esc_attr_e( 'Save', 'wpmediaverse' ); ?>" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" data-wp-bind--aria-pressed="state.lightboxIsFavorited" aria-pressed="false" aria-label="<?php esc_attr_e( 'Save to your Favorites', 'wpmediaverse' ); ?>">
@@ -688,6 +725,7 @@ wp_interactivity_state(
 
 									<div class="mvs-lightbox-comment-edit" data-wp-bind--hidden="state.hideLightboxCommentEditForm">
 										<textarea class="mvs-lightbox-comment-edit-input" rows="2"
+											aria-label="<?php esc_attr_e( 'Edit comment', 'wpmediaverse' ); ?>"
 											data-wp-bind--value="context.item.editText"
 											data-wp-on--input="actions.updateLightboxEditText"></textarea>
 										<div class="mvs-lightbox-comment-edit-actions">
@@ -763,12 +801,14 @@ wp_interactivity_state(
 	<div class="mvs-confirm-overlay" hidden
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.confirmVisible">
-		<div class="mvs-confirm">
-			<p data-wp-text="state.confirmMessage"></p>
+		<div class="mvs-confirm" role="alertdialog" aria-modal="true" aria-labelledby="mvs-confirm-message">
+			<p id="mvs-confirm-message" data-wp-text="state.confirmMessage"></p>
 			<div class="mvs-confirm-actions">
 				<button class="mvs-btn mvs-btn--secondary mvs-confirm-cancel" type="button"
 					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 				<button class="mvs-btn mvs-btn--danger" type="button"
+					data-wp-class--mvs-btn--danger="!state.confirmPrimary"
+					data-wp-class--mvs-btn--primary="state.confirmPrimary"
 					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
 			</div>
 		</div>

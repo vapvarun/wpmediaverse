@@ -20,9 +20,11 @@ defined( 'ABSPATH' ) || exit;
  * narrow — one per source — so callers don't reimplement the directory choice
  * or filename convention.
  *
- * Filename convention: `<media_id>.<ext>` for source bytes; size variants
- * (`<media_id>-WxH.jpg`) are produced by the standard `generate_thumbnails`
- * pipeline against the staged source.
+ * Filename convention (2.6.1+): `posters/YYYY/MM/<random>.<ext>` for source
+ * bytes; size variants (`<random>-WxH.jpg`) are produced by the standard
+ * `generate_thumbnails` pipeline against the staged source. Posters made before
+ * 2.6.1 keep their `posters/<media_id>.<ext>` names and paths (stored in meta),
+ * and stay on the signed /serve route because their names are guessable.
  *
  * @since 1.5.0
  */
@@ -45,14 +47,30 @@ class PosterService {
 		if ( ! empty( $upload_dir['error'] ) ) {
 			return null;
 		}
-		$dir = trailingslashit( $upload_dir['basedir'] ) . self::REL_DIR;
+		// Dated like every other upload, so the folder never collects every poster
+		// the site has ever made (it was one flat posters/ directory until 2.6.1).
+		$dir = trailingslashit( $upload_dir['basedir'] ) . self::REL_DIR . '/' . gmdate( 'Y/m' );
 		return wp_mkdir_p( $dir ) ? $dir : null;
+	}
+
+	/**
+	 * A random file stem for a new poster.
+	 *
+	 * Posters used to be named after the media id, so anyone could guess the
+	 * poster of any video, private ones included. A random stem (the same 16 hex
+	 * characters FilenameStrategy gives originals) makes a poster reachable only
+	 * through a URL MediaVerse handed out.
+	 *
+	 * @return string
+	 */
+	private function random_stem(): string {
+		return bin2hex( random_bytes( 8 ) );
 	}
 
 	/**
 	 * Persist a video / audio embedded cover (Path A — getID3 / ID3 art).
 	 *
-	 * @param int   $media_id Media ID (filename anchor).
+	 * @param int   $media_id Media ID (for log context).
 	 * @param array $image    `image` array from wp_read_video_metadata() / ID3 reader.
 	 *                        Must contain `data` (raw bytes) and optionally `mime`.
 	 * @return string|null Absolute path of the staged poster, or null on failure.
@@ -75,7 +93,7 @@ class PosterService {
 			return null;
 		}
 
-		$path = trailingslashit( $dir ) . $media_id . '.' . $ext;
+		$path = trailingslashit( $dir ) . $this->random_stem() . '.' . $ext;
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		$bytes = file_put_contents( $path, $image['data'] );
 
@@ -88,6 +106,7 @@ class PosterService {
 			return null;
 		}
 
+		$this->record_source( $media_id, $path );
 		return $path;
 	}
 
@@ -99,7 +118,7 @@ class PosterService {
 	 * The source `$tmp_path` is moved (copy + unlink) into place — this
 	 * matches the pre-1.5.0 inline behavior at `MediaController:649-657`.
 	 *
-	 * @param int    $media_id Media ID (filename anchor).
+	 * @param int    $media_id Media ID (records the source path).
 	 * @param string $tmp_path Absolute path to the uploaded tmpfile.
 	 * @return string|null Absolute path of the staged poster, or null on failure.
 	 */
@@ -108,12 +127,32 @@ class PosterService {
 		if ( null === $dir ) {
 			return null;
 		}
-		$dest = trailingslashit( $dir ) . $media_id . '.jpg';
+		$dest = trailingslashit( $dir ) . $this->random_stem() . '.jpg';
 		if ( ! copy( $tmp_path, $dest ) ) {
 			return null;
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		@unlink( $tmp_path );
+		$this->record_source( $media_id, $dest );
 		return $dest;
+	}
+
+	/**
+	 * Record the cover's source image as one of the item's files.
+	 *
+	 * The sizes made from it are recorded under thumb_*_path, but the source
+	 * itself was recorded nowhere, so deleting a video left it on disk forever
+	 * and no rename or cloud move could find it. A `*_path` key puts it in
+	 * MediaRepository::get_stored_file_paths(), which every one of those uses.
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $abs      Absolute path of the staged source.
+	 * @return void
+	 */
+	private function record_source( int $media_id, string $abs ): void {
+		$base = trailingslashit( wp_upload_dir()['basedir'] ) . 'wpmediaverse/';
+		if ( 0 === strpos( $abs, $base ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'poster_source_path', substr( $abs, strlen( $base ) ) );
+		}
 	}
 }

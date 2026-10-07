@@ -31,6 +31,8 @@ class EmailService {
 		'battle_invite'   => 'mvs_email_battle_invite',
 		'document_shared' => 'mvs_email_document_shared',
 		'report_resolved' => 'mvs_email_report_outcome',
+		'new_follower'    => 'mvs_email_new_follower',
+		'media_comment'   => 'mvs_email_media_comment',
 	);
 
 	/** User meta: 'off' when the member does not want activity emails. */
@@ -53,6 +55,9 @@ class EmailService {
 	 * @return bool
 	 */
 	public static function any_type_enabled(): bool {
+		if ( self::host_sends() ) {
+			return false;
+		}
 		foreach ( self::TYPES as $option ) {
 			if ( get_option( $option, false ) ) {
 				return true;
@@ -60,6 +65,20 @@ class EmailService {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether BuddyNext sends member emails for MediaVerse activity. MediaVerse
+	 * is a core feature of BuddyNext, so on a BuddyNext site BuddyNext owns
+	 * these emails and MediaVerse sends only when it runs on its own (owner
+	 * decision 2026-10-02; one email per event, not two). Account deletion
+	 * confirmations are not activity and are always sent.
+	 *
+	 * @since 2.6.1
+	 * @return bool
+	 */
+	public static function host_sends(): bool {
+		return (bool) apply_filters( 'mvs_buddynext_active', false );
 	}
 
 	/**
@@ -98,7 +117,7 @@ class EmailService {
 		$user_id = (int) $user_id;
 		$type    = (string) $type;
 
-		if ( ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
+		if ( self::host_sends() || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
 			return;
 		}
 
@@ -111,6 +130,14 @@ class EmailService {
 			case 'document_shared':
 				/* translators: %s: site name. */
 				$subject = sprintf( __( 'A document was shared with you on %s', 'wpmediaverse' ), $site );
+				break;
+			case 'new_follower':
+				/* translators: %s: site name. */
+				$subject = sprintf( __( 'You have a new follower on %s', 'wpmediaverse' ), $site );
+				break;
+			case 'media_comment':
+				/* translators: %s: site name. */
+				$subject = sprintf( __( 'New comment on your media on %s', 'wpmediaverse' ), $site );
 				break;
 			default:
 				/* translators: %s: site name. */

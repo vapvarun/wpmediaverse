@@ -3,13 +3,13 @@
 > **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require MediaVerse Pro.
 
 
-MediaVerse integrates with OpenAI Vision (GPT-4o or GPT-4o Mini) to automatically analyze and moderate uploaded media. MediaVerse Pro adds support for Google Vision, AWS Rekognition, and Claude (Anthropic).
+MediaVerse integrates with OpenAI Vision (GPT-4o Mini by default) to automatically analyze and moderate uploaded media. MediaVerse Pro adds support for Google Vision, AWS Rekognition, and Claude (Anthropic).
 
 ![AI moderation result on a media post](../images/admin-moderation.jpg)
 
 ## How AI Analysis Works
 
-When **Auto-Analyze Uploads** is enabled, MediaVerse sends each uploaded image to OpenAI immediately after storage. The analysis returns:
+When **Auto-Analyze Uploads** (**MediaVerse > Settings > AI**, off by default) is enabled, MediaVerse sends each uploaded image to OpenAI immediately after storage. The analysis returns:
 
 - A natural-language description of the image
 - Suggested tags (comma-separated keywords)
@@ -19,7 +19,9 @@ The description is saved to the `ai_description` media metadata key. If **Auto-A
 
 ## How AI Moderation Works
 
-When **Auto-Moderate Uploads** is enabled, MediaVerse checks the AI safety scores against configurable thresholds. If a policy violation is detected, the action defined in **When AI Flags Content** is applied:
+When **AI Moderation** is enabled (**MediaVerse > Settings > Moderation**, off by default), MediaVerse checks each new upload with AI. If it flags the upload, the action chosen in **When AI Flags Content** is applied. The default is **Hide until I review it**.
+
+You choose what the AI looks for with **AI Flag Criteria** (nudity or sexual content, violence or gore, hate or harassment, self-harm, drugs, spam; all on by default, and at least one always stays on). **Custom Flag Terms** lets you add your own comma-separated terms, such as weapons or gambling.
 
 | Action | What Happens |
 |--------|-------------|
@@ -33,7 +35,7 @@ Moderation status changes fire the `mvs_moderation_changed` action hook (`$media
 
 ## Triggering Analysis Manually
 
-Site administrators can re-analyze any media item from the moderation queue or via the REST API:
+Moderators can re-analyze any media item via the REST API:
 
 ```bash
 curl -X POST https://yoursite.com/wp-json/mvs/v1/moderation/123/analyze \
@@ -42,7 +44,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/moderation/123/analyze \
 
 ## Approving or Rejecting from the Moderation Queue
 
-1. Go to **Media > Media Moderation** (renamed from "Moderation" in 2.0.0).
+1. Go to **MediaVerse > Moderation**. The **AI Flagged** tab lists what AI flagged, **Pending Review** lists items waiting for a decision, and **Resolved / Rejected** lists the rest.
 2. Review the flagged item and its AI analysis result.
 3. Click **Approve** to publish or **Reject** to move to draft.
 
@@ -50,7 +52,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/moderation/123/analyze \
 
 ## Budget Control
 
-Set a monthly spending cap at **Media > Settings > AI & Moderation > Monthly AI Budget ($)**. MediaVerse tracks estimated spending per call and stops making AI calls when the budget is reached.
+Set a monthly spending cap at **MediaVerse > Settings > AI > Monthly AI Budget ($)**. The default is 10. MediaVerse counts an estimated $0.01 per call and stops making AI calls when the estimate reaches the budget; they resume next month. Set it to 0 for no limit. Real cost depends on the model, so also set a billing limit with your AI provider.
 
 To check current spending:
 

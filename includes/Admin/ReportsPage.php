@@ -199,7 +199,7 @@ class ReportsPage {
 		echo '<p class="description">' . esc_html__( 'Content and members your community has flagged for review.', 'wpmediaverse' ) . '</p>';
 
 		if ( ! ReportService::reports_enabled() ) {
-			echo '<div class="notice notice-warning"><p>' . esc_html__( 'Member reporting is turned off, so no new reports can arrive. Turn it back on under Settings, AI & Moderation.', 'wpmediaverse' ) . '</p></div>';
+			echo '<div class="notice notice-warning"><p>' . esc_html__( 'Member reporting is turned off, so no new reports can arrive. Turn it back on under MediaVerse > Settings > Moderation.', 'wpmediaverse' ) . '</p></div>';
 		}
 
 		// Status tabs.

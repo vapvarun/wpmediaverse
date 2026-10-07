@@ -135,7 +135,7 @@ class UploadService {
 		// Duplicate detection.
 		$duplicate_action = get_option( 'mvs_duplicate_action', 'warn' );
 		if ( 'allow' !== $duplicate_action ) {
-			$existing = $this->find_by_hash( $hash );
+			$existing = $this->find_by_hash( $hash, $user_id );
 			if ( $existing ) {
 				if ( 'skip' === $duplicate_action ) {
 					return new WP_Error(
@@ -168,6 +168,11 @@ class UploadService {
 		if ( get_option( 'mvs_strip_exif', true ) && $this->is_image( $mime ) ) {
 			$this->strip_exif( $file['tmp_name'] );
 		}
+
+		// MP4/MOV with its index at the end: move it to the front so playback
+		// starts before the whole file arrives, even where a host cache keeps
+		// Range requests from PHP. Pure PHP, no ffmpeg; same size, same samples.
+		Mp4Faststart::apply( $file['tmp_name'], $mime );
 
 		// Determine media type from MIME.
 		$media_type = $this->get_media_type( $mime );
@@ -811,7 +816,10 @@ class UploadService {
 			if ( ! wp_mkdir_p( $wpmv_base . $subdir ) ) {
 				return '';
 			}
-			$dest_path = $subdir . '/' . $media_id . '-' . sanitize_file_name( basename( $source_path ) );
+			// Random stem, like every upload: '<media_id>-<original name>' was
+			// guessable, which matters now media can be served without /serve.
+			$import_ext = strtolower( (string) pathinfo( $source_path, PATHINFO_EXTENSION ) );
+			$dest_path  = $subdir . '/' . bin2hex( random_bytes( 8 ) ) . ( '' !== $import_ext ? '.' . sanitize_key( $import_ext ) : '' );
 		}
 
 		$local_full = $wpmv_base . $dest_path;
@@ -834,6 +842,11 @@ class UploadService {
 
 		$repo->set( $media_id, 'file_path', $dest_path );
 		$repo->set( $media_id, 'file_url', $driver->url( $dest_path ) );
+		// Downloads name the file from original_filename; keep the source's name
+		// now that the stored one is random (never overwrite one already set).
+		if ( '' === (string) $repo->get_raw( $media_id, 'original_filename' ) ) {
+			$repo->set( $media_id, 'original_filename', sanitize_file_name( basename( $source_path ) ) );
+		}
 		$this->process_stored_file( $media_id, $dest_path, $media_type, $mime );
 
 		return $dest_path;
@@ -2361,12 +2374,10 @@ class UploadService {
 	 * @param string $hash SHA-256 hash.
 	 * @return int|null Existing media ID or null.
 	 */
-	private function find_by_hash( string $hash ): ?int {
-		global $wpdb;
-
+	private function find_by_hash( string $hash, int $user_id ): ?int {
 		$media_id = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
-			->find_by_hash( (string) $hash );
+			->find_by_hash( (string) $hash, $user_id );
 
 		return $media_id ? (int) $media_id : null;
 	}

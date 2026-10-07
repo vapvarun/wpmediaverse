@@ -1,19 +1,14 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Core/TemplateVersions.php
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 2
+			path: includes/Admin/CollectionMetaBox.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 2
 			path: includes/Admin/DocumentListPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 2
-			path: includes/Admin/CollectionMetaBox.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
@@ -91,6 +86,11 @@ parameters:
 			path: includes/Admin/OverviewPage.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
 			message: "#^Parameter \\#1 \\$args of function wp_dropdown_pages expects array\\{depth\\?\\: int, child_of\\?\\: int, selected\\?\\: int\\|string, echo\\?\\: bool\\|int, name\\?\\: string, id\\?\\: string, class\\?\\: string, show_option_none\\?\\: string, \\.\\.\\.\\}, array\\{name\\: mixed, selected\\: int, show_option_none\\: string, option_none_value\\: 0\\} given\\.$#"
 			count: 1
 			path: includes/Admin/Settings/FieldRenderer.php
@@ -109,11 +109,6 @@ parameters:
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Admin/Settings/FieldRenderer.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
@@ -151,6 +146,26 @@ parameters:
 			path: includes/Admin/TagManagementPage.php
 
 		-
+			message: "#^Call to function method_exists\\(\\) with '\\\\\\\\BuddyNext\\\\\\\\App…' and 'connect_url' will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Auth/AppConnect.php
+
+		-
+			message: "#^Call to function method_exists\\(\\) with '\\\\\\\\BuddyNext\\\\\\\\App…' and 'schemes' will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Auth/AppConnect.php
+
+		-
+			message: "#^Call to static method connect_url\\(\\) on an unknown class BuddyNext\\\\App\\\\AppConnectService\\.$#"
+			count: 1
+			path: includes/Auth/AppConnect.php
+
+		-
+			message: "#^Call to static method schemes\\(\\) on an unknown class BuddyNext\\\\App\\\\AppConnectService\\.$#"
+			count: 1
+			path: includes/Auth/AppConnect.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
 			path: includes/Blocks/BlockRegistrar.php
@@ -172,12 +187,12 @@ parameters:
 
 		-
 			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 32
+			count: 34
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Call to static method warning\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 17
+			count: 18
 			path: includes/CLI/Commands.php
 
 		-
@@ -187,12 +202,12 @@ parameters:
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\get_flag_value not found\\.$#"
-			count: 47
+			count: 49
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\make_progress_bar not found\\.$#"
-			count: 9
+			count: 10
 			path: includes/CLI/Commands.php
 
 		-
@@ -236,13 +251,18 @@ parameters:
 			path: includes/Core/TemplateHelpers.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 3
+			message: "#^Call to static method auth_url\\(\\) on an unknown class BuddyNext\\\\Core\\\\PageRouter\\.$#"
+			count: 2
 			path: includes/Core/TemplateHelpers.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 3
 			path: includes/Core/TemplateHelpers.php
 
 		-
@@ -259,6 +279,11 @@ parameters:
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Core/TemplateVersions.php
 
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
