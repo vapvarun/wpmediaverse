@@ -4,8 +4,6 @@ When a member uploads to MediaVerse, BuddyNext publishes a card into the communi
 
 ## What gets published
 
-![A photo post in the BuddyNext feed with reactions and comments](../images/single-media.webp)
-
 | Upload | Feed result |
 |---|---|
 | Photo | A native BuddyNext photo post carrying the media ids, rendered as a grid |

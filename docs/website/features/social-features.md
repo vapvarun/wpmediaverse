@@ -1,5 +1,7 @@
 # Social Features
 
+![A media page with the photo, its author, the reaction bar, Save, Share and Report, and the comments below](../images/single-media.webp)
+
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
 React, comment, follow, and share - MediaVerse turns your media site into a living community where every photo starts a conversation.
