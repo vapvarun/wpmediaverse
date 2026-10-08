@@ -1,5 +1,7 @@
 # Video Analytics
 
+![Analytics for one video: completion rate, average watch duration, engagement score, the playback heatmap, audience retention and top drop-off points](../images/admin-video-analytics.webp)
+
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 MediaVerse Pro records play events for every video, builds per-video heatmaps, and provides a dashboard showing retention and engagement metrics.
