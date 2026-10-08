@@ -6,6 +6,8 @@ Give every member a private drive for their files. Folders, sharing, search, tra
 
 ## What Users See
 
+![The Documents tab in My Media: Upload, New folder, search, and the drive with folders and files](../images/my-media-documents.webp)
+
 Each member gets a **Documents** section on their My Media page: their own drive, with folders they create and name, an upload button, and a list showing name, size, when it changed and who owns it.
 
 Opening a document uses the right view for its type. A PDF opens inline in a built-in viewer (pdf.js), laid out the way the file really looks. Plain text, Markdown and CSV render as formatted HTML. Word, Excel, PowerPoint, OpenDocument and RTF files show a download card - MediaVerse embeds what the browser can render and hands you the file for the rest, rather than converting one format into another.
@@ -121,6 +123,8 @@ points at any more; if that is not what you expect, stop and investigate rather 
 
 ## For Site Owners
 
+![The Documents screen in wp-admin listing every document with type, size, author and privacy](../images/admin-documents.webp)
+
 ![Documents settings tab with who can use documents, size limit, allowed file types and sharing](../images/settings-documents.webp)
 
 Settings live at **MediaVerse > Settings > Documents**:
@@ -155,6 +159,8 @@ Activating the licence restores everything immediately. Nothing is migrated, con
 Every other Pro feature is unaffected by licence state - the licence buys updates.
 
 ## Blocks
+
+![The Explore Documents page listing public documents with search and sort](../images/explore-documents.webp)
 
 Two blocks put documents on any page or post. Both decide access for the person reading
 the page, on every view, so a visitor never sees a document they could not open elsewhere.
