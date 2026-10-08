@@ -2,10 +2,7 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 MediaVerse includes a blocking system that prevents specific users from interacting with you and a reporting system that lets users flag abusive content or accounts for moderator review.
-
-![User profile page showing Block User and Report User options](../images/profile-other.png)
 
 ## Blocking a User
 
@@ -24,8 +21,6 @@ When you block a user, they cannot:
 A block hides media both ways in lists: neither of you sees the other's media on browse pages, profiles or feeds. The person who blocked can still open a direct link to the blocked member's public media; the blocked member cannot open the blocker's.
 
 Blocks are stored per-user and do not require any admin action.
-
-![Confirmation dialog after blocking a user](../images/profile-other.png)
 
 ## Unblocking a User
 
@@ -55,6 +50,8 @@ Reports appear in **MediaVerse > Moderation** on the **Reports** tab. Moderators
 
 ## Media Reporting
 
+![User Reports tab in Moderation, listing reported media with the reason, details and Resolve or Dismiss](../images/admin-moderation-reports.webp)
+
 Any logged-in member can also report a comment or a chat message. Any logged-in user can report a media item from the media card or the media detail page using the flag icon.
 
 ### Report Reasons
@@ -72,8 +69,6 @@ Found on **MediaVerse > Settings > Moderation**.
 | Member Reporting | Lets members report media and members. Turning it off hides every Report control and refuses incoming reports. | On |
 | Auto-Hide Threshold | Number of reports before media is hidden automatically. 0 turns it off. | 3 |
 | Community Guidelines URL | Link to your rules, shown in the app and next to the Report control. | Empty |
-
-![Media card showing the report flag icon](../images/single-media.jpg)
 
 ## REST API
 

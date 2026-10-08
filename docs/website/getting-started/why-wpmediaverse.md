@@ -2,6 +2,10 @@
 
 MediaVerse is a purpose-built media platform for WordPress. Unlike plugins that bolt media features onto WordPress posts or attachments, MediaVerse uses its own high-performance database architecture designed from the ground up for media-heavy communities.
 
+![Explore page showing a justified grid of member photos](../images/explore.webp)
+
+Watch: [A neighbourhood feed, groups and a shared photo gallery](https://youtu.be/xcUAZJSqGzw) (short video)
+
 ## The Problem with WordPress Attachments
 
 Most WordPress media plugins store user uploads as `wp_posts` with `post_type = 'attachment'`. This creates serious problems at scale:

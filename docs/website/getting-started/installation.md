@@ -15,16 +15,12 @@ Get MediaVerse running on your WordPress site in under five minutes - install, a
 2. Search for **MediaVerse**.
 3. Click **Install Now**, then **Activate**.
 
-![WordPress plugin search showing MediaVerse install button](../images/admin-overview.png)
-
 ## Installing via ZIP Upload
 
 1. Download the `wpmediaverse.zip` file from [wbcomdesigns.com](https://wbcomdesigns.com/downloads/mediaverse/).
 2. Go to **Plugins > Add New Plugin > Upload Plugin**.
 3. Choose the ZIP file and click **Install Now**.
 4. Click **Activate Plugin**.
-
-![Upload plugin screen with MediaVerse ZIP selected](../images/admin-overview.png)
 
 ## Installing via FTP
 
@@ -33,6 +29,8 @@ Get MediaVerse running on your WordPress site in under five minutes - install, a
 3. Go to **Plugins** in your dashboard and activate **MediaVerse**.
 
 ## What Happens on Activation
+
+![MediaVerse overview screen with media counts, quick links, recent uploads and connected integrations](../images/admin-overview.webp)
 
 When you activate MediaVerse, the plugin automatically:
 

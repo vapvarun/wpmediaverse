@@ -2,7 +2,6 @@
 
 > **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require MediaVerse Pro.
 
-
 Share photos, videos, and audio with your community - no admin access needed, straight from any page on your site.
 
 ## What You Can Do
@@ -24,7 +23,7 @@ Share photos, videos, and audio with your community - no admin access needed, st
 6. When finished, your files appear in your media dashboard and your profile page
 7. Find all your uploads anytime under **My Media** or your profile's Media tab
 
-![Frontend upload form with drag-and-drop zone and privacy dropdown](../images/upload-page.png)
+![Upload Media page with the drag-and-drop area and the privacy selector](../images/upload-page.webp)
 
 ## For Site Owners
 

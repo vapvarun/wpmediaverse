@@ -2,8 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 Run themed photo competitions - your community submits their best shots, votes for their favorites, and the top three photographers win point prizes.
 
 ## What You Can Do (as a User)
@@ -25,7 +23,7 @@ Run themed photo competitions - your community submits their best shots, votes f
 7. When voting closes, open the **Results** tab to see the ranked results
 8. Winner badges (1st, 2nd, 3rd) appear on the top entries and points are awarded automatically to your account
 
-![Photo Challenges frontend page showing active challenge](../images/challenges-page.png)
+![Photo Challenges page with two challenges open for entries](../images/challenges-page.webp)
 
 ## For Site Owners
 
@@ -36,7 +34,7 @@ Run themed photo competitions - your community submits their best shots, votes f
 5. Save - the challenge opens when the start date arrives
 6. To run challenges on autopilot without manual creation, enable **Autopilot** in the settings (see below)
 
-![Challenge Manager create form](../images/admin-competitions.png)
+![Create Challenge form with presets, schedule, entry limit and point rewards](../images/admin-challenge-create.webp)
 
 ## Lifecycle
 
@@ -53,8 +51,6 @@ A challenge moves through four stages (a challenge can also be cancelled). Trans
 
 Go to **MediaVerse > Competitions > Photo Challenges** and click **Create Challenge**. You can start from a preset.
 
-![Challenge Manager create form](../images/admin-competitions.png)
-
 | Field | Description |
 |-------|-------------|
 | Title | The challenge name shown to members |
@@ -70,6 +66,8 @@ Go to **MediaVerse > Competitions > Photo Challenges** and click **Create Challe
 The dates must be in order: start, then entry end, then voting end. Times use your site's timezone. The challenge cover image follows the leading entry automatically.
 
 ## Autopilot
+
+![Weekly Autopilot setting on the Competitions tab](../images/settings-autopilot.webp)
 
 Autopilot creates a new themed challenge every week so you do not need to create them manually.
 
@@ -89,7 +87,7 @@ When autopilot runs, the new challenge opens straight away. It picks an enabled 
 
 MediaVerse Pro ships with 52 pre-built challenge themes. Go to **MediaVerse > Competitions > Challenge Themes** to browse, add, enable or disable themes.
 
-![Challenge Themes grid showing theme cards with categories](../images/admin-competitions.png)
+![Challenge Themes library with category and status filters](../images/admin-challenge-themes.webp)
 
 Themes are grouped into the categories Color, Concept, Creative, Life, Nature, People, Seasonal and Urban. You can add custom themes in any category and delete the custom ones.
 
@@ -137,15 +135,13 @@ No body is needed. Returns `403` if the challenge is not in Voting stage or the 
 
 The `/media/challenges/` page displays challenges in three tabs: **Active**, **Voting**, and **Results**.
 
-![Challenges page with tab navigation and challenge cards](../images/challenges-page.png)
+![A challenge in its voting phase, with each entry and its vote count](../images/challenge-detail.webp)
 
 - **Active tab** - Shows the entry submission form when the member is logged in and has not yet reached the entry limit
 - **Voting tab** - Shows all entries as a grid with vote buttons; an entry you voted for shows a **Voted** badge
 - **Results tab** - Shows entries ranked by votes with winner badges for positions 1, 2, and 3
 
 The entry form lets members select from their existing uploaded media or upload a new photo directly.
-
-![Challenge entry submission form](../images/dashboard-challenges.png)
 
 ## Who Can See Entries (Logged-Out Experience)
 

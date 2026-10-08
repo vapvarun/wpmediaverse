@@ -2,7 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
 Give every member a private drive for their files. Folders, sharing, search, trash and a viewer that shows a contract as a contract - not as its words in a plain column.
 
 ## What Users See
@@ -121,6 +120,8 @@ Always run the dry run first and read what it lists. A file it names is one no d
 points at any more; if that is not what you expect, stop and investigate rather than deleting.
 
 ## For Site Owners
+
+![Documents settings tab with who can use documents, size limit, allowed file types and sharing](../images/settings-documents.webp)
 
 Settings live at **MediaVerse > Settings > Documents**:
 

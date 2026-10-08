@@ -4,6 +4,8 @@ These settings are on two tabs: **MediaVerse > Settings > AI** and **MediaVerse 
 
 ## AI Features Section (AI tab)
 
+![AI settings tab with the provider selector, API key, auto-analyze and monthly budget](../images/settings-ai.webp)
+
 AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) supply an API key and (2) turn on at least one of the toggles below. There is no separate "enable AI" master switch because a missing key already disables every AI feature - you stay in full control of what runs and what it costs.
 
 | Option | Default | Description |
@@ -43,6 +45,8 @@ When this constant is defined, the settings page field is disabled and shows a n
 
 ## Moderation Section (Moderation tab)
 
+![Moderation settings tab with community guidelines URL, member reporting, AI moderation and the auto-hide threshold](../images/settings-moderation.webp)
+
 | Option | Default | Description |
 |--------|---------|-------------|
 | Community Guidelines URL | (empty) | What members may and may not post. Shown in the app and alongside the Report control. |
@@ -59,8 +63,6 @@ The Terms of Service URL and Abuse Contact Email moved from this tab to **Settin
 
 Administrators with the `moderate_mvs_media` capability can review flagged media at **MediaVerse > Moderation**.
 
-![Moderation queue with pending media items](../images/admin-moderation.jpg)
-
 The queue shows:
 - Media flagged by AI
 - Media that reached the auto-hide threshold from user reports
@@ -69,8 +71,6 @@ The queue shows:
 ## Log Viewer
 
 The AI & moderation activity log is available at **Tools > MediaVerse Logs**. It shows each AI call, the result, estimated cost, and any action taken.
-
-![AI log viewer showing analysis results](../images/admin-stats.png)
 
 ## Budget Alerts
 

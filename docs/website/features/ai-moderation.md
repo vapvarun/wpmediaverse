@@ -2,10 +2,7 @@
 
 > **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require MediaVerse Pro.
 
-
 MediaVerse integrates with OpenAI Vision (GPT-4o Mini by default) to automatically analyze and moderate uploaded media. MediaVerse Pro adds support for Google Vision, AWS Rekognition, and Claude (Anthropic).
-
-![AI moderation result on a media post](../images/admin-moderation.jpg)
 
 ## How AI Analysis Works
 
@@ -47,8 +44,6 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/moderation/123/analyze \
 1. Go to **MediaVerse > Moderation**. The **AI Flagged** tab lists what AI flagged, **Pending Review** lists items waiting for a decision, and **Resolved / Rejected** lists the rest.
 2. Review the flagged item and its AI analysis result.
 3. Click **Approve** to publish or **Reject** to move to draft.
-
-![Moderation queue item with approve and reject buttons](../images/admin-moderation.jpg)
 
 ## Budget Control
 

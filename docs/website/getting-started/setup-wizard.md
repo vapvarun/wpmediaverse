@@ -2,7 +2,7 @@
 
 After you activate MediaVerse, a short wizard guides you through the only settings you need to make your first upload possible. The whole thing takes about two minutes.
 
-![Setup wizard welcome screen](../images/admin-overview.png)
+![Setup wizard welcome step](../images/setup-wizard-welcome.webp)
 
 ## Step 1: Welcome
 
@@ -12,7 +12,7 @@ A quick overview of what MediaVerse does - albums and collections, the social la
 
 Configure how media appears on your site.
 
-![Setup wizard display step showing items-per-page and layout options](../images/admin-settings-display.png)
+![Setup wizard Display step with items per page and the default layout](../images/setup-wizard-display.webp)
 
 | Option | Choices | Default |
 |--------|---------|---------|

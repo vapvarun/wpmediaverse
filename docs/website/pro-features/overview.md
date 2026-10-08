@@ -2,15 +2,13 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, document drives, photo competitions, video analytics, chapters and auto-captions, AI providers, and granular privacy controls.
 
 > Pro does not transcode video. The FFmpeg pipeline was removed in 2.4.0 - MediaVerse embeds media, it does not process it. The player uses the original file.
 
 > Storage limits are not a Pro feature. Free's Settings > General has one optional "Fair-use storage limit per member (MB)" (0 = no limit), with a per-member override on the member's wp-admin profile. Pro's quota packages, credits and membership-plugin quota mapping were removed in 2.6.0 - see [Free vs Pro](../getting-started/free-vs-pro.md).
 
-![MediaVerse Pro license key entry screen](../images/admin-overview.png)
+![License tab showing an active license](../images/settings-license.webp)
 
 ## Requirements
 
@@ -27,8 +25,6 @@ MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage
 4. Click **Activate Plugin**.
 5. Go to **MediaVerse > Settings > License** and enter your license key.
 6. Click **Activate License**.
-
-![Media License settings page with activation status](../images/admin-overview.png)
 
 All Pro features run as soon as the plugin is activated. The license key unlocks automatic updates; it is not a feature switch.
 

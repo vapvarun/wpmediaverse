@@ -2,7 +2,6 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 React, comment, follow, and share - MediaVerse turns your media site into a living community where every photo starts a conversation.
 
 ## What You Can Do
@@ -31,8 +30,6 @@ React, comment, follow, and share - MediaVerse turns your media site into a livi
 3. Choose your reaction - like, love, wow, haha, sad, or angry
 4. Your reaction is shown instantly. Click the same reaction to remove it
 5. Click a different reaction to change yours
-
-![Media item with reaction bar showing emoji counts](../images/single-media.jpg)
 
 ### Commenting
 
@@ -100,8 +97,6 @@ do_action( 'mvs_reaction_added', $media_id, $user_id, $reaction_type );
 ## Comments
 
 MediaVerse uses a custom comments system stored in a dedicated table, separate from WordPress's `wp_comments`.
-
-![Comment section below a media item](../images/single-media.jpg)
 
 ### REST API
 

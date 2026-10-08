@@ -14,6 +14,8 @@ With MediaVerse Pro, a member also gets a **Files** tab with their own document 
 
 ## What the tab shows
 
+![Media tab on a BuddyNext member profile](../images/profile-media.webp)
+
 Only media the person viewing is allowed to see. The same privacy rules that govern Explore apply here:
 
 | Privacy | Who sees it on the profile |

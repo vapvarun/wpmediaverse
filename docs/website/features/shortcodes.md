@@ -2,7 +2,6 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 MediaVerse provides **13** shortcodes for embedding media features in pages, posts, and classic editor content.
 
 ## [mvs_gallery]
@@ -123,8 +122,6 @@ Displays a profile edit form for the logged-in user, allowing them to update the
 ```
 
 No configurable attributes. The form is powered by the `mvs/profile-edit` Interactivity API store and saves to `/mvs/v1/profile`.
-
-![Profile edit form with avatar upload and name fields](../images/profile-own.png)
 
 ## [mvs_explore_feed]
 

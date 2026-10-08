@@ -69,7 +69,7 @@ If you had this checkbox enabled before upgrading, no action is needed - behavio
 7. Click **Save Changes**, then click **Test S3 Connection** - MediaVerse Pro uploads a small test file and deletes it again to confirm the credentials work
 8. All new public uploads now go to S3
 
-![S3 configuration fields in Storage settings](../images/admin-settings-storage.png)
+![Amazon S3 fields on the Storage tab](../images/settings-storage-s3.webp)
 
 ## Setting Up BunnyCDN
 
@@ -81,7 +81,7 @@ If you had this checkbox enabled before upgrading, no action is needed - behavio
 6. Click **Save Changes**, then click **Test BunnyCDN Connection** to verify
 7. All new public uploads now go to BunnyCDN
 
-![Cloud Storage settings panel showing driver selector](../images/admin-settings-storage.png)
+![Storage settings tab with the storage location selector, watermarking and storage usage](../images/settings-storage.webp)
 
 ## Choosing a Storage Driver
 
@@ -100,8 +100,6 @@ Only one driver is active at a time. Switching drivers does not move existing fi
 ---
 
 ## Amazon S3
-
-![S3 configuration fields in Storage settings](../images/admin-settings-storage.png)
 
 ### Settings
 
@@ -158,7 +156,7 @@ If you serve your bucket through CloudFront or a custom domain, enter the hostna
 
 ## BunnyCDN
 
-![BunnyCDN configuration fields in Storage settings](../images/admin-settings-storage.png)
+![BunnyCDN fields on the Storage tab](../images/settings-storage-bunnycdn.webp)
 
 ### Settings
 
@@ -227,8 +225,6 @@ Both actions need a cloud driver to be active.
 ## Testing the Connection
 
 After saving settings, click the **Test ... Connection** button for your driver in the Storage settings panel. MediaVerse Pro uploads a small test file, then deletes it. The result (success or error message) appears inline without a page reload.
-
-![Storage settings panel showing connection test result](../images/admin-settings-storage.png)
 
 If the test fails, verify your credentials, bucket name, and that the IAM or API key has sufficient permissions.
 

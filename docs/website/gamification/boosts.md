@@ -2,8 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 Spend your earned points to push a photo to the top of the Explore feed - get more eyes on your best work right when you want it seen. Boosts spend points from the free WB Gamification plugin, which must be active.
 
 ## What You Can Do (as a User)
@@ -21,8 +19,6 @@ Spend your earned points to push a photo to the top of the Explore feed - get mo
 4. Click **Boost** - points are deducted immediately from your balance and **Boost activated!** appears
 5. Your photo now appears at the top of the Explore feed
 6. When the impression target is reached (or when the boost expires, after 7 days by default), the boost ends automatically and your photo returns to its normal rank
-
-![Media item page showing Boost button](../images/single-media.jpg)
 
 ### Where Boosted Content Appears
 
@@ -60,6 +56,8 @@ Example: boosting for 500 impressions at the default cost of 50 points per 100 c
 The points are deducted through WB Gamification at the moment the boost is created. If the member does not have enough points, the boost is not created. If the boost cannot be saved after points were taken, the points are refunded.
 
 ## Settings Reference
+
+![Boost Pricing section with points per 100 impressions, maximum impressions and expiry](../images/settings-boosts.webp)
 
 | Setting | Key | Default | Description |
 |---------|-----|---------|-------------|

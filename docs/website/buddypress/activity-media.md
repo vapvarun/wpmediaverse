@@ -2,7 +2,6 @@
 
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
-
 MediaVerse records media events as BuddyPress activity items and enhances existing activity with media thumbnails and inline video players.
 
 ## Activity Types Registered
@@ -37,8 +36,6 @@ The mechanism: the upload modal sends `?album_upload=1` with each per-file `POST
 
 ## Activity Format
 
-![BuddyPress activity item showing a media upload](../images/bp-activity-stream.jpg)
-
 Upload activities use the format:
 > **Username** uploaded a new **[type]**
 
@@ -60,8 +57,6 @@ Inline video players are injected for video media via `inject_video_player_in_ac
 ## Attaching Media via the Activity Post Form
 
 The **Attach Media** button appears in the BuddyPress activity post form for members and inside groups.
-
-![BuddyPress activity post form with Attach Media button](../images/bp-activity-media-grid.jpg)
 
 Users select previously uploaded media or upload new files inline. The media IDs are attached to the activity via `bp_activity_posted_update` / `bp_groups_posted_update`.
 

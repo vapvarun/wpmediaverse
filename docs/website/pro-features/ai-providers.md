@@ -2,11 +2,9 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 MediaVerse Pro adds Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) as AI analysis providers alongside the built-in OpenAI Vision option. All four providers support auto-tagging and content moderation.
 
-![AI and Moderation settings tab showing provider selector](../images/admin-settings-general.png)
+![AI settings tab with the provider selector, API key, auto-analyze and monthly budget](../images/settings-ai.webp)
 
 ## Supported Providers
 
@@ -34,7 +32,7 @@ Only one provider is active at a time. Select it under **MediaVerse > Settings >
 |--------|-----------|-------------|
 | Google Cloud API Key | `mvs_pro_google_vision_key` | Google Cloud API key. The project must have the Cloud Vision API enabled and billing on |
 
-![Google Vision settings section with API key field](../images/admin-settings-general.png)
+![Google Cloud Vision section with the API key field](../images/settings-ai-google-vision.webp)
 
 ### What Google Vision Returns
 
@@ -59,7 +57,7 @@ Only one provider is active at a time. Select it under **MediaVerse > Settings >
 | AWS Secret Access Key | `mvs_pro_aws_secret_key` | AWS IAM secret access key |
 | AWS Region | `mvs_pro_aws_region` | Pick from the regions where Rekognition is available. Default `us-east-1` |
 
-![AWS Rekognition settings section](../images/admin-settings-general.png)
+![AWS Rekognition section with access key, secret key and region](../images/settings-ai-rekognition.webp)
 
 ### What Rekognition Returns
 
@@ -82,7 +80,7 @@ Only one provider is active at a time. Select it under **MediaVerse > Settings >
 
 The model is **Claude Haiku 4.5**, chosen for tagging speed and cost. Since 2.6.0 there is no model picker on the screen; a site that picked Claude Sonnet 4.6 or Claude Opus 4.8 before then keeps that choice.
 
-![Claude settings section with API key field](../images/admin-settings-general.png)
+![Claude (Anthropic) section with the API key field](../images/settings-ai-claude.webp)
 
 ### What Claude Returns
 
@@ -116,4 +114,3 @@ Moderation settings are shared by every provider and live on **MediaVerse > Sett
 
 The separate **Auto-Hide Threshold** setting on that tab counts member reports, not AI scores.
 
-![Moderation threshold sliders for content categories](../images/admin-settings-general.png)

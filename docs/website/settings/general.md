@@ -2,7 +2,7 @@
 
 Access these settings at **MediaVerse > Settings > General**.
 
-![General settings tab](../images/admin-settings-general.png)
+![General settings tab](../images/settings-general.webp)
 
 ## General Section
 

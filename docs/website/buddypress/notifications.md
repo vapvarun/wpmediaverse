@@ -2,7 +2,6 @@
 
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
-
 When BuddyPress Notifications is active, MediaVerse sends in-app notifications for media social events.
 
 ## Notification Types
@@ -37,8 +36,6 @@ Notifications appear in the BuddyPress notification bell with these formats:
 | Follow | **Username** started following you |
 | Favourite | **Username** favorited **[media title]** (or "your media") |
 | Report reviewed | A moderator reviewed your report. Thank you for helping keep the community safe. |
-
-![BuddyPress notification dropdown showing MediaVerse notifications](../images/bp-profile-media.jpg)
 
 ## Notification Filters (BP Nouveau)
 
