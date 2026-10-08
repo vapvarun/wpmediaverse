@@ -6,6 +6,8 @@ MediaVerse registers **8** Gutenberg blocks. In the inserter, Media Upload, Medi
 
 ## Block List
 
+![The block inserter in the page editor with the MediaVerse and MediaVerse Pro block groups](../images/block-inserter.webp)
+
 | Block Name | Handle | Description |
 |------------|--------|-------------|
 | Media Upload | `mvs/media-upload` | Frontend file upload form with drag-and-drop |
@@ -39,6 +41,8 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 - A row of eight popular tag pills appears below the tags input - click to append, no duplicates.
 
 ## Media Grid Block
+
+![The Media Grid block in the editor with its Grid Settings panel: layout, columns, items per page and gap](../images/block-media-grid.webp)
 
 **Block Settings:**
 - Layout - site default (follows **MediaVerse > Settings > Display**), grid, justified rows or list; with MediaVerse Pro the Pro layouts are also offered
