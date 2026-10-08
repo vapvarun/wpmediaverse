@@ -1,6 +1,6 @@
 # Social Features
 
-![A media page with the photo, its author, the reaction bar, Save, Share and Report, and the comments below](../images/single-media.webp)
+![A media page as its owner sees it: the photo, the reaction bar, Save and Share, and the comment box](../images/single-media.webp)
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
