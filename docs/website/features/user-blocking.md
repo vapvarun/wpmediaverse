@@ -6,6 +6,8 @@ MediaVerse includes a blocking system that prevents specific users from interact
 
 ## Blocking a User
 
+![A member profile with Follow, Message and the more menu that holds Block and Report](../images/profile-other.webp)
+
 Open the member's profile, open the action menu (the three dots) and select **Block**. The same menu has **Unblock** once you have blocked them.
 
 ### What Blocking Does

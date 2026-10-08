@@ -19,6 +19,8 @@ Send private messages, share photos, record voice notes, and have real conversat
 
 ### Starting a Conversation
 
+![The Message button on a member profile, next to Follow](../images/profile-other.webp)
+
 1. Visit any member's profile page
 2. Click **Message** - the chat panel opens in the bottom-right corner with that conversation ready
 3. Type your message and press Enter to send
