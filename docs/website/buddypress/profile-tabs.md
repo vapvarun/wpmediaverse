@@ -1,5 +1,7 @@
 # Profile Media Tab
 
+![The Media tab on a BuddyPress member profile, with Media, Albums and Documents sub-tabs, the Upload Media button and the member's photos](../images/bp-profile-media.webp)
+
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 When BuddyPress is active, MediaVerse adds a **Media** tab to every user's BuddyPress profile page.

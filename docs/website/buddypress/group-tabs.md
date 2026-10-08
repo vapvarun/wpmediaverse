@@ -1,5 +1,7 @@
 # Group Media Tab
 
+![The Media tab on a BuddyPress group, with Media and Albums sub-tabs, the Upload Media button and photos shared with the group](../images/bp-group-media.webp)
+
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 When BuddyPress Groups is active, MediaVerse adds a **Media** tab to every BuddyPress group.
