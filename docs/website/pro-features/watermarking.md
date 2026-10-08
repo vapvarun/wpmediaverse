@@ -4,7 +4,7 @@
 
 MediaVerse Pro stamps a text, logo, or combined watermark onto uploaded images using PHP's GD library, so your brand or credit travels with every photo members share.
 
-![Watermark settings panel showing text and logo options](../images/admin-settings-display.png)
+![Image Watermarking setting on the Storage tab](../images/settings-watermark.webp)
 
 ## How it works (read this first)
 
@@ -39,8 +39,6 @@ Go to **MediaVerse > Settings > Storage**, find the **Image Watermarking** secti
 | Opacity (%) | `mvs_watermark_opacity` | `40` | Watermark opacity, 0 (transparent) to 100 (opaque) |
 | Text Size | `mvs_watermark_font_size` | `24` | Base size for text watermarks, calibrated for an image about 1000px wide; scales with the image |
 | Text Color | `mvs_watermark_color` | `#ffffff` | Hex colour for text watermarks |
-
-![Watermark position selector showing position options](../images/admin-settings-display.png)
 
 ## Who gets watermarked
 

@@ -2,7 +2,7 @@
 
 Access these settings at **MediaVerse > Settings > Display**.
 
-![Display settings tab showing grid and thumbnail options](../images/admin-settings-display.png)
+![Display settings tab with layout, items per page, downloads and stories](../images/settings-display.webp)
 
 ## Media Display Section
 
@@ -44,8 +44,6 @@ The full-screen lightbox includes a toolbar with three quick-action buttons.
 All three buttons carry `aria-label` text and `:focus-visible` outlines for keyboard users.
 
 The **Save** button shows "Saved" (filled) while the item is in the member's Favorites. The image's alt text is the AI description when there is one, otherwise the title, the same as on grid cards.
-
-![Lightbox with toolbar showing download, fullscreen, share, and reaction controls](../images/lightbox.png)
 
 ## How Display Settings Interact with Shortcodes
 

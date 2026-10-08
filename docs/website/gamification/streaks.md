@@ -2,8 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 Upload one photo a day and watch your streak grow - hit milestones to earn point rewards, and use freeze tokens, if the site allows them, to protect your streak on days you miss.
 
 ## What You Can Do (as a User)
@@ -35,7 +33,7 @@ When your streak reaches a milestone, points are awarded automatically to your a
 
 These are the amounts MediaVerse passes to WB Gamification when you reach each milestone.
 
-![User dashboard showing streak badge with flame icon](../images/dashboard-media.png)
+![My Media with the upload streak bar above the library](../images/my-media.webp)
 
 ### Using Freeze Tokens
 
@@ -80,8 +78,6 @@ MediaVerse tells WB Gamification when a member's streak reaches exactly 7, 30, 1
 | 100 days | 1,000 points |
 | 365 days | 5,000 points |
 
-![Streak milestone points award notification](../images/dashboard-media.png)
-
 ## Streak Freeze Tokens
 
 When the **Allow Streak Freezes** setting is enabled (and WB Gamification is active), members can buy freeze tokens with their points from the streak card - the cost is set by **Freeze Cost (Points)** (`mvs_pro_streak_freeze_cost`, default 100). The whole freeze feature is off by default; with it disabled, a missed day always resets the streak.
@@ -95,6 +91,8 @@ When the `mvs_daily_streak_check` job runs and finds a user missed yesterday:
 Each missed day uses one token, so a member with two tokens can cover two missed days in a row.
 
 ## Settings Reference
+
+![Upload Streaks section with the streak and freeze-token toggles](../images/settings-streaks.webp)
 
 | Setting | Key | Default |
 |---------|-----|---------|

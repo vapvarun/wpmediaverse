@@ -2,7 +2,7 @@
 
 Access these settings at **MediaVerse > Settings > Messages**. This tab was called "Messaging" and "Direct Messages" before 2.6.0.
 
-![Messages settings tab](../images/admin-settings-social.png)
+![Messages settings tab](../images/settings-messages.webp)
 
 These settings control who can message whom, where the chat appears, and who sees online status.
 

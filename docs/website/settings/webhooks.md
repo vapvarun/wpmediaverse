@@ -4,7 +4,7 @@ Access these settings at **MediaVerse > Settings > Webhooks**.
 
 Webhooks allow MediaVerse to send signed HTTP POST notifications to external services when media events occur.
 
-![Webhooks settings tab showing webhook URL list](../images/admin-settings-general.png)
+![Webhooks settings tab with the destination URL, signing secret and events](../images/settings-webhooks.webp)
 
 ## Supported Events
 

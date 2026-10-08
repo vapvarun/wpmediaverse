@@ -2,11 +2,7 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 MediaVerse Pro extends the free plugin's privacy levels with album-level inheritance, per-user presets, and bulk privacy updates.
-
-![Privacy selector on the upload page showing all six levels](../images/upload-page.png)
 
 ## Privacy Levels
 

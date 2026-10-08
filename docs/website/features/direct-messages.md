@@ -2,7 +2,6 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 Send private messages, share photos, record voice notes, and have real conversations - all without leaving your media community.
 
 ## What You Can Do
@@ -58,8 +57,6 @@ If a member has restricted who can message them to followers only, your message 
 - **Accept** - Your conversation moves to their main inbox and messaging continues normally
 - **Decline** - The request is removed. You are not notified of the decline
 
-![Chat panel with message requests](../images/chat-open.png)
-
 ## For Site Owners
 
 1. Go to **MediaVerse > Settings > Messages**.
@@ -94,8 +91,6 @@ There are three ways to start or open a conversation:
 | `#mvs-chat/{conversationId}` | A specific conversation by ID |
 | `#mvs-chat/user/{userId}` | The conversation with a specific user (creates one if none exists) |
 
-![Message button on a user profile card](../images/profile-other.png)
-
 ## Chat Panel Features
 
 | Feature | Description |
@@ -108,8 +103,6 @@ There are three ways to start or open a conversation:
 | Typing indicators | Shows a live indicator when the other user is typing |
 | Read receipts | Delivered and read timestamps shown per message |
 | Message deletion | Delete your own messages (content replaced with "This message was deleted") |
-
-![Chat panel showing a conversation with media share and reactions](../images/chat-open.png)
 
 ## Conversation Management
 

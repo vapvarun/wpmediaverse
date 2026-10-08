@@ -2,13 +2,11 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 The competition admin screens are at **MediaVerse > Competitions**. It is one menu entry with a tab strip: **Overview**, **Photo Challenges**, **Tournaments**, **Photo Battles** and **Challenge Themes**. A tab shows only when its feature is switched on. Older direct links to each screen still work. You need the permission to manage MediaVerse settings.
 
 These screens only appear when **Competitions** and at least one competition type are switched on in Settings.
 
-![Competitions admin page showing the main table](../images/admin-competitions.png)
+![Competitions overview with live counts, items that need attention and quick actions](../images/admin-competitions.webp)
 
 ## Competitions Overview
 
@@ -27,7 +25,7 @@ The first time you open it, a short welcome panel explains how competitions work
 
 Go to **MediaVerse > Competitions** and open the **Photo Challenges** tab to create and edit photo challenges.
 
-![Challenge Manager list view](../images/admin-competitions.png)
+![Photo Challenges admin list with status tabs, entry counts and dates](../images/admin-challenges.webp)
 
 The Challenge Manager has tabs for **Active**, **Scheduled**, **Voting**, **Finalized** and **All**, each with a count. Click **Create Challenge** to open the create form. The form offers **Quick Start: Choose a Preset**, which fills in the dates and points so you only add a title and theme.
 
@@ -46,7 +44,7 @@ You can edit a challenge, including its dates and point prizes, until it is fina
 
 Open the **Challenge Themes** tab to manage the pool of themes used by Autopilot and when you create a challenge by hand. MediaVerse ships 52 themes.
 
-![Challenge Themes admin page with category filter](../images/admin-competitions.png)
+![Challenge Themes library with category and status filters](../images/admin-challenge-themes.webp)
 
 | Column | Description |
 |--------|-------------|
@@ -61,7 +59,7 @@ Add a custom theme with **Add Theme**. Set the name, category, optional descript
 
 Open the **Tournaments** tab to create and manage tournaments. It has tabs for **Registration**, **Active** and **Finalized**.
 
-![Tournament Manager showing tournament list](../images/admin-competitions.png)
+![Tournaments admin list showing bracket size, status and participants](../images/admin-tournaments.webp)
 
 From the Tournament Manager you can:
 
@@ -73,13 +71,11 @@ From the Tournament Manager you can:
 
 The bracket size cannot be changed after the tournament is created.
 
-![Admin bracket view for a tournament](../images/admin-competitions.png)
-
 ## Battle Monitor
 
 Open the **Photo Battles** tab to oversee battles. Members start battles from the front end, so there is no create button. The tabs are **Voting**, **Active**, **Pending**, **Completed** and **All**.
 
-![Battle Monitor table showing active battles](../images/admin-competitions.png)
+![Photo Battles admin list with challenger, opponent, theme, status and votes](../images/admin-battles.webp)
 
 The Battle Monitor table columns are:
 
@@ -101,7 +97,7 @@ The Battle Monitor table columns are:
 
 Go to **MediaVerse > Settings > Competitions** to configure all competition features.
 
-![Gamification settings page showing feature toggles](../images/admin-settings-gamification.png)
+![Competitions settings tab with a toggle for each competition type, boost pricing, autopilot and streaks](../images/settings-competitions.webp)
 
 ### Feature Toggles
 

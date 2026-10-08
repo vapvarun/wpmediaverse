@@ -30,6 +30,8 @@ There are two separate roles in this feature, and it helps to keep them apart:
 
 ## Step 1 - Enable Connected Accounts (Admin)
 
+![Flickr import setting in MediaVerse settings](../images/settings-flickr-import.webp)
+
 1. In WordPress admin, go to **MediaVerse > Settings**.
 2. In the settings sidebar, open the **Flickr import** tab (under **Access & Integrations**).
 3. Tick **Turn on Flickr import**.

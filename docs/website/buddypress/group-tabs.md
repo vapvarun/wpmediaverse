@@ -2,10 +2,7 @@
 
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
-
 When BuddyPress Groups is active, MediaVerse adds a **Media** tab to every BuddyPress group.
-
-![BuddyPress group page with Media tab](../images/bp-group-media.jpg)
 
 ## Tab Location
 
@@ -48,8 +45,6 @@ do_action( 'mvs_media_group_assigned', $media_id, $group_id );
 ```
 
 The BuddyPress integration listens to this action and re-scopes the upload's activity item from the member component to the groups component, so it appears in the group's activity stream rather than the member's personal stream.
-
-![BuddyPress group activity stream with media upload](../images/bp-activity-stream.jpg)
 
 ## Group Activity in the Activity Post Form
 

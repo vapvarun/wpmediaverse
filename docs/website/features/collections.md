@@ -2,7 +2,6 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 Save and curate media from anyone on your site into personal boards - like Pinterest boards, but for your community's photos and videos. Unlike an album, which holds only your own uploads, a collection can hold anyone's media.
 
 ## What You Can Do
@@ -25,8 +24,6 @@ Save and curate media from anyone on your site into personal boards - like Pinte
 5. Find all your collections under **My Media > Collections** in your dashboard
 6. To manage a collection, open it and click **Edit** to rename it, reorder items, or remove ones you no longer want
 7. To share a collection, copy the link from the collection page
-
-![Media item with bookmark/save button and collection picker](../images/single-media.jpg)
 
 ## For Site Owners
 
@@ -92,4 +89,3 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/collections \
 
 In the WordPress admin, each `mvs_collection` post has a **Collection Settings** meta box that lets you define smart rules without using the API. The available rules are media type, tag, category, author, date after, date before and privacy. Saving any rule makes the collection a smart collection.
 
-![Collection meta box in WordPress admin](../images/admin-media-list.png)

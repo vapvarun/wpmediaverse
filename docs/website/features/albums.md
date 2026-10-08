@@ -2,7 +2,6 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 Group your own uploads into an album - tell a story, document a trip, or build a portfolio you can share with one link.
 
 ## What You Can Do
@@ -24,7 +23,7 @@ Group your own uploads into an album - tell a story, document a trip, or build a
 6. To change it later, open **Edit Album**, adjust the details or the media, and click **Save**. On the album page, **Add Media** adds more photos
 7. To share your album, copy the album link from the album page and send it to anyone
 
-![Album creation form with title field and privacy selector](../images/dashboard-media.png)
+![Albums tab in My Media with the Create Album button](../images/my-media-albums.webp)
 
 ## For Site Owners
 

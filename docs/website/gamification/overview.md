@@ -2,13 +2,11 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 MediaVerse Gamification turns your media community into a competitive platform. Members enter photo challenges and tournaments, challenge each other to battles, build upload streaks, and boost their media visibility. Points come from the separate free **WB Gamification** plugin.
 
 Gamification is part of **MediaVerse Pro**. Competitions run without WB Gamification, but points are only earned and spent when it is active. Everything is off by default. Turn it on at **MediaVerse > Settings > Competitions**: tick **Competitions** first, then choose which types to switch on.
 
-![Gamification overview in MediaVerse admin settings](../images/admin-settings-gamification.png)
+![Competitions settings tab with a toggle for each competition type, boost pricing, autopilot and streaks](../images/settings-competitions.webp)
 
 ## Requirements
 
@@ -77,7 +75,7 @@ MediaVerse fires the matching events as members use the site, and WB Gamificatio
 
 The My Media dashboard has no competition tabs. Members reach their competition activity on the Compete hub, which has a **Back to My Media** link.
 
-![My Media dashboard with competition tabs](../images/dashboard-media.png)
+![Compete page with your activity, the active challenge, open tournaments and the Battle Arena](../images/compete.webp)
 
 ## Scheduled Actions
 

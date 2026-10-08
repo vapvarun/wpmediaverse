@@ -2,8 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 Enter a single-elimination bracket competition - submit your best photo, survive each round of community voting, and claim the championship title.
 
 ## What You Can Do (as a User)
@@ -48,7 +46,7 @@ You do not pick a photo when you register. You submit a photo for each match.
 
 There is no separate prize for the runner-up.
 
-![Tournament bracket visualization showing round progression](../images/tournaments-page.png)
+![Tournament page with its bracket and the first-round matches open for voting](../images/tournament-bracket.webp)
 
 ## For Site Owners
 
@@ -59,7 +57,7 @@ There is no separate prize for the runner-up.
 5. Save - the tournament appears on the frontend when registration opens
 6. The bracket generates automatically when registration closes
 
-![Tournament Manager create form](../images/admin-competitions.png)
+![Create Tournament form with bracket size, registration window, round duration and point rewards](../images/admin-tournament-create.webp)
 
 ## Bracket Sizes
 
@@ -83,8 +81,6 @@ The system generates the bracket when the registration deadline passes (a recurr
 ## Creating a Tournament
 
 Go to **MediaVerse > Competitions > Tournaments** and click **Create Tournament**. You can start from a preset.
-
-![Tournament Manager create form](../images/admin-competitions.png)
 
 | Field | Description |
 |-------|-------------|
@@ -163,11 +159,7 @@ Returns `400` if the match is not in its voting phase. Returns `403` if you are 
 
 The `/media/tournaments/` page lists all tournaments with their current stage and participant count.
 
-![Tournaments browse page showing tournament cards](../images/tournaments-page.png)
-
 Clicking a tournament opens the detail page with the bracket visualization. Active matches show vote buttons directly inside the bracket.
-
-![Tournament detail page with bracket](../images/dashboard-tournaments.png)
 
 - **Registration stage** - Shows **Register for this tournament**, how long registration stays open, and the player count relative to bracket size. A full tournament says registration is full
 - **In Progress** - Shows the bracket with each match's status and **Submit Your Photo** or **Vote** where they apply

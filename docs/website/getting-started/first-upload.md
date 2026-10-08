@@ -15,7 +15,7 @@ Add the upload form to any page using either the Gutenberg block or shortcode.
 
 MediaVerse already creates an **Upload Media** page (`/upload-media/`) with this form when you activate the plugin. Members who can upload also see a **+** button on MediaVerse pages and an upload button in **My Media**. Which roles can upload is set under **MediaVerse > Settings > General > Who can upload media**.
 
-![Frontend media upload form with drag-and-drop area and privacy selector](../images/upload-page.png)
+![Upload Media page with the drag-and-drop area and the privacy selector](../images/upload-page.webp)
 
 ## Option 2: Upload via REST API
 

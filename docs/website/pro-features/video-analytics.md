@@ -2,11 +2,7 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 MediaVerse Pro records play events for every video, builds per-video heatmaps, and provides a dashboard showing retention and engagement metrics.
-
-![Video analytics dashboard showing play counts and retention curve](../images/admin-stats.png)
 
 ## How Event Tracking Works
 
@@ -95,4 +91,3 @@ Two site-wide routes require the `manage_mvs_settings` capability:
 
 Pro adds a **Video Analytics** tab to the **MediaVerse > Stats** page. It includes a per-media detail view with the full heatmap, retention curve, and drop-off table.
 
-![Video Analytics tab on the Stats page with retention curve](../images/admin-stats.png)

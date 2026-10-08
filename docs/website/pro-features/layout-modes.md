@@ -2,8 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 Transform your media community's look with one click - choose the visual style that fits your audience, from Instagram-style grids to Pinterest masonry boards.
 
 ## What You Can Do
@@ -38,7 +36,7 @@ Choosing a free layout puts the feed back on the plain grid.
 - Stories appear above the grid in Instagram mode only
 - Search and tag filtering behave identically to the default layout, including the empty states (2.2.0): a zero-result search shows "No results for ..." with a Browse-all button and popular-tag chips, and an unknown tag shows "Tag not found" instead of an unfiltered feed
 
-![Layout mode selector in Settings showing all four options](../images/admin-settings-display.png)
+![Display settings tab with layout, items per page, downloads and stories](../images/settings-display.webp)
 
 ---
 
@@ -52,7 +50,7 @@ The selected mode applies to the explore archive and the user profile media tab.
 
 Perfect for photo-sharing communities and daily uploads.
 
-![Instagram layout with recent uploaders bar and vertical card feed](../images/layout-instagram.png)
+![Instagram layout: a single-column feed of large cards](../images/layout-instagram.webp)
 
 The Instagram layout renders a vertical card feed. Each post shows the author avatar, full-width photo, reaction/comment/share buttons, like count, caption, and inline comment box - identical to the Instagram experience.
 
@@ -70,7 +68,7 @@ The Instagram layout renders a vertical card feed. Each post shows the author av
 
 Ideal for inspiration boards, discovery-focused sites, and mixed-format content.
 
-![Pinterest masonry layout with cards of varying heights](../images/layout-pinterest.png)
+![Pinterest layout: a masonry grid with cards of different heights](../images/layout-pinterest.webp)
 
 The Pinterest layout uses a masonry algorithm that preserves each image's original proportions. Cards include the media title and a truncated description below the image.
 
@@ -86,7 +84,7 @@ The Pinterest layout uses a masonry algorithm that preserves each image's origin
 
 Best for photography portfolios, camera clubs, and image-quality-focused communities.
 
-![Flickr justified gallery layout with full-width rows](../images/layout-flickr.png)
+![Flickr layout: justified rows that fill the full width](../images/layout-flickr.webp)
 
 The Flickr layout uses a justified gallery algorithm: images in each row are resized to fill the full container width while maintaining a consistent row height.
 
@@ -104,7 +102,7 @@ Drop the Flickr layout on a specific page with the **Flickr Feed** block or the 
 
 Great for design showcases, creative portfolios, and high-resolution work.
 
-![Dribbble layout showing large shot thumbnails](../images/layout-dribbble.png)
+![Dribbble layout: a grid of large, evenly sized shots](../images/layout-dribbble.webp)
 
 The Dribbble layout presents media as large portfolio shots in a responsive grid (cards at least 300px wide, one column on phones). Each card shows the title, view count, and reaction count on hover. This layout is optimised for high-resolution PNG and GIF files.
 

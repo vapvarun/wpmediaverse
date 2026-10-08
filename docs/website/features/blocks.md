@@ -2,10 +2,7 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-
 MediaVerse registers **8** Gutenberg blocks. In the inserter, Media Upload, Media Grid, Media Player, Album Viewer and Explore Feed sit under **Media**, Member Photos and PDF Viewer under **MediaVerse**, and Media Stats under **Widgets**. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
-
-![Gutenberg block inserter showing the MediaVerse block category](../images/admin-overview.png)
 
 ## Block List
 
@@ -32,8 +29,6 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 
 ## Media Upload Block
 
-![Media Upload block in the editor](../images/upload-page.png)
-
 **Block Settings:**
 - Max Files per Upload (default: 10)
 - Show Privacy Selector (default: on)
@@ -44,8 +39,6 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 - A row of eight popular tag pills appears below the tags input - click to append, no duplicates.
 
 ## Media Grid Block
-
-![Media Grid block showing filter controls and grid layout](../images/explore-feed.png)
 
 **Block Settings:**
 - Layout - site default (follows **MediaVerse > Settings > Display**), grid, justified rows or list; with MediaVerse Pro the Pro layouts are also offered

@@ -2,10 +2,7 @@
 
 > **Included in Free** - MediaVerse is the most complete media solution for BuddyPress communities. Integration is optional - the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
-
 When BuddyPress is active, MediaVerse adds a **Media** tab to every user's BuddyPress profile page.
-
-![BuddyPress member profile with Media tab active](../images/bp-profile-media.jpg)
 
 ## Tab Location
 
@@ -26,8 +23,6 @@ The Media tab displays the profile owner's published media items in a paginated 
 - BuddyPress friends see **public**, **members-only**, and **friends** media.
 - The profile owner sees all their own media.
 - Moderators (`moderate_mvs_media`) see all media.
-
-![Media tab content showing grid of photos with privacy badges](../images/bp-profile-media.jpg)
 
 ## Sub-tabs
 

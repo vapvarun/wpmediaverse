@@ -2,8 +2,6 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-
-
 Challenge any photographer on the site to a head-to-head photo duel - your best shot vs. theirs, side by side, with the community deciding the winner.
 
 ## What You Can Do (as a User)
@@ -34,7 +32,7 @@ You cannot challenge yourself, and you cannot start a second battle with someone
 4. Any logged-in member except the two players can cast one vote
 5. When the voting period ends, the winner is announced automatically and points are awarded. If the votes are tied (including a battle nobody voted in), the battle is a draw: nobody wins and no points are awarded
 
-![Photo Battles frontend page showing VS layout](../images/battles-page.png)
+![Photo Battles page with two battles open for voting](../images/battles-page.webp)
 
 ### Viewing Your Battles
 
@@ -137,8 +135,6 @@ Returns `403` if the authenticated user is not one of the two players. Returns `
 ## Frontend Behavior
 
 The `/media/battles/` page shows battles in tabs: **Voting**, **Active**, **Pending**, **Completed**, plus **All battles**.
-
-![Battles browse page showing battle cards with VS layout](../images/battles-page.png)
 
 - **Voting battles** - Shows the VS card layout with both photos and a **Vote for this photo** button
 - **Pending battles** - Shows a card with the invite status and **Accept Challenge** and **Decline** buttons for the opponent

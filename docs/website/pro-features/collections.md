@@ -4,8 +4,6 @@
 
 MediaVerse Pro makes the **Save** control open a picker, so members can add a media item to any number of their named [collections](../features/collections.md). Since 2.6.0, Save is the one way to keep an item. Reactions say how you feel; Save keeps the item.
 
-![Media item with Save button and collection picker](../images/single-media.jpg)
-
 ## Save vs. Favorite
 
 - **Without Pro**, Save puts the item straight into the member's private **Favorites** collection. Everything a member favorited before 2.6.0 is in that collection too.
