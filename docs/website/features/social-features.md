@@ -35,6 +35,8 @@ React, comment, follow, and share - MediaVerse turns your media site into a livi
 
 ### Commenting
 
+![The lightbox with the photo on the left and, on the right, reactions, Save, Share and Download, and the comments](../images/lightbox.webp)
+
 1. Scroll to the comments section below any media item
 2. Type your comment in the text box and press Enter or click **Post**
 3. To @mention someone, type `@` followed by their username - they receive a notification

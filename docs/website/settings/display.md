@@ -33,6 +33,8 @@ Lists with a **Load More** button (Explore, the front-page feed, profiles and al
 
 ## Lightbox Toolbar
 
+![The lightbox with its toolbar: fullscreen and close at the top, Save, Share, Download and Open under the title](../images/lightbox.webp)
+
 The full-screen lightbox includes a toolbar with three quick-action buttons.
 
 | Button | Behaviour |
