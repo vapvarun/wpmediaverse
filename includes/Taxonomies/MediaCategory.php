@@ -38,7 +38,9 @@ class MediaCategory {
 			'hierarchical'          => true,
 			'public'                => true,
 			'show_in_rest'          => true,
-			'show_admin_column'     => true,
+			// Not on the Albums list: see MediaTag. Basecamp 10379842826.
+			'show_admin_column'     => false,
+			'show_in_quick_edit'    => false,
 			'rewrite'               => array( 'slug' => 'media-category' ),
 			'update_count_callback' => array( MediaTag::class, 'update_term_count' ),
 			// No metabox on the album editor. Categories describe MEDIA, never albums:

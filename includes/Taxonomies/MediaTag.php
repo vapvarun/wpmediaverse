@@ -47,7 +47,11 @@ class MediaTag {
 			// No core wp/v2 route: it listed every tag name, including tags used
 			// only on private items. mvs/v1/tags is the API (2.6.1).
 			'show_in_rest'          => false,
-			'show_admin_column'     => true,
+			// Not on the Albums list: the column was always empty, and Quick/Bulk
+			// Edit wrote album IDs, the same path the metabox below closed.
+			// Basecamp 10379842826.
+			'show_admin_column'     => false,
+			'show_in_quick_edit'    => false,
 			'rewrite'               => array( 'slug' => 'media-tag' ),
 			'update_count_callback' => array( __CLASS__, 'update_term_count' ),
 			// No metabox on the album editor. Every mvs_tag write in this plugin passes a

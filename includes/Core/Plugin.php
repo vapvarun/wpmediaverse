@@ -1275,6 +1275,34 @@ class Plugin {
 			array( self::$container->get( 'admin.tags' ), 'render' )
 		);
 
+		// Categories - core's term screen. They feed the app's interests, Explore's
+		// category filter and smart collections. The taxonomy rides on mvs_album
+		// only to keep this screen alive, so core files it under no menu at all;
+		// parent_file puts it back under MediaVerse, and submenu_file marks it current
+		// (core sets the &amp; form, which matches no slug). Basecamp 10379842826.
+		$category_slug = 'edit-tags.php?taxonomy=mvs_category&post_type=mvs_album';
+		add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Media Categories', 'wpmediaverse' ),
+			__( 'Categories', 'wpmediaverse' ),
+			'manage_categories',
+			$category_slug
+		);
+		add_filter(
+			'parent_file',
+			static function ( $parent_file ) {
+				$screen = get_current_screen();
+				return ( $screen && 'mvs_category' === $screen->taxonomy ) ? self::ADMIN_SLUG : $parent_file;
+			}
+		);
+		add_filter(
+			'submenu_file',
+			static function ( $submenu_file ) use ( $category_slug ) {
+				$screen = get_current_screen();
+				return ( $screen && 'mvs_category' === $screen->taxonomy ) ? $category_slug : $submenu_file;
+			}
+		);
+
 		// Albums and Collections register themselves via show_in_menu => 'wpmediaverse'.
 	}
 

@@ -2357,6 +2357,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** `mvs_upload_roles` (writes the `upload_mvs_media` capability).
 - **Edge cases:** A developer can bring the old matrix back with the `mvs_settings_sections` filter; that is an intentional extension point, not a defect.
 
+#### MV-ADM-023 - Media Categories screen
+- **Edition:** Free
+- **Who:** Admin (any role with `manage_categories` that can open the MediaVerse menu).
+- **Where:** MediaVerse > Categories (`edit-tags.php?taxonomy=mvs_category&post_type=mvs_album`), right after Tags.
+- **Setup:** None; demo data adds Nature, Architecture, Portraits, Food, Travel, Technology.
+- **Steps:** 1. Open MediaVerse > Categories: the item is highlighted and the MediaVerse menu stays open. 2. Add a category, edit one (term edit screen keeps the same highlight), delete one. 3. Open MediaVerse > Albums.
+- **Expected:** Core's term screen for media categories. Categories feed the app's interests onboarding (`/mvs/v1/app/interests`, picks saved via `/mvs/v1/me/interests`), Explore's `?category=` filter (MV-EXP-005), `/media-category/` archives, smart-collection Category rules (MV-ADM-019) and the Media Grid block. Assigning a category to an item is REST/app only (`categories` on media create/update); there is no web picker yet.
+- **UX expectation:** Albums list shows Title, Author, Date only: no "Media Tags" / "Media Categories" columns and no taxonomy fields in Quick or Bulk Edit (they were always empty and wrote album IDs into the media term space). Basecamp 10379842826.
+- **Settings that change it:** None.
+- **Edge cases:** The taxonomy is registered on `mvs_album` only to keep this screen; albums never carry categories (no metabox, no column, no Quick Edit).
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
