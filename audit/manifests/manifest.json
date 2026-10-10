@@ -6814,6 +6814,14 @@
         "ChatFiles::hide_legacy covers search"
       ],
       "unchanged": "routes, hooks fired, settings, tables"
+    },
+    "refresh_2026_10_10_gallery": {
+      "scope": "targeted (2.6.2: gallery member visibility, Basecamp 10392589060)",
+      "added": {},
+      "changed": [
+        "MediaRepository::gallery_exclude_subquery hides a member only while its cover is published, approved and equally visible"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
     }
   },
   "category_sources": {
