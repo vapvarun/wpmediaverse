@@ -6756,6 +6756,14 @@
         "mvs_message_deleted now also removes the deleted message own chat file"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_chat_files_failclosed": {
+      "scope": "targeted (2.6.2: ChatFiles listing filter fails closed, Basecamp 10392474704)",
+      "added": {},
+      "changed": [
+        "ChatFiles::hide_legacy keeps hiding while any move failed"
+      ],
+      "unchanged": "no new surface"
     }
   },
   "category_sources": {
