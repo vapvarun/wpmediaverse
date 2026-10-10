@@ -5502,24 +5502,31 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function gallery_exclude_subquery( string $cover_type = '' ): string {
 		global $wpdb;
 
-		$meta = $wpdb->prefix . 'mvs_media_meta';
-		$sql  = "SELECT mm1.media_id FROM {$meta} mm1
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+		$index = $this->index_table();
+
+		// A member is hidden only while its cover stands in for it: the cover
+		// exists, is published and approved, and has the member's own privacy, so
+		// it is listed wherever the member would be. Otherwise the member is
+		// listed itself. Hiding every non-cover member made a public item vanish
+		// from Explore for good once its cover was made private, held for review
+		// or deleted (Basecamp 10392589060).
+		$type = ( '' !== $cover_type && MediaTypes::is_known( $cover_type ) )
+			? " AND ci.media_type = '" . esc_sql( $cover_type ) . "'" // is_known() leaves a fixed slug.
+			: '';
+
+		return "SELECT mm1.media_id FROM {$meta} mm1
 			INNER JOIN {$meta} mm2 ON mm1.media_id = mm2.media_id
+			INNER JOIN {$index} mi ON mi.media_id = mm1.media_id
 			WHERE mm1.meta_key = 'media_group'
 			AND mm2.meta_key = 'group_position'
-			AND mm2.meta_value != '0'";
-
-		if ( '' === $cover_type || ! MediaTypes::is_known( $cover_type ) ) {
-			return $sql;
-		}
-
-		// is_known() leaves a fixed slug, so it is safe to inline.
-		return $sql . " AND EXISTS (
+			AND mm2.meta_value != '0'
+			AND EXISTS (
 				SELECT 1 FROM {$meta} c1
 				INNER JOIN {$meta} c2 ON c2.media_id = c1.media_id AND c2.meta_key = 'group_position' AND c2.meta_value = '0'
-				INNER JOIN {$this->index_table()} ci ON ci.media_id = c1.media_id
+				INNER JOIN {$index} ci ON ci.media_id = c1.media_id
 				WHERE c1.meta_key = 'media_group' AND c1.meta_value = mm1.meta_value
-				AND ci.media_type = '" . esc_sql( $cover_type ) . "'
+				AND ci.status = 'publish' AND ci.moderation_status = 'approved' AND ci.privacy = mi.privacy{$type}
 			)";
 	}
 

@@ -74,6 +74,40 @@ class ExploreTypeFilterBatchTest extends WP_UnitTestCase {
 		$this->assertNotContains( $audio, $all, 'Unfiltered, the batch is still one tile.' );
 	}
 
+	/**
+	 * A gallery member is listed itself once its cover can no longer stand in
+	 * for it: private, held for review, or deleted. Basecamp 10392589060.
+	 */
+	public function test_a_member_is_listed_when_its_cover_is_private_held_or_deleted(): void {
+		$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$author = self::factory()->user->create();
+		$listed = static function () use ( $repo, $author ): array {
+			$rows = $repo->query(
+				array(
+					'author_id'               => $author,
+					'exclude_non_cover_group' => true,
+					'per_page'                => 50,
+				)
+			);
+			return array_map( 'intval', array_column( $rows, 'media_id' ) );
+		};
+
+		$cover  = $this->member( 'image', 'g-cover', 0, $author );
+		$member = $this->member( 'video', 'g-cover', 1, $author );
+		$this->assertNotContains( $member, $listed(), 'Behind a public cover, the batch is one tile.' );
+
+		$repo->set( $cover, 'privacy', 'private' );
+		$this->assertContains( $member, $listed(), 'Cover private: the public member is listed itself.' );
+
+		$repo->set( $cover, 'privacy', 'public' );
+		$repo->set( $cover, 'moderation_status', 'pending' );
+		$this->assertContains( $member, $listed(), 'Cover held for review: the member is listed itself.' );
+
+		$repo->set( $cover, 'moderation_status', 'approved' );
+		$repo->delete_cascade( $cover );
+		$this->assertContains( $member, $listed(), 'Cover deleted: the member is listed itself, for good.' );
+	}
+
 	public function test_bulk_privacy_refuses_an_unknown_level(): void {
 		$author = self::factory()->user->create();
 		$id     = $this->member( 'image', 'g-one', 0, $author );

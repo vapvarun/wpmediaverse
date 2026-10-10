@@ -44,9 +44,12 @@ Check at BOTH levels: the code flow below, then the browser as each role.
 - **Action**: open the photo; open the bell on `/my-media/`.
 - **Expect**: Member B's comment shows with only "Report comment" for Member A (no Edit/Delete of
   someone else's words); the bell lists "commented on" and "reacted to".
-- **Known gaps (decide, not bugs today)**: the owner cannot remove a comment on their own photo; a
-  reaction toggled off and on notifies twice; a deleted comment's notification stays; a member is
-  not notified when someone replies to them.
+- **By design (owner decision 10 Oct 2026)**: the media owner cannot remove someone else's comment
+  on their photo; Report is the way.
+- **Fixed in 2.6.2 (Basecamp 10392589159)**: reacting again after removing a reaction must not
+  notify the owner a second time.
+- **Known, later (same card)**: a deleted comment's notification stays; a member is not notified
+  when someone replies to them.
 
 ### 4. Delete (Member B)
 - **Action**: delete the comment.

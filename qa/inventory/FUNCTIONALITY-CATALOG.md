@@ -626,7 +626,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** All files upload as one group (single activity/action group), each becoming its own media item.
 - **UX expectation:** Per-file thumbnail previews for every selected file, with a way to remove one before submitting (`removeUploadFile`). One combined success confirmation, not one toast per file.
 - **Settings that change it:** same as MV-UPL-002.
-- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time.").
+- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show the first item as the cover tile (badge with the count) and hide the rest behind it ONLY while that cover is published, approved and has the same privacy. Make the cover private, have it held for review, or delete it, and each still-public member is listed itself again (`MediaRepository::gallery_exclude_subquery()`, Basecamp 10392589060).
 
 #### MV-UPL-004 — Upload video / audio
 - **Edition:** Free

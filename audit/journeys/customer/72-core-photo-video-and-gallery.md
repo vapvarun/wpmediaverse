@@ -62,12 +62,12 @@ explained by the code, is a gap to close before calling it done.
 - **Expect** as Member B and as the visitor: Explore no longer shows it; `/media/<photo-slug>/` 404;
   `GET /mvs/v1/media/{id}` 404; reactions/comments routes 404; the old direct file path 403/404.
 
-### 6. Gallery siblings stay findable (OPEN BUG, found 10 Oct 2026; card not filed yet)
+### 6. Gallery siblings stay findable (Basecamp 10392589060, fixed in 2.6.2)
 - **Action**: with the cover private (step 5), and again after DELETING the cover, open Explore as
-  the visitor.
-- **Expect**: the still-public video is listed (it was a gallery member, not private).
-- **Today**: it disappears from Explore and every gallery-collapsing listing, while its own page and
-  `GET /mvs/v1/media` still show it. This step fails until it is fixed.
+  the visitor; also `GET /mvs/v1/media?group_covers=1`.
+- **Expect**: the still-public video is listed itself (it was a gallery member, not private). With
+  the cover public again, the gallery is one tile with its count badge and the video is behind it.
+- **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
 
 ### 7. Restore
 - Delete the test items via `MediaRepository::delete_cascade()` (never raw SQL).

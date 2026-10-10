@@ -20,7 +20,7 @@ in stage 4.1 (Pro journeys included when Pro sits next to Free).
 | Photo upload → My Media → Explore → single → lightbox | `UploadService::handle`, `PrivacyService::can_view`, `TemplateLoader` 404, `/serve` re-check | owner, other member, visitor | `customer/72` (`core-media-photo`) |
 | Video plays (poster, lightbox, single page) | `Mp4Faststart`, poster pipeline, `SignedUrlService` / direct delivery | owner, visitor | `customer/72` (`core-media-video`) |
 | Private means private (page, Explore, REST, reactions, comments, file path) | `can_view` on every read path; hidden item = missing item | other member, visitor | `customer/72`, `customer/73` |
-| Gallery members stay findable when the cover is private or deleted | `MediaRepository::gallery_exclude_subquery` | visitor | `customer/72` step 6 (`gallery-member-visibility`) - OPEN BUG 2026-10-10 |
+| Gallery members stay findable when the cover is private or deleted | `MediaRepository::gallery_exclude_subquery` | visitor | `customer/72` step 6 (`gallery-member-visibility`) - fixed 2.6.2, Basecamp 10392589060 |
 | React: add, switch, remove; counts match | `ReactionController`, `ReactionService`, `mvs_media_stats` | other member, visitor (login prompt) | `customer/73` (`core-reactions`) |
 | Comment: add, edit own, delete own; owner sees, cannot edit others | `CommentController` (`own_item_permissions_check`), `CommentService` | other member, owner, visitor | `customer/73` (`core-comments`) |
 | Documents: upload, preview, share with one member, outsiders refused | `PermissionService::can_view`, `DeliveryController::can_read`, `DocumentLicense` | owner, recipient, outsider, visitor | `pro/customer/documents-core-share-and-gates` (`core-documents`) |
