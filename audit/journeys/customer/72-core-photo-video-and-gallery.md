@@ -69,5 +69,14 @@ explained by the code, is a gap to close before calling it done.
   the cover public again, the gallery is one tile with its count badge and the video is behind it.
 - **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
 
-### 7. Restore
+### 7. Lightbox layout at tablet and desktop (fixed in 2.6.2)
+- **Action**: at 1440x900, 1024x768 and 820x1180, open the video in the Explore lightbox AND, on a
+  BuddyPress site, from its activity post (the BP lightbox is a separate copy driven by
+  `assets/js/bp-activity-media.js`). Then open the photo the same two ways.
+- **Expect**: only that item's player shows, filling the media area with the arrows inside it; no
+  "This video cannot play here." box, document card or empty photo frame beside a playing video. For
+  a video the "1 / 2" counter sits at the top, clear of the player's seek bar; for a photo, at the
+  bottom. A video the browser cannot play shows the centred "cannot play" box with Download.
+
+### 8. Restore
 - Delete the test items via `MediaRepository::delete_cascade()` (never raw SQL).

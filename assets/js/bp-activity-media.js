@@ -874,6 +874,17 @@
 			if ( media )   { media.removeAttribute( 'hidden' ); }
 			if ( sidebar ) { sidebar.removeAttribute( 'hidden' ); }
 
+			// The clone un-hid every slot IA controlled (createBPLightbox), so the
+			// error box and document cards sat beside the player and squeezed it
+			// off-centre. Hide every slot by rule, then open the one this item needs.
+			if ( media ) {
+				Array.prototype.forEach.call( media.children, function( el ) {
+					if ( ! el.matches( '.mvs-lightbox-nav, .mvs-lightbox-position' ) ) {
+						el.setAttribute( 'hidden', '' );
+					}
+				} );
+			}
+
 			// Media: show the right element (img/video/audio) based on type.
 			var img = media ? ( media.querySelector( 'picture img' ) || media.querySelector( 'img' ) ) : null;
 			var vid = media ? media.querySelector( 'video' ) : null;
@@ -889,10 +900,25 @@
 					img.src = data.thumbnail_url || data.file_url || '';
 					img.alt = data.title || '';
 					img.removeAttribute( 'hidden' );
+					if ( img.parentElement && 'PICTURE' === img.parentElement.tagName ) {
+						img.parentElement.removeAttribute( 'hidden' );
+					}
 				}
 			}
 			if ( vid ) {
 				if ( isVideo ) {
+					// Same as the IA lightbox: a file the browser cannot play shows why.
+					var vidError = media.querySelector( '.mvs-lightbox-media-error' );
+					vid.onerror = function() {
+						if ( ! vid.getAttribute( 'src' ) || ! vidError ) { return; }
+						vid.setAttribute( 'hidden', '' );
+						var dl = vidError.querySelector( 'a' );
+						if ( dl ) {
+							dl.href = data.file_url || '';
+							dl.hidden = false === data.allow_download;
+						}
+						vidError.removeAttribute( 'hidden' );
+					};
 					vid.src = data.file_url || '';
 					vid.removeAttribute( 'hidden' );
 					vid.load();

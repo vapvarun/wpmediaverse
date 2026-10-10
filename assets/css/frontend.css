@@ -7187,6 +7187,12 @@ a.mvs-dashboard-card-title:hover {
     font-size: 13px;
 }
 
+/* A video's own controls sit at the bottom; the counter would cover its seek bar. */
+.mvs-lightbox-media:has(> video:not([hidden])) .mvs-lightbox-position {
+    bottom: auto;
+    top: 12px;
+}
+
 /* Sidebar */
 .mvs-lightbox-sidebar {
     width: 380px;
