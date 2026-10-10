@@ -78,8 +78,10 @@ class UploadService {
 			);
 		}
 
-		// Validate MIME type.
-		$allowed = $this->get_allowed_types();
+		// Validate MIME type. A chat attachment ('dm', conversation-scoped) follows
+		// the message rules, not the media library's (Basecamp 10392474704).
+		$is_dm   = 'dm' === ( $args['privacy'] ?? '' );
+		$allowed = $is_dm ? \WPMediaVerse\Messaging\MessagingController::allowed_attachment_types() : $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
 		// Hard guard: PDF and unrecognised uploads are refused (owner decision,
@@ -124,7 +126,10 @@ class UploadService {
 		// Check file size using server-side measurement (not client-reported).
 		// One reader for the limit, shared with Pro's document ingest.
 		$actual_size = filesize( $file['tmp_name'] );
-		$mvs_refusal = $this->reject_oversized_file( $actual_size, $user_id );
+		$mvs_refusal = $is_dm ? null : $this->reject_oversized_file( $actual_size, $user_id );
+		if ( $is_dm && ( false === $actual_size || $actual_size > \WPMediaVerse\Messaging\MessagingController::max_attachment_size() ) ) {
+			$mvs_refusal = new WP_Error( 'mvs_file_too_large', \WPMediaVerse\Messaging\MessagingController::attachment_too_large_message(), array( 'status' => 400 ) );
+		}
 		if ( $mvs_refusal ) {
 			return $mvs_refusal;
 		}
@@ -134,7 +139,7 @@ class UploadService {
 
 		// Duplicate detection.
 		$duplicate_action = get_option( 'mvs_duplicate_action', 'warn' );
-		if ( 'allow' !== $duplicate_action ) {
+		if ( 'allow' !== $duplicate_action && ! $is_dm ) {
 			$existing = $this->find_by_hash( $hash, $user_id );
 			if ( $existing ) {
 				if ( 'skip' === $duplicate_action ) {
@@ -671,6 +676,12 @@ class UploadService {
 		 * @param int    $user_id    Uploader user ID.
 		 * @param string $media_type Resolved media type ('photo' | 'video' | 'audio' | 'document').
 		 */
+		if ( 'dm' === $privacy ) {
+			// A chat attachment is not an upload: no feed, points, streaks, AI,
+			// captions or export, as in any messenger. Only the storage count moves.
+			\WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->forget_usage( $user_id );
+			return $media_id;
+		}
 		do_action(
 			'mvs_media_uploaded',
 			$media_id,

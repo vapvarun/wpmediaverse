@@ -2128,6 +2128,7 @@ class MessagingService {
 
 			if ( $msg->media_id && ! $is_hidden ) {
 				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
+				$this->attach_from_media( $msg );
 			}
 		}
 
@@ -3071,6 +3072,7 @@ class MessagingService {
 			}
 			if ( $msg->media_id && ! $msg->deleted_for_all ) {
 				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
+				$this->attach_from_media( $msg );
 			}
 			if ( $msg->parent_id ) {
 				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
@@ -3242,6 +3244,31 @@ class MessagingService {
 	 * @param int $viewer_id User the URLs are signed for (the message viewer).
 	 * @return array|null
 	 */
+	/**
+	 * Give a chat attachment stored as 'dm' media the `attachment` shape the chat
+	 * UI reads (image, video, voice and file messages), from the share payload
+	 * already signed for this viewer. Shares of an existing item keep only
+	 * `media_share`. Basecamp 10392474704.
+	 *
+	 * @param \stdClass $msg Message row with media_share set.
+	 * @return void
+	 */
+	private function attach_from_media( \stdClass $msg ): void {
+		if ( 'media_share' === $msg->message_type || ! empty( $msg->attachment ) || empty( $msg->media_share['url'] ) ) {
+			return;
+		}
+		$repo            = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$media_id        = (int) $msg->media_id;
+		$msg->attachment = array(
+			'id'        => $media_id,
+			'url'       => $msg->media_share['url'],
+			'mime'      => (string) $repo->get( $media_id, 'file_type' ),
+			'name'      => (string) $msg->media_share['title'],
+			'size'      => (int) $repo->get( $media_id, 'file_size' ),
+			'thumbnail' => '' !== (string) ( $msg->media_share['thumbnail'] ?? '' ) ? $msg->media_share['thumbnail'] : null,
+		);
+	}
+
 	private function get_media_share_data( int $media_id, int $viewer_id ) {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		if ( ! $repo->exists( $media_id ) ) {

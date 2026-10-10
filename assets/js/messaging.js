@@ -1311,7 +1311,8 @@ const { state, actions } = store( 'mvs/messaging', {
 			if ( parentId ) body.parent_id = parentId;
 
 			if ( state.selectedAttachment ) {
-				body.attachment_id = state.selectedAttachment.id;
+				// Chat files are conversation-scoped MediaVerse media (10392474704).
+				body.media_id = state.selectedAttachment.id;
 				body.message_type = state.selectedAttachment.type || 'file';
 			}
 
@@ -1380,7 +1381,7 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			const body = { content: failed.content || '', message_type: failed.message_type || 'text' };
 			if ( failed.parent_id && failed.parent_id !== '0' ) body.parent_id = failed.parent_id;
-			if ( failed.attachment && failed.attachment.id ) body.attachment_id = failed.attachment.id;
+			if ( failed.attachment && failed.attachment.id ) body.media_id = failed.attachment.id;
 
 			try {
 				const realMsg = yield apiFetch(
@@ -1685,7 +1686,7 @@ const { state, actions } = store( 'mvs/messaging', {
 						body: JSON.stringify( {
 							content: '',
 							message_type: 'voice',
-							attachment_id: data.id,
+							media_id: data.id,
 							metadata: { duration },
 						} ),
 					}

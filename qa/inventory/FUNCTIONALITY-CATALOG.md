@@ -1252,13 +1252,13 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 #### MV-MSG-005 — Send an attachment
 - **Edition:** Free
 - **Who:** Member
-- **Where:** Attachment picker in the composer. `POST /mvs/v1/messages/upload` then `POST /conversations/{id}/messages` with `attachment_id`.
+- **Where:** Attachment picker (and voice recorder) in the composer. `POST /mvs/v1/messages/upload` returns a `media_id`, then `POST /conversations/{id}/messages` with `media_id` (2.6.2; `attachment_id` before).
 - **Setup:** An image/video/audio file under 10MB (PDFs are excluded from DM attachments since 2.2.0 and still excluded).
 - **Steps:** 1. Click the attachment icon. 2. Pick a valid file. 3. Try a file over 10MB. 4. Try a PDF.
 - **Expected:** Valid media-type attachment uploads and sends as a message. Oversize file refused (10MB cap, filter-only — no wp-admin UI field for changing it). PDF refused (not a valid DM attachment type, verified by file content via `finfo_file()`, not by extension).
 - **UX expectation:** Upload progress shown while the attachment uploads before the message actually sends. A rejected attachment should say clearly why (too large / wrong type), not just fail silently.
 - **Settings that change it:** none in the wp-admin UI (10MB cap is filter-only, `mvs_dm_max_upload_size`).
-- **Edge cases:** none beyond the type/size checks above.
+- **Edge cases:** Since 2.6.2 the file is stored as conversation-scoped `dm` media (protected folder, random name, URLs signed per participant), never a WordPress attachment: logged out, `/wp-json/wp/v2/media` lists nothing and an outsider cannot open it. It is not an upload: no feed post, points, streak, AI, captions, export or `mvs_media_uploaded`, and it never appears in My Media, Explore or admin grids. Sending the same file twice is allowed whatever the duplicate setting (Basecamp 10392474704).
 
 #### MV-MSG-006 — Share an existing media item into a conversation
 - **Edition:** Free

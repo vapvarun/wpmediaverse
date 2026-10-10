@@ -984,30 +984,11 @@ class MessagingController extends WP_REST_Controller {
 
 		$file = $files['file'];
 
-		// Validate MIME type. MediaVerse is a media platform: DMs share the
-		// same media surface (image/video/audio) — documents are out of scope.
-		// Site owners can extend per-site via the filter.
-		$allowed = apply_filters(
-			'mvs_dm_allowed_file_types',
-			array(
-				'image/jpeg',
-				'image/png',
-				'image/gif',
-				'image/webp',
-				'audio/webm',
-				'audio/mp4',
-				'audio/mpeg',
-				'audio/ogg',
-				'video/mp4',
-				'video/webm',
-			)
-		);
-
 		$finfo     = finfo_open( FILEINFO_MIME_TYPE );
 		$real_mime = \WPMediaVerse\Core\MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
-		if ( ! in_array( $real_mime, $allowed, true ) ) {
+		if ( ! in_array( $real_mime, self::allowed_attachment_types(), true ) ) {
 			return new WP_REST_Response( array( 'message' => 'File type not allowed.' ), 400 );
 		}
 
@@ -1022,61 +1003,61 @@ class MessagingController extends WP_REST_Controller {
 			return new WP_REST_Response( array( 'message' => $mvs_refused->get_error_message() ), 413 );
 		}
 
-		// Temporarily grant upload_files so wp_handle_upload works.
-		$grant_cap = function ( $allcaps ) {
-			$allcaps['upload_files'] = true;
-			return $allcaps;
-		};
-		add_filter( 'user_has_cap', $grant_cap );
-
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-
-		$upload = wp_handle_upload( $file, array( 'test_form' => false ) );
-		// A DM video is served through PHP, the case index-first exists for.
-		if ( is_array( $upload ) && ! empty( $upload['file'] ) && ! empty( $upload['type'] ) ) {
-			\WPMediaVerse\Services\Mp4Faststart::apply( (string) $upload['file'], (string) $upload['type'] );
-		}
-
-		if ( isset( $upload['error'] ) ) {
-			remove_filter( 'user_has_cap', $grant_cap );
-			return new WP_REST_Response( array( 'message' => $upload['error'] ), 500 );
-		}
-
-		// Create WP attachment.
-		$attachment_id = wp_insert_attachment(
-			array(
-				'post_mime_type' => $upload['type'],
-				'post_title'     => sanitize_file_name( $file['name'] ),
-				'post_status'    => 'inherit',
-			),
-			$upload['file']
+		// Stored as conversation-scoped 'dm' media, like the app and BuddyNext
+		// chat: protected folder, random name, URLs signed per participant. It
+		// used to be a plain WordPress attachment under its original name in the
+		// public uploads folder, listed by /wp/v2/media. Basecamp 10392474704.
+		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'upload' )->handle(
+			$file,
+			get_current_user_id(),
+			array( 'privacy' => 'dm' )
 		);
-
-		if ( is_wp_error( $attachment_id ) ) {
-			remove_filter( 'user_has_cap', $grant_cap );
-			return new WP_REST_Response( array( 'message' => 'Failed to create attachment.' ), 500 );
+		if ( is_wp_error( $media_id ) ) {
+			$status = (int) ( $media_id->get_error_data()['status'] ?? 400 );
+			return new WP_REST_Response( array( 'message' => $media_id->get_error_message() ), $status );
 		}
 
-		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $upload['file'] ) );
-
-		// Counted toward the sender's storage limit (StorageLimitService).
-		update_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META, (int) filesize( $upload['file'] ) );
-		$mvs_storage->forget_usage( get_current_user_id() );
-
-		remove_filter( 'user_has_cap', $grant_cap );
-
-		$thumb = wp_get_attachment_image_url( $attachment_id, 'medium' );
+		$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$url    = $signed->generate( (int) $media_id, get_current_user_id() );
+		$thumb  = 'image' === $repo->get( (int) $media_id, 'media_type' ) ? $signed->generate_thumbnail( (int) $media_id, get_current_user_id() ) : '';
 
 		return new WP_REST_Response(
 			array(
-				'id'         => $attachment_id,
-				'source_url' => set_url_scheme( $upload['url'] ),
-				'thumbnail'  => $thumb ? set_url_scheme( $thumb ) : null,
-				'type'       => $upload['type'],
+				'id'         => (int) $media_id,
+				'media_id'   => (int) $media_id,
+				'source_url' => is_string( $url ) ? $url : '',
+				'thumbnail'  => is_string( $thumb ) && '' !== $thumb ? $thumb : null,
+				'type'       => $real_mime,
 			),
 			201
+		);
+	}
+
+	/**
+	 * The file types a message attachment may be: the media types (image, video,
+	 * audio, voice notes); documents are out of scope. One list for this route
+	 * and for UploadService when it stores 'dm' media.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @return string[]
+	 */
+	public static function allowed_attachment_types(): array {
+		return (array) apply_filters(
+			'mvs_dm_allowed_file_types',
+			array(
+				'image/jpeg',
+				'image/png',
+				'image/gif',
+				'image/webp',
+				'audio/webm',
+				'audio/mp4',
+				'audio/mpeg',
+				'audio/ogg',
+				'video/mp4',
+				'video/webm',
+			)
 		);
 	}
 }
