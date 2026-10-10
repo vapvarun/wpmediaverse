@@ -419,6 +419,23 @@ class NotificationService {
 	 */
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
 		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+
+		// One "reacted to" per member per item: removing a reaction and reacting
+		// again must not notify the owner twice (Basecamp 10392589159).
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$already = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->prefix}mvs_notifications WHERE media_id = %d AND user_id = %d AND actor_id = %d AND type = 'media_reaction' LIMIT 1",
+				$media_id,
+				$owner,
+				$user_id
+			)
+		);
+		if ( null !== $already ) {
+			return;
+		}
+
 		$this->create( $owner, 'media_reaction', $user_id, $media_id );
 	}
 
