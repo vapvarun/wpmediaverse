@@ -6764,6 +6764,18 @@
         "ChatFiles::hide_legacy keeps hiding while any move failed"
       ],
       "unchanged": "no new surface"
+    },
+    "refresh_2026_10_10_chat_files_retry": {
+      "scope": "targeted (2.6.2: chat file move retry + Site Health, Basecamp 10392474704)",
+      "added": {
+        "site_health_tests": [
+          "wpmediaverse_chat_files (only while moves failed)"
+        ]
+      },
+      "changed": [
+        "ChatFiles::maybe_start retries failed moves once a day"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, WP-CLI, fired hooks"
     }
   },
   "category_sources": {
