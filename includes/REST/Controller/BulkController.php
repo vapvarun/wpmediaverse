@@ -357,13 +357,22 @@ class BulkController extends WP_REST_Controller {
 		$updated = 0;
 
 		$albums        = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$album_decides = 0;
+		$kept          = 0;
 		foreach ( $media_ids as $media_id ) {
 			// In an album: the album decides; the choice is kept for when it leaves.
 			if ( $albums->keep_own_privacy_if_in_album( (int) $media_id, $privacy ) ) {
 				++$album_decides;
-			} else {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', $privacy );
+				++$updated;
+				continue;
+			}
+			$repo->set( $media_id, 'privacy', $privacy );
+			// A chat file keeps its conversation privacy (MediaRepository refuses
+			// the change); report it, never count it as done (Basecamp 10392474704).
+			if ( (string) $repo->get( $media_id, 'privacy' ) !== $privacy ) {
+				++$kept;
+				continue;
 			}
 			++$updated;
 		}
@@ -377,6 +386,8 @@ class BulkController extends WP_REST_Controller {
 				// Items in an album keep showing with the album's privacy; the
 				// choice applies when they leave it (2.6.0).
 				'album_decides' => $album_decides,
+				// Files sent in messages, left as they were.
+				'kept'          => $kept,
 			)
 		);
 	}

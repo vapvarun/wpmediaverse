@@ -92,6 +92,17 @@ class DmAttachmentStorageTest extends WP_UnitTestCase {
 		$this->assertSame( 'mvs_privacy_dm_fixed', $response->as_error()->get_error_code() );
 		$this->assertSame( 'dm', $repo->get( $media_id, 'privacy' ) );
 
+		// Bulk edit reports the chat file as kept, never as done.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$bulk = new \WP_REST_Request( 'POST', '/mvs/v1/media/bulk' );
+		$bulk->set_param( 'action', 'change_privacy' );
+		$bulk->set_param( 'media_ids', array( $media_id ) );
+		$bulk->set_param( 'privacy', 'public' );
+		$result = rest_do_request( $bulk )->get_data();
+		$this->assertSame( 0, $result['processed'] );
+		$this->assertSame( 1, $result['kept'] );
+		$this->assertSame( 'dm', $repo->get( $media_id, 'privacy' ) );
+
 		$public = (int) $repo->insert(
 			array(
 				'title'       => 'Public photo',
