@@ -112,6 +112,11 @@ class ChatFilesTest extends WP_UnitTestCase {
 
 		$this->assertContains( $normal, $listed );
 		$this->assertNotContains( $legacy, $listed );
+
+		// The single-item route answers like a missing id (ids are sequential).
+		wp_set_current_user( 0 );
+		$this->assertSame( 404, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $legacy ) )->get_status() );
+		$this->assertSame( 200, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $normal ) )->get_status() );
 	}
 
 	public function test_an_attachment_that_cannot_be_moved_stays_hidden_after_the_job_is_done(): void {

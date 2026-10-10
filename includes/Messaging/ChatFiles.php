@@ -65,6 +65,7 @@ final class ChatFiles {
 		add_action( self::HOOK, array( self::class, 'run_batch' ) );
 		add_action( 'wp_loaded', array( self::class, 'maybe_start' ) );
 		add_action( 'pre_get_posts', array( self::class, 'hide_legacy' ) );
+		add_filter( 'rest_request_before_callbacks', array( self::class, 'hide_legacy_item' ), 10, 3 );
 		add_filter( 'site_status_tests', array( self::class, 'register_health_test' ) );
 	}
 
@@ -192,6 +193,28 @@ final class ChatFiles {
 			'compare' => 'NOT EXISTS',
 		);
 		$query->set( 'meta_query', $meta );
+	}
+
+	/**
+	 * Answer /wp/v2/media/{id} for an old chat file exactly like a missing id.
+	 * Attachment ids are sequential, so hiding only the listing would still let
+	 * anyone walk them one by one.
+	 *
+	 * Runs before the route (rest_request_before_callbacks), the hook made for
+	 * returning an error; core's rest_prepare_attachment cannot take one.
+	 *
+	 * @param mixed            $response Response so far (null to continue).
+	 * @param array            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed
+	 */
+	public static function hide_legacy_item( $response, $handler, $request ) {
+		if ( $request instanceof \WP_REST_Request
+			&& preg_match( '#^/wp/v2/media/(\d+)#', $request->get_route(), $match )
+			&& '' !== (string) get_post_meta( (int) $match[1], StorageLimitService::DM_SIZE_META, true ) ) {
+			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.' ), array( 'status' => 404 ) ); // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- core's own string, so the reply matches a missing id.
+		}
+		return $response;
 	}
 
 	/**
