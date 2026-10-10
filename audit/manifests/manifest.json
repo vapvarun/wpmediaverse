@@ -6776,6 +6776,18 @@
         "ChatFiles::maybe_start retries failed moves once a day"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_bulk_kept": {
+      "scope": "targeted (2.6.2: bulk privacy reports kept chat files)",
+      "added": {
+        "response_fields": [
+          "POST /mvs/v1/media/bulk change_privacy: kept"
+        ]
+      },
+      "changed": [
+        "processed counts only items whose privacy changed"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
     }
   },
   "category_sources": {
