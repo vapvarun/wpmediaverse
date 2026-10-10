@@ -229,9 +229,9 @@ class ActivityContentIntegration {
 
 				// EXISTENCE IS THE WRONG QUESTION, and it is why the first fix
 				// bounced: the file being on disk says nothing about whether a
-				// browser can fetch it. Activator::create_upload_protection()
-				// writes "Deny from all" over the whole wpmediaverse upload dir,
-				// so EVERY direct URL into it 403s - present or not. The member
+				// browser can fetch it. The folder's .htaccess denies every
+				// readable (non-random) name, which is what this legacy markup
+				// carries, so these URLs 403 - present or not. The member
 				// still saw a broken image; the guard just kept the tag.
 				//
 				// Nor can these be rewritten to a working URL. Both
@@ -257,7 +257,15 @@ class ActivityContentIntegration {
 		// linkage renderer, the _mvs_media_ids rebuild, refresh_broadcast_urls -
 		// correctly finds nothing to check and the member sees broken-image
 		// boxes on their own timeline forever. Basecamp 10290384337.
-		$content = $this->drop_missing_upload_images( $content );
+		//
+		// Legacy markup only. Id-keyed blocks are re-minted per id by
+		// refresh_broadcast_urls() below, which also drops missing media. Since
+		// 2.6.1 direct delivery stores public images under uploads/wpmediaverse/,
+		// so running this on them deleted every new upload's picture from the
+		// stream. Basecamp 10387034419.
+		if ( false === strpos( $content, 'data-mvs-media-id' ) ) {
+			$content = $this->drop_missing_upload_images( $content );
+		}
 
 		// Activity already has MVS media markup baked into content
 		// (BP composer flow saves content with `mvs-activity-media-grid`
@@ -863,6 +871,10 @@ class ActivityContentIntegration {
 						$body
 					);
 				}
+
+				// BuddyPress kses strips <picture> and srcset on save, leaving an
+				// inert image <source>. Drop it; the <img> below carries the photo.
+				$body = (string) preg_replace( '~<source\b[^>]*\btype=["\']image/[^>]*>~i', '', $body );
 
 				// Refresh inner <img src="...">.
 				if ( $thumb_url ) {

@@ -1653,8 +1653,8 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Setup:** BuddyPress Activity component active.
 - **Steps:** 1. Upload a public item. 2. Check the site-wide activity stream. 3. Upload a `private` or `dm` item and re-check.
 - **Expected:** Public (and any non-private/non-dm privacy) upload creates a real `bp_activity_add()` entry. A `private` or a `dm`-privacy upload deliberately writes NO activity row at all (so DM attachments never leak into the public activity stream).
-- **UX expectation:** The activity card's media preview follows the LOCKED visual spec: a single image preview is a fixed 64px square (never a "hero" 200-320px preview regardless of file count); 2-6 images use a CSS grid with per-count column templates, collapsing to 2 columns at ≤640px. This is an explicit regression lock — measure it, don't eyeball it.
-- **Settings that change it:** none beyond privacy itself gating whether an activity row is written.
+- **UX expectation:** The posted activity card shows the uploaded photo itself, at the stream's content width (one image), or a CSS grid with per-count column templates for 2-6 images, collapsing to 2 columns at ≤640px. The fixed 64px square belongs to the composer's attach preview BEFORE posting (`bp-integration.css` "Preview item"), not to the posted card. Measure it, don't eyeball it.
+- **Settings that change it:** none beyond privacy itself gating whether an activity row is written. Direct delivery (Site Health "media delivery" probe, filter `mvs_direct_media_delivery`) changes the stored image URL only; the photo must show with it on and off. Check: upload with it forced on, then view the stream with it on and off (Basecamp 10387034419).
 - **Edge cases:** Deleting the media afterward must clean up its associated activity entry (no dead activity card advertising deleted content).
 
 #### MV-BP-004 — Comment syncs into BuddyPress activity comments
