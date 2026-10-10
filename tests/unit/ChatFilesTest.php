@@ -114,6 +114,32 @@ class ChatFilesTest extends WP_UnitTestCase {
 		$this->assertNotContains( $legacy, $listed );
 	}
 
+	public function test_an_attachment_that_cannot_be_moved_stays_hidden_after_the_job_is_done(): void {
+		$attachment = $this->legacy_attachment();
+		$this->legacy_message( $attachment );
+		$no_jpeg = static function () {
+			return array( 'video/mp4' ); // Makes the move refuse this JPEG.
+		};
+		add_filter( 'mvs_dm_allowed_file_types', $no_jpeg );
+		ChatFiles::run_batch();
+		remove_filter( 'mvs_dm_allowed_file_types', $no_jpeg );
+
+		$state = get_option( ChatFiles::OPTION );
+		$this->assertTrue( $state['done'] );
+		$this->assertSame( 1, $state['failed'] );
+		$this->assertNotNull( get_post( $attachment ), 'Not moved, so not deleted.' );
+
+		$listed = ( new \WP_Query(
+			array(
+				'post_type'   => 'attachment',
+				'post_status' => 'inherit',
+				'fields'      => 'ids',
+				'post__in'    => array( $attachment ),
+			)
+		) )->posts;
+		$this->assertNotContains( $attachment, $listed, 'Fail closed: still hidden.' );
+	}
+
 	public function test_unsending_removes_the_chat_file_unless_another_message_shows_it(): void {
 		$upload = Plugin::container()->get( 'upload' );
 		add_filter( 'mvs_upload_skip_move_uploaded_file_check', '__return_true' );

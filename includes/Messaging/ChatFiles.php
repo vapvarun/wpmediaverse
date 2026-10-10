@@ -158,11 +158,19 @@ final class ChatFiles {
 	/**
 	 * Keep old chat attachments out of every attachment listing until moved.
 	 *
+	 * Fails closed: an attachment the job could not move stays a public
+	 * WordPress attachment, so hiding continues for as long as any failed one
+	 * is left, not just until the job reports done.
+	 *
 	 * @param \WP_Query $query Query about to run.
 	 * @return void
 	 */
 	public static function hide_legacy( $query ): void {
-		if ( ! $query instanceof \WP_Query || self::done() || ! in_array( 'attachment', (array) $query->get( 'post_type' ), true ) ) {
+		if ( ! $query instanceof \WP_Query || ! in_array( 'attachment', (array) $query->get( 'post_type' ), true ) ) {
+			return;
+		}
+		$state = self::state();
+		if ( $state['done'] && 0 === (int) $state['failed'] ) {
 			return;
 		}
 		$meta   = (array) $query->get( 'meta_query' );
