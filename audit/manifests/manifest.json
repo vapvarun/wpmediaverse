@@ -6663,6 +6663,15 @@
         ]
       },
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks (3.1b hook manifests match)"
+    },
+    "refresh_2026_10_10": {
+      "scope": "targeted (2.6.2: BuddyPress activity direct-URL images, Basecamp 10387034419)",
+      "added": {},
+      "changed": [
+        "ActivityContentIntegration::enhance_activity_media_content runs the legacy image drop only on markup without data-mvs-media-id",
+        "ActivityContentIntegration::refresh_broadcast_urls drops image <source> tags"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks, public methods"
     }
   },
   "category_sources": {
