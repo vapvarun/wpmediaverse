@@ -6684,6 +6684,18 @@
         "UploadService::detect_mime, MessagingController::upload_attachment and MediaController::replace_file pass the sniffed type through MediaTypes::canonical_mime"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_categories": {
+      "scope": "targeted (2.6.2: Categories admin entry, Basecamp 10379842826)",
+      "added": {
+        "admin_pages": [
+          "MediaVerse > Categories (edit-tags.php?taxonomy=mvs_category&post_type=mvs_album, cap manage_categories)"
+        ]
+      },
+      "changed": [
+        "mvs_tag and mvs_category: show_admin_column false, show_in_quick_edit false"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
     }
   },
   "category_sources": {
