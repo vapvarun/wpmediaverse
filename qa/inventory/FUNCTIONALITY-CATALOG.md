@@ -637,7 +637,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Uploads and appears with a generated poster (embedded cover frame, or a client-supplied frame) for video, or embedded/decorative artwork for audio.
 - **UX expectation:** Video/audio types not on the allowed list are rejected client-side before any upload request is attempted ("N file(s) not allowed for {mode} upload.").
 - **Settings that change it:** `mvs_allowed_file_types`.
-- **Edge cases:** A posterless video must never render a blank/black tile — falls back to a bundled default poster image.
+- **Edge cases:** A posterless video must never render a blank/black tile — falls back to a bundled default poster image. An MP4 whose container brand is M4V (Apple, HandBrake, many stock clips; `file` says "Apple iTunes Video (.M4V)") uploads as `video/mp4` wherever MP4 is allowed: upload page, composer, DM attachment, replace file. With `video/mp4` removed from the allowed list it is refused too (`MediaTypes::canonical_mime()`, Basecamp 10379561512).
 
 #### MV-UPL-005 — Upload rejected: oversize / disallowed type / empty file
 - **Edition:** Free

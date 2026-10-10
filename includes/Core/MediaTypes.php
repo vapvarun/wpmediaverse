@@ -206,4 +206,21 @@ final class MediaTypes {
 	public static function is_known( string $type ): bool {
 		return in_array( $type, self::ALL, true );
 	}
+
+	/**
+	 * The MIME type the allowed lists use for a sniffed type.
+	 *
+	 * PHP's finfo reports an MP4 whose container brand is M4V (Apple, HandBrake, many
+	 * stock clips) as video/x-m4v. It is the same H.264 MP4, so it is checked
+	 * against video/mp4: allowed when the owner allows MP4, refused when not.
+	 * Basecamp 10379561512.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $mime Sniffed MIME type.
+	 * @return string
+	 */
+	public static function canonical_mime( string $mime ): string {
+		return 'video/x-m4v' === $mime ? 'video/mp4' : $mime;
+	}
 }

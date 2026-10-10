@@ -1221,7 +1221,7 @@ class MediaController extends WP_REST_Controller {
 		$upload_service = Plugin::container()->get( 'upload' );
 		$allowed        = $upload_service->get_allowed_types_public();
 		$finfo          = finfo_open( FILEINFO_MIME_TYPE );
-		$mime           = finfo_file( $finfo, $file['tmp_name'] );
+		$mime           = MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
 		// The SAME guard as UploadService::handle(), not a mirror of it. This

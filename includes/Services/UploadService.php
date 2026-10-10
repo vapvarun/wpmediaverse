@@ -902,7 +902,7 @@ class UploadService {
 	private function detect_mime( string $file_path ): string {
 		$check = wp_check_filetype_and_ext( $file_path, $file_path );
 		if ( ! empty( $check['type'] ) ) {
-			return $check['type'];
+			return MediaTypes::canonical_mime( $check['type'] );
 		}
 		// Fallback to finfo.
 		if ( function_exists( 'finfo_open' ) ) {
@@ -910,7 +910,7 @@ class UploadService {
 			$mime  = finfo_file( $finfo, $file_path );
 			// PHP 8.5 deprecated finfo_close — finfo handle is GC'd when $finfo
 			// goes out of scope.
-			return $mime ? $mime : '';
+			return $mime ? MediaTypes::canonical_mime( $mime ) : '';
 		}
 		return '';
 	}

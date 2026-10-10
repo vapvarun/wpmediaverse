@@ -1003,7 +1003,7 @@ class MessagingController extends WP_REST_Controller {
 		);
 
 		$finfo     = finfo_open( FILEINFO_MIME_TYPE );
-		$real_mime = finfo_file( $finfo, $file['tmp_name'] );
+		$real_mime = \WPMediaVerse\Core\MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
 		if ( ! in_array( $real_mime, $allowed, true ) ) {
