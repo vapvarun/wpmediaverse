@@ -797,4 +797,37 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( 0, $meta_count );
 	}
+
+	/**
+	 * A privacy listener reads the NEW value even when the row was already cached.
+	 *
+	 * Callers such as MediaController::update_item() read the item before writing,
+	 * and the hook used to fire before the cache was dropped, so the BuddyPress
+	 * activity always took the previous privacy (Basecamp 10392976094).
+	 */
+	public function test_privacy_listener_reads_new_value_from_warm_cache(): void {
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$media_id = $repo->insert(
+			array(
+				'title'       => 'Privacy hook order',
+				'post_author' => $this->admin_id,
+				'privacy'     => 'public',
+			)
+		);
+
+		$seen     = array();
+		$listener = static function ( $id ) use ( $repo, &$seen ) {
+			$seen[] = $repo->get( (int) $id, 'privacy' );
+		};
+		add_action( 'mvs_media_privacy_changed', $listener );
+
+		$repo->get( $media_id, 'privacy' ); // Warm the cache, as update_item() does.
+		$repo->set( $media_id, 'privacy', 'private' );
+		$repo->get( $media_id, 'privacy' );
+		$repo->set_many( $media_id, array( 'privacy' => 'members' ) );
+
+		remove_action( 'mvs_media_privacy_changed', $listener );
+
+		$this->assertSame( array( 'private', 'members' ), $seen );
+	}
 }

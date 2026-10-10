@@ -856,8 +856,13 @@ class ActivityContentIntegration {
 					return '';
 				}
 
-				$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );
-				$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_thumbnail_url( $media_id, 'large' );
+				// Broadcast URLs are anonymous, so a non-public item gets none and its
+				// tile kept the src of a file that going private renamed: the owner saw
+				// a broken image (Basecamp 10392976094). Fall back to a URL minted for
+				// this viewer; it is empty for anyone who may not see the item.
+				$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+				$file_url  = $repo->get_broadcast_url( $media_id ) ?: $repo->get_url_for_viewer( $media_id );
+				$thumb_url = $repo->get_broadcast_thumbnail_url( $media_id, 'large' ) ?: $repo->get_thumbnail_url_for_viewer( $media_id, 'large' );
 
 				// Refresh outer <a href="..."> when the href targets the gated
 				// uploads dir. Permalinks (which point to the public single

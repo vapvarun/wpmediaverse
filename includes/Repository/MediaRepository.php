@@ -964,6 +964,11 @@ class MediaRepository implements MediaRepositoryInterface {
 				array( 'media_id' => $media_id )
 			);
 
+			// Drop the cached row BEFORE announcing: listeners re-read the item, and a
+			// warm cache handed them the old privacy, so the BuddyPress activity
+			// always carried the previous value (Basecamp 10392976094).
+			self::invalidate_row_cache( $media_id );
+
 			// Fire only on UPDATE (old value existed) and when value actually changes.
 			// Inserts skip — uploaders set privacy at activity-creation time directly.
 			if ( 'privacy' === $key && null !== $old_privacy && (string) $old_privacy !== (string) $value ) {
@@ -978,7 +983,6 @@ class MediaRepository implements MediaRepositoryInterface {
 				 */
 				do_action( 'mvs_media_privacy_changed', $media_id, (string) $value, (string) $old_privacy );
 			}
-			self::invalidate_row_cache( $media_id );
 			return;
 		}
 
@@ -3215,12 +3219,13 @@ class MediaRepository implements MediaRepositoryInterface {
 				);
 			}
 
+			// Before the hook, as in set(): listeners must read the new row.
+			self::invalidate_row_cache( $media_id );
+
 			if ( array_key_exists( 'privacy', $index_data ) && null !== $old_privacy && (string) $old_privacy !== (string) $index_data['privacy'] ) {
 				/** This action is documented in MediaRepository::set(). */
 				do_action( 'mvs_media_privacy_changed', $media_id, (string) $index_data['privacy'], (string) $old_privacy );
 			}
-
-			self::invalidate_row_cache( $media_id );
 		}
 
 		// Meta fields one by one (upsert). Each set() call self-invalidates.
