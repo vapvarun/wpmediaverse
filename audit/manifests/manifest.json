@@ -6696,6 +6696,19 @@
         "mvs_tag and mvs_category: show_admin_column false, show_in_quick_edit false"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_dm_grant": {
+      "scope": "targeted (2.6.2: DM media grant hardening, Basecamp 10392490030)",
+      "added": {
+        "error_codes": [
+          "attachment_unavailable (POST /conversations/{id}/messages, 403)"
+        ]
+      },
+      "changed": [
+        "MessagingService::user_received_media matches media_id shared by the media owner only",
+        "MessagingService::send_message refuses media the sender cannot view and attachments the sender does not own"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
     }
   },
   "category_sources": {
