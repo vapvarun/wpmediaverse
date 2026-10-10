@@ -371,7 +371,9 @@ class MediaController extends WP_REST_Controller {
 				->get_by_slug( sanitize_title( $slug ) );
 
 			$found_id = $mvs_by_slug['media_id'] ?? 0;
-			if ( $found_id ) {
+			// Same gate as the id route and the include branch below: a slug
+			// must not reveal an item the viewer may not see (Basecamp 10393041290).
+			if ( $found_id && $this->privacy->can_view( (int) $found_id, get_current_user_id() ) ) {
 				$item = $this->prepare_item_for_response( (int) $found_id, $request );
 				return rest_ensure_response( $item ? array( $item ) : array() );
 			}
