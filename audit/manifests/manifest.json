@@ -6723,6 +6723,18 @@
         "MessagingService fills attachment from media_share for non-share messages with media_id"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI"
+    },
+    "refresh_2026_10_10_dm_lock": {
+      "scope": "targeted (2.6.2: dm privacy is fixed after upload, Basecamp 10392474704)",
+      "added": {
+        "error_codes": [
+          "mvs_privacy_dm_fixed (PATCH /mvs/v1/media/{id}, 400)"
+        ]
+      },
+      "changed": [
+        "MediaRepository privacy writers refuse changes to or from dm"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
     }
   },
   "category_sources": {
