@@ -6805,6 +6805,15 @@
         "ChatFiles::hide_legacy covers post_type any"
       ],
       "unchanged": "routes, hooks fired, settings, tables"
+    },
+    "refresh_2026_10_10_chat_files_private": {
+      "scope": "targeted (2.6.2: old chat files set private on first request)",
+      "added": {},
+      "changed": [
+        "ChatFiles::privatize_legacy on init (once)",
+        "ChatFiles::hide_legacy covers search"
+      ],
+      "unchanged": "routes, hooks fired, settings, tables"
     }
   },
   "category_sources": {
