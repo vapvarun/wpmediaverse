@@ -48,7 +48,7 @@ Check at BOTH levels: the code flow below, then the browser as each role.
   on their photo; Report is the way.
 - **Fixed in 2.6.2 (Basecamp 10392589159)**: reacting again after removing a reaction must not
   notify the owner a second time.
-- **Known, later (same card)**: a deleted comment's notification stays; a member is not notified
+- **Known, later (Basecamp 10392592778)**: a deleted comment's notification stays; a member is not notified
   when someone replies to them.
 
 ### 4. Delete (Member B)
