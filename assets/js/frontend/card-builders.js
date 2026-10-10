@@ -352,8 +352,8 @@
 		var mediaType = item.media_type || 'image';
 		var stats     = item.stats || {};
 		var author    = item.author_data || {};
-		var isGallery = !! item.media_group;
 		var groupCnt  = item.group_count || 0;
+		var isGallery = groupCnt > 1; // group_count is 0 for a member listed on its own.
 
 		var rootClass = 'mvs-grid-item' + ( isGallery ? ' mvs-grid-item--gallery' : '' );
 		var root = el( 'div', rootClass, {

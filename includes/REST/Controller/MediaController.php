@@ -2440,13 +2440,9 @@ class MediaController extends WP_REST_Controller {
 			$data['group_position'] = ! empty( $all['group_position'] ) ? (int) $all['group_position'] : 0;
 			$data['group_cover']    = ! empty( $all['group_cover'] ) ? (bool) $all['group_cover'] : false;
 
-			// Count group members.
-			$data['group_count'] = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$media_group
-				)
-			);
+			// Items this tile stands for: a cover counts the members it hides,
+			// any other item 0, so a split member opens alone in the lightbox.
+			$data['group_count'] = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( (int) $media_id ) )[ (int) $media_id ] ?? 0 );
 		}
 
 		// Add media-type-specific metadata.

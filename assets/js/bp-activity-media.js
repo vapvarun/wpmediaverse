@@ -13,6 +13,7 @@
 	// i18n bridge — guard in case wp.i18n is unavailable (graceful English fallback).
 	var i18n = ( window.wp && window.wp.i18n ) ? window.wp.i18n : null;
 	var __ = i18n ? i18n.__ : function( s ) { return s; };
+	var _n = i18n ? i18n._n : function( single, plural, n ) { return 1 === n ? single : plural; };
 	var sprintf = i18n ? i18n.sprintf : function( fmt ) {
 		var args = Array.prototype.slice.call( arguments, 1 );
 		var i = 0;
@@ -919,10 +920,18 @@
 						}
 						vidError.removeAttribute( 'hidden' );
 					};
+					// Poster as in the IA lightbox (lightboxPosterUrl); the clone kept an
+					// empty one, so the player was black until play.
+					if ( data.thumbnail_url ) {
+						vid.poster = data.thumbnail_url;
+					} else {
+						vid.removeAttribute( 'poster' );
+					}
 					vid.src = data.file_url || '';
 					vid.removeAttribute( 'hidden' );
 					vid.load();
 				} else {
+					vid.removeAttribute( 'poster' );
 					vid.removeAttribute( 'src' );
 					vid.setAttribute( 'hidden', '' );
 				}
@@ -1215,7 +1224,9 @@
 			apiGet( 'media/' + mediaId + '/stats' ).then( function( data ) {
 				var statsSpan = overlay.querySelector( '.mvs-lightbox-stats span' );
 				if ( statsSpan && data && data.views !== undefined ) {
-					statsSpan.textContent = data.views + ' views';
+					var views = parseInt( data.views, 10 ) || 0;
+					/* translators: %d: number of views. */
+					statsSpan.textContent = sprintf( _n( '%d view', '%d views', views, 'wpmediaverse' ), views );
 				}
 			} );
 		}

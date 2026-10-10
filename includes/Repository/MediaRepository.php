@@ -5494,6 +5494,53 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * How many items each listed tile stands for, for its gallery badge.
+	 *
+	 * A gallery cover counts itself plus the members it hides in listings (same
+	 * privacy, published, approved: the rule in gallery_exclude_subquery()). Any
+	 * other item stands for itself and gets 0, so a member listed on its own
+	 * after its cover went private or was deleted shows no badge, and a private
+	 * member is never counted on a public cover (Basecamp 10392976432).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[] $media_ids Listed media IDs (one page).
+	 * @return array<int,int> media_id => count; 0 for a non-cover.
+	 */
+	public function gallery_tile_counts( array $media_ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		if ( ! $ids ) {
+			return array();
+		}
+		$counts = array_fill_keys( $ids, 0 );
+		$meta   = $wpdb->prefix . 'mvs_media_meta';
+		$index  = $this->index_table();
+		$in     = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
+				"SELECT cg.media_id, COUNT(*) AS c FROM {$meta} cg
+					INNER JOIN {$meta} cp ON cp.media_id = cg.media_id AND cp.meta_key = 'group_position' AND cp.meta_value = '0'
+					INNER JOIN {$index} ci ON ci.media_id = cg.media_id
+					INNER JOIN {$meta} mg ON mg.meta_key = 'media_group' AND mg.meta_value = cg.meta_value
+					INNER JOIN {$index} mi ON mi.media_id = mg.media_id AND mi.privacy = ci.privacy
+						AND mi.status = 'publish' AND mi.moderation_status = 'approved'
+					WHERE cg.meta_key = 'media_group' AND cg.media_id IN ({$in})
+					GROUP BY cg.media_id",
+				...$ids
+			),
+			ARRAY_A
+		);
+		foreach ( (array) $rows as $row ) {
+			$counts[ (int) $row['media_id'] ] = (int) $row['c'];
+		}
+		return $counts;
+	}
+
+	/**
 	 * The single source of truth for the "exclude non-cover gallery members"
 	 * subquery (previously copy-pasted verbatim across 6 listing sites).
 	 *

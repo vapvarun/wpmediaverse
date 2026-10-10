@@ -67,6 +67,10 @@ explained by the code, is a gap to close before calling it done.
   the visitor; also `GET /mvs/v1/media?group_covers=1`.
 - **Expect**: the still-public video is listed itself (it was a gallery member, not private). With
   the cover public again, the gallery is one tile with its count badge and the video is behind it.
+- **Badge** (Basecamp 10392976432): a split-out tile has NO gallery badge and opens alone in the
+  lightbox (no "1 / N", no jump to another item); the cover's badge counts only the items it stands
+  for, so a private member is not counted on a public cover. Check page 1 AND a "Load more" page
+  (server and JS builders).
 - **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
 
 ### 7. Lightbox layout at tablet and desktop (fixed in 2.6.2)
@@ -76,7 +80,9 @@ explained by the code, is a gap to close before calling it done.
 - **Expect**: only that item's player shows, filling the media area with the arrows inside it; no
   "This video cannot play here." box, document card or empty photo frame beside a playing video. For
   a video the "1 / 2" counter sits at the top, clear of the player's seek bar; for a photo, at the
-  bottom. A video the browser cannot play shows the centred "cannot play" box with Download.
+  bottom. A video the browser cannot play shows the centred "cannot play" box with Download. In the
+  BP lightbox the video shows its poster before play (not black) and the stats read "1 view" for one
+  view, "2 views" for two.
 
 ### 8. Restore
 - Delete the test items via `MediaRepository::delete_cascade()` (never raw SQL).

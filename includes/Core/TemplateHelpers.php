@@ -1365,23 +1365,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			$data_str .= ' data-' . esc_attr( $key ) . '="' . esc_attr( $val ) . '"';
 		}
 
-		// Check if this is a gallery group cover.
-		$media_group = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
-		$group_count = 0;
-		$is_gallery  = false;
-		if ( $media_group ) {
-			$is_gallery  = true;
-			$group_count = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'group_count_cache' );
-			if ( ! $group_count ) {
-				global $wpdb;
-				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						$media_group
-					)
-				);
-			}
-		}
+		// A gallery cover badges the items it stands for; any other tile stands
+		// for itself (MediaRepository::gallery_tile_counts()).
+		$group_count = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( $media_id ) )[ $media_id ] ?? 0 );
+		$is_gallery  = $group_count > 1;
 
 		$item_class = 'mvs-grid-item' . ( $is_gallery ? ' mvs-grid-item--gallery' : '' );
 
@@ -1461,7 +1448,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$this->render_grid_thumbnail( $media_id, $size );
 
 		// Gallery badge showing item count.
-		if ( $is_gallery && $group_count > 1 ) {
+		if ( $is_gallery ) {
 			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
 			echo '<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> ' . esc_html( $group_count );
 			echo '</span>';

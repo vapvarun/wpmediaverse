@@ -203,31 +203,9 @@ if ( $mvs_grid_author_ids ) {
 	cache_users( $mvs_grid_author_ids );
 }
 
-// Gallery tiles show "N in this group". One grouped COUNT for the page, not
-// one per grouped tile. (2.5.1)
-$mvs_grid_group_counts = array();
-$mvs_grid_page_groups  = array();
-foreach ( $mvs_page_ids as $mvs_grid_pid ) {
-	$mvs_grid_pid_group = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_grid_pid, 'media_group' );
-	if ( $mvs_grid_pid_group ) {
-		$mvs_grid_page_groups[] = (string) $mvs_grid_pid_group;
-	}
-}
-$mvs_grid_page_groups = array_values( array_unique( $mvs_grid_page_groups ) );
-if ( $mvs_grid_page_groups ) {
-	$mvs_grid_group_ph  = implode( ', ', array_fill( 0, count( $mvs_grid_page_groups ), '%s' ) );
-	$mvs_grid_group_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and placeholders are built above.
-			"SELECT meta_value, COUNT(*) AS c FROM {$meta_table} WHERE meta_key = 'media_group' AND meta_value IN ({$mvs_grid_group_ph}) GROUP BY meta_value",
-			...$mvs_grid_page_groups
-		),
-		ARRAY_A
-	);
-	foreach ( (array) $mvs_grid_group_rows as $mvs_grid_group_row ) {
-		$mvs_grid_group_counts[ (string) $mvs_grid_group_row['meta_value'] ] = (int) $mvs_grid_group_row['c'];
-	}
-}
+// Gallery badges for the page in one query: a cover counts the items it
+// stands for, any other tile 0 (MediaRepository::gallery_tile_counts()).
+$mvs_grid_group_counts = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( $mvs_page_ids );
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
@@ -260,8 +238,8 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
 				$mvs_grid_group      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $item_id, 'media_group' );
-				$mvs_grid_group_cnt  = $mvs_grid_group ? ( $mvs_grid_group_counts[ (string) $mvs_grid_group ] ?? 0 ) : 0;
-				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
+				$mvs_grid_group_cnt  = (int) ( $mvs_grid_group_counts[ $item_id ] ?? 0 );
+				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group_cnt > 1 ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
 				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
@@ -318,7 +296,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
 					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
-					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
+					<?php if ( $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
 							<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
 						</span>
