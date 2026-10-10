@@ -6672,6 +6672,18 @@
         "ActivityContentIntegration::refresh_broadcast_urls drops image <source> tags"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks, public methods"
+    },
+    "refresh_2026_10_10_m4v": {
+      "scope": "targeted (2.6.2: M4V-branded MP4 uploads, Basecamp 10379561512)",
+      "added": {
+        "public_methods": [
+          "MediaTypes::canonical_mime"
+        ]
+      },
+      "changed": [
+        "UploadService::detect_mime, MessagingController::upload_attachment and MediaController::replace_file pass the sniffed type through MediaTypes::canonical_mime"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
     }
   },
   "category_sources": {
