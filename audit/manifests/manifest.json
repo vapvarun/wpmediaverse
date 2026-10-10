@@ -6788,6 +6788,14 @@
         "processed counts only items whose privacy changed"
       ],
       "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_10_chat_files_item": {
+      "scope": "targeted (2.6.2: old chat files hidden from /wp/v2/media/{id})",
+      "added": {},
+      "changed": [
+        "ChatFiles hooks rest_request_before_callbacks"
+      ],
+      "unchanged": "routes, hooks fired, settings, tables"
     }
   },
   "category_sources": {
