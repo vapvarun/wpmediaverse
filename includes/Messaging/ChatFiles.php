@@ -180,7 +180,12 @@ final class ChatFiles {
 	 * @return void
 	 */
 	public static function hide_legacy( $query ): void {
-		if ( ! $query instanceof \WP_Query || ! in_array( 'attachment', (array) $query->get( 'post_type' ), true ) ) {
+		if ( ! $query instanceof \WP_Query ) {
+			return;
+		}
+		// 'any' too: site search and other mixed queries include attachments.
+		$types = (array) $query->get( 'post_type' );
+		if ( ! in_array( 'attachment', $types, true ) && ! in_array( 'any', $types, true ) ) {
 			return;
 		}
 		$state = self::state();
@@ -209,9 +214,14 @@ final class ChatFiles {
 	 * @return mixed
 	 */
 	public static function hide_legacy_item( $response, $handler, $request ) {
-		if ( $request instanceof \WP_REST_Request
-			&& preg_match( '#^/wp/v2/media/(\d+)#', $request->get_route(), $match )
-			&& '' !== (string) get_post_meta( (int) $match[1], StorageLimitService::DM_SIZE_META, true ) ) {
+		// Ask the handler WordPress already matched, never the raw path: routes
+		// match case-insensitively and can arrive as ?rest_route=, so a path
+		// regex is bypassable.
+		$controller = is_array( $handler['callback'] ?? null ) ? ( $handler['callback'][0] ?? null ) : null;
+		if ( $controller instanceof \WP_REST_Attachments_Controller
+			&& $request instanceof \WP_REST_Request
+			&& (int) $request->get_param( 'id' ) > 0
+			&& '' !== (string) get_post_meta( (int) $request->get_param( 'id' ), StorageLimitService::DM_SIZE_META, true ) ) {
 			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.' ), array( 'status' => 404 ) ); // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- core's own string, so the reply matches a missing id.
 		}
 		return $response;

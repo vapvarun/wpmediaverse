@@ -113,9 +113,21 @@ class ChatFilesTest extends WP_UnitTestCase {
 		$this->assertContains( $normal, $listed );
 		$this->assertNotContains( $legacy, $listed );
 
+		// Mixed queries (site search uses post_type 'any') too.
+		$any = ( new \WP_Query(
+			array(
+				'post_type'   => 'any',
+				'post_status' => 'inherit',
+				'fields'      => 'ids',
+				'post__in'    => array( $legacy, $normal ),
+			)
+		) )->posts;
+		$this->assertNotContains( $legacy, $any );
+
 		// The single-item route answers like a missing id (ids are sequential).
 		wp_set_current_user( 0 );
 		$this->assertSame( 404, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $legacy ) )->get_status() );
+		$this->assertSame( 404, rest_do_request( new \WP_REST_Request( 'GET', '/WP/V2/MEDIA/' . $legacy ) )->get_status(), 'Routes match case-insensitively.' );
 		$this->assertSame( 200, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $normal ) )->get_status() );
 	}
 
