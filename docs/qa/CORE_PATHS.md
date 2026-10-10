@@ -11,6 +11,13 @@
 > the Basecamp columns, and the free/pro split. Re-confirm at each major release;
 > the ledger will tell you when the ranking has drifted (`C-4`).
 
+> **Two levels, two sites, every time (owner rule, 2026-10-10).** A core path is checked at the
+> code-flow level (entry points, the privacy/permission gate, counters, every surface that renders
+> it) AND in the browser as every role, on mediaverse.local and the Apache wp-env site. Paths 1-5,
+> 7 and 9 have journeys with a "Code flow to confirm" block: `customer/72`, `customer/73`,
+> `pro/customer/documents-core-share-and-gates`, enforced by `REQUIRED-COVERS.txt`. See
+> `qa/inventory/WHAT-TO-CHECK.md` section 0.
+
 Last confirmed: **UNCONFIRMED — seeded 2026-09-09, needs the plugin owner's sign-off**
 
 | # | Flow (owner's words) | Role | Surface | Why it is core (evidence) | Journey | Free/Pro |

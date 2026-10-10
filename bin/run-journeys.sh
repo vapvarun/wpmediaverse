@@ -50,7 +50,14 @@ while IFS= read -r -d '' f; do
     [ "$actual_priority" = "$PRIORITY" ] || continue
   fi
   JOURNEYS+=("$rel")
-done < <(find audit/journeys -type f -name '*.md' -not -name 'README.md' -print0 | sort -z)
+done < <(
+  # Pro journeys (audit/pro/journeys) count for coverage at stage 1.6, so they
+  # must also be run: include them whenever Pro sits next to Free, the same
+  # combo rule architecture-checks uses.
+  JOURNEY_ROOTS=(audit/journeys)
+  [ -d "$PLUGIN_DIR/../wpmediaverse-pro" ] && [ -d audit/pro/journeys ] && JOURNEY_ROOTS+=(audit/pro/journeys)
+  find "${JOURNEY_ROOTS[@]}" -type f -name '*.md' -not -name 'README.md' -print0 | sort -z
+)
 
 if [ ${#JOURNEYS[@]} -eq 0 ]; then
   echo "No journeys matched filter (only=$ONLY priority=$PRIORITY)"

@@ -88,3 +88,15 @@ touch-target-floor
 
 # departed-member-labelling: Recent Results showed members "Unknown VS Unknown".
 departed-member-labelling
+
+# Core flows (2026-10-10): photo, video, gallery visibility, reactions, comments
+# and documents must each be checked at BOTH levels - the code flow in the
+# journey's "Code flow to confirm" block, then the browser as every role, on
+# mediaverse.local AND the Apache wp-env site. The 2.6.2 double-check found a
+# public video vanishing from Explore once its gallery cover went private.
+core-media-photo
+core-media-video
+gallery-member-visibility
+core-reactions
+core-comments
+core-documents
