@@ -6830,6 +6830,21 @@
         "NotificationService::on_reaction skips an existing media_reaction row for the same owner, actor and item"
       ],
       "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_qa_round": {
+      "scope": "targeted (2.6.2: privacy hook order, chat files out of listings, gallery tile counts)",
+      "added": {
+        "methods": [
+          "MediaRepository::gallery_tile_counts(int[]): array<int,int> - items a listed tile stands for; 0 for a non-cover"
+        ]
+      },
+      "changed": [
+        "MediaRepository::set()/set_many() drop the row cache BEFORE firing mvs_media_privacy_changed",
+        "MediaRepository::explore_privacy_clause()/member_privacy_clause() exclude privacy 'dm' for owners and moderators",
+        "REST media group_count = gallery_tile_counts() (was the raw group size)",
+        "ActivityContentIntegration::refresh_broadcast_urls() falls back to viewer-minted URLs for non-public media"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
     }
   },
   "category_sources": {
