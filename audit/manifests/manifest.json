@@ -6709,6 +6709,20 @@
         "MessagingService::send_message refuses media the sender cannot view and attachments the sender does not own"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_dm_storage": {
+      "scope": "targeted (2.6.2: chat attachments as dm media, Basecamp 10392474704)",
+      "added": {
+        "public_methods": [
+          "MessagingController::allowed_attachment_types"
+        ]
+      },
+      "changed": [
+        "POST /mvs/v1/messages/upload stores dm media and returns id + media_id",
+        "UploadService::handle: privacy dm uses DM types/size, skips duplicate refusal and mvs_media_uploaded",
+        "MessagingService fills attachment from media_share for non-share messages with media_id"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI"
     }
   },
   "category_sources": {
