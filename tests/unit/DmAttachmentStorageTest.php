@@ -70,6 +70,42 @@ class DmAttachmentStorageTest extends WP_UnitTestCase {
 		$this->assertSame( 0, (int) ( new \WP_Query( array( 'post_type' => 'attachment', 'post_status' => 'any', 'author' => $this->sender, 'fields' => 'ids' ) ) )->found_posts, 'No WordPress attachment is created.' );
 	}
 
+	/**
+	 * Uploading as 'dm' skips the media rules, so a chat file may never be
+	 * switched to another level (it would publish around them), and nothing
+	 * may be switched to 'dm'.
+	 */
+	public function test_a_chat_file_can_never_change_privacy_and_nothing_becomes_dm(): void {
+		wp_set_current_user( $this->sender );
+		$media_id = $this->store( $this->voice_note() );
+		$repo     = Plugin::container()->get( 'media_repository' );
+
+		$repo->set( $media_id, 'privacy', 'public' );
+		$this->assertSame( 'dm', $repo->get( $media_id, 'privacy' ) );
+		$this->assertSame( array(), $repo->set_privacy_many( array( $media_id ), 'public' ) );
+		$this->assertSame( 'dm', $repo->get( $media_id, 'privacy' ) );
+
+		$request = new \WP_REST_Request( 'POST', '/mvs/v1/media/' . $media_id );
+		$request->set_param( 'privacy', 'public' );
+		$response = rest_do_request( $request );
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'mvs_privacy_dm_fixed', $response->as_error()->get_error_code() );
+		$this->assertSame( 'dm', $repo->get( $media_id, 'privacy' ) );
+
+		$public = (int) $repo->insert(
+			array(
+				'title'       => 'Public photo',
+				'post_author' => $this->sender,
+				'media_type'  => 'image',
+				'privacy'     => 'public',
+				'file_url'    => 'https://example.org/wp-content/uploads/wpmediaverse/2026/10/fedcba9876543210.jpg',
+			)
+		);
+		$repo->set( $public, 'privacy', 'dm' );
+		$this->assertSame( array(), $repo->set_privacy_many( array( $public ), 'dm' ) );
+		$this->assertSame( 'public', $repo->get( $public, 'privacy' ) );
+	}
+
 	public function test_dm_rules_apply_size_limit_and_no_duplicate_refusal(): void {
 		wp_set_current_user( $this->sender );
 		update_option( 'mvs_duplicate_action', 'skip' );

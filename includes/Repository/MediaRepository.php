@@ -899,6 +899,22 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string $key      Field name (without _mvs_ prefix).
 	 * @param mixed  $value    Value to store.
 	 */
+	/**
+	 * Would this privacy change cross the 'dm' boundary?
+	 *
+	 * A chat file ('dm') is uploaded by the message rules (types, size, no
+	 * moderation hook), so it may never become another level, and nothing may
+	 * become 'dm' after upload. Every privacy write in this class honours it.
+	 * Basecamp 10392474704.
+	 *
+	 * @param mixed $old Current privacy (null for a new row).
+	 * @param mixed $new Requested privacy.
+	 * @return bool
+	 */
+	private static function crosses_dm( $old, $new ): bool {
+		return null !== $old && (string) $old !== (string) $new && ( 'dm' === (string) $old || 'dm' === (string) $new );
+	}
+
 	public function set( int $media_id, string $key, $value ): void {
 		global $wpdb;
 
@@ -915,6 +931,9 @@ class MediaRepository implements MediaRepositoryInterface {
 						$media_id
 					)
 				);
+				if ( self::crosses_dm( $old_privacy, $value ) ) {
+					return;
+				}
 			}
 
 			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -2957,11 +2976,14 @@ class MediaRepository implements MediaRepositoryInterface {
 		global $wpdb;
 
 		$changed = array();
+		if ( 'dm' === $privacy ) {
+			return $changed; // See crosses_dm().
+		}
 		foreach ( array_chunk( $this->media_ids_only( $media_ids ), self::BATCH_CHUNK ) as $chunk ) {
 			$in  = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
 			$old = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT media_id, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN ({$in}) AND ( privacy <> %s OR privacy IS NULL )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT media_id, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN ({$in}) AND ( privacy <> %s OR privacy IS NULL ) AND ( privacy IS NULL OR privacy <> 'dm' )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					...array_merge( $chunk, array( $privacy ) )
 				),
 				ARRAY_A
@@ -3163,6 +3185,10 @@ class MediaRepository implements MediaRepositoryInterface {
 						$media_id
 					)
 				);
+				if ( self::crosses_dm( $old_privacy, $index_data['privacy'] ) ) {
+					unset( $index_data['privacy'] );
+					$old_privacy = null;
+				}
 			}
 
 			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

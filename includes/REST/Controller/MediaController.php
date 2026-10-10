@@ -1047,6 +1047,18 @@ class MediaController extends WP_REST_Controller {
 				);
 			}
 
+			// A file sent in a message stays a chat file, and nothing becomes one
+			// after upload: 'dm' is uploaded by the message rules (Basecamp
+			// 10392474704). MediaRepository refuses it too; this says so out loud.
+			$current = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+			if ( $clean_privacy !== $current && ( 'dm' === $current || 'dm' === $clean_privacy ) ) {
+				return new WP_Error(
+					'mvs_privacy_dm_fixed',
+					__( 'A file sent in a message keeps the privacy of its conversation.', 'wpmediaverse' ),
+					array( 'status' => 400 )
+				);
+			}
+
 			if ( ! in_array( $clean_privacy, PrivacyService::supported_levels(), true ) ) {
 				return new WP_Error(
 					'mvs_privacy_unsupported',
