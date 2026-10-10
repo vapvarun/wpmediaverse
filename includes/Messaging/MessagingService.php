@@ -190,6 +190,7 @@ class MessagingService {
 			'content_too_long'       => __( 'That message is too long to send.', 'wpmediaverse' ),
 			'empty_content'          => __( 'Your message is empty.', 'wpmediaverse' ),
 			'invalid_recipient'      => __( 'That member could not be found.', 'wpmediaverse' ),
+			'attachment_unavailable' => __( 'That file can’t be sent. It may have been removed or made private.', 'wpmediaverse' ),
 		);
 
 		$message = $messages[ $reason ] ?? __( 'This message could not be delivered.', 'wpmediaverse' );
@@ -914,13 +915,18 @@ class MessagingService {
 	}
 
 	/**
-	 * Whether a user is an active participant of a conversation the given media
-	 * was shared into (as a message media_id or attachment_id).
+	 * Whether a user is an active participant of a conversation the media's
+	 * OWNER shared it into.
 	 *
 	 * Lets the privacy layer grant DM recipients access to media shared with
 	 * them — the conversation membership already gates who can read the message,
 	 * so the attachment must be viewable to the same set. Owner/admin are
 	 * handled earlier in the privacy check; this only covers the recipient side.
+	 *
+	 * Only the owner's own share counts: anyone else posting the id must not
+	 * widen who can see it. attachment_id is not matched either - WordPress
+	 * attachment ids are a different sequence, so a collision granted unrelated
+	 * media. Basecamp 10392490030.
 	 *
 	 * @param int $user_id  Viewer user id.
 	 * @param int $media_id Media id shared in a message.
@@ -928,6 +934,11 @@ class MessagingService {
 	 */
 	public function user_received_media( int $user_id, int $media_id ): bool {
 		if ( $user_id <= 0 || $media_id <= 0 ) {
+			return false;
+		}
+
+		$owner_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		if ( $owner_id <= 0 ) {
 			return false;
 		}
 
@@ -941,17 +952,49 @@ class MessagingService {
 				"SELECT 1
 				   FROM {$msg_table} m
 				   INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id
-				  WHERE ( m.media_id = %d OR m.attachment_id = %d )
+				  WHERE m.media_id = %d
+				    AND m.sender_id = %d
 				    AND p.user_id = %d
 				    AND p.status = 'active'
 				  LIMIT 1",
 				$media_id,
-				$media_id,
+				$owner_id,
 				$user_id
 			)
 		);
 
 		return null !== $found;
+	}
+
+	/**
+	 * Whether a sender may put this message's file into a conversation.
+	 *
+	 * A media item must be one the sender can see (their own, or one its
+	 * privacy shows them); a WordPress attachment must be the sender's own
+	 * upload. Basecamp 10392490030.
+	 *
+	 * @param int   $sender_id Sender user id.
+	 * @param array $data      Message data (media_id, attachment_id).
+	 * @return bool
+	 */
+	private function sender_may_attach( int $sender_id, array $data ): bool {
+		$media_id = (int) ( $data['media_id'] ?? 0 );
+		if ( $media_id > 0 ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			if ( ! $container->get( 'media_repository' )->exists( $media_id ) || ! $container->get( 'privacy' )->can_view( $media_id, $sender_id ) ) {
+				return false;
+			}
+		}
+
+		$attachment_id = (int) ( $data['attachment_id'] ?? 0 );
+		if ( $attachment_id > 0 ) {
+			$attachment = get_post( $attachment_id );
+			if ( ! $attachment || 'attachment' !== $attachment->post_type || (int) $attachment->post_author !== $sender_id ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -1568,6 +1611,17 @@ class MessagingService {
 				'success'    => false,
 				'message_id' => 0,
 				'error'      => 'content_too_long',
+			);
+		}
+
+		// A message may only carry a file its sender can already see. Storing any
+		// id let a member post someone else's private media into their own DM and
+		// read it through the DM grant. Basecamp 10392490030.
+		if ( ! $this->sender_may_attach( $sender_id, $data ) ) {
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'attachment_unavailable',
 			);
 		}
 

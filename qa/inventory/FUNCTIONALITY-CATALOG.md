@@ -1269,7 +1269,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** A message referencing the existing media item is created (not a duplicate upload); the recipient sees an inline preview card for it (`chat-media-card.php`), respecting THEIR own view permission on it.
 - **UX expectation:** If the recipient can't actually view the referenced item (e.g. it later goes private), the card should degrade gracefully, not break the chat rendering.
 - **Settings that change it:** none beyond messaging access rules.
-- **Edge cases:** none beyond the above.
+- **Edge cases:** Only the item's OWNER sharing it widens access: the recipient of the owner's own share may view and download a private item; a member sharing someone else's item gives the recipient nothing beyond the item's own privacy. Sending an item the sender cannot see is refused (403 "That file can't be sent. It may have been removed or made private."), and a WordPress attachment must be the sender's own upload. Check as an outsider: post another member's private media id into your own DM, then read the thread: no media URLs (Basecamp 10392490030).
 
 #### MV-MSG-007 — React to a message
 - **Edition:** Free

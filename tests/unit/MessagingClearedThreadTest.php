@@ -137,6 +137,8 @@ class MessagingClearedThreadTest extends WP_UnitTestCase {
 	public function test_attachment_only_messages_store_typed_previews(): void {
 		global $wpdb;
 		$conv_id = (int) $this->service->find_or_create_conversation( $this->user_a, $this->user_b )['conversation_id'];
+		// The sender's own upload: send_message() refuses a file the sender does not own (10392490030).
+		$attachment_id = self::factory()->attachment->create( array( 'post_author' => $this->user_a ) );
 
 		$cases = array(
 			array( 'image', 'Photo' ),
@@ -151,7 +153,7 @@ class MessagingClearedThreadTest extends WP_UnitTestCase {
 				array(
 					'content'       => '',
 					'message_type'  => $type,
-					'attachment_id' => 12345,
+					'attachment_id' => $attachment_id,
 				)
 			);
 			$this->assertTrue( (bool) $result['success'] );
@@ -169,7 +171,7 @@ class MessagingClearedThreadTest extends WP_UnitTestCase {
 			array(
 				'content'       => '',
 				'message_type'  => 'text',
-				'attachment_id' => 12345,
+				'attachment_id' => $attachment_id,
 			)
 		);
 		$this->assertTrue( (bool) $result['success'] );

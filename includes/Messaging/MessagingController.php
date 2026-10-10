@@ -717,6 +717,7 @@ class MessagingController extends WP_REST_Controller {
 				'account_too_new'        => 403,
 				'mutual_follow_required' => 403,
 				'cannot_message_self'    => 400,
+				'attachment_unavailable' => 403,
 			);
 			$status     = $status_map[ $result['error'] ] ?? 400;
 			return new WP_REST_Response(
