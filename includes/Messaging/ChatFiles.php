@@ -40,7 +40,7 @@ final class ChatFiles {
 	public const HOOK = 'mvs_move_chat_attachments';
 
 	/**
-	 * Progress: array{moved: int, removed: int, failed: int, done: bool}.
+	 * Progress: array{moved: int, removed: int, failed: int, done: bool, retried_at: int}.
 	 */
 	public const OPTION = 'mvs_chat_attachments_moved';
 
@@ -65,6 +65,7 @@ final class ChatFiles {
 		add_action( self::HOOK, array( self::class, 'run_batch' ) );
 		add_action( 'wp_loaded', array( self::class, 'maybe_start' ) );
 		add_action( 'pre_get_posts', array( self::class, 'hide_legacy' ) );
+		add_filter( 'site_status_tests', array( self::class, 'register_health_test' ) );
 	}
 
 	/**
@@ -107,7 +108,19 @@ final class ChatFiles {
 	 * @return void
 	 */
 	public static function maybe_start(): void {
-		if ( self::done() || ! DirectDelivery::is_scheduling_request() ) {
+		if ( ! DirectDelivery::is_scheduling_request() ) {
+			return;
+		}
+		$state = self::state();
+		if ( $state['done'] && $state['failed'] > 0 && $state['retried_at'] < time() - DAY_IN_SECONDS ) {
+			// Files that could not be moved get another try once a day.
+			delete_post_meta_by_key( self::FAILED_META );
+			$state['done']       = false;
+			$state['failed']     = 0;
+			$state['retried_at'] = time();
+			update_option( self::OPTION, $state, true );
+		}
+		if ( $state['done'] ) {
 			return;
 		}
 		$queued = function_exists( 'as_has_scheduled_action' )
@@ -179,6 +192,46 @@ final class ChatFiles {
 			'compare' => 'NOT EXISTS',
 		);
 		$query->set( 'meta_query', $meta );
+	}
+
+	/**
+	 * Tell the owner in Site Health, only while some old chat files could not be moved.
+	 *
+	 * @param array $tests Site Health tests.
+	 * @return array
+	 */
+	public static function register_health_test( $tests ) {
+		if ( (int) self::state()['failed'] > 0 ) {
+			$tests['direct']['wpmediaverse_chat_files'] = array(
+				'label' => __( 'MediaVerse chat files', 'wpmediaverse' ),
+				'test'  => array( self::class, 'health_result' ),
+			);
+		}
+		return $tests;
+	}
+
+	/**
+	 * The Site Health result for chat files that could not be moved.
+	 *
+	 * @return array
+	 */
+	public static function health_result(): array {
+		$failed = (int) self::state()['failed'];
+		return array(
+			'label'       => sprintf(
+				/* translators: %d: number of files. */
+				_n( '%d file sent in messages could not be moved to protected storage', '%d files sent in messages could not be moved to protected storage', $failed, 'wpmediaverse' ),
+				$failed
+			),
+			'status'      => 'recommended',
+			'badge'       => array(
+				'label' => __( 'Privacy', 'wpmediaverse' ),
+				'color' => 'orange',
+			),
+			'description' => '<p>' . esc_html__( 'Files sent in messages before MediaVerse 2.6.2 are being moved so only the people in the conversation can open them. These could not be moved yet. They are hidden from every media list, but their old web address still works. MediaVerse tries again once a day; the reason for each one is under Tools > MediaVerse Logs (messaging).', 'wpmediaverse' ) . '</p>',
+			'actions'     => '',
+			'test'        => 'wpmediaverse_chat_files',
+		);
 	}
 
 	/**
@@ -308,16 +361,17 @@ final class ChatFiles {
 	/**
 	 * Current progress.
 	 *
-	 * @return array{moved: int, removed: int, failed: int, done: bool}
+	 * @return array{moved: int, removed: int, failed: int, done: bool, retried_at: int}
 	 */
 	private static function state(): array {
 		return wp_parse_args(
 			(array) get_option( self::OPTION, array() ),
 			array(
-				'moved'   => 0,
-				'removed' => 0,
-				'failed'  => 0,
-				'done'    => false,
+				'moved'      => 0,
+				'removed'    => 0,
+				'failed'     => 0,
+				'done'       => false,
+				'retried_at' => 0,
 			)
 		);
 	}

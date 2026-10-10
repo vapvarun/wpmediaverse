@@ -140,6 +140,30 @@ class ChatFilesTest extends WP_UnitTestCase {
 		$this->assertNotContains( $attachment, $listed, 'Fail closed: still hidden.' );
 	}
 
+	public function test_a_failed_move_is_retried_daily_and_shows_in_site_health_until_it_works(): void {
+		$attachment = $this->legacy_attachment();
+		$message    = $this->legacy_message( $attachment );
+		$no_jpeg    = static function () {
+			return array( 'video/mp4' );
+		};
+		add_filter( 'mvs_dm_allowed_file_types', $no_jpeg );
+		ChatFiles::run_batch();
+		remove_filter( 'mvs_dm_allowed_file_types', $no_jpeg );
+
+		$tests = ChatFiles::register_health_test( array( 'direct' => array() ) );
+		$this->assertArrayHasKey( 'wpmediaverse_chat_files', $tests['direct'] );
+		$this->assertSame( 'recommended', ChatFiles::health_result()['status'] );
+
+		// Retried from an admin page load (never a visitor request).
+		set_current_screen( 'dashboard' );
+		ChatFiles::maybe_start();
+		$this->assertFalse( get_option( ChatFiles::OPTION )['done'], 'Retry queued.' );
+		ChatFiles::run_batch();
+		$this->assertSame( 'moved', $this->message( $message )->media_id ? 'moved' : 'not moved' );
+		$this->assertSame( 0, get_option( ChatFiles::OPTION )['failed'] );
+		$this->assertArrayNotHasKey( 'wpmediaverse_chat_files', ChatFiles::register_health_test( array( 'direct' => array() ) )['direct'] );
+	}
+
 	public function test_unsending_removes_the_chat_file_unless_another_message_shows_it(): void {
 		$upload = Plugin::container()->get( 'upload' );
 		add_filter( 'mvs_upload_skip_move_uploaded_file_check', '__return_true' );
