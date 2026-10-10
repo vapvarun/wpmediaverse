@@ -2479,6 +2479,14 @@
       },
       "unchanged": "REST routes, AJAX actions, tables, cron, WP-CLI, Free services consumed (reports and media_repository already listed)",
       "verified_against_pro_head": "1f78fa6"
+    },
+    "refresh_2026_10_10": {
+      "scope": "targeted (2.6.2: Top 10 completion rate, Basecamp 10386996875)",
+      "added": {},
+      "changed": [
+        "AnalyticsService::get_top_media reads all event types; completions = distinct completed sessions"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks, public methods"
     }
   },
   "category_sources": {
