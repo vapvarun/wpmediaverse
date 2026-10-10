@@ -6796,6 +6796,15 @@
         "ChatFiles hooks rest_request_before_callbacks"
       ],
       "unchanged": "routes, hooks fired, settings, tables"
+    },
+    "refresh_2026_10_10_chat_files_parity": {
+      "scope": "targeted (2.6.2: old chat files hidden on every route)",
+      "added": {},
+      "changed": [
+        "ChatFiles::hide_legacy_item keys on the attachments controller + parsed id",
+        "ChatFiles::hide_legacy covers post_type any"
+      ],
+      "unchanged": "routes, hooks fired, settings, tables"
     }
   },
   "category_sources": {
