@@ -6822,6 +6822,14 @@
         "MediaRepository::gallery_exclude_subquery hides a member only while its cover is published, approved and equally visible"
       ],
       "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_10_reaction_notify_once": {
+      "scope": "targeted (2.6.2: reaction notification once per member per item)",
+      "added": {},
+      "changed": [
+        "NotificationService::on_reaction skips an existing media_reaction row for the same owner, actor and item"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
     }
   },
   "category_sources": {
