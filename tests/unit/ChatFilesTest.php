@@ -124,6 +124,23 @@ class ChatFilesTest extends WP_UnitTestCase {
 		) )->posts;
 		$this->assertNotContains( $legacy, $any );
 
+		// Site search (post_type 'any' is set after pre_get_posts).
+		$search = new \WP_Query();
+		$found  = $search->query(
+			array(
+				's'      => get_the_title( $legacy ),
+				'fields' => 'ids',
+			)
+		);
+		$this->assertNotContains( $legacy, $found );
+
+		// The first request marks old chat files private, so WordPress itself
+		// keeps them out of oEmbed, attachment pages and the REST API.
+		ChatFiles::privatize_legacy();
+		$this->assertSame( 'private', get_post_status( $legacy ) );
+		$this->assertNotSame( 'private', get_post_status( $normal ), 'Ordinary attachments are untouched.' );
+		$this->assertTrue( get_option( ChatFiles::OPTION )['private'] );
+
 		// The single-item route answers like a missing id (ids are sequential).
 		wp_set_current_user( 0 );
 		$this->assertSame( 404, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $legacy ) )->get_status() );

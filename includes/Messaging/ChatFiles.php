@@ -40,7 +40,7 @@ final class ChatFiles {
 	public const HOOK = 'mvs_move_chat_attachments';
 
 	/**
-	 * Progress: array{moved: int, removed: int, failed: int, done: bool, retried_at: int}.
+	 * Progress: array{moved: int, removed: int, failed: int, done: bool, retried_at: int, private: bool}.
 	 */
 	public const OPTION = 'mvs_chat_attachments_moved';
 
@@ -63,6 +63,7 @@ final class ChatFiles {
 	public static function register(): void {
 		add_action( 'mvs_message_deleted', array( self::class, 'on_message_deleted' ), 10, 1 );
 		add_action( self::HOOK, array( self::class, 'run_batch' ) );
+		add_action( 'init', array( self::class, 'privatize_legacy' ), 20 );
 		add_action( 'wp_loaded', array( self::class, 'maybe_start' ) );
 		add_action( 'pre_get_posts', array( self::class, 'hide_legacy' ) );
 		add_filter( 'rest_request_before_callbacks', array( self::class, 'hide_legacy_item' ), 10, 3 );
@@ -100,6 +101,33 @@ final class ChatFiles {
 		if ( $attachment_id > 0 && ! self::still_shown( 'attachment_id', $attachment_id, (int) $message_id ) && self::is_legacy_chat_file( $attachment_id, $sender ) ) {
 			wp_delete_attachment( $attachment_id, true );
 		}
+	}
+
+	/**
+	 * Mark every old chat attachment private, once, on the first request after
+	 * the update. WordPress then keeps them out of search, oEmbed, attachment
+	 * pages and the REST API for anyone who may not read private posts: every
+	 * sibling route at once, the core way, before the move has even started.
+	 * One UPDATE, then a flag; a no-op on every request after.
+	 *
+	 * @return void
+	 */
+	public static function privatize_legacy(): void {
+		$state = self::state();
+		if ( $state['private'] || ( $state['done'] && 0 === (int) $state['failed'] ) ) {
+			return;
+		}
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s", StorageLimitService::DM_SIZE_META ) ) );
+		foreach ( array_chunk( $ids, 500 ) as $chunk ) {
+			$in = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->posts} SET post_status = 'private' WHERE post_type = 'attachment' AND ID IN ({$in})", ...$chunk ) );
+			array_map( 'clean_post_cache', $chunk );
+		}
+		$state['private'] = true;
+		update_option( self::OPTION, $state, true );
 	}
 
 	/**
@@ -183,9 +211,10 @@ final class ChatFiles {
 		if ( ! $query instanceof \WP_Query ) {
 			return;
 		}
-		// 'any' too: site search and other mixed queries include attachments.
+		// 'any' and search too: site search sets post_type 'any' only after this
+		// hook runs, and includes attachments.
 		$types = (array) $query->get( 'post_type' );
-		if ( ! in_array( 'attachment', $types, true ) && ! in_array( 'any', $types, true ) ) {
+		if ( ! in_array( 'attachment', $types, true ) && ! in_array( 'any', $types, true ) && ! $query->is_search() ) {
 			return;
 		}
 		$state = self::state();
@@ -394,7 +423,7 @@ final class ChatFiles {
 	/**
 	 * Current progress.
 	 *
-	 * @return array{moved: int, removed: int, failed: int, done: bool, retried_at: int}
+	 * @return array{moved: int, removed: int, failed: int, done: bool, retried_at: int, private: bool}
 	 */
 	private static function state(): array {
 		return wp_parse_args(
@@ -405,6 +434,7 @@ final class ChatFiles {
 				'failed'     => 0,
 				'done'       => false,
 				'retried_at' => 0,
+				'private'    => false,
 			)
 		);
 	}
