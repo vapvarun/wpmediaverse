@@ -2536,6 +2536,9 @@ class Plugin {
 		$messaging_service = new \WPMediaVerse\Messaging\MessagingService();
 		$listener          = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
 
+		// Before the switch: old chat files are public whether Messages is on or off.
+		\WPMediaVerse\Messaging\ChatFiles::register();
+
 		if ( ! self::messaging_enabled() ) {
 			// Off: the engine never boots, so nothing listens (no routes, panel,
 			// page or `messaging` service - BuddyNext reads that as "no messaging").
