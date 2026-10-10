@@ -4647,10 +4647,9 @@ class MediaRepository implements MediaRepositoryInterface {
 				return array( "m.privacy = 'public'", array() );
 			case 'explore':
 				// The explore/feed-layout rule, which is NOT the same as 'visible':
-				// it grants moderators everything, and it does not exclude the
-				// viewer's own `dm` attachments. Both differences are load-bearing,
-				// so the Pro layouts get this mode rather than being quietly
-				// remapped onto 'visible' and narrowing what a moderator sees.
+				// it grants moderators everything except chat files, so the Pro
+				// layouts get this mode rather than being quietly remapped onto
+				// 'visible' and narrowing what a moderator sees.
 				return $this->explore_privacy_clause( 'm', $viewer_id );
 			case 'visible':
 				// Owner sees their own media EXCEPT conversation-scoped 'dm'
@@ -5446,7 +5445,8 @@ class MediaRepository implements MediaRepositoryInterface {
 			return array( "{$prefix}privacy = 'public'", array() );
 		}
 		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
-			return array( '1 = 1', array() );
+			// Everything but chat files, which live only in their conversation.
+			return array( self::not_dm_sql( $prefix ), array() );
 		}
 		return $this->member_privacy_clause( $alias, $viewer_id );
 	}
@@ -5473,12 +5473,24 @@ class MediaRepository implements MediaRepositoryInterface {
 		// rule PrivacyService::can_view() applies to the single item; without it
 		// every list failed closed (Basecamp 10354828096). Served by the
 		// follower_following unique key.
+		// A chat file is never listed, not even to its sender: it lives only in
+		// the conversation, as in any messenger (Basecamp 10392976206).
 		global $wpdb;
 		return array(
 			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d"
-				. " OR ( {$prefix}privacy = 'followers' AND {$prefix}post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ) ))",
+				. " OR ( {$prefix}privacy = 'followers' AND {$prefix}post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ) ))"
+				. ' AND ' . self::not_dm_sql( $prefix ),
 			array( $viewer_id, $viewer_id ),
 		);
+	}
+
+	/**
+	 * SQL that keeps chat ('dm') files out of a listing; NULL privacy stays listed.
+	 *
+	 * @param string $prefix Column prefix ('' or 'alias.').
+	 */
+	private static function not_dm_sql( string $prefix ): string {
+		return "( {$prefix}privacy IS NULL OR {$prefix}privacy <> 'dm' )";
 	}
 
 	/**
