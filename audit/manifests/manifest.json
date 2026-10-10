@@ -6735,6 +6735,27 @@
         "MediaRepository privacy writers refuse changes to or from dm"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_chat_files": {
+      "scope": "targeted (2.6.2: chat file lifecycle, Basecamp 10392474704)",
+      "added": {
+        "classes": [
+          "Messaging\\ChatFiles"
+        ],
+        "options": [
+          "mvs_chat_attachments_moved"
+        ],
+        "background_jobs": [
+          "mvs_move_chat_attachments (Action Scheduler, WP-Cron fallback)"
+        ],
+        "post_meta": [
+          "_mvs_dm_move_failed"
+        ]
+      },
+      "changed": [
+        "mvs_message_deleted now also removes the deleted message own chat file"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, WP-CLI, fired hooks"
     }
   },
   "category_sources": {
