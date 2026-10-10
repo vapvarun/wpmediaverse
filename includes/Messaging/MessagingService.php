@@ -1689,7 +1689,8 @@ class MessagingService {
 			$insert_formats[]        = '%d';
 		}
 
-		if ( ! empty( $data['parent_id'] ) ) {
+		// A reply may only point at a message in this conversation (Basecamp 10393041312).
+		if ( ! empty( $data['parent_id'] ) && $conversation_id === (int) $wpdb->get_var( $wpdb->prepare( "SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d", (int) $data['parent_id'] ) ) ) {
 			$insert_data['parent_id'] = (int) $data['parent_id'];
 			$insert_formats[]         = '%d';
 		}
@@ -2109,7 +2110,7 @@ class MessagingService {
 
 			// Get parent message preview for reply-to.
 			if ( $msg->parent_id ) {
-				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
+				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id, (int) $msg->conversation_id );
 			}
 
 			// Add sender info.
@@ -2138,10 +2139,12 @@ class MessagingService {
 	/**
 	 * Get a brief preview of a message (for reply-to).
 	 *
-	 * @param int $message_id Message ID.
+	 * @param int $message_id      Message ID.
+	 * @param int $conversation_id Conversation the preview is shown in; when set, a
+	 *                             message from any other conversation yields null.
 	 * @return array|null
 	 */
-	public function get_message_preview( int $message_id ) {
+	public function get_message_preview( int $message_id, int $conversation_id = 0 ) {
 		global $wpdb;
 
 		$msg_table = $wpdb->prefix . 'mvs_messages';
@@ -2149,12 +2152,13 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$msg = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT id, sender_id, content, message_type, deleted_for_all FROM {$msg_table} WHERE id = %d",
+				"SELECT id, conversation_id, sender_id, content, message_type, deleted_for_all FROM {$msg_table} WHERE id = %d",
 				$message_id
 			)
 		);
 
-		if ( ! $msg ) {
+		// Also hides rows stored before send_message() checked the conversation.
+		if ( ! $msg || ( $conversation_id > 0 && (int) $msg->conversation_id !== $conversation_id ) ) {
 			return null;
 		}
 
@@ -3075,7 +3079,7 @@ class MessagingService {
 				$this->attach_from_media( $msg );
 			}
 			if ( $msg->parent_id ) {
-				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
+				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id, (int) $msg->conversation_id );
 			}
 		}
 
