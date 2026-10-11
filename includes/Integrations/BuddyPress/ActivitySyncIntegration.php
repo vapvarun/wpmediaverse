@@ -53,6 +53,7 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 		add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
+		add_action( 'mvs_media_before_delete', array( $this, 'remember_activity_of_deleted_media' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
@@ -643,17 +644,12 @@ class ActivitySyncIntegration {
 			return;
 		}
 
-		$attached_csv = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
-		if ( $attached_csv ) {
-			$attached_ids = array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) );
-			if ( count( $attached_ids ) > 1 ) {
-				$effective_privacy = self::effective_privacy_for_batch( $attached_ids );
-			} else {
-				$effective_privacy = self::effective_privacy_for_media( $media_id );
-			}
-		} else {
-			$effective_privacy = self::effective_privacy_for_media( $media_id );
-		}
+		// The post takes its most restrictive item, not the one that changed last
+		// (Basecamp 10392976094).
+		$attached_ids      = $this->activity_media_ids( $activity_id );
+		$effective_privacy = count( $attached_ids ) > 1
+			? self::effective_privacy_for_batch( $attached_ids )
+			: self::effective_privacy_for_media( $media_id );
 
 		$desired_hide = self::privacy_to_hide_sitewide( $effective_privacy );
 
@@ -750,38 +746,42 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Whether an activity is about ONLY this media.
+	 * Note the post a media item is on before its meta is deleted.
 	 *
-	 * Reads the activity's `_mvs_media_ids` list, which the composer writes for
-	 * every multi-image post. Any surviving id other than this one means the
-	 * activity is a shared post and must NOT be deleted just because one of its
-	 * photos is going away.
-	 *
-	 * Absent or empty meta means a standalone upload activity (the
-	 * `mvs_media_upload` type never carries the list), so the answer is true and
-	 * the historical behaviour is preserved for that case.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param int $activity_id Activity to inspect.
-	 * @param int $media_id    Media being deleted.
-	 * @return bool True when nothing else is attached.
+	 * @param int $media_id Media ID about to be deleted.
 	 */
-	private function activity_has_no_other_media( int $activity_id, int $media_id ): bool {
-		if ( ! function_exists( 'bp_activity_get_meta' ) ) {
-			return true;
+	public function remember_activity_of_deleted_media( int $media_id ): void {
+		$post_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
+		if ( $post_id > 0 ) {
+			self::$deleted_media_activity[ $media_id ] = $post_id;
 		}
+	}
 
-		$raw = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+	/**
+	 * Post id of each media being deleted, read while its meta still exists.
+	 *
+	 * @var array<int,int>
+	 */
+	private static array $deleted_media_activity = array();
 
-		if ( '' === (string) $raw ) {
-			return true;
-		}
+	/**
+	 * The media shown on a post, optionally without one item.
+	 *
+	 * Composer posts list them in `_mvs_media_ids`; an upload-page batch does
+	 * not, but each of its items stores the post id as `bp_activity_id`. Reading
+	 * only the CSV made deleting one photo of a batch delete the whole post.
+	 *
+	 * @param int $activity_id BP activity ID.
+	 * @param int $without     Media ID to leave out (0 = none).
+	 * @return int[]
+	 */
+	private function activity_media_ids( int $activity_id, int $without = 0 ): array {
+		$raw = function_exists( 'bp_activity_get_meta' ) ? (string) bp_activity_get_meta( $activity_id, '_mvs_media_ids', true ) : '';
+		$ids = '' !== $raw
+			? array_map( 'intval', explode( ',', $raw ) )
+			: array_map( 'intval', wp_list_pluck( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->query_by_meta( 'bp_activity_id', (string) $activity_id, 100 ), 'media_id' ) );
 
-		$ids   = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
-		$other = array_diff( $ids, array( $media_id ) );
-
-		return empty( $other );
+		return array_values( array_diff( array_filter( $ids ), array( $without ) ) );
 	}
 
 	/**
@@ -830,19 +830,34 @@ class ActivitySyncIntegration {
 		// So: only delete when this media is the ONLY thing the activity is
 		// about. When other media still point at it, fall through to step 3,
 		// which drops this one from the list and rewrites the grid.
-		$stored_activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
-		if ( $stored_activity_id > 0 && $this->activity_has_no_other_media( $stored_activity_id, $media_id ) ) {
-			bp_activity_delete( array( 'id' => $stored_activity_id ) );
+		// The post this item was on (read before the delete, see
+		// remember_activity_of_deleted_media()) plus the upload post whose
+		// item_id is this media: an upload-page batch post carries its COVER's
+		// id there, so deleting the cover used to delete the whole post.
+		// component=wpmediaverse: a group upload's item_id is the GROUP id.
+		$posts = array(
+			(int) ( self::$deleted_media_activity[ $media_id ] ?? 0 ),
+			(int) bp_activity_get_activity_id(
+				array(
+					'component' => 'wpmediaverse',
+					'type'      => 'mvs_media_upload',
+					'item_id'   => $media_id,
+				)
+			),
+		);
+		unset( self::$deleted_media_activity[ $media_id ] );
+		foreach ( array_unique( array_filter( $posts ) ) as $post_id ) {
+			$others = $this->activity_media_ids( $post_id, $media_id );
+			if ( $others ) {
+				// The post stays for its other items; its privacy follows them.
+				$this->update_single_activity_hide_sitewide( $others[0] );
+			} else {
+				bp_activity_delete( array( 'id' => $post_id ) );
+			}
 		}
 
-		// 2. Any other activities still pointing at this media via item_id or
-		// secondary_item_id (covers legacy rows where the back-ref was lost).
-		bp_activity_delete(
-			array(
-				'type'    => 'mvs_media_upload',
-				'item_id' => $media_id,
-			)
-		);
+		// 2. Group upload activities pointing at this media via secondary_item_id
+		// (covers legacy rows where the back-ref was lost).
 		bp_activity_delete(
 			array(
 				'component'         => 'groups',

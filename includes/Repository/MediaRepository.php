@@ -6528,6 +6528,16 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool {
 		global $wpdb;
 
+		/**
+		 * Fires before a media item and its meta are deleted, while every field
+		 * can still be read (mvs_media_deleted fires after the rows are gone).
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int $media_id Media ID about to be deleted.
+		 */
+		do_action( 'mvs_media_before_delete', $media_id );
+
 		// Author + permalink captured before the index row is deleted, so the
 		// mvs_media_deleted hook (fired at the end, once the slug row is gone)
 		// can still carry them. The permalink is slug-based, so a listener CANNOT
