@@ -2419,7 +2419,10 @@ const { state: mvsState } = store( 'mvs', {
 				// blank page. Detect the empty swap and fall back to a full load
 				// so the user never sees a blank screen. (#10033416011)
 				const region = document.querySelector( '[data-wp-router-region="mvs/main"]' );
-				if ( ! region || region.children.length === 0 ) {
+				// A page whose content needs scripts this page never loaded (the PDF
+				// viewer) marks itself data-mvs-full-load; the router swaps markup,
+				// not scripts, so load it for real (Basecamp 10392988289).
+				if ( ! region || region.children.length === 0 || region.querySelector( '[data-mvs-full-load]' ) ) {
 					window.location.href = href;
 					return;
 				}
