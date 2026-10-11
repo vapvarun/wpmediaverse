@@ -6900,6 +6900,11 @@
         "MediaListPage: redundant deletes removed; publish_at scheduled branch removed; ViewRetentionService prune_views batched",
         "AiSettingsRegistrar: WPCS class brace (no behaviour change)"
       ],
+      "code_standard": [
+        "Comments only across includes/, src/, assets/js, tests: docblocks moved onto their methods, card ids and history narration out (token streams unchanged)",
+        "coding-rules Rules 9-11 (bin/lib/code-standard-check.php, baseline audit/cleanup/code-standard-baseline.txt)",
+        "PHPStan level 6 with regenerated baseline"
+      ],
       "unchanged": "routes, settings, tables"
     }
   },

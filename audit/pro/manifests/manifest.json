@@ -2525,7 +2525,9 @@
         "Requires PHP 8.1",
         "Group C: Frontend\\FeatureOffNotice (one feature-off notice; members get the empty state), Admin\\EmptyState + templates/admin/partials/empty-state.php, bulk privacy calls Free apply_requested_privacy()",
         "Group D: DeliveryController::stream uses readable_path(); BoostService::record_impression deprecated",
-        "CompeteHubRenderer, TournamentManager: WPCS class brace (no behaviour change)"
+        "CompeteHubRenderer, TournamentManager: WPCS class brace (no behaviour change)",
+        "Code standard: comments only (docblocks placed, card ids and history out), code-standard checks in coding-rules, PHPStan level 6",
+        "AnalyticsDashboard: Top Media Tracked card removed (counted a top-5 list)"
       ],
       "unchanged": "routes, hooks, settings, tables"
     }
