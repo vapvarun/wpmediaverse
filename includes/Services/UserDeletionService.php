@@ -27,6 +27,13 @@ class UserDeletionService {
 	public const CASCADE_HOOK = 'mvs_user_deletion_cascade';
 
 	/**
+	 * Action Scheduler hook that finishes erasing a member's rows.
+	 *
+	 * @since 2.6.2
+	 */
+	public const PURGE_HOOK = 'mvs_user_deletion_purge';
+
+	/**
 	 * Action Scheduler group, matching every other AS job in this plugin.
 	 */
 	private const AS_GROUP = 'wpmediaverse';
@@ -49,6 +56,7 @@ class UserDeletionService {
 		// with only media was never asked and lost it all.
 		add_filter( 'users_have_additional_content', array( $this, 'users_have_media' ), 10, 2 );
 		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 ); // 1 arg from 2.6.2, 2 for older jobs.
+		add_action( self::PURGE_HOOK, array( $this, 'purge_member_rows' ) );
 	}
 
 	/**
@@ -320,13 +328,7 @@ class UserDeletionService {
 		// runs. Rows a member does not own outright (reports, conversations they
 		// started, ledger rows) are kept and anonymised. Batched per pass, so it
 		// runs until a pass finds nothing; media is left to the cascade above.
-		$purger = new \WPMediaVerse\Privacy\MemberPurger();
-		for ( $pass = 0; $pass < 100; $pass++ ) {
-			$counts = $purger->purge( $user_id );
-			if ( 0 === $counts['removed'] + $counts['retained'] ) {
-				break;
-			}
-		}
+		$this->purge_member_rows( $user_id );
 
 		// Conversations that just lost their last participant are dead shells:
 		// remove them and any residual messages. The per-user purge above clears
@@ -410,6 +412,40 @@ class UserDeletionService {
 		foreach ( $media_ids as $media_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
 		}
+	}
+
+	/**
+	 * Erase a member from every mapped table, however many rows they have.
+	 *
+	 * The purge works in batches; this runs passes until one finds nothing.
+	 * When the request's share runs out with rows left, the rest continues in a
+	 * background job, so erasure never stops part way.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $user_id Member being erased.
+	 */
+	public function purge_member_rows( int $user_id ): void {
+		if ( $user_id <= 0 ) {
+			return;
+		}
+		$purger = new \WPMediaVerse\Privacy\MemberPurger();
+		for ( $pass = 0; $pass < 40; $pass++ ) {
+			$counts = $purger->purge( $user_id );
+			if ( 0 === $counts['removed'] + $counts['retained'] ) {
+				return;
+			}
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action( self::PURGE_HOOK, array( $user_id ), self::AS_GROUP );
+			return;
+		}
+
+		// No queue: finish now rather than leave rows behind.
+		do {
+			$counts = $purger->purge( $user_id );
+		} while ( $counts['removed'] + $counts['retained'] > 0 );
 	}
 
 	/**

@@ -50,6 +50,7 @@ class Deactivator {
 		'mvs_cloud_sync_media',
 		'mvs_cloud_repatriate_media',
 		'mvs_user_deletion_cascade',
+		'mvs_user_deletion_purge',
 		'mvs_tag_merge_batch',
 	);
 
