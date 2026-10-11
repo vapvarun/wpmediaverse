@@ -407,6 +407,10 @@ class NotificationService {
 	 * @param int $following_id Followed user.
 	 */
 	public function on_follow( int $follower_id, int $following_id ): void {
+		// Unfollow and follow again must not notify twice, as with reactions.
+		if ( $this->already_notified( $following_id, $follower_id, 'new_follower' ) ) {
+			return;
+		}
 		$this->create( $following_id, 'new_follower', $follower_id );
 	}
 
@@ -422,21 +426,35 @@ class NotificationService {
 
 		// One "reacted to" per member per item: removing a reaction and reacting
 		// again must not notify the owner twice (Basecamp 10392589159).
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$already = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT 1 FROM {$wpdb->prefix}mvs_notifications WHERE media_id = %d AND user_id = %d AND actor_id = %d AND type = 'media_reaction' LIMIT 1",
-				$media_id,
-				$owner,
-				$user_id
-			)
-		);
-		if ( null !== $already ) {
+		if ( $this->already_notified( $owner, $user_id, 'media_reaction', $media_id ) ) {
 			return;
 		}
 
 		$this->create( $owner, 'media_reaction', $user_id, $media_id );
+	}
+
+	/**
+	 * Whether this actor already notified this member of this kind of event
+	 * (about this item, when one is given). Toggling an action off and on must
+	 * not notify twice (Basecamp 10393276031).
+	 *
+	 * @param int    $user_id  Recipient.
+	 * @param int    $actor_id Actor.
+	 * @param string $type     Notification type.
+	 * @param int    $media_id Item, 0 for none.
+	 */
+	private function already_notified( int $user_id, int $actor_id, string $type, int $media_id = 0 ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		return null !== $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->prefix}mvs_notifications WHERE media_id = %d AND user_id = %d AND actor_id = %d AND type = %s LIMIT 1",
+				$media_id,
+				$user_id,
+				$actor_id,
+				$type
+			)
+		);
 	}
 
 	/**
@@ -495,6 +513,9 @@ class NotificationService {
 	 */
 	public function on_favorite( int $media_id, int $user_id ): void {
 		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		if ( $this->already_notified( $owner, $user_id, 'media_favorite', $media_id ) ) {
+			return;
+		}
 		$this->create( $owner, 'media_favorite', $user_id, $media_id );
 	}
 
