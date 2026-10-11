@@ -579,4 +579,27 @@ interface MediaRepositoryInterface {
 	 * @return array<int, array{author_id:int, status:string, moderation_status:string}>
 	 */
 	public function status_columns_many( array $media_ids ): array;
+
+	/**
+	 * The media id a permalink points at: the reverse of get_permalink().
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $url URL.
+	 * @return int Media id, 0 for none.
+	 */
+	public function id_from_permalink( string $url ): int;
+
+	/**
+	 * Move a media item to another drive (and folder).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param string $drive_type Drive type.
+	 * @param int    $drive_id   Drive id.
+	 * @param int    $folder_id  Folder, 0 for the root.
+	 * @return bool
+	 */
+	public function move_to_drive( int $media_id, string $drive_type, int $drive_id, int $folder_id = 0 ): bool;
 }

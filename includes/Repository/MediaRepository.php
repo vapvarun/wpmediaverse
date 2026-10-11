@@ -6284,10 +6284,120 @@ class MediaRepository implements MediaRepositoryInterface {
 	 */
 	public function get_permalink( int $media_id ): string {
 		$slug = $this->get( $media_id, 'slug' );
-		if ( $slug ) {
-			return home_url( '/media/' . $slug . '/' );
+		$url  = $slug ? home_url( '/media/' . $slug . '/' ) : home_url( '/media/' . $media_id . '/' );
+
+		/**
+		 * Filters a media item's permalink.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param string $url      Permalink.
+		 * @param int    $media_id Media id.
+		 */
+		return (string) apply_filters( 'mvs_media_permalink', $url, $media_id );
+	}
+
+	/**
+	 * The media id a permalink points at: the reverse of get_permalink().
+	 *
+	 * For plugins that hold links to media (notifications, imported posts) and
+	 * need the item back, instead of matching the URL shape themselves.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $url Absolute or root-relative URL.
+	 * @return int Media id, 0 when the URL is not a media permalink.
+	 */
+	public function id_from_permalink( string $url ): int {
+		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+		$base = (string) wp_parse_url( home_url( '/media/' ), PHP_URL_PATH );
+		$id   = 0;
+
+		if ( '' !== $path && 0 === strpos( trailingslashit( $path ), $base ) ) {
+			$rest = rawurldecode( trim( substr( $path, strlen( $base ) ), '/' ) );
+			if ( '' !== $rest && false === strpos( $rest, '/' ) && '@' !== $rest[0] ) {
+				if ( ctype_digit( $rest ) && $this->exists( (int) $rest ) ) {
+					$id = (int) $rest;
+				} else {
+					$row = $this->get_by_slug( $rest );
+					$id  = $row ? (int) ( is_array( $row ) ? ( $row['media_id'] ?? 0 ) : ( $row->media_id ?? 0 ) ) : 0;
+				}
+			}
 		}
-		return home_url( '/media/' . $media_id . '/' );
+
+		/**
+		 * Filters the media id resolved from a permalink.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int    $id  Media id, 0 for none.
+		 * @param string $url The URL asked about.
+		 */
+		return (int) apply_filters( 'mvs_media_id_from_permalink', $id, $url );
+	}
+
+	/**
+	 * Move a media item or document to another drive (and folder).
+	 *
+	 * The one writer of the drive columns for other plugins: moving a space's
+	 * file back to its owner, filing an upload into a space. It moves only the
+	 * location; privacy is changed through PrivacyService::apply_requested_privacy()
+	 * so the album and chat-file rules still apply.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param string $drive_type 'user', 'space' or another registered drive type.
+	 * @param int    $drive_id   Owner id for 'user', the drive's id otherwise.
+	 * @param int    $folder_id  Folder inside that drive, 0 for its root.
+	 * @return bool Whether the item moved.
+	 */
+	public function move_to_drive( int $media_id, string $drive_type, int $drive_id, int $folder_id = 0 ): bool {
+		$drive_type = sanitize_key( $drive_type );
+		if ( ! $this->exists( $media_id ) || '' === $drive_type || $drive_id <= 0 ) {
+			return false;
+		}
+		$from = array(
+			'drive_type' => (string) $this->get( $media_id, 'drive_type' ),
+			'drive_id'   => (int) $this->get( $media_id, 'drive_id' ),
+		);
+
+		/**
+		 * Filters whether a media item may move to a drive.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool   $allowed    Default true.
+		 * @param int    $media_id   Media id.
+		 * @param string $drive_type Target drive type.
+		 * @param int    $drive_id   Target drive id.
+		 * @param int    $folder_id  Target folder.
+		 */
+		if ( ! apply_filters( 'mvs_can_move_to_drive', true, $media_id, $drive_type, $drive_id, $folder_id ) ) {
+			return false;
+		}
+
+		$this->set_many(
+			$media_id,
+			array(
+				'drive_type' => $drive_type,
+				'drive_id'   => $drive_id,
+				'folder_id'  => max( 0, $folder_id ),
+			)
+		);
+
+		/**
+		 * Fires after a media item moved to another drive.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int    $media_id   Media id.
+		 * @param string $drive_type New drive type.
+		 * @param int    $drive_id   New drive id.
+		 * @param array  $from       Previous `drive_type` and `drive_id`.
+		 */
+		do_action( 'mvs_media_moved_to_drive', $media_id, $drive_type, $drive_id, $from );
+		return true;
 	}
 
 	/**

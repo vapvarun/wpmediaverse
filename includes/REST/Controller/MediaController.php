@@ -253,6 +253,25 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /media/{id}/spaces - the spaces an item is linked into (2.6.2), for
+		// a community plugin that shows where a document lives.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/spaces',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_item_spaces' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
 		// GET /media/{id}/access — check access.
 		register_rest_route(
 			$this->namespace,
@@ -1966,6 +1985,26 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to upload media.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 		return true;
+	}
+
+	/**
+	 * The spaces an item is linked into (GET /media/{id}/spaces).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function get_item_spaces( $request ): WP_REST_Response {
+		$media_id = (int) $request->get_param( 'id' );
+		$spaces   = \WPMediaVerse\Core\Plugin::container()->get( 'media_space_repository' )->spaces_for_media( $media_id );
+
+		return rest_ensure_response(
+			array(
+				'media_id'  => $media_id,
+				'space_ids' => array_values( array_map( 'intval', (array) $spaces ) ),
+			)
+		);
 	}
 
 	/**
