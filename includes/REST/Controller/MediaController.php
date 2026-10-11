@@ -2033,11 +2033,7 @@ class MediaController extends WP_REST_Controller {
 			return $not_found;
 		}
 
-		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( $own_cap ) ) {
-			return true;
-		}
-
-		if ( current_user_can( $others_cap ) ) {
+		if ( \WPMediaVerse\Capabilities\MediaCapabilities::can_edit_media( $media_id, $user_id, $own_cap, $others_cap ) ) {
 			return true;
 		}
 

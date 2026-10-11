@@ -65,6 +65,42 @@ class MediaCapabilities {
 	const USE_DOCUMENTS_CAP = 'use_mvs_documents';
 
 	/**
+	 * Whether a member may edit one media item.
+	 *
+	 * The one rule for every edit (title, captions, chapters, privacy): the owner
+	 * may edit their own when their role allows editing media; anyone else needs
+	 * the "edit others' media" capability.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param int    $user_id    Member.
+	 * @param string $own_cap    Capability for the owner's own item.
+	 * @param string $others_cap Capability for anyone's item.
+	 * @return bool
+	 */
+	public static function can_edit_media( int $media_id, int $user_id, string $own_cap = 'edit_mvs_medias', string $others_cap = 'edit_others_mvs_medias' ): bool {
+		$allowed = false;
+		if ( $user_id > 0 && $media_id > 0 ) {
+			$owner   = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
+			$allowed = ( $owner === $user_id && user_can( $user_id, $own_cap ) ) || user_can( $user_id, $others_cap );
+		}
+
+		/**
+		 * Filters whether a member may edit a media item.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool   $allowed    Whether editing is allowed.
+		 * @param int    $media_id   Media id.
+		 * @param int    $user_id    Member.
+		 * @param string $own_cap    Capability asked of the owner.
+		 * @param string $others_cap Capability asked of anyone else.
+		 */
+		return (bool) apply_filters( 'mvs_can_edit_media', $allowed, $media_id, $user_id, $own_cap, $others_cap );
+	}
+
+	/**
 	 * Capability mapping per role.
 	 *
 	 * @return array<string, string[]>
