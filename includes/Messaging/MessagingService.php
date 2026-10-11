@@ -946,6 +946,8 @@ class MessagingService {
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
+		// A message the sender deleted for everyone or unsent no longer shares the
+		// item (Basecamp 10393276020 #16).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$found = $wpdb->get_var(
 			$wpdb->prepare(
@@ -956,6 +958,8 @@ class MessagingService {
 				    AND m.sender_id = %d
 				    AND p.user_id = %d
 				    AND p.status = 'active'
+				    AND m.is_deleted = 0
+				    AND m.deleted_for_all = 0
 				  LIMIT 1",
 				$media_id,
 				$owner_id,
