@@ -855,7 +855,7 @@ class MessagingService {
 	 *
 	 * @since 2.6.2
 	 *
-	 * @param int   $user_id Member creating the group or adding to it.
+	 * @param int                  $user_id Member creating the group or adding to it.
 	 * @param array<string, mixed> $context `conversation_id` when adding to an existing group, plus create options.
 	 * @return int
 	 */
