@@ -447,7 +447,7 @@
 
 			// Avatar + name link to the uploader's profile so Load More items
 			// stay clickable, matching the server-rendered grid in
-			// TemplateHelpers::render_grid_item (card #9962508646). Falls back
+			// TemplateHelpers::render_grid_item. Falls back
 			// to a plain row when the REST payload carries no profile_url.
 			var authorTarget = info;
 			if ( author.profile_url ) {

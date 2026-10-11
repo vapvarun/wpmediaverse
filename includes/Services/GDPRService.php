@@ -199,7 +199,7 @@ class GDPRService {
 		// empty, so a reviewer cannot tell the exporter ran from one that
 		// never fired. Only on the genuinely empty first page: a later page
 		// of a multi-page export being empty (the tail end) is normal and
-		// the heading already appeared on page 1. Basecamp 10350231765.
+		// the heading already appeared on page 1.
 		if ( empty( $export_items ) && 1 === $page ) {
 			$export_items[] = array(
 				'group_id'    => 'wpmediaverse-media',

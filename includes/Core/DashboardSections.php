@@ -267,7 +267,7 @@ final class DashboardSections {
 	 * The rail item to mark active for a section: its declared parent, or the
 	 * section itself. Favorites has no rail item of its own (it is reached from
 	 * Collections), so on /my-media/favorites/ Collections is the active tab
-	 * rather than none (card 10364777801).
+	 * rather than none.
 	 *
 	 * @since 2.6.1
 	 *
@@ -314,7 +314,7 @@ final class DashboardSections {
 	 * Before this existed, only the first was handled. Clicking Compete in the
 	 * rail was intercepted client-side, pushState'd the URL and set an activeTab
 	 * with no panel behind it, so every panel hid and the content area went
-	 * blank (Basecamp 10264172058). `documents` had a hardcoded bypass in the
+	 * blank. `documents` had a hardcoded bypass in the
 	 * JS for the same reason; asking the section declaration instead means the
 	 * next section Pro registers cannot reintroduce the bug.
 	 *
@@ -445,7 +445,7 @@ final class DashboardSections {
 
 		// On a BuddyNext site BuddyNext owns the profile editor, so MediaVerse's
 		// steps aside instead of being a second place to edit one profile
-		// (owner decision 2026-10-02, Basecamp 10364778286).
+		// (owner decision 2026-10-02,
 		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
 			unset( $sections['profile'] );
 		}

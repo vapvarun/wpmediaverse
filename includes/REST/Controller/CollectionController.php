@@ -249,7 +249,7 @@ class CollectionController extends WP_REST_Controller {
 
 		// Privacy gate — mirror AlbumController::get_item(). A members/private
 		// collection's title, structure and item list must not be readable by
-		// non-owners (Basecamp 10073499554).
+		// non-owners.
 		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $post->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
@@ -561,7 +561,7 @@ class CollectionController extends WP_REST_Controller {
 			// raw SQL that skipped both the viewer gate and the
 			// mvs_collection_media_ids filter - so a collection could report
 			// more items than it would show, and draw its cover from media the
-			// viewer cannot open. Basecamp 10298492555.
+			// viewer cannot open.
 			// ponytail: linear scan, one privacy check per row — but batch-prefetched
 			// (FavoriteService::get_collection_media_ids() primes MediaRepository
 			// before the can_view() loop, 2.6.0), so it is one query pair for the

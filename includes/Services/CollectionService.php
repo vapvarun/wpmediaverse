@@ -32,7 +32,7 @@ class CollectionService {
 	 * the two cannot drift. PrivacyService::check_access() resolves both
 	 * mvs_album and mvs_collection through one accessor, so a collection that
 	 * writes this key is gated by machinery that already exists - there is no
-	 * second read path to build. Basecamp 10298612348.
+	 * second read path to build.
 	 *
 	 * @since 2.4.2
 	 * @var string
@@ -81,7 +81,7 @@ class CollectionService {
 	 * case: it is a curated view of OTHER people's public media, so cascading
 	 * would rewrite a stranger's photo because a curator changed a collection
 	 * they happen to own. The collection's own visibility is the only thing
-	 * this touches. Basecamp 10298612348.
+	 * this touches.
 	 *
 	 * @since 2.4.2
 	 *
@@ -119,7 +119,7 @@ class CollectionService {
 	 * Lives here rather than on FavoriteService because both membership stores
 	 * need the same answer: Free keeps manual membership in `mvs_favorites`,
 	 * Pro keeps it in `mvs_pro_collection_items`. One rule, asked twice, so a
-	 * later change cannot drift between them. Basecamp 10298612348.
+	 * later change cannot drift between them.
 	 *
 	 * @since 2.4.2
 	 *
@@ -318,7 +318,7 @@ class CollectionService {
 		// mutually exclusive — two media_type rules became `file_type LIKE
 		// '%image%' AND file_type LIKE '%video%'`, which no single file can
 		// satisfy, so the collection resolved to 0 items and showed the
-		// placeholder cover (#9962118482).
+		// placeholder cover.
 		$by_key = array();
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {

@@ -153,7 +153,7 @@ class SettingsPage {
 		// add_settings_error() raised anywhere on this screen, Free's or Pro's,
 		// so a refused value was silently reverted under a green "Settings
 		// saved." The watermark type/image dependency was the first fix to
-		// depend on this channel, which is how it surfaced. Basecamp 10281548802.
+		// depend on this channel, which is how it surfaced.
 		global $wp_settings_errors;
 
 		$mvs_persisted = get_transient( 'settings_errors' );
@@ -248,7 +248,7 @@ class SettingsPage {
 	 * submit - the failure arriving as a bare "You need a higher level of
 	 * permission" page after they had typed everything. That is worse than the
 	 * 403 it replaced: the screen was honestly closed before, and is now open
-	 * and misleading. Basecamp 10285712647.
+	 * and misleading.
 	 *
 	 * Driven from get_registered_sections(), the same list that declares the
 	 * groups, so a new section cannot forget to add itself here.
@@ -611,7 +611,7 @@ class SettingsPage {
 								// The confirmation sits at the top, where the page reloads;
 								// below the Save button it was far below the fold (Basecamp
 								// 10364777243). Never claim success when part of the
-								// submission was rejected (Basecamp 10281548802).
+								// submission was rejected.
 								if ( isset( $_GET['settings-updated'] ) && ! self::$has_settings_error ) : // phpcs:ignore WordPress.Security.NonceVerification
 									?>
 									<div class="mvs-save-notice" role="status">

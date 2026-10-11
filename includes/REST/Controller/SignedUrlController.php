@@ -147,7 +147,7 @@ class SignedUrlController extends WP_REST_Controller {
 		$media_id = $request->get_param( 'media_id' );
 		$download = (bool) $request->get_param( 'download' );
 		// A caller may ask for a shorter link, never a longer one than the site's
-		// setting (Basecamp 10393276020 #15).
+		// setting.
 		$ttl      = min( (int) $request->get_param( 'ttl' ), $this->signed_urls->get_ttl() );
 		$user_id  = get_current_user_id();
 

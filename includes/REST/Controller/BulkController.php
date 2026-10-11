@@ -141,7 +141,7 @@ class BulkController extends WP_REST_Controller {
 				if ( ! $privacy ) {
 					return new WP_Error( 'mvs_missing_privacy', __( 'privacy is required for change_privacy.', 'wpmediaverse' ), array( 'status' => 400 ) );
 				}
-				// Same owner lock as the single-item update. Basecamp 10320619418.
+				// Same owner lock as the single-item update.
 				// The same list a single-item save checks: an unknown level is refused, not stored.
 				if ( ! in_array( $privacy, \WPMediaVerse\Services\PrivacyService::supported_levels(), true ) ) {
 					return new WP_Error( 'mvs_privacy_unsupported', __( 'That privacy level is not available on this site.', 'wpmediaverse' ), array( 'status' => 400 ) );
@@ -361,7 +361,7 @@ class BulkController extends WP_REST_Controller {
 		$kept          = 0;
 		foreach ( $media_ids as $media_id ) {
 			// In an album the album decides; a chat file keeps its conversation
-			// privacy and is reported, never counted as done (Basecamp 10392474704).
+			// privacy and is reported, never counted as done.
 			$outcome = $privacy_svc->apply_requested_privacy( (int) $media_id, $privacy );
 			if ( 'kept' === $outcome ) {
 				++$kept;
@@ -392,7 +392,6 @@ class BulkController extends WP_REST_Controller {
 	 * Delete checks the delete capabilities, as the single delete route does
 	 * (MediaController::owner_or_refuse); every other action the edit ones. A
 	 * role with edit but not delete rights hard-deleted through bulk
-	 * (Basecamp 10393276020 #14).
 	 *
 	 * @param int[]  $media_ids Media IDs.
 	 * @param int    $user_id   Current user ID.

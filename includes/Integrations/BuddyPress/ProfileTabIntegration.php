@@ -155,7 +155,6 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 
 		// Viewer-aware count via the repository privacy gate — members/friends
 		// items no longer counted for viewers outside those audiences
-		// (Basecamp #9941246549).
 		$media_count = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )
 			->count_visible_by_author( $displayed_user_id );
 
@@ -179,7 +178,7 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		// would advertise documents the viewer may not open, which is the
 		// defect 10296867415 was filed for. So this asks, exactly the way the
 		// LIST already asks via `mvs_profile_documents_html`, and renders
-		// nothing when Pro is absent. Basecamp 10298471056.
+		// nothing when Pro is absent.
 		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
 			return;
 		}
@@ -341,7 +340,7 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 
 		// Viewer-aware repository gate — replaces raw SQL that listed
 		// members/friends-level media to any visitor, including logged-out
-		// ones (Basecamp #9941246549).
+		// ones.
 		$total = $repo->count_visible_by_author( $user_id );
 
 		if ( ! $total ) {

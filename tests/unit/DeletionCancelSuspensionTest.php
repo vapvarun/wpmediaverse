@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276020 item 6.
+ * Cancelling a deletion lifts only the suspension the deletion request set.
  */
 class DeletionCancelSuspensionTest extends WP_UnitTestCase {
 

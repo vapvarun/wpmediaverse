@@ -60,7 +60,7 @@ class MediaDriveAccessSeamTest extends WP_UnitTestCase {
 	 * A site that has not adopted the new filter behaves exactly as before.
 	 *
 	 * The load-bearing test. This seam is additive or it is a regression for
-	 * every existing integration (Basecamp 10252314484).
+	 * every existing integration.
 	 */
 	public function test_without_the_new_filter_the_document_answer_still_decides(): void {
 		$user_id = self::factory()->user->create();
@@ -236,7 +236,7 @@ class MediaDriveAccessSeamTest extends WP_UnitTestCase {
 	 *
 	 * The gate used to refuse user 0 before asking the bridge, so a photo on an
 	 * OPEN space was hidden from visitors while a document on the same drive
-	 * showed (Basecamp 10344310617).
+	 * showed.
 	 */
 	public function test_a_visitor_reads_a_space_photo_when_the_space_says_read(): void {
 		$id   = $this->space_photo( self::factory()->user->create() );

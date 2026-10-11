@@ -6,7 +6,7 @@
  * every album on the site. Two things were wrong with that and this file pins
  * both: every foreign choice died with 403 mvs_forbidden when the member
  * pressed Add, and the response shipped other members' album titles to the
- * browser whether or not anything was ever clicked. Basecamp 10320911477.
+ * browser whether or not anything was ever clicked.
  *
  * @package WPMediaVerse
  */

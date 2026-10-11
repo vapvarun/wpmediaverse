@@ -8,7 +8,7 @@
  * instead of uploading a new one. The check was extracted into
  * `reject_oversized_file()` so both write paths run the identical guard —
  * the same shape as `reject_unsupported_mime()` (see MediaTypeResolutionTest),
- * fixed for exactly this bug class in 2026-06-04 (#9962125462).
+ * fixed for exactly this bug class in 2026-06-04.
  *
  * @package WPMediaVerse
  */

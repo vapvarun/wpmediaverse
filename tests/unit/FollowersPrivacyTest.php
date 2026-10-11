@@ -11,7 +11,6 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10350019949.
  *
  * PrivacyService had no `followers` case, so the level fell through to the
  * default deny and hid the item from the owner's own followers.

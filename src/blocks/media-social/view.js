@@ -16,7 +16,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s", no zone) to
  * epoch ms as UTC. new Date() would read the zone-less string as LOCAL time, so
  * on a non-UTC browser a just-posted comment looked hours old and its edit
- * window read as expired (Basecamp 10148635942).
+ * window read as expired.
  *
  * @param {string} s Date string.
  * @return {number} Epoch ms (returns Date.now() on an unparseable value).
@@ -33,7 +33,7 @@ function gmtToMs( s ) {
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
 // interactivity state by TemplateHelpers::media_social_i18n_state() via
 // wp_interactivity_state(); read them as `state.i18n.<key>` with an English
-// fallback. Basecamp 10073528834.
+// fallback.
 // Reactions render as the vendored Microsoft Fluent emoji SVGs (the same set as
 // BuddyNext) so they look identical on every platform; state.emojiBase is seeded
 // by TemplateHelpers::media_social_i18n_state().
@@ -94,7 +94,7 @@ async function fetchComments( ctx ) {
 					// Delete is not time-limited: the API lets an owner delete their
 					// own comment at any age, and a moderator delete anyone's — the UI
 					// used to hide Delete with Edit at 15 minutes, so the control was
-					// stricter than the route it drives (Basecamp 10148635942).
+					// stricter than the route it drives.
 					canDelete: isOwnComment || !! ctx.canModerateComments,
 					canReport: !! ( ctx.isLoggedIn && sharedUI.state.reportsEnabled && ! isOwnComment ),
 					reported: false,
@@ -157,7 +157,7 @@ const { state } = store( 'mvs/media-social', {
 		 * isFavorite is per-item CONTEXT, not store state - one page can carry
 		 * many of these buttons - so this reads getContext(). The visual state
 		 * was already handled by data-wp-class--active; this is the half a
-		 * screen reader gets. Basecamp 10297839293.
+		 * screen reader gets.
 		 */
 		get favoriteLabel() {
 			return getContext().isFavorite

@@ -127,7 +127,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 		get hasPending() {
 			return !! getContext().hasPending;
 		},
-		// What the member picked, shown in the drop area (Basecamp 10364777491).
+		// What the member picked, shown in the drop area.
 		get pickedLabel() {
 			const ctx = getContext();
 			const names = ctx.pendingNames || [];
@@ -364,7 +364,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 			// the form, and on this page that is BELOW the fold - measured 123px
 			// past a 840px viewport with the page still at scrollY 0. The warning
 			// rendered correctly and was simply never seen, which reads as "the
-			// duplicate warning is not displayed". Basecamp 10280477806.
+			// duplicate warning is not displayed".
 			if ( ctx.uploadError ) {
 				// Deferred twice: setting ctx.uploadError only QUEUES the render
 				// that removes the box's `hidden` attribute, and an element with

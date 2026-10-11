@@ -441,7 +441,7 @@ class ActivitySyncIntegration {
 
 		// Carousel / gallery post: every image in the group belongs to ONE feed
 		// entry, not one each. If a sibling already created the activity, join it
-		// and re-render rather than adding another. Basecamp #10153581987.
+		// and re-render rather than adding another.
 		$media_group = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
 		if ( '' !== $media_group ) {
 			$existing = $this->find_group_activity( $media_group );
@@ -645,7 +645,6 @@ class ActivitySyncIntegration {
 		}
 
 		// The post takes its most restrictive item, not the one that changed last
-		// (Basecamp 10392976094).
 		$attached_ids      = $this->activity_media_ids( $activity_id );
 		$effective_privacy = count( $attached_ids ) > 1
 			? self::effective_privacy_for_batch( $attached_ids )
@@ -825,7 +824,6 @@ class ActivitySyncIntegration {
 		// Deleting on it unconditionally meant removing one photo from a 5-photo
 		// update destroyed the whole update - and it returned before step 3
 		// could strip that photo's tile, so the fix down there never ran
-		// (Basecamp 10254566611, QA re-verify on activities 106 and 110).
 		//
 		// So: only delete when this media is the ONLY thing the activity is
 		// about. When other media still point at it, fall through to step 3,
@@ -904,7 +902,6 @@ class ActivitySyncIntegration {
 			// has NO media markup. A normal composer post does have it, so the
 			// stored HTML rendered unchanged and the deleted photo stayed in the
 			// feed as a broken-image tile with its filename underneath
-			// (Basecamp 10254566611).
 			//
 			// Removing the baked grid hands rendering back to that rebuild path,
 			// which already checks exists() per media - so this one deletion is
@@ -1062,7 +1059,7 @@ class ActivitySyncIntegration {
 		// Prominent "view all" link inside the activity CONTENT — the album URL
 		// otherwise lives only in the $action string, which many BP themes never
 		// render, leaving batch-upload galleries with no path to the album or the
-		// remaining photos (Basecamp #10077895284).
+		// remaining photos.
 		$album_url    = get_permalink( $album_id );
 		$view_all_txt = sprintf(
 			/* translators: 1: album title, 2: total photo count */
@@ -1100,7 +1097,7 @@ class ActivitySyncIntegration {
 
 		// Private albums / batches leave zero public footprint — skip the
 		// gallery activity insert entirely. See record_upload_activity()
-		// for the rationale (Basecamp #9936622656).
+		// for the rationale.
 		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( (int) $album_id );
 		if ( 'private' === $album_privacy || 'private' === self::effective_privacy_for_batch( $media_ids ) ) {
 			return;

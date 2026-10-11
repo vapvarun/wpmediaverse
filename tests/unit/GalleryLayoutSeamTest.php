@@ -10,7 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 
 /**
- * Basecamp 10297764235.
  *
  * The grid path could filter by tag, category, type and author but only ever
  * drew one layout; the platform layouts could draw four but accepted no

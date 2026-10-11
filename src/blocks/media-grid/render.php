@@ -35,10 +35,9 @@ $columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : a
 // "deliberately grid" have to stay distinguishable. Assigned BEFORE the line
 // below that consumes it: defined after, it was always null, so the override
 // silently did nothing and every render emitted a warning.
-// Basecamp 10297764235.
 $mvs_layout_override = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : '';
 
-// Resolved through the one emitter every grid uses. Basecamp 10297763824.
+// Resolved through the one emitter every grid uses.
 $mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class( $mvs_layout_override );
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
@@ -82,7 +81,6 @@ $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 // surface for" - the question that stays right when a type is added. An
 // explicit type= (including document) still overrides below, so a deliberate
 // file grid is still possible. Escape hatch: mvs_media_library_types.
-// Basecamp 10298650705.
 if ( $media_type ) {
 	// An explicit type REPLACES the default - type="document" is still a
 	// document grid - so it is decided here rather than narrowed afterwards.
@@ -250,7 +248,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				// lightbox_* keys MediaController emits. Without them the image
 				// getter fell through to file_url and `mvs_lightbox_image_source`
 				// did nothing on this block — including every tile appended by
-				// Load More. (Basecamp 10171640247)
+				// Load More.
 				$mvs_grid_helpers       = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
 				$mvs_grid_lightbox_url  = $mvs_grid_helpers->get_lightbox_url( $item_id, (string) ( $item['file_url'] ?? '' ) );
 				$mvs_grid_lightbox_webp = $mvs_grid_helpers->get_lightbox_webp_url( $item_id, $mvs_grid_lightbox_url );

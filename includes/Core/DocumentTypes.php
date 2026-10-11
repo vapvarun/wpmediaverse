@@ -261,7 +261,7 @@ final class DocumentTypes {
 		// bytes text/plain, 65,536 octet-stream). A member's padded log or
 		// repeated-token dump was therefore refused as an unsupported TYPE while
 		// a smaller file with the same extension and the same content uploaded
-		// fine, and the message named the wrong reason (Basecamp 10190462935).
+		// fine, and the message named the wrong reason.
 		//
 		// The strictness above stays exactly where it belongs: when the sniff is
 		// a POSITIVE answer that contradicts the extension, that is a disguised
@@ -552,7 +552,7 @@ final class DocumentTypes {
 	 * without keeping a second copy of the extension vocabulary. A second copy is
 	 * how `.psd` ends up admitted by one surface and refused by another — the
 	 * same class of drift that put a `doc` label ahead of the file resolver in
-	 * the MediaPress importer (Basecamp 10245253286).
+	 * the MediaPress importer.
 	 *
 	 * NOT a permission check and must never be used as one: `accept` is a file
 	 * dialog hint the member can defeat by typing a name, and the server still

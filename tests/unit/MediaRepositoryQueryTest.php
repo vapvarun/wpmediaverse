@@ -443,7 +443,7 @@ class MediaRepositoryQueryTest extends WP_UnitTestCase {
 
 	/*
 	------------------------------------------------------------------
-	 * Drive defaults on insert() — Basecamp 10259007636
+	 * Drive defaults on insert()
 	 * ----------------------------------------------------------------*/
 
 	public function test_insert_defaults_drive_to_the_author(): void {

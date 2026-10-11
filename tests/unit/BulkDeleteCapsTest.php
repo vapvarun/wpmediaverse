@@ -12,7 +12,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276020 item 14.
+ * Bulk delete applies the delete capabilities, like the single delete route.
  */
 class BulkDeleteCapsTest extends WP_UnitTestCase {
 

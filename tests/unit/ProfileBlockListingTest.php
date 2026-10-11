@@ -11,7 +11,6 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10296867415.
  *
  * PrivacyService::can_view() already refuses the ITEM. This covers the LIST
  * that advertises it, and the count printed above the list - the two must move

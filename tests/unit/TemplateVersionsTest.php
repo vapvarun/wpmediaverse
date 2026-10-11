@@ -1,6 +1,6 @@
 <?php
 /**
- * Theme copies of our templates are compared by `@version` (Basecamp 10344471983).
+ * Theme copies of our templates are compared by `@version`.
  *
  * @package WPMediaVerse
  */

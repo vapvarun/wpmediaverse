@@ -298,7 +298,7 @@ class AlbumController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 
 		// The only privacy gate on this endpoint: the rule is in SQL so the
-		// totals match what the viewer sees (Basecamp 10071400189). Same helper
+		// totals match what the viewer sees. Same helper
 		// as the /album/ archive and the BuddyPress albums tab.
 		$query = PrivacyService::query_listable_spaces( $args, (int) $user_id );
 
@@ -312,7 +312,7 @@ class AlbumController extends WP_REST_Controller {
 		// returned-count mismatch this fix exists to kill. wp_posts.post_author
 		// (used by the SQL clause) is the authoritative album author.
 		// A list carries counts, not every album's item ids: 20 albums of 2,000
-		// photos checked 80,000 items per request (Basecamp 10393276031 #11). A
+		// photos checked 80,000 items per request. A
 		// client that still wants the ids asks with ?with_items=1.
 		$with_items = (bool) $request->get_param( 'with_items' );
 		$items      = array();
@@ -468,7 +468,7 @@ class AlbumController extends WP_REST_Controller {
 		// (AlbumService::set_privacy()), so changing it is changing theirs. Same
 		// contract as PATCH /media/{id}: the edit screens hide the picker but still
 		// send the current level, so only a CHANGE is refused, out loud (Rule 20),
-		// and before any other field is written. Basecamp 10320619418.
+		// and before any other field is written.
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy
 			&& ! PrivacyService::user_may_choose_privacy()
@@ -757,7 +757,7 @@ class AlbumController extends WP_REST_Controller {
 
 			// Photos by the privacy their member chose, so the album screen can
 			// warn before making the album more public than some of them
-			// (Basecamp 10264373450). Editors only; a single query.
+			// Editors only; a single query.
 			if ( $with_counts && $can_edit ) {
 				$data['own_privacy_counts'] = $this->albums->own_privacy_counts( $album_id );
 			}

@@ -231,7 +231,6 @@ class ActivityContentIntegration {
 				// So the tag goes, whatever the filesystem says. Anything the
 				// viewer CAN see is rendered by the id-keyed path below, which
 				// routes through MediaUrl and gets a signed URL.
-				// Basecamp 10290384337.
 				return '';
 			},
 			$content
@@ -256,13 +255,13 @@ class ActivityContentIntegration {
 		// with no media id anywhere, so every id-keyed guard we have - the
 		// linkage renderer, the _mvs_media_ids rebuild, refresh_broadcast_urls -
 		// correctly finds nothing to check and the member sees broken-image
-		// boxes on their own timeline forever. Basecamp 10290384337.
+		// boxes on their own timeline forever.
 		//
 		// Legacy markup only. Id-keyed blocks are re-minted per id by
 		// refresh_broadcast_urls() below, which also drops missing media. Since
 		// 2.6.1 direct delivery stores public images under uploads/wpmediaverse/,
 		// so running this on them deleted every new upload's picture from the
-		// stream. Basecamp 10387034419.
+		// stream.
 		if ( false === strpos( $content, 'data-mvs-media-id' ) ) {
 			$content = $this->drop_missing_upload_images( $content );
 		}
@@ -858,7 +857,7 @@ class ActivityContentIntegration {
 
 				// Broadcast URLs are anonymous, so a non-public item gets none and its
 				// tile kept the src of a file that going private renamed: the owner saw
-				// a broken image (Basecamp 10392976094). Fall back to a URL minted for
+				// a broken image. Fall back to a URL minted for
 				// this viewer; it is empty for anyone who may not see the item.
 				$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 				$file_url  = $repo->get_broadcast_url( $media_id ) ?: $repo->get_url_for_viewer( $media_id );

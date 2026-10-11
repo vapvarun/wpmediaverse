@@ -18,7 +18,7 @@ const config = window.mvsMessagingConfig || {};
 // returned the English source. Instead PHP seeds mvsMessagingConfig.i18n with
 // __()-translated strings keyed by their English source (gettext-style); the
 // shim looks the source up, falling back to the literal. Matches how the
-// Interactivity stores read wp_interactivity_state i18n. Basecamp 10073528834.
+// Interactivity stores read wp_interactivity_state i18n.
 const I18N = config.i18n || {};
 const __ = ( str ) => ( Object.prototype.hasOwnProperty.call( I18N, str ) ? I18N[ str ] : str );
 
@@ -57,7 +57,7 @@ async function apiFetch( path, options = {} ) {
 	// to surface as an empty conversation list — indistinguishable from "you
 	// have no conversations". That is exactly how the chat panel reported "No
 	// conversations" on any page that didn't enqueue mvs-rest
-	// (Basecamp #10149580967). The enqueue is fixed in Core\Plugin, but keep
+	// The enqueue is fixed in Core\Plugin, but keep
 	// this guard so the next delivery regression is diagnosable instead of
 	// looking like an empty state.
 	if ( ! window.mvsRest || typeof window.mvsRest.restFetch !== 'function' ) {
@@ -156,7 +156,7 @@ function messagePreview( msg ) {
 			return __( 'File' );
 		default:
 			// Attachment under message_type 'text' (mobile clients / MIME
-			// strings the server allow-list resets) — card 10127764989.
+			// strings the server allow-list resets) —
 			return ( msg.attachment || msg.attachment_id || msg.media_id ) ? __( 'Attachment' ) : '';
 	}
 }
@@ -194,7 +194,7 @@ function enrichMessage( msg ) {
 	// Deleted covers BOTH server flags: deleted_for_all (unsend) and
 	// is_deleted (delete-for-me — get_messages still returns the row to the
 	// sender, blanked). Only checking deleted_for_all left the sender's
-	// reopened chat rendering a blue empty bubble (Basecamp #9962618059).
+	// reopened chat rendering a blue empty bubble.
 	msg.isDeleted  = Number( msg.deleted_for_all ) === 1 || Number( msg.is_deleted ) === 1;
 	msg.notDeleted = ! msg.isDeleted;
 	// Normalize a deleted message before the type flags below: text type
@@ -289,7 +289,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// searchQuery drives the NEW MESSAGE member search (chat-new.php).
 		// listQuery drives the conversation-LIST filter (chat-list.php). They
 		// were the same field, which is why typing in "Search conversations…"
-		// ran a member search and never filtered the list (#10153528515).
+		// ran a member search and never filtered the list.
 		searchQuery: '',
 		listQuery: '',
 		searchResults: [],
@@ -406,7 +406,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// day-separator flag here rather than at each of the eleven places that
 		// assign state.messages. The template bound created_at directly, so
 		// bubbles showed a raw MySQL datetime (2026-07-08 12:27:26) and there
-		// were no day separators at all (#10074503902). formatMessageTime()
+		// were no day separators at all. formatMessageTime()
 		// already existed in this store but was never referenced by any template.
 		get displayMessages() {
 			let prevKey = '';
@@ -442,7 +442,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// The bell had NO state binding at all: no data-wp-bind, no
 		// data-wp-class, a hardcoded aria-label of "Mute". It rendered
 		// identically muted or unmuted, so members reported it "resetting to
-		// off" — it was never on (#10153578635). Muting itself always worked:
+		// off" — it was never on. Muting itself always worked:
 		// NotificationListener and the unread counter both honour is_muted.
 		get isMuted() {
 			const conv = state.activeConversation;
@@ -477,7 +477,6 @@ const { state, actions } = store( 'mvs/messaging', {
 			if ( p.is_online ) return __( 'Online' );
 			// No _n() in this module, so the plural "5 minutes ago" comes from
 			// Intl in the page language, inside one translatable phrase.
-			// Basecamp 10320657271, 10320784236.
 			const lang = document.documentElement.lang || undefined;
 			const ts   = parseServerDate( p.last_active );
 			const mins = Math.max( 1, Math.floor( ( Date.now() - ts ) / 60000 ) );
@@ -692,7 +691,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			// almost always to someone you already talk to, and forcing compose
 			// meant the control -- which is a paper-plane "Share" icon on the
 			// Instagram layout -- looked like it had opened the wrong screen
-			// (#10153188975). The list still has "New message" for the rest.
+			// The list still has "New message" for the rest.
 			state.chatView = 'list';
 			state.chatPanelOpen = true;
 			actions.startPolling();
@@ -828,7 +827,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		 * Single owner of the handoff. It used to live inline in
 		 * createOrOpenConversation() only, so picking an EXISTING thread from
 		 * the list dropped the media silently and left the id armed to fire
-		 * later on an unrelated conversation (#10153188975).
+		 * later on an unrelated conversation.
 		 *
 		 * @param {number|string} conversationId Target conversation.
 		 */
@@ -1315,7 +1314,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			if ( parentId ) body.parent_id = parentId;
 
 			if ( state.selectedAttachment ) {
-				// Chat files are conversation-scoped MediaVerse media (10392474704).
+				// Chat files are conversation-scoped MediaVerse media.
 				body.media_id = state.selectedAttachment.id;
 				body.message_type = state.selectedAttachment.type || 'file';
 			}
@@ -1358,7 +1357,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				// Update conversation preview. Same placeholder rules as the
 				// server's build_message_preview() — the raw lowercase type
 				// ('image') used to flash here until the next poll refetched
-				// the stored preview (card 10127764989).
+				// the stored preview.
 				const conv = state.activeConversation;
 				if ( conv ) {
 					conv.last_message_preview = messagePreview( { content: content, message_type: body.message_type, attachment_id: body.attachment_id, media_id: body.media_id } );
@@ -1415,7 +1414,6 @@ const { state, actions } = store( 'mvs/messaging', {
 				// participants. Filtering the row out instead meant one action had
 				// two different outcomes depending on whether you reloaded: the
 				// bubble vanished, then came back as "This message was deleted".
-				// Basecamp 10263770236.
 				state.messages = state.messages.map( m =>
 					String( m.id ) === String( msgId )
 						? enrichMessage( { ...m, is_deleted: 1, content: '', message_type: 'text' } )
@@ -1591,7 +1589,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			// the getUserMedia() call below threw a TypeError BEFORE the browser
 			// could show a permission prompt, and the catch swallowed it. From
 			// the member's side the microphone button simply did nothing, with
-			// no prompt and no error (#10153607841). Tell them why.
+			// no prompt and no error. Tell them why.
 			if ( ! window.isSecureContext || ! navigator.mediaDevices || ! window.MediaRecorder ) {
 				actions.showToast(
 					__( 'Voice messages need a secure (https) connection.', 'wpmediaverse' )
@@ -2021,7 +2019,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// that is already in memory, so it should feel instant. The list input
 		// used to call updateSearchQuery(), which searched MEMBERS and rendered
 		// its results only in the hidden New Message view, so the list itself
-		// never changed (#10153528515).
+		// never changed.
 		updateListQuery() {
 			const el = getElement();
 			state.listQuery = el.ref.value;
@@ -2131,7 +2129,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				// Reactions on already-delivered messages. A reaction never moves
 				// created_at, so it does not arrive in data.messages above — the
 				// server sends it separately, or the other participant's reaction
-				// only appeared after a full reload (card 10122929662). Re-enrich
+				// only appeared after a full reload. Re-enrich
 				// just the affected message with the server's fresh reaction set.
 				if ( Array.isArray( data.reaction_updates ) && data.reaction_updates.length > 0 ) {
 					for ( const u of data.reaction_updates ) {
@@ -2187,7 +2185,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// refused file type, a denied or unavailable microphone), so the default
 		// is 'error'. It used to pass no type, and the shared store defaults to
 		// 'success', so every failure rendered in success green. Pass a type
-		// for anything that is not an error. Basecamp 10320619304.
+		// for anything that is not an error.
 		showToast( message, type = 'error' ) {
 			// Use shared UI toast if available.
 			try {
@@ -2214,7 +2212,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// Auto-scroll on mount.
 		onMessagesMount() {
 			// Videos and images get their height after the first scroll, which left
-			// the newest message below the fold (Basecamp 10393302433). Stay at the
+			// the newest message below the fold. Stay at the
 			// bottom while media loads, unless the member has scrolled up.
 			const { ref } = getElement();
 			messagesEl = ref;

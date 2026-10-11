@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393041312.
+ * A reply only ever previews a message from its own conversation.
  */
 class MessageReplyScopeTest extends WP_UnitTestCase {
 

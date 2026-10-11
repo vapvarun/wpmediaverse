@@ -1,7 +1,7 @@
 <?php
 /**
  * Chat files: moving pre-2.6.2 attachments, hiding them meanwhile, and removing
- * a file when its message is deleted. Basecamp 10392474704.
+ * a file when its message is deleted.
  *
  * @package WPMediaVerse
  */

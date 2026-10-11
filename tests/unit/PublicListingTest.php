@@ -11,7 +11,7 @@ use WP_Query;
 use WP_UnitTestCase;
 
 /**
- * Basecamp 10393276020 item 17.
+ * Core listings (sitemap, feed) show only public albums and collections.
  */
 class PublicListingTest extends WP_UnitTestCase {
 

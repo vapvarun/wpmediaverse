@@ -75,7 +75,7 @@ class CommunityPrivacyGate {
 	 * Answer the private-community signal from the Members only setting.
 	 *
 	 * Standalone sites had no way to arm this gate: only BuddyNext's private
-	 * mode did (Basecamp 10344427420).
+	 * mode did.
 	 *
 	 * @since 2.6.0
 	 *
@@ -185,7 +185,7 @@ class CommunityPrivacyGate {
 		);
 
 		if ( ! $is_gated_page ) {
-			// Both Explore pages: media, and documents (2.6.0, Basecamp 10344427420).
+			// Both Explore pages: media, and documents (2.6.0,
 			$explore_page_ids = array_filter(
 				array(
 					(int) get_option( 'mvs_page_explore', 0 ),

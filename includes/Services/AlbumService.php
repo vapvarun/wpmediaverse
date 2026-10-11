@@ -75,7 +75,7 @@ class AlbumService {
 		// Only a PRIVACY-ONLY stub row may answer here. A row carrying a
 		// media_type is a real media item that merely shares this album's
 		// integer, and its privacy is not the album's - reading it is the
-		// collision this docblock warns about. Basecamp 10298525085.
+		// collision this docblock warns about.
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		if ( '' !== (string) $repo->get( $album_id, 'media_type' ) ) {
@@ -124,7 +124,7 @@ class AlbumService {
 	 * Batched: one prefetch for the reads, one upsert for the set-aside
 	 * choices and one UPDATE per 500 photos for the privacy. Every photo whose
 	 * privacy changes still fires `mvs_media_privacy_changed`, so storage and
-	 * activity listeners run exactly as for a single write (Basecamp 10344644266).
+	 * activity listeners run exactly as for a single write.
 	 *
 	 * @since 2.6.0 Replaces the one-way clamp_items_privacy().
 	 *
@@ -140,7 +140,7 @@ class AlbumService {
 		// A member the owner has locked out of choosing privacy does not change
 		// a photo's privacy through an album either. Keyed on the ACTING user,
 		// so a manager editing the album still applies it, and so does a system
-		// caller with no user (imports, WP-CLI, cron). Basecamp 10320619418.
+		// caller with no user (imports, WP-CLI, cron).
 		$actor_id = get_current_user_id();
 		if ( $actor_id > 0 && ! PrivacyService::user_may_choose_privacy( $actor_id ) ) {
 			return;
@@ -409,7 +409,7 @@ class AlbumService {
 		// choose privacy must not choose it here either, or "create a private
 		// album, add my photo" becomes the route round the lock. The album takes
 		// the site default, exactly as UploadService does for an upload by the
-		// same author. Basecamp 10320619418.
+		// same author.
 		if ( ! PrivacyService::user_may_choose_privacy( $author_id ) ) {
 			$privacy = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		}
@@ -641,7 +641,7 @@ class AlbumService {
 		// owner cannot open (a friends-only photo added by a friend), and the
 		// card must match the album page (QA, 2.6.0). But the owner can always
 		// list their OWN items, so those are one COUNT, and only other people's
-		// items go through the per-item rule (Basecamp 10393276031 #11).
+		// items go through the per-item rule.
 		$owner = (int) get_post_field( 'post_author', $album_id );
 		if ( $mvs_viewer > 0 && $mvs_viewer === $owner ) {
 			$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
@@ -694,7 +694,7 @@ class AlbumService {
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		// One read for every photo's row, so the existence, owner and type
-		// checks below cost no query each (Basecamp 10344644266).
+		// checks below cost no query each.
 		$repo->prefetch( array_map( 'intval', $media_ids ) );
 
 		// Whose media may go in. Adding to an album repoints the item's album_id

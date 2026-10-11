@@ -188,7 +188,7 @@ class FavoriteController extends WP_REST_Controller {
 
 		// Favorite only media you can view (permission check is login-only). An
 		// existing favourite can always be REMOVED: the toggle then only takes it
-		// back, which a blocked member must be able to do (Basecamp 10350196637).
+		// back, which a blocked member must be able to do.
 		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() )
 			&& ! $this->favorites->is_favorited( (int) $media_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
@@ -221,7 +221,6 @@ class FavoriteController extends WP_REST_Controller {
 		// narrower rule: public, or your own. Without this, a members-only
 		// photo could be pulled into a collection by any logged-in curator,
 		// because can_view() admits members-level to everyone signed in.
-		// Basecamp 10298612348.
 		if ( $collection_id
 			&& ! \WPMediaVerse\Core\Plugin::container()->get( 'collections' )->may_contain( (int) $media_id, get_current_user_id() ) ) {
 			return new WP_Error(
@@ -287,7 +286,7 @@ class FavoriteController extends WP_REST_Controller {
 		// around it did not. Privacy was half-applied: the member could not see
 		// the photo but could see what it was called and that it still existed.
 		// can_view() is the same gate this controller already applies to a single
-		// favourite (see the POST path). Basecamp 10297947358.
+		// favourite (see the POST path).
 		$mvs_privacy  = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		$mvs_viewer   = get_current_user_id();
 		$mvs_filtered = 0;

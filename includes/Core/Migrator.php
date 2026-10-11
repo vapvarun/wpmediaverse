@@ -115,7 +115,7 @@ class Migrator {
 		// One runner at a time: right after an update every request arrives here,
 		// and without a lock several ran the same steps at once. add_option() is
 		// atomic (unique option_name). A lock older than 10 minutes belongs to a
-		// request that died mid-way (Basecamp 10393276031 #19).
+		// request that died mid-way.
 		$lock = 'mvs_migrator_lock';
 		if ( ! add_option( $lock, time(), '', false ) ) {
 			if ( time() - (int) get_option( $lock, 0 ) < 10 * MINUTE_IN_SECONDS ) {
@@ -998,7 +998,7 @@ class Migrator {
 	 * Albums and collections get an mvs_media_index row purely to store their
 	 * privacy (media_type left empty). Before 2.0.0 the delete handlers cleaned
 	 * only their own item tables, so deleting the CPT left that index row behind
-	 * and Explore kept rendering a dead, click-broken tile (Basecamp 10073671889).
+	 * and Explore kept rendering a dead, click-broken tile.
 	 * The delete handlers now purge the row; this heals installs that already
 	 * accumulated orphans (deleted albums/collections, authorless placeholders).
 	 *
@@ -1127,7 +1127,7 @@ class Migrator {
 	 * "Delete conversation" used to flip the participant to 'left' and
 	 * find_or_create_conversation() then created a brand-new thread on
 	 * re-contact — leaving the other member with TWO threads for the same
-	 * pair (card 10127717045). The fix reuses the pair's single thread and
+	 * pair. The fix reuses the pair's single thread and
 	 * hides pre-delete history per user via this clear point instead.
 	 *
 	 * The watermark is a message ID, not a datetime: message ids are strictly
@@ -2139,7 +2139,6 @@ class Migrator {
 	 * a push to a member's registered devices. The plugin OWNS the tokens and
 	 * fires the dispatch signal; the actual FCM/APNs send is a delivery
 	 * integration's job (credentials + platform SDKs live off the plugin).
-	 * Basecamp 9667082225.
 	 */
 	private function migrate_to_30(): void {
 		global $wpdb;
@@ -2258,7 +2257,7 @@ class Migrator {
 	 * the server went on refusing it, and the owner had no way to stop it: PDF is
 	 * absent from the grid so there is no box to untick, and the sanitizer's
 	 * preserve-custom-types rule (correct in itself) wrote it back on every save.
-	 * The stored value was unreachable by any admin action (Basecamp 10190738445).
+	 * The stored value was unreachable by any admin action.
 	 *
 	 * Nothing is lost: the media path has refused these types since 1.2.3, so
 	 * removing them from the option removes an entry that only ever produced a
@@ -2293,7 +2292,7 @@ class Migrator {
 	 * `MediaRepository::insert()` defaulted status, privacy, moderation and
 	 * created_at but not the drive, so any caller that did not pass it landed on
 	 * the column default `drive_id = 0`. The default is fixed at the write side;
-	 * this settles the rows already stored (Basecamp 10259007636).
+	 * this settles the rows already stored.
 	 *
 	 * Safe because it writes the value the read side ALREADY returns:
 	 * `PermissionService::drive_of()` falls back to `post_author` when
@@ -2591,7 +2590,7 @@ class Migrator {
 	 * Migration v40 - one album per photo, and each photo's own privacy (2.6.0).
 	 *
 	 * A photo in an album now shows with the album's privacy in both directions,
-	 * and belongs to one album (Basecamp 10264373450). This puts existing data in
+	 * and belongs to one album. This puts existing data in
 	 * that shape without changing what anyone sees:
 	 *
 	 *  1. membership rows for albums that no longer exist are removed;

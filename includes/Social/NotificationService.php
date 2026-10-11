@@ -310,7 +310,7 @@ class NotificationService {
 	 *
 	 * Across a block, neither the other member's actions nor anything about
 	 * their items reaches the bell: those rows' title and link point at an item
-	 * that answers 404 (Basecamp 10355130639). Both block columns and the
+	 * that answers 404. Both block columns and the
 	 * index's post_author are indexed.
 	 *
 	 * @param int $user_id Notification recipient.
@@ -424,14 +424,14 @@ class NotificationService {
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
 		unset( $type );
 		// One "reacted to" per member per item: removing a reaction and reacting
-		// again must not notify the owner twice (Basecamp 10392589159).
+		// again must not notify the owner twice.
 		$this->notify_owner_once( $media_id, $user_id, 'media_reaction' );
 	}
 
 	/**
 	 * Whether this actor already notified this member of this kind of event
 	 * (about this item, when one is given). Toggling an action off and on must
-	 * not notify twice (Basecamp 10393276031).
+	 * not notify twice.
 	 *
 	 * @param int    $user_id  Recipient.
 	 * @param int    $actor_id Actor.
@@ -583,7 +583,7 @@ class NotificationService {
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
 		// Read at render time, so a title stays out once the item turned private
-		// for this reader (a mention made before the change; Basecamp 10393276031).
+		// for this reader (a mention made before the change;
 		if ( $media_id && ( $recipient <= 0 || \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, $recipient ) ) ) {
 			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: '';
 		}

@@ -202,7 +202,7 @@ class Sanitizers {
 		// this rule preserved it forever: absent from the grid (nothing to
 		// untick), preserved by every save, and still offered to members in the
 		// picker the server would then refuse. Unreachable by any admin action
-		// (Basecamp 10190738445). Preserving a type the server will never accept
+		// Preserving a type the server will never accept
 		// serves nobody, so it is excluded from the rescue.
 		$stored_types  = array_filter( array_map( 'trim', explode( ',', $stored ) ) );
 		$preserve_from = array_diff( $stored_types, UploadService::hard_refused_mimes() );
@@ -606,7 +606,7 @@ class Sanitizers {
 	 *
 	 * Default fallback matches FilenameStrategy::effective_default() (hashed
 	 * since 1.6.0, filterable) so garbage input lands on the same default the
-	 * runtime resolver uses (audit 2026-06-04, #9962530792).
+	 * runtime resolver uses.
 	 *
 	 * @since 1.2.1
 	 *

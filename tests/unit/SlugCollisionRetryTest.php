@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276031 item 10.
+ * Same-title uploads racing for one slug both land.
  */
 class SlugCollisionRetryTest extends WP_UnitTestCase {
 

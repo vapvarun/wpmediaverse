@@ -261,7 +261,6 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	 * media (a BuddyNext activity card) has no way to see a column change. Until
 	 * 2.4.0 only the permanent delete fired anything, so a member trashing a
 	 * video left the community feed advertising it with a link that 404s
-	 * (Basecamp 10252324048).
 	 *
 	 * The permalink argument is asserted because it is the reason the signature
 	 * matches `mvs_media_deleted`: a listener withdrawing a mirror keyed on the

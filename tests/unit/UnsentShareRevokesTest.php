@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276020 item 16.
+ * Unsending a message that shared a library item takes the access back.
  */
 class UnsentShareRevokesTest extends WP_UnitTestCase {
 

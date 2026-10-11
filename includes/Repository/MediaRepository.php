@@ -52,7 +52,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// the column is shared with Pro folder grants (target_type 'folder', where
 		// media_id holds a FOLDER id), which nothing writes today. If folder
 		// sharing is ever built, filter this delete on target_type first, or
-		// deleting document N wipes the grants on folder N (Basecamp 10344002012).
+		// deleting document N wipes the grants on folder N.
 		'mvs_access_grants',
 		'mvs_media_spaces',
 	);
@@ -486,7 +486,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Albums and collections get an mvs_media_index row purely to store their
 	 * privacy (media_type left empty). This is the targeted row/meta purge their
 	 * delete handlers call on `before_delete_post` so a deleted album/collection
-	 * doesn't leave a dead tile on Explore (Basecamp 10073671889). Media items use
+	 * doesn't leave a dead tile on Explore. Media items use
 	 * delete_cascade() instead — it also clears the downstream reaction / stat /
 	 * view / album-item tables that albums and collections never touch.
 	 *
@@ -910,7 +910,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * A chat file ('dm') is uploaded by the message rules (types, size, no
 	 * moderation hook), so it may never become another level, and nothing may
 	 * become 'dm' after upload. Every privacy write in this class honours it.
-	 * Basecamp 10392474704.
 	 *
 	 * @param mixed $old Current privacy (null for a new row).
 	 * @param mixed $new Requested privacy.
@@ -978,7 +977,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 			// Drop the cached row BEFORE announcing: listeners re-read the item, and a
 			// warm cache handed them the old privacy, so the BuddyPress activity
-			// always carried the previous value (Basecamp 10392976094).
+			// always carried the previous value.
 			self::invalidate_row_cache( $media_id );
 
 			// Fire only on UPDATE (old value existed) and when value actually changes.
@@ -1144,13 +1143,13 @@ class MediaRepository implements MediaRepositoryInterface {
 
 			if ( $viewer_id > 0 ) {
 				// The shared member rule, so followers-only stories reach followers
-				// (card 10355187431). Not explore_privacy_clause(): its moderator
+				// Not explore_privacy_clause(): its moderator
 				// override would fill a moderator's stories bar with private stories.
 				list( $mvs_privacy_sql, $mvs_privacy_params ) = $this->member_privacy_clause( 'idx', $viewer_id );
 				$where[]                                      = $mvs_privacy_sql;
 				$params                                       = array_merge( $params, $mvs_privacy_params );
 
-				// Lists hide media both ways across a block (Basecamp 10355130639);
+				// Lists hide media both ways across a block;
 				// the stories bar is a list.
 				$blocked = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id );
 				if ( $blocked ) {
@@ -2652,7 +2651,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// "Shared with me" means things OTHER PEOPLE gave me. A role grant is
 		// legitimately made to a role, and the uploader usually holds that role
 		// too — so sharing to "Subscriber" put your own document into your own
-		// Shared-with-me band (Basecamp 10190505530). The scope is what was
+		// Shared-with-me band. The scope is what was
 		// missing, not the grant: `PermissionService::grant()` correctly refuses
 		// a DIRECT grant to the owner (`mvs_grant_redundant`) and must keep
 		// accepting the role grant, which is not redundant for its other holders.
@@ -2977,7 +2976,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * The batch form of set( $id, 'privacy', ... ): one read and one UPDATE per
 	 * 500 rows instead of three queries per row, for album-wide changes on
-	 * albums of thousands of photos (Basecamp 10344644266). Only rows whose
+	 * albums of thousands of photos. Only rows whose
 	 * privacy actually changes are written, and each of them still fires
 	 * `mvs_media_privacy_changed`, so file placement, cloud repatriation and
 	 * activity privacy follow exactly as they do for a single write.
@@ -3338,7 +3337,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * The one answer every Download control asks (single page, player block),
 	 * so a surface cannot ship a working button the setting promised was hidden
-	 * (Basecamp 10350019690).
 	 *
 	 * @param int $media_id Media ID.
 	 * @return bool
@@ -3947,7 +3945,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				// documents was handed images instead - silently, because an
 				// unknown key was dropped on the way to query(). Measured:
 				// query_by_author( media_types => ['document'] ) returned one
-				// row, of type image. Basecamp 10297845497.
+				// row, of type image.
 				'media_types'       => null,
 			)
 		);
@@ -3957,10 +3955,10 @@ class MediaRepository implements MediaRepositoryInterface {
 			: (int) $args['viewer_id'];
 
 		// Privacy mode selection. 1.3.0 closed the private-leak case
-		// (Basecamp #9936622656) with 'hide_private'; 1.6.0 tightens it to
+		// with 'hide_private'; 1.6.0 tightens it to
 		// the viewer-aware 'profile' mode because members/friends-level items
 		// were still listed to viewers outside those audiences — including
-		// logged-out visitors (Basecamp #9941246549). Owner / admin /
+		// logged-out visitors. Owner / admin /
 		// explicit-opt-in callers still see everything; sites can restore the
 		// old discoverability via the `mvs_profile_privacy_levels` filter.
 		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
@@ -4040,7 +4038,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// information about content the viewer is barred from.
 		//
 		// PrivacyService::can_view() already refuses the item. That is the item;
-		// this is the list that advertises it (Basecamp 10296867415).
+		// this is the list that advertises it.
 		if ( $viewer > 0 && $author_id > 0 ) {
 			$mvs_container = \WPMediaVerse\Core\Plugin::container();
 			// has() before get(): the container throws on an unregistered key,
@@ -4075,7 +4073,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * same defaults through the same parse as query_by_author(), and hands
 	 * them to the same query_count(). Pass the list's args and the two agree
 	 * by construction rather than by everyone remembering.
-	 * Basecamp 10297845497.
 	 *
 	 * @since 1.6.0
 	 * @since 2.4.2 Accepts $args, mirroring query_by_author().
@@ -4430,7 +4427,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// mutually exclusive — two media_type rules became `file_type LIKE
 		// '%image%' AND file_type LIKE '%video%'`, which no single file can
 		// satisfy, so the collection resolved to zero and rendered the broken
-		// placeholder cover (#9962118482). These args carry that semantic, so the
+		// placeholder cover. These args carry that semantic, so the
 		// collection service no longer needs SQL of its own to express it.
 		list( $or_where, $or_params ) = $this->or_set( 'm.post_author', '%d', $args['authors_in'] );
 		if ( '' !== $or_where ) {
@@ -4565,7 +4562,6 @@ class MediaRepository implements MediaRepositoryInterface {
 				// Either direction: the author blocked the viewer, or the viewer
 				// blocked the author. Explore and every feed listing share this
 				// clause, and showed a blocked member the blocker's media
-				// (Basecamp 10354827925).
 				self::$blocked_cache[ $mvs_viewer ] = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $mvs_viewer );
 			}
 			$mvs_blocked = self::$blocked_cache[ $mvs_viewer ];
@@ -5048,7 +5044,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int    $author_id Only this member's media (0 = anyone's). An
 	 *                          upload passes the uploader: another member's
 	 *                          file, private or not, is none of their business
-	 *                          (Basecamp 10364776039). @since 2.6.1
+	 * @since 2.6.1
 	 * @return int|null
 	 */
 	public function find_by_hash( string $hash, int $author_id = 0 ): ?int {
@@ -5118,8 +5114,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Hand a member's media to another member, the way WordPress hands over posts.
 	 *
-	 * Used when an account is deleted with "Attribute all content to" (Basecamp
-	 * 10344411938). Privacy is untouched. A personal drive IS its owner, so a
+	 * Used when an account is deleted with "Attribute all content to". Privacy is untouched. A personal drive IS its owner, so a
 	 * `user` drive that named the old author now names the new one; team drives
 	 * keep their drive. DM attachments are left out: they live inside the
 	 * sender's messages, which are erased with the account, so the caller
@@ -5486,10 +5481,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		$prefix = '' !== $alias ? $alias . '.' : '';
 		// Followers-only items are listed for the author's followers, the same
 		// rule PrivacyService::can_view() applies to the single item; without it
-		// every list failed closed (Basecamp 10354828096). Served by the
+		// every list failed closed. Served by the
 		// follower_following unique key.
 		// A chat file is never listed, not even to its sender: it lives only in
-		// the conversation, as in any messenger (Basecamp 10392976206).
+		// the conversation, as in any messenger.
 		global $wpdb;
 		return array(
 			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d"
@@ -5514,7 +5509,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * A gallery cover counts itself plus the published, approved members that
 	 * share its privacy, so a private member is never counted on a public cover.
 	 * Any other item stands for itself and gets 0: a member listed on its own
-	 * shows no badge and opens alone in the lightbox (Basecamp 10392976432).
+	 * shows no badge and opens alone in the lightbox.
 	 * Cached for the request; any repository write clears it.
 	 *
 	 * @since 2.6.2
@@ -5603,7 +5598,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function gallery_exclude_subquery( string $cover_type = '' ): string {
 		global $wpdb;
 
-		// Known limit, planned for 2.7.0 (Basecamp 10392589060): every non-cover
+		// Known limit, planned for 2.7.0: every non-cover
 		// member is hidden even when its cover is private or deleted. Checking the
 		// cover per member needs an index on the group key: without one it ran in
 		// seconds on large sites on both MySQL and MariaDB, so 2.6.2 kept this rule.
@@ -5636,7 +5631,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * and 121 chips above the grid buries the media. But a cap with no way to
 	 * reach past it reads as "tags are missing", which is exactly how it was
 	 * reported. The caller uses this to decide whether to offer a route to the
-	 * rest. Basecamp 10278224214.
+	 * rest.
 	 *
 	 * @since 2.4.2
 	 *
@@ -5678,7 +5673,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * EVERY object on the term — documents included. The Explore feed queries
 	 * `MediaTypes::MEDIA_LIBRARY` (image/video/audio) and excludes documents by
 	 * design, so a tag carried only by documents was rendered as a chip that can
-	 * never match: click it, get zero items (Basecamp 10259632183). A filter
+	 * never match: click it, get zero items. A filter
 	 * control that offers a value with no results is worse than not offering it.
 	 *
 	 * So the cloud is counted against the same table and the same type group the
@@ -6283,7 +6278,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// It was left to callers, so anything inserting without it landed on the
 		// column default `drive_id = 0` — 13 rows on the QA baseline (11 images,
 		// 1 document, 1 junk row), every one created AFTER the drive backfill had
-		// finished, i.e. a live path and not legacy drift (Basecamp 10259007636).
+		// finished, i.e. a live path and not legacy drift.
 		//
 		// Nothing looked broken because `PermissionService::drive_of()` falls back
 		// to `post_author` when `drive_id` is 0. That fallback is a mask: it holds
@@ -6315,7 +6310,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// Two parallel uploads with the same title (every iPhone photo is
 		// "Image") can probe the same free slug; the second insert then hits the
 		// unique key and the upload failed, deleting the file. Retry once with a
-		// random suffix (Basecamp 10393276031 #10).
+		// random suffix.
 		if ( false === $result && $generated && false !== stripos( (string) $wpdb->last_error, 'duplicate' ) ) {
 			$data['slug'] = self::random_slug_suffix( (string) $data['slug'] );
 			$result       = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

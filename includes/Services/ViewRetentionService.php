@@ -74,7 +74,7 @@ class ViewRetentionService {
 	/**
 	 * Prune READ notifications older than the retention window.
 	 *
-	 * The table only grew (Basecamp 10393276031). Unread ones stay. There is
+	 * The table only grew. Unread ones stay. There is
 	 * no created_at index here (a 2.7.0 schema item), so the delete walks the
 	 * primary key: old rows have the lowest ids, so each batch stops early
 	 * instead of scanning the table.

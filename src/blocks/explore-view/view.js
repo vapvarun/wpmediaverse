@@ -95,7 +95,7 @@ const { state, actions } = store( 'mvs/explore', {
 		},
 		/**
 		 * Same shortcuts as the dashboard, and the same first rule: never while
-		 * the member is typing (10249014961).
+		 * the member is typing.
 		 */
 		exploreBulkKeydown( event ) {
 			const el = event.target;
@@ -252,7 +252,7 @@ const { state, actions } = store( 'mvs/explore', {
 	},
 	// callbacks.init() used to fetch tags/cloud and build the chip row client
 	// side. explore.php now renders those chips on the server, which is what
-	// makes the active state survive a router navigation (Basecamp 10277976087),
+	// makes the active state survive a router navigation,
 	// so the fetch is gone rather than left running for a row nothing reads.
 	// The tags/cloud REST route stays - it is public API and the app uses it.
 } );

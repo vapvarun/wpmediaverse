@@ -13,7 +13,7 @@ import { store, getContext, getElement, withScope } from '@wordpress/interactivi
  * with focus left on the page behind them, so Tab walked the dashboard cards
  * under the overlay before reaching the form (WCAG 2.4.3). One behaviour for
  * all three: focus moves to the first field on open, Tab stays inside, and
- * focus returns to whatever opened the modal on close. Basecamp 10320657228.
+ * focus returns to whatever opened the modal on close.
  */
 const MODAL_FOCUSABLE =
 	'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -88,7 +88,7 @@ function countLabel( total, plural, one ) {
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here.
 // PHP (dashboard-content.php) seeds translated strings into interactivity state;
-// read them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+// read them as `state.i18n.<key>` with an English fallback.
 const sharedUI = store( 'mvs/shared-ui' );
 
 function apiFetch( ctx, path, opts = {} ) {
@@ -440,7 +440,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		// A document has no thumbnail_url and is not an image, so favThumbUrl is
 		// '' and every other branch above is false for it — the card thumb
-		// rendered completely empty (Basecamp 10268223103). Audio already had a
+		// rendered completely empty. Audio already had a
 		// placeholder; documents did not.
 		get showFavDocPlaceholder() {
 			return ! state.favThumbUrl && getContext().item?.media_type === 'document';
@@ -512,7 +512,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		 * privacy_options() renders the offered levels server-side; this only
 		 * decides whether the extra disabled option appears. The offered set
 		 * comes from privacy_choices() via PHP - filterable, BP-conditional -
-		 * so it is never restated here. Basecamp 10290748981.
+		 * so it is never restated here.
 		 */
 		privacyUnlisted( stored ) {
 			const offered = state.i18n?.privacyChoices || [];
@@ -527,7 +527,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/*
 		 * One album per photo (2.6.0): a photo already in another album moves
 		 * when it is picked here, so the picker says where it is now, and where
-		 * it will move from once selected (Basecamp 10264373450).
+		 * it will move from once selected.
 		 */
 		get pickerItemAlbumLabel() {
 			const { item } = getContext();
@@ -544,7 +544,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// Label, never the stored slug. The badge used to print `loggedin`
 			// straight from the database, lowercase and untranslated, directly
 			// above a picker calling the same state "Members: logged-in users
-			// only". Basecamp 10290748981.
+			// only".
 			// Short word only ("Members", not "Members: logged-in users only"),
 			// the same rule as TemplateHelpers::privacy_short_label().
 			const item = getContext().item;
@@ -552,7 +552,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const map = state.i18n?.privacyLabels || {};
 			const label = ( map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' ) ).split( ':' )[ 0 ].trim();
 			// In an album the album's privacy applies; say so, so the badge and
-			// the edit modal agree (2.6.0, Basecamp 10264373450).
+			// the edit modal agree (2.6.0,
 			return item?.album ? ( state.i18n?.privacyViaAlbum || '%s (album)' ).replace( '%s', label ) : label;
 		},
 		// A photo in an album shows with the album's privacy (2.6.0, Basecamp
@@ -601,7 +601,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// selectedIds from the album's current items and then draws none of it —
 		// the member sees an undifferentiated grid and cannot tell what is in
 		// the album, what they just toggled, or what Save will do
-		// (Basecamp 10190678139).
 		get isPickerSelected() {
 			const ctx = getContext();
 			return !! ctx.item && state.albumModal.selectedIds.includes( ctx.item.id );
@@ -743,7 +742,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			//
 			// This used to be `if ( 'documents' === tab )` — a name-check standing
 			// in for a rule. Compete was not covered by it and went blank
-			// (Basecamp 10264172058); and writing the rule as "off-site only"
+			// and writing the rule as "off-site only"
 			// then dropped Documents and reproduced the same blank panel there.
 			// Asking whether a panel was rendered covers both, and covers the
 			// next section without anyone remembering to add it.
@@ -971,7 +970,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 							lastDuplicateId = mediaData.existing_media_id || 0;
 						}
 						// "Also share as a story" (Pro). Non-fatal: the media is
-						// uploaded either way. Basecamp 10313107097.
+						// uploaded either way.
 						if ( state.upload.story && mediaData && mediaData.id ) {
 							await window.mvsRest.markAsStory( mediaData.id );
 						}
@@ -1385,7 +1384,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		 *
 		 * Bound on document, so the FIRST thing it does is get out of the way of
 		 * anything the member is typing into — the same guard the lightbox needed
-		 * (10249014961). Delete is deliberately routed through the same confirm
+		 * Delete is deliberately routed through the same confirm
 		 * as the button: a destructive shortcut with no confirmation is how a
 		 * library disappears to a mis-aimed keypress.
 		 */
@@ -1738,7 +1737,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.pickerLoading = true;
 			try {
 				// Paged: a fixed per_page=100 hid every older photo from a member
-				// with more than 100 (Basecamp 10264373450).
+				// with more than 100.
 				const res = await apiFetch( ctx, 'me/media?per_page=' + perPage + '&page=' + page );
 				const rows = Array.isArray( res.data ) ? res.data : [];
 				state.albumModal.pickerItems = 1 === page ? rows : [ ...state.albumModal.pickerItems, ...rows ];
@@ -1760,7 +1759,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		 * A photo in an album shows with the album's privacy, so making an album
 		 * more public, or adding a stricter photo to it, widens who sees those
 		 * photos. Count them so the member is asked first - never for a change
-		 * that only tightens (Basecamp 10264373450).
+		 * that only tightens.
 		 */
 		async countWidenedPhotos( ctx, albumId, toAdd ) {
 			const next = state.privacyLevel( state.albumModal.privacy );
@@ -1866,7 +1865,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				if ( widened.count > 0 ) {
 					state.albumModal.saving = false;
 					// Name the photos it affects and say what the button does;
-					// Cancel keeps focus (Basecamp 10364776389).
+					// Cancel keeps focus.
 					const shown = widened.names.slice( 0, 3 ).map( ( n ) => '"' + n + '"' ).join( ', ' );
 					const more = widened.names.length > 3
 						? ' ' + ( state.i18n?.andNMore || 'and %d more' ).replace( '%d', widened.names.length - 3 )
@@ -1888,7 +1887,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.loosenConfirmed = false;
 
 			// A stricter album privacy changes how every photo in it shows; ask
-			// first instead of hiding them silently (Basecamp 10364776389).
+			// first instead of hiding them silently.
 			const itemCount = state.albumModal.selectedIds.length;
 			if (
 				! state.albumModal.narrowConfirmed &&
@@ -1940,7 +1939,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// empty-name message and create logic live in one place.
 					// It also checks the response, so a failed create (e.g. an
 					// empty title returning 400) can no longer fall through and
-					// be reported as "Album created!" (Basecamp 10069383195).
+					// be reported as "Album created!".
 					const albumResult = await window.mvsRest.createAlbum(
 						state.albumModal.title,
 						{
@@ -1972,7 +1971,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.albumModal.saving = false;
 				// Say what happened to the photos, not only to the album: which
 				// moved in from another album, and which went back to their own
-				// privacy (Basecamp 10264373450).
+				// privacy.
 				const notes = [ state.albumModal.isEdit ? ( state.i18n?.albumUpdated || 'Album updated!' ) : ( state.i18n?.albumCreated || 'Album created!' ) ];
 				if ( moving ) {
 					notes.push( ( state.i18n?.photosMoved || '%d photo(s) moved from other albums.' ).replace( '%d', moving ) );
@@ -2073,7 +2072,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// get_permalink()), and overwriting it shipped every card as
 					// an ugly /?p=<id> that WordPress then 301'd — so the URL a
 					// member copied or bookmarked was never the canonical one
-					// (Basecamp 10249047170). loadAlbums never did this, which is
+					// loadAlbums never did this, which is
 					// why album cards were always right.
 					if ( item.type === 'smart' ) {
 						try {
@@ -2490,7 +2489,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			// Back and Forward. The tabs write the address with pushState, so the
 			// browser moves through those entries without reloading; without this
-			// the address changed and the screen did not (card 10369327095). The
+			// the address changed and the screen did not. The
 			// section comes from the history entry, or, for the entry the page
 			// loaded with, from the rail link whose address matches. Anything else
 			// (a section on its own page, an address no rail item owns) reloads,

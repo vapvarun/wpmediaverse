@@ -534,7 +534,7 @@ class CloudOps {
 			// migrate_one behaviour) followed by "Free up server space"
 			// permanently deleted thumbnails that were never uploaded, turning
 			// every thumbnail into a 404. Verify each file on its own; keep any
-			// the cloud can't confirm. (BC #10029395885 follow-up.)
+			// the cloud can't confirm.
 			foreach ( self::stored_paths( $media_id, $rel_path ) as $path ) {
 				if ( $path === $rel_path ) {
 					continue; // Original handled above.

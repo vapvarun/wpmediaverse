@@ -56,7 +56,7 @@ class UserDeletionService {
 	 * Tell the Delete Users screen that these members own media.
 	 *
 	 * Makes WordPress show "Attribute all content to" for a member whose only
-	 * content is media (Basecamp 10344411938).
+	 * content is media.
 	 *
 	 * @since 2.6.0
 	 *
@@ -228,7 +228,7 @@ class UserDeletionService {
 	 *
 	 * When the admin chose "Attribute all content to", phase 1 hands the media
 	 * to that member instead, as WordPress does with posts; only DM attachments,
-	 * which live inside the erased messages, still go (Basecamp 10344411938).
+	 * which live inside the erased messages, still go.
 	 *
 	 * @param int      $user_id  User ID being deleted.
 	 * @param int|null $reassign Member receiving the content, or null to erase it.
@@ -480,7 +480,7 @@ class UserDeletionService {
 			// Only the user id: each batch re-reads what is still theirs. The id
 			// list used to travel in the job, and Action Scheduler refuses
 			// arguments over 8,000 characters, so deleting a member with ~1,100+
-			// media threw out of the delete (Basecamp 10393276031 #9).
+			// media threw out of the delete.
 			as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
 			return;
 		}

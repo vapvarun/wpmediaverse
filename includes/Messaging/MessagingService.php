@@ -102,7 +102,7 @@ class MessagingService {
 		// "everyone" + user "mutual" -> "mutual"), never widen past it (e.g.
 		// global "nobody" + user "everyone" must stay "nobody"). Without this,
 		// a recipient's per-user meta could silently re-open DMs an admin
-		// disabled site-wide (Basecamp #10053143680).
+		// disabled site-wide.
 		$global_access = get_option( 'mvs_dm_access', 'everyone' );
 		$user_access   = get_user_meta( $recipient_id, '_mvs_dm_access', true );
 		$access        = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
@@ -316,7 +316,7 @@ class MessagingService {
 		// initiator simply sees no pre-delete history. The old fresh-thread rule
 		// (`p1.status <> 'left'` here) spawned a second conversation row on
 		// re-contact, and the OTHER member — who never deleted anything — ended
-		// up with two live threads for the same person (card 10127717045).
+		// up with two live threads for the same person.
 		// ORDER BY newest keeps the lookup deterministic for pairs that already
 		// have historical duplicates from the old behaviour.
 		$existing_id = $wpdb->get_var(
@@ -589,7 +589,6 @@ class MessagingService {
 				// tab, and listing them in both meant a message from someone
 				// you don't follow appeared twice — once as a pending request
 				// and once as if it were already an accepted conversation
-				// (Basecamp #10153356172).
 				$where_parts[] = "p.status = 'active'";
 				$where_parts[] = 'p.is_archived = 0';
 				break;
@@ -805,7 +804,7 @@ class MessagingService {
 	 * `last_message_id` / `last_message_preview` live on the conversation row
 	 * and are shared by both participants; a user who deleted the thread must
 	 * not see the pre-delete preview when the thread reactivates before any
-	 * new message arrives (card 10127717045). Rows expose `cleared_up_to`
+	 * new message arrives. Rows expose `cleared_up_to`
 	 * via the participant JOIN in get_conversations()/get_conversation().
 	 *
 	 * @since 2.2.1
@@ -926,7 +925,7 @@ class MessagingService {
 	 * Only the owner's own share counts: anyone else posting the id must not
 	 * widen who can see it. attachment_id is not matched either - WordPress
 	 * attachment ids are a different sequence, so a collision granted unrelated
-	 * media. Basecamp 10392490030.
+	 * media.
 	 *
 	 * @param int $user_id  Viewer user id.
 	 * @param int $media_id Media id shared in a message.
@@ -947,7 +946,7 @@ class MessagingService {
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
 		// A message the sender deleted for everyone or unsent no longer shares the
-		// item (Basecamp 10393276020 #16).
+		// item.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$found = $wpdb->get_var(
 			$wpdb->prepare(
@@ -975,7 +974,7 @@ class MessagingService {
 	 *
 	 * A media item must be one the sender can see (their own, or one its
 	 * privacy shows them); a WordPress attachment must be the sender's own
-	 * upload. Basecamp 10392490030.
+	 * upload.
 	 *
 	 * @param int   $sender_id Sender user id.
 	 * @param array $data      Message data (media_id, attachment_id).
@@ -1065,7 +1064,7 @@ class MessagingService {
 	 * thread". Any notification producer must ask this — MediaVerse's own
 	 * listener does, and a host bridge (BuddyNext routes DM notifications through
 	 * its own store) must too, or a muted thread still pings on that stack
-	 * (Basecamp 10153578635). An EXPIRED timed mute auto-unmutes here and returns
+	 * An EXPIRED timed mute auto-unmutes here and returns
 	 * false, so the expiry rule lives in one place rather than being re-derived
 	 * by every caller.
 	 *
@@ -1116,7 +1115,7 @@ class MessagingService {
 		// reactivates (re-contact via find_or_create_conversation(), or an
 		// inbound message via send_message()). The other participant keeps the
 		// same single thread and their full history — no duplicate conversation
-		// is ever created for the pair (card 10127717045). An id watermark, not
+		// is ever created for the pair. An id watermark, not
 		// a timestamp: ids are strictly monotonic, so a message sent in the
 		// same second as the delete is still delivered.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1564,7 +1563,7 @@ class MessagingService {
 		// sets DM access to "nobody", blocks the sender, admin flips the
 		// site-wide setting) — without this, every send into an
 		// already-open conversation silently bypassed can_message() forever
-		// (Basecamp #10053143680). Only applies to 1:1 `direct` conversations;
+		// Only applies to 1:1 `direct` conversations;
 		// group DM access isn't governed by per-recipient DM privacy rules.
 		if ( 'direct' === $participant->type ) {
 			$other_id = 0;
@@ -1620,7 +1619,7 @@ class MessagingService {
 
 		// A message may only carry a file its sender can already see. Storing any
 		// id let a member post someone else's private media into their own DM and
-		// read it through the DM grant. Basecamp 10392490030.
+		// read it through the DM grant.
 		if ( ! $this->sender_may_attach( $sender_id, $data ) ) {
 			return array(
 				'success'    => false,
@@ -1693,7 +1692,7 @@ class MessagingService {
 			$insert_formats[]        = '%d';
 		}
 
-		// A reply may only point at a message in this conversation (Basecamp 10393041312).
+		// A reply may only point at a message in this conversation.
 		if ( ! empty( $data['parent_id'] ) && $conversation_id === (int) $wpdb->get_var( $wpdb->prepare( "SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d", (int) $data['parent_id'] ) ) ) {
 			$insert_data['parent_id'] = (int) $data['parent_id'];
 			$insert_formats[]         = '%d';
@@ -2009,7 +2008,6 @@ class MessagingService {
 	 * Set by leave_conversation() ("Delete" in the UI). Messages with an id at
 	 * or below the watermark must never be served to this user again — the
 	 * thread itself is reused on re-contact instead of duplicated
-	 * (card 10127717045).
 	 *
 	 * @since 2.2.1
 	 *
@@ -2056,7 +2054,7 @@ class MessagingService {
 		// person's thread without a trace, while the deleter kept a tombstone.
 		// Exactly backwards from the label, with no time limit on it.
 		// Members already have a real per-user hide: the cleared_up_to
-		// watermark applied just below. Basecamp 10263770236.
+		// watermark applied just below.
 		$where  = 'm.conversation_id = %d';
 		$params = array( $conversation_id );
 
@@ -2126,7 +2124,7 @@ class MessagingService {
 			}
 
 			// Attachment / media-share payloads are never shipped for deleted
-			// messages — same contract as poll() (Basecamp #9962618059).
+			// messages — same contract as poll().
 			if ( $msg->attachment_id && ! $is_hidden ) {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
 			}
@@ -2204,7 +2202,7 @@ class MessagingService {
 
 		// Look the message up first so the controller can return precise status
 		// codes (404 when it never existed, 403 when the caller isn't the
-		// sender) instead of a blanket 400 Bad Request (Basecamp #9936826065).
+		// sender) instead of a blanket 400 Bad Request.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
@@ -2284,7 +2282,7 @@ class MessagingService {
 	 *                              'text' (or a raw MIME the allow-list resets to
 	 *                              'text'), which previously stored an EMPTY
 	 *                              preview and left a blank line in the
-	 *                              conversation list (card 10127764989); the
+	 *                              conversation list; the
 	 *                              attachment's real MIME resolves the label.
 	 * @param int    $media_id      Shared media item id, when present.
 	 * @return string Preview (max 100 chars).
@@ -2297,7 +2295,7 @@ class MessagingService {
 
 		// Attachment-only messages: a typed placeholder, the way every chat app
 		// previews its media messages. 'audio' was previously missing entirely
-		// and fell through to '' (card 10127764989).
+		// and fell through to ''.
 		$labels = array(
 			'voice'       => __( 'Voice message', 'wpmediaverse' ),
 			'image'       => __( 'Photo', 'wpmediaverse' ),
@@ -2339,7 +2337,7 @@ class MessagingService {
 	 * from the newest still-visible message (not is_deleted, not
 	 * deleted_for_all), or clear them when nothing visible remains. Called after
 	 * a message is deleted/unsent so the sidebar preview never shows a removed
-	 * message (Basecamp #9962618059).
+	 * message.
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 */
@@ -2457,7 +2455,7 @@ class MessagingService {
 
 		// Unsend (delete-for-everyone) also removes the message from every
 		// surface, so refresh the conversation's stored preview the same way
-		// delete_message does (Basecamp #9962618059).
+		// delete_message does.
 		$this->refresh_conversation_last_message( (int) $msg->conversation_id );
 
 		do_action( 'mvs_message_deleted', $message_id, $user_id, true );
@@ -2953,7 +2951,7 @@ class MessagingService {
 
 		// The mute predicate mirrors is_conversation_muted(): an EXPIRED timed mute
 		// must stop suppressing here too, or the badge keeps undercounting a thread
-		// the member already un-muted by the clock (Basecamp 10153578635).
+		// the member already un-muted by the clock.
 		$count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*)
@@ -3095,7 +3093,7 @@ class MessagingService {
 	 *
 	 * The poll only returns messages newer than the client's last-seen time, so a
 	 * reaction on an ALREADY-delivered message is invisible to it — the reason
-	 * reactions did not appear live for the other participant (card 10122929662).
+	 * reactions did not appear live for the other participant.
 	 * This is the companion query: messages the viewer participates in, created on
 	 * or before `$since` (a newer message already ships its reactions in poll()),
 	 * whose updated_at moved past `$since` because a reaction was added or removed.
@@ -3239,7 +3237,7 @@ class MessagingService {
 	 * Give a chat attachment stored as 'dm' media the `attachment` shape the chat
 	 * UI reads (image, video, voice and file messages), from the share payload
 	 * already signed for this viewer. Shares of an existing item keep only
-	 * `media_share`. Basecamp 10392474704.
+	 * `media_share`.
 	 *
 	 * @param \stdClass $msg Message row with media_share set.
 	 * @return void

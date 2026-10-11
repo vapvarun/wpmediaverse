@@ -45,7 +45,7 @@ abstract class BaseBPTabIntegration {
 	 * `Plugin::enforce_frontend_presence()` deregisters every enqueued `mvs-*`
 	 * handle except what `mvs_frontend_presence_keep_handles` protects, and the
 	 * old callback protected TWO handles while this class enqueued FIVE. Load
-	 * More rendered with its script stripped (Basecamp 10300002499).
+	 * More rendered with its script stripped.
 	 *
 	 * THE DEPENDENCIES ARE IN THE LIST ON PURPOSE. Deregistering a dependency
 	 * does not just remove it: the dependent still reports `enqueued`, and then
@@ -457,7 +457,7 @@ abstract class BaseBPTabIntegration {
 			 * block, the member dashboard) has carried these since 1.2.0; this
 			 * one shipped with a dropzone and nothing else, so a member
 			 * uploading from their profile Media tab could not name or caption
-			 * the item at upload time at all. Basecamp 10171655728.
+			 * the item at upload time at all.
 			 *
 			 * Read back by assets/js/frontend/bp-tab-upload.js. Title is sent
 			 * only for a single-file upload — N files must not share one name —
@@ -476,7 +476,7 @@ abstract class BaseBPTabIntegration {
 					placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 					aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" />
 				<?php
-				// Owner lock (Basecamp 10320619418): hidden when members may not
+				// Owner lock: hidden when members may not
 				// choose; the upload then takes the site default server-side. The
 				// options come from the one shared list, preselected at the site
 				// default like every other upload picker.
@@ -645,7 +645,7 @@ abstract class BaseBPTabIntegration {
 			// non-members. Album privacy lives on the album POST (_mvs_privacy)
 			// since 2.4.0, NOT in mvs_media_index - an index row at this ID is an
 			// unrelated media item that happens to share the integer, which is
-			// why the call declares SPACE_CPT. Basecamp 10298525085.
+			// why the call declares SPACE_CPT.
 			// No null-guard on the service — fail closed, never skip the gate.
 			if ( ! $privacy->can_view( $album_id, $viewer_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				continue;

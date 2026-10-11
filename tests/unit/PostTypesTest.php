@@ -33,7 +33,7 @@ class PostTypesTest extends WP_UnitTestCase {
 	/**
 	 * Media taxonomies ride on mvs_album only to keep their term screen. The Albums
 	 * list must not offer them: Quick/Bulk Edit would write album IDs into the
-	 * media term space. Basecamp 10379842826.
+	 * media term space.
 	 */
 	public function test_media_taxonomies_are_not_on_the_albums_list(): void {
 		foreach ( array( 'mvs_tag', 'mvs_category' ) as $taxonomy ) {

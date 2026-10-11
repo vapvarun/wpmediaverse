@@ -95,7 +95,7 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 	 * cookies but can never send X-WP-Nonce, and core anonymizes cookie-authed
 	 * REST requests without a nonce. Gating /serve on is_user_logged_in()
 	 * therefore 401s every media file for EVERY visitor, members included —
-	 * that was the 2.2.0 regression (Basecamp 10180510437). serve_file()
+	 * that was the 2.2.0 regression. serve_file()
 	 * validates the signature and re-checks per-item privacy itself.
 	 *
 	 * @return void

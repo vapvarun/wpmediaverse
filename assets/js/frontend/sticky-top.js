@@ -9,7 +9,7 @@
  * all hit-tested to the theme's header, so a member doing bulk work could not
  * click the controls at all; `.mvs-dashboard-tabs` at 390 sat entirely inside
  * the header band (0-70 against 0-81, z-index 50 against 999) and its first tab
- * hit-tested to the site logo. Basecamp 10320911387.
+ * hit-tested to the site logo.
  *
  * A plugin cannot hardcode a theme's header height, so the number is measured:
  * probe the top edge of the viewport, keep the elements that are actually

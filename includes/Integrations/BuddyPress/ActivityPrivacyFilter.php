@@ -75,7 +75,7 @@ class ActivityPrivacyFilter {
 	 * EVERY viewer — including logged-out ones — so it is a hide_sitewide
 	 * widening flag, not a moderation/trust signal. Skipping on it disabled
 	 * MVS privacy gating on all member-profile activity streams and leaked
-	 * members-only media to anonymous visitors (Basecamp #9941246549).
+	 * members-only media to anonymous visitors.
 	 * Admin/owner visibility is granted inside build_where_clause() instead.
 	 *
 	 * @param string $join_sql Existing JOIN clause.

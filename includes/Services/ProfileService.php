@@ -82,7 +82,7 @@ class ProfileService {
 		// BuddyPress's bp_core_fetch_avatar() reads its OWN uploads/avatars/ dir and
 		// routes through neither of the WP filters above, so a member's MVS avatar
 		// showed on no BP surface — the members directory, activity, cards all fell
-		// back to the theme default (Basecamp 10128286574). Serve the MVS avatar
+		// back to the theme default. Serve the MVS avatar
 		// through BP's own filters too. (These only fire when BuddyPress is active.)
 		add_filter( 'bp_core_fetch_avatar_url', array( $this, 'filter_bp_avatar_url' ), 10, 2 );
 		add_filter( 'bp_core_fetch_avatar', array( $this, 'filter_bp_avatar_html' ), 10, 2 );
@@ -483,7 +483,6 @@ class ProfileService {
 	 * field beside it in the same REST response served their real photograph.
 	 * Anything gating on this — an "upload a profile photo" nudge, a
 	 * profile-completion check — asked them for a picture they already had
-	 * (Basecamp 10252323883).
 	 *
 	 * It cannot be resolved by inspecting the avatar chain. Core's
 	 * `found_avatar` looks like the signal and is not: a plugin that generates

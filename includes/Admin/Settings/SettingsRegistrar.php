@@ -190,7 +190,7 @@ class SettingsRegistrar {
 			$image::SETTING_GENERATE_WEBP                            => array( 'boolean', 'rest_sanitize_boolean', true ),
 			$image::SETTING_GENERATE_AVIF                            => array( 'boolean', 'rest_sanitize_boolean', false ),
 			// Hashed by default since 1.6.0; matches FilenameStrategy's runtime
-			// fallback so get_option() and resolve_strategy agree (#9962530792).
+			// fallback so get_option() and resolve_strategy agree.
 			\WPMediaVerse\Services\FilenameStrategy::SETTING     => array( 'string', array( Sanitizers::class, 'sanitize_filename_strategy' ), \WPMediaVerse\Services\FilenameStrategy::effective_default() ),
 		);
 		foreach ( $fieldless as $option => $spec ) {
@@ -206,7 +206,7 @@ class SettingsRegistrar {
 		}
 
 		// Lossy for JPEG (about quality 92), so OFF by default: re-encoding every
-		// upload can only lose detail (Basecamp #10073918955). Removing GPS is a
+		// upload can only lose detail. Removing GPS is a
 		// separate lossless step controlled by mvs_strip_exif.
 		register_setting(
 			$group,
@@ -325,7 +325,7 @@ class SettingsRegistrar {
 				// REST schema, so 'delete' here made a fresh install SHOW "Delete
 				// permanently" as the default and persist it on the first Save —
 				// silently arming auto-deletion of flagged uploads. Auto-moderation
-				// must default to the safe, reversible action. Basecamp 10074612454.
+				// must default to the safe, reversible action.
 				'default'           => 'flag',
 			)
 		);

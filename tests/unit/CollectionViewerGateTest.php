@@ -12,7 +12,6 @@ use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Social\FavoriteService;
 
 /**
- * Basecamp 10298492555.
  *
  * get_collection_media_ids() returned raw favourite rows with no privacy
  * check, and the REST controller counted them with its own raw SQL, so a

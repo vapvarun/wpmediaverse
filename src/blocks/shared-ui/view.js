@@ -18,7 +18,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
 // interactivity state by shared-ui-frame.php via wp_interactivity_state(); read
-// them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+// them as `state.i18n.<key>` with an English fallback.
 let toastTimer = null;
 let tagSearchTimer = null;
 let savedListenerAdded = false;
@@ -27,7 +27,7 @@ let savedListenerAdded = false;
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s" with no zone)
  * to epoch ms as UTC. new Date() would read the zone-less string as LOCAL time,
  * so on a non-UTC browser a just-posted comment looked hours old and its edit
- * window read as expired (Basecamp 10148635942).
+ * window read as expired.
  *
  * @param {string} s Date string.
  * @return {number} Epoch ms (NaN-safe: returns Date.now() on an unparseable value).
@@ -98,7 +98,7 @@ function isTextEntry( target ) {
  * focus, never held it, and never gave it back. A member pressed Enter on a
  * grid tile, the overlay covered the page, and their next Tab walked the 27
  * controls BEHIND it — reachable, invisible, and with no way to tell they had
- * left (Basecamp 10252222057).
+ * left.
  *
  * Kept as plain functions over the live DOM rather than store state: the
  * lightbox markup is server-rendered once and shown by a `hidden` binding, so
@@ -111,7 +111,7 @@ let lightboxReturnFocus = null;
 
 /**
  * The shell upload modal is the same kind of dialog and reuses the same
- * focusables + Tab trap below, keyed by its own selector (Basecamp 10320784059).
+ * focusables + Tab trap below, keyed by its own selector.
  */
 const UPLOAD_MODAL = '.mvs-upload-modal-overlay .mvs-modal';
 
@@ -321,7 +321,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		 * privacy_options() renders the offered levels server-side; this only
 		 * decides whether the extra disabled option is shown. The offered set
 		 * comes from privacy_choices() via PHP - filterable, and BP-conditional
-		 * - so it is never restated here. Basecamp 10290748981.
+		 * - so it is never restated here.
 		 */
 		privacyUnlisted( stored ) {
 			const offered = state.i18n?.privacyChoices || [];
@@ -508,7 +508,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Bound to the <img src>. When there is no image (document/video/audio)
 			// a bound empty string makes the browser resolve src="" to the page URL
 			// and fetch it — harmless (the <img> is hidden) but wasteful. A 1x1
-			// transparent GIF is inert. (Basecamp 10248528902)
+			// transparent GIF is inert.
 			return state.lightboxImageUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 		},
 		get lightboxImageWebpUrl() {
@@ -562,7 +562,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxHideDocument() {
 			// The download card is for documents we cannot preview. When Pro
 			// returned viewer HTML the card would duplicate it, so it steps aside.
-			// Basecamp 10268223516.
 			return state.lightboxMediaData?.media_type !== 'document'
 				|| !! state.lightboxMediaData?.doc_viewer_html;
 		},
@@ -573,7 +572,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxDocGlyphClass() {
 			// Per-type glyph from the REST doc_icon (resolved server-side from the
 			// single DocumentTypes map), so a spreadsheet is not drawn as a text
-			// file. Falls back to the generic file glyph. (Basecamp 10248528902)
+			// file. Falls back to the generic file glyph.
 			//
 			// MUST return the FULL class string, not just the `--<icon>` modifier:
 			// the template binds this with `data-wp-bind--class`, which REPLACES
@@ -591,7 +590,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Show the <img> only when there is a real image URL. lightboxImageUrl
 			// now returns '' for every non-image type, so a document (or any item
 			// with no displayable image) never synthesises a broken <img> under
-			// the media chrome (Basecamp 10248528902).
+			// the media chrome.
 			return ! state.lightboxImageUrl;
 		},
 		get lightboxHideVideo() {
@@ -645,7 +644,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';
 		},
-		// Same alt as the grid card (Basecamp 9822979354).
+		// Same alt as the grid card.
 		get lightboxAlt() {
 			return state.lightboxMediaData?.alt || state.lightboxMediaData?.title || '';
 		},
@@ -780,7 +779,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		showToast( msg, type = 'success' ) {
 			// The live region only speaks when its text changes. It is emptied
 			// whenever a toast hides, and blanked here too so a toast replacing
-			// one still on screen is announced. Basecamp 10320784236.
+			// one still on screen is announced.
 			state.toastLive = '';
 			state.toastVisible = false;
 			clearTimeout( toastTimer );
@@ -1317,7 +1316,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateUploadTags( event ) {
 			state.uploadModalTags = event.target.value;
 			// Suggest tags for the word being typed, as pills under the field
-			// (Basecamp 10124085450). Same search the edit modal uses.
+			// Same search the edit modal uses.
 			const typing = state.uploadModalTags.split( ',' ).pop().trim();
 			actions.searchTags( typing, window.mvsBpActions?.restUrl || ( window.location.origin + '/wp-json/mvs/v1/' ) );
 		},
@@ -1439,7 +1438,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 							state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
 						}
 						// "Also share as a story" (Pro). Non-fatal: the media is
-						// uploaded either way. Basecamp 10313107097.
+						// uploaded either way.
 						if ( state.uploadModalStory && mediaData && mediaData.id ) {
 							await window.mvsRest.markAsStory( mediaData.id );
 						}
@@ -1528,7 +1527,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} else {
 				// Nothing went up (over quota, too large, wrong type): say why IN the
 				// window the member is looking at, not only in a toast that is gone
-				// in three seconds (card 10364778707). Stays until the next try; the
+				// in three seconds. Stays until the next try; the
 				// box is role=alert, so it is announced without a duplicate toast.
 				state.uploadModalError = state.uploadModalLastError ||
 					( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' );
@@ -1668,7 +1667,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// single-media page. The view POST was wired into that page and into
 			// the BP activity driver, but never into the IA lightbox - so opening
 			// media in the lightbox counted nothing, and the same item viewed two
-			// ways gave two different answers (Basecamp 10280453489).
+			// ways gave two different answers.
 			// This is the single funnel for all four lightbox openers
 			// (openLightbox, openLightboxById, and the two dashboard ones), so one
 			// line covers them. record_view() is already rate-limited and
@@ -1733,7 +1732,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! state.currentUserId ) {
 				// A way in, not just a refusal: the same login page the
 				// 'Log in to comment' link opens, back to this page after
-				// (card 10364778707). Nothing navigates until they choose to.
+				// Nothing navigates until they choose to.
 				if ( state.loginUrl ) {
 					actions.showConfirm(
 						state.i18n?.loginToReact || 'Please log in to react.',
@@ -1813,7 +1812,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxOpenCollections() {
 			if ( ! state.lightboxMediaId ) return;
 			// The picker announces each change; re-read the saved state so the
-			// Save button fills or empties (Basecamp 10364776932).
+			// Save button fills or empties.
 			if ( ! savedListenerAdded ) {
 				savedListenerAdded = true;
 				document.addEventListener( 'mvs-collections-changed', async ( e ) => {
@@ -1849,7 +1848,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// In-flight guard. The Post button's only disable was bound to the
 			// text, and the text is not cleared until the response returns, so
 			// the button stayed live for the whole request and every extra
-			// click sent another identical comment (#10148507863). Enter does
+			// click sent another identical comment. Enter does
 			// the same thing through lightboxCommentKeydown.
 			// media-social/view.js has had this pattern all along; the lightbox
 			// never got it.
@@ -1947,8 +1946,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		 *
 		 * The modal already existed but was only reachable from a dashboard
 		 * grid card, so a member viewing their own upload in the lightbox had
-		 * no way to add a title or caption after the fact (Basecamp
-		 * 10171655728). Closes the lightbox first so the two overlays never
+		 * no way to add a title or caption after the fact. Closes the lightbox first so the two overlays never
 		 * stack — openEditModal fetches, and the lightbox's own key handlers
 		 * would otherwise still be listening underneath.
 		 */
@@ -2040,7 +2038,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// report uses, filed to this item's queue (BuddyNext's own lightbox
 			// posts to the same route). It used to navigate to the item's page
 			// with #report, which nothing handled: the member landed on a page
-			// with no form and nothing was reported (card 10369223794).
+			// with no form and nothing was reported.
 			const id = state.lightboxMediaData?.id;
 			if ( id ) {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -2189,7 +2187,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				// the "+ New collection" field inside the lightbox itself. The
 				// f/F shortcut ate the `f` of "Office" and jumped to fullscreen,
 				// and Arrow keys navigated the gallery instead of moving the
-				// caret (Basecamp 10249014961).
+				// caret.
 				//
 				// Guards the SHORTCUT branch only, deliberately: Escape is
 				// handled above and must keep working from inside a field —
@@ -2411,11 +2409,11 @@ const { state: mvsState } = store( 'mvs', {
 				// (e.g. a Pro non-grid Explore layout whose template omits it),
 				// the swap yields EMPTY content instead of throwing, leaving a
 				// blank page. Detect the empty swap and fall back to a full load
-				// so the user never sees a blank screen. (#10033416011)
+				// so the user never sees a blank screen.
 				const region = document.querySelector( '[data-wp-router-region="mvs/main"]' );
 				// A page whose content needs scripts this page never loaded (the PDF
 				// viewer) marks itself data-mvs-full-load; the router swaps markup,
-				// not scripts, so load it for real (Basecamp 10392988289).
+				// not scripts, so load it for real.
 				if ( ! region || region.children.length === 0 || region.querySelector( '[data-mvs-full-load]' ) ) {
 					window.location.href = href;
 					return;

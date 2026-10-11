@@ -2,7 +2,7 @@
 /**
  * A photo in an album shows with the album's privacy; out of it, its own.
  *
- * Owner decisions 2026-09-27 (Basecamp 10264373450): one uniform rule, the
+ * Owner decisions 2026-09-27: one uniform rule, the
  * album wins in both directions, a photo belongs to one album, and the
  * member's own choice is kept and comes back when the photo leaves.
  *

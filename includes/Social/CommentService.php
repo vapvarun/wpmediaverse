@@ -195,7 +195,7 @@ class CommentService {
 		// reached through a view-only share must not be commentable. Pro narrows
 		// the filter for documents; all other media keeps the default true. Lives
 		// here so every client — web, lightbox, BP composer, REST, the planned
-		// mobile app — is covered rather than just create_item (#10240475368).
+		// mobile app — is covered rather than just create_item.
 		if ( ! (bool) apply_filters( 'mvs_can_comment', true, $media_id, $user_id ) ) {
 			return new WP_Error(
 				'mvs_comment_forbidden',
@@ -221,7 +221,7 @@ class CommentService {
 		// This is the ONLY layer that covers every client: the lightbox had no
 		// in-flight guard at all, the BP activity composer disabled the input
 		// but not the button, and the planned mobile app is a third client we
-		// cannot guard from the browser (#10148507863).
+		// cannot guard from the browser.
 		$duplicate = $this->find_recent_duplicate( $media_id, $user_id, $content, $parent_id );
 		if ( $duplicate ) {
 			return new WP_Error(
@@ -320,7 +320,7 @@ class CommentService {
 
 		// Replies of THIS page's threads only (the one level the formatter shows).
 		// Every reply on the item used to load for every page, so a popular photo
-		// fetched thousands of rows to show twenty threads (Basecamp 10393276031).
+		// fetched thousands of rows to show twenty threads.
 		$all_replies = array();
 		if ( $top_level ) {
 			$replies_raw = get_comments(

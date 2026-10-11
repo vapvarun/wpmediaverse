@@ -391,7 +391,7 @@ class DocumentListPage {
 				 * it). The member-facing paths in Pro fire it, but this admin
 				 * screen wrote the status column directly — so an admin trashing
 				 * a document left the mirror in place, the same defect reported
-				 * for media (Basecamp 10252324048).
+				 * for media.
 				 */
 				$repo->trash( $media_id );
 				do_action( 'mvs_document_trashed', $media_id );

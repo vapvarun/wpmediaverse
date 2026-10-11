@@ -196,7 +196,7 @@ class ActivityFormIntegration {
 		// Media is uploaded BEFORE the user picks the dropdown, so it lands at
 		// the default privacy (usually public). Without this step the dropdown
 		// is dead UI: the activity stays public regardless of selection and
-		// leaks to logged-out users on the sitewide stream (card 9867136209).
+		// leaks to logged-out users on the sitewide stream.
 		$chosen_privacy = $this->resolve_chosen_privacy();
 
 		// Tags typed in the activity-form tags field, applied per media below.
@@ -217,7 +217,7 @@ class ActivityFormIntegration {
 			// mvs_hold_uploads_for_moderation filter). It stays draft +
 			// moderation_status=pending in the moderation queue and is NOT
 			// published or attached to the activity, so held content can never
-			// reach the stream through an activity post (Basecamp #9962830813).
+			// reach the stream through an activity post.
 			// Once a moderator approves it, it shows in the member's media
 			// normally. Default flow (filter off) is unaffected: media is
 			// 'approved' and publishes here as before.
@@ -243,7 +243,7 @@ class ActivityFormIntegration {
 
 			// Apply the tags typed in the activity form. Mirrors the tag handling
 			// in MediaController::create_item — set the mvs_tag terms and cache the
-			// JSON list on the media row (audit 2026-06-04, #9962548621).
+			// JSON list on the media row.
 			if ( ! empty( $chosen_tags ) ) {
 				wp_set_object_terms( $media_id, $chosen_tags, 'mvs_tag' );
 				$repo->set( $media_id, 'tags', wp_json_encode( array_values( $chosen_tags ) ) );
@@ -271,7 +271,7 @@ class ActivityFormIntegration {
 
 		// Most-restrictive privacy across attached media (and their parent
 		// albums) — any non-public attachment hides the parent activity
-		// (Zoho #39974, card 9866323691). When the user picked an explicit
+		// When the user picked an explicit
 		// privacy via the form dropdown, effective_privacy_for_batch() now
 		// reflects it because the loop above synced each media row.
 		$effective_privacy = ActivitySyncIntegration::effective_privacy_for_batch( $valid_ids );
@@ -281,7 +281,7 @@ class ActivityFormIntegration {
 		// on bp_activity_posted_update which fires AFTER bp_activity_add).
 		// Without this, BP keeps the entry with hide_sitewide=1 + still
 		// surfaces it on the author's profile activity tab to any visitor,
-		// leaking the broken-thumbnail card (Basecamp #9936622656). Other
+		// leaking the broken-thumbnail card. Other
 		// non-public levels (members/friends/group/custom) keep the
 		// activity and rely on ActivityPrivacyFilter's viewer-aware WHERE.
 		if ( 'private' === $effective_privacy && function_exists( 'bp_activity_delete' ) ) {
@@ -379,7 +379,7 @@ class ActivityFormIntegration {
 	 * count so a pasted blob can't spawn hundreds of terms), or an empty array
 	 * when none were sent. Applied at post time in attach_media_to_activity()
 	 * because the media is uploaded before the user can type — the same reason
-	 * privacy is resolved here rather than at upload (card #9962548621).
+	 * privacy is resolved here rather than at upload.
 	 *
 	 * @return string[]
 	 */

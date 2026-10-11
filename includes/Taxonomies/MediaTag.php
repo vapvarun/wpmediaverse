@@ -49,7 +49,6 @@ class MediaTag {
 			'show_in_rest'          => false,
 			// Not on the Albums list: the column was always empty, and Quick/Bulk
 			// Edit wrote album IDs, the same path the metabox below closed.
-			// Basecamp 10379842826.
 			'show_admin_column'     => false,
 			'show_in_quick_edit'    => false,
 			'rewrite'               => array( 'slug' => 'media-tag' ),

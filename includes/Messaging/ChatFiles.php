@@ -12,8 +12,6 @@
  *   deleted. Until it finishes they are kept out of every attachment listing
  *   (/wp/v2/media, the Media Library).
  *
- * Basecamp 10392474704.
- *
  * @package WPMediaVerse
  * @since   2.6.2
  */

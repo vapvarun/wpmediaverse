@@ -4,7 +4,7 @@
  *
  * Basecamp 10387034419: since 2.6.1 a public upload stores its image under
  * uploads/wpmediaverse/, and the legacy "drop every <img> into that folder"
- * guard (Basecamp 10290384337) deleted it from the stream.
+ * guard deleted it from the stream.
  *
  * @package WPMediaVerse
  */

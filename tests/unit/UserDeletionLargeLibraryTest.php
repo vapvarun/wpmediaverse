@@ -12,7 +12,6 @@ use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Services\UserDeletionService;
 
 /**
- * Basecamp 10393276031 item 9.
  */
 class UserDeletionLargeLibraryTest extends WP_UnitTestCase {
 

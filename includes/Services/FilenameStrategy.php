@@ -2,7 +2,7 @@
 /**
  * Filename strategy — decides how an uploaded file is named on disk.
  *
- * Customer ask (Crisp #NZRSBX, card 9862532897 Item 1):
+ * Customer ask:
  *   - Long filenames break uploads silently (OS / S3 path-length limits).
  *   - Filenames with emojis / special chars trip AJAX/DB edge cases.
  *   - Original filenames are an enumeration / fingerprinting vector.
@@ -78,8 +78,7 @@ final class FilenameStrategy {
 	 *
 	 * Hashed since 1.6.0 (was `original_sanitized` for upgrade installs
 	 * pre-1.6.0) — exposing the original client filename in the media URL is
-	 * an information-leak and enumeration vector (audit 2026-06-04, card
-	 * #9962530792). Only NEW uploads are affected; existing on-disk files are
+	 * an information-leak and enumeration vector. Only NEW uploads are affected; existing on-disk files are
 	 * never renamed and their stored URLs never change.
 	 *
 	 * Escape hatch (Production Rule #3) — a site that depends on readable

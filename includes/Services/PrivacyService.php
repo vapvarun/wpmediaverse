@@ -28,7 +28,7 @@ class PrivacyService {
 	 * AUTO keeps the old one-argument signature working and resolves media-first
 	 * when the row is a real media row, which is the safe side of the ambiguity:
 	 * serving a private file to a stranger is worse than an album owner being
-	 * asked to use the album route. Basecamp 10298525085.
+	 * asked to use the album route.
 	 *
 	 * @since 2.4.2
 	 */
@@ -53,7 +53,6 @@ class PrivacyService {
 	 * default and change the level one click later in Edit, in bulk, or through
 	 * the REST update. Anyone who can manage MediaVerse settings keeps the
 	 * control: moderating privacy is part of running the site.
-	 * Basecamp 10320619418.
 	 *
 	 * @since 2.5.1
 	 *
@@ -78,7 +77,6 @@ class PrivacyService {
 	 * stored whatever string it was handed — `banana` included, which then failed
 	 * closed in `check_access()`'s default arm and read as private forever. A
 	 * value the API accepts and never applies is worse than one it rejects
-	 * (Basecamp 10220491230).
 	 *
 	 * Filterable rather than a hard enum because the vocabulary genuinely is
 	 * extensible: `mvs_privacy_can_view` lets an extension answer for a level
@@ -155,7 +153,7 @@ class PrivacyService {
 	 * and until 2.4.0 one filter answered for both. There was no way for a
 	 * bridge to say "any space member may post a photo here" while keeping
 	 * files behind the space's own Files switch, so a site owner's toggle could
-	 * not mean what it said (Basecamp 10252314484).
+	 * not mean what it said.
 	 *
 	 * The document filter is still asked first and its answer is the default,
 	 * so a site that has not adopted the new one behaves exactly as it did.
@@ -255,7 +253,7 @@ class PrivacyService {
 	 * may see in a list.
 	 *
 	 * The rule lives in SQL so found_posts and pagination count only visible
-	 * rows (Basecamp 10071400189). Privacy is the post meta both CPTs share
+	 * rows. Privacy is the post meta both CPTs share
 	 * (AlbumService::PRIVACY_META): public for everyone, members-level for any
 	 * logged-in viewer, anything else only for its author. Moderators see all.
 	 * wp_posts.post_author is the authoritative author; the index author on
@@ -389,7 +387,7 @@ class PrivacyService {
 		// predicate is a non-empty media_type, not MediaTypes::is_known():
 		// `is_known()` tests ALL, which deliberately omits `legacy_document`,
 		// and the row that first demonstrated this bug was exactly that
-		// (index-first resolution, Basecamp 10073499758).
+		// (index-first resolution,
 		$in_index = $repo->exists( $media_id );
 		$typed    = $in_index && '' !== (string) $repo->get( $media_id, 'media_type' );
 
@@ -424,8 +422,8 @@ class PrivacyService {
 		} else {
 			// Legacy one-argument callers. Media wins the collision: post-type
 			// first is what served a private photo because a published album
-			// shared its integer (10298525085); media_type-first alone is what
-			// denied an album owner their own album (10071824547). Neither is
+			// shared its integer; media_type-first alone is what
+			// denied an album owner their own album. Neither is
 			// right for both, so AUTO takes the side where the failure is a
 			// refusal rather than a leak, and the CPT callers below say 'cpt'.
 			if ( $is_media ) {
@@ -617,8 +615,7 @@ class PrivacyService {
 	 *
 	 * Asks FollowService, MediaVerse's own follow graph, so it needs no other
 	 * plugin. Before this case existed a `followers` item fell through to the
-	 * default deny and hid the item from the owner's own followers (Basecamp
-	 * 10350019949).
+	 * default deny and hid the item from the owner's own followers.
 	 *
 	 * @param int $owner_id Media owner user ID.
 	 * @param int $user_id  Requesting user ID.
@@ -675,7 +672,7 @@ class PrivacyService {
 	 * A signed-out visitor is asked about too, not refused up front. Whether a
 	 * space is readable by visitors is the space's rule (an open space is), and
 	 * refusing here made photos disagree with documents on the same drive: the
-	 * post showed in Explore and the photo did not (Basecamp 10344310617).
+	 * post showed in Explore and the photo did not.
 	 *
 	 * @since 2.4.0
 	 *
@@ -766,7 +763,7 @@ class PrivacyService {
 	 * The can_view() check is one-directional on purpose: a blocker may still open a
 	 * direct link to the blocked member's public media. Lists hide both ways,
 	 * so a list also drops items whose author is on either side of a block with
-	 * the viewer (Basecamp 10355130639). The block list is read once per viewer.
+	 * the viewer. The block list is read once per viewer.
 	 *
 	 * @since 2.6.0
 	 *

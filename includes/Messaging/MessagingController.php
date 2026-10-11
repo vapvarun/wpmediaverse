@@ -574,7 +574,7 @@ class MessagingController extends WP_REST_Controller {
 		// Coding Rule 20 — a refusal is never a success response. Without this,
 		// a NON-PARTICIPANT got 204 from a call that updated zero rows: a silent
 		// no-op wearing a success status, while every neighbouring route on the
-		// same conversation answered 404 (Basecamp 10190938967). Same guard, and
+		// same conversation answered 404. Same guard, and
 		// deliberately the same 404 `not_found`, as list_messages() — a refusal
 		// must not confirm that the conversation exists.
 		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
@@ -707,7 +707,7 @@ class MessagingController extends WP_REST_Controller {
 
 		if ( ! $result['success'] ) {
 			// New reason codes now reachable here because send_message() re-checks
-			// can_message() on every send (Basecamp #10053143680), not just at
+			// can_message() on every send, not just at
 			// conversation creation — see MessagingService::send_message().
 			$status_map = array(
 				'not_participant'        => 403,
@@ -783,7 +783,7 @@ class MessagingController extends WP_REST_Controller {
 
 		// Coding Rule 20, same as delete_conversation() above: the read-watermark
 		// update matched no participant row and this still answered
-		// `{"success":true}` (Basecamp 10190938967).
+		// `{"success":true}`.
 		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
 			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
 		}
@@ -868,7 +868,7 @@ class MessagingController extends WP_REST_Controller {
 		// Reactions on already-delivered messages don't move created_at, so poll()
 		// above never sees them. This companion list carries them so the other
 		// participant's chat updates live instead of only after a reload
-		// (card 10122929662). Additive — a client that ignores the key is unchanged.
+		// Additive — a client that ignores the key is unchanged.
 		$reaction_updates = $this->service->poll_reaction_updates( $user_id, (string) $since );
 
 		// Per-conversation typing + presence requires the viewer to actually
@@ -1006,7 +1006,7 @@ class MessagingController extends WP_REST_Controller {
 		// Stored as conversation-scoped 'dm' media, like the app and BuddyNext
 		// chat: protected folder, random name, URLs signed per participant. It
 		// used to be a plain WordPress attachment under its original name in the
-		// public uploads folder, listed by /wp/v2/media. Basecamp 10392474704.
+		// public uploads folder, listed by /wp/v2/media.
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'upload' )->handle(
 			$file,
 			get_current_user_id(),

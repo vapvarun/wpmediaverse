@@ -72,7 +72,7 @@ class TemplateLoader {
 
 			// Remember where the page used to live, the way WordPress remembers
 			// a post's old slug, so links saved elsewhere (a nav menu, a
-			// bookmark) still reach their section (Basecamp 10344452624).
+			// bookmark) still reach their section.
 			// ponytail: an ANCESTOR's rename is not recorded (core does not
 			// either); add it if owners hit it.
 			if ( $post_id === $dashboard ) {
@@ -122,7 +122,7 @@ class TemplateLoader {
 	 * Send /media/ to the owner's Explore page when one is mapped.
 	 *
 	 * Mapping a page as Explore left /media/ live as a second, indexable copy
-	 * of the same archive (Basecamp 10344427396). The owner's page wins; paging
+	 * of the same archive. The owner's page wins; paging
 	 * and the query string (search, tag, type) carry over. Unmapped sites keep
 	 * /media/ as Explore. Singles stay at /media/<slug>/.
 	 *
@@ -335,7 +335,7 @@ class TemplateLoader {
 		if ( $mvs_dashboard ) {
 			// The page's full PATH, not its post_name: as a child page it lives at
 			// parent/my-media/, and a rule built from `my-media` never matched, so
-			// every section 404'd (Basecamp 10344427213).
+			// every section 404'd.
 			$mvs_dashboard_slug = get_page_uri( $mvs_dashboard );
 
 			if ( $mvs_dashboard_slug ) {
@@ -706,7 +706,7 @@ class TemplateLoader {
 		// run after get_header(), so a members/private album's or collection's
 		// document <title> and breadcrumbs still leaked its name to non-owners.
 		// Rendering the branded 404 now — before the theme sets the title — closes
-		// that. The in-template gates stay as defense-in-depth. Basecamp 10073499554.
+		// that. The in-template gates stay as defense-in-depth.
 		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
 			$mvs_cpt_id = get_queried_object_id();
 			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
@@ -783,7 +783,7 @@ class TemplateLoader {
 		// default 10, and that is what adds the Google-Fonts printer, the
 		// body_class filter, and the wp_footer chain Elementor Pro hangs its
 		// widget handlers on - so on our own routes a Pro header lost its fonts,
-		// its Menu Cart toggle and its Search widget. Basecamp 10285448527.
+		// its Menu Cart toggle and its Search widget.
 		//
 		// Returning through template_include - the hook that exists to choose a
 		// template - fixes it for every builder rather than for Elementor
@@ -913,7 +913,7 @@ class TemplateLoader {
 		// such activity to go to — most are uploaded straight into a drive, and a
 		// private one cannot be posted to a feed at all — so a host resolving the
 		// redirect walks its fallback chain and lands the viewer on a photo surface
-		// that shows no documents (Basecamp #10194229966).
+		// that shows no documents.
 		//
 		// This plugin's own surfaces are what break: the drive rows, the Explore
 		// Documents listing and Shared-with-me all link to /media/{slug}/. Free
@@ -1108,7 +1108,6 @@ class TemplateLoader {
 		// Explore page is a real page: WordPress and SEO plugins already title it
 		// from the owner's page (the front-page title when it is the front page),
 		// and forcing "Explore Media" there overrode the name the owner chose
-		// (Basecamp 10344427413).
 		if ( get_query_var( 'mvs_media_archive' ) ) {
 			add_filter(
 				'document_title_parts',

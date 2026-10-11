@@ -100,10 +100,9 @@
 		// any [data-wp-on--click] ancestor: the whole app is wrapped in
 		// #mvs-app[data-wp-on--click="actions.navigate"] (client-nav), so matching
 		// that ancestor bailed on every click and the lightbox never opened.
-		// (Bugs #10014549774; regression guard #10019404777.)
 		// Form controls too, not just buttons: Pro's Instagram layout puts a
 		// comment <input> inside the [data-media-id] card, so typing in it opened
-		// the lightbox instead (Basecamp 10281485098). Asking "is this an
+		// the lightbox instead. Asking "is this an
 		// interactive control" beats listing the layouts that have one — the next
 		// layout with a field would have reintroduced it (Coding Rule 22).
 		if ( e.target.closest( 'button, input, textarea, select, label, [contenteditable]' ) ) {
@@ -279,7 +278,7 @@
 	} );
 
 	// --- Auto-load: press Load More as it nears the viewport. The button stays
-	// as the keyboard and no-IntersectionObserver fallback. Basecamp 9941211270.
+	// as the keyboard and no-IntersectionObserver fallback.
 	// Only the first AUTO_PAGES pages load by themselves; after that the button
 	// takes over so the footer stays reachable on a long feed.
 	var AUTO_PAGES = 3;

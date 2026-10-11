@@ -157,7 +157,7 @@ class SignedUrlService {
 			}
 		}
 
-		// Existence gate (Basecamp #9871025511). For videos with no embedded
+		// Existence gate. For videos with no embedded
 		// poster frame, no thumb_<size> meta was ever written. Pre-1.2.2 this
 		// function still returned a valid-looking signed URL — the template
 		// rendered <img src=signed-url> which then 404'd at serve time,
@@ -196,7 +196,7 @@ class SignedUrlService {
 	 *
 	 * Returning false here lets generate_thumbnail() return false, which lets
 	 * the calling template render its placeholder/<video> fallback instead of
-	 * shipping a signed URL that's guaranteed to 404 (Basecamp #9871025511).
+	 * shipping a signed URL that's guaranteed to 404.
 	 *
 	 * @since 1.2.1
 	 *
@@ -453,7 +453,7 @@ class SignedUrlService {
 		header( 'Vary: Accept' );
 		header( 'Content-Type: ' . $content_type );
 
-		// SVG defense in depth (WMV-03, Basecamp #9919403906): force
+		// SVG defense in depth: force
 		// attachment disposition + restrictive CSP for SVG so an unsanitized
 		// SVG carrying inline <script> cannot execute in the site origin even
 		// if an admin enables image/svg+xml uploads. The proper long-term
@@ -532,7 +532,7 @@ class SignedUrlService {
 		// browser can recover from. Skip any variant that points at a
 		// non-image file: pre-1.6.0 video rows wrote the .mp4 itself into
 		// thumb_large_path for upscale-skipped sizes, so the requested size
-		// must fall through to a real poster (Basecamp #9952600334).
+		// must fall through to a real poster.
 		$rel_path = self::first_image_path(
 			array(
 				(string) $repo->get_raw( $media_id, $meta_key . '_path' ),
@@ -554,7 +554,7 @@ class SignedUrlService {
 	 * First candidate that points at an image (a valid poster), skipping empties
 	 * and any video/audio variant. Pre-1.6.0 video rows wrote the source .mp4
 	 * into thumb_<size>_path for upscale-skipped sizes; serving that as a
-	 * thumbnail produces a broken poster (Basecamp #9952600334).
+	 * thumbnail produces a broken poster.
 	 *
 	 * @param string[] $candidates Ordered paths or URLs.
 	 * @return string First image candidate, or '' when none qualify.
@@ -877,7 +877,6 @@ class SignedUrlService {
 		// is present yet (pre-migration rows). Skip non-image variants so a
 		// pre-1.6.0 video row (.mp4 stored in thumb_large_path) falls through
 		// to a real poster instead of emitting the video as a CDN <img src>
-		// (Basecamp #9952600334).
 		$rel_path = self::first_image_path(
 			array(
 				(string) $repo->get_raw( $media_id, $meta_key . '_path' ),
@@ -889,7 +888,7 @@ class SignedUrlService {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
 			// Resolve by where the file ACTUALLY lives, not the active driver:
 			// a public file still on local disk (cloud enabled but not migrated
-			// yet) must not be served from a cloud URL that 404s. (BC #10029395885)
+			// yet) must not be served from a cloud URL that 404s.
 			$driver = $storage->get_driver_for_location( $media_id );
 			if ( $driver instanceof LocalDriver ) {
 				// File is local. By default /serve streams it, but let operators
@@ -912,7 +911,7 @@ class SignedUrlService {
 		// Legacy fallback — pre-1.4.0 rows have only the URL meta. The
 		// Migrator v14 backfill writes `_path` for these, so this branch
 		// shrinks toward zero as the migration completes. Image-only guard
-		// (Basecamp #9952600334): skip a video URL stored in thumb_large.
+		// skip a video URL stored in thumb_large.
 		$thumb_url = self::first_image_path(
 			array(
 				(string) $repo->get_raw( $media_id, $meta_key ),
@@ -930,7 +929,7 @@ class SignedUrlService {
 		// staging site, a retired CDN), not a working thumbnail. Emitting it
 		// pointed the grid at a dead address while the original file was still
 		// here. Only a URL on the host the file's driver serves from is direct;
-		// anything else falls through to /serve (Basecamp 10350203155).
+		// anything else falls through to /serve.
 		if ( ! $this->is_on_driver_host( $thumb_url, $media_id ) ) {
 			return '';
 		}
@@ -981,7 +980,7 @@ class SignedUrlService {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
 			// Resolve by where the file ACTUALLY lives, not the active driver, so a
 			// public file still on local disk (cloud enabled but not migrated yet)
-			// is served locally instead of from a 404-ing cloud URL. (BC #10029395885)
+			// is served locally instead of from a 404-ing cloud URL.
 			$driver = $storage->get_driver_for_location( $media_id );
 			if ( $driver instanceof LocalDriver ) {
 				// See maybe_direct_cloud_thumbnail_url(): same local-storage
@@ -1005,7 +1004,7 @@ class SignedUrlService {
 		}
 		// Same rule as the thumbnail: a leftover URL on a host the file is not
 		// served from is not a working location. Fall through to /serve, which
-		// streams the local copy (Basecamp 10354828461).
+		// streams the local copy.
 		if ( ! $this->is_on_driver_host( $file_url, $media_id ) ) {
 			return '';
 		}

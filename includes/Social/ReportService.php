@@ -595,7 +595,7 @@ class ReportService {
 	 *
 	 * A block hides both members from each other. Lists that only excluded the
 	 * people a viewer blocked still showed the viewer the media of whoever
-	 * blocked THEM (Basecamp 10354827925). Both columns are indexed.
+	 * blocked THEM. Both columns are indexed.
 	 *
 	 * @since 2.6.0
 	 *

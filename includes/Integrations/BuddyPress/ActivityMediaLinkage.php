@@ -163,7 +163,7 @@ class ActivityMediaLinkage {
 			// URL that answered 403 - neither hidden nor honest. Guarding the
 			// renderer covers trash, hard delete and legacy orphans in one place;
 			// deleting activities on trash would destroy a post that restoring
-			// the media should bring back. Basecamp 10285850126.
+			// the media should bring back.
 			if ( ! $mvs_repo->exists( $mvs_media_id ) ) {
 				continue;
 			}

@@ -9,7 +9,7 @@ import { store, getContext } from '@wordpress/interactivity';
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
 // interactivity state by render.php via wp_interactivity_state(); read them as
-// `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+// `state.i18n.<key>` with an English fallback.
 
 /**
  * Build the thumbnail node(s) for a Load More media item.

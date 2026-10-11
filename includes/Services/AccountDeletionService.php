@@ -59,7 +59,7 @@ class AccountDeletionService {
 	/**
 	 * Who owns the suspension during a pending deletion: '1' the request set it,
 	 * '0' it was already suspended or a moderator acted since. Cancelling lifts
-	 * only the request's own suspension (Basecamp 10393276020 #6). Absent means
+	 * only the request's own suspension. Absent means
 	 * a request made before 2.6.2, which keeps the old lift-on-cancel.
 	 */
 	const META_SUSPENDED_BY_DELETION = 'mvs_suspended_by_deletion';

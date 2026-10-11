@@ -50,7 +50,7 @@ class BuddyPressManager {
 		// Answer the "does this member have a picture they chose?" question for
 		// BP-owned avatars. Free shipped the `mvs_has_custom_avatar` seam in
 		// 2.4.0 but nothing hooked it, so a member with a BP avatar was still
-		// told to upload one (QA re-verify, Basecamp 10252323883).
+		// told to upload one.
 		add_filter(
 			'mvs_has_custom_avatar',
 			static function ( $has, $user_id ) {

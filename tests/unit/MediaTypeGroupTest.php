@@ -180,7 +180,7 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	 * The orphan stub row the old `!= ''` guard was written for stays excluded.
 	 *
 	 * The guard is gone, so this proves the replacement kept the behaviour that
-	 * guard existed to provide (Basecamp 10074442944).
+	 * guard existed to provide.
 	 */
 	public function test_untyped_rows_stay_out_of_the_feed(): void {
 		$orphan = $this->insert_row( '', 'Untyped Orphan' );

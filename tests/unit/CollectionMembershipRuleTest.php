@@ -11,7 +11,6 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10298612348.
  *
  * A collection is curated and shareable, usually by an admin assembling other
  * members' work. can_view() is the wrong gate for that: it admits members-only

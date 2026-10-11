@@ -8,8 +8,6 @@
  * hooks `mvs_push_send` and does the actual sending. So this class is the seam —
  * store tokens, and hand a delivery layer the "who + what" on every notification.
  *
- * Basecamp 9667082225.
- *
  * @package WPMediaVerse
  * @since   2.4.0
  */

@@ -48,7 +48,7 @@ class MediaRepositoryFoldInTest extends WP_UnitTestCase {
 	 * against the repository's own ordering. Rows seeded in the same second tie,
 	 * MySQL does not promise an order for ties, and the two sides broke the tie
 	 * differently - so the file failed roughly half the time on a clean tree and
-	 * blocked pushes that had nothing to do with it. Basecamp 10298195956.
+	 * blocked pushes that had nothing to do with it.
 	 *
 	 * insert() merges caller data over its defaults, so an explicit created_at
 	 * wins. One second apart per row, descending, makes both sides deterministic

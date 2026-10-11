@@ -265,7 +265,7 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 
 	/**
 	 * A real media item that shares its ID with an album can still be edited.
-	 * The guard refuses only an ID with no media row (Basecamp 10355752606).
+	 * The guard refuses only an ID with no media row.
 	 */
 	public function test_media_sharing_an_album_id_can_be_edited(): void {
 		$album_id = self::factory()->post->create( array( 'post_type' => 'mvs_album' ) );

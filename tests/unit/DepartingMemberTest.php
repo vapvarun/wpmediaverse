@@ -155,7 +155,7 @@ class DepartingMemberTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * "Attribute all content to" keeps the member's media (Basecamp 10344411938).
+	 * "Attribute all content to" keeps the member's media.
 	 *
 	 * WordPress hands posts to the chosen member; media used to be erased
 	 * instead. Everything moves with its privacy kept, a personal drive follows

@@ -7,7 +7,7 @@
  * release, so an owner is told about a stale copy exactly when it matters.
  * A theme copy with an older version, or none (copied before 2.6.0), is
  * outdated: it can keep rendering, but it misses fixes and may read request
- * data the plugin no longer sends (Basecamp 10344452624 / 10344471983).
+ * data the plugin no longer sends.
  *
  * @package WPMediaVerse
  * @since   2.6.0

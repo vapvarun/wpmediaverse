@@ -12,7 +12,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276031 item 11.
+ * The album list returns counts without loading every album's items.
  */
 class AlbumListScaleTest extends WP_UnitTestCase {
 

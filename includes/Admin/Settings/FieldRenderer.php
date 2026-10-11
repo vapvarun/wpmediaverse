@@ -51,8 +51,6 @@ class FieldRenderer {
 	 * through here rather than repeating the argument 46 times and missing some.
 	 * The matching `id` is emitted by the render methods themselves.
 	 *
-	 * Basecamp 10252222135.
-	 *
 	 * @param string   $id       Field ID.
 	 * @param string   $title    Row heading.
 	 * @param callable $callback Render callback. `callable`, not `array`: every
@@ -650,7 +648,7 @@ class FieldRenderer {
 		?>
 		<fieldset class="mvs-webhook-row">
 			<p>
-				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all (Basecamp 10252222135). ?>
+				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all. ?>
 				<label for="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
 				<input type="url" name="<?php echo esc_attr( $name ); ?>[url]" id="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"

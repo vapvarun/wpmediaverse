@@ -1,7 +1,7 @@
 <?php
 /**
  * Album and collection lists show only what the viewer may see, and the core
- * wp/v2 routes that leaked private items are gone (Basecamp 10360879667).
+ * wp/v2 routes that leaked private items are gone.
  *
  * @package WPMediaVerse
  */

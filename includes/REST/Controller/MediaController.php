@@ -372,7 +372,7 @@ class MediaController extends WP_REST_Controller {
 
 			$found_id = $mvs_by_slug['media_id'] ?? 0;
 			// Same gate as the id route and the include branch below: a slug
-			// must not reveal an item the viewer may not see (Basecamp 10393041290).
+			// must not reveal an item the viewer may not see.
 			if ( $found_id && $this->privacy->can_view( (int) $found_id, get_current_user_id() ) ) {
 				$item = $this->prepare_item_for_response( (int) $found_id, $request );
 				return rest_ensure_response( $item ? array( $item ) : array() );
@@ -450,7 +450,7 @@ class MediaController extends WP_REST_Controller {
 		// media_type != '' — which answered "what do I not want today" and passed
 		// every future type straight through. `document` rows would have landed in
 		// this feed, and in the mobile app that reads the same route, without a line
-		// of code changing. The trashed-media leak (68113454) was the same shape: it
+		// of code changing. The trashed-media leak was the same shape: it
 		// too carried a media_type predicate and still leaked.
 		//
 		// An explicit ?media_type= is honoured for the MEDIA vocabulary, and it is
@@ -565,7 +565,7 @@ class MediaController extends WP_REST_Controller {
 		// offer Public / Followers / My uploads; only 'public' was implemented
 		// here, so 'followers' and 'self' silently did nothing on every layout.
 		// self/followers need a logged-in viewer; anonymous falls through to the
-		// public-only privacy gate above. Basecamp 10068992480.
+		// public-only privacy gate above.
 		$scope = $request->get_param( 'scope' );
 		if ( 'public' === $scope ) {
 			$where[]  = 'privacy = %s';
@@ -856,7 +856,7 @@ class MediaController extends WP_REST_Controller {
 		// Carousel / gallery-post membership travels WITH the upload rather than
 		// being written after it returns. Listeners on mvs_media_uploaded have to
 		// be able to see that this item is part of a group — the BuddyPress
-		// activity recorder bundles on it. Basecamp #10153581987.
+		// activity recorder bundles on it.
 		$media_group_param = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( '' !== $media_group_param ) {
 			$args['media_group']    = $media_group_param;
@@ -913,7 +913,7 @@ class MediaController extends WP_REST_Controller {
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
-			$cat_terms = wp_get_object_terms( $media_id, 'mvs_category' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
+			$cat_terms = wp_get_object_terms( $media_id, 'mvs_category' ); // Not get_the_terms(): media are not posts.
 			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
 			}
@@ -1027,7 +1027,7 @@ class MediaController extends WP_REST_Controller {
 		// string it was handed: `banana` persisted and then failed closed in
 		// PrivacyService's default arm, and `space` persisted on a personal-drive
 		// item where check_space() can never resolve it — 200 OK, never applied,
-		// member believes it saved (Basecamp 10220491230). The vocabulary is
+		// member believes it saved. The vocabulary is
 		// PrivacyService's single filterable list, so upload and update cannot
 		// drift apart again.
 		$privacy         = $request->get_param( 'privacy' );
@@ -1087,7 +1087,7 @@ class MediaController extends WP_REST_Controller {
 			}
 
 			// A photo in an album shows with the album's privacy; the member's
-			// choice is kept for when it leaves the album (Basecamp 10264373450).
+			// choice is kept for when it leaves the album.
 			// The edit screens send the CURRENT level with every save - for a
 			// photo in an album that is the album's - so an unchanged value is
 			// not a choice and must not overwrite the one set aside.
@@ -1239,7 +1239,7 @@ class MediaController extends WP_REST_Controller {
 
 		// The SAME guard as UploadService::handle(), not a mirror of it. This
 		// endpoint bypassing the upload guard is exactly what the double-verifier
-		// caught in 2026-06-04 (#9962125462), and a second copy is how that
+		// caught in 2026-06-04, and a second copy is how that
 		// happens again — the 2.4.0 change from a name test to an unknown test
 		// would have needed both edited in lockstep to stay correct.
 		$mvs_refusal = $upload_service->reject_unsupported_mime( $mime );
@@ -1344,7 +1344,7 @@ class MediaController extends WP_REST_Controller {
 		// Then strip, on the same owner switch as a fresh upload. Replace ran
 		// orientation, filename strategy, watermark, optimize and the WebP/AVIF
 		// siblings - everything except this - so replacing a photo kept the GPS
-		// coordinates a normal upload would have removed. Basecamp 10316771960.
+		// coordinates a normal upload would have removed.
 		if ( get_option( 'mvs_strip_exif', true ) && 0 === strpos( (string) $mime, 'image/' ) ) {
 			$upload_service->strip_exif( $file['tmp_name'] );
 		}
@@ -1353,7 +1353,7 @@ class MediaController extends WP_REST_Controller {
 		// the same rule as a fresh upload. This MUST run before store() below:
 		// store() persists the temp file, and the WebP/AVIF siblings are cut from
 		// that same temp file further down. Stamping afterwards would ship a
-		// clean original alongside watermarked siblings. Basecamp 10073917553.
+		// clean original alongside watermarked siblings.
 		Plugin::container()->get( 'watermark' )->stamp_new_upload(
 			$file['tmp_name'],
 			$mime,
@@ -1686,7 +1686,7 @@ class MediaController extends WP_REST_Controller {
 		//
 		// Keyed on the logged-in user when there is one, else the salted IP hash,
 		// and it uses the media_user_date index the table already carries for
-		// exactly this lookup. Basecamp 10278289615.
+		// exactly this lookup.
 		if ( $mvs_view_window > 0 ) {
 			if ( $this->seen_recently( $media_id, $user_id, $ip_hash, 'view', $mvs_view_window ) ) {
 				// Already counted. Return the current total so the client still
@@ -1795,7 +1795,7 @@ class MediaController extends WP_REST_Controller {
 		//
 		// Keyed on the logged-in user when there is one, else the salted IP hash,
 		// and it uses the media_user_date index the table already carries for
-		// exactly this lookup. Basecamp 10278289615.
+		// exactly this lookup.
 		if ( $mvs_view_window > 0 ) {
 			if ( $this->seen_recently( $media_id, $user_id, $ip_hash, 'download', $mvs_view_window ) ) {
 				// Already counted. Return the current total so the client still
@@ -2221,7 +2221,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Per-size image URLs so the app can pick a size tier per context
-		// (Basecamp 9667082287): thumb (~150), medium (~640), large (~1080),
+		// thumb (~150), medium (~640), large (~1080),
 		// plus the original as full_url. Each resolves exactly like
 		// thumbnail_url above — the stored signed variant first, generating
 		// only when that size is absent. Public media resolves to
@@ -2270,8 +2270,8 @@ class MediaController extends WP_REST_Controller {
 		// edit_others_mvs_medias. The old test was ownership-or-manage_options,
 		// which ignored the permission matrix entirely — so revoking "Edit" left
 		// the button on screen and a member clicking it got a 403 from the API
-		// (Basecamp 10285497657), while a delegated "Edit Others" role had no
-		// affordance at all (10285691473).
+		// while a delegated "Edit Others" role had no
+		// affordance at all.
 		$can_edit   = $is_own
 			? user_can( $viewer_id, 'edit_mvs_medias' )
 			: ( $viewer_id > 0 && user_can( $viewer_id, 'edit_others_mvs_medias' ) );
@@ -2324,7 +2324,6 @@ class MediaController extends WP_REST_Controller {
 			// The same viewer the single-media page renders, so the two surfaces
 			// stop disagreeing about the same file: favourite a text document,
 			// open it in the lightbox, and you got less than by opening its page.
-			// Basecamp 10268223516.
 			//
 			// Free asks; whoever answers decides what it can safely return here.
 			// Which document types have a script-free preview is Pro's knowledge,

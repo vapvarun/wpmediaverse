@@ -681,7 +681,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * wordings across eight render sites - "Members", "Members Only",
 	 * "Members Only - logged-in users" and "Members: logged-in users only" - and
 	 * the bare "Members" reads as "followers only" to a member choosing it,
-	 * which has already produced a false bug report (Basecamp 10286023341).
+	 * which has already produced a false bug report.
 	 * The explicit wording came from the upload picker, which was the only
 	 * surface that had it.
 	 *
@@ -834,7 +834,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * One emitter rather than per-surface copies: the toggle shipped only on the
 	 * Upload page, so the dashboard popup, the FAB modal and the BuddyPress tab
 	 * silently could not create a story. The Pro + setting guard lives here too,
-	 * so a surface cannot forget it. Basecamp 10313107097.
+	 * so a surface cannot forget it.
 	 *
 	 * Surfaces driven by the Interactivity API pass their own store action in
 	 * $on_change; classic-JS surfaces (the BuddyPress tab) pass '' and read the
@@ -864,7 +864,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * Pro owns stories, so a Free-only site must not be offered the checkbox:
 	 * the upload succeeds and no story is ever created, which reads as broken
-	 * rather than absent. Basecamp #10156642726.
+	 * rather than absent.
 	 *
 	 * @since 2.5.1
 	 *
@@ -881,7 +881,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// anything an import or the REST write set) is shown as a disabled
 		// option rather than leaving the select blank. Before this, an owner
 		// opening their own item saw an empty privacy field with no way to read
-		// what it was currently set to. Basecamp 10290748981.
+		// what it was currently set to.
 		if ( '' !== $selected && ! isset( $choices[ $selected ] ) ) {
 			printf(
 				'<option value="%s" selected disabled>%s</option>',
@@ -1459,7 +1459,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			 * Lucide, not emoji. These three were `&#x1F441;&#xFE0F;` /
 			 * `&#x2764;&#xFE0F;` / `&#x1F4AC;` — entity-encoded, which is why a
 			 * grep for literal emoji reported this file clean and the card was
-			 * closed while they were still rendering (Basecamp 10253006229).
+			 * closed while they were still rendering.
 			 *
 			 * They are chrome, not content: labels for a count, unlike the
 			 * lightbox reactions where the emoji IS the thing being counted.
@@ -1499,7 +1499,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			// (single-media header, lightbox), not on every grid thumbnail.
 			// The avatar + name link to the uploader's profile (BuddyPress, or
 			// the /media/@user fallback) so visitors can reach the poster from
-			// the grid, matching the single-media header (card #9962508646).
+			// the grid, matching the single-media header.
 			// This block is OUTSIDE the media permalink <a> above, so the
 			// profile link does not nest.
 			$author_url  = $this->get_user_profile_url( $author_id );
@@ -1564,7 +1564,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * The ONE place that answers "where is Explore". Templates in both plugins
 	 * link here instead of spelling /media/, which a mapped page now redirects
-	 * (Basecamp 10344452624).
 	 *
 	 * @since 2.6.0 public (was the private resolve_explore_url()).
 	 *
@@ -1588,7 +1587,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * because `s` is a RESERVED WordPress query var: on a real page (a mapped
 	 * Explore page, or the front page) `?s=` turns the request into the site's
 	 * own search. `s` is still read so old /media/?s= links keep working
-	 * (Basecamp 10344452624).
 	 *
 	 * @since 2.6.0
 	 *
@@ -1696,7 +1694,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// there — not to the public Explore Documents listing, which
 					// excludes private rows and would drop them on an empty "No
 					// documents" grid the instant after previewing their own
-					// private file (Basecamp 10230967864). Everyone else (a
+					// private file. Everyone else (a
 					// non-owner member, a logged-out viewer) gets the public
 					// listing, which is the only documents surface they share.
 					$viewer = get_current_user_id();
@@ -1955,7 +1953,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 	/**
 	 * When members cannot choose privacy, the line that tells them who will see
-	 * their upload instead of a missing control (Basecamp 10364776646).
+	 * their upload instead of a missing control.
 	 *
 	 * @since 2.6.1
 	 * @return string Escaped HTML, or '' when the member chooses per upload.
@@ -2157,7 +2155,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// call sites hand over the same hard-coded Newest/Oldest pair, which is
 		// precisely the defect. A caller that genuinely needs its own wording
 		// uses the mvs_direction_labels filter, which knows the field.
-		// Basecamp 10297765808.
 		if ( ! empty( $args['order'] ) && is_array( $args['order'] ) && ! empty( $args['sort']['value'] ) ) {
 			$args['order']['options'] = $this->direction_labels( (string) $args['sort']['value'] );
 		}
@@ -2216,7 +2213,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * was, so Explore sorted by Title labelled A-Z as "Newest first", the drive
 	 * sorted by Size called largest-first "Newest", and Trending had an
 	 * "Oldest first" that means nothing at all. Seven call sites shared one
-	 * hard-coded pair. Basecamp 10297765808.
+	 * hard-coded pair.
 	 *
 	 * Derived from what the field IS, not from a list of field names: anything
 	 * unrecognised falls back to the ascending/descending pair, which is true
@@ -2360,7 +2357,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		// The markup admin.css styles (icon, h3, p). The helper used to emit
 		// <p> titles with classes no stylesheet defined, so nothing used it and
-		// every admin screen hand-rolled its own (Basecamp 10350404627).
+		// every admin screen hand-rolled its own.
 		$html  = '<div class="mvs-empty-state-admin" role="status">';
 		$html .= '<i data-lucide="' . esc_attr( $icon ) . '" aria-hidden="true"></i>';
 		if ( '' !== $title ) {
@@ -2383,7 +2380,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * state; the store reads state.i18n.<key> with an English fallback. Called
 	 * before the first data-wp-interactive="mvs/media-social" root element in
 	 * media-single.php and album.php so the state is seeded during render.
-	 * Basecamp 10073528834.
 	 *
 	 * @return void
 	 */
@@ -2403,7 +2399,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// The favourite button's accessible name, which has to change
 					// with the state. Only its CSS class moved before, so a screen
 					// reader heard "Add to favorites" whether or not the item was
-					// already a favourite. Basecamp 10297839293.
+					// already a favourite.
 					'addToFavorites'       => __( 'Add to favorites', 'wpmediaverse' ),
 					'removeFromFavorites'  => __( 'Remove from favorites', 'wpmediaverse' ),
 					// Comments.
@@ -2418,7 +2414,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'linkCopiedClipboard'  => __( 'Link copied to clipboard!', 'wpmediaverse' ),
 					// Plain text — the share button's <i data-lucide="share-2"> supplies
 					// the icon, so an emoji here re-created the double-icon two seconds
-					// after every share (card 10127321228).
+					// after every share.
 					'shareResetLabel'      => __( 'Share', 'wpmediaverse' ),
 					'copyLinkFailed'       => __( 'Could not copy link. Please copy the URL manually.', 'wpmediaverse' ),
 					// Follow.
@@ -2449,8 +2445,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * an English fallback and appends the formatted timestamp itself. Called
 	 * before the first data-wp-interactive="mvs/media-player" root element in
 	 * media-single.php and the media-player block's render.php so the state
-	 * is seeded during render. Mirrors media_social_i18n_state() (Basecamp
-	 * 10073528834).
+	 * is seeded during render. Mirrors media_social_i18n_state().
 	 *
 	 * @return void
 	 */

@@ -213,7 +213,6 @@ final class MediaTypes {
 	 * PHP's finfo reports an MP4 whose container brand is M4V (Apple, HandBrake, many
 	 * stock clips) as video/x-m4v. It is the same H.264 MP4, so it is checked
 	 * against video/mp4: allowed when the owner allows MP4, refused when not.
-	 * Basecamp 10379561512.
 	 *
 	 * @since 2.6.2
 	 *

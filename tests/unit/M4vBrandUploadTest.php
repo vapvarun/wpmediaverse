@@ -3,7 +3,6 @@
  * An MP4 whose container brand is M4V uploads like any MP4.
  *
  * PHP's finfo reports these as video/x-m4v; the allowed list only knows video/mp4.
- * Basecamp 10379561512.
  *
  * @package WPMediaVerse
  */

@@ -26,7 +26,7 @@ const { actions } = store( 'mvs/profile-edit', {
 			// Discard unsaved edits and stay on the profile section. A reload
 			// re-seeds the form from the server. Before 2.4.0 Cancel called the
 			// dashboard's toggleProfileEdit, which flipped to the media section
-			// (Basecamp 10240303858) — the same navigation bug Save had.
+			// — the same navigation bug Save had.
 			window.location.reload();
 		},
 

@@ -259,7 +259,7 @@ class CacheService {
 	 *             table and type group the feed reads. This copy counted against
 	 *             `wp_term_taxonomy.count`, which includes documents the feed
 	 *             excludes — the exact defect `MediaRepository::tag_cloud()` was
-	 *             written to fix (Basecamp 10259632183). Kept as a caching
+	 *             written to fix. Kept as a caching
 	 *             delegate because it is public API on a container-registered
 	 *             service (Production Rule 1); scheduled for removal in 4.0.
 	 *

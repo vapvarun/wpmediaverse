@@ -18,7 +18,7 @@ class MediaCapabilities {
 	 * Option holding the admin's Permissions-matrix overrides
 	 * (role => cap => 0|1). Written by PermissionsManager on save,
 	 * re-applied by add_caps() so version-bump re-grants never wipe
-	 * an admin's manual grant/revoke choices (Basecamp #9937811664).
+	 * an admin's manual grant/revoke choices.
 	 *
 	 * @since 1.6.0
 	 */
@@ -162,7 +162,6 @@ class MediaCapabilities {
 				// granted to every member role (here + contributor + base) so the
 				// Settings -> Permissions matrix matches the actual behaviour and
 				// there is no upload-can-but-publish-cannot mismatch
-				// (Basecamp #9962830813).
 				'publish_mvs_media',
 				// Singular AND plural. The Permissions matrix displays the
 				// singular; every gate checks the plural. Granting only the
@@ -209,7 +208,7 @@ class MediaCapabilities {
 	 *
 	 * Admin Permissions-matrix overrides are re-applied LAST, so the
 	 * version-gated re-grant in Plugin::init() / Migrator no longer resets
-	 * an admin's manual revocations on every update (Basecamp #9937811664).
+	 * an admin's manual revocations on every update.
 	 */
 	public static function add_caps(): void {
 		$named = self::get_role_caps();
@@ -297,7 +296,7 @@ class MediaCapabilities {
 	 *    `edit_mvs_medias`), because `MediaController` checks the plural;
 	 * 3. records the choice in `OVERRIDES_OPTION`, which `add_caps()` replays
 	 *    AFTER its default grants — without this a plugin update silently
-	 *    restores a cap the owner deliberately revoked (Basecamp #9937811664).
+	 *    restores a cap the owner deliberately revoked.
 	 *
 	 * The option is merged, never replaced, so a caller passing one cap for one
 	 * role does not erase what another screen recorded.

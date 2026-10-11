@@ -292,7 +292,7 @@ class CommentController extends WP_REST_Controller {
 		$user_id    = get_current_user_id();
 
 		// Editing publishes new words onto the other member's item, so a block
-		// refuses it, and says so (owner decision on Basecamp 10350196637).
+		// refuses it, and says so (owner decision on
 		// Asked only for the caller's own comment on this item, so it cannot be
 		// used to probe other items.
 		$own = $this->visible_comment( (int) $comment_id, (int) $media_id, true );
@@ -419,7 +419,7 @@ class CommentController extends WP_REST_Controller {
 	private function visible_comment( int $comment_id, int $media_id, bool $own_ok = false ) {
 		$comment = get_comment( $comment_id );
 
-		// Deleting your OWN comment needs no view access (Basecamp 10350196637):
+		// Deleting your OWN comment needs no view access:
 		// a blocked member can retract what they wrote.
 		$own = $own_ok && $comment && (int) $comment->user_id === get_current_user_id();
 

@@ -232,7 +232,7 @@ class ReactionController extends WP_REST_Controller {
 
 		// Removing your OWN reaction needs no view access: a member the author
 		// blocked can no longer view the item but must still be able to take it back,
-		// and retracting leaks nothing (Basecamp 10350196637). Only a caller who
+		// and retracting leaks nothing. Only a caller who
 		// removed nothing is told anything, and hidden still looks like missing.
 		$removed = $this->reactions->remove( $media_id, get_current_user_id() );
 

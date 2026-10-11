@@ -161,7 +161,7 @@
 					// large/medium/thumb. The 200px-wide downscale used pre-1.4.1
 					// produced a blurry "thumb_large" that Safari/Bing then used
 					// as the <video poster> and the result looked broken on the
-					// activity stream (card 9910574354).
+					// activity stream.
 					canvas.width  = w;
 					canvas.height = h;
 					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
@@ -268,7 +268,6 @@
 				// that has no `id`. Pre-1.6.0 the handler only checked data.id,
 				// so the upload failed SILENTLY with no notice. Throw the
 				// server's message so the catch below shows it to the user
-				// (audit 2026-06-04, #9962548621).
 				if ( ! r.ok || ! data || ! data.id ) {
 					throw new Error(
 						( data && data.message )
@@ -360,7 +359,7 @@
 			privacySel.style.display = '';
 		}
 		// Reveal the tags field too — applied to the attached media at post
-		// time (audit 2026-06-04, #9962548621).
+		// time.
 		var tagsField = document.getElementById( 'mvs-activity-tags' );
 		if ( tagsField ) {
 			tagsField.style.display = '';
@@ -447,7 +446,7 @@
 			var errText = document.createElement( 'span' );
 			// Show the specific server message (e.g. "PDF uploads are not
 			// supported.") instead of a generic line, so an unsupported-type
-			// upload tells the user WHY (audit 2026-06-04, #9962548621).
+			// upload tells the user WHY.
 			errText.textContent = ( err && err.message )
 				? err.message
 				: __( 'Upload failed. Please try again.', 'wpmediaverse' );
@@ -627,7 +626,7 @@
 			// Nouveau can re-render the tab body via AJAX after this handler
 			// binds, which would leave `titleIn` pointing at a detached node
 			// that reads empty — the false "Please enter an album name." bug
-			// (Basecamp 10069383195). getElementById always resolves the live
+			// getElementById always resolves the live
 			// node in the current DOM.
 			var titleEl = document.getElementById( 'mvs-bp-album-title' );
 			var descEl  = document.getElementById( 'mvs-bp-album-desc' );
@@ -770,7 +769,7 @@
 			// knows by name. The <picture> wrapper around the lightbox image was
 			// one it did not know, and `.mvs-lightbox-media picture[hidden]`
 			// made the stale attribute authoritative — so the media area opened
-			// solid black (Basecamp 10264071147). The comments heading was
+			// solid black. The comments heading was
 			// another, silently.
 			//
 			// Clearing by "did IA control this?" rather than by a list of
@@ -1041,7 +1040,7 @@
 			// the Download action is invisible even though its handler is wired.
 			// Owner-gated controls lost their IA bindings in the clone and were all
 			// un-hidden: Edit showed to everyone, Report to the owner. Re-apply both
-			// gates from the item, as state.lightboxIsOwner does (Basecamp 10393027580).
+			// gates from the item, as state.lightboxIsOwner does.
 			var me      = ( typeof mvsActivityMedia !== 'undefined' ) ? parseInt( mvsActivityMedia.userId, 10 ) || 0 : 0;
 			var isOwner = me > 0 && parseInt( data.author, 10 ) === me;
 			var editBtn = overlay.querySelector( '.mvs-lightbox-actions .mvs-lb-edit' );
@@ -1177,7 +1176,7 @@
 				// heading are SIBLINGS of <ul class="mvs-lightbox-comment-list">,
 				// so list.querySelector() always returned null and this whole
 				// branch was dead — the placeholder sat there next to real
-				// comments (Basecamp 10264121252).
+				// comments.
 				var noComments = overlay.querySelector( '.mvs-lightbox-no-comments' );
 				var heading    = overlay.querySelector( '.mvs-lightbox-comments-heading' );
 				if ( noComments ) {
@@ -1247,7 +1246,7 @@
 		// and Lucide has already swapped the <i> for an SVG by the time the clone
 		// is taken. Assigning textContent wiped both and substituted a U+2665
 		// dingbat, so the clone lost its icon and the longer "Favorited" string
-		// hit the button's overflow:hidden and clipped (Basecamp 10264108133).
+		// hit the button's overflow:hidden and clipped.
 		// Write only the <span>; leave the icon alone.
 		// The button that keeps an item: Free's Save (2.6.0), or the old star in
 		// a theme copy of shared-ui-frame.php. data-mvs-* survives the clone.
@@ -1408,10 +1407,10 @@
 			// Interactivity directive `data-wp-on--click="actions.toggleLightboxFullscreen"`
 			// is gone by the time the clone is in the DOM. The button rendered,
 			// looked live and did nothing on the Activity page while working on
-			// Explore, where the original IA overlay is used (Basecamp 10264236711).
+			// Explore, where the original IA overlay is used.
 			//
 			// The favorite button had this exact defect and was fixed the same way
-			// (#10077932144); fullscreen was simply never swept with it.
+			// fullscreen was simply never swept with it.
 			var btn = e.target.closest( '.mvs-lightbox-fullscreen' );
 			if ( ! btn ) { return; }
 
@@ -1434,7 +1433,7 @@
 			// Target the favorite button via a STABLE class. The BP lightbox is a
 			// clone with every data-wp-* attribute stripped (createBPLightbox), so
 			// selecting on [data-wp-on--click*=...] never matched and the handler
-			// was dead (Basecamp #10077932144). The .mvs-lb-fav class survives the
+			// was dead. The .mvs-lb-fav class survives the
 			// clone and is locale-independent (textContent was translation-broken).
 			var btn = e.target.closest( FAV_TOGGLE );
 			if ( ! btn ) { return; }
@@ -1456,7 +1455,7 @@
 			if ( ! suiState.active ) { return; }
 			// Target the share button via a STABLE class — see the favorite
 			// handler above; the cloned lightbox strips data-wp-* so the old
-			// [data-wp-on--click*="lightboxShare"] selector was dead (#10077932144).
+			// [data-wp-on--click*="lightboxShare"] selector was dead.
 			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-share' );
 			if ( ! btn ) { return; }
 
@@ -1476,7 +1475,7 @@
 		// The Save button has no BP handler and relied on the IA action
 		// lightboxOpenCollections, which is stripped from the clone. Replicate it:
 		// announce the media id so Pro's collection-picker.js (listening on document
-		// for 'mvs-collections-click') can open the picker (#10077932144).
+		// for 'mvs-collections-click') can open the picker.
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
@@ -1495,7 +1494,7 @@
 		// ── Download (event delegation) ──
 		// Also relied on the stripped IA action lightboxDownload. Replicate the
 		// browser-native download via a hidden anchor (signed URLs carry the
-		// Content-Disposition header from the storage driver) (#10077932144).
+		// Content-Disposition header from the storage driver).
 
 		// Edit (owner only, gated in populate): the IA store's edit modal via its bridge.
 		document.addEventListener( 'click', function( e ) {
@@ -1553,7 +1552,7 @@
 			// delegated on document and reads input.value, which is still
 			// populated while the request is in flight — so disabling only the
 			// input left every extra click posting another identical comment
-			// (#10148507863). Guard on the button's own state too, in case the
+			// Guard on the button's own state too, in case the
 			// element is re-rendered mid-flight.
 			var btn = overlay.querySelector( '.mvs-lightbox-comment-post' );
 			if ( btn && btn.disabled ) { return; }

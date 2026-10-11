@@ -38,7 +38,7 @@ class MediaCategory {
 			'hierarchical'          => true,
 			'public'                => true,
 			'show_in_rest'          => true,
-			// Not on the Albums list: see MediaTag. Basecamp 10379842826.
+			// Not on the Albums list: see MediaTag.
 			'show_admin_column'     => false,
 			'show_in_quick_edit'    => false,
 			'rewrite'               => array( 'slug' => 'media-category' ),

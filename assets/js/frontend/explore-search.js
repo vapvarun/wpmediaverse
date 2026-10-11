@@ -94,7 +94,7 @@
 	// destination is itself a router region (an MVS `/media/@user/` profile), the
 	// router navigates client-side and MORPHS the old region onto the new one —
 	// and the diff, finding runtime cards with no counterpart, strands one inside
-	// the profile header (Basecamp 10230881780). Clearing on the NEXT TICK lets
+	// the profile header. Clearing on the NEXT TICK lets
 	// the click initiate navigation first, then hands the morph the empty
 	// container the server default has. A full page load (e.g. a BuddyPress
 	// `/members/` destination) makes this a harmless no-op. ---

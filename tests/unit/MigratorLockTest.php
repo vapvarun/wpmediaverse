@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Migrator;
 
 /**
- * Basecamp 10393276031 item 19.
+ * Migrations run one runner at a time and record progress per step.
  */
 class MigratorLockTest extends WP_UnitTestCase {
 

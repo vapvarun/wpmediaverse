@@ -151,7 +151,7 @@ final class MediaUrl {
 	 * Callers pairing this with an already-rendered primary URL must also check
 	 * the two share a host — see `TemplateHelpers::get_variant_url()`. A variant
 	 * on a different host than its primary is unreachable, which is what made
-	 * every WebP 403 behind a CDN (Basecamp #10162798416).
+	 * every WebP 403 behind a CDN.
 	 *
 	 * @since 2.3.1
 	 *

@@ -135,7 +135,7 @@ class WatermarkService {
 		// but the stamp did not succeed, a paid "protect my media" upload would
 		// otherwise be stored and served UN-watermarked with no trace. Log an
 		// error so the site owner sees it on the Logs screen and can act (most
-		// often: the GD image library is unavailable). Basecamp 10073499080.
+		// often: the GD image library is unavailable).
 		if ( ! $stamped && has_filter( 'mvs_watermark_stamp_file' ) ) {
 			LoggerService::error(
 				'watermark',

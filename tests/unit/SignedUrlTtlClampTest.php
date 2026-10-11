@@ -12,7 +12,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276020 item 15.
+ * A caller-chosen ttl never outlives the site's signed-URL setting.
  */
 class SignedUrlTtlClampTest extends WP_UnitTestCase {
 

@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393276020 item 7.
+ * The data export lists the blocks and reports a member made, not the ones about them.
  */
 class GdprExportActorOnlyTest extends WP_UnitTestCase {
 

@@ -222,7 +222,6 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	 * an exclusion, which kept out the album/collection privacy stubs and let
 	 * every other type straight through. So `[mvs_gallery]` and the block served
 	 * documents beside photos: 136 documents against 84 media on the QA baseline.
-	 * Basecamp 10298650705.
 	 *
 	 * Asserted against the same clause the template builds, because a block
 	 * template is not reachable from a unit test — the browser check covers the

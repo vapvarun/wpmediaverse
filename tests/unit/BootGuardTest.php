@@ -69,7 +69,7 @@ class BootGuardTest extends WP_UnitTestCase {
 	 * Free and Pro release in lockstep, and Free warns when Pro is older than
 	 * MVS_MIN_PRO. 2.6.0 shipped with it still at 2.1.0, so Free 2.6.0 with Pro
 	 * 2.5.1 raised no notice while the old Pro storage screen read a table 2.6.0
-	 * had removed (Basecamp 10355536157).
+	 * had removed.
 	 */
 	public function test_minimum_pro_matches_this_minor_release(): void {
 		$minor = static fn( string $v ): string => implode( '.', array_slice( explode( '.', $v ), 0, 2 ) );

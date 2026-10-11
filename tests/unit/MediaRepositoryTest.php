@@ -210,7 +210,6 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * a hardcoded host reads as local only where WP_TESTS_DOMAIN matches it,
 	 * and as an external CDN everywhere else - where returning it unsigned is
 	 * correct behaviour and the guard fails against working code.
-	 * Basecamp 10298570514.
 	 */
 	private function uploads_url(): string {
 		return trailingslashit( wp_upload_dir()['baseurl'] ) . 'wpmediaverse/';
@@ -803,7 +802,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 *
 	 * Callers such as MediaController::update_item() read the item before writing,
 	 * and the hook used to fire before the cache was dropped, so the BuddyPress
-	 * activity always took the previous privacy (Basecamp 10392976094).
+	 * activity always took the previous privacy.
 	 */
 	public function test_privacy_listener_reads_new_value_from_warm_cache(): void {
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );

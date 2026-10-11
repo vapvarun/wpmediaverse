@@ -262,7 +262,7 @@
 						lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
 					} else if ( meta.story && r.data && r.data.id ) {
 						// "Also share as a story" (Pro). Non-fatal: the media is
-						// uploaded either way. Basecamp 10313107097.
+						// uploaded either way.
 						window.mvsRest.markAsStory( r.data.id );
 					}
 					done++;

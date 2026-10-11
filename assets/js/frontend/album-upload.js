@@ -87,7 +87,6 @@
 	// always has a real image to feed `UploadService::generate_thumbnails()`.
 	// Without this, videos uploaded on hosts without ffmpeg + without an
 	// embedded cover atom render the default-SVG poster in Safari/Bing
-	// (card 9910574354).
 	function generateVideoThumb( file ) {
 		return new Promise( function ( resolve ) {
 			var video = document.createElement( 'video' );

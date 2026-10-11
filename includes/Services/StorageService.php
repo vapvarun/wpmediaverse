@@ -209,7 +209,7 @@ class StorageService {
 	public static function driver_name_for_url( string $url ): string {
 		// Match the parsed HOST by suffix, never the whole URL: a substring match
 		// trusted https://oldsite.example/x/.r2.dev/a.jpg and ?x=.b-cdn.net/ as
-		// storage and emitted them on public pages (Basecamp 10355018821).
+		// storage and emitted them on public pages.
 		$host = self::host_of( $url );
 		if ( '' === $host ) {
 			return '';
@@ -242,7 +242,7 @@ class StorageService {
 	 * private/group/custom, the `file_url` and `thumb_*` meta values stay as
 	 * cloud URLs. `SignedUrlService::serve_thumbnail()` then rejects every
 	 * read with a 403 because the cloud URL fails the `realpath()` containment
-	 * check against `{uploads}/wpmediaverse/`. Card 9925110293.
+	 * check against `{uploads}/wpmediaverse/`.
 	 *
 	 * The Free upload pipeline already mirrors the original bytes to the
 	 * canonical local path via the copy at `UploadService::handle()` (the

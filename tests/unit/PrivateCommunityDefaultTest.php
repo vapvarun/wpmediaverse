@@ -1,6 +1,6 @@
 <?php
 /**
- * Private communities start new uploads at Members Only (Basecamp 10252887515).
+ * Private communities start new uploads at Members Only.
  *
  * @package WPMediaVerse
  */

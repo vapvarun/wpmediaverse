@@ -111,7 +111,7 @@ final class MemberDataMap {
 				'label'   => __( 'Follows', 'wpmediaverse' ),
 			),
 			// Export only the blocks the member made: a row where they are the
-			// blocked one would name who blocked them (Basecamp 10393276020 #7).
+			// blocked one would name who blocked them.
 			'mvs_blocks'                    => array(
 				'columns'        => array( 'blocker_id', 'blocked_id' ),
 				'export_columns' => array( 'blocker_id' ),

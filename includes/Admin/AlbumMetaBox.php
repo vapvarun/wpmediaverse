@@ -6,7 +6,7 @@
  * the REST API, but wp-admin offered only WordPress's own title/content/
  * featured-image controls, none of which the plugin reads. This is the admin
  * entry point for the same three values, going through AlbumService so it
- * cannot drift from the other two (Basecamp 10351283087).
+ * cannot drift from the other two.
  *
  * @package WPMediaVerse
  */
@@ -113,7 +113,7 @@ class AlbumMetaBox {
 			<?php
 			// Only these two change behaviour (a playlist takes audio only). A
 			// custom value set through the API stays selectable, so saving the
-			// album does not erase it (Basecamp 10354828394).
+			// album does not erase it.
 			$type_choices = array(
 				'default'  => __( 'Standard album', 'wpmediaverse' ),
 				'playlist' => __( 'Playlist (audio only)', 'wpmediaverse' ),

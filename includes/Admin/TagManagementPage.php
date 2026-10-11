@@ -247,7 +247,7 @@ class TagManagementPage {
 					<?php
 					// `no-items` + `colspanchange` are core's own empty-row classes: without
 					// them core's phone-width list-table CSS shrank this cell to one
-					// column and pushed the message off-centre (Basecamp 10350404627).
+					// column and pushed the message off-centre.
 					$mvs_searching = '' !== ( isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 					?>
 					<tr class="no-items">
@@ -335,7 +335,7 @@ class TagManagementPage {
 				<?php
 				// Core's phone-width list-table pattern: below 782px Count and Actions
 				// collapse, and this button (wired by core's common.js) expands the
-				// row so Edit and Delete stay reachable (Basecamp 10355019169).
+				// row so Edit and Delete stay reachable.
 				?>
 				<button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e( 'Show more details', 'wpmediaverse' ); ?></span></button>
 			</td>

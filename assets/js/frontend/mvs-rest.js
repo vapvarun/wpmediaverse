@@ -117,7 +117,7 @@
 	 * (`/index.php?rest_route=/mvs/v1/`, the shape rest_url() returns without
 	 * pretty permalinks) and a caller concatenates a path that has its own query
 	 * (`me/media?per_page=20&page=1`), the result has TWO `?` and WordPress
-	 * cannot match the route → 404 (Basecamp 9793599140). This turns every `?`
+	 * cannot match the route → 404. This turns every `?`
 	 * after the first into `&`, which is correct for both URL shapes and a no-op
 	 * on a well-formed single-`?` URL. Fixes the class at one layer rather than
 	 * at each of the ~dozen concatenation sites across the blocks.
@@ -466,7 +466,7 @@
 	 * (the upload-modal album mode in the shared-ui block and the BuddyPress
 	 * profile/group albums tab). Keeping the validation message and the create
 	 * request in one place removes the duplicate implementations that drifted
-	 * apart (Basecamp 10069383195).
+	 * apart.
 	 *
 	 * Album names are intentionally NOT unique — they are per-member labels
 	 * (AlbumService::create runs no name-uniqueness check), so validation only

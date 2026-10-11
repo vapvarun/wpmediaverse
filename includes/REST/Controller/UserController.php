@@ -112,7 +112,7 @@ class UserController extends WP_REST_Controller {
 		// themselves + admins (post-WMV-01 hardening); WP core also withholds
 		// these from anon REST responses. Email and last-login were never in
 		// the payload. Triaged 2026-05-01 (Item 5); username/registered
-		// gating added per WMV-01 (Basecamp #9919403615).
+		// gating added per WMV-01.
 		register_rest_route(
 			$this->namespace,
 			'/users/(?P<id>[\d]+)',
@@ -223,7 +223,7 @@ class UserController extends WP_REST_Controller {
 		// leaked here, enabling iteration-based enumeration; the fields are now
 		// gated to the viewer themselves (and admins) below, and the request
 		// itself is throttled so a residual enumeration via id-iteration is
-		// expensive. See WMV-01 (Basecamp #9919403615).
+		// expensive. See WMV-01.
 		$rate_check = RateLimiter::check( 'user_profile', 60, 60 );
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
@@ -304,7 +304,7 @@ class UserController extends WP_REST_Controller {
 		// owner/admin = own media (dm excluded); group/custom need per-item checks.
 		$repo = Plugin::container()->get( 'media_repository' );
 		// Same filters as the list below, or the total describes a different
-		// set than the rows. Basecamp 10297845497.
+		// set than the rows.
 		$total = $repo->count_visible_by_author(
 			$user_id,
 			$viewer_id,

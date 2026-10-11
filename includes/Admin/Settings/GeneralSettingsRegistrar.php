@@ -172,8 +172,8 @@ class GeneralSettingsRegistrar {
 					'members' => __( 'Members Only', 'wpmediaverse' ),
 					'private' => __( 'Private', 'wpmediaverse' ),
 				),
-				// Says what actually happens with the setting below (Basecamp 10364776646),
-				// read with its registered default: no row yet means "members choose" (10392987925).
+				// Says what actually happens with the setting below,
+				// read with its registered default: no row yet means "members choose".
 				'description' => get_option( 'mvs_allow_user_privacy', true )
 					? __( 'New uploads start at this level; members can change it per upload.', 'wpmediaverse' )
 					: __( 'Every new upload gets this level; members cannot change it while "Let members choose" is off.', 'wpmediaverse' ),

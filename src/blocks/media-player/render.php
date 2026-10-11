@@ -91,14 +91,14 @@ $mvs_classes = trim(
 $wrapper  = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 $rest_url = esc_url( rest_url( 'mvs/v1/media/' . $media_id . '/view' ) );
 // The block's Download link follows the same site switch and per-item opt-out
-// as every other Download control (Basecamp 10350019690).
+// as every other Download control.
 $show_dl = $show_dl && \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->downloads_allowed( $media_id );
 $nonce    = wp_create_nonce( 'wp_rest' );
 
 // Pro analytics — wire the player to POST play/pause/seek/complete events to
 // the Pro events endpoint when the Pro plugin is active. Falls back silently
 // (client action short-circuits on empty analyticsUrl) when Pro isn't
-// installed. Card 9822587682.
+// installed.
 $mvs_pro_active   = defined( 'MVS_PRO_VERSION' );
 $mvs_analytics_url = $mvs_pro_active
 	? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $media_id . '/events' ) )

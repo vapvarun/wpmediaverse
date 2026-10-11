@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Albums and collections are public post types, so core lists them in their
  * archive, their RSS feed and the XML sitemap without asking MediaVerse about
- * their privacy (Basecamp 10393276020 #17). Those listings show only public
+ * their privacy. Those listings show only public
  * ones and never a member's Favorites collection. Single pages keep their own
  * gate (TemplateLoader); site search leaves them out through
  * `exclude_from_search` on the post types.

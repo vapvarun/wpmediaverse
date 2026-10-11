@@ -77,7 +77,7 @@ class StatsService {
 		global $wpdb;
 
 		// In batches: one unbounded DELETE on a large views table held a long
-		// lock (Basecamp 10393276047). created_at is indexed.
+		// lock. created_at is indexed.
 		$total = 0;
 		do {
 			$deleted = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

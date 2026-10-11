@@ -1357,7 +1357,7 @@ class Commands {
 
 	/**
 	 * Backfill the lazy-load placeholder colour for images uploaded before it
-	 * existed (Basecamp 9667082287).
+	 * existed.
 	 *
 	 * Walks the library in keyset batches so it scales past the per-item
 	 * Regenerate action, which was the only backfill path there was. Reads the
@@ -1713,7 +1713,7 @@ class Commands {
 	 * relocalized. `SignedUrlService::serve_thumbnail()` then 403s on every
 	 * read because the stored cloud URL fails its `wpmediaverse/` containment
 	 * check. The 1.4.0 listener fixes this going forward; this command heals
-	 * pre-1.4.0 rows (card 9925110293).
+	 * pre-1.4.0 rows.
 	 *
 	 * Safe to re-run — rows that already have local URLs are skipped.
 	 *
