@@ -7,7 +7,9 @@
  *   Rule 10  no method over 150 lines; a baselined long method may not grow.
  *   Rule 11  no new $wpdb query outside the repository layer and the migrator.
  *
- * Usage: php bin/lib/code-standard-check.php <plugin-dir> [--bless]
+ * Usage: php bin/lib/code-standard-check.php <plugin-dir> [--bless] [--named]
+ * --named prints "Code standard (ids)" etc. instead of rule numbers, for Pro,
+ * whose coding-rules script numbers its own rules.
  * Prints one line per violation and exits 1 when there is any. --bless rewrites
  * audit/cleanup/code-standard-baseline.txt from the current tree; do that only
  * when the debt itself shrank, never to make a new violation pass.
@@ -17,6 +19,9 @@
 
 $dir   = rtrim( $argv[1] ?? '.', '/' );
 $bless = in_array( '--bless', $argv, true );
+$label = in_array( '--named', $argv, true )
+	? array( 'id' => 'Code standard (ids)', 'method' => 'Code standard (method length)', 'wpdb' => 'Code standard ($wpdb)' )
+	: array( 'id' => 'Rule 9 ', 'method' => 'Rule 10', 'wpdb' => 'Rule 11' );
 
 const MAX_METHOD_LINES = 150;
 const ID_PATTERN       = '/Basecamp|\b[Cc]ards? #?\d{8,}|#\d{8,}|\b(?:9\d{9}|10\d{9})\b/';
@@ -165,13 +170,13 @@ foreach ( $current as $row ) {
 	list( $kind, $where, $value ) = explode( "\t", $row );
 	$known                        = $base[ "$kind\t$where" ] ?? array();
 	if ( 'id' === $kind && ! in_array( $value, $known, true ) ) {
-		echo "Rule 9  $where: a comment names a ticket or card id; put the reason in the comment and the id in the commit\n";
+		echo "{$label['id']} $where: a comment names a ticket or card id; put the reason in the comment and the id in the commit\n";
 		++$fail;
 	} elseif ( 'method' === $kind && ( ! $known || (int) $value > (int) $known[0] ) ) {
-		echo "Rule 10 $where: $value lines" . ( $known ? " (baseline {$known[0]})" : '' ) . ': split it by job, nothing new over ' . MAX_METHOD_LINES . "\n";
+		echo "{$label['method']} $where: $value lines" . ( $known ? " (baseline {$known[0]})" : '' ) . ': split it by job, nothing new over ' . MAX_METHOD_LINES . "\n";
 		++$fail;
 	} elseif ( 'wpdb' === $kind && ( ! $known || (int) $value > (int) $known[0] ) ) {
-		echo "Rule 11 $where: $value \$wpdb queries" . ( $known ? " (baseline {$known[0]})" : '' ) . ": new queries go in a repository class\n";
+		echo "{$label['wpdb']} $where: $value \$wpdb queries" . ( $known ? " (baseline {$known[0]})" : '' ) . ": new queries go in a repository class\n";
 		++$fail;
 	}
 }
