@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\PostTypes\Album;
 use WPMediaVerse\PostTypes\Collection;
+use WPMediaVerse\PostTypes\PublicListing;
 use WPMediaVerse\Taxonomies\MediaTag;
 use WPMediaVerse\Taxonomies\MediaCategory;
 use WPMediaVerse\Admin\Settings\SettingsPage;
@@ -1148,6 +1149,7 @@ class Plugin {
 
 		Album::register();
 		Collection::register();
+		PublicListing::register();
 		MediaTag::register();
 		MediaCategory::register();
 	}
