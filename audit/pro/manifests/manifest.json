@@ -2522,7 +2522,9 @@
         "Connector import batches of 5 (JS), route maxItems 10",
         "StreakService milestone claimed with unique user meta per day",
         "SearchService narrowed searches use 1000 candidates",
-        "Requires PHP 8.1"
+        "Requires PHP 8.1",
+        "Group C: Frontend\\FeatureOffNotice (one feature-off notice; members get the empty state), Admin\\EmptyState + templates/admin/partials/empty-state.php, bulk privacy calls Free apply_requested_privacy()",
+        "Group D: DeliveryController::stream uses readable_path(); BoostService::record_impression deprecated"
       ],
       "unchanged": "routes, hooks, settings, tables"
     }

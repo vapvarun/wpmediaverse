@@ -6892,6 +6892,13 @@
         "ViewRetentionService::purge_notifications (filter mvs_notification_retention_days)",
         "NotificationService::notify_owner_once shared by reactions and favourites"
       ],
+      "group_c_d": [
+        "Plugin::is_pro_active() replaces three private copies and four inline checks",
+        "PrivacyService::apply_requested_privacy() shared by BulkController and Pro bulk privacy",
+        "mvs-rest.js uploadMedia()/appendVideoPoster() used by media-upload, dashboard-view and shared-ui uploads",
+        "Deprecated (removal 4.0.0): 8 unused MediaRepository methods via _deprecated_function",
+        "MediaListPage: redundant deletes removed; publish_at scheduled branch removed; ViewRetentionService prune_views batched"
+      ],
       "unchanged": "routes, settings, tables"
     }
   },
