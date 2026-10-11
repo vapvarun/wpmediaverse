@@ -318,26 +318,24 @@ class CommentService {
 			)
 		);
 
-		// Fetch ALL replies for this media in one query, then build tree in memory.
+		// Replies of THIS page's threads only (the one level the formatter shows).
+		// Every reply on the item used to load for every page, so a popular photo
+		// fetched thousands of rows to show twenty threads (Basecamp 10393276031).
 		$all_replies = array();
 		if ( $top_level ) {
 			$replies_raw = get_comments(
 				array_merge(
 					$this->media_scope_args( $media_id ),
 					array(
-						'parent__not_in' => array( 0 ),
-						'orderby'        => 'comment_date_gmt',
-						'order'          => 'ASC',
-						'number'         => 0, // All replies.
+						'parent__in' => array_map( static fn( $c ) => (int) $c->comment_ID, $top_level ),
+						'orderby'    => 'comment_date_gmt',
+						'order'      => 'ASC',
+						'number'     => 0, // All replies in these threads.
 					)
 				)
 			);
 			foreach ( $replies_raw as $reply ) {
-				$parent_id = (int) $reply->comment_parent;
-				if ( ! isset( $all_replies[ $parent_id ] ) ) {
-					$all_replies[ $parent_id ] = array();
-				}
-				$all_replies[ $parent_id ][] = $reply;
+				$all_replies[ (int) $reply->comment_parent ][] = $reply;
 			}
 		}
 
