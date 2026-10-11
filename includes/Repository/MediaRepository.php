@@ -840,12 +840,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( $media_id <= 0 ) {
 			return '';
 		}
-		$signed = $this->signed_urls_service();
-		if ( ! $signed ) {
-			return '';
-		}
-		$url = $signed->generate_thumbnail( $media_id, get_current_user_id(), $size, 0, true );
-		return is_string( $url ) ? $url : '';
+		// One signing rule (MediaUrl::thumb()): a visitor gets '' for media they
+		// cannot see, so callers show a placeholder instead of a link that 403s.
+		return \WPMediaVerse\Core\MediaUrl::thumb( $media_id, $size, 0, get_current_user_id() );
 	}
 
 	/**
