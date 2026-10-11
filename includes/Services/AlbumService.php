@@ -509,13 +509,35 @@ class AlbumService {
 	 * @return int[]
 	 */
 	public function viewable_item_ids( int $album_id, ?int $viewer_id = null ): array {
+		$mvs_viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+		$key        = $album_id . ':' . $mvs_viewer;
+		if ( ! isset( $this->viewable_cache[ $key ] ) ) {
+			$this->viewable_cache[ $key ] = $this->compute_viewable_item_ids( $album_id, $mvs_viewer );
+		}
+		return $this->viewable_cache[ $key ];
+	}
+
+	/**
+	 * Request-scope cache for viewable_item_ids(); cleared on every item write.
+	 *
+	 * @var array<string,int[]>
+	 */
+	private array $viewable_cache = array();
+
+	/**
+	 * The uncached half of viewable_item_ids().
+	 *
+	 * @param int $album_id   Album post id.
+	 * @param int $mvs_viewer Viewer.
+	 * @return int[]
+	 */
+	private function compute_viewable_item_ids( int $album_id, int $mvs_viewer ): array {
 		$mvs_ids = array_map( 'intval', array_column( $this->get_items( $album_id ), 'media_id' ) );
 
 		if ( empty( $mvs_ids ) ) {
 			return array();
 		}
 
-		$mvs_viewer  = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 		$mvs_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_ids );
 
@@ -647,6 +669,7 @@ class AlbumService {
 	 * @return int Number of items successfully added.
 	 */
 	public function add_items( int $album_id, array $media_ids, array $args = array() ): int {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		$is_playlist = 'playlist' === $this->get_album_type( $album_id );
@@ -782,6 +805,7 @@ class AlbumService {
 	 * @return bool True if removed, false if not found.
 	 */
 	public function remove_item( int $album_id, int $media_id ): bool {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -876,6 +900,7 @@ class AlbumService {
 	 * @param int[] $order    Ordered array of media IDs.
 	 */
 	public function reorder( int $album_id, array $order ): void {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		foreach ( $order as $position => $media_id ) {
@@ -1146,6 +1171,7 @@ class AlbumService {
 	 * @return int Number of rows deleted.
 	 */
 	public function delete_all_items( int $album_id ): int {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		// Read the members before the rows go, then release them (see

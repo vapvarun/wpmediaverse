@@ -76,7 +76,7 @@ If a user can see the album but not a specific media item (because the item's pr
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/mvs/v1/albums` | List albums |
+| `GET` | `/mvs/v1/albums` | List albums with `media_count`; add `with_items=1` for each album's media ids (the single album route always has them) |
 | `POST` | `/mvs/v1/albums` | Create album |
 | `GET` | `/mvs/v1/albums/{id}` | Get album |
 | `PUT` | `/mvs/v1/albums/{id}` | Update album |

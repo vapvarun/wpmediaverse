@@ -311,9 +311,13 @@ class AlbumController extends WP_REST_Controller {
 		// owner's own non-public album, re-introducing the found_posts vs
 		// returned-count mismatch this fix exists to kill. wp_posts.post_author
 		// (used by the SQL clause) is the authoritative album author.
-		$items = array();
+		// A list carries counts, not every album's item ids: 20 albums of 2,000
+		// photos checked 80,000 items per request (Basecamp 10393276031 #11). A
+		// client that still wants the ids asks with ?with_items=1.
+		$with_items = (bool) $request->get_param( 'with_items' );
+		$items      = array();
 		foreach ( $query->posts as $post ) {
-			$items[] = $this->prepare_album_response( $post, true );
+			$items[] = $this->prepare_album_response( $post, $with_items );
 		}
 
 		$response = rest_ensure_response( $items );
@@ -741,7 +745,9 @@ class AlbumController extends WP_REST_Controller {
 			'link'           => get_permalink( $album_id ),
 			'privacy'        => $privacy_value ? $privacy_value : 'public',
 			'album_type'     => $album_type ? $album_type : 'default',
-			'media_count'    => count( $this->albums->viewable_item_ids( $album_id ) ),
+			// The owner can list every item of their own album, so one COUNT
+			// answers for them; anyone else needs the per-item listing rule.
+			'media_count'    => $is_owner ? $this->albums->get_item_count( $album_id ) : count( $this->albums->viewable_item_ids( $album_id ) ),
 			'cover_url'      => $this->albums->get_cover_url( $album_id ),
 			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
 			'is_owner'       => $is_owner,
@@ -777,6 +783,11 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	public function get_collection_params() {
 		return array(
+			'with_items' => array(
+				'description' => __( 'Include each album\'s viewable media ids (costly on large albums; the list carries media_count either way).', 'wpmediaverse' ),
+				'type'        => 'boolean',
+				'default'     => false,
+			),
 			'per_page'   => array(
 				'type'              => 'integer',
 				'default'           => 20,
