@@ -2487,6 +2487,21 @@
         "AnalyticsService::get_top_media reads all event types; completions = distinct completed sessions"
       ],
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks, public methods"
+    },
+    "refresh_2026_10_11": {
+      "scope": "targeted (2.6.2 round 3, Pro)",
+      "added": {
+        "hooks": [
+          "mvs_pro_caption_media_types (filter, TranscriptionService::caption_media_types)"
+        ]
+      },
+      "changed": [
+        "AnalyticsDashboard::enqueue_assets also on Stats > Video Analytics tab; heatmap note wording",
+        "DocumentViewer .mvs-pdf carries data-mvs-full-load",
+        "Storage screen wording + Migrate all confirmation (CloudOpsManager i18n.confirm, admin-storage-mgmt.js)",
+        "Captions: upload hook and POST captions accept caption_media_types() (default video)"
+      ],
+      "unchanged": "routes, settings, tables"
     }
   },
   "category_sources": {
