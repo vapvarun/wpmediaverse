@@ -6897,7 +6897,8 @@
         "PrivacyService::apply_requested_privacy() shared by BulkController and Pro bulk privacy",
         "mvs-rest.js uploadMedia()/appendVideoPoster() used by media-upload, dashboard-view and shared-ui uploads",
         "Deprecated (removal 4.0.0): 8 unused MediaRepository methods via _deprecated_function",
-        "MediaListPage: redundant deletes removed; publish_at scheduled branch removed; ViewRetentionService prune_views batched"
+        "MediaListPage: redundant deletes removed; publish_at scheduled branch removed; ViewRetentionService prune_views batched",
+        "AiSettingsRegistrar: WPCS class brace (no behaviour change)"
       ],
       "unchanged": "routes, settings, tables"
     }

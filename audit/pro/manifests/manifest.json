@@ -2524,7 +2524,8 @@
         "SearchService narrowed searches use 1000 candidates",
         "Requires PHP 8.1",
         "Group C: Frontend\\FeatureOffNotice (one feature-off notice; members get the empty state), Admin\\EmptyState + templates/admin/partials/empty-state.php, bulk privacy calls Free apply_requested_privacy()",
-        "Group D: DeliveryController::stream uses readable_path(); BoostService::record_impression deprecated"
+        "Group D: DeliveryController::stream uses readable_path(); BoostService::record_impression deprecated",
+        "CompeteHubRenderer, TournamentManager: WPCS class brace (no behaviour change)"
       ],
       "unchanged": "routes, hooks, settings, tables"
     }
