@@ -6278,7 +6278,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		// Generate slug if not provided.
-		if ( empty( $data['slug'] ) && ! empty( $data['title'] ) ) {
+		$generated = empty( $data['slug'] ) && ! empty( $data['title'] );
+		if ( $generated ) {
 			$data['slug'] = $this->generate_unique_slug( $data['title'] );
 		}
 
@@ -6286,6 +6287,18 @@ class MediaRepository implements MediaRepositoryInterface {
 			$wpdb->prefix . 'mvs_media_index',
 			$data
 		);
+
+		// Two parallel uploads with the same title (every iPhone photo is
+		// "Image") can probe the same free slug; the second insert then hits the
+		// unique key and the upload failed, deleting the file. Retry once with a
+		// random suffix (Basecamp 10393276031 #10).
+		if ( false === $result && $generated && false !== stripos( (string) $wpdb->last_error, 'duplicate' ) ) {
+			$data['slug'] = self::random_slug_suffix( (string) $data['slug'] );
+			$result       = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_media_index',
+				$data
+			);
+		}
 
 		if ( false === $result ) {
 			return false;
@@ -6313,42 +6326,42 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function generate_unique_slug( string $title, int $exclude_media_id = 0 ): string {
 		global $wpdb;
 
-		$slug = sanitize_title( $title );
-		if ( empty( $slug ) ) {
-			$slug = 'media-' . wp_generate_password( 8, false );
+		$base = sanitize_title( $title );
+		if ( empty( $base ) ) {
+			return 'media-' . strtolower( wp_generate_password( 8, false ) );
 		}
 
-		$base_slug = $slug;
-		$counter   = 1;
-
-		while ( true ) {
-			if ( $exclude_media_id > 0 ) {
-				$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND media_id != %d",
-						$slug,
-						$exclude_media_id
-					)
-				);
-			} else {
-				$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s",
-						$slug
-					)
-				);
+		// At most two queries: the plain slug, then -1 to -4 together. Past that
+		// a random suffix, instead of one query per existing duplicate (a site
+		// with thousands of "image" uploads ran thousands per upload).
+		$candidates = array( $base, $base . '-1', $base . '-2', $base . '-3', $base . '-4' );
+		foreach ( array( array( $base ), array_slice( $candidates, 1 ) ) as $round ) {
+			$in    = implode( ',', array_fill( 0, count( $round ), '%s' ) );
+			$taken = (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- placeholders built above.
+					"SELECT slug FROM {$wpdb->prefix}mvs_media_index WHERE slug IN ({$in}) AND media_id != %d",
+					...array_merge( $round, array( $exclude_media_id ) )
+				)
+			);
+			$free  = array_values( array_diff( $round, $taken ) );
+			if ( $free ) {
+				return $free[0];
 			}
-
-			if ( ! $exists ) {
-				break;
-			}
-
-			$slug = $base_slug . '-' . $counter;
-			++$counter;
 		}
 
-		return $slug;
+		return self::random_slug_suffix( $base );
 	}
+
+	/**
+	 * A slug with a short random suffix, for a base that is already crowded.
+	 *
+	 * @param string $base Slug.
+	 */
+	private static function random_slug_suffix( string $base ): string {
+		return $base . '-' . strtolower( wp_generate_password( 6, false ) );
+	}
+
 
 	/**
 	 * Delete all data for a media item (delegates to delete_cascade).
