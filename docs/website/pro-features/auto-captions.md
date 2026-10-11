@@ -58,7 +58,7 @@ Retrieve the caption metadata for a media item. Returns `404` when the item has 
 
 ### POST /media/{id}/captions/generate
 
-Queue Whisper transcription for the media item. Requires ownership or admin (`manage_mvs_settings`). No body is required. Only video items are accepted (audio too when the `mvs_pro_caption_media_types` filter adds it), and the OpenAI key must be set (otherwise the answer is `503`).
+Queue Whisper transcription for the media item. Requires ownership or admin (`manage_mvs_settings`). A member who is not an admin may ask only while **Auto-generate on Upload** is on, not for a video that already has captions (`409`), and at most 5 times a day; admins can re-generate at any time. No body is required. Only video items are accepted (audio too when the `mvs_pro_caption_media_types` filter adds it), and the OpenAI key must be set (otherwise the answer is `503`).
 
 ```bash
 curl -X POST https://yoursite.com/wp-json/mvs-pro/v1/media/123/captions/generate \
