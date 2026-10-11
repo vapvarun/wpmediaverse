@@ -90,4 +90,19 @@ class MemberDeletionRemovesFilesTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->meta_rows( $ids ), 'Media meta must go with the media.' );
 		$this->assertTrue( $this->cleanup_queued(), 'The files must be handed to storage cleanup.' );
 	}
+
+	public function test_account_deletion_erases_past_the_purge_batch_size(): void {
+		global $wpdb;
+		$user  = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$other = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$media = Plugin::container()->get( 'media_repository' )->insert( array( 'title' => 'Viewed', 'post_author' => $other, 'status' => 'publish', 'media_type' => 'image', 'privacy' => 'public' ) );
+		$views = $wpdb->prefix . 'mvs_media_views';
+		for ( $i = 0; $i < 700; $i++ ) {
+			$wpdb->insert( $views, array( 'media_id' => $media, 'user_id' => $user, 'ip_hash' => 'h' . $i ) );
+		}
+
+		Plugin::container()->get( 'user_deletion' )->handle_user_deletion( $user );
+
+		$this->assertSame( 0, (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$views} WHERE user_id = %d", $user ) ), 'Every row goes, not just the first purge batch.' ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+	}
 }
