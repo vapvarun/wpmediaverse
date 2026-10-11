@@ -82,7 +82,8 @@ explained by the code, is a gap to close before calling it done.
   a video the "1 / 2" counter sits at the top, clear of the player's seek bar; for a photo, at the
   bottom. A video the browser cannot play shows the centred "cannot play" box with Download. In the
   BP lightbox the video shows its poster before play (not black) and the stats read "1 view" for one
-  view, "2 views" for two.
+  view, "2 views" for two. In the BP lightbox Edit shows only to the item's owner and opens the
+  edit dialog; Report shows to other members, never to the owner (Basecamp 10393027580).
 
 ### 8. Restore
 - Delete the test items via `MediaRepository::delete_cascade()` (never raw SQL).

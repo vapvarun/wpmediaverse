@@ -1039,6 +1039,16 @@
 			// state.lightboxHideDownload logic here — show it only when the item
 			// has a file_url and per-media downloads aren't disabled. Without this
 			// the Download action is invisible even though its handler is wired.
+			// Owner-gated controls lost their IA bindings in the clone and were all
+			// un-hidden: Edit showed to everyone, Report to the owner. Re-apply both
+			// gates from the item, as state.lightboxIsOwner does (Basecamp 10393027580).
+			var me      = ( typeof mvsActivityMedia !== 'undefined' ) ? parseInt( mvsActivityMedia.userId, 10 ) || 0 : 0;
+			var isOwner = me > 0 && parseInt( data.author, 10 ) === me;
+			var editBtn = overlay.querySelector( '.mvs-lightbox-actions .mvs-lb-edit' );
+			if ( editBtn ) { editBtn.hidden = ! isOwner; }
+			var reportBtn = overlay.querySelector( '.mvs-lightbox-actions .mvs-lightbox-action--report' );
+			if ( reportBtn ) { reportBtn.hidden = isOwner; }
+
 			var dlBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lb-download' );
 			if ( dlBtn ) {
 				if ( suiState.fileUrl && data.allow_download !== false ) {
@@ -1486,6 +1496,15 @@
 		// Also relied on the stripped IA action lightboxDownload. Replicate the
 		// browser-native download via a hidden anchor (signed URLs carry the
 		// Content-Disposition header from the storage driver) (#10077932144).
+
+		// Edit (owner only, gated in populate): the IA store's edit modal via its bridge.
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-edit' );
+			if ( ! btn || btn.hidden || ! suiState.mediaId || typeof window.mvsOpenEditModal !== 'function' ) { return; }
+			e.preventDefault();
+			window.mvsOpenEditModal( suiState.mediaId );
+		} );
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }

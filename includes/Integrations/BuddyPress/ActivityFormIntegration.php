@@ -161,6 +161,8 @@ class ActivityFormIntegration {
 				'bpRestUrl' => esc_url_raw( rest_url( 'buddypress/v1/' ) ),
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
 				'maxMedia'  => (int) apply_filters( 'mvs_activity_max_media', 6 ),
+				// The lightbox copy gates owner-only controls (Edit) and Report on it.
+				'userId'    => get_current_user_id(),
 			)
 		);
 	}
