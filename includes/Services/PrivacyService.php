@@ -173,7 +173,7 @@ class PrivacyService {
 	 * @param int    $user_id    User to test.
 	 * @return string `none`, `read`, `write` or `own`.
 	 */
-	private static function media_drive_access( string $drive_type, int $drive_id, int $user_id ): string {
+	public static function media_drive_access( string $drive_type, int $drive_id, int $user_id ): string {
 		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $drive_type, $drive_id, $user_id );
 
 		/**
@@ -257,7 +257,8 @@ class PrivacyService {
 	 * The rule lives in SQL so found_posts and pagination count only visible
 	 * rows. Privacy is the post meta both CPTs share
 	 * (AlbumService::PRIVACY_META): public for everyone, members-level for any
-	 * logged-in viewer, anything else only for its author. Moderators see all.
+	 * logged-in viewer, followers- and friends-only for the author's followers
+	 * and friends, anything else only for its author. Moderators see all.
 	 * wp_posts.post_author is the authoritative author; the index author on
 	 * album rows is unreliable, which is why can_view() is not used per row.
 	 *
@@ -278,8 +279,16 @@ class PrivacyService {
 		}
 
 		if ( $user_id ) {
-			$fragment = $wpdb->prepare(
-				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// Followers- and friends-only albums for their audience, from the same
+			// follow and friendship answers can_view() uses.
+			$in        = static function ( array $ids ): string {
+				return $ids ? implode( ',', array_map( 'intval', $ids ) ) : '0';
+			};
+			$following = \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->get_following_ids( $user_id );
+			$fragment  = $wpdb->prepare(
+				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d"
+				. " OR ( mvpriv.meta_value = 'followers' AND {$wpdb->posts}.post_author IN ( " . $in( $following ) . ' ) )'
+				. " OR ( mvpriv.meta_value = 'friends' AND {$wpdb->posts}.post_author IN ( " . $in( self::friend_ids( $user_id ) ) . ' ) ) )', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$user_id
 			);
 		} else {

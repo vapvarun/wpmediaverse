@@ -1988,7 +1988,7 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
-	 * The spaces an item is linked into (GET /media/{id}/spaces).
+	 * The spaces an item is linked into that the viewer may open (GET /media/{id}/spaces).
 	 *
 	 * @since 2.6.2
 	 *
@@ -1997,12 +1997,21 @@ class MediaController extends WP_REST_Controller {
 	 */
 	public function get_item_spaces( $request ): WP_REST_Response {
 		$media_id = (int) $request->get_param( 'id' );
-		$spaces   = \WPMediaVerse\Core\Plugin::container()->get( 'media_space_repository' )->spaces_for_media( $media_id );
+		$viewer   = get_current_user_id();
+		$spaces   = array();
+
+		// Only spaces this viewer may open: a link into a private space must not
+		// tell an outsider that the space exists.
+		foreach ( (array) \WPMediaVerse\Core\Plugin::container()->get( 'media_space_repository' )->spaces_for_media( $media_id ) as $space_id ) {
+			if ( 'none' !== \WPMediaVerse\Services\PrivacyService::media_drive_access( 'space', (int) $space_id, $viewer ) ) {
+				$spaces[] = (int) $space_id;
+			}
+		}
 
 		return rest_ensure_response(
 			array(
 				'media_id'  => $media_id,
-				'space_ids' => array_values( array_map( 'intval', (array) $spaces ) ),
+				'space_ids' => $spaces,
 			)
 		);
 	}

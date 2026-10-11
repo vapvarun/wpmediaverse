@@ -90,4 +90,17 @@ class CoreVisibilityContractTest extends WP_UnitTestCase {
 		remove_filter( 'mvs_friend_ids', $friends, 10 );
 		remove_filter( 'mvs_are_friends', '__return_true' );
 	}
+
+	public function test_album_lists_reach_followers_and_friends(): void {
+		$author   = self::factory()->user->create( array( 'role' => 'author' ) );
+		$follower = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$other    = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		Plugin::container()->get( 'follows' )->follow( $follower, $author );
+		$album = self::factory()->post->create( array( 'post_type' => 'mvs_album', 'post_author' => $author, 'post_status' => 'publish' ) );
+		update_post_meta( $album, \WPMediaVerse\Services\AlbumService::PRIVACY_META, 'followers' );
+
+		$args = array( 'post_type' => 'mvs_album', 'fields' => 'ids', 'posts_per_page' => 50 );
+		$this->assertContains( $album, PrivacyService::query_listable_spaces( $args, $follower )->posts, 'A follower lists a followers-only album.' );
+		$this->assertNotContains( $album, PrivacyService::query_listable_spaces( $args, $other )->posts );
+	}
 }

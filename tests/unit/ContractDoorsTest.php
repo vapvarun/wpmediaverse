@@ -46,6 +46,17 @@ class ContractDoorsTest extends WP_UnitTestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( array(), $response->get_data()['space_ids'] );
 
+		// Linked into a space the viewer may open and one they may not: only the first is named.
+		Plugin::container()->get( 'media_space_repository' )->link( $id, 501, $owner );
+		Plugin::container()->get( 'media_space_repository' )->link( $id, 502, $owner );
+		$access = static function ( $level, $type, $drive_id ) {
+			return 501 === (int) $drive_id ? 'read' : 'none';
+		};
+		add_filter( 'mvs_document_drive_access', $access, 10, 3 );
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/mvs/v1/media/' . $id . '/spaces' ) );
+		$this->assertSame( array( 501 ), $response->get_data()['space_ids'], 'A private space the viewer cannot open is not disclosed.' );
+		remove_filter( 'mvs_document_drive_access', $access, 10 );
+
 		$this->assertSame( 'followers', PrivacyService::map_external_privacy( 'followers', 'buddynext' ) );
 		$this->assertSame( 'friends', PrivacyService::map_external_privacy( 'connections', 'buddynext' ) );
 		$this->assertSame( 'private', PrivacyService::map_external_privacy( 'something-new', 'buddynext' ), 'Unknown words fail closed.' );
