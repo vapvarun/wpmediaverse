@@ -2138,6 +2138,7 @@ class MediaController extends WP_REST_Controller {
 		self::$stats_map = array();
 		self::prime_stats( $media_ids );
 		$repo    = Plugin::container()->get( 'media_repository' );
+		$repo->gallery_tile_counts( $media_ids ); // One batch for every tile's group_count.
 		$authors = array();
 		foreach ( $media_ids as $mid ) {
 			$author = (int) $repo->get( (int) $mid, 'post_author' );

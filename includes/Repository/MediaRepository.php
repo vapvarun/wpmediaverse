@@ -133,6 +133,13 @@ class MediaRepository implements MediaRepositoryInterface {
 	private static array $row_cache = array();
 
 	/**
+	 * Request-scope gallery badge counts, media_id => count (gallery_tile_counts()).
+	 *
+	 * @var array<int,int>
+	 */
+	private static array $tile_counts = array();
+
+	/**
 	 * Blocked-author ids per viewer, for this request only.
 	 *
 	 * Both query() and query_count() build through build_query_parts(), so a
@@ -192,6 +199,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		self::$row_cache         = array();
 		self::$meta_fully_loaded = array();
 		self::$blocked_cache     = array();
+		self::$tile_counts       = array();
 	}
 
 	/**
@@ -468,6 +476,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 */
 	private static function invalidate_row_cache( int $media_id ): void {
 		unset( self::$row_cache[ $media_id ], self::$meta_fully_loaded[ $media_id ] );
+		self::$tile_counts = array(); // Any write can change a gallery's count.
 	}
 
 	/**
@@ -5496,11 +5505,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * How many items each listed tile stands for, for its gallery badge.
 	 *
-	 * A gallery cover counts itself plus the members it hides in listings (same
-	 * privacy, published, approved: the rule in gallery_exclude_subquery()). Any
-	 * other item stands for itself and gets 0, so a member listed on its own
-	 * after its cover went private or was deleted shows no badge, and a private
-	 * member is never counted on a public cover (Basecamp 10392976432).
+	 * A gallery cover counts itself plus the published, approved members that
+	 * share its privacy, so a private member is never counted on a public cover.
+	 * Any other item stands for itself and gets 0: a member listed on its own
+	 * shows no badge and opens alone in the lightbox (Basecamp 10392976432).
+	 * Cached for the request; any repository write clears it.
 	 *
 	 * @since 2.6.2
 	 *
@@ -5510,35 +5519,57 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function gallery_tile_counts( array $media_ids ): array {
 		global $wpdb;
 
-		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
-		if ( ! $ids ) {
-			return array();
-		}
-		$counts = array_fill_keys( $ids, 0 );
-		$meta   = $wpdb->prefix . 'mvs_media_meta';
-		$index  = $this->index_table();
-		$in     = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$ids     = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		$missing = array_values( array_diff( $ids, array_keys( self::$tile_counts ) ) );
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
-				"SELECT cg.media_id, COUNT(*) AS c FROM {$meta} cg
-					INNER JOIN {$meta} cp ON cp.media_id = cg.media_id AND cp.meta_key = 'group_position' AND cp.meta_value = '0'
-					INNER JOIN {$index} ci ON ci.media_id = cg.media_id
-					INNER JOIN {$meta} mg ON mg.meta_key = 'media_group' AND mg.meta_value = cg.meta_value
-					INNER JOIN {$index} mi ON mi.media_id = mg.media_id AND mi.privacy = ci.privacy
-						AND mi.status = 'publish' AND mi.moderation_status = 'approved'
-					WHERE cg.meta_key = 'media_group' AND cg.media_id IN ({$in})
-					GROUP BY cg.media_id",
-				...$ids
-			),
-			ARRAY_A
-		);
-		foreach ( (array) $rows as $row ) {
-			$counts[ (int) $row['media_id'] ] = (int) $row['c'];
+		if ( $missing ) {
+			$meta = $wpdb->prefix . 'mvs_media_meta';
+			$idx  = $this->index_table();
+			foreach ( $missing as $id ) {
+				self::$tile_counts[ $id ] = 0;
+			}
+
+			// Two short queries, not one join on the unindexed meta_value: the join
+			// cost ~200 ms a page on MySQL at 12k media, these ~18 ms together.
+			$in     = implode( ',', array_fill( 0, count( $missing ), '%d' ) );
+			$covers = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
+					"SELECT c.media_id, c.meta_value AS grp, ci.privacy FROM {$meta} c
+						INNER JOIN {$meta} p ON p.media_id = c.media_id AND p.meta_key = 'group_position' AND p.meta_value = '0'
+						INNER JOIN {$idx} ci ON ci.media_id = c.media_id
+						WHERE c.meta_key = 'media_group' AND c.media_id IN ({$in})",
+					...$missing
+				)
+			);
+
+			$groups = array_values( array_unique( array_map( static fn( $c ) => (string) $c->grp, (array) $covers ) ) );
+			if ( $groups ) {
+				$ph   = implode( ',', array_fill( 0, count( $groups ), '%s' ) );
+				$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
+						"SELECT mg.meta_value AS grp, mi.privacy, COUNT(*) AS c FROM {$meta} mg
+							INNER JOIN {$idx} mi ON mi.media_id = mg.media_id
+							WHERE mg.meta_key = 'media_group' AND mg.meta_value IN ({$ph})
+							AND mi.status = 'publish' AND mi.moderation_status = 'approved'
+							GROUP BY mg.meta_value, mi.privacy",
+						...$groups
+					)
+				);
+				$by = array();
+				foreach ( (array) $rows as $row ) {
+					$by[ (string) $row->grp ][ (string) $row->privacy ] = (int) $row->c;
+				}
+				foreach ( (array) $covers as $cover ) {
+					self::$tile_counts[ (int) $cover->media_id ] = $by[ (string) $cover->grp ][ (string) $cover->privacy ] ?? 0;
+				}
+			}
 		}
-		return $counts;
+
+		return array_intersect_key( self::$tile_counts, array_flip( $ids ) );
 	}
+
 
 	/**
 	 * The single source of truth for the "exclude non-cover gallery members"
@@ -5566,31 +5597,29 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function gallery_exclude_subquery( string $cover_type = '' ): string {
 		global $wpdb;
 
-		$meta  = $wpdb->prefix . 'mvs_media_meta';
-		$index = $this->index_table();
+		// Known limit, planned for 2.7.0 (Basecamp 10392589060): every non-cover
+		// member is hidden even when its cover is private or deleted. Checking the
+		// cover per member needs an index on the group key: without one it ran in
+		// seconds on large sites on both MySQL and MariaDB, so 2.6.2 kept this rule.
 
-		// A member is hidden only while its cover stands in for it: the cover
-		// exists, is published and approved, and has the member's own privacy, so
-		// it is listed wherever the member would be. Otherwise the member is
-		// listed itself. Hiding every non-cover member made a public item vanish
-		// from Explore for good once its cover was made private, held for review
-		// or deleted (Basecamp 10392589060).
-		$type = ( '' !== $cover_type && MediaTypes::is_known( $cover_type ) )
-			? " AND ci.media_type = '" . esc_sql( $cover_type ) . "'" // is_known() leaves a fixed slug.
-			: '';
-
-		return "SELECT mm1.media_id FROM {$meta} mm1
+		$meta = $wpdb->prefix . 'mvs_media_meta';
+		$sql  = "SELECT mm1.media_id FROM {$meta} mm1
 			INNER JOIN {$meta} mm2 ON mm1.media_id = mm2.media_id
-			INNER JOIN {$index} mi ON mi.media_id = mm1.media_id
 			WHERE mm1.meta_key = 'media_group'
 			AND mm2.meta_key = 'group_position'
-			AND mm2.meta_value != '0'
-			AND EXISTS (
+			AND mm2.meta_value != '0'";
+
+		if ( '' === $cover_type || ! MediaTypes::is_known( $cover_type ) ) {
+			return $sql;
+		}
+
+		// is_known() leaves a fixed slug, so it is safe to inline.
+		return $sql . " AND EXISTS (
 				SELECT 1 FROM {$meta} c1
 				INNER JOIN {$meta} c2 ON c2.media_id = c1.media_id AND c2.meta_key = 'group_position' AND c2.meta_value = '0'
-				INNER JOIN {$index} ci ON ci.media_id = c1.media_id
+				INNER JOIN {$this->index_table()} ci ON ci.media_id = c1.media_id
 				WHERE c1.meta_key = 'media_group' AND c1.meta_value = mm1.meta_value
-				AND ci.status = 'publish' AND ci.moderation_status = 'approved' AND ci.privacy = mi.privacy{$type}
+				AND ci.media_type = '" . esc_sql( $cover_type ) . "'
 			)";
 	}
 

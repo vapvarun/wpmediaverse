@@ -62,15 +62,15 @@ explained by the code, is a gap to close before calling it done.
 - **Expect** as Member B and as the visitor: Explore no longer shows it; `/media/<photo-slug>/` 404;
   `GET /mvs/v1/media/{id}` 404; reactions/comments routes 404; the old direct file path 403/404.
 
-### 6. Gallery siblings stay findable (Basecamp 10392589060, fixed in 2.6.2)
-- **Action**: with the cover private (step 5), and again after DELETING the cover, open Explore as
-  the visitor; also `GET /mvs/v1/media?group_covers=1`.
-- **Expect**: the still-public video is listed itself (it was a gallery member, not private). With
-  the cover public again, the gallery is one tile with its count badge and the video is behind it.
-- **Badge** (Basecamp 10392976432): a split-out tile has NO gallery badge and opens alone in the
-  lightbox (no "1 / N", no jump to another item); the cover's badge counts only the items it stands
-  for, so a private member is not counted on a public cover. Check page 1 AND a "Load more" page
-  (server and JS builders).
+### 6. Gallery badge, and the known cover limit (Basecamp 10392589060, 10392976432)
+- **Action**: with the cover public, open Explore as the visitor; then make ONE non-cover member
+  private and reload.
+- **Expect**: one tile with the badge counting the items it stands for (4, then 3 once a member is
+  private); the lightbox steps through what this viewer may see.
+- **Known until 2.7.0**: with the cover private or deleted, the other members are NOT listed on
+  Explore (they stay in My Media and on their own pages). The fix needs an index on the group key
+  and a 12k-media benchmark on MySQL and MariaDB; 2.6.2 reverted an unindexed version that took
+  seconds per page. Do not bounce 2.6.2 for this.
 - **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
 
 ### 7. Lightbox layout at tablet and desktop (fixed in 2.6.2)
