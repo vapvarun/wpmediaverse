@@ -57,6 +57,14 @@ class AccountDeletionService {
 	const META_SCHEDULED = 'mvs_deletion_scheduled_at';
 
 	/**
+	 * Who owns the suspension during a pending deletion: '1' the request set it,
+	 * '0' it was already suspended or a moderator acted since. Cancelling lifts
+	 * only the request's own suspension (Basecamp 10393276020 #6). Absent means
+	 * a request made before 2.6.2, which keeps the old lift-on-cancel.
+	 */
+	const META_SUSPENDED_BY_DELETION = 'mvs_suspended_by_deletion';
+
+	/**
 	 * Cron hook that sweeps due deletions.
 	 */
 	const CRON_HOOK = 'mvs_process_account_deletions';
@@ -160,6 +168,8 @@ class AccountDeletionService {
 		// Suspend for the duration. RestGate already enforces `mvs_suspended` on
 		// every write, so this needs no new enforcement code — it is the reason
 		// the suspension gate exists.
+		$already_suspended = (bool) get_user_meta( $user_id, 'mvs_suspended', true );
+		update_user_meta( $user_id, self::META_SUSPENDED_BY_DELETION, $already_suspended ? '0' : '1' );
 		update_user_meta( $user_id, 'mvs_suspended', 1 );
 
 		// Lock out anyone holding a credential, including a thief. The owner can
@@ -204,7 +214,10 @@ class AccountDeletionService {
 		}
 
 		delete_user_meta( $user_id, self::META_SCHEDULED );
-		delete_user_meta( $user_id, 'mvs_suspended' );
+		if ( '0' !== get_user_meta( $user_id, self::META_SUSPENDED_BY_DELETION, true ) ) {
+			delete_user_meta( $user_id, 'mvs_suspended' );
+		}
+		delete_user_meta( $user_id, self::META_SUSPENDED_BY_DELETION );
 
 		/**
 		 * Fires when a member cancels their pending account deletion.
