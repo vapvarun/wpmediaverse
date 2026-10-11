@@ -539,7 +539,7 @@ class NotificationService {
 
 		// Message + deep link come from the single shared builder so REST
 		// output and the mvs_notification_created hook never drift apart.
-		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id, (int) $row->comment_id );
+		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id, (int) $row->comment_id, (int) $row->user_id );
 
 		return array(
 			'id'         => (int) $row->id,
@@ -576,13 +576,17 @@ class NotificationService {
 	 * @param int    $media_id  Related media ID (0 if none).
 	 * @param int    $object_id The row's comment_id slot: a comment id, or the
 	 *                          id of whatever a custom type is about.
+	 * @param int    $recipient Member reading it (0 = not known). When set, an
+	 *                          item they may no longer see keeps its title out.
 	 * @return array{message:string,link:string,message_grouped:string}
 	 */
-	public function build_message_and_link( string $type, int $actor_id, int $media_id, int $object_id = 0 ): array {
+	public function build_message_and_link( string $type, int $actor_id, int $media_id, int $object_id = 0, int $recipient = 0 ): array {
 		$actor       = get_userdata( $actor_id );
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
-		if ( $media_id ) {
+		// Read at render time, so a title stays out once the item turned private
+		// for this reader (a mention made before the change; Basecamp 10393276031).
+		if ( $media_id && ( $recipient <= 0 || \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, $recipient ) ) ) {
 			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: '';
 		}
 

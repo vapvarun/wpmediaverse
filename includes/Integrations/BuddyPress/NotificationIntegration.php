@@ -279,7 +279,7 @@ class NotificationIntegration {
 		$media_id = (int) $item_id;
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$rendered = \WPMediaVerse\Core\Plugin::container()->get( 'notifications' )
-			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0, (int) bp_notifications_get_meta( (int) $id, self::OBJECT_META ) );
+			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0, (int) bp_notifications_get_meta( (int) $id, self::OBJECT_META ), get_current_user_id() );
 		$text     = $rendered['message'];
 		$link     = '' !== $rendered['link'] ? $rendered['link'] : bp_get_notifications_permalink();
 
