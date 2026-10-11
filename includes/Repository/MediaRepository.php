@@ -4840,6 +4840,8 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[] = "status != 'trash'";
 		}
 
+		// Chat files live only in their conversation, never in a media list.
+		$where[] = "privacy != 'dm'";
 		if ( '' !== $privacy ) {
 			$where[]  = 'privacy = %s';
 			$params[] = $privacy;

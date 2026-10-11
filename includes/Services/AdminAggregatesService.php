@@ -473,6 +473,16 @@ class AdminAggregatesService {
 	 * @return string[] Privacy slugs.
 	 */
 	public function privacy_levels_in_use(): array {
+		// Chat files ('dm') never appear in a media list, so their level is no filter.
+		return array_values( array_diff( $this->privacy_levels_stored(), array( 'dm' ) ) );
+	}
+
+	/**
+	 * Every privacy level stored on a media row (cached).
+	 *
+	 * @return string[]
+	 */
+	private function privacy_levels_stored(): array {
 		return (array) $this->cache->remember_persistent(
 			'admin_privacy_in_use',
 			static function (): array {
