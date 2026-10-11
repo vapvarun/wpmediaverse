@@ -6889,7 +6889,8 @@
         "Requires PHP 8.1 (header, MVS_MIN_PHP, readme, composer)",
         "NotificationService::already_notified for reactions, follows, favourites; titles hidden for readers who cannot view",
         "UserController search uses user_nicename, not user_login",
-        "ViewRetentionService::purge_notifications (filter mvs_notification_retention_days)"
+        "ViewRetentionService::purge_notifications (filter mvs_notification_retention_days)",
+        "NotificationService::notify_owner_once shared by reactions and favourites"
       ],
       "unchanged": "routes, settings, tables"
     }
