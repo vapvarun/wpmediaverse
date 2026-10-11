@@ -6845,6 +6845,20 @@
         "ActivityContentIntegration::refresh_broadcast_urls() falls back to viewer-minted URLs for non-public media"
       ],
       "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_qa_round_3": {
+      "scope": "targeted (2.6.2 round 3: two security fixes, gallery rule reverted, client-nav full-load, BP lightbox gates)",
+      "added": {},
+      "changed": [
+        "MediaController::get_items slug lookup applies PrivacyService::can_view()",
+        "MessagingService::send_message keeps parent_id only within the same conversation; get_message_preview(int, int $conversation_id = 0)",
+        "MediaRepository::gallery_exclude_subquery back to the 2.6.1 rule (cover-private case known until 2.7.0)",
+        "MediaRepository::gallery_tile_counts two queries, request cache; primed in MediaController::prime_viewer_state",
+        "shared-ui navigate: region content with data-mvs-full-load falls back to a full load",
+        "bp-activity-media.js gates Edit/Report per item; mvsActivityMedia.userId added",
+        "GeneralSettingsRegistrar reads mvs_allow_user_privacy with its registered default"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
     }
   },
   "category_sources": {
