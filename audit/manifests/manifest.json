@@ -6876,7 +6876,8 @@
         "AccountDeletionService cancel lifts only the request's own suspension; MemberModeration marks moderator ownership",
         "GDPR export honours MemberDataMap export_columns (blocks, reports)",
         "ActivityService feed requires publish + approved (own pending allowed)",
-        "Album/Collection CPTs exclude_from_search"
+        "Album/Collection CPTs exclude_from_search",
+        "ActivityService count query always prepared (lifecycle clause binds the viewer)"
       ],
       "unchanged": "routes, settings, tables"
     }
