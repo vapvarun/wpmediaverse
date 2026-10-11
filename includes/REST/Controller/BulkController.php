@@ -356,24 +356,18 @@ class BulkController extends WP_REST_Controller {
 		global $wpdb;
 		$updated = 0;
 
-		$albums        = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$privacy_svc   = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		$album_decides = 0;
 		$kept          = 0;
 		foreach ( $media_ids as $media_id ) {
-			// In an album: the album decides; the choice is kept for when it leaves.
-			if ( $albums->keep_own_privacy_if_in_album( (int) $media_id, $privacy ) ) {
-				++$album_decides;
-				++$updated;
-				continue;
-			}
-			$repo->set( $media_id, 'privacy', $privacy );
-			// A chat file keeps its conversation privacy (MediaRepository refuses
-			// the change); report it, never count it as done (Basecamp 10392474704).
-			if ( (string) $repo->get( $media_id, 'privacy' ) !== $privacy ) {
+			// In an album the album decides; a chat file keeps its conversation
+			// privacy and is reported, never counted as done (Basecamp 10392474704).
+			$outcome = $privacy_svc->apply_requested_privacy( (int) $media_id, $privacy );
+			if ( 'kept' === $outcome ) {
 				++$kept;
 				continue;
 			}
+			$album_decides += 'album' === $outcome ? 1 : 0;
 			++$updated;
 		}
 

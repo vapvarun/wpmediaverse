@@ -735,6 +735,32 @@ class PrivacyService {
 	private $blocked_cache = array();
 
 	/**
+	 * Apply a requested privacy to one item, by the library's rules.
+	 *
+	 * The one rule for bulk changes (Free's /media/bulk and Pro's
+	 * /media/bulk-privacy, which had drifted apart, Basecamp 10393276042): an
+	 * item in an album keeps showing with the album's privacy and keeps the
+	 * choice for when it leaves; a chat file keeps its conversation privacy
+	 * (the repository refuses the change).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id Media ID (the caller has checked permission).
+	 * @param string $privacy  Requested privacy slug.
+	 * @return string 'updated', 'album' (the album decides) or 'kept'.
+	 */
+	public function apply_requested_privacy( int $media_id, string $privacy ): string {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->keep_own_privacy_if_in_album( $media_id, $privacy ) ) {
+			return 'album';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->set( $media_id, 'privacy', $privacy );
+
+		return (string) $repo->get( $media_id, 'privacy' ) === $privacy ? 'updated' : 'kept';
+	}
+
+	/**
 	 * May this media be LISTED to the viewer (a grid, an album, a collection)?
 	 *
 	 * The can_view() check is one-directional on purpose: a blocker may still open a
