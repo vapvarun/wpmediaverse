@@ -835,18 +835,44 @@ class MessagingService {
 	 * @return int Conversation ID, or 0 when the message is gone.
 	 */
 	public function get_message_conversation_id( int $message_id ): int {
-		global $wpdb;
+		return \WPMediaVerse\Core\Plugin::container()->get( 'message_repository' )->conversation_of( $message_id );
+	}
 
-		if ( $message_id <= 0 ) {
-			return 0;
-		}
+	/**
+	 * Who sent each message, for a page of messages (moderation, reports).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[] $message_ids Message ids.
+	 * @return array<int,int> message id => sender id.
+	 */
+	public function get_message_senders( array $message_ids ): array {
+		return \WPMediaVerse\Core\Plugin::container()->get( 'message_repository' )->senders_of( $message_ids );
+	}
 
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d",
-				$message_id
-			)
-		);
+	/**
+	 * Largest group conversation allowed, creator included.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int   $user_id Member creating the group or adding to it.
+	 * @param array $context `conversation_id` when adding to an existing group, plus create options.
+	 * @return int
+	 */
+	public function max_group_participants( int $user_id, array $context = array() ): int {
+		/**
+		 * Filters the largest group conversation, creator included.
+		 *
+		 * Checked when a group is created and when a member is added, so a
+		 * membership plan can size groups per member.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int   $max     Default self::MAX_GROUP_PARTICIPANTS.
+		 * @param int   $user_id Member creating or adding.
+		 * @param array $context Conversation id and create options.
+		 */
+		return max( 2, (int) apply_filters( 'mvs_group_conversation_max_participants', self::MAX_GROUP_PARTICIPANTS, $user_id, $context ) );
 	}
 
 	/**
@@ -1176,7 +1202,7 @@ class MessagingService {
 			}
 		}
 		$members = array_keys( $members );
-		if ( count( $members ) + 1 > self::MAX_GROUP_PARTICIPANTS ) {
+		if ( count( $members ) + 1 > $this->max_group_participants( $creator_id, $opts ) ) {
 			return 0;
 		}
 
@@ -1293,9 +1319,17 @@ class MessagingService {
 
 		// Already a participant? Reactivate.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$existing = $wpdb->get_var(
-			$wpdb->prepare( "SELECT id FROM {$part_table} WHERE conversation_id = %d AND user_id = %d", $conversation_id, $user_id )
+		$existing = $wpdb->get_row(
+			$wpdb->prepare( "SELECT id, status FROM {$part_table} WHERE conversation_id = %d AND user_id = %d", $conversation_id, $user_id )
 		);
+
+		// The group size applies to a returning member too, not only a new one.
+		$joining = ! $existing || 'active' !== (string) $existing->status;
+		if ( $joining && \WPMediaVerse\Core\Plugin::container()->get( 'message_repository' )->active_participant_count( $conversation_id )
+			>= $this->max_group_participants( get_current_user_id(), array( 'conversation_id' => $conversation_id ) ) ) {
+			return false;
+		}
+
 		if ( $existing ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
@@ -1309,15 +1343,6 @@ class MessagingService {
 				array( '%d', '%d' )
 			);
 			return true;
-		}
-
-		// Enforce the group cap on active participants.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$active = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$part_table} WHERE conversation_id = %d AND status = 'active'", $conversation_id )
-		);
-		if ( $active >= self::MAX_GROUP_PARTICIPANTS ) {
-			return false;
 		}
 
 		$ok = $this->insert_participant( $conversation_id, $user_id, $role, current_time( 'mysql', true ) );
@@ -1692,7 +1717,7 @@ class MessagingService {
 		}
 
 		// A reply may only point at a message in this conversation.
-		if ( ! empty( $data['parent_id'] ) && $conversation_id === (int) $wpdb->get_var( $wpdb->prepare( "SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d", (int) $data['parent_id'] ) ) ) {
+		if ( ! empty( $data['parent_id'] ) && $conversation_id === $this->get_message_conversation_id( (int) $data['parent_id'] ) ) {
 			$insert_data['parent_id'] = (int) $data['parent_id'];
 			$insert_formats[]         = '%d';
 		}

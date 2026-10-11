@@ -1018,6 +1018,14 @@ class Plugin {
 			}
 		);
 
+		// Message SQL lives here; MessagingService owns the rules over it.
+		self::$container->register(
+			'message_repository',
+			function () {
+				return new \WPMediaVerse\Repository\MessageRepository();
+			}
+		);
+
 		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
 		// consumers (e.g. BuddyNext) to attach/read media on their own objects
 		// (bn_post, bn_space, …) without the BuddyPress save path.
