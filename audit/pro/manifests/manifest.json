@@ -2541,7 +2541,8 @@
       "changed": [
         "SearchService::search narrows author/folder/drive through Free MediaRepository::document_scope_ids() inside the FULLTEXT and title queries; the PHP post-filter and the space-link read are gone",
         "SearchService::candidates() and title_candidates() take the scope ids",
-        "Stories and boosts stores wrap actions with syncEvents() from @wpmediaverse/sync-events (declared dependency)"
+        "Stories and boosts stores wrap actions with syncEvents() from @wpmediaverse/sync-events (declared dependency)",
+        "BoostAffordance enqueues the boosts store with {id} dependency entries (PHPStan baseline entry removed)"
       ],
       "unchanged": "routes, settings, tables"
     }
