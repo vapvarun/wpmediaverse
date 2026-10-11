@@ -14,6 +14,11 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
+	/**
+	 * Name of the lock that keeps a second request from running the steps.
+	 */
+	const LOCK_NAME = 'mvs_migrator';
+
 	const CURRENT_VERSION = 40;
 
 	/**
@@ -112,16 +117,11 @@ class Migrator {
 			return;
 		}
 
-		// One runner at a time: right after an update every request arrives here,
-		// and without a lock several ran the same steps at once. add_option() is
-		// atomic (unique option_name). A lock older than 10 minutes belongs to a
-		// request that died mid-way.
-		$lock = 'mvs_migrator_lock';
-		if ( ! add_option( $lock, time(), '', false ) ) {
-			if ( time() - (int) get_option( $lock, 0 ) < 10 * MINUTE_IN_SECONDS ) {
-				return;
-			}
-			update_option( $lock, time(), false );
+		// One runner at a time: right after an update every request arrives here.
+		// Core's upgrader lock is an INSERT IGNORE, so only one request wins it,
+		// and a lock older than 10 minutes (a request that died) is taken over.
+		if ( ! self::acquire_lock( self::LOCK_NAME ) ) {
+			return;
 		}
 
 		try {
@@ -135,8 +135,23 @@ class Migrator {
 				update_option( self::VERSION_OPTION, $v );
 			}
 		} finally {
-			delete_option( $lock );
+			\WP_Upgrader::release_lock( self::LOCK_NAME );
 		}
+	}
+
+	/**
+	 * Take a migration lock through core's upgrader lock.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $name Lock name (stored as the option "{$name}.lock").
+	 * @return bool Whether this request holds the lock.
+	 */
+	public static function acquire_lock( string $name ): bool {
+		if ( ! class_exists( 'WP_Upgrader' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		}
+		return \WP_Upgrader::create_lock( $name, 10 * MINUTE_IN_SECONDS );
 	}
 
 	/**

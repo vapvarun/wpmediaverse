@@ -19,13 +19,18 @@ class MigratorLockTest extends WP_UnitTestCase {
 		$current = Migrator::CURRENT_VERSION;
 		update_option( Migrator::VERSION_OPTION, $current - 1 );
 
-		add_option( 'mvs_migrator_lock', time() );
+		add_option( Migrator::LOCK_NAME . '.lock', time() );
 		( new Migrator() )->run();
 		$this->assertSame( $current - 1, (int) get_option( Migrator::VERSION_OPTION ), 'Ran while another runner held the lock.' );
 
-		update_option( 'mvs_migrator_lock', time() - HOUR_IN_SECONDS );
+		update_option( Migrator::LOCK_NAME . '.lock', time() - HOUR_IN_SECONDS );
 		( new Migrator() )->run();
 		$this->assertSame( $current, (int) get_option( Migrator::VERSION_OPTION ) );
-		$this->assertFalse( get_option( 'mvs_migrator_lock' ), 'The lock must be released.' );
+		$this->assertFalse( get_option( Migrator::LOCK_NAME . '.lock' ), 'The lock must be released.' );
+
+		// One request wins the lock; a second one at the same moment does not.
+		$this->assertTrue( Migrator::acquire_lock( 'mvs_lock_probe' ) );
+		$this->assertFalse( Migrator::acquire_lock( 'mvs_lock_probe' ) );
+		\WP_Upgrader::release_lock( 'mvs_lock_probe' );
 	}
 }
