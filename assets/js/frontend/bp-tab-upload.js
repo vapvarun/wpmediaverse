@@ -213,73 +213,6 @@
 		next();
 	}
 
-	// Album upload: POST each file to /media, collect IDs, then add to album.
-	function uploadToAlbum( files, statusEl, albumId ) {
-		var total = files.length;
-		var done = 0;
-		var uploadedIds = [];
-		var failed = 0;
-		var lastError = '';
-		// Mirror the shared-ui modal flag (src/blocks/shared-ui/view.js:878):
-		// for ≥2-file album batches, tag each per-file POST so the server
-		// suppresses per-media BP activities and emits ONE "uploaded N photos
-		// to album X" gallery activity instead. Single-file uploads still
-		// produce a normal per-photo activity (no bundling needed).
-		var uploadUrl = restUrl + 'media' + ( total > 1 ? '?album_upload=1' : '' );
-		startStatus( statusEl, total );
-
-		function next() {
-			if ( done >= total ) {
-				if ( ! uploadedIds.length ) {
-					window.mvsDropzone.showFailure( statusEl, lastError || i18n.uploadFailed || '' );
-					return;
-				}
-				statusEl.textContent = i18n.addingToAlbum || '';
-				window.mvsRest.restFetch( restUrl + 'albums/' + albumId + '/items', {
-					method: 'POST',
-					body: { media_ids: uploadedIds },
-				} ).then( function () {
-					if ( failed ) {
-						window.mvsDropzone.showFailure( statusEl, format( i18n.someFailed, { '%1$d': uploadedIds.length, '%2$d': failed } ) + ' ' + lastError );
-					} else {
-						statusEl.textContent = format( i18n.addedToAlbum, { '%d': uploadedIds.length } );
-						statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
-					}
-					setTimeout( function () {
-						window.location.reload();
-					}, failed ? 2500 : 800 );
-				} );
-				return;
-			}
-			// Album metadata belongs to the album, so no title or caption here;
-			// a video still gets its poster frame.
-			window.mvsRest.uploadMedia(
-				uploadUrl,
-				files[ done ],
-				{ extra: extraFields },
-				progressLine( statusEl, done + 1, total )
-			).then( function ( r ) {
-				if ( r.ok && r.data && r.data.id ) {
-					uploadedIds.push( r.data.id );
-				} else {
-					failed++;
-					lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
-				}
-				done++;
-				if ( done < total ) {
-					statusEl.textContent = format( i18n.uploading, { '%1$d': done + 1, '%2$d': total } );
-				}
-				next();
-			} ).catch( function () {
-				failed++;
-				lastError = i18n.uploadFailed || '';
-				done++;
-				next();
-			} );
-		}
-		next();
-	}
-
 	// Plain tab uploader.
 	bindForm( {
 		btn: 'mvs-bp-upload-btn',
@@ -292,23 +225,5 @@
 		showName: true,
 		onFiles: uploadPlain
 	} );
-
-	// Album uploader (single album view).
-	var albumWrap = byId( 'mvs-album-upload-wrap' );
-	if ( albumWrap ) {
-		var albumId = parseInt( albumWrap.getAttribute( 'data-album-id' ), 10 );
-		bindForm( {
-			btn: 'mvs-album-upload-btn',
-			wrap: 'mvs-album-upload-wrap',
-			dropzone: 'mvs-album-dropzone',
-			input: 'mvs-album-file-input',
-			status: 'mvs-album-upload-status',
-			preview: 'mvs-album-upload-preview',
-			cancel: 'mvs-album-upload-cancel',
-			showName: false,
-			onFiles: function ( files, statusEl ) {
-				uploadToAlbum( files, statusEl, albumId );
-			}
-		} );
-	}
+	// Album pages: assets/js/frontend/album-upload.js owns uploading into an album.
 } )();

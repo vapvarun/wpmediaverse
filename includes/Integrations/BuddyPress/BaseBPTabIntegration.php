@@ -777,7 +777,10 @@ abstract class BaseBPTabIntegration {
 		echo '</button>';
 		echo '</div>';
 
-		echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;" data-album-id="' . (int) $album_id . '">';
+		// The album uploader (album-upload.js) is the one owner of uploading into
+		// an album; this tab only adds its context fields (a group id) for it.
+		wp_enqueue_script( 'mvs-album-upload' );
+		echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;" data-album-id="' . (int) $album_id . '" data-upload-extra="' . esc_attr( (string) wp_json_encode( (object) $this->extra_upload_fields() ) ) . '">';
 		echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
 		echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
 		echo '<i data-lucide="upload-cloud" aria-hidden="true"></i>';

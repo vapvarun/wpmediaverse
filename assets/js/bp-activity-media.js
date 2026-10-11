@@ -141,68 +141,6 @@
 		syncHiddenInput();
 	}
 
-	function generateVideoThumb( file ) {
-		return new Promise( function( resolve ) {
-			var video = document.createElement( 'video' );
-			var url   = URL.createObjectURL( file );
-			video.preload = 'metadata';
-			video.muted   = true;
-			video.playsInline = true;
-			video.src     = url;
-			video.addEventListener( 'loadeddata', function() {
-				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
-			} );
-			video.addEventListener( 'seeked', function() {
-				try {
-					var canvas = document.createElement( 'canvas' );
-					var w = video.videoWidth  || 320;
-					var h = video.videoHeight || 180;
-					// Capture at native resolution so the server can resize to
-					// large/medium/thumb. A 200px-wide downscale produces a blurry "thumb_large"
-					// that Safari/Bing then use as the <video poster>, which looks broken on the
-					// activity stream.
-					canvas.width  = w;
-					canvas.height = h;
-					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-					URL.revokeObjectURL( url );
-					resolve( canvas.toDataURL( 'image/jpeg', 0.85 ) );
-				} catch ( e ) {
-					URL.revokeObjectURL( url );
-					resolve( '' );
-				}
-			} );
-			video.addEventListener( 'error', function() {
-				URL.revokeObjectURL( url );
-				resolve( '' );
-			} );
-		} );
-	}
-
-	// Convert a data:image/jpeg;base64,... URL to a Blob so it can ride the
-	// multipart upload as the `thumbnail` field. `MediaController::create_item()`
-	// stages this blob into `wpmediaverse/posters/{media_id}.jpg` and feeds it
-	// through `UploadService::generate_thumbnails()` — same pipeline as the
-	// server-side ffmpeg / cover-atom paths. Safari/Bing now always receive a
-	// real `<video poster>` instead of the default-SVG fallback.
-	function dataURLtoBlob( dataURL ) {
-		if ( ! dataURL || dataURL.indexOf( 'data:' ) !== 0 ) {
-			return null;
-		}
-		try {
-			var parts = dataURL.split( ',' );
-			var match = parts[ 0 ].match( /:(.*?);/ );
-			var mime  = match ? match[ 1 ] : 'image/jpeg';
-			var bin   = atob( parts[ 1 ] );
-			var bytes = new Uint8Array( bin.length );
-			for ( var i = 0; i < bin.length; i++ ) {
-				bytes[ i ] = bin.charCodeAt( i );
-			}
-			return new Blob( [ bytes ], { type: mime } );
-		} catch ( e ) {
-			return null;
-		}
-	}
-
 	/**
 	 * Upload one file and record it in `slots[ index ]`.
 	 *
@@ -227,40 +165,27 @@
 		var isVideo = file.type.indexOf( 'video/' ) === 0;
 		var isAudio = file.type.indexOf( 'audio/' ) === 0;
 
-		// Serialize thumb capture BEFORE the upload starts so the captured
-		// frame can ride the same multipart POST as `thumbnail`. Running these in
-		// parallel discards the captured frame — videos with no embedded cover and no
-		// ffmpeg on the server would end up with the default-poster SVG instead of a
-		// real first frame.
-		var thumbPromise = isVideo ? generateVideoThumb( file ) : Promise.resolve( '' );
+		// One frame, captured once: it rides the upload as the poster and is the
+		// preview tile while the post is composed.
+		var framePromise = isVideo ? window.mvsRest.captureVideoFrame( file ) : Promise.resolve( null );
 
-		return thumbPromise.then( function( localThumb ) {
-			var fd = new FormData();
-			fd.append( 'file', file );
-			fd.append( 'status', 'draft' );
-
-			// Include the user's chosen privacy level when the admin setting
-			// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
-			// so a forged privacy param is overridden server-side.
+		return framePromise.then( function( frame ) {
+			// The member's privacy choice, when the site lets members choose; the
+			// server still enforces the owner's setting.
 			var privacySel = document.getElementById( 'mvs-activity-privacy' );
-			if ( privacySel && privacySel.value ) {
-				fd.append( 'privacy', privacySel.value );
-			}
 
-			if ( isVideo && localThumb ) {
-				var blob = dataURLtoBlob( localThumb );
-				if ( blob ) {
-					fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
-				}
-			}
-
-			return window.mvsRest.restFetch( restUrl + 'media?context=activity', {
-				method: 'POST',
-				body: fd,
-				onUploadProgress: onProgress ? function( loaded, total ) {
+			return window.mvsRest.uploadMedia(
+				restUrl + 'media?context=activity',
+				file,
+				{
+					privacy: privacySel && privacySel.value ? privacySel.value : '',
+					poster: frame,
+					extra: { status: 'draft' }
+				},
+				onProgress ? function( loaded, total ) {
 					onProgress( index, total ? loaded / total : 0 );
 				} : undefined
-			} ).then( function( r ) {
+			).then( function( r ) {
 				var data = r.data || {};
 				// restFetch does NOT throw on HTTP 4xx/5xx, so an unsupported
 				// type (PDF/document) comes back as a 400 with a WP_Error body
@@ -276,7 +201,7 @@
 				}
 				slots[ index ] = {
 					id:        data.id,
-					thumbUrl:  localThumb || data.thumbnail_url || '',
+					thumbUrl:  frame ? URL.createObjectURL( frame ) : ( data.thumbnail_url || '' ),
 					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
 				};
 			} );

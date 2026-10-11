@@ -536,6 +536,19 @@
 	}
 
 	/**
+	 * Full URL of a MediaVerse Pro REST route (`mvs-pro/v1`).
+	 *
+	 * The one place a client builds a Pro URL, so no surface rewrites
+	 * `/mvs/v1` by hand.
+	 *
+	 * @param {string} path Route path, e.g. 'documents/upload'.
+	 * @return {string} URL.
+	 */
+	function proUrl( path ) {
+		return resolveBase().replace( /\/mvs\/v1$/, '/mvs-pro/v1' ) + '/' + String( path || '' ).replace( /^\/+/, '' );
+	}
+
+	/**
 	 * Flag a freshly uploaded media item as a 24h story (Pro).
 	 *
 	 * Every upload surface that offers the "Also share as a story" checkbox
@@ -554,14 +567,7 @@
 			return false;
 		}
 
-		// mvsRestConfig.restBase is `.../mvs/v1`; stories are a Pro route.
-		const base = ( window.mvsRestConfig && window.mvsRestConfig.restBase ) ? window.mvsRestConfig.restBase : '';
-
-		if ( ! base ) {
-			return false;
-		}
-
-		const url = base.replace( '/mvs/v1', '/mvs-pro/v1' ) + '/media/' + id + '/story';
+		const url = proUrl( 'media/' + id + '/story' );
 
 		try {
 			const resp = await restFetch( url, { method: 'POST', body: {} } );
@@ -573,27 +579,20 @@
 	}
 
 	/**
-	 * Grab a poster frame from a video File and append it as `thumbnail`.
+	 * A poster frame from a video File: 1s in (frame 0 under 1s), JPEG.
 	 *
-	 * Without one, a video whose file carries no cover image lands with no poster
-	 * and the grid shows a blank tile with a play icon, which reads to a member
-	 * as "my video is broken". MediaVerse does not run ffmpeg, so the frame is
-	 * taken in the browser: seek to 1s (frame 0 under 1s), 5s timeout, never
-	 * reject. `MediaController::create_item()` hands the `thumbnail` file to
-	 * `PosterService::stage_client_frame()`.
+	 * The one capture every uploader uses; appendVideoPoster() sends it, and a
+	 * caller that also shows a preview tile reuses the same Blob. Resolves null
+	 * for a non-video, a codec the browser cannot decode, or after 5s.
 	 *
-	 * Every uploader calls this through uploadMedia(); the upload modal passes
-	 * the frame it already decoded for its preview instead.
-	 *
-	 * @param {FormData} formData Upload payload, mutated in place.
-	 * @param {File}     file     File being uploaded.
-	 * @return {Promise<void>} Resolves whether or not a poster was attached.
+	 * @param {File} file File being uploaded.
+	 * @return {Promise<Blob|null>} The frame, or null.
 	 */
-	async function appendVideoPoster( formData, file ) {
+	async function captureVideoFrame( file ) {
 		if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
-			return;
+			return null;
 		}
-		const blob = await new Promise( ( resolve ) => {
+		return new Promise( ( resolve ) => {
 			const video = document.createElement( 'video' );
 			const url = URL.createObjectURL( file );
 			let settled = false;
@@ -629,6 +628,27 @@
 			} );
 			video.src = url;
 		} );
+	}
+
+	/**
+	 * Grab a poster frame from a video File and append it as `thumbnail`.
+	 *
+	 * Without one, a video whose file carries no cover image lands with no poster
+	 * and the grid shows a blank tile with a play icon, which reads to a member
+	 * as "my video is broken". MediaVerse does not run ffmpeg, so the frame is
+	 * taken in the browser: seek to 1s (frame 0 under 1s), 5s timeout, never
+	 * reject. `MediaController::create_item()` hands the `thumbnail` file to
+	 * `PosterService::stage_client_frame()`.
+	 *
+	 * Every uploader calls this through uploadMedia(); the upload modal passes
+	 * the frame it already decoded for its preview instead.
+	 *
+	 * @param {FormData} formData Upload payload, mutated in place.
+	 * @param {File}     file     File being uploaded.
+	 * @return {Promise<void>} Resolves whether or not a poster was attached.
+	 */
+	async function appendVideoPoster( formData, file ) {
+		const blob = await captureVideoFrame( file );
 		if ( blob ) {
 			formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
 		}
@@ -683,6 +703,8 @@
 		createAlbum: createAlbum,
 		markAsStory: markAsStory,
 		uploadMedia: uploadMedia,
-		appendVideoPoster: appendVideoPoster
+		appendVideoPoster: appendVideoPoster,
+		captureVideoFrame: captureVideoFrame,
+		proUrl: proUrl
 	};
 } )();
