@@ -601,13 +601,18 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<h3>
 					<?php
 					printf(
-						/* translators: %s: tag or category name being filtered on. */
-						esc_html__( 'No media tagged "%s" yet', 'wpmediaverse' ),
+						esc_html(
+							'' !== $mvs_filter_tag
+								/* translators: %s: tag name being filtered on. */
+								? __( 'No media tagged "%s" yet', 'wpmediaverse' )
+								/* translators: %s: category name being filtered on. */
+								: __( 'No media in "%s" yet', 'wpmediaverse' )
+						),
 						esc_html( $mvs_empty_obj ? $mvs_empty_obj->name : $mvs_empty_term )
 					);
 					?>
 				</h3>
-				<p><?php esc_html_e( 'Nothing matches this filter right now. Browse everything, or pick another tag.', 'wpmediaverse' ); ?></p>
+				<p><?php esc_html_e( 'Nothing matches this filter right now. Browse everything, or pick another filter.', 'wpmediaverse' ); ?></p>
 				<div class="mvs-empty-state-actions">
 					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
 						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
