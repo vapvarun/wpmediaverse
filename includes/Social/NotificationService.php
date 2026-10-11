@@ -422,15 +422,10 @@ class NotificationService {
 	 * @param string $type     Reaction type.
 	 */
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
-		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
-
+		unset( $type );
 		// One "reacted to" per member per item: removing a reaction and reacting
 		// again must not notify the owner twice (Basecamp 10392589159).
-		if ( $this->already_notified( $owner, $user_id, 'media_reaction', $media_id ) ) {
-			return;
-		}
-
-		$this->create( $owner, 'media_reaction', $user_id, $media_id );
+		$this->notify_owner_once( $media_id, $user_id, 'media_reaction' );
 	}
 
 	/**
@@ -512,11 +507,22 @@ class NotificationService {
 	 * @param int $user_id  User who favorited.
 	 */
 	public function on_favorite( int $media_id, int $user_id ): void {
+		$this->notify_owner_once( $media_id, $user_id, 'media_favorite' );
+	}
+
+	/**
+	 * Notify a media item's owner, once per actor and type.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param int    $actor_id Member who acted.
+	 * @param string $type     Notification type.
+	 */
+	private function notify_owner_once( int $media_id, int $actor_id, string $type ): void {
 		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
-		if ( $this->already_notified( $owner, $user_id, 'media_favorite', $media_id ) ) {
+		if ( $this->already_notified( $owner, $actor_id, $type, $media_id ) ) {
 			return;
 		}
-		$this->create( $owner, 'media_favorite', $user_id, $media_id );
+		$this->create( $owner, $type, $actor_id, $media_id );
 	}
 
 	/**

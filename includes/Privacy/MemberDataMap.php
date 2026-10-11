@@ -181,7 +181,7 @@ final class MemberDataMap {
 	 * so the record survives without identifying anyone. De-identification
 	 * satisfies GDPR; destroying an audit trail or an accounting record does not.
 	 *
-	 * @return array<string, array{columns: string[], label: string, reason: string, basis: string}>
+	 * @return array<string, array{columns: string[], label: string, reason: string, basis: string, export_columns?: string[], scope?: array, anonymise_unique?: bool}>
 	 */
 	public static function retain_map(): array {
 		$map = array(
