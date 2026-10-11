@@ -2511,7 +2511,8 @@
         "CaptionController::generate_captions: non-admins need auto-captions on, no existing captions (409), RateLimiter captions_generate 5/day; TranscriptionService::auto_captions_enabled public",
         "GroupController create/add run Free can_message() per member (refuse requests and missing users)",
         "Documents: privacy action/field and SpaceLinkService need can_share()",
-        "PermissionController::create_link caps level with can_grant_level()"
+        "PermissionController::create_link caps level with can_grant_level()",
+        "ChallengeService: WPCS class brace (no behaviour change)"
       ],
       "unchanged": "routes, hooks, settings, tables"
     }
