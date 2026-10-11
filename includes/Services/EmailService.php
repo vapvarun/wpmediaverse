@@ -58,13 +58,86 @@ class EmailService {
 		if ( self::host_sends() ) {
 			return false;
 		}
-		foreach ( self::TYPES as $option ) {
-			if ( get_option( $option, false ) ) {
+		foreach ( array_keys( self::types() ) as $type ) {
+			if ( self::is_type_on( $type ) ) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	/**
+	 * Every member email the owner can switch, with its setting and default.
+	 *
+	 * The one list the Emails settings section renders and every send checks.
+	 * Pro and other plugins add their emails through the filter; they then send
+	 * with send_member_email() and get the owner switch, the member's
+	 * unsubscribe and the From header for free.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @return array<string, array{option:string, label:string, description:string, default:bool}>
+	 */
+	public static function types(): array {
+		$types = array(
+			'battle_invite'   => array(
+				'option'      => self::TYPES['battle_invite'],
+				'label'       => __( 'Photo battle invites', 'wpmediaverse' ),
+				'description' => __( 'Someone challenged the member to a battle (MediaVerse Pro).', 'wpmediaverse' ),
+				'default'     => false,
+			),
+			'document_shared' => array(
+				'option'      => self::TYPES['document_shared'],
+				'label'       => __( 'Documents shared with a member', 'wpmediaverse' ),
+				'description' => __( 'Someone shared a document with the member (MediaVerse Pro).', 'wpmediaverse' ),
+				'default'     => false,
+			),
+			'report_resolved' => array(
+				'option'      => self::TYPES['report_resolved'],
+				'label'       => __( 'Report reviewed', 'wpmediaverse' ),
+				'description' => __( 'A moderator resolved or dismissed a report the member filed. The email does not say what was decided.', 'wpmediaverse' ),
+				'default'     => false,
+			),
+			'new_follower'    => array(
+				'option'      => self::TYPES['new_follower'],
+				'label'       => __( 'New follower', 'wpmediaverse' ),
+				'description' => __( 'Someone started following the member.', 'wpmediaverse' ),
+				'default'     => false,
+			),
+			'media_comment'   => array(
+				'option'      => self::TYPES['media_comment'],
+				'label'       => __( 'Comment on their media', 'wpmediaverse' ),
+				'description' => __( 'Someone commented on a photo, video or file the member posted.', 'wpmediaverse' ),
+				'default'     => false,
+			),
+		);
+
+		/**
+		 * Filters the member emails the owner can switch on or off.
+		 *
+		 * Each entry: `option` (the setting name), `label`, `description`, and
+		 * `default` (true when the email is on until the owner turns it off).
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param array<string, array> $types Type => definition.
+		 */
+		return (array) apply_filters( 'mvs_email_types', $types );
+	}
+
+	/**
+	 * Whether an email type is switched on (its setting, else its default).
+	 *
+	 * @param string $type Email type.
+	 * @return bool
+	 */
+	private static function is_type_on( string $type ): bool {
+		$types = self::types();
+		if ( empty( $types[ $type ]['option'] ) ) {
+			return false;
+		}
+		return (bool) get_option( $types[ $type ]['option'], ! empty( $types[ $type ]['default'] ) );
 	}
 
 	/**
@@ -88,7 +161,30 @@ class EmailService {
 	 * @return bool
 	 */
 	public function type_enabled( string $type ): bool {
-		return isset( self::TYPES[ $type ] ) && (bool) get_option( self::TYPES[ $type ], false );
+		return self::is_type_on( $type );
+	}
+
+	/**
+	 * Send a member email by every rule: the owner's switch for its type, the
+	 * member's unsubscribe, BuddyNext sending its own mail, the unsubscribe link
+	 * and the site's From header.
+	 *
+	 * The door for plugins that email members (register the type through
+	 * mvs_email_types first).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $user_id Recipient.
+	 * @param string $type    Registered email type.
+	 * @param string $subject Subject.
+	 * @param string $body    Plain-text body.
+	 * @return bool Whether the email was sent.
+	 */
+	public function send_member_email( int $user_id, string $type, string $subject, string $body ): bool {
+		if ( self::host_sends() || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
+			return false;
+		}
+		return $this->send( $user_id, $type, $subject, $body, true );
 	}
 
 	/**

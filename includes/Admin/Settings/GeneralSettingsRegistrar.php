@@ -309,49 +309,29 @@ class GeneralSettingsRegistrar {
 			return;
 		}
 
-		$emails = array(
-			\WPMediaVerse\Services\EmailService::TYPES['battle_invite']   => array(
-				__( 'Photo battle invites', 'wpmediaverse' ),
-				__( 'Someone challenged the member to a battle (MediaVerse Pro).', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['document_shared'] => array(
-				__( 'Documents shared with a member', 'wpmediaverse' ),
-				__( 'Someone shared a document with the member (MediaVerse Pro).', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['report_resolved'] => array(
-				__( 'Report reviewed', 'wpmediaverse' ),
-				__( 'A moderator resolved or dismissed a report the member filed. The email does not say what was decided.', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['new_follower']    => array(
-				__( 'New follower', 'wpmediaverse' ),
-				__( 'Someone started following the member.', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['media_comment']   => array(
-				__( 'Comment on their media', 'wpmediaverse' ),
-				__( 'Someone commented on a photo, video or file the member posted.', 'wpmediaverse' ),
-			),
-		);
-
-		foreach ( $emails as $option => $copy ) {
+		// One list of member emails (EmailService::types()); Pro's challenge
+		// emails arrive through its filter.
+		foreach ( \WPMediaVerse\Services\EmailService::types() as $email ) {
+			$option = (string) $email['option'];
 			register_setting(
 				SettingsPage::OPTION_GROUP . '_general',
 				$option,
 				array(
 					'type'              => 'boolean',
 					'sanitize_callback' => 'rest_sanitize_boolean',
-					'default'           => false,
+					'default'           => ! empty( $email['default'] ),
 				)
 			);
 			FieldRenderer::add_field(
 				$option,
-				$copy[0],
+				(string) $email['label'],
 				array( FieldRenderer::class, 'render_checkbox_field' ),
 				SettingsPage::PAGE_SLUG . '-general',
 				'mvs_emails',
 				array(
 					'option'      => $option,
 					'label'       => __( 'Send this email', 'wpmediaverse' ),
-					'description' => $copy[1],
+					'description' => (string) $email['description'],
 				)
 			);
 		}
