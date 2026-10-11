@@ -87,8 +87,12 @@ class MemberPurger {
 					continue;
 				}
 
+				// A column inside a UNIQUE key cannot hold 0 for two erased members
+				// (the second update failed silently and kept the id). Such tables
+				// set `anonymise_unique` and get a per-row id no account can have.
+				$to      = empty( $spec['anonymise_unique'] ) ? '0' : MemberDataMap::ANONYMOUS_ID_BASE . ' - `id`';
 				$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- condition from MemberDataMap::member_condition(), prepared there.
-					"UPDATE `{$full}` SET `{$column}` = 0 WHERE " . MemberDataMap::member_condition( $spec, $column, $user_id ) . ' LIMIT ' . (int) self::BATCH
+					"UPDATE `{$full}` SET `{$column}` = {$to} WHERE " . MemberDataMap::member_condition( $spec, $column, $user_id ) . ' LIMIT ' . (int) self::BATCH
 				);
 
 				$retained += max( 0, (int) $updated );

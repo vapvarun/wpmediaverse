@@ -46,6 +46,16 @@ defined( 'ABSPATH' ) || exit;
 final class MemberDataMap {
 
 	/**
+	 * Base for per-row anonymised ids (`anonymise_unique` retain tables): the
+	 * row's id is subtracted from it, so ids stay unique and far above any real
+	 * user id. Readers treat them as a missing account ("Deleted member").
+	 *
+	 * @since 2.6.2
+	 */
+	const ANONYMOUS_ID_BASE = 9223372036854775807;
+
+
+	/**
 	 * Tables whose rows are DELETED when a member is erased.
 	 *
 	 * Shape: table (unprefixed) => [
