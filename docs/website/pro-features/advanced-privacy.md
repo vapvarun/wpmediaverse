@@ -2,7 +2,7 @@
 
 > **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
 
-MediaVerse Pro extends the free plugin's privacy levels with album-level inheritance, per-user presets, and bulk privacy updates.
+MediaVerse Pro extends the free plugin's privacy levels with album-level inheritance and per-user presets, and adds a bulk-privacy REST route for apps. Changing many items at once from **My Media** is part of the free plugin.
 
 ## Privacy Levels
 
@@ -120,7 +120,7 @@ Save a new privacy preset for the current user. A member can keep up to 20.
 
 ## Bulk Privacy Changes
 
-Members change the privacy of many items at once from **My Media**: select items, pick a privacy level in the bar that appears, and apply. Photos that sit in an album keep the album's privacy until they leave it (the bar says how many).
+Members change the privacy of many items at once from **My Media**: select items, pick a privacy level in the bar that appears, and apply. This bar is in the free plugin and works without Pro. Photos that sit in an album keep the album's privacy until they leave it (the bar says how many).
 
 Apps and integrations use `POST /media/bulk-privacy` above. There is no bulk privacy action on the wp-admin media list.
 
