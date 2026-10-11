@@ -262,5 +262,4 @@ class AiSettingsRegistrar {
 		}
 		return ' ' . __( 'The selected provider has no API key, so AI features are paused until you add one.', 'wpmediaverse' );
 	}
-
 }
