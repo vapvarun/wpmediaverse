@@ -6925,7 +6925,8 @@
         "UserDeletionService runs MemberPurger until done (background job mvs_user_deletion_purge)",
         "REST GET /mvs/v1/media/{id}/spaces (viewer-filtered)",
         "mvs-rest.js: captureVideoFrame, proUrl, uploadMedia extra/signal; all uploaders use it; album-upload.js the only album uploader",
-        "coding-rules Rule 12 (core contract owners) with baseline"
+        "coding-rules Rule 12 (core contract owners) with baseline",
+        "PHPStan 6 value types and WPCS alignment on the new doors"
       ],
       "unchanged": "routes, settings, tables"
     }
