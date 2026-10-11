@@ -1399,44 +1399,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
 				state.uploadModalProgress = 0;
-				const fd = new FormData();
-				fd.append( 'file', files[ i ] );
-				// One title fits one item or one gallery; separate videos must not all
-				// share it (same rule as My Media).
-				if ( state.uploadModalTitle && ( 1 === files.length || mediaGroup ) ) fd.append( 'title', state.uploadModalTitle );
-				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
-				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
-				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );
-				if ( mediaGroup ) {
-					fd.append( 'media_group', mediaGroup );
-					fd.append( 'group_position', String( i ) );
-				}
-				// Send client-generated video thumbnail if available.
-				// generatePreviews() stores preview objects: { uid, src, name, type, ... }.
-				// The thumbnail data URL lives on `preview.src` — calling startsWith
-				// on the object itself throws TypeError and aborts the whole upload
-				// for video files (Basecamp #9871815208).
+				// The modal already made a thumbnail for each video (generatePreviews()
+				// stores { uid, src, name, type }; the data URL is preview.src, Basecamp
+				// #9871815208), so it is sent as the poster instead of capturing again.
+				let poster = null;
 				const preview = state.uploadModalPreviews[ i ];
 				const previewSrc = preview && typeof preview.src === 'string' ? preview.src : '';
 				if ( files[ i ].type.startsWith( 'video/' ) && previewSrc.startsWith( 'data:' ) ) {
 					try {
-						const resp = await fetch( previewSrc );
-						const blob = await resp.blob();
-						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
-					} catch { /* skip thumbnail */ }
+						poster = await ( await fetch( previewSrc ) ).blob();
+					} catch { /* the helper captures one instead */ }
 				}
 
-				const uploadUrl = restUrl + 'media';
-
 				try {
-					const res = await window.mvsRest.restFetch( uploadUrl, {
-						method: 'POST',
-						body: fd,
-						// Share (0-1) of the current file sent so far.
-						onUploadProgress: ( loaded, total ) => {
-							state.uploadModalProgress = total ? loaded / total : 0;
+					const res = await window.mvsRest.uploadMedia(
+						restUrl + 'media',
+						files[ i ],
+						{
+							// One title fits one item or one gallery; separate videos must
+							// not all share it (same rule as My Media).
+							title: 1 === files.length || mediaGroup ? state.uploadModalTitle : '',
+							description: state.uploadModalDescription,
+							tags: state.uploadModalTags,
+							privacy: state.uploadModalPrivacy,
+							mediaGroup,
+							groupPosition: i,
+							poster,
 						},
-					} );
+						// Share (0-1) of the current file sent so far.
+						( loaded, total ) => {
+							state.uploadModalProgress = total ? loaded / total : 0;
+						}
+					);
 					if ( res.ok ) {
 						const mediaData = res.data;
 						if ( mediaData && mediaData.id ) uploadedMediaIds.push( mediaData.id );

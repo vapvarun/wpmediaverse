@@ -75,63 +75,6 @@ function toolbarQuery( panelState, slug ) {
 	return parts.length ? '&' + parts.join( '&' ) : '';
 }
 
-/**
- * Grab a poster frame from a video File and append it as `thumbnail`.
- *
- * See the twin in src/blocks/media-upload/view.js for the full rationale: a
- * video uploaded on a host with no ffmpeg and no embedded cover atom gets no
- * poster at all and renders as a blank tile. These view bundles are script
- * MODULES, so a cross-file import is emitted as a bare specifier the browser
- * 404s on — hence the deliberate copy. Keep the two in sync.
- *
- * @param {FormData} formData Upload payload, mutated in place.
- * @param {File}     file     File being uploaded.
- * @return {Promise<void>} Resolves whether or not a poster was attached.
- */
-async function appendVideoPoster( formData, file ) {
-	if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
-		return;
-	}
-	const blob = await new Promise( ( resolve ) => {
-		const video = document.createElement( 'video' );
-		const url = URL.createObjectURL( file );
-		let settled = false;
-		const finish = ( result ) => {
-			if ( settled ) return;
-			settled = true;
-			URL.revokeObjectURL( url );
-			resolve( result );
-		};
-		const timer = setTimeout( () => finish( null ), 5000 );
-		video.preload = 'metadata';
-		video.muted = true;
-		video.playsInline = true;
-		video.addEventListener( 'loadeddata', () => {
-			video.currentTime = video.duration && video.duration < 1 ? 0 : 1;
-		} );
-		video.addEventListener( 'seeked', () => {
-			clearTimeout( timer );
-			try {
-				const canvas = document.createElement( 'canvas' );
-				canvas.width = video.videoWidth || 320;
-				canvas.height = video.videoHeight || 180;
-				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-				canvas.toBlob( ( b ) => finish( b ), 'image/jpeg', 0.7 );
-			} catch {
-				finish( null );
-			}
-		} );
-		video.addEventListener( 'error', () => {
-			clearTimeout( timer );
-			finish( null );
-		} );
-		video.src = url;
-	} );
-	if ( blob ) {
-		formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
-	}
-}
-
 // The toolbar's item count. Reuses `itemsCount`, the string the album and
 // collection cards already print, rather than minting a second one that would
 // need translating separately and could drift from it. The template is passed
@@ -996,36 +939,25 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.upload.status = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
 					.replace( '%1$d', i + 1 )
 					.replace( '%2$d', total );
-				const formData = new FormData();
-				formData.append( 'file', files[ i ] );
-				// Capture a poster frame for videos — see media-upload. Without
-				// it, a video uploaded from the dashboard is posterless on a
-				// host with no ffmpeg and renders as a blank tile.
-				await appendVideoPoster( formData, files[ i ] );
-				if ( mediaGroup ) {
-					formData.append( 'media_group', mediaGroup );
-					formData.append( 'group_position', String( i ) );
-				}
-				if ( state.upload.privacy ) formData.append( 'privacy', state.upload.privacy );
-				// Title stays single-file only (N files must not share one name),
-				// but the description IS the carousel caption — dropping it on a
-				// multi-file upload is exactly why grouped feed items posted with
-				// no caption text.
-				if ( state.upload.title && total === 1 ) formData.append( 'title', state.upload.title );
-				if ( state.upload.description ) formData.append( 'description', state.upload.description );
-				if ( state.upload.tags ) {
-					state.upload.tags.split( ',' ).map( ( t ) => t.trim() ).filter( Boolean )
-						.forEach( ( tag ) => formData.append( 'tags[]', tag ) );
-				}
 				try {
-					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media', {
-						method: 'POST',
-						body: formData,
-						// Overall percent: finished files plus the share of this one sent.
-						onUploadProgress: ( loaded, bytes ) => {
-							state.upload.percent = Math.min( 100, Math.round( ( ( i + ( bytes ? loaded / bytes : 0 ) ) / total ) * 100 ) );
+					const res = await window.mvsRest.uploadMedia(
+						ctx.restUrl + 'media',
+						files[ i ],
+						{
+							privacy: state.upload.privacy,
+							// Title stays single-file only (N files must not share one
+							// name), but the description IS the carousel caption.
+							title: 1 === total ? state.upload.title : '',
+							description: state.upload.description,
+							tags: state.upload.tags,
+							mediaGroup,
+							groupPosition: i,
 						},
-					} );
+						// Overall percent: finished files plus the share of this one sent.
+						( loaded, bytes ) => {
+							state.upload.percent = Math.min( 100, Math.round( ( ( i + ( bytes ? loaded / bytes : 0 ) ) / total ) * 100 ) );
+						}
+					);
 					if ( res.ok ) {
 						uploaded++;
 						// The server flags a re-upload of identical content. The
