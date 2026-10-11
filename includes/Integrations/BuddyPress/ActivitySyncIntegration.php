@@ -168,7 +168,7 @@ class ActivitySyncIntegration {
 		// most sites that ID belongs to an unrelated photo, so a public album
 		// could hide the activity (or a private one show it) on that photo's
 		// privacy.
-		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->album_of( $media_id );
 		if ( $album_id > 0 ) {
 			$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 			if ( self::privacy_to_hide_sitewide( $album_privacy ) ) {
@@ -301,7 +301,7 @@ class ActivitySyncIntegration {
 		}
 
 		// Check if this media belongs to an album.
-		$album_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'album_id' );
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->album_of( $media_id );
 		if ( $album_id ) {
 			$album = get_post( $album_id );
 			if ( $album && 'mvs_album' === $album->post_type ) {

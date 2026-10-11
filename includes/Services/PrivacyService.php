@@ -322,7 +322,7 @@ class PrivacyService {
 			$media_privacy = 'public';
 		}
 
-		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->album_of( $media_id );
 		if ( $album_id <= 0 ) {
 			return $media_privacy;
 		}

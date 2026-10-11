@@ -253,7 +253,7 @@ class AlbumService {
 	 * @return bool True when the photo is in an album and the choice was kept aside.
 	 */
 	public function keep_own_privacy_if_in_album( int $media_id, string $privacy ): bool {
-		$album_id = (int) ( $this->albums_for_media( $media_id )[0] ?? 0 );
+		$album_id = $this->album_of( $media_id );
 		if ( $album_id <= 0 || ! apply_filters( 'mvs_album_inherit_privacy', true, $album_id, array( $media_id ) ) ) {
 			return false;
 		}
@@ -1145,6 +1145,22 @@ class AlbumService {
 		);
 
 		return empty( $rows[0]['media_id'] ) ? null : (int) $rows[0]['media_id'];
+	}
+
+	/**
+	 * The album a photo belongs to, 0 for none.
+	 *
+	 * A photo is in at most one album (2.6.0); its album_id column is kept in
+	 * step with the membership table on every add and remove. The one answer
+	 * for privacy, activity and Pro.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $media_id Media id.
+	 * @return int Album post id.
+	 */
+	public function album_of( int $media_id ): int {
+		return $media_id > 0 ? (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'album_id' ) : 0;
 	}
 
 	/**
