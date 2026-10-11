@@ -235,6 +235,48 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		$this->register_item_info_routes();
+
+		// GET /media/{id}/group — get all items in same gallery group.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/group',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_group_items' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
+		// GET /me/media — current user's media.
+		register_rest_route(
+			$this->namespace,
+			'/me/media',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_my_items' ),
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+				'args'                => $this->get_collection_params(),
+			)
+		);
+	}
+
+	/**
+	 * Routes that answer about one item without returning it: share events,
+	 * linked spaces, a viewability check.
+	 *
+	 * @since 2.6.2
+	 */
+	private function register_item_info_routes(): void {
 		// POST /media/{id}/share — record a share event + increment shares stat.
 		register_rest_route(
 			$this->namespace,
@@ -287,38 +329,6 @@ class MediaController extends WP_REST_Controller {
 						'sanitize_callback' => 'absint',
 					),
 				),
-			)
-		);
-
-		// GET /media/{id}/group — get all items in same gallery group.
-		register_rest_route(
-			$this->namespace,
-			'/' . $this->rest_base . '/(?P<id>[\d]+)/group',
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_group_items' ),
-				'permission_callback' => '__return_true',
-				'args'                => array(
-					'id' => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-					),
-				),
-			)
-		);
-
-		// GET /me/media — current user's media.
-		register_rest_route(
-			$this->namespace,
-			'/me/media',
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_my_items' ),
-				'permission_callback' => function () {
-					return is_user_logged_in();
-				},
-				'args'                => $this->get_collection_params(),
 			)
 		);
 	}

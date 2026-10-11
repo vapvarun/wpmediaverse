@@ -1001,6 +1001,35 @@ class Plugin {
 			}
 		);
 
+		self::register_repositories();
+
+		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
+		// consumers (e.g. BuddyNext) to attach/read media on their own objects
+		// (bn_post, bn_space, …) without the BuddyPress save path.
+		self::$container->register(
+			'object_media',
+			function () {
+				$object_media = new \WPMediaVerse\Media\ObjectMediaLinkage();
+				$object_media->init();
+				return $object_media;
+			}
+		);
+
+		self::$container->register(
+			'template_helpers',
+			function () {
+				return new TemplateHelpers();
+			}
+		);
+	}
+
+	/**
+	 * Data-access classes, one per table group. Registered so services and Pro
+	 * reach them through the container rather than importing concrete classes.
+	 *
+	 * @since 2.6.2
+	 */
+	private static function register_repositories(): void {
 		self::$container->register(
 			'media_repository',
 			function () {
@@ -1023,25 +1052,6 @@ class Plugin {
 			'message_repository',
 			function () {
 				return new \WPMediaVerse\Repository\MessageRepository();
-			}
-		);
-
-		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
-		// consumers (e.g. BuddyNext) to attach/read media on their own objects
-		// (bn_post, bn_space, …) without the BuddyPress save path.
-		self::$container->register(
-			'object_media',
-			function () {
-				$object_media = new \WPMediaVerse\Media\ObjectMediaLinkage();
-				$object_media->init();
-				return $object_media;
-			}
-		);
-
-		self::$container->register(
-			'template_helpers',
-			function () {
-				return new TemplateHelpers();
 			}
 		);
 	}
