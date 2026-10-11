@@ -69,3 +69,9 @@ ALL hold:
 | New conversation panel is blank | showThreadEmpty missing / not bound | `assets/js/messaging.js` (getter), `templates/partials/chat-conversation.php` |
 | List reads "No conversations yet" mid-load | loadingConversations not bound / showListEmpty missing | `templates/partials/chat-list.php`, `assets/js/messaging.js` |
 | Retry duplicates the message | retrySend re-posts without replacing the temp | `assets/js/messaging.js` (retrySend) |
+
+### Opens at the newest message (Basecamp 10393302433)
+- **Action**: open a thread holding videos, images and text at 1440, 1024 and 390.
+- **Expect**: `.mvs-chat-messages` scrollHeight - clientHeight - scrollTop is 0 at 1, 3 and 6 s (media
+  loading must not leave the newest message below the fold); after scrolling up, a video's
+  loadedmetadata does not pull the thread back down.

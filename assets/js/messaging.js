@@ -7,6 +7,10 @@
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
+// The open thread's list, and whether it should follow new content.
+let messagesEl = null;
+let pinnedToBottom = true;
+
 const config = window.mvsMessagingConfig || {};
 
 // i18n — script modules can't import @wordpress/i18n and the global wp.i18n
@@ -2171,8 +2175,11 @@ const { state, actions } = store( 'mvs/messaging', {
 		// ---- Helpers ----
 		scrollToBottom() {
 			setTimeout( () => {
-				const container = document.querySelector( '.mvs-chat-messages' );
-				if ( container ) container.scrollTop = container.scrollHeight;
+				const container = messagesEl && messagesEl.isConnected ? messagesEl : document.querySelector( '.mvs-chat-messages' );
+				if ( container ) {
+					pinnedToBottom = true;
+					container.scrollTop = container.scrollHeight;
+				}
 			}, 50 );
 		},
 
@@ -2206,6 +2213,25 @@ const { state, actions } = store( 'mvs/messaging', {
 	callbacks: {
 		// Auto-scroll on mount.
 		onMessagesMount() {
+			// Videos and images get their height after the first scroll, which left
+			// the newest message below the fold (Basecamp 10393302433). Stay at the
+			// bottom while media loads, unless the member has scrolled up.
+			const { ref } = getElement();
+			messagesEl = ref;
+			if ( ref && ! ref.dataset.mvsPinBound ) {
+				ref.dataset.mvsPinBound = '1';
+				ref.addEventListener( 'scroll', () => {
+					pinnedToBottom = ref.scrollHeight - ref.clientHeight - ref.scrollTop < 48;
+				}, { passive: true } );
+				const keepPinned = () => {
+					if ( pinnedToBottom ) {
+						ref.scrollTop = ref.scrollHeight;
+					}
+				};
+				// load / loadedmetadata do not bubble; capture sees every bubble's media.
+				ref.addEventListener( 'load', keepPinned, true );
+				ref.addEventListener( 'loadedmetadata', keepPinned, true );
+			}
 			actions.scrollToBottom();
 		},
 
