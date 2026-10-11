@@ -252,7 +252,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** `/media/?q=<term>` (search box on the Explore page). Read by `TemplateHelpers::explore_search()`. Backing REST: `GET /mvs/v1/media?s=<term>` for Load More continuation.
 - **Setup:** Media items with distinct titles.
 - **Steps:** 1. Type a term that matches a media title into the Explore search box. 2. Submit/observe results.
-- **Expected:** Feed filters to items whose title/description matches (MySQL FULLTEXT with LIKE fallback). URL updates to `?q=<term>`.
+- **Expected:** Feed filters to items whose title/description matches (MySQL FULLTEXT with LIKE fallback). URL updates to `?q=<term>`. Page 1 and Load More use the same rule (`MediaRepository::search_clause()`), so the count and the pages agree.
 - **UX expectation:** A zero-result search shows "no results for {term}" plus popular tags and a "browse all" link, not a blank grid. Search debounces (see MV-EXP-008) rather than firing on every keystroke.
 - **Settings that change it:** none.
 - **Edge cases:** Search term under 2 characters does nothing (no network call — see MV-EXP-008). Search combined with an active tag/category filter narrows further, does not reset the filter.
@@ -1394,6 +1394,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Grid renders per the chosen attributes on the frontend. The shortcode is a thin wrapper around the same block render — results should be visually identical to the block for the same effective settings, EXCEPT that the shortcode's `columns`/`per_page` are always forced from the site's admin settings (`mvs_grid_columns`/`mvs_items_per_page`) and cannot be overridden by shortcode attributes, unlike the block's own `columns`/`perPage` attributes.
 - **UX expectation:** Empty state ("nothing shared yet" equivalent) when the filter matches nothing. Lightbox opens on click when `showLightbox` is true (block default).
 - **Settings that change it:** `mvs_grid_columns`, `mvs_items_per_page` (shortcode only, as above).
+- **Galleries:** one tile per gallery, the first item the viewer may see (same rule as Explore, `MediaRepository::gallery_hidden_clause()`).
 - **Edge cases:** A non-core `layout` value (anything other than grid/masonry/list/square/original) on the shortcode falls through to Pro's layout filter, then to the plain grid if Pro isn't active — verify Free-only never errors on an unrecognised layout string, it just shows the default grid.
 
 #### MV-BLK-002 — Explore Feed block (`mvs/explore-feed`) / `[mvs_explore_feed]`
@@ -2089,6 +2090,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** `mvs_email_battle_invite`, `mvs_email_document_shared`, `mvs_email_report_outcome` start ON on a new install and OFF on a site updated to 2.6.0 (so an update never starts mailing members). Test both: a fresh install, and an update from 2.5.x.
 - **UX expectation:** Each toggle's label should name the actual trigger event plainly ("Report reviewed" = "we tell the reporter/reported member what happened to their report").
 - **Settings that change it:** As listed.
+- **BuddyNext sites:** BuddyNext sends MediaVerse's own member emails, so their toggles are hidden. Emails BuddyNext has no equivalent for (Pro's four challenge emails, `host_owned => false` in `EmailService::types()`) are still sent by MediaVerse and still listed here. With none left, the Emails section does not show.
 - **Edge cases:** Confirmed: "Photo battle invites" is a Pro-gamification-adjacent notification type shipped in Free's email settings, and it genuinely has no visible effect without MediaVerse Pro's Battles feature active — nothing in Free ever triggers a battle-invite notification, only Pro's Battles code does. Toggling it on a Free-only site does nothing observable.
 
 #### MV-SET-034 — Pages (Explore/My Media/Upload/Explore Documents)
@@ -2814,7 +2816,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** `Services/AccountDeletionService::request()` requires the account password even if the caller authenticated via Application Password (the plugin's stated genuine-second-factor reasoning) — wrong password returns `mvs_invalid_password`. A grace period of 0 (owner-configured) deletes immediately with no window.
 - **UX expectation:** A wrong password on the deletion request must give a clear, specific error, not a generic failure — and the immediate credential/session revocation should be something a tester can independently verify (e.g. confirm an app password issued before the request stops working right after the request, even though the account isn't deleted yet).
 - **Settings that change it:** `mvs_account_deletion_grace_days` filter (no settings-screen UI — code/filter only).
-- **Edge cases:** A cron sweep (`process_due()`) executes deletion for every account whose grace period has expired — confirm a member who cancelled in time is correctly excluded from that sweep, not accidentally caught by a race.
+- **Edge cases:** Asking twice while a deletion is pending changes nothing (same date, and Cancel still lifts the suspension). A cron sweep (`process_due()`) executes deletion for every account whose grace period has expired — confirm a member who cancelled in time is correctly excluded from that sweep, not accidentally caught by a race.
 
 #### MV-PRV-008 — Remove Data on Delete (uninstall coverage, cross-reference)
 - **Edition:** Free
@@ -3623,7 +3625,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** `/media/challenges/` detail view, Submit Entry action; `POST /mvs-pro/v1/challenges/{id}/entries`.
 - **Setup:** Challenge status must be `active` (submission window open); user logged in.
 - **Steps:** 1. Open an active challenge. 2. Choose "upload new photo". 3. Upload and submit.
-- **Expected:** New media is created, then `ChallengeService::submit_entry()` validates via `CompetitionMedia::is_entrable()` (must exist, be owned by the user, and be a media-library type — a document cannot be entered). On success, entry row inserted and `mvs_challenge_entry_submitted` fires.
+- **Expected:** New media is created as **public** (the hint above the picker says entries are public, so photos uploaded there are too), then `ChallengeService::submit_entry()` validates via `CompetitionMedia::is_entrable()` (owned by the user, published, approved, public, and a media-library type). On success, entry row inserted and `mvs_challenge_entry_submitted` fires. When the owner has locked member privacy (members cannot choose) and the site default is not public, the upload is kept but not selected, and the member sees "This photo is not public, so it cannot enter..." instead of a refused submit. Same for battles.
 - **UX expectation:** Success toast "Entry submitted successfully!" (from the store's `entrySubmitted` string). Upload failure shows "Upload failed. Please try again."; submission failure shows "Submission failed."; a dropped connection shows "Network error. Please try again." No duplicate entry created if the user double-clicks Submit (should disable the button while in flight — verify in the browser, not assumed).
 - **Settings that change it:** `max_entries_per_user` on the challenge (default 1) caps how many times this can succeed for the same user.
 - **Edge cases:** Upload of a non-image/video file; upload interrupted mid-flight; user with 0 storage quota remaining (Free-side check).
@@ -3635,7 +3637,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Setup:** User already has media in their library; challenge active.
 - **Steps:** 1. Open Submit Entry. 2. Pick an existing media item instead of uploading. 3. Submit.
 - **Expected:** Same validation path as CHL-003. Two extra guarded cases apply: (a) submitting a media item the user does not own is rejected with "Invalid media or not your content." (b) submitting the *same* media id twice into the same challenge (by the same or a different route) is rejected with "This media has already been submitted." (409, `mvs_challenge_duplicate_media`).
-- **UX expectation:** The media picker should only surface the user's own media (not require the backend rejection to be the only guard) — a picker that lets you attempt someone else's media and then fails server-side is a worse UX than filtering client-side. Verify which is actually true in the browser.
+- **UX expectation:** The picker lists only the member's own public photos (`GET /mvs/v1/media?author=&scope=public&media_type=image`), so nothing it offers is refused on submit. Private, members-only and audio items do not appear. Same for battles.
 - **Settings that change it:** None.
 - **Edge cases:** Re-submitting a previously-submitted (from an earlier, cancelled challenge) media id into a new challenge should succeed — the duplicate check is scoped to `competition_id`, not global.
 
@@ -4632,7 +4634,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Expected:** Title/content/tag matches rank (content/title weighted ahead of tags). PDF is findable by title/tags only — never by body text, since extraction never runs on PDFs.
 - **UX expectation:** A PDF that doesn't surface for a body-text search must not look like "search is broken" — if a QA pass files this as a bug, it should be corrected to note it's the documented PDF exception. A freshly-uploaded, not-yet-extracted document should show as "indexing" state, not a false "no results."
 - **Settings that change it:** `mvs_pro_documents_extraction` — turning it off stops new indexing.
-- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan).
+- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan). A search inside one drive finds the member's file however many better matches the site has elsewhere (the drive narrows inside the query), and a space's search includes files linked into it.
 
 #### MV-DOC-029 — Space search covering linked files
 - **Edition:** Pro (bridged via BuddyNext)

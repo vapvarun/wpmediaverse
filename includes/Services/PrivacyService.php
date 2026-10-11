@@ -211,6 +211,7 @@ class PrivacyService {
 	 */
 	public static function privacy_to_level( string $privacy ): int {
 		switch ( $privacy ) {
+			case '':
 			case 'public':
 				return 0;
 			case 'members':
@@ -233,7 +234,17 @@ class PrivacyService {
 			case 'custom':
 				return 90;
 			default:
-				return 0;
+				/**
+				 * Audience level of a privacy slug MediaVerse does not know (an
+				 * extension's own level). Unknown is private, so a new level never
+				 * opens a BuddyPress post to everyone.
+				 *
+				 * @since 2.6.2
+				 *
+				 * @param int    $level   Default 80 (private).
+				 * @param string $privacy Privacy slug.
+				 */
+				return (int) apply_filters( 'mvs_privacy_level_value', 80, $privacy );
 		}
 	}
 

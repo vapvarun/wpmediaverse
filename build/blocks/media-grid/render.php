@@ -60,7 +60,6 @@ global $wpdb;
 // The index is the joined side of a query this template owns; the repository
 // supplies the name (Rule 7 — see MediaRepository::index_table()).
 $index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
-$meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 // Build WHERE/JOIN clauses.
 // A POSITIVE list, not `media_type != ''`.
@@ -131,14 +130,10 @@ if ( $mvs_tag ) {
 	}
 }
 
-// Exclude non-cover gallery group items.
-$where .= " AND m.media_id NOT IN (
-	SELECT mm1.media_id FROM {$meta_table} mm1
-	INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
-	WHERE mm1.meta_key = 'media_group'
-	AND mm2.meta_key = 'group_position'
-	AND mm2.meta_value != '0'
-)";
+// One tile per gallery: the repository's rule, matched against this grid's own filters.
+list( $mvs_gallery_sql, $mvs_gallery_params ) = $mvs_grid_repo->gallery_hidden_clause( 'm', $joins, substr( $where, strlen( 'WHERE ' ) ), $params );
+$where  .= ' AND ' . $mvs_gallery_sql;
+$params  = array_merge( $params, $mvs_gallery_params );
 
 // ── ORDER BY clause (and optional JOIN for popularity-based sort) ─────────
 // Supported values: date | title | popular | views | reactions | random.

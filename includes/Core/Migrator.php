@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 42;
+	const CURRENT_VERSION = 43;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -2707,5 +2707,31 @@ class Migrator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$wpdb->query( "ALTER TABLE {$meta} ADD KEY meta_value_lookup (meta_key, meta_value(64))" );
 		$wpdb->show_errors( $prev_show );
+	}
+
+	/**
+	 * Migration v43 - find the messages that use a file.
+	 *
+	 * Chat files are checked against the messages that show them on every view,
+	 * and the daily sweeps ask which files no message uses; without these keys
+	 * each check reads the whole messages table.
+	 *
+	 * Idempotent (SHOW INDEX guard per key), add-only.
+	 *
+	 * @since 2.6.2
+	 */
+	private function migrate_to_43(): void {
+		global $wpdb;
+
+		$messages = $wpdb->prefix . 'mvs_messages';
+		$prev     = $wpdb->show_errors( false );
+		foreach ( array( 'media_id', 'attachment_id' ) as $column ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			if ( ! $wpdb->get_var( $wpdb->prepare( "SHOW INDEX FROM {$messages} WHERE Key_name = %s", $column ) ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->query( "ALTER TABLE {$messages} ADD KEY {$column} ({$column})" );
+			}
+		}
+		$wpdb->show_errors( $prev );
 	}
 }

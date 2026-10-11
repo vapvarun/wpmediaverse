@@ -3526,6 +3526,17 @@
       ],
       "where": "includes/Messaging/ChatFiles.php:123",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_level_value",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $level",
+        "string $privacy"
+      ],
+      "where": "includes/Services/PrivacyService.php:247",
+      "consumed_by": []
     }
   ],
   "generated": {

@@ -161,30 +161,36 @@ class AccountDeletionService {
 			);
 		}
 
-		$when = time() + ( $grace * DAY_IN_SECONDS );
+		// A second request while one is pending changes nothing: re-running the
+		// suspension bookkeeping would record the deletion's own suspension as the
+		// member's, and cancelling would then leave them suspended.
+		$when = $this->scheduled_at( $user_id );
+		if ( $when <= 0 ) {
+			$when = time() + ( $grace * DAY_IN_SECONDS );
 
-		update_user_meta( $user_id, self::META_SCHEDULED, $when );
+			update_user_meta( $user_id, self::META_SCHEDULED, $when );
 
-		// Suspend for the duration. RestGate already enforces `mvs_suspended` on
-		// every write, so this needs no new enforcement code — it is the reason
-		// the suspension gate exists.
-		$already_suspended = (bool) get_user_meta( $user_id, 'mvs_suspended', true );
-		update_user_meta( $user_id, self::META_SUSPENDED_BY_DELETION, $already_suspended ? '0' : '1' );
-		update_user_meta( $user_id, 'mvs_suspended', 1 );
+			// Suspend for the duration. RestGate already enforces `mvs_suspended` on
+			// every write, so this needs no new enforcement code — it is the reason
+			// the suspension gate exists.
+			$already_suspended = (bool) get_user_meta( $user_id, 'mvs_suspended', true );
+			update_user_meta( $user_id, self::META_SUSPENDED_BY_DELETION, $already_suspended ? '0' : '1' );
+			update_user_meta( $user_id, 'mvs_suspended', 1 );
 
-		// Lock out anyone holding a credential, including a thief. The owner can
-		// still cancel by signing in with their password, which the thief lacks.
-		$this->revoke_credentials( $user_id );
+			// Lock out anyone holding a credential, including a thief. The owner can
+			// still cancel by signing in with their password, which the thief lacks.
+			$this->revoke_credentials( $user_id );
 
-		/**
-		 * Fires when a member schedules their own account deletion.
-		 *
-		 * @since 2.1.0
-		 *
-		 * @param int $user_id      Member.
-		 * @param int $scheduled_at Unix timestamp deletion will run.
-		 */
-		do_action( 'mvs_account_deletion_requested', $user_id, $when );
+			/**
+			 * Fires when a member schedules their own account deletion.
+			 *
+			 * @since 2.1.0
+			 *
+			 * @param int $user_id      Member.
+			 * @param int $scheduled_at Unix timestamp deletion will run.
+			 */
+			do_action( 'mvs_account_deletion_requested', $user_id, $when );
+		}
 
 		return array(
 			'status'        => 'scheduled',

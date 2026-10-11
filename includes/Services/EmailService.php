@@ -55,11 +55,8 @@ class EmailService {
 	 * @return bool
 	 */
 	public static function any_type_enabled(): bool {
-		if ( self::host_sends() ) {
-			return false;
-		}
 		foreach ( array_keys( self::types() ) as $type ) {
-			if ( self::is_type_on( $type ) ) {
+			if ( ! self::host_owns( $type ) && self::is_type_on( $type ) ) {
 				return true;
 			}
 		}
@@ -75,9 +72,13 @@ class EmailService {
 	 * with send_member_email() and get the owner switch, the member's
 	 * unsubscribe and the From header for free.
 	 *
+	 * 'host_owned' (default true): a community host such as BuddyNext sends
+	 * this email itself. Set it false for an email the host has no equivalent
+	 * for, so it is still sent (and still switchable) on the host's sites.
+	 *
 	 * @since 2.6.2
 	 *
-	 * @return array<string, array{option:string, label:string, description:string, default:bool}>
+	 * @return array<string, array{option:string, label:string, description:string, default:bool, host_owned?:bool}>
 	 */
 	public static function types(): array {
 		$types = array(
@@ -141,6 +142,18 @@ class EmailService {
 	}
 
 	/**
+	 * Whether the community host sends this email type itself.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $type Email type.
+	 * @return bool
+	 */
+	public static function host_owns( string $type ): bool {
+		return self::host_sends() && false !== ( self::types()[ $type ]['host_owned'] ?? true );
+	}
+
+	/**
 	 * Whether BuddyNext sends member emails for MediaVerse activity. MediaVerse
 	 * is a core feature of BuddyNext, so on a BuddyNext site BuddyNext owns
 	 * these emails and MediaVerse sends only when it runs on its own (owner
@@ -181,7 +194,7 @@ class EmailService {
 	 * @return bool Whether the email was sent.
 	 */
 	public function send_member_email( int $user_id, string $type, string $subject, string $body ): bool {
-		if ( self::host_sends() || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
+		if ( self::host_owns( $type ) || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
 			return false;
 		}
 		return $this->send( $user_id, $type, $subject, $body, true );
@@ -213,7 +226,7 @@ class EmailService {
 		$user_id = (int) $user_id;
 		$type    = (string) $type;
 
-		if ( self::host_sends() || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
+		if ( self::host_owns( $type ) || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
 			return;
 		}
 

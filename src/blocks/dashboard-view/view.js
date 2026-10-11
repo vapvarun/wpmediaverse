@@ -1698,14 +1698,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			actions.loadPickerMedia();
 
 			// The album list carries counts, not item ids, so the window asks for
-			// this one album. Until it answers, both lists stay empty and a save
-			// changes no items.
+			// this one album. Photos ticked before it answers are kept (merged in);
+			// if it fails, the original list stays empty so a save only adds.
 			if ( album && ! album.items ) {
 				try {
 					const res = await apiFetch( ctx, 'albums/' + album.id );
 					const ids = Array.isArray( res.data?.items ) ? res.data.items : [];
 					if ( state.albumModal.albumId === album.id ) {
-						state.albumModal.selectedIds = [ ...ids ];
+						state.albumModal.selectedIds = [ ...new Set( [ ...ids, ...state.albumModal.selectedIds ] ) ];
 						state.albumModal.originalItems = [ ...ids ];
 					}
 				} catch { /* the picker still opens; nothing is pre-selected */ }

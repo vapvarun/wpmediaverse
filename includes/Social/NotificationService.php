@@ -580,9 +580,10 @@ class NotificationService {
 		$actor       = get_userdata( $actor_id );
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
-		// Read at render time, so a title stays out once the item turned private
-		// for this reader (a mention made before the change;
-		if ( $media_id && ( $recipient <= 0 || \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, $recipient ) ) ) {
+		// Read at render time, so the title (and the slug-based link, which spells
+		// it) stays out once the item turned private for this reader.
+		$can_see = $media_id && ( $recipient <= 0 || \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, $recipient ) );
+		if ( $can_see ) {
 			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: '';
 		}
 
@@ -590,7 +591,7 @@ class NotificationService {
 
 		$link = '';
 		if ( $media_id ) {
-			$link = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
+			$link = $can_see ? \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ) : '';
 		} elseif ( 'new_follower' === $type ) {
 			// Route to the canonical author-profile URL — BP profile when BP
 			// is active, plugin's /media/@user/ otherwise. NEVER hard-code

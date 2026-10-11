@@ -1422,19 +1422,20 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Published document ids inside a search scope.
+	 * SQL that keeps a document search inside a scope: one author, folder and/or drive.
 	 *
-	 * Document search narrows by author, folder and drive inside its query
-	 * through this list, so a member's own file is found however many matches
-	 * the rest of the site has. A space drive also holds the documents linked
+	 * Document search narrows inside its own query with this, so a member's file
+	 * is found however many matches the rest of the site has, and however many
+	 * documents the scope holds. A space drive also holds the documents linked
 	 * into it from other drives.
 	 *
 	 * @since 2.6.2
 	 *
-	 * @param array{author?:int,folder_id?:int,drive_type?:string,drive_id?:int} $scope Filters, all applied together.
-	 * @return int[] Empty when no filter is given or nothing is in scope.
+	 * @param string                                                             $column Column holding the media id in the caller's query.
+	 * @param array{author?:int,folder_id?:int,drive_type?:string,drive_id?:int} $scope  Filters, all applied together.
+	 * @return array{0:string,1:array<int,scalar>} Fragment and params; '1 = 0' when no filter is given.
 	 */
-	public function document_scope_ids( array $scope ): array {
+	public function document_scope_clause( string $column, array $scope ): array {
 		global $wpdb;
 
 		$where  = array();
@@ -1457,20 +1458,49 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[] = "( {$drive} )";
 		}
 		if ( ! $where ) {
-			return array();
+			return array( '1 = 0', array() );
 		}
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+		$column                         = preg_replace( '/[^a-z_.]/i', '', $column );
+
+		return array(
+			"{$column} IN ( SELECT media_id FROM {$this->index_table()} WHERE {$type_sql} AND status = 'publish' AND " . implode( ' AND ', $where ) . ' )',
+			array_merge( $type_params, $params ),
+		);
+	}
+
+	/**
+	 * Which of the given documents are inside a search scope, in their order.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param array{author?:int,folder_id?:int,drive_type?:string,drive_id?:int} $scope Filters (see document_scope_clause()).
+	 * @param int[]                                                              $among Candidate ids (one search page, bounded).
+	 * @return int[]
+	 */
+	public function document_scope_ids( array $scope, array $among ): array {
+		global $wpdb;
+
+		$among = array_values( array_unique( array_filter( array_map( 'intval', $among ) ) ) );
+		if ( ! $among ) {
+			return array();
+		}
+		list( $scope_sql, $scope_params ) = $this->document_scope_clause( 'media_id', $scope );
+		$in                               = implode( ',', array_fill( 0, count( $among ), '%d' ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$ids = (array) $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$type_sql} AND status = 'publish' AND " . implode( ' AND ', $where ),
-				...array_merge( $type_params, $params )
+		$found = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT media_id FROM {$this->index_table()} WHERE media_id IN ({$in}) AND {$scope_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( $among, $scope_params )
+				)
 			)
 		);
 
-		return array_map( 'intval', $ids );
+		return array_values( array_intersect( $among, $found ) );
 	}
 
 	/**
@@ -1486,16 +1516,15 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param string $query  Search phrase. Escaped for LIKE here, not by callers.
-	 * @param int    $limit  Maximum ids to return.
-	 * @param int[]  $within Only these ids (a search scope from document_scope_ids()); empty = site-wide.
+	 * @param string                                                             $query Search phrase. Escaped for LIKE here, not by callers.
+	 * @param int                                                                $limit Maximum ids to return.
+	 * @param array{author?:int,folder_id?:int,drive_type?:string,drive_id?:int} $scope Search scope (document_scope_clause()); empty = site-wide.
 	 * @return int[]
 	 */
-	public function document_title_candidates( string $query, int $limit = 50, array $within = array() ): array {
+	public function document_title_candidates( string $query, int $limit = 50, array $scope = array() ): array {
 		global $wpdb;
 
-		$query  = trim( $query );
-		$within = array_values( array_unique( array_filter( array_map( 'intval', $within ) ) ) );
+		$query = trim( $query );
 
 		if ( '' === $query ) {
 			return array();
@@ -1504,16 +1533,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		$limit = max( 1, min( 1000, $limit ) );
 		$like  = '%' . $wpdb->esc_like( $query ) . '%';
 
-		if ( $within ) {
+		if ( $scope ) {
+			list( $scope_sql, $scope_params ) = $this->document_scope_clause( 'media_id', $scope );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$ids = (array) $wpdb->get_col(
 				$wpdb->prepare(
 					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index
-					  WHERE media_type = 'document' AND status = 'publish' AND title LIKE %s
-					    AND media_id IN ( " . implode( ',', array_fill( 0, count( $within ), '%d' ) ) . ' )
-					  ORDER BY title ASC LIMIT %d',
-					$like,
-					...array_merge( $within, array( $limit ) )
+					  WHERE media_type = 'document' AND status = 'publish' AND title LIKE %s AND {$scope_sql}
+					  ORDER BY title ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $like ), $scope_params, array( $limit ) )
 				)
 			);
 			return array_map( 'intval', $ids );
@@ -3995,21 +4023,23 @@ class MediaRepository implements MediaRepositoryInterface {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'status'            => 'publish',
-				'moderation_status' => '',
-				'limit'             => 20,
-				'offset'            => 0,
-				'orderby'           => 'created_at',
-				'order'             => 'DESC',
-				'viewer_id'         => null,  // null => get_current_user_id()
-				'include_private'   => false, // owner/admin opt-in to see ALL
+				'status'                  => 'publish',
+				'moderation_status'       => '',
+				'limit'                   => 20,
+				'offset'                  => 0,
+				'orderby'                 => 'created_at',
+				'order'                   => 'DESC',
+				'viewer_id'               => null,  // null => get_current_user_id()
+				'include_private'         => false, // owner/admin opt-in to see ALL
 				// null => let query() apply its own default (MEDIA_LIBRARY).
 				// It must be present: when absent, a caller asking for
 				// documents is handed images instead - silently, because an
 				// unknown key is dropped on the way to query(). Measured:
 				// query_by_author( media_types => ['document'] ) returned one
 				// row, of type image.
-				'media_types'       => null,
+				'media_types'             => null,
+				// One tile per gallery, as Explore lists them.
+				'exclude_non_cover_group' => false,
 			)
 		);
 
@@ -4027,15 +4057,16 @@ class MediaRepository implements MediaRepositoryInterface {
 		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
 
 		$query_args = array(
-			'author_id'         => $user_id,
-			'status'            => (string) $args['status'],
-			'moderation_status' => (string) $args['moderation_status'],
-			'limit'             => (int) $args['limit'],
-			'offset'            => (int) $args['offset'],
-			'orderby'           => (string) $args['orderby'],
-			'order'             => (string) $args['order'],
-			'privacy'           => $privacy,
-			'viewer_id'         => $viewer,
+			'author_id'               => $user_id,
+			'status'                  => (string) $args['status'],
+			'moderation_status'       => (string) $args['moderation_status'],
+			'limit'                   => (int) $args['limit'],
+			'offset'                  => (int) $args['offset'],
+			'orderby'                 => (string) $args['orderby'],
+			'order'                   => (string) $args['order'],
+			'privacy'                 => $privacy,
+			'viewer_id'               => $viewer,
+			'exclude_non_cover_group' => ! empty( $args['exclude_non_cover_group'] ),
 		);
 
 		// Only when asked, so a caller that says nothing lists exactly what it
@@ -4145,7 +4176,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array    $args      Same shape as query_by_author()'s $args; the
 	 *                            filters that narrow WHICH rows are counted
 	 *                            (status, moderation_status, media_types,
-	 *                            include_private) are honoured. Paging and
+	 *                            include_private, exclude_non_cover_group) are honoured. Paging and
 	 *                            ordering are meaningless for a count and are
 	 *                            ignored.
 	 * @return int
@@ -4156,23 +4187,25 @@ class MediaRepository implements MediaRepositoryInterface {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'status'            => 'publish',
-				'moderation_status' => '',
-				'media_types'       => null,
-				'include_private'   => false,
+				'status'                  => 'publish',
+				'moderation_status'       => '',
+				'media_types'             => null,
+				'include_private'         => false,
+				'exclude_non_cover_group' => false,
 			)
 		);
 
 		$count_args = array(
-			'author_id'         => $user_id,
-			'status'            => (string) $args['status'],
-			'moderation_status' => (string) $args['moderation_status'],
-			'privacy'           => $this->resolve_profile_privacy_mode(
+			'author_id'               => $user_id,
+			'status'                  => (string) $args['status'],
+			'moderation_status'       => (string) $args['moderation_status'],
+			'privacy'                 => $this->resolve_profile_privacy_mode(
 				$user_id,
 				$viewer,
 				! empty( $args['include_private'] )
 			),
-			'viewer_id'         => $viewer,
+			'viewer_id'               => $viewer,
+			'exclude_non_cover_group' => ! empty( $args['exclude_non_cover_group'] ),
 		);
 
 		// Only when asked. Omitted, query_count() applies its own default, so
@@ -4463,10 +4496,10 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$search = trim( (string) $args['search'] );
 		if ( '' !== $search ) {
-			$like     = '%' . $wpdb->esc_like( $search ) . '%';
-			$where[]  = '(m.title LIKE %s OR m.description LIKE %s)';
-			$params[] = $like;
-			$params[] = $like;
+			// The same search rule as the REST feed, so Load More continues page 1.
+			list( $search_sql, $search_params ) = $this->search_clause( $search, 'm' );
+			$where[]                            = $search_sql;
+			$params                             = array_merge( $params, $search_params );
 		}
 
 		if ( (int) $args['tag_tt_id'] > 0 ) {
@@ -4885,7 +4918,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				...$ids
 			)
 		);
-		$out = array();
+		$out  = array();
 		foreach ( $rows as $row ) {
 			$out[ (int) $row->media_id ] = array(
 				'author_id'         => (int) $row->post_author,
@@ -5505,24 +5538,28 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @since 2.6.0
 	 *
 	 * @param string $search Raw search term.
+	 * @param string $alias  Media index alias, or '' for unqualified columns.
 	 * @return array{0:string, 1:array<int,string>} SQL fragment and its params.
 	 */
-	public function search_clause( string $search ): array {
+	public function search_clause( string $search, string $alias = '' ): array {
 		global $wpdb;
 
-		$like = '%' . $wpdb->esc_like( $search ) . '%';
-		$ft   = $this->has_fulltext_index() ? self::fulltext_boolean_query( $search ) : array(
+		$alias = preg_replace( '/[^a-z_]/i', '', $alias );
+		$t     = '' !== $alias ? $alias . '.title' : 'title';
+		$d     = '' !== $alias ? $alias . '.description' : 'description';
+		$like  = '%' . $wpdb->esc_like( $search ) . '%';
+		$ft    = $this->has_fulltext_index() ? self::fulltext_boolean_query( $search ) : array(
 			'query'   => '',
 			'dropped' => true,
 		);
 
 		if ( '' === $ft['query'] ) {
-			return array( '(title LIKE %s OR description LIKE %s)', array( $like, $like ) );
+			return array( "({$t} LIKE %s OR {$d} LIKE %s)", array( $like, $like ) );
 		}
 		if ( $ft['dropped'] ) {
-			return array( '(MATCH(title, description) AGAINST (%s IN BOOLEAN MODE) AND (title LIKE %s OR description LIKE %s))', array( $ft['query'], $like, $like ) );
+			return array( "(MATCH({$t}, {$d}) AGAINST (%s IN BOOLEAN MODE) AND ({$t} LIKE %s OR {$d} LIKE %s))", array( $ft['query'], $like, $like ) );
 		}
-		return array( 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)', array( $ft['query'] ) );
+		return array( "MATCH({$t}, {$d}) AGAINST (%s IN BOOLEAN MODE)", array( $ft['query'] ) );
 	}
 
 	/**
@@ -6664,7 +6701,7 @@ class MediaRepository implements MediaRepositoryInterface {
 					...array_merge( $round, array( $exclude_media_id ) )
 				)
 			);
-			$free  = array_values( array_diff( $round, $taken ) );
+			$free = array_values( array_diff( $round, $taken ) );
 			if ( $free ) {
 				return $free[0];
 			}

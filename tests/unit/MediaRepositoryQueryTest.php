@@ -122,6 +122,12 @@ class MediaRepositoryQueryTest extends WP_UnitTestCase {
 	}
 
 	public function test_query_search_matches_title_or_description(): void {
+		global $wpdb;
+
+		// FULLTEXT sees committed rows only, and search uses it as the REST feed
+		// does; commit for this test and remove the rows after.
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( 'SET autocommit = 1' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$by_title = $this->make_media( array( 'title' => 'Aurora over the fjord' ) );
 		$by_desc  = $this->make_media(
 			array(
@@ -131,11 +137,19 @@ class MediaRepositoryQueryTest extends WP_UnitTestCase {
 		);
 		$miss     = $this->make_media( array( 'title' => 'Desert dunes' ) );
 
-		$ids = $this->ids( $this->repo()->query( array( 'search' => 'aurora' ) ) );
+		try {
+			$ids = $this->ids( $this->repo()->query( array( 'search' => 'aurora' ) ) );
 
-		$this->assertContains( $by_title, $ids );
-		$this->assertContains( $by_desc, $ids );
-		$this->assertNotContains( $miss, $ids );
+			$this->assertContains( $by_title, $ids );
+			$this->assertContains( $by_desc, $ids );
+			$this->assertNotContains( $miss, $ids );
+		} finally {
+			foreach ( array( $by_title, $by_desc, $miss ) as $id ) {
+				$this->repo()->delete_cascade( $id );
+			}
+			$wpdb->query( 'SET autocommit = 0' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		}
 	}
 
 	/*

@@ -52,6 +52,7 @@ class Deactivator {
 		'mvs_user_deletion_cascade',
 		'mvs_user_deletion_purge',
 		'mvs_tag_merge_batch',
+		\WPMediaVerse\Messaging\ChatFiles::HOOK,
 	);
 
 	/**

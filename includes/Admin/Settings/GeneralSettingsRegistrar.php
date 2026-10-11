@@ -303,15 +303,14 @@ class GeneralSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-general'
 		);
 
-		// BuddyNext owns these emails on its sites, so the section (which renders
-		// only with fields) is left empty and does not show.
-		if ( \WPMediaVerse\Services\EmailService::host_sends() ) {
-			return;
-		}
-
 		// One list of member emails (EmailService::types()); Pro's challenge
-		// emails arrive through its filter.
-		foreach ( \WPMediaVerse\Services\EmailService::types() as $email ) {
+		// emails arrive through its filter. On a community host's site only the
+		// emails the host does not send itself are listed, so the section (which
+		// renders only with fields) disappears when the host sends them all.
+		foreach ( \WPMediaVerse\Services\EmailService::types() as $type => $email ) {
+			if ( \WPMediaVerse\Services\EmailService::host_owns( (string) $type ) ) {
+				continue;
+			}
 			$option = (string) $email['option'];
 			register_setting(
 				SettingsPage::OPTION_GROUP . '_general',
@@ -354,8 +353,8 @@ class GeneralSettingsRegistrar {
 		// A community plugin (BuddyNext's private mode) answers the same signal
 		// and its answer wins, so a switch here would do nothing. Show its answer.
 		if ( \WPMediaVerse\REST\CommunityPrivacyGate::host_decides() ) {
-			$args['locked']       = (bool) apply_filters( 'mvs_rest_require_auth', false, null );
-			$args['description']  = $args['locked']
+			$args['locked']      = (bool) apply_filters( 'mvs_rest_require_auth', false, null );
+			$args['description'] = $args['locked']
 				? __( 'On: your community plugin keeps this site private, so visitors are already sent to the login page. Change it in that plugin\'s settings.', 'wpmediaverse' )
 				: __( 'Off: your community plugin decides who can see this site. Turn on its private or members-only mode to hide WP MediaVerse from visitors.', 'wpmediaverse' );
 		}

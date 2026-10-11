@@ -103,6 +103,23 @@ final class ChatFiles {
 	}
 
 	/**
+	 * Upload time (GMT, MySQL format) before which an unsent chat file is removed.
+	 *
+	 * @return string
+	 */
+	private static function unsent_cutoff(): string {
+		/**
+		 * Hours an unsent chat file is kept before it is deleted.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int $hours Default 24.
+		 */
+		$hours = max( 1, (int) apply_filters( 'mvs_unsent_chat_file_hours', 24 ) );
+		return gmdate( 'Y-m-d H:i:s', time() - $hours * HOUR_IN_SECONDS );
+	}
+
+	/**
 	 * Daily: delete chat files that were uploaded but never sent.
 	 *
 	 * Removing an attachment before sending, or closing the tab, leaves the
@@ -113,15 +130,7 @@ final class ChatFiles {
 	 * @since 2.6.2
 	 */
 	public static function sweep_unsent(): void {
-		/**
-		 * Hours an unsent chat file is kept before the daily sweep deletes it.
-		 *
-		 * @since 2.6.2
-		 *
-		 * @param int $hours Default 24.
-		 */
-		$hours  = max( 1, (int) apply_filters( 'mvs_unsent_chat_file_hours', 24 ) );
-		$before = gmdate( 'Y-m-d H:i:s', time() - $hours * HOUR_IN_SECONDS );
+		$before = self::unsent_cutoff();
 		$repo   = Plugin::container()->get( 'media_repository' );
 
 		for ( $batch = 0; $batch < 20; $batch++ ) {
@@ -253,12 +262,20 @@ final class ChatFiles {
 		if ( $state['done'] && 0 === (int) $state['failed'] ) {
 			return;
 		}
-		$meta   = (array) $query->get( 'meta_query' );
-		$meta[] = array(
+		$ours = array(
 			'key'     => StorageLimitService::DM_SIZE_META,
 			'compare' => 'NOT EXISTS',
 		);
-		$query->set( 'meta_query', $meta );
+		$meta = array_filter( (array) $query->get( 'meta_query' ) );
+		// Nested under AND, so a query's own OR relation cannot absorb it.
+		$query->set(
+			'meta_query',
+			$meta ? array(
+				'relation' => 'AND',
+				$meta,
+				$ours,
+			) : array( $ours )
+		);
 	}
 
 	/**
@@ -341,10 +358,19 @@ final class ChatFiles {
 		$sent = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE attachment_id = %d", $attachment_id ) );
 		$path = (string) get_attached_file( $attachment_id );
 
-		if ( 0 === $sent || '' === $path || ! is_readable( $path ) ) {
-			// Never sent, or its file is already gone: nothing to keep.
+		if ( 0 === $sent ) {
+			// Never sent: removed once it is too old to still be waiting to go.
+			if ( (string) get_post_field( 'post_date_gmt', $attachment_id ) > self::unsent_cutoff() ) {
+				return self::fail( $attachment_id, 'not sent yet' );
+			}
 			wp_delete_attachment( $attachment_id, true );
 			return 'removed';
+		}
+
+		// A sent file is never deleted here: on offloaded storage it is not on
+		// this disk, so it stays where it is (hidden) and Site Health reports it.
+		if ( '' === $path || ! is_readable( $path ) ) {
+			return self::fail( $attachment_id, 'file not on this server' );
 		}
 
 		$author = (int) get_post_field( 'post_author', $attachment_id );

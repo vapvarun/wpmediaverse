@@ -88,13 +88,40 @@ class ChatFilesTest extends WP_UnitTestCase {
 		$this->assertTrue( $state['done'] );
 	}
 
-	public function test_a_never_sent_attachment_is_deleted(): void {
+	public function test_a_never_sent_attachment_is_deleted_once_it_is_a_day_old(): void {
 		$attachment = $this->legacy_attachment();
+		wp_update_post(
+			array(
+				'ID'            => $attachment,
+				'post_date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 2 * DAY_IN_SECONDS ),
+			)
+		);
 
 		ChatFiles::run_batch();
 
 		$this->assertNull( get_post( $attachment ) );
 		$this->assertSame( 1, get_option( ChatFiles::OPTION )['removed'] );
+	}
+
+	public function test_a_fresh_unsent_attachment_is_kept_for_now(): void {
+		$attachment = $this->legacy_attachment();
+
+		ChatFiles::run_batch();
+
+		$this->assertNotNull( get_post( $attachment ), 'It may still be on its way into a message.' );
+		$this->assertSame( 0, get_option( ChatFiles::OPTION )['removed'] );
+	}
+
+	public function test_a_sent_attachment_whose_file_is_not_on_this_server_is_kept(): void {
+		$attachment = $this->legacy_attachment();
+		$message    = $this->legacy_message( $attachment );
+		wp_delete_file( get_attached_file( $attachment ) ); // As on offloaded storage.
+
+		ChatFiles::run_batch();
+
+		$this->assertNotNull( get_post( $attachment ), 'A sent file is never deleted by the move.' );
+		$this->assertSame( $attachment, (int) $this->message( $message )->attachment_id );
+		$this->assertSame( 1, get_option( ChatFiles::OPTION )['failed'] );
 	}
 
 	public function test_old_chat_files_are_hidden_from_attachment_listings_until_moved(): void {
@@ -146,6 +173,30 @@ class ChatFilesTest extends WP_UnitTestCase {
 		$this->assertSame( 404, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $legacy ) )->get_status() );
 		$this->assertSame( 404, rest_do_request( new \WP_REST_Request( 'GET', '/WP/V2/MEDIA/' . $legacy ) )->get_status(), 'Routes match case-insensitively.' );
 		$this->assertSame( 200, rest_do_request( new \WP_REST_Request( 'GET', '/wp/v2/media/' . $normal ) )->get_status() );
+	}
+
+	public function test_hiding_holds_when_a_query_uses_an_or_meta_query(): void {
+		$attachment = $this->legacy_attachment();
+		$found      = get_posts(
+			array(
+				'post_type'   => 'attachment',
+				'post_status' => 'any',
+				'fields'      => 'ids',
+				'numberposts' => -1,
+				'meta_query'  => array( // phpcs:ignore WordPress.DB.SlowDBQuery
+					'relation' => 'OR',
+					array(
+			'key'     => '_wp_attached_file',
+			'compare' => 'EXISTS',
+				),
+					array(
+				'key'     => 'qa_none',
+				'compare' => 'EXISTS',
+				),
+				),
+			)
+		);
+		$this->assertNotContains( $attachment, $found );
 	}
 
 	public function test_an_attachment_that_cannot_be_moved_stays_hidden_after_the_job_is_done(): void {

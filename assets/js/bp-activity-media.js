@@ -30,6 +30,18 @@
 
 	var maxMedia = ( typeof mvsActivityMedia !== 'undefined' && mvsActivityMedia.maxMedia ) ? mvsActivityMedia.maxMedia : 6;
 	var attachedMedia = []; // Array of { id, thumbUrl }
+
+	// A video's preview frame is a blob URL; release it when the item leaves the composer.
+	function releaseThumb( item ) {
+		if ( item && 'string' === typeof item.thumbUrl && 0 === item.thumbUrl.indexOf( 'blob:' ) ) {
+			URL.revokeObjectURL( item.thumbUrl );
+		}
+	}
+
+	function clearAttached() {
+		attachedMedia.forEach( releaseThumb );
+		attachedMedia = [];
+	}
 	var isSubmitting = false; // Flag to prevent orphan cleanup during form submit
 
 	function syncHiddenInput() {
@@ -129,7 +141,7 @@
 			removeBtn.textContent = '\u00D7';
 			removeBtn.setAttribute( 'aria-label', __( 'Remove media', 'wpmediaverse' ) );
 			removeBtn.addEventListener( 'click', function() {
-				attachedMedia.splice( idx, 1 );
+				attachedMedia.splice( idx, 1 ).forEach( releaseThumb );
 				renderPreview();
 			} );
 
@@ -219,7 +231,7 @@
 				navigator.sendBeacon( restUrl + 'media/' + item.id + '?_method=DELETE', fd );
 			}
 		} );
-		attachedMedia = [];
+		clearAttached();
 	}
 
 	window.addEventListener( 'beforeunload', cleanupOrphans );
@@ -390,7 +402,7 @@
 		jQuery( document ).on( 'bp_activity_ajax_post_update', function() {
 			isSubmitting = false;
 			window.removeEventListener( 'beforeunload', cleanupOrphans );
-			attachedMedia = [];
+			clearAttached();
 			renderPreview();
 			var btn = document.getElementById( 'mvs-activity-media-btn' );
 			if ( btn ) { btn.disabled = false; btn.style.opacity = '1'; }
@@ -505,7 +517,7 @@
 			}
 
 			// Real success — reset closure state so the next upload starts fresh.
-			attachedMedia = [];
+			clearAttached();
 			isSubmitting = false;
 
 			var hiddenInput = document.getElementById( 'mvs-activity-media-ids' );
