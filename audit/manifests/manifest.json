@@ -6905,6 +6905,14 @@
         "coding-rules Rules 9-11 (bin/lib/code-standard-check.php, baseline audit/cleanup/code-standard-baseline.txt)",
         "PHPStan level 6 with regenerated baseline"
       ],
+      "qa_bounces": [
+        "Dashboard album Edit reads GET /albums/{id} for its selection; filter mvs_album_list_include_items",
+        "MemberPurger routes mvs_media_index through delete_cascade (batch 50); skips while UserDeletionService::cascade_pending()",
+        "Migrator::acquire_lock() wraps WP_Upgrader::create_lock (LOCK_NAME mvs_migrator)",
+        "bp-tab-upload.js uses mvsRest.uploadMedia (fields.extra)",
+        "admin_media_list and privacy_levels_in_use leave out 'dm'",
+        "Version 2.6.2"
+      ],
       "unchanged": "routes, settings, tables"
     }
   },
