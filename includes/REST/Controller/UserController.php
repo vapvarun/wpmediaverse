@@ -373,7 +373,9 @@ class UserController extends WP_REST_Controller {
 		$user_query = new \WP_User_Query(
 			array(
 				'search'         => '*' . $query . '*',
-				'search_columns' => array( 'user_login', 'display_name' ),
+				// Never user_login: a public search that matches it confirms login
+				// names. user_nicename is already public (profile URLs).
+				'search_columns' => array( 'user_nicename', 'display_name' ),
 				'number'         => $per_page,
 				'orderby'        => 'display_name',
 				'fields'         => 'ID',
