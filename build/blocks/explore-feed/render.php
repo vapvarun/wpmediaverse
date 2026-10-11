@@ -13,9 +13,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// '' means inherit the site's Default Layout setting. It used to default
-// to 'grid', which made "not set" indistinguishable from "deliberately
-// grid" and left no way to follow the site setting.
+// '' means inherit the site's Default Layout setting. Defaulting to 'grid'
+// would make "not set" indistinguishable from "deliberately grid" and leave
+// no way to follow the site setting.
 $layout       = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : '';
 $mvs_per_page = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : 12;
 $show_filters = ! empty( $attributes['showFilters'] );
