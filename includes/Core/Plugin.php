@@ -97,9 +97,7 @@ class Plugin {
 	 * Set by Pro feed Layout::enqueue_assets() so the lightbox dialog markup
 	 * (and its `@mvs/shared-ui` Interactivity store) reaches ordinary shortcode
 	 * / block pages that host a feed grid whose media tiles use
-	 * `actions.openLightbox`. Without this, the lightbox is dead off MVS pages
-	 * (Basecamp #9961961339 — same surface-miss class as the Load More fix
-	 * #9961961337). Honored in render_shared_ui_frame().
+	 * `actions.openLightbox`. Without this, the lightbox is dead off MVS pages. Honored in render_shared_ui_frame().
 	 *
 	 * @var bool
 	 */
@@ -257,7 +255,7 @@ class Plugin {
 
 		// Block/suspension gate for every write route in both namespaces. Runs at
 		// dispatch, not per controller, because Application Passwords bypass the
-		// login gate and only three of ~112 write endpoints used to check.
+		// login gate and only three of ~112 write endpoints check.
 		\WPMediaVerse\REST\RestGate::register();
 
 		// One seam for app-facing timestamps: at dispatch, add an ISO-8601
@@ -385,12 +383,11 @@ class Plugin {
 			3
 		);
 
-		// NOTE: the dashboard's Documents tab is no longer registered here. It
-		// began as a registry LINK out to the documents page, and became a real
+		// NOTE: the dashboard's Documents tab is not registered here. It is a real
 		// panel rendering the drive in place — a member managing their media
 		// should not be sent elsewhere to manage their documents, and the upload
 		// control has to be on the screen they are already on. The registry
-		// itself stays: it is the seam that fixed the action/filter collision,
+		// itself stays: it is the seam that avoids the action/filter collision,
 		// and it remains the supported way for anything else to add a tab.
 
 		// Signing now lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url') — the
@@ -442,13 +439,13 @@ class Plugin {
 		// The two stylesheets every BuddyPress surface asks for, registered at
 		// the SAME earliest priority and for the same reason.
 		//
-		// They used to be registered inside `enqueue_frontend_assets()` below,
-		// which is `wp_enqueue_scripts@10` — and BuddyPress fires
+		// Registering them inside `enqueue_frontend_assets()` below is too late:
+		// that is `wp_enqueue_scripts@10`, and BuddyPress fires
 		// `bp_enqueue_scripts` from its OWN `wp_enqueue_scripts@10`, added
-		// first, so it ran first. Measured on this hook: `bp_enqueue_scripts`
+		// first, so it runs first. Measured on this hook: `bp_enqueue_scripts`
 		// at position 9, `enqueue_frontend_assets` at position 10. Every BP
-		// integration enqueuing at `bp_enqueue_scripts` therefore named a
-		// handle that did not exist yet, and `wp_enqueue_style()` on an
+		// integration enqueuing at `bp_enqueue_scripts` would therefore name a
+		// handle that does not exist yet, and `wp_enqueue_style()` on an
 		// unregistered handle fails SILENTLY — no notice, no style.
 		//
 		// The visible result was an activity stream with zero MediaVerse CSS:
@@ -1454,8 +1451,8 @@ class Plugin {
 		// handle below on MVS pages) because the Pro feed shortcodes
 		// ([mvs_pro_flickr_feed] etc.) render the same grid + Load More
 		// button on ordinary pages and enqueue these handles from their
-		// Layout::enqueue_assets() (Basecamp #9941413137 — Load More was
-		// dead on shortcode pages because these were enqueue-only inside
+		// Layout::enqueue_assets() (otherwise Load More is
+		// dead on shortcode pages, because these would be enqueue-only inside
 		// the MVS-page branch). Same shared-handle contract as
 		// mvs-explore-search.
 		wp_register_script(
@@ -1597,9 +1594,9 @@ class Plugin {
 
 			// Media player store — playback analytics (play/pause/seek/complete).
 			// templates/media-single.php renders its own <video>/<audio> bound to
-			// this store, but the store used to ship only as the media-player
-			// block's viewScriptModule, so the template path bound to nothing and
-			// mvs_play_events stayed empty.
+			// this store, but the store otherwise ships only as the media-player
+			// block's viewScriptModule, so the template path would bind to nothing and
+			// mvs_play_events would stay empty.
 			wp_enqueue_script_module(
 				'@mvs/media-player',
 				MVS_PLUGIN_URL . 'src/blocks/media-player/view.js',
@@ -1634,8 +1631,7 @@ class Plugin {
 			// ([mvs_pro_flickr_feed] etc.) can enqueue it by id from their
 			// Layout::enqueue_assets() on ordinary pages. Without this the
 			// feed tiles' data-wp-on--click="actions.openLightbox" has no
-			// store and the lightbox is dead off MVS pages (Basecamp
-			// #9961961339). Uses build/ (compiled IIFE) — matches the
+			// store and the lightbox is dead off MVS pages. Uses build/ (compiled IIFE) — matches the
 			// enqueue_shared_ui_assets() path; register-only here, so it is a
 			// no-op on pages that never enqueue it by handle. The MVS-page
 			// branch above intentionally keeps its own src/ enqueue, so this
@@ -2627,11 +2623,11 @@ class Plugin {
 	 * Whether the floating chat panel bundle (CSS + JS module + inline config)
 	 * should load on this request.
 	 *
-	 * Single home for the `mvs_chat_panel_visibility === 'disabled'` check that
-	 * used to live only in render_chat_panel() (markup), while the two asset
-	 * loaders (enqueue_messaging_assets(), print_messaging_config()) had no
-	 * gate at all and shipped the full messaging bundle on every logged-in
-	 * pageview even when the admin disabled the panel.
+	 * Single home for the `mvs_chat_panel_visibility === 'disabled'` check, so
+	 * render_chat_panel() (markup) and the two asset loaders
+	 * (enqueue_messaging_assets(), print_messaging_config()) all honour it;
+	 * without a gate the loaders would ship the full messaging bundle on every
+	 * logged-in pageview even when the admin disabled the panel.
 	 *
 	 * The dedicated `/messages/` full-page template (templates/messages.php)
 	 * renders its OWN chat UI using this same JS module + config — it is not
@@ -2675,7 +2671,7 @@ class Plugin {
 		// frontend enqueue of it sits inside the MVS-page branch of
 		// enqueue_frontend_assets(). The chat FAB renders on every page (see
 		// render_chat_panel()), so on a non-MVS page (Home, a blog post) the
-		// panel used to mount without a REST client and report "No conversations"
+		// panel would mount without a REST client and report "No conversations"
 		// instead of failing loudly. Each module that needs mvsRest enqueues it
 		// itself.
 		wp_enqueue_script( 'mvs-rest' );
@@ -2966,8 +2962,8 @@ JS;
 	 * dependency array, including @wordpress/interactivity-router as a dynamic dep
 	 * so the navigate action's dynamic import() is declared at module-registry time.
 	 *
-	 * This is the single source of truth for the dep list. All callers that
-	 * previously registered/enqueued the module directly now go through here.
+	 * This is the single source of truth for the dep list. All callers go
+	 * through here instead of registering/enqueuing the module directly.
 	 * Mirrors the register_lucide_script() consolidation pattern.
 	 *
 	 * @param bool   $enqueue  True to enqueue immediately; false to register only.
@@ -3256,10 +3252,10 @@ JS;
 	 * Render the slide-out chat panel in wp_footer for logged-in users.
 	 *
 	 * The slide-out chat panel is the compact DM UI (the floating chat
-	 * icon + the docked panel that opens from it). It used to appear on
-	 * every page for logged-in users, which produced visual clutter on
+	 * icon + the docked panel that opens from it). It does not appear on
+	 * every page for logged-in users, which would produce visual clutter on
 	 * landing pages, blog posts, and other non-MVS surfaces. Visibility
-	 * is now controlled by the `mvs_chat_panel_visibility` admin setting
+	 * is controlled by the `mvs_chat_panel_visibility` admin setting
 	 * — see SettingsRegistrar::register_messaging_settings().
 	 *
 	 * Suppression order (any condition skips the render):
@@ -3442,14 +3438,14 @@ JS;
 	/**
 	 * The slug of the standalone messages page.
 	 *
-	 * ONE source for a path that three call sites used to spell out
+	 * ONE source for a path that three call sites would otherwise spell out
 	 * independently: this rewrite, the client-navigation deny-list, and the
-	 * direct-message notification link. They agreed only by coincidence. The
+	 * direct-message notification link; they would agree only by coincidence. The
 	 * deny-list already resolves MAPPED pages through their permalink for
 	 * exactly this reason - "so admin-renamed slugs stay correct without
 	 * touching the deny-list" - and messages, being a virtual route rather
-	 * than a mapped page, had no equivalent and got a hard-coded literal in
-	 * each place instead.
+	 * than a mapped page, has no equivalent, so this is the one place the
+	 * literal lives.
 	 *
 	 * Filtering this moves the route; flush permalinks afterwards, since the
 	 * rewrite rule is stored.

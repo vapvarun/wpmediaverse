@@ -435,9 +435,9 @@ class MessagingController extends WP_REST_Controller {
 
 		$response = new WP_REST_Response( $results, 200 );
 
-		// Honest pagination. The endpoint previously returned a bare page with
-		// no total, so a client could not distinguish a short page from the
-		// last page, and the mobile app had no way to size an infinite list
+		// Honest pagination. A bare page with no total would leave a client
+		// unable to distinguish a short page from the last page, and the mobile
+		// app unable to size an infinite list
 		// (big-site checklist items 1 and 4; Coding Rule 18 requires the API to
 		// be fully drivable on its own).
 		$total = $this->service->count_conversations( $user_id, $tab );
@@ -801,10 +801,9 @@ class MessagingController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 		$conv_id = (int) $request['id'];
 
-		// Third instance of the same Rule 20 shape, found while fixing the two
-		// on Basecamp 10190938967 and fixed with them: `set_typing()` UPDATEs
-		// the participant row, so for a non-participant it matched nothing and
-		// this still answered `{"success":true}`.
+		// Same Rule 20 shape as the other gates in this file: `set_typing()` UPDATEs
+		// the participant row, so for a non-participant it matches nothing and
+		// this would still answer `{"success":true}`.
 		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
 			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
 		}
@@ -874,8 +873,7 @@ class MessagingController extends WP_REST_Controller {
 		// Per-conversation typing + presence requires the viewer to actually
 		// be a participant. Without this gate any logged-in user could iterate
 		// conversation_id values and harvest participant lists, presence, and
-		// live typing for every private conversation (WMV-02, Basecamp
-		// #9919403766). `list_messages()` already gates the same way via
+		// live typing for every private conversation. `list_messages()` already gates the same way via
 		// get_conversation(); we mirror that here.
 		$typing       = array();
 		$online_users = array();
@@ -1004,9 +1002,9 @@ class MessagingController extends WP_REST_Controller {
 		}
 
 		// Stored as conversation-scoped 'dm' media, like the app and BuddyNext
-		// chat: protected folder, random name, URLs signed per participant. It
-		// used to be a plain WordPress attachment under its original name in the
-		// public uploads folder, listed by /wp/v2/media.
+		// chat: protected folder, random name, URLs signed per participant. A
+		// plain WordPress attachment under its original name in the public
+		// uploads folder would be listed by /wp/v2/media.
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'upload' )->handle(
 			$file,
 			get_current_user_id(),

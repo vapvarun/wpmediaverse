@@ -84,8 +84,7 @@ class UploadService {
 		$allowed = $is_dm ? \WPMediaVerse\Messaging\MessagingController::allowed_attachment_types() : $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
-		// Hard guard: PDF and unrecognised uploads are refused (owner decision,
-		// Basecamp #9962125462). This is the real enforcement — it fires even
+		// Hard guard: PDF and unrecognised uploads are refused (owner decision). This is the real enforcement — it fires even
 		// when a legacy site still has `application/pdf` in its stored
 		// `mvs_allowed_file_types` option (1.2.3 dropped it from the default but
 		// did not strip it from existing installs) or when the
@@ -167,8 +166,8 @@ class UploadService {
 		$this->apply_exif_orientation( $file['tmp_name'], $mime );
 
 		// Strip EXIF GPS data from images. Nothing is kept: the extracted block
-		// used to be written to meta as `exif_raw` and was never read by any
-		// template, REST field, admin screen or Pro surface - dead weight plus a
+		// would never be read by any template, REST field, admin screen or Pro
+		// surface - dead weight plus a
 		// privacy surface with no payoff.
 		if ( get_option( 'mvs_strip_exif', true ) && $this->is_image( $mime ) ) {
 			$this->strip_exif( $file['tmp_name'] );
@@ -629,10 +628,10 @@ class UploadService {
 		$this->init_stats( $media_id );
 
 		// Carousel / gallery-post membership, recorded BEFORE mvs_media_uploaded
-		// fires. It used to be written by the REST controller *after* the upload
-		// call returned, which meant every listener — the BuddyPress activity
-		// recorder above all — saw a media item that did not yet know it belonged
-		// to a group. That is why a 3-image carousel produced 3 separate activity
+		// fires. Written by the REST controller *after* the upload
+		// call returned, it would leave every listener — the BuddyPress activity
+		// recorder above all — seeing a media item that does not yet know it belongs
+		// to a group, and a 3-image carousel would produce 3 separate activity
 		// entries instead of one.
 		$media_group = isset( $args['media_group'] ) ? sanitize_text_field( (string) $args['media_group'] ) : '';
 		if ( '' !== $media_group ) {
@@ -973,11 +972,10 @@ class UploadService {
 	 * Two copies of a security guard is the shape that produced that bypass, and
 	 * this change would have needed both edited in lockstep to stay correct.
 	 *
-	 * Until 2.4.0 the unsupported test was a NAME test: `'document' === type`,
-	 * which worked only because unknown MIMEs were *named* 'document' by
-	 * elimination. Now that unknown resolves to '', it is an UNKNOWN test. The
-	 * two had to change together or unrecognised files would have started being
-	 * accepted the moment the fallback changed.
+	 * The unsupported test is an UNKNOWN test, not a NAME test
+	 * (`'document' === type`): a name test works only when unknown MIMEs are
+	 * *named* 'document' by elimination, and would let unrecognised files
+	 * through now that unknown resolves to ''.
 	 *
 	 * @since 2.4.0
 	 *
@@ -1019,8 +1017,8 @@ class UploadService {
 	 *
 	 * Extracted so `MediaController::replace_file()` can run the identical
 	 * check `handle()` runs — a size cap the owner sets has to hold on every
-	 * write path, not just fresh uploads. Basecamp 10350220155: replace()
-	 * called neither this nor any size check, so the cap could be bypassed by
+	 * write path, not just fresh uploads; a replace()
+	 * that skipped it would let the cap be bypassed by
 	 * replacing an existing item's file.
 	 *
 	 * @since 2.6.0
@@ -1067,11 +1065,11 @@ class UploadService {
 	 * - `Sanitizers::sanitize_file_types()` (do not preserve it as a custom type),
 	 * - `Migrator` v27 (strip it from installs that stored it before 1.2.3).
 	 *
-	 * That agreement is the actual bug being fixed: this list said no while the
-	 * stored `mvs_allowed_file_types` still offered PDF in the picker, so members
-	 * on every pre-1.2.3 install were shown a type the server then refused — and
-	 * the owner could not stop it, because PDF is absent from the settings grid
-	 * and the sanitizer preserved it on every save.
+	 * That agreement matters: if this list says no while the stored
+	 * `mvs_allowed_file_types` still offers PDF in the picker, members on every
+	 * pre-1.2.3 install are shown a type the server then refuses — and the
+	 * owner cannot stop it, because PDF is absent from the settings grid and
+	 * the sanitizer preserves it on every save.
 	 *
 	 * NOT filterable, and deliberately so: a site that wants PDFs has the
 	 * document library, which accepts them properly.
@@ -1406,12 +1404,12 @@ class UploadService {
 	/**
 	 * Strip GPS and other sensitive EXIF from an image file.
 	 *
-	 * Nothing is returned to the caller for storage: the extracted block used to
-	 * be kept as `exif_raw` meta that no surface ever read.
+	 * Nothing is returned to the caller for storage: keeping the extracted block as
+	 * `exif_raw` meta would be pointless, since no surface reads it.
 	 *
 	 * Public for the same reason apply_exif_orientation() is: the REST
 	 * replace-file path runs its own ingest and must reuse this seam rather
-	 * than grow a second copy - or, as it did until 2.5.1, skip it entirely.
+	 * than grow a second copy - or skip it entirely.
 	 *
 	 * @param string $file_path File path.
 	 * @return bool True when the file carried GPS and was rewritten.
@@ -1453,7 +1451,6 @@ class UploadService {
 				// the XMP/IPTC block where copyright and credit live - on a photo
 				// platform, destroying an author's byline to hide their location
 				// is a bad trade when only one of the two is a privacy problem.
-				// Basecamp 10252326888 follow-up.
 				if ( $this->strip_gps_ifd( $file_path ) ) {
 					return true;
 				}
@@ -1892,7 +1889,7 @@ class UploadService {
 	 *
 	 * Deferring it would buy about a quarter of a second and cost every member a
 	 * placeholder where their photo should be until the queue catches up. The
-	 * "uploads spend seconds making image sizes" figure that used to justify
+	 * "uploads spend seconds making image sizes" figure that would justify
 	 * deferring this was really the six blocking cloud round trips, which are
 	 * gone.
 	 *
@@ -2062,8 +2059,7 @@ class UploadService {
 
 		// Variant write surface — single writer for every thumb_*/_webp/_avif
 		// meta key. See `MediaVariantWriter` for the path-meta gate and
-		// `VariantSpec::compute_rel_path` for the relative-path computation
-		// (previously duplicated at 3 sites in this method).
+		// `VariantSpec::compute_rel_path` for the relative-path computation.
 		$writer    = \WPMediaVerse\Core\Plugin::container()->get( 'variant_writer' );
 		$image_opt = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 

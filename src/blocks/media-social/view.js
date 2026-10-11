@@ -73,7 +73,8 @@ async function fetchComments( ctx ) {
 		const data = res.data;
 		const now = Date.now();
 		// Seconds from the server (filterable mvs_comment_edit_window), not a
-		// hardcoded 15 minutes — the two used to drift on any site that changed it.
+		// hardcoded 15 minutes, which would drift from the server on any site that
+		// changed it.
 		const editWindow = ( ctx.commentEditWindow || 15 * 60 ) * 1000;
 		ctx.comments = Array.isArray( data )
 			? data.map( ( c ) => {
@@ -92,9 +93,9 @@ async function fetchComments( ctx ) {
 					content: c.content,
 					canEdit: isOwnComment && commentAge < editWindow,
 					// Delete is not time-limited: the API lets an owner delete their
-					// own comment at any age, and a moderator delete anyone's — the UI
-					// used to hide Delete with Edit at 15 minutes, so the control was
-					// stricter than the route it drives.
+					// own comment at any age, and a moderator delete anyone's — hiding Delete
+					// along with Edit at 15 minutes would make the control stricter than the
+					// route it drives.
 					canDelete: isOwnComment || !! ctx.canModerateComments,
 					canReport: !! ( ctx.isLoggedIn && sharedUI.state.reportsEnabled && ! isOwnComment ),
 					reported: false,

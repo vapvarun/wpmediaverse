@@ -2,9 +2,9 @@
 /**
  * The message poll cursor survives second-precision truncation.
  *
- * Regression cover for the message half of the poll-cursor race. 2.2.1 widened
- * the reaction sweep (see MessagingReactionUpdatesTest) but left the identical
- * defect on `poll()` itself: `created_at` is a second-precision DATETIME and the
+ * Regression cover for the message half of the poll-cursor race (the reaction
+ * sweep is covered by MessagingReactionUpdatesTest). The same defect applies to
+ * `poll()` itself: `created_at` is a second-precision DATETIME and the
  * client's cursor is the previous response's `server_time`, stamped AFTER the
  * poll query ran. A message inserted in the remainder of that same second was
  * missed by that query and then excluded by the next poll's strict `>`, so it

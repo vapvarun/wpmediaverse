@@ -2,7 +2,7 @@
 /**
  * Test custom post types and taxonomies registration.
  *
- * Note: mvs_media is NO LONGER a CPT — media lives in mvs_media_index custom table.
+ * Note: mvs_media is not a CPT — media lives in mvs_media_index custom table.
  * Albums and Collections remain as CPTs.
  *
  * @package WPMediaVerse

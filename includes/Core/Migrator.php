@@ -739,10 +739,10 @@ class Migrator {
 	/**
 	 * Migration v10 — recount mvs_tag and mvs_category terms against mvs_media_index.
 	 *
-	 * Previously term counts stayed at 0 because the default term-count callback
-	 * counts wp_posts rows of registered post types, but our media lives in the
-	 * mvs_media_index custom table. This backfill brings existing tag/category
-	 * counts in line with the new custom update_count_callback.
+	 * The default term-count callback counts wp_posts rows of registered post
+	 * types, but our media lives in the mvs_media_index custom table, so term
+	 * counts stayed at 0. This backfill brings existing tag/category counts in
+	 * line with the custom update_count_callback.
 	 *
 	 * @since 1.1.2
 	 */
@@ -1093,8 +1093,7 @@ class Migrator {
 	 * The DM poll only re-serves messages whose created_at is newer than the
 	 * client's last poll. A reaction lives in a separate table and never touches
 	 * the parent row, so reacting to an already-delivered message was invisible to
-	 * the other participant until a full reload (customer report, card
-	 * 10122929662). A reactions-table scan cannot fix it alone: removals are hard
+	 * the other participant until a full reload (customer report). A reactions-table scan cannot fix it alone: removals are hard
 	 * deletes that leave no timestamp, so only a column on the message itself —
 	 * stamped on both add and remove — catches every change. This is that column;
 	 * poll_reaction_updates() reads it.
@@ -1124,11 +1123,11 @@ class Migrator {
 	/**
 	 * Migration v24 — per-user clear point on conversation participants.
 	 *
-	 * "Delete conversation" used to flip the participant to 'left' and
-	 * find_or_create_conversation() then created a brand-new thread on
-	 * re-contact — leaving the other member with TWO threads for the same
-	 * pair. The fix reuses the pair's single thread and
-	 * hides pre-delete history per user via this clear point instead.
+	 * "Delete conversation" does not flip the participant to 'left':
+	 * find_or_create_conversation() would then create a brand-new thread on
+	 * re-contact, leaving the other member with TWO threads for the same
+	 * pair. Instead the pair's single thread is reused and
+	 * pre-delete history is hidden per user via this clear point.
 	 *
 	 * The watermark is a message ID, not a datetime: message ids are strictly
 	 * monotonic, so `m.id > cleared_up_to` is exact, where a second-precision
@@ -1207,8 +1206,8 @@ class Migrator {
 	/**
 	 * Migration v13 — FULLTEXT search index on mvs_media_index.(title, description).
 	 *
-	 * REST `/media?s=<term>` previously did `LIKE '%term%'` on title/description.
-	 * That's a sequential scan — fine at 1k rows, brutal at 100k. The 1.2.0
+	 * A `LIKE '%term%'` search on title/description (REST `/media?s=<term>`)
+	 * is a sequential scan — fine at 1k rows, brutal at 100k. The 1.2.0
 	 * Explore-page autocomplete fires on every keystroke (debounced 250ms),
 	 * so search is a hot path. FULLTEXT + MATCH/AGAINST drops worst-case
 	 * latency from O(n) to roughly log n with a sub-millisecond ceiling on
@@ -1693,8 +1692,6 @@ class Migrator {
 	 * Rows carrying real media are PRESERVED and logged. Their album data was
 	 * destroyed at write time and is not recoverable — the photo is real and must not
 	 * be touched.
-	 *
-	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md
 	 *
 	 * @since 2.4.0
 	 * @return void
@@ -2251,13 +2248,13 @@ class Migrator {
 	 * `mvs_allowed_file_types`.
 	 *
 	 * Every install predating 1.2.3 still carries `application/pdf` in that
-	 * option. Card #9962125462 removed PDF from the settings grid and made the
-	 * upload path refuse it, but neither half covered an install whose option
-	 * ALREADY contained it — so the picker went on advertising PDF to members,
-	 * the server went on refusing it, and the owner had no way to stop it: PDF is
-	 * absent from the grid so there is no box to untick, and the sanitizer's
-	 * preserve-custom-types rule (correct in itself) wrote it back on every save.
-	 * The stored value was unreachable by any admin action.
+	 * option. The settings grid no longer offers PDF and the upload path refuses it, but
+	 * neither half covers an install whose option ALREADY contains it — so the
+	 * picker goes on advertising PDF to members, the server goes on refusing it,
+	 * and the owner has no way to stop it: PDF is absent from the grid so there
+	 * is no box to untick, and the sanitizer's preserve-custom-types rule
+	 * (correct in itself) writes it back on every save. The stored value is
+	 * unreachable by any admin action.
 	 *
 	 * Nothing is lost: the media path has refused these types since 1.2.3, so
 	 * removing them from the option removes an entry that only ever produced a

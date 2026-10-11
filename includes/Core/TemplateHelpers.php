@@ -434,20 +434,19 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				$poster_attr = ' poster="' . esc_url( $poster_url ) . '"';
 				// preload="none" and NO `#t=` fragment, deliberately.
 				//
-				// This used to be preload="metadata" with `#t=0.1` so a bad
-				// poster URL would degrade to the video's own first frame. That
-				// backfired: a video element paints its current frame as soon as
-				// it has one, and the poster is only shown UNTIL then — so the
-				// 0.1s frame was painted over every poster, good ones included.
-				// Any video that opens on a fade-in, a title card or a white
-				// intro therefore rendered a blank tile no matter how good its
-				// poster was, and the bundled fallback below could never be seen
-				// either. That is the "blank video cover" customers report.
+				// A preload="metadata" with a `#t=0.1` fragment would let a bad poster URL
+				// degrade to the video's own first frame, but a video element paints its
+				// current frame as soon as it has one, and the poster is only shown UNTIL
+				// then — so the 0.1s frame would be painted over every poster, good ones
+				// included. Any video that opens on a fade-in, a title card or a white
+				// intro would then render a blank tile no matter how good its poster was,
+				// and the bundled fallback below could never be seen either. That is the
+				// "blank video cover" customers report.
 				//
 				// $poster_url is never empty — it falls back to the bundled SVG
 				// on this very line above — so there is nothing left for the
-				// frame-grab to rescue. Dropping it also means a grid of videos
-				// no longer fetches a moov atom per tile.
+				// frame-grab to rescue. Omitting it also means a grid of videos
+				// does not fetch a moov atom per tile.
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
 			// No streamable URL (the viewer may not stream the file). Show the
@@ -1109,7 +1108,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * primary (JPEG/PNG) URL.
 	 *
 	 * Single implementation behind `get_webp_variant_url()` and
-	 * `get_avif_variant_url()`, which previously differed only by format.
+	 * `get_avif_variant_url()`, which differ only by format.
 	 *
 	 * Resolution mirrors the primary path in
 	 * `SignedUrlService::maybe_direct_cloud_thumbnail_url()`, because the two
@@ -1125,10 +1124,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *      `MediaVariantWriter::path_meta_ok()` deliberately skips because
 	 *      their `file_path` is absolute.
 	 *
-	 * Then one invariant, which is the actual fix for Basecamp #10162798416:
-	 * **never emit a variant on a different host from the primary.** Before
-	 * this, a Bunny-CDN JPEG was paired with the stale local `_webp` URL, which
-	 * points inside wp-content/uploads/wpmediaverse/ -- the directory MediaVerse
+	 * Then one invariant: **never emit a variant on a different host from the
+	 * primary.** Otherwise a Bunny-CDN JPEG is paired with the stale local `_webp`
+	 * URL, which points inside wp-content/uploads/wpmediaverse/ -- the directory MediaVerse
 	 * itself locks with `Deny from all` -- so every WebP returned 403 on Apache
 	 * (AH01797) and rendered as a broken image. The host check is deliberately
 	 * broader than the CDN case: it also covers any future arrangement where
@@ -1252,7 +1250,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 	/**
 	 * Thin wrapper around media_thumbnail() kept for backward compatibility
-	 * with callers that used to pass positional args.
+	 * with callers that pass positional args.
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $size     WP image size.
@@ -1558,8 +1556,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * Prefers the configured `mvs_page_explore` page permalink (matching
 	 * OverviewPage / SetupWizard), falling back to the /media/ rewrite only when
-	 * no explore page exists. The back-link previously hardcoded /media/, which
-	 * sent users to the rewrite instead of the real page on sites whose explore
+	 * no explore page exists. The back-link must not hardcode /media/, which
+	 * sends users to the rewrite instead of the real page on sites whose explore
 	 * page has a different slug (e.g. /explore-media/).
 	 *
 	 * The ONE place that answers "where is Explore". Templates in both plugins
@@ -1666,9 +1664,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * Pro extensions can register their own contexts via the
 	 * `mvs_parent_route` filter, applied at the end of this method.
-	 * (This block used to name `mvs_parent_url`, a filter that has never
-	 * existed anywhere in either plugin; the docs copied the wrong name from
-	 * here, so it is corrected at the source.)
+	 * (The filter is `mvs_parent_route`; there is no `mvs_parent_url`.)
 	 *
 	 * @param string $context Page context — one of:
 	 *                        'single-media', 'album', 'edit-profile',
@@ -2355,9 +2351,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
 		$message = isset( $args['message'] ) ? (string) $args['message'] : '';
 
-		// The markup admin.css styles (icon, h3, p). The helper used to emit
-		// <p> titles with classes no stylesheet defined, so nothing used it and
-		// every admin screen hand-rolled its own.
+		// The markup admin.css styles (icon, h3, p). Emitting <p> titles with
+		// classes no stylesheet defines would leave nothing using the helper and
+		// every admin screen hand-rolling its own.
 		$html  = '<div class="mvs-empty-state-admin" role="status">';
 		$html .= '<i data-lucide="' . esc_attr( $icon ) . '" aria-hidden="true"></i>';
 		if ( '' !== $title ) {

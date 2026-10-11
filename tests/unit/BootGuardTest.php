@@ -2,9 +2,9 @@
 /**
  * The plugin fails to boot without taking the site down.
  *
- * The autoloader used to be wrapped in a bare `file_exists()` that skipped the
- * require and let execution continue, even though every line after it names a
- * class the autoloader provides. Replicated 2026-08-13 by moving `vendor/`
+ * The autoloader must not sit behind a bare `file_exists()` that skips the
+ * require and lets execution continue, since every line after it names a
+ * class the autoloader provides. Moving `vendor/`
  * aside: HTTP 500 on the front page, HTTP 500 on `wp-admin/plugins.php` — the
  * screen an owner would use to switch the plugin off — and WP-CLI refusing to
  * start at all ("Callable WPMediaVerse\CLI\Commands does not exist"). Every

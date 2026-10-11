@@ -801,8 +801,8 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * A privacy listener reads the NEW value even when the row was already cached.
 	 *
 	 * Callers such as MediaController::update_item() read the item before writing,
-	 * and the hook used to fire before the cache was dropped, so the BuddyPress
-	 * activity always took the previous privacy.
+	 * and the hook must fire after the cache is dropped, otherwise the BuddyPress
+	 * activity takes the previous privacy.
 	 */
 	public function test_privacy_listener_reads_new_value_from_warm_cache(): void {
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );

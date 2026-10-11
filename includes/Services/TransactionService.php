@@ -8,8 +8,7 @@
  * GET /me/transactions and the [mvs_usage_history] shortcode. Storage limits
  * are not read from here: StorageLimitService measures usage live.
  *
- * The table (mvs_transactions, Migrator v9) was created but never written or read
- * before 1.8.0 — this is the model that finally owns it (Coding Rule: no raw $wpdb
+ * The table (mvs_transactions, Migrator v9) is owned by this model (Coding Rule: no raw $wpdb
  * outside a model).
  *
  * @package WPMediaVerse\Services

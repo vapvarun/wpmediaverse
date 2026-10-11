@@ -305,9 +305,9 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	/**
 	 * A legacy PDF does not count as MEDIA on a profile.
 	 *
-	 * REVERSED with the MEDIA_LIBRARY change (owner, 2026-08-09: "documents type
-	 * will never display at media grid"). This previously asserted the opposite,
-	 * to stop an upgrade deducting from a member's visible numbers. The browser
+	 * Owner decision (2026-08-09): "documents type will never display at media
+	 * grid". Counting the row would stop an upgrade deducting from a member's
+	 * visible numbers, but the browser
 	 * settled it: the row a profile was counting rendered in Explore as a broken
 	 * image tile, so the count was promising a picture that did not exist.
 	 *

@@ -68,8 +68,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 // The option check alone is not enough: deactivating Pro leaves
 // mvs_stories_enabled at '1', so the toggle kept rendering on a Free-only site
 // where nothing consumes it — the upload succeeds but no story is ever created,
-// which reads as a broken feature rather than an absent one. Basecamp
-// #10156642726.
+// which reads as a broken feature rather than an absent one.
 $mvs_stories_on = \WPMediaVerse\Core\TemplateHelpers::stories_available();
 // Pre-check the toggle when arriving from the "Your story" tile (?mvs_story=1). Display-only, no action.
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended

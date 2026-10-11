@@ -2,7 +2,7 @@
 /**
  * A DM only grants access to media its OWNER shared.
  *
- * Basecamp 10392490030: any member could post another member's private media
+ * Without that rule, any member could post another member's private media
  * id into a DM with their own second account, and the DM grant then let them
  * view and download it.
  *

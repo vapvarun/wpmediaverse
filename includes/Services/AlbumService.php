@@ -102,10 +102,9 @@ class AlbumService {
 		// Every photo in an album shows with the album's privacy, in BOTH
 		// directions: making an album private hides its photos, making it public
 		// again brings them back. Each photo keeps the member's own choice aside
-		// (OWN_PRIVACY_META) and gets it back when it leaves the album. Before
-		// 2.6.0 this was a one-way clamp that overwrote the photo's own choice,
-		// so re-publishing an album left every photo private forever
-		// (Basecamp 10264373450; owner decision 2026-09-27).
+		// (OWN_PRIVACY_META) and gets it back when it leaves the album. A one-way
+		// clamp would overwrite the photo's own choice, so re-publishing
+		// an album would leave every photo private forever.
 		$this->apply_album_privacy( $album_id, $this->member_ids( $album_id ) );
 	}
 
@@ -355,7 +354,7 @@ class AlbumService {
 	 * Create a new album.
 	 *
 	 * Wraps the `mvs_album` CPT insertion + privacy / album_type / group
-	 * association meta writes that REST and template callers used to repeat
+	 * association meta writes that REST and template callers would otherwise repeat
 	 * inline. Single canonical entry point so seeders, WP-CLI, and any
 	 * future caller produce identical state to the REST flow.
 	 *
@@ -414,12 +413,12 @@ class AlbumService {
 			$privacy = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		}
 
-		// Album attributes live in post meta. Before 2.4.0 they were written through
-		// MediaRepository at media_id = <album post ID>, which put an album ID into the
+		// Album attributes live in post meta. Writing them through
+		// MediaRepository at media_id = <album post ID> would put an album ID into the
 		// media ID sequence: on any site where uploads have outrun post IDs — most of
-		// them — the write landed on a real photo and overwrote its slug and privacy.
+		// them — the write would land on a real photo and overwrite its slug and privacy.
 		// The album's own slug is wp_posts.post_name, which wp_insert_post() has
-		// already made unique. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// already made unique.
 		$this->set_privacy( $album_id, $privacy );
 		$this->set_album_type( $album_id, $album_type );
 
@@ -770,9 +769,9 @@ class AlbumService {
 
 			// Record the album association on each item, then show them with the
 			// album's privacy - the same rule set_privacy() re-applies when the
-			// album's privacy later changes. Only ACCEPTED items: this used to walk
-			// the raw input, so a skipped id (missing, not audio for a playlist,
-			// someone else's) was still pointed at the album.
+			// album's privacy later changes. Only ACCEPTED items: walking
+			// the raw input would point a skipped id (missing, not audio for a playlist,
+			// someone else's) at the album anyway.
 			$repo->set_album_pointer_many( $accepted, $album_id );
 
 			$this->apply_album_privacy( $album_id, $accepted );
@@ -840,11 +839,11 @@ class AlbumService {
 	 *
 	 * The item's album pointer, mvs_media_index.album_id, is set by add_items(),
 	 * and read by PrivacyService::effective_privacy_for_media() and the BuddyPress
-	 * activity sync. Removing an item, or deleting the album, only
-	 * dropped the mvs_album_items row, so the pointer kept naming an album the
-	 * item had left or that no longer existed: the item went on inheriting that
-	 * album's privacy and media_ids_in_album() kept returning it. Items still in
-	 * another album now point at the one they joined most recently, the rest at 0.
+	 * activity sync. Removing an item, or deleting the album, would otherwise
+	 * drop only the mvs_album_items row, so the pointer would keep naming an
+	 * album the item had left or that no longer existed: the item would go on
+	 * inheriting that album's privacy and media_ids_in_album() would keep
+	 * returning it. Items still in another album point at the one they joined most recently, the rest at 0.
 	 *
 	 * Call AFTER the mvs_album_items rows are gone. Photos out of every album
 	 * get their own privacy back (restore_own_privacy()).
@@ -1078,7 +1077,7 @@ class AlbumService {
 		}
 
 		// Fallback for image-type media: signed file URL passes the
-		// .htaccess gate. Previously returned a raw URL that 403s.
+		// .htaccess gate. A raw URL would 403.
 		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( is_string( $file_type ) && 0 === strpos( $file_type, 'image/' ) ) {
 			$signed = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );

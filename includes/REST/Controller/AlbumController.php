@@ -351,8 +351,8 @@ class AlbumController extends WP_REST_Controller {
 	/**
 	 * Get an album's media items, in album order, paginated.
 	 *
-	 * `GET /albums/{id}/items`. The route previously registered POST only, so
-	 * every client asking for an album's contents got a 404 and rendered an
+	 * `GET /albums/{id}/items`. A POST-only route would 404 for
+	 * every client asking for an album's contents and render an
 	 * empty album — the mobile app's album screen among them. `GET /albums/{id}`
 	 * returns bare media IDs; this returns the hydrated rows a grid needs.
 	 *

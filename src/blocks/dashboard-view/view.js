@@ -269,7 +269,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		// Rail highlight, one getter for every rail item (slug from context):
 		// active when its section is showing, or the showing section belongs to
-		// it (Favorites under Collections, card 10364777801). Panels keep the
+		// it (Favorites under Collections). Panels keep the
 		// per-slug getters below; this one is for the rail only.
 		get isActiveRail() {
 			const slug = getContext()?.railSlug;
@@ -313,8 +313,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return !! panel && ! panel.items.length && ! panel.loading && ! ( panel.s || '' ).trim();
 		},
 		// showMediaEmpty is the TRULY-empty-library state ("No media yet");
-		// showMediaSearchEmpty is a search that matched nothing. Basecamp
-		// 10350215664: a member with real uploads who searched a nonsense
+		// showMediaSearchEmpty is a search that matched nothing. A member with real uploads who searched a nonsense
 		// title saw "No media yet - upload your first file", which is untrue
 		// and tells them nothing about the search they just ran.
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading && ! ( state.media.s || '' ).trim(); },
@@ -541,10 +540,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		get itemPrivacy() {
-			// Label, never the stored slug. The badge used to print `loggedin`
-			// straight from the database, lowercase and untranslated, directly
-			// above a picker calling the same state "Members: logged-in users
-			// only".
+			// Label, never the stored slug: printing `loggedin` straight from the
+			// database would be lowercase and untranslated, directly above a picker
+			// calling the same state "Members: logged-in users only".
 			// Short word only ("Members", not "Members: logged-in users only"),
 			// the same rule as TemplateHelpers::privacy_short_label().
 			const item = getContext().item;
@@ -555,8 +553,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// the edit modal agree (2.6.0,
 			return item?.album ? ( state.i18n?.privacyViaAlbum || '%s (album)' ).replace( '%s', label ) : label;
 		},
-		// A photo in an album shows with the album's privacy (2.6.0, Basecamp
-		// 10264373450): the picker would offer a choice that is ignored, so it
+		// A photo in an album shows with the album's privacy: the picker would offer a choice that is ignored, so it
 		// is disabled and says which album decides.
 		get editPrivacyFollowsAlbum() {
 			return !! state.editModal.album;
@@ -740,10 +737,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// server-rendered on demand and only emitted when it is the active
 			// section (the drive).
 			//
-			// This used to be `if ( 'documents' === tab )` — a name-check standing
-			// in for a rule. Compete was not covered by it and went blank
-			// and writing the rule as "off-site only"
-			// then dropped Documents and reproduced the same blank panel there.
+			// Not a name-check like `if ( 'documents' === tab )`, which stands in for a
+			// rule: it misses Compete (a blank panel), and writing the rule as
+			// "off-site only" drops Documents and reproduces the same blank panel there.
 			// Asking whether a panel was rendered covers both, and covers the
 			// next section without anyone remembering to add it.
 			if ( tabBtn.dataset.mvsNavigate ) {
@@ -1420,10 +1416,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/**
 		 * One place that turns a bulk response into what the member is told.
 		 *
-		 * The server now reports `requested` alongside `processed`, because
-		 * filter_allowed_ids drops anything they may not edit and every handler
-		 * used to report the SURVIVING count as the total — a clean success for
-		 * a partly-ignored request. If anything was skipped the member hears so,
+		 * The server reports `requested` alongside `processed`, because
+		 * filter_allowed_ids drops anything they may not edit, and reporting the
+		 * SURVIVING count as the total would be a clean success for a partly-ignored
+		 * request. If anything was skipped the member hears so,
 		 * rather than the operation quietly meaning less than it said.
 		 */
 		bulkResultMessage( data, doneMessage ) {
@@ -1938,7 +1934,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// upload modal and BuddyPress albums tab use, so the
 					// empty-name message and create logic live in one place.
 					// It also checks the response, so a failed create (e.g. an
-					// empty title returning 400) can no longer fall through and
+					// empty title returning 400) cannot fall through and
 					// be reported as "Album created!".
 					const albumResult = await window.mvsRest.createAlbum(
 						state.albumModal.title,

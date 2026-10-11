@@ -18,12 +18,12 @@ use WPMediaVerse\Core\Plugin;
  * Applies the block and suspension guards to every write route, from one place.
  *
  * Why a single gate instead of a guard call in each permission callback: the
- * plugins register ~112 write endpoints across Free and Pro, and before 2.1.0
- * exactly three of them consulted RestGuards. The rest were open. A blocked
+ * plugins register ~112 write endpoints across Free and Pro, and only three
+ * of them consult RestGuards on their own. The rest would be open: a blocked
  * member could still favourite the person who blocked them, view their story,
  * challenge them to a battle, or pull them into a group. Patching forty
- * callbacks would have closed today's holes and guaranteed the next new route
- * shipped ungated.
+ * callbacks would close today's holes and guarantee the next new route
+ * ships ungated.
  *
  * So: one filter on `rest_request_before_callbacks` — the choke point that runs
  * after WordPress has matched the route and authenticated the request (cookie

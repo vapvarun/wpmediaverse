@@ -600,9 +600,9 @@ class FieldRenderer {
 	 * Render the webhook configuration field.
 	 *
 	 * One block per stored webhook (or one empty block when there are none).
-	 * Only the first used to be rendered, and because the save rebuilds the
+	 * Rendering only the first would mean that, because the save rebuilds the
 	 * option from what was posted, every other webhook - ones added through
-	 * the REST API or code - was deleted by the next Save on this tab.
+	 * the REST API or code - is deleted by the next Save on this tab.
 	 */
 	public static function render_webhook_field(): void {
 		$webhooks = array_values( array_filter( (array) get_option( 'mvs_webhooks', array() ), 'is_array' ) );

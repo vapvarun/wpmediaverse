@@ -2,9 +2,9 @@
 /**
  * Deleting the plugin keeps member data unless the owner opted in.
  *
- * Premium plugins are routinely updated by deleting and re-uploading them.
- * Before 2.6.0 that path dropped every MediaVerse table - media, albums,
- * messages - with no question asked. uninstall.php now clears scheduled work
+ * Premium plugins are routinely updated by deleting and re-uploading them, so
+ * uninstall must not drop every MediaVerse table - media, albums, messages -
+ * with no question asked. uninstall.php clears scheduled work
  * and caches, and stops there unless mvs_delete_data_on_uninstall is '1'.
  *
  * Only the KEEP path runs here: the delete path drops tables, which would

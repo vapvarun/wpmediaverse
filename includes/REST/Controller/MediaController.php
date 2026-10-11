@@ -415,11 +415,10 @@ class MediaController extends WP_REST_Controller {
 		$media_type = $request->get_param( 'media_type' );
 		$author     = $request->get_param( 'author' );
 
-		// The old media_type != '' guard existed to hide the privacy-only stub rows
-		// albums and collections used to leave in mvs_media_index (Basecamp
-		// 10074442944). Migrator v26 evicted those rows entirely, so that job is done;
-		// what replaces it below is a positive type group, which is a different and
-		// stronger guarantee.
+		// No media_type != '' guard: it would only hide the privacy-only stub rows
+		// albums and collections once left in mvs_media_index, and Migrator v26
+		// evicted those rows entirely. What filters below is a positive type
+		// group, which is a different and stronger guarantee.
 		// status = 'publish' is NOT optional here, and its absence is why a trashed
 		// item kept appearing at the top of the feed with a working signed URL: the
 		// owner removed it and every member -- and the mobile app, which reads this
@@ -446,9 +445,9 @@ class MediaController extends WP_REST_Controller {
 			array_pop( $params );
 		}
 
-		// POSITIVE INCLUSION, never exclusion. This clause used to read
-		// media_type != '' — which answered "what do I not want today" and passed
-		// every future type straight through. `document` rows would have landed in
+		// POSITIVE INCLUSION, never exclusion. This clause must not read
+		// media_type != '' — which answers "what do I not want today" and passes
+		// every future type straight through. `document` rows would land in
 		// this feed, and in the mobile app that reads the same route, without a line
 		// of code changing. The trashed-media leak was the same shape: it
 		// too carried a media_type predicate and still leaked.
@@ -747,8 +746,8 @@ class MediaController extends WP_REST_Controller {
 
 		// The route is PUBLIC (permission_callback __return_true) because a public
 		// gallery must open for a signed-out visitor. The privacy gate therefore
-		// lives here, exactly as it does in get_item() - it did NOT until 2.5.1,
-		// and an anonymous caller walking the id space harvested the title,
+		// lives here, exactly as it does in get_item(). Without it, an anonymous
+		// caller walking the id space harvests the title,
 		// description, owner, filename, tags and stats of every private and
 		// members-only item on the site. 404, not 403: the sibling routes answer
 		// 404 for what you may not see, and an existence oracle is a leak of its
@@ -794,7 +793,7 @@ class MediaController extends WP_REST_Controller {
 		$repo->prefetch( $int_group_ids );
 
 		// Per member, not just the entry point: one private photo inside an
-		// otherwise public gallery used to come back with the rest.
+		// otherwise public gallery would otherwise come back with the rest.
 		$items = array();
 		foreach ( $group_media_ids as $gid ) {
 			if ( ! $this->privacy->can_view( (int) $gid, $mvs_viewer_id ) ) {
@@ -921,8 +920,7 @@ class MediaController extends WP_REST_Controller {
 
 		// Media group (gallery post) metadata is written by UploadService before
 		// mvs_media_uploaded fires — see $args['media_group'] above. Nothing to do
-		// here any more; writing it a second time would be a no-op at best and,
-		// while it lived here alone, was the cause of #10153581987.
+		// here; writing it a second time would be a no-op at best.
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
@@ -1023,13 +1021,13 @@ class MediaController extends WP_REST_Controller {
 
 		// Update privacy.
 		//
-		// VALIDATED HERE, not just on upload. This route used to store whatever
-		// string it was handed: `banana` persisted and then failed closed in
-		// PrivacyService's default arm, and `space` persisted on a personal-drive
+		// VALIDATED HERE, not just on upload. Without it this route would store whatever
+		// string it is handed: `banana` would persist and then fail closed in
+		// PrivacyService's default arm, and `space` would persist on a personal-drive
 		// item where check_space() can never resolve it — 200 OK, never applied,
 		// member believes it saved. The vocabulary is
 		// PrivacyService's single filterable list, so upload and update cannot
-		// drift apart again.
+		// drift apart.
 		$privacy         = $request->get_param( 'privacy' );
 		$privacy_changed = false;
 		if ( $privacy ) {
@@ -1049,8 +1047,7 @@ class MediaController extends WP_REST_Controller {
 			}
 
 			// A file sent in a message stays a chat file, and nothing becomes one
-			// after upload: 'dm' is uploaded by the message rules (Basecamp
-			// 10392474704). MediaRepository refuses it too; this says so out loud.
+			// after upload: 'dm' is uploaded by the message rules. MediaRepository refuses it too; this says so out loud.
 			$current = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
 			if ( $clean_privacy !== $current && ( 'dm' === $current || 'dm' === $clean_privacy ) ) {
 				return new WP_Error(
@@ -1165,11 +1162,11 @@ class MediaController extends WP_REST_Controller {
 				// Derive the cached name list straight from the IDs we just
 				// wrote — NOT from a get_the_terms() re-read. On sites with a
 				// persistent object cache the relationship cache can momentarily
-				// miss right after wp_set_object_terms(), which previously sent
-				// this code down a destructive else-branch that wiped the saved
+				// miss right after wp_set_object_terms(), which would send
+				// this code down a destructive else-branch that wipes the saved
 				// category list to [] even though the taxonomy assignment
-				// succeeded. That is exactly the reported bug: categories
-				// vanished on read-back for a subset of items (HTTP 200, not
+				// succeeds: categories
+				// vanish on read-back for a subset of items (HTTP 200, not
 				// applied). Resolving names from the submitted IDs keeps the
 				// cached meta in lockstep with the relationship table for every
 				// item, and an empty array still correctly clears the list.
@@ -1252,7 +1249,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// The SAME quota gate as a fresh upload, for the same reason as the MIME
-		// guard above: this endpoint used to run neither, so a member who was out
+		// guard above: without it a member who is out
 		// of quota could not upload but could still push new bytes in through
 		// Replace. A package limit an owner sells has to hold on every write path.
 		//
@@ -1309,10 +1306,9 @@ class MediaController extends WP_REST_Controller {
 		$dest_sub = gmdate( 'Y/m' );
 		// Route through FilenameStrategy exactly like the primary upload path
 		// (UploadService::handle) so the configured strategy — hashed by
-		// default since 1.6.0 — applies to replacements too. Before 1.6.0 this
-		// called sanitize_file_name() directly, so replacing a file leaked the
-		// original filename in the URL even on hashed sites (audit 2026-06-04,
-		// #9962530792).
+		// default since 1.6.0 — applies to replacements too. Calling
+		// sanitize_file_name() directly would leak the
+		// original filename in the URL even on hashed sites.
 		$filename_pick = \WPMediaVerse\Services\FilenameStrategy::pick(
 			(string) $file['name'],
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
@@ -1334,8 +1330,7 @@ class MediaController extends WP_REST_Controller {
 		// exactly as UploadService::handle() does for a fresh upload. This path
 		// reimplements the ingest pipeline instead of calling handle(), so it
 		// does not inherit that step and a replaced iPhone portrait would land
-		// sideways even though a newly-uploaded one is now correct
-		// (Basecamp #10134243656 fixed create; #10156642711 found replace).
+		// sideways even though a newly-uploaded one is correct.
 		//
 		// Calls the same UploadService seam rather than repeating the logic —
 		// two copies of a rotation is how the paths drift apart again.
@@ -1371,20 +1366,17 @@ class MediaController extends WP_REST_Controller {
 
 		// Update media index with new file data.
 		//
-		// Through UploadService, not inline — the fourth time this endpoint has
-		// had to stop reimplementing a step of the ingest pipeline (filename
-		// strategy, EXIF orientation and the MIME guard above were the first
-		// three). What stood here was the pre-1.2.3 catch-all: anything not
-		// image/video/audio became `document`. `get_media_type()` moved to an
-		// allowlist in 2.4.0 and this copy did not, so it was the last inverted
-		// one left in Free.
+		// Through UploadService, not inline - this endpoint must not reimplement
+		// a step of the ingest pipeline (filename strategy, EXIF orientation and
+		// the MIME guard above are the others). An inline resolver would be the
+		// pre-1.2.3 catch-all, where anything not image/video/audio became
+		// `document`, while `get_media_type()` is an allowlist.
 		//
-		// It was DEAD code, not a live bug: `reject_unsupported_mime()` above
-		// already refuses every MIME this resolver answers '' for, so the
-		// `document` branch was unreachable and no row could be re-typed by a
-		// replacement. Removed rather than guarded — adding a second refusal
-		// here would duplicate that check, which is how these two paths drifted
-		// apart the previous three times. The '' case cannot reach this line.
+		// An inline copy would also be dead code: `reject_unsupported_mime()` above
+		// already refuses every MIME this resolver answers '' for, so a `document`
+		// branch would be unreachable and no row could be re-typed by a
+		// replacement. A second refusal here would duplicate that check, which is
+		// how these paths drift apart. The '' case cannot reach this line.
 		$media_type = $upload_service->get_media_type_public( $mime );
 
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
@@ -2305,9 +2297,8 @@ class MediaController extends WP_REST_Controller {
 
 		// Per-type document glyph + friendly label, resolved once from the single
 		// DocumentTypes map so the app and the media lightbox bind these instead
-		// of re-deriving an icon and a label from the raw MIME — the lightbox used
-		// to hardcode the file-text glyph and print the raw MIME (Basecamp
-		// 10248528902). Empty for non-documents.
+		// of re-deriving an icon and a label from the raw MIME — the lightbox would
+		// otherwise hardcode the file-text glyph and print the raw MIME. Empty for non-documents.
 		$mvs_doc_icon   = '';
 		$mvs_doc_label  = '';
 		$mvs_doc_viewer = '';
@@ -2351,8 +2342,7 @@ class MediaController extends WP_REST_Controller {
 			'doc_icon'          => $mvs_doc_icon,
 			'doc_label'         => $mvs_doc_label,
 			'privacy'           => $privacy_value,
-			// The album this photo is in, whose privacy it shows with (2.6.0,
-			// Basecamp 10264373450), or null. own_privacy - what the member
+			// The album this photo is in, whose privacy it shows with, or null. own_privacy - what the member
 			// chose, back in force when the photo leaves the album - only for
 			// whoever may edit the photo.
 			'album'             => $this->album_summary( (int) ( $all['album_id'] ?? 0 ), $can_edit ? (string) ( $all['own_privacy'] ?? '' ) : null ),
@@ -2394,9 +2384,8 @@ class MediaController extends WP_REST_Controller {
 		// `mvs_user_badge_html` filter) rendered in a sibling node via
 		// `data-wp-html`. Keeping the two fields separate means the plain
 		// value stays escapable for attribute use; the lightbox path (REST →
-		// `data-wp-text`) had been bypassing the `mvs_user_display_name`
-		// filter chain so the badge never reached the popup — see Basecamp
-		// card #9872031539, follow-up 2026-05-11.
+		// `data-wp-text`) would bypass the `mvs_user_display_name`
+		// filter chain, so the badge would never reach the popup.
 		// `get_the_author_meta( 'display_name' )` flows through
 		// `bp_core_get_user_displayname` — which bp-verified-member hooks
 		// to append its badge `<span>`. The legacy `$data['author_name']`

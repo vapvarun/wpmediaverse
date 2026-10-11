@@ -4,10 +4,10 @@
  *
  * Track data is read from the <script type="application/json"
  * class="mvs-playlist-data"> emitted INSIDE the .mvs-playlist container, which
- * lives inside the router region. It used to arrive on a localized
- * window.mvsAlbumPlaylist global, but a template-body wp_localize_script()
- * prints its tag in wp_footer, outside [data-wp-router-region="mvs/main"] — so
- * after a client-side navigation into an audio album the data was stale (or,
+ * lives inside the router region. It is not passed on a localized
+ * window.mvsAlbumPlaylist global: a template-body wp_localize_script()
+ * prints its tag in wp_footer, outside [data-wp-router-region="mvs/main"], so
+ * after a client-side navigation into an audio album the data would be stale (or,
  * on a first visit reached by client-nav, absent entirely).
  *
  * NAV-SAFETY: track clicks are delegated on `document`; per-playlist state is

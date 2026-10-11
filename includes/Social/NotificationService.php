@@ -56,10 +56,9 @@ class NotificationService {
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
 		add_action( 'mvs_report_resolved', array( $this, 'on_report_resolved' ), 10, 3 );
 		// `mvs_message_sent` is handled by Messaging\NotificationListener (mute,
-		// coalescing, BuddyNext routing, unread-cache). This service used to
-		// ALSO hook it via on_message(), producing a second, un-muted,
-		// un-coalesced notification for every DM (audit 2026-06-04). Listener
-		// owns it; on_message() removed.
+		// coalescing, BuddyNext routing, unread-cache). This service must not
+		// ALSO hook it: that would produce a second, un-muted, un-coalesced
+		// notification for every DM. The listener owns it.
 	}
 
 	/**
@@ -477,8 +476,7 @@ class NotificationService {
 
 		// For comment mentions, the media owner already receives a
 		// media_comment row from on_comment() for the SAME comment — sending
-		// a media_mention too means two notifications for one action (QA
-		// 2026-06-05, card 9962124853). Same one-owner-per-path rule as the
+		// a media_mention too means two notifications for one action. Same one-owner-per-path rule as the
 		// DM fix above: on_comment() owns the media owner; on_mentions()
 		// owns everyone else.
 		$owner = 0;

@@ -66,8 +66,8 @@ class StorageService {
 	 *
 	 * Drivers report failure by returning false (the interface never throws),
 	 * so the result is returned to the caller — StorageCleanupService re-queues
-	 * failed paths for retry instead of silently orphaning them (Basecamp
-	 * #9966546394: a swallowed cloud failure left the file on R2 forever).
+	 * failed paths for retry instead of silently orphaning them (a swallowed cloud failure would
+	 * leave the file on R2 forever).
 	 *
 	 * @since 1.6.0
 	 *
@@ -183,8 +183,7 @@ class StorageService {
 	public static function host_of( string $url ): string {
 		// Parsers disagree on these, so a URL carrying one is refused rather than
 		// read: PHP reads https://evil.com\@x.b-cdn.net/ as host x.b-cdn.net, a
-		// browser treats the backslash as a slash and goes to evil.com (Basecamp
-		// 10355130450). Userinfo (user@host) is never part of a storage URL.
+		// browser treats the backslash as a slash and goes to evil.com. Userinfo (user@host) is never part of a storage URL.
 		if ( preg_match( '/[\\\\\s\x00-\x1f\x7f]/', $url ) ) {
 			return '';
 		}

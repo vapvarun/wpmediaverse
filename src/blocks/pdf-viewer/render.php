@@ -57,8 +57,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 
 // A block-configuration notice is shown to editors and NOBODY else: a visitor
 // gets nothing rather than an instruction meant for whoever placed the block —
-// which would also confirm the id resolves to something real. Convention from
-// card 10168162725; rendered through the shared frontend empty-state helper
+// which would also confirm the id resolves to something real. Rendered through the shared frontend empty-state helper
 // (.mvs-empty-state-frontend), not a hand-rolled admin-flavoured div.
 $mvs_pdf_tpl    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
 $mvs_pdf_notice = static function ( $icon, $message ) use ( $wrapper, $mvs_pdf_tpl ) {

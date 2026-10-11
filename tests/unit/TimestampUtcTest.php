@@ -4,8 +4,8 @@
  *
  * MySQL fills `DEFAULT CURRENT_TIMESTAMP` and evaluates `NOW()` in the
  * connection's zone, which WordPress never sets, so on a host whose database
- * runs in local time every default-filled row was off by the server offset
- * (Basecamp 10343134036, sister of BuddyNext 10343133937). Each write here is
+ * runs in local time every default-filled row was off by the server offset.
+ * Each write here is
  * checked with the session clock pushed to +05:30: a row filled by MySQL lands
  * five and a half hours away from PHP's UTC.
  *

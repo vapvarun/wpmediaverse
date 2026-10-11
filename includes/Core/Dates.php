@@ -31,7 +31,7 @@ final class Dates {
 	/**
 	 * Resolve an optional caller-supplied backdated timestamp.
 	 *
-	 * Importer seam (BuddyNext cards 10124307318 / 10124307358): a migration
+	 * Importer seam: a migration
 	 * replaying a source DM history needs conversations and messages to keep
 	 * their original dates instead of the migration run time. Mirrors the
 	 * contract of BuddyNext's Core\Backdate and Jetonomy's Journey_Backdate:

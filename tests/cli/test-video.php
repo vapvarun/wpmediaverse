@@ -49,8 +49,8 @@ function run_video_tests(): array {
 	$r = rest( 'GET', "/mvs-pro/v1/media/$mid/captions/status" );
 	assert_test( 'Caption generation status', $r['ok'] || $r['status'] === 404, 'status:' . $r['status'] ) ? $p++ : $f++;
 
-	// Transcode removed: MediaVerse embeds video, it does not process it (no
-	// ffmpeg). The /transcode* routes no longer exist.
+	// MediaVerse embeds video, it does not process it (no ffmpeg), so there are
+	// no /transcode* routes.
 
 	section( 'ANALYTICS' );
 	$r = rest( 'GET', "/mvs-pro/v1/media/$mid/analytics" );

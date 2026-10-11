@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Single source of truth for the "which driver should write this media's
- * bytes?" decision. Historically the same question was asked three different
+ * bytes?" decision. The same question can be asked three different
  * ways:
  *
  *   - `StorageService::get_driver_for_privacy()` (the canonical helper)

@@ -12,8 +12,8 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10393041290: the slug branch of get_items returned a private item's
- * title, owner and file name to anyone, while /media/{id} answered 404.
+ * The slug branch of get_items must not return a private item's title, owner and
+ * file name to anyone, since /media/{id} answers 404.
  */
 class SlugLookupPrivacyTest extends WP_UnitTestCase {
 

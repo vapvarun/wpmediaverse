@@ -207,7 +207,7 @@ class MediaCapabilities {
 	 * All other roles (custom, BuddyPress, bbPress, etc.) get base member caps.
 	 *
 	 * Admin Permissions-matrix overrides are re-applied LAST, so the
-	 * version-gated re-grant in Plugin::init() / Migrator no longer resets
+	 * version-gated re-grant in Plugin::init() / Migrator does not reset
 	 * an admin's manual revocations on every update.
 	 */
 	public static function add_caps(): void {
@@ -406,12 +406,11 @@ class MediaCapabilities {
 	/**
 	 * Every capability this plugin can put on a role.
 	 *
-	 * ONE list, derived from the declarations that grant. `remove_caps()` used
-	 * to restate the set as a hardcoded literal beside `get_base_member_caps()`
-	 * - two hand-maintained lists that had to agree, with nothing enforcing it.
-	 * They did agree, but only because someone remembered twice; a capability
-	 * added to a role array and forgotten here would survive uninstall in
-	 * silence, which is how Basecamp 10296868773 came to be filed.
+	 * ONE list, derived from the declarations that grant. Restating the set as
+	 * a hardcoded literal in `remove_caps()` beside `get_base_member_caps()`
+	 * would give two hand-maintained lists that have to agree, with nothing
+	 * enforcing it; a capability added to a role array and forgotten here
+	 * would survive uninstall in silence.
 	 *
 	 * Asking the grant side what it grants is the fix (Coding Rule 22), and
 	 * `CapabilitiesTest::test_every_granted_cap_is_removable()` holds it.

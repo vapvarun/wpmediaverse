@@ -65,8 +65,8 @@ class SettingsPage {
 	public function cleanup_admin_menu(): void {
 		// No-op in 1.1.3.
 		//
-		// Pro-side hiding was previously done from here via CSS targeting
-		// Pro slugs by name — a Free-knows-Pro boundary violation. Pro now
+		// Pro-side hiding is not done from here: CSS targeting
+		// Pro slugs by name would be a Free-knows-Pro boundary violation. Pro
 		// registers Reports/Analytics with parent=null (WP-standard for
 		// hidden-but-URL-accessible pages) and orders Competitions children
 		// next to the hub via Core/Plugin::reorder_submenu at admin_menu:999.
@@ -609,8 +609,7 @@ class SettingsPage {
 									settings_errors();
 								}
 								// The confirmation sits at the top, where the page reloads;
-								// below the Save button it was far below the fold (Basecamp
-								// 10364777243). Never claim success when part of the
+								// below the Save button it would be far below the fold. Never claim success when part of the
 								// submission was rejected.
 								if ( isset( $_GET['settings-updated'] ) && ! self::$has_settings_error ) : // phpcs:ignore WordPress.Security.NonceVerification
 									?>

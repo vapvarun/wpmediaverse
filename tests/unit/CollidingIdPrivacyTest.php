@@ -135,7 +135,7 @@ class CollidingIdPrivacyTest extends WP_UnitTestCase {
 
 	/**
 	 * The other half of the trap: fixing the leak must not re-break
-	 * Basecamp 10071824547. Asked as a CPT, the album still resolves as the
+	 * the owner's access to their own album. Asked as a CPT, the album still resolves as the
 	 * album — its owner sees it, and the colliding photo does not decide it.
 	 */
 	public function test_the_album_is_still_viewable_as_an_album(): void {

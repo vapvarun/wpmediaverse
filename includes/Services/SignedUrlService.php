@@ -158,9 +158,9 @@ class SignedUrlService {
 		}
 
 		// Existence gate. For videos with no embedded
-		// poster frame, no thumb_<size> meta was ever written. Pre-1.2.2 this
-		// function still returned a valid-looking signed URL — the template
-		// rendered <img src=signed-url> which then 404'd at serve time,
+		// poster frame, no thumb_<size> meta was ever written. Without this gate the
+		// function would return a valid-looking signed URL — the template
+		// would render <img src=signed-url> which then 404s at serve time,
 		// producing a blank/broken poster instead of triggering the template's
 		// <video>/placeholder fallback. Mirror serve_thumbnail()'s fallback
 		// chain here so we only sign URLs that will actually resolve to bytes.
@@ -871,8 +871,7 @@ class SignedUrlService {
 
 		// 1.4.0+ — the meta is a relative path (`2026/05/foo-1024.jpg`).
 		// Resolve via the CURRENTLY-ACTIVE driver so switching CDN/storage
-		// providers does not strand stored URLs (card 9925110293 + the
-		// "service-specific CDN in meta" architectural fix). The legacy
+		// providers does not strand stored URLs. The legacy
 		// `thumb_*` URL meta is consulted only as a fallback when no _path
 		// is present yet (pre-migration rows). Skip non-image variants so a
 		// pre-1.6.0 video row (.mp4 stored in thumb_large_path) falls through
@@ -1172,10 +1171,9 @@ class SignedUrlService {
 	 * @param int $user_id  User ID.
 	 */
 	private function record_download( int $media_id, int $user_id ): void {
-		// StatsService owns this write. This method used to carry a
-		// byte-identical copy of the same insert + downloads counter, so a
-		// change to how a download is recorded had to be made in two files or
-		// the two paths would disagree.
+		// StatsService owns this write. A byte-identical copy of the same insert +
+		// downloads counter here would mean a change to how a download is recorded
+		// has to be made in two files or the two paths disagree.
 		//
 		// Resolved lazily at call time, matching how this class already reaches
 		// media_repository. StatsService holds no reference back here, so there
@@ -1476,11 +1474,11 @@ class SignedUrlService {
 				$start = (int) $matches[1];
 				$end   = ! empty( $matches[2] ) ? (int) $matches[2] : $file_size - 1;
 
-				// Clamp to the file. A client asking for bytes=0-999999999 used to
-				// get a Content-Length far larger than the body it received: the
-				// read loop stops at feof, so nothing outside the file was ever
-				// served, but the header lied and a strict client hangs waiting
-				// for bytes that will not come. 2.5.1.
+				// Clamp to the file. A client asking for bytes=0-999999999 would
+				// otherwise get a Content-Length far larger than the body it receives: the
+				// read loop stops at feof, so nothing outside the file is ever
+				// served, but the header lies and a strict client hangs waiting
+				// for bytes that will not come.
 				$end = min( $end, $file_size - 1 );
 
 				if ( $start > $end || $start >= $file_size ) {

@@ -14,7 +14,7 @@ use WPMediaVerse\Services\Mp4Faststart;
 
 /**
  * A video whose moov sits after mdat must start playing before the whole file
- * arrives (Basecamp 10370404673: members-only videos never started on a host
+ * arrives (members-only videos never start on a host
  * whose page cache keeps Range from PHP). Built from synthetic boxes so it
  * runs without ffmpeg.
  */

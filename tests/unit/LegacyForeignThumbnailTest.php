@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10350203155. With no thumb_*_path rows, the legacy branch returned
+ * With no thumb_*_path rows, the legacy branch returned
  * any https thumb URL outside local uploads, so a site migrated from another
  * host pointed its grid at the old host while the original was still here.
  */

@@ -55,8 +55,8 @@ class MediaDisplayHelper {
 	public static function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
 		$media_type = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
 		// Documents are admitted here, and that is the fix for the blank card:
-		// this guard used to answer '' for anything that was not image/video/
-		// audio, so a document upload produced an activity that said "uploaded
+		// this guard must not answer '' for anything that is not image/video/
+		// audio, or a document upload produces an activity that says "uploaded
 		// a new file" over an EMPTY body — announcing a file while giving no
 		// way to reach it. `legacy_document` and untyped rows still return ''
 		// on purpose: those are data defects, not content (see MediaTypes).

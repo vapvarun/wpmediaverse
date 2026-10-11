@@ -190,7 +190,7 @@ const { state, actions } = store( 'mvs/explore', {
 				if ( res.ok ) {
 					// The server reports what it actually touched, because
 					// filter_allowed_ids drops anything the member may not
-					// edit and used to do so silently.
+					// edit, which would otherwise go unnoticed.
 					const skipped = parseInt( res.data?.skipped, 10 ) || 0;
 
 					if ( skipped ) {
@@ -250,9 +250,8 @@ const { state, actions } = store( 'mvs/explore', {
 			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Added to album.' );
 		},
 	},
-	// callbacks.init() used to fetch tags/cloud and build the chip row client
-	// side. explore.php now renders those chips on the server, which is what
-	// makes the active state survive a router navigation,
-	// so the fetch is gone rather than left running for a row nothing reads.
+	// callbacks.init() does not fetch tags/cloud: explore.php renders the chip row
+	// on the server, which is what makes the active state survive a router
+	// navigation, so a client fetch would only run for a row nothing reads.
 	// The tags/cloud REST route stays - it is public API and the app uses it.
 } );

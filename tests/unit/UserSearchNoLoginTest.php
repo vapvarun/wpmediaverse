@@ -10,9 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
-/**
- * Basecamp 10393276031 (login-name search).
- */
 class UserSearchNoLoginTest extends WP_UnitTestCase {
 
 	public function test_search_by_login_finds_nothing_but_display_name_works(): void {

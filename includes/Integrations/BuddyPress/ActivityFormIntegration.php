@@ -89,8 +89,6 @@ class ActivityFormIntegration {
 			// at post time in attach_media_to_activity() — the upload fires the
 			// moment files are picked, before the user can type, so tagging can't
 			// happen at upload time (same constraint as the privacy dropdown).
-			// Card #9962548621: previously there was no way to tag media added
-			// from the activity form.
 			?>
 			<input
 				type="text"

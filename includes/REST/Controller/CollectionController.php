@@ -601,8 +601,8 @@ class CollectionController extends WP_REST_Controller {
 			} else {
 				// Paginated by the same $per_page/$page the caller already sent
 				// (and the smart branch above already honours via resolve()) —
-				// previously ignored here, so a manual collection's detail
-				// response always returned EVERY favourite row regardless of
+				// ignoring them would make a manual collection's detail
+				// response return EVERY favourite row regardless of
 				// per_page, unbounded at any collection size.
 				global $wpdb;
 				$mvs_page_ids = array_slice( $manual_ids, ( $page - 1 ) * $per_page, $per_page );
@@ -640,8 +640,8 @@ class CollectionController extends WP_REST_Controller {
 	 *
 	 * The stored 'value' (term/user ID) is preserved so clients can round-trip
 	 * rules through the edit modal without corrupting them; the readable name
-	 * is exposed separately as 'label'. Before 1.6.0 this method overwrote
-	 * 'value' with the name, which the dashboard edit modal then saved back —
+	 * is exposed separately as 'label'. Overwriting
+	 * 'value' with the name would have the dashboard edit modal save it back —
 	 * permanently breaking the collection's rules.
 	 *
 	 * @param array $rule Rule array with 'key' and 'value'.

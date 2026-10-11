@@ -234,9 +234,9 @@ class MediaDriveAccessSeamTest extends WP_UnitTestCase {
 	/**
 	 * A signed-out visitor is asked about, and an open space lets them read.
 	 *
-	 * The gate used to refuse user 0 before asking the bridge, so a photo on an
-	 * OPEN space was hidden from visitors while a document on the same drive
-	 * showed.
+	 * The gate asks the bridge about user 0 instead of refusing it, because
+	 * refusing would hide a photo on an OPEN space from visitors while a document
+	 * on the same drive showed.
 	 */
 	public function test_a_visitor_reads_a_space_photo_when_the_space_says_read(): void {
 		$id   = $this->space_photo( self::factory()->user->create() );

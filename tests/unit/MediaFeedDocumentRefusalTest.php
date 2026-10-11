@@ -4,9 +4,9 @@
  *
  * `GET /media` hand-builds its own WHERE rather than going through
  * MediaRepository, so it does not inherit the repository's MEDIA_LIBRARY
- * default and needs its own pin. Until 2.4.0 an explicit `?media_type=document`
- * returned document rows from this route, and the same handler backs
- * `/me/media`, so both leaked. This is also the route the mobile app reads.
+ * default and needs its own pin. An explicit `?media_type=document` must not
+ * return document rows from this route; the same handler backs `/me/media`, so
+ * both would leak. This is also the route the mobile app reads.
  *
  * Build plan: plan/document-library.md §19 (was P1.5, absorbed 2026-08-11)
  * Journey:    audit/journeys/security/07-document-never-in-media-surface.md

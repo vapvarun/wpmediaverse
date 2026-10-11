@@ -368,8 +368,7 @@ class Activator {
 
 		// Filename strategy — hashed is the default for NEW uploads on every
 		// install since 1.6.0 (fresh AND upgrade). Original client filenames in
-		// the media URL are an info-leak + enumeration vector (audit 2026-06-04,
-		// #9962530792). Existing on-disk files are NEVER renamed; only the
+		// the media URL are an info-leak + enumeration vector. Existing on-disk files are NEVER renamed; only the
 		// strategy applied to new uploads changes. `add_option` no-ops on
 		// existing keys, so a site that previously persisted
 		// 'original_sanitized' keeps its explicit choice. Sites that want

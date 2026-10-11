@@ -105,8 +105,7 @@ class Collection {
 		// item vanished from every surface. It guarded a state that cannot occur and
 		// its only possible effect was data loss.
 		//
-		// Basecamp 10183850886. Analysis: plan/2026-08-08-cpt-id-collision-fix-plan.md
-		// §3.5 C2. Run `wp mvs diagnose_cpt_ids` to see whether a site is affected.
+		// Run `wp mvs diagnose_cpt_ids` to see whether a site is affected.
 
 		/**
 		 * Fires when a collection is permanently deleted.

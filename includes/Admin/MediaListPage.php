@@ -973,9 +973,9 @@ class MediaListPage {
 
 		// Image: regenerate size variants through the shared generator so repair
 		// produces exactly the same rungs as a fresh upload — including the
-		// owner-configured "Large image size" (mvs_large_image_size). This path
-		// previously hardcoded its own 200/600/1280 sizes, which both diverged
-		// from the upload pipeline (1024 large) and ignored the setting + the
+		// owner-configured "Large image size" (mvs_large_image_size). Hardcoding
+		// its own 200/600/1280 sizes would both diverge
+		// from the upload pipeline (1024 large) and ignore the setting + the
 		// mvs_thumbnail_sizes filter. Routing through UploadService keeps
 		// get_thumbnail_sizes() the single source of truth.
 		if ( 0 === strpos( $file_type, 'image/' ) ) {

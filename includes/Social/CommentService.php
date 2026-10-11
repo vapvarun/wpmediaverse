@@ -319,8 +319,8 @@ class CommentService {
 		);
 
 		// Replies of THIS page's threads only (the one level the formatter shows).
-		// Every reply on the item used to load for every page, so a popular photo
-		// fetched thousands of rows to show twenty threads.
+		// Loading every reply on the item for every page would fetch thousands of
+		// rows for a popular photo to show twenty threads.
 		$all_replies = array();
 		if ( $top_level ) {
 			$replies_raw = get_comments(

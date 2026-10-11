@@ -174,8 +174,7 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 								<td class="column-title column-primary" data-colname="<?php esc_attr_e( 'Title', 'wpmediaverse' ); ?>">
 									<?php
 									// The title opens the EDIT screen, the way it
-									// does in All Posts. It used to leave for the
-									// front end, which is the one thing an admin
+									// does in All Posts. Leaving for the front end is the one thing an admin
 									// does not expect a title to do.
 									$mvs_edit_url = add_query_arg(
 										array(

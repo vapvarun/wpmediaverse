@@ -4,7 +4,7 @@
  *
  * Covers the Migrator v37 index sweep, AccountDeletionService::process_due()
  * SQL-side selection, LoggerService's social-event gate, and AIService's
- * atomic usage counters. See Basecamp "Big-site readiness".
+ * atomic usage counters.
  *
  * @package WPMediaVerse
  */

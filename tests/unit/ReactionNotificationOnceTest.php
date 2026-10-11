@@ -2,8 +2,8 @@
 /**
  * A member's reaction notifies the owner once per item.
  *
- * Basecamp 10392589159: removing a reaction and reacting again added a second
- * "reacted to" to the owner's bell.
+ * Removing a reaction and reacting again must not add a second "reacted to" to
+ * the owner's bell.
  *
  * @package WPMediaVerse
  */

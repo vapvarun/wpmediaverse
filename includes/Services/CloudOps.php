@@ -253,12 +253,12 @@ class CloudOps {
 		// Phase 2b — repoint every stored variant URL meta at the destination.
 		// The variant FILES already moved (stored_paths() collects every
 		// `%_path` meta, which includes the WebP/AVIF siblings), but their URL
-		// metas kept the old base. On a CDN migration that left `thumb_*_webp`
+		// metas keep the old base unless refreshed. On a CDN migration that leaves `thumb_*_webp`
 		// pointing into wp-content/uploads/wpmediaverse/ — the directory
-		// MediaVerse locks with `Deny from all` — so admin links to them 403'd.
-		// The read side no longer trusts these metas when a `_path` exists
-		// (MediaUrl::variant_url), so this is hygiene rather than the fix for
-		// Basecamp #10162798416; it keeps the stored data honest.
+		// MediaVerse locks with `Deny from all` — so admin links to them 403.
+		// The read side does not trust these metas when a `_path` exists
+		// (MediaUrl::variant_url), so this is hygiene;
+		// it keeps the stored data honest.
 		self::refresh_variant_urls( $media_id, $dest_driver );
 
 		// Only files the destination verifiably holds. A variant skipped as
@@ -348,7 +348,7 @@ class CloudOps {
 	 *
 	 * Idempotent: a file already on the destination is reported as 'present'.
 	 * A file missing from BOTH source and destination is 'absent' (stale meta —
-	 * there is nothing to move). The two used to share one 'skipped', which let
+	 * there is nothing to move). The two must not share one 'skipped', which would let
 	 * migrate_one() treat "not there" as "safely there" and delete the source.
 	 * Only a genuine download/upload/verify failure is 'failed'.
 	 *
@@ -452,7 +452,7 @@ class CloudOps {
 	 * `status='skipped-already-clean'`.
 	 *
 	 * NEVER processes non-public media (privacy != public) — those still
-	 * route through the gated /serve proxy which (as of 1.2.2) only reads
+	 * route through the gated /serve proxy which only reads
 	 * from local disk.
 	 *
 	 * @param int  $media_id    Media ID.
@@ -528,13 +528,12 @@ class CloudOps {
 		$thumbs_kept    = 0;
 		if ( ! $keep_thumbs ) {
 			// Delete each recorded variant's local copy ONLY when that exact
-			// file is verified on the cloud. Pre-1.8.0 this globbed sibling
-			// files and deleted them gated solely on the ORIGINAL being on the
-			// cloud — so a migration that moved only the original (the pre-1.8.0
-			// migrate_one behaviour) followed by "Free up server space"
-			// permanently deleted thumbnails that were never uploaded, turning
-			// every thumbnail into a 404. Verify each file on its own; keep any
-			// the cloud can't confirm.
+			// file is verified on the cloud. Globbing sibling files and deleting them,
+			// gated solely on the ORIGINAL being on the cloud, would be wrong: after a
+			// migration that moved only the original, "Free up server space" would
+			// permanently delete thumbnails that were never uploaded, turning every
+			// thumbnail into a 404. Verify each file on its own; keep any the cloud
+			// can't confirm.
 			foreach ( self::stored_paths( $media_id, $rel_path ) as $path ) {
 				if ( $path === $rel_path ) {
 					continue; // Original handled above.
@@ -593,12 +592,10 @@ class CloudOps {
 
 		$total = $repo->query_count( $base );
 
-		// The comment that used to sit here said this had to match
-		// `query_public_cloud_candidates( $limit, true )` EXACTLY — and then
-		// restated its predicate by hand, which is not matching, it is hoping.
-		// They had already drifted once, in the direction where the backlog
-		// never reaches zero and the migrate button never goes quiet. Now the
-		// list and its count are one method with one predicate.
+		// The list and its count are one method with one predicate: restating
+		// `query_public_cloud_candidates( $limit, true )`'s predicate by hand is not
+		// matching, it is hoping, and the two drift in the direction where the
+		// backlog never reaches zero and the migrate button never goes quiet.
 		$still_local = $repo->count_public_cloud_candidates( true );
 
 		$non_public = $repo->query_count( array_merge( $base, array( 'privacy_not_in' => array( 'public' ) ) ) );

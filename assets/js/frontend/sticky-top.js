@@ -2,10 +2,10 @@
  * Sticky-top offsets — measures what is pinned at the top of the viewport and
  * publishes it as two custom properties on <html>.
  *
- * Why this exists: our sticky surfaces used to park at a flat offset from the
- * top of the viewport, which on any theme that pins its own header (Reign, the
- * theme we ship with, occupies 0-90 at 1440 and 0-81 at 390) put them
- * UNDERNEATH it. `.mvs-bulk-bar`'s selection count, album picker and Add button
+ * Why this exists: a sticky surface parked at a flat offset from the top of the
+ * viewport lands UNDERNEATH any theme header that pins itself (Reign, the
+ * theme we ship with, occupies 0-90 at 1440 and 0-81 at 390). In that case
+ * `.mvs-bulk-bar`'s selection count, album picker and Add button
  * all hit-tested to the theme's header, so a member doing bulk work could not
  * click the controls at all; `.mvs-dashboard-tabs` at 390 sat entirely inside
  * the header band (0-70 against 0-81, z-index 50 against 999) and its first tab

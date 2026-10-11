@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Services\StorageService;
 
 /**
- * Basecamp 10355018821. A substring match trusted a foreign URL that merely
+ * A substring match trusted a foreign URL that merely
  * contained a storage suffix in its path or query.
  */
 class StorageHostMatchTest extends WP_UnitTestCase {
@@ -29,7 +29,7 @@ class StorageHostMatchTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Basecamp 10355130450. PHP and browsers read these differently, so they are
+	 * PHP and browsers read these differently, so they are
 	 * refused outright rather than parsed.
 	 */
 	public function test_ambiguous_urls_have_no_host(): void {

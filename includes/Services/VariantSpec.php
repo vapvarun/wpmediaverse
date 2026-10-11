@@ -127,8 +127,8 @@ final class VariantSpec {
 
 	/**
 	 * Canonical "relative-to-wpmediaverse" path computation for a generated
-	 * thumb variant. Single source of truth — every caller that previously
-	 * derived this independently (5+ sites) routes here.
+	 * thumb variant. Single source of truth — every caller routes here
+	 * instead of deriving this independently.
 	 *
 	 * Strategy: the variant lives in the same directory as the SOURCE file
 	 * (`$rel_dir` derived from `dirname( $file_path )` minus the uploads

@@ -132,10 +132,8 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	/**
 	 * The opt-in path is REFUSED — the media feed is not a document surface.
 	 *
-	 * This test previously asserted the opposite, on the reasoning that an
-	 * explicit `?media_type=document` is "how a document surface asks for
-	 * documents". Reversed by owner decision (2026-08-09) after the P1.5 walk,
-	 * for two reasons the original framing missed:
+	 * The feed does not treat an explicit `?media_type=document` as "how a document
+	 * surface asks for documents" (owner decision, 2026-08-09), for two reasons:
 	 *
 	 * 1. This route applies MEDIA privacy (public / members / author). Document
 	 *    access is grants-first through the folder ancestor chain, so the route
@@ -196,10 +194,10 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	/**
 	 * NEITHER kind of document appears in the media feed.
 	 *
-	 * REVERSED, owner 2026-08-09: *"documents type will never display at media
-	 * grid."* This previously asserted that a pre-1.2.3 PDF must keep appearing,
-	 * so upgrading would not remove content a member can see. The browser settled
-	 * it — that row rendered in Explore as a **broken image tile**, a dark
+	 * Owner, 2026-08-09: *"documents type will never display at media
+	 * grid."* A pre-1.2.3 PDF is not kept visible just so an upgrade removes nothing
+	 * a member can see: the browser showed that row rendering in Explore as a
+	 * **broken image tile**, a dark
 	 * rectangle with a missing-image glyph. Keeping it "visible" published a
 	 * defect rather than content.
 	 *
@@ -251,7 +249,7 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	/**
 	 * A legacy row belongs to no drive, but the document PAGE still lists it.
 	 *
-	 * Two different questions, which one constant used to answer badly:
+	 * Two different questions, which one constant cannot answer well:
 	 * "whose drive is this in?" (`DOCUMENTS` — never a legacy row, it has no
 	 * folder and no extraction) and "what does the document page show?"
 	 * (`DOCUMENT_LIBRARY` — which does include it, because that surface renders a

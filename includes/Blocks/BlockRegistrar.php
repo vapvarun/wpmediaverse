@@ -19,9 +19,9 @@ class BlockRegistrar {
 	/**
 	 * Registered Gutenberg blocks.
 	 *
-	 * Stories moved to the Pro plugin in 1.9.0 (engine, REST, admin, frontend
+	 * Stories live in the Pro plugin (engine, REST, admin, frontend
 	 * block, and cleanup cron all live in WPMediaVerse Pro, gated by the
-	 * `mvs_stories_enabled` option). Free no longer ships any story block.
+	 * `mvs_stories_enabled` option). Free ships no story block.
 	 *
 	 * @var string[]
 	 */

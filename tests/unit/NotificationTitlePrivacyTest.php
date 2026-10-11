@@ -10,9 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
-/**
- * Basecamp 10393276031 (notification title after privacy change).
- */
 class NotificationTitlePrivacyTest extends WP_UnitTestCase {
 
 	public function test_title_is_hidden_once_the_item_is_private_to_the_reader(): void {

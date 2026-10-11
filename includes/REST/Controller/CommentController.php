@@ -292,7 +292,7 @@ class CommentController extends WP_REST_Controller {
 		$user_id    = get_current_user_id();
 
 		// Editing publishes new words onto the other member's item, so a block
-		// refuses it, and says so (owner decision on
+		// refuses it, and says so (owner decision).
 		// Asked only for the caller's own comment on this item, so it cannot be
 		// used to probe other items.
 		$own = $this->visible_comment( (int) $comment_id, (int) $media_id, true );
@@ -457,8 +457,7 @@ class CommentController extends WP_REST_Controller {
 	/**
 	 * Permission check for editing or deleting your OWN existing comment.
 	 *
-	 * Deliberately NOT `create_item_permissions_check()` — Basecamp
-	 * 10350196637 found the same "gate pointed the wrong way" class here that
+	 * Deliberately NOT `create_item_permissions_check()` — the same "gate pointed the wrong way" class that
 	 * `RestGate` already declares exempt for this route: PUT/PATCH/DELETE on
 	 * `/media/\d+/comments/\d+` (`RestGate.php` line ~158), because sharing
 	 * the create callback meant a blocked member could never edit or retract

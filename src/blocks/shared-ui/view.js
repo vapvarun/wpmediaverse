@@ -216,7 +216,7 @@ function dialogTrapTab( event, selector ) {
  * neither carries them. Reading canModerate from a caller-supplied ctx made it
  * silently false everywhere, so moderators lost Delete on other members'
  * comments in the lightbox while the single page and the DELETE route still
- * allowed it (Basecamp 10248799004; 10148635942 for the same lesson on
+ * allowed it (the same goes for
  * currentUserId / commentEditWindow).
  *
  * canEdit is own-comment within the edit window; canDelete is own OR moderator
@@ -346,8 +346,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return state.uploadModalAlbum === -1;
 		},
 		/*
-		 * A photo in an album shows with the album's privacy (2.6.0, Basecamp
-		 * 10264373450), so a privacy picker next to an album would offer a
+		 * A photo in an album shows with the album's privacy, so a privacy picker next to an album would offer a
 		 * choice that is ignored. Where an album decides, the picker becomes a
 		 * plain sentence saying which album and what that means.
 		 */
@@ -1212,8 +1211,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		generatePreviews() {
 			// Each preview is { uid, src, name, type, isAudio, isOther }
 			// so the template can render filename + an icon for non-image
-			// types (audio especially — previously rendered an empty <img>
-			// with no visual cue at all). uid is a stable per-file marker
+			// types (audio especially: an empty <img> gives no visual cue at all).
+			// uid is a stable per-file marker
 			// so removeUploadFile can identify which entry to drop without
 			// relying on array index (which data-wp-each doesn't expose
 			// directly in template context).
@@ -1399,8 +1398,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			for ( let i = 0; i < files.length; i++ ) {
 				state.uploadModalProgress = 0;
 				// The modal already made a thumbnail for each video (generatePreviews()
-				// stores { uid, src, name, type }; the data URL is preview.src, Basecamp
-				// #9871815208), so it is sent as the poster instead of capturing again.
+				// stores { uid, src, name, type }; the data URL is preview.src),
+				// so it is sent as the poster instead of capturing again.
 				let poster = null;
 				const preview = state.uploadModalPreviews[ i ];
 				const previewSrc = preview && typeof preview.src === 'string' ? preview.src : '';
@@ -1691,11 +1690,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					? cd.map( ( x ) => mapLightboxComment( x ) )
 					: [];
 			} catch ( e ) {
-				// Log rather than fail silently. This catch used to turn a code
-				// error in the map above into an ordinary-looking "No comments
-				// yet" — the failure was indistinguishable from an empty thread,
-				// which is why it survived. A load failure still degrades to an
-				// empty list; it just says so.
+				// Log rather than fail silently: a code error in the map above would
+				// otherwise look like an ordinary "No comments yet", indistinguishable
+				// from an empty thread. A load failure still degrades to an empty list;
+				// it just says so.
 				state.lightboxComments = [];
 				state.lightboxTotalComments = 0;
 				// eslint-disable-next-line no-console
@@ -1782,10 +1780,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				return;
 			}
 			// Optimistic flip for snappy UI; roll back on error / verify
-			// against server response. Previously the flip was unconditional
-			// and the catch was silent — a 4xx response (rate-limit, auth
-			// lapse) would leave the heart filled with no server record,
-			// then a refresh would re-show it empty.
+			// against server response. An unconditional flip with a silent catch would
+			// leave the heart filled with no server record after a 4xx response
+			// (rate-limit, auth lapse), then a refresh would re-show it empty.
 			const previous = !! state.lightboxIsFavorited;
 			state.lightboxIsFavorited = ! previous;
 			try {
@@ -2036,9 +2033,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxReport() {
 			// Report in place, with the same reason picker every MediaVerse
 			// report uses, filed to this item's queue (BuddyNext's own lightbox
-			// posts to the same route). It used to navigate to the item's page
-			// with #report, which nothing handled: the member landed on a page
-			// with no form and nothing was reported.
+			// posts to the same route). It does not navigate to the item's page with
+			// #report: nothing handles that, so the member would land on a page with no
+			// form and nothing would be reported.
 			const id = state.lightboxMediaData?.id;
 			if ( id ) {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -2081,8 +2078,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		// A gallery steps through its photos, then its edges hand over to the
-		// neighbouring grid tile. It used to wrap, so Next cycled one gallery
-		// forever once prev/next were always visible (QA, 2.6.0).
+		// neighbouring grid tile. It does not wrap: with prev/next always visible,
+		// Next would cycle one gallery forever.
 		lightboxPrev() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) {
 				const idx = state.lightboxCurrentIndex - 1;
@@ -2381,7 +2378,7 @@ const { state: mvsState } = store( 'mvs', {
 			// client-navigate those — otherwise both handlers fire and the
 			// lightbox stacks over an already-navigated single-media page
 			// (the "close reveals the wrong page" / "overlay blocks clicks"
-			// regression). Author and other links inside a card are not
+			// failures). Author and other links inside a card are not
 			// .mvs-grid-item-link, so they still client-navigate normally.
 			// The list is load-more.js's (window.mvsMediaTileLink), so every
 			// layout's tile link is covered, load-more tiles included.

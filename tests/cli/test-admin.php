@@ -33,11 +33,10 @@ function run_admin_tests(): array {
 		'mvs_boosts_enabled'       => 'Boosts Enabled',
 		'mvs_streaks_enabled'      => 'Streaks Enabled',
 	);
-	// Absent is a VALID state, and the common one. Activation used to force
-	// every one of these to '1'; competitions are opt-in now, so a site that
-	// never enabled them has no row at all and every runtime gate reads the
-	// '0' default. Asserting the row exists would be asserting the behaviour
-	// we deliberately removed. What must hold is that the value is a legal
+	// Absent is a VALID state, and the common one. Competitions are opt-in, so a
+	// site that never enabled them has no row at all and every runtime gate reads
+	// the '0' default. Asserting the row exists would assert behaviour that does
+	// not exist. What must hold is that the value is a legal
 	// on/off, never something else.
 	foreach ( $pro_settings as $key => $label ) {
 		$val   = get_option( $key, '__UNSET__' );
@@ -56,9 +55,8 @@ function run_admin_tests(): array {
 		assert_test( "Page: $label", $exists, "id: $page_id" ) ? $p++ : $f++;
 	}
 
-	// Compete is NOT in the list above. Pro activation used to insert a
-	// published /compete/ page on every site; competitions are opt-in now, so
-	// the page is absent until an owner turns them on and it must not be
+	// Compete is NOT in the list above. Competitions are opt-in, so the page is
+	// absent until an owner turns them on and it must not be
 	// asserted into existence. When it does exist it still has to be a real
 	// published page - a stale id pointing at a trashed post is a broken menu
 	// item, which is what this row is actually for.

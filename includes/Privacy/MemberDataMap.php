@@ -197,7 +197,7 @@ final class MemberDataMap {
 				'export_columns' => array( 'reporter_id' ),
 				// target_id is a member only on a report ABOUT a member; on a
 				// media, comment or message report it is that item's id, and
-				// erasing member #42 used to zero every report on media #42
+				// an unscoped erase of member #42 would zero every report on media #42
 				// (and export them to member #42).
 				'scope'   => array( 'target_id' => array( 'target_type', 'user' ) ),
 				'label'   => __( 'Reports', 'wpmediaverse' ),

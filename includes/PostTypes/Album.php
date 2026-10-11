@@ -103,7 +103,6 @@ class Album {
 		// there is nothing left to purge. Legacy rows from before 2.4.0 are cleared
 		// once by Migrator v26, not on every delete.
 		//
-		// Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 		// Audit any site with `wp mvs diagnose_cpt_ids` (read-only).
 
 		/**

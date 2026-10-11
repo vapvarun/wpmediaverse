@@ -1108,12 +1108,12 @@ class Commands {
 			// original PLUS every stored variant (thumbnails, WebP/AVIF
 			// siblings, video/audio posters), verifies each on the destination
 			// before flipping `file_url`, repoints the variant URL metas, and
-			// only then deletes sources. This CLI previously carried its own
-			// loop that transferred `file_path` alone, so on a CDN migration
-			// every thumbnail and WebP sibling stayed behind on local disk
+			// only then deletes sources. A CLI-local
+			// loop that transferred `file_path` alone would, on a CDN migration,
+			// leave every thumbnail and WebP sibling behind on local disk
 			// while `get_driver_for_location()` resolved their URLs to the CDN
-			// — a 404 on every derived image. The Pro admin UI already went
-			// through CloudOps and was never affected.
+			// — a 404 on every derived image. The Pro admin UI goes
+			// through CloudOps too.
 			$result = CloudOps::migrate_one( $media_id_row, $from, $to, $keep_source );
 
 			if ( ! empty( $result['ok'] ) ) {
@@ -1220,9 +1220,9 @@ class Commands {
 		global $wpdb;
 
 		// IMPORTANT: only public media. Non-public media routes through the
-		// gated /serve proxy which (as of 1.2.2) can only read from local
+		// gated /serve proxy which can only read from local
 		// disk — flipping non-public thumb meta to CDN URLs would 404 the
-		// proxy. Cloud-aware /serve is on the 1.3.0 list.
+		// proxy.
 		$rows = $this->repo()->query(
 			$this->storage_walk_args(
 				array(
@@ -1604,9 +1604,9 @@ class Commands {
 		global $wpdb;
 
 		// IMPORTANT: only public media. Non-public media routes through the
-		// gated /serve proxy which (as of 1.2.2) can only read from local
-		// disk. Deleting locals for those would break /serve. Cloud-aware
-		// /serve lands in 1.3.0 — until then, private/members/friends
+		// gated /serve proxy which can only read from local
+		// disk. Deleting locals for those would break /serve, so
+		// private/members/friends
 		// media keeps its local copy as a hard requirement.
 		$rows = $this->repo()->query(
 			$this->storage_walk_args(

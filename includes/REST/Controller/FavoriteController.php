@@ -195,7 +195,7 @@ class FavoriteController extends WP_REST_Controller {
 		}
 
 		// DELETE only removes. It shares this toggle with POST, so a DELETE on an
-		// item that was not favourited used to ADD it, and DELETE is exempt from
+		// item that was not favourited would ADD it, and DELETE is exempt from
 		// the block gate: a blocked member could favourite the blocker's item.
 		if ( 'DELETE' === $request->get_method() && ! $this->favorites->is_favorited( (int) $media_id, get_current_user_id() ) ) {
 			return rest_ensure_response(
@@ -291,8 +291,8 @@ class FavoriteController extends WP_REST_Controller {
 		$mvs_viewer   = get_current_user_id();
 		$mvs_filtered = 0;
 		// Prefetch the page BEFORE the existence/privacy loop: exists() and
-		// can_view() read the prefetched rows, so the loop no longer runs two
-		// queries per favourite (2.6.0, big-site pass).
+		// can_view() read the prefetched rows, so the loop does not run two
+		// queries per favourite.
 		$repo->prefetch( array_map( 'intval', array_column( $result['items'], 'media_id' ) ) );
 
 		foreach ( $result['items'] as $item ) {

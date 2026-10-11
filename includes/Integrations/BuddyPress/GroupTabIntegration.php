@@ -123,10 +123,10 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 		// Viewer-scoped privacy gate, built in SQL so pagination stays honest.
-		// The group tab previously listed EVERY item with this group_id
-		// regardless of privacy — members/friends/private/group items leaked
-		// to non-members and logged-out visitors (audit 2026-06-04). ProfileTab
-		// is saved by query_by_author's pre-filter; this tab had none.
+		// Without it the group tab would list EVERY item with this group_id
+		// regardless of privacy — members/friends/private/group items would leak
+		// to non-members and logged-out visitors. ProfileTab
+		// is covered by query_by_author's pre-filter; this tab has none.
 		$viewer_id       = get_current_user_id();
 		$is_group_member = $viewer_id > 0
 			&& function_exists( 'groups_is_user_member' )

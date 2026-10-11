@@ -351,8 +351,8 @@ class CacheService {
 	 * requests (404.php/explore.php "popular tags" = 5, the Explore chip row's
 	 * default and site-filterable limit = 20, and the REST route's default and
 	 * max = 20/200). TTL_MEDIUM (5 min) bounds staleness for any limit a caller
-	 * asks for outside this list — the same tradeoff the pre-2.6.0 version of
-	 * this method already made for the (then unused) legacy keys.
+	 * asks for outside this list — the same tradeoff made for the legacy keys
+	 * below.
 	 */
 	public function invalidate_tag_cloud(): void {
 		// Legacy keys (deprecated get_tag_cloud()).

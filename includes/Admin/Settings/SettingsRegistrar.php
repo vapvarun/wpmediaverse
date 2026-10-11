@@ -59,12 +59,11 @@ class SettingsRegistrar {
 	 * expose these keys, and a `get_option()` call returns `false` (not the
 	 * documented default) until the option is manually written somewhere.
 	 *
-	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` USED to be registered
-	 * here AND in the Display registrar. Two register_setting() calls
-	 * for the same option silently overwrites the first sanitize_callback —
-	 * the same class of bug that wiped dm_access values. Both are now owned
-	 * solely by DisplaySettingsRegistrar. This method only registers
-	 * options without a settings-page UI.
+	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` are NOT registered
+	 * here: two register_setting() calls for the same option silently
+	 * overwrite the first sanitize_callback — the same class of bug that wiped
+	 * dm_access values. Both are owned solely by DisplaySettingsRegistrar.
+	 * This method only registers options without a settings-page UI.
 	 *
 	 * See qa/runs/FINDINGS-HISTORY.md (E3, F13) for background.
 	 */
@@ -291,7 +290,7 @@ class SettingsRegistrar {
 			)
 		);
 
-		// Lived on the AI tab until 2.6.0; it is a moderation decision.
+		// A moderation decision, so it is registered with moderation rather than the AI tab.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_ai_auto_moderate',

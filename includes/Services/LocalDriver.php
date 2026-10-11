@@ -83,9 +83,9 @@ class LocalDriver implements StorageDriverInterface {
 
 		// Absent at the CORRECT base means already gone, or the bytes live on the
 		// cloud tier — delete_everywhere() asks every tier and relies on each
-		// no-opping when it holds nothing, so this must stay true. What used to
-		// make it a lie was resolving a document path against the wrong base
-		// (uploads/wpmediaverse/wpmediaverse-documents/…); resolve() now picks the
+		// no-opping when it holds nothing, so this must stay true. Resolving a
+		// document path against the wrong base
+		// (uploads/wpmediaverse/wpmediaverse-documents/…) would make it a lie; resolve() picks the
 		// base by prefix, so "not here" means "not anywhere on this disk".
 		return true;
 	}
@@ -172,8 +172,8 @@ class LocalDriver implements StorageDriverInterface {
 	 *
 	 * Every method that touches the disk (store, exists, download, delete,
 	 * get_full_path) goes through here, so a local-only path is found at the
-	 * same place by all of them. Before 2.5.1 only delete() did, and a cloud
-	 * migration read "missing" from exists() then deleted the real file.
+	 * same place by all of them. If only delete() did, a cloud
+	 * migration would read "missing" from exists() then delete the real file.
 	 *
 	 * This feeds a delete primitive, so it is a trust boundary: the path comes
 	 * from a database row, and a `../` in a stored row must not reach unlink().

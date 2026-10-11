@@ -24,9 +24,9 @@ const { actions } = store( 'mvs/profile-edit', {
 
 		cancelProfileEdit() {
 			// Discard unsaved edits and stay on the profile section. A reload
-			// re-seeds the form from the server. Before 2.4.0 Cancel called the
-			// dashboard's toggleProfileEdit, which flipped to the media section
-			// — the same navigation bug Save had.
+			// re-seeds the form from the server. Calling the dashboard's
+			// toggleProfileEdit would flip to the media section, the same navigation bug
+			// Save avoids.
 			window.location.reload();
 		},
 
@@ -154,8 +154,7 @@ const { actions } = store( 'mvs/profile-edit', {
 				// an inline form to close — the fields above already show the saved
 				// values and the success message is bound here. Calling the
 				// dashboard's toggleProfileEdit flipped activeTab to 'media', which
-				// hid this whole panel and the message with it (Basecamp
-				// 10240303858). The rail is how the member leaves the section.
+				// hid this whole panel and the message with it. The rail is how the member leaves the section.
 			} catch ( err ) {
 				const errMsg = 'Network error. Please try again.';
 				ctx.profileError = errMsg;

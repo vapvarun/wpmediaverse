@@ -434,7 +434,7 @@ class DirectDeliveryTest extends WP_UnitTestCase {
 
 	/**
 	 * A staged cover source is one of the item's files, so delete cleanup,
-	 * renames and cloud moves all find it (it used to be left on disk forever).
+	 * renames and cloud moves all find it (otherwise it is left on disk forever).
 	 */
 	public function test_cover_source_is_recorded(): void {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );

@@ -2,7 +2,7 @@
 /**
  * Reactions on already-delivered messages surface through the poll.
  *
- * Regression cover for card 10122929662: a reaction never moves a message's
+ * Regression cover: a reaction never moves a message's
  * created_at, so poll() (which filters on created_at) skipped it and the other
  * participant saw nothing until a full reload. poll_reaction_updates() is the
  * companion query that closes that gap.

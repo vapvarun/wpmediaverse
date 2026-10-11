@@ -330,7 +330,7 @@ class MVS_CSS {
 		// Belt and braces: values are allowlisted or absint()ed on the way in, and
 		// no selector this generator emits contains an angle bracket, so stripping
 		// them here closes the whole "break out of <style>" class rather than the
-		// instances known today. Basecamp: 2.5.1 security patch.
+		// instances known today.
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- allowlisted units + absint values, angle brackets stripped.
 		echo str_replace( array( '<', '>' ), '', implode( "\n", self::$styles ) );
 		echo "\n</style>\n";

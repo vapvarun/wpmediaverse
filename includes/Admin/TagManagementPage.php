@@ -789,9 +789,9 @@ class TagManagementPage {
 		}
 
 		// Get media items with this tag, ONE PAGE at a time — a tag on a
-		// large library can link thousands of items, and the edit screen
-		// used to load every one of them (plus a get_all() call per item)
-		// on a single request.
+		// large library can link thousands of items, and loading every one
+		// of them (plus a get_all() call per item) on a single request
+		// would not scale.
 		$media_per_page = self::PER_PAGE;
 		$media_paged    = isset( $_GET['media_paged'] ) ? max( 1, absint( $_GET['media_paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
 		$media_offset   = ( $media_paged - 1 ) * $media_per_page;

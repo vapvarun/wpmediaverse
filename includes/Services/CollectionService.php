@@ -76,8 +76,8 @@ class CollectionService {
 	 *
 	 * NO CASCADE, and that is the difference from AlbumService::set_privacy().
 	 * An album clamps the privacy of the items inside it, because those items
-	 * are the owner's own uploads and #10149366902 showed an album turned
-	 * private was leaving its contents public. A collection is the opposite
+	 * are the owner's own uploads and an album turned
+	 * private must not leave its contents public. A collection is the opposite
 	 * case: it is a curated view of OTHER people's public media, so cascading
 	 * would rewrite a stranger's photo because a curator changed a collection
 	 * they happen to own. The collection's own visibility is the only thing

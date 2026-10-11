@@ -1,8 +1,8 @@
 /**
  * Explore search — media/users tab switch + debounced user search.
  *
- * Extracted from the inline <script> previously duplicated in templates/
- * explore.php (Free) and the Pro feed layouts. Config + translated strings
+ * Loaded by templates/explore.php (Free) and the Pro feed layouts instead of an
+ * inline <script> in each. Config + translated strings
  * arrive via the localized `window.mvsExploreSearch` object, so no markup or
  * strings live in JS.
  *

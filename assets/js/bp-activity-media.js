@@ -158,9 +158,8 @@
 					var w = video.videoWidth  || 320;
 					var h = video.videoHeight || 180;
 					// Capture at native resolution so the server can resize to
-					// large/medium/thumb. The 200px-wide downscale used pre-1.4.1
-					// produced a blurry "thumb_large" that Safari/Bing then used
-					// as the <video poster> and the result looked broken on the
+					// large/medium/thumb. A 200px-wide downscale produces a blurry "thumb_large"
+					// that Safari/Bing then use as the <video poster>, which looks broken on the
 					// activity stream.
 					canvas.width  = w;
 					canvas.height = h;
@@ -221,7 +220,7 @@
 	 */
 	function uploadFile( file, btn, slots, index, onProgress ) {
 		// The caller already trimmed the selection to the remaining allowance,
-		// so this no longer needs to re-check attachedMedia.length — and must
+		// so this does not re-check attachedMedia.length — and must
 		// not, because with concurrent uploads that count is still 0 for every
 		// in-flight file and the guard would either pass for all or none.
 
@@ -229,10 +228,10 @@
 		var isAudio = file.type.indexOf( 'audio/' ) === 0;
 
 		// Serialize thumb capture BEFORE the upload starts so the captured
-		// frame can ride the same multipart POST as `thumbnail`. Pre-1.4.1
-		// ran these in parallel and the captured frame was discarded —
-		// videos with no embedded cover and no ffmpeg on the server ended
-		// up with the default-poster SVG instead of a real first frame.
+		// frame can ride the same multipart POST as `thumbnail`. Running these in
+		// parallel discards the captured frame — videos with no embedded cover and no
+		// ffmpeg on the server would end up with the default-poster SVG instead of a
+		// real first frame.
 		var thumbPromise = isVideo ? generateVideoThumb( file ) : Promise.resolve( '' );
 
 		return thumbPromise.then( function( localThumb ) {
@@ -265,8 +264,8 @@
 				var data = r.data || {};
 				// restFetch does NOT throw on HTTP 4xx/5xx, so an unsupported
 				// type (PDF/document) comes back as a 400 with a WP_Error body
-				// that has no `id`. Pre-1.6.0 the handler only checked data.id,
-				// so the upload failed SILENTLY with no notice. Throw the
+				// that has no `id`, so checking data.id alone would fail the upload
+				// SILENTLY with no notice. Throw the
 				// server's message so the catch below shows it to the user
 				if ( ! r.ok || ! data || ! data.id ) {
 					throw new Error(

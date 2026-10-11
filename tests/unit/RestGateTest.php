@@ -150,8 +150,8 @@ class RestGateTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Basecamp 10350196637 — the same "gate pointed the wrong way" class the
-	 * test above documents, alive again in ReactionController: DELETE shared
+	 * The same "gate pointed the wrong way" class the test above documents, in
+	 * ReactionController: DELETE shared
 	 * `create_item_permissions_check()` with POST, so a blocked member could
 	 * react (before being blocked) but never retract it afterward. Seeded
 	 * directly through the service, not the REST route — the blocked
@@ -170,7 +170,7 @@ class RestGateTest extends WP_UnitTestCase {
 	 * Same class, CommentController: PUT/PATCH/DELETE on an existing comment
 	 * shared the create callback, so a blocked member could never edit or
 	 * retract their own earlier comment. `RestGate` already declared this
-	 * route+methods exempt (Basecamp 10350196637's linked finding); the
+	 * route+methods exempt; the
 	 * controller's own permission callback had not caught up.
 	 */
 	public function test_blocked_member_can_still_delete_their_own_comment(): void {
@@ -188,7 +188,7 @@ class RestGateTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Owner decision (2026-09-30, Basecamp 10350196637): a blocked member may
+	 * Owner decision: a blocked member may
 	 * DELETE their own comment but not EDIT it, because editing publishes new
 	 * text onto the blocker's item.
 	 */
@@ -210,14 +210,13 @@ class RestGateTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Basecamp 10350224617 — the profile's `media_count` used a flat
+	 * The profile's `media_count` used a flat
 	 * `'privacy' => 'public'` query with no viewer awareness at all, so it
 	 * always reported the same number to everyone, blocked or not. The media
 	 * LIST endpoint right below it (`get_user_media()`) was already
 	 * viewer-aware via `count_visible_by_author()`; the count now goes
 	 * through the same helper so the two can never disagree again
-	 * (Basecamp #9941246549 is the original "count vs. list disagree" bug
-	 * this helper exists to prevent).
+	 * (the helper exists to prevent the "count vs. list disagree" bug).
 	 */
 	public function test_blocked_member_sees_zero_media_count_a_bystander_still_sees(): void {
 		wp_set_current_user( $this->bystander );

@@ -10,9 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
-/**
- * Basecamp 10393276031 (repeat follow notifications).
- */
 class FollowNotifyOnceTest extends WP_UnitTestCase {
 
 	public function test_refollow_does_not_notify_again(): void {

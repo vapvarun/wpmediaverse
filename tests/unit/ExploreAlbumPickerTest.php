@@ -2,11 +2,12 @@
 /**
  * The Explore/profile bulk bar's "Add to album" picker.
  *
- * The picker used to request `albums?per_page=100` with no author, so it listed
- * every album on the site. Two things were wrong with that and this file pins
- * both: every foreign choice died with 403 mvs_forbidden when the member
- * pressed Add, and the response shipped other members' album titles to the
- * browser whether or not anything was ever clicked.
+ * The picker must scope its album request to the member, not use
+ * `albums?per_page=100` with no author, which lists every album on the site.
+ * Two things go wrong with that and this file pins both: every foreign choice
+ * dies with 403 mvs_forbidden when the member presses Add, and the response
+ * ships other members' album titles to the browser whether or not anything is
+ * ever clicked.
  *
  * @package WPMediaVerse
  */

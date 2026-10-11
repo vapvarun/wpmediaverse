@@ -105,10 +105,9 @@ class Shortcodes {
 		// as "handled". An unknown slug simply falls through to the grid rather
 		// than erroring, which is what an owner who typos one should get.
 		//
-		// This closes the gap in Basecamp 10297764235: the grid path could
-		// filter by tag but not choose a layout, and the layout paths could not
-		// filter. Pro's render_feed() already accepts filterTag/filterCategory,
-		// so nothing new had to be built there - it was only unreachable.
+		// This is what lets one shortcode both filter by tag and choose a layout.
+		// Pro's render_feed() already accepts filterTag/filterCategory, so nothing
+		// new is needed there - it was only unreachable from the grid path.
 		if ( '' !== $mvs_layout && ! self::is_core_grid_layout( $mvs_layout ) ) {
 			/**
 			 * Render a gallery in a layout Free does not provide.
@@ -940,14 +939,13 @@ class Shortcodes {
 		// `?drive=my-drive|shared|recent` is a VIRTUAL ROOT of the member's own
 		// drive - a different concept from the public listing below, and it
 		// needs the same seam the `folder` attribute already uses two branches
-		// up. Before this fix, `$mvs_doc_root` was computed correctly (for the
-		// template's chrome/heading) but never actually used to choose a data
-		// source: every root, including 'shared', silently fell through to
-		// `public_documents()` below - so `?drive=shared` rendered the PUBLIC
-		// listing under a "Shared with me" heading. Confirmed 2026-08-11 combo
-		// QA (F1): a real grant existed and `GET /mvs-pro/v1/me/shared`
-		// returned it correctly, proving the REST controller's query was
-		// always right - only this page template's query was wrong. Route
+		// up. `$mvs_doc_root` also has to choose the data source, not only the
+		// template's chrome/heading: otherwise every root, including 'shared',
+		// silently falls through to `public_documents()` below - so
+		// `?drive=shared` would render the PUBLIC listing under a "Shared with me"
+		// heading, even though `GET /mvs-pro/v1/me/shared` returns the real grant
+		// correctly (the REST controller's query is right; only this page
+		// template's query could be wrong). Route
 		// through the SAME `mvs_documents_drive_html` filter the folder branch
 		// uses, so there is one seam for "this needs Pro's drive", not two
 		// that can drift apart again.

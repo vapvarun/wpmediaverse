@@ -57,8 +57,8 @@ async function apiFetch( path, options = {} ) {
 	// to surface as an empty conversation list — indistinguishable from "you
 	// have no conversations". That is exactly how the chat panel reported "No
 	// conversations" on any page that didn't enqueue mvs-rest
-	// The enqueue is fixed in Core\Plugin, but keep
-	// this guard so the next delivery regression is diagnosable instead of
+	// Core\Plugin enqueues it, but keep
+	// this guard so a delivery failure is diagnosable instead of
 	// looking like an empty state.
 	if ( ! window.mvsRest || typeof window.mvsRest.restFetch !== 'function' ) {
 		throw new Error(
@@ -824,10 +824,9 @@ const { state, actions } = store( 'mvs/messaging', {
 		/**
 		 * Send a queued media share into a conversation, if one is pending.
 		 *
-		 * Single owner of the handoff. It used to live inline in
-		 * createOrOpenConversation() only, so picking an EXISTING thread from
-		 * the list dropped the media silently and left the id armed to fire
-		 * later on an unrelated conversation.
+		 * Single owner of the handoff: if only createOrOpenConversation() handled
+		 * it, picking an EXISTING thread from the list would drop the media silently
+		 * and leave the id armed to fire later on an unrelated conversation.
 		 *
 		 * @param {number|string} conversationId Target conversation.
 		 */
@@ -1356,7 +1355,7 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				// Update conversation preview. Same placeholder rules as the
 				// server's build_message_preview() — the raw lowercase type
-				// ('image') used to flash here until the next poll refetched
+				// ('image') would flash here until the next poll refetches
 				// the stored preview.
 				const conv = state.activeConversation;
 				if ( conv ) {
@@ -2017,9 +2016,9 @@ const { state, actions } = store( 'mvs/messaging', {
 		// Conversation list: filter the loaded conversations. Deliberately not
 		// debounced and not a network call — it is a local filter over a page
 		// that is already in memory, so it should feel instant. The list input
-		// used to call updateSearchQuery(), which searched MEMBERS and rendered
+		// does not call updateSearchQuery(): it searches MEMBERS and renders
 		// its results only in the hidden New Message view, so the list itself
-		// never changed.
+		// would never change.
 		updateListQuery() {
 			const el = getElement();
 			state.listQuery = el.ref.value;
@@ -2082,9 +2081,8 @@ const { state, actions } = store( 'mvs/messaging', {
 						if ( msg.isDeleted ) {
 							// Unsent message. The poll re-serves it for the whole
 							// unsend window (no updated_at column to scope it), so
-							// dedupe via seenUnsendIds: react to each unsend ONCE
-							// (Basecamp #9962618059 — "Unsend for everyone" must
-							// reach other participants without a refresh).
+							// dedupe via seenUnsendIds: react to each unsend ONCE,
+							// so "Unsend for everyone" reaches other participants without a refresh.
 							if ( ! seenUnsendIds.has( String( msg.id ) ) ) {
 								seenUnsendIds.add( String( msg.id ) );
 								changed = true;
@@ -2183,8 +2181,8 @@ const { state, actions } = store( 'mvs/messaging', {
 
 		// Every messaging toast today reports a failure (a caught API error, a
 		// refused file type, a denied or unavailable microphone), so the default
-		// is 'error'. It used to pass no type, and the shared store defaults to
-		// 'success', so every failure rendered in success green. Pass a type
+		// is 'error': the shared store defaults to 'success', so a failure with no
+		// type would render in success green. Pass a type
 		// for anything that is not an error.
 		showToast( message, type = 'error' ) {
 			// Use shared UI toast if available.

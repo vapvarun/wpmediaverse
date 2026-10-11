@@ -14,9 +14,9 @@ use WPMediaVerse\Admin\CollectionMetaBox;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10351283087 (album) and 10351428179 (collection privacy). wp-admin
- * had no control for either, so a value both other entry points wrote could
- * not be edited by the site owner.
+ * Album privacy and collection privacy are editable in wp-admin. Without a
+ * control for either, a value both other entry points write could not be edited
+ * by the site owner.
  */
 class AdminMetaBoxSaveTest extends WP_UnitTestCase {
 

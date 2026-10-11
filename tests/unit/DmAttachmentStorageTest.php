@@ -2,8 +2,8 @@
 /**
  * Chat attachments are stored as conversation-scoped 'dm' media.
  *
- * Basecamp 10392474704: /messages/upload used to make a public WordPress
- * attachment under the original file name, listed by /wp/v2/media.
+ * /messages/upload must not make a public WordPress attachment under the
+ * original file name, which /wp/v2/media would list.
  *
  * @package WPMediaVerse
  */

@@ -451,13 +451,13 @@ class MessagingService {
 
 		// Deliberately NOT firing mvs_message_sent here.
 		//
-		// It used to fire with message_id 0 "so DM notifications reach the
+		// Firing it with message_id 0 "so DM notifications reach the
 		// recipient even when the conversation is created without an initial
-		// send_message() call" - but creating a conversation is not sending a
-		// message, and every listener took it at its word: our own
-		// NotificationListener and BuddyNext's bridge both told the recipient
-		// "X sent you a message" while mvs_messages held nothing. Opening a
-		// compose window and picking a recipient was enough to notify them.
+		// send_message() call" would be wrong - creating a conversation is not
+		// sending a message, and every listener takes it at its word: our own
+		// NotificationListener and BuddyNext's bridge would both tell the recipient
+		// "X sent you a message" while mvs_messages holds nothing. Opening a
+		// compose window and picking a recipient would be enough to notify them.
 		//
 		// Anyone who wants the create signal has mvs_conversation_created
 		// above; the real send fires mvs_message_sent with a real id.
@@ -513,9 +513,9 @@ class MessagingService {
 	 * Total conversations for a tab, for honest pagination.
 	 *
 	 * Shares conversation_tab_where() with get_conversations() so the count can
-	 * never drift from the list it counts. Before 2.3.0 the endpoint returned a
-	 * page with no total at all, so a client could not tell a short page from
-	 * the last page (big-site checklist items 1 and 4).
+	 * never drift from the list it counts. A page with no total leaves a
+	 * client unable to tell a short page from the
+	 * last page (big-site checklist items 1 and 4).
 	 *
 	 * @param int    $user_id User ID.
 	 * @param string $tab     Tab: all, unread, requests, archived.
@@ -576,10 +576,9 @@ class MessagingService {
 			case 'archived':
 				// Archived is the ONLY tab that shows archived rows, and it
 				// ignores is_archived in the other direction. Without it a
-				// member who archived a conversation had no way back to it:
-				// PATCH /conversations/{id} accepted is_archived and the row
-				// then vanished from every available tab. (Basecamp
-				// #10132225661 / app card MV-1.)
+				// member who archived a conversation would have no way back to it:
+				// PATCH /conversations/{id} accepts is_archived and the row
+				// would then vanish from every available tab.
 				$where_parts[] = "p.status = 'active'";
 				$where_parts[] = 'p.is_archived = 1';
 				break;
@@ -618,7 +617,7 @@ class MessagingService {
 
 		// Batched for the whole page — one IN() query for participants, one
 		// UNION query for unread counts, instead of 3 queries PER conversation
-		// (big-site checklist item 3: the inbox used to scale query count with
+		// (big-site checklist item 3: otherwise the inbox scales query count with
 		// conversation count).
 		$participants_by_conversation = $this->get_participants_for_conversations( $conversation_ids );
 		$unread_by_conversation       = $this->batch_unread_counts( $conversations, $user_id );
@@ -1779,8 +1778,8 @@ class MessagingService {
 		// archived it. Archiving means "done with this for now", not "never
 		// show me this person again" — every mainstream chat app resurfaces an
 		// archived thread when the other person writes. Without this the
-		// message landed in a thread the recipient only saw if they thought to
-		// open the archived tab (Basecamp #10132225661 / MV-1).
+		// message lands in a thread the recipient only sees if they think to
+		// open the archived tab.
 		//
 		// Filter escape hatch (Production Rule #3): return false to keep
 		// archived threads archived on new activity.
@@ -1933,9 +1932,9 @@ class MessagingService {
 	/**
 	 * List media shared in a conversation, newest first.
 	 *
-	 * Backs the "shared media" info panel and the mobile app's equivalent. The
-	 * web panel previously scraped the DOM of already-loaded bubbles, so it saw
-	 * only part of the thread and the app could not do it at all. This walks the
+	 * Backs the "shared media" info panel and the mobile app's equivalent. Scraping
+	 * the DOM of already-loaded bubbles would see only part of the thread
+	 * and the app could not do it at all, so this walks the
 	 * full message history for rows carrying an attachment or a shared media
 	 * item and returns a resolved payload per item, so web + app share one
 	 * source. The caller (controller) must confirm participation first.
@@ -2259,8 +2258,7 @@ class MessagingService {
 			// just-deleted message was the conversation's last, recompute it from
 			// the newest still-visible message (or clear it). Without this the
 			// sidebar preview stays stale on reload / other devices after a
-			// delete - the client only updated its own state optimistically
-			// (Basecamp #9962618059, symptom B).
+			// delete - the client only updates its own state optimistically.
 			$this->refresh_conversation_last_message( (int) $row->conversation_id );
 
 			do_action( 'mvs_message_deleted', $message_id, $user_id, false );
@@ -2280,8 +2278,8 @@ class MessagingService {
 	 *                              one. Clients (the BuddyNext theme, mobile apps)
 	 *                              may send an attachment under message_type
 	 *                              'text' (or a raw MIME the allow-list resets to
-	 *                              'text'), which previously stored an EMPTY
-	 *                              preview and left a blank line in the
+	 *                              'text'), which would store an EMPTY
+	 *                              preview and leave a blank line in the
 	 *                              conversation list; the
 	 *                              attachment's real MIME resolves the label.
 	 * @param int    $media_id      Shared media item id, when present.
@@ -2294,8 +2292,8 @@ class MessagingService {
 		}
 
 		// Attachment-only messages: a typed placeholder, the way every chat app
-		// previews its media messages. 'audio' was previously missing entirely
-		// and fell through to ''.
+		// previews its media messages. 'audio' must be listed, or it
+		// falls through to ''.
 		$labels = array(
 			'voice'       => __( 'Voice message', 'wpmediaverse' ),
 			'image'       => __( 'Photo', 'wpmediaverse' ),
@@ -3020,7 +3018,7 @@ class MessagingService {
 
 		// Unsent (deleted_for_all) messages must still be POLLED so other
 		// participants' open chats learn about the unsend without a refresh
-		// (Basecamp #9962618059 follow-up: excluding them left the original
+		// (excluding them leaves the original
 		// bubble in every other client until a hard reload). There is no
 		// updated_at column to scope "unsent since the last poll", but unsend
 		// is only allowed within UNSEND_WINDOW_SECONDS of created_at — so any
@@ -3383,8 +3381,8 @@ class MessagingService {
 		);
 
 		// Refresh each affected conversation's stored last-message preview so the
-		// sidebar never keeps showing an erased message (Basecamp #9962618059 -
-		// same staleness as delete/unsend, caught in the double-verify pass).
+		// sidebar never keeps showing an erased message (same
+		// staleness as delete/unsend).
 		foreach ( $conversation_ids as $conversation_id ) {
 			$this->refresh_conversation_last_message( (int) $conversation_id );
 		}

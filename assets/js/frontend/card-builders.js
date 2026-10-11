@@ -168,7 +168,7 @@
 		// streamable video ALWAYS renders as a <video> first-frame preview with
 		// thumbUrl as the <video poster> fallback. thumbUrl for a posterless
 		// video is the bundled default-poster SVG (REST 1.7.0), so gating the
-		// <video> on an empty thumbUrl — as this used to — made every posterless
+		// <video> on an empty thumbUrl would make every posterless
 		// upload show the generic placeholder instead of its real first frame.
 		if ( 'video' === mediaType && fileUrl ) {
 			var vidAttrs = {

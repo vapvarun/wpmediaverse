@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10252887530. My Media's "No media yet" box needed an Upload button
+ * My Media's "No media yet" box needed an Upload button
  * that opens the file picker in place, which a link action cannot do.
  */
 class EmptyStateActionTest extends WP_UnitTestCase {

@@ -16,7 +16,7 @@ use WPMediaVerse\Services\PrivacyService;
  *
  * The docs promised private collections and the 2.0.0 changelog said the gating
  * shipped, but there was nowhere to store the value - so every collection was
- * public and the gates added for 10073499554 could only ever deny the owner
+ * public and the collection gates could only ever deny the owner
  * check. These pin the storage, the two-level vocabulary, and the fact that a
  * collection's privacy does NOT cascade into the media inside it.
  */

@@ -263,9 +263,8 @@ const { state } = store( 'mvs/explore-feed', {
 				// server-rendered card in render.php exactly: a typed grid item
 				// wrapping a permalink anchor (with a media-type-aware thumbnail)
 				// plus a title overlay. Every media type — image, video, audio —
-				// renders here; previously only image/* items were appended so
-				// video and audio results from the REST page were silently
-				// dropped. Thumbnails come from buildThumbnailNodes (thumbnail_url),
+				// renders here; appending only image/* items would silently drop video and
+				// audio results from the REST page. Thumbnails come from buildThumbnailNodes (thumbnail_url),
 				// never the full-resolution file_url.
 				const grid = document.querySelector( '.mvs-explore-feed-block .mvs-media-grid' );
 				if ( grid && data.length ) {

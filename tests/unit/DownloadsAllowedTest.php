@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10350019690. The media-player block rendered a Download link with
+ * The media-player block rendered a Download link with
  * neither check, while the single page gated on both.
  */
 class DownloadsAllowedTest extends WP_UnitTestCase {

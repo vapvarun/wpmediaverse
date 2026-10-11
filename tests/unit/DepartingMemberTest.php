@@ -157,8 +157,8 @@ class DepartingMemberTest extends WP_UnitTestCase {
 	/**
 	 * "Attribute all content to" keeps the member's media.
 	 *
-	 * WordPress hands posts to the chosen member; media used to be erased
-	 * instead. Everything moves with its privacy kept, a personal drive follows
+	 * WordPress hands posts to the chosen member; media goes to them too instead
+	 * of being erased. Everything moves with its privacy kept, a personal drive follows
 	 * its new owner, Space files still go to their Space, and only DM
 	 * attachments go with the erased messages (owner decision 2026-09-27).
 	 */

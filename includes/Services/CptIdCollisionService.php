@@ -2,7 +2,7 @@
 /**
  * CPT / media ID-collision analyser.
  *
- * Albums (and historically collections) store attributes by calling
+ * Legacy albums (and collections) stored attributes by calling
  * MediaRepository::set() with their `wp_posts` ID. That column is
  * AUTO_INCREMENT for real media, so two independent ID sequences share one
  * primary key and collide wherever the integers coincide.
@@ -43,7 +43,7 @@ class CptIdCollisionService {
 	/**
 	 * The integrity queries this report is built from.
 	 *
-	 * Every SQL statement this class used to carry now lives in
+	 * Every SQL statement for this report lives in
 	 * `Repository\MediaIntegrityRepository` (architecture invariant 6, coding
 	 * Rule 7). What stays here is the part that is actually this class's job:
 	 * deciding what the numbers MEAN — whether the window is dangerous, what

@@ -10,9 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
-/**
- * Basecamp 10393276020 item 17 (feed).
- */
 class ActivityFeedLifecycleTest extends WP_UnitTestCase {
 
 	/**

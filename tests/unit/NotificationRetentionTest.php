@@ -10,9 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 use WPMediaVerse\Services\ViewRetentionService;
 
-/**
- * Basecamp 10393276031 (notifications never pruned).
- */
 class NotificationRetentionTest extends WP_UnitTestCase {
 
 	public function test_old_read_notifications_go_unread_and_recent_stay(): void {

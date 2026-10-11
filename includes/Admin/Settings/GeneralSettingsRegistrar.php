@@ -387,7 +387,7 @@ class GeneralSettingsRegistrar {
 	 * The opt-in that lets uninstall delete member data.
 	 *
 	 * Off by default: premium plugins are routinely updated by deleting and
-	 * re-uploading them, and before 2.6.0 that wiped every table. Uploaded
+	 * re-uploading them, and deleting data on uninstall wipes every table. Uploaded
 	 * files and the pages MediaVerse created are never deleted, and the help
 	 * says so.
 	 */

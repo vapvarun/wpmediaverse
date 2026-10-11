@@ -4,7 +4,7 @@
  *
  * Hooks into WordPress's user-deletion lifecycle and removes every row
  * owned by the deleted user across wpmediaverse custom tables, preventing
- * orphaned records that previously lived on after `deleted_user` fired.
+ * orphaned records from living on after `deleted_user` fires.
  *
  * @package WPMediaVerse
  */
@@ -32,9 +32,8 @@ class UserDeletionService {
 	private const AS_GROUP = 'wpmediaverse';
 
 	/**
-	 * Media items torn down per batch. A member with thousands of uploads
-	 * previously ran the whole cascade (file I/O + child-table deletes per
-	 * item) inline on the `deleted_user` request; this bounds each request
+	 * Media items torn down per batch. Running the whole cascade (file I/O + child-table deletes per
+	 * item) inline on the `deleted_user` request does not scale for a member with thousands of uploads; this bounds each request
 	 * / AS run to a fixed amount of work.
 	 */
 	private const CASCADE_BATCH_SIZE = 100;
@@ -281,9 +280,9 @@ class UserDeletionService {
 			$media_ids = array_values( array_diff( $media_ids, $reassigned ) );
 		}
 
-		// Batched via Action Scheduler — a member with thousands of uploads
-		// used to run every delete_cascade() (file I/O + child-table deletes)
-		// inline on this request, big-site checklist item 3 in one hook.
+		// Batched via Action Scheduler — running every delete_cascade() (file I/O + child-table deletes)
+		// inline on this request for a member with thousands of uploads would be
+		// big-site checklist item 3 in one hook.
 		$this->cascade_media_deletion( $user_id, $media_ids );
 
 		// Phase 1b — delete the user's albums and collections (CPTs). These were
@@ -394,7 +393,7 @@ class UserDeletionService {
 		// Conversations that just lost their last participant are dead shells:
 		// remove them and any residual messages. The per-user purge above clears
 		// participants + messages but never the thread row, so deleting every
-		// member of a conversation previously left an orphaned mvs_conversations
+		// member of a conversation would leave an orphaned mvs_conversations
 		// row behind. This sweeps any now-empty thread (cheap; cleanup path only).
 		$empty_conversation_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			"SELECT c.id FROM {$wpdb->prefix}mvs_conversations c
@@ -478,9 +477,9 @@ class UserDeletionService {
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
 			// Only the user id: each batch re-reads what is still theirs. The id
-			// list used to travel in the job, and Action Scheduler refuses
+			// list must not travel in the job: Action Scheduler refuses
 			// arguments over 8,000 characters, so deleting a member with ~1,100+
-			// media threw out of the delete.
+			// media would throw out of the delete.
 			as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
 			return;
 		}

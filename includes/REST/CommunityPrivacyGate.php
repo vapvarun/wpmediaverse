@@ -315,8 +315,7 @@ class CommunityPrivacyGate {
 		 * password to carry an authenticated session, and needs to be
 		 * authenticated to be issued one — so a Members Only site could read
 		 * its own `/app/config` (which advertises password login as
-		 * available) but could never actually complete it. Basecamp
-		 * 10350211493.
+		 * available) but could never actually complete it.
 		 *
 		 * @since 2.3.2
 		 * @since 2.6.0 Added `/mvs/v1/auth/app-password`.

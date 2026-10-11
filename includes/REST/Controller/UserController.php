@@ -219,11 +219,10 @@ class UserController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_profile( $request ) {
-		// Rate-limit the anon path. user_login + user_registered used to be
-		// leaked here, enabling iteration-based enumeration; the fields are now
-		// gated to the viewer themselves (and admins) below, and the request
-		// itself is throttled so a residual enumeration via id-iteration is
-		// expensive. See WMV-01.
+		// Rate-limit the anon path. user_login + user_registered are gated to
+		// the viewer themselves (and admins) below, since leaking them enables
+		// iteration-based enumeration, and the request itself is throttled so a
+		// residual enumeration via id-iteration is expensive.
 		$rate_check = RateLimiter::check( 'user_profile', 60, 60 );
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
@@ -242,11 +241,10 @@ class UserController extends WP_REST_Controller {
 
 		// Viewer-aware count through the SAME canonical helper get_user_media()
 		// below uses (count_visible_by_author() -> resolve_profile_privacy_mode()),
-		// not a flat 'privacy' => 'public' query. The flat query counted every
-		// public item unconditionally, so a member the author had blocked still
-		// learned how much public media the author has — the count disagreed
-		// with the (correctly gated) media list underneath it. Basecamp
-		// 10350224617.
+		// not a flat 'privacy' => 'public' query. The flat query would count every
+		// public item unconditionally, so a member the author had blocked would still
+		// learn how much public media the author has — the count would disagree
+		// with the (correctly gated) media list underneath it.
 		$media_count = Plugin::container()->get( 'media_repository' )->count_visible_by_author(
 			(int) $user_id,
 			$current_id,

@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10350019690. Block view scripts are modules that call
+ * Block view scripts are modules that call
  * window.mvsRest, but mvs-rest was enqueued only on MediaVerse's own pages, so a
  * block on an ordinary page silently lost view and download tracking.
  */

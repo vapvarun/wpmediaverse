@@ -2,9 +2,9 @@
 /**
  * BuddyPress activity rendering with direct-delivery URLs.
  *
- * Basecamp 10387034419: since 2.6.1 a public upload stores its image under
- * uploads/wpmediaverse/, and the legacy "drop every <img> into that folder"
- * guard deleted it from the stream.
+ * Since 2.6.1 a public upload stores its image under uploads/wpmediaverse/, so
+ * the legacy "drop every <img> into that folder" guard must not delete it from
+ * the stream.
  *
  * @package WPMediaVerse
  */

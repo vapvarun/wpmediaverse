@@ -195,8 +195,8 @@ class ActivityPrivacyFilter {
 
 		$viewer_id = get_current_user_id();
 		// manage_options mirrors PrivacyService::can_view; bp_moderate keeps
-		// BP moderators / the wp-admin activity list table fully sighted now
-		// that the show_hidden skip is gone (it used to be their bypass).
+		// BP moderators / the wp-admin activity list table fully sighted,
+		// since there is no show_hidden skip to bypass the filter.
 		$is_admin    = $viewer_id > 0 && (
 			user_can( $viewer_id, 'manage_options' )
 			|| user_can( $viewer_id, 'bp_moderate' )

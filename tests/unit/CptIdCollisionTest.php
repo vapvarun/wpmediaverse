@@ -4,10 +4,8 @@
  *
  * mvs_media_index.media_id is AUTO_INCREMENT for real media, but albums write
  * their own wp_posts ID into that same primary key. Where the integers coincide,
- * permanently deleting the CPT used to purge the media item's index record — the
- * file survived on disk and the item vanished from every surface.
- *
- * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md
+ * permanently deleting the CPT must not purge the media item's index record —
+ * otherwise the file survives on disk and the item vanishes from every surface.
  *
  * @package WPMediaVerse
  */
@@ -71,7 +69,7 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 		// trigger it, with or without this guard. So this is not "the flake is
 		// fixed". It closes a silent-failure path that a fixture should never
 		// have had, and makes the next occurrence say what happened instead of
-		// mismatching a title. Basecamp 10198467141 stays open.
+		// mismatching a title.
 		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_index',
 			array( 'media_id' => $media_id )
@@ -142,10 +140,9 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 	/**
 	 * The delete path must not touch mvs_media_index at all.
 	 *
-	 * Before 2.4.0 an album stored its privacy at media_id = <album post ID> and
-	 * purged that row on delete. Both halves are gone: albums write privacy to post
-	 * meta, so there is no row to purge, and the purge itself was what destroyed
-	 * colliding media. Legacy rows from older installs are cleared once by
+	 * Albums write privacy to post meta, not to a media_id = <album post ID> row,
+	 * so there is no row to purge, and a purge would destroy colliding media.
+	 * Legacy rows from older installs are cleared once by
 	 * Migrator v26, not on every delete.
 	 */
 	public function test_deleting_album_touches_no_index_row(): void {

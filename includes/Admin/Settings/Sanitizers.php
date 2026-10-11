@@ -210,10 +210,10 @@ class Sanitizers {
 
 		$result = array_values( array_unique( array_merge( $custom_stored, $kept_known ) ) );
 
-		// Nothing ticked is refused, not stored. '' used to mean "default" to
+		// Nothing ticked is refused, not stored. '' would mean "default" to
 		// the field (all eight boxes shown ticked) and "nothing" to the upload
-		// path (every upload rejected), so the screen said one thing and the
-		// site did the other. Keep the previous choice and say why.
+		// path (every upload rejected), so the screen would say one thing and the
+		// site do the other. Keep the previous choice and say why.
 		if ( empty( $result ) ) {
 			add_settings_error(
 				'mvs_allowed_file_types',

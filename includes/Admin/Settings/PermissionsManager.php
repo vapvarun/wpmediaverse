@@ -214,7 +214,7 @@ class PermissionsManager {
 	 * Applies grants/revokes to wp_user_roles AND persists the full matrix
 	 * to the MediaCapabilities::OVERRIDES_OPTION option, which add_caps()
 	 * re-applies after its default grants — so plugin updates (the
-	 * version-gated add_caps() call in Plugin::init()) no longer reset the
+	 * version-gated add_caps() call in Plugin::init()) do not reset the
 	 * admin's choices.
 	 *
 	 * @return int Number of roles updated.

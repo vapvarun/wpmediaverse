@@ -341,8 +341,8 @@ abstract class BaseBPTabIntegration {
 		$this->render_album_header( $album );
 
 		// All viewer-visible items, then paginate — an album is unbounded, and
-		// this view used to render every item on every page load with no
-		// prefetch, so a large album meant one render_grid_item() query chain
+		// rendering every item on every page load with no
+		// prefetch would mean one render_grid_item() query chain
 		// per item, every visit (big-site target: 50k+ media).
 		$all_items = $this->fetch_album_items( (int) $album->ID );
 
@@ -385,7 +385,7 @@ abstract class BaseBPTabIntegration {
 		// render_load_more_button() emits .mvs-load-more-btn, whose only
 		// handler is load-more.js — registered globally by Plugin but only
 		// enqueued on MVS-native pages, which BP profile/group screens are
-		// not (Basecamp #9941413137 bug class).
+		// not.
 		wp_enqueue_style( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-bp-actions' );

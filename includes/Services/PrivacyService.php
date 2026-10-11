@@ -72,10 +72,10 @@ class PrivacyService {
 	/**
 	 * The privacy levels this site will ACCEPT on a write.
 	 *
-	 * One list, asked by every write path. It used to be an inline array in
-	 * UploadService and nothing at all on `PUT /media/{id}`, so the update route
-	 * stored whatever string it was handed — `banana` included, which then failed
-	 * closed in `check_access()`'s default arm and read as private forever. A
+	 * One list, asked by every write path. Without it, the update route
+	 * `PUT /media/{id}` would store whatever string it is handed — `banana`
+	 * included, which then fails closed in `check_access()`'s default arm and
+	 * reads as private forever. A
 	 * value the API accepts and never applies is worse than one it rejects
 	 *
 	 * Filterable rather than a hard enum because the vocabulary genuinely is
@@ -116,8 +116,8 @@ class PrivacyService {
 	 * `write`/`own` (the SAME gate documents use); anything else falls back to
 	 * the personal drive.
 	 *
-	 * FROZEN CONTRACT (pairs with BuddyNext card 10220148861, and declared in
-	 * Pro's DriveContract::FILTER_MEDIA_DRIVE):
+	 * FROZEN CONTRACT (declared in Pro's
+	 * DriveContract::FILTER_MEDIA_DRIVE):
 	 * apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
 	 * returns array( string $drive_type, int $drive_id ).
 	 *
@@ -150,10 +150,10 @@ class PrivacyService {
 	 * How much access a member has to a drive, for MEDIA.
 	 *
 	 * Media and documents are two different things a member can put on a drive,
-	 * and until 2.4.0 one filter answered for both. There was no way for a
-	 * bridge to say "any space member may post a photo here" while keeping
+	 * and one filter answering for both would leave a
+	 * bridge no way to say "any space member may post a photo here" while keeping
 	 * files behind the space's own Files switch, so a site owner's toggle could
-	 * not mean what it said.
+	 * not mean what it says.
 	 *
 	 * The document filter is still asked first and its answer is the default,
 	 * so a site that has not adopted the new one behaves exactly as it did.
@@ -259,8 +259,8 @@ class PrivacyService {
 	 * wp_posts.post_author is the authoritative author; the index author on
 	 * album rows is unreliable, which is why can_view() is not used per row.
 	 *
-	 * Every album or collection list goes through here (Basecamp 10360879667:
-	 * the /album/ archive and the BuddyPress albums tab listed private albums).
+	 * Every album or collection list goes through here (the /album/ archive
+	 * and the BuddyPress albums tab must not list private albums).
 	 *
 	 * @since 2.6.1
 	 *
@@ -326,9 +326,9 @@ class PrivacyService {
 		}
 
 		// Album privacy is a property of the album post, not of any media row.
-		// Before 2.4.0 this read mvs_media_index at media_id = <album post ID>, which
-		// on a colliding ID returned an unrelated PHOTO's privacy and clamped this
-		// item against it. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// Reading mvs_media_index at media_id = <album post ID> would, on a
+		// colliding ID, return an unrelated PHOTO's privacy and clamp this
+		// item against it.
 		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 		if ( '' === $album_privacy || 'public' === $album_privacy ) {
 			return $media_privacy;
@@ -372,14 +372,13 @@ class PrivacyService {
 		// 2.4.0 those are two clean ID spaces — a CPT never writes an index row — so
 		// the post type is authoritative and cheap to trust.
 		//
-		// This replaces the media_type sniff added by 3cfff321 for Basecamp
-		// 10071824547 ("owner denied their own private album"). That workaround read
-		// the index row and, when media_type was empty, treated the ID as a CPT. It
-		// could not survive a collision: where an album's post ID landed on a real
-		// photo, media_type was 'image', so the album was access-checked as that
-		// photo — resolving to the PHOTO's owner and the PHOTO's privacy. The album's
-		// owner was denied their own album and an unrelated member was granted it.
-		// Root cause, not symptom: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// This replaces a media_type sniff that read the index row and, when
+		// media_type was empty, treated the ID as a CPT. It could not survive a
+		// collision: where an album's post ID lands on a real photo, media_type is
+		// 'image', so the album would be access-checked as that photo — resolving to
+		// the PHOTO's owner and the PHOTO's privacy. The album's owner would be
+		// denied their own album and an unrelated member granted it. The post type
+		// fixes the root cause, not the symptom.
 		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$allowed_types = array( 'mvs_album', 'mvs_collection' );
 
@@ -522,7 +521,7 @@ class PrivacyService {
 		 *
 		 * Fires for MEDIA only (an mvs_media_index id), never for an album or
 		 * collection post: every listener reads the id as media, and the two
-		 * id sequences collide, so an album check used to be answered from an
+		 * id sequences collide, so an album check would otherwise be answered from an
 		 * unrelated photo's row (an inherit-privacy flag, a competition entry).
 		 *
 		 * @param bool|null $result   Access result. Null to use default logic.
@@ -735,7 +734,7 @@ class PrivacyService {
 	 * Apply a requested privacy to one item, by the library's rules.
 	 *
 	 * The one rule for bulk changes (Free's /media/bulk and Pro's
-	 * /media/bulk-privacy, which had drifted apart, Basecamp 10393276042): an
+	 * /media/bulk-privacy): an
 	 * item in an album keeps showing with the album's privacy and keeps the
 	 * choice for when it leaves; a chat file keeps its conversation privacy
 	 * (the repository refuses the change).

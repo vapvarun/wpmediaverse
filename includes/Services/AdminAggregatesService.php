@@ -66,9 +66,8 @@ class AdminAggregatesService {
 	 * Total published MEDIA items — photos, video and audio.
 	 *
 	 * Documents are counted separately by `total_documents()`. They share the
-	 * index table but they are not media, and until 2.4.0 this counted them:
-	 * a site whose members had uploaded 400 documents saw them added to "Total
-	 * Media" on a screen where no document was reachable.
+	 * index table but they are not media, so counting them would add them to "Total
+	 * Media" for a site whose members had uploaded 400 documents, on a screen where no document is reachable.
 	 *
 	 * The type list runs through `MediaTypes::library_types()`, so a site that
 	 * wants the old number back has the documented one-line escape hatch

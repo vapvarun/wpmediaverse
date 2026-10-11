@@ -12,7 +12,7 @@ use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Services\ModerationService;
 
 /**
- * Basecamp 10364778984 (QA bounce): with five pending reports and no flagged
+ * With five pending reports and no flagged
  * media, the Overview card said "0 Needs review" and the menu had no badge.
  */
 class NeedsReviewCountsReportsTest extends WP_UnitTestCase {

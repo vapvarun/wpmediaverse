@@ -196,10 +196,10 @@ class ReactionController extends WP_REST_Controller {
 
 		// NOTE: `mvs_reaction_added` is fired by ReactionService::toggle() (the
 		// canonical owner, for every caller) on a genuinely new reaction only.
-		// This controller used to fire it a SECOND time — and also on 'updated'
-		// — producing duplicate notifications/activity/webhooks and a spurious
-		// notification when a user merely changed their reaction type
-		// (audit 2026-06-04). Removed; the service owns the hook.
+		// This controller must not fire it a SECOND time, nor on 'updated':
+		// that would produce duplicate notifications/activity/webhooks and a spurious
+		// notification when a user merely changes their reaction type.
+		// The service owns the hook.
 
 		$counts = $this->reactions->get_counts( $media_id );
 
@@ -270,8 +270,7 @@ class ReactionController extends WP_REST_Controller {
 	/**
 	 * Permission check for retracting your OWN reaction.
 	 *
-	 * Deliberately NOT `create_item_permissions_check()` — Basecamp
-	 * 10350196637: sharing that callback meant a blocked member could never
+	 * Deliberately NOT `create_item_permissions_check()` — sharing that callback would mean a blocked member could never
 	 * take their own reaction back, which is the same "gate pointed the
 	 * wrong way" class `RestGate` already exempts this route+method for
 	 * (`RestGate.php` line ~163). Login is still required; only the block

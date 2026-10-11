@@ -164,10 +164,10 @@ class ActivitySyncIntegration {
 		}
 
 		// Album privacy is post meta on the album (AlbumService::get_privacy()).
-		// This used to read mvs_media_index at media_id = <album post ID>: on
+		// Reading mvs_media_index at media_id = <album post ID> would be wrong: on
 		// most sites that ID belongs to an unrelated photo, so a public album
 		// could hide the activity (or a private one show it) on that photo's
-		// privacy. Basecamp 10320619418; same defect class as 10183850886.
+		// privacy.
 		$album_id = (int) $repo->get( $media_id, 'album_id' );
 		if ( $album_id > 0 ) {
 			$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
@@ -427,8 +427,7 @@ class ActivitySyncIntegration {
 		// Private uploads leave ZERO public footprint — no BP activity entry
 		// at all. hide_sitewide alone isn't enough: BP still surfaces
 		// hide_sitewide=1 entries on the author's profile activity tab to
-		// any visitor, so the broken thumbnail card leaks (Basecamp
-		// #9936622656). Skip the activity insert entirely; other non-public
+		// any visitor, so the broken thumbnail card leaks. Skip the activity insert entirely; other non-public
 		// levels (members/friends/group/custom) keep the activity and rely
 		// on `ActivityPrivacyFilter` for viewer-aware gating.
 		if ( 'private' === self::effective_privacy_for_media( $media_id ) ) {
@@ -730,7 +729,7 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * No-op. Previously created activity on publish_mvs_media hook.
+	 * No-op. Stub for the retired publish_mvs_media hook.
 	 *
 	 * Media no longer uses a CPT, so the publish_mvs_media hook never fires.
 	 * Kept as a stub for backwards compatibility.
@@ -831,7 +830,7 @@ class ActivitySyncIntegration {
 		// The post this item was on (read before the delete, see
 		// remember_activity_of_deleted_media()) plus the upload post whose
 		// item_id is this media: an upload-page batch post carries its COVER's
-		// id there, so deleting the cover used to delete the whole post.
+		// id there, so deleting the cover keeps the post while other items remain.
 		// component=wpmediaverse: a group upload's item_id is the GROUP id.
 		$posts = array(
 			(int) ( self::$deleted_media_activity[ $media_id ] ?? 0 ),

@@ -161,7 +161,7 @@ class ActivityContentIntegration {
 		// preload="auto" — Safari/iOS/Bing render a blank frame with
 		// preload="metadata" + the poster image when the poster URL is slow
 		// or fails to load. Letting the browser pull the first frame is the
-		// belt-and-braces fix from Basecamp #9910574354 (Crisp ticket).
+		// belt-and-braces fix.
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
 			. '<video controls preload="auto"' . $poster . '>'
 			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
@@ -460,8 +460,7 @@ class ActivityContentIntegration {
 		global $wpdb;
 
 		// Index columns go to the repository, which owns both the table and the
-		// allowlist that makes a dynamic column name safe (Rule 7). The copy of
-		// that list that used to live here is gone with the query.
+		// allowlist that makes a dynamic column name safe (Rule 7).
 		$found = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
 			->find_by_indexed_column( $key, $value );

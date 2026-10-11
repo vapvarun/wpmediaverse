@@ -12,9 +12,9 @@ use WPMediaVerse\Admin\Settings\Sanitizers;
 use WPMediaVerse\Admin\Settings\SettingsRegistrar;
 
 /**
- * Basecamp 10374850600: the select and the sanitizer each had their own fixed
- * list, so a driver registered through `mvs_storage_driver` was dropped back to
- * local the next time an owner saved the Storage tab.
+ * The select and the sanitizer share one list of drivers: with each holding its
+ * own fixed list, a driver registered through `mvs_storage_driver` would be
+ * dropped back to local the next time an owner saved the Storage tab.
  */
 class StorageDriverChoicesTest extends WP_UnitTestCase {
 

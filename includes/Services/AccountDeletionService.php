@@ -18,10 +18,10 @@ use WP_User;
  * Lets a member delete their own account, from the app or the web.
  *
  * Apple App Store guideline 5.1.1(v) requires any app that lets you create an
- * account to let you start deleting it from inside the app. Until 2.1.0 the only
- * erasure path was WordPress's admin-mediated Tools -> Erase Personal Data flow,
- * which a member cannot complete themselves. That made the mobile app
- * unshippable.
+ * account to let you start deleting it from inside the app. WordPress's own
+ * erasure path is the admin-mediated Tools -> Erase Personal Data flow,
+ * which a member cannot complete themselves, so on its own it would leave the
+ * mobile app unshippable.
  *
  * Two design decisions worth stating, because both look like extra work and
  * both are load-bearing:

@@ -2,7 +2,7 @@
 /**
  * Direct media delivery: serve local media files straight from the web server.
  *
- * Every image and video used to go through the signed /serve REST route, a full
+ * Sending every image and video through the signed /serve REST route costs a full
  * WordPress boot per file (160-220 queries, ~200ms on a typical family site;
  * one customer's small community ran 70 PHP workers). Media files already have
  * unguessable names (16 random hex characters), so a viewer who may see an item

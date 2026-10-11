@@ -474,7 +474,7 @@ class MediaRepositoryQueryTest extends WP_UnitTestCase {
 
 	/*
 	------------------------------------------------------------------
-	 * tag_cloud() counts only what the listing can render — 10259632183
+	 * tag_cloud() counts only what the listing can render
 	 * ----------------------------------------------------------------*/
 
 	public function test_tag_cloud_omits_tags_carried_only_by_documents(): void {

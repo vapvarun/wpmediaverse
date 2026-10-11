@@ -141,8 +141,7 @@ class TemplateLoader {
 		/**
 		 * Whether /media/ redirects to the mapped Explore page.
 		 *
-		 * Return false to keep /media/ serving Explore alongside the mapped page,
-		 * as it did before 2.6.0.
+		 * Return false to keep /media/ serving Explore alongside the mapped page.
 		 *
 		 * @since 2.6.0
 		 *
@@ -545,7 +544,6 @@ class TemplateLoader {
 	 *
 	 * Soft-404s deindex paginated archives and make caches and CDNs skip the
 	 * page, so on a 60-item library only page 1 was reachable to search engines.
-	 * Basecamp: 2.3.0 smoke F1.
 	 *
 	 * @since 2.3.0
 	 *
@@ -635,11 +633,11 @@ class TemplateLoader {
 	/**
 	 * Send `?drive=my-drive|shared|recent` on the documents page to the dashboard.
 	 *
-	 * The member's drive used to answer at two addresses: the dashboard's
+	 * A member's drive must not answer at two addresses: the dashboard's
 	 * documents section and the public Explore Documents page with a `?drive=`
-	 * query. Same drive, two URLs, two sets of chrome - and the page title said
+	 * query. Same drive, two URLs, two sets of chrome - and the page title would say
 	 * "Explore Documents" over a member's private files. The dashboard section
-	 * is the one home now; the old query keeps working as a 302 so bookmarks
+	 * is the one home; the old query keeps working as a 302 so bookmarks
 	 * and links already out there still land somewhere real.
 	 *
 	 * Only when the dashboard page exists and this member can see its documents
@@ -671,8 +669,7 @@ class TemplateLoader {
 		/**
 		 * Whether `?drive=` on the documents page redirects to the dashboard.
 		 *
-		 * Return false to keep rendering the drive on the documents page, as
-		 * before 2.6.0.
+		 * Return false to keep rendering the drive on the documents page.
 		 *
 		 * @since 2.6.0
 		 *
@@ -859,9 +856,9 @@ class TemplateLoader {
 			return;
 		}
 
-		// Who may see this, decided BEFORE any redirect: a host redirect used to
-		// run first, so a signed-out visitor on a private photo was sent to the
-		// owner's profile, which told them whose it was (QA, 2.6.0).
+		// Who may see this, decided BEFORE any redirect: a host redirect that runs
+		// first would send a signed-out visitor on a private photo to the
+		// owner's profile, which tells them whose it is.
 		//
 		// A viewer who cannot see the item gets one of two answers:
 		// - a signed-out visitor on an item that signing in could open
@@ -928,9 +925,8 @@ class TemplateLoader {
 			/**
 			 * Whether a document permalink may be redirected away from its own page.
 			 *
-			 * Default false: a document renders its own page. Answer true to restore
-			 * the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for
-			 * documents as well as for media.
+			 * Default false: a document renders its own page. Answer true to follow
+			 * `mvs_single_media_redirect` for documents as well as for media.
 			 *
 			 * @since 2.4.0
 			 *
@@ -1197,7 +1193,7 @@ class TemplateLoader {
 			/**
 			 * Whether /media/edit-profile/ redirects to the dashboard profile section.
 			 *
-			 * Return false to keep serving the standalone editor, as before 2.6.0.
+			 * Return false to keep serving the standalone editor.
 			 *
 			 * @since 2.6.0
 			 *
@@ -1235,11 +1231,10 @@ class TemplateLoader {
 			return false;
 		}
 
-		// Delegate to the single canonical gate. This local check previously
-		// handled only public/owner/moderator/members and returned false for
-		// friends/group/custom — so a legitimate friend or group member was
-		// wrongly 404'd on a friends-only/group media page (audit 2026-06-04),
-		// and it was one of several privacy reimplementations. PrivacyService
+		// Delegate to the single canonical gate. A local check would miss
+		// friends/group/custom — so a legitimate friend or group member would be
+		// wrongly 404'd on a friends-only/group media page — and add one more
+		// privacy reimplementation. PrivacyService
 		// covers every level (friends via friendship, group via membership,
 		// custom via grants) in one place.
 		return \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() );
@@ -1274,7 +1269,7 @@ class TemplateLoader {
 	 *
 	 * Both CPTs share the dedicated cpt-archive.php template which queries
 	 * the correct post_type, paginates, and renders CPT-specific cards.
-	 * explore.php remains the /media/ feed and is no longer used for archives.
+	 * explore.php remains the /media/ feed and is not used for archives.
 	 *
 	 * @param string $template Current template path.
 	 * @return string

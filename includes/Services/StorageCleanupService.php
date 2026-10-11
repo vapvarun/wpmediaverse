@@ -10,9 +10,9 @@
  *
  * Both delete paths funnel through delete_cascade() — the REST media delete
  * (MediaController::delete_item) and account deletion (UserDeletionService) —
- * so this single listener covers every way media leaves the system. Previously
- * the REST path deleted only the original (from the active driver, missing
- * variants and cloud-resident files) and account deletion deleted no files at
+ * so this single listener covers every way media leaves the system. Without it
+ * the REST path would delete only the original (from the active driver, missing
+ * variants and cloud-resident files) and account deletion would delete no files at
  * all, leaving orphaned bytes on disk and the CDN.
  *
  * Async-first is deliberate: a bulk delete can orphan hundreds of paths and

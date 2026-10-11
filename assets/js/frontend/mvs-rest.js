@@ -644,7 +644,7 @@
 	 *
 	 * The upload page, My Media and the upload modal each built this request by
 	 * hand and had drifted (tags as a string on one, a poster capture missing on
-	 * another; Basecamp 10393276042). Each surface still decides WHICH fields it
+	 * another). Each surface still decides WHICH fields it
 	 * sends; this decides how they are sent.
 	 *
 	 * @param {string}   url        Media route URL.

@@ -596,12 +596,12 @@ class MediaRepository implements MediaRepositoryInterface {
 		/**
 		 * Filter the broadcast thumbnail TTL (seconds).
 		 *
-		 * Default 1 hour. Used to be YEAR_IN_SECONDS (WMV-05) — a stale
-		 * bearer-token horizon for thumbnails embedded in BP activity,
-		 * notifications, RSS, etc. The serve() path already re-checks
-		 * privacy at request time for non-public media, but minting
-		 * year-long URLs left an unnecessarily long credential lifetime
-		 * after a privacy downgrade. Filter to widen for high-cache sites.
+		 * Default 1 hour, not a year: year-long URLs are a stale bearer-token
+		 * horizon for thumbnails embedded in BP activity, notifications, RSS,
+		 * etc. The serve() path already re-checks privacy at request time for
+		 * non-public media, but minting year-long URLs would leave an
+		 * unnecessarily long credential lifetime after a privacy downgrade.
+		 * Filter to widen for high-cache sites.
 		 *
 		 * @since 1.4.0
 		 *
@@ -865,17 +865,15 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * that media POINT AT via the album_id column; their own attributes (privacy,
 	 * type, import markers) belong in post meta.
 	 *
-	 * Before 2.4.0 albums stored privacy by calling set()/set_many() with their post
-	 * ID. media_id is AUTO_INCREMENT for media, so on any site where uploads have
+	 * Storing album privacy through set()/set_many() keyed on the album's post
+	 * ID corrupts data. media_id is AUTO_INCREMENT for media, so on any site where uploads have
 	 * outrun post IDs — most of them, since members upload far more than a site
-	 * publishes — that write landed on a real photo and overwrote its slug and
+	 * publishes — that write lands on a real photo and overwrites its slug and
 	 * privacy. It is a silent corruption on every album creation, which is why the
 	 * refusal lives here at the choke point rather than at each caller.
 	 *
 	 * Refuses rather than throws: a fatal on a mis-keyed write would take a site
 	 * down, and the correct outcome is simply that the bad write does not happen.
-	 *
-	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 	 *
 	 * @since 2.4.0
 	 *
@@ -957,11 +955,11 @@ class MediaRepository implements MediaRepositoryInterface {
 			// A write for a row that is gone is a write-after-delete, not a
 			// row to create: a queued cloud-upload job finishing after the
 			// member deleted the media called set( $id, 'file_url', ... ).
-			// This used to INSERT a stub carrying one column, which left a
+			// Inserting a stub carrying one column would leave a
 			// ghost with an empty slug, title, author and media_type - and
-			// because `slug` is NOT NULL UNIQUE, the SECOND such ghost failed
+			// because `slug` is NOT NULL UNIQUE, the SECOND such ghost would fail
 			// on a duplicate-key database error instead. Rows are created by
-			// insert(), which supplies the whole shape. (2.5.1)
+			// insert(), which supplies the whole shape.
 			if ( ! $exists ) {
 				return;
 			}
@@ -1476,8 +1474,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Documents of ONE owner whose mvs_tag matches, for in-drive search.
 	 *
-	 * Tags are set in wp-admin and, until 2.5.1, read nowhere: an admin could
-	 * tag a contract "signed" and no search on the site would find it.
+	 * Tags are set in wp-admin and read here, so an admin who tags a contract
+	 * "signed" can find it in a search.
 	 *
 	 * Deliberately owner-scoped, and the caller must pass the searching member's
 	 * own id. A tag is an organiser's label, often internal ("contracts",
@@ -2293,8 +2291,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// "Recent" view needs, since recency is a property of the document and
 		// not of where it happens to be filed.
 		//
-		// INDEX REALITY, re-measured 2026-08-19 on a 30,000-document fixture
-		// after the soft spot this comment used to describe was closed.
+		// INDEX REALITY, measured on a 30,000-document fixture.
 		//
 		// TWO INDEXES, AND WHICH ONE RUNS DEPENDS ON THE SHAPE OF THE QUERY.
 		//
@@ -2333,13 +2330,13 @@ class MediaRepository implements MediaRepositoryInterface {
 			? array_merge( $type_params, array( $status ) )
 			: array_merge( $type_params, array( $folder_id, $status ) );
 
-		// ROOT SCOPING IS THE DRIVE, NOT THE AUTHOR (Phase 11 G1).
+		// ROOT SCOPING IS THE DRIVE, NOT THE AUTHOR.
 		//
-		// This used to read `post_author = %d`, which worked only because a
+		// Scoping on `post_author = %d` would work only because a
 		// personal drive's owner and its documents' uploader are the same person.
-		// That coincidence is exactly what made a Space-root upload impossible:
+		// That coincidence makes a Space-root upload impossible:
 		// filed by a member, it would list under THEM rather than under the
-		// Space. `post_author` goes back to meaning only "who uploaded this".
+		// Space. `post_author` means only "who uploaded this".
 		//
 		// `drive_id = 0` is carried alongside for rows Migrator v29's bounded
 		// backfill has not reached yet — on those the author IS the drive, so
@@ -3133,8 +3130,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * The two ID spaces overlap: a real media item can share its ID with an
 	 * album. Its row is in the index and an album's never is, so an ID is
-	 * dropped only when it has no media row (Basecamp 10355752606: edits to
-	 * such a media item were silently thrown away).
+	 * dropped only when it has no media row; otherwise edits to such a media
+	 * item would be silently thrown away.
 	 *
 	 * @since 2.6.0
 	 *
@@ -3906,8 +3903,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Query media rows filtered by author, with optional status + moderation
 	 * + pagination. Returns full mvs_media_index rows in created_at DESC order.
 	 *
-	 * Used by profile/feed templates that previously did direct $wpdb against
-	 * the index table. Centralizes the "show me this user's published feed"
+	 * Used by profile/feed templates, which would otherwise run direct $wpdb
+	 * against the index table. Centralizes the "show me this user's published feed"
 	 * query so per-template direct $wpdb calls go away.
 	 *
 	 * @since 1.3.0
@@ -3941,9 +3938,9 @@ class MediaRepository implements MediaRepositoryInterface {
 				'viewer_id'         => null,  // null => get_current_user_id()
 				'include_private'   => false, // owner/admin opt-in to see ALL
 				// null => let query() apply its own default (MEDIA_LIBRARY).
-				// This used to be absent entirely, so a caller asking for
-				// documents was handed images instead - silently, because an
-				// unknown key was dropped on the way to query(). Measured:
+				// It must be present: when absent, a caller asking for
+				// documents is handed images instead - silently, because an
+				// unknown key is dropped on the way to query(). Measured:
 				// query_by_author( media_types => ['document'] ) returned one
 				// row, of type image.
 				'media_types'       => null,
@@ -4062,9 +4059,9 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * in its own pass.
 	 *
 	 * Mirrors query_by_author()'s privacy-mode selection so profile tabs
-	 * count exactly the rows they list (Basecamp #9941246549 — the BP
-	 * profile media tab previously counted/listed members-only items for
-	 * logged-out visitors via its own raw SQL).
+	 * count exactly the rows they list (a profile media tab running its own
+	 * raw SQL would count and list members-only items for logged-out
+	 * visitors).
 	 *
 	 * PRIVACY WAS THE ONLY THING IT MIRRORED. Every other filter the caller
 	 * gave its list - moderation above all - was absent here, so the number
@@ -4170,7 +4167,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// Views live in mvs_media_stats; mvs_media_index.view_count is not kept
 		// up to date (0 on every row here), so a views sort must join the stats.
-		// It used to fall back to created_at silently, which made the Grid's
+		// Falling back to created_at silently would make the Grid's
 		// "Views" option sort by date.
 		$sort_join = '';
 		$sort_sql  = "m.{$orderby} {$order}";
@@ -4540,14 +4537,14 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		// Blocked members are excluded from every multi-author listing, here
-		// rather than in each caller. The exclusion used to live only in
-		// MediaController's feed query, which serves page 2 onward - so Explore
-		// page 1 (rendered server-side through this builder) still showed media
-		// from people the viewer had blocked, and page 2 did not. Same viewer,
+		// rather than in each caller. Living only in MediaController's feed
+		// query, which serves page 2 onward, the exclusion would let Explore
+		// page 1 (rendered server-side through this builder) show media
+		// from people the viewer had blocked while page 2 did not. Same viewer,
 		// same feed, two different answers.
 		//
 		// query() and query_count() both build from these parts, so the list and
-		// the count can never disagree - which is the other half of that bug.
+		// the count can never disagree - which is the other half of that problem.
 		//
 		// Gated on viewer_id > 0, and that is sufficient rather than lucky:
 		// explore.php passes viewer_id 0 for anonymous visitors (public-only
@@ -4589,8 +4586,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		// every other listing ran with no type predicate at all.
 		//
 		// That flag was `m.media_type != ''`, an exclusion written to drop the
-		// privacy-only stub rows album creation used to insert. It is superseded
-		// twice over: those stubs no longer exist (2.4.0 stopped albums writing to
+		// privacy-only stub rows from album creation. It is superseded
+		// twice over: those stubs no longer exist (albums do not write to
 		// the index and Migrator v26 removed the rows), and an exclusion passes
 		// every type added later — including documents — straight through.
 		//
@@ -4640,8 +4637,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * The single source of truth for the media-index privacy WHERE fragment.
 	 *
-	 * Previously copy-pasted across explore + 3 Pro feed templates. Centralized
-	 * here so a privacy-policy change happens in exactly one place. Lives in the
+	 * Centralized here (rather than copy-pasted across explore and Pro feed
+	 * templates) so a privacy-policy change happens in exactly one place. Lives in the
 	 * Repository (never up-calls PrivacyService — that would invert the layer
 	 * order).
 	 *
@@ -4672,8 +4669,8 @@ class MediaRepository implements MediaRepositoryInterface {
 			case 'profile':
 				// Single-author (profile) listing — per-viewer privacy levels.
 				// Members- and friends-level items must NOT be listed for
-				// viewers outside those audiences (Basecamp #9941246549:
-				// members-only media rendered for logged-out visitors).
+				// viewers outside those audiences (otherwise members-only media
+				// renders for logged-out visitors).
 				// `group` / `custom` need per-item membership checks, so they
 				// stay owner-only in listings. Owner/admin callers get 'any'
 				// upstream (query_by_author), so this branch is non-owner only.
@@ -4702,7 +4699,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				 * Filters the privacy levels a viewer may see in a single-author
 				 * profile listing.
 				 *
-				 * Restore the pre-1.6.0 "everything except private" discoverability:
+				 * Restore the legacy "everything except private" discoverability:
 				 * add_filter( 'mvs_profile_privacy_levels', function () {
 				 *     return array( 'public', 'members', 'loggedin', 'friends', 'group', 'custom' );
 				 * } );
@@ -4725,8 +4722,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				return array( "m.privacy IN ({$placeholders})", array_values( $levels ) );
 			case 'hide_private':
 				// DEPRECATED since 1.6.0 — superseded by 'profile' (this mode
-				// listed members/friends items to any visitor, Basecamp
-				// #9941246549). Kept because mode strings reach the public
+				// listed members/friends items to any visitor). Kept because mode strings reach the public
 				// query()/query_count() args surface (Production Rule #2).
 				return array(
 					"((m.privacy != 'private' OR m.post_author = %d) AND m.privacy != 'dm')",
@@ -5574,7 +5570,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 	/**
 	 * The single source of truth for the "exclude non-cover gallery members"
-	 * subquery (previously copy-pasted verbatim across 6 listing sites).
+	 * subquery (rather than copy-pasted across listing sites).
 	 *
 	 * Returns rows that are gallery members at a non-zero position — the outer
 	 * query wraps this in `<alias>.media_id NOT IN (...)`. Fully static: no
@@ -5644,8 +5640,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$types                          = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
 		// The cloud is one cached list for every viewer, so it counts only what
-		// anyone may see: a tag used only on private items is not shown (Basecamp
-		// 10335795450).
+		// anyone may see: a tag used only on private items is not shown.
 		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT COUNT(*) FROM (
@@ -5698,8 +5693,7 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'm.media_type' );
 		// The cloud is one cached list for every viewer, so it counts only what
-		// anyone may see: a tag used only on private items is not shown (Basecamp
-		// 10335795450).
+		// anyone may see: a tag used only on private items is not shown.
 		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
 
 		$sql = "SELECT t.term_id, t.name, t.slug, COUNT(*) AS media_count
@@ -6447,11 +6441,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		 * Fires after a media item has been moved to the trash.
 		 *
 		 * Trash is the ordinary delete a member performs; permanent delete is
-		 * the rare one. Until 2.4.0 only the permanent path had a hook, so an
-		 * integration mirroring media — a BuddyNext activity card — had nothing
-		 * to listen to and went on advertising a trashed item, linking to a URL
-		 * that now 404s. `mvs_document_trashed` already existed for the document
-		 * half of the same lifecycle; this is the missing twin.
+		 * the rare one. An integration mirroring media — a BuddyNext activity
+		 * card — needs this event to stop advertising a trashed item, linking to a URL
+		 * that now 404s. `mvs_document_trashed` already exists for the document
+		 * half of the same lifecycle; this is its twin.
 		 *
 		 * Same three arguments as `mvs_media_deleted`, deliberately: a listener
 		 * that withdraws a mirror keyed on the URL can handle both events with
@@ -6583,7 +6576,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// then hand them to the async storage-cleanup cycle. Both delete paths
 		// funnel through here (REST delete + account deletion), so this is the
 		// single point that reclaims the original + every variant (thumbnails,
-		// WebP/AVIF, posters) from local + cloud (Basecamp #9952862992 family).
+		// WebP/AVIF, posters) from local + cloud.
 		$orphaned_files = $this->get_stored_file_paths( $media_id );
 		if ( ! empty( $orphaned_files ) ) {
 			/**
@@ -6643,9 +6636,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		 * MediaListPage, GDPR erase, account deletion), so firing here — rather
 		 * than in each caller — guarantees Pro listeners (quota decrement,
 		 * collection-membership purge, competition-entry cleanup) run no matter
-		 * how the media was deleted. Previously only the two REST paths fired
-		 * it, so admin/GDPR/user-deletion left those rows orphaned
-		 * (audit 2026-06-04, #39 follow-up; verified by the cascade double-check).
+		 * how the media was deleted. Firing only from the two REST paths would
+		 * leave those rows orphaned after admin/GDPR/user-deletion.
 		 *
 		 * @since 1.1.0
 		 *

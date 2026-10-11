@@ -10,9 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
-/**
- * Basecamp 10393276031 (comments).
- */
 class CommentRepliesPageScopeTest extends WP_UnitTestCase {
 
 	public function test_page_one_does_not_fetch_page_two_replies_but_keeps_its_own(): void {

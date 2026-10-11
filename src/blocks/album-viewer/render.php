@@ -55,10 +55,10 @@ if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int)
 	return;
 }
 
-// Album membership the VIEWER may open. This template used to run its own
-// JOIN filtered on status alone, so a public album holding a private item
-// rendered that item's title and permalink to anyone - the same hole the REST
-// route had, in a second copy of the query. AlbumService owns the rule now.
+// Album membership the VIEWER may open. AlbumService owns the rule: a JOIN
+// filtered on status alone would let a public album holding a private item
+// render that item's title and permalink to anyone, and a second copy of the
+// query here would reopen the hole the REST route closes.
 // 2.5.1.
 $mvs_albums   = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
 $mvs_repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );

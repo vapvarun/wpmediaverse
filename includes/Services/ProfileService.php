@@ -322,8 +322,7 @@ class ProfileService {
 		 *
 		 * Return `url` + `label` + `fields` to have MediaVerse's profile forms
 		 * hide those fields, link to the community editor, and refuse to save
-		 * them. Return an empty `url` to edit everything in MediaVerse, as
-		 * before 2.6.0.
+		 * them. Return an empty `url` to edit everything in MediaVerse.
 		 *
 		 * @since 2.6.0
 		 *
@@ -474,8 +473,8 @@ class ProfileService {
 	 * Whether a member has a real avatar they chose — from anywhere, not just us.
 	 *
 	 * This answers the question every caller actually has: may I nag this member
-	 * to add a profile photo? It used to answer a narrower one — is there a row
-	 * in OUR avatar store — and the two stop agreeing the moment another plugin
+	 * to add a profile photo? It does not answer a narrower one — is there a row
+	 * in OUR avatar store — because the two stop agreeing the moment another plugin
 	 * on the site also provides avatars.
 	 *
 	 * Measured on the QA site with BuddyNext active, 8 of 8 members who had

@@ -1,6 +1,6 @@
 <?php
 /**
- * Basecamp 10350220155 — the max-upload-size guard, shared by every write path.
+ * The max-upload-size guard, shared by every write path.
  *
  * `UploadService::handle()` checked a file's server-measured size against
  * `mvs_max_upload_size`; `MediaController::replace_file()` did not, so a size

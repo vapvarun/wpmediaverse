@@ -27,7 +27,7 @@ wp_enqueue_script( 'mvs-lucide' );
 // Block attribute is the source of truth when the merchant has explicitly
 // set it in the sidebar; falls back to the admin default (Settings →
 // Display) when unset/absent/0. Matches edit.js's own "Using admin default"
-// help text, which the frontend previously never honored.
+// help text, which the frontend must honor.
 $mvs_grid_columns_attr = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 0;
 $columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : absint( get_option( 'mvs_grid_columns', 3 ) );
 // Per-instance layout override; '' inherits the site's Default Layout, which

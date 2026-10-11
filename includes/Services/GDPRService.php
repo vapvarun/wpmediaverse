@@ -352,7 +352,7 @@ class GDPRService {
 			'mvs_blocks'                    => 'blocker_id',
 			'mvs_activity'                  => 'user_id',
 			'mvs_mentions'                  => 'mentioned_user_id',
-			// Additions — previously missed by GDPR erasure, causing orphaned rows to
+			// Also covered by GDPR erasure, so orphaned rows do not
 			// survive a user wipe. `mvs_conversations` is intentionally retained so
 			// threads with other participants keep working; we only erase the
 			// requesting user's participation + their sent messages.

@@ -625,9 +625,9 @@ class ImageOptimizationService {
 	/**
 	 * Re-compress the image in place. NOT lossless for JPEG.
 	 *
-	 * This method used to be called `run_lossless_pass()`. It never was lossless:
-	 * it decodes the image and re-encodes it at `mvs_optimize_jpeg_quality`
-	 * (default 92). The name told a maintainer the opposite of what the code did.
+	 * It is deliberately not named `run_lossless_pass()`: it is not lossless.
+	 * It decodes the image and re-encodes it at `mvs_optimize_jpeg_quality`
+	 * (default 92), so such a name would tell a maintainer the opposite of what the code does.
 	 *
 	 * The commit guard below only keeps the result when it is SMALLER than the
 	 * source, which has a consequence worth stating plainly:
