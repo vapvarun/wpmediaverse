@@ -575,20 +575,15 @@
 	/**
 	 * Grab a poster frame from a video File and append it as `thumbnail`.
 	 *
-	 * MediaVerse builds a video poster server-side from an embedded cover atom or
-	 * an ffmpeg first-frame grab. On a host with no ffmpeg, a video with no cover
-	 * atom gets NO poster and the grid renders a blank tile with a play icon —
-	 * which reads to a member as "my video is broken". Capturing the frame in the
-	 * browser removes the ffmpeg dependency for the common case.
-	 * `MediaController::create_item()` already accepts the `thumbnail` file param
-	 * and hands it to `PosterService::stage_client_frame()`.
+	 * Without one, a video whose file carries no cover image lands with no poster
+	 * and the grid shows a blank tile with a play icon, which reads to a member
+	 * as "my video is broken". MediaVerse does not run ffmpeg, so the frame is
+	 * taken in the browser: seek to 1s (frame 0 under 1s), 5s timeout, never
+	 * reject. `MediaController::create_item()` hands the `thumbnail` file to
+	 * `PosterService::stage_client_frame()`.
 	 *
-	 * This block and dashboard-view carry their own copy on purpose: these view
-	 * bundles are script MODULES, and a cross-file import is emitted as a bare
-	 * specifier the browser 404s on. shared-ui has a third variant that reuses the
-	 * frame it already decoded for its preview UI, so it isn't double-decoding.
-	 * Keep the three in sync — seek to 1s, fall back to frame 0 under 1s, 5s
-	 * timeout, never reject.
+	 * Every uploader calls this through uploadMedia(); the upload modal passes
+	 * the frame it already decoded for its preview instead.
 	 *
 	 * @param {FormData} formData Upload payload, mutated in place.
 	 * @param {File}     file     File being uploaded.
@@ -650,7 +645,8 @@
 	 * @param {string}   url        Media route URL.
 	 * @param {File}     file       File to upload.
 	 * @param {Object}   fields     title, description, privacy, tags (array or comma string),
-	 *                              mediaGroup + groupPosition, poster (Blob, optional).
+	 *                              mediaGroup + groupPosition, poster (Blob, optional),
+	 *                              extra (field => value, sent as given, e.g. a group id).
 	 * @param {Function} onProgress Optional ( loaded, total ) callback.
 	 * @return {Promise<Object>} restFetch result { ok, status, data }.
 	 */
@@ -666,6 +662,9 @@
 		const tags = Array.isArray( f.tags ) ? f.tags : String( f.tags || '' ).split( ',' );
 		tags.map( function ( t ) { return String( t ).trim(); } ).filter( Boolean ).forEach( function ( tag ) {
 			fd.append( 'tags[]', tag );
+		} );
+		Object.keys( f.extra || {} ).forEach( function ( key ) {
+			fd.append( key, f.extra[ key ] );
 		} );
 		if ( f.mediaGroup ) {
 			fd.append( 'media_group', f.mediaGroup );

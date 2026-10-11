@@ -76,65 +76,6 @@
 		};
 	}
 
-	/**
-	 * Capture a poster frame from a video File and append it as `thumbnail`.
-	 *
-	 * Without this, a video uploaded from a BuddyPress tab on a host with no
-	 * ffmpeg and no embedded cover atom gets no poster at all and renders as a
-	 * blank tile. Mirrors the capture in the Upload Media block and the member
-	 * dashboard. Never rejects — a decode failure just uploads without a poster.
-	 *
-	 * @param {FormData} fd   Upload payload, mutated in place.
-	 * @param {File}     file File being uploaded.
-	 * @param {Function} done Called when the attempt finishes.
-	 */
-	function appendVideoPoster( fd, file, done ) {
-		if ( ! file || ! file.type || file.type.indexOf( 'video/' ) !== 0 ) {
-			done();
-			return;
-		}
-		var video = document.createElement( 'video' );
-		var url = URL.createObjectURL( file );
-		var settled = false;
-		function finish( blob ) {
-			if ( settled ) { return; }
-			settled = true;
-			URL.revokeObjectURL( url );
-			if ( blob ) { fd.append( 'thumbnail', blob, 'video-thumb.jpg' ); }
-			done();
-		}
-		var timer = setTimeout( function () { finish( null ); }, 5000 );
-		video.preload = 'metadata';
-		video.muted = true;
-		video.playsInline = true;
-		video.addEventListener( 'loadeddata', function () {
-			video.currentTime = ( video.duration && video.duration < 1 ) ? 0 : 1;
-		} );
-		video.addEventListener( 'seeked', function () {
-			clearTimeout( timer );
-			try {
-				var canvas = document.createElement( 'canvas' );
-				canvas.width = video.videoWidth || 320;
-				canvas.height = video.videoHeight || 180;
-				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-				canvas.toBlob( function ( b ) { finish( b ); }, 'image/jpeg', 0.7 );
-			} catch ( e ) {
-				finish( null );
-			}
-		} );
-		video.addEventListener( 'error', function () {
-			clearTimeout( timer );
-			finish( null );
-		} );
-		video.src = url;
-	}
-
-	function appendExtraFields( fd ) {
-		Object.keys( extraFields ).forEach( function ( key ) {
-			fd.append( key, extraFields[ key ] );
-		} );
-	}
-
 	// Register a dropzone with the shared mvs-dropzone module, which is the
 	// single owner of panel toggling, click-to-pick, drag feedback, drop and
 	// input-change wiring for the vanilla uploaders. This file keeps only the
@@ -232,50 +173,41 @@
 				}, failed ? 2500 : 800 );
 				return;
 			}
-			var fd = new FormData();
-			fd.append( 'file', files[ done ] );
-			appendExtraFields( fd );
-			// Title only when a single file is uploaded — N files must not
-			// share one name. The caption travels with every file so a grouped
-			// upload keeps it.
-			if ( meta.title && total === 1 ) { fd.append( 'title', meta.title ); }
-			if ( meta.description ) { fd.append( 'description', meta.description ); }
-			if ( meta.tags ) {
-				meta.tags.split( ',' ).map( function ( t ) { return t.trim(); } )
-					.filter( Boolean )
-					.forEach( function ( tag ) { fd.append( 'tags[]', tag ); } );
-			}
-			if ( meta.privacy ) { fd.append( 'privacy', meta.privacy ); }
-			if ( mediaGroup ) {
-				fd.append( 'media_group', mediaGroup );
-				fd.append( 'group_position', String( done ) );
-			}
-
-			appendVideoPoster( fd, files[ done ], function () {
-				window.mvsRest.restFetch( restUrl + 'media', {
-					method: 'POST',
-					body: fd,
-					onUploadProgress: progressLine( statusEl, done + 1, total )
-				} ).then( function ( r ) {
-					if ( ! r.ok ) {
-						failed++;
-						lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
-					} else if ( meta.story && r.data && r.data.id ) {
-						// "Also share as a story" (Pro). Non-fatal: the media is
-						// uploaded either way.
-						window.mvsRest.markAsStory( r.data.id );
-					}
-					done++;
-					if ( done < total ) {
-						statusEl.textContent = format( i18n.uploading, { '%1$d': done + 1, '%2$d': total } );
-					}
-					next();
-				} ).catch( function () {
+			// Title only when a single file is uploaded: N files must not share
+			// one name. The caption travels with every file so a grouped upload
+			// keeps it.
+			window.mvsRest.uploadMedia(
+				restUrl + 'media',
+				files[ done ],
+				{
+					title: total === 1 ? meta.title : '',
+					description: meta.description,
+					tags: meta.tags,
+					privacy: meta.privacy,
+					mediaGroup: mediaGroup,
+					groupPosition: done,
+					extra: extraFields
+				},
+				progressLine( statusEl, done + 1, total )
+			).then( function ( r ) {
+				if ( ! r.ok ) {
 					failed++;
-					lastError = i18n.uploadFailed || '';
-					done++;
-					next();
-				} );
+					lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
+				} else if ( meta.story && r.data && r.data.id ) {
+					// "Also share as a story" (Pro). Non-fatal: the media is
+					// uploaded either way.
+					window.mvsRest.markAsStory( r.data.id );
+				}
+				done++;
+				if ( done < total ) {
+					statusEl.textContent = format( i18n.uploading, { '%1$d': done + 1, '%2$d': total } );
+				}
+				next();
+			} ).catch( function () {
+				failed++;
+				lastError = i18n.uploadFailed || '';
+				done++;
+				next();
 			} );
 		}
 		next();
@@ -319,35 +251,30 @@
 				} );
 				return;
 			}
-			var fd = new FormData();
-			fd.append( 'file', files[ done ] );
-			appendExtraFields( fd );
-			// Album metadata belongs to the album, so no title/caption here —
-			// but a video still needs a cover frame or it lands posterless on
-			// an ffmpeg-less host.
-			appendVideoPoster( fd, files[ done ], function () {
-				window.mvsRest.restFetch( uploadUrl, {
-					method: 'POST',
-					body: fd,
-					onUploadProgress: progressLine( statusEl, done + 1, total )
-				} ).then( function ( r ) {
-					if ( r.ok && r.data && r.data.id ) {
-						uploadedIds.push( r.data.id );
-					} else {
-						failed++;
-						lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
-					}
-					done++;
-					if ( done < total ) {
-						statusEl.textContent = format( i18n.uploading, { '%1$d': done + 1, '%2$d': total } );
-					}
-					next();
-				} ).catch( function () {
+			// Album metadata belongs to the album, so no title or caption here;
+			// a video still gets its poster frame.
+			window.mvsRest.uploadMedia(
+				uploadUrl,
+				files[ done ],
+				{ extra: extraFields },
+				progressLine( statusEl, done + 1, total )
+			).then( function ( r ) {
+				if ( r.ok && r.data && r.data.id ) {
+					uploadedIds.push( r.data.id );
+				} else {
 					failed++;
-					lastError = i18n.uploadFailed || '';
-					done++;
-					next();
-				} );
+					lastError = window.mvsDropzone.failureMessage( r, i18n.uploadFailed );
+				}
+				done++;
+				if ( done < total ) {
+					statusEl.textContent = format( i18n.uploading, { '%1$d': done + 1, '%2$d': total } );
+				}
+				next();
+			} ).catch( function () {
+				failed++;
+				lastError = i18n.uploadFailed || '';
+				done++;
+				next();
 			} );
 		}
 		next();
