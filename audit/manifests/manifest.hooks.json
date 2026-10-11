@@ -3516,6 +3516,16 @@
       ],
       "where": "includes/Social/CommentService.php:86",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_unsent_chat_file_hours",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $hours"
+      ],
+      "where": "includes/Messaging/ChatFiles.php:123",
+      "consumed_by": []
     }
   ],
   "generated": {

@@ -4766,6 +4766,35 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Chat files no message uses, uploaded before a cut-off.
+	 *
+	 * A file attached in a chat uploads at once; when the member removes it or
+	 * closes the tab before sending, no message ever points at it.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $before UTC datetime; only older uploads are returned.
+	 * @param int    $limit  Batch size.
+	 * @return int[] Media ids.
+	 */
+	public function unsent_chat_media_ids( string $before, int $limit = 100 ): array {
+		global $wpdb;
+		return array_map(
+			'intval',
+			(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT mi.media_id FROM {$this->index_table()} mi
+					 WHERE mi.privacy = 'dm' AND mi.created_at < %s
+					 AND NOT EXISTS ( SELECT 1 FROM {$wpdb->prefix}mvs_messages m WHERE m.media_id = mi.media_id )
+					 ORDER BY mi.media_id LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$before,
+					max( 1, $limit )
+				)
+			)
+		);
+	}
+
+	/**
 	 * Author, status and moderation status for many media rows, in one query.
 	 *
 	 * For callers that decide access for a whole page (PrivacyService::safety_refuses()

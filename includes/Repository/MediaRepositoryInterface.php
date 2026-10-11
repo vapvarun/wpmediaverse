@@ -602,4 +602,15 @@ interface MediaRepositoryInterface {
 	 * @return bool
 	 */
 	public function move_to_drive( int $media_id, string $drive_type, int $drive_id, int $folder_id = 0 ): bool;
+
+	/**
+	 * Chat files no message uses, uploaded before a cut-off.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $before UTC datetime.
+	 * @param int    $limit  Batch size.
+	 * @return int[]
+	 */
+	public function unsent_chat_media_ids( string $before, int $limit = 100 ): array;
 }

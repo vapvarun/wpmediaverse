@@ -60,6 +60,7 @@ final class ChatFiles {
 	 */
 	public static function register(): void {
 		add_action( 'mvs_message_deleted', array( self::class, 'on_message_deleted' ), 10, 1 );
+		add_action( 'mvs_purge_old_views', array( self::class, 'sweep_unsent' ) );
 		add_action( self::HOOK, array( self::class, 'run_batch' ) );
 		add_action( 'init', array( self::class, 'privatize_legacy' ), 20 );
 		add_action( 'wp_loaded', array( self::class, 'maybe_start' ) );
@@ -98,6 +99,39 @@ final class ChatFiles {
 		$attachment_id = (int) $row->attachment_id;
 		if ( $attachment_id > 0 && ! self::still_shown( 'attachment_id', $attachment_id, (int) $message_id ) && self::is_legacy_chat_file( $attachment_id, $sender ) ) {
 			wp_delete_attachment( $attachment_id, true );
+		}
+	}
+
+	/**
+	 * Daily: delete chat files that were uploaded but never sent.
+	 *
+	 * Removing an attachment before sending, or closing the tab, leaves the
+	 * upload behind with no message pointing at it. After a day it can no
+	 * longer be waiting to be sent, so it goes, with its files. A file any
+	 * message uses is never touched.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function sweep_unsent(): void {
+		/**
+		 * Hours an unsent chat file is kept before the daily sweep deletes it.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int $hours Default 24.
+		 */
+		$hours  = max( 1, (int) apply_filters( 'mvs_unsent_chat_file_hours', 24 ) );
+		$before = gmdate( 'Y-m-d H:i:s', time() - $hours * HOUR_IN_SECONDS );
+		$repo   = Plugin::container()->get( 'media_repository' );
+
+		for ( $batch = 0; $batch < 20; $batch++ ) {
+			$ids = $repo->unsent_chat_media_ids( $before, 100 );
+			foreach ( $ids as $media_id ) {
+				$repo->delete_cascade( $media_id );
+			}
+			if ( count( $ids ) < 100 ) {
+				return;
+			}
 		}
 	}
 
