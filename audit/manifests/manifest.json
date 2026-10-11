@@ -6960,6 +6960,29 @@
         "MediaRepository::gallery_exclude_subquery() since 2.6.2, removal 4.0.0"
       ],
       "unchanged": "routes, settings"
+    },
+    "refresh_2026_10_12_review_fixes": {
+      "scope": "2.6.2 regression review fixes (code + browser review, 12 Oct)",
+      "added": [
+        "EmailService::host_owns( $type ); types() entries accept 'host_owned' (default true)",
+        "MediaRepository::document_scope_clause( $column, $scope ); document_scope_ids( $scope, $among ) now checks a bounded list",
+        "MediaRepository::search_clause( $search, $alias = '' )",
+        "query_by_author / count_visible_by_author accept exclude_non_cover_group",
+        "Migrator v43: mvs_messages KEY media_id, KEY attachment_id",
+        "filter mvs_privacy_level_value (unknown privacy slugs map to private, 80)",
+        "Deactivator::JOB_HOOKS includes ChatFiles::HOOK"
+      ],
+      "changed": [
+        "ChatFiles::move keeps sent files it cannot read (fail + Site Health) and fresh unsent ones; hide_legacy nests its meta clause under AND",
+        "AccountDeletionService::request is idempotent while a deletion is pending",
+        "GeneralSettingsRegistrar lists only emails the host does not own",
+        "Media Grid block render uses gallery_hidden_clause()",
+        "build_query_parts search uses search_clause( 'm' )",
+        "document_title_candidates third arg is the scope array",
+        "NotificationService: no link to an item the reader cannot see",
+        "dashboard-view album modal merges early picks; bp-activity-media revokes preview blob URLs; explore-feed render uses 'explore' privacy"
+      ],
+      "unchanged": "routes, settings"
     }
   },
   "category_sources": {

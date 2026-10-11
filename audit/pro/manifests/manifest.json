@@ -2545,6 +2545,19 @@
         "BoostAffordance enqueues the boosts store with {id} dependency entries (PHPStan baseline entry removed)"
       ],
       "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_12_review_fixes": {
+      "scope": "targeted (2.6.2 regression review fixes)",
+      "added": {},
+      "changed": [
+        "challenges-store.js / battles-store.js: upload with privacy public, picker scope=public&media_type=image, notPublic message; templates challenges-body.php + battles-body.php @version 2.6.2 (hint reworded, notice removed, gamification.css .mvs-submit-notice removed)",
+        "ChallengeNotificationListener: challenge email types 'host_owned' => false",
+        "instagram/partials/feed-card.php: carousel filtered by can_list, signed thumbnails only (@version 2.6.2)",
+        "pinterest/profile.php + instagram/profile.php: exclude_non_cover_group on list and count (@version 2.6.2)",
+        "SearchService: scope via Free document_scope_clause(); final scope check via document_scope_ids( scope, candidates )",
+        "AnalyticsService Top 10: WHERE event_type IN (ALLOWED_EVENT_TYPES)"
+      ],
+      "unchanged": "routes, settings, tables"
     }
   },
   "category_sources": {
