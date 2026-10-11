@@ -6,8 +6,28 @@ parameters:
 			path: includes/Admin/CollectionMetaBox.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\CollectionMetaBox\\:\\:render_rule_row\\(\\) has parameter \\$categories with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/CollectionMetaBox.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\CollectionMetaBox\\:\\:render_rule_row\\(\\) has parameter \\$rule with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/CollectionMetaBox.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\CollectionMetaBox\\:\\:render_rule_row\\(\\) has parameter \\$tags with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/CollectionMetaBox.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 2
+			path: includes/Admin/DocumentListPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\DocumentListPage\\:\\:authors_for\\(\\) has parameter \\$items with no value type specified in iterable type array\\.$#"
+			count: 1
 			path: includes/Admin/DocumentListPage.php
 
 		-
@@ -36,6 +56,11 @@ parameters:
 			path: includes/Admin/MediaListPage.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\MediaListPage\\:\\:render_row\\(\\) has parameter \\$item with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
 			message: "#^Negated boolean expression is always false\\.$#"
 			count: 2
 			path: includes/Admin/MediaListPage.php
@@ -56,7 +81,37 @@ parameters:
 			path: includes/Admin/MediaListPage.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\MemberModeration\\:\\:add_column\\(\\) has parameter \\$columns with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/MemberModeration.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\MemberModeration\\:\\:add_column\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/MemberModeration.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\MemberModeration\\:\\:add_row_action\\(\\) has parameter \\$actions with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/MemberModeration.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\MemberModeration\\:\\:add_row_action\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/MemberModeration.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/ModerationQueue.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\ModerationQueue\\:\\:build_tabs\\(\\) has parameter \\$counts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/ModerationQueue.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\ModerationQueue\\:\\:build_tabs\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/ModerationQueue.php
 
@@ -81,12 +136,107 @@ parameters:
 			path: includes/Admin/OverviewPage.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\OverviewPage\\:\\:get_recent_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/OverviewPage.php
+
+		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"
 			count: 1
 			path: includes/Admin/OverviewPage.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\ReportsPage\\:\\:add_moderation_tab\\(\\) has parameter \\$tabs with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/ReportsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\ReportsPage\\:\\:add_moderation_tab\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/ReportsPage.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:add_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_checkbox_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_checkbox_group_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_color_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_file_types_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_number_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_page_dropdown_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_password_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_pro_checkbox_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_pro_select_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_select_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_size_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_text_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_textarea_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_upload_roles_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:render_webhook_row\\(\\) has parameter \\$webhook with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/Settings/FieldRenderer.php
 
@@ -106,6 +256,11 @@ parameters:
 			path: includes/Admin/Settings/FieldRenderer.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\Sanitizers\\:\\:sanitize_webhooks\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/Sanitizers.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
@@ -113,6 +268,26 @@ parameters:
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 3
+			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:get_registered_sections\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:group_sections\\(\\) has parameter \\$sections with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:group_sections\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:render_section_cards\\(\\) has parameter \\$section with no value type specified in iterable type array\\.$#"
+			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
 
 		-
@@ -124,6 +299,16 @@ parameters:
 			message: "#^Property WP_Screen\\:\\:\\$id \\(string\\) on left side of \\?\\? is not nullable\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsSaveGuard\\:\\:filter_allowed_options\\(\\) has parameter \\$allowed with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsSaveGuard.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsSaveGuard\\:\\:filter_allowed_options\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsSaveGuard.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
@@ -142,6 +327,11 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/TagManagementPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\TagManagementPage\\:\\:render_bulk_actions_form\\(\\) has parameter \\$tags with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/TagManagementPage.php
 
@@ -166,9 +356,44 @@ parameters:
 			path: includes/Auth/AppConnect.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Auth\\\\AppConnect\\:\\:auth_block\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Auth/AppConnect.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Auth\\\\AppConnect\\:\\:join_buddynext_allowlist\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Auth/AppConnect.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
 			path: includes/Blocks/BlockRegistrar.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Blocks\\\\BlockRegistrar\\:\\:register_category\\(\\) has parameter \\$categories with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Blocks/BlockRegistrar.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Blocks\\\\BlockRegistrar\\:\\:register_category\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Blocks/BlockRegistrar.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Blocks\\\\MVS_CSS\\:\\:add\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/Blocks/MVS_CSS.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Blocks\\\\MVS_CSS\\:\\:init\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/Blocks/MVS_CSS.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Blocks\\\\MVS_CSS\\:\\:output\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/Blocks/MVS_CSS.php
 
 		-
 			message: "#^Call to static method confirm\\(\\) on an unknown class WP_CLI\\.$#"
@@ -211,9 +436,339 @@ parameters:
 			path: includes/CLI/Commands.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_activity_thumbnails\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_activity_thumbnails\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_activity_thumbnails\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_ai\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_ai\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_ai\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_placeholder_color\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:backfill_placeholder_color\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cache_flush\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cache_flush\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cache_flush\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cleanup_expired\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cleanup_expired\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cleanup_expired\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cleanup_local\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cleanup_local\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cleanup_local\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cloud_thumbs_backfill\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cloud_thumbs_backfill\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:cloud_thumbs_backfill\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:diagnose_cpt_ids\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:diagnose_cpt_ids\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:faststart\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:faststart\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:faststart\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:migrate\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:migrate\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:migrate\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:migrate_storage\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:migrate_storage\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:migrate_storage\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:moderation_stats\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:moderation_stats\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:moderation_stats\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:optimize\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:optimize\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:optimize\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:optimize_bulk\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:optimize_bulk\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:optimize_bulk\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:prune_views\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:prune_views\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:prune_views\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:regenerate_thumbnails\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:regenerate_thumbnails\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:regenerate_thumbnails\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:reindex\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:reindex\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:reindex\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:relocalize_private\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:relocalize_private\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:relocalize_private\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:repair_storage\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:repair_storage\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:repair_storage\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:report_section\\(\\) has parameter \\$fields with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:report_section\\(\\) has parameter \\$rows with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:stats\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:stats\\(\\) has parameter \\$args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:stats\\(\\) has parameter \\$assoc_args with no type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:storage_walk_args\\(\\) has parameter \\$overrides with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:storage_walk_args\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:sync_activity_privacy\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:sync_activity_privacy\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\CLI\\\\Commands\\:\\:sync_activity_privacy\\(\\) has parameter \\$assoc_args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
 			message: "#^Offset 'basedir' on array\\{path\\: string, url\\: string, subdir\\: string, basedir\\: string, baseurl\\: string, error\\: string\\|false\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Abilities\\:\\:get_ability_definitions\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Abilities.php
 
 		-
 			message: "#^Call to function is_wp_error\\(\\) with int\\<1, max\\> will always evaluate to false\\.$#"
@@ -224,6 +779,46 @@ parameters:
 			message: "#^is_wp_error\\(int\\<1, max\\>\\) will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Core/Activator.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\DashboardSections\\:\\:all\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/DashboardSections.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\DashboardSections\\:\\:core_sections\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/DashboardSections.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\DashboardSections\\:\\:grouped\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/DashboardSections.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\DashboardSections\\:\\:normalise\\(\\) has parameter \\$section with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/DashboardSections.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\DashboardSections\\:\\:normalise\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/DashboardSections.php
+
+		-
+			message: "#^Property WPMediaVerse\\\\Core\\\\DashboardSections\\:\\:\\$resolved type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/DashboardSections.php
+
+		-
+			message: "#^Property WPMediaVerse\\\\Core\\\\Loader\\:\\:\\$actions type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Loader.php
+
+		-
+			message: "#^Property WPMediaVerse\\\\Core\\\\Loader\\:\\:\\$filters type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Loader.php
 
 		-
 			message: "#^Constant DB_NAME not found\\.$#"
@@ -238,6 +833,41 @@ parameters:
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 36
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:admin_url\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:deliver_webhook\\(\\) has parameter \\$headers with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:enqueue_rest_client_for_block\\(\\) has parameter \\$block with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:filter_nav_menu_objects\\(\\) has parameter \\$items with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:filter_nav_menu_objects\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:register_documents_tab\\(\\) has parameter \\$tabs with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:register_documents_tab\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
 			path: includes/Core/Plugin.php
 
 		-
@@ -266,12 +896,157 @@ parameters:
 			path: includes/Core/TemplateHelpers.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:bulk_get_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:get_parent_route\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:media_thumbnail\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:picture_or_img\\(\\) has parameter \\$extra_attrs with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_admin_empty_state\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_back_link\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_block_empty_state\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_explore_sort_toolbar\\(\\) has parameter \\$hidden with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_grid_item\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_grid_item\\(\\) has parameter \\$stats with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:render_panel_toolbar\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:toolbar_attrs\\(\\) has parameter \\$config with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:toolbar_search\\(\\) has parameter \\$search with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpers\\:\\:toolbar_select\\(\\) has parameter \\$select with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<2, max\\> given\\.$#"
 			count: 1
 			path: includes/Core/TemplateHelpers.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:bulk_get_stats\\(\\) has parameter \\$media_ids with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:bulk_get_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:get_parent_route\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:get_parent_route\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:media_thumbnail\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:render_admin_empty_state\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:render_back_link\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:render_block_empty_state\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:render_grid_item\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:render_grid_item\\(\\) has parameter \\$stats with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateHelpersInterface\\:\\:render_panel_toolbar\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpersInterface.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateLoader\\:\\:can_view_media\\(\\) has parameter \\$media with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateLoader\\:\\:get_template\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateLoader\\:\\:title_parts\\(\\) has parameter \\$parts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateLoader\\:\\:title_parts\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Core/TemplateLoader.php
 
@@ -361,6 +1136,51 @@ parameters:
 			path: includes/Integrations/Companions/CompanionInstaller.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Integrations\\\\WebhookService\\:\\:build_media_payload\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Integrations/WebhookService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Integrations\\\\WebhookService\\:\\:dispatch\\(\\) has parameter \\$payload with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Integrations/WebhookService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Integrations\\\\WebhookService\\:\\:get_webhooks\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Integrations/WebhookService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Integrations\\\\WebhookService\\:\\:maybe_retry\\(\\) has parameter \\$headers with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Integrations/WebhookService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Integrations\\\\WebhookService\\:\\:send\\(\\) has parameter \\$headers with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Integrations/WebhookService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\ChatFiles\\:\\:health_result\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/ChatFiles.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\ChatFiles\\:\\:hide_legacy_item\\(\\) has parameter \\$handler with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/ChatFiles.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\ChatFiles\\:\\:register_health_test\\(\\) has parameter \\$tests with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/ChatFiles.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\ChatFiles\\:\\:register_health_test\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/ChatFiles.php
+
+		-
 			message: "#^If condition is always true\\.$#"
 			count: 2
 			path: includes/Messaging/MessagingService.php
@@ -371,14 +1191,244 @@ parameters:
 			path: includes/Messaging/MessagingService.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:conversation_tab_where\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:create_group_conversation\\(\\) has parameter \\$opts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:enrich_conversations\\(\\) has parameter \\$conversations with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:enrich_conversations\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:export_user_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:find_or_create_conversation\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_attachment_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_conversations\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_media_share_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_message_preview\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_message_reactions\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_messages\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_participants\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_participants_for_conversations\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:get_reactions_for_messages\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:poll\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:poll_reaction_updates\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:search_messages\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:send_message\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:sender_may_attach\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\MessagingService\\:\\:update_participant\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
 			message: "#^Left side of && is always true\\.$#"
 			count: 1
 			path: includes/Messaging/NotificationListener.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\NotificationListener\\:\\:erase_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\NotificationListener\\:\\:export_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\NotificationListener\\:\\:register_eraser\\(\\) has parameter \\$erasers with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\NotificationListener\\:\\:register_eraser\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\NotificationListener\\:\\:register_exporter\\(\\) has parameter \\$exporters with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\NotificationListener\\:\\:register_exporter\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\RestPollingTransport\\:\\:get_client_config\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/RestPollingTransport.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\RestPollingTransport\\:\\:poll\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/RestPollingTransport.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\RestPollingTransport\\:\\:push\\(\\) has parameter \\$message with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/RestPollingTransport.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\TransportInterface\\:\\:get_client_config\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/TransportInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\TransportInterface\\:\\:poll\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/TransportInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Messaging\\\\TransportInterface\\:\\:push\\(\\) has parameter \\$message with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Messaging/TransportInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\PostTypes\\\\PublicListing\\:\\:filter_sitemap\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/PostTypes/PublicListing.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\PostTypes\\\\PublicListing\\:\\:filter_sitemap\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/PostTypes/PublicListing.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\PostTypes\\\\PublicListing\\:\\:meta_query\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/PostTypes/PublicListing.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Privacy\\\\MemberDataMap\\:\\:member_condition\\(\\) has parameter \\$spec with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Privacy/MemberDataMap.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Privacy\\\\MemberDataMap\\:\\:retain_map\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Privacy/MemberDataMap.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\ActivityController\\:\\:enrich_activity_media\\(\\) has parameter \\$activities with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/ActivityController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\ActivityController\\:\\:enrich_activity_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/ActivityController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\AlbumController\\:\\:get_collection_params\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/AlbumController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\AlbumController\\:\\:prepare_album_response\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/AlbumController.php
+
+		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
 			path: includes/REST/Controller/AlbumController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\CollectionController\\:\\:enrich_rule\\(\\) has parameter \\$rule with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/CollectionController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\CollectionController\\:\\:enrich_rule\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/CollectionController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\CollectionController\\:\\:get_collection_params\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/CollectionController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\CollectionController\\:\\:prepare_collection_response\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/CollectionController.php
 
 		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
@@ -391,6 +1441,26 @@ parameters:
 			path: includes/REST/Controller/CommentController.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\ConfigController\\:\\:get_item_schema\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/ConfigController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\ConfigController\\:\\:respond_with_etag\\(\\) has parameter \\$config with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/ConfigController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:format_user_list\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/FollowController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:get_pagination_args\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/FollowController.php
+
+		-
 			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:unfollow_user\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
 			count: 1
 			path: includes/REST/Controller/FollowController.php
@@ -401,7 +1471,22 @@ parameters:
 			path: includes/REST/Controller/MediaController.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:get_collection_params\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Property WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:\\$stats_map type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/REST/Controller/MediaController.php
 
@@ -409,6 +1494,21 @@ parameters:
 			message: "#^Return type \\(array\\|null\\) of method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should be compatible with return type \\(WP_Error\\|WP_REST_Response\\) of method WP_REST_Controller\\:\\:prepare_item_for_response\\(\\)$#"
 			count: 1
 			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Unable to resolve the template type T in call to function rest_sanitize_boolean$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\ModerationController\\:\\:get_collection_params\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/ModerationController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\ModerationController\\:\\:prepare_item_from_meta\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/ModerationController.php
 
 		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
@@ -421,12 +1521,397 @@ parameters:
 			path: includes/REST/Controller/NotificationController.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\SignedUrlController\\:\\:serve_file\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: includes/REST/Controller/SignedUrlController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\TagController\\:\\:format_term\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/Controller/TagController.php
+
+		-
 			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\UserController\\:\\:search_users\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
 			count: 1
 			path: includes/REST/Controller/UserController.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\RestGate\\:\\:gate\\(\\) has parameter \\$handler with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/RestGate.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\RestGate\\:\\:resolve_targets\\(\\) has parameter \\$rule with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/REST/RestGate.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaIntegrityRepository\\:\\:placeholders\\(\\) has parameter \\$values with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaIntegrityRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:admin_documents\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:admin_media_list\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:album_items\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:album_items_parts\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:album_items_parts\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:authors_with_term_taxonomy_ids\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:build_privacy_where\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:build_query_parts\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:build_query_parts\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:count_album_items\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:count_documents\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:count_documents_shared_with\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:count_visible_by_author\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:document_ids_in_folders\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:document_type_counts\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:document_visibility_clause\\(\\) has parameter \\$spec with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:document_visibility_clause\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:documents_shared_with\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:drive_document_facets\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:drive_document_facets\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:drive_documents\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:drive_documents_scope\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:drive_documents_scope\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:explore_privacy_clause\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:feed_page\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:find_ids_by_meta\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_all\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_batch\\(\\) has parameter \\$media_ids with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_batch\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_by_slug\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_moderation_counts\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:get_user_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:grantee_clause\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:insert\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:media_ids_missing_meta\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:media_with_meta\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:member_privacy_clause\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:normalize_query_args\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:normalize_query_args\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:or_set\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:public_cloud_candidate_where\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:public_documents\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:query\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:query\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:query_by_author\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:query_by_author\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:query_count\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:query_recent\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:ranked_feed_page\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:set_many\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:shared_with_scope\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:tag_cloud_total\\(\\) has parameter \\$types with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:top_author_ids\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepository\\:\\:user_media_totals\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepository.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:documents_shared_with\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:drive_document_facets\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:drive_document_facets\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:drive_documents\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:get_all\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:get_batch\\(\\) has parameter \\$media_ids with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:get_batch\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:get_by_slug\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:get_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:get_user_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:insert\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:media_with_meta\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:public_documents\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Repository\\\\MediaRepositoryInterface\\:\\:set_many\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Repository/MediaRepositoryInterface.php
+
+		-
 			message: "#^Call to function is_wp_error\\(\\) with array\\{safe\\: bool, flags\\: array\\<string\\>, confidence\\: float\\} will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AIService\\:\\:analyze\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AIService\\:\\:moderate\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AIService\\:\\:process\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Services/AIService.php
 
@@ -446,12 +1931,102 @@ parameters:
 			path: includes/Services/AIService.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AccountDeletionService\\:\\:cancel\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AccountDeletionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AccountDeletionService\\:\\:request\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AccountDeletionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AlbumService\\:\\:add_items\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AlbumService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AlbumService\\:\\:create\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AlbumService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AlbumService\\:\\:get_items\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AlbumService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\AlbumService\\:\\:get_items_with_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/AlbumService.php
+
+		-
 			message: "#^Negated boolean expression is always true\\.$#"
 			count: 1
 			path: includes/Services/AlbumService.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CacheService\\:\\:get_media_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CacheService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CacheService\\:\\:get_moderation_counts\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CacheService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CacheService\\:\\:get_tag_cloud\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CacheService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CacheService\\:\\:get_user_stats\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CacheService.php
+
+		-
 			message: "#^Left side of && is always true\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:actionable_row\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:cleanup_local_one\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:cleanup_tmp_dirs\\(\\) has parameter \\$tmp_dirs with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:copy_to_dest\\(\\) has parameter \\$tmp_dirs with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:get_status\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:local_only_refusal\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:migrate_one\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CloudOps\\:\\:set_status\\(\\) has parameter \\$patch with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Services/CloudOps.php
 
@@ -476,6 +2051,116 @@ parameters:
 			path: includes/Services/CloudOps.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CollectionService\\:\\:get_rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CollectionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CollectionService\\:\\:resolve\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CollectionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\CollectionService\\:\\:save_rules\\(\\) has parameter \\$rules with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/CollectionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\FilenameStrategy\\:\\:sanitize_setting\\(\\) has parameter \\$value with no type specified\\.$#"
+			count: 1
+			path: includes/Services/FilenameStrategy.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:erase_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:erase_member\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:erase_social\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:export_mapped\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:export_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:export_social\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:register_erasers\\(\\) has parameter \\$erasers with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:register_erasers\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:register_exporters\\(\\) has parameter \\$exporters with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\GDPRService\\:\\:register_exporters\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/GDPRService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:register_tests\\(\\) has parameter \\$tests with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:register_tests\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:test_media_privacy\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:test_pages\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:test_serve_offload\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:test_tables\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:test_template_overrides\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\HealthCheckService\\:\\:test_uploads\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/HealthCheckService.php
+
+		-
 			message: "#^Call to function is_wp_error\\(\\) with string will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Services/ImageOptimizationService.php
@@ -483,6 +2168,31 @@ parameters:
 		-
 			message: "#^Constant WPINC not found\\.$#"
 			count: 3
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ImageOptimizationService\\:\\:emit_avif_sibling\\(\\) has parameter \\$context with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ImageOptimizationService\\:\\:optimize\\(\\) has parameter \\$context with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ImageOptimizationService\\:\\:optimize_media\\(\\) has parameter \\$opts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ImageOptimizationService\\:\\:optimize_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ImageOptimizationService\\:\\:run_recompress_pass\\(\\) has parameter \\$context with no value type specified in iterable type array\\.$#"
+			count: 1
 			path: includes/Services/ImageOptimizationService.php
 
 		-
@@ -496,12 +2206,112 @@ parameters:
 			path: includes/Services/LocalDriver.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\LoggerService\\:\\:error\\(\\) has parameter \\$metadata with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/LoggerService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\LoggerService\\:\\:get_logs\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/LoggerService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\LoggerService\\:\\:get_logs\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/LoggerService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\LoggerService\\:\\:info\\(\\) has parameter \\$metadata with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/LoggerService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\LoggerService\\:\\:log\\(\\) has parameter \\$metadata with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/LoggerService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\LoggerService\\:\\:warning\\(\\) has parameter \\$metadata with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/LoggerService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\MediaFileRotator\\:\\:move_sets\\(\\) has parameter \\$sets with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/MediaFileRotator.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\MediaFileRotator\\:\\:rotate_many\\(\\) has parameter \\$ids with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/MediaFileRotator.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ModerationService\\:\\:get_log\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ModerationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ModerationService\\:\\:get_queue\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ModerationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ModerationService\\:\\:handle_flagged\\(\\) has parameter \\$result with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ModerationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ModerationService\\:\\:needs_review\\(\\) has parameter \\$counts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ModerationService.php
+
+		-
 			message: "#^Property WPMediaVerse\\\\Services\\\\ModerationService\\:\\:\\$ai is never read, only written\\.$#"
 			count: 1
 			path: includes/Services/ModerationService.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\PosterService\\:\\:stage_bytes\\(\\) has parameter \\$image with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/PosterService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\PrivacyService\\:\\:query_listable_spaces\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/PrivacyService.php
+
+		-
 			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ProfileService\\:\\:filter_avatar_data\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ProfileService\\:\\:filter_avatar_data\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ProfileService\\:\\:filter_avatar_url\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ProfileService\\:\\:get_profile\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ProfileService\\:\\:update_profile\\(\\) has parameter \\$fields with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ProfileService\\:\\:upload_avatar\\(\\) has parameter \\$file with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Services/ProfileService.php
 
@@ -511,9 +2321,64 @@ parameters:
 			path: includes/Services/ProfileService.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\SignedUrlService\\:\\:serve\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/SignedUrlService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\SignedUrlService\\:\\:sign\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/SignedUrlService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\SignedUrlService\\:\\:validate\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/SignedUrlService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\SignedUrlService\\:\\:validate_signature\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/SignedUrlService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\StatsService\\:\\:get_for_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/StatsService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\StatsService\\:\\:get_for_user\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/StatsService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\StorageLimitService\\:\\:filter_upload_args\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/StorageLimitService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\StorageLimitService\\:\\:filter_upload_args\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/StorageLimitService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\StorageRepairService\\:\\:run_to_completion\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/StorageRepairService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\StorageRepairService\\:\\:set_state\\(\\) has parameter \\$patch with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/StorageRepairService.php
+
+		-
 			message: "#^Property WPMediaVerse\\\\Services\\\\StorageRepairService\\:\\:\\$storage is never read, only written\\.$#"
 			count: 1
 			path: includes/Services/StorageRepairService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\TransactionService\\:\\:get_for_user\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/TransactionService.php
 
 		-
 			message: "#^Call to function is_wp_error\\(\\) with array will always evaluate to false\\.$#"
@@ -523,6 +2388,21 @@ parameters:
 		-
 			message: "#^Constant WPINC not found\\.$#"
 			count: 3
+			path: includes/Services/UploadService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\UploadService\\:\\:generate_video_poster_thumbnails\\(\\) has parameter \\$video_meta with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/UploadService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\UploadService\\:\\:handle\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Services/UploadService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\UploadService\\:\\:handle\\(\\) has parameter \\$file with no value type specified in iterable type array\\.$#"
+			count: 1
 			path: includes/Services/UploadService.php
 
 		-
@@ -536,6 +2416,16 @@ parameters:
 			path: includes/Services/UploadService.php
 
 		-
+			message: "#^Unable to resolve the template type T in call to function array_values$#"
+			count: 1
+			path: includes/Services/UserDeletionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Services\\\\ViewRetentionService\\:\\:sanitize_setting\\(\\) has parameter \\$value with no type specified\\.$#"
+			count: 1
+			path: includes/Services/ViewRetentionService.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 12
 			path: includes/Shortcodes/Shortcodes.php
@@ -546,6 +2436,151 @@ parameters:
 			path: includes/Shortcodes/Shortcodes.php
 
 		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_album\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_block_template\\(\\) has parameter \\$attributes with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_collection\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_dashboard\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_documents\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_explore_feed\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_gallery\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_member_photos\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_pdf_viewer\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_player\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_profile_edit\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_stats\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_upload\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_usage_history\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\ActivityService\\:\\:format_activity\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/ActivityService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\ActivityService\\:\\:get_feed\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/ActivityService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\ActivityService\\:\\:get_feed\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/ActivityService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\ActivityService\\:\\:on_upload\\(\\) has parameter \\$file_data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/ActivityService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\CommentService\\:\\:format_comment\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/CommentService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\CommentService\\:\\:format_comment_with_replies\\(\\) has parameter \\$replies_map with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/CommentService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\CommentService\\:\\:format_comment_with_replies\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/CommentService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\CommentService\\:\\:get_for_media\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/CommentService.php
+
+		-
 			message: "#^Parameter \\#1 \\$args of function get_comments expects array\\{author_email\\?\\: string, author_url\\?\\: string, author__in\\?\\: array\\<int\\>, author__not_in\\?\\: array\\<int\\>, comment__in\\?\\: array\\<int\\>, comment__not_in\\?\\: array\\<int\\>, count\\?\\: bool, date_query\\?\\: array, \\.\\.\\.\\}, array\\{parent\\: string, type\\: 'mvs_comment', status\\: 'approve', orderby\\: 'comment_date_gmt', order\\: 'ASC'\\} given\\.$#"
 			count: 1
 			path: includes/Social/CommentService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\FavoriteService\\:\\:get_user_favorites\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/FavoriteService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\FollowService\\:\\:get_counts\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/FollowService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\FollowService\\:\\:get_followers\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/FollowService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\FollowService\\:\\:get_following\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/FollowService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\MentionService\\:\\:get_for_user\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/MentionService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\NotificationService\\:\\:format_notification\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/NotificationService.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Social\\\\NotificationService\\:\\:get_notifications\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: includes/Social/NotificationService.php
