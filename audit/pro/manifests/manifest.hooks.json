@@ -804,6 +804,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_pro_caption_media_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$types"
+      ],
+      "where": "includes/Captions/TranscriptionService.php:476",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_analytics_summary",
       "type": "filter",
       "args_count": 3,
