@@ -2512,7 +2512,17 @@
         "GroupController create/add run Free can_message() per member (refuse requests and missing users)",
         "Documents: privacy action/field and SpaceLinkService need can_share()",
         "PermissionController::create_link caps level with can_grant_level()",
-        "ChallengeService: WPCS class brace (no behaviour change)"
+        "ChallengeService: WPCS class brace (no behaviour change)",
+        "BoostService create under GET_LOCK; get_active_boosted_ids least-delivered first",
+        "ProMemberData: competition votes erased; entries anonymise_unique",
+        "BattleService accept merges settings (xp_win kept); resolve/finalize/resolve_match claim on status",
+        "TournamentService try_advance: champion at one winner, bye for odd winner",
+        "AnalyticsController record_event RateLimiter play_events 120/min",
+        "LeaderboardService does not cache empty pages",
+        "Connector import batches of 5 (JS), route maxItems 10",
+        "StreakService milestone claimed with unique user meta per day",
+        "SearchService narrowed searches use 1000 candidates",
+        "Requires PHP 8.1"
       ],
       "unchanged": "routes, hooks, settings, tables"
     }

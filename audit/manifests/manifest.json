@@ -6879,6 +6879,18 @@
         "Album/Collection CPTs exclude_from_search",
         "ActivityService count query always prepared (lifecycle clause binds the viewer)"
       ],
+      "group_b": [
+        "UserDeletionService cascade job carries the user id; batches re-read author_media_ids",
+        "MediaRepository::generate_unique_slug two queries max; insert() retries a duplicate slug once",
+        "Album list: no item ids unless with_items; viewable_item_count counts own items with one COUNT; viewable_item_ids request cache",
+        "Migrator::run add_option lock + version per step",
+        "MemberPurger honours retain-map anonymise_unique (MemberDataMap::ANONYMOUS_ID_BASE)",
+        "CommentService::get_for_media fetches replies for the page's threads only",
+        "Requires PHP 8.1 (header, MVS_MIN_PHP, readme, composer)",
+        "NotificationService::already_notified for reactions, follows, favourites; titles hidden for readers who cannot view",
+        "UserController search uses user_nicename, not user_login",
+        "ViewRetentionService::purge_notifications (filter mvs_notification_retention_days)"
+      ],
       "unchanged": "routes, settings, tables"
     }
   },

@@ -1564,6 +1564,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_notification_retention_days",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $days"
+      ],
+      "where": "includes/Services/ViewRetentionService.php:92",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_media_before_delete",
       "type": "action",
       "args_count": 1,
