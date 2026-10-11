@@ -303,6 +303,21 @@ class MessagingService {
 			);
 		}
 
+		// A blocked pair is refused before the lookup, in either direction. The
+		// existing thread used to be handed back (and the caller's side of it
+		// re-opened) to someone the other person had blocked: they could not send,
+		// but "Message" still opened the conversation as if nothing had happened.
+		// Only a block does this; a privacy setting ("who can message me") never
+		// closes a thread two people already have.
+		$access = $this->can_message( $user_a, $user_b );
+		if ( ! $access['allowed'] && 'blocked' === $access['reason'] ) {
+			return array(
+				'conversation_id' => 0,
+				'created'         => false,
+				'status'          => 'blocked',
+			);
+		}
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
