@@ -235,7 +235,7 @@ class ActivityFormIntegration {
 			if ( '' !== $chosen_privacy ) {
 				$current_privacy = (string) $repo->get( $media_id, 'privacy' );
 				if ( $current_privacy !== $chosen_privacy ) {
-					$repo->set( $media_id, 'privacy', $chosen_privacy );
+					\WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->apply_requested_privacy( $media_id, $chosen_privacy );
 				}
 			}
 
@@ -334,7 +334,7 @@ class ActivityFormIntegration {
 			// write it as CSV, but a meta value is never type-guaranteed).
 			$media_ids = array_filter( array_map( 'absint', explode( ',', (string) $raw_ids ) ) );
 			foreach ( $media_ids as $media_id ) {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'group' );
+				\WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->apply_requested_privacy( $media_id, 'group' );
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
 			}
 		}

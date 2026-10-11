@@ -6,6 +6,9 @@
  *   Rule 9   no ticket or card id in a comment (the id belongs in the commit).
  *   Rule 10  no method over 150 lines; a baselined long method may not grow.
  *   Rule 11  no new $wpdb query outside the repository layer and the migrator.
+ *   Rule 12  one owner per core rule (docs/architecture/core-contract.md): no new
+ *            privacy SQL, privacy write, wp_mail(), thumbnail signing or upload
+ *            request outside the class that owns it.
  *
  * Usage: php bin/lib/code-standard-check.php <plugin-dir> [--bless] [--named]
  * --named prints "Code standard (ids)" etc. instead of rule numbers, for Pro,
@@ -20,8 +23,8 @@
 $dir   = rtrim( $argv[1] ?? '.', '/' );
 $bless = in_array( '--bless', $argv, true );
 $label = in_array( '--named', $argv, true )
-	? array( 'id' => 'Code standard (ids)', 'method' => 'Code standard (method length)', 'wpdb' => 'Code standard ($wpdb)' )
-	: array( 'id' => 'Rule 9 ', 'method' => 'Rule 10', 'wpdb' => 'Rule 11' );
+	? array( 'id' => 'Code standard (ids)', 'method' => 'Code standard (method length)', 'wpdb' => 'Code standard ($wpdb)', 'owner' => 'Core contract' )
+	: array( 'id' => 'Rule 9 ', 'method' => 'Rule 10', 'wpdb' => 'Rule 11', 'owner' => 'Rule 12' );
 
 const MAX_METHOD_LINES = 150;
 const ID_PATTERN       = '/Basecamp|\b[Cc]ards? #?\d{8,}|#\d{8,}|\b(?:9\d{9}|10\d{9})\b/';
@@ -31,6 +34,38 @@ const WPDB_METHODS     = array( 'query', 'get_results', 'get_var', 'get_row', 'g
 $wpdb_allowed = '#(^|/)(Repository/|Core/Migrator\.php$|Core/Installer\.php$)#';
 
 $baseline_file = $dir . '/audit/cleanup/code-standard-baseline.txt';
+
+/*
+ * Core contract owners: a rule's code lives in its owner; everyone else calls it.
+ * Each entry: pattern counted per file, files allowed to hold it, the door to call.
+ */
+$owners = array(
+	'privacy-sql'   => array(
+		'pattern' => '/\b\w+\.privacy\s*(?:=|<>|!=|IN\b)|\bprivacy\s*(?:=|<>|!=)\s*%s|\bprivacy\s+(?:NOT\s+)?IN\s*\(/i',
+		'allowed' => '#(^|/)(Repository/|Services/PrivacyService\.php$|Core/Migrator\.php$)#',
+		'ext'     => 'php',
+		'door'    => 'MediaRepository list modes / PrivacyService clauses',
+	),
+	'privacy-write' => array(
+		'pattern' => '/->set\(\s*[^,]+,\s*[\'"]privacy[\'"]/',
+		// Moderation forces an item private whatever its album; the migrator rewrites stored data.
+		'allowed' => '#(^|/)(Repository/|Services/PrivacyService\.php$|Services/AlbumService\.php$|Services/ModerationService\.php$|Core/Migrator\.php$)#',
+		'ext'     => 'php',
+		'door'    => 'PrivacyService::apply_requested_privacy()',
+	),
+	'wp-mail'       => array(
+		'pattern' => '/\bwp_mail\s*\(/',
+		'allowed' => '#(^|/)Services/EmailService\.php$#',
+		'ext'     => 'php',
+		'door'    => 'EmailService::send_member_email()',
+	),
+	'upload'        => array(
+		'pattern' => '/\.append\(\s*[\'"]file[\'"]/',
+		'allowed' => '#(^|/)assets/js/frontend/mvs-rest\.js$#',
+		'ext'     => 'js',
+		'door'    => 'window.mvsRest.uploadMedia()',
+	),
+);
 
 /**
  * Files the checks read: shipped PHP and JS, never generated or vendored code.
@@ -147,6 +182,15 @@ foreach ( standard_files( $dir ) as $path ) {
 	if ( $wpdb && ! preg_match( $wpdb_allowed, $path ) ) {
 		$current[] = "wpdb\t$path\t$wpdb";
 	}
+	foreach ( $owners as $rule => $owner ) {
+		if ( ! str_ends_with( $path, '.' . $owner['ext'] ) || preg_match( $owner['allowed'], $path ) ) {
+			continue;
+		}
+		$hits = preg_match_all( $owner['pattern'], $src );
+		if ( $hits ) {
+			$current[] = "owner:$rule\t$path\t$hits";
+		}
+	}
 }
 
 if ( $bless ) {
@@ -174,6 +218,10 @@ foreach ( $current as $row ) {
 		++$fail;
 	} elseif ( 'method' === $kind && ( ! $known || (int) $value > (int) $known[0] ) ) {
 		echo "{$label['method']} $where: $value lines" . ( $known ? " (baseline {$known[0]})" : '' ) . ': split it by job, nothing new over ' . MAX_METHOD_LINES . "\n";
+		++$fail;
+	} elseif ( 0 === strpos( $kind, 'owner:' ) && ( ! $known || (int) $value > (int) $known[0] ) ) {
+		$rule = substr( $kind, 6 );
+		echo "{$label['owner']} $where: new {$rule} code ($value" . ( $known ? ", baseline {$known[0]}" : '' ) . "): call {$owners[ $rule ]['door']} instead of repeating its rule\n";
 		++$fail;
 	} elseif ( 'wpdb' === $kind && ( ! $known || (int) $value > (int) $known[0] ) ) {
 		echo "{$label['wpdb']} $where: $value \$wpdb queries" . ( $known ? " (baseline {$known[0]})" : '' ) . ": new queries go in a repository class\n";

@@ -1530,8 +1530,6 @@ const { state, actions } = store( 'mvs/messaging', {
 		},
 
 		*uploadAttachment( file, type ) {
-			const formData = new FormData();
-			formData.append( 'file', file );
 
 			// Generation token: if the user cancels while the upload is in
 			// flight, the stale response must not re-attach the file.
@@ -1540,14 +1538,10 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.attachmentPercent = 0;
 
 			try {
-				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
-					method: 'POST',
-					body: formData,
-					onUploadProgress: ( loaded, total ) => {
-						if ( requestId === attachmentRequestId ) {
-							state.attachmentPercent = total ? Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) : 0;
-						}
-					},
+				const res = yield window.mvsRest.uploadMedia( REST + '/messages/upload', file, {}, ( loaded, total ) => {
+					if ( requestId === attachmentRequestId ) {
+						state.attachmentPercent = total ? Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) : 0;
+					}
 				} );
 				const data = res.data;
 
@@ -1667,15 +1661,8 @@ const { state, actions } = store( 'mvs/messaging', {
 			const ext = mimeType.includes( 'webm' ) ? '.webm' : '.mp4';
 			const file = new File( [ blob ], 'voice' + ext, { type: mimeType } );
 
-			// Upload.
-			const formData = new FormData();
-			formData.append( 'file', file );
-
 			try {
-				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
-					method: 'POST',
-					body: formData,
-				} );
+				const res = yield window.mvsRest.uploadMedia( REST + '/messages/upload', file, {} );
 				const data = res.data;
 				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 

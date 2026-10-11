@@ -1184,17 +1184,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			state.editModal.saving = true;
 			state.editModal.replaceProgress = '0%';
-			const formData = new FormData();
-			formData.append( 'file', file );
-
 			try {
-				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
-					method: 'POST',
-					body: formData,
-					// A replacement video can be large: show how much has been sent.
-					onUploadProgress: ( loaded, total ) => {
-						state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
-					},
+				// A replacement video can be large: show how much has been sent.
+				const res = await window.mvsRest.uploadMedia( ctx.restUrl + 'media/' + mediaId + '/replace', file, {}, ( loaded, total ) => {
+					state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
 				} );
 				if ( res.ok ) {
 					const updated = res.data;

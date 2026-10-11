@@ -666,7 +666,8 @@
 	 * @param {File}     file       File to upload.
 	 * @param {Object}   fields     title, description, privacy, tags (array or comma string),
 	 *                              mediaGroup + groupPosition, poster (Blob, optional),
-	 *                              extra (field => value, sent as given, e.g. a group id).
+	 *                              extra (field => value, sent as given, e.g. a group id),
+	 *                              signal (AbortSignal, to let the member cancel).
 	 * @param {Function} onProgress Optional ( loaded, total ) callback.
 	 * @return {Promise<Object>} restFetch result { ok, status, data }.
 	 */
@@ -695,7 +696,7 @@
 		} else {
 			await appendVideoPoster( fd, file );
 		}
-		return restFetch( url, { method: 'POST', body: fd, onUploadProgress: onProgress } );
+		return restFetch( url, { method: 'POST', body: fd, onUploadProgress: onProgress, signal: f.signal } );
 	}
 
 	window.mvsRest = {
