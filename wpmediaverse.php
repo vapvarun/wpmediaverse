@@ -11,7 +11,7 @@
  * Text Domain: wpmediaverse
  * Domain Path: /languages
  * Requires at least: 6.5
- * Requires PHP: 7.4
+ * Requires PHP: 8.1
  *
  * @package WPMediaVerse
  */
@@ -23,7 +23,7 @@ define( 'MVS_VERSION', '2.6.1' );
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
 // an already-active site to an older PHP.
-define( 'MVS_MIN_PHP', '7.4' );
+define( 'MVS_MIN_PHP', '8.1' );
 // Minimum Pro version compatible with this free build. Free and Pro release in
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
