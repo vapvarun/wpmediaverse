@@ -17,11 +17,6 @@ defined( 'ABSPATH' ) || exit;
 class BlockRegistrar {
 
 	/**
-	 * Block names to register.
-	 *
-	 * @var string[]
-	 */
-	/**
 	 * Registered Gutenberg blocks.
 	 *
 	 * Stories moved to the Pro plugin in 1.9.0 (engine, REST, admin, frontend

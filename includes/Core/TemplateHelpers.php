@@ -273,37 +273,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Canonical media-thumbnail renderer — single source of truth for every
-	 * MVS surface (Explore grid, BP activity, album/collection, Pro premium
-	 * layouts, single-media page, block templates).
-	 *
-	 * Always returns **inner** markup the caller wraps in its own `<a>`/link.
-	 * Output is one of:
-	 *   - `<img>` for media with a thumbnail
-	 *   - `<video preload="metadata">` for videos without a thumbnail (the
-	 *     browser paints the first frame — matches the single-media view)
-	 *   - an audio card for audio
-	 *   - a generic dashicon placeholder as last resort
-	 *
-	 * Use this instead of building ad-hoc `<img>` tags in templates so every
-	 * surface handles poster-less videos the same way.
-	 *
-	 * @since 1.1.3
-	 *
-	 * @param int   $media_id Media ID (mvs_media_index.media_id).
-	 * @param array $args     Options:
-	 *                        - 'size'         string WP image size slug (default 'large'). Validated against
-	 *                                                the registered image-size whitelist; invalid values fall
-	 *                                                back to 'large'.
-	 *                        - 'alt'          string Pre-escaped alt-attribute value. Caller MUST escape with
-	 *                                                esc_attr() before passing — the helper does not re-escape.
-	 *                                                When empty, the media's title is fetched and escaped here.
-	 *                        - 'classes'      string Extra classes for the <img>/<video>.
-	 *                        - 'show_play'    bool   Append play-icon overlay for videos (default true).
-	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
-	 * @return string Inner HTML ready for echo.
-	 */
-	/**
 	 * The <track> for a video's captions, or '' when it has none.
 	 *
 	 * Captions are made by Pro (or any provider); Free asks through
@@ -384,6 +353,37 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
 	}
 
+	/**
+	 * Canonical media-thumbnail renderer — single source of truth for every
+	 * MVS surface (Explore grid, BP activity, album/collection, Pro premium
+	 * layouts, single-media page, block templates).
+	 *
+	 * Always returns **inner** markup the caller wraps in its own `<a>`/link.
+	 * Output is one of:
+	 *   - `<img>` for media with a thumbnail
+	 *   - `<video preload="metadata">` for videos without a thumbnail (the
+	 *     browser paints the first frame — matches the single-media view)
+	 *   - an audio card for audio
+	 *   - a generic dashicon placeholder as last resort
+	 *
+	 * Use this instead of building ad-hoc `<img>` tags in templates so every
+	 * surface handles poster-less videos the same way.
+	 *
+	 * @since 1.1.3
+	 *
+	 * @param int   $media_id Media ID (mvs_media_index.media_id).
+	 * @param array $args     Options:
+	 *                        - 'size'         string WP image size slug (default 'large'). Validated against
+	 *                                                the registered image-size whitelist; invalid values fall
+	 *                                                back to 'large'.
+	 *                        - 'alt'          string Pre-escaped alt-attribute value. Caller MUST escape with
+	 *                                                esc_attr() before passing — the helper does not re-escape.
+	 *                                                When empty, the media's title is fetched and escaped here.
+	 *                        - 'classes'      string Extra classes for the <img>/<video>.
+	 *                        - 'show_play'    bool   Append play-icon overlay for videos (default true).
+	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
+	 * @return string Inner HTML ready for echo.
+	 */
 	public function media_thumbnail( int $media_id, array $args = array() ): string {
 		$args = wp_parse_args(
 			$args,
@@ -1276,20 +1276,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Render a complete grid item (thumbnail + overlay + info row).
-	 *
-	 * Reads media data from mvs_media_index via MediaRepository -- no get_post().
-	 *
-	 * @param int   $media_id Media ID (mvs_media_index.media_id).
-	 * @param array $stats    Optional stats array with 'views', 'reactions', 'comments' keys.
-	 * @param array $options  Optional rendering options:
-	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
-	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
-	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
-	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
-	 *                        - 'size' (string) Image size. Default 'medium'.
-	 */
-	/**
 	 * The aspect-ratio style a justified grid item carries.
 	 *
 	 * `original` mode lays media out as justified rows (Flickr-style): each
@@ -1332,6 +1318,20 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return ' style="--mvs-ar:' . esc_attr( (string) $ratio ) . '"';
 	}
 
+	/**
+	 * Render a complete grid item (thumbnail + overlay + info row).
+	 *
+	 * Reads media data from mvs_media_index via MediaRepository -- no get_post().
+	 *
+	 * @param int   $media_id Media ID (mvs_media_index.media_id).
+	 * @param array $stats    Optional stats array with 'views', 'reactions', 'comments' keys.
+	 * @param array $options  Optional rendering options:
+	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
+	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
+	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
+	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
+	 *                        - 'size' (string) Image size. Default 'medium'.
+	 */
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
@@ -1554,27 +1554,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Resolve the parent route for a detail/edit page so the template can render
-	 * a back-link in its header.
-	 *
-	 * Defined by docs/MOBILE_UX_GUIDELINE.md §6.3. Pages call this with a
-	 * context string and receive a `[ 'url' => ..., 'label' => ... ]` pair (or
-	 * null if the parent can't be resolved — in which case the template should
-	 * skip the back link instead of rendering a broken one).
-	 *
-	 * Pro extensions can register their own contexts via the
-	 * `mvs_parent_route` filter, applied at the end of this method.
-	 * (This block used to name `mvs_parent_url`, a filter that has never
-	 * existed anywhere in either plugin; the docs copied the wrong name from
-	 * here, so it is corrected at the source.)
-	 *
-	 * @param string $context Page context — one of:
-	 *                        'single-media', 'album', 'edit-profile',
-	 *                        'challenge', 'battle', 'tournament'.
-	 * @param array  $args    Optional context-specific args (e.g. media_id).
-	 * @return array{url: string, label: string}|null
-	 */
-	/**
 	 * Resolve the canonical Explore page URL.
 	 *
 	 * Prefers the configured `mvs_page_explore` page permalink (matching
@@ -1678,6 +1657,27 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		);
 	}
 
+	/**
+	 * Resolve the parent route for a detail/edit page so the template can render
+	 * a back-link in its header.
+	 *
+	 * Defined by docs/MOBILE_UX_GUIDELINE.md §6.3. Pages call this with a
+	 * context string and receive a `[ 'url' => ..., 'label' => ... ]` pair (or
+	 * null if the parent can't be resolved — in which case the template should
+	 * skip the back link instead of rendering a broken one).
+	 *
+	 * Pro extensions can register their own contexts via the
+	 * `mvs_parent_route` filter, applied at the end of this method.
+	 * (This block used to name `mvs_parent_url`, a filter that has never
+	 * existed anywhere in either plugin; the docs copied the wrong name from
+	 * here, so it is corrected at the source.)
+	 *
+	 * @param string $context Page context — one of:
+	 *                        'single-media', 'album', 'edit-profile',
+	 *                        'challenge', 'battle', 'tournament'.
+	 * @param array  $args    Optional context-specific args (e.g. media_id).
+	 * @return array{url: string, label: string}|null
+	 */
 	public function get_parent_route( string $context, array $args = array() ): ?array {
 		$parent = null;
 
@@ -2210,15 +2210,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * One labelled select in the toolbar.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param string $id     Id prefix.
-	 * @param array  $select Select config.
-	 * @return string
-	 */
-	/**
 	 * Direction labels that match the field being sorted.
 	 *
 	 * Every toolbar offered "Newest first / Oldest first" whatever the sort
@@ -2276,6 +2267,15 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return (array) apply_filters( 'mvs_direction_labels', $labels, $field );
 	}
 
+	/**
+	 * One labelled select in the toolbar.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $id     Id prefix.
+	 * @param array  $select Select config.
+	 * @return string
+	 */
 	private function toolbar_select( string $id, array $select ): string {
 		$name    = isset( $select['name'] ) ? (string) $select['name'] : '';
 		$label   = isset( $select['label'] ) ? (string) $select['label'] : '';

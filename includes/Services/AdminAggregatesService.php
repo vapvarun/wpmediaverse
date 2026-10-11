@@ -141,9 +141,6 @@ class AdminAggregatesService {
 	}
 
 	/**
-	 * Total views aggregated across all media.
-	 */
-	/**
 	 * Engagement totals for the Stats page, optionally bounded by date.
 	 *
 	 * Views, reactions, comments and shares in ONE row rather than four calls —
@@ -285,6 +282,9 @@ class AdminAggregatesService {
 		return is_array( $rows ) ? $rows : array();
 	}
 
+	/**
+	 * Total views aggregated across all media.
+	 */
 	public function total_views(): int {
 		return (int) $this->cache->remember_persistent(
 			'admin_total_views',

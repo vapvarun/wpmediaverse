@@ -905,13 +905,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Set a single field for a media item.
-	 *
-	 * @param int    $media_id Media ID.
-	 * @param string $key      Field name (without _mvs_ prefix).
-	 * @param mixed  $value    Value to store.
-	 */
-	/**
 	 * Would this privacy change cross the 'dm' boundary?
 	 *
 	 * A chat file ('dm') is uploaded by the message rules (types, size, no
@@ -927,6 +920,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		return null !== $old && (string) $old !== (string) $new && ( 'dm' === (string) $old || 'dm' === (string) $new );
 	}
 
+	/**
+	 * Set a single field for a media item.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $key      Field name (without _mvs_ prefix).
+	 * @param mixed  $value    Value to store.
+	 */
 	public function set( int $media_id, string $key, $value ): void {
 		global $wpdb;
 
@@ -4326,16 +4326,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Assemble the JOIN + WHERE + bound params for query()/query_count().
-	 *
-	 * Pure: builds strings and a params array, runs no query. Every
-	 * caller-supplied value becomes a prepare placeholder; only fixed SQL
-	 * fragments and the privacy literals are interpolated.
-	 *
-	 * @param array $args Normalized args.
-	 * @return array{join:string,where:string,params:array,distinct:bool}
-	 */
-	/**
 	 * Build an OR-set predicate for one column: `(col op %x OR col op %x …)`.
 	 *
 	 * @since 2.4.0
@@ -4370,6 +4360,16 @@ class MediaRepository implements MediaRepositoryInterface {
 		return array( '(' . implode( ' OR ', $ors ) . ')', $values );
 	}
 
+	/**
+	 * Assemble the JOIN + WHERE + bound params for query()/query_count().
+	 *
+	 * Pure: builds strings and a params array, runs no query. Every
+	 * caller-supplied value becomes a prepare placeholder; only fixed SQL
+	 * fragments and the privacy literals are interpolated.
+	 *
+	 * @param array $args Normalized args.
+	 * @return array{join:string,where:string,params:array,distinct:bool}
+	 */
 	private function build_query_parts( array $args ): array {
 		global $wpdb;
 
@@ -4777,23 +4777,6 @@ class MediaRepository implements MediaRepositoryInterface {
 		return 'visible';
 	}
 
-	/**
-	 * The same explore gate as resolve_explore_privacy_mode(), but as a raw
-	 * SQL fragment for callers that can't route through query() because they
-	 * join extra tables (story meta, Pro feed layouts). Returns
-	 * [ where_fragment, params ] using the supplied column alias.
-	 *
-	 * Mirrors build_privacy_where()'s 'public'/'visible' cases; kept in lockstep
-	 * with resolve_explore_privacy_mode() so every explore surface honours one
-	 * rule. `moderation_status = 'approved'` is the caller's responsibility
-	 * (it varies by table alias).
-	 *
-	 * @since 1.6.0
-	 *
-	 * @param string $alias     Table alias holding the privacy + post_author columns (e.g. 'idx').
-	 * @param int    $viewer_id Current viewer (0 = anonymous).
-	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
-	 */
 	/**
 	 * One page of the admin All-Media list, its total, and the status tab counts.
 	 *
@@ -5449,6 +5432,23 @@ class MediaRepository implements MediaRepositoryInterface {
 		return $wpdb->prefix . 'mvs_media_index';
 	}
 
+	/**
+	 * The same explore gate as resolve_explore_privacy_mode(), but as a raw
+	 * SQL fragment for callers that can't route through query() because they
+	 * join extra tables (story meta, Pro feed layouts). Returns
+	 * [ where_fragment, params ] using the supplied column alias.
+	 *
+	 * Mirrors build_privacy_where()'s 'public'/'visible' cases; kept in lockstep
+	 * with resolve_explore_privacy_mode() so every explore surface honours one
+	 * rule. `moderation_status = 'approved'` is the caller's responsibility
+	 * (it varies by table alias).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $alias     Table alias holding the privacy + post_author columns (e.g. 'idx').
+	 * @param int    $viewer_id Current viewer (0 = anonymous).
+	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
+	 */
 	public function explore_privacy_clause( string $alias, int $viewer_id ): array {
 		// Alias is caller-supplied code, never user input; still constrain it.
 		// Empty alias → bare column names (callers that query a single table
@@ -5630,30 +5630,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * Tag terms that actually have media a listing can render.
-	 *
-	 * `get_terms( 'mvs_tag' )` orders by `wp_term_taxonomy.count`, which counts
-	 * EVERY object on the term — documents included. The Explore feed queries
-	 * `MediaTypes::MEDIA_LIBRARY` (image/video/audio) and excludes documents by
-	 * design, so a tag carried only by documents was rendered as a chip that can
-	 * never match: click it, get zero items (Basecamp 10259632183). A filter
-	 * control that offers a value with no results is worse than not offering it.
-	 *
-	 * So the cloud is counted against the same table and the same type group the
-	 * feed reads, plus the status/moderation gates the feed requires. Privacy is
-	 * deliberately NOT applied: the previous cloud applied none either, and the
-	 * public/members split is per-viewer — narrowing it belongs with a change to
-	 * the privacy model, not with this fix.
-	 *
-	 * Callers that want the document tags ask for `MediaTypes::DOCUMENTS`.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param int      $limit Maximum terms to return. Clamped to 1..200.
-	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
-	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
-	 */
-	/**
 	 * How many tags WOULD qualify for the cloud, ignoring its limit.
 	 *
 	 * The cloud is capped deliberately - core's own wp_tag_cloud() caps at 45,
@@ -5695,6 +5671,30 @@ class MediaRepository implements MediaRepositoryInterface {
 		return (int) $wpdb->get_var( $type_params ? $wpdb->prepare( $sql, $type_params ) : $sql );
 	}
 
+	/**
+	 * Tag terms that actually have media a listing can render.
+	 *
+	 * `get_terms( 'mvs_tag' )` orders by `wp_term_taxonomy.count`, which counts
+	 * EVERY object on the term — documents included. The Explore feed queries
+	 * `MediaTypes::MEDIA_LIBRARY` (image/video/audio) and excludes documents by
+	 * design, so a tag carried only by documents was rendered as a chip that can
+	 * never match: click it, get zero items (Basecamp 10259632183). A filter
+	 * control that offers a value with no results is worse than not offering it.
+	 *
+	 * So the cloud is counted against the same table and the same type group the
+	 * feed reads, plus the status/moderation gates the feed requires. Privacy is
+	 * deliberately NOT applied: the previous cloud applied none either, and the
+	 * public/members split is per-viewer — narrowing it belongs with a change to
+	 * the privacy model, not with this fix.
+	 *
+	 * Callers that want the document tags ask for `MediaTypes::DOCUMENTS`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int      $limit Maximum terms to return. Clamped to 1..200.
+	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
+	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
+	 */
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
 		global $wpdb;
 
@@ -6402,12 +6402,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Soft-delete a media item by setting its status to 'trash'.
-	 *
-	 * @param int $media_id Media ID.
-	 * @return bool True on success.
-	 */
-	/**
 	 * Write a media row's status and drop its cached copy.
 	 *
 	 * The shared half of trash() and restore(), which are otherwise the same
@@ -6443,6 +6437,12 @@ class MediaRepository implements MediaRepositoryInterface {
 		return false !== $result;
 	}
 
+	/**
+	 * Soft-delete a media item by setting its status to 'trash'.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True on success.
+	 */
 	public function trash( int $media_id ): bool {
 		if ( ! $this->write_status( $media_id, 'trash' ) ) {
 			return false;

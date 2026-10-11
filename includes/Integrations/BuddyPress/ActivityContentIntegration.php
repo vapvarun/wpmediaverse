@@ -176,18 +176,6 @@ class ActivityContentIntegration {
 	}
 
 	/**
-	 * Enhance activity media content.
-	 *
-	 * Single unified filter for all activity media rendering:
-	 * 1. Transform rtMedia legacy HTML to MVS rendering (when rtMedia deactivated)
-	 * 2. Transform MediaPress activities via _mpp_attached_media_id meta lookup
-	 * 3. Inject thumbnails for imported/empty mvs_media_upload activities
-	 *
-	 * @param string      $content  Raw activity content.
-	 * @param object|null $activity BP activity object (passed by ref from BP).
-	 * @return string Enhanced content.
-	 */
-	/**
 	 * Remove <img> tags pointing directly at our own uploads folder.
 	 *
 	 * Was: only tags whose file no
@@ -250,6 +238,18 @@ class ActivityContentIntegration {
 		);
 	}
 
+	/**
+	 * Enhance activity media content.
+	 *
+	 * Single unified filter for all activity media rendering:
+	 * 1. Transform rtMedia legacy HTML to MVS rendering (when rtMedia deactivated)
+	 * 2. Transform MediaPress activities via _mpp_attached_media_id meta lookup
+	 * 3. Inject thumbnails for imported/empty mvs_media_upload activities
+	 *
+	 * @param string      $content  Raw activity content.
+	 * @param object|null $activity BP activity object (passed by ref from BP).
+	 * @return string Enhanced content.
+	 */
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
 		// Drop <img> tags whose file is gone. Activities saved before media was
 		// referenced by id carry literal <img src="...uploads/wpmediaverse/...">

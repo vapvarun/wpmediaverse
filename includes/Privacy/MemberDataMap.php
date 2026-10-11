@@ -253,11 +253,6 @@ final class MemberDataMap {
 	}
 
 	/**
-	 * Every user-keyed table, whichever list it is on.
-	 *
-	 * @return string[]
-	 */
-	/**
 	 * SQL condition for "this column holds this member" in a mapped table.
 	 *
 	 * A spec may carry `scope` => [ column => [ type_column, value ] ] for a
@@ -284,6 +279,11 @@ final class MemberDataMap {
 		return $sql;
 	}
 
+	/**
+	 * Every user-keyed table, whichever list it is on.
+	 *
+	 * @return string[]
+	 */
 	public static function all_tables(): array {
 		return array_merge(
 			array_keys( self::erase_map() ),

@@ -101,16 +101,6 @@ class CommentService {
 	}
 
 	/**
-	 * Add a comment to a media item.
-	 *
-	 * @param int    $media_id  Media post ID.
-	 * @param int    $user_id   Commenter user ID.
-	 * @param string $content   Comment content.
-	 * @param int    $parent_id Parent comment ID for threading (0 for top-level).
-	 * @param string $source    Optional source identifier (e.g. 'bp_activity') to prevent sync loops.
-	 * @return int|WP_Error Comment ID on success.
-	 */
-	/**
 	 * Find an identical comment by the same author on the same media, posted
 	 * within the dedupe window.
 	 *
@@ -184,6 +174,16 @@ class CommentService {
 		return 0;
 	}
 
+	/**
+	 * Add a comment to a media item.
+	 *
+	 * @param int    $media_id  Media post ID.
+	 * @param int    $user_id   Commenter user ID.
+	 * @param string $content   Comment content.
+	 * @param int    $parent_id Parent comment ID for threading (0 for top-level).
+	 * @param string $source    Optional source identifier (e.g. 'bp_activity') to prevent sync loops.
+	 * @return int|WP_Error Comment ID on success.
+	 */
 	public function add( int $media_id, int $user_id, string $content, int $parent_id = 0, string $source = '' ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user ) {

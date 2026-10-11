@@ -2827,29 +2827,6 @@ class Plugin {
 	}
 
 	/**
-	 * Register the `mvs-lucide` script + hydration inline once per request.
-	 *
-	 * Central helper so every integration that emits `<i data-lucide="…">`
-	 * can call `Plugin::register_lucide_script()` + `wp_enqueue_script(
-	 * 'mvs-lucide' )` without re-implementing the registration and without
-	 * diverging on the hydration logic.
-	 *
-	 * The inline hydration does two things that a single `createIcons()`
-	 * on `DOMContentLoaded` cannot do:
-	 *
-	 *   1. Hydrates on DCL (covers the static initial render).
-	 *   2. Installs a MutationObserver that calls `createIcons()` again
-	 *      whenever a fresh `<i data-lucide>` enters the DOM. This is the
-	 *      fix for BP Nouveau's Backbone-driven composer re-render, the
-	 *      WP Interactivity API dynamic inserts, and any future dynamic
-	 *      surface that injects Lucide placeholders after initial load.
-	 *
-	 * Prior pattern: every integration duplicated a `wp_register_script(
-	 * 'mvs-lucide', ... ) + wp_add_inline_script( ... )` block. Four such
-	 * blocks existed and any one forgetting or diverging produced the
-	 * "icon renders as an empty box" class of bug we kept re-fixing.
-	 */
-	/**
 	 * Late-priority callback that pairs the `mvs-confirm` stylesheet with its
 	 * script automatically. Any code path that calls
 	 * wp_enqueue_script('mvs-confirm') (directly or via a dep chain like
@@ -2898,6 +2875,29 @@ class Plugin {
 		}
 	}
 
+	/**
+	 * Register the `mvs-lucide` script + hydration inline once per request.
+	 *
+	 * Central helper so every integration that emits `<i data-lucide="…">`
+	 * can call `Plugin::register_lucide_script()` + `wp_enqueue_script(
+	 * 'mvs-lucide' )` without re-implementing the registration and without
+	 * diverging on the hydration logic.
+	 *
+	 * The inline hydration does two things that a single `createIcons()`
+	 * on `DOMContentLoaded` cannot do:
+	 *
+	 *   1. Hydrates on DCL (covers the static initial render).
+	 *   2. Installs a MutationObserver that calls `createIcons()` again
+	 *      whenever a fresh `<i data-lucide>` enters the DOM. This is the
+	 *      fix for BP Nouveau's Backbone-driven composer re-render, the
+	 *      WP Interactivity API dynamic inserts, and any future dynamic
+	 *      surface that injects Lucide placeholders after initial load.
+	 *
+	 * Prior pattern: every integration duplicated a `wp_register_script(
+	 * 'mvs-lucide', ... ) + wp_add_inline_script( ... )` block. Four such
+	 * blocks existed and any one forgetting or diverging produced the
+	 * "icon renders as an empty box" class of bug we kept re-fixing.
+	 */
 	public static function register_lucide_script(): void {
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			return;

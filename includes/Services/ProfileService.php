@@ -238,19 +238,6 @@ class ProfileService {
 	}
 
 	/**
-	 * The community plugin's profile editor, when one owns the member's name.
-	 *
-	 * One profile editor per field: when a community plugin (BuddyPress with
-	 * Extended Profiles) already edits the member's name, MediaVerse links to
-	 * it instead of offering a second form that writes the same field. Bio,
-	 * avatar and the MediaVerse-only settings stay here.
-	 *
-	 * @since 2.6.0
-	 *
-	 * @param int $user_id User ID.
-	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
-	 */
-	/**
 	 * "Who can message you" values a member may pick on this site: the site
 	 * setting and everything stricter.
 	 *
@@ -298,6 +285,19 @@ class ProfileService {
 		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
 	}
 
+	/**
+	 * The community plugin's profile editor, when one owns the member's name.
+	 *
+	 * One profile editor per field: when a community plugin (BuddyPress with
+	 * Extended Profiles) already edits the member's name, MediaVerse links to
+	 * it instead of offering a second form that writes the same field. Bio,
+	 * avatar and the MediaVerse-only settings stay here.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
+	 */
 	public static function community_profile( int $user_id ): array {
 		$profile = array(
 			'url'    => '',

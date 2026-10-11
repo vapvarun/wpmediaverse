@@ -222,9 +222,6 @@ class SettingsPage {
 	}
 
 	/**
-	 * Add settings page as submenu under WPMediaVerse (mvs_media CPT menu).
-	 */
-	/**
 	 * Whether a sanitize callback rejected part of the last submission.
 	 *
 	 * @since 2.4.2
@@ -277,6 +274,9 @@ class SettingsPage {
 		}
 	}
 
+	/**
+	 * Add settings page as submenu under WPMediaVerse (mvs_media CPT menu).
+	 */
 	public function add_menu_page(): void {
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,

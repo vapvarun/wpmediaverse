@@ -2595,14 +2595,6 @@ class MessagingService {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Add or replace a reaction on a message.
-	 *
-	 * @param int    $message_id Message ID.
-	 * @param int    $user_id    User ID.
-	 * @param string $emoji      Emoji character.
-	 * @return bool
-	 */
-	/**
 	 * Whether a user may react to a message.
 	 *
 	 * Resolves the message and requires the actor to be a participant of its
@@ -2648,6 +2640,14 @@ class MessagingService {
 		);
 	}
 
+	/**
+	 * Add or replace a reaction on a message.
+	 *
+	 * @param int    $message_id Message ID.
+	 * @param int    $user_id    User ID.
+	 * @param string $emoji      Emoji character.
+	 * @return bool
+	 */
 	public function add_reaction( int $message_id, int $user_id, string $emoji ): bool {
 		global $wpdb;
 
@@ -3236,23 +3236,6 @@ class MessagingService {
 	}
 
 	/**
-	 * Get media share data for an mvs_media post, scoped to a specific viewer.
-	 *
-	 * All URLs are signed for the explicit conversation viewer (NOT the ambient
-	 * current user — message formatting can run outside the viewer's auth
-	 * context, e.g. background poll enrichment, which is why the thumbnail used
-	 * to come back empty) and routed through the access-controlled mvs serve
-	 * endpoint. That makes conversation-scoped ('dm'-privacy) attachments
-	 * viewable AND downloadable by the conversation's participants while staying
-	 * inaccessible to everyone else. The public /media/{slug}/ permalink is
-	 * intentionally NOT exposed — DM media must only be reachable via the signed
-	 * serve URL.
-	 *
-	 * @param int $media_id  mvs_media post ID.
-	 * @param int $viewer_id User the URLs are signed for (the message viewer).
-	 * @return array|null
-	 */
-	/**
 	 * Give a chat attachment stored as 'dm' media the `attachment` shape the chat
 	 * UI reads (image, video, voice and file messages), from the share payload
 	 * already signed for this viewer. Shares of an existing item keep only
@@ -3277,6 +3260,23 @@ class MessagingService {
 		);
 	}
 
+	/**
+	 * Get media share data for an mvs_media post, scoped to a specific viewer.
+	 *
+	 * All URLs are signed for the explicit conversation viewer (NOT the ambient
+	 * current user — message formatting can run outside the viewer's auth
+	 * context, e.g. background poll enrichment, which is why the thumbnail used
+	 * to come back empty) and routed through the access-controlled mvs serve
+	 * endpoint. That makes conversation-scoped ('dm'-privacy) attachments
+	 * viewable AND downloadable by the conversation's participants while staying
+	 * inaccessible to everyone else. The public /media/{slug}/ permalink is
+	 * intentionally NOT exposed — DM media must only be reachable via the signed
+	 * serve URL.
+	 *
+	 * @param int $media_id  mvs_media post ID.
+	 * @param int $viewer_id User the URLs are signed for (the message viewer).
+	 * @return array|null
+	 */
 	private function get_media_share_data( int $media_id, int $viewer_id ) {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		if ( ! $repo->exists( $media_id ) ) {

@@ -405,9 +405,6 @@ class MediaCapabilities {
 	}
 
 	/**
-	 * Remove capabilities from roles (on uninstall).
-	 */
-	/**
 	 * Every capability this plugin can put on a role.
 	 *
 	 * ONE list, derived from the declarations that grant. `remove_caps()` used

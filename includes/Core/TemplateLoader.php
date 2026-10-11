@@ -495,11 +495,6 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Serve media templates via template_redirect.
-	 *
-	 * Handles single media, explore archive, user profile, and profile edit.
-	 */
-	/**
 	 * Prevent WordPress canonical redirect on MVS media URLs.
 	 *
 	 * When a media slug matches a WP attachment post, WordPress tries to
@@ -700,6 +695,11 @@ class TemplateLoader {
 		exit;
 	}
 
+	/**
+	 * Serve media templates via template_redirect.
+	 *
+	 * Handles single media, explore archive, user profile, and profile edit.
+	 */
 	public function load_media_templates(): void {
 		// Gate single album/collection privacy here (template_redirect@5), BEFORE
 		// the theme renders. The in-template gates in album.php / collection.php
@@ -745,6 +745,14 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Template resolved on template_redirect, rendered later via template_include.
+	 *
+	 * @since 2.4.2
+	 * @var string
+	 */
+	private $resolved_template = '';
+
+	/**
 	 * Render a full MVS virtual page and stop.
 	 *
 	 * Our virtual pages (explore archive, profile, single media, profile edit)
@@ -755,14 +763,6 @@ class TemplateLoader {
 	 *
 	 * @param string $template Absolute path to the located template file.
 	 */
-	/**
-	 * Template resolved on template_redirect, rendered later via template_include.
-	 *
-	 * @since 2.4.2
-	 * @var string
-	 */
-	private $resolved_template = '';
-
 	private function render_template( string $template ): void {
 		// Heal WP's soft-404 default to 200 for our virtual pages — EXCEPT when
 		// the caller already set an explicit error status (e.g. the members-only
@@ -1385,15 +1385,6 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Locate a template file.
-	 *
-	 * Checks theme first, then plugin templates directory.
-	 *
-	 * @param string $template_name Template file name.
-	 * @param string $template_path Optional subdirectory within the theme override folder.
-	 * @return string Full path to template or empty string if not found.
-	 */
-	/**
 	 * Render the plugin-branded 404 for a plugin-owned URL and exit.
 	 *
 	 * Replaces the `set_404() + status_header(404) + return` pattern used
@@ -1764,6 +1755,15 @@ class TemplateLoader {
 		return $single ? array( $meta ) : array( array( $meta ) );
 	}
 
+	/**
+	 * Locate a template file.
+	 *
+	 * Checks theme first, then plugin templates directory.
+	 *
+	 * @param string $template_name Template file name.
+	 * @param string $template_path Optional subdirectory within the theme override folder.
+	 * @return string Full path to template or empty string if not found.
+	 */
 	public static function locate( string $template_name, string $template_path = '' ): string {
 		$theme_path = self::THEME_DIR . '/';
 		if ( $template_path ) {

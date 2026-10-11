@@ -26,43 +26,6 @@ class CollectionService {
 	private const RULE_KEYS = array( 'media_type', 'tag', 'category', 'author', 'date_after', 'date_before', 'privacy' );
 
 	/**
-	 * Save smart collection rules.
-	 *
-	 * Rules are normalized before storage: keys are whitelisted, and
-	 * tag/category/author values are coerced to IDs (a tag/category name or
-	 * slug is resolved to its term ID) so resolve() always operates on IDs.
-	 *
-	 * @param int   $collection_id Collection post ID.
-	 * @param array $rules         Array of rule definitions.
-	 */
-	/**
-	 * May this media item be put into a collection by this curator?
-	 *
-	 * MEDIA, and PUBLIC OR THEIRS. A collection is a curated, shareable surface
-	 * of images, video and audio, and the curator is usually an admin assembling
-	 * members' work - so the rule the owner set (2026-09-13) is that they may
-	 * use anyone's PUBLIC media, or anything they uploaded themselves, and
-	 * nothing else. Documents are excluded outright: they have their own menu
-	 * and their own categorisation, and files are not mixed with media.
-	 *
-	 * Deliberately NOT `PrivacyService::can_view()`. That answers "may this
-	 * person look at it", which admits members-only media to any logged-in
-	 * curator - and a members-only photo pulled into a public collection is
-	 * exactly the exposure this prevents. Viewing and collecting are different
-	 * questions, so they get different predicates.
-	 *
-	 * Lives here rather than on FavoriteService because both membership stores
-	 * need the same answer: Free keeps manual membership in `mvs_favorites`,
-	 * Pro keeps it in `mvs_pro_collection_items`. One rule, asked twice, so a
-	 * later change cannot drift between them. Basecamp 10298612348.
-	 *
-	 * @since 2.4.2
-	 *
-	 * @param int $media_id   Media item being added.
-	 * @param int $curator_id The user doing the adding.
-	 * @return bool
-	 */
-	/**
 	 * Post-meta key holding a collection's privacy.
 	 *
 	 * Deliberately the SAME key albums use, referenced rather than retyped so
@@ -137,6 +100,33 @@ class CollectionService {
 		return $privacy;
 	}
 
+	/**
+	 * May this media item be put into a collection by this curator?
+	 *
+	 * MEDIA, and PUBLIC OR THEIRS. A collection is a curated, shareable surface
+	 * of images, video and audio, and the curator is usually an admin assembling
+	 * members' work - so the rule the owner set (2026-09-13) is that they may
+	 * use anyone's PUBLIC media, or anything they uploaded themselves, and
+	 * nothing else. Documents are excluded outright: they have their own menu
+	 * and their own categorisation, and files are not mixed with media.
+	 *
+	 * Deliberately NOT `PrivacyService::can_view()`. That answers "may this
+	 * person look at it", which admits members-only media to any logged-in
+	 * curator - and a members-only photo pulled into a public collection is
+	 * exactly the exposure this prevents. Viewing and collecting are different
+	 * questions, so they get different predicates.
+	 *
+	 * Lives here rather than on FavoriteService because both membership stores
+	 * need the same answer: Free keeps manual membership in `mvs_favorites`,
+	 * Pro keeps it in `mvs_pro_collection_items`. One rule, asked twice, so a
+	 * later change cannot drift between them. Basecamp 10298612348.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int $media_id   Media item being added.
+	 * @param int $curator_id The user doing the adding.
+	 * @return bool
+	 */
 	public function may_contain( int $media_id, int $curator_id ): bool {
 		if ( $media_id <= 0 || $curator_id <= 0 ) {
 			return false;
@@ -187,6 +177,16 @@ class CollectionService {
 		return (bool) apply_filters( 'mvs_media_may_join_collection', $allowed, $media_id, $curator_id );
 	}
 
+	/**
+	 * Save smart collection rules.
+	 *
+	 * Rules are normalized before storage: keys are whitelisted, and
+	 * tag/category/author values are coerced to IDs (a tag/category name or
+	 * slug is resolved to its term ID) so resolve() always operates on IDs.
+	 *
+	 * @param int   $collection_id Collection post ID.
+	 * @param array $rules         Array of rule definitions.
+	 */
 	public function save_rules( int $collection_id, array $rules ): void {
 		$clean = array();
 

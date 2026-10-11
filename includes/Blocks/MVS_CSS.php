@@ -33,13 +33,6 @@ class MVS_CSS {
 	private static $styles = array();
 
 	/**
-	 * Generate scoped CSS for a block instance.
-	 *
-	 * @param string               $unique_id Block unique ID.
-	 * @param array<string, mixed> $attrs     Block attributes.
-	 * @return string CSS string.
-	 */
-	/**
 	 * A CSS length unit from block attributes, or the default.
 	 *
 	 * Block attributes are author-controlled strings that land inside a <style>
@@ -95,6 +88,13 @@ class MVS_CSS {
 		return '';
 	}
 
+	/**
+	 * Generate scoped CSS for a block instance.
+	 *
+	 * @param string               $unique_id Block unique ID.
+	 * @param array<string, mixed> $attrs     Block attributes.
+	 * @return string CSS string.
+	 */
 	public static function generate( $unique_id, $attrs ) {
 		if ( empty( $unique_id ) || ! is_scalar( $unique_id ) ) {
 			// A non-scalar id reached sanitize_html_class() and emitted a PHP

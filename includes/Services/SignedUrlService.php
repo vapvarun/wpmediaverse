@@ -476,12 +476,6 @@ class SignedUrlService {
 	}
 
 	/**
-	 * Serve a thumbnail file for a validated signed request.
-	 *
-	 * @param int    $media_id Validated media ID.
-	 * @param string $size     Requested size (large|medium|thumbnail).
-	 */
-	/**
 	 * The file's own URL, when this viewer may see it and it can be served
 	 * directly by the web server (see DirectDelivery), else ''.
 	 *

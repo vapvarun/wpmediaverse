@@ -526,14 +526,6 @@ class NotificationService {
 	}
 
 	/**
-	 * Handle new DM sent event.
-	 *
-	 * @param int   $message_id      Message ID.
-	 * @param int   $conversation_id Conversation ID.
-	 * @param int   $sender_id       Sender user ID.
-	 * @param int[] $recipient_ids   Recipient user IDs.
-	 */
-	/**
 	 * Format a notification row for REST output.
 	 *
 	 * @param object $row Database row.

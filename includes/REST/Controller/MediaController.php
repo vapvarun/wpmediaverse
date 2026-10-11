@@ -2608,11 +2608,6 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Get client IP.
-	 *
-	 * @return string
-	 */
-	/**
 	 * Parse a meta value that may be JSON array or comma-separated into a flat array.
 	 *
 	 * @param string $raw Raw meta value.
@@ -2629,6 +2624,11 @@ class MediaController extends WP_REST_Controller {
 		return array_values( array_filter( array_map( 'trim', explode( ',', $raw ) ) ) );
 	}
 
+	/**
+	 * Get client IP.
+	 *
+	 * @return string
+	 */
 	private static function get_client_ip(): string {
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
