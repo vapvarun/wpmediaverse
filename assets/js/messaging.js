@@ -6,6 +6,7 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 // The open thread's list, and whether it should follow new content.
 let messagesEl = null;
@@ -660,7 +661,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		get noSearchResults() { return state.searchQuery.length >= 2 && state.searchResults.length === 0; },
 	},
 
-	actions: {
+	actions: syncEvents( {
 		// ---- Panel ----
 		toggleChatPanel() {
 			state.chatPanelOpen = ! state.chatPanelOpen;
@@ -2191,7 +2192,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			const d = new Date( parseServerDate( dateStr ) );
 			return d.toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } );
 		},
-	},
+	} ),
 
 	callbacks: {
 		// Auto-scroll on mount.

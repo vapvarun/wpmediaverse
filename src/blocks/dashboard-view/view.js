@@ -7,6 +7,7 @@
  */
 
 import { store, getContext, getElement, withScope } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 /**
  * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
@@ -671,7 +672,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return [];
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		/**
 		 * Keep Tab inside the open modal and close it on Escape
 		 * (data-wp-on--keydown on .mvs-modal).
@@ -2455,7 +2456,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.collectionModal.visible = false;
 			}
 		},
-	},
+	} ),
 	callbacks: {
 		/**
 		 * data-wp-watch on each .mvs-modal; its context names the state key

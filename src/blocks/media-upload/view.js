@@ -5,6 +5,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 /**
  * Map of MIME types to human-readable labels for error messages.
@@ -145,7 +146,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 				: ( state.i18n?.uploadNFiles || 'Upload %d files' ).replace( '%d', n );
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		handleClick( event ) {
 			// Don't trigger from the controls inside the dropzone (the file input,
 			// privacy select, metadata fields, Confirm/Cancel).
@@ -406,5 +407,5 @@ const { state, actions } = store( 'mvs/media-upload', {
 				}
 			}
 		},
-	},
+	} ),
 } );

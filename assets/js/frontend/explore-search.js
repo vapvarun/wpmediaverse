@@ -88,30 +88,29 @@
 			} );
 	}
 
-	// --- Delegated click on a result card: empty the list before the router
-	// morphs. The cards are injected at runtime INTO the iAPI router region, so
-	// they are not in the server markup the destination page renders. When the
-	// destination is itself a router region (an MVS `/media/@user/` profile), the
-	// router navigates client-side and MORPHS the old region onto the new one —
-	// and the diff, finding runtime cards with no counterpart, strands one inside
-	// the profile header. Clearing on the NEXT TICK lets
-	// the click initiate navigation first, then hands the morph the empty
-	// container the server default has. A full page load (e.g. a BuddyPress
-	// `/members/` destination) makes this a harmless no-op. ---
-	document.addEventListener( 'click', function ( e ) {
-		var card = e.target.closest( '.mvs-user-card' );
-		if ( ! card ) {
-			return;
-		}
-		var cardResults = document.getElementById( 'mvs-user-search-results' );
-		if ( ! cardResults ) {
+	// --- Empty the list before any navigation. The cards are injected at
+	// runtime INTO the iAPI router region, so they are not in the server markup
+	// the next page renders; when the router morphs the region client-side, a
+	// runtime card with no counterpart can be stranded in the new page (once,
+	// inside a profile header). Clearing on the NEXT TICK after any link click,
+	// and on back/forward, lets the navigation start first and hands the morph
+	// the empty container the server renders. A full page load makes it a no-op. ---
+	function clearBeforeNavigation() {
+		var pending = document.getElementById( 'mvs-user-search-results' );
+		if ( ! pending || ! pending.firstChild ) {
 			return;
 		}
 		setTimeout( function () {
-			cardResults.style.display = 'none';
-			clearResults( cardResults );
+			pending.style.display = 'none';
+			clearResults( pending );
 		}, 0 );
+	}
+	document.addEventListener( 'click', function ( e ) {
+		if ( e.target.closest( 'a[href]' ) ) {
+			clearBeforeNavigation();
+		}
 	} );
+	window.addEventListener( 'popstate', clearBeforeNavigation );
 
 	// --- Delegated tab click: any .mvs-search-mode-btn click. ---
 	document.addEventListener( 'click', function ( e ) {

@@ -202,6 +202,7 @@ class Plugin {
 
 		// Register post types, taxonomies, and blocks.
 		add_action( 'init', array( self::class, 'register_types' ) );
+		add_action( 'init', array( self::class, 'register_shared_modules' ), 1 );
 
 		// Custom admin menu (replaces CPT-based menu).
 		add_action( 'admin_menu', array( self::class, 'register_admin_menu' ), 5 );
@@ -1053,6 +1054,22 @@ class Plugin {
 			function () {
 				return new \WPMediaVerse\Repository\MessageRepository();
 			}
+		);
+	}
+
+	/**
+	 * Script modules other modules import by id (Free's stores, Pro's, add-ons').
+	 *
+	 * @since 2.6.2
+	 */
+	public static function register_shared_modules(): void {
+		// syncEvents(): wraps the store actions that need their event
+		// synchronously (Interactivity API withSyncEvent, WordPress 6.8+).
+		wp_register_script_module(
+			'@wpmediaverse/sync-events',
+			MVS_PLUGIN_URL . 'assets/js/frontend/sync-events.js',
+			array( '@wordpress/interactivity' ),
+			self::asset_version( 'assets/js/frontend/sync-events.js' )
 		);
 	}
 
@@ -2696,6 +2713,7 @@ class Plugin {
 					'id'     => '@wordpress/interactivity',
 					'import' => 'static',
 				),
+				'@wpmediaverse/sync-events',
 			),
 			self::asset_version( 'assets/js/messaging.js' )
 		);

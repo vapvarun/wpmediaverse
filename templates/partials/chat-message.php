@@ -12,7 +12,7 @@
  * (e.g. notDeleted, notText) set by enrichMessage() in messaging.js.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.2
  * @since   1.1.0
  */
 
@@ -51,6 +51,15 @@ defined( 'ABSPATH' ) || exit;
 			"\xF0\x9F\x98\xA1",
 			"\xF0\x9F\x91\x8D",
 		);
+		// Screen readers announce the reaction's name, as in the lightbox.
+		$mvs_reaction_label = array(
+			"\xE2\x9D\xA4\xEF\xB8\x8F" => __( 'React with Love', 'wpmediaverse' ),
+			"\xF0\x9F\x98\x82"         => __( 'React with Haha', 'wpmediaverse' ),
+			"\xF0\x9F\x98\xAE"         => __( 'React with Wow', 'wpmediaverse' ),
+			"\xF0\x9F\x98\xA2"         => __( 'React with Sad', 'wpmediaverse' ),
+			"\xF0\x9F\x98\xA1"         => __( 'React with Angry', 'wpmediaverse' ),
+			"\xF0\x9F\x91\x8D"         => __( 'React with Like', 'wpmediaverse' ),
+		);
 		foreach ( $quick_reactions as $emoji ) :
 			?>
 			<button
@@ -61,7 +70,7 @@ defined( 'ABSPATH' ) || exit;
 				echo wp_interactivity_data_wp_context( array( 'emoji' => $emoji ) );
 				?>
 				type="button"
-				aria-label="<?php echo esc_attr( $emoji ); ?>"
+				aria-label="<?php echo esc_attr( $mvs_reaction_label[ $emoji ] ?? $emoji ); ?>"
 			>
 				<?php
 				$mvs_emoji_slug = array(
@@ -76,16 +85,16 @@ defined( 'ABSPATH' ) || exit;
 				<img src="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::emoji_url( $mvs_emoji_slug ) ); ?>" alt="" width="20" height="20" />
 			</button>
 		<?php endforeach; ?>
-		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>">
+		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" fill="currentColor"/></svg>
 		</button>
-		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>">
+		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
 		</button>
 		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.reportMessage" data-wp-bind--hidden="state.hideReportMessage" type="button" title="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Report message', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
 		</button>
-		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--unsend" data-wp-on--click="actions.unsendMessage" data-wp-bind--hidden="state.hideUnsend" type="button" title="<?php esc_attr_e( 'Unsend for everyone', 'wpmediaverse' ); ?>">
+		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--unsend" data-wp-on--click="actions.unsendMessage" data-wp-bind--hidden="state.hideUnsend" type="button" title="<?php esc_attr_e( 'Unsend for everyone', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Unsend for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z" fill="currentColor"/></svg>
 		</button>
 	</div>

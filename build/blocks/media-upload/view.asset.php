@@ -1,1 +1,1 @@
-<?php return array('dependencies' => array('@wordpress/interactivity'), 'version' => '8787a7a28ca9e72c4063', 'type' => 'module');
+<?php return array('dependencies' => array('@wordpress/interactivity', '@wpmediaverse/sync-events'), 'version' => 'd29fee6b4c33d37a149a', 'type' => 'module');

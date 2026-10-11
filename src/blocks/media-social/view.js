@@ -11,6 +11,7 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 /**
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s", no zone) to
@@ -183,7 +184,7 @@ const { state } = store( 'mvs/media-social', {
 			return ! item?.canDelete || item?.editing;
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		/* --- Reactions --- */
 		async toggleReaction( event ) {
 			const ctx = getContext();
@@ -637,7 +638,7 @@ const { state } = store( 'mvs/media-social', {
 		stopPropagation( event ) {
 			event.stopPropagation();
 		},
-	},
+	} ),
 	callbacks: {
 		async init() {
 			const ctx = getContext();

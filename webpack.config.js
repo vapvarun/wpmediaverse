@@ -30,21 +30,21 @@ const configs = Array.isArray( defaultConfig )
 	? defaultConfig
 	: [ defaultConfig ];
 
-// Add view-only entries to the first config.
-const mainConfig = configs[ 0 ];
-const originalEntry = mainConfig.entry;
-
-configs[ 0 ] = {
-	...mainConfig,
-	entry: async () => {
-		const resolved = typeof originalEntry === 'function'
-			? await originalEntry()
-			: originalEntry || {};
-		return {
-			...resolved,
-			...viewEntries,
-		};
-	},
-};
+// Shared script modules MediaVerse registers itself (Core\Plugin::register_shared_modules()):
+// imported by id, resolved by WordPress's import map, never bundled into a view.
+const SHARED_MODULES = [ '@wpmediaverse/sync-events' ];
+configs.forEach( ( config ) => {
+	if ( ! config.output || ! config.output.module ) {
+		return;
+	}
+	( config.plugins || [] ).forEach( ( plugin ) => {
+		if ( 'DependencyExtractionWebpackPlugin' !== plugin.constructor.name ) {
+			return;
+		}
+		const previous = plugin.options.requestToExternalModule;
+		plugin.options.requestToExternalModule = ( request ) =>
+			SHARED_MODULES.includes( request ) ? true : ( previous ? previous( request ) : undefined );
+	} );
+} );
 
 module.exports = configs;

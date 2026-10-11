@@ -5,6 +5,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
@@ -119,7 +120,7 @@ const { state } = store( 'mvs/explore-feed', {
 			return state.hasSuggestions && idx >= 0 ? 'mvs-explore-sugg-' + idx : null;
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		setFilter() {
 			const itemCtx = getContext();
 			const ctx = getContext();
@@ -314,5 +315,5 @@ const { state } = store( 'mvs/explore-feed', {
 
 			ctx.loading = false;
 		},
-	},
+	} ),
 } );

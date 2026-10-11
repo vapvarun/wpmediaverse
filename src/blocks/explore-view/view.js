@@ -8,6 +8,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 /**
  * Explore bulk actions work against a SERVER-RENDERED grid, which is the one
@@ -38,7 +39,7 @@ const { state, actions } = store( 'mvs/explore', {
 			return ( state.i18n?.selected || '%d selected' ).replace( '%d', String( state.bulkIds.length ) );
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		toggleExploreBulk( event ) {
 			// The tile is a link to the media; selecting must not open it.
 			event.preventDefault();
@@ -249,7 +250,7 @@ const { state, actions } = store( 'mvs/explore', {
 			if ( ! state.bulkAlbum ) return;
 			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Added to album.' );
 		},
-	},
+	} ),
 	// callbacks.init() does not fetch tags/cloud: explore.php renders the chip row
 	// on the server, which is what makes the active state survive a router
 	// navigation, so a client fetch would only run for a row nothing reads.

@@ -7691,23 +7691,23 @@ a.mvs-dashboard-card-title:hover {
 /*
  * Hit area, not icon size.
  *
- * These measured 24x24 against a 40px floor, but the 24px glyph is a
- * deliberate design choice for this row and enlarging it would rebuild the
- * comment meta line. So the target grows and the button does not.
- *
- * 40x44, not 44x44: the siblings sit 8.5px apart, so a 44px-wide area would
- * overlap its neighbour by ~11px and the later button in the DOM would win
- * every click in the overlap — silently turning "edit" into "delete" near the
- * boundary. 40 wide leaves 0.5px between areas and still clears the floor.
- * Basecamp 10252222115.
+ * The 24px glyph is a deliberate design choice for this row, so the target
+ * grows and the button does not: a full --mvs-touch-min square around it. The
+ * gap between the two buttons is the touch floor minus the button, so the two
+ * targets meet but never overlap (an overlap would let the later button,
+ * delete, win taps meant for edit).
  */
+.mvs-lightbox-comment-actions {
+    gap: calc(var(--mvs-touch-min, 44px) - 24px);
+}
+
 .mvs-lightbox-comment-action::after {
     content: '';
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 50%;
     translate: -50% -50%;
-    inline-size: 40px;
+    inline-size: var(--mvs-touch-min, 44px);
     block-size: var(--mvs-touch-min, 44px);
 }
 

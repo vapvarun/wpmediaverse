@@ -14,6 +14,7 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
+import { syncEvents } from '@wpmediaverse/sync-events';
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
@@ -773,7 +774,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return idx >= 0 && idx < gridIds.length - 1;
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		// --- Toast ---
 		showToast( msg, type = 'success' ) {
 			// The live region only speaks when its text changes. It is emptied
@@ -2200,7 +2201,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 			}
 		},
-	},
+	} ),
 	callbacks: {
 		// Pro sanitises this server-side (wp_kses on the rendered document), and
 		// it only ever contains the text/markdown/csv tier - no script tier
@@ -2364,7 +2365,7 @@ window.mvsOpenLightbox = function ( mediaId ) {
  * clicks from a single persistent element and survives router swaps.
  */
 const { state: mvsState } = store( 'mvs', {
-	actions: {
+	actions: syncEvents( {
 		*navigate( event ) {
 			const link = event.target?.closest?.( 'a' );
 			const href = link?.href;
@@ -2421,7 +2422,7 @@ const { state: mvsState } = store( 'mvs', {
 				window.location.href = href; // never strand the user
 			}
 		},
-	},
+	} ),
 } );
 
 // Bridge: expose openEditModal to vanilla JS (used by bp-actions.js
