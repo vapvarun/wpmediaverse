@@ -33,7 +33,7 @@ leaving orphaned rows.
 
 ### 2. Empty state
 - **Action**: with zero play events recorded anywhere, visit the tab.
-- **Expect**: "No play events recorded yet. The player will start sending events once viewers watch your videos." plus zeroed summary cards (Plays Today, Plays This Week, Avg Engagement, Top Media Tracked).
+- **Expect**: "No play events recorded yet. The player will start sending events once viewers watch your videos." plus zeroed summary cards (Plays Today, Plays This Week, Avg Engagement). No "Top Media Tracked" card: the Top 10 table lists the videos.
 
 ### 3. Populated overview
 - **Action**: `POST /media/{id}/events` a few times as different sessions (play/pause/complete), reload the tab.
