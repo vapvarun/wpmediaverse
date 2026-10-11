@@ -494,17 +494,9 @@ class UploadService {
 			$moderation_status = 'pending';
 		}
 
-		// Scheduled publishing — store as 'scheduled' status with future
-		// created_at. Skipped when held for moderation so a held upload can't
-		// auto-publish on a schedule and slip past the queue.
+		// No scheduled publishing: the old publish_at branch stored a 'scheduled'
+		// row that nothing ever published (Basecamp 10393276047).
 		$created_at = current_time( 'mysql', true );
-		if ( ! $held_for_moderation && ! empty( $args['publish_at'] ) && 'draft' === $status ) {
-			$publish_time = strtotime( $args['publish_at'] );
-			if ( $publish_time && $publish_time > time() ) {
-				$status     = 'scheduled';
-				$created_at = gmdate( 'Y-m-d H:i:s', $publish_time );
-			}
-		}
 
 		$description = ! empty( $args['description'] ) ? wp_kses_post( $args['description'] ) : '';
 

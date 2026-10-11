@@ -192,6 +192,7 @@ class MediaRepositoryFoldInTest extends WP_UnitTestCase {
 	}
 
 	public function test_query_recent_matches_legacy_sql(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::query_recent' );
 		global $wpdb;
 		$this->seed_mixed();
 		$index = $wpdb->prefix . 'mvs_media_index';
@@ -208,6 +209,7 @@ class MediaRepositoryFoldInTest extends WP_UnitTestCase {
 	}
 
 	public function test_query_recent_with_since_matches_legacy_sql(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::query_recent' );
 		global $wpdb;
 		$this->seed_mixed();
 		$index = $wpdb->prefix . 'mvs_media_index';

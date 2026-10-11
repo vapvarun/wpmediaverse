@@ -76,12 +76,20 @@ class StatsService {
 	public function prune_views( int $days_old = 90 ): int {
 		global $wpdb;
 
-		return (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)",
-				$days_old
-			)
-		);
+		// In batches: one unbounded DELETE on a large views table held a long
+		// lock (Basecamp 10393276047). created_at is indexed.
+		$total = 0;
+		do {
+			$deleted = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY) LIMIT 5000",
+					$days_old
+				)
+			);
+			$total += $deleted;
+		} while ( 5000 === $deleted );
+
+		return $total;
 	}
 
 	/**

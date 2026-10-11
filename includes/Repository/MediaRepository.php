@@ -492,8 +492,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @param int $media_id The mvs_media_index PK (media / album / collection id).
 	 * @return void
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function purge_index_record( int $media_id ): void {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		if ( $media_id <= 0 ) {
 			return;
 		}
@@ -3847,8 +3850,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string $since_datetime Optional ISO datetime ("Y-m-d H:i:s")
 	 *                               cutoff. Default '' = no cutoff.
 	 * @return array<int, array> Numerically-indexed list of media rows.
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function query_recent( int $limit = 20, string $since_datetime = '' ): array {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		return $this->query(
 			array(
 				'status'  => 'publish',
@@ -5946,8 +5952,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @param string $status Moderation status.
 	 * @return int
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function count_by_moderation( string $status ): int {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		global $wpdb;
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -5984,8 +5993,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @param string $group_id Group ID stored in meta.
 	 * @return int
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function count_by_group( string $group_id ): int {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		global $wpdb;
 
 		$index_table = $wpdb->prefix . 'mvs_media_index';
@@ -6011,8 +6023,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @param int $media_id Media ID.
 	 * @return array|null Stats row or null.
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function get_stats( int $media_id ): ?array {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		global $wpdb;
 
 		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -6099,8 +6114,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int    $media_id Media ID.
 	 * @param string $column   Column name (views, downloads, reactions, comments, shares).
 	 * @return bool True on success.
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function increment_stat( int $media_id, string $column ): bool {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		global $wpdb;
 
 		$allowed = array( 'views', 'downloads', 'reactions', 'comments', 'shares' );
@@ -6126,8 +6144,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string $column   Column name (views, downloads, reactions, comments, shares).
 	 * @param int    $value    Value to set.
 	 * @return bool True on success.
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function set_stat( int $media_id, string $column, int $value ): bool {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		global $wpdb;
 
 		$allowed = array( 'views', 'downloads', 'reactions', 'comments', 'shares' );
@@ -6176,8 +6197,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @param int $days_old Number of days to retain (default: 90).
 	 * @return int Number of deleted rows.
+	 *
+	 * @deprecated 2.6.2 Nothing calls it. Removal planned for 4.0.0.
 	 */
 	public function prune_events( int $days_old = 90 ): int {
+		_deprecated_function( __METHOD__, '2.6.2' );
 		global $wpdb;
 
 		$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

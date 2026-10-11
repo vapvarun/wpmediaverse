@@ -209,6 +209,8 @@ interface MediaRepositoryInterface {
 	 * Count media items in a moderation status.
 	 *
 	 * @param string $status Moderation status.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function count_by_moderation( string $status ): int;
 
@@ -223,6 +225,8 @@ interface MediaRepositoryInterface {
 	 * Count media items in a BP group.
 	 *
 	 * @param string $group_id Group ID (string for compatibility).
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function count_by_group( string $group_id ): int;
 
@@ -230,6 +234,8 @@ interface MediaRepositoryInterface {
 	 * Get aggregated statistics for a media item.
 	 *
 	 * @param int $media_id Media ID.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function get_stats( int $media_id ): ?array;
 
@@ -252,6 +258,8 @@ interface MediaRepositoryInterface {
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $column   Column name.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function increment_stat( int $media_id, string $column ): bool;
 
@@ -261,6 +269,8 @@ interface MediaRepositoryInterface {
 	 * @param int    $media_id Media ID.
 	 * @param string $column   Column name.
 	 * @param int    $value    New value.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function set_stat( int $media_id, string $column, int $value ): bool;
 
@@ -279,6 +289,8 @@ interface MediaRepositoryInterface {
 	 *
 	 * @param int $days_old Retention days.
 	 * @return int Rows deleted.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function prune_events( int $days_old = 90 ): int;
 
@@ -359,6 +371,8 @@ interface MediaRepositoryInterface {
 	 * delete (they never touch the downstream tables delete_cascade() clears).
 	 *
 	 * @param int $media_id The mvs_media_index PK.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function purge_index_record( int $media_id ): void;
 

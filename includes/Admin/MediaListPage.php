@@ -1299,12 +1299,8 @@ class MediaListPage {
 	 * @param int $media_id Media ID.
 	 */
 	private static function permanently_delete_media( int $media_id ): void {
-		global $wpdb;
+		// delete_cascade() (via delete_all) already clears every child table.
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 
 	/**

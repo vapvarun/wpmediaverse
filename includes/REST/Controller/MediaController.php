@@ -426,7 +426,7 @@ class MediaController extends WP_REST_Controller {
 		// same route -- went on being served it.
 		//
 		// The column is a lifecycle field with several legitimate non-publish
-		// values (trash, and scheduled items awaiting publish_at), so this must
+		// values (trash, and scheduled rows from before 2.6.2), so this must
 		// assert publish rather than exclude trash; != 'trash' would leak scheduled
 		// items instead. MediaRepository's shared query builder already defaults to
 		// exactly this, which is why the slug lookup and the album-items query were
@@ -845,7 +845,6 @@ class MediaController extends WP_REST_Controller {
 			'title'       => sanitize_text_field( $request->get_param( 'title' ) ?? '' ),
 			'description' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
 			'status'      => sanitize_text_field( $request->get_param( 'status' ) ?? 'publish' ),
-			'publish_at'  => sanitize_text_field( $request->get_param( 'publish_at' ) ?? '' ),
 		);
 
 		// Only set privacy if explicitly provided; otherwise UploadService uses the default option.

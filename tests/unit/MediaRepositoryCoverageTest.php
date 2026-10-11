@@ -131,6 +131,7 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	}
 
 	public function test_count_by_moderation_groups_by_status(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::count_by_moderation' );
 		$media_id = $this->insert_media();
 		$this->repo->set( $media_id, 'moderation_status', 'flagged' );
 
@@ -151,6 +152,7 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	}
 
 	public function test_count_by_group_counts_meta_group_id_rows(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::count_by_group' );
 		$group_id = 'mvs_grp_' . wp_generate_password( 6, false );
 		$media_id = $this->insert_media();
 		$this->repo->set( $media_id, 'group_id', $group_id );
@@ -161,6 +163,7 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	// ── stats + events ─────────────────────────────────────────────────────
 
 	public function test_init_stats_creates_zeroed_row(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::get_stats' );
 		$media_id = $this->insert_media();
 		$this->repo->init_stats( $media_id );
 
@@ -170,6 +173,8 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	}
 
 	public function test_increment_stat_bumps_counter(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::get_stats' );
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::increment_stat' );
 		$media_id = $this->insert_media();
 		$this->repo->init_stats( $media_id );
 		$this->repo->increment_stat( $media_id, 'views' );
@@ -180,6 +185,8 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	}
 
 	public function test_set_stat_writes_absolute_value(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::get_stats' );
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::set_stat' );
 		$media_id = $this->insert_media();
 		$this->repo->init_stats( $media_id );
 		$this->repo->set_stat( $media_id, 'reactions', 42 );
@@ -204,6 +211,7 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	}
 
 	public function test_prune_events_deletes_old_rows(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::prune_events' );
 		$media_id = $this->insert_media();
 		$this->repo->record_event( $media_id, $this->admin_id, 'hash-old', 'view' );
 
@@ -223,6 +231,7 @@ class MediaRepositoryCoverageTest extends WP_UnitTestCase {
 	}
 
 	public function test_get_user_stats_returns_aggregated_array(): void {
+		$this->setExpectedDeprecated( 'WPMediaVerse\\Repository\\MediaRepository::set_stat' );
 		$media_id = $this->insert_media();
 		$this->repo->init_stats( $media_id );
 		$this->repo->set_stat( $media_id, 'views', 5 );
