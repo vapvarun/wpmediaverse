@@ -1,48 +1,42 @@
 # WPMediaVerse — AI Quick Reference
 
-> **TRUST ORDER:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) (code-verified state) → [`CAPABILITIES.md`](CAPABILITIES.md) (what it does, in buyer language) → the code itself (wins on any disagreement). Dated files under `qa/runs/`, `audit/runs/` and `plan/` are history — verify before trusting.
+> **TRUST ORDER:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) (code-verified state) → [`CAPABILITIES.md`](CAPABILITIES.md) (what it does, in buyer language) → the code itself (wins on any disagreement). Dated files under `qa/runs/`, `audit/runs/` and `plan/` are history - verify before trusting.
 >
-> **Manifest refresh: agent-enumeration-only.** `write-manifest.mjs` cannot see this plugin's registration patterns (SettingsRegistrar, ServiceContainer::register(), MediaCapabilities, PostTypes\Album::register(), CLI subcommands as methods) and would zero out settings/services/wp_cli/capabilities/post_types/taxonomies. Refresh by targeted delta against ground-truth grep — never by committing generator output. See `generated.refresh_2026_08_05` in the manifest.
+> **Manifest refresh: agent-enumeration-only.** `write-manifest.mjs` cannot see this plugin's registration patterns (SettingsRegistrar, ServiceContainer::register(), MediaCapabilities, PostTypes\Album::register(), CLI subcommands as methods) and would zero out settings/services/wp_cli/capabilities/post_types/taxonomies. Refresh by targeted delta against ground-truth grep, never by committing generator output.
 >
-> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory is in [`audit/manifests/manifest.json`](audit/manifests/manifest.json) (v2.2 schema), with detail files [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Pro audit mirror: [`audit/pro/`](audit/pro/) (manifests + journeys only). Bug-finder baseline: newest `audit/runs/*wppqa-baseline-SUMMARY.md` (local-CI stage 2.4 fails if it is >14 days old). Refresh: `/wp-plugin-onboard --refresh`.
+> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a small index - load it first. The full inventory is in [`audit/manifests/manifest.json`](audit/manifests/manifest.json), with detail files [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Pro audit mirror: [`audit/pro/`](audit/pro/) (manifests + journeys only). Bug-finder baseline: newest `audit/runs/*wppqa-baseline-SUMMARY.md` (local-CI stage 2.4 fails if it is >14 days old). Refresh: `/wp-plugin-onboard --refresh`.
 >
-> **Counts live in the manifest, not in this file.** Every bare number here has rotted at least once. Ask the code:
+> **Counts live in the code, not in this file.** A bare number here rots. Ask the code:
 >
-> | What | Command | 2026-09-27 |
-> |---|---|---|
-> | REST endpoints | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` | 118 |
-> | REST controllers | `ls includes/REST/Controller/*.php \| wc -l` | 24 |
-> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` | 291 |
-> | Plugin AJAX actions | `grep -rhoE "add_action\( *'wp_ajax_mvs_[a-z_]+'" includes/ \| sort -u \| wc -l` | 2 (`mvs_import_demo_data`, `mvs_cleanup_demo_data`) - the looser `grep -rho "wp_ajax_mvs_[a-z_]*"` returns 3, counting a bare prefix inside a comment |
-> | Admin page registrations | `grep -rn 'add_menu_page(\|add_submenu_page(' includes/ \| grep -vc 'function \|\*'` | 12 call sites (the manifest's `admin_pages: 22` counts rendered surfaces: these 12 plus 2 CPT menu entries and 8 settings tabs) |
-> | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` | 31 distinct literal options (41 real `register_setting()` calls; a naive `grep -c` also matches doc-comment mentions of the function name, inflating to 44). 3 of the 41 calls are foreach loops expanding to 12 more options, mostly behind class constants - full expansion gives 48 distinct settings, see manifest.summary.json |
-> | Custom tables | `grep -c 'CREATE TABLE' includes/Core/Migrator.php` | 23 distinct names (24 real statements; the naive count returns 25 because it also matches a comment at Migrator.php:372 describing dbDelta's column-parsing behavior) |
-> | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` | 8 registered, 12 `block.json` (4 Interactivity-only) |
-> | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` | 55 |
-> | WP-CLI subcommands | `grep -c 'public function ' includes/CLI/Commands.php` | 20 |
-> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` | 40 (2026-09-27) |
+> | What | Command |
+> |---|---|
+> | REST endpoints | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` |
+> | REST controllers | `ls includes/REST/Controller/*.php \| wc -l` |
+> | Hooks fired | `jq '.hooks_fired \| length' audit/manifests/manifest.hooks.json` |
+> | Plugin AJAX actions | `grep -rhoE "add_action\( *'wp_ajax_mvs_[a-z_]+'" includes/ \| sort -u \| wc -l` (the looser `grep -rho "wp_ajax_mvs_[a-z_]*"` also counts a bare prefix inside a comment) |
+> | Admin page registrations | `grep -rn 'add_menu_page(\|add_submenu_page(' includes/ \| grep -vc 'function \|\*'` (call sites; the manifest's `admin_pages` counts rendered surfaces: call sites plus CPT menu entries and settings tabs) |
+> | Settings | `grep -rhA2 'register_setting(' includes/Admin/Settings/ \| grep -o "'mvs_[a-z_0-9]*'" \| sort -u \| wc -l` (literal options only; some `register_setting()` calls are foreach loops over class constants, so the manifest's full expansion is higher; a naive `grep -c` also matches doc comments) |
+> | Custom tables | `grep -c 'CREATE TABLE' includes/Core/Migrator.php` (a comment in the file also matches; use the `-o` one-liner under Custom Tables) |
+> | Registered blocks | `BlockRegistrar::BLOCKS` / `ls src/blocks/*/block.json \| wc -l` (some blocks are Interactivity-only and not registered by `BlockRegistrar`) |
+> | Container services | `grep -A1 'container->register(' includes/Core/Plugin.php \| grep -o "'[a-z_.]*'," \| sort -u \| wc -l` |
+> | WP-CLI subcommands | `grep -c 'public function ' includes/CLI/Commands.php` |
+> | Migrator version | `grep CURRENT_VERSION includes/Core/Migrator.php` |
 >
-> 2.4.0 added 4 hooks (the manifest gained 20 more on 2026-09-01 that shipped undocumented): `mvs_media_trashed` / `mvs_media_restored` (actions) and `mvs_has_custom_avatar` / `mvs_media_drive_access` (filters) — all four verified present.
->
-> **Reconciled 2026-09-27.** That delta was applied in the same pass: `manifest.summary.json`
-> now carries `admin_pages: 22`, `settings: 47`, `services: 55`, `wp_cli: 22`, `rest_endpoints: 118`,
-> matching the commands above. Where a number here and a number there still differ, the
-> summary says which unit it counted - read its `counts_note` before assuming drift.
+> Where a number here and a number in `manifest.summary.json` differ, the summary's `counts_note` says which unit it counted. Read it before assuming drift.
 
 ## Quick Facts
 
 | Key | Value |
 |-----|-------|
-| Version | 2.6.0 |
-| PHP | >= 7.4 (header), target 8.1+ |
+| PHP | `Requires PHP: 8.1` (supported range 8.1-8.5; no syntax newer than 8.1) |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
 | Autoload | Hand-written PSR-4 in `wpmediaverse.php` (`WPMediaVerse\` → `includes/`). **Runtime never loads Composer.** |
-| Runtime deps | Committed under `libs/` (Action Scheduler, EDD SL SDK) — see `libs/README.md` |
+| Runtime deps | Committed under `libs/` (Action Scheduler, EDD SL SDK) - see `libs/README.md` |
 | `vendor/` | Dev and build tooling ONLY. Gitignored, not in the release zip, never loaded at runtime. |
 | Text Domain | `wpmediaverse` |
-| Custom Tables | 23 (prefixed `mvs_`) |
-| REST Controllers | 24 files in `includes/REST/Controller/` (23 extend `WP_REST_Controller`; `AccountController` is a plain class), plus `Messaging\MessagingController`. Namespace `mvs/v1`. |
+| Custom Tables | Prefixed `mvs_` |
+| REST Controllers | `includes/REST/Controller/` (all extend `WP_REST_Controller` except `AccountController`, a plain class), plus `Messaging\MessagingController`. Namespace `mvs/v1`. |
 | Pro Extension Hook | `mvs_loaded` (fires with `ServiceContainer`) |
 | Build | `npx grunt dist` |
 | Entry Point | `wpmediaverse.php` -> `Plugin::init()` |
@@ -52,20 +46,19 @@
 
 ## Module Map
 
-Every namespace under `includes/` is listed. Class lists are complete as of 2026-09-01 —
-`find includes -name '*.php' | sort` is the check.
+Every namespace under `includes/` is listed. `find includes -name '*.php' | sort` is the check.
 
 | Namespace | Responsibility | Key Classes |
 |-----------|---------------|-------------|
-| `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade, type vocabularies | `Plugin`, `ServiceContainer`, `Migrator`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers` (+`TemplateHelpersInterface`), `Abilities`, `SettingsHelper`, `MediaUrl`, `MediaTypes`, `DocumentTypes`, `DashboardSections`, `Dates` (+ `Loader`, **deprecated 2.4.0**, never used, removal 4.0.0) |
+| `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade, type vocabularies | `Plugin`, `ServiceContainer`, `Migrator`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers` (+`TemplateHelpersInterface`), `Abilities`, `SettingsHelper`, `MediaUrl`, `MediaTypes`, `DocumentTypes`, `DashboardSections`, `Dates` (+ `Loader`, deprecated, never used, removal 4.0.0) |
 | `Admin\` | WP admin pages, moderation queue, member moderation | `OverviewPage`, `StatsPage`, `ModerationQueue`, `MemberModeration`, `ReportsPage`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage`, `DocumentListPage`, `IntegrationsPage`, `TagManagementPage` |
-| `Admin\Settings\` | Settings page (8 focused classes) | `SettingsPage`, `SettingsRegistrar`, `GeneralSettingsRegistrar`, `AiSettingsRegistrar`, `MessagingSettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
+| `Admin\Settings\` | Settings page (focused classes, one registrar per settings group) | `SettingsPage`, `SettingsRegistrar`, `GeneralSettingsRegistrar`, `AiSettingsRegistrar`, `MessagingSettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
 | `REST\Controller\` | REST API endpoints | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController`, `AdminController`, `AuthController`, `ConfigController`, `InterestsController`, `TransactionController`, `AccountController`, `DeviceController` |
 | `REST\` | Middleware, gates, pagination | `RateLimiter`, `RestGate`, `RestGuards`, `CommunityPrivacyGate`, `Pagination` |
 | `Services\` | Business logic, storage, AI, caching, URL signing, variant pipeline, poster generation | `UploadService`, `StorageService`, `StorageRouter`, `MediaVariantWriter`, `VariantSpec`, `PosterService`, `FilenameStrategy`, `ImageOptimizationService`, `PrivacyService`, `AlbumService`, `CollectionService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AdminAggregatesService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `TelemetryService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `TransactionService`, `LocalDriver`, `CloudOps`, `StorageCleanupService`, `StorageRepairService`, `CptIdCollisionService`, `AccountDeletionService`, `UserDeletionService`, `ViewRetentionService` (+ `StorageDriverInterface`, `AIProviderInterface`) |
 | `Social\` | Social interactions (reactions, comments, follows, push, suggestions) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `PushService`, `ReportService`, `ActivityService`, `SuggestionService` |
 | `Integrations\` | Third-party platform bridges | `WebhookService` |
-| `Integrations\BuddyPress\` | BuddyPress integration (11 classes) | `BuddyPressManager`, `BaseBPTabIntegration`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ActivityFormIntegration`, `ActivityMediaLinkage`, `ActivityPrivacyFilter`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, `MediaDisplayHelper` |
+| `Integrations\BuddyPress\` | BuddyPress integration | `BuddyPressManager`, `BaseBPTabIntegration`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ActivityFormIntegration`, `ActivityMediaLinkage`, `ActivityPrivacyFilter`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, `MediaDisplayHelper` |
 | `Integrations\BPVerifiedMember\` | Verified-member badge bridge | `BadgeIntegration` |
 | `Integrations\Companions\` | Companion-plugin registry + installer | `CompanionRegistry`, `CompanionInstaller` |
 | `Auth\` | App-password / OAuth-style app connect | `AppConnect`, `AppAuthorizeAccess`, `AppCredentials` |
@@ -78,11 +71,10 @@ Every namespace under `includes/` is listed. Class lists are complete as of 2026
 | `Shortcodes\` | Legacy shortcode support | `Shortcodes` |
 | `CLI\` | WP-CLI commands | `Commands` |
 | `Messaging\` | Direct messaging engine + REST routes | `MessagingService`, `MessagingController`, `NotificationListener`, `RestPollingTransport`, `TransportInterface` |
-| `Repository\` | Central data access layer | `MediaRepository` (+`MediaRepositoryInterface`), `MediaIntegrityRepository` |
+| `Repository\` | Central data access layer | `MediaRepository` (+`MediaRepositoryInterface`), `MediaIntegrityRepository`, `MediaSpaceRepository` |
 | `Capabilities\` | Role/capability management | `MediaCapabilities` |
 
-**Gone, do not reference:** `Services\StoryService` and `src/blocks/story-viewer` were removed in 1.8.1 —
-Stories now live in Pro (`WPMediaVersePro\Stories\StoryService`).
+**Gone, do not reference:** `Services\StoryService` and `src/blocks/story-viewer`. Stories live in Pro (`WPMediaVersePro\Stories\StoryService`).
 
 ---
 
@@ -90,11 +82,8 @@ Stories now live in Pro (`WPMediaVersePro\Stories\StoryService`).
 
 Registered in `includes/Core/Plugin.php` via `register_services()` and `init_messaging()`.
 
-**The key is the lookup, not a line number.** This table used to carry a `Line` column; every
-number in it had rotted by 2.4.0 (`register_services()` moved from ~line 224 to ~line 475).
-To find a registration, grep the key: `grep -n "'storage_router'" includes/Core/Plugin.php`.
-To re-enumerate the whole table:
-`grep -A1 "container->register(" includes/Core/Plugin.php | grep -o "'[a-z_.]*',"`
+**The key is the lookup, not a line number.** Find a registration by grepping the key: `grep -n "'storage_router'" includes/Core/Plugin.php`. Re-enumerate the whole table with
+`grep -A1 "container->register(" includes/Core/Plugin.php | grep -o "'[a-z_.]*',"`.
 
 | Key | Class |
 |-----|-------|
@@ -153,18 +142,13 @@ To re-enumerate the whole table:
 | `template_helpers` | `TemplateHelpers` |
 | `messaging` | `MessagingService` (registered in `init_messaging()`) |
 
-**55 keys as of 2026-09-27** — re-run the grep above rather than trusting that number.
-The `stories` key is **gone** (removed with `StoryService` in 1.8.1). Plus a non-container static
-helper: `Core\MediaUrl` (single read-side URL facade for non-REST callers; replaces the never-built
-`Services\MediaUrl` referenced before 1.5.0). `VariantSpec` is a value object (not
-container-registered) consumed by the upload pipeline.
+There is no `stories` key (Stories are in Pro). Non-container helpers: `Core\MediaUrl` is the single read-side URL facade for non-REST callers; `VariantSpec` is a value object consumed by the upload pipeline.
 
 ---
 
-## Custom Tables (23)
+## Custom Tables
 
-All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
-(`Migrator::CURRENT_VERSION` is 40 as of 2026-09-27). Re-enumerate with
+All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php` (`Migrator::CURRENT_VERSION`). Re-enumerate with
 `grep -o 'CREATE TABLE[^(]*mvs_[a-z_]*' includes/Core/Migrator.php | sort -u`.
 
 | Table | Purpose |
@@ -190,14 +174,14 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | `mvs_message_reactions` | Reactions on DM messages |
 | `mvs_transactions` | Credit/monetization transactions |
 | `mvs_bp_activity_media` | BuddyPress activity-to-media mapping |
-| `mvs_device_tokens` | The ONE push device registry (`/me/devices`, Migrator v30). Pro's `/mvs-pro/v1/push/register-device` writes here too, and Pro's Expo sender reads it on `mvs_push_send`. |
-| `mvs_media_spaces` | Links one document into more than one space without a copy (Migrator v33, `Repository/MediaSpaceRepository.php`) |
+| `mvs_device_tokens` | The ONE push device registry (`/me/devices`). Pro's `/mvs-pro/v1/push/register-device` writes here too, and Pro's Expo sender reads it on `mvs_push_send`. |
+| `mvs_media_spaces` | Links one document into more than one space without a copy (`Repository/MediaSpaceRepository.php`) |
 
 ---
 
 ## Coding Rules
 
-This is the index. Every rule below links to its full spec in `qa/`. Add new rules here first (1-2 sentence canonical version), then write the detailed spec.
+This is the index. Every rule below links to its full spec in `qa/` where one exists. Add new rules here first (1-2 sentence canonical version), then write the detailed spec.
 
 1. **Max file size: 500 lines.** Files above this are tech debt (see Known Debt below). Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §1.
 2. **Max method size: 50 lines.** Extract helpers or delegate to services. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §1.
@@ -206,94 +190,38 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
 5. **Hook names: `mvs_` prefix, snake_case.** Example: `mvs_media_uploaded`, `mvs_ai_providers`. Spec: `qa/rules/NAMING-RULES.md` §5.
 6. **REST: extend `WP_REST_Controller`.** Every endpoint must define `get_item_schema()` and `get_item_permissions_check()` / `permission_callback`.
 7. **Security: nonce + capability on every write.** Use `wp_verify_nonce()` for admin forms, `permission_callback` for REST.
-8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` — log failures. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §5.
+8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` - log failures. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §5.
 9. **i18n: all user-facing strings wrapped.** Use `__()`, `esc_html__()`, `esc_attr__()` with text domain `wpmediaverse`. Spec: `qa/rules/NAMING-RULES.md` §10.
-10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` — no `use WPMediaVerse\...` in Pro code. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §9.
+10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` - no `use WPMediaVerse\...` in Pro code. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §9.
 11. **No silent render fallthrough.** Every `return;` inside a render path (block `render.php`, shortcode callback, template, admin list, widget) must be paired with a visible empty state. Use `TemplateHelpers::render_block_empty_state()` / `render_admin_empty_state()`. Bare returns are only acceptable in hook callbacks, cron handlers, and REST permission checks. Spec: `qa/rules/RENDER-STATE-RULES.md`.
 12. **CSS file ownership.** BP rules live in `bp-integration.css` (scoped under `#buddypress`). `frontend.css` is for generic plugin frontend only. Admin rules in `admin.css`. Messaging in `messaging.css`. Block-specific in `src/blocks/*/style.css`. Every BP-touching integration enqueues both `mvs-frontend` and `mvs-bp-integration`. No duplicate class-vs-ID rules. No `!important` without a one-line comment explaining what theme rule it fights. No dead selectors (every `.mvs-*` / `#mvs-*` must have an emitter). Spec: `qa/rules/CSS-ORGANIZATION-RULES.md`. Locked in `qa/inventory/WHAT-TO-CHECK.md` regression row "BP CSS file ownership".
 13. **Names don't lie.** Class names, hook names, CSS classes must match actual usage. A `.mvs-bp-X` class used outside BP is a bug; either rename or narrow usage. Spec: `qa/rules/NAMING-RULES.md`.
 14. **Sibling classes with ≥50% duplicate method bodies share a base class.** At n=2 duplication is tolerable; at n=3 it must be extracted. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §6.
 15. **Debt tax.** No PR adds lines to files in the Known Debt table below. Every edit to a debt file must reduce its line count or extract code out, unless the PR body justifies the addition. Spec: `qa/rules/PROCESS-RULES.md` §3.
-16. **Cache backend by cardinality.** Pick the storage by how many distinct keys a callsite produces, not by convenience. ≤ ~50 fixed keys (settings, global counters, feature flags) → `wp_options` or transients are fine. Anything keyed by `user_id` / `media_id` / `conversation_id` / any entity → custom `mvs_*` table. Never options. Never transients without a `wp_using_ext_object_cache()` guard. Per-request reuse → static array on the service class. Site-wide aggregate counts (total media, total views, storage size) MUST go through `Services\AdminAggregatesService` — raw `$wpdb->get_var` SUM/COUNT against `mvs_*` tables outside that service is a Rule 3 violation in `bin/coding-rules-check.sh`. Per-entity transients (key contains `$user_id` etc.) is a Rule 4 violation. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` (performance section).
-17. **Never modify site navigation via code.** Creating pages on activation is fine (they back features), but detach `_wp_auto_add_pages_to_menu` around the `wp_insert_post` calls so menus with WP's auto_add option are never edited — see `Activator::create_pages()`. Hooking `wp_nav_menu_items` / calling `wp_update_nav_menu_item` to inject items is forbidden: a code-injected item can't be removed in Appearance → Menus and surprises every site running the plugin. Feature discoverability belongs in plugin-owned surfaces (dashboard tabs, banners), never the site's menus. (Varun, 2026-06-04, customer report.)
-18. **Three entry points per data store — frontend, backend, API.** Every `mvs_*` table / data feature must be reachable through all three: (1) **frontend UX** that lets members use it, (2) **backend/admin UI** that lets the site owner see and manage it, (3) **REST API** that populates/reads it. A table created with a Migrator bump (even seeded) but missing any of the three is a HALF-COOKED feature — it ships dead weight a customer pays for but can never use. When adding a table or feature: wire all three in the same release, or document the intentional exception in the manifest (e.g., internal cache tables like `mvs_error_log` are admin+internal only). Every audit and every bug fix checks all three entry points — the bug class where a fix lands on one surface and misses the others (DM settings, Load More, members-privacy, all 2026-06) is this rule violated at fix time. **The API entry point is MANDATORY for MediaVerse, never an exception: a native mobile APP is planned, so every member-facing feature must be fully drivable through `mvs/v1` REST alone** — complete CRUD, auth that works outside the cookie/nonce browser context, consistent response shapes, honest pagination. A feature that only works through a PHP template or admin-ajax is app-blocking. (Varun, 2026-06-04.)
-19. **No inline cosmetic CSS in markup.** Templates, block `render.php`, and HTML-echoing PHP must NOT carry cosmetic `style="…"` (color, background, margin/padding, font, border, box-shadow, text-align) or hardcoded hex. Move it to the owning stylesheet — block → `src/blocks/*/style.css`, BuddyPress → `bp-integration.css`, generic frontend → `frontend.css`, admin → `admin.css` — as a tokenized (`var(--mvs-*)`) class. **Reuse before you add:** most of these leaks were renderers re-inlining styles a tokenized class already provided (`.mvs-stat-value`, `.mvs-activity-audio-*`, `.mvs-leaderboard__*`); check the stylesheet first, never duplicate, never let markup and CSS diverge into dead selectors. **Allowed inline:** pure visibility toggles (`style="display:none"`), `var(--token, #fallback)` fallbacks, and instance custom properties (`style="--mvs-x:<?php … ?>"`). The CSS token-contract gate scans `.css` files only and is blind to inline `style=` — that is exactly why these slipped past WPCS + the CSS gate for so long. Enforced by `bin/template-style-check.sh` (local-CI stage 1.7). Spec: `qa/rules/CSS-ORGANIZATION-RULES.md`. (Varun, 2026-06-23.)
+16. **Cache backend by cardinality.** Pick the storage by how many distinct keys a callsite produces, not by convenience. ≤ ~50 fixed keys (settings, global counters, feature flags) → `wp_options` or transients are fine. Anything keyed by `user_id` / `media_id` / `conversation_id` / any entity → custom `mvs_*` table. Never options. Never transients without a `wp_using_ext_object_cache()` guard. Per-request reuse → static array on the service class. Site-wide aggregate counts (total media, total views, storage size) MUST go through `Services\AdminAggregatesService` - raw `$wpdb->get_var` SUM/COUNT against `mvs_*` tables outside that service is a Rule 3 violation in `bin/coding-rules-check.sh`. Per-entity transients (key contains `$user_id` etc.) is a Rule 4 violation. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` (performance section).
+17. **Never modify site navigation via code.** Creating pages on activation is fine (they back features), but detach `_wp_auto_add_pages_to_menu` around the `wp_insert_post` calls so menus with WP's auto_add option are never edited - see `Activator::create_pages()`. Hooking `wp_nav_menu_items` / calling `wp_update_nav_menu_item` to inject items is forbidden: a code-injected item can't be removed in Appearance → Menus and surprises every site running the plugin. Feature discoverability belongs in plugin-owned surfaces (dashboard tabs, banners), never the site's menus.
+18. **Three entry points per data store - frontend, backend, API.** Every `mvs_*` table / data feature must be reachable through all three: (1) **frontend UX** that lets members use it, (2) **backend/admin UI** that lets the site owner see and manage it, (3) **REST API** that populates/reads it. A table created with a Migrator bump (even seeded) but missing any of the three is a HALF-COOKED feature that ships dead weight. When adding a table or feature: wire all three in the same release, or document the intentional exception in the manifest (e.g., internal tables like `mvs_error_log` are admin+internal only). Every audit and every bug fix checks all three entry points; a fix that lands on one surface and misses the others violates this rule at fix time. **The API entry point is MANDATORY for MediaVerse, never an exception: a native mobile APP is planned, so every member-facing feature must be fully drivable through `mvs/v1` REST alone** - complete CRUD, auth that works outside the cookie/nonce browser context, consistent response shapes, honest pagination. A feature that only works through a PHP template or admin-ajax is app-blocking.
+19. **No inline cosmetic CSS in markup.** Templates, block `render.php`, and HTML-echoing PHP must NOT carry cosmetic `style="…"` (color, background, margin/padding, font, border, box-shadow, text-align) or hardcoded hex. Move it to the owning stylesheet - block → `src/blocks/*/style.css`, BuddyPress → `bp-integration.css`, generic frontend → `frontend.css`, admin → `admin.css` - as a tokenized (`var(--mvs-*)`) class. **Reuse before you add:** most leaks were renderers re-inlining styles a tokenized class already provided (`.mvs-stat-value`, `.mvs-activity-audio-*`, `.mvs-leaderboard__*`); check the stylesheet first, never duplicate, never let markup and CSS diverge into dead selectors. **Allowed inline:** pure visibility toggles (`style="display:none"`), `var(--token, #fallback)` fallbacks, and instance custom properties (`style="--mvs-x:<?php … ?>"`). The CSS token-contract gate scans `.css` files only and is blind to inline `style=`. Enforced by `bin/template-style-check.sh` (local-CI stage 1.7). Spec: `qa/rules/CSS-ORGANIZATION-RULES.md`.
+20. **A refusal is never a success response.** `wp_send_json_success()` must carry an outcome the caller asked for; a guard that declines the request returns `wp_send_json_error()` so the UI can say why. A refusal sent through a success envelope makes the JS take its success path and the button silently does nothing. Wiring audits prove the plumbing connects, not that the logic behind it is right. Enforced by `bin/coding-rules-check.sh` Rule 6, which greps success responses for refusal language.
+21. **No exec-family call in shipped source.** `exec`, `shell_exec`, `proc_open`, `system`, `passthru`, `popen` - none of them, in either plugin. Security scanners flag them as a possible backdoor, and they match the CALL SITE IN THE SHIPPED FILE, not the runtime path: wrapping one in `if ( ffmpeg_available() )` changes nothing, and we cannot know which scanner a customer runs. If a feature genuinely needs a binary, it runs somewhere else: a remote service, the browser, or the site owner's own mu-plugin. The three shapes are in `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md` §0. Enforced by `bin/coding-rules-check.sh` Rule 8 in BOTH plugins, mutation-tested.
+22. **Apply a standard by RULE, never by enumerating the things it applies to.** When a decision holds for a whole class (hidden elements stay hidden, interactive controls clear the touch floor, a section with no panel here must navigate), express it as one rule keyed on what makes it true. A hand-maintained list of selectors, slugs or class names is a standard plus a memory test, and the memory loses. Failure shapes: a hand-kept list of `[hidden]` selectors missed new elements (fixed by one `[class*="mvs-"][hidden]` rule); a tab check by name broke when Pro added a section; a BP lightbox clone that strips `data-wp-*` needs a delegated handler on a stable class for every cloned control, not just the ones someone noticed. **The tell:** if adding a feature requires remembering to add it to a list somewhere else, the list is the bug. Ask the thing that makes the rule true (the rendered DOM, the section declaration, the design token) rather than restating its members.
 
-20. **A refusal is never a success response.** `wp_send_json_success()` must carry an outcome the caller asked for; a guard that declines the request returns `wp_send_json_error()` so the UI can say why. The demo importer refused ("demo data already exists") through a success envelope, so the admin JS took its success path and the Import button silently did nothing — no error, no data, no clue. Note what this means for tooling: every wiring layer was correct (button, JS binding, `wp_ajax_` handler, nonce), so a cross-layer action audit passed it cleanly. Wiring audits prove the plumbing connects, not that the logic behind it is right. Enforced by `bin/coding-rules-check.sh` Rule 6, which greps success responses for refusal language. (2026-08-01.)
+    **Corollary - a threshold is read, never retyped.** A journey asserting "controls >= 40px" against a 44px token licenses the gap it was written to catch. Read `--mvs-touch-min` at runtime. Same for any contrast floor, page-size cap or timeout the plugin defines.
+23. **When you fix a bug, sweep the class before you close it.** After fixing, grep for the shape (not the symptom) across BOTH plugins, and say in the commit what the sweep covered and what it did not. A fix with no sweep note is half a fix.
+24. **Changing an overridable template bumps its `@version`.** Every template a theme can override (`templates/**` except `templates/admin/`) carries `@version` in its header; it moves to the release that ships a markup or variable change, and ONLY then. Site Health (`TemplateVersions` + `HealthCheckService::test_template_overrides()`) compares a theme's copy against it, so an unbumped change hides a stale copy from the owner. A template that stops reading or sending a request value (for example a renamed query arg) is such a change. Enforced by `bin/template-version-check.sh` (local-CI stage 1.9), mutation-tested both ways. Pro registers its folder through `mvs_template_roots`.
+25. **Every feature has a catalog entry, written in the same commit.** `qa/inventory/FUNCTIONALITY-CATALOG.md` is the one file handed to testers and outside QA tools. A change that adds, removes or changes a feature, setting, screen, REST route, WP-CLI command or template adds or edits its entry (`MV-<AREA>-<NNN>`: who, where, setup, steps, expected, UX expectation, settings, edge cases) in the same commit, Free and Pro alike. Write facts read from the code, never a guess; if something cannot be confirmed, write a `Check:` line for the tester. A feature with no entry is a feature nobody tests.
+26. **Comments say why, in present tense.** No ticket ids, dates or history in comments; the id goes in the commit message. Enforced by coding-rules Rule 9.
 
-21. **No exec-family call in shipped source.** `exec`, `shell_exec`, `proc_open`, `system`,
-    `passthru`, `popen` — none of them, in either plugin. Security plugins flag them as a possible
-    backdoor, and they match the CALL SITE IN THE SHIPPED FILE, not the runtime path: wrapping one
-    in `if ( ffmpeg_available() )` changes nothing, and we cannot know which scanner a customer
-    runs. The FFmpeg transcoding path was removed in 2.4.0 for exactly this (`c96415ba`) after it
-    "kept making them panic". If a feature genuinely needs a binary, it runs somewhere else — a
-    remote service, the browser, or the site owner's own mu-plugin; the three shapes are in
-    `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md` §0. Enforced by
-    `bin/coding-rules-check.sh` Rule 8 in BOTH plugins, mutation-tested. (2026-08-30.)
-
-22. **Apply a standard by RULE, never by enumerating the things it applies to.**
-    When a decision holds for a whole class — "elements hidden by the Interactivity
-    API stay hidden", "interactive controls clear the touch floor", "a section with
-    no panel here must navigate" — express it as one rule keyed on what makes it
-    true. A hand-maintained list of selectors, slugs or class names is not a
-    standard; it is a standard plus a memory test, and the memory always loses.
-
-    This is the most expensive recurring defect class in this plugin. Four separate
-    2.4.1 bugs were ONE mistake wearing four hats:
-
-    - `frontend.css` kept a twelve-selector allowlist of `[hidden]` guards, under a
-      comment describing the exact bug. `.mvs-bulk-bar` and `.mvs-dashboard-loading`
-      were not on it, so a bulk **Delete** bar and a permanent "Loading…" rendered on
-      every dashboard on any theme without its own `[hidden]` reset. Replaced with
-      `[class*="mvs-"][hidden]`, which then also fixed twelve elements nobody had
-      reported.
-    - `--mvs-touch-min: 44px` was applied by listing selectors, so the chat header
-      buttons (32px), the chat tabs (37.5px), `.mvs-bulk-check` and
-      `.mvs-load-more-btn` sat under the plugin's own floor.
-    - `switchTab` said `if ( 'documents' === tab )`. Documents was the only off-site
-      section anyone had hit, so it got a name-check instead of a rule; when Pro's
-      Compete hub arrived it was intercepted and the content area went blank
-      (Basecamp 10264172058).
-    - The BP lightbox clone strips every `data-wp-*`, so each cloned button needs a
-      delegated handler on a stable class. The favourite button got one
-      (#10077932144). Fullscreen did not, and stayed dead for months
-      (Basecamp 10264236711).
-
-    **The tell:** if adding a feature requires remembering to add it to a list
-    somewhere else, the list is the bug. Ask the thing that makes the rule true —
-    the rendered DOM, the section declaration, the design token — rather than
-    restating its members.
-
-    **Corollary — a threshold is read, never retyped.** A journey asserting
-    "controls >= 40px" against a plugin whose token is 44px licenses exactly the gap
-    it was written to catch. Read `--mvs-touch-min` at runtime. Same for any
-    contrast floor, page-size cap or timeout the plugin defines. (2026-09-03.)
-
-23. **When you fix a bug, sweep the class before you close it.** CLAUDE.md has said
-    "fix the class, sweep every surface" for a while; rules 22's four cases are what
-    happens when that is skipped. Two of them were *identical* to a defect already
-    fixed elsewhere in the same file, months apart — the favourite button and the
-    fullscreen button, the `.mvs-share__section[hidden]` fix and `.mvs-bulk-bar`.
-
-    Concretely: after fixing, grep for the shape (not the symptom) across BOTH
-    plugins, and say in the commit what the sweep covered and what it did not. A fix
-    with no sweep note is half a fix. (2026-09-03.)
-
-24. **Changing an overridable template bumps its `@version`.** Every template a theme can override (`templates/**` except `templates/admin/`) carries `@version` in its header; it moves to the release that ships a markup or variable change, and ONLY then. Site Health (`TemplateVersions` + `HealthCheckService::test_template_overrides()`) compares a theme's copy against it, so an unbumped change hides a stale copy from the owner. A template that stops reading or sending a request value is exactly such a change (the `s` -> `q` Explore search, Basecamp 10344452624). Enforced by `bin/template-version-check.sh` (local-CI stage 1.9), mutation-tested both ways. Pro registers its folder through `mvs_template_roots`. (Basecamp 10344471983, 2026-09-27.)
-
-25. **Every feature has a catalog entry, written in the same commit.** `qa/inventory/FUNCTIONALITY-CATALOG.md` is the one file handed to testers and outside QA tools. A change that adds, removes or changes a feature, setting, screen, REST route, WP-CLI command or template adds or edits its entry (`MV-<AREA>-<NNN>`: who, where, setup, steps, expected, UX expectation, settings, edge cases) in the same commit, Free and Pro alike. Write facts read from the code, never a guess; if something cannot be confirmed, write a `Check:` line for the tester. A feature with no entry is a feature nobody tests. (2026-09-27.)
-
-**Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
-
+**Process meta:** how rules are added, checked, and retired - `qa/rules/PROCESS-RULES.md`.
 
 ---
 
-## Production Rules (50+ live sites — non-negotiable)
+## Production Rules (live customer sites - non-negotiable)
 
-These rules protect 50+ production customer sites. They are mechanically enforced via `bin/architecture-checks.sh` where possible; the rest are review-time hard gates. **No exceptions in patch releases.**
+These rules protect the live customer sites. They are mechanically enforced via `bin/architecture-checks.sh` where possible; the rest are review-time hard gates. **No exceptions in patch releases.**
 
 1. **NEVER hard-remove a public symbol in the release it is deprecated.** Minimum 2 major versions between `@deprecated since X.Y.Z` and deletion. Applies to: functions, classes, methods, hooks (`do_action`/`apply_filters`), REST routes, AJAX actions, options, meta keys, capabilities, WP-CLI commands, service container keys.
-2. **NEVER rename a public identifier without an alias.** Option keys, capability names, hook names, REST routes, service keys — add a new one and alias the old one for ≥2 major versions. The old read path must continue to work.
+2. **NEVER rename a public identifier without an alias.** Option keys, capability names, hook names, REST routes, service keys - add a new one and alias the old one for ≥2 major versions. The old read path must continue to work.
 3. **NEVER ship a default-behavior change without a filter escape hatch.** Customer must be able to restore the old behavior via a one-line `add_filter` in a mu-plugin. The filter stays for ≥2 major versions before being removed.
 4. **NEVER touch DB schema in a patch release.** Schema changes require `Migrator` version bump + minor release minimum. Migrations must be reversible OR include a documented one-way migration in the upgrade notes.
 5. **NEVER remove a template file.** Templates can be overridden by themes via `locate_template`. Always alias the file with an `@deprecated` header for ≥2 major versions before deletion.
@@ -315,28 +243,18 @@ These rules protect 50+ production customer sites. They are mechanically enforce
 
 ## Known Debt (Do Not Worsen)
 
-> **Debt criterion (2026-05-03 update):** A file lands here only when it has a CONCRETE structural problem — duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at WPMediaVerse's scale (55 container services, 24 REST controllers, Free + Pro pair), files in the 1k–3k range are normal and healthy as long as they're focused on one responsibility. The team splits at ~2.5k+ when a file's scope genuinely outgrows one class (BP manager was 2,811; Settings was 2,401 — both already split).
+> **Debt criterion:** A file lands here only when it has a CONCRETE structural problem - duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at this scale, files in the 1k-3k range are normal as long as each is focused on one responsibility. Split when a file's scope genuinely outgrows one class. Measure with `wc -l` before quoting a size.
 
-**Line counts below are `wc -l` as of 2026-09-01.** Re-measure before quoting one; the previous
-set in this table was 6–18 months stale and understated four files by more than 2×.
+| File | Issue |
+|------|-------|
+| `includes/Services/UploadService.php` | Mixes validation, type detection, storage routing and progress tracking, and keeps growing. `MediaVariantWriter` / `StorageRouter` / `PosterService` were extracted; a validator and a progress tracker were not. **OPEN.** |
+| `includes/REST/Controller/MediaController.php::replace_file` | Very long method that orchestrates its own ingest instead of calling `UploadService::handle()`. Shared seams already cover the logic that can drift (`FilenameStrategy::pick()`, `apply_exif_orientation()`, `watermark->stamp_new_upload()`, `process_stored_file()`); what remains is the orchestration shell, and it genuinely differs (replace UPDATES an existing row and must not reset stats or mint a new media_id, `handle()` CREATES one). Collapsing it means teaching `handle()` an update mode, a behaviour change on the upload path that Production Rule 7 forbids in a patch. Debt tax applies: no new inline ingest logic here, extract a seam and call it from both sides. **OPEN.** |
 
-| File | Issue | Status |
-|------|-------|--------|
-| `includes/Integrations/BuddyPress/` | (was 2,811-line manager mixing 7 unrelated BP integration concerns) | DONE — split; `BuddyPressManager.php` is now 118 lines and the namespace holds 11 focused classes |
-| `includes/Admin/Settings/` | (was 2,401-line registrar with 7 settings groups + UI + sanitizers in one) | DONE — split into 6 classes (except `SettingsRegistrar.php`, see below) |
-| `includes/Integrations/BuddyPress/ProfileTabIntegration.php` ↔ `GroupTabIntegration.php` | (was 80% duplicate method bodies between the two siblings) | DONE 2026-05-03 (Phase 5 P2.4) — `BaseBPTabIntegration` extracted; subclasses now hold only context-specific overrides. |
-| `includes/Admin/Settings/SettingsRegistrar.php` | (was 1,189 lines holding every settings group) | DONE 2026-09-26 - AI, General (2.6.0) and Messages (2.6.0, with the master switch) each moved to their own registrar; `SettingsRegistrar.php` is 494 lines (storage, display, moderation, webhooks, pages). Next group added gets its own registrar too. |
-| `includes/Services/UploadService.php` | (was 1,482 lines mixing 4 concerns: validation, type detection, storage routing, progress tracking) | **OPEN, and GROWING — 2,217 lines** (2026-09-01). 1.5.0 did extract `MediaVariantWriter` / `StorageRouter` / `PosterService` (1,482 → 1,211), but the file has since grown past where it started. `ValidatorService` and `ProgressTrackerService` were never created — they do not exist in `includes/Services/`. |
-| `includes/REST/Controller/MediaController.php::replace_file` | ~260-line method that orchestrates its own ingest instead of calling `UploadService::handle()`. Every step that can drift has already been pulled into a shared seam — `FilenameStrategy::pick()`, `apply_exif_orientation()`, `watermark->stamp_new_upload()`, `process_stored_file()` — so the two paths no longer duplicate *logic*; what remains is the orchestration shell, and it genuinely differs (replace UPDATES an existing row and must not reset stats or mint a new media_id, `handle()` CREATES one). | **STILL OPEN.** The 2026-08-06 decision (Basecamp 10156642711) deferred this to 2.4.0; 2.4.0 is the current version and the method was not collapsed. Re-decide rather than re-defer: collapsing the shell means teaching `handle()` an update mode, a behaviour change on the upload path that Production Rule 7 forbids in a patch. Debt tax applies now: no new inline ingest logic in this method — extract a seam and call it from both sides. |
+**Large but NOT debt:** `MediaRepository.php`, `Plugin.php`, `MessagingService.php`, `MediaController.php`, `MessagingController.php`. They are large because their domain is large, not because responsibilities are tangled. Don't propose splits unless a real organizational problem surfaces; look for a genuine seam in `MediaRepository.php` when you are in it anyway.
 
-**Files that are large but NOT debt** (mentioned because someone might wonder), `wc -l` 2026-09-01:
-`MediaRepository.php` (5,380), `Plugin.php` (3,065), `MessagingService.php` (3,030),
-`MediaController.php` (2,251), `MessagingController.php` (1,032). They are large because their
-domain is genuinely large, not because responsibilities are tangled. Don't propose splits unless a
-real organizational problem surfaces — but note `MediaRepository.php` has grown 6× since this row
-was written, and is worth a look for a genuine seam next time someone is in it.
+**Baselined code-standard debt:** `audit/cleanup/code-standard-baseline.txt` lists existing violations of coding-rules Rules 9-11 (below). They pass until the code is touched.
 
-**Debt tax (Coding Rule #15):** No PR adds lines to a file in the OPEN rows above. Every edit must reduce the line count or extract code out. Files in the "large but NOT debt" list have no debt tax — edit them normally.
+**Debt tax (Coding Rule 15):** No PR adds lines to a file in the OPEN rows above. Every edit must reduce the line count or extract code out. Files in the "large but NOT debt" list have no debt tax; edit them normally.
 
 ---
 
@@ -346,9 +264,8 @@ was written, and is worth a look for a genuine seam next time someone is in it.
 |-----|-------|
 | Framework | PHPUnit 9.6 + yoast/phpunit-polyfills 2.x |
 | Test dir | `tests/unit/` |
-| Test files | 99 as of 2026-09-27. This line has been wrong twice (it said 11, then 42) because a hardcoded count rots the moment anyone adds a file — run `ls tests/unit/*.php \| wc -l` rather than trusting it. |
-| Suite size | 703 tests / 1,815 assertions / 2 skipped, green on 2026-09-27. Same caveat — `composer test:unit` is the number. |
-| Coverage | Not precisely measured; grown substantially past the old ~10% estimate given the file-count growth above — re-measure with `phpunit --coverage-text` before quoting a number |
+| Size | Ask the code: `ls tests/unit/*.php \| wc -l`, and `composer test:unit` for the suite totals. |
+| Coverage | Not tracked. Measure with `phpunit --coverage-text` before quoting a number. |
 | Run | `./vendor/bin/phpunit` or `composer test:unit` (also stage 2.4 of local-CI, see below) |
 | Config | `phpunit.xml.dist` |
 
@@ -361,15 +278,16 @@ was written, and is worth a look for a genuine seam next time someone is in it.
 | `npx grunt build` | RTL CSS, minify CSS/JS, generate .pot |
 | `npx grunt dist` | Full build + clean dist/ + copy + ZIP |
 | `npx grunt release` | CI check + dist |
+| `npm run build` | Block assets (a bare `wp-scripts build` wipes tracked files in `build/`) |
 | `composer run phpcs` | WPCS coding standards |
 | `composer run phpstan` | Static analysis (baseline: `phpstan-baseline.neon`) |
 | `./vendor/bin/phpunit` | Unit tests |
 
 ### Static Analysis Config
 
-- `phpcs.xml` — WPCS ruleset
-- `phpstan.neon.dist` — PHPStan config with WordPress stubs
-- `phpstan-baseline.neon` — Known issues baseline
+- `phpcs.xml` - WPCS ruleset
+- `phpstan.neon.dist` - PHPStan config with WordPress stubs
+- `phpstan-baseline.neon` - Known issues baseline
 
 ---
 
@@ -386,8 +304,8 @@ was written, and is worth a look for a genuine seam next time someone is in it.
 | `tests/` | PHPUnit tests + bootstrap |
 | `dist/` | Release ZIP (generated) |
 | `docs/` | Human-facing reference docs (see Doc Map below) |
-| `qa/` | All pre-release QA — runbooks, rules, inventory, audits, runs (Free + Pro) |
-| `audit/` | Machine-derived audits — `manifests/`, `journeys/`, `runs/`, `cleanup/`, `conformance/`, `ux/`, dated `ux-audit-*.md`, `cert-*.json`. Pro mirror `audit/pro/` currently holds **manifests + journeys only**. `audit/reports/` is empty and `audit/graph.html` does not exist — the FEATURE_AUDIT / CODE_FLOWS / ROLE_MATRIX reports were never regenerated after the 2026-07-07 refresh. |
+| `qa/` | All pre-release QA - runbooks, rules, inventory, audits, runs (Free + Pro) |
+| `audit/` | Machine-derived audits - `manifests/`, `journeys/`, `runs/`, `cleanup/`, `conformance/`, `ux/`, dated `ux-audit-*.md`, `cert-*.json`. Pro mirror `audit/pro/` holds **manifests + journeys only**. |
 | `marketing/` | Marketing copy and assets |
 
 ---
@@ -398,7 +316,7 @@ All docs (Free + Pro) live in this plugin. Pro is intentionally doc-free.
 
 | Path | Contents |
 |------|----------|
-| `docs/architecture/MASTER_PLAN.md` | **Forward-looking** — current state + 6-month roadmap (Free + Pro). Trim shipped rows each release; do not add a "completed" section. |
+| `docs/architecture/MASTER_PLAN.md` | **Forward-looking** - current state + roadmap (Free + Pro). Trim shipped rows each release; do not add a "completed" section. |
 | `docs/architecture/ARCHITECTURE.md` | Free architecture |
 | `docs/architecture/architecture-contract.md` | Free ↔ Pro contract |
 | `docs/architecture/pro/` | Pro architecture + Interactivity-API design |
@@ -407,24 +325,24 @@ All docs (Free + Pro) live in this plugin. Pro is intentionally doc-free.
 | `docs/security/SECURITY_CHECKLIST.md` | Security checklist |
 | `docs/standards/authorization-guards.md` | What the four `audit/*-authority.json` manifests are (route, capability, render surface, admin action) and why each is an assertion rather than documentation. Their tests run inside the unit suite; a route that loses its permission check fails the build. |
 | `docs/verification/` | Ad-hoc verification reports (e.g. `cloud-storage-verification.md`) |
-| `docs/website/` | Public docs source. **Lives in this repo only** — do not publish or sync it anywhere. |
+| `docs/website/` | Public docs source. **Lives in this repo only** - do not publish or sync it anywhere. |
 | `docs/marketing/` | Marketing asset folder (different from `marketing/`) |
 
 ---
 
 ## QA
 
-All QA lives in `qa/` — single home for Free + Pro. Pro has no `qa/` directory of its own.
+All QA lives in `qa/` - single home for Free + Pro. Pro has no `qa/` directory of its own.
 
 | Path | Contents |
 |------|----------|
-| `qa/README.md` | Index — what's where and when to run |
-| `qa/runbooks/AGENT_SMOKE_RUNBOOK.md` | Pre-release gate (release-blocking) — sections A–G |
+| `qa/README.md` | Index - what's where and when to run |
+| `qa/runbooks/AGENT_SMOKE_RUNBOOK.md` | Pre-release gate (release-blocking) |
 | `qa/runbooks/MANUAL-UX-QA-free.md` | Free manual UX walkthrough |
 | `qa/runbooks/MANUAL-UX-QA-pro.md` | Pro manual UX walkthrough |
-| `qa/rules/` | Organization rules — CSS, NAMING, PHP, PROCESS, RENDER-STATE |
+| `qa/rules/` | Organization rules - CSS, NAMING, PHP, PROCESS, RENDER-STATE |
 | `qa/inventory/FUNCTIONALITY-CATALOG.md` | Every Free + Pro feature for testers and outside QA tools: who, where, steps, expected, UX expectation; plus the presentation bar and code-organization audit |
-| `qa/inventory/WHAT-TO-CHECK.md` | Flat list — surfaces, actions, settings, data stores, contracts |
+| `qa/inventory/WHAT-TO-CHECK.md` | Flat list - surfaces, actions, settings, data stores, contracts |
 | `qa/audits/` | Dated audits (a11y, doc-drift, etc.) |
 | `qa/runs/` | Append-only final run reports + `FINDINGS-HISTORY.md`. Drafts, raw debug logs and screenshots go to `app/qa-artifacts/`, never the repo |
 | `qa/.last-smoke-pass.json` | Release-gate green-light signal (combo mode) |
@@ -436,66 +354,63 @@ At release: can the plugin demonstrate the things in `qa/inventory/WHAT-TO-CHECK
 
 ## Release history
 
-Not kept here, deliberately. CLAUDE.md describes what the plugin **is right
-now**; a changelog describes what it **was**, and a second copy drifts from the
-first while burying the current-state material this file is opened for.
+Not kept here. CLAUDE.md describes what the plugin **is**; a second changelog drifts.
 
 - Customer-facing: `readme.txt` (WooCommerce action-prefix style).
-- Engineering detail: `git log --oneline`, where these entries came from.
+- Engineering detail: `git log --oneline`.
 - Release evidence: `qa/.last-smoke-pass.json` and `audit/runs/`.
 
 ---
 
 ## Local CI pipeline (REQUIRED before push)
 
-This plugin has a self-contained local-CI gate. No external service runs the gate — every contributor runs it on their own machine, and the pre-push git hook runs it automatically before every `git push`.
+This plugin has a self-contained local-CI gate. No external service runs it. Every contributor runs it locally, and the pre-push git hook runs it before every `git push`.
 
 ```bash
-composer install-hooks    # one-time per clone — activates bin/git-hooks/pre-push
-composer ci               # full pipeline (~30s + browser journeys)
-composer ci:no-journeys   # everything except browser-dependent journeys (~25s)
-composer ci:quick         # PHP lint + coding-rules only (~10s, for tight loops)
+composer install-hooks    # one-time per clone - activates bin/git-hooks/pre-push
+composer ci               # full pipeline (plus browser journeys)
+composer ci:no-journeys   # everything except browser-dependent journeys
+composer ci:quick         # PHP lint + coding-rules only, for tight loops
 composer arch-checks      # Free/Pro contract invariants (Pro plugin only)
 composer journeys:dry-run # list configured journeys without executing
 ```
 
 What the gate runs (in order, see `bin/local-ci.sh`):
 
-| Stage | Tool | Catches | Status as of 2026-09-01 |
-|---|---|---|---|
-| 1.1 PHP lint | `php -l` on every changed source | syntax errors | ✅ exits 0 |
-| 1.2 WPCS | `composer phpcs` | WordPress coding standards (errors only; warnings via `composer phpcs:full`) | ✅ exits 0 — 0 errors. Warning count is not pinned here (it was quoted as 41, actual 34 on 2026-09-01); run `composer phpcs:full` for the number. |
-| 1.3 PHPStan | `composer phpstan` | static type errors | ✅ exits 0 — `phpstan-baseline.neon` pins existing items |
-| 1.4 CSS token-contract | `bin/css-token-contract.sh` | phantom `var(--mvs-*)` tokens + dead dark-mode selectors | ✅ exits 0 |
-| 1.5 Duplication gate | `bin/duplication-gate.sh` | new copy-pasted method bodies vs the frozen baseline | ✅ exits 0 |
-| 1.6 Journey coverage | `bin/journey-coverage.sh` | release-critical features missing an executable journey | ✅ exits 0 |
-| 1.6b Erasure coverage | `php bin/check-erasure.php` | a user-keyed table that is neither ERASE nor RETAIN in the privacy map | ✅ exits 0 |
-| 1.7 Template-style | `bin/template-style-check.sh` | inline cosmetic CSS / hardcoded hex in markup (Coding Rule 19) | ✅ exits 0 |
-| 1.8 Dead-template check | `bin/dead-template-check.sh` | orphan templates nothing loads | ✅ exits 0 |
-| 1.9 Template versioning | `bin/template-version-check.sh` | an overridable template without `@version`, or changed since the last tag without a bump (Coding Rule 24) | ✅ exits 0 (added 2026-09-27) |
-| 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific Rules 1–8 (1 native cap checks, 2 REST `__return_true` allowlist, 3 admin aggregates via `AdminAggregatesService`, 4 no per-entity transients, 5 REST `per_page` declares a `maximum`, 6 no refusal-as-success, 7 no direct `mvs_media_index` query outside `MediaRepository`, 8 no exec-family call in shipped source) | ✅ all 8 pass. Rule 7 (added 2026-08-11, **hard `violation()` since 2026-08-15**): all 32 tracked call sites migrated across `CLI/Commands.php` (11), `Services/CloudOps.php` (8), `Services/CptIdCollisionService.php` (6), `REST/Controller/MediaController.php` (4) and `Services/StorageRepairService.php` (3). Mutation-tested — a planted leak fails the script with exit 1. Allowlist is the repository layer (`Repository/MediaRepository.php`, `Repository/MediaIntegrityRepository.php`) plus `Core/Migrator.php` and `Services/AdminAggregatesService.php`, each with a written architectural reason. Rule 8 (2026-08-30) enforces Coding Rule 21 — 0 hits. |
-| 2.2 Architecture | `../wpmediaverse-pro/bin/architecture-checks.sh` (falls back to a local `bin/` copy; skipped if neither is checked out) | Free/Pro contract invariants | ✅ runs from the Free side too — this row previously said "(Pro only)", which is wrong |
-| 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 (skipped with a warning if `/tmp/wordpress-tests-lib` is absent) |
-| 2.4 Full unit suite | `composer test:unit` | Every PHPUnit test in the plugin | ✅ green 2026-09-27 — 703 tests / 1,815 assertions / 2 skipped. Added 2026-08-11, mirroring the gap closed on Pro the same day (Basecamp #10184313297). **Known rare flake, still unexplained:** `CptIdCollisionTest.php` showed 2 order-dependent failures ("Linkage C") on 1 of 8 full-suite runs measured 2026-08-11. Confirmed NOT Pro's root cause (`MediaRepository::reset_test_cache()`) — no Free test file truncates `mvs_media_index`. Targeted repros did not reproduce it. **No speculative fix applied** — a guessed fix with a ~1-in-8 signal to validate against would be indistinguishable from dead code. See `plan/2026-08-11-pro-competitions-test-triage-plan.md`'s closing note. |
-| 2.4 wppqa baseline | freshness check on `audit/runs/*wppqa-baseline*.md` | a missing or >14-day-old bug-finder baseline (blocks the push) | ✅ latest is `2026-08-28-wppqa-baseline-SUMMARY.md`. Tag "2.4" is shared with the unit suite in `local-ci.sh` — two different stages, same label. |
-| 2.5 UX audit | `bin/ux-audit.sh` → `audit/ux-audit-<date>.md` | ux-foundation drift; block-severity findings fail the gate, advisory ones only print | ✅ exits 0 |
-| 3.1 Manifest | `jq` on `audit/manifests/manifest.json` | manifest validity + freshness (warns past 30 days) | ✅ exits 0 |
-| 3.2 Functional cert | `wp mvs cert` | boot-smoke every REST route + dead-toggle oracles + toggle coverage | skipped unless `MVS_WP_PATH` points at a live WP |
-| 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end | (skipped in `:no-journeys` mode) |
+| Stage | Tool | Catches |
+|---|---|---|
+| 1.1 PHP lint | `php -l` on every changed source | syntax errors |
+| 1.2 WPCS | `composer phpcs` | WordPress coding standards (errors only; warnings via `composer phpcs:full`) |
+| 1.3 PHPStan | `composer phpstan` | static type errors; `phpstan-baseline.neon` pins existing items |
+| 1.4 CSS token-contract | `bin/css-token-contract.sh` | phantom `var(--mvs-*)` tokens + dead dark-mode selectors |
+| 1.5 Duplication gate | `bin/duplication-gate.sh` | new copy-pasted method bodies vs the frozen baseline |
+| 1.6 Journey coverage | `bin/journey-coverage.sh` | release-critical features missing an executable journey |
+| 1.6b Erasure coverage | `php bin/check-erasure.php` | a user-keyed table that is neither ERASE nor RETAIN in the privacy map |
+| 1.7 Template-style | `bin/template-style-check.sh` | inline cosmetic CSS / hardcoded hex in markup (Coding Rule 19) |
+| 1.8 Dead-template check | `bin/dead-template-check.sh` | orphan templates nothing loads |
+| 1.9 Template versioning | `bin/template-version-check.sh` | an overridable template without `@version`, or changed since the last tag without a bump (Coding Rule 24) |
+| 2.1 Coding rules | `bin/coding-rules-check.sh` | Rules 1-11. 1 native cap checks, 2 REST `__return_true` allowlist, 3 admin aggregates via `AdminAggregatesService`, 4 no per-entity transients, 5 REST `per_page` declares a `maximum`, 6 no refusal-as-success (Coding Rule 20), 7 no direct `mvs_media_index` query outside `MediaRepository`, 8 no exec-family call in shipped source (Coding Rule 21), 9 no ticket/card id in comments (Coding Rule 26), 10 no new method over 150 lines and baselined long methods may not grow, 11 no new `$wpdb` query outside `includes/Repository/` and the migrator. Existing debt for 9-11 is listed in `audit/cleanup/code-standard-baseline.txt` and passes until touched. Rule 7 is a hard `violation()`, mutation-tested; its allowlist is the repository layer (`Repository/MediaRepository.php`, `Repository/MediaIntegrityRepository.php`) plus `Core/Migrator.php` and `Services/AdminAggregatesService.php`, each with a written architectural reason. |
+| 2.2 Architecture | `../wpmediaverse-pro/bin/architecture-checks.sh` (falls back to a local `bin/` copy; skipped if neither is checked out) | Free/Pro contract invariants; runs from the Free side too |
+| 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (skipped with a warning if `/tmp/wordpress-tests-lib` is absent) |
+| 2.4 Full unit suite | `composer test:unit` | Every PHPUnit test in the plugin. A rare order-dependent flake in `CptIdCollisionTest.php` ("Linkage C") is unexplained; do not apply a speculative fix, reproduce it first. |
+| 2.4 wppqa baseline | freshness check on `audit/runs/*wppqa-baseline*.md` | a missing or >14-day-old bug-finder baseline (blocks the push). The "2.4" tag is shared with the unit suite in `local-ci.sh`: two different stages, same label. |
+| 2.5 UX audit | `bin/ux-audit.sh` → `audit/ux-audit-<date>.md` | ux-foundation drift; block-severity findings fail the gate, advisory ones only print |
+| 3.1 Manifest | `jq` on `audit/manifests/manifest.json` | manifest validity + freshness (warns past 30 days) |
+| 3.2 Functional cert | `wp mvs cert` | boot-smoke every REST route + dead-toggle oracles + toggle coverage; skipped unless `MVS_WP_PATH` points at a live WP |
+| 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end (skipped in `:no-journeys` mode) |
 
-**Composer scripts (added 2026-05-01):**
-- `composer phpcs` — runs WPCS errors only (`--warning-severity=0`); exits 0 on baseline.
-- `composer phpcs:full` — runs WPCS with warnings shown (informational; still exits 0 if no errors).
-- `composer phpcs:fix` — runs phpcbf to auto-fix fixable violations.
-- `composer phpstan` — runs PHPStan with the existing baseline; exits 0.
+**Composer scripts:**
+- `composer phpcs` - WPCS errors only (`--warning-severity=0`).
+- `composer phpcs:full` - WPCS with warnings shown (informational).
+- `composer phpcs:fix` - phpcbf to auto-fix fixable violations.
+- `composer phpstan` - PHPStan with the existing baseline.
 
 **Bypass for emergencies only**: `SKIP_LOCAL_CI=1 git push`.
 
 ## Customer journeys
 
-38 Free + 13 Pro as of 2026-09-03, and `audit/journeys/REQUIRED-COVERS.txt` names the 30 features that must never ship without one (gate 1.6 fails the build otherwise; gate 4.1 runs them). Counts rot — `ls audit/journeys/*/*.md audit/pro/journeys/*/*.md | wc -l`.
-
+`audit/journeys/REQUIRED-COVERS.txt` names the features that must never ship without a journey (gate 1.6 fails the build otherwise; gate 4.1 runs them). Count them with `ls audit/journeys/*/*.md audit/pro/journeys/*/*.md | wc -l`.
 
 Bug fixes that survive a refactor are journey-covered. See `audit/journeys/README.md` for the schema and the executor contract. When a new bug is fixed, add or update the journey that would have caught it. The journey IS the regression test.
 
-**And prove it fails.** A journey added alongside a fix must be run against the PRE-fix code and required to FAIL. Two `priority: critical` journeys passed for months while the bugs they named were live: `security/05` captured a private file's URL and never fetched it, and `customer/08` policed a 40px touch floor against a 44px token. Both claimed coverage they did not assert. Skipping the revert-check is how that happens.
+**And prove it fails.** A journey added alongside a fix must be run against the PRE-fix code and required to FAIL. A journey that never fetched the private URL it claimed to protect, or that policed a 40px floor against a 44px token, passes while the bug is live. Skipping the revert-check is how that happens.
