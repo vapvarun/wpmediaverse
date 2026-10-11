@@ -49,11 +49,13 @@ final class MemberDataMap {
 	 * Tables whose rows are DELETED when a member is erased.
 	 *
 	 * Shape: table (unprefixed) => [
-	 *   'columns' => string[]  every column that can hold this member's ID,
-	 *   'label'   => string    human name, used in the export
+	 *   'columns'        => string[]  every column that can hold this member's ID,
+	 *   'export_columns' => string[]  optional: only these mark the member's own rows
+	 *                                 in the export (the rest would name someone else),
+	 *   'label'          => string    human name, used in the export
 	 * ]
 	 *
-	 * @return array<string, array{columns: string[], label: string}>
+	 * @return array<string, array{columns: string[], export_columns?: string[], label: string}>
 	 */
 	public static function erase_map(): array {
 		$map = array(
@@ -98,9 +100,12 @@ final class MemberDataMap {
 				'columns' => array( 'follower_id', 'following_id' ),
 				'label'   => __( 'Follows', 'wpmediaverse' ),
 			),
+			// Export only the blocks the member made: a row where they are the
+			// blocked one would name who blocked them (Basecamp 10393276020 #7).
 			'mvs_blocks'                    => array(
-				'columns' => array( 'blocker_id', 'blocked_id' ),
-				'label'   => __( 'Blocks', 'wpmediaverse' ),
+				'columns'        => array( 'blocker_id', 'blocked_id' ),
+				'export_columns' => array( 'blocker_id' ),
+				'label'          => __( 'Blocks', 'wpmediaverse' ),
 			),
 
 			// Recipient and actor. A notification saying "X liked your photo"
@@ -176,7 +181,10 @@ final class MemberDataMap {
 			// record of why. The reporter's identity is anonymised; the case
 			// stays.
 			'mvs_reports'           => array(
-				'columns' => array( 'reporter_id', 'target_id' ),
+				'columns'        => array( 'reporter_id', 'target_id' ),
+				// Export only the reports the member filed: one about them would
+				// name the reporter and quote what they wrote.
+				'export_columns' => array( 'reporter_id' ),
 				// target_id is a member only on a report ABOUT a member; on a
 				// media, comment or message report it is that item's id, and
 				// erasing member #42 used to zero every report on media #42

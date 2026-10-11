@@ -538,8 +538,10 @@ class GDPRService {
 					continue;
 				}
 
+				// `export_columns` narrows the export to rows where the member is the
+				// actor; erasure and retention still use every column.
 				$where = array();
-				foreach ( $spec['columns'] as $column ) {
+				foreach ( $spec['export_columns'] ?? $spec['columns'] as $column ) {
 					$has = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM `{$full}` LIKE %s", $column ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					if ( $has ) {
 						$where[] = '(' . \WPMediaVerse\Privacy\MemberDataMap::member_condition( $spec, $column, $user_id ) . ')';
