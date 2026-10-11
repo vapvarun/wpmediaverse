@@ -102,7 +102,7 @@ class BulkController extends WP_REST_Controller {
 
 		// Filter to items the user can modify.
 		$requested   = count( $media_ids );
-		$allowed_ids = $this->filter_allowed_ids( $media_ids, $user_id );
+		$allowed_ids = $this->filter_allowed_ids( $media_ids, $user_id, (string) $action );
 
 		// Documents are not media-library items: their access is grants-first
 		// through the folder chain, and they have their own trash and bulk flow
@@ -393,22 +393,31 @@ class BulkController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Filter media IDs to only those the user can modify.
+	 * Filter media IDs to only those the user may act on.
 	 *
-	 * @param int[] $media_ids Media IDs.
-	 * @param int   $user_id   Current user ID.
+	 * Delete checks the delete capabilities, as the single delete route does
+	 * (MediaController::owner_or_refuse); every other action the edit ones. A
+	 * role with edit but not delete rights hard-deleted through bulk
+	 * (Basecamp 10393276020 #14).
+	 *
+	 * @param int[]  $media_ids Media IDs.
+	 * @param int    $user_id   Current user ID.
+	 * @param string $action    Bulk action.
 	 * @return int[]
 	 */
-	private function filter_allowed_ids( array $media_ids, int $user_id ): array {
-		$can_edit_others = current_user_can( 'edit_others_mvs_medias' );
+	private function filter_allowed_ids( array $media_ids, int $user_id, string $action ): array {
+		$verb       = 'delete' === $action ? 'delete' : 'edit';
+		$can_own    = current_user_can( $verb . '_mvs_medias' );
+		$can_others = current_user_can( $verb . '_others_mvs_medias' );
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		return array_filter(
 			$media_ids,
-			function ( $media_id ) use ( $user_id, $can_edit_others ) {
-				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			static function ( $media_id ) use ( $user_id, $can_own, $can_others, $repo ) {
+				if ( ! $repo->exists( $media_id ) ) {
 					return false;
 				}
-				return $can_edit_others || \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id;
+				return $can_others || ( $can_own && $repo->get_author( $media_id ) === $user_id );
 			}
 		);
 	}
