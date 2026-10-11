@@ -70,7 +70,16 @@ final class PublicListing {
 			return;
 		}
 		$existing = (array) $query->get( 'meta_query' );
-		$query->set( 'meta_query', $existing ? array( 'relation' => 'AND', $existing, self::meta_query() ) : self::meta_query() );
+		$query->set(
+			'meta_query',
+			$existing
+				? array(
+					'relation' => 'AND',
+					$existing,
+					self::meta_query(),
+				)
+				: self::meta_query()
+		);
 	}
 
 	/**

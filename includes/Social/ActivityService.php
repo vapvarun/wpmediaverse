@@ -164,15 +164,12 @@ class ActivityService {
 			$mvs_act_priv_params = array_merge( $mvs_act_priv_params, array_map( 'intval', $blocked ) );
 		}
 
-		// On an unfiltered anonymous feed (scope 'all', no blocks, param-less
-		// privacy clause) the COUNT has zero placeholders — wpdb::prepare()
-		// raises a doing-it-wrong notice for placeholder-less queries, so only
-		// prepare when there is something to bind. Every fragment interpolated
-		// here is placeholder-built or table-prefix derived, never user input.
-		$count_params = array_merge( $params, $mvs_act_priv_params );
-		$count_sql    = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_activity a{$privacy_join} WHERE {$where}{$privacy_where}";
-		$total        = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$count_params ? $wpdb->prepare( $count_sql, ...$count_params ) : $count_sql // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// The lifecycle clause always binds the viewer, so the COUNT always has a
+		// placeholder. Every fragment interpolated here is placeholder-built or
+		// table-prefix derived, never user input.
+		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_activity a{$privacy_join} WHERE {$where}{$privacy_where}";
+		$total     = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->prepare( $count_sql, ...array_merge( $params, $mvs_act_priv_params ) ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
 
 		$params   = array_merge( $params, $mvs_act_priv_params );
