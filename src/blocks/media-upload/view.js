@@ -5,7 +5,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
-import { syncEvents } from '@wpmediaverse/sync-events';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Map of MIME types to human-readable labels for error messages.

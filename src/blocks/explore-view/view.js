@@ -8,7 +8,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
-import { syncEvents } from '@wpmediaverse/sync-events';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Explore bulk actions work against a SERVER-RENDERED grid, which is the one

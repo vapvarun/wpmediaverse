@@ -11,7 +11,7 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
-import { syncEvents } from '@wpmediaverse/sync-events';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s", no zone) to

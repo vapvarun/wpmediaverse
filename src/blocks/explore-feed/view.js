@@ -5,7 +5,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
-import { syncEvents } from '@wpmediaverse/sync-events';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into

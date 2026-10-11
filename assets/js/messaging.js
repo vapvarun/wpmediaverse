@@ -6,7 +6,7 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
-import { syncEvents } from '@wpmediaverse/sync-events';
+import { syncEvents } from './frontend/sync-events.js';
 
 // The open thread's list, and whether it should follow new content.
 let messagesEl = null;

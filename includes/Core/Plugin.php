@@ -164,12 +164,9 @@ class Plugin {
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
-		// WordPress 4.6+ auto-loads plugin textdomains from the standard
-		// language directories (wp-content/languages/plugins/{slug}-{locale}.mo
-		// and {plugin}/languages/{slug}-{locale}.mo). Calling
-		// load_plugin_textdomain() here on `plugins_loaded` triggers the
-		// `_load_textdomain_just_in_time was called incorrectly` notice on
-		// WP 6.7+ which now requires textdomain loading on `init` or later.
+		// No load_plugin_textdomain(): WordPress 4.6+ loads it from the language
+		// folders, and calling it on `plugins_loaded` raises the
+		// `_load_textdomain_just_in_time` notice on WP 6.7+.
 
 		// Ensure capabilities are registered. The activation hook can fail
 		// on some hosts (fatal error, WP-CLI without --activate, etc.).
@@ -1058,7 +1055,8 @@ class Plugin {
 	}
 
 	/**
-	 * Script modules other modules import by id (Free's stores, Pro's, add-ons').
+	 * Script modules Pro and add-ons import by id. Free's own files import them
+	 * by relative path, so no enqueue has to list them as a dependency.
 	 *
 	 * @since 2.6.2
 	 */
@@ -1068,7 +1066,7 @@ class Plugin {
 		wp_register_script_module(
 			'@wpmediaverse/sync-events',
 			MVS_PLUGIN_URL . 'assets/js/frontend/sync-events.js',
-			array( '@wordpress/interactivity' ),
+			array( array( 'id' => '@wordpress/interactivity' ) ),
 			self::asset_version( 'assets/js/frontend/sync-events.js' )
 		);
 	}
@@ -2713,7 +2711,6 @@ class Plugin {
 					'id'     => '@wordpress/interactivity',
 					'import' => 'static',
 				),
-				'@wpmediaverse/sync-events',
 			),
 			self::asset_version( 'assets/js/messaging.js' )
 		);

@@ -7,7 +7,7 @@
  */
 
 import { store, getContext, getElement, withScope } from '@wordpress/interactivity';
-import { syncEvents } from '@wpmediaverse/sync-events';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
