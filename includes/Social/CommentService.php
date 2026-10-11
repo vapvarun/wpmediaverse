@@ -51,6 +51,55 @@ class CommentService {
 	 */
 	public static function register_query_guard(): void {
 		add_action( 'pre_get_comments', array( __CLASS__, 'exclude_media_comments_from_foreign_queries' ) );
+		add_action( 'delete_comment', array( __CLASS__, 'delete_replies_with_comment' ), 10, 2 );
+	}
+
+	/**
+	 * A deleted media comment takes its replies with it, as on social networks.
+	 *
+	 * Hooked on core's delete_comment, which fires before WordPress moves the
+	 * replies up a level, so the rule holds however the comment is deleted (the
+	 * REST route, moderation, the wp-admin comments screen). Each reply's own
+	 * delete runs this again, so a whole thread goes. Reply authors are not told.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int         $comment_id Comment being deleted.
+	 * @param \WP_Comment $comment    The comment.
+	 * @return void
+	 */
+	public static function delete_replies_with_comment( $comment_id, $comment ): void {
+		if ( ! $comment instanceof \WP_Comment || self::COMMENT_TYPE !== $comment->comment_type ) {
+			return;
+		}
+
+		/**
+		 * Filters whether deleting a media comment also deletes its replies.
+		 *
+		 * Return false to keep replies, moved up a level (the behaviour before 2.6.2).
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool        $delete  Default true.
+		 * @param \WP_Comment $comment The comment being deleted.
+		 */
+		if ( ! apply_filters( 'mvs_comment_delete_replies', true, $comment ) ) {
+			return;
+		}
+
+		$replies = get_comments(
+			array(
+				'parent'  => (int) $comment_id,
+				'type'    => self::COMMENT_TYPE,
+				'status'  => 'all',
+				'fields'  => 'ids',
+				'number'  => 0,
+				'orderby' => 'comment_ID',
+			)
+		);
+		foreach ( (array) $replies as $reply_id ) {
+			wp_delete_comment( (int) $reply_id, true );
+		}
 	}
 
 	/**

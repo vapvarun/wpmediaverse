@@ -1704,16 +1704,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const s = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/stats' );
 				state.lightboxStats = s.data;
 			} catch { state.lightboxStats = {}; }
-			// Favorite status. Attempt unconditionally — the REST endpoint
-			// enforces its own auth, returning 401 for guests which lands in
-			// the catch and leaves the default `false`. The previous
-			// ctx.isLoggedIn gate was driven by parsed.currentUserId, which
-			// is not emitted into every per-card data-wp-context (only
-			// mediaId/restUrl/nonce are guaranteed). That mismatch caused
-			// the "lightbox heart never reflects server truth after refresh"
-			// desync: server records the favorite correctly, but the
-			// lightbox always boots with lightboxIsFavorited=false because
-			// the GET was skipped.
+			// Favorite status, for signed-in members only. The gate is the page-wide
+			// state.currentUserId: the per-card context does not always carry the
+			// viewer, and gating on it once left the heart out of step with the server.
+			// A visitor has no favourites: skip the call instead of logging a 401.
+			if ( ! state.currentUserId ) {
+				state.lightboxIsFavorited = false;
+				return;
+			}
 			try {
 				const f = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/favorite' );
 				if ( f.ok ) {

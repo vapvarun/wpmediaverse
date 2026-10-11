@@ -3505,6 +3505,17 @@
       ],
       "where": "includes/Repository/MediaRepository.php:6399",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_comment_delete_replies",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $delete",
+        "\\WP_Comment $comment"
+      ],
+      "where": "includes/Social/CommentService.php:86",
+      "consumed_by": []
     }
   ],
   "generated": {
