@@ -72,6 +72,43 @@ class ViewRetentionService {
 	}
 
 	/**
+	 * Prune READ notifications older than the retention window.
+	 *
+	 * The table only grew (Basecamp 10393276031). Unread ones stay. There is
+	 * no created_at index here (a 2.7.0 schema item), so the delete walks the
+	 * primary key: old rows have the lowest ids, so each batch stops early
+	 * instead of scanning the table.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function purge_notifications(): void {
+		/**
+		 * Days a read notification is kept. 0 = keep forever.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int $days Default 90, like view retention.
+		 */
+		$days = min( self::MAX_DAYS, max( 0, (int) apply_filters( 'mvs_notification_retention_days', self::DEFAULT_DAYS ) ) );
+		if ( $days <= 0 ) {
+			return;
+		}
+
+		global $wpdb;
+		for ( $batch = 0; $batch < 20; $batch++ ) {
+			$deleted = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}mvs_notifications WHERE read_at IS NOT NULL AND created_at < ( UTC_TIMESTAMP() - INTERVAL %d DAY ) ORDER BY id LIMIT 5000",
+					$days
+				)
+			);
+			if ( $deleted < 5000 ) {
+				return;
+			}
+		}
+	}
+
+	/**
 	 * Delete rows older than $days from one of our tables (created_at is
 	 * indexed on both), in bounded batches.
 	 *

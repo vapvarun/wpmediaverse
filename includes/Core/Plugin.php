@@ -905,6 +905,7 @@ class Plugin {
 		}
 		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge' ) );
 		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge_activity' ) );
+		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge_notifications' ) );
 
 		// Wire LoggerService into key operations.
 		\WPMediaVerse\Services\LoggerService::register_hooks();
