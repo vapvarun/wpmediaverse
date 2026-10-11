@@ -1128,7 +1128,7 @@ class SignedUrlService {
 	 *
 	 * @return int TTL in seconds.
 	 */
-	private function get_ttl(): int {
+	public function get_ttl(): int {
 		$ttl = (int) get_option( 'mvs_signed_url_ttl', self::DEFAULT_TTL );
 		// At least a minute, at most a week: with no ceiling a large value made
 		// a private file's link effectively permanent once it was shared.

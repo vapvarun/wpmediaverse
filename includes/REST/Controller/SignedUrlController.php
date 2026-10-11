@@ -146,10 +146,12 @@ class SignedUrlController extends WP_REST_Controller {
 
 		$media_id = $request->get_param( 'media_id' );
 		$download = (bool) $request->get_param( 'download' );
-		$ttl      = $request->get_param( 'ttl' );
+		// A caller may ask for a shorter link, never a longer one than the site's
+		// setting (Basecamp 10393276020 #15).
+		$ttl      = min( (int) $request->get_param( 'ttl' ), $this->signed_urls->get_ttl() );
 		$user_id  = get_current_user_id();
 
-		$url = $this->signed_urls->generate( $media_id, $user_id, $ttl ? $ttl : 0, $download );
+		$url = $this->signed_urls->generate( $media_id, $user_id, $ttl > 0 ? $ttl : 0, $download );
 
 		if ( ! $url ) {
 			// Hidden looks exactly like missing (QA, 2.6.0).
