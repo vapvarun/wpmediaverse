@@ -6913,6 +6913,20 @@
         "admin_media_list and privacy_levels_in_use leave out 'dm'",
         "Version 2.6.2"
       ],
+      "core_contract": [
+        "docs/architecture/core-contract.md: one owner per rule; extensions call doors",
+        "PrivacyService: level_audience_sql, safety_refuses, are_friends/friend_ids, map_external_privacy, media_drive_access public, apply_requested_privacy filter; member_privacy_clause + 'visible' mode + query_listable_spaces include followers/friends/legacy loggedin",
+        "Migrator v41: BuddyPress activity levels of legacy loggedin media",
+        "BuddyPress activity filter, group tab and Explore templates use core rules; resolve_explore_privacy_mode deprecated",
+        "MediaRepository: status_columns_many, id_from_permalink, move_to_drive, thumbnails via MediaUrl::thumb",
+        "MediaCapabilities::can_edit_media; AlbumService::album_of",
+        "EmailService::types() + send_member_email(); settings render from the list",
+        "MessageRepository (message_repository); MessagingService get_message_senders, max_group_participants (create/add/rejoin)",
+        "UserDeletionService runs MemberPurger until done (background job mvs_user_deletion_purge)",
+        "REST GET /mvs/v1/media/{id}/spaces (viewer-filtered)",
+        "mvs-rest.js: captureVideoFrame, proUrl, uploadMedia extra/signal; all uploaders use it; album-upload.js the only album uploader",
+        "coding-rules Rule 12 (core contract owners) with baseline"
+      ],
       "unchanged": "routes, settings, tables"
     }
   },

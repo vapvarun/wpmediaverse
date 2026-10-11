@@ -3337,6 +3337,174 @@
       ],
       "where": "includes/Core/PresetActivation.php:194",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_are_friends",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $are_friends",
+        "int $user_a",
+        "int $user_b"
+      ],
+      "where": "includes/Services/PrivacyService.php:747",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_friend_ids",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int[] $friend_ids",
+        "int $user_id"
+      ],
+      "where": "includes/Services/PrivacyService.php:774",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_level_audience_sql",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $sql",
+        "array $context"
+      ],
+      "where": "includes/Services/PrivacyService.php:836",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_safety_refuses",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $refuses",
+        "int $media_id",
+        "int $user_id",
+        "array $args"
+      ],
+      "where": "includes/Services/PrivacyService.php:716",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_requested_privacy",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $privacy",
+        "int $media_id"
+      ],
+      "where": "includes/Services/PrivacyService.php:994",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_external_privacy_map",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array<string,string> $map",
+        "string $vocabulary",
+        "array $context"
+      ],
+      "where": "includes/Services/PrivacyService.php:638",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_map_external_privacy",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $slug",
+        "string $value",
+        "string $vocabulary",
+        "array $context"
+      ],
+      "where": "includes/Services/PrivacyService.php:652",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_email_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array<string, array> $types"
+      ],
+      "where": "includes/Services/EmailService.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_can_edit_media",
+      "type": "filter",
+      "args_count": 5,
+      "args_signature": [
+        "bool $allowed",
+        "int $media_id",
+        "int $user_id",
+        "string $own_cap",
+        "string $others_cap"
+      ],
+      "where": "includes/Capabilities/MediaCapabilities.php:100",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_group_conversation_max_participants",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $max",
+        "int $user_id",
+        "array $context"
+      ],
+      "where": "includes/Messaging/MessagingService.php:875",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_permalink",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $url",
+        "int $media_id"
+      ],
+      "where": "includes/Repository/MediaRepository.php:6297",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_id_from_permalink",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $id",
+        "string $url"
+      ],
+      "where": "includes/Repository/MediaRepository.php:6336",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_can_move_to_drive",
+      "type": "filter",
+      "args_count": 5,
+      "args_signature": [
+        "bool $allowed",
+        "int $media_id",
+        "string $drive_type",
+        "int $drive_id",
+        "int $folder_id"
+      ],
+      "where": "includes/Repository/MediaRepository.php:6376",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_moved_to_drive",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "string $drive_type",
+        "int $drive_id",
+        "array $from"
+      ],
+      "where": "includes/Repository/MediaRepository.php:6399",
+      "consumed_by": []
     }
   ],
   "generated": {

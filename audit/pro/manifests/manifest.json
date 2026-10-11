@@ -2529,7 +2529,8 @@
         "Code standard: comments only (docblocks placed, card ids and history out), code-standard checks in coding-rules, PHPStan level 6",
         "AnalyticsDashboard: Top Media Tracked card removed (counted a top-5 list)",
         "Migrator::run under WP_Upgrader::create_lock('mvs_pro_migrator'); steps in run_steps()",
-        "Version 2.6.2; MVS_PRO_MIN_FREE 2.6.2"
+        "Version 2.6.2; MVS_PRO_MIN_FREE 2.6.2",
+        "Core contract: documents ask Free safety_refuses (page-level in prefetch); single-item privacy, document privacy action and Flickr import via apply_requested_privacy; captions/chapters/privacy via can_edit_media; challenge emails via EmailService types (default on); CompetitionMedia::attach_to_entry/cover_url + Repository\\CompetitionEntryRepository; document upload via mvsRest (rate-limited); Pro feed templates use 'explore'; battles/challenges/stories uploads via mvsRest; ProMemberData::purge_on_account_deletion deprecated"
       ],
       "unchanged": "routes, hooks, settings, tables"
     }
