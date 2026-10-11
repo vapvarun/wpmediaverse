@@ -152,7 +152,9 @@ class CapabilityMapTest extends WP_UnitTestCase {
 						continue;
 					}
 
-					$key = str_replace( dirname( __DIR__, 2 ) . '/', '', $file->getPathname() ) . ':' . ( $number + 1 );
+					// Keyed by the enclosing method, not the line: a line number moves
+					// whenever anything above it changes.
+					$key = str_replace( dirname( __DIR__, 2 ) . '/', '', $file->getPathname() ) . '::' . self::enclosing_function( $lines, $number );
 
 					if ( isset( $allowlist[ $key ] ) && '' !== trim( (string) $allowlist[ $key ] ) ) {
 						continue;
@@ -165,5 +167,21 @@ class CapabilityMapTest extends WP_UnitTestCase {
 		}
 
 		$this->assertSame( array(), $offenders, implode( "\n", $offenders ) );
+	}
+
+	/**
+	 * Name of the function a line sits in, by the nearest declaration above it.
+	 *
+	 * @param array<int, string> $lines  File lines.
+	 * @param int                $number Zero-based line index.
+	 * @return string Function name, or 'file' outside any function.
+	 */
+	private static function enclosing_function( array $lines, int $number ): string {
+		for ( $i = $number; $i >= 0; $i-- ) {
+			if ( preg_match( '/\bfunction\s+(\w+)\s*\(/', (string) $lines[ $i ], $m ) ) {
+				return $m[1];
+			}
+		}
+		return 'file';
 	}
 }
