@@ -49,7 +49,7 @@ class UserDeletionService {
 		// WordPress only offers that choice when the user owns posts, so a member
 		// with only media was never asked and lost it all.
 		add_filter( 'users_have_additional_content', array( $this, 'users_have_media' ), 10, 2 );
-		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 );
+		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 ); // 1 arg from 2.6.2, 2 for older jobs.
 	}
 
 	/**
@@ -477,7 +477,11 @@ class UserDeletionService {
 		}
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			$this->schedule_cascade_batch( $user_id, array_values( array_map( 'intval', $media_ids ) ) );
+			// Only the user id: each batch re-reads what is still theirs. The id
+			// list used to travel in the job, and Action Scheduler refuses
+			// arguments over 8,000 characters, so deleting a member with ~1,100+
+			// media threw out of the delete (Basecamp 10393276031 #9).
+			as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
 			return;
 		}
 
@@ -487,41 +491,44 @@ class UserDeletionService {
 	}
 
 	/**
-	 * Enqueue the next cascade batch. Idempotent by construction — each call
-	 * enqueues a fresh AS action carrying only the ids still to process.
-	 *
-	 * @param int   $user_id   Deleted user id.
-	 * @param int[] $media_ids Remaining media ids.
-	 */
-	private function schedule_cascade_batch( int $user_id, array $media_ids ): void {
-		if ( empty( $media_ids ) ) {
-			return;
-		}
-		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $media_ids ), self::AS_GROUP );
-	}
-
-	/**
-	 * Action Scheduler callback — deletes one batch of media and re-enqueues
-	 * itself for whatever remains. `delete_cascade()` is a no-op on an id
-	 * that no longer exists, so a retried/duplicated batch is harmless.
+	 * Action Scheduler callback: deletes the next batch of the user's media and
+	 * re-enqueues itself while more remain. Re-reading by author means a
+	 * retried or duplicated job is harmless.
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param int   $user_id   Deleted user id (unused here beyond reschedule bookkeeping).
-	 * @param int[] $media_ids Media ids for this cascade run.
+	 * @param int   $user_id   Deleted user id.
+	 * @param int[] $media_ids Ids carried by a job queued before 2.6.2; new jobs
+	 *                         carry none.
 	 */
-	public function process_cascade_batch( int $user_id, array $media_ids ): void {
-		$batch     = array_slice( $media_ids, 0, self::CASCADE_BATCH_SIZE );
-		$remaining = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
+	public function process_cascade_batch( int $user_id, array $media_ids = array() ): void {
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$batch = $media_ids
+			? array_slice( $media_ids, 0, self::CASCADE_BATCH_SIZE )
+			: $repo->author_media_ids( $user_id, self::CASCADE_BATCH_SIZE );
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$deleted = 0;
 		foreach ( $batch as $media_id ) {
-			$repo->delete_cascade( (int) $media_id );
+			$deleted += $repo->delete_cascade( (int) $media_id ) ? 1 : 0;
 		}
 
-		if ( ! empty( $remaining ) ) {
-			$this->schedule_cascade_batch( $user_id, $remaining );
+		if ( $media_ids ) {
+			$rest = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
+			if ( $rest ) {
+				as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $rest ), self::AS_GROUP );
+			}
+			return;
 		}
+
+		if ( count( $batch ) < self::CASCADE_BATCH_SIZE ) {
+			return;
+		}
+		if ( 0 === $deleted ) {
+			// A full batch that deletes nothing would re-read the same ids forever.
+			\WPMediaVerse\Services\LoggerService::error( 'user_deletion', 'Media cascade stopped: a batch deleted nothing.', array( 'user_id' => $user_id ) );
+			return;
+		}
+		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
 	}
 
 	/**
