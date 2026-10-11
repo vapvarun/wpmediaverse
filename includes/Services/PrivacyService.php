@@ -603,7 +603,7 @@ class PrivacyService {
 	 *
 	 * @param string $value      The other plugin's privacy word.
 	 * @param string $vocabulary Who is asking, e.g. 'buddynext' (passed to the filter).
-	 * @param array  $context    Optional details, e.g. `space_id`.
+	 * @param array<string, mixed> $context Optional details, e.g. `space_id`.
 	 * @return string A MediaVerse privacy slug.
 	 */
 	public static function map_external_privacy( string $value, string $vocabulary = '', array $context = array() ): string {
@@ -665,7 +665,7 @@ class PrivacyService {
 	 *
 	 * @param int   $media_id Item id.
 	 * @param int   $user_id  Viewer, 0 for a visitor.
-	 * @param array $args {
+	 * @param array<string, mixed> $args {
 	 *     Optional. Values the caller already holds, so no row is read.
 	 *
 	 *     @type int    $author_id         Author id.
@@ -791,7 +791,7 @@ class PrivacyService {
 	 * @param string $level_expr  SQL expression holding the level (NULL or '' = public).
 	 * @param string $author_expr SQL expression holding the author id.
 	 * @param int    $viewer_id   Viewer, 0 for a visitor.
-	 * @param array  $args        Optional `group_expr`: SQL expression for the row's group id.
+	 * @param array<string, string> $args Optional `group_expr`: SQL expression for the row's group id.
 	 * @return string SQL condition (no leading AND), values already escaped.
 	 */
 	public function level_audience_sql( string $level_expr, string $author_expr, int $viewer_id, array $args = array() ): string {

@@ -856,7 +856,7 @@ class MessagingService {
 	 * @since 2.6.2
 	 *
 	 * @param int   $user_id Member creating the group or adding to it.
-	 * @param array $context `conversation_id` when adding to an existing group, plus create options.
+	 * @param array<string, mixed> $context `conversation_id` when adding to an existing group, plus create options.
 	 * @return int
 	 */
 	public function max_group_participants( int $user_id, array $context = array() ): int {

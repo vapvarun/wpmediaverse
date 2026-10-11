@@ -6320,7 +6320,7 @@ class MediaRepository implements MediaRepositoryInterface {
 					$id = (int) $rest;
 				} else {
 					$row = $this->get_by_slug( $rest );
-					$id  = $row ? (int) ( is_array( $row ) ? ( $row['media_id'] ?? 0 ) : ( $row->media_id ?? 0 ) ) : 0;
+					$id  = $row ? (int) ( $row['media_id'] ?? 0 ) : 0;
 				}
 			}
 		}
