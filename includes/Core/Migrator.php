@@ -112,14 +112,31 @@ class Migrator {
 			return;
 		}
 
-		for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
-			$method = "migrate_to_{$v}";
-			if ( method_exists( $this, $method ) ) {
-				$this->$method();
+		// One runner at a time: right after an update every request arrives here,
+		// and without a lock several ran the same steps at once. add_option() is
+		// atomic (unique option_name). A lock older than 10 minutes belongs to a
+		// request that died mid-way (Basecamp 10393276031 #19).
+		$lock = 'mvs_migrator_lock';
+		if ( ! add_option( $lock, time(), '', false ) ) {
+			if ( time() - (int) get_option( $lock, 0 ) < 10 * MINUTE_IN_SECONDS ) {
+				return;
 			}
+			update_option( $lock, time(), false );
 		}
 
-		update_option( self::VERSION_OPTION, self::CURRENT_VERSION );
+		try {
+			for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
+				$method = "migrate_to_{$v}";
+				if ( method_exists( $this, $method ) ) {
+					$this->$method();
+				}
+				// Saved per step, so a timeout resumes at the next one instead of
+				// re-running every step from the start.
+				update_option( self::VERSION_OPTION, $v );
+			}
+		} finally {
+			delete_option( $lock );
+		}
 	}
 
 	/**
