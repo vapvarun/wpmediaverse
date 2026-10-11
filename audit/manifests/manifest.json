@@ -6859,6 +6859,26 @@
         "GeneralSettingsRegistrar reads mvs_allow_user_privacy with its registered default"
       ],
       "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_round_4_security": {
+      "scope": "targeted (2.6.2 round 4: bounces 094/chat scroll, security group A Free items)",
+      "added": {
+        "hooks": ["mvs_media_before_delete (action, MediaRepository::delete_cascade start)"],
+        "classes": ["PostTypes\\PublicListing (archive/feed/sitemap show public albums/collections only)"],
+        "constants": ["AccountDeletionService::META_SUSPENDED_BY_DELETION"]
+      },
+      "changed": [
+        "ActivitySyncIntegration: activity_media_ids() (composer CSV or bp_activity_id), strictest privacy, delete keeps posts with items left, item_id delete filtered by component",
+        "messaging.js: thread pinned to newest while media loads",
+        "SignedUrlController clamps ttl to SignedUrlService::get_ttl() (now public)",
+        "MessagingService::user_received_media ignores deleted/unsent messages",
+        "BulkController::filter_allowed_ids uses delete caps for delete",
+        "AccountDeletionService cancel lifts only the request's own suspension; MemberModeration marks moderator ownership",
+        "GDPR export honours MemberDataMap export_columns (blocks, reports)",
+        "ActivityService feed requires publish + approved (own pending allowed)",
+        "Album/Collection CPTs exclude_from_search"
+      ],
+      "unchanged": "routes, settings, tables"
     }
   },
   "category_sources": {

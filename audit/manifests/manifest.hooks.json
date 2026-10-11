@@ -1564,6 +1564,21 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_media_before_delete",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $media_id"
+      ],
+      "where": "includes/Repository/MediaRepository.php:6539",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse",
+          "where": "includes/Integrations/BuddyPress/ActivitySyncIntegration.php (remember_activity_of_deleted_media)"
+        }
+      ]
+    },
+    {
       "name": "mvs_media_deleted",
       "type": "action",
       "args_count": 2,
