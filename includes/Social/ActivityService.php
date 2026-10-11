@@ -150,6 +150,12 @@ class ActivityService {
 		$privacy_join                                   = " LEFT JOIN {$index_table} mi ON mi.media_id = a.media_id";
 		$privacy_where                                  = " AND ( a.media_id = 0 OR a.media_id IS NULL OR {$mvs_act_priv_sql} )";
 
+		// Same lifecycle rule as Explore: a trashed, scheduled, rejected or held
+		// item is not listed, except a member's own pending upload to them
+		// (Basecamp 10393276020 #17). A deleted item (no index row) fails it too.
+		$privacy_where      .= " AND ( a.media_id = 0 OR a.media_id IS NULL OR ( mi.status = 'publish' AND ( mi.moderation_status = 'approved' OR mi.post_author = %d ) ) )";
+		$mvs_act_priv_params = array_merge( $mvs_act_priv_params, array( (int) $viewer_id ) );
+
 		// A third party's comment or reaction on a blocked member's item still
 		// carries that item (title, link, author), so the item's AUTHOR must be
 		// outside the block too, not only the actor (Basecamp 10354827925).
