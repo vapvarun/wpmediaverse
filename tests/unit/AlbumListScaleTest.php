@@ -40,6 +40,16 @@ class AlbumListScaleTest extends WP_UnitTestCase {
 
 		$list->set_query_params( array( 'author' => $owner, 'with_items' => 1 ) );
 		$this->assertCount( 3, rest_do_request( $list )->get_data()[0]['items'] );
+
+		// The edit window reads the single album, which carries its items.
+		$single = rest_do_request( new WP_REST_Request( 'GET', '/mvs/v1/albums/' . $album ) )->get_data();
+		$this->assertEqualsCanonicalizing( $ids, array_map( 'intval', $single['items'] ) );
+
+		// A site whose client reads `items` from the list can restore it.
+		add_filter( 'mvs_album_list_include_items', '__return_true' );
+		$list->set_query_params( array( 'author' => $owner ) );
+		$this->assertCount( 3, rest_do_request( $list )->get_data()[0]['items'] );
+		remove_filter( 'mvs_album_list_include_items', '__return_true' );
 	}
 
 	/**

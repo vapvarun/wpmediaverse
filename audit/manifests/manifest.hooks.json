@@ -1574,6 +1574,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_album_list_include_items",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $include",
+        "WP_REST_Request $request"
+      ],
+      "where": "includes/REST/Controller/AlbumController.php:328",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_media_before_delete",
       "type": "action",
       "args_count": 1,

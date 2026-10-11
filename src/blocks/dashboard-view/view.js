@@ -1682,7 +1682,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Album Modal (Create / Edit)
 		   ===================================================================== */
-		openAlbumModal( event ) {
+		async openAlbumModal( event ) {
+			const ctx = getContext();
 			const id = event?.target?.closest( '[data-album-id]' )?.dataset.albumId;
 			const album = id ? state.albums.items.find( ( a ) => a.id === parseInt( id, 10 ) ) : null;
 
@@ -1699,8 +1700,22 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.originalPrivacy = album?.privacy || 'public';
 			state.albumModal.loosenConfirmed = false;
 
-			// Load user media for picker.
+			// Load user media for picker (before any await: it reads getContext()).
 			actions.loadPickerMedia();
+
+			// The album list carries counts, not item ids, so the window asks for
+			// this one album. Until it answers, both lists stay empty and a save
+			// changes no items.
+			if ( album && ! album.items ) {
+				try {
+					const res = await apiFetch( ctx, 'albums/' + album.id );
+					const ids = Array.isArray( res.data?.items ) ? res.data.items : [];
+					if ( state.albumModal.albumId === album.id ) {
+						state.albumModal.selectedIds = [ ...ids ];
+						state.albumModal.originalItems = [ ...ids ];
+					}
+				} catch { /* the picker still opens; nothing is pre-selected */ }
+			}
 		},
 
 		openCreateAlbum() {

@@ -314,7 +314,18 @@ class AlbumController extends WP_REST_Controller {
 		// A list carries counts, not every album's item ids: 20 albums of 2,000
 		// photos checked 80,000 items per request. A
 		// client that still wants the ids asks with ?with_items=1.
-		$with_items = (bool) $request->get_param( 'with_items' );
+		/**
+		 * Filters whether GET /albums includes each album's item ids by default.
+		 *
+		 * Return true to restore the pre-2.6.2 list shape for a client that reads
+		 * `items` from the list instead of asking with ?with_items=1.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool            $include Whether to include item ids. Default false.
+		 * @param WP_REST_Request $request The list request.
+		 */
+		$with_items = (bool) $request->get_param( 'with_items' ) || (bool) apply_filters( 'mvs_album_list_include_items', false, $request );
 		$items      = array();
 		foreach ( $query->posts as $post ) {
 			$items[] = $this->prepare_album_response( $post, $with_items );
