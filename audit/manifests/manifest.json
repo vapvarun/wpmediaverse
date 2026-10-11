@@ -6061,7 +6061,7 @@
       "command": "wp mvs diagnose_cpt_ids",
       "handler": "WPMediaVerse\\CLI\\Commands::diagnose_cpt_ids",
       "file": "includes/CLI/Commands.php",
-      "note": "READ-ONLY. Reports album/collection IDs colliding with media IDs in mvs_media_index, data-loss risk, overwritten slugs, taxonomy object_id spread, and a forecast of how likely the next album is to overwrite a photo. Basecamp 10183850886."
+      "note": "READ-ONLY. Reports album/collection IDs colliding with media IDs in mvs_media_index, data-loss risk, overwritten slugs, taxonomy object_id spread. No forecast: albums keep their data in post meta since 2.4.0, so a new album cannot collide. Basecamp 10183850886."
     },
     {
       "command": "wp mvs regenerate-thumbnails",
@@ -6863,9 +6863,15 @@
     "refresh_2026_10_11_round_4_security": {
       "scope": "targeted (2.6.2 round 4: bounces 094/chat scroll, security group A Free items)",
       "added": {
-        "hooks": ["mvs_media_before_delete (action, MediaRepository::delete_cascade start)"],
-        "classes": ["PostTypes\\PublicListing (archive/feed/sitemap show public albums/collections only)"],
-        "constants": ["AccountDeletionService::META_SUSPENDED_BY_DELETION"]
+        "hooks": [
+          "mvs_media_before_delete (action, MediaRepository::delete_cascade start)"
+        ],
+        "classes": [
+          "PostTypes\\PublicListing (archive/feed/sitemap show public albums/collections only)"
+        ],
+        "constants": [
+          "AccountDeletionService::META_SUSPENDED_BY_DELETION"
+        ]
       },
       "changed": [
         "ActivitySyncIntegration: activity_media_ids() (composer CSV or bp_activity_id), strictest privacy, delete keeps posts with items left, item_id delete filtered by component",
@@ -6929,6 +6935,31 @@
         "PHPStan 6 value types and WPCS alignment on the new doors"
       ],
       "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_11_gallery_poster_search": {
+      "scope": "2.6.2 delta: gallery front tile, video poster on replace, scoped document search, Free module imports, comment replies, unsent chat files",
+      "added": [
+        "MediaRepository::gallery_hidden_clause( $alias, $sibling_join, $sibling_where, $sibling_params ) - a gallery member is hidden only behind a sibling the same listing shows (used by query() and the REST feed group_covers)",
+        "MediaRepository::document_scope_ids( $scope ) - published documents in an author/folder/drive scope, space links included",
+        "MediaRepository::document_title_candidates() third arg $within",
+        "Migrator v42: mvs_media_meta KEY meta_value_lookup (meta_key, meta_value(64))",
+        "MediaController::apply_client_poster() shared by create_item and replace_file",
+        "Comment delete removes its replies (filter mvs_comment_delete_replies)",
+        "ChatFiles::sweep_unsent on mvs_purge_old_views (filter mvs_unsent_chat_file_hours)",
+        "assets/js/frontend/sync-events.js (module @wpmediaverse/sync-events for Pro/add-ons; Free imports it by relative path)"
+      ],
+      "changed": [
+        "gallery_tile_counts(): the front item of each gallery privacy set carries the badge",
+        "ActivityContentIntegration::refresh_broadcast_urls() re-mints <video poster>",
+        "wp mvs diagnose-cpt-ids: forecast removed (CptIdCollisionService::forecast and three MediaIntegrityRepository helpers deleted)",
+        "Pro SearchService narrows author/folder/drive inside the FULLTEXT and title queries",
+        "Visitor lightbox skips the favourite call; share dialog intro only with anonymous links; boost button follows is_entrable",
+        "Interactivity stores wrap actions with syncEvents(); data-wp-ignore removed; chat menu aria-labels; comment action targets 44px"
+      ],
+      "deprecated": [
+        "MediaRepository::gallery_exclude_subquery() since 2.6.2, removal 4.0.0"
+      ],
+      "unchanged": "routes, settings"
     }
   },
   "category_sources": {

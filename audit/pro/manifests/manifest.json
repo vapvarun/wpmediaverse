@@ -2534,6 +2534,16 @@
         "PHPStan 6 value types and WPCS alignment on the new doors"
       ],
       "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_scoped_search": {
+      "scope": "targeted (2.6.2, Pro document search and stores)",
+      "added": {},
+      "changed": [
+        "SearchService::search narrows author/folder/drive through Free MediaRepository::document_scope_ids() inside the FULLTEXT and title queries; the PHP post-filter and the space-link read are gone",
+        "SearchService::candidates() and title_candidates() take the scope ids",
+        "Stories and boosts stores wrap actions with syncEvents() from @wpmediaverse/sync-events (declared dependency)"
+      ],
+      "unchanged": "routes, settings, tables"
     }
   },
   "category_sources": {
