@@ -288,15 +288,6 @@ class SettingsPage {
 		);
 	}
 
-	/**
-	 * Whether WPMediaVerse Pro is active.
-	 *
-	 * @return bool
-	 */
-	private function is_pro_active(): bool {
-		return defined( 'MVS_PRO_VERSION' );
-	}
-
 	// -------------------------------------------------------------------------
 	// Section Registry
 	// -------------------------------------------------------------------------
@@ -649,7 +640,7 @@ class SettingsPage {
 				<?php endforeach; ?>
 
 				<?php
-				if ( ! $this->is_pro_active() ) {
+				if ( ! \WPMediaVerse\Core\Plugin::is_pro_active() ) {
 					$this->render_pro_upsell( 'general' );
 				}
 				?>

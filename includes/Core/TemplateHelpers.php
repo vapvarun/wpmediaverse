@@ -871,7 +871,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return bool
 	 */
 	public static function stories_available(): bool {
-		return defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stories_enabled', '0' );
+		return \WPMediaVerse\Core\Plugin::is_pro_active() && '1' === get_option( 'mvs_stories_enabled', '0' );
 	}
 
 	public static function privacy_options( string $selected = '' ): void {

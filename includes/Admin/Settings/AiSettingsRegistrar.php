@@ -35,7 +35,7 @@ class AiSettingsRegistrar {
 				'default'           => 'openai',
 			)
 		);
-		if ( self::is_pro_active() ) {
+		if ( \WPMediaVerse\Core\Plugin::is_pro_active() ) {
 			FieldRenderer::add_field(
 				'mvs_ai_provider',
 				__( 'AI Provider', 'wpmediaverse' ),
@@ -92,7 +92,7 @@ class AiSettingsRegistrar {
 				'constant'    => 'MVS_OPENAI_API_KEY',
 				// With Pro the key is only for OpenAI, or for Whisper captions.
 				// Without Pro the provider select has no name, so no rule.
-				'show_when'   => self::is_pro_active() ? 'mvs_ai_provider=openai|mvs_pro_settings[captions_auto]' : '',
+				'show_when'   => \WPMediaVerse\Core\Plugin::is_pro_active() ? 'mvs_ai_provider=openai|mvs_pro_settings[captions_auto]' : '',
 				'description' => sprintf(
 					/* translators: %s: link to the OpenAI API keys page. */
 					__( 'Get a key from %s (sign in, create a secret key, and make sure billing is enabled on the account). Or define the MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
@@ -263,12 +263,4 @@ class AiSettingsRegistrar {
 		return ' ' . __( 'The selected provider has no API key, so AI features are paused until you add one.', 'wpmediaverse' );
 	}
 
-	/**
-	 * Whether the Pro plugin is active.
-	 *
-	 * @return bool
-	 */
-	private static function is_pro_active(): bool {
-		return defined( 'MVS_PRO_VERSION' );
-	}
 }

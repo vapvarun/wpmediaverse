@@ -166,7 +166,7 @@ final class ConfigController extends WP_REST_Controller {
 			'login_bg_url'      => $branding['login_bg_url'] ?? null,
 			'dark_mode_default' => (bool) ( $branding['dark_mode_default'] ?? false ),
 			'layout'            => $layout,
-			'pro_active'        => defined( 'MVS_PRO_VERSION' ),
+			'pro_active'        => \WPMediaVerse\Core\Plugin::is_pro_active(),
 			'features'          => array_map( 'boolval', $features ),
 			'legal'             => $this->get_legal(),
 

@@ -80,15 +80,6 @@ class SettingsRegistrar {
 		);
 	}
 
-	/**
-	 * Whether WPMediaVerse Pro is active.
-	 *
-	 * @return bool
-	 */
-	private static function is_pro_active(): bool {
-		return defined( 'MVS_PRO_VERSION' );
-	}
-
 	// -------------------------------------------------------------------------
 	// Storage settings (the General tab's own fields live in GeneralSettingsRegistrar)
 	// -------------------------------------------------------------------------
@@ -160,7 +151,7 @@ class SettingsRegistrar {
 		$choices = self::storage_driver_choices();
 		// Without Pro its cloud drivers cannot be used, so they are shown locked.
 		// A driver a site registered itself can be picked either way.
-		$usable = self::is_pro_active() ? $choices : array_diff_key( $choices, self::cloud_driver_choices() );
+		$usable = \WPMediaVerse\Core\Plugin::is_pro_active() ? $choices : array_diff_key( $choices, self::cloud_driver_choices() );
 		if ( count( $usable ) > 1 ) {
 			FieldRenderer::add_field(
 				'mvs_storage_driver',

@@ -236,7 +236,7 @@ class Plugin {
 			self::$container->get( 'admin.overview' );
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
-			if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+			if ( ! self::is_pro_active() ) {
 				self::$container->get( 'admin.reports' );
 			}
 			self::$container->get( 'admin.member_moderation' );
@@ -709,7 +709,7 @@ class Plugin {
 		// richer User Reports screen (Pro Admin\ReportManager) and two reports
 		// menus would be confusing. Reporting defaults ON, so a Free site must
 		// still have somewhere for reports to land.
-		if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+		if ( ! self::is_pro_active() ) {
 			self::$container->register(
 				'admin.reports',
 				function ( ServiceContainer $c ) {
@@ -2404,6 +2404,15 @@ class Plugin {
 	}
 
 	/**
+	 * Whether WPMediaVerse Pro is loaded. One answer for every caller.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function is_pro_active(): bool {
+		return defined( 'MVS_PRO_VERSION' );
+	}
+
+	/**
 	 * Get the service container, building it if nothing has yet.
 	 *
 	 * ACTIVATION IS THE CASE THIS EXISTS FOR. `register_activation_hook` fires
@@ -2730,7 +2739,7 @@ class Plugin {
 			// site and messaging.js hides "New group" + roster controls
 			// accordingly. Same empty-string-when-Pro-absent pattern as
 			// templates/media-single.php's analyticsUrl.
-			'groupsRestBase'     => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
+			'groupsRestBase'     => self::is_pro_active() ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
 			// Checked before upload, so an over-limit video is refused at once
 			// instead of after the member waits for the whole file to send.
 			'attachmentMaxBytes' => \WPMediaVerse\Messaging\MessagingController::max_attachment_size(),
