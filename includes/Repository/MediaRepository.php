@@ -4660,12 +4660,9 @@ class MediaRepository implements MediaRepositoryInterface {
 				// 'visible' and narrowing what a moderator sees.
 				return $this->explore_privacy_clause( 'm', $viewer_id );
 			case 'visible':
-				// Owner sees their own media EXCEPT conversation-scoped 'dm'
-				// attachments, which never belong in any library/grid listing.
-				return array(
-					"(m.privacy = 'public' OR m.privacy = 'members' OR ( m.post_author = %d AND m.privacy != 'dm' ))",
-					array( $viewer_id ),
-				);
+				// A signed-in member's list: the one member rule (public, members,
+				// own, followers, friends; never chat files). A visitor gets public.
+				return $viewer_id > 0 ? $this->member_privacy_clause( 'm', $viewer_id ) : array( "m.privacy = 'public'", array() );
 			case 'profile':
 				// Single-author (profile) listing — per-viewer privacy levels.
 				// Members- and friends-level items must NOT be listed for
@@ -4680,8 +4677,7 @@ class MediaRepository implements MediaRepositoryInterface {
 					$levels[] = 'loggedin';
 					if (
 						$author_id > 0
-						&& function_exists( 'friends_check_friendship' )
-						&& friends_check_friendship( $author_id, $viewer_id )
+						&& \WPMediaVerse\Services\PrivacyService::are_friends( $author_id, $viewer_id )
 					) {
 						$levels[] = 'friends';
 					}
@@ -4758,8 +4754,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @param int $viewer_id Current viewer (0 = anonymous).
 	 * @return string 'public' | 'visible' | 'any'
+	 *
+	 * @deprecated 2.6.2 Pass `'privacy' => 'explore'` with the viewer id. Removal planned for 4.0.0.
 	 */
 	public function resolve_explore_privacy_mode( int $viewer_id ): string {
+		_deprecated_function( __METHOD__, '2.6.2', "query( array( 'privacy' => 'explore' ) )" );
 		if ( ! $viewer_id ) {
 			return 'public';
 		}
@@ -4767,6 +4766,41 @@ class MediaRepository implements MediaRepositoryInterface {
 			return 'any';
 		}
 		return 'visible';
+	}
+
+	/**
+	 * Author, status and moderation status for many media rows, in one query.
+	 *
+	 * For callers that decide access for a whole page (PrivacyService::safety_refuses()
+	 * takes these values) without reading each row.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[] $media_ids Media ids.
+	 * @return array<int, array{author_id:int, status:string, moderation_status:string}>
+	 */
+	public function status_columns_many( array $media_ids ): array {
+		global $wpdb;
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		if ( ! $ids ) {
+			return array();
+		}
+		$in   = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id, post_author, status, moderation_status FROM {$this->index_table()} WHERE media_id IN ({$in})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$ids
+			)
+		);
+		$out = array();
+		foreach ( $rows as $row ) {
+			$out[ (int) $row->media_id ] = array(
+				'author_id'         => (int) $row->post_author,
+				'status'            => (string) $row->status,
+				'moderation_status' => (string) $row->moderation_status,
+			);
+		}
+		return $out;
 	}
 
 	/**
@@ -5483,12 +5517,19 @@ class MediaRepository implements MediaRepositoryInterface {
 		// follower_following unique key.
 		// A chat file is never listed, not even to its sender: it lives only in
 		// the conversation, as in any messenger.
+		// Friends-only items for the author's friends, from the same friendship
+		// answer can_view() uses (PrivacyService::friend_ids()).
 		global $wpdb;
+		$friends     = \WPMediaVerse\Services\PrivacyService::friend_ids( $viewer_id );
+		$friends_sql = $friends
+			? " OR ( {$prefix}privacy = 'friends' AND {$prefix}post_author IN ( " . implode( ',', array_fill( 0, count( $friends ), '%d' ) ) . ' ) )'
+			: '';
 		return array(
-			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d"
-				. " OR ( {$prefix}privacy = 'followers' AND {$prefix}post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ) ))"
+			"({$prefix}privacy IN ( 'public', 'members', 'loggedin' ) OR {$prefix}post_author = %d"
+				. " OR ( {$prefix}privacy = 'followers' AND {$prefix}post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' ) )"
+				. $friends_sql . ')'
 				. ' AND ' . self::not_dm_sql( $prefix ),
-			array( $viewer_id, $viewer_id ),
+			array_merge( array( $viewer_id, $viewer_id ), $friends ),
 		);
 	}
 

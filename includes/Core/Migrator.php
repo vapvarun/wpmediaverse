@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 40;
+	const CURRENT_VERSION = 41;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -2645,6 +2645,38 @@ class Migrator {
 			"INSERT IGNORE INTO {$meta} ( media_id, meta_key, meta_value )
 			 SELECT ai.media_id, 'own_privacy', IF( m.privacy = '', 'public', m.privacy )
 			 FROM {$items} ai JOIN {$index} m ON m.media_id = ai.media_id"
+		);
+		// phpcs:enable
+	}
+
+	/**
+	 * Migration v41 - BuddyPress posts of legacy "logged-in only" media.
+	 *
+	 * The legacy `loggedin` level is the Members audience, but its activity
+	 * level was stored as 0 (public), so signed-out visitors saw those posts.
+	 * Any post that holds such an item and still reads 0 now reads Members (20);
+	 * stricter posts are left as they are.
+	 *
+	 * @since 2.6.2
+	 */
+	private function migrate_to_41(): void {
+		global $wpdb;
+
+		$activity_meta = $wpdb->base_prefix . 'bp_activity_meta';
+		if ( $activity_meta !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $activity_meta ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return;
+		}
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"UPDATE {$activity_meta} am
+			 JOIN {$meta} mm ON mm.meta_key = 'bp_activity_id' AND mm.meta_value = am.activity_id
+			 JOIN {$index} mi ON mi.media_id = mm.media_id AND mi.privacy = 'loggedin'
+			 SET am.meta_value = '20'
+			 WHERE am.meta_key = '_mvs_activity_privacy_level' AND ( am.meta_value = '0' OR am.meta_value = '' )"
 		);
 		// phpcs:enable
 	}

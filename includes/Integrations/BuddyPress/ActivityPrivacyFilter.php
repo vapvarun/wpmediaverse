@@ -2,16 +2,11 @@
 /**
  * ActivityPrivacyFilter — viewer-side filter on BP activity queries.
  *
- * Honours the WPMV 4-level activity privacy enum (Public / Members /
- * Friends / Private) end-to-end. Persisted on every activity insert as
- * `_mvs_activity_privacy_level` meta with rtMedia-parity numeric values:
- *
- *     0  = public            visible to anyone (anonymous + logged-in)
- *     20 = members-only      visible only to logged-in users
- *     40 = friends-only      visible only to BP friends of the author
- *     60 = group-only        set automatically for group uploads (auto)
- *     80 = private           visible only to the author + admins
- *     90 = custom            only the members listed on the item
+ * Each activity carries its media's privacy as `_mvs_activity_privacy_level`
+ * meta (PrivacyService::privacy_to_level(); rtMedia-parity numbers: 0 public,
+ * 20 members, 30 followers, 40 friends, 60 group, 80 private, 90 custom).
+ * Who may see each level is decided by PrivacyService::level_audience_sql(),
+ * the same audience can_view() applies to a single item.
  *
  * The filter rewrites every BP activity SELECT (legacy + modern paths)
  * to add a LEFT JOIN on bp_activity_meta and a WHERE clause that excludes
@@ -36,11 +31,6 @@ defined( 'ABSPATH' ) || exit;
  * Hooks viewer-aware privacy gating into BP activity SQL.
  */
 class ActivityPrivacyFilter {
-
-	/**
-	 * Cache key suffix for per-viewer friend-list arrays.
-	 */
-	private const FRIENDS_CACHE_GROUP = 'mvs_activity_privacy';
 
 	/**
 	 * Wire the filter callbacks. Called by BuddyPressManager on init.
@@ -187,54 +177,26 @@ class ActivityPrivacyFilter {
 
 	/**
 	 * Build the viewer-permitted WHERE clause body (without the leading
-	 * `AND ( ... )` wrapping — the appender adds that). Same logic
+	 * `AND ( ... )` wrapping; the appender adds that). Same logic
 	 * regardless of which hook called us.
+	 *
+	 * The audience per level is core's (PrivacyService::level_audience_sql());
+	 * this class only says where BuddyPress keeps the level, the author and the
+	 * group. BuddyPress moderators keep the full stream so the wp-admin
+	 * activity screen stays complete.
 	 */
 	private function build_where_clause(): string {
-		global $wpdb;
-
 		$viewer_id = get_current_user_id();
-		// manage_options mirrors PrivacyService::can_view; bp_moderate keeps
-		// BP moderators / the wp-admin activity list table fully sighted,
-		// since there is no show_hidden skip to bypass the filter.
-		$is_admin    = $viewer_id > 0 && (
-			user_can( $viewer_id, 'manage_options' )
-			|| user_can( $viewer_id, 'bp_moderate' )
+		if ( $viewer_id > 0 && user_can( $viewer_id, 'bp_moderate' ) ) {
+			return '1 = 1';
+		}
+
+		return \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->level_audience_sql(
+			'mvs_priv_lvl_alias.meta_value',
+			'a.user_id',
+			$viewer_id,
+			array( 'group_expr' => "IF( a.component = 'groups', a.item_id, 0 )" )
 		);
-		$friend_list = $this->get_friend_ids( $viewer_id );
-
-		$conditions = array();
-
-		// Public always.
-		$conditions[] = '(mvs_priv_lvl_alias.meta_value IS NULL OR mvs_priv_lvl_alias.meta_value = \'\' OR CAST(mvs_priv_lvl_alias.meta_value AS UNSIGNED) <= 0)';
-
-		// Admin sees everything (mirrors PrivacyService::can_view's
-		// `manage_options` short-circuit).
-		if ( $is_admin ) {
-			$conditions[] = '1 = 1';
-		}
-
-		if ( $viewer_id > 0 ) {
-			// Members-only.
-			$conditions[] = '(CAST(mvs_priv_lvl_alias.meta_value AS UNSIGNED) = 20)';
-
-			// Author of any activity at level >= friends sees their own.
-			$conditions[] = $wpdb->prepare(
-				'(a.user_id = %d AND CAST(mvs_priv_lvl_alias.meta_value AS UNSIGNED) >= 40)',
-				$viewer_id
-			);
-
-			// Friends-only — viewer must be in the author's friends list.
-			if ( ! empty( $friend_list ) ) {
-				$placeholders = implode( ',', array_fill( 0, count( $friend_list ), '%d' ) );
-				$conditions[] = $wpdb->prepare(
-					"(CAST(mvs_priv_lvl_alias.meta_value AS UNSIGNED) = 40 AND a.user_id IN ({$placeholders}))", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...$friend_list
-				);
-			}
-		}
-
-		return implode( ' OR ', $conditions );
 	}
 
 	/**
@@ -275,38 +237,5 @@ class ActivityPrivacyFilter {
 		}
 		// No tail clauses — append.
 		return rtrim( $sql ) . $where_addition;
-	}
-
-	/**
-	 * Friend IDs for a viewer, cached per request via `wp_cache`. Empty
-	 * array if BP friends component is inactive or the viewer has none.
-	 *
-	 * @return int[]
-	 */
-	private function get_friend_ids( int $viewer_id ): array {
-		if ( $viewer_id <= 0 ) {
-			return array();
-		}
-		if ( ! function_exists( 'bp_is_active' ) || ! bp_is_active( 'friends' ) ) {
-			return array();
-		}
-
-		$cache_key = (string) $viewer_id;
-		$found     = false;
-		$cached    = wp_cache_get( $cache_key, self::FRIENDS_CACHE_GROUP, false, $found );
-		if ( $found && is_array( $cached ) ) {
-			return $cached;
-		}
-
-		$ids = array();
-		if ( function_exists( 'friends_get_friend_user_ids' ) ) {
-			$result = friends_get_friend_user_ids( $viewer_id );
-			if ( is_array( $result ) ) {
-				$ids = array_map( 'intval', array_filter( $result ) );
-			}
-		}
-
-		wp_cache_set( $cache_key, $ids, self::FRIENDS_CACHE_GROUP, MINUTE_IN_SECONDS * 5 );
-		return $ids;
 	}
 }

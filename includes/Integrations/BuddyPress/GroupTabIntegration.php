@@ -132,24 +132,14 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 			&& function_exists( 'groups_is_user_member' )
 			&& groups_is_user_member( $viewer_id, (int) $group->id );
 
-		$priv_params = array();
-		if ( $viewer_id > 0 && user_can( $viewer_id, 'moderate_mvs_media' ) ) {
-			$priv_sql = '1 = 1';
-		} else {
-			$clauses = array( "mi.privacy = 'public'" );
-			if ( $viewer_id > 0 ) {
-				$clauses[]     = "mi.privacy = 'members'";
-				$clauses[]     = 'mi.post_author = %d';
-				$priv_params[] = $viewer_id;
-			}
-			if ( $is_group_member ) {
-				// Group-level items are visible to members of THIS group.
-				$clauses[] = "mi.privacy = 'group'";
-			}
-			$priv_sql = '( ' . implode( ' OR ', $clauses ) . ' )';
+		// Core's list rule (public, members, own, followers, friends; moderators
+		// everything but chat files), plus group items for members of THIS group.
+		list( $priv_sql, $priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->explore_privacy_clause( 'mi', $viewer_id );
+		if ( $is_group_member ) {
+			$priv_sql = "( ( {$priv_sql} ) OR mi.privacy = 'group' )";
 		}
 
-		$base_where  = "mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish' AND {$priv_sql}";
+		$base_where  = "mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish' AND mi.moderation_status = 'approved' AND {$priv_sql}";
 		$base_params = array_merge( array( (string) $group->id ), $priv_params );
 
 		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

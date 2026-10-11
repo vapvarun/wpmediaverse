@@ -7,7 +7,7 @@
  * Override by copying to your-theme/wpmediaverse/explore.php
  *
  * @package WPMediaVerse
- * @version 2.6.1
+ * @version 2.6.2
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -240,18 +240,9 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 
 	$mvs_search = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_search();
 
-	// Privacy scope by viewer: anon -> public only; logged-in non-moderator ->
-	// public + members + own; moderator -> no privacy filter.
-	if ( ! is_user_logged_in() ) {
-		$mvs_privacy   = 'public';
-		$mvs_viewer_id = 0;
-	} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
-		$mvs_privacy   = 'visible';
-		$mvs_viewer_id = get_current_user_id();
-	} else {
-		$mvs_privacy   = 'any';
-		$mvs_viewer_id = 0;
-	}
+	// The site-wide Explore rule, the same one the REST feed and Load More use.
+	$mvs_privacy   = 'explore';
+	$mvs_viewer_id = get_current_user_id();
 
 	// A profile route is a single-author listing, so it takes the purpose-built
 	// 'profile' mode - the same rule count_visible_by_author() and every Pro

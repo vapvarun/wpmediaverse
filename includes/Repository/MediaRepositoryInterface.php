@@ -569,4 +569,14 @@ interface MediaRepositoryInterface {
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function documents_shared_with( array $args = array() ): array;
+
+	/**
+	 * Author, status and moderation status for many media rows, in one query.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[] $media_ids Media ids.
+	 * @return array<int, array{author_id:int, status:string, moderation_status:string}>
+	 */
+	public function status_columns_many( array $media_ids ): array;
 }
