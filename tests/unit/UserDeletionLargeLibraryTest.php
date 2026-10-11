@@ -12,6 +12,7 @@ use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Services\UserDeletionService;
 
 /**
+ * Deleting a member with a large library queues a small job and removes everything.
  */
 class UserDeletionLargeLibraryTest extends WP_UnitTestCase {
 

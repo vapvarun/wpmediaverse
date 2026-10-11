@@ -490,6 +490,19 @@ class UserDeletionService {
 	}
 
 	/**
+	 * Whether a deletion cascade is still queued for this member's media.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $user_id Member.
+	 * @return bool
+	 */
+	public static function cascade_pending( int $user_id ): bool {
+		return function_exists( 'as_has_scheduled_action' )
+			&& as_has_scheduled_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
+	}
+
+	/**
 	 * Action Scheduler callback: deletes the next batch of the user's media and
 	 * re-enqueues itself while more remain. Re-reading by author means a
 	 * retried or duplicated job is harmless.

@@ -34,6 +34,12 @@ class MemberPurger {
 	private const BATCH = 500;
 
 	/**
+	 * Media items deleted per pass. Each one removes files from storage, so the
+	 * pass is smaller than a plain row delete.
+	 */
+	private const MEDIA_BATCH = 50;
+
+	/**
 	 * Delete the member from every ERASE table, and anonymise them in every
 	 * RETAIN table.
 	 *
@@ -57,6 +63,13 @@ class MemberPurger {
 			$full = $wpdb->prefix . $table;
 
 			if ( ! $this->table_exists( $full ) ) {
+				continue;
+			}
+
+			// A media row owns files, meta and stats that a row delete would
+			// leave behind, publicly reachable. Only delete_cascade() removes them.
+			if ( 'mvs_media_index' === $table ) {
+				$removed += $this->purge_media( $user_id );
 				continue;
 			}
 
@@ -112,6 +125,29 @@ class MemberPurger {
 			'removed'  => $removed,
 			'retained' => $retained,
 		);
+	}
+
+	/**
+	 * Delete one batch of the member's media through the repository cascade.
+	 *
+	 * When account deletion has already queued its own cascade for this member,
+	 * that job owns the media: deleting the rows here first would leave it
+	 * nothing to find, and the files nothing to remove them.
+	 *
+	 * @param int $user_id Member.
+	 * @return int Media items deleted.
+	 */
+	private function purge_media( int $user_id ): int {
+		if ( \WPMediaVerse\Services\UserDeletionService::cascade_pending( $user_id ) ) {
+			return 0;
+		}
+
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$deleted = 0;
+		foreach ( $repo->author_media_ids( $user_id, self::MEDIA_BATCH ) as $media_id ) {
+			$deleted += $repo->delete_cascade( (int) $media_id ) ? 1 : 0;
+		}
+		return $deleted;
 	}
 
 	/**
