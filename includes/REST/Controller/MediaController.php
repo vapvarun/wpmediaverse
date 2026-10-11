@@ -622,18 +622,15 @@ class MediaController extends WP_REST_Controller {
 		// Exclude non-cover gallery group items from feeds (only when explicitly requested).
 		$group_covers = $request->get_param( 'group_covers' );
 		if ( $group_covers ) {
-			// `i.media_id` (not bare `media_id`): the trending/popular data query
-			// LEFT JOINs mvs_media_stats, which also has a media_id column, so an
-			// unqualified ref is ambiguous and the data query silently returns 0
-			// rows while the (stats-join-free) COUNT query still returns the total.
-			//
-			// Reuses the repository's canonical definition of "non-cover gallery
-			// member" instead of keeping a second copy here — this inline copy
-			// used a different rule ("lowest media_id in the group") than
-			// `MediaRepository::gallery_exclude_subquery()` ("group_position !=
-			// '0'"), so the same media could be a cover in Explore and not in
-			// this feed, or vice versa.
-			$where[] = '(i.media_id NOT IN (' . \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_exclude_subquery( ( $media_type && MediaTypes::is_known( (string) $media_type ) ) ? (string) $media_type : '' ) . '))';
+			// The repository's gallery rule, matched against this feed's own conditions.
+			list( $mvs_gallery_sql, $mvs_gallery_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_hidden_clause(
+				'i',
+				$join_clauses ? implode( ' ', $join_clauses ) : '',
+				implode( ' AND ', $where ),
+				$params
+			);
+			$where[] = $mvs_gallery_sql;
+			$params  = array_merge( $params, $mvs_gallery_params );
 		}
 
 		// Filter by specific media group ID.
@@ -897,32 +894,7 @@ class MediaController extends WP_REST_Controller {
 			return $media_id;
 		}
 
-		// Client-generated video thumbnail (JS canvas captured first frame).
-		// Used as a last-resort poster when the server-side ffmpeg / cover-atom
-		// paths both failed. Routed through PosterService so every poster write
-		// hits the same dir + filename convention. The staged frame then feeds
-		// `UploadService::generate_thumbnails()` for sized variants + WebP/AVIF
-		// siblings. Failure path is non-fatal; meta stays empty so the frontend
-		// renders the default video poster at template time.
-		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
-			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
-
-			// Regenerate when there is no thumb yet OR the stored value is not a
-			// valid image URL. A prior write could have stored the video file URL
-			// itself (the broken video-thumbnail case); skipping on a truthy-but-
-			// invalid value left the thumbnail permanently broken.
-			$needs_thumb = true;
-			if ( is_string( $existing_thumb ) && '' !== $existing_thumb ) {
-				$needs_thumb = ! preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $existing_thumb );
-			}
-
-			if ( $needs_thumb ) {
-				$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
-				if ( $staged_path ) {
-					$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
-				}
-			}
-		}
+		$this->apply_client_poster( $media_id, $files );
 
 		// Apply tags and categories if provided.
 		$tags = $request->get_param( 'tags' );
@@ -1215,6 +1187,35 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Use the browser-captured first frame as the video's poster.
+	 *
+	 * The fallback when the file has no embedded cover. Shared by upload and
+	 * replace-file, so a replaced video is not left without a poster.
+	 *
+	 * @param int                 $media_id Media id.
+	 * @param array<string,mixed> $files    Request file params; reads `thumbnail`.
+	 * @return void
+	 */
+	private function apply_client_poster( int $media_id, array $files ): void {
+		if ( empty( $files['thumbnail'] ) || ! empty( $files['thumbnail']['error'] ) ) {
+			return;
+		}
+
+		$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
+
+		// Regenerate when there is no thumb yet OR the stored value is not an image URL
+		// (a prior write could have stored the video file URL itself).
+		if ( is_string( $existing_thumb ) && '' !== $existing_thumb && preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $existing_thumb ) ) {
+			return;
+		}
+
+		$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
+		if ( $staged_path ) {
+			Plugin::container()->get( 'upload' )->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
+		}
+	}
+
+	/**
 	 * Replace the file of an existing media item.
 	 *
 	 * Accepts a new file upload, stores it, updates the media index,
@@ -1263,11 +1264,8 @@ class MediaController extends WP_REST_Controller {
 		$mime           = MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
-		// The SAME guard as UploadService::handle(), not a mirror of it. This
-		// endpoint bypassing the upload guard is exactly what the double-verifier
-		// caught in 2026-06-04, and a second copy is how that
-		// happens again — the 2.4.0 change from a name test to an unknown test
-		// would have needed both edited in lockstep to stay correct.
+		// The SAME guard as UploadService::handle(), not a mirror of it: a second
+		// copy would have to be edited in lockstep to stay correct.
 		$mvs_refusal = $upload_service->reject_unsupported_mime( $mime );
 		if ( $mvs_refusal ) {
 			return $mvs_refusal;
@@ -1401,11 +1399,8 @@ class MediaController extends WP_REST_Controller {
 		// pre-1.2.3 catch-all, where anything not image/video/audio became
 		// `document`, while `get_media_type()` is an allowlist.
 		//
-		// An inline copy would also be dead code: `reject_unsupported_mime()` above
-		// already refuses every MIME this resolver answers '' for, so a `document`
-		// branch would be unreachable and no row could be re-typed by a
-		// replacement. A second refusal here would duplicate that check, which is
-		// how these paths drift apart. The '' case cannot reach this line.
+		// `reject_unsupported_mime()` above already refuses every MIME this
+		// resolver answers '' for, so the '' case cannot reach this line.
 		$media_type = $upload_service->get_media_type_public( $mime );
 
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
@@ -1526,6 +1521,9 @@ class MediaController extends WP_REST_Controller {
 		// codec and regenerate thumbnails (+ video poster / audio cover art).
 		$upload_service = Plugin::container()->get( 'upload' );
 		$upload_service->process_stored_file( $media_id, $dest_path, $media_type, $mime );
+		if ( 'video' === $media_type ) {
+			$this->apply_client_poster( $media_id, $files );
+		}
 
 		$file_data = array(
 			'file_url'   => $driver->url( $dest_path ),

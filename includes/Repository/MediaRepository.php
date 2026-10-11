@@ -1422,6 +1422,58 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Published document ids inside a search scope.
+	 *
+	 * Document search narrows by author, folder and drive inside its query
+	 * through this list, so a member's own file is found however many matches
+	 * the rest of the site has. A space drive also holds the documents linked
+	 * into it from other drives.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param array{author?:int,folder_id?:int,drive_type?:string,drive_id?:int} $scope Filters, all applied together.
+	 * @return int[] Empty when no filter is given or nothing is in scope.
+	 */
+	public function document_scope_ids( array $scope ): array {
+		global $wpdb;
+
+		$where  = array();
+		$params = array();
+		if ( ! empty( $scope['author'] ) ) {
+			$where[]  = 'post_author = %d';
+			$params[] = (int) $scope['author'];
+		}
+		if ( ! empty( $scope['folder_id'] ) ) {
+			$where[]  = 'folder_id = %d';
+			$params[] = (int) $scope['folder_id'];
+		}
+		if ( ! empty( $scope['drive_type'] ) ) {
+			$drive = '( drive_type = %s AND drive_id = %d )';
+			array_push( $params, (string) $scope['drive_type'], (int) ( $scope['drive_id'] ?? 0 ) );
+			if ( 'space' === $scope['drive_type'] && ! empty( $scope['drive_id'] ) ) {
+				$drive   .= " OR media_id IN ( SELECT media_id FROM {$wpdb->prefix}mvs_media_spaces WHERE space_id = %d )";
+				$params[] = (int) $scope['drive_id'];
+			}
+			$where[] = "( {$drive} )";
+		}
+		if ( ! $where ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$type_sql} AND status = 'publish' AND " . implode( ' AND ', $where ),
+				...array_merge( $type_params, $params )
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
 	 * Published document ids whose TITLE matches a phrase, in title order.
 	 *
 	 * For the names an extractor never sees. Document search runs FULLTEXT over
@@ -1434,21 +1486,38 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param string $query Search phrase. Escaped for LIKE here, not by callers.
-	 * @param int    $limit Maximum ids to return.
+	 * @param string $query  Search phrase. Escaped for LIKE here, not by callers.
+	 * @param int    $limit  Maximum ids to return.
+	 * @param int[]  $within Only these ids (a search scope from document_scope_ids()); empty = site-wide.
 	 * @return int[]
 	 */
-	public function document_title_candidates( string $query, int $limit = 50 ): array {
+	public function document_title_candidates( string $query, int $limit = 50, array $within = array() ): array {
 		global $wpdb;
 
-		$query = trim( $query );
+		$query  = trim( $query );
+		$within = array_values( array_unique( array_filter( array_map( 'intval', $within ) ) ) );
 
 		if ( '' === $query ) {
 			return array();
 		}
 
-		$limit = max( 1, min( 500, $limit ) );
+		$limit = max( 1, min( 1000, $limit ) );
 		$like  = '%' . $wpdb->esc_like( $query ) . '%';
+
+		if ( $within ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$ids = (array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index
+					  WHERE media_type = 'document' AND status = 'publish' AND title LIKE %s
+					    AND media_id IN ( " . implode( ',', array_fill( 0, count( $within ), '%d' ) ) . ' )
+					  ORDER BY title ASC LIMIT %d',
+					$like,
+					...array_merge( $within, array( $limit ) )
+				)
+			);
+			return array_map( 'intval', $ids );
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$ids = (array) $wpdb->get_col(
@@ -4534,11 +4603,8 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		// Blocked members are excluded from every multi-author listing, here
-		// rather than in each caller. Living only in MediaController's feed
-		// query, which serves page 2 onward, the exclusion would let Explore
-		// page 1 (rendered server-side through this builder) show media
-		// from people the viewer had blocked while page 2 did not. Same viewer,
-		// same feed, two different answers.
+		// rather than in each caller, so Explore page 1 (rendered here) and the
+		// REST pages after it give the same answer.
 		//
 		// query() and query_count() both build from these parts, so the list and
 		// the count can never disagree - which is the other half of that problem.
@@ -4571,8 +4637,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		if ( ! empty( $args['exclude_non_cover_group'] ) ) {
-			$mvs_one_type = ( is_array( $args['media_types'] ) && 1 === count( $args['media_types'] ) ) ? (string) reset( $args['media_types'] ) : '';
-			$where[]      = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery( $mvs_one_type ) . ')';
+			list( $gallery_sql, $gallery_params ) = $this->listing_gallery_clause( $args );
+			$where[]                              = $gallery_sql;
+			$params                               = array_merge( $params, $gallery_params );
 		}
 
 		// Every listing this repository serves — explore, the BuddyPress profile
@@ -5571,8 +5638,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * How many items each listed tile stands for, for its gallery badge.
 	 *
-	 * A gallery cover counts itself plus the published, approved members that
-	 * share its privacy, so a private member is never counted on a public cover.
+	 * The front item of a gallery (lowest position among the published,
+	 * approved members that share its privacy) counts itself plus those
+	 * members, so a private member is never counted on a public tile and a
+	 * gallery whose cover is private still badges its first visible member.
 	 * Any other item stands for itself and gets 0: a member listed on its own
 	 * shows no badge and opens alone in the lightbox.
 	 * Cached for the request; any repository write clears it.
@@ -5595,14 +5664,14 @@ class MediaRepository implements MediaRepositoryInterface {
 				self::$tile_counts[ $id ] = 0;
 			}
 
-			// Two short queries, not one join on the unindexed meta_value: the join
+			// Two short queries rather than one join on meta_value: the join
 			// cost ~200 ms a page on MySQL at 12k media, these ~18 ms together.
 			$in     = implode( ',', array_fill( 0, count( $missing ), '%d' ) );
 			$covers = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
-					"SELECT c.media_id, c.meta_value AS grp, ci.privacy FROM {$meta} c
-						INNER JOIN {$meta} p ON p.media_id = c.media_id AND p.meta_key = 'group_position' AND p.meta_value = '0'
+					"SELECT c.media_id, c.meta_value AS grp, ci.privacy, CAST( p.meta_value AS UNSIGNED ) AS pos FROM {$meta} c
+						INNER JOIN {$meta} p ON p.media_id = c.media_id AND p.meta_key = 'group_position'
 						INNER JOIN {$idx} ci ON ci.media_id = c.media_id
 						WHERE c.meta_key = 'media_group' AND c.media_id IN ({$in})",
 					...$missing
@@ -5615,8 +5684,9 @@ class MediaRepository implements MediaRepositoryInterface {
 				$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prepare(
 						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
-						"SELECT mg.meta_value AS grp, mi.privacy, COUNT(*) AS c FROM {$meta} mg
+						"SELECT mg.meta_value AS grp, mi.privacy, COUNT(*) AS c, MIN( CAST( mp.meta_value AS UNSIGNED ) ) AS front FROM {$meta} mg
 							INNER JOIN {$idx} mi ON mi.media_id = mg.media_id
+							LEFT JOIN {$meta} mp ON mp.media_id = mg.media_id AND mp.meta_key = 'group_position'
 							WHERE mg.meta_key = 'media_group' AND mg.meta_value IN ({$ph})
 							AND mi.status = 'publish' AND mi.moderation_status = 'approved'
 							GROUP BY mg.meta_value, mi.privacy",
@@ -5625,10 +5695,13 @@ class MediaRepository implements MediaRepositoryInterface {
 				);
 				$by = array();
 				foreach ( (array) $rows as $row ) {
-					$by[ (string) $row->grp ][ (string) $row->privacy ] = (int) $row->c;
+					$by[ (string) $row->grp ][ (string) $row->privacy ] = array( (int) $row->c, (int) $row->front );
 				}
 				foreach ( (array) $covers as $cover ) {
-					self::$tile_counts[ (int) $cover->media_id ] = $by[ (string) $cover->grp ][ (string) $cover->privacy ] ?? 0;
+					$bucket = $by[ (string) $cover->grp ][ (string) $cover->privacy ] ?? array( 0, -1 );
+					if ( (int) $cover->pos === $bucket[1] ) {
+						self::$tile_counts[ (int) $cover->media_id ] = $bucket[0];
+					}
 				}
 			}
 		}
@@ -5638,24 +5711,83 @@ class MediaRepository implements MediaRepositoryInterface {
 
 
 	/**
-	 * The single source of truth for the "exclude non-cover gallery members"
-	 * subquery (rather than copy-pasted across listing sites).
+	 * The gallery rule for one listing, matched against the listing's own filters.
 	 *
-	 * Returns rows that are gallery members at a non-zero position — the outer
-	 * query wraps this in `<alias>.media_id NOT IN (...)`. Fully static: no
-	 * params, so any caller's alias works unchanged.
+	 * A sibling counts when this listing would show it; the page window
+	 * (cursor, date range, id page) is not a filter.
 	 *
-	 * Public since 2.6.0 so `MediaController`'s feed query (which builds its
-	 * WHERE outside the repository per the `mvs_feed_query_args` contract, see
-	 * Rule 7's note on `feed_page()`) can reuse this instead of keeping its own
-	 * copy — the two had drifted onto different "which item is the cover"
-	 * definitions (`group_position = '0'` here vs "lowest media_id in the
-	 * group" in the old inline copy).
+	 * @param array<string,mixed> $args Normalized query args.
+	 * @return array{0:string,1:array<int,scalar>}
+	 */
+	private function listing_gallery_clause( array $args ): array {
+		$sib = $this->build_query_parts(
+			array_merge(
+				$args,
+				array(
+					'exclude_non_cover_group' => false,
+					'id_after'                => 0,
+					'until'                   => '',
+					'since'                   => '',
+					'media_ids'               => array(),
+				)
+			)
+		);
+		return $this->gallery_hidden_clause( 'm', $sib['join'], $sib['where'], $sib['params'] );
+	}
+
+	/**
+	 * Gallery rule for a listing: one tile per gallery.
 	 *
-	 * A listing narrowed to one media type passes that type: a member then stays
-	 * hidden only while its cover is of that type too. A batch of two videos and
-	 * one audio has a video cover, and without this the audio could never be
-	 * found under Audio (2.6.1).
+	 * A gallery member is hidden while a sibling in front of it (lower
+	 * group_position, then lower id) is one this listing shows. So a gallery
+	 * whose cover is private, deleted, held for review or of another type is
+	 * fronted by its first member the viewer can see, instead of vanishing.
+	 *
+	 * The sibling is matched by the listing's own conditions: `$sibling_where`
+	 * and `$sibling_join` are written against `$alias`, the same alias the
+	 * outer query uses for the media index, which the subquery rebinds to the
+	 * sibling. Items with no gallery are never hidden.
+	 *
+	 * One uncorrelated set, not a correlated NOT EXISTS: MariaDB flattens the
+	 * correlated form and took seconds at 12k media; this runs under ~50 ms on
+	 * MySQL 8.4 and MariaDB with the meta_value_lookup index (Migrator v42).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string            $alias          Media index alias of the outer query ('m', 'i').
+	 * @param string            $sibling_join   JOIN SQL of the listing (prepared or with params below).
+	 * @param string            $sibling_where  WHERE SQL of the listing, without this clause.
+	 * @param array<int,scalar> $sibling_params Params for the join, then the where.
+	 * @return array{0:string,1:array<int,scalar>} NOT IN clause and its params.
+	 */
+	public function gallery_hidden_clause( string $alias, string $sibling_join = '', string $sibling_where = '1 = 1', array $sibling_params = array() ): array {
+		global $wpdb;
+
+		$alias = preg_replace( '/[^a-z_]/i', '', $alias );
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+		$where = '' !== trim( $sibling_where ) ? $sibling_where : '1 = 1';
+
+		$sql = "{$alias}.media_id NOT IN (
+			SELECT g1.media_id FROM {$meta} g1
+			INNER JOIN {$meta} p1 ON p1.media_id = g1.media_id AND p1.meta_key = 'group_position'
+			INNER JOIN {$meta} g2 ON g2.meta_key = 'media_group' AND g2.meta_value = g1.meta_value AND g2.media_id <> g1.media_id
+			INNER JOIN {$meta} p2 ON p2.media_id = g2.media_id AND p2.meta_key = 'group_position'
+			INNER JOIN {$this->index_table()} {$alias} ON {$alias}.media_id = g2.media_id
+			{$sibling_join}
+			WHERE g1.meta_key = 'media_group'
+			AND ( CAST( p2.meta_value AS UNSIGNED ) < CAST( p1.meta_value AS UNSIGNED )
+				OR ( CAST( p2.meta_value AS UNSIGNED ) = CAST( p1.meta_value AS UNSIGNED ) AND g2.media_id < g1.media_id ) )
+			AND {$where}
+		)";
+
+		return array( $sql, array_values( $sibling_params ) );
+	}
+
+	/**
+	 * Old gallery rule: hides every member at a non-zero position.
+	 *
+	 * @since 2.6.0
+	 * @deprecated 2.6.2 Use gallery_hidden_clause(), which keeps a gallery listed when its cover cannot be shown. Removal planned for 4.0.0.
 	 *
 	 * @param string $cover_type Media type the listing is narrowed to, or '' for none.
 	 * @return string Subquery SQL (no surrounding parentheses).
@@ -5663,10 +5795,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function gallery_exclude_subquery( string $cover_type = '' ): string {
 		global $wpdb;
 
-		// Known limit, planned for 2.7.0: every non-cover
-		// member is hidden even when its cover is private or deleted. Checking the
-		// cover per member needs an index on the group key: without one it ran in
-		// seconds on large sites on both MySQL and MariaDB, so 2.6.2 kept this rule.
+		_deprecated_function( __METHOD__, '2.6.2', __CLASS__ . '::gallery_hidden_clause()' );
 
 		$meta = $wpdb->prefix . 'mvs_media_meta';
 		$sql  = "SELECT mm1.media_id FROM {$meta} mm1
@@ -5679,7 +5808,6 @@ class MediaRepository implements MediaRepositoryInterface {
 			return $sql;
 		}
 
-		// is_known() leaves a fixed slug, so it is safe to inline.
 		return $sql . " AND EXISTS (
 				SELECT 1 FROM {$meta} c1
 				INNER JOIN {$meta} c2 ON c2.media_id = c1.media_id AND c2.meta_key = 'group_position' AND c2.meta_value = '0'

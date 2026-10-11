@@ -2327,37 +2327,8 @@ class Commands {
 			array( 'Metric', 'Count' )
 		);
 
-		$forecast = $report['forecast'];
-
 		WP_CLI::log( '' );
-		WP_CLI::log( '── Forecast — will the NEXT album corrupt something? ──' );
-		Utils\format_items(
-			'table',
-			array(
-				array(
-					'Metric' => 'Next wp_posts ID',
-					'Value'  => $forecast['next_post_id'],
-				),
-				array(
-					'Metric' => 'Next mvs_media_index ID',
-					'Value'  => $forecast['next_media_id'],
-				),
-				array(
-					'Metric' => 'Post IDs still behind media IDs',
-					'Value'  => $forecast['window'],
-				),
-				array(
-					'Metric' => '…of those, already used by media',
-					'Value'  => $forecast['occupied'],
-				),
-				array(
-					'Metric' => 'Chance the next album collides',
-					'Value'  => $forecast['risk_percent'] . '%',
-				),
-			),
-			array( 'Metric', 'Value' )
-		);
-		WP_CLI::log( '   ' . $forecast['verdict'] );
+		WP_CLI::log( '   Albums and collections keep their data in post meta, so a new one cannot overwrite a media item. The sections below are past damage only.' );
 
 		$this->report_section(
 			'Collisions — a CPT and a media item share one index row',

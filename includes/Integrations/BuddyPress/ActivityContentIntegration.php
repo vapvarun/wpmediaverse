@@ -891,6 +891,16 @@ class ActivityContentIntegration {
 				}
 
 				// Refresh inner <source src="..."> and <video src="...">.
+				// A replaced or re-encoded video gets a new poster file, and the saved one is deleted.
+				$poster_url = $thumb_url ?: \WPMediaVerse\Core\TemplateHelpers::default_video_poster_url();
+				$body       = (string) preg_replace_callback(
+					'~(<video\b[^>]*\bposter=")([^"]*)(")~i',
+					static function ( $v ) use ( $poster_url ) {
+						return $v[1] . esc_url( $poster_url ) . $v[3];
+					},
+					$body
+				);
+
 				if ( $file_url ) {
 					$body = preg_replace_callback(
 						'~(<(?:source|video|audio)\s+[^>]*src=")([^"]+)(")~i',

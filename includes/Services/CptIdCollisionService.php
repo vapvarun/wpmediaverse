@@ -46,8 +46,7 @@ class CptIdCollisionService {
 	 * Every SQL statement for this report lives in
 	 * `Repository\MediaIntegrityRepository` (architecture invariant 6, coding
 	 * Rule 7). What stays here is the part that is actually this class's job:
-	 * deciding what the numbers MEAN — whether the window is dangerous, what
-	 * the verdict sentence should say, which rows a human has to look at.
+	 * deciding what the numbers mean and which rows a human has to look at.
 	 *
 	 * @return \WPMediaVerse\Repository\MediaIntegrityRepository
 	 */
@@ -64,7 +63,6 @@ class CptIdCollisionService {
 	 *
 	 * @return array{
 	 *     totals: array<string,int>,
-	 *     forecast: array<string,mixed>,
 	 *     collisions: array<int,array<string,mixed>>,
 	 *     privacy_only: array<int,array<string,mixed>>,
 	 *     slug_overwrites: array<int,array<string,mixed>>,
@@ -76,74 +74,12 @@ class CptIdCollisionService {
 	public function analyze(): array {
 		return array(
 			'totals'          => $this->totals(),
-			'forecast'        => $this->forecast(),
 			'collisions'      => $this->collisions(),
 			'privacy_only'    => $this->privacy_only_rows(),
 			'slug_overwrites' => $this->slug_overwrites(),
 			'meta_rows'       => $this->cpt_meta_rows(),
 			'purge_risk'      => $this->purge_risk(),
 			'taxonomy'        => $this->taxonomy_spread(),
-		);
-	}
-
-	/**
-	 * How likely the NEXT album created on this site is to corrupt a media item.
-	 *
-	 * This is the number that matters day to day. Existing collisions are damage
-	 * already done; the forecast is damage still to come.
-	 *
-	 * On a media plugin the two sequences drift apart in a predictable direction:
-	 * members upload far more media than the site creates posts, so
-	 * mvs_media_index.media_id outruns wp_posts.ID. Every new album is therefore
-	 * allocated an ID that lands *inside* the already-populated media range, and
-	 * writing the album's attributes overwrites whatever media row is sitting
-	 * there. The busier the site, the further ahead media IDs are, and the higher
-	 * the odds — this defect gets worse with success, not better.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function forecast(): array {
-		global $wpdb;
-
-		$queries = $this->queries();
-
-		$next_post  = $queries->next_auto_increment( $wpdb->posts );
-		$next_media = $queries->next_auto_increment( $queries->index_table_name() );
-
-		// Post IDs already past the media sequence — new albums land on unused
-		// ground and cannot collide until uploads catch up again.
-		if ( $next_post <= 0 || $next_media <= 0 || $next_post >= $next_media ) {
-			return array(
-				'next_post_id'   => $next_post,
-				'next_media_id'  => $next_media,
-				'window'         => 0,
-				'occupied'       => 0,
-				'risk_percent'   => 0.0,
-				'albums_at_risk' => 0,
-				'verdict'        => 'Post IDs are ahead of media IDs — new albums cannot collide right now.',
-			);
-		}
-
-		$window = $next_media - $next_post;
-
-		$occupied = $queries->count_rows_from_id( $next_post );
-
-		$risk = $window > 0 ? round( 100 * $occupied / $window, 1 ) : 0.0;
-
-		return array(
-			'next_post_id'   => $next_post,
-			'next_media_id'  => $next_media,
-			'window'         => $window,
-			'occupied'       => $occupied,
-			'risk_percent'   => $risk,
-			'albums_at_risk' => $window,
-			'verdict'        => sprintf(
-				'The next %d album(s) created here each have a ~%s%% chance of overwriting a real media item.',
-				$window,
-				$risk
-			),
 		);
 	}
 

@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 41;
+	const CURRENT_VERSION = 42;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -2679,5 +2679,33 @@ class Migrator {
 			 WHERE am.meta_key = '_mvs_activity_privacy_level' AND ( am.meta_value = '0' OR am.meta_value = '' )"
 		);
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v42 - look up media meta by value.
+	 *
+	 * Galleries find their siblings by the shared `media_group` value, which the
+	 * primary key (media_id, meta_key) cannot answer. 64 characters covers the
+	 * group ids and keeps the key well under every engine's prefix limit.
+	 *
+	 * Without it the gallery listing takes seconds on a large site. Idempotent
+	 * (SHOW INDEX guard), add-only, the same privilege that created the table.
+	 *
+	 * @since 2.6.2
+	 */
+	private function migrate_to_42(): void {
+		global $wpdb;
+
+		$meta = $wpdb->prefix . 'mvs_media_meta';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		if ( $wpdb->get_var( "SHOW INDEX FROM {$meta} WHERE Key_name = 'meta_value_lookup'" ) ) {
+			return;
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$meta} ADD KEY meta_value_lookup (meta_key, meta_value(64))" );
+		$wpdb->show_errors( $prev_show );
 	}
 }

@@ -626,7 +626,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** All files upload as one group (single activity/action group), each becoming its own media item.
 - **UX expectation:** Per-file thumbnail previews for every selected file, with a way to remove one before submitting (`removeUploadFile`). One combined success confirmation, not one toast per file.
 - **Settings that change it:** same as MV-UPL-002.
-- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show the first item as the cover tile (badge with the count) and hide the rest behind it (`MediaRepository::gallery_exclude_subquery()`). Known until 2.7.0 (Basecamp 10392589060): if the cover is made private, held for review or deleted, the other members stay hidden from Explore and the feeds; they remain in the owner's My Media and on their own pages. The badge counts the items the cover stands for (`gallery_tile_counts()`).
+- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts the front item plus the members that share its privacy (`gallery_tile_counts()`). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
 
 #### MV-UPL-004 — Upload video / audio
 - **Edition:** Free
@@ -2721,7 +2721,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** `wp mvs diagnose-cpt-ids`
 - **Setup:** A library, ideally one that has had post-ID collisions between `mvs_album`/`mvs_collection` CPT rows and other post types.
 - **Steps:** Run the command; inspect the diagnostic report.
-- **Expected:** Surfaces ID-collision risk between MediaVerse CPTs and other content (a real, documented failure class the plugin guards against elsewhere via `CptIdCollisionService`).
+- **Expected:** Reports past ID collisions between album/collection posts and media rows (damage written before 2.4.0). It makes no forecast: albums keep their data in post meta, so a new album cannot collide.
 - **UX expectation:** Read-only diagnostic — must make no changes, only report.
 - **Settings that change it:** None.
 - **Edge cases:** Should run cleanly and report "no issues" on a healthy site, not merely output nothing.
