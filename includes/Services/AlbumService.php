@@ -637,11 +637,22 @@ class AlbumService {
 	public function viewable_item_count( int $album_id, ?int $viewer_id = null ): int {
 		$mvs_viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 
-		// No owner shortcut: an album can hold someone else's item its owner
-		// cannot open (a friends-only photo added by a friend), and the card
-		// must match the album page (QA, 2.6.0).
-		// ponytail: loads the album's ids once per card; fine for a page of
-		// cards, add a counted privacy query if albums reach tens of thousands.
+		// No blanket owner shortcut: an album can hold someone else's item its
+		// owner cannot open (a friends-only photo added by a friend), and the
+		// card must match the album page (QA, 2.6.0). But the owner can always
+		// list their OWN items, so those are one COUNT, and only other people's
+		// items go through the per-item rule (Basecamp 10393276031 #11).
+		$owner = (int) get_post_field( 'post_author', $album_id );
+		if ( $mvs_viewer > 0 && $mvs_viewer === $owner ) {
+			$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$others = array_map( 'intval', array_column( $repo->album_items( $album_id, array( 'exclude_author' => $owner ) ), 'media_id' ) );
+			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+
+			return $repo->count_album_items( $album_id, array( 'author' => $owner ) )
+				+ count( array_filter( $others, static fn( $id ) => $privacy->can_list( $id, $mvs_viewer ) ) );
+		}
+
+		// Everyone else: the album page's own filter, cached for the request.
 		return count( $this->viewable_item_ids( $album_id, $mvs_viewer ) );
 	}
 

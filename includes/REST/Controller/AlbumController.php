@@ -745,9 +745,7 @@ class AlbumController extends WP_REST_Controller {
 			'link'           => get_permalink( $album_id ),
 			'privacy'        => $privacy_value ? $privacy_value : 'public',
 			'album_type'     => $album_type ? $album_type : 'default',
-			// The owner can list every item of their own album, so one COUNT
-			// answers for them; anyone else needs the per-item listing rule.
-			'media_count'    => $is_owner ? $this->albums->get_item_count( $album_id ) : count( $this->albums->viewable_item_ids( $album_id ) ),
+			'media_count'    => $this->albums->viewable_item_count( $album_id ),
 			'cover_url'      => $this->albums->get_cover_url( $album_id ),
 			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
 			'is_owner'       => $is_owner,

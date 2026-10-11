@@ -6695,7 +6695,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @since 2.4.0
 	 *
 	 * @param int   $album_id Album post id.
-	 * @param array $args     status, types, mime_like.
+	 * @param array $args     status, types, mime_like, author / exclude_author (user id).
 	 * @return array{0:string,1:array} WHERE fragment (after the JOIN) and its params.
 	 */
 	private function album_items_parts( int $album_id, array $args ): array {
@@ -6704,11 +6704,19 @@ class MediaRepository implements MediaRepositoryInterface {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'status'    => 'publish',
-				'types'     => MediaTypes::MEDIA_LIBRARY,
-				'mime_like' => '',
+				'status'         => 'publish',
+				'types'          => MediaTypes::MEDIA_LIBRARY,
+				'mime_like'      => '',
+				'author'         => 0,
+				'exclude_author' => 0,
 			)
 		);
+
+		if ( (int) $args['author'] > 0 ) {
+			$where_author = array( 'idx.post_author = %d', (int) $args['author'] );
+		} elseif ( (int) $args['exclude_author'] > 0 ) {
+			$where_author = array( 'idx.post_author <> %d', (int) $args['exclude_author'] );
+		}
 
 		$where  = array( 'ai.album_id = %d' );
 		$params = array( $album_id );
@@ -6727,6 +6735,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
 		$where[]                        = $type_sql;
 		$params                         = array_merge( $params, $type_params );
+
+		if ( isset( $where_author ) ) {
+			$where[]  = $where_author[0];
+			$params[] = $where_author[1];
+		}
 
 		unset( $wpdb );
 
