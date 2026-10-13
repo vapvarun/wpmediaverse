@@ -213,7 +213,7 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 
 	protected function load_more_data_attrs(): array {
 		return array(
-			'data-group' => (int) ( groups_get_current_group()->id ?? 0 ),
+			'data-group' => $this->gallery_params()['group'],
 		);
 	}
 
