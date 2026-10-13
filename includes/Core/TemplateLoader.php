@@ -522,6 +522,8 @@ class TemplateLoader {
 			|| get_query_var( 'mvs_media_archive' )
 			|| get_query_var( 'mvs_profile_user' )
 			|| get_query_var( 'mvs_edit_profile' )
+			// Messages, unless BuddyNext draws the inbox and the route is not ours.
+			|| ( get_query_var( 'mvs_messages_page' ) && ! apply_filters( 'mvs_buddynext_active', false ) )
 		);
 	}
 
