@@ -133,23 +133,21 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Effective WPMV privacy slug across a batch: the most open item's.
+	 * Effective WPMV privacy slug across a batch — most-restrictive wins.
 	 *
 	 * @since 1.2.1
 	 *
 	 * @param int[] $media_ids Media IDs.
 	 */
 	public static function effective_privacy_for_batch( array $media_ids ): string {
-		// The post reaches the audience of its most open item; display drops the
-		// items a viewer may not open (ActivityContentIntegration).
-		$open = '';
+		$worst = 'public';
 		foreach ( $media_ids as $mid ) {
 			$slug = self::effective_privacy_for_media( (int) $mid );
-			if ( '' === $open || self::privacy_to_level( $slug ) < self::privacy_to_level( $open ) ) {
-				$open = $slug;
+			if ( self::privacy_to_level( $slug ) > self::privacy_to_level( $worst ) ) {
+				$worst = $slug;
 			}
 		}
-		return '' === $open ? 'public' : $open;
+		return $worst;
 	}
 
 	/**
@@ -189,8 +187,8 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Effective hide_sitewide across a batch of media: hidden only when every
-	 * item is (by its own or its album's privacy).
+	 * Effective hide_sitewide across a batch of media — short-circuits on
+	 * the first non-public sibling (or non-public album).
 	 *
 	 * @since 1.2.1
 	 *
@@ -198,14 +196,38 @@ class ActivitySyncIntegration {
 	 * @return bool
 	 */
 	public static function should_hide_for_batch( array $media_ids ): bool {
-		// Hidden only when no item may be shown sitewide; a public item keeps the
-		// post listed, and display drops the items a viewer may not open.
-		foreach ( $media_ids as $mid ) {
-			if ( ! self::should_hide_for_media( (int) $mid ) ) {
-				return false;
+		if ( empty( $media_ids ) ) {
+			return false;
+		}
+
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$batch = $repo->get_batch( $media_ids );
+
+		$album_ids = array();
+		foreach ( $batch as $row ) {
+			$row_privacy = isset( $row['privacy'] ) ? (string) $row['privacy'] : '';
+			if ( self::privacy_to_hide_sitewide( $row_privacy ) ) {
+				return true;
+			}
+			if ( ! empty( $row['album_id'] ) ) {
+				$album_ids[ (int) $row['album_id'] ] = true;
 			}
 		}
-		return ! empty( $media_ids );
+
+		if ( ! empty( $album_ids ) ) {
+			// Album privacy from the album's post meta, as in should_hide_for_media();
+			// one primed meta query for the distinct albums, not one per album.
+			$album_ids = array_keys( $album_ids );
+			update_postmeta_cache( $album_ids );
+			$albums = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+			foreach ( $album_ids as $album_id ) {
+				if ( self::privacy_to_hide_sitewide( $albums->get_privacy( (int) $album_id ) ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**

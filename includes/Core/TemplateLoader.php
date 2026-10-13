@@ -750,6 +750,25 @@ class TemplateLoader {
 	private $resolved_template = '';
 
 	/**
+	 * Answer 200 for a MediaVerse virtual page WordPress resolved as a 404.
+	 *
+	 * Except when the caller already set an error status (e.g. the members-only
+	 * gate's 403): never downgrade a 4xx to 200, or the gate would advertise
+	 * itself as a normal indexable page.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function serve_as_found(): void {
+		$current_status = http_response_code();
+		if ( ! is_int( $current_status ) || $current_status < 400 ) {
+			status_header( 200 );
+		}
+		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
+			$GLOBALS['wp_query']->is_404 = false;
+		}
+	}
+
+	/**
 	 * Render a full MVS virtual page and stop.
 	 *
 	 * Our virtual pages (explore archive, profile, single media, profile edit)
@@ -761,17 +780,7 @@ class TemplateLoader {
 	 * @param string $template Absolute path to the located template file.
 	 */
 	private function render_template( string $template ): void {
-		// Heal WP's soft-404 default to 200 for our virtual pages — EXCEPT when
-		// the caller already set an explicit error status (e.g. the members-only
-		// access gate's 403 in serve_single_media). Never downgrade a 4xx to 200,
-		// or the gate would advertise itself as a normal indexable page.
-		$current_status = http_response_code();
-		if ( ! is_int( $current_status ) || $current_status < 400 ) {
-			status_header( 200 );
-		}
-		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
-			$GLOBALS['wp_query']->is_404 = false;
-		}
+		self::serve_as_found();
 		// Hold it for template_include instead of `include $template; exit;`.
 		//
 		// exit here ended the request inside template_redirect at priority 5, so

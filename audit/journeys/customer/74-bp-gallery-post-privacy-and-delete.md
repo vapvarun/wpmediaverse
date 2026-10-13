@@ -24,15 +24,15 @@ sync and the delete cleanup use it.
 - **Expect**: one activity post; every item's `bp_activity_id` is that post; the post's
   `item_id` is the first item (cover).
 
-### 2. The post follows its most open item; each tile its own item (owner decision 13 Oct 2026)
-- **Action**: make the first item (the cover) Only me (My Media or `POST /mvs/v1/media/{id}`).
-- **Expect**: the post stays listed (`hide_sitewide 0`, level public) for Member B and the visitor,
-  showing the other items only; the owner still sees all of them. No tile of the private item is
-  printed for anyone else (`ActivityContentIntegration::refresh_broadcast_urls()`,
-  `ActivityMediaLinkage::render()`).
-- **Action**: make every item Only me.
-- **Expect**: the post is hidden sitewide, as before.
-- **Fails on 8d86e49e**: the whole post vanished for everyone when one item was private.
+### 2. Strictest item wins
+- **Action**: make the second item Only me, then Members, then public again (My Media or
+  `PATCH /mvs/v1/media/{id}`).
+- **Expect**: Only me -> post `hide_sitewide 1`, level private, gone for Member B and the
+  visitor; Members -> level members; public again -> public. With the cover private, the
+  post stays private whatever the other items do.
+- **Planned for 2.7.0 (owner decision 13 Oct 2026)**: show the post without its private items. That
+  needs the stored activity content rebuilt without them, because BuddyPress REST, RSS and emails
+  read stored content directly; a display-only filter is not enough.
 
 ### 3. Deleting the cover keeps the post
 - **Action**: delete the cover.

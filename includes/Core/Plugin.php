@@ -3567,6 +3567,7 @@ JS;
 					$template = MVS_PLUGIN_DIR . 'templates/messages.php';
 				}
 				if ( file_exists( $template ) ) {
+					\WPMediaVerse\Core\TemplateLoader::serve_as_found();
 					// Render through template_include like every other MediaVerse
 					// route, not `include; exit;` here: exiting inside
 					// template_redirect skipped every later callback themes and
