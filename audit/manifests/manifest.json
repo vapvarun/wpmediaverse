@@ -6994,6 +6994,12 @@
       "changed": [
         "templates media-single.php, partials/dashboard-content.php, partials/shared-ui-frame.php @version 2.6.2"
       ]
+    },
+    "refresh_2026_10_13_bp_profile_gallery": {
+      "scope": "BP profile Media tab follows the gallery rule",
+      "changed": [
+        "ProfileTabIntegration::fetch_media_ids passes exclude_non_cover_group to count_visible_by_author and query_by_author"
+      ]
     }
   },
   "category_sources": {
