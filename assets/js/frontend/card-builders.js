@@ -91,10 +91,11 @@
 	function statsBlock( stats ) {
 		var i18n = window.mvsCardBuildersI18n || {};
 		var wrap = el( 'div', 'mvs-grid-item-stats' );
+		var labels = i18n.statLabels || {};
 		[
-			[ 'eye', stats.views, i18n.views || 'Views' ],
-			[ 'heart', stats.reactions || 0, i18n.likes || 'Likes' ],
-			[ 'message-circle', stats.comments || 0, i18n.comments || 'Comments' ],
+			[ 'eye', stats.views, 'views' ],
+			[ 'heart', stats.reactions || 0, 'reactions' ],
+			[ 'message-circle', stats.comments || 0, 'comments' ],
 		].forEach( function ( row, idx ) {
 			if ( 0 === idx && ! row[ 1 ] ) {
 				return; // Views only when there are some, as on page 1.
@@ -102,7 +103,9 @@
 			var stat = el( 'span', 'mvs-grid-stat' );
 			stat.appendChild( el( 'i', '', { 'data-lucide': row[ 0 ], 'aria-hidden': 'true' } ) );
 			var label = el( 'span', 'mvs-sr-only' );
-			label.textContent = row[ 2 ] + ': ' + fmtNum( row[ 1 ] );
+			// shortcut: singular for 1, plural otherwise; languages with more plural forms get the plural.
+			var forms = labels[ row[ 2 ] ] || [ '%s', '%s' ];
+			label.textContent = forms[ 1 === Number( row[ 1 ] ) ? 0 : 1 ].replace( '%s', fmtNum( row[ 1 ] ) );
 			stat.appendChild( label );
 			var num = el( 'span', '', { 'aria-hidden': 'true' } );
 			num.textContent = fmtNum( row[ 1 ] );

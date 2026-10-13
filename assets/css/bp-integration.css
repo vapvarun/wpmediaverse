@@ -374,9 +374,10 @@
  *  Premium grid card
  *
  *  Each tile is a self-contained card: bordered, lifted, with a clear
- *  boundary between the thumbnail and the author footer.
+ *  boundary between the thumbnail and the author footer. Not in the List
+ *  layout: its row comes from frontend.css, as on Explore.
  * ============================================================================= */
-#buddypress .mvs-bp-screen .mvs-grid-item {
+#buddypress .mvs-bp-screen .mvs-media-grid:not(.mvs-grid--list) .mvs-grid-item {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -389,13 +390,13 @@
     aspect-ratio: auto;
 }
 
-#buddypress .mvs-bp-screen .mvs-grid-item:hover {
+#buddypress .mvs-bp-screen .mvs-media-grid:not(.mvs-grid--list) .mvs-grid-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     border-color: var(--mvs-border-strong, var(--mvs-border));
 }
 
-#buddypress .mvs-bp-screen .mvs-grid-item .mvs-grid-item-link {
+#buddypress .mvs-bp-screen .mvs-media-grid:not(.mvs-grid--list) .mvs-grid-item .mvs-grid-item-link {
     position: relative;
     display: block;
     width: 100%;
@@ -416,7 +417,7 @@
     transform: scale(1.03);
 }
 
-#buddypress .mvs-bp-screen .mvs-grid-item .mvs-grid-item-info {
+#buddypress .mvs-bp-screen .mvs-media-grid:not(.mvs-grid--list) .mvs-grid-item .mvs-grid-item-info {
     display: flex;
     align-items: center;
     gap: 8px;

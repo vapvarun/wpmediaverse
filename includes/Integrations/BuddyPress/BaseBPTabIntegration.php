@@ -353,10 +353,10 @@ abstract class BaseBPTabIntegration {
 		if ( empty( $all_items ) ) {
 			$this->render_empty_single_album();
 		} else {
-			$mpage     = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$per_page  = absint( get_option( 'mvs_items_per_page', 12 ) );
-			$max_pages = $per_page > 0 ? (int) ceil( count( $all_items ) / $per_page ) : 1;
-			$mpage     = max( 1, min( $mpage, max( 1, $max_pages ) ) );
+			$mpage      = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$per_page   = absint( get_option( 'mvs_items_per_page', 12 ) );
+			$max_pages  = $per_page > 0 ? (int) ceil( count( $all_items ) / $per_page ) : 1;
+			$mpage      = max( 1, min( $mpage, max( 1, $max_pages ) ) );
 			$page_items = $per_page > 0 ? array_slice( $all_items, ( $mpage - 1 ) * $per_page, $per_page ) : $all_items;
 
 			// Batch index + meta for the page in one pair of queries so each
@@ -575,7 +575,8 @@ abstract class BaseBPTabIntegration {
 		$filter    = $repo->gallery_filter_args( $params );
 		$repo->gallery_tile_counts( $media_ids, null, $filter ); // One batch for every badge.
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1" data-mvs-gallery-filter="' . esc_attr( http_build_query( $params ) ) . '">';
+		$layout = \WPMediaVerse\Core\SettingsHelper::grid_layout_class(); // Same layout as Explore.
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed' . ( $layout ? ' ' . esc_attr( $layout ) : '' ) . '" data-mvs-grid-container data-show-actions="1" data-mvs-gallery-filter="' . esc_attr( http_build_query( $params ) ) . '">';
 		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 				$mid,
@@ -816,7 +817,8 @@ abstract class BaseBPTabIntegration {
 	 * @param int[] $media_ids Media IDs (already sorted by `position`).
 	 */
 	protected function render_album_items_grid( array $media_ids ): void {
-		echo '<div class="mvs-media-grid mvs-cols-3" data-show-actions="1">';
+		$layout = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+		echo '<div class="mvs-media-grid mvs-cols-3' . ( $layout ? ' ' . esc_attr( $layout ) : '' ) . '" data-show-actions="1">';
 		foreach ( $media_ids as $media_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 				(int) $media_id,

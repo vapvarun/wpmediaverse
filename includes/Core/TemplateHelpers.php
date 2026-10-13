@@ -1474,40 +1474,54 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		echo '</a>';
 
-		// Title, date and counts beside the thumbnail in the List layout (CSS
-		// shows this block only there; the grid keeps them in the hover overlay).
-		$mvs_created = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'created_at' );
+		$this->render_grid_meta(
+			$media_id,
+			$mvs_link_name,
+			array(
+				'views'     => $views,
+				'reactions' => $reactions,
+				'comments'  => $comments,
+			),
+			$show_author ? (int) $author_id : 0
+		);
+
+		echo '</div>';
+	}
+
+	/**
+	 * What a tile prints under its link: title, date and counts (the List layout
+	 * shows these; grids keep counts in the hover overlay), then the uploader.
+	 * One emitter for every grid that prints tiles, so List reads the same everywhere.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int               $media_id  Media id.
+	 * @param string            $name      Title shown in the row.
+	 * @param array<string,int> $stats     views, reactions, comments.
+	 * @param int               $author_id Uploader; 0 prints no uploader.
+	 */
+	public function render_grid_meta( int $media_id, string $name, array $stats, int $author_id ): void {
+		$created = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'created_at' );
 		echo '<div class="mvs-grid-item-details">';
-		echo '<span class="mvs-grid-item-name">' . esc_html( $mvs_link_name ) . '</span>';
-		if ( '' !== $mvs_created ) {
-			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( mysql2date( 'c', $mvs_created ) ) . '">' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) ) . '</time>';
+		echo '<span class="mvs-grid-item-name">' . esc_html( $name ) . '</span>';
+		if ( '' !== $created ) {
+			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( mysql2date( 'c', $created ) ) . '">' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $created ) ) ) . '</time>';
 		}
-		$this->render_grid_stats( (int) $views, (int) $reactions, (int) $comments );
+		$this->render_grid_stats( (int) ( $stats['views'] ?? 0 ), (int) ( $stats['reactions'] ?? 0 ), (int) ( $stats['comments'] ?? 0 ) );
 		echo '</div>';
 
-		if ( $show_author && $author_id ) {
-			// Plain name only — badges belong on author-focused surfaces
-			// (single-media header, lightbox), not on every grid thumbnail.
-			// The avatar + name link to the uploader's profile (BuddyPress, or
-			// the /media/@user fallback) so visitors can reach the poster from
-			// the grid, matching the single-media header.
-			// This block is OUTSIDE the media permalink <a> above, so the
-			// profile link does not nest.
-			$author_url  = $this->get_user_profile_url( $author_id );
-			$author_name = $this->get_display_name_plain( $author_id );
-			echo '<div class="mvs-grid-item-info">';
-			if ( '' !== $author_url ) {
-				echo '<a class="mvs-grid-item-author-link" href="' . esc_url( $author_url ) . '">';
-				echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-				echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
-				echo '</a>';
-			} else {
-				echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-				echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
-			}
-			echo '</div>';
+		if ( ! $author_id ) {
+			return;
 		}
-
+		// Plain name only: badges belong on author-focused surfaces. Outside the
+		// media permalink, so the profile link does not nest.
+		$author_url  = $this->get_user_profile_url( $author_id );
+		$author_name = $this->get_display_name_plain( $author_id );
+		echo '<div class="mvs-grid-item-info">';
+		echo '' !== $author_url ? '<a class="mvs-grid-item-author-link" href="' . esc_url( $author_url ) . '">' : '';
+		echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
+		echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
+		echo '' !== $author_url ? '</a>' : '';
 		echo '</div>';
 	}
 

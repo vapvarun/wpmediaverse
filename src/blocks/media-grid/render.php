@@ -236,6 +236,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 	<?php if ( ! empty( $media_items ) ) : ?>
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px" data-mvs-gallery-filter="<?php echo esc_attr( http_build_query( $mvs_grid_gallery_params ) ); ?>">
 			<?php
+			$mvs_grid_stats = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', array_column( $media_items, 'media_id' ) ) );
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
 				$mvs_grid_media_type = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id );
@@ -309,13 +310,10 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>
 					</div>
 					</a>
-					<?php // Shown in the List layout only, as on Explore (TemplateHelpers::render_grid_item()). ?>
-					<div class="mvs-grid-item-details">
-						<span class="mvs-grid-item-name"><?php echo esc_html( $item_title ); ?></span>
-						<?php if ( ! empty( $item['created_at'] ) ) : ?>
-							<time class="mvs-grid-item-date" datetime="<?php echo esc_attr( mysql2date( 'c', (string) $item['created_at'] ) ); ?>"><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( (string) $item['created_at'] ) ) ); ?></time>
-						<?php endif; ?>
-					</div>
+					<?php
+					// Same row as every other grid; the uploader only in List, so the block's grid is unchanged.
+					$mvs_grid_helpers->render_grid_meta( $item_id, '' !== trim( (string) $item_title ) ? (string) $item_title : __( 'View media', 'wpmediaverse' ), $mvs_grid_stats[ $item_id ] ?? array(), str_contains( $mvs_layout_class, 'list' ) ? $mvs_grid_author_id : 0 );
+					?>
 				</div>
 			<?php endforeach; ?>
 		</div>

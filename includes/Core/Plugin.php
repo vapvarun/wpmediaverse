@@ -122,7 +122,7 @@ class Plugin {
 	/**
 	 * Strings for the JS card builder (cards appended by Load More).
 	 *
-	 * @return array<string,string>
+	 * @return array<string,mixed>
 	 */
 	private static function card_builders_i18n(): array {
 		return array(
@@ -133,6 +133,15 @@ class Plugin {
 			'likes'        => __( 'Likes', 'wpmediaverse' ),
 			'views'        => __( 'Views', 'wpmediaverse' ),
 			'comments'     => __( 'Comments', 'wpmediaverse' ),
+			// Count labels, the same strings page 1 prints (TemplateHelpers::render_grid_stats()).
+			'statLabels'   => array(
+				/* translators: %s: number of views. */
+				'views'     => array( _n( '%s view', '%s views', 1, 'wpmediaverse' ), _n( '%s view', '%s views', 2, 'wpmediaverse' ) ),
+				/* translators: %s: number of reactions. */
+				'reactions' => array( _n( '%s reaction', '%s reactions', 1, 'wpmediaverse' ), _n( '%s reaction', '%s reactions', 2, 'wpmediaverse' ) ),
+				/* translators: %s: number of comments. */
+				'comments'  => array( _n( '%s comment', '%s comments', 1, 'wpmediaverse' ), _n( '%s comment', '%s comments', 2, 'wpmediaverse' ) ),
+			),
 			/* translators: %d: number of items in the gallery (one). */
 			'galleryItem'  => __( '%d item', 'wpmediaverse' ),
 			/* translators: %d: number of items in the gallery (two or more). */
@@ -1104,10 +1113,10 @@ class Plugin {
 		$stats     = self::$container->get( 'stats' );
 		$albums    = self::$container->get( 'albums' );
 
-		$collections  = self::$container->get( 'collections' );
-		$moderation   = self::$container->get( 'moderation' );
-		$ai           = self::$container->get( 'ai' );
-		$signed_urls  = self::$container->get( 'signed_urls' );
+		$collections = self::$container->get( 'collections' );
+		$moderation  = self::$container->get( 'moderation' );
+		$ai          = self::$container->get( 'ai' );
+		$signed_urls = self::$container->get( 'signed_urls' );
 
 		$follows       = self::$container->get( 'follows' );
 		$notifications = self::$container->get( 'notifications' );
@@ -2584,11 +2593,11 @@ class Plugin {
 			return;
 		}
 
-		$transport         = apply_filters(
+		$transport  = apply_filters(
 			'mvs_messaging_transport',
 			new \WPMediaVerse\Messaging\RestPollingTransport()
 		);
-		$controller        = new \WPMediaVerse\Messaging\MessagingController( $messaging_service, $transport );
+		$controller = new \WPMediaVerse\Messaging\MessagingController( $messaging_service, $transport );
 
 		add_action( 'rest_api_init', array( $controller, 'register_routes' ) );
 
