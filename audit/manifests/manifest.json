@@ -7025,7 +7025,10 @@
         "NotificationService::on_conversation_read() on mvs_conversation_read",
         "MediaRepository::mark_notifications_read_from()",
         "notification REST item date_human",
-        "dashboard-view actions.closeNotifications"
+        "dashboard-view actions.closeNotifications",
+        "TemplateHelpers::render_grid_meta() (shared tile meta; block uses it)",
+        "BP tab grids carry grid_layout_class()",
+        "card_builders_i18n statLabels"
       ],
       "changed": [
         "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)",
