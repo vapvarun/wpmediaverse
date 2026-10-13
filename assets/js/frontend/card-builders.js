@@ -81,6 +81,38 @@
 	}
 
 	/**
+	 * A tile's counts, the same markup as TemplateHelpers::render_grid_stats():
+	 * Lucide icons (hydrated with the rest of the card), a screen-reader label
+	 * and an aria-hidden number.
+	 *
+	 * @param {Object} stats { views, reactions, comments }.
+	 * @return {HTMLElement}
+	 */
+	function statsBlock( stats ) {
+		var i18n = window.mvsCardBuildersI18n || {};
+		var wrap = el( 'div', 'mvs-grid-item-stats' );
+		[
+			[ 'eye', stats.views, i18n.views || 'Views' ],
+			[ 'heart', stats.reactions || 0, i18n.likes || 'Likes' ],
+			[ 'message-circle', stats.comments || 0, i18n.comments || 'Comments' ],
+		].forEach( function ( row, idx ) {
+			if ( 0 === idx && ! row[ 1 ] ) {
+				return; // Views only when there are some, as on page 1.
+			}
+			var stat = el( 'span', 'mvs-grid-stat' );
+			stat.appendChild( el( 'i', '', { 'data-lucide': row[ 0 ], 'aria-hidden': 'true' } ) );
+			var label = el( 'span', 'mvs-sr-only' );
+			label.textContent = row[ 2 ] + ': ' + fmtNum( row[ 1 ] );
+			stat.appendChild( label );
+			var num = el( 'span', '', { 'aria-hidden': 'true' } );
+			num.textContent = fmtNum( row[ 1 ] );
+			stat.appendChild( num );
+			wrap.appendChild( stat );
+		} );
+		return wrap;
+	}
+
+	/**
 	 * Format a number with locale separators (mimics number_format_i18n).
 	 *
 	 * @param {number} n
@@ -418,28 +450,29 @@
 			anchor.appendChild( badge );
 		}
 
-		// Stats overlay.
+		// Stats overlay (grid layouts).
 		var overlay = el( 'div', 'mvs-grid-item-overlay' );
-		var statsWrap = el( 'div', 'mvs-grid-item-stats' );
-
-		if ( stats.views ) {
-			var viewStat = el( 'span', 'mvs-grid-stat' );
-			viewStat.textContent = '\uD83D\uDC41\uFE0F ' + fmtNum( stats.views );
-			statsWrap.appendChild( viewStat );
-		}
-
-		var reactStat = el( 'span', 'mvs-grid-stat' );
-		reactStat.textContent = '\u2764\uFE0F ' + fmtNum( stats.reactions || 0 );
-		statsWrap.appendChild( reactStat );
-
-		var commentStat = el( 'span', 'mvs-grid-stat' );
-		commentStat.textContent = '\uD83D\uDCAC ' + fmtNum( stats.comments || 0 );
-		statsWrap.appendChild( commentStat );
-
-		overlay.appendChild( statsWrap );
+		overlay.appendChild( statsBlock( stats ) );
 		anchor.appendChild( overlay );
 
 		root.appendChild( anchor );
+
+		// Title, date and counts beside the thumbnail in the List layout: the
+		// same block TemplateHelpers::render_grid_item() prints on page 1.
+		var details = el( 'div', 'mvs-grid-item-details' );
+		var name = el( 'span', 'mvs-grid-item-name' );
+		name.textContent = title || ( ( window.mvsCardBuildersI18n || {} ).viewMedia || '' );
+		details.appendChild( name );
+		if ( item.date ) {
+			var when = new Date( String( item.date ).replace( ' ', 'T' ) + ( /Z|[+-]\d\d:?\d\d$/.test( item.date ) ? '' : 'Z' ) );
+			if ( ! isNaN( when.getTime() ) ) {
+				var time = el( 'time', 'mvs-grid-item-date', { datetime: when.toISOString() } );
+				time.textContent = when.toLocaleDateString( document.documentElement.lang || undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
+				details.appendChild( time );
+			}
+		}
+		details.appendChild( statsBlock( stats ) );
+		root.appendChild( details );
 
 		// Author info row.
 		if ( author.name ) {

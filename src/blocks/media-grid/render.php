@@ -309,6 +309,13 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>
 					</div>
 					</a>
+					<?php // Shown in the List layout only, as on Explore (TemplateHelpers::render_grid_item()). ?>
+					<div class="mvs-grid-item-details">
+						<span class="mvs-grid-item-name"><?php echo esc_html( $item_title ); ?></span>
+						<?php if ( ! empty( $item['created_at'] ) ) : ?>
+							<time class="mvs-grid-item-date" datetime="<?php echo esc_attr( mysql2date( 'c', (string) $item['created_at'] ) ); ?>"><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( (string) $item['created_at'] ) ) ); ?></time>
+						<?php endif; ?>
+					</div>
 				</div>
 			<?php endforeach; ?>
 		</div>

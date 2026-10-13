@@ -132,6 +132,7 @@ class Plugin {
 			'stats'        => __( 'Stats', 'wpmediaverse' ),
 			'likes'        => __( 'Likes', 'wpmediaverse' ),
 			'views'        => __( 'Views', 'wpmediaverse' ),
+			'comments'     => __( 'Comments', 'wpmediaverse' ),
 			/* translators: %d: number of items in the gallery (one). */
 			'galleryItem'  => __( '%d item', 'wpmediaverse' ),
 			/* translators: %d: number of items in the gallery (two or more). */

@@ -1467,31 +1467,23 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			 * itself as "title 👁️ 1 ❤️ 0 💬 0". Icons are aria-hidden and each
 			 * stat carries a real label instead.
 			 */
-			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
-			if ( $views ) {
-				echo '<span class="mvs-grid-stat">';
-				echo '<i data-lucide="eye" aria-hidden="true"></i>';
-				/* translators: %s: number of views. */
-				echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s view', '%s views', (int) $views, 'wpmediaverse' ), number_format_i18n( $views ) ) ) . '</span>';
-				echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $views ) ) . '</span>';
-				echo '</span>';
-			}
-			echo '<span class="mvs-grid-stat">';
-			echo '<i data-lucide="heart" aria-hidden="true"></i>';
-			/* translators: %s: number of reactions. */
-			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s reaction', '%s reactions', (int) $reactions, 'wpmediaverse' ), number_format_i18n( $reactions ) ) ) . '</span>';
-			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $reactions ) ) . '</span>';
-			echo '</span>';
-			echo '<span class="mvs-grid-stat">';
-			echo '<i data-lucide="message-circle" aria-hidden="true"></i>';
-			/* translators: %s: number of comments. */
-			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s comment', '%s comments', (int) $comments, 'wpmediaverse' ), number_format_i18n( $comments ) ) ) . '</span>';
-			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $comments ) ) . '</span>';
-			echo '</span>';
-			echo '</div></div>';
+			echo '<div class="mvs-grid-item-overlay">';
+			$this->render_grid_stats( (int) $views, (int) $reactions, (int) $comments );
+			echo '</div>';
 		}
 
 		echo '</a>';
+
+		// Title, date and counts beside the thumbnail in the List layout (CSS
+		// shows this block only there; the grid keeps them in the hover overlay).
+		$mvs_created = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'created_at' );
+		echo '<div class="mvs-grid-item-details">';
+		echo '<span class="mvs-grid-item-name">' . esc_html( $mvs_link_name ) . '</span>';
+		if ( '' !== $mvs_created ) {
+			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( mysql2date( 'c', $mvs_created ) ) . '">' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) ) . '</time>';
+		}
+		$this->render_grid_stats( (int) $views, (int) $reactions, (int) $comments );
+		echo '</div>';
 
 		if ( $show_author && $author_id ) {
 			// Plain name only — badges belong on author-focused surfaces
@@ -1516,6 +1508,40 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			echo '</div>';
 		}
 
+		echo '</div>';
+	}
+
+	/**
+	 * A tile's counts: views (when any), reactions, comments.
+	 *
+	 * Lucide icons, aria-hidden, each count with a real label for screen readers.
+	 *
+	 * @param int $views     Views.
+	 * @param int $reactions Reactions.
+	 * @param int $comments  Comments.
+	 */
+	private function render_grid_stats( int $views, int $reactions, int $comments ): void {
+		echo '<div class="mvs-grid-item-stats">';
+		if ( $views ) {
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="eye" aria-hidden="true"></i>';
+			/* translators: %s: number of views. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s view', '%s views', (int) $views, 'wpmediaverse' ), number_format_i18n( $views ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $views ) ) . '</span>';
+			echo '</span>';
+		}
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="heart" aria-hidden="true"></i>';
+			/* translators: %s: number of reactions. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s reaction', '%s reactions', (int) $reactions, 'wpmediaverse' ), number_format_i18n( $reactions ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $reactions ) ) . '</span>';
+			echo '</span>';
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="message-circle" aria-hidden="true"></i>';
+			/* translators: %s: number of comments. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s comment', '%s comments', (int) $comments, 'wpmediaverse' ), number_format_i18n( $comments ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $comments ) ) . '</span>';
+			echo '</span>';
 		echo '</div>';
 	}
 

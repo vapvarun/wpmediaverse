@@ -854,8 +854,7 @@ class ActivityContentIntegration {
 					return '';
 				}
 
-				// A post is listed for the audience of its most open item, so each
-				// tile shows only to a viewer who may open that item.
+				// Each tile shows only to a viewer who may open that item.
 				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
 					return '';
 				}
