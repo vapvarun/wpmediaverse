@@ -626,7 +626,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** All files upload as one group (single activity/action group), each becoming its own media item.
 - **UX expectation:** Per-file thumbnail previews for every selected file, with a way to remove one before submitting (`removeUploadFile`). One combined success confirmation, not one toast per file.
 - **Settings that change it:** same as MV-UPL-002.
-- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts the front item plus the members that share its privacy (`gallery_tile_counts()`). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
+- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts every member this viewer may see (`gallery_tile_counts()`), the same set the lightbox opens: a visitor, a follower and the owner can each see a different count on the same gallery. A gallery is one post: stepping through it in the lightbox keeps the cover's comment thread, while each item's own page shows its own comments (by design, owner decision 13 Oct 2026). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
 
 #### MV-UPL-004 — Upload video / audio
 - **Edition:** Free
@@ -1634,7 +1634,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Real thumbnails render (not a raw page URL / broken image), matching the member's viewable uploads. "Documents" sub-tab is present only when the documents feature is enabled site-wide.
 - **UX expectation:** Empty state (no broken `<img>` tags) when the member has nothing to show under a given sub-tab.
 - **Settings that change it:** the documents master switch (for the Documents sub-tab's presence).
-- **Edge cases:** This tab must respect the SAME privacy rules as the standalone `/media/@user/` profile — a stranger should not see more (or less) here than there.
+- **Edge cases:** This tab must respect the SAME privacy rules as the standalone `/media/@user/` profile — a stranger should not see more (or less) here than there. Galleries show as one tile with a badge, the same rule as Explore, on page 1 and on Load More. The nav count still counts every item the viewer may see.
 
 #### MV-BP-002 — Group "Media" tab
 - **Edition:** Free

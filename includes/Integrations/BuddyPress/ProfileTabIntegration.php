@@ -336,10 +336,9 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		$user_id = (int) bp_displayed_user_id();
 		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-		// Viewer-aware repository gate — replaces raw SQL that listed
-		// members/friends-level media to any visitor, including logged-out
-		// ones.
-		$total = $repo->count_visible_by_author( $user_id );
+		// Viewer-aware, one tile per gallery: the same rule as Explore and as
+		// this tab's Load More (group_covers), so page 1 and page 2 agree.
+		$total = $repo->count_visible_by_author( $user_id, null, array( 'exclude_non_cover_group' => true ) );
 
 		if ( ! $total ) {
 			return array(
@@ -351,8 +350,9 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		$rows = $repo->query_by_author(
 			$user_id,
 			array(
-				'limit'  => $per_page,
-				'offset' => $offset,
+				'limit'                   => $per_page,
+				'offset'                  => $offset,
+				'exclude_non_cover_group' => true,
 			)
 		);
 
