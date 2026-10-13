@@ -854,6 +854,12 @@ class ActivityContentIntegration {
 					return '';
 				}
 
+				// A post is listed for the audience of its most open item, so each
+				// tile shows only to a viewer who may open that item.
+				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
+					return '';
+				}
+
 				// Broadcast URLs are anonymous, so a non-public item gets none and its
 				// tile kept the src of a file that going private renamed: the owner saw
 				// a broken image. Fall back to a URL minted for

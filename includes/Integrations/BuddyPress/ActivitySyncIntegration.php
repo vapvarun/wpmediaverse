@@ -133,21 +133,23 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Effective WPMV privacy slug across a batch — most-restrictive wins.
+	 * Effective WPMV privacy slug across a batch: the most open item's.
 	 *
 	 * @since 1.2.1
 	 *
 	 * @param int[] $media_ids Media IDs.
 	 */
 	public static function effective_privacy_for_batch( array $media_ids ): string {
-		$worst = 'public';
+		// The post reaches the audience of its most open item; display drops the
+		// items a viewer may not open (ActivityContentIntegration).
+		$open = '';
 		foreach ( $media_ids as $mid ) {
 			$slug = self::effective_privacy_for_media( (int) $mid );
-			if ( self::privacy_to_level( $slug ) > self::privacy_to_level( $worst ) ) {
-				$worst = $slug;
+			if ( '' === $open || self::privacy_to_level( $slug ) < self::privacy_to_level( $open ) ) {
+				$open = $slug;
 			}
 		}
-		return $worst;
+		return '' === $open ? 'public' : $open;
 	}
 
 	/**
@@ -187,8 +189,8 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Effective hide_sitewide across a batch of media — short-circuits on
-	 * the first non-public sibling (or non-public album).
+	 * Effective hide_sitewide across a batch of media: hidden only when every
+	 * item is (by its own or its album's privacy).
 	 *
 	 * @since 1.2.1
 	 *
@@ -196,38 +198,14 @@ class ActivitySyncIntegration {
 	 * @return bool
 	 */
 	public static function should_hide_for_batch( array $media_ids ): bool {
-		if ( empty( $media_ids ) ) {
-			return false;
-		}
-
-		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$batch = $repo->get_batch( $media_ids );
-
-		$album_ids = array();
-		foreach ( $batch as $row ) {
-			$row_privacy = isset( $row['privacy'] ) ? (string) $row['privacy'] : '';
-			if ( self::privacy_to_hide_sitewide( $row_privacy ) ) {
-				return true;
-			}
-			if ( ! empty( $row['album_id'] ) ) {
-				$album_ids[ (int) $row['album_id'] ] = true;
+		// Hidden only when no item may be shown sitewide; a public item keeps the
+		// post listed, and display drops the items a viewer may not open.
+		foreach ( $media_ids as $mid ) {
+			if ( ! self::should_hide_for_media( (int) $mid ) ) {
+				return false;
 			}
 		}
-
-		if ( ! empty( $album_ids ) ) {
-			// Album privacy from the album's post meta, as in should_hide_for_media();
-			// one primed meta query for the distinct albums, not one per album.
-			$album_ids = array_keys( $album_ids );
-			update_postmeta_cache( $album_ids );
-			$albums = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-			foreach ( $album_ids as $album_id ) {
-				if ( self::privacy_to_hide_sitewide( $albums->get_privacy( (int) $album_id ) ) ) {
-					return true;
-				}
-			}
-		}
-
-		return false;
+		return ! empty( $media_ids );
 	}
 
 	/**
@@ -1220,10 +1198,65 @@ class ActivitySyncIntegration {
 		}
 		$ac_id = (int) get_comment_meta( (int) $comment->comment_ID, self::ACTIVITY_COMMENT_META, true );
 		if ( ! $ac_id ) {
+			$ac_id = $this->find_unlinked_mirror( $comment );
+		}
+		if ( ! $ac_id ) {
 			return null;
 		}
 		$ac = new \BP_Activity_Activity( $ac_id );
 		return empty( $ac->id ) ? null : $ac;
+	}
+
+	/**
+	 * The mirror of a comment made before mirrors were linked (2.6.1 and earlier).
+	 *
+	 * Old comments carry no link, so look once for the activity comment that
+	 * copied it: same member, same activity post, same text, written within a
+	 * few seconds. Only an exact single match is used, and then recorded; none
+	 * or several means no guess.
+	 *
+	 * @param \WP_Comment $comment Media comment.
+	 * @return int Activity comment ID, or 0.
+	 */
+	private function find_unlinked_mirror( \WP_Comment $comment ): int {
+		if ( ! function_exists( 'bp_activity_get' ) ) {
+			return 0;
+		}
+		$media_id    = \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment->comment_ID );
+		$activity_id = $media_id ? (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' ) : 0;
+		if ( ! $activity_id || ! (int) $comment->user_id ) {
+			return 0;
+		}
+
+		$found   = bp_activity_get(
+			array(
+				'filter'           => array(
+					'user_id'    => (int) $comment->user_id,
+					'action'     => 'activity_comment',
+					'primary_id' => $activity_id,
+				),
+				'display_comments' => 'stream',
+				'show_hidden'      => true,
+				'per_page'         => 100,
+			)
+		);
+		// BuddyPress filters a comment before storing it (entities, curly quotes).
+		$plain   = static fn( string $t ): string => trim( html_entity_decode( wp_strip_all_tags( $t ), ENT_QUOTES, 'UTF-8' ) );
+		$texts   = array( $plain( (string) $comment->comment_content ), $plain( wptexturize( (string) $comment->comment_content ) ) );
+		$at      = strtotime( (string) $comment->comment_date_gmt . ' UTC' );
+		$matches = array();
+		foreach ( (array) ( $found['activities'] ?? array() ) as $row ) {
+			$same_text = in_array( $plain( (string) $row->content ), $texts, true );
+			$same_time = abs( strtotime( (string) $row->date_recorded . ' UTC' ) - $at ) <= 10;
+			if ( $same_text && $same_time ) {
+				$matches[] = (int) $row->id;
+			}
+		}
+		if ( 1 !== count( $matches ) ) {
+			return 0;
+		}
+		update_comment_meta( (int) $comment->comment_ID, self::ACTIVITY_COMMENT_META, $matches[0] );
+		return $matches[0];
 	}
 
 	/**

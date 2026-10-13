@@ -5699,6 +5699,29 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Remove the notifications a deleted media comment raised.
+	 *
+	 * Filtered on media_id first (indexed), then the comment.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $media_id   Media the comment was on.
+	 * @param int $comment_id Deleted comment.
+	 * @return int Rows removed.
+	 */
+	public function delete_comment_notifications( int $media_id, int $comment_id ): int {
+		global $wpdb;
+		return (int) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_notifications',
+			array(
+				'media_id'   => $media_id,
+				'comment_id' => $comment_id,
+			),
+			array( '%d', '%d' )
+		);
+	}
+
+	/**
 	 * Query args for a listing's filter, from its public parameters.
 	 *
 	 * The one translation of `media_type`, `tag`, `category`, `s` and `group`

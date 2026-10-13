@@ -52,6 +52,7 @@ class NotificationService {
 		add_action( 'mvs_user_followed', array( $this, 'on_follow' ), 10, 2 );
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
+		add_action( 'delete_comment', array( $this, 'on_comment_deleted' ), 10, 2 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
 		add_action( 'mvs_report_resolved', array( $this, 'on_report_resolved' ), 10, 3 );
@@ -461,6 +462,22 @@ class NotificationService {
 	public function on_comment( int $media_id, int $user_id, int $comment_id ): void {
 		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_comment', $user_id, $media_id, $comment_id );
+	}
+
+	/**
+	 * A deleted media comment takes its notifications with it (reply cascade included).
+	 *
+	 * @param int|string $comment_id Comment being deleted.
+	 * @param mixed      $comment    The comment.
+	 */
+	public function on_comment_deleted( $comment_id, $comment = null ): void {
+		if ( ! $comment instanceof \WP_Comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type ) {
+			return;
+		}
+		$media_id = \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id );
+		if ( $media_id ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_comment_notifications( $media_id, (int) $comment_id );
+		}
 	}
 
 	/**

@@ -170,6 +170,10 @@ class ActivityMediaLinkage {
 			if ( 'publish' !== (string) $mvs_repo->get( $mvs_media_id, 'status' ) ) {
 				continue;
 			}
+			// The post reaches its most open item's audience; each tile only its own.
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_media_id, get_current_user_id() ) ) {
+				continue;
+			}
 
 			$pieces[] = $this->tpl->media_thumbnail(
 				$mvs_media_id,
