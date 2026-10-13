@@ -354,8 +354,8 @@ class CommentController extends WP_REST_Controller {
 			)
 		);
 
-		// 0 means nothing changed (Save with the same text), which is not a failure.
-		if ( false === $result || is_wp_error( $result ) ) {
+		// 0 means nothing changed (Save with the same text); only false is a failure.
+		if ( false === $result ) {
 			return new WP_Error( 'mvs_update_failed', __( 'Failed to update comment.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
 

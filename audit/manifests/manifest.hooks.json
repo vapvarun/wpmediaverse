@@ -3050,7 +3050,7 @@
       ],
       "where": "includes/Core/TemplateVersions.php:41",
       "consumed_by": [
-        "wpmediaverse-pro/includes/Core/Plugin.php"
+        "wpmediaverse-pro/includes/Frontend/GamificationTemplateLoader.php"
       ]
     },
     {
@@ -3547,7 +3547,7 @@
       ],
       "where": "includes/Core/Plugin.php:3536",
       "consumed_by": [
-        "wpmediaverse-pro/includes/Core/Plugin.php"
+        "wpmediaverse-pro/includes/Frontend/GamificationTemplateLoader.php"
       ]
     }
   ],
