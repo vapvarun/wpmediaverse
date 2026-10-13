@@ -147,6 +147,7 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 * Improve  - Screen readers hear the right name for the People search field and the chat message buttons, and comment buttons are 44px on touch screens.
 * Improve  - A document page names its privacy with the same words as the drive.
 * Improve  - Storage screens call local storage "This server", as the setting does.
+* Improve  - An incomplete licensing package shows an admin notice that automatic updates are off, instead of failing silently.
 * Fix      - BuddyPress activity posts show their photo again when direct delivery is on.
 * Fix      - An MP4 file branded as M4V, as iPhones save them, uploads like any MP4.
 * Fix      - Changing an item's privacy through the API updates its BuddyPress activity post.
@@ -163,6 +164,7 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 * Fix      - A deleted chat message no longer offers reactions or Reply.
 * Fix      - Explore says "in" rather than "tagged" when a category has no results.
 * Fix      - The wp mvs diagnose_cpt_ids warning no longer points at a fix that shipped in 2.4.0.
+* Fix      - The licence and update screen loads its styles and scripts on hosts where the plugin path does not match the web root, and every bundled copy of the update SDK is the same.
 * Security - Chat attachments open only for the people in the conversation.
 * Security - A shared item opens only for what its owner chose to share.
 * Security - Album and collection feeds, archives, sitemaps and site search list only public ones.

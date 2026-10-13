@@ -162,6 +162,15 @@ if ( file_exists( MVS_PLUGIN_DIR . 'libs/action-scheduler/action-scheduler.php' 
 if ( file_exists( MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 	&& file_exists( MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/src/Versions.php' ) ) {
 	require_once MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/edd-sl-sdk.php';
+} elseif ( is_admin() ) {
+	add_action(
+		'admin_notices',
+		static function () {
+			echo '<div class="notice notice-warning"><p>'
+				. esc_html__( 'MediaVerse: the bundled licensing and update SDK is incomplete, so automatic updates are turned off. Reinstall the plugin from a complete package to restore them. Every other feature works normally.', 'wpmediaverse' )
+				. '</p></div>';
+		}
+	);
 }
 add_action(
 	'edd_sl_sdk_registry',
