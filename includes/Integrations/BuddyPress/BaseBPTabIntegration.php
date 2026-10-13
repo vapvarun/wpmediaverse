@@ -570,19 +570,33 @@ abstract class BaseBPTabIntegration {
 	 */
 	protected function render_media_grid( array $media_ids ): void {
 		$stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $media_ids );
+		$params    = $this->gallery_params();
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$filter    = $repo->gallery_filter_args( $params );
+		$repo->gallery_tile_counts( $media_ids, null, $filter ); // One batch for every badge.
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1">';
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1" data-mvs-gallery-filter="' . esc_attr( http_build_query( $params ) ) . '">';
 		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
 				array(
-					'show_author'  => true,
-					'show_actions' => true,
+					'show_author'    => true,
+					'show_actions'   => true,
+					'gallery_filter' => $filter,
 				)
 			);
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * This tab's listing filter in GET /media terms, for gallery badges and the lightbox.
+	 *
+	 * @return array<string,mixed> Empty for an unfiltered tab.
+	 */
+	protected function gallery_params(): array {
+		return array();
 	}
 
 	/**

@@ -198,7 +198,18 @@ if ( $mvs_grid_author_ids ) {
 
 // Gallery badges for the page in one query: a cover counts the items it
 // stands for, any other tile 0 (MediaRepository::gallery_tile_counts()).
-$mvs_grid_group_counts = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( $mvs_page_ids );
+$mvs_grid_gallery_params = array_filter(
+	array(
+		'media_type' => $media_type,
+		'tag'        => $mvs_tag,
+		'category'   => $category,
+	)
+);
+$mvs_grid_group_counts = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts(
+	$mvs_page_ids,
+	null,
+	\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_filter_args( $mvs_grid_gallery_params )
+);
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
@@ -223,7 +234,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( ! empty( $media_items ) ) : ?>
-		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
+		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px" data-mvs-gallery-filter="<?php echo esc_attr( http_build_query( $mvs_grid_gallery_params ) ); ?>">
 			<?php
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
@@ -290,7 +301,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
 					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					<?php if ( $mvs_grid_group_cnt > 1 ) : ?>
-						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
+						<span class="mvs-gallery-badge" title="<?php /* translators: %d: number of items in the gallery. */ echo esc_attr( sprintf( _n( '%d item', '%d items', $mvs_grid_group_cnt, 'wpmediaverse' ), $mvs_grid_group_cnt ) ); ?>">
 							<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
 						</span>
 					<?php endif; ?>

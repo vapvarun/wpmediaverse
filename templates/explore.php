@@ -313,6 +313,19 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 
 	$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
+	// The listing's filter in GET /media terms: the badges count under it, and
+	// the lightbox sends it to /media/{id}/group so it opens the same set.
+	$mvs_gallery_params = array_filter(
+		array(
+			'media_type' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_type(),
+			'tag'        => (string) $mvs_filter_tag,
+			'category'   => (string) $mvs_filter_cat,
+			's'          => (string) $mvs_search,
+		)
+	);
+	$mvs_gallery_filter = $mvs_repo->gallery_filter_args( $mvs_gallery_params );
+	$mvs_gallery_query  = http_build_query( $mvs_gallery_params );
+
 	// An unknown tag/category slug means "no such filter" -> show the empty
 	// state, skip the query entirely.
 	if ( '' !== $mvs_invalid_filter_tag || '' !== $mvs_invalid_filter_cat ) {
@@ -446,13 +459,14 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		// reach some surfaces and miss others. Basecamp 10297763824.
 		$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
 		?>
-		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container>
+		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container data-mvs-gallery-filter="<?php echo esc_attr( $mvs_gallery_query ); ?>">
 			<?php
 			// Render media items from index table.
 			$media_ids_for_stats = array_map( 'intval', array_column( $media_items, 'media_id' ) );
 			// Batch-load index + all meta for the whole page in 2 queries so each
 			// tile renders from the request cache instead of ~14 queries/tile. (1.7.0)
 			$mvs_repo->prefetch( $media_ids_for_stats );
+			$mvs_repo->gallery_tile_counts( $media_ids_for_stats, null, $mvs_gallery_filter ); // One batch for every badge.
 			$stats_data = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $media_ids_for_stats );
 
 			foreach ( $media_items as $item ) :
@@ -465,8 +479,9 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					// albums, collections and both BuddyPress tabs, and only
 					// Explore asked for selection.
 					array(
-						'show_author' => true,
-						'bulk'        => is_user_logged_in(),
+						'show_author'    => true,
+						'bulk'           => is_user_logged_in(),
+						'gallery_filter' => $mvs_gallery_filter,
 					)
 				);
 			endforeach;

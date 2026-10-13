@@ -246,11 +246,17 @@ class MediaController extends WP_REST_Controller {
 				'callback'            => array( $this, 'get_group_items' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'id' => array(
+					'id'         => array(
 						'type'              => 'integer',
 						'required'          => true,
 						'sanitize_callback' => 'absint',
 					),
+					// The listing's filter, so the lightbox opens the set its badge counted.
+					'media_type' => array( 'type' => 'string' ),
+					'tag'        => array( 'type' => 'string' ),
+					'category'   => array( 'type' => 'string' ),
+					's'          => array( 'type' => 'string' ),
+					'group'      => array( 'type' => 'integer' ),
 				),
 			)
 		);
@@ -718,6 +724,7 @@ class MediaController extends WP_REST_Controller {
 		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
 		// so the per-item prepare below stays query-bounded at any list size.
 		self::prime_viewer_state( $int_ids, get_current_user_id() );
+		$repo->gallery_tile_counts( $int_ids, null, $this->gallery_filter( $request ) ); // Badges count under this feed's filter.
 
 		$items = array();
 		foreach ( $int_ids as $media_id ) {
@@ -759,6 +766,24 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * The listing filter a request carries, as query args (MediaRepository::gallery_filter_args()).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return array<string,mixed>
+	 */
+	private function gallery_filter( $request ): array {
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_filter_args(
+			array(
+				'media_type' => (string) $request->get_param( 'media_type' ),
+				'tag'        => (string) $request->get_param( 'tag' ),
+				'category'   => (string) $request->get_param( 'category' ),
+				's'          => (string) $request->get_param( 's' ),
+				'group'      => (int) $request->get_param( 'group' ),
+			)
+		);
+	}
+
+	/**
 	 * Get all media items in the same gallery group.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -784,62 +809,21 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$group_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
-		if ( ! $group_id ) {
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$members = $repo->gallery_members( $media_id, $mvs_viewer_id, $this->gallery_filter( $request ) );
+		if ( count( $members ) < 2 ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
 		}
 
-		// Query group members from mvs_media_meta custom table.
-		global $wpdb;
-		// Type group, not an exclusion. This feeds the gallery lightbox, which steps
-		// through members with prev/next — a document has nothing to render there, so
-		// it must not be reachable by arrowing off the end of a photo.
-		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'mi.media_type' );
-
-		// Driving table is media_meta; the index is the joined side (Rule 7 — see
-		// MediaRepository::index_table()).
-		$mvs_index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
-
-		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
-				INNER JOIN {$mvs_index_table} mi ON mm.media_id = mi.media_id
-				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'
-				  AND {$mvs_group_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$group_id,
-				...$mvs_group_type_params
-			)
-		);
-
-		if ( empty( $group_media_ids ) ) {
-			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
-		}
-
-		$int_group_ids = array_map( 'intval', $group_media_ids );
-		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$repo->prefetch( $int_group_ids );
-
-		// Per member, not just the entry point: one private photo inside an
-		// otherwise public gallery would otherwise come back with the rest.
+		// The badge's own set (MediaRepository::gallery_rows()), in position order.
+		$repo->prefetch( $members );
 		$items = array();
-		foreach ( $group_media_ids as $gid ) {
-			if ( ! $this->privacy->can_view( (int) $gid, $mvs_viewer_id ) ) {
-				continue;
-			}
-
+		foreach ( $members as $gid ) {
 			$item = $this->prepare_item_for_response( (int) $gid, $request );
 			if ( $item ) {
 				$items[] = $item;
 			}
 		}
-
-		// Sort by group_position.
-		usort(
-			$items,
-			function ( $a, $b ) {
-				return ( $a['group_position'] ?? 0 ) - ( $b['group_position'] ?? 0 );
-			}
-		);
 
 		return rest_ensure_response( $items );
 	}
@@ -2485,7 +2469,7 @@ class MediaController extends WP_REST_Controller {
 
 			// Items this tile stands for: a cover counts the members it hides,
 			// any other item 0, so a split member opens alone in the lightbox.
-			$data['group_count'] = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( (int) $media_id ) )[ (int) $media_id ] ?? 0 );
+			$data['group_count'] = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( (int) $media_id ), null, $this->gallery_filter( $request ) )[ (int) $media_id ] ?? 0 );
 		}
 
 		// Add media-type-specific metadata.

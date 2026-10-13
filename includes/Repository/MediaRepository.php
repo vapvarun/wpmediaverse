@@ -133,9 +133,9 @@ class MediaRepository implements MediaRepositoryInterface {
 	private static array $row_cache = array();
 
 	/**
-	 * Request-scope gallery badge counts, viewer => media_id => count (gallery_tile_counts()).
+	 * Request-scope gallery badge counts, viewer|filter => media_id => count (gallery_tile_counts()).
 	 *
-	 * @var array<int,array<int,int>>
+	 * @var array<string,array<int,int>>
 	 */
 	private static array $tile_counts = array();
 
@@ -5699,93 +5699,169 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
-	 * How many items each listed tile stands for, for its gallery badge.
+	 * Query args for a listing's filter, from its public parameters.
 	 *
-	 * The front item of a gallery (lowest position, then lowest id, among the
-	 * published, approved members this viewer may see in a listing) counts
-	 * every such member. That is the audience gallery_hidden_clause() hides
-	 * behind the front and the group lightbox opens, so one tile holds all a
-	 * viewer may see: a private member is never counted for a visitor, and the
-	 * owner's or a follower's tile counts their extra members too.
-	 * Any other item stands for itself and gets 0: a member listed on its own
-	 * shows no badge and opens alone in the lightbox.
-	 * Cached for the request per viewer; any repository write clears it.
+	 * The one translation of `media_type`, `tag`, `category`, `s` and `group`
+	 * (the GET /media names) into query() args, so a listing, its gallery
+	 * badges and the lightbox's /media/{id}/group apply the same filter.
 	 *
 	 * @since 2.6.2
 	 *
-	 * @param int[]    $media_ids Listed media IDs (one page).
-	 * @param int|null $viewer_id Viewer; null for the current user.
+	 * @param array<string,mixed> $params Public filter parameters.
+	 * @return array<string,mixed> query() args; empty for no filter.
+	 */
+	public function gallery_filter_args( array $params ): array {
+		$args = array();
+		$type = sanitize_key( (string) ( $params['media_type'] ?? '' ) );
+		if ( MediaTypes::is_known( $type ) ) {
+			$args['media_types'] = array( $type );
+		}
+		foreach ( array(
+			'tag'      => array( 'mvs_tag', 'tag_tt_id' ),
+			'category' => array( 'mvs_category', 'category_tt_id' ),
+		) as $param => $map ) {
+			$slug = sanitize_title( (string) ( $params[ $param ] ?? '' ) );
+			if ( '' !== $slug ) {
+				$term                = get_term_by( 'slug', $slug, $map[0] );
+				$args[ $map[1] ] = $term ? (int) $term->term_taxonomy_id : -1;
+			}
+		}
+		$search = trim( sanitize_text_field( (string) ( $params['s'] ?? '' ) ) );
+		if ( '' !== $search ) {
+			$args['search'] = $search;
+		}
+		if ( absint( $params['group'] ?? 0 ) > 0 ) {
+			$args['group_id'] = absint( $params['group'] );
+		}
+		return $args;
+	}
+
+	/**
+	 * Gallery members a viewer may see under a listing filter, by group.
+	 *
+	 * The single rule behind the badge (gallery_tile_counts()) and the lightbox
+	 * (gallery_members()): the same members the listing would show, so the
+	 * front tile, its count and the steps always agree.
+	 *
+	 * @param string[]            $groups Gallery ids.
+	 * @param int                 $viewer Viewer.
+	 * @param array<string,mixed> $filter gallery_filter_args() output.
+	 * @return array<string,array<int,int>> group => media ids in position order.
+	 */
+	private function gallery_rows( array $groups, int $viewer, array $filter ): array {
+		global $wpdb;
+
+		if ( ! $groups ) {
+			return array();
+		}
+		$parts = $this->build_query_parts(
+			$this->normalize_query_args(
+				array_merge(
+					$filter,
+					array(
+						'privacy'           => 'explore',
+						'viewer_id'         => $viewer,
+						'status'            => 'publish',
+						'moderation_status' => 'approved',
+					)
+				)
+			)
+		);
+		$meta = $wpdb->prefix . 'mvs_media_meta';
+		$ph   = implode( ',', array_fill( 0, count( $groups ), '%s' ) );
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names, the listing's own parts and placeholders are built above.
+				"SELECT mg.meta_value AS grp, m.media_id, CAST( mp.meta_value AS UNSIGNED ) AS pos FROM {$this->index_table()} m {$parts['join']}
+					INNER JOIN {$meta} mg ON mg.media_id = m.media_id AND mg.meta_key = 'media_group'
+					LEFT JOIN {$meta} mp ON mp.media_id = m.media_id AND mp.meta_key = 'group_position'
+					WHERE {$parts['where']} AND mg.meta_value IN ({$ph})",
+				...array_merge( $parts['params'], $groups )
+			)
+		);
+		$by = array();
+		foreach ( (array) $rows as $row ) {
+			$by[ (string) $row->grp ][ (int) $row->media_id ] = (int) $row->pos;
+		}
+		foreach ( $by as $grp => $members ) {
+			uksort(
+				$members,
+				static fn( $x, $y ) => array( $members[ $x ], $x ) <=> array( $members[ $y ], $y )
+			);
+			$by[ $grp ] = array_keys( $members );
+		}
+		return $by;
+	}
+
+	/**
+	 * How many items each listed tile stands for, for its gallery badge.
+	 *
+	 * The front item of a gallery (the first member, by position then id, that
+	 * this viewer may see under the listing's filter) counts every such member:
+	 * the set gallery_hidden_clause() hides behind it and the lightbox opens
+	 * (gallery_members()). Any other item gets 0: a member listed on its own
+	 * shows no badge and opens alone. Cached for the request per viewer and
+	 * filter; any repository write clears it.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[]               $media_ids Listed media IDs (one page).
+	 * @param int|null            $viewer_id Viewer; null for the current user.
+	 * @param array<string,mixed> $filter    gallery_filter_args() of the listing.
 	 * @return array<int,int> media_id => count; 0 for a non-cover.
 	 */
-	public function gallery_tile_counts( array $media_ids, ?int $viewer_id = null ): array {
+	public function gallery_tile_counts( array $media_ids, ?int $viewer_id = null, array $filter = array() ): array {
 		global $wpdb;
 
 		$viewer  = null === $viewer_id ? get_current_user_id() : $viewer_id;
-		$cache   = self::$tile_counts[ $viewer ] ?? array();
+		$key     = $viewer . '|' . md5( (string) wp_json_encode( $filter ) );
+		$cache   = self::$tile_counts[ $key ] ?? array();
 		$ids     = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
 		$missing = array_values( array_diff( $ids, array_keys( $cache ) ) );
 
 		if ( $missing ) {
-			$meta = $wpdb->prefix . 'mvs_media_meta';
-			$idx  = $this->index_table();
 			foreach ( $missing as $id ) {
 				$cache[ $id ] = 0;
 			}
-
-			// Two short queries rather than one join on meta_value: the join
-			// cost ~200 ms a page on MySQL at 12k media, these ~18 ms together.
 			$in     = implode( ',', array_fill( 0, count( $missing ), '%d' ) );
 			$covers = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and placeholders are built above.
-					"SELECT media_id, meta_value AS grp FROM {$meta} WHERE meta_key = 'media_group' AND media_id IN ({$in})",
+					"SELECT media_id, meta_value AS grp FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND media_id IN ({$in})",
 					...$missing
 				)
 			);
-
-			$groups = array_values( array_unique( array_map( static fn( $c ) => (string) $c->grp, (array) $covers ) ) );
-			if ( $groups ) {
-				list( $priv_sql, $priv_params ) = $this->explore_privacy_clause( 'mi', $viewer );
-
-				$ph   = implode( ',', array_fill( 0, count( $groups ), '%s' ) );
-				$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names, placeholders and the privacy clause are built above.
-						"SELECT mg.meta_value AS grp, mg.media_id, CAST( mp.meta_value AS UNSIGNED ) AS pos FROM {$meta} mg
-							INNER JOIN {$idx} mi ON mi.media_id = mg.media_id
-							LEFT JOIN {$meta} mp ON mp.media_id = mg.media_id AND mp.meta_key = 'group_position'
-							WHERE mg.meta_key = 'media_group' AND mg.meta_value IN ({$ph})
-							AND mi.status = 'publish' AND mi.moderation_status = 'approved' AND {$priv_sql}",
-						...array_merge( $groups, $priv_params )
-					)
-				);
-				$by = array(); // grp => [ count, front id, front pos ].
-				foreach ( (array) $rows as $row ) {
-					$grp = (string) $row->grp;
-					$id  = (int) $row->media_id;
-					$pos = (int) $row->pos;
-					if ( ! isset( $by[ $grp ] ) ) {
-						$by[ $grp ] = array( 0, $id, $pos );
-					}
-					++$by[ $grp ][0];
-					if ( $pos < $by[ $grp ][2] || ( $pos === $by[ $grp ][2] && $id < $by[ $grp ][1] ) ) {
-						$by[ $grp ][1] = $id;
-						$by[ $grp ][2] = $pos;
-					}
-				}
-				foreach ( (array) $covers as $cover ) {
-					$front = $by[ (string) $cover->grp ] ?? null;
-					if ( $front && (int) $cover->media_id === $front[1] ) {
-						$cache[ (int) $cover->media_id ] = $front[0];
-					}
+			$by = $this->gallery_rows( array_values( array_unique( array_map( static fn( $c ) => (string) $c->grp, (array) $covers ) ) ), $viewer, $filter );
+			foreach ( (array) $covers as $cover ) {
+				$members = $by[ (string) $cover->grp ] ?? array();
+				if ( $members && (int) $cover->media_id === $members[0] ) {
+					$cache[ (int) $cover->media_id ] = count( $members );
 				}
 			}
-			self::$tile_counts[ $viewer ] = $cache;
+			self::$tile_counts[ $key ] = $cache;
 		}
 
 		return array_intersect_key( $cache, array_flip( $ids ) );
 	}
 
+	/**
+	 * The gallery a tile opens: its members this viewer may see under the filter.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int                 $media_id  Any member of the gallery.
+	 * @param int|null            $viewer_id Viewer; null for the current user.
+	 * @param array<string,mixed> $filter    gallery_filter_args() of the listing.
+	 * @return int[] Media ids in position order; empty when not in a gallery.
+	 */
+	public function gallery_members( int $media_id, ?int $viewer_id = null, array $filter = array() ): array {
+		$group = (string) $this->get( $media_id, 'media_group' );
+		if ( '' === $group ) {
+			return array();
+		}
+		$viewer = null === $viewer_id ? get_current_user_id() : $viewer_id;
+		return $this->gallery_rows( array( $group ), $viewer, $filter )[ $group ] ?? array();
+	}
 
 	/**
 	 * The gallery rule for one listing, matched against the listing's own filters.

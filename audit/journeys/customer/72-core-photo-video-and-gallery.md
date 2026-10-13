@@ -77,8 +77,11 @@ explained by the code, is a gap to close before calling it done.
   repeating or skipping items.
 - **Fails on 2.6.1 / 8d86e49e**: the owner's and the follower's tiles show no badge and the lightbox
   opens one item, then jumps to the next gallery.
-- **By design**: stepping through a gallery in the lightbox keeps the cover's comment thread; each
-  item's own page shows its own comments.
+- **Comments per item**: step to item 2 in the lightbox; its own comments load (a request for
+  /media/<item 2>/comments), never "No comments yet" when it has some.
+- **Under a filter**: a gallery of a photo then two videos; open Explore > Videos as the visitor.
+  Expect one tile (the first video), badge 2, lightbox 1 / 2 through `/group?media_type=video`; under
+  Photos the photo alone with no badge. Same for a tag or category filter.
 - **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
 
 ### 6b. Explore People search (Basecamp 10393726173)

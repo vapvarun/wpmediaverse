@@ -1328,6 +1328,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
 	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
 	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
+	 *                        - 'gallery_filter' (array) The listing's MediaRepository::gallery_filter_args(), so the badge counts what the listing shows.
 	 *                        - 'size' (string) Image size. Default 'medium'.
 	 */
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
@@ -1365,7 +1366,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		// A gallery cover badges the items it stands for; any other tile stands
 		// for itself (MediaRepository::gallery_tile_counts()).
-		$group_count = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( $media_id ) )[ $media_id ] ?? 0 );
+		$group_count = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( $media_id ), null, (array) ( $options['gallery_filter'] ?? array() ) )[ $media_id ] ?? 0 );
 		$is_gallery  = $group_count > 1;
 
 		$item_class = 'mvs-grid-item' . ( $is_gallery ? ' mvs-grid-item--gallery' : '' );
@@ -1447,7 +1448,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		// Gallery badge showing item count.
 		if ( $is_gallery ) {
-			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
+			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( /* translators: %d: number of items in the gallery. */ _n( '%d item', '%d items', $group_count, 'wpmediaverse' ), $group_count ) ) . '">';
 			echo '<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> ' . esc_html( $group_count );
 			echo '</span>';
 		}

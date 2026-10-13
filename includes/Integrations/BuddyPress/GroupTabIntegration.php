@@ -207,6 +207,10 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 		return __( 'This album is empty.', 'wpmediaverse' );
 	}
 
+	protected function gallery_params(): array {
+		return array( 'group' => (int) ( groups_get_current_group()->id ?? 0 ) );
+	}
+
 	protected function load_more_data_attrs(): array {
 		return array(
 			'data-group' => (int) ( groups_get_current_group()->id ?? 0 ),

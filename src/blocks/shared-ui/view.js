@@ -255,6 +255,36 @@ function mapLightboxComment( c ) {
 // gallery entered backwards opens on its last photo.
 let enterGroupAtEnd = false;
 
+// REST context of the open lightbox, so stepping inside a gallery can load the
+// shown item's own reactions and comments.
+let lightboxCtx = null;
+
+/**
+ * The /media/{id}/group query for a tile: the filter its listing printed on its
+ * grid (data-mvs-gallery-filter), else Explore's URL filter (Pro layouts), so
+ * the lightbox steps through the set the badge counted.
+ *
+ * @param {number} mediaId Tile media id.
+ * @return {string} '' or '?media_type=...'.
+ */
+function galleryQuery( mediaId ) {
+	const tile = document.querySelector( '[data-media-id="' + mediaId + '"]' );
+	const holder = tile && tile.closest( '[data-mvs-gallery-filter]' );
+	if ( holder ) {
+		const q = holder.getAttribute( 'data-mvs-gallery-filter' ) || '';
+		return q ? '?' + q : '';
+	}
+	const url = new URLSearchParams( window.location.search );
+	const out = new URLSearchParams();
+	[ [ 'mvs_type', 'media_type' ], [ 'mvs_tag', 'tag' ], [ 'mvs_category', 'category' ], [ 'q', 's' ] ].forEach( ( [ from, to ] ) => {
+		if ( url.get( from ) ) {
+			out.set( to, url.get( from ) );
+		}
+	} );
+	const q = out.toString();
+	return q ? '?' + q : '';
+}
+
 const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
 		// --- Toast (flat) ---
@@ -450,6 +480,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxVisible: false,
 		lightboxFullscreen: false,
 		lightboxMediaId: null,
+		// The grid tile the lightbox was opened from (grid navigation); lightboxMediaId follows the item shown.
+		lightboxTileId: null,
 		lightboxMediaData: null,
 		lightboxGroupItems: [],
 		lightboxCurrentIndex: 0,
@@ -766,13 +798,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxHasPrev() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
-			const idx = gridIds.indexOf( state.lightboxMediaId );
+			const idx = gridIds.indexOf( state.lightboxTileId );
 			return idx > 0;
 		},
 		get lightboxHasNext() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
-			const idx = gridIds.indexOf( state.lightboxMediaId );
+			const idx = gridIds.indexOf( state.lightboxTileId );
 			return idx >= 0 && idx < gridIds.length - 1;
 		},
 	},
@@ -1545,6 +1577,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			state.lightboxVisible = true;
 			state.lightboxMediaId = mediaId;
+			state.lightboxTileId = mediaId;
 			state.lightboxLoading = true;
 			state.lightboxCommentText = '';
 			state.lightboxGroupItems = [];
@@ -1561,10 +1594,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxLoading = false;
 				loadLightboxMedia();
 
-				// If this item is part of a gallery group, fetch all group members.
-				if ( data.media_group && data.group_count > 1 ) {
+				// A gallery opens the members its listing counted (same filter).
+				if ( data.media_group ) {
 					const groupRes = await window.mvsRest.restFetch(
-						ctx.restUrl + 'media/' + mediaId + '/group'
+						ctx.restUrl + 'media/' + mediaId + '/group' + galleryQuery( mediaId )
 					);
 					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
@@ -1577,6 +1610,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}
 				}
 			// Fetch social data in parallel.
+				lightboxCtx = ctx;
 				actions.lightboxLoadSocial( ctx, mediaId );
 			} catch {
 				state.lightboxLoading = false;
@@ -1594,6 +1628,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			lightboxRememberTrigger();
 
 			state.lightboxMediaId = mediaId;
+			state.lightboxTileId = mediaId;
 			state.lightboxVisible = true;
 			state.lightboxLoading = true;
 			state.lightboxCommentText = '';
@@ -1640,20 +1675,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxLoading = false;
 				loadLightboxMedia();
 
-				if ( data.media_group && data.group_count > 1 ) {
-					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' );
+				if ( data.media_group ) {
+					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' + galleryQuery( mediaId ) );
 					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
 						const start = enterGroupAtEnd ? groupData.length - 1 : 0;
 						state.lightboxGroupItems = groupData;
 						state.lightboxCurrentIndex = start;
 						state.lightboxMediaData = groupData[ start ];
+						state.lightboxMediaId = groupData[ start ].id;
 						loadLightboxMedia();
 					}
 				}
 				enterGroupAtEnd = false;
 
-				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
+				lightboxCtx = { restUrl, nonce, isLoggedIn };
+				actions.lightboxLoadSocial( lightboxCtx, state.lightboxMediaId );
 			} catch {
 				enterGroupAtEnd = false;
 				state.lightboxLoading = false;
@@ -2093,15 +2130,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// A gallery steps through its photos, then its edges hand over to the
 		// neighbouring grid tile. It does not wrap: with prev/next always visible,
 		// Next would cycle one gallery forever.
+		// Each gallery item keeps its own comments and reactions: show it and load them.
+		lightboxShowGroupItem( idx ) {
+			const item = state.lightboxGroupItems[ idx ];
+			state.lightboxCurrentIndex = idx;
+			state.lightboxMediaData = item;
+			state.lightboxMediaId = item.id;
+			if ( lightboxCtx ) {
+				actions.lightboxLoadSocial( lightboxCtx, item.id );
+			}
+		},
 		lightboxPrev() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) {
-				const idx = state.lightboxCurrentIndex - 1;
-				state.lightboxCurrentIndex = idx;
-				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+				actions.lightboxShowGroupItem( state.lightboxCurrentIndex - 1 );
 				return;
 			}
 			const gridIds = window.mvsGridRegistry || [];
-			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
+			const currentIdx = gridIds.indexOf( state.lightboxTileId );
 			if ( currentIdx > 0 ) {
 				enterGroupAtEnd = true; // Going back into a gallery starts at its last photo.
 				actions.openLightboxById( gridIds[ currentIdx - 1 ] );
@@ -2109,13 +2154,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		lightboxNext() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) {
-				const idx = state.lightboxCurrentIndex + 1;
-				state.lightboxCurrentIndex = idx;
-				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+				actions.lightboxShowGroupItem( state.lightboxCurrentIndex + 1 );
 				return;
 			}
 			const gridIds = window.mvsGridRegistry || [];
-			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
+			const currentIdx = gridIds.indexOf( state.lightboxTileId );
 			if ( currentIdx >= 0 && currentIdx < gridIds.length - 1 ) {
 				actions.openLightboxById( gridIds[ currentIdx + 1 ] );
 			}

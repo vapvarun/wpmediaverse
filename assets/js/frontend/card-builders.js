@@ -410,7 +410,7 @@
 		// Gallery badge.
 		if ( isGallery && groupCnt > 1 ) {
 			var badge = el( 'span', 'mvs-gallery-badge', {
-				title: groupCnt + ' photos',
+				title: ( ( window.mvsCardBuildersI18n || {} )[ 1 === groupCnt ? 'galleryItem' : 'galleryItems' ] || '%d' ).replace( '%d', groupCnt ),
 			} );
 			var dashicon = el( 'span', 'dashicons dashicons-images-alt2' );
 			badge.appendChild( dashicon );

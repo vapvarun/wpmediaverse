@@ -120,6 +120,26 @@ class Plugin {
 	}
 
 	/**
+	 * Strings for the JS card builder (cards appended by Load More).
+	 *
+	 * @return array<string,string>
+	 */
+	private static function card_builders_i18n(): array {
+		return array(
+			'deleteMedia'  => __( 'Delete media', 'wpmediaverse' ),
+			'video'        => __( 'Video', 'wpmediaverse' ),
+			'viewMedia'    => __( 'View media', 'wpmediaverse' ),
+			'stats'        => __( 'Stats', 'wpmediaverse' ),
+			'likes'        => __( 'Likes', 'wpmediaverse' ),
+			'views'        => __( 'Views', 'wpmediaverse' ),
+			/* translators: %d: number of items in the gallery (one). */
+			'galleryItem'  => __( '%d item', 'wpmediaverse' ),
+			/* translators: %d: number of items in the gallery (two or more). */
+			'galleryItems' => __( '%d items', 'wpmediaverse' ),
+		);
+	}
+
+	/**
 	 * Enqueue the lightbox store + dialog frame for a Pro feed surface.
 	 *
 	 * Single entry point the Pro feed layouts call from their
@@ -1485,18 +1505,7 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
-		wp_localize_script(
-			'mvs-card-builders',
-			'mvsCardBuildersI18n',
-			array(
-				'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
-				'video'       => __( 'Video', 'wpmediaverse' ),
-				'viewMedia'   => __( 'View media', 'wpmediaverse' ),
-				'stats'       => __( 'Stats', 'wpmediaverse' ),
-				'likes'       => __( 'Likes', 'wpmediaverse' ),
-				'views'       => __( 'Views', 'wpmediaverse' ),
-			)
-		);
+		wp_localize_script( 'mvs-card-builders', 'mvsCardBuildersI18n', self::card_builders_i18n() );
 		wp_register_script(
 			'mvs-load-more',
 			MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',

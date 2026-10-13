@@ -115,6 +115,16 @@ class GalleryFrontTileTest extends WP_UnitTestCase {
 		$this->assertSame( 2, $this->repo()->gallery_tile_counts( array( $ids[0] ), 0 )[ $ids[0] ], 'A visitor does not.' );
 	}
 
+	public function test_a_type_filter_counts_and_opens_the_matching_members(): void {
+		$ids    = $this->gallery( array( array( 'media_type' => 'image' ), array( 'media_type' => 'video' ), array( 'media_type' => 'video' ) ) );
+		$filter = $this->repo()->gallery_filter_args( array( 'media_type' => 'video' ) );
+
+		$this->assertSame( array( $ids[1] ), $this->listed( 0, array( 'media_types' => array( 'video' ) ) ), 'Under Videos the first video fronts the gallery.' );
+		$this->assertSame( 2, $this->repo()->gallery_tile_counts( array( $ids[1] ), 0, $filter )[ $ids[1] ], 'Its badge counts both videos.' );
+		$this->assertSame( array( $ids[1], $ids[2] ), $this->repo()->gallery_members( $ids[1], 0, $filter ), 'The lightbox steps through both videos.' );
+		$this->assertSame( 3, $this->repo()->gallery_tile_counts( array( $ids[0] ), 0 )[ $ids[0] ], 'Unfiltered, the photo fronts all three.' );
+	}
+
 	public function test_cover_held_for_review_does_not_hide_the_gallery(): void {
 		$ids = $this->gallery( array( array( 'moderation_status' => 'pending' ), array(), array() ) );
 		$this->assertSame( array( $ids[1] ), $this->listed( 0, array( 'moderation_status' => 'approved' ) ) );
