@@ -62,6 +62,7 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 		add_action( 'delete_comment', array( $this, 'delete_mirrored_activity_comment' ), 10, 2 );
+		add_filter( 'wp_update_comment_data', array( $this, 'link_mirror_before_edit' ), 10, 2 );
 		add_action( 'edit_comment', array( $this, 'update_mirrored_activity_comment' ), 10, 2 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
@@ -1304,6 +1305,27 @@ class ActivitySyncIntegration {
 			}
 		}
 		bp_activity_delete_comment( (int) $ac->item_id, (int) $ac->id );
+	}
+
+	/**
+	 * Link an old comment to its mirror while it still holds the text the mirror copied.
+	 *
+	 * The match in find_unlinked_mirror() is on the text, and by edit_comment the
+	 * comment already carries the new wording, so an old comment edited once
+	 * could never be linked again (nor removed when deleted later).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param array<string,mixed> $data    Comment data about to be saved (returned unchanged).
+	 * @param array<string,mixed> $comment The comment as stored now.
+	 * @return array<string,mixed>
+	 */
+	public function link_mirror_before_edit( $data, $comment = array() ) {
+		$id = (int) ( $comment['comment_ID'] ?? 0 );
+		if ( $id && ! get_comment_meta( $id, self::ACTIVITY_COMMENT_META, true ) ) {
+			$this->mirrored_activity_comment( $id );
+		}
+		return $data;
 	}
 
 	/**

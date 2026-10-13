@@ -34,6 +34,13 @@ also removes the owner's `update_reply` / `comment_reply` notifications.
 - **Expect**: both `wp_comments` rows and both `activity_comment` rows are gone; the
   activity post no longer lists them; Member A's notification for it is gone.
 
+### 3b. Comments made before 2.6.2 (site upgraded from 2.6.1)
+- **Action**: on 2.6.1 comment on a photo (and reply); upgrade; delete one old comment; edit another
+  old comment, then delete it.
+- **Expect**: the deleted comment and its replies leave the activity post; the edit shows on the post;
+  the edited-then-deleted comment leaves the post too, with its notification. (The link is made on
+  `wp_update_comment_data`, before the text changes; `find_unlinked_mirror()` matches the old text.)
+
 ### 4. Upload-page post steps in the lightbox (1440 and 390)
 - **Action**: Member A uploads 2+ photos from `/upload-media/`; on `/activity/` click the
   first photo of that post.
