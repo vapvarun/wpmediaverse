@@ -138,7 +138,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		<?php endif; ?>
 		<div class="mvs-profile-header-info">
 			<div class="mvs-profile-header-top">
-				<h2 class="mvs-profile-header-name">
+				<h1 class="mvs-profile-header-name">
 				<?php
 				if ( $mvs_profile_url ) {
 					printf( '<a href="%s">%s</a>', esc_url( $mvs_profile_url ), esc_html( $mvs_profile->display_name ) );
@@ -146,7 +146,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					echo esc_html( $mvs_profile->display_name );
 				}
 				?>
-				</h2>
+				</h1>
 				<?php if ( $mvs_is_own_profile ) : ?>
 					<?php
 					// Link to the profile EDIT section, not the dashboard root —

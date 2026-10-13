@@ -598,6 +598,8 @@ body.dark-mode {
 .mvs-single-album h2,
 .mvs-single-collection h2,
 .mvs-explore-page h2,
+/* The profile name is the page's h1 since 2.6.2; it keeps the h2 look. */
+.mvs-explore-page h1.mvs-profile-header-name,
 .mvs-documents h2,
 .mvs-dashboard h2,
 .mvs-profile-edit h2 {

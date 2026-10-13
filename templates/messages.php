@@ -3,7 +3,7 @@
  * Full-page messages layout — two-column chat at /messages/.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.2
  * @since   1.1.0
  */
 
@@ -22,6 +22,8 @@ do_action( 'mvs_before_content' );
 	data-wp-init="callbacks.onInit"
 	data-wp-bind--data-active-conv="state.activeConversationId"
 >
+	<?php // The page's heading: the route has no post, so the theme prints none. ?>
+	<h1 class="mvs-sr-only"><?php esc_html_e( 'Messages', 'wpmediaverse' ); ?></h1>
 	<!-- Sidebar: Conversation List OR New Conversation picker -->
 	<div class="mvs-messages-sidebar">
 		<div data-wp-bind--hidden="state.isViewNew">

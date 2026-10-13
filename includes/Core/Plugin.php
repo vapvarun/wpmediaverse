@@ -3546,6 +3546,11 @@ JS;
 				foreach ( array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) as $var ) {
 					if ( $query->get( $var ) ) {
 						$query->is_home = false;
+						// No blog posts either: the page comes from our own tables, and a theme
+						// header that prints the current post's title showed the first blog
+						// post ("Hello world!") over Messages and the profile (Reign). pre_handle_404
+						// keeps the empty result from becoming a 404.
+						$query->set( 'post__in', array( 0 ) );
 						return;
 					}
 				}
