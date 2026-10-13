@@ -6983,6 +6983,17 @@
         "dashboard-view album modal merges early picks; bp-activity-media revokes preview blob URLs; explore-feed render uses 'explore' privacy"
       ],
       "unchanged": "routes, settings"
+    },
+    "refresh_2026_10_13_bugs_column": {
+      "scope": "2.6.2 Bugs column (13 Oct): gallery badge per viewer, BuddyPress comment mirror sync, polish",
+      "added": [
+        "MediaRepository::gallery_tile_counts( $media_ids, ?int $viewer_id = null ) counts members the viewer may see",
+        "ActivitySyncIntegration::ACTIVITY_COMMENT_META (_mvs_bp_activity_comment_id); delete_comment / edit_comment listeners remove or rewrite the mirrored activity comment",
+        "MessagingService::blocked_pair_refusal() (private)"
+      ],
+      "changed": [
+        "templates media-single.php, partials/dashboard-content.php, partials/shared-ui-frame.php @version 2.6.2"
+      ]
     }
   },
   "category_sources": {

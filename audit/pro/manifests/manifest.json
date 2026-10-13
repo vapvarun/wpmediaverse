@@ -2558,6 +2558,16 @@
         "AnalyticsService Top 10: WHERE event_type IN (ALLOWED_EVENT_TYPES)"
       ],
       "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_13_bugs_column": {
+      "scope": "2.6.2 polish (13 Oct)",
+      "changed": [
+        "Instagram feed-card Boost gated on BoostAffordance::is_available() + CompetitionMedia::is_entrable()",
+        "layouts/partials/explore-filters.php @version 2.6.2 (data-search-label)"
+      ],
+      "added": [
+        "filter mvs_document_readable_via_post documented in manifest.hooks.json"
+      ]
     }
   },
   "category_sources": {
