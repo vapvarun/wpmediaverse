@@ -7021,7 +7021,11 @@
         "TemplateHelpers::render_grid_stats() (private); .mvs-grid-item-details in tiles",
         "MediaController::group_route_args() (private)",
         "NotificationService::on_comment_deleted(), MediaRepository::delete_comment_notifications()",
-        "ActivitySyncIntegration::link_mirror_before_edit() on wp_update_comment_data"
+        "ActivitySyncIntegration::link_mirror_before_edit() on wp_update_comment_data",
+        "NotificationService::on_conversation_read() on mvs_conversation_read",
+        "MediaRepository::mark_notifications_read_from()",
+        "notification REST item date_human",
+        "dashboard-view actions.closeNotifications"
       ],
       "changed": [
         "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)",
