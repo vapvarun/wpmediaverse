@@ -360,6 +360,23 @@ check_no_exec_family_calls() {
     fi
 }
 
+# ------------------------------------------------------------------------------
+# Rules 9-11: the code standard (no ticket ids in comments, no method over 150
+# lines, no new $wpdb query outside a repository). Existing debt is listed in
+# audit/cleanup/code-standard-baseline.txt and passes until someone touches it;
+# new code fails at once. The checker is bin/lib/code-standard-check.php.
+check_code_standard() {
+    local out
+    out="$(php "$SCRIPT_DIR/lib/code-standard-check.php" "$PLUGIN_DIR" 2>/dev/null)"
+    if [ -n "$out" ]; then
+        while IFS= read -r line; do
+            [ -n "$line" ] && violation "$line"
+        done <<< "$out"
+    else
+        ok "Rules 9-11 — code standard holds (ids, method length, \$wpdb outside repositories)"
+    fi
+}
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
@@ -372,6 +389,7 @@ check_rest_per_page_has_maximum
 check_no_refusal_reported_as_success
 check_no_direct_media_index_query_outside_repository
 check_no_exec_family_calls
+check_code_standard
 
 echo ""
 COUNT=$(violations_count)

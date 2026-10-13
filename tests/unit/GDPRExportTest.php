@@ -1,7 +1,7 @@
 <?php
 /**
- * Basecamp 10350231765 — a member with zero media got a personal data
- * export with no Media Items section at all, not an empty one. WordPress
+ * A member with zero media must get a personal data export with an empty
+ * Media Items section, not none at all. WordPress
  * only renders a group heading in the export file when at least one item
  * carries that group_id, so an exporter returning `data: []` is
  * indistinguishable from one that never ran.

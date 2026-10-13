@@ -27,7 +27,7 @@ wp_enqueue_script( 'mvs-lucide' );
 // Block attribute is the source of truth when the merchant has explicitly
 // set it in the sidebar; falls back to the admin default (Settings →
 // Display) when unset/absent/0. Matches edit.js's own "Using admin default"
-// help text, which the frontend previously never honored.
+// help text, which the frontend must honor.
 $mvs_grid_columns_attr = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 0;
 $columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : absint( get_option( 'mvs_grid_columns', 3 ) );
 // Per-instance layout override; '' inherits the site's Default Layout, which
@@ -35,10 +35,9 @@ $columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : a
 // "deliberately grid" have to stay distinguishable. Assigned BEFORE the line
 // below that consumes it: defined after, it was always null, so the override
 // silently did nothing and every render emitted a warning.
-// Basecamp 10297764235.
 $mvs_layout_override = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : '';
 
-// Resolved through the one emitter every grid uses. Basecamp 10297763824.
+// Resolved through the one emitter every grid uses.
 $mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class( $mvs_layout_override );
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
@@ -61,7 +60,6 @@ global $wpdb;
 // The index is the joined side of a query this template owns; the repository
 // supplies the name (Rule 7 — see MediaRepository::index_table()).
 $index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
-$meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 // Build WHERE/JOIN clauses.
 // A POSITIVE list, not `media_type != ''`.
@@ -82,7 +80,6 @@ $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 // surface for" - the question that stays right when a type is added. An
 // explicit type= (including document) still overrides below, so a deliberate
 // file grid is still possible. Escape hatch: mvs_media_library_types.
-// Basecamp 10298650705.
 if ( $media_type ) {
 	// An explicit type REPLACES the default - type="document" is still a
 	// document grid - so it is decided here rather than narrowed afterwards.
@@ -133,14 +130,10 @@ if ( $mvs_tag ) {
 	}
 }
 
-// Exclude non-cover gallery group items.
-$where .= " AND m.media_id NOT IN (
-	SELECT mm1.media_id FROM {$meta_table} mm1
-	INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
-	WHERE mm1.meta_key = 'media_group'
-	AND mm2.meta_key = 'group_position'
-	AND mm2.meta_value != '0'
-)";
+// One tile per gallery: the repository's rule, matched against this grid's own filters.
+list( $mvs_gallery_sql, $mvs_gallery_params ) = $mvs_grid_repo->gallery_hidden_clause( 'm', $joins, substr( $where, strlen( 'WHERE ' ) ), $params );
+$where  .= ' AND ' . $mvs_gallery_sql;
+$params  = array_merge( $params, $mvs_gallery_params );
 
 // ── ORDER BY clause (and optional JOIN for popularity-based sort) ─────────
 // Supported values: date | title | popular | views | reactions | random.
@@ -203,31 +196,20 @@ if ( $mvs_grid_author_ids ) {
 	cache_users( $mvs_grid_author_ids );
 }
 
-// Gallery tiles show "N in this group". One grouped COUNT for the page, not
-// one per grouped tile. (2.5.1)
-$mvs_grid_group_counts = array();
-$mvs_grid_page_groups  = array();
-foreach ( $mvs_page_ids as $mvs_grid_pid ) {
-	$mvs_grid_pid_group = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_grid_pid, 'media_group' );
-	if ( $mvs_grid_pid_group ) {
-		$mvs_grid_page_groups[] = (string) $mvs_grid_pid_group;
-	}
-}
-$mvs_grid_page_groups = array_values( array_unique( $mvs_grid_page_groups ) );
-if ( $mvs_grid_page_groups ) {
-	$mvs_grid_group_ph  = implode( ', ', array_fill( 0, count( $mvs_grid_page_groups ), '%s' ) );
-	$mvs_grid_group_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and placeholders are built above.
-			"SELECT meta_value, COUNT(*) AS c FROM {$meta_table} WHERE meta_key = 'media_group' AND meta_value IN ({$mvs_grid_group_ph}) GROUP BY meta_value",
-			...$mvs_grid_page_groups
-		),
-		ARRAY_A
-	);
-	foreach ( (array) $mvs_grid_group_rows as $mvs_grid_group_row ) {
-		$mvs_grid_group_counts[ (string) $mvs_grid_group_row['meta_value'] ] = (int) $mvs_grid_group_row['c'];
-	}
-}
+// Gallery badges for the page in one query: a cover counts the items it
+// stands for, any other tile 0 (MediaRepository::gallery_tile_counts()).
+$mvs_grid_gallery_params = array_filter(
+	array(
+		'media_type' => $media_type,
+		'tag'        => $mvs_tag,
+		'category'   => $category,
+	)
+);
+$mvs_grid_group_counts = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts(
+	$mvs_page_ids,
+	null,
+	\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_filter_args( $mvs_grid_gallery_params )
+);
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
@@ -252,16 +234,17 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( ! empty( $media_items ) ) : ?>
-		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
+		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px" data-mvs-gallery-filter="<?php echo esc_attr( http_build_query( $mvs_grid_gallery_params ) ); ?>">
 			<?php
+			$mvs_grid_stats = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', array_column( $media_items, 'media_id' ) ) );
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
 				$mvs_grid_media_type = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id );
 				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
 				$mvs_grid_group      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $item_id, 'media_group' );
-				$mvs_grid_group_cnt  = $mvs_grid_group ? ( $mvs_grid_group_counts[ (string) $mvs_grid_group ] ?? 0 ) : 0;
-				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
+				$mvs_grid_group_cnt  = (int) ( $mvs_grid_group_counts[ $item_id ] ?? 0 );
+				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group_cnt > 1 ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
 				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
@@ -272,7 +255,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				// lightbox_* keys MediaController emits. Without them the image
 				// getter fell through to file_url and `mvs_lightbox_image_source`
 				// did nothing on this block — including every tile appended by
-				// Load More. (Basecamp 10171640247)
+				// Load More.
 				$mvs_grid_helpers       = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
 				$mvs_grid_lightbox_url  = $mvs_grid_helpers->get_lightbox_url( $item_id, (string) ( $item['file_url'] ?? '' ) );
 				$mvs_grid_lightbox_webp = $mvs_grid_helpers->get_lightbox_webp_url( $item_id, $mvs_grid_lightbox_url );
@@ -318,8 +301,8 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
 					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
-					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
-						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
+					<?php if ( $mvs_grid_group_cnt > 1 ) : ?>
+						<span class="mvs-gallery-badge" title="<?php /* translators: %d: number of items in the gallery. */ echo esc_attr( sprintf( _n( '%d item', '%d items', $mvs_grid_group_cnt, 'wpmediaverse' ), $mvs_grid_group_cnt ) ); ?>">
 							<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
 						</span>
 					<?php endif; ?>
@@ -327,6 +310,10 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>
 					</div>
 					</a>
+					<?php
+					// Same row as every other grid; the uploader only in List, so the block's grid is unchanged.
+					$mvs_grid_helpers->render_grid_meta( $item_id, '' !== trim( (string) $item_title ) ? (string) $item_title : __( 'View media', 'wpmediaverse' ), $mvs_grid_stats[ $item_id ] ?? array(), str_contains( $mvs_layout_class, 'list' ) ? $mvs_grid_author_id : 0 );
+					?>
 				</div>
 			<?php endforeach; ?>
 		</div>

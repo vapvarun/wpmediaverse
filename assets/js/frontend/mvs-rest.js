@@ -117,7 +117,7 @@
 	 * (`/index.php?rest_route=/mvs/v1/`, the shape rest_url() returns without
 	 * pretty permalinks) and a caller concatenates a path that has its own query
 	 * (`me/media?per_page=20&page=1`), the result has TWO `?` and WordPress
-	 * cannot match the route → 404 (Basecamp 9793599140). This turns every `?`
+	 * cannot match the route → 404. This turns every `?`
 	 * after the first into `&`, which is correct for both URL shapes and a no-op
 	 * on a well-formed single-`?` URL. Fixes the class at one layer rather than
 	 * at each of the ~dozen concatenation sites across the blocks.
@@ -466,7 +466,7 @@
 	 * (the upload-modal album mode in the shared-ui block and the BuddyPress
 	 * profile/group albums tab). Keeping the validation message and the create
 	 * request in one place removes the duplicate implementations that drifted
-	 * apart (Basecamp 10069383195).
+	 * apart.
 	 *
 	 * Album names are intentionally NOT unique — they are per-member labels
 	 * (AlbumService::create runs no name-uniqueness check), so validation only
@@ -536,6 +536,19 @@
 	}
 
 	/**
+	 * Full URL of a MediaVerse Pro REST route (`mvs-pro/v1`).
+	 *
+	 * The one place a client builds a Pro URL, so no surface rewrites
+	 * `/mvs/v1` by hand.
+	 *
+	 * @param {string} path Route path, e.g. 'documents/upload'.
+	 * @return {string} URL.
+	 */
+	function proUrl( path ) {
+		return resolveBase().replace( /\/mvs\/v1$/, '/mvs-pro/v1' ) + '/' + String( path || '' ).replace( /^\/+/, '' );
+	}
+
+	/**
 	 * Flag a freshly uploaded media item as a 24h story (Pro).
 	 *
 	 * Every upload surface that offers the "Also share as a story" checkbox
@@ -554,14 +567,7 @@
 			return false;
 		}
 
-		// mvsRestConfig.restBase is `.../mvs/v1`; stories are a Pro route.
-		const base = ( window.mvsRestConfig && window.mvsRestConfig.restBase ) ? window.mvsRestConfig.restBase : '';
-
-		if ( ! base ) {
-			return false;
-		}
-
-		const url = base.replace( '/mvs/v1', '/mvs-pro/v1' ) + '/media/' + id + '/story';
+		const url = proUrl( 'media/' + id + '/story' );
 
 		try {
 			const resp = await restFetch( url, { method: 'POST', body: {} } );
@@ -572,9 +578,134 @@
 		}
 	}
 
+	/**
+	 * A poster frame from a video File: 1s in (frame 0 under 1s), JPEG.
+	 *
+	 * The one capture every uploader uses; appendVideoPoster() sends it, and a
+	 * caller that also shows a preview tile reuses the same Blob. Resolves null
+	 * for a non-video, a codec the browser cannot decode, or after 5s.
+	 *
+	 * @param {File} file File being uploaded.
+	 * @return {Promise<Blob|null>} The frame, or null.
+	 */
+	async function captureVideoFrame( file ) {
+		if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
+			return null;
+		}
+		return new Promise( ( resolve ) => {
+			const video = document.createElement( 'video' );
+			const url = URL.createObjectURL( file );
+			let settled = false;
+			const finish = ( result ) => {
+				if ( settled ) return;
+				settled = true;
+				URL.revokeObjectURL( url );
+				resolve( result );
+			};
+			// A file that never fires `seeked` (bad codec) must not hang the upload.
+			const timer = setTimeout( () => finish( null ), 5000 );
+			video.preload = 'metadata';
+			video.muted = true;
+			video.playsInline = true;
+			video.addEventListener( 'loadeddata', () => {
+				video.currentTime = video.duration && video.duration < 1 ? 0 : 1;
+			} );
+			video.addEventListener( 'seeked', () => {
+				clearTimeout( timer );
+				try {
+					const canvas = document.createElement( 'canvas' );
+					canvas.width = video.videoWidth || 320;
+					canvas.height = video.videoHeight || 180;
+					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+					canvas.toBlob( ( b ) => finish( b ), 'image/jpeg', 0.7 );
+				} catch {
+					finish( null );
+				}
+			} );
+			video.addEventListener( 'error', () => {
+				clearTimeout( timer );
+				finish( null );
+			} );
+			video.src = url;
+		} );
+	}
+
+	/**
+	 * Grab a poster frame from a video File and append it as `thumbnail`.
+	 *
+	 * Without one, a video whose file carries no cover image lands with no poster
+	 * and the grid shows a blank tile with a play icon, which reads to a member
+	 * as "my video is broken". MediaVerse does not run ffmpeg, so the frame is
+	 * taken in the browser: seek to 1s (frame 0 under 1s), 5s timeout, never
+	 * reject. `MediaController::create_item()` hands the `thumbnail` file to
+	 * `PosterService::stage_client_frame()`.
+	 *
+	 * Every uploader calls this through uploadMedia(); the upload modal passes
+	 * the frame it already decoded for its preview instead.
+	 *
+	 * @param {FormData} formData Upload payload, mutated in place.
+	 * @param {File}     file     File being uploaded.
+	 * @return {Promise<void>} Resolves whether or not a poster was attached.
+	 */
+	async function appendVideoPoster( formData, file ) {
+		const blob = await captureVideoFrame( file );
+		if ( blob ) {
+			formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
+		}
+	}
+
+	/**
+	 * Upload one file to the media route, the same way on every surface.
+	 *
+	 * The upload page, My Media and the upload modal each built this request by
+	 * hand and had drifted (tags as a string on one, a poster capture missing on
+	 * another). Each surface still decides WHICH fields it
+	 * sends; this decides how they are sent.
+	 *
+	 * @param {string}   url        Media route URL.
+	 * @param {File}     file       File to upload.
+	 * @param {Object}   fields     title, description, privacy, tags (array or comma string),
+	 *                              mediaGroup + groupPosition, poster (Blob, optional),
+	 *                              extra (field => value, sent as given, e.g. a group id),
+	 *                              signal (AbortSignal, to let the member cancel).
+	 * @param {Function} onProgress Optional ( loaded, total ) callback.
+	 * @return {Promise<Object>} restFetch result { ok, status, data }.
+	 */
+	async function uploadMedia( url, file, fields, onProgress ) {
+		const f  = fields || {};
+		const fd = new FormData();
+		fd.append( 'file', file );
+		[ 'title', 'description', 'privacy' ].forEach( function ( key ) {
+			if ( f[ key ] ) {
+				fd.append( key, f[ key ] );
+			}
+		} );
+		const tags = Array.isArray( f.tags ) ? f.tags : String( f.tags || '' ).split( ',' );
+		tags.map( function ( t ) { return String( t ).trim(); } ).filter( Boolean ).forEach( function ( tag ) {
+			fd.append( 'tags[]', tag );
+		} );
+		Object.keys( f.extra || {} ).forEach( function ( key ) {
+			fd.append( key, f.extra[ key ] );
+		} );
+		if ( f.mediaGroup ) {
+			fd.append( 'media_group', f.mediaGroup );
+			fd.append( 'group_position', String( f.groupPosition || 0 ) );
+		}
+		if ( f.poster ) {
+			fd.append( 'thumbnail', f.poster, 'video-thumb.jpg' );
+		} else {
+			await appendVideoPoster( fd, file );
+		}
+		return restFetch( url, { method: 'POST', body: fd, onUploadProgress: onProgress, signal: f.signal } );
+	}
+
 	window.mvsRest = {
 		restFetch: restFetch,
 		createAlbum: createAlbum,
-		markAsStory: markAsStory
+		markAsStory: markAsStory,
+		uploadMedia: uploadMedia,
+		appendVideoPoster: appendVideoPoster,
+		captureVideoFrame: captureVideoFrame,
+		proUrl: proUrl
 	};
 } )();

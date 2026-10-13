@@ -1,10 +1,13 @@
 # WPMediaVerse Architecture Reference
 
 > Single source of truth for the plugin's technical architecture.
-> Migrator version: **30** | REST namespace: **mvs/v1** | Custom tables: **23**
+> REST namespace: **mvs/v1**. Schema version: `grep CURRENT_VERSION includes/Core/Migrator.php`.
+> Tables: `Migrator::tables()`.
 >
-> Counts here rot. `audit/manifests/manifest.summary.json` and the commands in
-> `CLAUDE.md` are ground truth for endpoint/hook/table/service totals.
+> `audit/manifests/manifest.summary.json` and the commands in `CLAUDE.md` are
+> ground truth for endpoint/hook/table/service totals. `includes/Core/Migrator.php`
+> is ground truth for columns and indexes; section 2 below describes the shape
+> and names the columns later migrations added.
 
 ---
 
@@ -12,17 +15,22 @@
 
 ```
 wpmediaverse.php
-  define MVS_VERSION ('2.4.0')
+  PHP gate (MVS_MIN_PHP = 8.1)           [admin notice and stop, before the autoloader]
+  define MVS_VERSION, MVS_MIN_PHP, MVS_MIN_PRO
   define MVS_PLUGIN_DIR, MVS_PLUGIN_URL, MVS_PLUGIN_FILE, MVS_PLUGIN_BASENAME
   spl_autoload_register (hand-written PSR-4; runtime never loads Composer)
-  register EDD SL SDK (auto-update with preset license)
+  includes/Core/Plugin.php unreadable?   [admin notice "incomplete" and stop]
+  libs/action-scheduler                  [required at plugin load]
+  libs/edd-sl-sdk                        [only if src/Versions.php exists; otherwise an
+                                          admin notice says updates are off]
+  edd_sl_sdk_registry                    [registers Free with the bundled SDK]
+  PresetActivation::register             [plugins_loaded, priority 1]
   ─────────────────────────────────────────────────────
   Plugin::init()
-    ├── load_plugin_textdomain('wpmediaverse')
     ├── MediaCapabilities::add_caps()          [version-gated via mvs_caps_version]
-    ├── Migrator::run()                        [CURRENT_VERSION = 30]
-    ├── ServiceContainer setup                 [53 lazy-loaded services]
-    │     └── register_services()              [storage → upload → admin → social → integrations]
+    ├── Migrator::run()                        [Migrator::CURRENT_VERSION]
+    ├── ServiceContainer setup                 [register_services(); lazy-loaded]
+    │     └── register_repositories()          [media_repository, media_space_repository, message_repository]
     │     └── LoggerService::register_hooks()
     │     └── GDPRService::init()
     │     └── HealthCheckService::init()
@@ -31,26 +39,32 @@ wpmediaverse.php
     ├── BlockRegistrar::init()
     ├── Shortcodes::init()
     ├── TemplateLoader::init()
+    ├── CommentService::register_query_guard() [keeps media comments out of post comment queries]
     ├── add_action('admin_init', maybe_redirect_after_activation)
-    ├── [is_admin()] Admin pages boot          [overview, settings, moderation, stats, logs, wizard, metabox]
-    ├── add_action('rest_api_init', register_rest_routes)  [25 controllers in REST/Controller/]
+    ├── [is_admin()] Admin pages boot          [overview, settings, moderation, stats, logs, wizard, metaboxes, integrations]
+    ├── add_action('rest_api_init', register_rest_routes)  [controllers in REST/Controller/]
+    ├── RestGate / CommunityPrivacyGate / Dates [dispatch-level block gate, private-community gate, *_gmt siblings]
+    ├── account_deletion, storage_limit, emails [->init()]
     ├── ModerationService                      [deferred load - admin or upload]
     ├── AI hooks                               [mvs_media_uploaded → mvs_ai_process_media]
-    ├── AccessRulesService filter              [mvs_privacy_can_view, priority 20]
-    ├── mvs_media_response filter              [signed URL replacement]
+    ├── Cloud sync workers                     [mvs_cloud_sync_media, mvs_cloud_repatriate_media]
+    ├── mvs_media_privacy_changed listeners    [flush PrivacyService cache, localize URLs, queue cloud repatriation]
     ├── WatermarkService                       [container service; stamps at ingest via mvs_watermark_stamp_file]
-    ├── CacheService::init()                   [invalidation hooks]
-    ├── ProfileService::init()                 [avatar filter hooks]
+    ├── CacheService / ProfileService / UserDeletionService / StorageCleanupService / StorageRepairService
     ├── BuddyPressManager::init()              [conditional - if BP active]
     ├── WebhookService::init()
     ├── add_action('mvs_deliver_webhook')      [Action Scheduler async delivery]
     ├── wp_enqueue_scripts                     [frontend CSS/JS]
     ├── Abilities::init()                      [WP 6.9+ Abilities API]
+    ├── AppAuthorizeAccess / AppConnect        [mobile app credential acquisition]
     ├── register_theme_json                    [plugin-level design tokens]
     ├── Shared UI shell                        [FAB, upload modal, lightbox]
     ├── init_messaging()                       [MessagingService + MessagingController + NotificationListener]
     └── do_action('mvs_loaded', $container)    ← Pro hooks in here
 ```
+
+Pro mirrors the same two guards in `wpmediaverse-pro.php` (PHP gate and an
+incomplete-package notice) and its own bundled-SDK completeness check.
 
 ---
 
@@ -73,7 +87,7 @@ Authoritative media record. No CPT dependency.
 | `post_author` | `bigint(20) unsigned` | `0` | |
 | `status` | `varchar(20)` | `'publish'` | |
 | `media_type` | `varchar(20)` | `''` | image/video/audio/document |
-| `privacy` | `varchar(20)` | `'public'` | public/members/private |
+| `privacy` | `varchar(20)` | `'public'` | privacy level; see `Services\PrivacyService` |
 | `moderation_status` | `varchar(20)` | `'approved'` | |
 | `file_url` | `text` | NULL | |
 | `file_path` | `text` | NULL | |
@@ -86,12 +100,16 @@ Authoritative media record. No CPT dependency.
 | `album_id` | `bigint(20) unsigned` | `0` | |
 | `view_count` | `bigint(20) unsigned` | `0` | denormalized |
 | `reaction_count` | `bigint(20) unsigned` | `0` | denormalized |
-| `comment_count` | `bigint(20) unsigned` | `0` | denormalized |
 | `is_featured` | `tinyint(1)` | `0` | |
 | `created_at` | `datetime` | `CURRENT_TIMESTAMP` | |
 | `updated_at` | `datetime` | NULL | |
 
-**Indexes:** `PRIMARY (media_id)`, `UNIQUE slug`, `moderation_privacy_date (moderation_status, privacy, created_at)`, `author_date (post_author, created_at)`, `type_date (media_type, created_at)`, `status_date (status, created_at)`, `album_id`, `file_hash`
+Later migrations add `folder_id`, `drive_type` and `drive_id` (the document
+drive; `0` / `'user'` / `0` is a personal root).
+
+**Indexes:** `PRIMARY (media_id)`, `UNIQUE slug`, `moderation_privacy_date (moderation_status, privacy, created_at)`, `author_date (post_author, created_at)`, `type_date (media_type, created_at)`, `status_date (status, created_at)`, `album_id`, `file_hash`, `rank_scan (status, moderation_status, privacy, post_author, reaction_count, created_at)`, plus the drive listing indexes (`doc_listing`, `drive_listing`).
+
+Query it only through the repository layer (Rule 7 in `bin/coding-rules-check.sh`).
 
 #### `mvs_media_meta` (v9)
 
@@ -276,27 +294,18 @@ User block list.
 
 **Indexes:** `PRIMARY (id)`, `UNIQUE blocker_blocked (blocker_id, blocked_id)`, `blocked_id`
 
-### 2.5 Access / Monetization
+### 2.5 Sharing grants / usage ledger
 
-#### `mvs_access_rules` (v1)
-
-Per-media access control rules.
-
-| Column | Type | Default | Notes |
-|--------|------|---------|-------|
-| `id` | `bigint(20) unsigned` | AUTO_INCREMENT | PK |
-| `media_id` | `bigint(20) unsigned` | | |
-| `rule_type` | `varchar(50)` | | e.g. role, password, purchase |
-| `rule_value` | `text` | | |
-| `price` | `decimal(10,2)` | NULL | for purchase rules |
-| `currency` | `varchar(3)` | NULL | ISO 4217 |
-| `created_at` | `datetime` | `CURRENT_TIMESTAMP` | |
-
-**Indexes:** `PRIMARY (id)`, `media_id`, `rule_type`
+MediaVerse has no per-media access rules and no paid access. Visibility is the
+item's privacy level plus sharing with named people or a group.
+`Migrator::RETIRED_TABLES` lists `mvs_access_rules`; migration v38 set every item
+that had a rule to private and dropped the table, and uninstall drops it for a
+site deleted before its upgrade ran. Nothing creates or reads it.
 
 #### `mvs_access_grants` (v1)
 
-Granted access tokens / purchased access.
+Named-person sharing grants (Pro Documents sharing, including expiring grants).
+Read through `MediaRepository`; erased per member by `Privacy\MemberDataMap`.
 
 | Column | Type | Default | Notes |
 |--------|------|---------|-------|
@@ -306,13 +315,13 @@ Granted access tokens / purchased access.
 | `granted_at` | `datetime` | `CURRENT_TIMESTAMP` | |
 | `expires_at` | `datetime` | NULL | NULL = permanent |
 | `revoked_at` | `datetime` | NULL | soft revoke |
-| `source` | `varchar(100)` | `''` | manual/purchase/promo |
+| `source` | `varchar(100)` | `''` | where the grant came from |
 
 **Indexes:** `PRIMARY (id)`, `media_user (media_id, user_id)`, `user_id`
 
 #### `mvs_transactions` (v9)
 
-Quota usage / credit transactions.
+Per-media-type usage ledger (`TransactionService`). It carries no amount, currency or gateway; it is not a payments ledger.
 
 | Column | Type | Default | Notes |
 |--------|------|---------|-------|
@@ -343,6 +352,8 @@ DM conversation threads.
 | `last_activity_at` | `datetime` | `CURRENT_TIMESTAMP` | |
 | `created_at` | `datetime` | `CURRENT_TIMESTAMP` | |
 
+Later migrations add `container_type` and `container_id` (the container a conversation belongs to; both are optional on creation).
+
 **Indexes:** `PRIMARY (id)`, `last_activity (last_activity_at)`, `created_by`
 
 #### `mvs_conversation_participants` (v6)
@@ -360,9 +371,12 @@ Conversation membership and per-user settings.
 | `is_pinned` | `tinyint(1)` | `0` | |
 | `is_archived` | `tinyint(1)` | `0` | |
 | `status` | `varchar(20)` | `'active'` | active/left/blocked |
+| `cleared_up_to` | `bigint(20) unsigned` | `0` | per-member "delete conversation" watermark; messages at or below it are hidden for this member |
 | `joined_at` | `datetime` | `CURRENT_TIMESTAMP` | |
 
-**Indexes:** `PRIMARY (id)`, `UNIQUE conv_user (conversation_id, user_id)`, `user_status (user_id, status)`, `conv_read (conversation_id, last_read_at)`
+Later migrations also add `role` and `typing_until`.
+
+**Indexes:** `PRIMARY (id)`, `UNIQUE conv_user (conversation_id, user_id)`, `user_status (user_id, status)`, `user_archived (user_id, is_archived, status)`, `conv_read (conversation_id, last_read_at)`
 
 #### `mvs_messages` (v6)
 
@@ -382,8 +396,9 @@ Individual DM messages.
 | `is_deleted` | `tinyint(1)` | `0` | soft delete (for sender) |
 | `deleted_for_all` | `tinyint(1)` | `0` | unsend |
 | `created_at` | `datetime` | `CURRENT_TIMESTAMP` | |
+| `updated_at` | `datetime` | `CURRENT_TIMESTAMP` | stamped when a reaction is added or removed; the DM poll reads it |
 
-**Indexes:** `PRIMARY (id)`, `conv_date (conversation_id, created_at)`, `conv_id (conversation_id)`, `sender (sender_id)`
+**Indexes:** `PRIMARY (id)`, `conv_date (conversation_id, created_at)`, `conv_updated (conversation_id, updated_at)`, `conv_id (conversation_id)`, `sender (sender_id)`
 
 #### `mvs_message_reactions` (v6)
 
@@ -422,7 +437,7 @@ Centralized error/debug log.
 
 | Version | Scope | Tables/Changes |
 |---------|-------|----------------|
-| 1 | Core foundation | reactions, favorites, media_views, media_stats, access_rules, access_grants, mentions, album_items, media_index |
+| 1 | Core foundation | reactions, favorites, media_views, media_stats, access_grants, mentions, album_items, media_index (v1 also created `access_rules`; v38 dropped it) |
 | 2 | Capabilities | MediaCapabilities::add_caps() |
 | 3 | Social | follows, notifications |
 | 4 | Moderation + Activity | reports, blocks, activity |
@@ -432,10 +447,11 @@ Centralized error/debug log.
 | 8 | Cleanup | Drop attachment_id column from mvs_media_index |
 | 9 | Meta + Transactions | media_meta, transactions |
 
-This table covers v1-v9 only. `Migrator::CURRENT_VERSION` is **30**; read
-`includes/Core/Migrator.php` for v10 onwards (which adds, among others,
-`mvs_bp_activity_media` and `mvs_device_tokens`, and the `folder_id` column on
-`mvs_media_index` that Pro's folder tree points at).
+This table covers v1-v9 only. Read `includes/Core/Migrator.php` (the
+`migrate_to_N()` methods) for v10 onwards, which add, among others,
+`mvs_bp_activity_media`, `mvs_device_tokens`, `mvs_media_spaces`, and the
+`folder_id` / `drive_type` / `drive_id` columns on `mvs_media_index` that Pro's
+folder tree points at.
 
 ---
 
@@ -453,14 +469,18 @@ code-derived list.
 
 | Method | Route | Permission | Description |
 |--------|-------|------------|-------------|
-| GET | `/media` | Public | List/search media items |
+| GET | `/media` | Public (privacy applied per viewer) | List/search media items. Filters: `media_type`, `tag`, `category`, `s`, `group` (BuddyPress group id) |
 | POST | `/media` | `create_item_permissions_check` | Upload new media |
 | GET | `/media/{id}` | `get_item_permissions_check` | Get single media item |
 | PUT | `/media/{id}` | `update_item_permissions_check` | Update media metadata |
 | DELETE | `/media/{id}` | `delete_item_permissions_check` | Delete media item |
+| POST | `/media/{id}/replace` | `update_item_permissions_check` | Replace the stored file, keeping the id and stats |
 | POST | `/media/{id}/view` | Public | Record a view event |
-| GET | `/media/{id}/access` | Public | Check access permissions |
-| GET | `/media/{id}/group` | Public | Get gallery group items |
+| POST | `/media/{id}/download` | Public | Record a download event |
+| POST | `/media/{id}/share` | Public | Record a share event |
+| GET | `/media/{id}/spaces` | `get_item_permissions_check` | Spaces the item is linked into |
+| GET | `/media/{id}/access` | Public | `{ media_id, can_view, privacy, is_owner }` for a viewer who can see or owns the item; a hidden item answers 404, the same as a missing one |
+| GET | `/media/{id}/group` | Public | Gallery members the viewer may see; accepts the listing's filter params so the lightbox opens the set its badge counted |
 | GET | `/me/media` | Authenticated | Current user's media |
 
 ### 3.2 Albums (AlbumController)
@@ -547,16 +567,11 @@ code-derived list.
 | POST | `/moderation/{id}/analyze` | `moderate_permissions_check` | Trigger AI analysis |
 | GET | `/ai/usage` | `moderate_permissions_check` | Get AI usage stats |
 
-### 3.11 Access Rules (AccessController)
+### 3.11 Access
 
-| Method | Route | Permission | Description |
-|--------|-------|------------|-------------|
-| GET | `/media/{media_id}/rules` | `manage_permissions_check` | Get access rules |
-| POST | `/media/{media_id}/rules` | `manage_permissions_check` | Set access rules |
-| DELETE | `/media/{media_id}/rules/{rule_id}` | `manage_permissions_check` | Delete single rule |
-| POST | `/media/{media_id}/grant` | `manage_permissions_check` | Grant access to user |
-| DELETE | `/media/{media_id}/grant/{user_id}` | `manage_permissions_check` | Revoke access |
-| GET | `/me/grants` | Authenticated | Current user's access grants |
+No controller. Per-media access rules and their `/rules` and `/grant` routes
+were removed; `GET /media/{id}/access` (3.1) is the only access route in Free.
+Pro Documents sharing has its own routes under `mvs-pro/v1`.
 
 ### 3.12 Signed URLs (SignedUrlController)
 
@@ -647,6 +662,9 @@ Registered via `init_messaging()` in Plugin.php. All routes require authenticati
 
 ## 4. Hook Reference
 
+Line numbers in the Location column drift; find a hook with
+`grep -n "'hook_name'"`. The complete list is `audit/manifests/manifest.hooks.json`.
+
 ### 4.1 Plugin Initialization
 
 | Hook | Type | Location | Description |
@@ -727,14 +745,10 @@ Registered via `init_messaging()` in Plugin.php. All routes require authenticati
 | `mvs_message_max_length` | filter | `Messaging/MessagingService.php:697` | Max message character length. |
 | `mvs_dm_max_upload_size` | filter | `Messaging/MessagingController.php:749` | Max DM attachment size (default: 10 MB). |
 
-### 4.5 Access / Monetization
+### 4.5 Access
 
-| Hook | Type | Location | Description |
-|------|------|----------|-------------|
-| `mvs_access_rule_created` | action | `Services/AccessRulesService.php:91` | Fires after an access rule is created. |
-| `mvs_access_rule_deleted` | action | `Services/AccessRulesService.php:169` | Fires after an access rule is deleted. |
-| `mvs_access_granted` | action | `Services/AccessRulesService.php:308` | Fires after access is granted to a user. |
-| `mvs_access_revoked` | action | `Services/AccessRulesService.php:344` | Fires after access is revoked. |
+Free fires no access-rule or grant hooks. The visibility decision is
+`PrivacyService::can_view()`, which `mvs_privacy_can_view` (4.2) filters.
 
 ### 4.6 Albums / Content
 
@@ -814,6 +828,12 @@ The template system serves frontend pages through two mechanisms:
 
 Reserved paths (excluded from slug matching, extensible via `mvs_reserved_media_paths`):
 `battles`, `challenges`, `tournaments`, `leaderboard`, `edit-profile`, `page`
+
+Every virtual page renders through `TemplateLoader::render_template()`, which
+calls `TemplateLoader::serve_as_found()` first: it answers 200 and clears
+`is_404` when WordPress resolved the URL as empty (for example `/media/page/2/`),
+but never downgrades a 4xx a gate already set (the members-only 403 stays 403).
+Other virtual pages that bypass `render_template()` call it directly.
 
 #### CPT Template Mapping
 
@@ -947,6 +967,26 @@ add_filter( 'mvs_stats_tabs', function ( array $tabs ) {
     return $tabs;
 });
 ```
+
+### Shared Query Rules (`MediaRepository`)
+
+One rule per question, so a listing, its badge and its lightbox agree.
+
+| Method | Rule |
+|--------|------|
+| `gallery_filter_args( $params )` | Translates the public listing params (`media_type`, `tag`, `category`, `s`, `group`) into `query()` args. |
+| `gallery_hidden_clause( $alias, ... )` | One tile per gallery: a member is hidden while a lower-positioned sibling the listing shows exists, so a gallery with a private or held cover is fronted by its first visible member. Uses an uncorrelated `NOT IN` set (a correlated `NOT EXISTS` takes seconds on MariaDB). |
+| `gallery_tile_counts( $ids, $viewer, $filter )` | Badge count per listed tile: the front tile counts every member the viewer may see under the filter, any other member gets 0. Cached per request, cleared by any repository write. |
+| `gallery_members( $id, $viewer, $filter )` | The set the lightbox opens, in position order. |
+| `group_scope_clause( $alias, $group_id, $viewer, ... )` | Narrows a listing to one BuddyPress group. Members also see the group's `group` items; anyone else gets nothing from a private or hidden group, or without BuddyPress. Used by `query()` and `GET /mvs/v1/media?group=`. |
+| `delete_comment_notifications( $media_id, $comment_id )` | Removes the notifications a deleted media comment raised; `NotificationService::on_comment_deleted()` calls it from core's `delete_comment`. |
+
+`gallery_exclude_subquery()` is the deprecated predecessor of `gallery_hidden_clause()`.
+
+### Integration Rules
+
+- **BuddyPress comment mirror.** `ActivitySyncIntegration` copies a media comment to the media's activity post and records the link in comment meta `ActivitySyncIntegration::ACTIVITY_COMMENT_META`. A comment with no link is matched once by `find_unlinked_mirror()` (same member, activity, text, within seconds; only a single exact match is used, then recorded). Deleting the comment removes the mirror.
+- **Messaging presence.** `MessagingService::mask_blocked_presence()` sets `is_online` false and clears `last_active` for a participant on either side of a block. `cast_member_flags()` casts `is_pinned`, `is_muted` and `is_archived` to booleans before they reach a client.
 
 ### Cron Hooks
 

@@ -46,14 +46,26 @@ defined( 'ABSPATH' ) || exit;
 final class MemberDataMap {
 
 	/**
+	 * Base for per-row anonymised ids (`anonymise_unique` retain tables): the
+	 * row's id is subtracted from it, so ids stay unique and far above any real
+	 * user id. Readers treat them as a missing account ("Deleted member").
+	 *
+	 * @since 2.6.2
+	 */
+	const ANONYMOUS_ID_BASE = 9223372036854775807;
+
+
+	/**
 	 * Tables whose rows are DELETED when a member is erased.
 	 *
 	 * Shape: table (unprefixed) => [
-	 *   'columns' => string[]  every column that can hold this member's ID,
-	 *   'label'   => string    human name, used in the export
+	 *   'columns'        => string[]  every column that can hold this member's ID,
+	 *   'export_columns' => string[]  optional: only these mark the member's own rows
+	 *                                 in the export (the rest would name someone else),
+	 *   'label'          => string    human name, used in the export
 	 * ]
 	 *
-	 * @return array<string, array{columns: string[], label: string}>
+	 * @return array<string, array{columns: string[], export_columns?: string[], label: string}>
 	 */
 	public static function erase_map(): array {
 		$map = array(
@@ -98,9 +110,12 @@ final class MemberDataMap {
 				'columns' => array( 'follower_id', 'following_id' ),
 				'label'   => __( 'Follows', 'wpmediaverse' ),
 			),
+			// Export only the blocks the member made: a row where they are the
+			// blocked one would name who blocked them.
 			'mvs_blocks'                    => array(
-				'columns' => array( 'blocker_id', 'blocked_id' ),
-				'label'   => __( 'Blocks', 'wpmediaverse' ),
+				'columns'        => array( 'blocker_id', 'blocked_id' ),
+				'export_columns' => array( 'blocker_id' ),
+				'label'          => __( 'Blocks', 'wpmediaverse' ),
 			),
 
 			// Recipient and actor. A notification saying "X liked your photo"
@@ -166,7 +181,7 @@ final class MemberDataMap {
 	 * so the record survives without identifying anyone. De-identification
 	 * satisfies GDPR; destroying an audit trail or an accounting record does not.
 	 *
-	 * @return array<string, array{columns: string[], label: string, reason: string, basis: string}>
+	 * @return array<string, array{columns: string[], label: string, reason: string, basis: string, export_columns?: string[], scope?: array, anonymise_unique?: bool}>
 	 */
 	public static function retain_map(): array {
 		$map = array(
@@ -176,10 +191,13 @@ final class MemberDataMap {
 			// record of why. The reporter's identity is anonymised; the case
 			// stays.
 			'mvs_reports'           => array(
-				'columns' => array( 'reporter_id', 'target_id' ),
+				'columns'        => array( 'reporter_id', 'target_id' ),
+				// Export only the reports the member filed: one about them would
+				// name the reporter and quote what they wrote.
+				'export_columns' => array( 'reporter_id' ),
 				// target_id is a member only on a report ABOUT a member; on a
 				// media, comment or message report it is that item's id, and
-				// erasing member #42 used to zero every report on media #42
+				// an unscoped erase of member #42 would zero every report on media #42
 				// (and export them to member #42).
 				'scope'   => array( 'target_id' => array( 'target_type', 'user' ) ),
 				'label'   => __( 'Reports', 'wpmediaverse' ),
@@ -235,11 +253,6 @@ final class MemberDataMap {
 	}
 
 	/**
-	 * Every user-keyed table, whichever list it is on.
-	 *
-	 * @return string[]
-	 */
-	/**
 	 * SQL condition for "this column holds this member" in a mapped table.
 	 *
 	 * A spec may carry `scope` => [ column => [ type_column, value ] ] for a
@@ -266,6 +279,11 @@ final class MemberDataMap {
 		return $sql;
 	}
 
+	/**
+	 * Every user-keyed table, whichever list it is on.
+	 *
+	 * @return string[]
+	 */
 	public static function all_tables(): array {
 		return array_merge(
 			array_keys( self::erase_map() ),

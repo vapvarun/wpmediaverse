@@ -8,6 +8,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Explore bulk actions work against a SERVER-RENDERED grid, which is the one
@@ -38,7 +39,7 @@ const { state, actions } = store( 'mvs/explore', {
 			return ( state.i18n?.selected || '%d selected' ).replace( '%d', String( state.bulkIds.length ) );
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		toggleExploreBulk( event ) {
 			// The tile is a link to the media; selecting must not open it.
 			event.preventDefault();
@@ -95,7 +96,7 @@ const { state, actions } = store( 'mvs/explore', {
 		},
 		/**
 		 * Same shortcuts as the dashboard, and the same first rule: never while
-		 * the member is typing (10249014961).
+		 * the member is typing.
 		 */
 		exploreBulkKeydown( event ) {
 			const el = event.target;
@@ -190,7 +191,7 @@ const { state, actions } = store( 'mvs/explore', {
 				if ( res.ok ) {
 					// The server reports what it actually touched, because
 					// filter_allowed_ids drops anything the member may not
-					// edit and used to do so silently.
+					// edit, which would otherwise go unnoticed.
 					const skipped = parseInt( res.data?.skipped, 10 ) || 0;
 
 					if ( skipped ) {
@@ -249,10 +250,9 @@ const { state, actions } = store( 'mvs/explore', {
 			if ( ! state.bulkAlbum ) return;
 			await actions.exploreBulk( 'move_to_album', { album_id: state.bulkAlbum }, 'movedToAlbum', 'Added to album.' );
 		},
-	},
-	// callbacks.init() used to fetch tags/cloud and build the chip row client
-	// side. explore.php now renders those chips on the server, which is what
-	// makes the active state survive a router navigation (Basecamp 10277976087),
-	// so the fetch is gone rather than left running for a row nothing reads.
+	} ),
+	// callbacks.init() does not fetch tags/cloud: explore.php renders the chip row
+	// on the server, which is what makes the active state survive a router
+	// navigation, so a client fetch would only run for a row nothing reads.
 	// The tags/cloud REST route stays - it is public API and the app uses it.
 } );

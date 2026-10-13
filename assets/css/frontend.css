@@ -598,6 +598,8 @@ body.dark-mode {
 .mvs-single-album h2,
 .mvs-single-collection h2,
 .mvs-explore-page h2,
+/* The profile name is the page's h1 since 2.6.2; it keeps the h2 look. */
+.mvs-explore-page h1.mvs-profile-header-name,
 .mvs-documents h2,
 .mvs-dashboard h2,
 .mvs-profile-edit h2 {
@@ -1762,10 +1764,66 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-media-grid.mvs-grid--list .mvs-grid-item {
     aspect-ratio: auto;
     display: grid;
-    grid-template-columns: 96px 1fr;
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-areas:
+        "thumb details"
+        "thumb info";
     align-items: center;
-    gap: 12px;
-    padding: 8px;
+    column-gap: var(--mvs-space-md, 12px);
+    row-gap: var(--mvs-space-1, 4px);
+    padding: var(--mvs-space-sm, 8px);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-surface);
+}
+
+.mvs-media-grid.mvs-grid--list .mvs-grid-item > a:first-of-type,
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-link {
+    grid-area: thumb;
+}
+
+/* Title, date and counts sit beside the thumbnail in List; the grid layouts keep
+   them in the hover overlay, so each block shows in one layout only. */
+.mvs-grid-item-details {
+    display: none;
+}
+
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-details {
+    grid-area: details;
+    align-self: end;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--mvs-space-md, 12px);
+    row-gap: var(--mvs-space-1, 4px);
+    min-width: 0;
+}
+
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-info {
+    grid-area: info;
+    align-self: start;
+}
+
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-name {
+    flex-basis: 100%;
+    color: var(--mvs-text);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-date,
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-details .mvs-grid-item-stats {
+    color: var(--mvs-text-muted);
+    font-size: 0.875em;
+    font-weight: 400;
+}
+
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-details .mvs-grid-item-stats {
+    gap: var(--mvs-space-md, 12px);
 }
 
 /* The square wrapper is wanted here - it keeps the row thumbnails aligned -
@@ -1785,27 +1843,14 @@ body.dark-mode .mvs-skeleton::after {
     overflow: hidden;
 }
 
-.mvs-grid--list .mvs-grid-item-overlay {
-    position: static;
-    inset: auto;
-    background: none;
-    color: inherit;
-    opacity: 1;
-    justify-content: flex-start;
-    /* start, not left: the row reads right-to-left in an RTL locale. */
-    text-align: start;
-    padding: 0;
-}
-
-.mvs-grid--list .mvs-grid-item-title {
-    white-space: normal;
-    font-weight: 600;
+.mvs-media-grid.mvs-grid--list .mvs-grid-item-overlay {
+    display: none;
 }
 
 @media (max-width: 480px) {
 
-    .mvs-grid--list .mvs-grid-item {
-        grid-template-columns: 72px 1fr;
+    .mvs-media-grid.mvs-grid--list .mvs-grid-item {
+        grid-template-columns: 72px minmax(0, 1fr);
     }
 }
 
@@ -7167,6 +7212,20 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-surface);
 }
 
+/* The control owns its look: themes style bare buttons (Twenty Twenty-One's
+   button:not(:hover):not(:active):not(.has-text-color) is 0,3,1 and paints them
+   dark). The repeated class lifts this to 0,4,1 without !important. */
+.mvs-lightbox-overlay .mvs-lightbox button.mvs-lightbox-nav.mvs-lightbox-nav {
+    padding: 0;
+    min-height: 0;
+    border: 0;
+    color: var(--mvs-text);
+    background: var(--mvs-surface);
+    text-decoration: none;
+    text-transform: none;
+    line-height: 1;
+}
+
 .mvs-lightbox-nav--prev {
     left: 12px;
 }
@@ -7185,6 +7244,12 @@ a.mvs-dashboard-card-title:hover {
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 13px;
+}
+
+/* A video's own controls sit at the bottom; the counter would cover its seek bar. */
+.mvs-lightbox-media:has(> video:not([hidden])) .mvs-lightbox-position {
+    bottom: auto;
+    top: 12px;
 }
 
 /* Sidebar */
@@ -7685,23 +7750,23 @@ a.mvs-dashboard-card-title:hover {
 /*
  * Hit area, not icon size.
  *
- * These measured 24x24 against a 40px floor, but the 24px glyph is a
- * deliberate design choice for this row and enlarging it would rebuild the
- * comment meta line. So the target grows and the button does not.
- *
- * 40x44, not 44x44: the siblings sit 8.5px apart, so a 44px-wide area would
- * overlap its neighbour by ~11px and the later button in the DOM would win
- * every click in the overlap — silently turning "edit" into "delete" near the
- * boundary. 40 wide leaves 0.5px between areas and still clears the floor.
- * Basecamp 10252222115.
+ * The 24px glyph is a deliberate design choice for this row, so the target
+ * grows and the button does not: a full --mvs-touch-min square around it. The
+ * gap between the two buttons is the touch floor minus the button, so the two
+ * targets meet but never overlap (an overlap would let the later button,
+ * delete, win taps meant for edit).
  */
+.mvs-lightbox-comment-actions {
+    gap: calc(var(--mvs-touch-min, 44px) - 24px);
+}
+
 .mvs-lightbox-comment-action::after {
     content: '';
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 50%;
     translate: -50% -50%;
-    inline-size: 40px;
+    inline-size: var(--mvs-touch-min, 44px);
     block-size: var(--mvs-touch-min, 44px);
 }
 

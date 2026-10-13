@@ -65,8 +65,8 @@ class SettingsPage {
 	public function cleanup_admin_menu(): void {
 		// No-op in 1.1.3.
 		//
-		// Pro-side hiding was previously done from here via CSS targeting
-		// Pro slugs by name — a Free-knows-Pro boundary violation. Pro now
+		// Pro-side hiding is not done from here: CSS targeting
+		// Pro slugs by name would be a Free-knows-Pro boundary violation. Pro
 		// registers Reports/Analytics with parent=null (WP-standard for
 		// hidden-but-URL-accessible pages) and orders Competitions children
 		// next to the hub via Core/Plugin::reorder_submenu at admin_menu:999.
@@ -153,7 +153,7 @@ class SettingsPage {
 		// add_settings_error() raised anywhere on this screen, Free's or Pro's,
 		// so a refused value was silently reverted under a green "Settings
 		// saved." The watermark type/image dependency was the first fix to
-		// depend on this channel, which is how it surfaced. Basecamp 10281548802.
+		// depend on this channel, which is how it surfaced.
 		global $wp_settings_errors;
 
 		$mvs_persisted = get_transient( 'settings_errors' );
@@ -222,9 +222,6 @@ class SettingsPage {
 	}
 
 	/**
-	 * Add settings page as submenu under WPMediaVerse (mvs_media CPT menu).
-	 */
-	/**
 	 * Whether a sanitize callback rejected part of the last submission.
 	 *
 	 * @since 2.4.2
@@ -251,7 +248,7 @@ class SettingsPage {
 	 * submit - the failure arriving as a bare "You need a higher level of
 	 * permission" page after they had typed everything. That is worse than the
 	 * 403 it replaced: the screen was honestly closed before, and is now open
-	 * and misleading. Basecamp 10285712647.
+	 * and misleading.
 	 *
 	 * Driven from get_registered_sections(), the same list that declares the
 	 * groups, so a new section cannot forget to add itself here.
@@ -277,6 +274,9 @@ class SettingsPage {
 		}
 	}
 
+	/**
+	 * Add settings page as submenu under WPMediaVerse (mvs_media CPT menu).
+	 */
 	public function add_menu_page(): void {
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
@@ -286,15 +286,6 @@ class SettingsPage {
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
-	}
-
-	/**
-	 * Whether WPMediaVerse Pro is active.
-	 *
-	 * @return bool
-	 */
-	private function is_pro_active(): bool {
-		return defined( 'MVS_PRO_VERSION' );
 	}
 
 	// -------------------------------------------------------------------------
@@ -618,9 +609,8 @@ class SettingsPage {
 									settings_errors();
 								}
 								// The confirmation sits at the top, where the page reloads;
-								// below the Save button it was far below the fold (Basecamp
-								// 10364777243). Never claim success when part of the
-								// submission was rejected (Basecamp 10281548802).
+								// below the Save button it would be far below the fold. Never claim success when part of the
+								// submission was rejected.
 								if ( isset( $_GET['settings-updated'] ) && ! self::$has_settings_error ) : // phpcs:ignore WordPress.Security.NonceVerification
 									?>
 									<div class="mvs-save-notice" role="status">
@@ -649,7 +639,7 @@ class SettingsPage {
 				<?php endforeach; ?>
 
 				<?php
-				if ( ! $this->is_pro_active() ) {
+				if ( ! \WPMediaVerse\Core\Plugin::is_pro_active() ) {
 					$this->render_pro_upsell( 'general' );
 				}
 				?>

@@ -2479,6 +2479,107 @@
       },
       "unchanged": "REST routes, AJAX actions, tables, cron, WP-CLI, Free services consumed (reports and media_repository already listed)",
       "verified_against_pro_head": "1f78fa6"
+    },
+    "refresh_2026_10_10": {
+      "scope": "targeted (2.6.2: Top 10 completion rate, Basecamp 10386996875)",
+      "added": {},
+      "changed": [
+        "AnalyticsService::get_top_media reads all event types; completions = distinct completed sessions"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks, public methods"
+    },
+    "refresh_2026_10_11": {
+      "scope": "targeted (2.6.2 round 3, Pro)",
+      "added": {
+        "hooks": [
+          "mvs_pro_caption_media_types (filter, TranscriptionService::caption_media_types)"
+        ]
+      },
+      "changed": [
+        "AnalyticsDashboard::enqueue_assets also on Stats > Video Analytics tab; heatmap note wording",
+        "DocumentViewer .mvs-pdf carries data-mvs-full-load",
+        "Storage screen wording + Migrate all confirmation (CloudOpsManager i18n.confirm, admin-storage-mgmt.js)",
+        "Captions: upload hook and POST captions accept caption_media_types() (default video)"
+      ],
+      "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_11_round_4": {
+      "scope": "targeted (2.6.2 round 4, Pro security group A)",
+      "added": {},
+      "changed": [
+        "CompetitionMedia::is_entrable requires publish + approved + public; format() placeholder when the viewer cannot see it; ChallengeService::format_media delegates",
+        "CaptionController::generate_captions: non-admins need auto-captions on, no existing captions (409), RateLimiter captions_generate 5/day; TranscriptionService::auto_captions_enabled public",
+        "GroupController create/add run Free can_message() per member (refuse requests and missing users)",
+        "Documents: privacy action/field and SpaceLinkService need can_share()",
+        "PermissionController::create_link caps level with can_grant_level()",
+        "ChallengeService: WPCS class brace (no behaviour change)",
+        "BoostService create under GET_LOCK; get_active_boosted_ids least-delivered first",
+        "ProMemberData: competition votes erased; entries anonymise_unique",
+        "BattleService accept merges settings (xp_win kept); resolve/finalize/resolve_match claim on status",
+        "TournamentService try_advance: champion at one winner, bye for odd winner",
+        "AnalyticsController record_event RateLimiter play_events 120/min",
+        "LeaderboardService does not cache empty pages",
+        "Connector import batches of 5 (JS), route maxItems 10",
+        "StreakService milestone claimed with unique user meta per day",
+        "SearchService narrowed searches use 1000 candidates",
+        "Requires PHP 8.1",
+        "Group C: Frontend\\FeatureOffNotice (one feature-off notice; members get the empty state), Admin\\EmptyState + templates/admin/partials/empty-state.php, bulk privacy calls Free apply_requested_privacy()",
+        "Group D: DeliveryController::stream uses readable_path(); BoostService::record_impression deprecated",
+        "CompeteHubRenderer, TournamentManager: WPCS class brace (no behaviour change)",
+        "Code standard: comments only (docblocks placed, card ids and history out), code-standard checks in coding-rules, PHPStan level 6",
+        "AnalyticsDashboard: Top Media Tracked card removed (counted a top-5 list)",
+        "Migrator::run under WP_Upgrader::create_lock('mvs_pro_migrator'); steps in run_steps()",
+        "Version 2.6.2; MVS_PRO_MIN_FREE 2.6.2",
+        "Core contract: documents ask Free safety_refuses (page-level in prefetch); single-item privacy, document privacy action and Flickr import via apply_requested_privacy; captions/chapters/privacy via can_edit_media; challenge emails via EmailService types (default on); CompetitionMedia::attach_to_entry/cover_url + Repository\\CompetitionEntryRepository; document upload via mvsRest (rate-limited); Pro feed templates use 'explore'; battles/challenges/stories uploads via mvsRest; ProMemberData::purge_on_account_deletion deprecated",
+        "PHPStan 6 value types and WPCS alignment on the new doors"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_scoped_search": {
+      "scope": "targeted (2.6.2, Pro document search and stores)",
+      "added": {},
+      "changed": [
+        "SearchService::search narrows author/folder/drive through Free MediaRepository::document_scope_ids() inside the FULLTEXT and title queries; the PHP post-filter and the space-link read are gone",
+        "SearchService::candidates() and title_candidates() take the scope ids",
+        "Stories and boosts stores wrap actions with syncEvents() from @wpmediaverse/sync-events (declared dependency)",
+        "BoostAffordance enqueues the boosts store with {id} dependency entries (PHPStan baseline entry removed)"
+      ],
+      "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_12_review_fixes": {
+      "scope": "targeted (2.6.2 regression review fixes)",
+      "added": {},
+      "changed": [
+        "challenges-store.js / battles-store.js: upload with privacy public, picker scope=public&media_type=image, notPublic message; templates challenges-body.php + battles-body.php @version 2.6.2 (hint reworded, notice removed, gamification.css .mvs-submit-notice removed)",
+        "ChallengeNotificationListener: challenge email types 'host_owned' => false",
+        "instagram/partials/feed-card.php: carousel filtered by can_list, signed thumbnails only (@version 2.6.2)",
+        "pinterest/profile.php + instagram/profile.php: exclude_non_cover_group on list and count (@version 2.6.2)",
+        "SearchService: scope via Free document_scope_clause(); final scope check via document_scope_ids( scope, candidates )",
+        "AnalyticsService Top 10: WHERE event_type IN (ALLOWED_EVENT_TYPES)"
+      ],
+      "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_13_bugs_column": {
+      "scope": "2.6.2 polish (13 Oct)",
+      "changed": [
+        "Instagram feed-card Boost gated on BoostAffordance::is_available() + CompetitionMedia::is_entrable()",
+        "layouts/partials/explore-filters.php @version 2.6.2 (data-search-label)"
+      ],
+      "added": [
+        "filter mvs_document_readable_via_post documented in manifest.hooks.json"
+      ]
+    },
+    "refresh_2026_10_13_presentation": {
+      "scope": "13 Oct afternoon (Pro)",
+      "changed": [
+        "CaptionController checks media type before provider",
+        "LicenseManager activates through the bundled SDK",
+        "Dribbble/Flickr profile header counts items",
+        "admin.css no longer redefines .mvs-badge",
+        "Core\\\\Plugin adds GamificationTemplateLoader::PAGES to mvs_virtual_route_query_vars",
+        "AlbumMarkerLookupTrait::add_to_album raises album privacy to the photo when stricter (imports never loosen)",
+        "GamificationTemplateLoader::init adds PAGES to mvs_virtual_route_query_vars (moved from Core\\\\Plugin)"
+      ]
     }
   },
   "category_sources": {

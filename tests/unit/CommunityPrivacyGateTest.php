@@ -94,8 +94,8 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 	 * Browsers fetch /serve as a subresource (<img>, <video>) which sends
 	 * cookies but can never send X-WP-Nonce, and core anonymizes cookie-authed
 	 * REST requests without a nonce. Gating /serve on is_user_logged_in()
-	 * therefore 401s every media file for EVERY visitor, members included —
-	 * that was the 2.2.0 regression (Basecamp 10180510437). serve_file()
+	 * therefore 401s every media file for EVERY visitor, members included.
+	 * serve_file()
 	 * validates the signature and re-checks per-item privacy itself.
 	 *
 	 * @return void
@@ -275,7 +275,7 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Basecamp 10350211493 — the SAME bootstrap exemption, one step later in
+	 * The SAME bootstrap exemption, one step later in
 	 * the same flow: `/app/config` tells the app password login is available,
 	 * but a Members Only community still 401'd the very next call that
 	 * exchanges a password for the Application Password the app needs to do

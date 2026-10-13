@@ -1108,12 +1108,12 @@ class Commands {
 			// original PLUS every stored variant (thumbnails, WebP/AVIF
 			// siblings, video/audio posters), verifies each on the destination
 			// before flipping `file_url`, repoints the variant URL metas, and
-			// only then deletes sources. This CLI previously carried its own
-			// loop that transferred `file_path` alone, so on a CDN migration
-			// every thumbnail and WebP sibling stayed behind on local disk
+			// only then deletes sources. A CLI-local
+			// loop that transferred `file_path` alone would, on a CDN migration,
+			// leave every thumbnail and WebP sibling behind on local disk
 			// while `get_driver_for_location()` resolved their URLs to the CDN
-			// — a 404 on every derived image. The Pro admin UI already went
-			// through CloudOps and was never affected.
+			// — a 404 on every derived image. The Pro admin UI goes
+			// through CloudOps too.
 			$result = CloudOps::migrate_one( $media_id_row, $from, $to, $keep_source );
 
 			if ( ! empty( $result['ok'] ) ) {
@@ -1220,9 +1220,9 @@ class Commands {
 		global $wpdb;
 
 		// IMPORTANT: only public media. Non-public media routes through the
-		// gated /serve proxy which (as of 1.2.2) can only read from local
+		// gated /serve proxy which can only read from local
 		// disk — flipping non-public thumb meta to CDN URLs would 404 the
-		// proxy. Cloud-aware /serve is on the 1.3.0 list.
+		// proxy.
 		$rows = $this->repo()->query(
 			$this->storage_walk_args(
 				array(
@@ -1357,7 +1357,7 @@ class Commands {
 
 	/**
 	 * Backfill the lazy-load placeholder colour for images uploaded before it
-	 * existed (Basecamp 9667082287).
+	 * existed.
 	 *
 	 * Walks the library in keyset batches so it scales past the per-item
 	 * Regenerate action, which was the only backfill path there was. Reads the
@@ -1604,9 +1604,9 @@ class Commands {
 		global $wpdb;
 
 		// IMPORTANT: only public media. Non-public media routes through the
-		// gated /serve proxy which (as of 1.2.2) can only read from local
-		// disk. Deleting locals for those would break /serve. Cloud-aware
-		// /serve lands in 1.3.0 — until then, private/members/friends
+		// gated /serve proxy which can only read from local
+		// disk. Deleting locals for those would break /serve, so
+		// private/members/friends
 		// media keeps its local copy as a hard requirement.
 		$rows = $this->repo()->query(
 			$this->storage_walk_args(
@@ -1713,7 +1713,7 @@ class Commands {
 	 * relocalized. `SignedUrlService::serve_thumbnail()` then 403s on every
 	 * read because the stored cloud URL fails its `wpmediaverse/` containment
 	 * check. The 1.4.0 listener fixes this going forward; this command heals
-	 * pre-1.4.0 rows (card 9925110293).
+	 * pre-1.4.0 rows.
 	 *
 	 * Safe to re-run — rows that already have local URLs are skipped.
 	 *
@@ -2257,14 +2257,12 @@ class Commands {
 	/**
 	 * Report album/collection IDs that collide with media IDs.
 	 *
-	 * Albums store their attributes by calling MediaRepository::set() with their
-	 * `wp_posts` ID. That column is AUTO_INCREMENT for real media, so the two ID
-	 * sequences collide wherever the integers coincide — overwriting media data,
-	 * inverting album access checks, and destroying a media row when the album
-	 * is deleted.
+	 * Before 2.4.0, albums stored their attributes through MediaRepository::set()
+	 * under their `wp_posts` ID, which collided with media IDs wherever the
+	 * integers coincided. Albums and collections keep their own data since 2.4.0;
+	 * this report shows where the two ID ranges overlap on this site.
 	 *
-	 * This command is READ-ONLY. It never writes. Run it before upgrading so you
-	 * know what a site actually has.
+	 * This command is READ-ONLY. It never writes.
 	 *
 	 * ## OPTIONS
 	 *
@@ -2327,37 +2325,8 @@ class Commands {
 			array( 'Metric', 'Count' )
 		);
 
-		$forecast = $report['forecast'];
-
 		WP_CLI::log( '' );
-		WP_CLI::log( '── Forecast — will the NEXT album corrupt something? ──' );
-		Utils\format_items(
-			'table',
-			array(
-				array(
-					'Metric' => 'Next wp_posts ID',
-					'Value'  => $forecast['next_post_id'],
-				),
-				array(
-					'Metric' => 'Next mvs_media_index ID',
-					'Value'  => $forecast['next_media_id'],
-				),
-				array(
-					'Metric' => 'Post IDs still behind media IDs',
-					'Value'  => $forecast['window'],
-				),
-				array(
-					'Metric' => '…of those, already used by media',
-					'Value'  => $forecast['occupied'],
-				),
-				array(
-					'Metric' => 'Chance the next album collides',
-					'Value'  => $forecast['risk_percent'] . '%',
-				),
-			),
-			array( 'Metric', 'Value' )
-		);
-		WP_CLI::log( '   ' . $forecast['verdict'] );
+		WP_CLI::log( '   Albums and collections keep their data in post meta, so a new one cannot overwrite a media item. The sections below are past damage only.' );
 
 		$this->report_section(
 			'Collisions — a CPT and a media item share one index row',
@@ -2367,7 +2336,7 @@ class Commands {
 		);
 
 		$this->report_section(
-			'DATA LOSS RISK — deleting these CPTs destroys the listed media',
+			'Albums and collections that shared an ID with a media item before 2.4.0',
 			$report['purge_risk'],
 			array( 'cpt_id', 'post_type', 'cpt_title', 'media_at_risk', 'media_author', 'file_path' ),
 			$format
@@ -2406,7 +2375,7 @@ class Commands {
 		if ( $totals['collisions'] > 0 ) {
 			WP_CLI::warning(
 				sprintf(
-					'%d collision(s) found. Do NOT permanently delete the listed albums/collections until the fix ships — see plan/2026-08-08-cpt-id-collision-fix-plan.md.',
+					'%d album or collection ID(s) also match a media ID. These overlaps date from before 2.4.0; albums and collections have kept their data apart from media since then.',
 					$totals['collisions']
 				)
 			);

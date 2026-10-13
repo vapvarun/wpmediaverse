@@ -66,9 +66,8 @@ class AdminAggregatesService {
 	 * Total published MEDIA items — photos, video and audio.
 	 *
 	 * Documents are counted separately by `total_documents()`. They share the
-	 * index table but they are not media, and until 2.4.0 this counted them:
-	 * a site whose members had uploaded 400 documents saw them added to "Total
-	 * Media" on a screen where no document was reachable.
+	 * index table but they are not media, so counting them would add them to "Total
+	 * Media" for a site whose members had uploaded 400 documents, on a screen where no document is reachable.
 	 *
 	 * The type list runs through `MediaTypes::library_types()`, so a site that
 	 * wants the old number back has the documented one-line escape hatch
@@ -140,9 +139,6 @@ class AdminAggregatesService {
 		);
 	}
 
-	/**
-	 * Total views aggregated across all media.
-	 */
 	/**
 	 * Engagement totals for the Stats page, optionally bounded by date.
 	 *
@@ -285,6 +281,9 @@ class AdminAggregatesService {
 		return is_array( $rows ) ? $rows : array();
 	}
 
+	/**
+	 * Total views aggregated across all media.
+	 */
 	public function total_views(): int {
 		return (int) $this->cache->remember_persistent(
 			'admin_total_views',
@@ -397,7 +396,7 @@ class AdminAggregatesService {
 
 		$services = array(
 			'local'    => array(
-				'label'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
+				'label'    => __( 'This server (WordPress uploads)', 'wpmediaverse' ),
 				'patterns' => array( '/wp-content/uploads/' ),
 			),
 			's3'       => array(
@@ -474,6 +473,16 @@ class AdminAggregatesService {
 	 * @return string[] Privacy slugs.
 	 */
 	public function privacy_levels_in_use(): array {
+		// Chat files ('dm') never appear in a media list, so their level is no filter.
+		return array_values( array_diff( $this->privacy_levels_stored(), array( 'dm' ) ) );
+	}
+
+	/**
+	 * Every privacy level stored on a media row (cached).
+	 *
+	 * @return string[]
+	 */
+	private function privacy_levels_stored(): array {
 		return (array) $this->cache->remember_persistent(
 			'admin_privacy_in_use',
 			static function (): array {

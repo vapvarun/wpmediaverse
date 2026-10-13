@@ -188,66 +188,6 @@ class MediaIntegrityRepository {
 	// --------------------------------------------------------- collisions --
 
 	/**
-	 * The next value a table's AUTO_INCREMENT will hand out.
-	 *
-	 * Reads `information_schema`, not the table — this asks about the SEQUENCE,
-	 * which is the whole subject of the collision forecast: album ids and media
-	 * ids are two independent sequences sharing one primary key, and the
-	 * question is where they are about to overlap.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param string $table Full table name.
-	 * @return int 0 when unknown (some hosts restrict information_schema).
-	 */
-	public function next_auto_increment( string $table ): int {
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s',
-				$wpdb->dbname,
-				$table
-			)
-		);
-	}
-
-	/**
-	 * The media-index table name, for callers asking about its sequence.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @return string
-	 */
-	public function index_table_name(): string {
-		global $wpdb;
-
-		return $wpdb->prefix . 'mvs_media_index';
-	}
-
-	/**
-	 * How many index rows already occupy ids at or above a given point.
-	 *
-	 * The numerator of the collision forecast: within the window between the
-	 * next post id and the next media id, this is how many landing spots are
-	 * already taken by a real media item.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param int $media_id Lower bound, inclusive.
-	 * @return int
-	 */
-	public function count_rows_from_id( int $media_id ): int {
-		global $wpdb;
-
-		$index = $wpdb->prefix . 'mvs_media_index';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE media_id >= %d", $media_id ) );
-	}
-
-	/**
 	 * Headline collision counts.
 	 *
 	 * `media_type <> ''` is what separates a REAL media row from an

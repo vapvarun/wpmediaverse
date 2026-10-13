@@ -2,8 +2,8 @@
 /**
  * P2.1 — the catch-all removal.
  *
- * `get_media_type()` used to return 'document' for anything that was not
- * image/video/audio — an allowlist inverted. With documents becoming a real
+ * `get_media_type()` must not return 'document' for anything that is not
+ * image/video/audio — that would be an allowlist inverted. With documents a real
  * library that fallback would manufacture documents out of every unrecognised
  * upload, so unknown now resolves to '' and is refused at ingest.
  *

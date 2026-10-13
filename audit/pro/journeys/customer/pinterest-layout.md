@@ -54,4 +54,4 @@ estimated_runtime_minutes: 4
 |---|---|---|
 | Column count wrong at a breakpoint | CSS-columns breakpoint missing/wrong | Pinterest layout stylesheet |
 | Empty-state wording differs from other layouts | copy hardcoded per-layout instead of shared partial | `includes/Frontend/Layouts/PinterestLayout.php` |
-| Profile shows another author's items | author_id scoping missing from the query | `AbstractConnectorFeedLayout::query_args()` |
+| Profile shows another author's items | author_id scoping missing from the query | `AbstractConnectorFeedLayout::render_feed()` args (author scope) |

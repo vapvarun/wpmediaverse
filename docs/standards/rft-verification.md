@@ -72,7 +72,7 @@ using. Prefer the lightest method that reproduces the defect, lightest first:
 |---|---|---|
 | CSS | Re-apply the old declaration in the page (`page.addStyleTag`, or remove the new rule from `document.styleSheets`) and measure both states on the same element | `font-size: inherit` re-added → buttons 13.8 → 15.9px; removed → back |
 | A PHP decision behind a filter/option | Flip it inside one `wp eval` (`add_filter(..., '__return_false', 999)`, `pre_option_*`) — never a stored option change you forget to undo | BuddyNext-off behaviour via `mvs_buddynext_active` |
-| A data path (writes, deletes) | Wrap the probe in `START TRANSACTION … ROLLBACK`, or use fixtures you delete and verify gone | Quota default wiped by a stale id |
+| A data path (writes, deletes) | Wrap the probe in `START TRANSACTION … ROLLBACK`, or use fixtures you delete and verify gone | A default row wiped by a stale id |
 | Logic only a test can isolate | `git worktree add` the pre-fix sha into scratch and run the one test there | Never `git stash`/`checkout` a live repo |
 
 Then, before any measurement:

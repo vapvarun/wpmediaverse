@@ -276,6 +276,8 @@ function rest_get_url_prefix(): string { return 'wp-json'; }
 function wp_enqueue_script( ...$a ): void {}
 function wp_enqueue_style( ...$a ): void {}
 function wp_register_script( ...$a ): bool { return true; }
+function wp_register_script_module( ...$a ): void {} // WordPress 6.5+, the plugin's minimum.
+function wp_enqueue_script_module( ...$a ): void {}
 function wp_register_style( ...$a ): bool { return true; }
 function wp_add_inline_style( ...$a ): bool { return true; }
 function wp_add_inline_script( ...$a ): bool { return true; }

@@ -36,7 +36,7 @@ estimated_runtime_minutes: 6
 - **On fail**: `includes/Tournaments/TournamentController.php` (register route).
 
 ### 3. Start the tournament — must NOT fatal
-- **Action**: trigger bracket generation — either run the scheduler hook `wp eval '\WPMediaVersePro\Core\Plugin::container_or_service("tournaments")->generate_bracket('"$TID"');'` or fire `do_action('mvs_start_registered_tournaments')` via WP-CLI. Watch `wp-content/debug.log`.
+- **Action**: trigger bracket generation — either run the scheduler hook `wp eval '(new \WPMediaVersePro\Tournaments\TournamentService())->generate_bracket('"$TID"');'` or fire `do_action('mvs_start_registered_tournaments')` via WP-CLI. Watch `wp-content/debug.log`.
 - **Expect**: returns `true` (or no `WP_Error`); **no PHP fatal**, no `Trying to get property 'id' of non-object`, no entry in debug.log for `generate_bracket`.
 - **On fail**: `includes/Tournaments/TournamentService.php::generate_bracket()` — the both-null skip at line ~245 was removed; the bye branch is dereferencing a null winner.
 

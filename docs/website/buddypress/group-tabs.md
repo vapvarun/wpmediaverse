@@ -24,6 +24,8 @@ The group media tab displays media that was:
 
 Privacy applies to each item. Visitors see the group's public media, signed-in members also see members-only media, and media set to **group** privacy is visible only to members of that group. The tab also has an **Albums** section for albums that belong to the group.
 
+A gallery (items uploaded together) shows as one tile with a count badge. Visitors can open the tiles in the lightbox. **Load More** on a group's tab loads only that group's media. In a private or hidden group, people who are not members see nothing, because the tab uses the same group rule as `GET /mvs/v1/media?group={id}`. See [REST API](../developer-guide/rest-api.md).
+
 ## Assigning Media to a Group
 
 When uploading, set the `privacy` to `group` and provide the `group_id`. The uploader must be a member of that group; otherwise the group is ignored:

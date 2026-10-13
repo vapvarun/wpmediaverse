@@ -11,7 +11,6 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10297845497.
  *
  * The count mirrored query_by_author()'s PRIVACY rule and nothing else, so a
  * caller that listed with a moderation filter counted without one and the

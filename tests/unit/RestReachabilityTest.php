@@ -3,7 +3,7 @@
  * No mvs/v1 GET route crashes, whoever calls it.
  *
  * RouteAuthorityTest proves every route declares who may call it. This proves
- * the other half of Gate E (Basecamp 10302674598): calling each GET route as a
+ * the other half of Gate E: calling each GET route as a
  * signed-out visitor and as a plain member never produces a 5xx. A refusal
  * (401/403/404) is a correct answer; a 500 is a crash an app or a scanner will
  * hit first. Path parameters get "1", the same substitution `wp mvs cert` uses.

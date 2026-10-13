@@ -2,10 +2,10 @@
 /**
  * Regression guard for the media lazy-load placeholder colour.
  *
- * Basecamp 9667082287: the placeholder was the MEAN colour (a 1px downscale),
- * so a two-tone image — half rgb(200,40,40), half rgb(40,60,200) — resolved to
- * a purple (#793278) that appears nowhere in it. It is now the DOMINANT colour:
- * the most-populated quantised bucket's own mean, a colour the image actually
+ * The placeholder is the DOMINANT colour, not the MEAN (a 1px downscale): the
+ * mean of a two-tone image — half rgb(200,40,40), half rgb(40,60,200) — is a
+ * purple (#793278) that appears nowhere in it. The dominant colour is the
+ * most-populated quantised bucket's own mean, a colour the image actually
  * contains. These pin that the two-tone case returns one of its real colours
  * (never the misleading average) and that an undecodable file yields ''.
  *

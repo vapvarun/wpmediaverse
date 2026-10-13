@@ -4,8 +4,8 @@
  *
  * MediaVerse is a media plugin first. Document support is additive and must be
  * asked for EXPLICITLY: no code path may reach a document type by elimination.
- * `UploadService::get_media_type()` used to end `return 'document';` — anything
- * unrecognised became a document — and that inversion is what this class exists
+ * A catch-all ending `return 'document';` — anything
+ * unrecognised becomes a document — is the inversion this class exists
  * to make impossible. `resolve()` returns a NAMED type or `null`. There is no
  * default branch, and adding one would defeat the whole design.
  *
@@ -261,7 +261,7 @@ final class DocumentTypes {
 		// bytes text/plain, 65,536 octet-stream). A member's padded log or
 		// repeated-token dump was therefore refused as an unsupported TYPE while
 		// a smaller file with the same extension and the same content uploaded
-		// fine, and the message named the wrong reason (Basecamp 10190462935).
+		// fine, and the message named the wrong reason.
 		//
 		// The strictness above stays exactly where it belongs: when the sniff is
 		// a POSITIVE answer that contradicts the extension, that is a disguised
@@ -443,9 +443,8 @@ final class DocumentTypes {
 	 * The Lucide icon name for a document type, so a row is scannable by shape.
 	 *
 	 * Lives HERE, beside `label()`, because every document surface needs the
-	 * same answer and each one previously invented its own: `templates/
-	 * documents.php` carried the only real map, Pro's profile tab hardcoded an
-	 * empty span, and the grid and activity paths fell through to a PHOTO
+	 * same answer and each would otherwise invent its own: a template-local map,
+	 * a hardcoded empty span, or a fall-through to a PHOTO
 	 * glyph — a picture icon on a spreadsheet. One map means adding a type
 	 * updates every surface at once instead of three of five.
 	 *
@@ -552,7 +551,7 @@ final class DocumentTypes {
 	 * without keeping a second copy of the extension vocabulary. A second copy is
 	 * how `.psd` ends up admitted by one surface and refused by another — the
 	 * same class of drift that put a `doc` label ahead of the file resolver in
-	 * the MediaPress importer (Basecamp 10245253286).
+	 * the MediaPress importer.
 	 *
 	 * NOT a permission check and must never be used as one: `accept` is a file
 	 * dialog hint the member can defeat by typing a name, and the server still

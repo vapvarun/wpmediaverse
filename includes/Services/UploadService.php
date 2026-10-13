@@ -78,12 +78,13 @@ class UploadService {
 			);
 		}
 
-		// Validate MIME type.
-		$allowed = $this->get_allowed_types();
+		// Validate MIME type. A chat attachment ('dm', conversation-scoped) follows
+		// the message rules, not the media library's.
+		$is_dm   = 'dm' === ( $args['privacy'] ?? '' );
+		$allowed = $is_dm ? \WPMediaVerse\Messaging\MessagingController::allowed_attachment_types() : $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
-		// Hard guard: PDF and unrecognised uploads are refused (owner decision,
-		// Basecamp #9962125462). This is the real enforcement — it fires even
+		// Hard guard: PDF and unrecognised uploads are refused (owner decision). This is the real enforcement — it fires even
 		// when a legacy site still has `application/pdf` in its stored
 		// `mvs_allowed_file_types` option (1.2.3 dropped it from the default but
 		// did not strip it from existing installs) or when the
@@ -124,7 +125,10 @@ class UploadService {
 		// Check file size using server-side measurement (not client-reported).
 		// One reader for the limit, shared with Pro's document ingest.
 		$actual_size = filesize( $file['tmp_name'] );
-		$mvs_refusal = $this->reject_oversized_file( $actual_size, $user_id );
+		$mvs_refusal = $is_dm ? null : $this->reject_oversized_file( $actual_size, $user_id );
+		if ( $is_dm && ( false === $actual_size || $actual_size > \WPMediaVerse\Messaging\MessagingController::max_attachment_size() ) ) {
+			$mvs_refusal = new WP_Error( 'mvs_file_too_large', \WPMediaVerse\Messaging\MessagingController::attachment_too_large_message(), array( 'status' => 400 ) );
+		}
 		if ( $mvs_refusal ) {
 			return $mvs_refusal;
 		}
@@ -134,7 +138,7 @@ class UploadService {
 
 		// Duplicate detection.
 		$duplicate_action = get_option( 'mvs_duplicate_action', 'warn' );
-		if ( 'allow' !== $duplicate_action ) {
+		if ( 'allow' !== $duplicate_action && ! $is_dm ) {
 			$existing = $this->find_by_hash( $hash, $user_id );
 			if ( $existing ) {
 				if ( 'skip' === $duplicate_action ) {
@@ -162,9 +166,9 @@ class UploadService {
 		$this->apply_exif_orientation( $file['tmp_name'], $mime );
 
 		// Strip EXIF GPS data from images. Nothing is kept: the extracted block
-		// used to be written to meta as `exif_raw` and was never read by any
-		// template, REST field, admin screen or Pro surface - dead weight plus a
-		// privacy surface with no payoff. Basecamp 10316771960.
+		// would never be read by any template, REST field, admin screen or Pro
+		// surface - dead weight plus a
+		// privacy surface with no payoff.
 		if ( get_option( 'mvs_strip_exif', true ) && $this->is_image( $mime ) ) {
 			$this->strip_exif( $file['tmp_name'] );
 		}
@@ -351,7 +355,7 @@ class UploadService {
 		// The update route (MediaController::update_item) has always answered a
 		// bad level with a 400 rather than guessing. Create now matches it: a
 		// client sending a level this site does not support has a bug, and the
-		// honest answer is to say so, not to publish. Basecamp 10297839180.
+		// honest answer is to say so, not to publish.
 		if ( ! in_array( $privacy, PrivacyService::supported_levels(), true ) ) {
 			// Only ever reached for a level the CLIENT sent - the site default is
 			// already sanitised above - so answering 400 blames the right party.
@@ -369,7 +373,7 @@ class UploadService {
 		// `space` means "the members of the Space this lives on". On a personal
 		// drive there is no such Space, so the level cannot be honoured — and an
 		// accepted-then-ignored level is the defect this card exists for
-		// (Basecamp 10220491230). Say no instead of storing a value that will
+		// Say no instead of storing a value that will
 		// silently read as private forever.
 		if ( 'space' === $privacy && ( 'user' === $mvs_drive_type || $mvs_drive_id <= 0 ) ) {
 			return new WP_Error(
@@ -473,7 +477,7 @@ class UploadService {
 		 * community returns true to hold every new upload as draft +
 		 * moderation_status=pending, where it appears in the moderation queue for
 		 * an admin/moderator to approve. This is a deliberate, site-wide opt-in,
-		 * NOT the default flow (Basecamp #9962830813). Reactive moderation of
+		 * NOT the default flow. Reactive moderation of
 		 * reported content (community-guideline violations) is separate and
 		 * always available via the reports + moderation queue.
 		 *
@@ -489,17 +493,9 @@ class UploadService {
 			$moderation_status = 'pending';
 		}
 
-		// Scheduled publishing — store as 'scheduled' status with future
-		// created_at. Skipped when held for moderation so a held upload can't
-		// auto-publish on a schedule and slip past the queue.
+		// No scheduled publishing: the old publish_at branch stored a 'scheduled'
+		// row that nothing ever published.
 		$created_at = current_time( 'mysql', true );
-		if ( ! $held_for_moderation && ! empty( $args['publish_at'] ) && 'draft' === $status ) {
-			$publish_time = strtotime( $args['publish_at'] );
-			if ( $publish_time && $publish_time > time() ) {
-				$status     = 'scheduled';
-				$created_at = gmdate( 'Y-m-d H:i:s', $publish_time );
-			}
-		}
 
 		$description = ! empty( $args['description'] ) ? wp_kses_post( $args['description'] ) : '';
 
@@ -632,11 +628,11 @@ class UploadService {
 		$this->init_stats( $media_id );
 
 		// Carousel / gallery-post membership, recorded BEFORE mvs_media_uploaded
-		// fires. It used to be written by the REST controller *after* the upload
-		// call returned, which meant every listener — the BuddyPress activity
-		// recorder above all — saw a media item that did not yet know it belonged
-		// to a group. That is why a 3-image carousel produced 3 separate activity
-		// entries instead of one. Basecamp #10153581987.
+		// fires. Written by the REST controller *after* the upload
+		// call returned, it would leave every listener — the BuddyPress activity
+		// recorder above all — seeing a media item that does not yet know it belongs
+		// to a group, and a 3-image carousel would produce 3 separate activity
+		// entries instead of one.
 		$media_group = isset( $args['media_group'] ) ? sanitize_text_field( (string) $args['media_group'] ) : '';
 		if ( '' !== $media_group ) {
 			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
@@ -671,6 +667,12 @@ class UploadService {
 		 * @param int    $user_id    Uploader user ID.
 		 * @param string $media_type Resolved media type ('photo' | 'video' | 'audio' | 'document').
 		 */
+		if ( 'dm' === $privacy ) {
+			// A chat attachment is not an upload: no feed, points, streaks, AI,
+			// captions or export, as in any messenger. Only the storage count moves.
+			\WPMediaVerse\Core\Plugin::container()->get( 'storage_limit' )->forget_usage( $user_id );
+			return $media_id;
+		}
 		do_action(
 			'mvs_media_uploaded',
 			$media_id,
@@ -902,7 +904,7 @@ class UploadService {
 	private function detect_mime( string $file_path ): string {
 		$check = wp_check_filetype_and_ext( $file_path, $file_path );
 		if ( ! empty( $check['type'] ) ) {
-			return $check['type'];
+			return MediaTypes::canonical_mime( $check['type'] );
 		}
 		// Fallback to finfo.
 		if ( function_exists( 'finfo_open' ) ) {
@@ -910,7 +912,7 @@ class UploadService {
 			$mime  = finfo_file( $finfo, $file_path );
 			// PHP 8.5 deprecated finfo_close — finfo handle is GC'd when $finfo
 			// goes out of scope.
-			return $mime ? $mime : '';
+			return $mime ? MediaTypes::canonical_mime( $mime ) : '';
 		}
 		return '';
 	}
@@ -966,15 +968,14 @@ class UploadService {
 	 *
 	 * ONE guard, called by both ingest paths. There were two copies — `handle()`
 	 * and `MediaController::replace_file()` — and the second existed only because
-	 * a double-verifier caught replace_file bypassing the first (#9962125462).
+	 * a double-verifier caught replace_file bypassing the first.
 	 * Two copies of a security guard is the shape that produced that bypass, and
 	 * this change would have needed both edited in lockstep to stay correct.
 	 *
-	 * Until 2.4.0 the unsupported test was a NAME test: `'document' === type`,
-	 * which worked only because unknown MIMEs were *named* 'document' by
-	 * elimination. Now that unknown resolves to '', it is an UNKNOWN test. The
-	 * two had to change together or unrecognised files would have started being
-	 * accepted the moment the fallback changed.
+	 * The unsupported test is an UNKNOWN test, not a NAME test
+	 * (`'document' === type`): a name test works only when unknown MIMEs are
+	 * *named* 'document' by elimination, and would let unrecognised files
+	 * through now that unknown resolves to ''.
 	 *
 	 * @since 2.4.0
 	 *
@@ -983,7 +984,7 @@ class UploadService {
 	 */
 	public function reject_unsupported_mime( string $mime ): ?\WP_Error {
 		// PDF stays its own case: it is explicitly blocked by owner decision
-		// (#9962125462) and keeps its established error code, which clients
+		// and keeps its established error code, which clients
 		// already branch on.
 		if ( in_array( $mime, self::hard_refused_mimes(), true ) ) {
 			return new WP_Error(
@@ -1016,8 +1017,8 @@ class UploadService {
 	 *
 	 * Extracted so `MediaController::replace_file()` can run the identical
 	 * check `handle()` runs — a size cap the owner sets has to hold on every
-	 * write path, not just fresh uploads. Basecamp 10350220155: replace()
-	 * called neither this nor any size check, so the cap could be bypassed by
+	 * write path, not just fresh uploads; a replace()
+	 * that skipped it would let the cap be bypassed by
 	 * replacing an existing item's file.
 	 *
 	 * @since 2.6.0
@@ -1064,11 +1065,11 @@ class UploadService {
 	 * - `Sanitizers::sanitize_file_types()` (do not preserve it as a custom type),
 	 * - `Migrator` v27 (strip it from installs that stored it before 1.2.3).
 	 *
-	 * That agreement is the actual bug being fixed: this list said no while the
-	 * stored `mvs_allowed_file_types` still offered PDF in the picker, so members
-	 * on every pre-1.2.3 install were shown a type the server then refused — and
-	 * the owner could not stop it, because PDF is absent from the settings grid
-	 * and the sanitizer preserved it on every save (Basecamp 10190738445).
+	 * That agreement matters: if this list says no while the stored
+	 * `mvs_allowed_file_types` still offers PDF in the picker, members on every
+	 * pre-1.2.3 install are shown a type the server then refuses — and the
+	 * owner cannot stop it, because PDF is absent from the settings grid and
+	 * the sanitizer preserves it on every save.
 	 *
 	 * NOT filterable, and deliberately so: a site that wants PDFs has the
 	 * document library, which accepts them properly.
@@ -1163,8 +1164,7 @@ class UploadService {
 	 *
 	 * The cheap lazy-load placeholder alternative to a blurhash. It is the
 	 * DOMINANT colour, not the average: a two-tone image (say half red, half
-	 * blue) averages to a purple that appears nowhere in it (Basecamp
-	 * 9667082287), so we downscale, quantise into coarse colour buckets, and
+	 * blue) averages to a purple that appears nowhere in it, so we downscale, quantise into coarse colour buckets, and
 	 * return the most-populated bucket's own mean — a colour the image actually
 	 * contains. Tries Imagick first because a managed-WordPress host commonly
 	 * ships Imagick without GD; falls back to GD. Returns '' when neither editor
@@ -1316,7 +1316,7 @@ class UploadService {
 	 * PUBLIC because MediaController::replace_file() reimplements the ingest
 	 * pipeline (watermark, optimise, WebP/AVIF, store) rather than calling
 	 * handle(), so it has to reach this seam explicitly. That duplication is
-	 * tracked separately (Basecamp #10156642711); until it is collapsed, both
+	 * tracked separately; until it is collapsed, both
 	 * paths must call the SAME rotation, not two copies of it.
 	 *
 	 * @param string $file_path Absolute path to the image, rewritten in place.
@@ -1404,12 +1404,12 @@ class UploadService {
 	/**
 	 * Strip GPS and other sensitive EXIF from an image file.
 	 *
-	 * Nothing is returned to the caller for storage: the extracted block used to
-	 * be kept as `exif_raw` meta that no surface ever read. Basecamp 10316771960.
+	 * Nothing is returned to the caller for storage: keeping the extracted block as
+	 * `exif_raw` meta would be pointless, since no surface reads it.
 	 *
 	 * Public for the same reason apply_exif_orientation() is: the REST
 	 * replace-file path runs its own ingest and must reuse this seam rather
-	 * than grow a second copy - or, as it did until 2.5.1, skip it entirely.
+	 * than grow a second copy - or skip it entirely.
 	 *
 	 * @param string $file_path File path.
 	 * @return bool True when the file carried GPS and was rewritten.
@@ -1431,7 +1431,7 @@ class UploadService {
 		// Strip GPS/EXIF from the stored file.
 		//
 		// JPEG: remove the APP1 (EXIF/XMP) marker segment WITHOUT decoding the
-		// image (Basecamp #10073918955). The previous approach decoded and
+		// image. The previous approach decoded and
 		// re-encoded via GD at quality 95 — a lossy generation on every
 		// GPS-tagged photo, on top of the separate optimize pass, so a phone
 		// photo was re-encoded twice before it was ever stored. It also dropped
@@ -1451,7 +1451,6 @@ class UploadService {
 				// the XMP/IPTC block where copyright and credit live - on a photo
 				// platform, destroying an author's byline to hide their location
 				// is a bad trade when only one of the two is a privacy problem.
-				// Basecamp 10252326888 follow-up.
 				if ( $this->strip_gps_ifd( $file_path ) ) {
 					return true;
 				}
@@ -1890,7 +1889,7 @@ class UploadService {
 	 *
 	 * Deferring it would buy about a quarter of a second and cost every member a
 	 * placeholder where their photo should be until the queue catches up. The
-	 * "uploads spend seconds making image sizes" figure that used to justify
+	 * "uploads spend seconds making image sizes" figure that would justify
 	 * deferring this was really the six blocking cloud round trips, which are
 	 * gone.
 	 *
@@ -1963,7 +1962,7 @@ class UploadService {
 		// alternative to a blurhash. Computed once here (on upload and on
 		// explicit regeneration), stored as meta, and surfaced as
 		// `placeholder_color` in the media REST response. Backfill an existing
-		// library with `wp mvs backfill-placeholder-color` (Basecamp 9667082287).
+		// library with `wp mvs backfill-placeholder-color`.
 		$mvs_placeholder = self::placeholder_color( $file_path );
 		if ( '' !== $mvs_placeholder ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'placeholder_color', $mvs_placeholder );
@@ -2060,8 +2059,7 @@ class UploadService {
 
 		// Variant write surface — single writer for every thumb_*/_webp/_avif
 		// meta key. See `MediaVariantWriter` for the path-meta gate and
-		// `VariantSpec::compute_rel_path` for the relative-path computation
-		// (previously duplicated at 3 sites in this method).
+		// `VariantSpec::compute_rel_path` for the relative-path computation.
 		$writer    = \WPMediaVerse\Core\Plugin::container()->get( 'variant_writer' );
 		$image_opt = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 
@@ -2359,7 +2357,7 @@ class UploadService {
 		// — there is no ffmpeg frame-grab (that shell-out was host-dependent and
 		// tripped security scanners). A cover-less video keeps the play-icon
 		// placeholder / default poster; the browser can also stage a first frame
-		// client-side via stage_client_frame(). (Basecamp 10232926505)
+		// client-side via stage_client_frame().
 		return false;
 	}
 
@@ -2452,7 +2450,7 @@ class UploadService {
 		// Same test run_cloud_repatriation() starts with: on local storage there
 		// is no cloud copy to bring home, so do not queue a job per photo that
 		// would only return (an album of thousands made private queued
-		// thousands of no-op jobs, Basecamp 10344644266).
+		// thousands of no-op jobs,
 		$source = (string) get_option( 'mvs_storage_driver', 'local' );
 		if ( $media_id <= 0 || '' === $source || 'local' === $source ) {
 			return;

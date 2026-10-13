@@ -14,8 +14,8 @@ use WP_UnitTestCase;
  * The shared preset-activation model (docs/standards/preset-licence-activation.md):
  * the store saying "expired" or "invalid" cannot change by asking again, so it is
  * never retried automatically. Only no answer at all (network error, firewall
- * page) gets the bounded hourly retry. Basecamp 10375332367: old releases retried
- * every refusal and flooded the store.
+ * page) gets the bounded hourly retry.
+ * Retrying every refusal would flood the store.
  *
  * @covers \WPMediaVerse\Core\PresetActivation::run
  * @covers \WPMediaVerse\Core\PresetActivation::maybe_render_notice

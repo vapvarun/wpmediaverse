@@ -72,7 +72,7 @@ class TemplateLoader {
 
 			// Remember where the page used to live, the way WordPress remembers
 			// a post's old slug, so links saved elsewhere (a nav menu, a
-			// bookmark) still reach their section (Basecamp 10344452624).
+			// bookmark) still reach their section.
 			// ponytail: an ANCESTOR's rename is not recorded (core does not
 			// either); add it if owners hit it.
 			if ( $post_id === $dashboard ) {
@@ -122,7 +122,7 @@ class TemplateLoader {
 	 * Send /media/ to the owner's Explore page when one is mapped.
 	 *
 	 * Mapping a page as Explore left /media/ live as a second, indexable copy
-	 * of the same archive (Basecamp 10344427396). The owner's page wins; paging
+	 * of the same archive. The owner's page wins; paging
 	 * and the query string (search, tag, type) carry over. Unmapped sites keep
 	 * /media/ as Explore. Singles stay at /media/<slug>/.
 	 *
@@ -141,8 +141,7 @@ class TemplateLoader {
 		/**
 		 * Whether /media/ redirects to the mapped Explore page.
 		 *
-		 * Return false to keep /media/ serving Explore alongside the mapped page,
-		 * as it did before 2.6.0.
+		 * Return false to keep /media/ serving Explore alongside the mapped page.
 		 *
 		 * @since 2.6.0
 		 *
@@ -335,7 +334,7 @@ class TemplateLoader {
 		if ( $mvs_dashboard ) {
 			// The page's full PATH, not its post_name: as a child page it lives at
 			// parent/my-media/, and a rule built from `my-media` never matched, so
-			// every section 404'd (Basecamp 10344427213).
+			// every section 404'd.
 			$mvs_dashboard_slug = get_page_uri( $mvs_dashboard );
 
 			if ( $mvs_dashboard_slug ) {
@@ -495,11 +494,6 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Serve media templates via template_redirect.
-	 *
-	 * Handles single media, explore archive, user profile, and profile edit.
-	 */
-	/**
 	 * Prevent WordPress canonical redirect on MVS media URLs.
 	 *
 	 * When a media slug matches a WP attachment post, WordPress tries to
@@ -523,12 +517,13 @@ class TemplateLoader {
 	 * @return bool
 	 */
 	private function is_mvs_virtual_route(): bool {
-		return (bool) (
-			get_query_var( 'mvs_media_slug' )
-			|| get_query_var( 'mvs_media_archive' )
-			|| get_query_var( 'mvs_profile_user' )
-			|| get_query_var( 'mvs_edit_profile' )
-		);
+		foreach ( Plugin::virtual_route_vars() as $var ) {
+			// Messages is not ours when BuddyNext draws the inbox.
+			if ( get_query_var( $var ) && ( 'mvs_messages_page' !== $var || ! apply_filters( 'mvs_buddynext_active', false ) ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -550,7 +545,6 @@ class TemplateLoader {
 	 *
 	 * Soft-404s deindex paginated archives and make caches and CDNs skip the
 	 * page, so on a 60-item library only page 1 was reachable to search engines.
-	 * Basecamp: 2.3.0 smoke F1.
 	 *
 	 * @since 2.3.0
 	 *
@@ -640,11 +634,11 @@ class TemplateLoader {
 	/**
 	 * Send `?drive=my-drive|shared|recent` on the documents page to the dashboard.
 	 *
-	 * The member's drive used to answer at two addresses: the dashboard's
+	 * A member's drive must not answer at two addresses: the dashboard's
 	 * documents section and the public Explore Documents page with a `?drive=`
-	 * query. Same drive, two URLs, two sets of chrome - and the page title said
+	 * query. Same drive, two URLs, two sets of chrome - and the page title would say
 	 * "Explore Documents" over a member's private files. The dashboard section
-	 * is the one home now; the old query keeps working as a 302 so bookmarks
+	 * is the one home; the old query keeps working as a 302 so bookmarks
 	 * and links already out there still land somewhere real.
 	 *
 	 * Only when the dashboard page exists and this member can see its documents
@@ -676,8 +670,7 @@ class TemplateLoader {
 		/**
 		 * Whether `?drive=` on the documents page redirects to the dashboard.
 		 *
-		 * Return false to keep rendering the drive on the documents page, as
-		 * before 2.6.0.
+		 * Return false to keep rendering the drive on the documents page.
 		 *
 		 * @since 2.6.0
 		 *
@@ -700,13 +693,18 @@ class TemplateLoader {
 		exit;
 	}
 
+	/**
+	 * Serve media templates via template_redirect.
+	 *
+	 * Handles single media, explore archive, user profile, and profile edit.
+	 */
 	public function load_media_templates(): void {
 		// Gate single album/collection privacy here (template_redirect@5), BEFORE
 		// the theme renders. The in-template gates in album.php / collection.php
 		// run after get_header(), so a members/private album's or collection's
 		// document <title> and breadcrumbs still leaked its name to non-owners.
 		// Rendering the branded 404 now — before the theme sets the title — closes
-		// that. The in-template gates stay as defense-in-depth. Basecamp 10073499554.
+		// that. The in-template gates stay as defense-in-depth.
 		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
 			$mvs_cpt_id = get_queried_object_id();
 			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
@@ -745,6 +743,33 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Template resolved on template_redirect, rendered later via template_include.
+	 *
+	 * @since 2.4.2
+	 * @var string
+	 */
+	private $resolved_template = '';
+
+	/**
+	 * Answer 200 for a MediaVerse virtual page WordPress resolved as a 404.
+	 *
+	 * Except when the caller already set an error status (e.g. the members-only
+	 * gate's 403): never downgrade a 4xx to 200, or the gate would advertise
+	 * itself as a normal indexable page.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function serve_as_found(): void {
+		$current_status = http_response_code();
+		if ( ! is_int( $current_status ) || $current_status < 400 ) {
+			status_header( 200 );
+		}
+		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
+			$GLOBALS['wp_query']->is_404 = false;
+		}
+	}
+
+	/**
 	 * Render a full MVS virtual page and stop.
 	 *
 	 * Our virtual pages (explore archive, profile, single media, profile edit)
@@ -755,26 +780,8 @@ class TemplateLoader {
 	 *
 	 * @param string $template Absolute path to the located template file.
 	 */
-	/**
-	 * Template resolved on template_redirect, rendered later via template_include.
-	 *
-	 * @since 2.4.2
-	 * @var string
-	 */
-	private $resolved_template = '';
-
 	private function render_template( string $template ): void {
-		// Heal WP's soft-404 default to 200 for our virtual pages — EXCEPT when
-		// the caller already set an explicit error status (e.g. the members-only
-		// access gate's 403 in serve_single_media). Never downgrade a 4xx to 200,
-		// or the gate would advertise itself as a normal indexable page.
-		$current_status = http_response_code();
-		if ( ! is_int( $current_status ) || $current_status < 400 ) {
-			status_header( 200 );
-		}
-		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
-			$GLOBALS['wp_query']->is_404 = false;
-		}
+		self::serve_as_found();
 		// Hold it for template_include instead of `include $template; exit;`.
 		//
 		// exit here ended the request inside template_redirect at priority 5, so
@@ -783,7 +790,7 @@ class TemplateLoader {
 		// default 10, and that is what adds the Google-Fonts printer, the
 		// body_class filter, and the wp_footer chain Elementor Pro hangs its
 		// widget handlers on - so on our own routes a Pro header lost its fonts,
-		// its Menu Cart toggle and its Search widget. Basecamp 10285448527.
+		// its Menu Cart toggle and its Search widget.
 		//
 		// Returning through template_include - the hook that exists to choose a
 		// template - fixes it for every builder rather than for Elementor
@@ -859,9 +866,9 @@ class TemplateLoader {
 			return;
 		}
 
-		// Who may see this, decided BEFORE any redirect: a host redirect used to
-		// run first, so a signed-out visitor on a private photo was sent to the
-		// owner's profile, which told them whose it was (QA, 2.6.0).
+		// Who may see this, decided BEFORE any redirect: a host redirect that runs
+		// first would send a signed-out visitor on a private photo to the
+		// owner's profile, which tells them whose it is.
 		//
 		// A viewer who cannot see the item gets one of two answers:
 		// - a signed-out visitor on an item that signing in could open
@@ -913,7 +920,7 @@ class TemplateLoader {
 		// such activity to go to — most are uploaded straight into a drive, and a
 		// private one cannot be posted to a feed at all — so a host resolving the
 		// redirect walks its fallback chain and lands the viewer on a photo surface
-		// that shows no documents (Basecamp #10194229966).
+		// that shows no documents.
 		//
 		// This plugin's own surfaces are what break: the drive rows, the Explore
 		// Documents listing and Shared-with-me all link to /media/{slug}/. Free
@@ -928,9 +935,8 @@ class TemplateLoader {
 			/**
 			 * Whether a document permalink may be redirected away from its own page.
 			 *
-			 * Default false: a document renders its own page. Answer true to restore
-			 * the pre-2.4.0 behaviour of following `mvs_single_media_redirect` for
-			 * documents as well as for media.
+			 * Default false: a document renders its own page. Answer true to follow
+			 * `mvs_single_media_redirect` for documents as well as for media.
 			 *
 			 * @since 2.4.0
 			 *
@@ -1108,7 +1114,6 @@ class TemplateLoader {
 		// Explore page is a real page: WordPress and SEO plugins already title it
 		// from the owner's page (the front-page title when it is the front page),
 		// and forcing "Explore Media" there overrode the name the owner chose
-		// (Basecamp 10344427413).
 		if ( get_query_var( 'mvs_media_archive' ) ) {
 			add_filter(
 				'document_title_parts',
@@ -1198,7 +1203,7 @@ class TemplateLoader {
 			/**
 			 * Whether /media/edit-profile/ redirects to the dashboard profile section.
 			 *
-			 * Return false to keep serving the standalone editor, as before 2.6.0.
+			 * Return false to keep serving the standalone editor.
 			 *
 			 * @since 2.6.0
 			 *
@@ -1236,11 +1241,10 @@ class TemplateLoader {
 			return false;
 		}
 
-		// Delegate to the single canonical gate. This local check previously
-		// handled only public/owner/moderator/members and returned false for
-		// friends/group/custom — so a legitimate friend or group member was
-		// wrongly 404'd on a friends-only/group media page (audit 2026-06-04),
-		// and it was one of several privacy reimplementations. PrivacyService
+		// Delegate to the single canonical gate. A local check would miss
+		// friends/group/custom — so a legitimate friend or group member would be
+		// wrongly 404'd on a friends-only/group media page — and add one more
+		// privacy reimplementation. PrivacyService
 		// covers every level (friends via friendship, group via membership,
 		// custom via grants) in one place.
 		return \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() );
@@ -1275,7 +1279,7 @@ class TemplateLoader {
 	 *
 	 * Both CPTs share the dedicated cpt-archive.php template which queries
 	 * the correct post_type, paginates, and renders CPT-specific cards.
-	 * explore.php remains the /media/ feed and is no longer used for archives.
+	 * explore.php remains the /media/ feed and is not used for archives.
 	 *
 	 * @param string $template Current template path.
 	 * @return string
@@ -1384,15 +1388,6 @@ class TemplateLoader {
 		);
 	}
 
-	/**
-	 * Locate a template file.
-	 *
-	 * Checks theme first, then plugin templates directory.
-	 *
-	 * @param string $template_name Template file name.
-	 * @param string $template_path Optional subdirectory within the theme override folder.
-	 * @return string Full path to template or empty string if not found.
-	 */
 	/**
 	 * Render the plugin-branded 404 for a plugin-owned URL and exit.
 	 *
@@ -1764,6 +1759,15 @@ class TemplateLoader {
 		return $single ? array( $meta ) : array( array( $meta ) );
 	}
 
+	/**
+	 * Locate a template file.
+	 *
+	 * Checks theme first, then plugin templates directory.
+	 *
+	 * @param string $template_name Template file name.
+	 * @param string $template_path Optional subdirectory within the theme override folder.
+	 * @return string Full path to template or empty string if not found.
+	 */
 	public static function locate( string $template_name, string $template_path = '' ): string {
 		$theme_path = self::THEME_DIR . '/';
 		if ( $template_path ) {

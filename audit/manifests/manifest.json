@@ -6061,7 +6061,7 @@
       "command": "wp mvs diagnose_cpt_ids",
       "handler": "WPMediaVerse\\CLI\\Commands::diagnose_cpt_ids",
       "file": "includes/CLI/Commands.php",
-      "note": "READ-ONLY. Reports album/collection IDs colliding with media IDs in mvs_media_index, data-loss risk, overwritten slugs, taxonomy object_id spread, and a forecast of how likely the next album is to overwrite a photo. Basecamp 10183850886."
+      "note": "READ-ONLY. Reports album/collection IDs colliding with media IDs in mvs_media_index, data-loss risk, overwritten slugs, taxonomy object_id spread. No forecast: albums keep their data in post meta since 2.4.0, so a new album cannot collide. Basecamp 10183850886."
     },
     {
       "command": "wp mvs regenerate-thumbnails",
@@ -6663,6 +6663,385 @@
         ]
       },
       "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks (3.1b hook manifests match)"
+    },
+    "refresh_2026_10_10": {
+      "scope": "targeted (2.6.2: BuddyPress activity direct-URL images, Basecamp 10387034419)",
+      "added": {},
+      "changed": [
+        "ActivityContentIntegration::enhance_activity_media_content runs the legacy image drop only on markup without data-mvs-media-id",
+        "ActivityContentIntegration::refresh_broadcast_urls drops image <source> tags"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks, public methods"
+    },
+    "refresh_2026_10_10_m4v": {
+      "scope": "targeted (2.6.2: M4V-branded MP4 uploads, Basecamp 10379561512)",
+      "added": {
+        "public_methods": [
+          "MediaTypes::canonical_mime"
+        ]
+      },
+      "changed": [
+        "UploadService::detect_mime, MessagingController::upload_attachment and MediaController::replace_file pass the sniffed type through MediaTypes::canonical_mime"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_categories": {
+      "scope": "targeted (2.6.2: Categories admin entry, Basecamp 10379842826)",
+      "added": {
+        "admin_pages": [
+          "MediaVerse > Categories (edit-tags.php?taxonomy=mvs_category&post_type=mvs_album, cap manage_categories)"
+        ]
+      },
+      "changed": [
+        "mvs_tag and mvs_category: show_admin_column false, show_in_quick_edit false"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_dm_grant": {
+      "scope": "targeted (2.6.2: DM media grant hardening, Basecamp 10392490030)",
+      "added": {
+        "error_codes": [
+          "attachment_unavailable (POST /conversations/{id}/messages, 403)"
+        ]
+      },
+      "changed": [
+        "MessagingService::user_received_media matches media_id shared by the media owner only",
+        "MessagingService::send_message refuses media the sender cannot view and attachments the sender does not own"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_dm_storage": {
+      "scope": "targeted (2.6.2: chat attachments as dm media, Basecamp 10392474704)",
+      "added": {
+        "public_methods": [
+          "MessagingController::allowed_attachment_types"
+        ]
+      },
+      "changed": [
+        "POST /mvs/v1/messages/upload stores dm media and returns id + media_id",
+        "UploadService::handle: privacy dm uses DM types/size, skips duplicate refusal and mvs_media_uploaded",
+        "MessagingService fills attachment from media_share for non-share messages with media_id"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI"
+    },
+    "refresh_2026_10_10_dm_lock": {
+      "scope": "targeted (2.6.2: dm privacy is fixed after upload, Basecamp 10392474704)",
+      "added": {
+        "error_codes": [
+          "mvs_privacy_dm_fixed (PATCH /mvs/v1/media/{id}, 400)"
+        ]
+      },
+      "changed": [
+        "MediaRepository privacy writers refuse changes to or from dm"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, cron, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_chat_files": {
+      "scope": "targeted (2.6.2: chat file lifecycle, Basecamp 10392474704)",
+      "added": {
+        "classes": [
+          "Messaging\\ChatFiles"
+        ],
+        "options": [
+          "mvs_chat_attachments_moved"
+        ],
+        "background_jobs": [
+          "mvs_move_chat_attachments (Action Scheduler, WP-Cron fallback)"
+        ],
+        "post_meta": [
+          "_mvs_dm_move_failed"
+        ]
+      },
+      "changed": [
+        "mvs_message_deleted now also removes the deleted message own chat file"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_chat_files_failclosed": {
+      "scope": "targeted (2.6.2: ChatFiles listing filter fails closed, Basecamp 10392474704)",
+      "added": {},
+      "changed": [
+        "ChatFiles::hide_legacy keeps hiding while any move failed"
+      ],
+      "unchanged": "no new surface"
+    },
+    "refresh_2026_10_10_chat_files_retry": {
+      "scope": "targeted (2.6.2: chat file move retry + Site Health, Basecamp 10392474704)",
+      "added": {
+        "site_health_tests": [
+          "wpmediaverse_chat_files (only while moves failed)"
+        ]
+      },
+      "changed": [
+        "ChatFiles::maybe_start retries failed moves once a day"
+      ],
+      "unchanged": "REST routes, AJAX actions, settings, tables, WP-CLI, fired hooks"
+    },
+    "refresh_2026_10_10_bulk_kept": {
+      "scope": "targeted (2.6.2: bulk privacy reports kept chat files)",
+      "added": {
+        "response_fields": [
+          "POST /mvs/v1/media/bulk change_privacy: kept"
+        ]
+      },
+      "changed": [
+        "processed counts only items whose privacy changed"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_10_chat_files_item": {
+      "scope": "targeted (2.6.2: old chat files hidden from /wp/v2/media/{id})",
+      "added": {},
+      "changed": [
+        "ChatFiles hooks rest_request_before_callbacks"
+      ],
+      "unchanged": "routes, hooks fired, settings, tables"
+    },
+    "refresh_2026_10_10_chat_files_parity": {
+      "scope": "targeted (2.6.2: old chat files hidden on every route)",
+      "added": {},
+      "changed": [
+        "ChatFiles::hide_legacy_item keys on the attachments controller + parsed id",
+        "ChatFiles::hide_legacy covers post_type any"
+      ],
+      "unchanged": "routes, hooks fired, settings, tables"
+    },
+    "refresh_2026_10_10_chat_files_private": {
+      "scope": "targeted (2.6.2: old chat files set private on first request)",
+      "added": {},
+      "changed": [
+        "ChatFiles::privatize_legacy on init (once)",
+        "ChatFiles::hide_legacy covers search"
+      ],
+      "unchanged": "routes, hooks fired, settings, tables"
+    },
+    "refresh_2026_10_10_gallery": {
+      "scope": "targeted (2.6.2: gallery member visibility, Basecamp 10392589060)",
+      "added": {},
+      "changed": [
+        "MediaRepository::gallery_exclude_subquery hides a member only while its cover is published, approved and equally visible"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_10_reaction_notify_once": {
+      "scope": "targeted (2.6.2: reaction notification once per member per item)",
+      "added": {},
+      "changed": [
+        "NotificationService::on_reaction skips an existing media_reaction row for the same owner, actor and item"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_qa_round": {
+      "scope": "targeted (2.6.2: privacy hook order, chat files out of listings, gallery tile counts)",
+      "added": {
+        "methods": [
+          "MediaRepository::gallery_tile_counts(int[]): array<int,int> - items a listed tile stands for; 0 for a non-cover"
+        ]
+      },
+      "changed": [
+        "MediaRepository::set()/set_many() drop the row cache BEFORE firing mvs_media_privacy_changed",
+        "MediaRepository::explore_privacy_clause()/member_privacy_clause() exclude privacy 'dm' for owners and moderators",
+        "REST media group_count = gallery_tile_counts() (was the raw group size)",
+        "ActivityContentIntegration::refresh_broadcast_urls() falls back to viewer-minted URLs for non-public media"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_qa_round_3": {
+      "scope": "targeted (2.6.2 round 3: two security fixes, gallery rule reverted, client-nav full-load, BP lightbox gates)",
+      "added": {},
+      "changed": [
+        "MediaController::get_items slug lookup applies PrivacyService::can_view()",
+        "MessagingService::send_message keeps parent_id only within the same conversation; get_message_preview(int, int $conversation_id = 0)",
+        "MediaRepository::gallery_exclude_subquery back to the 2.6.1 rule (cover-private case known until 2.7.0)",
+        "MediaRepository::gallery_tile_counts two queries, request cache; primed in MediaController::prime_viewer_state",
+        "shared-ui navigate: region content with data-mvs-full-load falls back to a full load",
+        "bp-activity-media.js gates Edit/Report per item; mvsActivityMedia.userId added",
+        "GeneralSettingsRegistrar reads mvs_allow_user_privacy with its registered default"
+      ],
+      "unchanged": "routes, hooks, settings, tables"
+    },
+    "refresh_2026_10_11_round_4_security": {
+      "scope": "targeted (2.6.2 round 4: bounces 094/chat scroll, security group A Free items)",
+      "added": {
+        "hooks": [
+          "mvs_media_before_delete (action, MediaRepository::delete_cascade start)"
+        ],
+        "classes": [
+          "PostTypes\\PublicListing (archive/feed/sitemap show public albums/collections only)"
+        ],
+        "constants": [
+          "AccountDeletionService::META_SUSPENDED_BY_DELETION"
+        ]
+      },
+      "changed": [
+        "ActivitySyncIntegration: activity_media_ids() (composer CSV or bp_activity_id), strictest privacy, delete keeps posts with items left, item_id delete filtered by component",
+        "messaging.js: thread pinned to newest while media loads",
+        "SignedUrlController clamps ttl to SignedUrlService::get_ttl() (now public)",
+        "MessagingService::user_received_media ignores deleted/unsent messages",
+        "BulkController::filter_allowed_ids uses delete caps for delete",
+        "AccountDeletionService cancel lifts only the request's own suspension; MemberModeration marks moderator ownership",
+        "GDPR export honours MemberDataMap export_columns (blocks, reports)",
+        "ActivityService feed requires publish + approved (own pending allowed)",
+        "Album/Collection CPTs exclude_from_search",
+        "ActivityService count query always prepared (lifecycle clause binds the viewer)"
+      ],
+      "group_b": [
+        "UserDeletionService cascade job carries the user id; batches re-read author_media_ids",
+        "MediaRepository::generate_unique_slug two queries max; insert() retries a duplicate slug once",
+        "Album list: no item ids unless with_items; viewable_item_count counts own items with one COUNT; viewable_item_ids request cache",
+        "Migrator::run add_option lock + version per step",
+        "MemberPurger honours retain-map anonymise_unique (MemberDataMap::ANONYMOUS_ID_BASE)",
+        "CommentService::get_for_media fetches replies for the page's threads only",
+        "Requires PHP 8.1 (header, MVS_MIN_PHP, readme, composer)",
+        "NotificationService::already_notified for reactions, follows, favourites; titles hidden for readers who cannot view",
+        "UserController search uses user_nicename, not user_login",
+        "ViewRetentionService::purge_notifications (filter mvs_notification_retention_days)",
+        "NotificationService::notify_owner_once shared by reactions and favourites"
+      ],
+      "group_c_d": [
+        "Plugin::is_pro_active() replaces three private copies and four inline checks",
+        "PrivacyService::apply_requested_privacy() shared by BulkController and Pro bulk privacy",
+        "mvs-rest.js uploadMedia()/appendVideoPoster() used by media-upload, dashboard-view and shared-ui uploads",
+        "Deprecated (removal 4.0.0): 8 unused MediaRepository methods via _deprecated_function",
+        "MediaListPage: redundant deletes removed; publish_at scheduled branch removed; ViewRetentionService prune_views batched",
+        "AiSettingsRegistrar: WPCS class brace (no behaviour change)"
+      ],
+      "code_standard": [
+        "Comments only across includes/, src/, assets/js, tests: docblocks moved onto their methods, card ids and history narration out (token streams unchanged)",
+        "coding-rules Rules 9-11 (bin/lib/code-standard-check.php, baseline audit/cleanup/code-standard-baseline.txt)",
+        "PHPStan level 6 with regenerated baseline"
+      ],
+      "qa_bounces": [
+        "Dashboard album Edit reads GET /albums/{id} for its selection; filter mvs_album_list_include_items",
+        "MemberPurger routes mvs_media_index through delete_cascade (batch 50); skips while UserDeletionService::cascade_pending()",
+        "Migrator::acquire_lock() wraps WP_Upgrader::create_lock (LOCK_NAME mvs_migrator)",
+        "bp-tab-upload.js uses mvsRest.uploadMedia (fields.extra)",
+        "admin_media_list and privacy_levels_in_use leave out 'dm'",
+        "Version 2.6.2"
+      ],
+      "core_contract": [
+        "docs/architecture/core-contract.md: one owner per rule; extensions call doors",
+        "PrivacyService: level_audience_sql, safety_refuses, are_friends/friend_ids, map_external_privacy, media_drive_access public, apply_requested_privacy filter; member_privacy_clause + 'visible' mode + query_listable_spaces include followers/friends/legacy loggedin",
+        "Migrator v41: BuddyPress activity levels of legacy loggedin media",
+        "BuddyPress activity filter, group tab and Explore templates use core rules; resolve_explore_privacy_mode deprecated",
+        "MediaRepository: status_columns_many, id_from_permalink, move_to_drive, thumbnails via MediaUrl::thumb",
+        "MediaCapabilities::can_edit_media; AlbumService::album_of",
+        "EmailService::types() + send_member_email(); settings render from the list",
+        "MessageRepository (message_repository); MessagingService get_message_senders, max_group_participants (create/add/rejoin)",
+        "UserDeletionService runs MemberPurger until done (background job mvs_user_deletion_purge)",
+        "REST GET /mvs/v1/media/{id}/spaces (viewer-filtered)",
+        "mvs-rest.js: captureVideoFrame, proUrl, uploadMedia extra/signal; all uploaders use it; album-upload.js the only album uploader",
+        "coding-rules Rule 12 (core contract owners) with baseline",
+        "PHPStan 6 value types and WPCS alignment on the new doors"
+      ],
+      "unchanged": "routes, settings, tables"
+    },
+    "refresh_2026_10_11_gallery_poster_search": {
+      "scope": "2.6.2 delta: gallery front tile, video poster on replace, scoped document search, Free module imports, comment replies, unsent chat files",
+      "added": [
+        "MediaRepository::gallery_hidden_clause( $alias, $sibling_join, $sibling_where, $sibling_params ) - a gallery member is hidden only behind a sibling the same listing shows (used by query() and the REST feed group_covers)",
+        "MediaRepository::document_scope_ids( $scope ) - published documents in an author/folder/drive scope, space links included",
+        "MediaRepository::document_title_candidates() third arg $within",
+        "Migrator v42: mvs_media_meta KEY meta_value_lookup (meta_key, meta_value(64))",
+        "MediaController::apply_client_poster() shared by create_item and replace_file",
+        "Comment delete removes its replies (filter mvs_comment_delete_replies)",
+        "ChatFiles::sweep_unsent on mvs_purge_old_views (filter mvs_unsent_chat_file_hours)",
+        "assets/js/frontend/sync-events.js (module @wpmediaverse/sync-events for Pro/add-ons; Free imports it by relative path)"
+      ],
+      "changed": [
+        "gallery_tile_counts(): the front item of each gallery privacy set carries the badge",
+        "ActivityContentIntegration::refresh_broadcast_urls() re-mints <video poster>",
+        "wp mvs diagnose-cpt-ids: forecast removed (CptIdCollisionService::forecast and three MediaIntegrityRepository helpers deleted)",
+        "Pro SearchService narrows author/folder/drive inside the FULLTEXT and title queries",
+        "Visitor lightbox skips the favourite call; share dialog intro only with anonymous links; boost button follows is_entrable",
+        "Interactivity stores wrap actions with syncEvents(); data-wp-ignore removed; chat menu aria-labels; comment action targets 44px"
+      ],
+      "deprecated": [
+        "MediaRepository::gallery_exclude_subquery() since 2.6.2, removal 4.0.0"
+      ],
+      "unchanged": "routes, settings"
+    },
+    "refresh_2026_10_12_review_fixes": {
+      "scope": "2.6.2 regression review fixes (code + browser review, 12 Oct)",
+      "added": [
+        "EmailService::host_owns( $type ); types() entries accept 'host_owned' (default true)",
+        "MediaRepository::document_scope_clause( $column, $scope ); document_scope_ids( $scope, $among ) now checks a bounded list",
+        "MediaRepository::search_clause( $search, $alias = '' )",
+        "query_by_author / count_visible_by_author accept exclude_non_cover_group",
+        "Migrator v43: mvs_messages KEY media_id, KEY attachment_id",
+        "filter mvs_privacy_level_value (unknown privacy slugs map to private, 80)",
+        "Deactivator::JOB_HOOKS includes ChatFiles::HOOK"
+      ],
+      "changed": [
+        "ChatFiles::move keeps sent files it cannot read (fail + Site Health) and fresh unsent ones; hide_legacy nests its meta clause under AND",
+        "AccountDeletionService::request is idempotent while a deletion is pending",
+        "GeneralSettingsRegistrar lists only emails the host does not own",
+        "Media Grid block render uses gallery_hidden_clause()",
+        "build_query_parts search uses search_clause( 'm' )",
+        "document_title_candidates third arg is the scope array",
+        "NotificationService: no link to an item the reader cannot see",
+        "dashboard-view album modal merges early picks; bp-activity-media revokes preview blob URLs; explore-feed render uses 'explore' privacy"
+      ],
+      "unchanged": "routes, settings"
+    },
+    "refresh_2026_10_13_bugs_column": {
+      "scope": "2.6.2 Bugs column (13 Oct): gallery badge per viewer, BuddyPress comment mirror sync, polish",
+      "added": [
+        "MediaRepository::gallery_tile_counts( $media_ids, ?int $viewer_id = null ) counts members the viewer may see",
+        "ActivitySyncIntegration::ACTIVITY_COMMENT_META (_mvs_bp_activity_comment_id); delete_comment / edit_comment listeners remove or rewrite the mirrored activity comment",
+        "MessagingService::blocked_pair_refusal() (private)"
+      ],
+      "changed": [
+        "templates media-single.php, partials/dashboard-content.php, partials/shared-ui-frame.php @version 2.6.2"
+      ]
+    },
+    "refresh_2026_10_13_bp_profile_gallery": {
+      "scope": "BP profile Media tab follows the gallery rule",
+      "changed": [
+        "ProfileTabIntegration::fetch_media_ids passes exclude_non_cover_group to count_visible_by_author and query_by_author"
+      ]
+    },
+    "refresh_2026_10_13_group_scope": {
+      "scope": "BP group listing scope",
+      "added": [
+        "MediaRepository::group_scope_clause( $alias, $group_id, $viewer_id, $privacy_sql, $privacy_params )",
+        "query() arg group_id",
+        "GET /mvs/v1/media param group (integer)"
+      ],
+      "changed": [
+        "GroupTabIntegration::fetch_media_ids lists through query() (own SQL removed); Load More sends data-group",
+        "group_scope_clause lists nothing for non-members of a private/hidden group (bp_moderate exempt)"
+      ]
+    },
+    "refresh_2026_10_13_presentation_messaging": {
+      "scope": "13 Oct afternoon: chat media, blocked-pair UI, list layout, lightbox controls, licensing",
+      "added": [
+        "MessagingService::mask_blocked_presence(), mark_sent()",
+        "TemplateLoader::serve_as_found()",
+        "TemplateHelpers::render_grid_stats() (private); .mvs-grid-item-details in tiles",
+        "MediaController::group_route_args() (private)",
+        "NotificationService::on_comment_deleted(), MediaRepository::delete_comment_notifications()",
+        "ActivitySyncIntegration::remove_mirror_on_edit() on wp_update_comment_data",
+        "NotificationService::on_conversation_read() on mvs_conversation_read",
+        "MediaRepository::mark_notifications_read_from()",
+        "notification REST item date_human",
+        "dashboard-view actions.closeNotifications",
+        "TemplateHelpers::render_grid_meta() (shared tile meta; block uses it)",
+        "BP tab grids carry grid_layout_class()",
+        "card_builders_i18n statLabels",
+        "messaging.js listRow(), deleteMessageNow/unsendMessageNow behind showConfirm, .mvs-chat-msg__more",
+        "Plugin::virtual_route_vars() + filter mvs_virtual_route_query_vars (used by parse_query hook and TemplateLoader::is_mvs_virtual_route)"
+      ],
+      "changed": [
+        "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)",
+        "GroupTabIntegration Load More uses gallery_params()",
+        "Removed ActivitySyncIntegration::update_mirrored_activity_comment(): edits are not copied to BuddyPress",
+        "TemplateLoader::is_mvs_virtual_route() includes mvs_messages_page (no core 404)",
+        "Virtual routes query no posts (post__in 0); profile name is the page h1; hidden h1 on messages",
+        "CommentController edit: 0 from wp_update_comment is success",
+        "CompanionRegistry: no unlocks for learnomy, wp-career-board, wb-listora",
+        "CommentController edit: only false is a failure"
+      ]
     }
   },
   "category_sources": {

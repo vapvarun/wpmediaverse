@@ -1,6 +1,6 @@
 # Photo Challenges
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Run themed photo competitions - your community submits their best shots, votes for their favorites, and the top three photographers win point prizes.
 
@@ -125,7 +125,7 @@ Themes are grouped into the categories Color, Concept, Creative, Life, Nature, P
 }
 ```
 
-Returns `400` if the media is not yours, the challenge is not accepting entries, or you have reached the maximum entries per user. Returns `409` if that media was already submitted.
+Returns `400` if the media is not yours, is not public and approved, the challenge is not accepting entries, or you have reached the maximum entries per user. Returns `409` if that media was already submitted.
 
 ### POST /challenges/{id}/entries/{entry_id}/vote
 
@@ -145,7 +145,8 @@ The entry form lets members select from their existing uploaded media or upload 
 
 ## Who Can See Entries (Logged-Out Experience)
 
-- **Entering makes the photo public.** The moment a member submits an entry, that photo is visible in the challenge gallery to everyone - including logged-out visitors - even if the original upload is private. This is by design: challenges are a public competition, so an entered photo can't stay hidden while still being voted on. The entry form tells the member this before they submit.
+- **Only public, approved photos can enter.** An entry is visible in the challenge gallery to everyone, including logged-out visitors. So a private photo cannot be picked as an entry. When a member uploads a new photo from the entry form, that new photo is made public, because challenges are a public competition. The entry form tells the member this before they submit. If an entry is later hidden, it shows as missing.
+- **Challenge emails.** On BuddyNext sites, challenge emails are sent to members.
 - **Challenges show when voting opened, not just when it ends.** Each challenge displays both a **Voting opened** and a **Voting ends** timestamp, so visitors can see the full voting window instead of only a deadline with no visible start.
 - **Logged-out visitors get a call to action, not a blank area.** On the Active tab, a visitor who is not logged in sees **Create an account** (linking to registration) followed by "to enter challenges." in place of the entry form. On the Voting tab, each entry shows **Log in to vote** (linking to login) instead of a vote button. Neither area is left empty.
 

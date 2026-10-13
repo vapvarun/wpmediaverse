@@ -1,8 +1,8 @@
 # Auto-Captions
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
-MediaVerse Pro transcribes video and audio files using the OpenAI Whisper API and attaches the result as a WebVTT caption file. Captions show in the website's video players through the browser's captions control (the lightbox, the single media page and the Media Player block), and can be edited via the REST API.
+MediaVerse Pro transcribes video files using the OpenAI Whisper API and attaches the result as a WebVTT caption file. Captions show in the website's video players through the browser's captions control (the lightbox, the single media page and the Media Player block), and can be edited via the REST API.
 
 ## Requirements
 
@@ -15,12 +15,14 @@ Go to **MediaVerse > Settings > AI**. The **Auto-Captions & Transcription** sect
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Auto-generate on Upload | Off | Automatically generate captions when a video or audio file is uploaded |
+| Auto-generate on Upload | Off | Automatically generate captions when a video is uploaded |
 | Default Language | English | The language most of your videos are spoken in, passed to Whisper as a hint. Choose Auto-detect if it varies. Shown once auto-generate is on |
 
 The OpenAI API key is read from the free plugin's existing **OpenAI API Key** setting (the `mvs_openai_api_key` option, configured under **MediaVerse > Settings > AI**). There is no separate Pro Whisper key field - captions reuse the same key as the rest of the AI features.
 
 ![Auto-captions and transcription setting on the AI tab](../images/settings-auto-captions.webp)
+
+Captions are written for videos only. Members can ask for a transcript of their own video only while **Auto-generate on Upload** is on, once per video, up to five times a day. Admins are not limited.
 
 When **Auto-generate on Upload** is on, MediaVerse Pro queues a transcription job via Action Scheduler immediately after a file is stored. The caption file is saved once the Whisper API responds.
 
@@ -58,7 +60,7 @@ Retrieve the caption metadata for a media item. Returns `404` when the item has 
 
 ### POST /media/{id}/captions/generate
 
-Queue Whisper transcription for the media item. Requires ownership or admin (`manage_mvs_settings`). No body is required. Only video and audio items are accepted, and the OpenAI key must be set (otherwise the answer is `503`).
+Queue Whisper transcription for the media item. Requires ownership or admin (`manage_mvs_settings`). A member who is not an admin may ask only while **Auto-generate on Upload** is on, not for a video that already has captions (`409`), and at most 5 times a day; admins can re-generate at any time. No body is required. Only video items are accepted (audio too when the `mvs_pro_caption_media_types` filter adds it), and the OpenAI key must be set (otherwise the answer is `503`).
 
 ```bash
 curl -X POST https://yoursite.com/wp-json/mvs-pro/v1/media/123/captions/generate \
@@ -112,3 +114,11 @@ Today we are covering the main topic.
 ## Editing Captions
 
 To correct a transcription, replace the stored VTT through the REST API with `PUT /media/{id}/captions`, passing the edited WebVTT content in the `vtt_content` field (see the REST API section above). The content must begin with the `WEBVTT` header.
+
+## Audio files
+
+Audio is not transcribed by default, because the audio player has no captions track to show the result. A site with its own player (or the app) can turn it back on:
+
+```php
+add_filter( 'mvs_pro_caption_media_types', fn() => array( 'video', 'audio' ) );
+```

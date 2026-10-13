@@ -64,7 +64,7 @@ class ActivityMediaLinkage {
 		// behind - measured 18 of 26 rows orphaned on the QA site. BuddyPress's
 		// own docblock on bp_activity_delete() says to use this one when you
 		// want the IDs. It also fires AFTER the delete succeeded, so a failed
-		// delete no longer drops links.
+		// delete does not drop links.
 		add_action( 'bp_activity_deleted_activities', array( $this, 'on_activity_delete' ) );
 	}
 
@@ -163,11 +163,15 @@ class ActivityMediaLinkage {
 			// URL that answered 403 - neither hidden nor honest. Guarding the
 			// renderer covers trash, hard delete and legacy orphans in one place;
 			// deleting activities on trash would destroy a post that restoring
-			// the media should bring back. Basecamp 10285850126.
+			// the media should bring back.
 			if ( ! $mvs_repo->exists( $mvs_media_id ) ) {
 				continue;
 			}
 			if ( 'publish' !== (string) $mvs_repo->get( $mvs_media_id, 'status' ) ) {
+				continue;
+			}
+			// Each tile shows only to a viewer who may open that item.
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_media_id, get_current_user_id() ) ) {
 				continue;
 			}
 
@@ -226,7 +230,7 @@ class ActivityMediaLinkage {
 	 * lookup this table exists to make possible.
 	 *
 	 * Added for `ActivitySyncIntegration::clean_activities_for_media()`,
-	 * which previously found these via a `LIKE '%,123,%'` scan across the
+	 * which would otherwise find these via a `LIKE '%,123,%'` scan across the
 	 * entire `bp_activity_meta` table on every media delete — unindexed and
 	 * unbounded by activity count. `media_id` carries its own KEY (Migrator
 	 * v12); `object_type` scopes the shared table (Migrator v16 opened it up

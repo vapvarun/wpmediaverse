@@ -34,8 +34,8 @@ $index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )
 
 // Viewer-scoped privacy gate so a public stats block only aggregates media the
 // viewer is allowed to see: owner/moderator → all; member → public + members +
-// own; anon → public only. Previously every total summed the author's PRIVATE
-// media too, exposing private view/reaction volume publicly (audit 2026-06-04).
+// own; anon → public only. Summing the author's PRIVATE media too would
+// expose private view/reaction volume publicly.
 $mvs_stats_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 list( $mvs_stats_priv_sql, $mvs_stats_priv_params ) = $mvs_stats_repo->explore_privacy_clause( 'idx', get_current_user_id() );
 

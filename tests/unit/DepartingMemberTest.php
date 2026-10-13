@@ -87,6 +87,18 @@ class DepartingMemberTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Run the media cascade account deletion queues, as Action Scheduler would.
+	 */
+	private function run_deletion_queue(): void {
+		$service = \WPMediaVerse\Core\Plugin::container()->get( 'user_deletion' );
+		for ( $run = 0; $run < 10 && \WPMediaVerse\Services\UserDeletionService::cascade_pending( $this->leaver ); $run++ ) {
+			as_unschedule_all_actions( \WPMediaVerse\Services\UserDeletionService::CASCADE_HOOK, array( $this->leaver ), 'wpmediaverse' );
+			$service->process_cascade_batch( $this->leaver );
+		}
+		\WPMediaVerse\Repository\MediaRepository::reset_test_cache();
+	}
+
+	/**
 	 * Whether a row is still in the index.
 	 *
 	 * @param int $media_id Media id.
@@ -136,6 +148,7 @@ class DepartingMemberTest extends WP_UnitTestCase {
 		);
 
 		wp_delete_user( $this->leaver );
+		$this->run_deletion_queue();
 
 		$this->assertFalse(
 			$this->exists( $personal ),
@@ -155,10 +168,10 @@ class DepartingMemberTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * "Attribute all content to" keeps the member's media (Basecamp 10344411938).
+	 * "Attribute all content to" keeps the member's media.
 	 *
-	 * WordPress hands posts to the chosen member; media used to be erased
-	 * instead. Everything moves with its privacy kept, a personal drive follows
+	 * WordPress hands posts to the chosen member; media goes to them too instead
+	 * of being erased. Everything moves with its privacy kept, a personal drive follows
 	 * its new owner, Space files still go to their Space, and only DM
 	 * attachments go with the erased messages (owner decision 2026-09-27).
 	 */
@@ -181,6 +194,7 @@ class DepartingMemberTest extends WP_UnitTestCase {
 		);
 
 		wp_delete_user( $this->leaver, $heir );
+		$this->run_deletion_queue();
 
 		foreach ( array( $public, $private ) as $id ) {
 			$this->assertTrue( $this->exists( $id ), 'Media was erased although the admin chose to keep the content.' );
@@ -220,6 +234,7 @@ class DepartingMemberTest extends WP_UnitTestCase {
 		$unstamped = $this->seed_document( $this->leaver, '', 0 );
 
 		wp_delete_user( $this->leaver );
+		$this->run_deletion_queue();
 
 		$this->assertFalse(
 			$this->exists( $unstamped ),
@@ -237,6 +252,7 @@ class DepartingMemberTest extends WP_UnitTestCase {
 
 		// No `mvs_document_drive_successor` filter answers.
 		wp_delete_user( $this->leaver );
+		$this->run_deletion_queue();
 
 		$this->assertTrue(
 			$this->exists( $team ),

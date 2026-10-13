@@ -50,7 +50,7 @@ class NotificationIntegration {
 	 * through `mvs_notification_types`) reaches BuddyPress without anyone
 	 * remembering to add it here. With BP notifications on, the MediaVerse
 	 * bell is hidden, so an unmirrored type is a notification nobody sees
-	 * (follows and favorites were, Basecamp 10296867984).
+	 * (follows and favorites were,
 	 *
 	 * @param string $type Notification type.
 	 * @return string
@@ -123,7 +123,7 @@ class NotificationIntegration {
 			return;
 		}
 
-		// Duplicate-notification guard (Basecamp #10077983779). When the media
+		// Duplicate-notification guard. When the media
 		// has a linked BP activity, a comment on it is also posted as a BP
 		// activity comment (ActivitySyncIntegration::sync_media_comment_to_activity),
 		// and BP's own notification system already notifies the activity author
@@ -189,7 +189,7 @@ class NotificationIntegration {
 	 * Mirrors ActivitySyncIntegration's mvs_media_deleted cleanup: without this,
 	 * bp_notifications rows created by on_notification_created (component
 	 * 'wpmediaverse', item_id = media_id) dangle after the media is gone and keep
-	 * rendering in the owner's dropdown (Basecamp #10077983779).
+	 * rendering in the owner's dropdown.
 	 *
 	 * @param int $media_id  Deleted media ID.
 	 * @param int $author_id Media author (unused; kept for hook signature).
@@ -279,7 +279,7 @@ class NotificationIntegration {
 		$media_id = (int) $item_id;
 		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$rendered = \WPMediaVerse\Core\Plugin::container()->get( 'notifications' )
-			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0, (int) bp_notifications_get_meta( (int) $id, self::OBJECT_META ) );
+			->build_message_and_link( $type, (int) $secondary_item_id, $media_id > 0 && $repo->exists( $media_id ) ? $media_id : 0, (int) bp_notifications_get_meta( (int) $id, self::OBJECT_META ), get_current_user_id() );
 		$text     = $rendered['message'];
 		$link     = '' !== $rendered['link'] ? $rendered['link'] : bp_get_notifications_permalink();
 

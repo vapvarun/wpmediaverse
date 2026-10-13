@@ -76,4 +76,4 @@ ALL hold:
 | Layout change doesn't reach albums/collections | Album/collection template still hardcodes grid | `templates/album.php`, `templates/collection.php` |
 | Grid Columns ignored at 390px | Missing/overridden responsive breakpoint rule | `assets/css/frontend.css` |
 | Load More shows with nothing more to load | Pagination total-count check wrong | `includes/REST/Pagination.php` |
-| Lightbox still serves `large` after option change | Lightbox source read is cached or hardcoded | `assets/js/frontend/lightbox.js` (or equivalent), `includes/Core/MediaUrl.php` |
+| Lightbox still serves `large` after option change | Lightbox source read is cached or hardcoded | `src/blocks/shared-ui/view.js` (the shared lightbox), `includes/Core/MediaUrl.php` |

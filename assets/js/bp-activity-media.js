@@ -13,6 +13,7 @@
 	// i18n bridge — guard in case wp.i18n is unavailable (graceful English fallback).
 	var i18n = ( window.wp && window.wp.i18n ) ? window.wp.i18n : null;
 	var __ = i18n ? i18n.__ : function( s ) { return s; };
+	var _n = i18n ? i18n._n : function( single, plural, n ) { return 1 === n ? single : plural; };
 	var sprintf = i18n ? i18n.sprintf : function( fmt ) {
 		var args = Array.prototype.slice.call( arguments, 1 );
 		var i = 0;
@@ -29,6 +30,18 @@
 
 	var maxMedia = ( typeof mvsActivityMedia !== 'undefined' && mvsActivityMedia.maxMedia ) ? mvsActivityMedia.maxMedia : 6;
 	var attachedMedia = []; // Array of { id, thumbUrl }
+
+	// A video's preview frame is a blob URL; release it when the item leaves the composer.
+	function releaseThumb( item ) {
+		if ( item && 'string' === typeof item.thumbUrl && 0 === item.thumbUrl.indexOf( 'blob:' ) ) {
+			URL.revokeObjectURL( item.thumbUrl );
+		}
+	}
+
+	function clearAttached() {
+		attachedMedia.forEach( releaseThumb );
+		attachedMedia = [];
+	}
 	var isSubmitting = false; // Flag to prevent orphan cleanup during form submit
 
 	function syncHiddenInput() {
@@ -128,7 +141,7 @@
 			removeBtn.textContent = '\u00D7';
 			removeBtn.setAttribute( 'aria-label', __( 'Remove media', 'wpmediaverse' ) );
 			removeBtn.addEventListener( 'click', function() {
-				attachedMedia.splice( idx, 1 );
+				attachedMedia.splice( idx, 1 ).forEach( releaseThumb );
 				renderPreview();
 			} );
 
@@ -138,69 +151,6 @@
 		} );
 
 		syncHiddenInput();
-	}
-
-	function generateVideoThumb( file ) {
-		return new Promise( function( resolve ) {
-			var video = document.createElement( 'video' );
-			var url   = URL.createObjectURL( file );
-			video.preload = 'metadata';
-			video.muted   = true;
-			video.playsInline = true;
-			video.src     = url;
-			video.addEventListener( 'loadeddata', function() {
-				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
-			} );
-			video.addEventListener( 'seeked', function() {
-				try {
-					var canvas = document.createElement( 'canvas' );
-					var w = video.videoWidth  || 320;
-					var h = video.videoHeight || 180;
-					// Capture at native resolution so the server can resize to
-					// large/medium/thumb. The 200px-wide downscale used pre-1.4.1
-					// produced a blurry "thumb_large" that Safari/Bing then used
-					// as the <video poster> and the result looked broken on the
-					// activity stream (card 9910574354).
-					canvas.width  = w;
-					canvas.height = h;
-					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-					URL.revokeObjectURL( url );
-					resolve( canvas.toDataURL( 'image/jpeg', 0.85 ) );
-				} catch ( e ) {
-					URL.revokeObjectURL( url );
-					resolve( '' );
-				}
-			} );
-			video.addEventListener( 'error', function() {
-				URL.revokeObjectURL( url );
-				resolve( '' );
-			} );
-		} );
-	}
-
-	// Convert a data:image/jpeg;base64,... URL to a Blob so it can ride the
-	// multipart upload as the `thumbnail` field. `MediaController::create_item()`
-	// stages this blob into `wpmediaverse/posters/{media_id}.jpg` and feeds it
-	// through `UploadService::generate_thumbnails()` — same pipeline as the
-	// server-side ffmpeg / cover-atom paths. Safari/Bing now always receive a
-	// real `<video poster>` instead of the default-SVG fallback.
-	function dataURLtoBlob( dataURL ) {
-		if ( ! dataURL || dataURL.indexOf( 'data:' ) !== 0 ) {
-			return null;
-		}
-		try {
-			var parts = dataURL.split( ',' );
-			var match = parts[ 0 ].match( /:(.*?);/ );
-			var mime  = match ? match[ 1 ] : 'image/jpeg';
-			var bin   = atob( parts[ 1 ] );
-			var bytes = new Uint8Array( bin.length );
-			for ( var i = 0; i < bin.length; i++ ) {
-				bytes[ i ] = bin.charCodeAt( i );
-			}
-			return new Blob( [ bytes ], { type: mime } );
-		} catch ( e ) {
-			return null;
-		}
 	}
 
 	/**
@@ -220,54 +170,40 @@
 	 */
 	function uploadFile( file, btn, slots, index, onProgress ) {
 		// The caller already trimmed the selection to the remaining allowance,
-		// so this no longer needs to re-check attachedMedia.length — and must
+		// so this does not re-check attachedMedia.length — and must
 		// not, because with concurrent uploads that count is still 0 for every
 		// in-flight file and the guard would either pass for all or none.
 
 		var isVideo = file.type.indexOf( 'video/' ) === 0;
 		var isAudio = file.type.indexOf( 'audio/' ) === 0;
 
-		// Serialize thumb capture BEFORE the upload starts so the captured
-		// frame can ride the same multipart POST as `thumbnail`. Pre-1.4.1
-		// ran these in parallel and the captured frame was discarded —
-		// videos with no embedded cover and no ffmpeg on the server ended
-		// up with the default-poster SVG instead of a real first frame.
-		var thumbPromise = isVideo ? generateVideoThumb( file ) : Promise.resolve( '' );
+		// One frame, captured once: it rides the upload as the poster and is the
+		// preview tile while the post is composed.
+		var framePromise = isVideo ? window.mvsRest.captureVideoFrame( file ) : Promise.resolve( null );
 
-		return thumbPromise.then( function( localThumb ) {
-			var fd = new FormData();
-			fd.append( 'file', file );
-			fd.append( 'status', 'draft' );
-
-			// Include the user's chosen privacy level when the admin setting
-			// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
-			// so a forged privacy param is overridden server-side.
+		return framePromise.then( function( frame ) {
+			// The member's privacy choice, when the site lets members choose; the
+			// server still enforces the owner's setting.
 			var privacySel = document.getElementById( 'mvs-activity-privacy' );
-			if ( privacySel && privacySel.value ) {
-				fd.append( 'privacy', privacySel.value );
-			}
 
-			if ( isVideo && localThumb ) {
-				var blob = dataURLtoBlob( localThumb );
-				if ( blob ) {
-					fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
-				}
-			}
-
-			return window.mvsRest.restFetch( restUrl + 'media?context=activity', {
-				method: 'POST',
-				body: fd,
-				onUploadProgress: onProgress ? function( loaded, total ) {
+			return window.mvsRest.uploadMedia(
+				restUrl + 'media?context=activity',
+				file,
+				{
+					privacy: privacySel && privacySel.value ? privacySel.value : '',
+					poster: frame,
+					extra: { status: 'draft' }
+				},
+				onProgress ? function( loaded, total ) {
 					onProgress( index, total ? loaded / total : 0 );
 				} : undefined
-			} ).then( function( r ) {
+			).then( function( r ) {
 				var data = r.data || {};
 				// restFetch does NOT throw on HTTP 4xx/5xx, so an unsupported
 				// type (PDF/document) comes back as a 400 with a WP_Error body
-				// that has no `id`. Pre-1.6.0 the handler only checked data.id,
-				// so the upload failed SILENTLY with no notice. Throw the
+				// that has no `id`, so checking data.id alone would fail the upload
+				// SILENTLY with no notice. Throw the
 				// server's message so the catch below shows it to the user
-				// (audit 2026-06-04, #9962548621).
 				if ( ! r.ok || ! data || ! data.id ) {
 					throw new Error(
 						( data && data.message )
@@ -277,7 +213,7 @@
 				}
 				slots[ index ] = {
 					id:        data.id,
-					thumbUrl:  localThumb || data.thumbnail_url || '',
+					thumbUrl:  frame ? URL.createObjectURL( frame ) : ( data.thumbnail_url || '' ),
 					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
 				};
 			} );
@@ -295,7 +231,7 @@
 				navigator.sendBeacon( restUrl + 'media/' + item.id + '?_method=DELETE', fd );
 			}
 		} );
-		attachedMedia = [];
+		clearAttached();
 	}
 
 	window.addEventListener( 'beforeunload', cleanupOrphans );
@@ -359,7 +295,7 @@
 			privacySel.style.display = '';
 		}
 		// Reveal the tags field too — applied to the attached media at post
-		// time (audit 2026-06-04, #9962548621).
+		// time.
 		var tagsField = document.getElementById( 'mvs-activity-tags' );
 		if ( tagsField ) {
 			tagsField.style.display = '';
@@ -446,7 +382,7 @@
 			var errText = document.createElement( 'span' );
 			// Show the specific server message (e.g. "PDF uploads are not
 			// supported.") instead of a generic line, so an unsupported-type
-			// upload tells the user WHY (audit 2026-06-04, #9962548621).
+			// upload tells the user WHY.
 			errText.textContent = ( err && err.message )
 				? err.message
 				: __( 'Upload failed. Please try again.', 'wpmediaverse' );
@@ -466,7 +402,7 @@
 		jQuery( document ).on( 'bp_activity_ajax_post_update', function() {
 			isSubmitting = false;
 			window.removeEventListener( 'beforeunload', cleanupOrphans );
-			attachedMedia = [];
+			clearAttached();
 			renderPreview();
 			var btn = document.getElementById( 'mvs-activity-media-btn' );
 			if ( btn ) { btn.disabled = false; btn.style.opacity = '1'; }
@@ -581,7 +517,7 @@
 			}
 
 			// Real success — reset closure state so the next upload starts fresh.
-			attachedMedia = [];
+			clearAttached();
 			isSubmitting = false;
 
 			var hiddenInput = document.getElementById( 'mvs-activity-media-ids' );
@@ -626,7 +562,7 @@
 			// Nouveau can re-render the tab body via AJAX after this handler
 			// binds, which would leave `titleIn` pointing at a detached node
 			// that reads empty — the false "Please enter an album name." bug
-			// (Basecamp 10069383195). getElementById always resolves the live
+			// getElementById always resolves the live
 			// node in the current DOM.
 			var titleEl = document.getElementById( 'mvs-bp-album-title' );
 			var descEl  = document.getElementById( 'mvs-bp-album-desc' );
@@ -769,7 +705,7 @@
 			// knows by name. The <picture> wrapper around the lightbox image was
 			// one it did not know, and `.mvs-lightbox-media picture[hidden]`
 			// made the stale attribute authoritative — so the media area opened
-			// solid black (Basecamp 10264071147). The comments heading was
+			// solid black. The comments heading was
 			// another, silently.
 			//
 			// Clearing by "did IA control this?" rather than by a list of
@@ -850,6 +786,9 @@
 					return;
 				}
 				populateSharedLightbox( overlay, data );
+				if ( data.media_group ) {
+					expandSharedGallery( overlay, mediaId );
+				}
 
 				// Social data fetches in parallel.
 				loadSharedReactions( overlay, mediaId );
@@ -866,6 +805,28 @@
 			} );
 		}
 
+		// A tile that stands for a gallery steps through every member the viewer
+		// may see, as the Explore lightbox does: the page lists one tile per
+		// gallery, so the set cannot come from the ids printed on the page.
+		function expandSharedGallery( overlay, mediaId ) {
+			apiGet( 'media/' + mediaId + '/group' ).then( function( items ) {
+				if ( ! Array.isArray( items ) || items.length < 2 || suiState.mediaId !== mediaId ) { return; }
+				var ids   = items.map( function( i ) { return parseInt( i.id, 10 ); } );
+				var known = suiState.gallery.map( function( g ) { return g.mediaId; } );
+				if ( ids.every( function( id ) { return known.indexOf( id ) >= 0; } ) ) { return; }
+
+				var current = suiState.gallery.length ? suiState.galleryIndex : 0;
+				var outside = function( g ) { return ids.indexOf( g.mediaId ) < 0; };
+				var gallery = suiState.gallery.slice( 0, current ).filter( outside )
+					.concat( ids.map( function( id ) { return { mediaId: id, imgSrc: '' }; } ) )
+					.concat( suiState.gallery.slice( current + 1 ).filter( outside ) );
+
+				suiState.gallery      = gallery;
+				suiState.galleryIndex = gallery.map( function( g ) { return g.mediaId; } ).indexOf( mediaId );
+				updateSharedNav( overlay );
+			} ).catch( function() {} );
+		}
+
 		function populateSharedLightbox( overlay, data ) {
 			var loading = overlay.querySelector( '.mvs-lightbox-loading' );
 			var media   = overlay.querySelector( '.mvs-lightbox-media' );
@@ -873,6 +834,17 @@
 			if ( loading ) { loading.setAttribute( 'hidden', '' ); }
 			if ( media )   { media.removeAttribute( 'hidden' ); }
 			if ( sidebar ) { sidebar.removeAttribute( 'hidden' ); }
+
+			// The clone un-hid every slot IA controlled (createBPLightbox), so the
+			// error box and document cards sat beside the player and squeezed it
+			// off-centre. Hide every slot by rule, then open the one this item needs.
+			if ( media ) {
+				Array.prototype.forEach.call( media.children, function( el ) {
+					if ( ! el.matches( '.mvs-lightbox-nav, .mvs-lightbox-position' ) ) {
+						el.setAttribute( 'hidden', '' );
+					}
+				} );
+			}
 
 			// Media: show the right element (img/video/audio) based on type.
 			var img = media ? ( media.querySelector( 'picture img' ) || media.querySelector( 'img' ) ) : null;
@@ -889,14 +861,37 @@
 					img.src = data.thumbnail_url || data.file_url || '';
 					img.alt = data.title || '';
 					img.removeAttribute( 'hidden' );
+					if ( img.parentElement && 'PICTURE' === img.parentElement.tagName ) {
+						img.parentElement.removeAttribute( 'hidden' );
+					}
 				}
 			}
 			if ( vid ) {
 				if ( isVideo ) {
+					// Same as the IA lightbox: a file the browser cannot play shows why.
+					var vidError = media.querySelector( '.mvs-lightbox-media-error' );
+					vid.onerror = function() {
+						if ( ! vid.getAttribute( 'src' ) || ! vidError ) { return; }
+						vid.setAttribute( 'hidden', '' );
+						var dl = vidError.querySelector( 'a' );
+						if ( dl ) {
+							dl.href = data.file_url || '';
+							dl.hidden = false === data.allow_download;
+						}
+						vidError.removeAttribute( 'hidden' );
+					};
+					// Poster as in the IA lightbox (lightboxPosterUrl); the clone kept an
+					// empty one, so the player was black until play.
+					if ( data.thumbnail_url ) {
+						vid.poster = data.thumbnail_url;
+					} else {
+						vid.removeAttribute( 'poster' );
+					}
 					vid.src = data.file_url || '';
 					vid.removeAttribute( 'hidden' );
 					vid.load();
 				} else {
+					vid.removeAttribute( 'poster' );
 					vid.removeAttribute( 'src' );
 					vid.setAttribute( 'hidden', '' );
 				}
@@ -1004,6 +999,16 @@
 			// state.lightboxHideDownload logic here — show it only when the item
 			// has a file_url and per-media downloads aren't disabled. Without this
 			// the Download action is invisible even though its handler is wired.
+			// Owner-gated controls lost their IA bindings in the clone and were all
+			// un-hidden: Edit showed to everyone, Report to the owner. Re-apply both
+			// gates from the item, as state.lightboxIsOwner does.
+			var me      = ( typeof mvsActivityMedia !== 'undefined' ) ? parseInt( mvsActivityMedia.userId, 10 ) || 0 : 0;
+			var isOwner = me > 0 && parseInt( data.author, 10 ) === me;
+			var editBtn = overlay.querySelector( '.mvs-lightbox-actions .mvs-lb-edit' );
+			if ( editBtn ) { editBtn.hidden = ! isOwner; }
+			var reportBtn = overlay.querySelector( '.mvs-lightbox-actions .mvs-lightbox-action--report' );
+			if ( reportBtn ) { reportBtn.hidden = isOwner; }
+
 			var dlBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lb-download' );
 			if ( dlBtn ) {
 				if ( suiState.fileUrl && data.allow_download !== false ) {
@@ -1132,7 +1137,7 @@
 				// heading are SIBLINGS of <ul class="mvs-lightbox-comment-list">,
 				// so list.querySelector() always returned null and this whole
 				// branch was dead — the placeholder sat there next to real
-				// comments (Basecamp 10264121252).
+				// comments.
 				var noComments = overlay.querySelector( '.mvs-lightbox-no-comments' );
 				var heading    = overlay.querySelector( '.mvs-lightbox-comments-heading' );
 				if ( noComments ) {
@@ -1189,7 +1194,9 @@
 			apiGet( 'media/' + mediaId + '/stats' ).then( function( data ) {
 				var statsSpan = overlay.querySelector( '.mvs-lightbox-stats span' );
 				if ( statsSpan && data && data.views !== undefined ) {
-					statsSpan.textContent = data.views + ' views';
+					var views = parseInt( data.views, 10 ) || 0;
+					/* translators: %d: number of views. */
+					statsSpan.textContent = sprintf( _n( '%d view', '%d views', views, 'wpmediaverse' ), views );
 				}
 			} );
 		}
@@ -1200,7 +1207,7 @@
 		// and Lucide has already swapped the <i> for an SVG by the time the clone
 		// is taken. Assigning textContent wiped both and substituted a U+2665
 		// dingbat, so the clone lost its icon and the longer "Favorited" string
-		// hit the button's overflow:hidden and clipped (Basecamp 10264108133).
+		// hit the button's overflow:hidden and clipped.
 		// Write only the <span>; leave the icon alone.
 		// The button that keeps an item: Free's Save (2.6.0), or the old star in
 		// a theme copy of shared-ui-frame.php. data-mvs-* survives the clone.
@@ -1304,7 +1311,10 @@
 
 		function openWithMediaId( mediaId, target ) {
 			// Collect gallery from all media in the same activity item.
-			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"], .mvs-activity-media-grid, .activity-content' );
+			// The activity item first: wrapActivityMediaGrids() moves links into a
+			// grid without the ids, which stay on their original holders.
+			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"]' ) ||
+				target.closest( '.mvs-activity-media-grid, .activity-content' );
 			var gallery = [];
 			var clickedIndex = 0;
 
@@ -1361,10 +1371,10 @@
 			// Interactivity directive `data-wp-on--click="actions.toggleLightboxFullscreen"`
 			// is gone by the time the clone is in the DOM. The button rendered,
 			// looked live and did nothing on the Activity page while working on
-			// Explore, where the original IA overlay is used (Basecamp 10264236711).
+			// Explore, where the original IA overlay is used.
 			//
 			// The favorite button had this exact defect and was fixed the same way
-			// (#10077932144); fullscreen was simply never swept with it.
+			// fullscreen was simply never swept with it.
 			var btn = e.target.closest( '.mvs-lightbox-fullscreen' );
 			if ( ! btn ) { return; }
 
@@ -1387,7 +1397,7 @@
 			// Target the favorite button via a STABLE class. The BP lightbox is a
 			// clone with every data-wp-* attribute stripped (createBPLightbox), so
 			// selecting on [data-wp-on--click*=...] never matched and the handler
-			// was dead (Basecamp #10077932144). The .mvs-lb-fav class survives the
+			// was dead. The .mvs-lb-fav class survives the
 			// clone and is locale-independent (textContent was translation-broken).
 			var btn = e.target.closest( FAV_TOGGLE );
 			if ( ! btn ) { return; }
@@ -1409,7 +1419,7 @@
 			if ( ! suiState.active ) { return; }
 			// Target the share button via a STABLE class — see the favorite
 			// handler above; the cloned lightbox strips data-wp-* so the old
-			// [data-wp-on--click*="lightboxShare"] selector was dead (#10077932144).
+			// [data-wp-on--click*="lightboxShare"] selector was dead.
 			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-share' );
 			if ( ! btn ) { return; }
 
@@ -1429,7 +1439,7 @@
 		// The Save button has no BP handler and relied on the IA action
 		// lightboxOpenCollections, which is stripped from the clone. Replicate it:
 		// announce the media id so Pro's collection-picker.js (listening on document
-		// for 'mvs-collections-click') can open the picker (#10077932144).
+		// for 'mvs-collections-click') can open the picker.
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
@@ -1448,7 +1458,16 @@
 		// ── Download (event delegation) ──
 		// Also relied on the stripped IA action lightboxDownload. Replicate the
 		// browser-native download via a hidden anchor (signed URLs carry the
-		// Content-Disposition header from the storage driver) (#10077932144).
+		// Content-Disposition header from the storage driver).
+
+		// Edit (owner only, gated in populate): the IA store's edit modal via its bridge.
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-edit' );
+			if ( ! btn || btn.hidden || ! suiState.mediaId || typeof window.mvsOpenEditModal !== 'function' ) { return; }
+			e.preventDefault();
+			window.mvsOpenEditModal( suiState.mediaId );
+		} );
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
@@ -1497,7 +1516,7 @@
 			// delegated on document and reads input.value, which is still
 			// populated while the request is in flight — so disabling only the
 			// input left every extra click posting another identical comment
-			// (#10148507863). Guard on the button's own state too, in case the
+			// Guard on the button's own state too, in case the
 			// element is re-rendered mid-flight.
 			var btn = overlay.querySelector( '.mvs-lightbox-comment-post' );
 			if ( btn && btn.disabled ) { return; }

@@ -92,7 +92,7 @@ class DisplaySettingsRegistrar {
 		// 1024 keeps existing installs pixel-identical.
 		$this->setting( 'mvs_large_image_size', 'integer', array( Sanitizers::class, 'sanitize_large_image_size' ), 1024 );
 		// 'large', not 'original': the full file made the first view of a phone
-		// photo slow. Basecamp 10171640247.
+		// photo slow.
 		$this->setting( 'mvs_lightbox_image_source', 'string', array( Sanitizers::class, 'sanitize_lightbox_image_source' ), 'large' );
 
 		// When off, the Download button is hidden and the REST download route

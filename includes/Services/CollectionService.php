@@ -26,50 +26,13 @@ class CollectionService {
 	private const RULE_KEYS = array( 'media_type', 'tag', 'category', 'author', 'date_after', 'date_before', 'privacy' );
 
 	/**
-	 * Save smart collection rules.
-	 *
-	 * Rules are normalized before storage: keys are whitelisted, and
-	 * tag/category/author values are coerced to IDs (a tag/category name or
-	 * slug is resolved to its term ID) so resolve() always operates on IDs.
-	 *
-	 * @param int   $collection_id Collection post ID.
-	 * @param array $rules         Array of rule definitions.
-	 */
-	/**
-	 * May this media item be put into a collection by this curator?
-	 *
-	 * MEDIA, and PUBLIC OR THEIRS. A collection is a curated, shareable surface
-	 * of images, video and audio, and the curator is usually an admin assembling
-	 * members' work - so the rule the owner set (2026-09-13) is that they may
-	 * use anyone's PUBLIC media, or anything they uploaded themselves, and
-	 * nothing else. Documents are excluded outright: they have their own menu
-	 * and their own categorisation, and files are not mixed with media.
-	 *
-	 * Deliberately NOT `PrivacyService::can_view()`. That answers "may this
-	 * person look at it", which admits members-only media to any logged-in
-	 * curator - and a members-only photo pulled into a public collection is
-	 * exactly the exposure this prevents. Viewing and collecting are different
-	 * questions, so they get different predicates.
-	 *
-	 * Lives here rather than on FavoriteService because both membership stores
-	 * need the same answer: Free keeps manual membership in `mvs_favorites`,
-	 * Pro keeps it in `mvs_pro_collection_items`. One rule, asked twice, so a
-	 * later change cannot drift between them. Basecamp 10298612348.
-	 *
-	 * @since 2.4.2
-	 *
-	 * @param int $media_id   Media item being added.
-	 * @param int $curator_id The user doing the adding.
-	 * @return bool
-	 */
-	/**
 	 * Post-meta key holding a collection's privacy.
 	 *
 	 * Deliberately the SAME key albums use, referenced rather than retyped so
 	 * the two cannot drift. PrivacyService::check_access() resolves both
 	 * mvs_album and mvs_collection through one accessor, so a collection that
 	 * writes this key is gated by machinery that already exists - there is no
-	 * second read path to build. Basecamp 10298612348.
+	 * second read path to build.
 	 *
 	 * @since 2.4.2
 	 * @var string
@@ -113,12 +76,12 @@ class CollectionService {
 	 *
 	 * NO CASCADE, and that is the difference from AlbumService::set_privacy().
 	 * An album clamps the privacy of the items inside it, because those items
-	 * are the owner's own uploads and #10149366902 showed an album turned
-	 * private was leaving its contents public. A collection is the opposite
+	 * are the owner's own uploads and an album turned
+	 * private must not leave its contents public. A collection is the opposite
 	 * case: it is a curated view of OTHER people's public media, so cascading
 	 * would rewrite a stranger's photo because a curator changed a collection
 	 * they happen to own. The collection's own visibility is the only thing
-	 * this touches. Basecamp 10298612348.
+	 * this touches.
 	 *
 	 * @since 2.4.2
 	 *
@@ -137,6 +100,33 @@ class CollectionService {
 		return $privacy;
 	}
 
+	/**
+	 * May this media item be put into a collection by this curator?
+	 *
+	 * MEDIA, and PUBLIC OR THEIRS. A collection is a curated, shareable surface
+	 * of images, video and audio, and the curator is usually an admin assembling
+	 * members' work - so the rule the owner set (2026-09-13) is that they may
+	 * use anyone's PUBLIC media, or anything they uploaded themselves, and
+	 * nothing else. Documents are excluded outright: they have their own menu
+	 * and their own categorisation, and files are not mixed with media.
+	 *
+	 * Deliberately NOT `PrivacyService::can_view()`. That answers "may this
+	 * person look at it", which admits members-only media to any logged-in
+	 * curator - and a members-only photo pulled into a public collection is
+	 * exactly the exposure this prevents. Viewing and collecting are different
+	 * questions, so they get different predicates.
+	 *
+	 * Lives here rather than on FavoriteService because both membership stores
+	 * need the same answer: Free keeps manual membership in `mvs_favorites`,
+	 * Pro keeps it in `mvs_pro_collection_items`. One rule, asked twice, so a
+	 * later change cannot drift between them.
+	 *
+	 * @since 2.4.2
+	 *
+	 * @param int $media_id   Media item being added.
+	 * @param int $curator_id The user doing the adding.
+	 * @return bool
+	 */
 	public function may_contain( int $media_id, int $curator_id ): bool {
 		if ( $media_id <= 0 || $curator_id <= 0 ) {
 			return false;
@@ -187,6 +177,16 @@ class CollectionService {
 		return (bool) apply_filters( 'mvs_media_may_join_collection', $allowed, $media_id, $curator_id );
 	}
 
+	/**
+	 * Save smart collection rules.
+	 *
+	 * Rules are normalized before storage: keys are whitelisted, and
+	 * tag/category/author values are coerced to IDs (a tag/category name or
+	 * slug is resolved to its term ID) so resolve() always operates on IDs.
+	 *
+	 * @param int   $collection_id Collection post ID.
+	 * @param array $rules         Array of rule definitions.
+	 */
 	public function save_rules( int $collection_id, array $rules ): void {
 		$clean = array();
 
@@ -318,7 +318,7 @@ class CollectionService {
 		// mutually exclusive — two media_type rules became `file_type LIKE
 		// '%image%' AND file_type LIKE '%video%'`, which no single file can
 		// satisfy, so the collection resolved to 0 items and showed the
-		// placeholder cover (#9962118482).
+		// placeholder cover.
 		$by_key = array();
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {

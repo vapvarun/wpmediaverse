@@ -38,9 +38,12 @@ class Album {
 			'public'          => true,
 			'has_archive'     => true,
 			// No core wp/v2 route: it listed and returned private items to anyone
-			// (Basecamp 10360879667). The classic editor does not need it, and
+			// The classic editor does not need it, and
 			// mvs/v1 is the privacy-aware API for albums and collections.
 			'show_in_rest'    => false,
+			// Site search ignored privacy; owners can re-enable it with core's
+			// register_post_type_args filter.
+			'exclude_from_search' => true,
 			'supports'        => array( 'title', 'editor', 'author' ),
 			'capability_type' => 'post',
 			'map_meta_cap'    => true,
@@ -76,7 +79,7 @@ class Album {
 		// each item's mvs_media_index.album_id pointer, which the raw delete left
 		// naming a deleted album (admin delete, user deletion). It only deletes
 		// rows and repoints items - it never calls wp_delete_post(), so this hook
-		// cannot re-enter. Basecamp 10320619418.
+		// cannot re-enter.
 		\WPMediaVerse\Core\Plugin::container()->get( 'albums' )->delete_all_items( $post_id );
 
 		// NO index purge here — removed in 2.4.0, and it must not come back.
@@ -100,7 +103,6 @@ class Album {
 		// there is nothing left to purge. Legacy rows from before 2.4.0 are cleared
 		// once by Migrator v26, not on every delete.
 		//
-		// Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
 		// Audit any site with `wp mvs diagnose_cpt_ids` (read-only).
 
 		/**

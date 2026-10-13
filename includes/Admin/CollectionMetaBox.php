@@ -132,9 +132,8 @@ class CollectionMetaBox {
 		?>
 		<?php
 		// Who may see the collection. The same two levels the front end and the
-		// API offer (CollectionService::PRIVACY_LEVELS); wp-admin had no control
-		// for a value the other two entry points both write (Basecamp
-		// 10351428179). A member's Favorites are always private, so they get the
+		// API offer (CollectionService::PRIVACY_LEVELS); wp-admin needs a control
+		// for a value the other two entry points both write. A member's Favorites are always private, so they get the
 		// fact stated rather than a select that would be ignored.
 		$mvs_privacy = $this->service->get_privacy( $post->ID );
 		$mvs_labels  = \WPMediaVerse\Core\TemplateHelpers::privacy_labels();

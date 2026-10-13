@@ -14,11 +14,12 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
 // interactivity state by shared-ui-frame.php via wp_interactivity_state(); read
-// them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+// them as `state.i18n.<key>` with an English fallback.
 let toastTimer = null;
 let tagSearchTimer = null;
 let savedListenerAdded = false;
@@ -27,7 +28,7 @@ let savedListenerAdded = false;
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s" with no zone)
  * to epoch ms as UTC. new Date() would read the zone-less string as LOCAL time,
  * so on a non-UTC browser a just-posted comment looked hours old and its edit
- * window read as expired (Basecamp 10148635942).
+ * window read as expired.
  *
  * @param {string} s Date string.
  * @return {number} Epoch ms (NaN-safe: returns Date.now() on an unparseable value).
@@ -98,7 +99,7 @@ function isTextEntry( target ) {
  * focus, never held it, and never gave it back. A member pressed Enter on a
  * grid tile, the overlay covered the page, and their next Tab walked the 27
  * controls BEHIND it — reachable, invisible, and with no way to tell they had
- * left (Basecamp 10252222057).
+ * left.
  *
  * Kept as plain functions over the live DOM rather than store state: the
  * lightbox markup is server-rendered once and shown by a `hidden` binding, so
@@ -111,7 +112,7 @@ let lightboxReturnFocus = null;
 
 /**
  * The shell upload modal is the same kind of dialog and reuses the same
- * focusables + Tab trap below, keyed by its own selector (Basecamp 10320784059).
+ * focusables + Tab trap below, keyed by its own selector.
  */
 const UPLOAD_MODAL = '.mvs-upload-modal-overlay .mvs-modal';
 
@@ -216,7 +217,7 @@ function dialogTrapTab( event, selector ) {
  * neither carries them. Reading canModerate from a caller-supplied ctx made it
  * silently false everywhere, so moderators lost Delete on other members'
  * comments in the lightbox while the single page and the DELETE route still
- * allowed it (Basecamp 10248799004; 10148635942 for the same lesson on
+ * allowed it (the same goes for
  * currentUserId / commentEditWindow).
  *
  * canEdit is own-comment within the edit window; canDelete is own OR moderator
@@ -239,6 +240,8 @@ function mapLightboxComment( c ) {
 		date: c.date,
 		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 		content: c.content,
+		// Kept so the delete confirm can say how many replies go with it.
+		replies: Array.isArray( c.replies ) ? c.replies : [],
 		canEdit: !! ( isOwn && age < editWindow ),
 		canDelete: !! ( isOwn || canModerate ),
 		canReport: !! ( state.reportsEnabled && state.currentUserId && ! isOwn ),
@@ -251,6 +254,36 @@ function mapLightboxComment( c ) {
 // Set by lightboxPrev when it steps back into the previous grid tile, so a
 // gallery entered backwards opens on its last photo.
 let enterGroupAtEnd = false;
+
+// REST context of the open lightbox, so stepping inside a gallery can load the
+// shown item's own reactions and comments.
+let lightboxCtx = null;
+
+/**
+ * The /media/{id}/group query for a tile: the filter its listing printed on its
+ * grid (data-mvs-gallery-filter), else Explore's URL filter (Pro layouts), so
+ * the lightbox steps through the set the badge counted.
+ *
+ * @param {number} mediaId Tile media id.
+ * @return {string} '' or '?media_type=...'.
+ */
+function galleryQuery( mediaId ) {
+	const tile = document.querySelector( '[data-media-id="' + mediaId + '"]' );
+	const holder = tile && tile.closest( '[data-mvs-gallery-filter]' );
+	if ( holder ) {
+		const q = holder.getAttribute( 'data-mvs-gallery-filter' ) || '';
+		return q ? '?' + q : '';
+	}
+	const url = new URLSearchParams( window.location.search );
+	const out = new URLSearchParams();
+	[ [ 'mvs_type', 'media_type' ], [ 'mvs_tag', 'tag' ], [ 'mvs_category', 'category' ], [ 'q', 's' ] ].forEach( ( [ from, to ] ) => {
+		if ( url.get( from ) ) {
+			out.set( to, url.get( from ) );
+		}
+	} );
+	const q = out.toString();
+	return q ? '?' + q : '';
+}
 
 const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
@@ -321,7 +354,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		 * privacy_options() renders the offered levels server-side; this only
 		 * decides whether the extra disabled option is shown. The offered set
 		 * comes from privacy_choices() via PHP - filterable, and BP-conditional
-		 * - so it is never restated here. Basecamp 10290748981.
+		 * - so it is never restated here.
 		 */
 		privacyUnlisted( stored ) {
 			const offered = state.i18n?.privacyChoices || [];
@@ -346,8 +379,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return state.uploadModalAlbum === -1;
 		},
 		/*
-		 * A photo in an album shows with the album's privacy (2.6.0, Basecamp
-		 * 10264373450), so a privacy picker next to an album would offer a
+		 * A photo in an album shows with the album's privacy, so a privacy picker next to an album would offer a
 		 * choice that is ignored. Where an album decides, the picker becomes a
 		 * plain sentence saying which album and what that means.
 		 */
@@ -448,6 +480,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxVisible: false,
 		lightboxFullscreen: false,
 		lightboxMediaId: null,
+		// The grid tile the lightbox was opened from (grid navigation); lightboxMediaId follows the item shown.
+		lightboxTileId: null,
 		lightboxMediaData: null,
 		lightboxGroupItems: [],
 		lightboxCurrentIndex: 0,
@@ -508,7 +542,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Bound to the <img src>. When there is no image (document/video/audio)
 			// a bound empty string makes the browser resolve src="" to the page URL
 			// and fetch it — harmless (the <img> is hidden) but wasteful. A 1x1
-			// transparent GIF is inert. (Basecamp 10248528902)
+			// transparent GIF is inert.
 			return state.lightboxImageUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 		},
 		get lightboxImageWebpUrl() {
@@ -562,7 +596,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxHideDocument() {
 			// The download card is for documents we cannot preview. When Pro
 			// returned viewer HTML the card would duplicate it, so it steps aside.
-			// Basecamp 10268223516.
 			return state.lightboxMediaData?.media_type !== 'document'
 				|| !! state.lightboxMediaData?.doc_viewer_html;
 		},
@@ -573,7 +606,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxDocGlyphClass() {
 			// Per-type glyph from the REST doc_icon (resolved server-side from the
 			// single DocumentTypes map), so a spreadsheet is not drawn as a text
-			// file. Falls back to the generic file glyph. (Basecamp 10248528902)
+			// file. Falls back to the generic file glyph.
 			//
 			// MUST return the FULL class string, not just the `--<icon>` modifier:
 			// the template binds this with `data-wp-bind--class`, which REPLACES
@@ -591,7 +624,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Show the <img> only when there is a real image URL. lightboxImageUrl
 			// now returns '' for every non-image type, so a document (or any item
 			// with no displayable image) never synthesises a broken <img> under
-			// the media chrome (Basecamp 10248528902).
+			// the media chrome.
 			return ! state.lightboxImageUrl;
 		},
 		get lightboxHideVideo() {
@@ -645,7 +678,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';
 		},
-		// Same alt as the grid card (Basecamp 9822979354).
+		// Same alt as the grid card.
 		get lightboxAlt() {
 			return state.lightboxMediaData?.alt || state.lightboxMediaData?.title || '';
 		},
@@ -765,22 +798,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxHasPrev() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
-			const idx = gridIds.indexOf( state.lightboxMediaId );
+			const idx = gridIds.indexOf( state.lightboxTileId );
 			return idx > 0;
 		},
 		get lightboxHasNext() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) return true;
 			const gridIds = window.mvsGridRegistry || [];
-			const idx = gridIds.indexOf( state.lightboxMediaId );
+			const idx = gridIds.indexOf( state.lightboxTileId );
 			return idx >= 0 && idx < gridIds.length - 1;
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		// --- Toast ---
 		showToast( msg, type = 'success' ) {
 			// The live region only speaks when its text changes. It is emptied
 			// whenever a toast hides, and blanked here too so a toast replacing
-			// one still on screen is announced. Basecamp 10320784236.
+			// one still on screen is announced.
 			state.toastLive = '';
 			state.toastVisible = false;
 			clearTimeout( toastTimer );
@@ -1213,8 +1246,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		generatePreviews() {
 			// Each preview is { uid, src, name, type, isAudio, isOther }
 			// so the template can render filename + an icon for non-image
-			// types (audio especially — previously rendered an empty <img>
-			// with no visual cue at all). uid is a stable per-file marker
+			// types (audio especially: an empty <img> gives no visual cue at all).
+			// uid is a stable per-file marker
 			// so removeUploadFile can identify which entry to drop without
 			// relying on array index (which data-wp-each doesn't expose
 			// directly in template context).
@@ -1317,7 +1350,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateUploadTags( event ) {
 			state.uploadModalTags = event.target.value;
 			// Suggest tags for the word being typed, as pills under the field
-			// (Basecamp 10124085450). Same search the edit modal uses.
+			// Same search the edit modal uses.
 			const typing = state.uploadModalTags.split( ',' ).pop().trim();
 			actions.searchTags( typing, window.mvsBpActions?.restUrl || ( window.location.origin + '/wp-json/mvs/v1/' ) );
 		},
@@ -1399,44 +1432,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
 				state.uploadModalProgress = 0;
-				const fd = new FormData();
-				fd.append( 'file', files[ i ] );
-				// One title fits one item or one gallery; separate videos must not all
-				// share it (same rule as My Media).
-				if ( state.uploadModalTitle && ( 1 === files.length || mediaGroup ) ) fd.append( 'title', state.uploadModalTitle );
-				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
-				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
-				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );
-				if ( mediaGroup ) {
-					fd.append( 'media_group', mediaGroup );
-					fd.append( 'group_position', String( i ) );
-				}
-				// Send client-generated video thumbnail if available.
-				// generatePreviews() stores preview objects: { uid, src, name, type, ... }.
-				// The thumbnail data URL lives on `preview.src` — calling startsWith
-				// on the object itself throws TypeError and aborts the whole upload
-				// for video files (Basecamp #9871815208).
+				// The modal already made a thumbnail for each video (generatePreviews()
+				// stores { uid, src, name, type }; the data URL is preview.src),
+				// so it is sent as the poster instead of capturing again.
+				let poster = null;
 				const preview = state.uploadModalPreviews[ i ];
 				const previewSrc = preview && typeof preview.src === 'string' ? preview.src : '';
 				if ( files[ i ].type.startsWith( 'video/' ) && previewSrc.startsWith( 'data:' ) ) {
 					try {
-						const resp = await fetch( previewSrc );
-						const blob = await resp.blob();
-						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
-					} catch { /* skip thumbnail */ }
+						poster = await ( await fetch( previewSrc ) ).blob();
+					} catch { /* the helper captures one instead */ }
 				}
 
-				const uploadUrl = restUrl + 'media';
-
 				try {
-					const res = await window.mvsRest.restFetch( uploadUrl, {
-						method: 'POST',
-						body: fd,
-						// Share (0-1) of the current file sent so far.
-						onUploadProgress: ( loaded, total ) => {
-							state.uploadModalProgress = total ? loaded / total : 0;
+					const res = await window.mvsRest.uploadMedia(
+						restUrl + 'media',
+						files[ i ],
+						{
+							// One title fits one item or one gallery; separate videos must
+							// not all share it (same rule as My Media).
+							title: 1 === files.length || mediaGroup ? state.uploadModalTitle : '',
+							description: state.uploadModalDescription,
+							tags: state.uploadModalTags,
+							privacy: state.uploadModalPrivacy,
+							mediaGroup,
+							groupPosition: i,
+							poster,
 						},
-					} );
+						// Share (0-1) of the current file sent so far.
+						( loaded, total ) => {
+							state.uploadModalProgress = total ? loaded / total : 0;
+						}
+					);
 					if ( res.ok ) {
 						const mediaData = res.data;
 						if ( mediaData && mediaData.id ) uploadedMediaIds.push( mediaData.id );
@@ -1445,7 +1472,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 							state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
 						}
 						// "Also share as a story" (Pro). Non-fatal: the media is
-						// uploaded either way. Basecamp 10313107097.
+						// uploaded either way.
 						if ( state.uploadModalStory && mediaData && mediaData.id ) {
 							await window.mvsRest.markAsStory( mediaData.id );
 						}
@@ -1534,7 +1561,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} else {
 				// Nothing went up (over quota, too large, wrong type): say why IN the
 				// window the member is looking at, not only in a toast that is gone
-				// in three seconds (card 10364778707). Stays until the next try; the
+				// in three seconds. Stays until the next try; the
 				// box is role=alert, so it is announced without a duplicate toast.
 				state.uploadModalError = state.uploadModalLastError ||
 					( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' );
@@ -1550,6 +1577,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			state.lightboxVisible = true;
 			state.lightboxMediaId = mediaId;
+			state.lightboxTileId = mediaId;
 			state.lightboxLoading = true;
 			state.lightboxCommentText = '';
 			state.lightboxGroupItems = [];
@@ -1566,10 +1594,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxLoading = false;
 				loadLightboxMedia();
 
-				// If this item is part of a gallery group, fetch all group members.
-				if ( data.media_group && data.group_count > 1 ) {
+				// A gallery opens the members its listing counted (same filter).
+				if ( data.media_group ) {
 					const groupRes = await window.mvsRest.restFetch(
-						ctx.restUrl + 'media/' + mediaId + '/group'
+						ctx.restUrl + 'media/' + mediaId + '/group' + galleryQuery( mediaId )
 					);
 					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
@@ -1582,6 +1610,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}
 				}
 			// Fetch social data in parallel.
+				lightboxCtx = ctx;
 				actions.lightboxLoadSocial( ctx, mediaId );
 			} catch {
 				state.lightboxLoading = false;
@@ -1599,6 +1628,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			lightboxRememberTrigger();
 
 			state.lightboxMediaId = mediaId;
+			state.lightboxTileId = mediaId;
 			state.lightboxVisible = true;
 			state.lightboxLoading = true;
 			state.lightboxCommentText = '';
@@ -1645,20 +1675,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxLoading = false;
 				loadLightboxMedia();
 
-				if ( data.media_group && data.group_count > 1 ) {
-					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' );
+				if ( data.media_group ) {
+					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' + galleryQuery( mediaId ) );
 					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
 						const start = enterGroupAtEnd ? groupData.length - 1 : 0;
 						state.lightboxGroupItems = groupData;
 						state.lightboxCurrentIndex = start;
 						state.lightboxMediaData = groupData[ start ];
+						state.lightboxMediaId = groupData[ start ].id;
 						loadLightboxMedia();
 					}
 				}
 				enterGroupAtEnd = false;
 
-				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
+				lightboxCtx = { restUrl, nonce, isLoggedIn };
+				actions.lightboxLoadSocial( lightboxCtx, state.lightboxMediaId );
 			} catch {
 				enterGroupAtEnd = false;
 				state.lightboxLoading = false;
@@ -1674,7 +1706,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// single-media page. The view POST was wired into that page and into
 			// the BP activity driver, but never into the IA lightbox - so opening
 			// media in the lightbox counted nothing, and the same item viewed two
-			// ways gave two different answers (Basecamp 10280453489).
+			// ways gave two different answers.
 			// This is the single funnel for all four lightbox openers
 			// (openLightbox, openLightboxById, and the two dashboard ones), so one
 			// line covers them. record_view() is already rate-limited and
@@ -1698,11 +1730,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					? cd.map( ( x ) => mapLightboxComment( x ) )
 					: [];
 			} catch ( e ) {
-				// Log rather than fail silently. This catch used to turn a code
-				// error in the map above into an ordinary-looking "No comments
-				// yet" — the failure was indistinguishable from an empty thread,
-				// which is why it survived. A load failure still degrades to an
-				// empty list; it just says so.
+				// Log rather than fail silently: a code error in the map above would
+				// otherwise look like an ordinary "No comments yet", indistinguishable
+				// from an empty thread. A load failure still degrades to an empty list;
+				// it just says so.
 				state.lightboxComments = [];
 				state.lightboxTotalComments = 0;
 				// eslint-disable-next-line no-console
@@ -1713,16 +1744,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const s = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/stats' );
 				state.lightboxStats = s.data;
 			} catch { state.lightboxStats = {}; }
-			// Favorite status. Attempt unconditionally — the REST endpoint
-			// enforces its own auth, returning 401 for guests which lands in
-			// the catch and leaves the default `false`. The previous
-			// ctx.isLoggedIn gate was driven by parsed.currentUserId, which
-			// is not emitted into every per-card data-wp-context (only
-			// mediaId/restUrl/nonce are guaranteed). That mismatch caused
-			// the "lightbox heart never reflects server truth after refresh"
-			// desync: server records the favorite correctly, but the
-			// lightbox always boots with lightboxIsFavorited=false because
-			// the GET was skipped.
+			// Favorite status, for signed-in members only. The gate is the page-wide
+			// state.currentUserId: the per-card context does not always carry the
+			// viewer, and gating on it once left the heart out of step with the server.
+			// A visitor has no favourites: skip the call instead of logging a 401.
+			if ( ! state.currentUserId ) {
+				state.lightboxIsFavorited = false;
+				return;
+			}
 			try {
 				const f = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/favorite' );
 				if ( f.ok ) {
@@ -1739,7 +1768,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! state.currentUserId ) {
 				// A way in, not just a refusal: the same login page the
 				// 'Log in to comment' link opens, back to this page after
-				// (card 10364778707). Nothing navigates until they choose to.
+				// Nothing navigates until they choose to.
 				if ( state.loginUrl ) {
 					actions.showConfirm(
 						state.i18n?.loginToReact || 'Please log in to react.',
@@ -1789,10 +1818,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				return;
 			}
 			// Optimistic flip for snappy UI; roll back on error / verify
-			// against server response. Previously the flip was unconditional
-			// and the catch was silent — a 4xx response (rate-limit, auth
-			// lapse) would leave the heart filled with no server record,
-			// then a refresh would re-show it empty.
+			// against server response. An unconditional flip with a silent catch would
+			// leave the heart filled with no server record after a 4xx response
+			// (rate-limit, auth lapse), then a refresh would re-show it empty.
 			const previous = !! state.lightboxIsFavorited;
 			state.lightboxIsFavorited = ! previous;
 			try {
@@ -1819,7 +1847,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxOpenCollections() {
 			if ( ! state.lightboxMediaId ) return;
 			// The picker announces each change; re-read the saved state so the
-			// Save button fills or empties (Basecamp 10364776932).
+			// Save button fills or empties.
 			if ( ! savedListenerAdded ) {
 				savedListenerAdded = true;
 				document.addEventListener( 'mvs-collections-changed', async ( e ) => {
@@ -1855,7 +1883,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// In-flight guard. The Post button's only disable was bound to the
 			// text, and the text is not cleared until the response returns, so
 			// the button stayed live for the whole request and every extra
-			// click sent another identical comment (#10148507863). Enter does
+			// click sent another identical comment. Enter does
 			// the same thing through lightboxCommentKeydown.
 			// media-social/view.js has had this pattern all along; the lightbox
 			// never got it.
@@ -1920,12 +1948,24 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
 			}
 		},
+		// Deleting a comment deletes its replies, so the confirm says how many.
+		commentDeleteConfirm( item ) {
+			const n = Array.isArray( item?.replies ) ? item.replies.length : 0;
+			if ( 1 === n ) {
+				return state.i18n?.deleteCommentReply || 'Delete this comment and its reply?';
+			}
+			if ( n > 1 ) {
+				return ( state.i18n?.deleteCommentReplies || 'Delete this comment and its %d replies?' ).replace( '%d', n );
+			}
+			return state.i18n?.deleteCommentConfirm || 'Delete this comment?';
+		},
+
 		deleteLightboxComment() {
 			const ctx = getContext();
 			const item = ctx.item;
 			if ( ! item ) return;
 			const id = item.id;
-			actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
+			actions.showConfirm( actions.commentDeleteConfirm( item ), async () => {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + id, {
 					method: 'DELETE',
 				} );
@@ -1953,8 +1993,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		 *
 		 * The modal already existed but was only reachable from a dashboard
 		 * grid card, so a member viewing their own upload in the lightbox had
-		 * no way to add a title or caption after the fact (Basecamp
-		 * 10171655728). Closes the lightbox first so the two overlays never
+		 * no way to add a title or caption after the fact. Closes the lightbox first so the two overlays never
 		 * stack — openEditModal fetches, and the lightbox's own key handlers
 		 * would otherwise still be listening underneath.
 		 */
@@ -2044,9 +2083,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxReport() {
 			// Report in place, with the same reason picker every MediaVerse
 			// report uses, filed to this item's queue (BuddyNext's own lightbox
-			// posts to the same route). It used to navigate to the item's page
-			// with #report, which nothing handled: the member landed on a page
-			// with no form and nothing was reported (card 10369223794).
+			// posts to the same route). It does not navigate to the item's page with
+			// #report: nothing handles that, so the member would land on a page with no
+			// form and nothing would be reported.
 			const id = state.lightboxMediaData?.id;
 			if ( id ) {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -2089,17 +2128,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		// A gallery steps through its photos, then its edges hand over to the
-		// neighbouring grid tile. It used to wrap, so Next cycled one gallery
-		// forever once prev/next were always visible (QA, 2.6.0).
+		// neighbouring grid tile. It does not wrap: with prev/next always visible,
+		// Next would cycle one gallery forever.
+		// Each gallery item keeps its own comments and reactions: show it and load them.
+		lightboxShowGroupItem( idx ) {
+			const item = state.lightboxGroupItems[ idx ];
+			state.lightboxCurrentIndex = idx;
+			state.lightboxMediaData = item;
+			state.lightboxMediaId = item.id;
+			if ( lightboxCtx ) {
+				actions.lightboxLoadSocial( lightboxCtx, item.id );
+			}
+		},
 		lightboxPrev() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex > 0 ) {
-				const idx = state.lightboxCurrentIndex - 1;
-				state.lightboxCurrentIndex = idx;
-				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+				actions.lightboxShowGroupItem( state.lightboxCurrentIndex - 1 );
 				return;
 			}
 			const gridIds = window.mvsGridRegistry || [];
-			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
+			const currentIdx = gridIds.indexOf( state.lightboxTileId );
 			if ( currentIdx > 0 ) {
 				enterGroupAtEnd = true; // Going back into a gallery starts at its last photo.
 				actions.openLightboxById( gridIds[ currentIdx - 1 ] );
@@ -2107,13 +2154,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		lightboxNext() {
 			if ( state.lightboxGroupItems.length > 1 && state.lightboxCurrentIndex < state.lightboxGroupItems.length - 1 ) {
-				const idx = state.lightboxCurrentIndex + 1;
-				state.lightboxCurrentIndex = idx;
-				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+				actions.lightboxShowGroupItem( state.lightboxCurrentIndex + 1 );
 				return;
 			}
 			const gridIds = window.mvsGridRegistry || [];
-			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
+			const currentIdx = gridIds.indexOf( state.lightboxTileId );
 			if ( currentIdx >= 0 && currentIdx < gridIds.length - 1 ) {
 				actions.openLightboxById( gridIds[ currentIdx + 1 ] );
 			}
@@ -2195,7 +2240,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				// the "+ New collection" field inside the lightbox itself. The
 				// f/F shortcut ate the `f` of "Office" and jumped to fullscreen,
 				// and Arrow keys navigated the gallery instead of moving the
-				// caret (Basecamp 10249014961).
+				// caret.
 				//
 				// Guards the SHORTCUT branch only, deliberately: Escape is
 				// handled above and must keep working from inside a field —
@@ -2213,7 +2258,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 			}
 		},
-	},
+	} ),
 	callbacks: {
 		// Pro sanitises this server-side (wp_kses on the rendered document), and
 		// it only ever contains the text/markdown/csv tier - no script tier
@@ -2377,7 +2422,7 @@ window.mvsOpenLightbox = function ( mediaId ) {
  * clicks from a single persistent element and survives router swaps.
  */
 const { state: mvsState } = store( 'mvs', {
-	actions: {
+	actions: syncEvents( {
 		*navigate( event ) {
 			const link = event.target?.closest?.( 'a' );
 			const href = link?.href;
@@ -2389,7 +2434,7 @@ const { state: mvsState } = store( 'mvs', {
 			// client-navigate those — otherwise both handlers fire and the
 			// lightbox stacks over an already-navigated single-media page
 			// (the "close reveals the wrong page" / "overlay blocks clicks"
-			// regression). Author and other links inside a card are not
+			// failures). Author and other links inside a card are not
 			// .mvs-grid-item-link, so they still client-navigate normally.
 			// The list is load-more.js's (window.mvsMediaTileLink), so every
 			// layout's tile link is covered, load-more tiles included.
@@ -2417,9 +2462,12 @@ const { state: mvsState } = store( 'mvs', {
 				// (e.g. a Pro non-grid Explore layout whose template omits it),
 				// the swap yields EMPTY content instead of throwing, leaving a
 				// blank page. Detect the empty swap and fall back to a full load
-				// so the user never sees a blank screen. (#10033416011)
+				// so the user never sees a blank screen.
 				const region = document.querySelector( '[data-wp-router-region="mvs/main"]' );
-				if ( ! region || region.children.length === 0 ) {
+				// A page whose content needs scripts this page never loaded (the PDF
+				// viewer) marks itself data-mvs-full-load; the router swaps markup,
+				// not scripts, so load it for real.
+				if ( ! region || region.children.length === 0 || region.querySelector( '[data-mvs-full-load]' ) ) {
 					window.location.href = href;
 					return;
 				}
@@ -2431,7 +2479,7 @@ const { state: mvsState } = store( 'mvs', {
 				window.location.href = href; // never strand the user
 			}
 		},
-	},
+	} ),
 } );
 
 // Bridge: expose openEditModal to vanilla JS (used by bp-actions.js

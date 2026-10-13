@@ -38,9 +38,12 @@ class Collection {
 			'public'          => true,
 			'has_archive'     => true,
 			// No core wp/v2 route: it listed and returned private items to anyone
-			// (Basecamp 10360879667). The classic editor does not need it, and
+			// The classic editor does not need it, and
 			// mvs/v1 is the privacy-aware API for albums and collections.
 			'show_in_rest'    => false,
+			// Site search ignored privacy; owners can re-enable it with core's
+			// register_post_type_args filter.
+			'exclude_from_search' => true,
 			'supports'        => array( 'title', 'editor', 'author' ),
 			'capability_type' => 'post',
 			'map_meta_cap'    => true,
@@ -102,8 +105,7 @@ class Collection {
 		// item vanished from every surface. It guarded a state that cannot occur and
 		// its only possible effect was data loss.
 		//
-		// Basecamp 10183850886. Analysis: plan/2026-08-08-cpt-id-collision-fix-plan.md
-		// §3.5 C2. Run `wp mvs diagnose_cpt_ids` to see whether a site is affected.
+		// Run `wp mvs diagnose_cpt_ids` to see whether a site is affected.
 
 		/**
 		 * Fires when a collection is permanently deleted.

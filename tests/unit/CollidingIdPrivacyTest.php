@@ -12,7 +12,6 @@ use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
- * Basecamp 10298525085.
  *
  * `mvs_media_index.media_id` and `wp_posts.ID` are independent AUTO_INCREMENT
  * sequences, so one integer can name BOTH a photo and an album. check_access()
@@ -21,7 +20,7 @@ use WPMediaVerse\Services\PrivacyService;
  *
  * The opposite ordering is not the fix either: resolving media-first
  * unconditionally is what denied an album owner their own album
- * (Basecamp 10071824547). The caller declares the ID space; only the genuine
+ * The caller declares the ID space; only the genuine
  * collision needs a tie-break, and it breaks toward media because a refusal is
  * a better failure than a leak.
  */
@@ -136,7 +135,7 @@ class CollidingIdPrivacyTest extends WP_UnitTestCase {
 
 	/**
 	 * The other half of the trap: fixing the leak must not re-break
-	 * Basecamp 10071824547. Asked as a CPT, the album still resolves as the
+	 * the owner's access to their own album. Asked as a CPT, the album still resolves as the
 	 * album — its owner sees it, and the colliding photo does not decide it.
 	 */
 	public function test_the_album_is_still_viewable_as_an_album(): void {

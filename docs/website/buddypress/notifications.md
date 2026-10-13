@@ -59,6 +59,13 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/me/notifications/read \
   -d '{"ids": [123]}'
 ```
 
+## Cleanup and Privacy (2.6.2)
+
+- A daily job removes read notifications older than 90 days. Change the window with the `mvs_notification_retention_days` filter. `0` keeps them.
+- Following, favouriting or reacting again notifies the owner only once.
+- A notification about an item its reader can no longer see shows no title or link.
+- When a media comment is deleted in MediaVerse, the BuddyPress reply notifications for its activity comment are deleted with it.
+
 ## Notification Count
 
 The frontend reads the unread count from `GET /mvs/v1/me/notifications/count`, which returns `{"count": N}` for the current user, without requiring WebSockets.

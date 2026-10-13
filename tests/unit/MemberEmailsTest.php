@@ -20,7 +20,12 @@ class MemberEmailsTest extends WP_UnitTestCase {
 		parent::set_up();
 		( new \WPMediaVerse\Core\Migrator() )->run();
 		reset_phpmailer_instance();
-		$this->member = self::factory()->user->create( array( 'role' => 'subscriber', 'user_email' => 'member@example.org' ) );
+		$this->member = self::factory()->user->create(
+			array(
+				'role'       => 'subscriber',
+				'user_email' => 'member@example.org',
+			)
+		);
 		$this->emails = Plugin::container()->get( 'emails' );
 		// Services init once per process and the framework restores hooks.
 		if ( ! has_action( 'mvs_notification_created', array( $this->emails, 'on_notification' ) ) ) {
@@ -59,11 +64,39 @@ class MemberEmailsTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $this->sent(), 'A type outside the minimal set was emailed.' );
 	}
 
+	public function test_a_community_host_takes_only_the_emails_it_sends_itself(): void {
+		$add = static function ( array $types ): array {
+			$types['qa_extension'] = array(
+				'option'      => 'mvs_qa_email_extension',
+				'label'       => 'QA',
+				'description' => 'QA',
+				'default'     => true,
+				'host_owned'  => false,
+			);
+			return $types;
+		};
+		add_filter( 'mvs_email_types', $add );
+		add_filter( 'mvs_buddynext_active', '__return_true' );
+		update_option( EmailService::TYPES['battle_invite'], '1' );
+
+		$this->notify( 'battle_invite' );
+		$this->assertCount( 0, $this->sent(), 'The host sends its own emails; MediaVerse stays quiet.' );
+
+		$this->assertTrue( $this->emails->send_member_email( $this->member, 'qa_extension', 'Subject', 'Body' ), 'An email the host has no equivalent for is still sent.' );
+		$this->assertCount( 1, $this->sent() );
+
+		remove_filter( 'mvs_buddynext_active', '__return_true' );
+		remove_filter( 'mvs_email_types', $add );
+	}
+
 	public function test_unsubscribe_link_needs_its_signature(): void {
 		$url = $this->emails->unsubscribe_url( $this->member );
 		parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
 
-		$_GET = array( 'mvs_unsubscribe' => (string) $this->member, 'mvs_sig' => 'forged' );
+		$_GET = array(
+			'mvs_unsubscribe' => (string) $this->member,
+			'mvs_sig'         => 'forged',
+		);
 		try {
 			$this->emails->maybe_unsubscribe();
 		} catch ( \WPDieException $e ) {

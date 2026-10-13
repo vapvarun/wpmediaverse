@@ -51,7 +51,7 @@ estimated_runtime_minutes: 8
 - **Note**: freezes=0 deliberately exercises the reset branch, which does NOT advance `_mvs_last_upload_date` — the exact condition a `LIMIT`-only fix would strand.
 
 ### 3. Run ONE tick — assert it processes at most DAILY_MAX_PER_RUN and does not time out
-- **Action**: time a single full-sweep tick: `wp eval '$t=microtime(true); \WPMediaVersePro\Core\Plugin::container_or_service("streaks")->daily_check(0); echo round((microtime(true)-$t)*1000)."ms";'` (no cursor = recurring-cron entry).
+- **Action**: time a single full-sweep tick: `wp eval '$t=microtime(true); (new \WPMediaVersePro\Streaks\StreakService())->daily_check(0); echo round((microtime(true)-$t)*1000)."ms";'` (no cursor = recurring-cron entry).
 - **Expect**: completes without fatal/timeout/memory-exhaustion. Because freezes=0, each processed user's `_mvs_current_streak` is set to 0 while `_mvs_last_upload_date` stays at the cutoff. At most **2000** users are processed this tick (the `$processed >= DAILY_MAX_PER_RUN` cap), so ~200 still have `_mvs_current_streak = 5`.
 - **On fail**: `includes/Streaks/StreakService.php:231` — the `DAILY_MAX_PER_RUN` cap / async hand-off is missing.
 
@@ -66,7 +66,7 @@ estimated_runtime_minutes: 8
 - **On fail**: `includes/Streaks/StreakService.php:216` — `$cursor = $user_id;` not updated per row, so the `LIMIT` strands rows / re-scans.
 
 ### 6. Run the continuation — assert it drains the remainder
-- **Action**: invoke the continuation with the captured cursor: `wp eval '\WPMediaVersePro\Core\Plugin::container_or_service("streaks")->daily_check(<CURSOR>);'` (or `wp action-scheduler run --hook=<AS_DAILY_HOOK>`).
+- **Action**: invoke the continuation with the captured cursor: `wp eval '(new \WPMediaVersePro\Streaks\StreakService())->daily_check(<CURSOR>);'` (or `wp action-scheduler run --hook=<AS_DAILY_HOOK>`).
 - **Expect**: the remaining ~200 users now also have `_mvs_current_streak = 0`. `mysql_query "SELECT COUNT(*) FROM wp_usermeta WHERE meta_key='_mvs_current_streak' AND meta_value='5'"` → **0** (fully drained). No further continuation enqueued (remainder < DAILY_MAX_PER_RUN).
 - **On fail**: keyset continuation not resuming from the cursor — `daily_check($after_user_id)` ignoring its argument.
 

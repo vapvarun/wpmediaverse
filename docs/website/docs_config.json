@@ -48,6 +48,10 @@
           "title": "Free vs Pro Comparison"
         },
         {
+          "slug": "whats-new-2-6-2",
+          "title": "What's New in 2.6.2"
+        },
+        {
           "slug": "whats-new-2-6-1",
           "title": "What's New in 2.6.1"
         },
@@ -157,7 +161,7 @@
         },
         {
           "slug": "stories",
-          "title": "Stories"
+          "title": "Stories in the Free Plugin"
         },
         {
           "slug": "social-features",

@@ -83,58 +83,14 @@
 		uploadAndAddToAlbum( files );
 	}
 
-	// Capture the first usable video frame so the server-side poster pipeline
-	// always has a real image to feed `UploadService::generate_thumbnails()`.
-	// Without this, videos uploaded on hosts without ffmpeg + without an
-	// embedded cover atom render the default-SVG poster in Safari/Bing
-	// (card 9910574354).
-	function generateVideoThumb( file ) {
-		return new Promise( function ( resolve ) {
-			var video = document.createElement( 'video' );
-			var url = URL.createObjectURL( file );
-			video.preload = 'metadata';
-			video.muted = true;
-			video.playsInline = true;
-			video.src = url;
-			video.addEventListener( 'loadeddata', function () {
-				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
-			} );
-			video.addEventListener( 'seeked', function () {
-				try {
-					var canvas = document.createElement( 'canvas' );
-					canvas.width = video.videoWidth || 320;
-					canvas.height = video.videoHeight || 180;
-					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-					URL.revokeObjectURL( url );
-					resolve( canvas.toDataURL( 'image/jpeg', 0.85 ) );
-				} catch ( e ) {
-					URL.revokeObjectURL( url );
-					resolve( '' );
-				}
-			} );
-			video.addEventListener( 'error', function () {
-				URL.revokeObjectURL( url );
-				resolve( '' );
-			} );
-		} );
-	}
-
-	function dataURLtoBlob( dataURL ) {
-		if ( ! dataURL || dataURL.indexOf( 'data:' ) !== 0 ) {
-			return null;
-		}
+	// Context fields a surface adds to every upload (a BuddyPress group id),
+	// from the wrap's data-upload-extra JSON.
+	function uploadExtra() {
+		var wrap = el( 'mvs-album-upload-wrap' );
 		try {
-			var parts = dataURL.split( ',' );
-			var match = parts[ 0 ].match( /:(.*?);/ );
-			var mime = match ? match[ 1 ] : 'image/jpeg';
-			var bin = atob( parts[ 1 ] );
-			var bytes = new Uint8Array( bin.length );
-			for ( var i = 0; i < bin.length; i++ ) {
-				bytes[ i ] = bin.charCodeAt( i );
-			}
-			return new Blob( [ bytes ], { type: mime } );
+			return JSON.parse( ( wrap && wrap.getAttribute( 'data-upload-extra' ) ) || '{}' ) || {};
 		} catch ( e ) {
-			return null;
+			return {};
 		}
 	}
 
@@ -183,29 +139,15 @@
 				} );
 				return;
 			}
-			var file = files[ done ];
-			var thumbPromise = file.type.indexOf( 'video/' ) === 0
-				? generateVideoThumb( file )
-				: Promise.resolve( '' );
-
-			thumbPromise.then( function ( localThumb ) {
-				var fd = new FormData();
-				fd.append( 'file', file );
-				if ( localThumb ) {
-					var blob = dataURLtoBlob( localThumb );
-					if ( blob ) {
-						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
-					}
+			window.mvsRest.uploadMedia(
+				uploadUrl,
+				files[ done ],
+				{ extra: uploadExtra() },
+				// Percent of this file sent: a large video takes a while.
+				function ( loaded, bytes ) {
+					statusEl.textContent = uploadingLabel( done + 1, total ) + ' ' + ( bytes ? Math.min( 100, Math.round( ( loaded / bytes ) * 100 ) ) : 0 ) + '%';
 				}
-				return window.mvsRest.restFetch( uploadUrl, {
-					method: 'POST',
-					body: fd,
-					// Percent of this file sent: a large video takes a while.
-					onUploadProgress: function ( loaded, bytes ) {
-						statusEl.textContent = uploadingLabel( done + 1, total ) + ' ' + ( bytes ? Math.min( 100, Math.round( ( loaded / bytes ) * 100 ) ) : 0 ) + '%';
-					},
-				} );
-			} ).then( function ( r ) {
+			).then( function ( r ) {
 				var data = r.data;
 				if ( r.ok && data && data.id ) {
 					uploadedIds.push( data.id );

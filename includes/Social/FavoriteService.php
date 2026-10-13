@@ -274,8 +274,8 @@ class FavoriteService {
 	 * VIEWER-FILTERED. This returned raw favourite rows with no privacy check,
 	 * so a manual collection could show a cover, and count, media the viewer
 	 * cannot open - the same half-applied privacy the favourites list had
-	 * (10297947358). The smart path has always resolved with a viewer id; this
-	 * one now does too. Basecamp 10298492555.
+	 * The smart path has always resolved with a viewer id; this
+	 * one now does too.
 	 *
 	 * @since 1.3.0
 	 * @since 2.4.2 $viewer_id added; rows the viewer cannot view are dropped.

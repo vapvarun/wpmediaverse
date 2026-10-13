@@ -1,33 +1,28 @@
 # WPMediaVerse — Functionality Catalog
 
-Generated 2026-08-01 from the reconciled manifests (`audit/manifests/`,
-`audit/pro/manifests/`) and verified against source.
-
-**Version status.** Both plugins ship `Version: 2.4.0` in their headers and constants.
-(The 2.2.1 note that used to sit here described the 2.3.0 branch cycle and is history.)
-
-Numbers below are derived from the manifest arrays, not hand-counted — see "Manifest
-reconciliation" at the end for why that distinction matters. They still rot between
-refreshes: the manifests under `audit/manifests/` and `audit/pro/manifests/` win over any
-figure written into prose here.
+Verified against source and the manifests (`audit/manifests/`,
+`audit/pro/manifests/`). The manifests win over any figure or name written into prose
+here. This file is the engineering view; `qa/inventory/FUNCTIONALITY-CATALOG.md` is the
+tester-facing catalog.
 
 ---
 
 ## 1. At a glance
 
-| Surface | Free | Pro |
-|---|---:|---:|
-| REST endpoints (`mvs/v1`, `mvs-pro/v1`) | 115 | 86 |
-| Hooks fired (actions + filters) | see `manifest.hooks.json` | see `audit/pro/manifests/manifest.hooks.json` |
-| Custom tables | 23 | 13 |
-| Services (container) | 53 | — |
-| Post types / taxonomies | 2 / 2 | 0 / 0 |
-| Migrator schema version | 30 | 15 |
+Counts are not typed here. Ask the code:
 
-Admin pages, settings, shortcodes, blocks, WP-CLI subcommands, cron jobs and capabilities
-were all listed here with numbers that have rotted more than once. Read them off
-`audit/manifests/manifest.summary.json` (Free) and `audit/pro/manifests/manifest.summary.json`
-(Pro), or the grep commands in `CLAUDE.md`, rather than trusting a figure typed here.
+| Surface | Free | Pro |
+|---|---|---|
+| REST endpoints (`mvs/v1`, `mvs-pro/v1`) | `jq '.rest.endpoints \| length' audit/manifests/manifest.rest.json` | `jq '.rest.endpoints \| length' audit/pro/manifests/manifest.rest.json` |
+| Hooks fired (actions + filters) | `audit/manifests/manifest.hooks.json` | `audit/pro/manifests/manifest.hooks.json` |
+| Custom tables | `Migrator::tables()` | `Migrator::tables()` in Pro's `includes/Core/Migrator.php` |
+| Container services | `grep -A1 'container->register(' includes/Core/Plugin.php` | none (Pro resolves Free's) |
+| Post types / taxonomies | `Album`, `Collection` / `MediaTag`, `MediaCategory` | none |
+| Migrator schema version | `Migrator::CURRENT_VERSION` | `Migrator::CURRENT_VERSION` (own counter) |
+
+Admin pages, settings, shortcodes, blocks, WP-CLI subcommands, cron jobs and capabilities:
+read them off `audit/manifests/manifest.summary.json` (Free) and
+`audit/pro/manifests/manifest.summary.json` (Pro), or the grep commands in `CLAUDE.md`.
 
 ---
 
@@ -69,9 +64,10 @@ Albums and collections are CPTs (`mvs_album`, `mvs_collection`) whose *members* 
   `privacy_to_level()` / `more_restrictive()` / `effective_privacy_for_media()` helpers
   (promoted out of the BuddyPress integration, where general privacy logic had been
   stranded; the old statics remain as aliases).
-- `AccessRulesService` + `mvs_access_rules` / `mvs_access_grants` — per-media rules and
-  grants. **Known gap:** enforcement and REST creation are live but both authoring UIs
-  were removed in 2.0.0 (tracked; Rule-18 violation in the no-UX direction).
+- There are no per-media access rules and no paid access: the item's privacy level, plus
+  sharing with named people or a group, is the whole model. `mvs_access_grants` holds the
+  named-person grants Pro Documents sharing writes (including expiring ones).
+  `mvs_access_rules` is retired (`Migrator::RETIRED_TABLES`).
 - `REST\RestGate` — write-gate over the whole `mvs/v1` surface, classifying each write
   route (`self` / `exempt`) and resolving the member a write targets.
 - `REST\CommunityPrivacyGate` — whole-namespace auth gate for private-community mode.
@@ -141,9 +137,8 @@ locale blocks.
 | **Gamification** | Points/XP bridge, boosts (spend points for visibility), daily upload streaks with freeze |
 | **Video** | Chapters, resume playback, play analytics and heatmaps |
 | **Captions** | Whisper-backed auto-transcription |
-| **AI** | Google Vision and AWS Rekognition providers behind a circuit breaker; auto-describe and auto-tag |
+| **AI** | Google Vision, AWS Rekognition and Anthropic providers (Vision and Rekognition behind a circuit breaker); auto-describe and auto-tag |
 | **Storage** | S3, BunnyCDN, Cloudflare R2, DigitalOcean Spaces drivers + a Storage Management admin UI |
-| **Quota** | Upload/storage quotas with MemberPress, PMPro and WooCommerce membership adapters |
 | **Connectors** | Flickr OAuth import/export behind a connector framework |
 | **Importers** | WP-CLI migrations from rtMedia, MediaPress and BuddyBoss, plus per-platform admin migration cards |
 | **Layouts** | Instagram, Pinterest, Flickr and Dribbble Explore feed layouts |
@@ -192,8 +187,8 @@ registration. Pro must never import a Free concrete class — enforced by
 BuddyNext consumes this engine rather than duplicating it, so the contract matters:
 
 - `mvs_buddynext_active` → BN declares itself; MVS stands down its chat panel,
-  `/messages/` page and notifications. **Verified 2026-08-01: zero MVS scripts load on a
-  BN page.**
+  `/messages/` page and notifications. `Plugin::enforce_frontend_presence()` dequeues
+  every `mvs-` handle on non-MVS surfaces while BN owns the community UX.
 - BN's inbox calls `MessagingService::get_conversations()` directly, and its request
   badge now uses `count_conversations($viewer, 'requests')`.
 - BN media upload resolves MVS's `UploadService` via `MediaClient::upload()` — so BN
@@ -206,59 +201,37 @@ BuddyNext consumes this engine rather than duplicating it, so the contract matte
 
 ## 6. Data model
 
-**Free (23 tables):** `mvs_media_index`, `mvs_media_meta`, `mvs_media_views`,
-`mvs_media_stats`, `mvs_reactions`, `mvs_favorites`, `mvs_follows`, `mvs_mentions`,
-`mvs_activity`, `mvs_notifications`, `mvs_reports`, `mvs_blocks`, `mvs_access_rules`,
+**Free** (`Migrator::tables()`): `mvs_media_index`, `mvs_media_meta`, `mvs_media_views`,
+`mvs_media_stats`, `mvs_media_spaces`, `mvs_reactions`, `mvs_favorites`, `mvs_follows`,
+`mvs_mentions`, `mvs_activity`, `mvs_notifications`, `mvs_reports`, `mvs_blocks`,
 `mvs_access_grants`, `mvs_album_items`, `mvs_error_log`, `mvs_conversations`,
 `mvs_conversation_participants`, `mvs_messages`, `mvs_message_reactions`,
 `mvs_transactions`, `mvs_bp_activity_media`, `mvs_device_tokens`.
 
-**Pro (13 tables):** `mvs_competitions`, `mvs_competition_entries`,
-`mvs_competition_matches`, `mvs_competition_votes`, `mvs_boosts`, `mvs_credit_log`,
-`mvs_play_events`, `mvs_quota_packages`, `mvs_pro_collection_items`,
-`mvs_pro_push_devices`, `mvs_pro_webhook_events`, `mvs_pro_folders`,
-`mvs_pro_document_search`. Note only four carry the `mvs_pro_` prefix; battles,
-challenges and tournaments all share the `mvs_competition*` tables rather than owning
-their own.
+**Pro** (`Migrator::tables()` in Pro): `mvs_competitions`, `mvs_competition_entries`,
+`mvs_competition_matches`, `mvs_competition_votes`, `mvs_boosts`, `mvs_play_events`,
+`mvs_pro_collection_items`, `mvs_pro_push_devices` (emptied by a migration; push tokens
+live in Free's `mvs_device_tokens`), `mvs_pro_folders`, `mvs_pro_document_search`. Only
+the `mvs_pro_` ones carry the prefix; battles, challenges and tournaments share the
+`mvs_competition*` tables. Pro's `Migrator::RETIRED_TABLES` names the quota, credit and
+webhook-event tables earlier versions created.
 
-Free schema version 30 (`Migrator::CURRENT_VERSION`); Pro keeps its own counter in
-`wpmediaverse-pro/includes/Core/Migrator.php`.
+Each plugin keeps its own schema counter in its own `Migrator::CURRENT_VERSION`.
 
 ---
 
-## 7. Manifest reconciliation (2026-08-01)
+## 7. Manifest extraction rules
 
-The manifest had drifted well past the 2.2.0 surface. Corrected in this pass:
+Summary counts are derived from the manifest's own arrays, never typed by hand.
 
-| Item | Before | After |
-|---|---:|---:|
-| Hooks recorded | 176 real (+5 phantom) | **220** |
-| REST endpoints | 113 | **114** |
-| Tables (duplicate entry) | 23 listed | **22** unique |
-| Migrator version | 20 | **25** |
-| Services / WP-CLI (summary) | 37 / 18 | **49 / 20** |
-
-Also removed: five watermark hooks (`mvs_apply_watermark_preview`,
-`mvs_generate_watermark`, `mvs_watermark_config`, `mvs_watermark_invalidated`,
-`mvs_watermarks_invalidated_all`) that exist in **neither Free nor Pro** — the manifest
-was advertising extension points that silently do nothing.
-
-Whole subsystems had been absent: `AccountDeletionService` (5 hooks), `RestGate` +
-`RestGuards` (5), `MemberDataMap` + `MemberPurger` (3), and the app config/template
-surface (3).
-
-**Summary counts are now derived from the manifest's own arrays** rather than
-hand-maintained, which is exactly how they drifted.
-
-### Extraction lessons (recorded so the next refresh does not repeat them)
-
-1. A same-line-only regex missed every **multi-line** `do_action(` / `apply_filters(` —
-   18 hooks under-reported, including `mvs_media_uploaded`, which BuddyNext hooks.
-2. `CREATE TABLE [^ ]*mvs_` missed `CREATE TABLE IF NOT EXISTS` — `mvs_media_meta` and
-   `mvs_transactions` looked phantom. Both hold live data (1125 and 90 rows). The
-   manifest was right and the scan was wrong.
-3. Therefore: **verify a scan against a second source** — the live DB, a detail file —
-   before deleting anything from the manifest on the scan's say-so.
+1. A same-line-only regex misses every **multi-line** `do_action(` / `apply_filters(`,
+   including `mvs_media_uploaded`, which BuddyNext hooks.
+2. `CREATE TABLE [^ ]*mvs_` misses `CREATE TABLE IF NOT EXISTS`: `mvs_media_meta` and
+   `mvs_transactions` look phantom. The manifest was right and the scan was wrong.
+3. **Verify a scan against a second source** (the live DB, a detail file) before
+   deleting anything from the manifest on the scan's say-so.
+4. A hook listed in the manifest that neither plugin fires is an extension point that
+   silently does nothing. `bin/hook-manifest-drift.php` fails on it in both directions.
 
 The deterministic generator remains deliberately unused: it zeroes REST and shortcodes on
 this plugin's `register_routes()` wrapper pattern, and `wppqa write-manifest.mjs`

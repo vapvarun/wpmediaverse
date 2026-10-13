@@ -2,7 +2,7 @@
 
 Every change that touches PHP, composer, or the build pipeline must pass the checks below before it is pushed. `phpcs`, `phpstan`, and `phpunit` being green **does not** prove the plugin activates - Pro #9788342062 on 2026-04-15 was a fatal-on-activation bug that shipped past all three green gates.
 
-The Free plugin has the canonical version of this document at `docs/development/LOCAL_TESTING.md` (this same `docs/` tree - Pro is intentionally doc-free). Read that first. This file only covers the Pro-specific additions.
+The Free plugin has the canonical version of this document at `docs/development/LOCAL_TESTING.md` (this same `docs/` tree; Pro keeps no development docs). Read that first. This file only covers the Pro-specific additions.
 
 ---
 

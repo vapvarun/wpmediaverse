@@ -68,6 +68,16 @@ Since 2.6.1 you can pick several videos or audio files at once and they upload t
 
 While you type in **Tags**, the modal shows "Matching tags" pills that complete the word you are typing. The full upload page shows the picked file's thumbnail and name.
 
+MP4 files that iPhones and some editors brand as M4V upload like any other MP4.
+
+## Galleries (2.6.2)
+
+Several files uploaded together form a gallery. Explore, the Media Grid block, the feeds and the BuddyPress profile and group tabs show one tile per gallery, with a badge that counts the items you are allowed to see.
+
+- The tile stays in the list when its first item is private or deleted. The next item you can see fronts it.
+- Under a filter (Explore > Videos, a tag, a category or a search), the gallery is one tile fronted by its first matching item. The badge counts the matching items, and the lightbox steps through those.
+- The lightbox shows each item's own reactions and comments.
+
 ## Bulk Album Upload (1.2.0)
 
 When uploading multiple files at once into an album, MediaVerse now creates **one** activity entry for the whole batch ("Varun uploaded 3 photos to album Portrait Series") with a thumbnail grid, instead of one separate activity per file. Single-file uploads and ad-hoc photo posts retain their existing per-post behaviour.

@@ -2,7 +2,7 @@
 /**
  * A write for a media row that is gone must not bring the row back.
  *
- * Basecamp: a BunnyCDN upload job finishing through Action Scheduler AFTER the
+ * A BunnyCDN upload job finishing through Action Scheduler AFTER the
  * member deleted the media called set( $id, 'file_url', ... ). set() inserted a
  * stub carrying one column, leaving a ghost row with an empty slug, title,
  * author and media_type. `slug` is NOT NULL UNIQUE, so the first ghost stuck

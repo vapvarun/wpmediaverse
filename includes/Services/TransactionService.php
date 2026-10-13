@@ -8,8 +8,7 @@
  * GET /me/transactions and the [mvs_usage_history] shortcode. Storage limits
  * are not read from here: StorageLimitService measures usage live.
  *
- * The table (mvs_transactions, Migrator v9) was created but never written or read
- * before 1.8.0 — this is the model that finally owns it (Coding Rule: no raw $wpdb
+ * The table (mvs_transactions, Migrator v9) is owned by this model (Coding Rule: no raw $wpdb
  * outside a model).
  *
  * @package WPMediaVerse\Services
@@ -81,7 +80,7 @@ class TransactionService {
 				'balance_after' => $balance_after,
 				'reason'        => substr( $reason, 0, 100 ),
 				// UTC from PHP, never the column DEFAULT: MySQL fills that in the
-				// server's zone (Basecamp 10343134036).
+				// server's zone.
 				'created_at'    => current_time( 'mysql', true ),
 			),
 			array( '%d', '%s', '%d', '%d', '%s', '%s' )

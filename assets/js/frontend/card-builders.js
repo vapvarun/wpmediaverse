@@ -81,6 +81,41 @@
 	}
 
 	/**
+	 * A tile's counts, the same markup as TemplateHelpers::render_grid_stats():
+	 * Lucide icons (hydrated with the rest of the card), a screen-reader label
+	 * and an aria-hidden number.
+	 *
+	 * @param {Object} stats { views, reactions, comments }.
+	 * @return {HTMLElement}
+	 */
+	function statsBlock( stats ) {
+		var i18n = window.mvsCardBuildersI18n || {};
+		var wrap = el( 'div', 'mvs-grid-item-stats' );
+		var labels = i18n.statLabels || {};
+		[
+			[ 'eye', stats.views, 'views' ],
+			[ 'heart', stats.reactions || 0, 'reactions' ],
+			[ 'message-circle', stats.comments || 0, 'comments' ],
+		].forEach( function ( row, idx ) {
+			if ( 0 === idx && ! row[ 1 ] ) {
+				return; // Views only when there are some, as on page 1.
+			}
+			var stat = el( 'span', 'mvs-grid-stat' );
+			stat.appendChild( el( 'i', '', { 'data-lucide': row[ 0 ], 'aria-hidden': 'true' } ) );
+			var label = el( 'span', 'mvs-sr-only' );
+			// shortcut: singular for 1, plural otherwise; languages with more plural forms get the plural.
+			var forms = labels[ row[ 2 ] ] || [ '%s', '%s' ];
+			label.textContent = forms[ 1 === Number( row[ 1 ] ) ? 0 : 1 ].replace( '%s', fmtNum( row[ 1 ] ) );
+			stat.appendChild( label );
+			var num = el( 'span', '', { 'aria-hidden': 'true' } );
+			num.textContent = fmtNum( row[ 1 ] );
+			stat.appendChild( num );
+			wrap.appendChild( stat );
+		} );
+		return wrap;
+	}
+
+	/**
 	 * Format a number with locale separators (mimics number_format_i18n).
 	 *
 	 * @param {number} n
@@ -168,7 +203,7 @@
 		// streamable video ALWAYS renders as a <video> first-frame preview with
 		// thumbUrl as the <video poster> fallback. thumbUrl for a posterless
 		// video is the bundled default-poster SVG (REST 1.7.0), so gating the
-		// <video> on an empty thumbUrl — as this used to — made every posterless
+		// <video> on an empty thumbUrl would make every posterless
 		// upload show the generic placeholder instead of its real first frame.
 		if ( 'video' === mediaType && fileUrl ) {
 			var vidAttrs = {
@@ -352,8 +387,8 @@
 		var mediaType = item.media_type || 'image';
 		var stats     = item.stats || {};
 		var author    = item.author_data || {};
-		var isGallery = !! item.media_group;
 		var groupCnt  = item.group_count || 0;
+		var isGallery = groupCnt > 1; // group_count is 0 for a member listed on its own.
 
 		var rootClass = 'mvs-grid-item' + ( isGallery ? ' mvs-grid-item--gallery' : '' );
 		var root = el( 'div', rootClass, {
@@ -410,7 +445,7 @@
 		// Gallery badge.
 		if ( isGallery && groupCnt > 1 ) {
 			var badge = el( 'span', 'mvs-gallery-badge', {
-				title: groupCnt + ' photos',
+				title: ( ( window.mvsCardBuildersI18n || {} )[ 1 === groupCnt ? 'galleryItem' : 'galleryItems' ] || '%d' ).replace( '%d', groupCnt ),
 			} );
 			var dashicon = el( 'span', 'dashicons dashicons-images-alt2' );
 			badge.appendChild( dashicon );
@@ -418,28 +453,29 @@
 			anchor.appendChild( badge );
 		}
 
-		// Stats overlay.
+		// Stats overlay (grid layouts).
 		var overlay = el( 'div', 'mvs-grid-item-overlay' );
-		var statsWrap = el( 'div', 'mvs-grid-item-stats' );
-
-		if ( stats.views ) {
-			var viewStat = el( 'span', 'mvs-grid-stat' );
-			viewStat.textContent = '\uD83D\uDC41\uFE0F ' + fmtNum( stats.views );
-			statsWrap.appendChild( viewStat );
-		}
-
-		var reactStat = el( 'span', 'mvs-grid-stat' );
-		reactStat.textContent = '\u2764\uFE0F ' + fmtNum( stats.reactions || 0 );
-		statsWrap.appendChild( reactStat );
-
-		var commentStat = el( 'span', 'mvs-grid-stat' );
-		commentStat.textContent = '\uD83D\uDCAC ' + fmtNum( stats.comments || 0 );
-		statsWrap.appendChild( commentStat );
-
-		overlay.appendChild( statsWrap );
+		overlay.appendChild( statsBlock( stats ) );
 		anchor.appendChild( overlay );
 
 		root.appendChild( anchor );
+
+		// Title, date and counts beside the thumbnail in the List layout: the
+		// same block TemplateHelpers::render_grid_item() prints on page 1.
+		var details = el( 'div', 'mvs-grid-item-details' );
+		var name = el( 'span', 'mvs-grid-item-name' );
+		name.textContent = title || ( ( window.mvsCardBuildersI18n || {} ).viewMedia || '' );
+		details.appendChild( name );
+		if ( item.date ) {
+			var when = new Date( String( item.date ).replace( ' ', 'T' ) + ( /Z|[+-]\d\d:?\d\d$/.test( item.date ) ? '' : 'Z' ) );
+			if ( ! isNaN( when.getTime() ) ) {
+				var time = el( 'time', 'mvs-grid-item-date', { datetime: when.toISOString() } );
+				time.textContent = when.toLocaleDateString( document.documentElement.lang || undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
+				details.appendChild( time );
+			}
+		}
+		details.appendChild( statsBlock( stats ) );
+		root.appendChild( details );
 
 		// Author info row.
 		if ( author.name ) {
@@ -447,7 +483,7 @@
 
 			// Avatar + name link to the uploader's profile so Load More items
 			// stay clickable, matching the server-rendered grid in
-			// TemplateHelpers::render_grid_item (card #9962508646). Falls back
+			// TemplateHelpers::render_grid_item. Falls back
 			// to a plain row when the REST payload carries no profile_url.
 			var authorTarget = info;
 			if ( author.profile_url ) {

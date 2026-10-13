@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * WCAG 1.2.2 (card 9822979354). Pro made .vtt captions but no player had a
+ * WCAG 1.2.2. Pro made .vtt captions but no player had a
  * <track>; captions_track() renders one from the mvs_media_captions filter.
  */
 class CaptionsTrackTest extends WP_UnitTestCase {

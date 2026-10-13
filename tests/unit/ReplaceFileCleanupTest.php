@@ -1,6 +1,6 @@
 <?php
 /**
- * Replace leaves nothing of the old version behind (card 10369185146).
+ * Replace leaves nothing of the old version behind.
  *
  * @package WPMediaVerse\Tests
  */

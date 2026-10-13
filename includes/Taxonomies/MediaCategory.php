@@ -38,7 +38,9 @@ class MediaCategory {
 			'hierarchical'          => true,
 			'public'                => true,
 			'show_in_rest'          => true,
-			'show_admin_column'     => true,
+			// Not on the Albums list: see MediaTag.
+			'show_admin_column'     => false,
+			'show_in_quick_edit'    => false,
 			'rewrite'               => array( 'slug' => 'media-category' ),
 			'update_count_callback' => array( MediaTag::class, 'update_term_count' ),
 			// No metabox on the album editor. Categories describe MEDIA, never albums:
@@ -67,7 +69,6 @@ class MediaCategory {
 		//
 		// Custom update_count_callback (shared with MediaTag) counts media in
 		// mvs_media_index, not wp_posts — see MediaTag::update_term_count() docblock.
-		// Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §3.4.
 		register_taxonomy( 'mvs_category', 'mvs_album', $args );
 	}
 }

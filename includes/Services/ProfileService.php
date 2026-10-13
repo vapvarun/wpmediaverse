@@ -82,7 +82,7 @@ class ProfileService {
 		// BuddyPress's bp_core_fetch_avatar() reads its OWN uploads/avatars/ dir and
 		// routes through neither of the WP filters above, so a member's MVS avatar
 		// showed on no BP surface — the members directory, activity, cards all fell
-		// back to the theme default (Basecamp 10128286574). Serve the MVS avatar
+		// back to the theme default. Serve the MVS avatar
 		// through BP's own filters too. (These only fire when BuddyPress is active.)
 		add_filter( 'bp_core_fetch_avatar_url', array( $this, 'filter_bp_avatar_url' ), 10, 2 );
 		add_filter( 'bp_core_fetch_avatar', array( $this, 'filter_bp_avatar_html' ), 10, 2 );
@@ -238,19 +238,6 @@ class ProfileService {
 	}
 
 	/**
-	 * The community plugin's profile editor, when one owns the member's name.
-	 *
-	 * One profile editor per field: when a community plugin (BuddyPress with
-	 * Extended Profiles) already edits the member's name, MediaVerse links to
-	 * it instead of offering a second form that writes the same field. Bio,
-	 * avatar and the MediaVerse-only settings stay here.
-	 *
-	 * @since 2.6.0
-	 *
-	 * @param int $user_id User ID.
-	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
-	 */
-	/**
 	 * "Who can message you" values a member may pick on this site: the site
 	 * setting and everything stricter.
 	 *
@@ -298,6 +285,19 @@ class ProfileService {
 		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
 	}
 
+	/**
+	 * The community plugin's profile editor, when one owns the member's name.
+	 *
+	 * One profile editor per field: when a community plugin (BuddyPress with
+	 * Extended Profiles) already edits the member's name, MediaVerse links to
+	 * it instead of offering a second form that writes the same field. Bio,
+	 * avatar and the MediaVerse-only settings stay here.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array{url:string,label:string,fields:string[]} Empty url = no deferral.
+	 */
 	public static function community_profile( int $user_id ): array {
 		$profile = array(
 			'url'    => '',
@@ -322,8 +322,7 @@ class ProfileService {
 		 *
 		 * Return `url` + `label` + `fields` to have MediaVerse's profile forms
 		 * hide those fields, link to the community editor, and refuse to save
-		 * them. Return an empty `url` to edit everything in MediaVerse, as
-		 * before 2.6.0.
+		 * them. Return an empty `url` to edit everything in MediaVerse.
 		 *
 		 * @since 2.6.0
 		 *
@@ -474,8 +473,8 @@ class ProfileService {
 	 * Whether a member has a real avatar they chose — from anywhere, not just us.
 	 *
 	 * This answers the question every caller actually has: may I nag this member
-	 * to add a profile photo? It used to answer a narrower one — is there a row
-	 * in OUR avatar store — and the two stop agreeing the moment another plugin
+	 * to add a profile photo? It does not answer a narrower one — is there a row
+	 * in OUR avatar store — because the two stop agreeing the moment another plugin
 	 * on the site also provides avatars.
 	 *
 	 * Measured on the QA site with BuddyNext active, 8 of 8 members who had
@@ -483,7 +482,6 @@ class ProfileService {
 	 * field beside it in the same REST response served their real photograph.
 	 * Anything gating on this — an "upload a profile photo" nudge, a
 	 * profile-completion check — asked them for a picture they already had
-	 * (Basecamp 10252323883).
 	 *
 	 * It cannot be resolved by inspecting the avatar chain. Core's
 	 * `found_avatar` looks like the signal and is not: a plugin that generates

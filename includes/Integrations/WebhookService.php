@@ -85,7 +85,7 @@ class WebhookService {
 		$this->dispatch( 'media.moderated', $payload );
 	}
 
-	// Note: on_media_updated removed — media is no longer a CPT, save_post hook doesn't fire.
+	// Note: there is no on_media_updated — media is not a CPT, so the save_post hook doesn't fire.
 	// Media updates are tracked via mvs_media_index direct writes.
 
 	/**

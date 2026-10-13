@@ -14,7 +14,12 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 40;
+	/**
+	 * Name of the lock that keeps a second request from running the steps.
+	 */
+	const LOCK_NAME = 'mvs_migrator';
+
+	const CURRENT_VERSION = 43;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -112,14 +117,41 @@ class Migrator {
 			return;
 		}
 
-		for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
-			$method = "migrate_to_{$v}";
-			if ( method_exists( $this, $method ) ) {
-				$this->$method();
-			}
+		// One runner at a time: right after an update every request arrives here.
+		// Core's upgrader lock is an INSERT IGNORE, so only one request wins it,
+		// and a lock older than 10 minutes (a request that died) is taken over.
+		if ( ! self::acquire_lock( self::LOCK_NAME ) ) {
+			return;
 		}
 
-		update_option( self::VERSION_OPTION, self::CURRENT_VERSION );
+		try {
+			for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
+				$method = "migrate_to_{$v}";
+				if ( method_exists( $this, $method ) ) {
+					$this->$method();
+				}
+				// Saved per step, so a timeout resumes at the next one instead of
+				// re-running every step from the start.
+				update_option( self::VERSION_OPTION, $v );
+			}
+		} finally {
+			\WP_Upgrader::release_lock( self::LOCK_NAME );
+		}
+	}
+
+	/**
+	 * Take a migration lock through core's upgrader lock.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $name Lock name (stored as the option "{$name}.lock").
+	 * @return bool Whether this request holds the lock.
+	 */
+	public static function acquire_lock( string $name ): bool {
+		if ( ! class_exists( 'WP_Upgrader' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		}
+		return \WP_Upgrader::create_lock( $name, 10 * MINUTE_IN_SECONDS );
 	}
 
 	/**
@@ -722,10 +754,10 @@ class Migrator {
 	/**
 	 * Migration v10 — recount mvs_tag and mvs_category terms against mvs_media_index.
 	 *
-	 * Previously term counts stayed at 0 because the default term-count callback
-	 * counts wp_posts rows of registered post types, but our media lives in the
-	 * mvs_media_index custom table. This backfill brings existing tag/category
-	 * counts in line with the new custom update_count_callback.
+	 * The default term-count callback counts wp_posts rows of registered post
+	 * types, but our media lives in the mvs_media_index custom table, so term
+	 * counts stayed at 0. This backfill brings existing tag/category counts in
+	 * line with the custom update_count_callback.
 	 *
 	 * @since 1.1.2
 	 */
@@ -981,7 +1013,7 @@ class Migrator {
 	 * Albums and collections get an mvs_media_index row purely to store their
 	 * privacy (media_type left empty). Before 2.0.0 the delete handlers cleaned
 	 * only their own item tables, so deleting the CPT left that index row behind
-	 * and Explore kept rendering a dead, click-broken tile (Basecamp 10073671889).
+	 * and Explore kept rendering a dead, click-broken tile.
 	 * The delete handlers now purge the row; this heals installs that already
 	 * accumulated orphans (deleted albums/collections, authorless placeholders).
 	 *
@@ -1076,8 +1108,7 @@ class Migrator {
 	 * The DM poll only re-serves messages whose created_at is newer than the
 	 * client's last poll. A reaction lives in a separate table and never touches
 	 * the parent row, so reacting to an already-delivered message was invisible to
-	 * the other participant until a full reload (customer report, card
-	 * 10122929662). A reactions-table scan cannot fix it alone: removals are hard
+	 * the other participant until a full reload (customer report). A reactions-table scan cannot fix it alone: removals are hard
 	 * deletes that leave no timestamp, so only a column on the message itself —
 	 * stamped on both add and remove — catches every change. This is that column;
 	 * poll_reaction_updates() reads it.
@@ -1107,11 +1138,11 @@ class Migrator {
 	/**
 	 * Migration v24 — per-user clear point on conversation participants.
 	 *
-	 * "Delete conversation" used to flip the participant to 'left' and
-	 * find_or_create_conversation() then created a brand-new thread on
-	 * re-contact — leaving the other member with TWO threads for the same
-	 * pair (card 10127717045). The fix reuses the pair's single thread and
-	 * hides pre-delete history per user via this clear point instead.
+	 * "Delete conversation" does not flip the participant to 'left':
+	 * find_or_create_conversation() would then create a brand-new thread on
+	 * re-contact, leaving the other member with TWO threads for the same
+	 * pair. Instead the pair's single thread is reused and
+	 * pre-delete history is hidden per user via this clear point.
 	 *
 	 * The watermark is a message ID, not a datetime: message ids are strictly
 	 * monotonic, so `m.id > cleared_up_to` is exact, where a second-precision
@@ -1190,8 +1221,8 @@ class Migrator {
 	/**
 	 * Migration v13 — FULLTEXT search index on mvs_media_index.(title, description).
 	 *
-	 * REST `/media?s=<term>` previously did `LIKE '%term%'` on title/description.
-	 * That's a sequential scan — fine at 1k rows, brutal at 100k. The 1.2.0
+	 * A `LIKE '%term%'` search on title/description (REST `/media?s=<term>`)
+	 * is a sequential scan — fine at 1k rows, brutal at 100k. The 1.2.0
 	 * Explore-page autocomplete fires on every keystroke (debounced 250ms),
 	 * so search is a hot path. FULLTEXT + MATCH/AGAINST drops worst-case
 	 * latency from O(n) to roughly log n with a sub-millisecond ceiling on
@@ -1677,8 +1708,6 @@ class Migrator {
 	 * destroyed at write time and is not recoverable — the photo is real and must not
 	 * be touched.
 	 *
-	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md
-	 *
 	 * @since 2.4.0
 	 * @return void
 	 */
@@ -2047,29 +2076,6 @@ class Migrator {
 	}
 
 	/**
-	 * Migration v28 — clear hard-refused MIME types out of the stored
-	 * `mvs_allowed_file_types`.
-	 *
-	 * Every install predating 1.2.3 still carries `application/pdf` in that
-	 * option. Card #9962125462 removed PDF from the settings grid and made the
-	 * upload path refuse it, but neither half covered an install whose option
-	 * ALREADY contained it — so the picker went on advertising PDF to members,
-	 * the server went on refusing it, and the owner had no way to stop it: PDF is
-	 * absent from the grid so there is no box to untick, and the sanitizer's
-	 * preserve-custom-types rule (correct in itself) wrote it back on every save.
-	 * The stored value was unreachable by any admin action (Basecamp 10190738445).
-	 *
-	 * Nothing is lost: the media path has refused these types since 1.2.3, so
-	 * removing them from the option removes an entry that only ever produced a
-	 * failed upload. PDFs belong in the document library, which accepts them.
-	 *
-	 * Idempotent — re-running finds nothing to strip. A site that genuinely wants
-	 * one of these back can still add it through the `mvs_allowed_file_types`
-	 * filter, which this does not touch.
-	 *
-	 * @since 2.4.0
-	 */
-	/**
 	 * Migration v29 — the drive columns (Phase 11 G1).
 	 *
 	 * A document uploaded to a Space root today stores only `post_author`, so it
@@ -2145,7 +2151,6 @@ class Migrator {
 	 * a push to a member's registered devices. The plugin OWNS the tokens and
 	 * fires the dispatch signal; the actual FCM/APNs send is a delivery
 	 * integration's job (credentials + platform SDKs live off the plugin).
-	 * Basecamp 9667082225.
 	 */
 	private function migrate_to_30(): void {
 		global $wpdb;
@@ -2253,6 +2258,29 @@ class Migrator {
 		return $stamped;
 	}
 
+	/**
+	 * Migration v28 — clear hard-refused MIME types out of the stored
+	 * `mvs_allowed_file_types`.
+	 *
+	 * Every install predating 1.2.3 still carries `application/pdf` in that
+	 * option. The settings grid no longer offers PDF and the upload path refuses it, but
+	 * neither half covers an install whose option ALREADY contains it — so the
+	 * picker goes on advertising PDF to members, the server goes on refusing it,
+	 * and the owner has no way to stop it: PDF is absent from the grid so there
+	 * is no box to untick, and the sanitizer's preserve-custom-types rule
+	 * (correct in itself) writes it back on every save. The stored value is
+	 * unreachable by any admin action.
+	 *
+	 * Nothing is lost: the media path has refused these types since 1.2.3, so
+	 * removing them from the option removes an entry that only ever produced a
+	 * failed upload. PDFs belong in the document library, which accepts them.
+	 *
+	 * Idempotent — re-running finds nothing to strip. A site that genuinely wants
+	 * one of these back can still add it through the `mvs_allowed_file_types`
+	 * filter, which this does not touch.
+	 *
+	 * @since 2.4.0
+	 */
 	private function migrate_to_28(): void {
 		$stored = get_option( 'mvs_allowed_file_types', null );
 
@@ -2276,7 +2304,7 @@ class Migrator {
 	 * `MediaRepository::insert()` defaulted status, privacy, moderation and
 	 * created_at but not the drive, so any caller that did not pass it landed on
 	 * the column default `drive_id = 0`. The default is fixed at the write side;
-	 * this settles the rows already stored (Basecamp 10259007636).
+	 * this settles the rows already stored.
 	 *
 	 * Safe because it writes the value the read side ALREADY returns:
 	 * `PermissionService::drive_of()` falls back to `post_author` when
@@ -2574,7 +2602,7 @@ class Migrator {
 	 * Migration v40 - one album per photo, and each photo's own privacy (2.6.0).
 	 *
 	 * A photo in an album now shows with the album's privacy in both directions,
-	 * and belongs to one album (Basecamp 10264373450). This puts existing data in
+	 * and belongs to one album. This puts existing data in
 	 * that shape without changing what anyone sees:
 	 *
 	 *  1. membership rows for albums that no longer exist are removed;
@@ -2619,5 +2647,91 @@ class Migrator {
 			 FROM {$items} ai JOIN {$index} m ON m.media_id = ai.media_id"
 		);
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v41 - BuddyPress posts of legacy "logged-in only" media.
+	 *
+	 * The legacy `loggedin` level is the Members audience, but its activity
+	 * level was stored as 0 (public), so signed-out visitors saw those posts.
+	 * Any post that holds such an item and still reads 0 now reads Members (20);
+	 * stricter posts are left as they are.
+	 *
+	 * @since 2.6.2
+	 */
+	private function migrate_to_41(): void {
+		global $wpdb;
+
+		$activity_meta = $wpdb->base_prefix . 'bp_activity_meta';
+		if ( $activity_meta !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $activity_meta ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return;
+		}
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"UPDATE {$activity_meta} am
+			 JOIN {$meta} mm ON mm.meta_key = 'bp_activity_id' AND mm.meta_value = am.activity_id
+			 JOIN {$index} mi ON mi.media_id = mm.media_id AND mi.privacy = 'loggedin'
+			 SET am.meta_value = '20'
+			 WHERE am.meta_key = '_mvs_activity_privacy_level' AND ( am.meta_value = '0' OR am.meta_value = '' )"
+		);
+		// phpcs:enable
+	}
+
+	/**
+	 * Migration v42 - look up media meta by value.
+	 *
+	 * Galleries find their siblings by the shared `media_group` value, which the
+	 * primary key (media_id, meta_key) cannot answer. 64 characters covers the
+	 * group ids and keeps the key well under every engine's prefix limit.
+	 *
+	 * Without it the gallery listing takes seconds on a large site. Idempotent
+	 * (SHOW INDEX guard), add-only, the same privilege that created the table.
+	 *
+	 * @since 2.6.2
+	 */
+	private function migrate_to_42(): void {
+		global $wpdb;
+
+		$meta = $wpdb->prefix . 'mvs_media_meta';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		if ( $wpdb->get_var( "SHOW INDEX FROM {$meta} WHERE Key_name = 'meta_value_lookup'" ) ) {
+			return;
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$meta} ADD KEY meta_value_lookup (meta_key, meta_value(64))" );
+		$wpdb->show_errors( $prev_show );
+	}
+
+	/**
+	 * Migration v43 - find the messages that use a file.
+	 *
+	 * Chat files are checked against the messages that show them on every view,
+	 * and the daily sweeps ask which files no message uses; without these keys
+	 * each check reads the whole messages table.
+	 *
+	 * Idempotent (SHOW INDEX guard per key), add-only.
+	 *
+	 * @since 2.6.2
+	 */
+	private function migrate_to_43(): void {
+		global $wpdb;
+
+		$messages = $wpdb->prefix . 'mvs_messages';
+		$prev     = $wpdb->show_errors( false );
+		foreach ( array( 'media_id', 'attachment_id' ) as $column ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			if ( ! $wpdb->get_var( $wpdb->prepare( "SHOW INDEX FROM {$messages} WHERE Key_name = %s", $column ) ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->query( "ALTER TABLE {$messages} ADD KEY {$column} ({$column})" );
+			}
+		}
+		$wpdb->show_errors( $prev );
 	}
 }

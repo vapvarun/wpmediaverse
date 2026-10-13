@@ -1,0 +1,512 @@
+<?php
+/**
+ * Chat files: what happens to a file sent in a message, the way any messenger works.
+ *
+ * Since 2.6.2 a chat file is conversation-scoped 'dm' media (see
+ * MessagingController::upload_attachment()). This class covers the rest of its life:
+ *
+ * - Deleting or unsending the message removes the file, for everyone.
+ * - Files sent before 2.6.2 were public WordPress attachments under their own
+ *   names. A background job moves every sent one into 'dm' media, re-points its
+ *   message and deletes the public copy; uploads that were never sent are
+ *   deleted. Until it finishes they are kept out of every attachment listing
+ *   (/wp/v2/media, the Media Library).
+ *
+ * @package WPMediaVerse
+ * @since   2.6.2
+ */
+
+declare( strict_types=1 );
+
+namespace WPMediaVerse\Messaging;
+
+use WPMediaVerse\Core\Plugin;
+use WPMediaVerse\Services\DirectDelivery;
+use WPMediaVerse\Services\LoggerService;
+use WPMediaVerse\Services\StorageLimitService;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Lifecycle of files sent in messages.
+ */
+final class ChatFiles {
+
+	/**
+	 * Background job that moves pre-2.6.2 chat attachments.
+	 */
+	public const HOOK = 'mvs_move_chat_attachments';
+
+	/**
+	 * Progress: array{moved: int, removed: int, failed: int, done: bool, retried_at: int, private: bool}.
+	 */
+	public const OPTION = 'mvs_chat_attachments_moved';
+
+	/**
+	 * Marks an attachment the job could not move, so it is not retried forever.
+	 */
+	private const FAILED_META = '_mvs_dm_move_failed';
+
+	/**
+	 * Attachments per batch: each one is a file copy and a delete.
+	 */
+	private const BATCH = 25;
+
+	/**
+	 * Hook everything. Runs whether or not Messages is switched on: old chat
+	 * files are public either way.
+	 *
+	 * @return void
+	 */
+	public static function register(): void {
+		add_action( 'mvs_message_deleted', array( self::class, 'on_message_deleted' ), 10, 1 );
+		add_action( 'mvs_purge_old_views', array( self::class, 'sweep_unsent' ) );
+		add_action( self::HOOK, array( self::class, 'run_batch' ) );
+		add_action( 'init', array( self::class, 'privatize_legacy' ), 20 );
+		add_action( 'wp_loaded', array( self::class, 'maybe_start' ) );
+		add_action( 'pre_get_posts', array( self::class, 'hide_legacy' ) );
+		add_filter( 'rest_request_before_callbacks', array( self::class, 'hide_legacy_item' ), 10, 3 );
+		add_filter( 'site_status_tests', array( self::class, 'register_health_test' ) );
+	}
+
+	/**
+	 * Remove the file of a deleted or unsent message, as a messenger does.
+	 *
+	 * Only the sender's own chat file, and only when no other live message
+	 * still shows it.
+	 *
+	 * @param int $message_id Message id.
+	 * @return void
+	 */
+	public static function on_message_deleted( $message_id ): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_messages';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT sender_id, media_id, attachment_id FROM {$table} WHERE id = %d", (int) $message_id ) );
+		if ( ! $row ) {
+			return;
+		}
+		$sender = (int) $row->sender_id;
+
+		$media_id = (int) $row->media_id;
+		if ( $media_id > 0 && ! self::still_shown( 'media_id', $media_id, (int) $message_id ) ) {
+			$repo = Plugin::container()->get( 'media_repository' );
+			if ( 'dm' === (string) $repo->get( $media_id, 'privacy' ) && (int) $repo->get( $media_id, 'post_author' ) === $sender ) {
+				$repo->delete_cascade( $media_id );
+			}
+		}
+
+		$attachment_id = (int) $row->attachment_id;
+		if ( $attachment_id > 0 && ! self::still_shown( 'attachment_id', $attachment_id, (int) $message_id ) && self::is_legacy_chat_file( $attachment_id, $sender ) ) {
+			wp_delete_attachment( $attachment_id, true );
+		}
+	}
+
+	/**
+	 * Upload time (GMT, MySQL format) before which an unsent chat file is removed.
+	 *
+	 * @return string
+	 */
+	private static function unsent_cutoff(): string {
+		/**
+		 * Hours an unsent chat file is kept before it is deleted.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int $hours Default 24.
+		 */
+		$hours = max( 1, (int) apply_filters( 'mvs_unsent_chat_file_hours', 24 ) );
+		return gmdate( 'Y-m-d H:i:s', time() - $hours * HOUR_IN_SECONDS );
+	}
+
+	/**
+	 * Daily: delete chat files that were uploaded but never sent.
+	 *
+	 * Removing an attachment before sending, or closing the tab, leaves the
+	 * upload behind with no message pointing at it. After a day it can no
+	 * longer be waiting to be sent, so it goes, with its files. A file any
+	 * message uses is never touched.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function sweep_unsent(): void {
+		$before = self::unsent_cutoff();
+		$repo   = Plugin::container()->get( 'media_repository' );
+
+		for ( $batch = 0; $batch < 20; $batch++ ) {
+			$ids = $repo->unsent_chat_media_ids( $before, 100 );
+			foreach ( $ids as $media_id ) {
+				$repo->delete_cascade( $media_id );
+			}
+			if ( count( $ids ) < 100 ) {
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Mark every old chat attachment private, once, on the first request after
+	 * the update. WordPress then keeps them out of search, oEmbed, attachment
+	 * pages and the REST API for anyone who may not read private posts: every
+	 * sibling route at once, the core way, before the move has even started.
+	 * One UPDATE, then a flag; a no-op on every request after.
+	 *
+	 * @return void
+	 */
+	public static function privatize_legacy(): void {
+		$state = self::state();
+		if ( $state['private'] || ( $state['done'] && 0 === (int) $state['failed'] ) ) {
+			return;
+		}
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s", StorageLimitService::DM_SIZE_META ) ) );
+		foreach ( array_chunk( $ids, 500 ) as $chunk ) {
+			$in = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->posts} SET post_status = 'private' WHERE post_type = 'attachment' AND ID IN ({$in})", ...$chunk ) );
+			array_map( 'clean_post_cache', $chunk );
+		}
+		$state['private'] = true;
+		update_option( self::OPTION, $state, true );
+	}
+
+	/**
+	 * Start the move when it has not finished: admin page loads and cron only,
+	 * never a visitor's request, and only when no batch is already waiting.
+	 *
+	 * @return void
+	 */
+	public static function maybe_start(): void {
+		if ( ! DirectDelivery::is_scheduling_request() ) {
+			return;
+		}
+		$state = self::state();
+		if ( $state['done'] && $state['failed'] > 0 && $state['retried_at'] < time() - DAY_IN_SECONDS ) {
+			// Files that could not be moved get another try once a day.
+			delete_post_meta_by_key( self::FAILED_META );
+			$state['done']       = false;
+			$state['failed']     = 0;
+			$state['retried_at'] = time();
+			update_option( self::OPTION, $state, true );
+		}
+		if ( $state['done'] ) {
+			return;
+		}
+		$queued = function_exists( 'as_has_scheduled_action' )
+			? as_has_scheduled_action( self::HOOK, null, 'wpmediaverse' )
+			: (bool) wp_next_scheduled( self::HOOK );
+		if ( ! $queued ) {
+			self::schedule();
+		}
+	}
+
+	/**
+	 * Move one batch of old chat attachments, then queue the next or finish.
+	 *
+	 * @return void
+	 */
+	public static function run_batch(): void {
+		if ( self::done() ) {
+			return;
+		}
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT pm.post_id FROM {$wpdb->postmeta} pm
+					 WHERE pm.meta_key = %s
+					   AND NOT EXISTS ( SELECT 1 FROM {$wpdb->postmeta} f WHERE f.post_id = pm.post_id AND f.meta_key = %s )
+					 ORDER BY pm.post_id DESC LIMIT %d",
+					StorageLimitService::DM_SIZE_META,
+					self::FAILED_META,
+					self::BATCH
+				)
+			)
+		);
+
+		$state = self::state();
+		foreach ( $ids as $attachment_id ) {
+			++$state[ self::move( $attachment_id ) ];
+		}
+		$state['done'] = count( $ids ) < self::BATCH;
+		update_option( self::OPTION, $state, true );
+		if ( ! $state['done'] ) {
+			self::schedule();
+		}
+	}
+
+	/**
+	 * Keep old chat attachments out of every attachment listing until moved.
+	 *
+	 * Fails closed: an attachment the job could not move stays a public
+	 * WordPress attachment, so hiding continues for as long as any failed one
+	 * is left, not just until the job reports done.
+	 *
+	 * @param \WP_Query $query Query about to run.
+	 * @return void
+	 */
+	public static function hide_legacy( $query ): void {
+		if ( ! $query instanceof \WP_Query ) {
+			return;
+		}
+		// 'any' and search too: site search sets post_type 'any' only after this
+		// hook runs, and includes attachments.
+		$types = (array) $query->get( 'post_type' );
+		if ( ! in_array( 'attachment', $types, true ) && ! in_array( 'any', $types, true ) && ! $query->is_search() ) {
+			return;
+		}
+		$state = self::state();
+		if ( $state['done'] && 0 === (int) $state['failed'] ) {
+			return;
+		}
+		$ours = array(
+			'key'     => StorageLimitService::DM_SIZE_META,
+			'compare' => 'NOT EXISTS',
+		);
+		$meta = array_filter( (array) $query->get( 'meta_query' ) );
+		// Nested under AND, so a query's own OR relation cannot absorb it.
+		$query->set(
+			'meta_query',
+			$meta ? array(
+				'relation' => 'AND',
+				$meta,
+				$ours,
+			) : array( $ours )
+		);
+	}
+
+	/**
+	 * Answer /wp/v2/media/{id} for an old chat file exactly like a missing id.
+	 * Attachment ids are sequential, so hiding only the listing would still let
+	 * anyone walk them one by one.
+	 *
+	 * Runs before the route (rest_request_before_callbacks), the hook made for
+	 * returning an error; core's rest_prepare_attachment cannot take one.
+	 *
+	 * @param mixed            $response Response so far (null to continue).
+	 * @param array            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed
+	 */
+	public static function hide_legacy_item( $response, $handler, $request ) {
+		// Ask the handler WordPress already matched, never the raw path: routes
+		// match case-insensitively and can arrive as ?rest_route=, so a path
+		// regex is bypassable.
+		$controller = is_array( $handler['callback'] ?? null ) ? ( $handler['callback'][0] ?? null ) : null;
+		if ( $controller instanceof \WP_REST_Attachments_Controller
+			&& $request instanceof \WP_REST_Request
+			&& (int) $request->get_param( 'id' ) > 0
+			&& '' !== (string) get_post_meta( (int) $request->get_param( 'id' ), StorageLimitService::DM_SIZE_META, true ) ) {
+			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.' ), array( 'status' => 404 ) ); // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- core's own string, so the reply matches a missing id.
+		}
+		return $response;
+	}
+
+	/**
+	 * Tell the owner in Site Health, only while some old chat files could not be moved.
+	 *
+	 * @param array $tests Site Health tests.
+	 * @return array
+	 */
+	public static function register_health_test( $tests ) {
+		if ( (int) self::state()['failed'] > 0 ) {
+			$tests['direct']['wpmediaverse_chat_files'] = array(
+				'label' => __( 'MediaVerse chat files', 'wpmediaverse' ),
+				'test'  => array( self::class, 'health_result' ),
+			);
+		}
+		return $tests;
+	}
+
+	/**
+	 * The Site Health result for chat files that could not be moved.
+	 *
+	 * @return array
+	 */
+	public static function health_result(): array {
+		$failed = (int) self::state()['failed'];
+		return array(
+			'label'       => sprintf(
+				/* translators: %d: number of files. */
+				_n( '%d chat file could not be moved to protected storage', '%d chat files could not be moved to protected storage', $failed, 'wpmediaverse' ),
+				$failed
+			),
+			'status'      => 'recommended',
+			'badge'       => array(
+				'label' => __( 'Privacy', 'wpmediaverse' ),
+				'color' => 'orange',
+			),
+			'description' => '<p>' . esc_html__( 'Chat files from before MediaVerse 2.6.2 (sent, or attached and never sent) are being moved so only the people in the conversation can open them. These could not be moved yet. They are hidden from every media list, but their old web address still works. MediaVerse tries again once a day; the reason for each one is under Tools > MediaVerse Logs (messaging).', 'wpmediaverse' ) . '</p>',
+			'actions'     => '',
+			'test'        => 'wpmediaverse_chat_files',
+		);
+	}
+
+	/**
+	 * Move one old chat attachment.
+	 *
+	 * @param int $attachment_id Attachment id.
+	 * @return string 'moved' | 'removed' | 'failed'.
+	 */
+	private static function move( int $attachment_id ): string {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_messages';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sent = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE attachment_id = %d", $attachment_id ) );
+		$path = (string) get_attached_file( $attachment_id );
+
+		if ( 0 === $sent ) {
+			// Never sent: removed once it is too old to still be waiting to go.
+			if ( (string) get_post_field( 'post_date_gmt', $attachment_id ) > self::unsent_cutoff() ) {
+				return self::fail( $attachment_id, 'not sent yet' );
+			}
+			wp_delete_attachment( $attachment_id, true );
+			return 'removed';
+		}
+
+		// A sent file is never deleted here: on offloaded storage it is not on
+		// this disk, so it stays where it is (hidden) and Site Health reports it.
+		if ( '' === $path || ! is_readable( $path ) ) {
+			return self::fail( $attachment_id, 'file not on this server' );
+		}
+
+		$author = (int) get_post_field( 'post_author', $attachment_id );
+		$size   = (int) get_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META, true );
+		$tmp    = wp_tempnam( basename( $path ) );
+		if ( ! $tmp || ! copy( $path, $tmp ) ) {
+			return self::fail( $attachment_id, 'copy failed' );
+		}
+
+		// The size is counted once: off the attachment, onto the new media.
+		delete_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META );
+		$skip = static function () {
+			return true; // The file is already on this server, not a browser upload.
+		};
+		add_filter( 'mvs_upload_skip_move_uploaded_file_check', $skip );
+		$media_id = Plugin::container()->get( 'upload' )->handle(
+			array(
+				'name'     => basename( $path ),
+				'tmp_name' => $tmp,
+				'type'     => (string) get_post_mime_type( $attachment_id ),
+				'error'    => UPLOAD_ERR_OK,
+				'size'     => (int) filesize( $tmp ),
+			),
+			$author,
+			array(
+				'privacy' => 'dm',
+				'title'   => get_the_title( $attachment_id ),
+			)
+		);
+		remove_filter( 'mvs_upload_skip_move_uploaded_file_check', $skip );
+
+		if ( is_wp_error( $media_id ) ) {
+			wp_delete_file( $tmp );
+			update_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META, $size );
+			return self::fail( $attachment_id, $media_id->get_error_message() );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update(
+			$table,
+			array(
+				'media_id'      => (int) $media_id,
+				'attachment_id' => null,
+			),
+			array( 'attachment_id' => $attachment_id )
+		);
+		wp_delete_attachment( $attachment_id, true );
+		return 'moved';
+	}
+
+	/**
+	 * Record an attachment the job could not move and log why.
+	 *
+	 * @param int    $attachment_id Attachment id.
+	 * @param string $reason        Why.
+	 * @return string 'failed'.
+	 */
+	private static function fail( int $attachment_id, string $reason ): string {
+		update_post_meta( $attachment_id, self::FAILED_META, $reason );
+		LoggerService::error(
+			'messaging',
+			'Chat attachment could not be moved to protected storage',
+			array(
+				'attachment_id' => $attachment_id,
+				'reason'        => $reason,
+			)
+		);
+		return 'failed';
+	}
+
+	/**
+	 * Whether another live message still shows this file.
+	 *
+	 * @param string $column     'media_id' or 'attachment_id'.
+	 * @param int    $id         File id.
+	 * @param int    $message_id The message being deleted.
+	 * @return bool
+	 */
+	private static function still_shown( string $column, int $id, int $message_id ): bool {
+		global $wpdb;
+		$table  = $wpdb->prefix . 'mvs_messages';
+		$column = 'media_id' === $column ? 'media_id' : 'attachment_id';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return null !== $wpdb->get_var( $wpdb->prepare( "SELECT 1 FROM {$table} WHERE {$column} = %d AND id <> %d AND is_deleted = 0 AND deleted_for_all = 0 LIMIT 1", $id, $message_id ) );
+	}
+
+	/**
+	 * Whether an attachment is a pre-2.6.2 chat file of this sender.
+	 *
+	 * @param int $attachment_id Attachment id.
+	 * @param int $sender        Sender id.
+	 * @return bool
+	 */
+	private static function is_legacy_chat_file( int $attachment_id, int $sender ): bool {
+		return (int) get_post_field( 'post_author', $attachment_id ) === $sender
+			&& '' !== (string) get_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META, true );
+	}
+
+	/**
+	 * Has the move finished?
+	 *
+	 * @return bool
+	 */
+	private static function done(): bool {
+		return ! empty( self::state()['done'] );
+	}
+
+	/**
+	 * Current progress.
+	 *
+	 * @return array{moved: int, removed: int, failed: int, done: bool, retried_at: int, private: bool}
+	 */
+	private static function state(): array {
+		return wp_parse_args(
+			(array) get_option( self::OPTION, array() ),
+			array(
+				'moved'      => 0,
+				'removed'    => 0,
+				'failed'     => 0,
+				'done'       => false,
+				'retried_at' => 0,
+				'private'    => false,
+			)
+		);
+	}
+
+	/**
+	 * Queue one batch (Action Scheduler, else WP-Cron).
+	 *
+	 * @return void
+	 */
+	private static function schedule(): void {
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action( self::HOOK, array(), 'wpmediaverse' );
+		} else {
+			wp_schedule_single_event( time(), self::HOOK );
+		}
+	}
+}

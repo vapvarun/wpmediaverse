@@ -13,19 +13,12 @@ defined( 'ABSPATH' ) || exit;
 use WPMediaVerse\Services\VariantSpec;
 
 /**
- * MediaUrl is the long-promised choke point referenced in `CLAUDE.md` and the
+ * MediaUrl is the choke point referenced in `CLAUDE.md` and the
  * `TemplateHelpers.php:95` comment ("Every return path routes through MediaUrl…").
- * Before 1.5.0 the file did not exist — callers either went through
- * `TemplateHelpers::get_thumb_url()` (the canonical path) or jumped straight
- * to `SignedUrlService::generate_thumbnail()` (5 known direct-call sites in
- * explore.php / media-single.php / Shortcodes.php / CollectionController.php /
- * the since-removed lock-overlay block).
- *
- * Phase 3 introduces MediaUrl, has `TemplateHelpers::get_thumb_url()` delegate
- * to it, and migrates the 5 direct callers. The size-key → meta-key map (today
- * hand-written 6 times across `TemplateHelpers` and `SignedUrlService`) is also
- * unified here so the read side has one place to ask "what meta key holds the
- * webp sibling for size=large?".
+ * `TemplateHelpers::get_thumb_url()` (the canonical path) delegates to it, so
+ * callers do not jump straight to `SignedUrlService::generate_thumbnail()`.
+ * The size-key → meta-key map is unified here so the read side has one place
+ * to ask "what meta key holds the webp sibling for size=large?".
  *
  * @since 1.5.0
  */
@@ -151,7 +144,7 @@ final class MediaUrl {
 	 * Callers pairing this with an already-rendered primary URL must also check
 	 * the two share a host — see `TemplateHelpers::get_variant_url()`. A variant
 	 * on a different host than its primary is unreachable, which is what made
-	 * every WebP 403 behind a CDN (Basecamp #10162798416).
+	 * every WebP 403 behind a CDN.
 	 *
 	 * @since 2.3.1
 	 *

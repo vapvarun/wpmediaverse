@@ -43,6 +43,11 @@ class ActivitySyncIntegration {
 	private static $posting_to_activity = false;
 
 	/**
+	 * Comment meta holding the ID of the activity comment that mirrors a media comment.
+	 */
+	public const ACTIVITY_COMMENT_META = '_mvs_bp_activity_comment_id';
+
+	/**
 	 * Register all activity sync hooks.
 	 */
 	public function init(): void {
@@ -53,8 +58,11 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 		add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
+		add_action( 'mvs_media_before_delete', array( $this, 'remember_activity_of_deleted_media' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
+		add_action( 'delete_comment', array( $this, 'delete_mirrored_activity_comment' ), 10, 2 );
+		add_filter( 'wp_update_comment_data', array( $this, 'remove_mirror_on_edit' ), 10, 2 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 		add_action( 'mvs_media_privacy_changed', array( $this, 'sync_activity_privacy' ), 10, 3 );
@@ -163,11 +171,11 @@ class ActivitySyncIntegration {
 		}
 
 		// Album privacy is post meta on the album (AlbumService::get_privacy()).
-		// This used to read mvs_media_index at media_id = <album post ID>: on
+		// Reading mvs_media_index at media_id = <album post ID> would be wrong: on
 		// most sites that ID belongs to an unrelated photo, so a public album
 		// could hide the activity (or a private one show it) on that photo's
-		// privacy. Basecamp 10320619418; same defect class as 10183850886.
-		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		// privacy.
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->album_of( $media_id );
 		if ( $album_id > 0 ) {
 			$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 			if ( self::privacy_to_hide_sitewide( $album_privacy ) ) {
@@ -300,7 +308,7 @@ class ActivitySyncIntegration {
 		}
 
 		// Check if this media belongs to an album.
-		$album_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'album_id' );
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->album_of( $media_id );
 		if ( $album_id ) {
 			$album = get_post( $album_id );
 			if ( $album && 'mvs_album' === $album->post_type ) {
@@ -426,8 +434,7 @@ class ActivitySyncIntegration {
 		// Private uploads leave ZERO public footprint — no BP activity entry
 		// at all. hide_sitewide alone isn't enough: BP still surfaces
 		// hide_sitewide=1 entries on the author's profile activity tab to
-		// any visitor, so the broken thumbnail card leaks (Basecamp
-		// #9936622656). Skip the activity insert entirely; other non-public
+		// any visitor, so the broken thumbnail card leaks. Skip the activity insert entirely; other non-public
 		// levels (members/friends/group/custom) keep the activity and rely
 		// on `ActivityPrivacyFilter` for viewer-aware gating.
 		if ( 'private' === self::effective_privacy_for_media( $media_id ) ) {
@@ -440,7 +447,7 @@ class ActivitySyncIntegration {
 
 		// Carousel / gallery post: every image in the group belongs to ONE feed
 		// entry, not one each. If a sibling already created the activity, join it
-		// and re-render rather than adding another. Basecamp #10153581987.
+		// and re-render rather than adding another.
 		$media_group = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
 		if ( '' !== $media_group ) {
 			$existing = $this->find_group_activity( $media_group );
@@ -643,17 +650,11 @@ class ActivitySyncIntegration {
 			return;
 		}
 
-		$attached_csv = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
-		if ( $attached_csv ) {
-			$attached_ids = array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) );
-			if ( count( $attached_ids ) > 1 ) {
-				$effective_privacy = self::effective_privacy_for_batch( $attached_ids );
-			} else {
-				$effective_privacy = self::effective_privacy_for_media( $media_id );
-			}
-		} else {
-			$effective_privacy = self::effective_privacy_for_media( $media_id );
-		}
+		// The post takes its most restrictive item, not the one that changed last
+		$attached_ids      = $this->activity_media_ids( $activity_id );
+		$effective_privacy = count( $attached_ids ) > 1
+			? self::effective_privacy_for_batch( $attached_ids )
+			: self::effective_privacy_for_media( $media_id );
 
 		$desired_hide = self::privacy_to_hide_sitewide( $effective_privacy );
 
@@ -735,7 +736,7 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * No-op. Previously created activity on publish_mvs_media hook.
+	 * No-op. Stub for the retired publish_mvs_media hook.
 	 *
 	 * Media no longer uses a CPT, so the publish_mvs_media hook never fires.
 	 * Kept as a stub for backwards compatibility.
@@ -750,38 +751,42 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Whether an activity is about ONLY this media.
+	 * Note the post a media item is on before its meta is deleted.
 	 *
-	 * Reads the activity's `_mvs_media_ids` list, which the composer writes for
-	 * every multi-image post. Any surviving id other than this one means the
-	 * activity is a shared post and must NOT be deleted just because one of its
-	 * photos is going away.
-	 *
-	 * Absent or empty meta means a standalone upload activity (the
-	 * `mvs_media_upload` type never carries the list), so the answer is true and
-	 * the historical behaviour is preserved for that case.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param int $activity_id Activity to inspect.
-	 * @param int $media_id    Media being deleted.
-	 * @return bool True when nothing else is attached.
+	 * @param int $media_id Media ID about to be deleted.
 	 */
-	private function activity_has_no_other_media( int $activity_id, int $media_id ): bool {
-		if ( ! function_exists( 'bp_activity_get_meta' ) ) {
-			return true;
+	public function remember_activity_of_deleted_media( int $media_id ): void {
+		$post_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
+		if ( $post_id > 0 ) {
+			self::$deleted_media_activity[ $media_id ] = $post_id;
 		}
+	}
 
-		$raw = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+	/**
+	 * Post id of each media being deleted, read while its meta still exists.
+	 *
+	 * @var array<int,int>
+	 */
+	private static array $deleted_media_activity = array();
 
-		if ( '' === (string) $raw ) {
-			return true;
-		}
+	/**
+	 * The media shown on a post, optionally without one item.
+	 *
+	 * Composer posts list them in `_mvs_media_ids`; an upload-page batch does
+	 * not, but each of its items stores the post id as `bp_activity_id`. Reading
+	 * only the CSV made deleting one photo of a batch delete the whole post.
+	 *
+	 * @param int $activity_id BP activity ID.
+	 * @param int $without     Media ID to leave out (0 = none).
+	 * @return int[]
+	 */
+	private function activity_media_ids( int $activity_id, int $without = 0 ): array {
+		$raw = function_exists( 'bp_activity_get_meta' ) ? (string) bp_activity_get_meta( $activity_id, '_mvs_media_ids', true ) : '';
+		$ids = '' !== $raw
+			? array_map( 'intval', explode( ',', $raw ) )
+			: array_map( 'intval', wp_list_pluck( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->query_by_meta( 'bp_activity_id', (string) $activity_id, 100 ), 'media_id' ) );
 
-		$ids   = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
-		$other = array_diff( $ids, array( $media_id ) );
-
-		return empty( $other );
+		return array_values( array_diff( array_filter( $ids ), array( $without ) ) );
 	}
 
 	/**
@@ -825,24 +830,38 @@ class ActivitySyncIntegration {
 		// Deleting on it unconditionally meant removing one photo from a 5-photo
 		// update destroyed the whole update - and it returned before step 3
 		// could strip that photo's tile, so the fix down there never ran
-		// (Basecamp 10254566611, QA re-verify on activities 106 and 110).
 		//
 		// So: only delete when this media is the ONLY thing the activity is
 		// about. When other media still point at it, fall through to step 3,
 		// which drops this one from the list and rewrites the grid.
-		$stored_activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
-		if ( $stored_activity_id > 0 && $this->activity_has_no_other_media( $stored_activity_id, $media_id ) ) {
-			bp_activity_delete( array( 'id' => $stored_activity_id ) );
+		// The post this item was on (read before the delete, see
+		// remember_activity_of_deleted_media()) plus the upload post whose
+		// item_id is this media: an upload-page batch post carries its COVER's
+		// id there, so deleting the cover keeps the post while other items remain.
+		// component=wpmediaverse: a group upload's item_id is the GROUP id.
+		$posts = array(
+			(int) ( self::$deleted_media_activity[ $media_id ] ?? 0 ),
+			(int) bp_activity_get_activity_id(
+				array(
+					'component' => 'wpmediaverse',
+					'type'      => 'mvs_media_upload',
+					'item_id'   => $media_id,
+				)
+			),
+		);
+		unset( self::$deleted_media_activity[ $media_id ] );
+		foreach ( array_unique( array_filter( $posts ) ) as $post_id ) {
+			$others = $this->activity_media_ids( $post_id, $media_id );
+			if ( $others ) {
+				// The post stays for its other items; its privacy follows them.
+				$this->update_single_activity_hide_sitewide( $others[0] );
+			} else {
+				bp_activity_delete( array( 'id' => $post_id ) );
+			}
 		}
 
-		// 2. Any other activities still pointing at this media via item_id or
-		// secondary_item_id (covers legacy rows where the back-ref was lost).
-		bp_activity_delete(
-			array(
-				'type'    => 'mvs_media_upload',
-				'item_id' => $media_id,
-			)
-		);
+		// 2. Group upload activities pointing at this media via secondary_item_id
+		// (covers legacy rows where the back-ref was lost).
 		bp_activity_delete(
 			array(
 				'component'         => 'groups',
@@ -889,7 +908,6 @@ class ActivitySyncIntegration {
 			// has NO media markup. A normal composer post does have it, so the
 			// stored HTML rendered unchanged and the deleted photo stayed in the
 			// feed as a broken-image tile with its filename underneath
-			// (Basecamp 10254566611).
 			//
 			// Removing the baked grid hands rendering back to that rebuild path,
 			// which already checks exists() per media - so this one deletion is
@@ -1047,7 +1065,7 @@ class ActivitySyncIntegration {
 		// Prominent "view all" link inside the activity CONTENT — the album URL
 		// otherwise lives only in the $action string, which many BP themes never
 		// render, leaving batch-upload galleries with no path to the album or the
-		// remaining photos (Basecamp #10077895284).
+		// remaining photos.
 		$album_url    = get_permalink( $album_id );
 		$view_all_txt = sprintf(
 			/* translators: 1: album title, 2: total photo count */
@@ -1085,7 +1103,7 @@ class ActivitySyncIntegration {
 
 		// Private albums / batches leave zero public footprint — skip the
 		// gallery activity insert entirely. See record_upload_activity()
-		// for the rationale (Basecamp #9936622656).
+		// for the rationale.
 		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( (int) $album_id );
 		if ( 'private' === $album_privacy || 'private' === self::effective_privacy_for_batch( $media_ids ) ) {
 			return;
@@ -1166,17 +1184,149 @@ class ActivitySyncIntegration {
 			return;
 		}
 
+		// A reply sits under its parent's mirror, so the thread reads the same.
+		$comment   = get_comment( $comment_id );
+		$parent_ac = $comment && $comment->comment_parent ? (int) get_comment_meta( (int) $comment->comment_parent, self::ACTIVITY_COMMENT_META, true ) : 0;
+
 		self::$posting_to_activity = true;
 
-		bp_activity_new_comment(
+		$ac_id = bp_activity_new_comment(
 			array(
 				'activity_id' => $activity_id,
+				'parent_id'   => $parent_ac ? $parent_ac : false,
 				'content'     => $content,
 				'user_id'     => $user_id,
 			)
 		);
 
 		self::$posting_to_activity = false;
+
+		if ( $ac_id ) {
+			update_comment_meta( $comment_id, self::ACTIVITY_COMMENT_META, (int) $ac_id );
+		}
+	}
+
+	/**
+	 * The activity comment mirroring a media comment, if there is one.
+	 *
+	 * @param int|string $comment_id Media comment ID.
+	 * @param mixed      $comment    The comment, when the hook passes it.
+	 * @return \BP_Activity_Activity|null
+	 */
+	private function mirrored_activity_comment( $comment_id, $comment = null ): ?\BP_Activity_Activity {
+		$comment = $comment instanceof \WP_Comment ? $comment : get_comment( (int) $comment_id );
+		if ( ! $comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type || ! class_exists( 'BP_Activity_Activity' ) ) {
+			return null;
+		}
+		$ac_id = (int) get_comment_meta( (int) $comment->comment_ID, self::ACTIVITY_COMMENT_META, true );
+		if ( ! $ac_id ) {
+			$ac_id = $this->find_unlinked_mirror( $comment );
+		}
+		if ( ! $ac_id ) {
+			return null;
+		}
+		$ac = new \BP_Activity_Activity( $ac_id );
+		return empty( $ac->id ) ? null : $ac;
+	}
+
+	/**
+	 * The mirror of a comment made before mirrors were linked (2.6.1 and earlier).
+	 *
+	 * Old comments carry no link, so look once for the activity comment that
+	 * copied it: same member, same activity post, same text, written within a
+	 * few seconds. Only an exact single match is used, and then recorded; none
+	 * or several means no guess.
+	 *
+	 * @param \WP_Comment $comment Media comment.
+	 * @return int Activity comment ID, or 0.
+	 */
+	private function find_unlinked_mirror( \WP_Comment $comment ): int {
+		if ( ! function_exists( 'bp_activity_get' ) ) {
+			return 0;
+		}
+		$media_id    = \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment->comment_ID );
+		$activity_id = $media_id ? (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' ) : 0;
+		if ( ! $activity_id || ! (int) $comment->user_id ) {
+			return 0;
+		}
+
+		$found   = bp_activity_get(
+			array(
+				'filter'           => array(
+					'user_id'    => (int) $comment->user_id,
+					'action'     => 'activity_comment',
+					'primary_id' => $activity_id,
+				),
+				'display_comments' => 'stream',
+				'show_hidden'      => true,
+				'per_page'         => 100,
+			)
+		);
+		// BuddyPress filters a comment before storing it (entities, curly quotes).
+		$plain   = static fn( string $t ): string => trim( html_entity_decode( wp_strip_all_tags( $t ), ENT_QUOTES, 'UTF-8' ) );
+		$texts   = array( $plain( (string) $comment->comment_content ), $plain( wptexturize( (string) $comment->comment_content ) ) );
+		$at      = strtotime( (string) $comment->comment_date_gmt . ' UTC' );
+		$matches = array();
+		foreach ( (array) ( $found['activities'] ?? array() ) as $row ) {
+			$same_text = in_array( $plain( (string) $row->content ), $texts, true );
+			$same_time = abs( strtotime( (string) $row->date_recorded . ' UTC' ) - $at ) <= 10;
+			if ( $same_text && $same_time ) {
+				$matches[] = (int) $row->id;
+			}
+		}
+		if ( 1 !== count( $matches ) ) {
+			return 0;
+		}
+		update_comment_meta( (int) $comment->comment_ID, self::ACTIVITY_COMMENT_META, $matches[0] );
+		return $matches[0];
+	}
+
+	/**
+	 * A deleted media comment leaves the activity post, with its notifications.
+	 *
+	 * Hooked on core's delete_comment so every delete path is covered: the
+	 * REST route, moderation, wp-admin and the reply cascade.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int|string $comment_id Comment being deleted.
+	 * @param mixed      $comment    The comment.
+	 * @return void
+	 */
+	public function delete_mirrored_activity_comment( $comment_id, $comment = null ): void {
+		$ac = $this->mirrored_activity_comment( $comment_id, $comment );
+		if ( ! $ac || ! function_exists( 'bp_activity_delete_comment' ) ) {
+			return;
+		}
+		if ( function_exists( 'bp_notifications_delete_all_notifications_by_type' ) ) {
+			foreach ( array( 'update_reply', 'comment_reply' ) as $action ) {
+				bp_notifications_delete_all_notifications_by_type( (int) $ac->id, 'activity', $action );
+			}
+		}
+		bp_activity_delete_comment( (int) $ac->item_id, (int) $ac->id );
+	}
+
+	/**
+	 * An edited media comment takes its copy off the activity post.
+	 *
+	 * BuddyPress core cannot edit an activity comment, and a copy left with the
+	 * old wording keeps text the author removed (owner decision 13 Oct). Runs
+	 * before the text changes, so an old unlinked comment still matches its copy.
+	 * BuddyPress removes the copy's replies with it; the MediaVerse thread is untouched.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param array<string,mixed> $data    Comment data about to be saved (returned unchanged).
+	 * @param array<string,mixed> $comment The comment as stored now.
+	 * @return array<string,mixed>
+	 */
+	public function remove_mirror_on_edit( $data, $comment = array() ) {
+		$id = (int) ( $comment['comment_ID'] ?? 0 );
+		if ( $id && isset( $data['comment_content'] ) && $data['comment_content'] !== ( $comment['comment_content'] ?? '' ) ) {
+			$this->delete_mirrored_activity_comment( $id );
+			delete_comment_meta( $id, self::ACTIVITY_COMMENT_META );
+		}
+		return $data;
 	}
 
 	/**

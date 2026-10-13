@@ -13,9 +13,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// '' means inherit the site's Default Layout setting. It used to default
-// to 'grid', which made "not set" indistinguishable from "deliberately
-// grid" and left no way to follow the site setting. Basecamp 10297763824.
+// '' means inherit the site's Default Layout setting. Defaulting to 'grid'
+// would make "not set" indistinguishable from "deliberately grid" and leave
+// no way to follow the site setting.
 $layout       = isset( $attributes['layout'] ) ? sanitize_text_field( $attributes['layout'] ) : '';
 $mvs_per_page = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : 12;
 $show_filters = ! empty( $attributes['showFilters'] );
@@ -31,7 +31,7 @@ $mvs_viewer_id  = get_current_user_id();
 $mvs_query_args = array(
 	'status'            => 'publish',
 	'moderation_status' => 'approved',
-	'privacy'           => $mvs_repo->resolve_explore_privacy_mode( $mvs_viewer_id ),
+	'privacy'           => 'explore',
 	'viewer_id'         => $mvs_viewer_id,
 	'limit'             => $mvs_per_page,
 	'offset'            => 0,
@@ -65,7 +65,7 @@ $wrapper  = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 
 // i18n for the mvs/explore-feed store (script module — English-locked __()). Seed
-// PHP-translated strings; store reads state.i18n.<key> with English fallback. Basecamp 10073528834.
+// PHP-translated strings; store reads state.i18n.<key> with English fallback.
 wp_interactivity_state(
 	'mvs/explore-feed',
 	array(

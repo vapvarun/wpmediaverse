@@ -7,7 +7,7 @@
  * Override by copying to your-theme/wpmediaverse/explore.php
  *
  * @package WPMediaVerse
- * @version 2.6.1
+ * @version 2.6.2
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -138,7 +138,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		<?php endif; ?>
 		<div class="mvs-profile-header-info">
 			<div class="mvs-profile-header-top">
-				<h2 class="mvs-profile-header-name">
+				<h1 class="mvs-profile-header-name">
 				<?php
 				if ( $mvs_profile_url ) {
 					printf( '<a href="%s">%s</a>', esc_url( $mvs_profile_url ), esc_html( $mvs_profile->display_name ) );
@@ -146,7 +146,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					echo esc_html( $mvs_profile->display_name );
 				}
 				?>
-				</h2>
+				</h1>
 				<?php if ( $mvs_is_own_profile ) : ?>
 					<?php
 					// Link to the profile EDIT section, not the dashboard root —
@@ -191,8 +191,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		<form method="get" action="<?php echo esc_url( $mvs_archive_url ); ?>" id="mvs-explore-search-form">
 			<div class="mvs-search-bar">
 				<div class="mvs-search-mode" role="tablist" aria-label="<?php esc_attr_e( 'Search mode', 'wpmediaverse' ); ?>">
-					<button type="button" class="mvs-search-mode-btn active" data-search-mode="media" role="tab" aria-selected="true"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
-					<button type="button" class="mvs-search-mode-btn" data-search-mode="users" role="tab" aria-selected="false"><?php esc_html_e( 'People', 'wpmediaverse' ); ?></button>
+					<button type="button" class="mvs-search-mode-btn active" data-search-mode="media" data-search-label="<?php esc_attr_e( 'Search media', 'wpmediaverse' ); ?>" role="tab" aria-selected="true"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
+					<button type="button" class="mvs-search-mode-btn" data-search-mode="users" data-search-label="<?php esc_attr_e( 'Search people', 'wpmediaverse' ); ?>" role="tab" aria-selected="false"><?php esc_html_e( 'People', 'wpmediaverse' ); ?></button>
 				</div>
 				<div class="mvs-search-field">
 					<svg class="mvs-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -204,16 +204,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 			</div>
 		</form>
 		<!-- User search results (populated via safe DOM methods) -->
-		<?php
-		// data-wp-ignore: the People-search result cards are injected at runtime
-		// and are NOT in the server markup, so when the iAPI router morphs this
-		// region during a client-side navigation it has no counterpart for them
-		// and re-parents one into the destination's profile header (Basecamp
-		// 10230881780). Marking the container ignored makes the router treat this
-		// subtree as opaque and never move its children — a structural fix, not a
-		// timing race. The click handler in explore-search.js still empties it.
-		?>
-		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;" data-wp-ignore></div>
+		<?php // Runtime-filled; explore-search.js empties it before any navigation so the router never morphs its cards. ?>
+		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;"></div>
 	</div>
 
 	<?php
@@ -240,18 +232,9 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 
 	$mvs_search = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_search();
 
-	// Privacy scope by viewer: anon -> public only; logged-in non-moderator ->
-	// public + members + own; moderator -> no privacy filter.
-	if ( ! is_user_logged_in() ) {
-		$mvs_privacy   = 'public';
-		$mvs_viewer_id = 0;
-	} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
-		$mvs_privacy   = 'visible';
-		$mvs_viewer_id = get_current_user_id();
-	} else {
-		$mvs_privacy   = 'any';
-		$mvs_viewer_id = 0;
-	}
+	// The site-wide Explore rule, the same one the REST feed and Load More use.
+	$mvs_privacy   = 'explore';
+	$mvs_viewer_id = get_current_user_id();
 
 	// A profile route is a single-author listing, so it takes the purpose-built
 	// 'profile' mode - the same rule count_visible_by_author() and every Pro
@@ -329,6 +312,19 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 	$mvs_query_args = apply_filters( 'mvs_explore_query_args', $mvs_query_args, $mvs_profile );
 
 	$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+	// The listing's filter in GET /media terms: the badges count under it, and
+	// the lightbox sends it to /media/{id}/group so it opens the same set.
+	$mvs_gallery_params = array_filter(
+		array(
+			'media_type' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_type(),
+			'tag'        => (string) $mvs_filter_tag,
+			'category'   => (string) $mvs_filter_cat,
+			's'          => (string) $mvs_search,
+		)
+	);
+	$mvs_gallery_filter = $mvs_repo->gallery_filter_args( $mvs_gallery_params );
+	$mvs_gallery_query  = http_build_query( $mvs_gallery_params );
 
 	// An unknown tag/category slug means "no such filter" -> show the empty
 	// state, skip the query entirely.
@@ -463,13 +459,14 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		// reach some surfaces and miss others. Basecamp 10297763824.
 		$mvs_layout_class = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
 		?>
-		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container>
+		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo $mvs_layout_class ? ' ' . esc_attr( $mvs_layout_class ) : ''; ?>" data-mvs-grid-container data-mvs-gallery-filter="<?php echo esc_attr( $mvs_gallery_query ); ?>">
 			<?php
 			// Render media items from index table.
 			$media_ids_for_stats = array_map( 'intval', array_column( $media_items, 'media_id' ) );
 			// Batch-load index + all meta for the whole page in 2 queries so each
 			// tile renders from the request cache instead of ~14 queries/tile. (1.7.0)
 			$mvs_repo->prefetch( $media_ids_for_stats );
+			$mvs_repo->gallery_tile_counts( $media_ids_for_stats, null, $mvs_gallery_filter ); // One batch for every badge.
 			$stats_data = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $media_ids_for_stats );
 
 			foreach ( $media_items as $item ) :
@@ -482,8 +479,9 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					// albums, collections and both BuddyPress tabs, and only
 					// Explore asked for selection.
 					array(
-						'show_author' => true,
-						'bulk'        => is_user_logged_in(),
+						'show_author'    => true,
+						'bulk'           => is_user_logged_in(),
+						'gallery_filter' => $mvs_gallery_filter,
 					)
 				);
 			endforeach;
@@ -618,13 +616,18 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<h3>
 					<?php
 					printf(
-						/* translators: %s: tag or category name being filtered on. */
-						esc_html__( 'No media tagged "%s" yet', 'wpmediaverse' ),
+						esc_html(
+							'' !== $mvs_filter_tag
+								/* translators: %s: tag name being filtered on. */
+								? __( 'No media tagged "%s" yet', 'wpmediaverse' )
+								/* translators: %s: category name being filtered on. */
+								: __( 'No media in "%s" yet', 'wpmediaverse' )
+						),
 						esc_html( $mvs_empty_obj ? $mvs_empty_obj->name : $mvs_empty_term )
 					);
 					?>
 				</h3>
-				<p><?php esc_html_e( 'Nothing matches this filter right now. Browse everything, or pick another tag.', 'wpmediaverse' ); ?></p>
+				<p><?php esc_html_e( 'Nothing matches this filter right now. Browse everything, or pick another filter.', 'wpmediaverse' ); ?></p>
 				<div class="mvs-empty-state-actions">
 					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
 						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>

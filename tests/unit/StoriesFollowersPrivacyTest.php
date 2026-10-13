@@ -1,6 +1,6 @@
 <?php
 /**
- * Followers-only stories reach followers (card 10355187431).
+ * Followers-only stories reach followers.
  *
  * @package WPMediaVerse\Tests
  */

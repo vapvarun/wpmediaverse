@@ -1,0 +1,105 @@
+---
+journey: core-photo-video-and-gallery
+plugin: wpmediaverse
+priority: critical
+roles: [subscriber, other-member, anonymous, administrator]
+covers: [core-media-photo, core-media-video, gallery-member-visibility]
+prerequisites:
+  - "Site reachable at $SITE_URL"
+  - "dev-auto-login mu-plugin installed"
+  - "Run on BOTH environments: mediaverse.local (nginx, cloud storage) and the Apache wp-env site (local storage, direct delivery on)"
+estimated_runtime_minutes: 15
+---
+
+# A member's photo and video show, play and stay private when asked (core paths 1, 2, 3, 4, 7)
+
+The product is bought for this: upload, see it in My Media and Explore, open it, play it, and trust
+that "private" means private. Check it at BOTH levels every release: the code flow below, then the
+browser as each role. A surface found in code but not walked, or seen in the browser but not
+explained by the code, is a gap to close before calling it done.
+
+## Code flow to confirm (read before walking)
+
+- Upload: `UploadService::handle()` (`includes/Services/UploadService.php`), random 16-hex name
+  (`Services/FilenameStrategy.php`), REST `POST /mvs/v1/media` (`MediaController::create_item`,
+  permission `upload_mvs_media`).
+- One read gate: `PrivacyService::can_view()` (`includes/Services/PrivacyService.php`). Single page
+  `Core/TemplateLoader.php` (branded 404 for a hidden item), REST `get_item_permissions_check`,
+  file URLs `SignedUrlService::generate()` / `/serve` re-checks `can_view` on every request.
+- Video: faststart `Mp4Faststart::apply()`, poster `generate_video_poster_thumbnails()` (cover art,
+  else the browser frame, else the default SVG).
+- Gallery: a multi-file upload is one `media_group`; listings hide a member behind the first sibling
+  the same listing shows (`MediaRepository::gallery_hidden_clause()`), and the badge counts every
+  member this viewer may see (`gallery_tile_counts()`), the set `/media/{id}/group` opens.
+
+## Setup
+
+- Member A (owner), Member B (other member), a logged-out visitor, admin.
+- Files: a unique JPG, a 4-second H.264 MP4 with audio, uploaded TOGETHER (one gallery).
+
+## Steps
+
+### 1. Upload (subscriber)
+- **Action**: Member A uploads the JPG and MP4 together from `/upload-media/`.
+- **Expect**: "2 file(s) uploaded successfully!"; `mvs_media_index` rows public + approved with
+  random-name `file_path`; one `media_group`, photo `group_position` 0, video 1.
+
+### 2. My Media (owner)
+- **Action**: open `/my-media/`.
+- **Expect**: both items, "2 items"; the photo loads; the video tile shows its poster and a play icon.
+
+### 3. Explore and lightbox (visitor)
+- **Action**: logged out, open Explore. Click the gallery tile.
+- **Expect**: one tile with the gallery badge "2" and reaction/comment counts; lightbox "1 / 2"
+  shows the photo, "Next" shows "2 / 2" and the video PLAYS (currentTime advances); the side panel
+  says "Log in to comment"; tapping a reaction shows "Please log in to react." with Log in.
+
+### 4. Single pages (visitor)
+- **Action**: open `/media/<photo-slug>/` and `/media/<video-slug>/`.
+- **Expect**: 200; the photo renders; the `<video>` loads metadata and plays.
+
+### 5. Private (owner makes the photo private)
+- **Action**: set the photo to Only me (or, where the owner locks privacy, admin sets it).
+- **Expect** as Member B and as the visitor: Explore no longer shows it; `/media/<photo-slug>/` 404;
+  `GET /mvs/v1/media/{id}` 404; reactions/comments routes 404; the old direct file path 403/404.
+
+### 6. Gallery badge per viewer (Basecamp 10392589060)
+- **Setup**: a 4-item gallery by Member A; make the cover Only me and one other member Followers.
+  Member B follows Member A.
+- **Action**: open Explore as Member A, as Member B and as the visitor; open the tile in the lightbox.
+- **Expect**: each sees ONE tile for the gallery. Member A: the private cover, badge 4, lightbox 1 / 4.
+  Member B: the first public member, badge 3, lightbox steps through 3. Visitor: badge 2, lightbox 2.
+  Nobody ever gets the private cover except Member A.
+- **Action**: delete the cover; reload as the visitor.
+- **Expect**: the gallery stays listed, fronted by its next visible member.
+- **Action**: open Member A's BuddyPress profile Media tab as Member A and as the visitor.
+- **Expect**: the same one tile and badge as Explore for each viewer; Load More continues without
+  repeating or skipping items.
+- **Fails on 2.6.1 / 8d86e49e**: the owner's and the follower's tiles show no badge and the lightbox
+  opens one item, then jumps to the next gallery.
+- **Comments per item**: step to item 2 in the lightbox; its own comments load (a request for
+  /media/<item 2>/comments), never "No comments yet" when it has some.
+- **Under a filter**: a gallery of a photo then two videos; open Explore > Videos as the visitor.
+  Expect one tile (the first video), badge 2, lightbox 1 / 2 through `/group?media_type=video`; under
+  Photos the photo alone with no badge. Same for a tag or category filter.
+- **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
+
+### 6b. Explore People search (Basecamp 10393726173)
+- **Action**: on Explore, switch the search tabs Media -> People -> Media.
+- **Expect**: the field's accessible name (its label) reads "Search people" on People and "Search media"
+  on Media; the selected tab has aria-selected="true". Same on a Pro layout's filter bar.
+
+### 7. Lightbox layout at tablet and desktop (fixed in 2.6.2)
+- **Action**: at 1440x900, 1024x768 and 820x1180, open the video in the Explore lightbox AND, on a
+  BuddyPress site, from its activity post (the BP lightbox is a separate copy driven by
+  `assets/js/bp-activity-media.js`). Then open the photo the same two ways.
+- **Expect**: only that item's player shows, filling the media area with the arrows inside it; no
+  "This video cannot play here." box, document card or empty photo frame beside a playing video. For
+  a video the "1 / 2" counter sits at the top, clear of the player's seek bar; for a photo, at the
+  bottom. A video the browser cannot play shows the centred "cannot play" box with Download. In the
+  BP lightbox the video shows its poster before play (not black) and the stats read "1 view" for one
+  view, "2 views" for two. In the BP lightbox Edit shows only to the item's owner and opens the
+  edit dialog; Report shows to other members, never to the owner (Basecamp 10393027580).
+
+### 8. Restore
+- Delete the test items via `MediaRepository::delete_cascade()` (never raw SQL).

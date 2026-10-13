@@ -14,8 +14,7 @@ namespace WPMediaVerse\Services;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * PosterService consolidates the three previously-scattered hardcodes of the
- * `wpmediaverse/posters` directory (UploadService:1206 / :1367, MediaController:649)
+ * PosterService is the single home for the `wpmediaverse/posters` directory
  * and the four code paths that put bytes there. Public methods are intentionally
  * narrow — one per source — so callers don't reimplement the directory choice
  * or filename convention.
@@ -48,7 +47,7 @@ class PosterService {
 			return null;
 		}
 		// Dated like every other upload, so the folder never collects every poster
-		// the site has ever made (it was one flat posters/ directory until 2.6.1).
+		// the site has ever made.
 		$dir = trailingslashit( $upload_dir['basedir'] ) . self::REL_DIR . '/' . gmdate( 'Y/m' );
 		return wp_mkdir_p( $dir ) ? $dir : null;
 	}
@@ -56,7 +55,7 @@ class PosterService {
 	/**
 	 * A random file stem for a new poster.
 	 *
-	 * Posters used to be named after the media id, so anyone could guess the
+	 * Posters named after the media id would let anyone guess the
 	 * poster of any video, private ones included. A random stem (the same 16 hex
 	 * characters FilenameStrategy gives originals) makes a poster reachable only
 	 * through a URL MediaVerse handed out.
@@ -115,8 +114,7 @@ class PosterService {
 	 * the posters directory. Caller is expected to feed the returned path
 	 * back into `UploadService::generate_thumbnails()` for size variants.
 	 *
-	 * The source `$tmp_path` is moved (copy + unlink) into place — this
-	 * matches the pre-1.5.0 inline behavior at `MediaController:649-657`.
+	 * The source `$tmp_path` is moved (copy + unlink) into place.
 	 *
 	 * @param int    $media_id Media ID (records the source path).
 	 * @param string $tmp_path Absolute path to the uploaded tmpfile.

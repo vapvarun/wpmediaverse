@@ -804,6 +804,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_pro_caption_media_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$types"
+      ],
+      "where": "includes/Captions/TranscriptionService.php:476",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_pro_analytics_summary",
       "type": "filter",
       "args_count": 3,
@@ -1090,6 +1100,44 @@
       "where": "includes/Core/Watermarker.php:94",
       "consumed_by": [],
       "note": "Added by targeted delta 2026-08-30 — this manifest was generated on the 2.2.0 branch and predates the document library."
+    },
+    {
+      "name": "mvs_pro_competition_entry_media",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $entry_id",
+        "int $media_id"
+      ],
+      "where": "includes/Support/CompetitionMedia.php:155",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_competition_cover_url",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $url",
+        "int $competition_id",
+        "int $cover_media_id"
+      ],
+      "where": "includes/Support/CompetitionMedia.php:189",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_document_readable_via_post",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $allowed",
+        "int $media_id",
+        "int $user_id",
+        "int $author_id"
+      ],
+      "where": "includes/Documents/PermissionService.php:726",
+      "consumed_by": [
+        "buddynext (post readers may open an attached document)"
+      ]
     }
   ],
   "generated": {

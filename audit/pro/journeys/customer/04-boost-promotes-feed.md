@@ -45,6 +45,11 @@ debited, and the boost must really reorder the feed (not a "fake boost").
 - **Expect**: the owner's own card exposes `.mvs-ig-boost-btn` (a `button[data-wp-on--click="actions.openBoostModal"]`) inside `.mvs-ig-boost-wrap[data-wp-interactive="mvs-pro/boosts"]`. If this button is absent, the feed-card partial dropped the boost section — FAIL here.
 - **Also expect**: the page enqueues the `mvs-pro-boosts-store` script module, and a boost modal partial is present after `wp_footer`.
 
+### 1b. Boost only where a boost is accepted (Basecamp 10393843225)
+- **Action**: as the owner, view the IG feed with one public photo, one Only me photo and one document of theirs; then view it as another member.
+- **Expect**: the Boost control shows on the owner's public, approved photo only, never on the private photo or the document, and never for another member. Same rule as the media page (`CompetitionMedia::is_entrable()`).
+- **Fails on Pro 4634988**: the card showed Boost on any item the owner had, and the press failed.
+
 ### 2. Create a boost via REST
 - **Action**: `curl -X POST $SITE_URL/wp-json/mvs-pro/v1/boosts -H "X-WP-Nonce: <nonce>" --data '{"media_id": $MEDIA_ID, "impressions_target": 500}'` (authenticated as `$OWNER`).
 - **Expect**: HTTP 201/200 with a boost id; NOT a 4xx. (A `mvs_boost_gamification_unavailable` 4xx means the points backend prerequisite wasn't met — fix setup, not code.)

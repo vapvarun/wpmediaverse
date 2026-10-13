@@ -82,6 +82,22 @@ If one member cannot upload at all, check **Who can upload media** in **MediaVer
 
 **Fix:** Site Health lists each outdated file with both version numbers. Copy the current file from the plugin's `templates/` folder over the theme's copy in its `wpmediaverse/` folder, then re-apply the theme's changes. See [Template Overrides](../developer-guide/template-overrides.md).
 
+## A gallery tile shows a different count than I expect
+
+**Symptom:** The badge on a gallery tile shows fewer items than the member uploaded.
+
+**Likely cause:** The badge counts only the items the viewer may see, and under a filter only the matching ones. Private or deleted items are not counted.
+
+**Fix:** None needed. Open the gallery while signed in as its owner to see every item.
+
+## An admin notice says automatic updates are off
+
+**Symptom:** A notice in wp-admin reads "the bundled licensing and update SDK is incomplete, so automatic updates are turned off". Every other feature works normally.
+
+**Likely cause:** The plugin files were not copied completely.
+
+**Fix:** Reinstall MediaVerse from a complete package. Your media and settings are kept.
+
 ## The Setup Wizard is gone and I want to run it again
 
 **Symptom:** There is no link to the wizard in the MediaVerse menu.

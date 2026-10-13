@@ -435,9 +435,9 @@ class MessagingController extends WP_REST_Controller {
 
 		$response = new WP_REST_Response( $results, 200 );
 
-		// Honest pagination. The endpoint previously returned a bare page with
-		// no total, so a client could not distinguish a short page from the
-		// last page, and the mobile app had no way to size an infinite list
+		// Honest pagination. A bare page with no total would leave a client
+		// unable to distinguish a short page from the last page, and the mobile
+		// app unable to size an infinite list
 		// (big-site checklist items 1 and 4; Coding Rule 18 requires the API to
 		// be fully drivable on its own).
 		$total = $this->service->count_conversations( $user_id, $tab );
@@ -574,7 +574,7 @@ class MessagingController extends WP_REST_Controller {
 		// Coding Rule 20 — a refusal is never a success response. Without this,
 		// a NON-PARTICIPANT got 204 from a call that updated zero rows: a silent
 		// no-op wearing a success status, while every neighbouring route on the
-		// same conversation answered 404 (Basecamp 10190938967). Same guard, and
+		// same conversation answered 404. Same guard, and
 		// deliberately the same 404 `not_found`, as list_messages() — a refusal
 		// must not confirm that the conversation exists.
 		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
@@ -707,7 +707,7 @@ class MessagingController extends WP_REST_Controller {
 
 		if ( ! $result['success'] ) {
 			// New reason codes now reachable here because send_message() re-checks
-			// can_message() on every send (Basecamp #10053143680), not just at
+			// can_message() on every send, not just at
 			// conversation creation — see MessagingService::send_message().
 			$status_map = array(
 				'not_participant'        => 403,
@@ -717,6 +717,7 @@ class MessagingController extends WP_REST_Controller {
 				'account_too_new'        => 403,
 				'mutual_follow_required' => 403,
 				'cannot_message_self'    => 400,
+				'attachment_unavailable' => 403,
 			);
 			$status     = $status_map[ $result['error'] ] ?? 400;
 			return new WP_REST_Response(
@@ -782,7 +783,7 @@ class MessagingController extends WP_REST_Controller {
 
 		// Coding Rule 20, same as delete_conversation() above: the read-watermark
 		// update matched no participant row and this still answered
-		// `{"success":true}` (Basecamp 10190938967).
+		// `{"success":true}`.
 		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
 			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
 		}
@@ -800,10 +801,9 @@ class MessagingController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 		$conv_id = (int) $request['id'];
 
-		// Third instance of the same Rule 20 shape, found while fixing the two
-		// on Basecamp 10190938967 and fixed with them: `set_typing()` UPDATEs
-		// the participant row, so for a non-participant it matched nothing and
-		// this still answered `{"success":true}`.
+		// Same Rule 20 shape as the other gates in this file: `set_typing()` UPDATEs
+		// the participant row, so for a non-participant it matches nothing and
+		// this would still answer `{"success":true}`.
 		if ( ! $this->service->get_conversation( $conv_id, $user_id ) ) {
 			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
 		}
@@ -867,14 +867,13 @@ class MessagingController extends WP_REST_Controller {
 		// Reactions on already-delivered messages don't move created_at, so poll()
 		// above never sees them. This companion list carries them so the other
 		// participant's chat updates live instead of only after a reload
-		// (card 10122929662). Additive — a client that ignores the key is unchanged.
+		// Additive — a client that ignores the key is unchanged.
 		$reaction_updates = $this->service->poll_reaction_updates( $user_id, (string) $since );
 
 		// Per-conversation typing + presence requires the viewer to actually
 		// be a participant. Without this gate any logged-in user could iterate
 		// conversation_id values and harvest participant lists, presence, and
-		// live typing for every private conversation (WMV-02, Basecamp
-		// #9919403766). `list_messages()` already gates the same way via
+		// live typing for every private conversation. `list_messages()` already gates the same way via
 		// get_conversation(); we mirror that here.
 		$typing       = array();
 		$online_users = array();
@@ -898,7 +897,7 @@ class MessagingController extends WP_REST_Controller {
 
 			$typing = $this->service->get_typing_users( $conv_id, $user_id );
 
-			$participants = $this->service->get_participants( $conv_id );
+			$participants = $this->service->mask_blocked_presence( $this->service->get_participants( $conv_id ), $user_id );
 			foreach ( $participants as $p ) {
 				if ( $p['id'] !== $user_id ) {
 					$online_users[ $p['id'] ] = array(
@@ -983,30 +982,11 @@ class MessagingController extends WP_REST_Controller {
 
 		$file = $files['file'];
 
-		// Validate MIME type. MediaVerse is a media platform: DMs share the
-		// same media surface (image/video/audio) — documents are out of scope.
-		// Site owners can extend per-site via the filter.
-		$allowed = apply_filters(
-			'mvs_dm_allowed_file_types',
-			array(
-				'image/jpeg',
-				'image/png',
-				'image/gif',
-				'image/webp',
-				'audio/webm',
-				'audio/mp4',
-				'audio/mpeg',
-				'audio/ogg',
-				'video/mp4',
-				'video/webm',
-			)
-		);
-
 		$finfo     = finfo_open( FILEINFO_MIME_TYPE );
-		$real_mime = finfo_file( $finfo, $file['tmp_name'] );
+		$real_mime = \WPMediaVerse\Core\MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
-		if ( ! in_array( $real_mime, $allowed, true ) ) {
+		if ( ! in_array( $real_mime, self::allowed_attachment_types(), true ) ) {
 			return new WP_REST_Response( array( 'message' => 'File type not allowed.' ), 400 );
 		}
 
@@ -1021,61 +1001,61 @@ class MessagingController extends WP_REST_Controller {
 			return new WP_REST_Response( array( 'message' => $mvs_refused->get_error_message() ), 413 );
 		}
 
-		// Temporarily grant upload_files so wp_handle_upload works.
-		$grant_cap = function ( $allcaps ) {
-			$allcaps['upload_files'] = true;
-			return $allcaps;
-		};
-		add_filter( 'user_has_cap', $grant_cap );
-
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-
-		$upload = wp_handle_upload( $file, array( 'test_form' => false ) );
-		// A DM video is served through PHP, the case index-first exists for.
-		if ( is_array( $upload ) && ! empty( $upload['file'] ) && ! empty( $upload['type'] ) ) {
-			\WPMediaVerse\Services\Mp4Faststart::apply( (string) $upload['file'], (string) $upload['type'] );
-		}
-
-		if ( isset( $upload['error'] ) ) {
-			remove_filter( 'user_has_cap', $grant_cap );
-			return new WP_REST_Response( array( 'message' => $upload['error'] ), 500 );
-		}
-
-		// Create WP attachment.
-		$attachment_id = wp_insert_attachment(
-			array(
-				'post_mime_type' => $upload['type'],
-				'post_title'     => sanitize_file_name( $file['name'] ),
-				'post_status'    => 'inherit',
-			),
-			$upload['file']
+		// Stored as conversation-scoped 'dm' media, like the app and BuddyNext
+		// chat: protected folder, random name, URLs signed per participant. A
+		// plain WordPress attachment under its original name in the public
+		// uploads folder would be listed by /wp/v2/media.
+		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'upload' )->handle(
+			$file,
+			get_current_user_id(),
+			array( 'privacy' => 'dm' )
 		);
-
-		if ( is_wp_error( $attachment_id ) ) {
-			remove_filter( 'user_has_cap', $grant_cap );
-			return new WP_REST_Response( array( 'message' => 'Failed to create attachment.' ), 500 );
+		if ( is_wp_error( $media_id ) ) {
+			$status = (int) ( $media_id->get_error_data()['status'] ?? 400 );
+			return new WP_REST_Response( array( 'message' => $media_id->get_error_message() ), $status );
 		}
 
-		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $upload['file'] ) );
-
-		// Counted toward the sender's storage limit (StorageLimitService).
-		update_post_meta( $attachment_id, StorageLimitService::DM_SIZE_META, (int) filesize( $upload['file'] ) );
-		$mvs_storage->forget_usage( get_current_user_id() );
-
-		remove_filter( 'user_has_cap', $grant_cap );
-
-		$thumb = wp_get_attachment_image_url( $attachment_id, 'medium' );
+		$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$url    = $signed->generate( (int) $media_id, get_current_user_id() );
+		$thumb  = 'image' === $repo->get( (int) $media_id, 'media_type' ) ? $signed->generate_thumbnail( (int) $media_id, get_current_user_id() ) : '';
 
 		return new WP_REST_Response(
 			array(
-				'id'         => $attachment_id,
-				'source_url' => set_url_scheme( $upload['url'] ),
-				'thumbnail'  => $thumb ? set_url_scheme( $thumb ) : null,
-				'type'       => $upload['type'],
+				'id'         => (int) $media_id,
+				'media_id'   => (int) $media_id,
+				'source_url' => is_string( $url ) ? $url : '',
+				'thumbnail'  => is_string( $thumb ) && '' !== $thumb ? $thumb : null,
+				'type'       => $real_mime,
 			),
 			201
+		);
+	}
+
+	/**
+	 * The file types a message attachment may be: the media types (image, video,
+	 * audio, voice notes); documents are out of scope. One list for this route
+	 * and for UploadService when it stores 'dm' media.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @return string[]
+	 */
+	public static function allowed_attachment_types(): array {
+		return (array) apply_filters(
+			'mvs_dm_allowed_file_types',
+			array(
+				'image/jpeg',
+				'image/png',
+				'image/gif',
+				'image/webp',
+				'audio/webm',
+				'audio/mp4',
+				'audio/mpeg',
+				'audio/ogg',
+				'video/mp4',
+				'video/webm',
+			)
 		);
 	}
 }

@@ -10,15 +10,15 @@
  *
  * Both delete paths funnel through delete_cascade() — the REST media delete
  * (MediaController::delete_item) and account deletion (UserDeletionService) —
- * so this single listener covers every way media leaves the system. Previously
- * the REST path deleted only the original (from the active driver, missing
- * variants and cloud-resident files) and account deletion deleted no files at
+ * so this single listener covers every way media leaves the system. Without it
+ * the REST path would delete only the original (from the active driver, missing
+ * variants and cloud-resident files) and account deletion would delete no files at
  * all, leaving orphaned bytes on disk and the CDN.
  *
  * Async-first is deliberate: a bulk delete can orphan hundreds of paths and
  * each cloud-resident path costs an HTTP DELETE — running those inline would
  * time out the admin request that triggered them. Reliability comes from the
- * retry cycle in process(), not from deleting inline (Basecamp #9966546394).
+ * retry cycle in process(), not from deleting inline.
  *
  * @package WPMediaVerse
  * @since   1.6.0
@@ -105,8 +105,7 @@ class StorageCleanupService {
 	 * Failed paths (driver returned false — network error, bad credentials,
 	 * non-2xx from the cloud API) are re-queued with a growing backoff instead
 	 * of being silently dropped. Before this, a single failed R2/S3/BunnyCDN
-	 * call orphaned the file permanently with no log and no retry (Basecamp
-	 * #9966546394). After MAX_ATTEMPTS the batch is abandoned with an error
+	 * call orphaned the file permanently with no log and no retry. After MAX_ATTEMPTS the batch is abandoned with an error
 	 * log so the orphan is at least visible in MediaVerse → Logs.
 	 *
 	 * @param string[] $paths   Relative file paths.

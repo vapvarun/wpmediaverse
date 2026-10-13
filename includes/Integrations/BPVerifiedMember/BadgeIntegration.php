@@ -2,7 +2,7 @@
 /**
  * BP Verified Member badge integration.
  *
- * Customer ask (Basecamp #9872031539): the bp-verified-member plugin renders
+ * Customer ask: the bp-verified-member plugin renders
  * a "verified" badge next to author names in BuddyPress activity, but WPMV's
  * media surfaces don't show the badge. Customers reading a media single page
  * or lightbox can't tell that the uploader is verified.

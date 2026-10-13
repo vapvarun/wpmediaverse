@@ -3,7 +3,7 @@
  * Member messaging choices never promise more than the site allows, and the
  * chat panel's "MediaVerse pages" scope includes Explore Documents.
  *
- * Settings audit 2026-09-27 (Basecamp 10301267654).
+ * Settings audit 2026-09-27.
  *
  * @package WPMediaVerse
  */

@@ -1,6 +1,6 @@
 # Cloud Storage
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Stop storing media on your web server - offload your public photos and videos to Amazon S3, BunnyCDN, Cloudflare R2 or DigitalOcean Spaces for faster delivery, lower server load, and global CDN performance.
 
@@ -220,7 +220,7 @@ When a cloud driver is active, the Storage tab shows a **Storage Management** pa
 - **Move media to cloud** - **Migrate all** uploads your existing public media in the background. Progress shows as it runs.
 - **Free up server space** - **Delete next 20** removes local copies of public media that are already in the cloud. Each file is checked in the cloud before it is removed. Private media always stays on the server. This cannot be undone.
 
-Both actions need a cloud driver to be active.
+Both actions need a cloud driver to be active. Media you already uploaded keeps showing after you switch drivers, and the Storage tab says so. Removing server copies asks you to confirm first.
 
 ## Testing the Connection
 

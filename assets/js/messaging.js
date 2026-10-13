@@ -6,6 +6,11 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
+import { syncEvents } from './frontend/sync-events.js';
+
+// The open thread's list, and whether it should follow new content.
+let messagesEl = null;
+let pinnedToBottom = true;
 
 const config = window.mvsMessagingConfig || {};
 
@@ -14,7 +19,7 @@ const config = window.mvsMessagingConfig || {};
 // returned the English source. Instead PHP seeds mvsMessagingConfig.i18n with
 // __()-translated strings keyed by their English source (gettext-style); the
 // shim looks the source up, falling back to the literal. Matches how the
-// Interactivity stores read wp_interactivity_state i18n. Basecamp 10073528834.
+// Interactivity stores read wp_interactivity_state i18n.
 const I18N = config.i18n || {};
 const __ = ( str ) => ( Object.prototype.hasOwnProperty.call( I18N, str ) ? I18N[ str ] : str );
 
@@ -53,8 +58,8 @@ async function apiFetch( path, options = {} ) {
 	// to surface as an empty conversation list — indistinguishable from "you
 	// have no conversations". That is exactly how the chat panel reported "No
 	// conversations" on any page that didn't enqueue mvs-rest
-	// (Basecamp #10149580967). The enqueue is fixed in Core\Plugin, but keep
-	// this guard so the next delivery regression is diagnosable instead of
+	// Core\Plugin enqueues it, but keep
+	// this guard so a delivery failure is diagnosable instead of
 	// looking like an empty state.
 	if ( ! window.mvsRest || typeof window.mvsRest.restFetch !== 'function' ) {
 		throw new Error(
@@ -66,7 +71,12 @@ async function apiFetch( path, options = {} ) {
 
 	if ( res.status === 204 ) return null;
 	const data = res.data;
-	if ( ! res.ok ) throw new Error( ( data && ( data.error || data.message ) ) || __( 'Request failed', 'wpmediaverse' ) );
+	if ( ! res.ok ) {
+		// The sentence first: some routes answer { error: 'code', message: 'sentence' }.
+		const err = new Error( ( data && ( data.message || data.error ) ) || __( 'Request failed', 'wpmediaverse' ) );
+		err.status = res.status;
+		throw err;
+	}
 	return data;
 }
 
@@ -152,7 +162,7 @@ function messagePreview( msg ) {
 			return __( 'File' );
 		default:
 			// Attachment under message_type 'text' (mobile clients / MIME
-			// strings the server allow-list resets) — card 10127764989.
+			// strings the server allow-list resets) —
 			return ( msg.attachment || msg.attachment_id || msg.media_id ) ? __( 'Attachment' ) : '';
 	}
 }
@@ -171,6 +181,38 @@ const seenUnsendIds = new Set();
 let openConversationBound = false;
 
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
+/**
+ * The fields a conversation row in the list renders, worked out once.
+ *
+ * Every path that puts a row in the list goes through this (list load, new
+ * conversation, new group, member changes); a row pushed raw showed no name
+ * and a broken picture until the next reload.
+ *
+ * Group threads reuse otherName/otherAvatar/otherOnline: the title (or the
+ * first 3 active members' names), the first active member's avatar, and no
+ * online dot (presence is not a group concept).
+ *
+ * @param {Object} conv Conversation from the REST API.
+ * @return {Object} The same object, with the row fields set.
+ */
+function listRow( conv ) {
+	if ( 'group' === conv.type ) {
+		const activeOthers = ( conv.participants || [] ).filter( p => p.status === 'active' && p.id !== ME.id );
+		conv.otherName   = conv.title || activeOthers.slice( 0, 3 ).map( p => p.display_name ).filter( Boolean ).join( ', ' );
+		conv.otherAvatar = activeOthers[0]?.avatar_url || '';
+		conv.otherOnline = false;
+		conv.isGroup     = true;
+	} else {
+		const other = ( conv.participants || [] ).find( p => p.id !== ME.id ) || conv.participants?.[0] || {};
+		conv.otherName   = other.display_name || '';
+		conv.otherAvatar = other.avatar_url || '';
+		conv.otherOnline = !! other.is_online;
+		conv.isGroup     = false;
+	}
+	conv.hasUnread = !! conv.unread_count;
+	return conv;
+}
+
 function enrichMessage( msg ) {
 	// Interactivity API does NOT track underscore-prefixed properties on
 	// context.item inside data-wp-each. Use plain camelCase names instead.
@@ -184,13 +226,17 @@ function enrichMessage( msg ) {
 	msg.isFailed   = !! msg._failed;
 	msg.notSending = ! msg.isSending;
 	msg.notFailed  = ! msg.isFailed;
+	// A refusal (403) cannot succeed on retry: say why instead of offering Retry.
+	msg.failReason     = msg.isFailed && msg._final ? ( msg._error || '' ) : '';
+	msg.hideRetry      = ! msg.isFailed || !! msg._final;
+	msg.hideFailReason = '' === msg.failReason;
 	// Hide the delivered double-check while the message is still in flight or
 	// failed (Interactivity directives can't OR, so derive it here).
 	msg.hideCheck  = msg.isReceived || msg.isSending || msg.isFailed;
 	// Deleted covers BOTH server flags: deleted_for_all (unsend) and
 	// is_deleted (delete-for-me — get_messages still returns the row to the
 	// sender, blanked). Only checking deleted_for_all left the sender's
-	// reopened chat rendering a blue empty bubble (Basecamp #9962618059).
+	// reopened chat rendering a blue empty bubble.
 	msg.isDeleted  = Number( msg.deleted_for_all ) === 1 || Number( msg.is_deleted ) === 1;
 	msg.notDeleted = ! msg.isDeleted;
 	// Normalize a deleted message before the type flags below: text type
@@ -243,9 +289,12 @@ function enrichMessage( msg ) {
 	msg.notText    = msg.message_type !== 'text';
 	msg.notImage   = msg.message_type !== 'image';
 	msg.notVideo   = msg.message_type !== 'video';
-	msg.notVoice   = msg.message_type !== 'voice' && msg.message_type !== 'audio';
+	msg.notVoice   = msg.message_type !== 'voice';
+	msg.notAudio   = msg.message_type !== 'audio';
 	msg.notFile    = msg.message_type !== 'file';
 	msg.notMediaShare = msg.message_type !== 'media_share';
+	// Photos and videos take the tap for themselves, so they get a visible menu button (touch has no right-click).
+	msg.noMoreButton = msg.isDeleted || ( msg.notImage && msg.notVideo );
 
 	// Show text content alongside attachments when both are present.
 	msg.hasTextContent = !! ( msg.content && msg.content.trim() );
@@ -285,7 +334,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// searchQuery drives the NEW MESSAGE member search (chat-new.php).
 		// listQuery drives the conversation-LIST filter (chat-list.php). They
 		// were the same field, which is why typing in "Search conversations…"
-		// ran a member search and never filtered the list (#10153528515).
+		// ran a member search and never filtered the list.
 		searchQuery: '',
 		listQuery: '',
 		searchResults: [],
@@ -402,7 +451,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// day-separator flag here rather than at each of the eleven places that
 		// assign state.messages. The template bound created_at directly, so
 		// bubbles showed a raw MySQL datetime (2026-07-08 12:27:26) and there
-		// were no day separators at all (#10074503902). formatMessageTime()
+		// were no day separators at all. formatMessageTime()
 		// already existed in this store but was never referenced by any template.
 		get displayMessages() {
 			let prevKey = '';
@@ -438,7 +487,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		// The bell had NO state binding at all: no data-wp-bind, no
 		// data-wp-class, a hardcoded aria-label of "Mute". It rendered
 		// identically muted or unmuted, so members reported it "resetting to
-		// off" — it was never on (#10153578635). Muting itself always worked:
+		// off" — it was never on. Muting itself always worked:
 		// NotificationListener and the unread counter both honour is_muted.
 		get isMuted() {
 			const conv = state.activeConversation;
@@ -473,7 +522,6 @@ const { state, actions } = store( 'mvs/messaging', {
 			if ( p.is_online ) return __( 'Online' );
 			// No _n() in this module, so the plural "5 minutes ago" comes from
 			// Intl in the page language, inside one translatable phrase.
-			// Basecamp 10320657271, 10320784236.
 			const lang = document.documentElement.lang || undefined;
 			const ts   = parseServerDate( p.last_active );
 			const mins = Math.max( 1, Math.floor( ( Date.now() - ts ) / 60000 ) );
@@ -618,6 +666,13 @@ const { state, actions } = store( 'mvs/messaging', {
 			return ( Date.now() - created ) > fifteenMin;
 		},
 
+		// One "for everyone" control at a time: Unsend while its window is open
+		// (it also removes the file), Delete after it closes.
+		get hideDeleteMessage() {
+			const msg = getContext().item;
+			return ! msg || ! msg.isSent || ! state.hideUnsend;
+		},
+
 		get messageDuration() {
 			const ctx = getContext();
 			const meta = ctx.item?.metadata;
@@ -657,7 +712,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		get noSearchResults() { return state.searchQuery.length >= 2 && state.searchResults.length === 0; },
 	},
 
-	actions: {
+	actions: syncEvents( {
 		// ---- Panel ----
 		toggleChatPanel() {
 			state.chatPanelOpen = ! state.chatPanelOpen;
@@ -688,7 +743,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			// almost always to someone you already talk to, and forcing compose
 			// meant the control -- which is a paper-plane "Share" icon on the
 			// Instagram layout -- looked like it had opened the wrong screen
-			// (#10153188975). The list still has "New message" for the rest.
+			// The list still has "New message" for the rest.
 			state.chatView = 'list';
 			state.chatPanelOpen = true;
 			actions.startPolling();
@@ -717,9 +772,9 @@ const { state, actions } = store( 'mvs/messaging', {
 				if ( data.conversation ) {
 					const idx = state.conversations.findIndex( c => String( c.id ) === String( data.conversation.id ) );
 					if ( idx >= 0 ) {
-						state.conversations[ idx ] = data.conversation;
+						state.conversations[ idx ] = listRow( data.conversation );
 					} else {
-						state.conversations.unshift( data.conversation );
+						state.conversations.unshift( listRow( data.conversation ) );
 					}
 
 					state.activeConversationId = data.conversation.id;
@@ -795,23 +850,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				// the first 3 active members' names), the first active other
 				// member's avatar, and no online dot (presence isn't a group
 				// concept). 1:1 threads are untouched below.
-				state.conversations = ( data || [] ).map( conv => {
-					if ( 'group' === conv.type ) {
-						const activeOthers = ( conv.participants || [] ).filter( p => p.status === 'active' && p.id !== ME.id );
-						conv.otherName   = conv.title || activeOthers.slice( 0, 3 ).map( p => p.display_name ).filter( Boolean ).join( ', ' );
-						conv.otherAvatar = activeOthers[0]?.avatar_url || '';
-						conv.otherOnline = false;
-						conv.isGroup     = true;
-					} else {
-						const other = ( conv.participants || [] ).find( p => p.id !== ME.id ) || conv.participants?.[0] || {};
-						conv.otherName   = other.display_name || '';
-						conv.otherAvatar = other.avatar_url || '';
-						conv.otherOnline = !! other.is_online;
-						conv.isGroup     = false;
-					}
-					conv.hasUnread   = !! conv.unread_count;
-					return conv;
-				} );
+				state.conversations = ( data || [] ).map( listRow );
 			} catch ( e ) {
 				// Silently fail, keep existing data.
 			}
@@ -821,10 +860,9 @@ const { state, actions } = store( 'mvs/messaging', {
 		/**
 		 * Send a queued media share into a conversation, if one is pending.
 		 *
-		 * Single owner of the handoff. It used to live inline in
-		 * createOrOpenConversation() only, so picking an EXISTING thread from
-		 * the list dropped the media silently and left the id armed to fire
-		 * later on an unrelated conversation (#10153188975).
+		 * Single owner of the handoff: if only createOrOpenConversation() handled
+		 * it, picking an EXISTING thread from the list would drop the media silently
+		 * and leave the id armed to fire later on an unrelated conversation.
 		 *
 		 * @param {number|string} conversationId Target conversation.
 		 */
@@ -885,9 +923,9 @@ const { state, actions } = store( 'mvs/messaging', {
 					// Add or update in list.
 					const idx = state.conversations.findIndex( c => String( c.id ) === String( data.conversation.id ) );
 					if ( idx >= 0 ) {
-						state.conversations[ idx ] = data.conversation;
+						state.conversations[ idx ] = listRow( data.conversation );
 					} else {
-						state.conversations.unshift( data.conversation );
+						state.conversations.unshift( listRow( data.conversation ) );
 					}
 
 					state.activeConversationId = data.conversation.id;
@@ -981,9 +1019,9 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				const idx = state.conversations.findIndex( c => String( c.id ) === String( conv.id ) );
 				if ( idx >= 0 ) {
-					state.conversations[ idx ] = conv;
+					state.conversations[ idx ] = listRow( conv );
 				} else {
-					state.conversations.unshift( conv );
+					state.conversations.unshift( listRow( conv ) );
 				}
 
 				state.newGroupMode = false;
@@ -1097,7 +1135,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				const conv = yield apiFetch( '/conversations/' + convId );
 				const idx = state.conversations.findIndex( c => String( c.id ) === String( convId ) );
 				if ( idx >= 0 ) {
-					state.conversations[ idx ] = conv;
+					state.conversations[ idx ] = listRow( conv );
 				}
 				state.groupAddResults = state.groupAddResults.filter( u => String( u.id ) !== String( userId ) );
 			} catch ( e ) {
@@ -1121,7 +1159,7 @@ const { state, actions } = store( 'mvs/messaging', {
 						const conv = await apiFetch( '/conversations/' + convId );
 						const idx = state.conversations.findIndex( c => String( c.id ) === String( convId ) );
 						if ( idx >= 0 ) {
-							state.conversations[ idx ] = conv;
+							state.conversations[ idx ] = listRow( conv );
 						}
 					} catch ( e ) {
 						actions.showToast( e.message );
@@ -1311,7 +1349,8 @@ const { state, actions } = store( 'mvs/messaging', {
 			if ( parentId ) body.parent_id = parentId;
 
 			if ( state.selectedAttachment ) {
-				body.attachment_id = state.selectedAttachment.id;
+				// Chat files are conversation-scoped MediaVerse media.
+				body.media_id = state.selectedAttachment.id;
 				body.message_type = state.selectedAttachment.type || 'file';
 			}
 
@@ -1352,8 +1391,8 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				// Update conversation preview. Same placeholder rules as the
 				// server's build_message_preview() — the raw lowercase type
-				// ('image') used to flash here until the next poll refetched
-				// the stored preview (card 10127764989).
+				// ('image') would flash here until the next poll refetches
+				// the stored preview.
 				const conv = state.activeConversation;
 				if ( conv ) {
 					conv.last_message_preview = messagePreview( { content: content, message_type: body.message_type, attachment_id: body.attachment_id, media_id: body.media_id } );
@@ -1362,7 +1401,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				// Mark as failed — re-enrich so isFailed/notSending recompute and
 				// the bubble shows an error + retry instead of looking delivered.
-				state.messages = state.messages.map( m => m.id === tempId ? enrichMessage( { ...m, _failed: true, _sending: false } ) : m );
+				state.messages = state.messages.map( m => m.id === tempId ? enrichMessage( { ...m, _failed: true, _sending: false, _error: e.message, _final: 403 === e.status } ) : m );
 				actions.showToast( e.message );
 			}
 
@@ -1380,7 +1419,7 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			const body = { content: failed.content || '', message_type: failed.message_type || 'text' };
 			if ( failed.parent_id && failed.parent_id !== '0' ) body.parent_id = failed.parent_id;
-			if ( failed.attachment && failed.attachment.id ) body.attachment_id = failed.attachment.id;
+			if ( failed.attachment && failed.attachment.id ) body.media_id = failed.attachment.id;
 
 			try {
 				const realMsg = yield apiFetch(
@@ -1389,15 +1428,25 @@ const { state, actions } = store( 'mvs/messaging', {
 				);
 				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...realMsg, _sending: false } ) : m );
 			} catch ( e ) {
-				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...m, _failed: true, _sending: false } ) : m );
+				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...m, _failed: true, _sending: false, _error: e.message, _final: 403 === e.status } ) : m );
 				actions.showToast( e.message );
 			}
 		},
 
-		*deleteMessage() {
+		// Permanent for both people, so it asks first (shared confirm, Cancel focused).
+		deleteMessage() {
 			const ctx = getContext();
 			const msgId = ctx.messageId || state.contextMenuMessageId;
 			if ( ! msgId ) return;
+			actions.hideContextMenu();
+			store( 'mvs/shared-ui' ).actions.showConfirm(
+				__( 'Delete this message for everyone? This cannot be undone.' ),
+				() => actions.deleteMessageNow( msgId ),
+				__( 'Delete' )
+			);
+		},
+
+		*deleteMessageNow( msgId ) {
 
 			// Was this the last message in the thread? If so the sidebar preview
 			// needs to be recomputed from whatever remains after the delete.
@@ -1410,7 +1459,6 @@ const { state, actions } = store( 'mvs/messaging', {
 				// participants. Filtering the row out instead meant one action had
 				// two different outcomes depending on whether you reloaded: the
 				// bubble vanished, then came back as "This message was deleted".
-				// Basecamp 10263770236.
 				state.messages = state.messages.map( m =>
 					String( m.id ) === String( msgId )
 						? enrichMessage( { ...m, is_deleted: 1, content: '', message_type: 'text' } )
@@ -1432,13 +1480,21 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
-			state.contextMenuMessageId = null;
 		},
 
-		*unsendMessage() {
+		unsendMessage() {
 			const ctx = getContext();
 			const msgId = ctx.messageId || state.contextMenuMessageId;
 			if ( ! msgId ) return;
+			actions.hideContextMenu();
+			store( 'mvs/shared-ui' ).actions.showConfirm(
+				__( 'Unsend this message for everyone? Any attached file is deleted too.' ),
+				() => actions.unsendMessageNow( msgId ),
+				__( 'Unsend' )
+			);
+		},
+
+		*unsendMessageNow( msgId ) {
 
 			try {
 				yield apiFetch( '/messages/' + msgId + '/unsend', { method: 'DELETE' } );
@@ -1450,7 +1506,6 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
-			state.contextMenuMessageId = null;
 		},
 
 		*reportMessage() {
@@ -1528,8 +1583,6 @@ const { state, actions } = store( 'mvs/messaging', {
 		},
 
 		*uploadAttachment( file, type ) {
-			const formData = new FormData();
-			formData.append( 'file', file );
 
 			// Generation token: if the user cancels while the upload is in
 			// flight, the stale response must not re-attach the file.
@@ -1538,14 +1591,10 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.attachmentPercent = 0;
 
 			try {
-				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
-					method: 'POST',
-					body: formData,
-					onUploadProgress: ( loaded, total ) => {
-						if ( requestId === attachmentRequestId ) {
-							state.attachmentPercent = total ? Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) : 0;
-						}
-					},
+				const res = yield window.mvsRest.uploadMedia( REST + '/messages/upload', file, {}, ( loaded, total ) => {
+					if ( requestId === attachmentRequestId ) {
+						state.attachmentPercent = total ? Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) : 0;
+					}
 				} );
 				const data = res.data;
 
@@ -1586,7 +1635,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			// the getUserMedia() call below threw a TypeError BEFORE the browser
 			// could show a permission prompt, and the catch swallowed it. From
 			// the member's side the microphone button simply did nothing, with
-			// no prompt and no error (#10153607841). Tell them why.
+			// no prompt and no error. Tell them why.
 			if ( ! window.isSecureContext || ! navigator.mediaDevices || ! window.MediaRecorder ) {
 				actions.showToast(
 					__( 'Voice messages need a secure (https) connection.', 'wpmediaverse' )
@@ -1665,15 +1714,8 @@ const { state, actions } = store( 'mvs/messaging', {
 			const ext = mimeType.includes( 'webm' ) ? '.webm' : '.mp4';
 			const file = new File( [ blob ], 'voice' + ext, { type: mimeType } );
 
-			// Upload.
-			const formData = new FormData();
-			formData.append( 'file', file );
-
 			try {
-				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
-					method: 'POST',
-					body: formData,
-				} );
+				const res = yield window.mvsRest.uploadMedia( REST + '/messages/upload', file, {} );
 				const data = res.data;
 				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 
@@ -1685,7 +1727,7 @@ const { state, actions } = store( 'mvs/messaging', {
 						body: JSON.stringify( {
 							content: '',
 							message_type: 'voice',
-							attachment_id: data.id,
+							media_id: data.id,
 							metadata: { duration },
 						} ),
 					}
@@ -1779,6 +1821,11 @@ const { state, actions } = store( 'mvs/messaging', {
 		},
 
 		// ---- Reactions ----
+		// The image link opens the file; keep the click from opening the menu.
+		openChatImage( event ) {
+			event.stopPropagation();
+		},
+
 		showContextMenu( event ) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -1798,6 +1845,11 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			// Show menu on this message.
 			const msg = state.messages.find( m => String( m.id ) === String( msgId ) );
+			// A deleted message has nothing left to react to, reply to, report or unsend.
+			if ( msg && msg.isDeleted ) {
+				state.contextMenuMessageId = null;
+				return;
+			}
 			if ( msg ) {
 				msg.showMenu = true;
 				msg.noMenu = false;
@@ -2014,9 +2066,9 @@ const { state, actions } = store( 'mvs/messaging', {
 		// Conversation list: filter the loaded conversations. Deliberately not
 		// debounced and not a network call — it is a local filter over a page
 		// that is already in memory, so it should feel instant. The list input
-		// used to call updateSearchQuery(), which searched MEMBERS and rendered
+		// does not call updateSearchQuery(): it searches MEMBERS and renders
 		// its results only in the hidden New Message view, so the list itself
-		// never changed (#10153528515).
+		// would never change.
 		updateListQuery() {
 			const el = getElement();
 			state.listQuery = el.ref.value;
@@ -2079,9 +2131,8 @@ const { state, actions } = store( 'mvs/messaging', {
 						if ( msg.isDeleted ) {
 							// Unsent message. The poll re-serves it for the whole
 							// unsend window (no updated_at column to scope it), so
-							// dedupe via seenUnsendIds: react to each unsend ONCE
-							// (Basecamp #9962618059 — "Unsend for everyone" must
-							// reach other participants without a refresh).
+							// dedupe via seenUnsendIds: react to each unsend ONCE,
+							// so "Unsend for everyone" reaches other participants without a refresh.
 							if ( ! seenUnsendIds.has( String( msg.id ) ) ) {
 								seenUnsendIds.add( String( msg.id ) );
 								changed = true;
@@ -2126,7 +2177,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				// Reactions on already-delivered messages. A reaction never moves
 				// created_at, so it does not arrive in data.messages above — the
 				// server sends it separately, or the other participant's reaction
-				// only appeared after a full reload (card 10122929662). Re-enrich
+				// only appeared after a full reload. Re-enrich
 				// just the affected message with the server's fresh reaction set.
 				if ( Array.isArray( data.reaction_updates ) && data.reaction_updates.length > 0 ) {
 					for ( const u of data.reaction_updates ) {
@@ -2170,16 +2221,19 @@ const { state, actions } = store( 'mvs/messaging', {
 		// ---- Helpers ----
 		scrollToBottom() {
 			setTimeout( () => {
-				const container = document.querySelector( '.mvs-chat-messages' );
-				if ( container ) container.scrollTop = container.scrollHeight;
+				const container = messagesEl && messagesEl.isConnected ? messagesEl : document.querySelector( '.mvs-chat-messages' );
+				if ( container ) {
+					pinnedToBottom = true;
+					container.scrollTop = container.scrollHeight;
+				}
 			}, 50 );
 		},
 
 		// Every messaging toast today reports a failure (a caught API error, a
 		// refused file type, a denied or unavailable microphone), so the default
-		// is 'error'. It used to pass no type, and the shared store defaults to
-		// 'success', so every failure rendered in success green. Pass a type
-		// for anything that is not an error. Basecamp 10320619304.
+		// is 'error': the shared store defaults to 'success', so a failure with no
+		// type would render in success green. Pass a type
+		// for anything that is not an error.
 		showToast( message, type = 'error' ) {
 			// Use shared UI toast if available.
 			try {
@@ -2200,11 +2254,30 @@ const { state, actions } = store( 'mvs/messaging', {
 			const d = new Date( parseServerDate( dateStr ) );
 			return d.toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } );
 		},
-	},
+	} ),
 
 	callbacks: {
 		// Auto-scroll on mount.
 		onMessagesMount() {
+			// Videos and images get their height after the first scroll, which left
+			// the newest message below the fold. Stay at the
+			// bottom while media loads, unless the member has scrolled up.
+			const { ref } = getElement();
+			messagesEl = ref;
+			if ( ref && ! ref.dataset.mvsPinBound ) {
+				ref.dataset.mvsPinBound = '1';
+				ref.addEventListener( 'scroll', () => {
+					pinnedToBottom = ref.scrollHeight - ref.clientHeight - ref.scrollTop < 48;
+				}, { passive: true } );
+				const keepPinned = () => {
+					if ( pinnedToBottom ) {
+						ref.scrollTop = ref.scrollHeight;
+					}
+				};
+				// load / loadedmetadata do not bubble; capture sees every bubble's media.
+				ref.addEventListener( 'load', keepPinned, true );
+				ref.addEventListener( 'loadedmetadata', keepPinned, true );
+			}
 			actions.scrollToBottom();
 		},
 
@@ -2291,7 +2364,15 @@ document.addEventListener( 'mvs:navigated', () => {
 // Deliberately a no-op when the panel is already closed, so Escape keeps
 // working normally for the lightbox, modals and anything else on the page.
 document.addEventListener( 'keydown', ( event ) => {
-	if ( 'Escape' !== event.key || ! state.chatPanelOpen ) {
+	if ( 'Escape' !== event.key ) {
+		return;
+	}
+	// An open message menu closes first; the next Escape closes the panel.
+	if ( state.contextMenuMessageId ) {
+		actions.hideContextMenu();
+		return;
+	}
+	if ( ! state.chatPanelOpen ) {
 		return;
 	}
 	actions.closeChatPanel();

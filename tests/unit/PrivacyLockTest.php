@@ -2,7 +2,7 @@
 /**
  * The owner's "Allow Users to Set Privacy" switch holds after upload too.
  *
- * Basecamp 10320619418: with the switch off, only the upload surfaces obeyed
+ * With the switch off, only the upload surfaces obeyed
  * it. A member could upload at the site default and change the level one click
  * later through Edit, bulk actions or PATCH /mvs/v1/media/{id}. Every picker
  * and every write path now asks PrivacyService::user_may_choose_privacy().
@@ -132,7 +132,7 @@ class PrivacyLockTest extends WP_UnitTestCase {
 	 * Albums. An album's privacy is carried down onto its items
 	 * (AlbumService::set_privacy() / add_items()), so with the lock on a member
 	 * could still make a photo private by creating a private album and adding
-	 * the photo to it. Basecamp 10320619418, second bounce.
+	 * the photo to it.
 	 */
 
 	private function albums(): \WPMediaVerse\Services\AlbumService {

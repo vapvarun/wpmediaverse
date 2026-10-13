@@ -45,7 +45,7 @@ abstract class BaseBPTabIntegration {
 	 * `Plugin::enforce_frontend_presence()` deregisters every enqueued `mvs-*`
 	 * handle except what `mvs_frontend_presence_keep_handles` protects, and the
 	 * old callback protected TWO handles while this class enqueued FIVE. Load
-	 * More rendered with its script stripped (Basecamp 10300002499).
+	 * More rendered with its script stripped.
 	 *
 	 * THE DEPENDENCIES ARE IN THE LIST ON PURPOSE. Deregistering a dependency
 	 * does not just remove it: the dependent still reports `enqueued`, and then
@@ -341,8 +341,8 @@ abstract class BaseBPTabIntegration {
 		$this->render_album_header( $album );
 
 		// All viewer-visible items, then paginate — an album is unbounded, and
-		// this view used to render every item on every page load with no
-		// prefetch, so a large album meant one render_grid_item() query chain
+		// rendering every item on every page load with no
+		// prefetch would mean one render_grid_item() query chain
 		// per item, every visit (big-site target: 50k+ media).
 		$all_items = $this->fetch_album_items( (int) $album->ID );
 
@@ -353,10 +353,10 @@ abstract class BaseBPTabIntegration {
 		if ( empty( $all_items ) ) {
 			$this->render_empty_single_album();
 		} else {
-			$mpage     = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$per_page  = absint( get_option( 'mvs_items_per_page', 12 ) );
-			$max_pages = $per_page > 0 ? (int) ceil( count( $all_items ) / $per_page ) : 1;
-			$mpage     = max( 1, min( $mpage, max( 1, $max_pages ) ) );
+			$mpage      = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$per_page   = absint( get_option( 'mvs_items_per_page', 12 ) );
+			$max_pages  = $per_page > 0 ? (int) ceil( count( $all_items ) / $per_page ) : 1;
+			$mpage      = max( 1, min( $mpage, max( 1, $max_pages ) ) );
 			$page_items = $per_page > 0 ? array_slice( $all_items, ( $mpage - 1 ) * $per_page, $per_page ) : $all_items;
 
 			// Batch index + meta for the page in one pair of queries so each
@@ -385,7 +385,7 @@ abstract class BaseBPTabIntegration {
 		// render_load_more_button() emits .mvs-load-more-btn, whose only
 		// handler is load-more.js — registered globally by Plugin but only
 		// enqueued on MVS-native pages, which BP profile/group screens are
-		// not (Basecamp #9941413137 bug class).
+		// not.
 		wp_enqueue_style( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-bp-actions' );
@@ -408,6 +408,8 @@ abstract class BaseBPTabIntegration {
 			\WPMediaVerse\Core\Plugin::register_lucide_script();
 		}
 		wp_enqueue_script( 'mvs-lucide' );
+		// The tiles open the same lightbox as Explore, for visitors too.
+		\WPMediaVerse\Core\Plugin::enqueue_shared_ui_for_feed();
 		wp_localize_script(
 			'mvs-bp-actions',
 			'mvsBpActions',
@@ -457,7 +459,7 @@ abstract class BaseBPTabIntegration {
 			 * block, the member dashboard) has carried these since 1.2.0; this
 			 * one shipped with a dropzone and nothing else, so a member
 			 * uploading from their profile Media tab could not name or caption
-			 * the item at upload time at all. Basecamp 10171655728.
+			 * the item at upload time at all.
 			 *
 			 * Read back by assets/js/frontend/bp-tab-upload.js. Title is sent
 			 * only for a single-file upload — N files must not share one name —
@@ -476,7 +478,7 @@ abstract class BaseBPTabIntegration {
 					placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 					aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" />
 				<?php
-				// Owner lock (Basecamp 10320619418): hidden when members may not
+				// Owner lock: hidden when members may not
 				// choose; the upload then takes the site default server-side. The
 				// options come from the one shared list, preselected at the site
 				// default like every other upload picker.
@@ -568,19 +570,34 @@ abstract class BaseBPTabIntegration {
 	 */
 	protected function render_media_grid( array $media_ids ): void {
 		$stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $media_ids );
+		$params    = $this->gallery_params();
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$filter    = $repo->gallery_filter_args( $params );
+		$repo->gallery_tile_counts( $media_ids, null, $filter ); // One batch for every badge.
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1">';
+		$layout = \WPMediaVerse\Core\SettingsHelper::grid_layout_class(); // Same layout as Explore.
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed' . ( $layout ? ' ' . esc_attr( $layout ) : '' ) . '" data-mvs-grid-container data-show-actions="1" data-mvs-gallery-filter="' . esc_attr( http_build_query( $params ) ) . '">';
 		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
 				array(
-					'show_author'  => true,
-					'show_actions' => true,
+					'show_author'    => true,
+					'show_actions'   => true,
+					'gallery_filter' => $filter,
 				)
 			);
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * This tab's listing filter in GET /media terms, for gallery badges and the lightbox.
+	 *
+	 * @return array<string,mixed> Empty for an unfiltered tab.
+	 */
+	protected function gallery_params(): array {
+		return array();
 	}
 
 	/**
@@ -645,7 +662,7 @@ abstract class BaseBPTabIntegration {
 			// non-members. Album privacy lives on the album POST (_mvs_privacy)
 			// since 2.4.0, NOT in mvs_media_index - an index row at this ID is an
 			// unrelated media item that happens to share the integer, which is
-			// why the call declares SPACE_CPT. Basecamp 10298525085.
+			// why the call declares SPACE_CPT.
 			// No null-guard on the service — fail closed, never skip the gate.
 			if ( ! $privacy->can_view( $album_id, $viewer_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				continue;
@@ -777,7 +794,10 @@ abstract class BaseBPTabIntegration {
 		echo '</button>';
 		echo '</div>';
 
-		echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;" data-album-id="' . (int) $album_id . '">';
+		// The album uploader (album-upload.js) is the one owner of uploading into
+		// an album; this tab only adds its context fields (a group id) for it.
+		wp_enqueue_script( 'mvs-album-upload' );
+		echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;" data-album-id="' . (int) $album_id . '" data-upload-extra="' . esc_attr( (string) wp_json_encode( (object) $this->extra_upload_fields() ) ) . '">';
 		echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
 		echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
 		echo '<i data-lucide="upload-cloud" aria-hidden="true"></i>';
@@ -797,7 +817,8 @@ abstract class BaseBPTabIntegration {
 	 * @param int[] $media_ids Media IDs (already sorted by `position`).
 	 */
 	protected function render_album_items_grid( array $media_ids ): void {
-		echo '<div class="mvs-media-grid mvs-cols-3" data-show-actions="1">';
+		$layout = \WPMediaVerse\Core\SettingsHelper::grid_layout_class();
+		echo '<div class="mvs-media-grid mvs-cols-3' . ( $layout ? ' ' . esc_attr( $layout ) : '' ) . '" data-show-actions="1">';
 		foreach ( $media_ids as $media_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 				(int) $media_id,

@@ -7,13 +7,14 @@
  */
 
 import { store, getContext, getElement, withScope } from '@wordpress/interactivity';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Modal focus. The Create/Edit Album, Collection and Edit Media modals opened
  * with focus left on the page behind them, so Tab walked the dashboard cards
  * under the overlay before reaching the form (WCAG 2.4.3). One behaviour for
  * all three: focus moves to the first field on open, Tab stays inside, and
- * focus returns to whatever opened the modal on close. Basecamp 10320657228.
+ * focus returns to whatever opened the modal on close.
  */
 const MODAL_FOCUSABLE =
 	'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -75,63 +76,6 @@ function toolbarQuery( panelState, slug ) {
 	return parts.length ? '&' + parts.join( '&' ) : '';
 }
 
-/**
- * Grab a poster frame from a video File and append it as `thumbnail`.
- *
- * See the twin in src/blocks/media-upload/view.js for the full rationale: a
- * video uploaded on a host with no ffmpeg and no embedded cover atom gets no
- * poster at all and renders as a blank tile. These view bundles are script
- * MODULES, so a cross-file import is emitted as a bare specifier the browser
- * 404s on — hence the deliberate copy. Keep the two in sync.
- *
- * @param {FormData} formData Upload payload, mutated in place.
- * @param {File}     file     File being uploaded.
- * @return {Promise<void>} Resolves whether or not a poster was attached.
- */
-async function appendVideoPoster( formData, file ) {
-	if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
-		return;
-	}
-	const blob = await new Promise( ( resolve ) => {
-		const video = document.createElement( 'video' );
-		const url = URL.createObjectURL( file );
-		let settled = false;
-		const finish = ( result ) => {
-			if ( settled ) return;
-			settled = true;
-			URL.revokeObjectURL( url );
-			resolve( result );
-		};
-		const timer = setTimeout( () => finish( null ), 5000 );
-		video.preload = 'metadata';
-		video.muted = true;
-		video.playsInline = true;
-		video.addEventListener( 'loadeddata', () => {
-			video.currentTime = video.duration && video.duration < 1 ? 0 : 1;
-		} );
-		video.addEventListener( 'seeked', () => {
-			clearTimeout( timer );
-			try {
-				const canvas = document.createElement( 'canvas' );
-				canvas.width = video.videoWidth || 320;
-				canvas.height = video.videoHeight || 180;
-				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-				canvas.toBlob( ( b ) => finish( b ), 'image/jpeg', 0.7 );
-			} catch {
-				finish( null );
-			}
-		} );
-		video.addEventListener( 'error', () => {
-			clearTimeout( timer );
-			finish( null );
-		} );
-		video.src = url;
-	} );
-	if ( blob ) {
-		formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
-	}
-}
-
 // The toolbar's item count. Reuses `itemsCount`, the string the album and
 // collection cards already print, rather than minting a second one that would
 // need translating separately and could drift from it. The template is passed
@@ -145,7 +89,7 @@ function countLabel( total, plural, one ) {
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here.
 // PHP (dashboard-content.php) seeds translated strings into interactivity state;
-// read them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+// read them as `state.i18n.<key>` with an English fallback.
 const sharedUI = store( 'mvs/shared-ui' );
 
 function apiFetch( ctx, path, opts = {} ) {
@@ -326,7 +270,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		// Rail highlight, one getter for every rail item (slug from context):
 		// active when its section is showing, or the showing section belongs to
-		// it (Favorites under Collections, card 10364777801). Panels keep the
+		// it (Favorites under Collections). Panels keep the
 		// per-slug getters below; this one is for the rail only.
 		get isActiveRail() {
 			const slug = getContext()?.railSlug;
@@ -370,8 +314,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return !! panel && ! panel.items.length && ! panel.loading && ! ( panel.s || '' ).trim();
 		},
 		// showMediaEmpty is the TRULY-empty-library state ("No media yet");
-		// showMediaSearchEmpty is a search that matched nothing. Basecamp
-		// 10350215664: a member with real uploads who searched a nonsense
+		// showMediaSearchEmpty is a search that matched nothing. A member with real uploads who searched a nonsense
 		// title saw "No media yet - upload your first file", which is untrue
 		// and tells them nothing about the search they just ran.
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading && ! ( state.media.s || '' ).trim(); },
@@ -497,7 +440,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		// A document has no thumbnail_url and is not an image, so favThumbUrl is
 		// '' and every other branch above is false for it — the card thumb
-		// rendered completely empty (Basecamp 10268223103). Audio already had a
+		// rendered completely empty. Audio already had a
 		// placeholder; documents did not.
 		get showFavDocPlaceholder() {
 			return ! state.favThumbUrl && getContext().item?.media_type === 'document';
@@ -569,7 +512,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		 * privacy_options() renders the offered levels server-side; this only
 		 * decides whether the extra disabled option appears. The offered set
 		 * comes from privacy_choices() via PHP - filterable, BP-conditional -
-		 * so it is never restated here. Basecamp 10290748981.
+		 * so it is never restated here.
 		 */
 		privacyUnlisted( stored ) {
 			const offered = state.i18n?.privacyChoices || [];
@@ -584,7 +527,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/*
 		 * One album per photo (2.6.0): a photo already in another album moves
 		 * when it is picked here, so the picker says where it is now, and where
-		 * it will move from once selected (Basecamp 10264373450).
+		 * it will move from once selected.
 		 */
 		get pickerItemAlbumLabel() {
 			const { item } = getContext();
@@ -598,10 +541,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		get itemPrivacy() {
-			// Label, never the stored slug. The badge used to print `loggedin`
-			// straight from the database, lowercase and untranslated, directly
-			// above a picker calling the same state "Members: logged-in users
-			// only". Basecamp 10290748981.
+			// Label, never the stored slug: printing `loggedin` straight from the
+			// database would be lowercase and untranslated, directly above a picker
+			// calling the same state "Members: logged-in users only".
 			// Short word only ("Members", not "Members: logged-in users only"),
 			// the same rule as TemplateHelpers::privacy_short_label().
 			const item = getContext().item;
@@ -609,11 +551,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const map = state.i18n?.privacyLabels || {};
 			const label = ( map[ slug ] || slug.charAt( 0 ).toUpperCase() + slug.slice( 1 ).replace( /_/g, ' ' ) ).split( ':' )[ 0 ].trim();
 			// In an album the album's privacy applies; say so, so the badge and
-			// the edit modal agree (2.6.0, Basecamp 10264373450).
+			// the edit modal agree (2.6.0,
 			return item?.album ? ( state.i18n?.privacyViaAlbum || '%s (album)' ).replace( '%s', label ) : label;
 		},
-		// A photo in an album shows with the album's privacy (2.6.0, Basecamp
-		// 10264373450): the picker would offer a choice that is ignored, so it
+		// A photo in an album shows with the album's privacy: the picker would offer a choice that is ignored, so it
 		// is disabled and says which album decides.
 		get editPrivacyFollowsAlbum() {
 			return !! state.editModal.album;
@@ -658,7 +599,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// selectedIds from the album's current items and then draws none of it —
 		// the member sees an undifferentiated grid and cannot tell what is in
 		// the album, what they just toggled, or what Save will do
-		// (Basecamp 10190678139).
 		get isPickerSelected() {
 			const ctx = getContext();
 			return !! ctx.item && state.albumModal.selectedIds.includes( ctx.item.id );
@@ -732,7 +672,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return [];
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		/**
 		 * Keep Tab inside the open modal and close it on Escape
 		 * (data-wp-on--keydown on .mvs-modal).
@@ -798,10 +738,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// server-rendered on demand and only emitted when it is the active
 			// section (the drive).
 			//
-			// This used to be `if ( 'documents' === tab )` — a name-check standing
-			// in for a rule. Compete was not covered by it and went blank
-			// (Basecamp 10264172058); and writing the rule as "off-site only"
-			// then dropped Documents and reproduced the same blank panel there.
+			// Not a name-check like `if ( 'documents' === tab )`, which stands in for a
+			// rule: it misses Compete (a blank panel), and writing the rule as
+			// "off-site only" drops Documents and reproduces the same blank panel there.
 			// Asking whether a panel was rendered covers both, and covers the
 			// next section without anyone remembering to add it.
 			if ( tabBtn.dataset.mvsNavigate ) {
@@ -996,36 +935,25 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.upload.status = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
 					.replace( '%1$d', i + 1 )
 					.replace( '%2$d', total );
-				const formData = new FormData();
-				formData.append( 'file', files[ i ] );
-				// Capture a poster frame for videos — see media-upload. Without
-				// it, a video uploaded from the dashboard is posterless on a
-				// host with no ffmpeg and renders as a blank tile.
-				await appendVideoPoster( formData, files[ i ] );
-				if ( mediaGroup ) {
-					formData.append( 'media_group', mediaGroup );
-					formData.append( 'group_position', String( i ) );
-				}
-				if ( state.upload.privacy ) formData.append( 'privacy', state.upload.privacy );
-				// Title stays single-file only (N files must not share one name),
-				// but the description IS the carousel caption — dropping it on a
-				// multi-file upload is exactly why grouped feed items posted with
-				// no caption text.
-				if ( state.upload.title && total === 1 ) formData.append( 'title', state.upload.title );
-				if ( state.upload.description ) formData.append( 'description', state.upload.description );
-				if ( state.upload.tags ) {
-					state.upload.tags.split( ',' ).map( ( t ) => t.trim() ).filter( Boolean )
-						.forEach( ( tag ) => formData.append( 'tags[]', tag ) );
-				}
 				try {
-					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media', {
-						method: 'POST',
-						body: formData,
-						// Overall percent: finished files plus the share of this one sent.
-						onUploadProgress: ( loaded, bytes ) => {
-							state.upload.percent = Math.min( 100, Math.round( ( ( i + ( bytes ? loaded / bytes : 0 ) ) / total ) * 100 ) );
+					const res = await window.mvsRest.uploadMedia(
+						ctx.restUrl + 'media',
+						files[ i ],
+						{
+							privacy: state.upload.privacy,
+							// Title stays single-file only (N files must not share one
+							// name), but the description IS the carousel caption.
+							title: 1 === total ? state.upload.title : '',
+							description: state.upload.description,
+							tags: state.upload.tags,
+							mediaGroup,
+							groupPosition: i,
 						},
-					} );
+						// Overall percent: finished files plus the share of this one sent.
+						( loaded, bytes ) => {
+							state.upload.percent = Math.min( 100, Math.round( ( ( i + ( bytes ? loaded / bytes : 0 ) ) / total ) * 100 ) );
+						}
+					);
 					if ( res.ok ) {
 						uploaded++;
 						// The server flags a re-upload of identical content. The
@@ -1039,7 +967,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 							lastDuplicateId = mediaData.existing_media_id || 0;
 						}
 						// "Also share as a story" (Pro). Non-fatal: the media is
-						// uploaded either way. Basecamp 10313107097.
+						// uploaded either way.
 						if ( state.upload.story && mediaData && mediaData.id ) {
 							await window.mvsRest.markAsStory( mediaData.id );
 						}
@@ -1130,6 +1058,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const sharedState = sharedUI.state;
 			sharedState.lightboxVisible = true;
 			sharedState.lightboxMediaId = item.id;
+			sharedState.lightboxTileId = item.id;
 			sharedState.lightboxLoading = true;
 			sharedState.lightboxCommentText = '';
 			sharedState.lightboxGroupItems = [];
@@ -1153,6 +1082,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const sharedState = sharedUI.state;
 			sharedState.lightboxVisible = true;
 			sharedState.lightboxMediaId = item.media_id;
+			sharedState.lightboxTileId = item.media_id;
 			sharedState.lightboxLoading = true;
 			sharedState.lightboxCommentText = '';
 			sharedState.lightboxGroupItems = [];
@@ -1257,17 +1187,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			state.editModal.saving = true;
 			state.editModal.replaceProgress = '0%';
-			const formData = new FormData();
-			formData.append( 'file', file );
-
 			try {
-				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
-					method: 'POST',
-					body: formData,
-					// A replacement video can be large: show how much has been sent.
-					onUploadProgress: ( loaded, total ) => {
-						state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
-					},
+				// A replacement video can be large: show how much has been sent.
+				const res = await window.mvsRest.uploadMedia( ctx.restUrl + 'media/' + mediaId + '/replace', file, {}, ( loaded, total ) => {
+					state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
 				} );
 				if ( res.ok ) {
 					const updated = res.data;
@@ -1453,7 +1376,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		 *
 		 * Bound on document, so the FIRST thing it does is get out of the way of
 		 * anything the member is typing into — the same guard the lightbox needed
-		 * (10249014961). Delete is deliberately routed through the same confirm
+		 * Delete is deliberately routed through the same confirm
 		 * as the button: a destructive shortcut with no confirmation is how a
 		 * library disappears to a mis-aimed keypress.
 		 */
@@ -1489,10 +1412,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/**
 		 * One place that turns a bulk response into what the member is told.
 		 *
-		 * The server now reports `requested` alongside `processed`, because
-		 * filter_allowed_ids drops anything they may not edit and every handler
-		 * used to report the SURVIVING count as the total — a clean success for
-		 * a partly-ignored request. If anything was skipped the member hears so,
+		 * The server reports `requested` alongside `processed`, because
+		 * filter_allowed_ids drops anything they may not edit, and reporting the
+		 * SURVIVING count as the total would be a clean success for a partly-ignored
+		 * request. If anything was skipped the member hears so,
 		 * rather than the operation quietly meaning less than it said.
 		 */
 		bulkResultMessage( data, doneMessage ) {
@@ -1618,7 +1541,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// Photos in an album keep showing with the album's privacy; say
 					// so, or the member believes they changed (2.6.0).
 					if ( res.data?.album_decides ) {
-						msg.text += ' ' + ( state.i18n?.bulkAlbumDecides || '%d photo(s) are in an album and keep its privacy until they leave it.' ).replace( '%d', res.data.album_decides );
+						msg.text += ' ' + ( state.i18n?.bulkAlbumDecides || '%d item(s) are in an album and keep its privacy until they leave it.' ).replace( '%d', res.data.album_decides );
 					}
 					sharedUI.actions.showToast( msg.text, msg.type );
 					actions.loadMedia( ctx, state.media.page || 1 );
@@ -1755,7 +1678,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Album Modal (Create / Edit)
 		   ===================================================================== */
-		openAlbumModal( event ) {
+		async openAlbumModal( event ) {
+			const ctx = getContext();
 			const id = event?.target?.closest( '[data-album-id]' )?.dataset.albumId;
 			const album = id ? state.albums.items.find( ( a ) => a.id === parseInt( id, 10 ) ) : null;
 
@@ -1772,8 +1696,22 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.originalPrivacy = album?.privacy || 'public';
 			state.albumModal.loosenConfirmed = false;
 
-			// Load user media for picker.
+			// Load user media for picker (before any await: it reads getContext()).
 			actions.loadPickerMedia();
+
+			// The album list carries counts, not item ids, so the window asks for
+			// this one album. Photos ticked before it answers are kept (merged in);
+			// if it fails, the original list stays empty so a save only adds.
+			if ( album && ! album.items ) {
+				try {
+					const res = await apiFetch( ctx, 'albums/' + album.id );
+					const ids = Array.isArray( res.data?.items ) ? res.data.items : [];
+					if ( state.albumModal.albumId === album.id ) {
+						state.albumModal.selectedIds = [ ...new Set( [ ...ids, ...state.albumModal.selectedIds ] ) ];
+						state.albumModal.originalItems = [ ...ids ];
+					}
+				} catch { /* the picker still opens; nothing is pre-selected */ }
+			}
 		},
 
 		openCreateAlbum() {
@@ -1806,7 +1744,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.pickerLoading = true;
 			try {
 				// Paged: a fixed per_page=100 hid every older photo from a member
-				// with more than 100 (Basecamp 10264373450).
+				// with more than 100.
 				const res = await apiFetch( ctx, 'me/media?per_page=' + perPage + '&page=' + page );
 				const rows = Array.isArray( res.data ) ? res.data : [];
 				state.albumModal.pickerItems = 1 === page ? rows : [ ...state.albumModal.pickerItems, ...rows ];
@@ -1828,7 +1766,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		 * A photo in an album shows with the album's privacy, so making an album
 		 * more public, or adding a stricter photo to it, widens who sees those
 		 * photos. Count them so the member is asked first - never for a change
-		 * that only tightens (Basecamp 10264373450).
+		 * that only tightens.
 		 */
 		async countWidenedPhotos( ctx, albumId, toAdd ) {
 			const next = state.privacyLevel( state.albumModal.privacy );
@@ -1934,14 +1872,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 				if ( widened.count > 0 ) {
 					state.albumModal.saving = false;
 					// Name the photos it affects and say what the button does;
-					// Cancel keeps focus (Basecamp 10364776389).
+					// Cancel keeps focus.
 					const shown = widened.names.slice( 0, 3 ).map( ( n ) => '"' + n + '"' ).join( ', ' );
 					const more = widened.names.length > 3
 						? ' ' + ( state.i18n?.andNMore || 'and %d more' ).replace( '%d', widened.names.length - 3 )
 						: '';
 					const named = shown ? ' ' + ( state.i18n?.photosAffected || 'Photos: %s.' ).replace( '%s', shown + more ) : '';
 					sharedUI.actions.showConfirm(
-						( state.i18n?.albumWidens || '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
+						( state.i18n?.albumWidens || '%1$d item(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
 							.replace( '%1$d', widened.count )
 							.replace( /%2\$s/g, albumLabel ) + named,
 						() => {
@@ -1956,7 +1894,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.loosenConfirmed = false;
 
 			// A stricter album privacy changes how every photo in it shows; ask
-			// first instead of hiding them silently (Basecamp 10364776389).
+			// first instead of hiding them silently.
 			const itemCount = state.albumModal.selectedIds.length;
 			if (
 				! state.albumModal.narrowConfirmed &&
@@ -1966,7 +1904,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			) {
 				state.albumModal.saving = false;
 				sharedUI.actions.showConfirm(
-					( state.i18n?.albumNarrows || 'Changing this album to "%2$s" makes its %1$d photo(s) show as "%2$s" while they are in it.' )
+					( state.i18n?.albumNarrows || 'Changing this album to "%2$s" makes its %1$d item(s) show as "%2$s" while they are in it.' )
 						.replace( '%1$d', itemCount )
 						.replace( /%2\$s/g, albumLabel ),
 					() => {
@@ -2007,8 +1945,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// upload modal and BuddyPress albums tab use, so the
 					// empty-name message and create logic live in one place.
 					// It also checks the response, so a failed create (e.g. an
-					// empty title returning 400) can no longer fall through and
-					// be reported as "Album created!" (Basecamp 10069383195).
+					// empty title returning 400) cannot fall through and
+					// be reported as "Album created!".
 					const albumResult = await window.mvsRest.createAlbum(
 						state.albumModal.title,
 						{
@@ -2040,13 +1978,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.albumModal.saving = false;
 				// Say what happened to the photos, not only to the album: which
 				// moved in from another album, and which went back to their own
-				// privacy (Basecamp 10264373450).
+				// privacy.
 				const notes = [ state.albumModal.isEdit ? ( state.i18n?.albumUpdated || 'Album updated!' ) : ( state.i18n?.albumCreated || 'Album created!' ) ];
 				if ( moving ) {
-					notes.push( ( state.i18n?.photosMoved || '%d photo(s) moved from other albums.' ).replace( '%d', moving ) );
+					notes.push( ( state.i18n?.photosMoved || '%d item(s) moved from other albums.' ).replace( '%d', moving ) );
 				}
 				if ( pendingRemove.length ) {
-					notes.push( ( state.i18n?.photosReleased || '%d photo(s) removed; each is back to its own privacy.' ).replace( '%d', pendingRemove.length ) );
+					notes.push( ( state.i18n?.photosReleased || '%d item(s) removed; each is back to its own privacy.' ).replace( '%d', pendingRemove.length ) );
 				}
 				sharedUI.actions.showToast( notes.join( ' ' ), 'success' );
 				await actions.loadAlbums( ctx );
@@ -2141,7 +2079,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// get_permalink()), and overwriting it shipped every card as
 					// an ugly /?p=<id> that WordPress then 301'd — so the URL a
 					// member copied or bookmarked was never the canonical one
-					// (Basecamp 10249047170). loadAlbums never did this, which is
+					// loadAlbums never did this, which is
 					// why album cards were always right.
 					if ( item.type === 'smart' ) {
 						try {
@@ -2441,13 +2379,24 @@ const { state, actions } = store( 'mvs/dashboard', {
 							id: n.id,
 							message: n.message || '',
 							url: n.url || '',
-							date: new Date( n.created_at ).toLocaleDateString(),
+							date: n.date_human || '',
 							read: !! n.is_read,
 						} ) )
 						: [];
 				} catch {
 					state.notifications.items = [];
 				}
+			}
+		},
+
+		// Outside click or Escape closes the bell; Escape hands focus back to it.
+		closeNotifications( event ) {
+			if ( ! state.notifications.visible || ( event.type === 'keydown' && event.key !== 'Escape' ) ) {
+				return;
+			}
+			state.notifications.visible = false;
+			if ( event.type === 'keydown' ) {
+				getElement().ref.querySelector( '.mvs-notification-bell-toggle' )?.focus();
 			}
 		},
 
@@ -2520,7 +2469,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.collectionModal.visible = false;
 			}
 		},
-	},
+	} ),
 	callbacks: {
 		/**
 		 * data-wp-watch on each .mvs-modal; its context names the state key
@@ -2558,7 +2507,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			// Back and Forward. The tabs write the address with pushState, so the
 			// browser moves through those entries without reloading; without this
-			// the address changed and the screen did not (card 10369327095). The
+			// the address changed and the screen did not. The
 			// section comes from the history entry, or, for the entry the page
 			// loaded with, from the rail link whose address matches. Anything else
 			// (a section on its own page, an address no rail item owns) reloads,

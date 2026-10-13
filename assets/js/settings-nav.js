@@ -117,7 +117,7 @@
 		} );
 
 		// On a phone the section menu stacks above the form, so bring the
-		// confirmation of the visible tab into view (Basecamp 10364777243).
+		// confirmation of the visible tab into view.
 		// After the hash tab has been shown, or every notice still reads hidden.
 		window.addEventListener( 'load', () => {
 			const shown = [ ...notices ].find( ( n ) => n.offsetParent !== null );

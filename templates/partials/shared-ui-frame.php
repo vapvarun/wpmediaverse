@@ -9,7 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
- * @version 2.6.1
+ * @version 2.6.2
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -64,51 +64,56 @@ wp_interactivity_state(
 		// URL as the lightbox's 'Log in to comment' link.
 		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
 		'i18n'                => array(
-			'reportPrompt'       => __( 'Why are you reporting this?', 'wpmediaverse' ),
-			'loginToReact'       => __( 'Please log in to react.', 'wpmediaverse' ),
-			'logIn'              => __( 'Log in', 'wpmediaverse' ),
-			'reportSubmitted'    => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
-			'reportAlready'      => __( 'Already reported or error occurred.', 'wpmediaverse' ),
-			'reportAction'       => __( 'Report', 'wpmediaverse' ),
-			'save'               => __( 'Save', 'wpmediaverse' ),
-			'saved'              => __( 'Saved', 'wpmediaverse' ),
-			'favorite'           => __( 'Favorite', 'wpmediaverse' ),
-			'favorited'          => __( 'Favorited', 'wpmediaverse' ),
-			'titleRequired'      => __( 'Title cannot be empty.', 'wpmediaverse' ),
-			'uploadMedia'        => __( 'Upload media', 'wpmediaverse' ),
-			'createGallery'      => __( 'Create Gallery Post', 'wpmediaverse' ),
-			'createAlbum'        => __( 'Create Album', 'wpmediaverse' ),
-			'uploadVideo'        => __( 'Upload Video', 'wpmediaverse' ),
-			'uploadVideos'       => __( 'Upload Videos', 'wpmediaverse' ),
-			'uploadAudio'        => __( 'Upload Audio', 'wpmediaverse' ),
-			'upload'             => __( 'Upload', 'wpmediaverse' ),
-			'savedRedirecting'   => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
-			'settingsSaved'      => __( 'Media settings saved.', 'wpmediaverse' ),
-			'selectFiles'        => __( 'Please select files to upload.', 'wpmediaverse' ),
+			'reportPrompt'         => __( 'Why are you reporting this?', 'wpmediaverse' ),
+			'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
+			/* translators: used when the comment has exactly one reply. */
+			'deleteCommentReply'   => __( 'Delete this comment and its reply?', 'wpmediaverse' ),
+			/* translators: %d: number of replies (2 or more). */
+			'deleteCommentReplies' => __( 'Delete this comment and its %d replies?', 'wpmediaverse' ),
+			'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
+			'logIn'                => __( 'Log in', 'wpmediaverse' ),
+			'reportSubmitted'      => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
+			'reportAlready'        => __( 'Already reported or error occurred.', 'wpmediaverse' ),
+			'reportAction'         => __( 'Report', 'wpmediaverse' ),
+			'save'                 => __( 'Save', 'wpmediaverse' ),
+			'saved'                => __( 'Saved', 'wpmediaverse' ),
+			'favorite'             => __( 'Favorite', 'wpmediaverse' ),
+			'favorited'            => __( 'Favorited', 'wpmediaverse' ),
+			'titleRequired'        => __( 'Title cannot be empty.', 'wpmediaverse' ),
+			'uploadMedia'          => __( 'Upload media', 'wpmediaverse' ),
+			'createGallery'        => __( 'Create Gallery Post', 'wpmediaverse' ),
+			'createAlbum'          => __( 'Create Album', 'wpmediaverse' ),
+			'uploadVideo'          => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadVideos'         => __( 'Upload Videos', 'wpmediaverse' ),
+			'uploadAudio'          => __( 'Upload Audio', 'wpmediaverse' ),
+			'upload'               => __( 'Upload', 'wpmediaverse' ),
+			'savedRedirecting'     => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+			'settingsSaved'        => __( 'Media settings saved.', 'wpmediaverse' ),
+			'selectFiles'          => __( 'Please select files to upload.', 'wpmediaverse' ),
 			/* translators: %d: number of files uploaded. */
-			'filesUploaded'      => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			'filesUploaded'        => __( '%d file(s) uploaded!', 'wpmediaverse' ),
 			/* translators: 1: uploaded count, 2: failed count. */
-			'uploadedFailed'     => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
-			'uploadFailedRetry'  => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+			'uploadedFailed'       => __( '%1$d uploaded, %2$d failed.', 'wpmediaverse' ),
+			'uploadFailedRetry'    => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
 			/* translators: 1: number of duplicate files, 2: existing media ID. */
-			'duplicatesDetected' => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
+			'duplicatesDetected'   => __( 'You had already uploaded %1$d of these files.', 'wpmediaverse' ),
 			/* translators: %s: album name. */
-			'albumCreated'       => __( 'Album "%s" created!', 'wpmediaverse' ),
-			'failedLoad'         => __( 'Failed to load media.', 'wpmediaverse' ),
-			'failedComment'      => __( 'Failed to post comment.', 'wpmediaverse' ),
-			'linkCopied'         => __( 'Link copied!', 'wpmediaverse' ),
-			'copyFailed'         => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
-			'notDownloadable'    => __( 'This media is not available for download.', 'wpmediaverse' ),
+			'albumCreated'         => __( 'Album "%s" created!', 'wpmediaverse' ),
+			'failedLoad'           => __( 'Failed to load media.', 'wpmediaverse' ),
+			'failedComment'        => __( 'Failed to post comment.', 'wpmediaverse' ),
+			'linkCopied'           => __( 'Link copied!', 'wpmediaverse' ),
+			'copyFailed'           => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+			'notDownloadable'      => __( 'This media is not available for download.', 'wpmediaverse' ),
 			// Read by the store to name a stored level the picker does not
 			// offer. privacyChoices is what privacy_choices() offers, so the
 			// vocabulary is never restated client-side. Basecamp 10290748981.
-			'privacyLabels'      => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
+			'privacyLabels'        => \WPMediaVerse\Core\TemplateHelpers::privacy_labels(),
 			// A photo in an album shows with the album's privacy (2.6.0).
 			/* translators: 1: album name, 2: privacy level. */
-			'followsAlbum'       => __( 'Follows album "%1$s" (%2$s)', 'wpmediaverse' ),
+			'followsAlbum'         => __( 'Follows album "%1$s" (%2$s)', 'wpmediaverse' ),
 			/* translators: 1: album name, 2: privacy level. */
-			'editFollowsAlbum'   => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
-			'privacyChoices'     => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
+			'editFollowsAlbum'     => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
+			'privacyChoices'       => array_keys( \WPMediaVerse\Core\TemplateHelpers::privacy_choices() ),
 		),
 	)
 );

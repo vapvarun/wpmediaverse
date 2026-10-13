@@ -28,7 +28,7 @@ Send private messages, share photos, record voice notes, and have real conversat
 To start a conversation without visiting a profile:
 1. Click the chat icon at the bottom of any page
 2. Click the compose icon inside the chat panel
-3. Search for the member by name or username and select them
+3. Search for the member by display name and select them. Search never matches login names
 
 ### Sending a Voice Message
 
@@ -43,12 +43,14 @@ To start a conversation without visiting a profile:
 2. Click the media icon (photo frame) in the message bar
 3. Browse your uploaded media and click any item to share it directly into the chat
 
+Files you attach in a chat stay in that conversation. They do not appear in **My Media**, the media list or the WordPress Media Library, and only the people in the conversation can open them. A file you attach but never send is deleted after a day. Developers can change that with the `mvs_unsent_chat_file_hours` filter.
+
 ### Managing Conversations
 
 | Action | How to do it |
 |--------|-------------|
 | Mute | Open the conversation menu and click **Mute** - notifications are suppressed |
-| Pin | Click **Pin** to keep the conversation at the top of your list |
+| Pin | Click **Pin** to keep the conversation at the top of your list. Only pinned conversations show the "Pinned" label |
 | Archive | Click **Archive** to hide it from the main list. Find archived chats under the Archive tab |
 | Search | Click the search icon in the panel header and type any word or phrase |
 
@@ -58,6 +60,15 @@ If a member has restricted who can message them to followers only, your message 
 
 - **Accept** - Your conversation moves to their main inbox and messaging continues normally
 - **Decline** - The request is removed. You are not notified of the decline
+
+### What to expect in a conversation
+
+- A conversation opens at the newest message and stays there while photos and videos load.
+- A new conversation with no message yet is not shown to the other member until you send the first message.
+- The typing indicator clears as soon as the message is sent.
+- If a message is refused, the reason appears on the message and there is no **Retry** button.
+- If you block a member, or they block you, neither of you can reopen the conversation, and neither sees the other's online status.
+- A deleted message has no menu, reactions or Reply.
 
 ## For Site Owners
 
@@ -85,7 +96,7 @@ Messaging yourself is refused with "You can't send a message to yourself".
 There are three ways to start or open a conversation:
 
 - **From a profile page** - Click the **Message** button on any user's profile. The chat panel opens with that conversation pre-loaded. No searching required.
-- **From the chat panel** - Click the compose icon inside the chat panel and search by username or display name.
+- **From the chat panel** - Click the compose icon inside the chat panel and search by display name.
 - **Deep links** - Link directly to a conversation or user using a URL fragment:
 
 | Fragment | Opens |

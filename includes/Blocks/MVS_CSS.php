@@ -33,13 +33,6 @@ class MVS_CSS {
 	private static $styles = array();
 
 	/**
-	 * Generate scoped CSS for a block instance.
-	 *
-	 * @param string               $unique_id Block unique ID.
-	 * @param array<string, mixed> $attrs     Block attributes.
-	 * @return string CSS string.
-	 */
-	/**
 	 * A CSS length unit from block attributes, or the default.
 	 *
 	 * Block attributes are author-controlled strings that land inside a <style>
@@ -95,6 +88,13 @@ class MVS_CSS {
 		return '';
 	}
 
+	/**
+	 * Generate scoped CSS for a block instance.
+	 *
+	 * @param string               $unique_id Block unique ID.
+	 * @param array<string, mixed> $attrs     Block attributes.
+	 * @return string CSS string.
+	 */
 	public static function generate( $unique_id, $attrs ) {
 		if ( empty( $unique_id ) || ! is_scalar( $unique_id ) ) {
 			// A non-scalar id reached sanitize_html_class() and emitted a PHP
@@ -330,7 +330,7 @@ class MVS_CSS {
 		// Belt and braces: values are allowlisted or absint()ed on the way in, and
 		// no selector this generator emits contains an angle bracket, so stripping
 		// them here closes the whole "break out of <style>" class rather than the
-		// instances known today. Basecamp: 2.5.1 security patch.
+		// instances known today.
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- allowlisted units + absint values, angle brackets stripped.
 		echo str_replace( array( '<', '>' ), '', implode( "\n", self::$styles ) );
 		echo "\n</style>\n";

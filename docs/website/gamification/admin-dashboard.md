@@ -1,6 +1,6 @@
 # Gamification Admin Dashboard
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 The competition admin screens are at **MediaVerse > Competitions**. It is one menu entry with a tab strip: **Overview**, **Photo Challenges**, **Tournaments**, **Photo Battles** and **Challenge Themes**. A tab shows only when its feature is switched on. Older direct links to each screen still work. You need the permission to manage MediaVerse settings.
 

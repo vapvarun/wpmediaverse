@@ -252,7 +252,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** `/media/?q=<term>` (search box on the Explore page). Read by `TemplateHelpers::explore_search()`. Backing REST: `GET /mvs/v1/media?s=<term>` for Load More continuation.
 - **Setup:** Media items with distinct titles.
 - **Steps:** 1. Type a term that matches a media title into the Explore search box. 2. Submit/observe results.
-- **Expected:** Feed filters to items whose title/description matches (MySQL FULLTEXT with LIKE fallback). URL updates to `?q=<term>`.
+- **Expected:** Feed filters to items whose title/description matches (MySQL FULLTEXT with LIKE fallback). URL updates to `?q=<term>`. Page 1 and Load More use the same rule (`MediaRepository::search_clause()`), so the count and the pages agree.
 - **UX expectation:** A zero-result search shows "no results for {term}" plus popular tags and a "browse all" link, not a blank grid. Search debounces (see MV-EXP-008) rather than firing on every keystroke.
 - **Settings that change it:** none.
 - **Edge cases:** Search term under 2 characters does nothing (no network call — see MV-EXP-008). Search combined with an active tag/category filter narrows further, does not reset the filter.
@@ -626,7 +626,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** All files upload as one group (single activity/action group), each becoming its own media item.
 - **UX expectation:** Per-file thumbnail previews for every selected file, with a way to remove one before submitting (`removeUploadFile`). One combined success confirmation, not one toast per file.
 - **Settings that change it:** same as MV-UPL-002.
-- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time.").
+- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts every member this viewer may see under the listing's filter (`gallery_tile_counts()` with `gallery_filter_args()`), the same set the lightbox opens through `/media/{id}/group` with that filter: a visitor, a follower and the owner can each see a different count, and under Explore > Videos a photo-plus-two-videos gallery is one tile fronted by its first video, badge 2, lightbox 1 / 2. Each step in the lightbox shows that item's own reactions and comments (owner decision 13 Oct 2026). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
 
 #### MV-UPL-004 — Upload video / audio
 - **Edition:** Free
@@ -637,7 +637,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Uploads and appears with a generated poster (embedded cover frame, or a client-supplied frame) for video, or embedded/decorative artwork for audio.
 - **UX expectation:** Video/audio types not on the allowed list are rejected client-side before any upload request is attempted ("N file(s) not allowed for {mode} upload.").
 - **Settings that change it:** `mvs_allowed_file_types`.
-- **Edge cases:** A posterless video must never render a blank/black tile — falls back to a bundled default poster image.
+- **Edge cases:** A posterless video must never render a blank/black tile — falls back to a bundled default poster image. An MP4 whose container brand is M4V (Apple, HandBrake, many stock clips; `file` says "Apple iTunes Video (.M4V)") uploads as `video/mp4` wherever MP4 is allowed: upload page, composer, DM attachment, replace file. With `video/mp4` removed from the allowed list it is refused too (`MediaTypes::canonical_mime()`, Basecamp 10379561512).
 
 #### MV-UPL-005 — Upload rejected: oversize / disallowed type / empty file
 - **Edition:** Free
@@ -1252,13 +1252,13 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 #### MV-MSG-005 — Send an attachment
 - **Edition:** Free
 - **Who:** Member
-- **Where:** Attachment picker in the composer. `POST /mvs/v1/messages/upload` then `POST /conversations/{id}/messages` with `attachment_id`.
+- **Where:** Attachment picker (and voice recorder) in the composer. `POST /mvs/v1/messages/upload` returns a `media_id`, then `POST /conversations/{id}/messages` with `media_id` (2.6.2; `attachment_id` before).
 - **Setup:** An image/video/audio file under 10MB (PDFs are excluded from DM attachments since 2.2.0 and still excluded).
 - **Steps:** 1. Click the attachment icon. 2. Pick a valid file. 3. Try a file over 10MB. 4. Try a PDF.
 - **Expected:** Valid media-type attachment uploads and sends as a message. Oversize file refused (10MB cap, filter-only — no wp-admin UI field for changing it). PDF refused (not a valid DM attachment type, verified by file content via `finfo_file()`, not by extension).
 - **UX expectation:** Upload progress shown while the attachment uploads before the message actually sends. A rejected attachment should say clearly why (too large / wrong type), not just fail silently.
 - **Settings that change it:** none in the wp-admin UI (10MB cap is filter-only, `mvs_dm_max_upload_size`).
-- **Edge cases:** none beyond the type/size checks above.
+- **Edge cases:** Since 2.6.2 the file is stored as conversation-scoped `dm` media (protected folder, random name, URLs signed per participant), never a WordPress attachment: logged out, `/wp-json/wp/v2/media` lists nothing and an outsider cannot open it. It is not an upload: no feed post, points, streak, AI, captions, export or `mvs_media_uploaded`, and it never appears in My Media, Explore or admin grids. Sending the same file twice is allowed whatever the duplicate setting (Basecamp 10392474704). Deleting or unsending the message removes the file for everyone, unless another live message still shows it. A chat file can never change privacy afterwards (400 `mvs_privacy_dm_fixed`). Chat files sent before 2.6.2 (public WordPress attachments) are hidden from every attachment listing at once and moved into `dm` media by a background job started from the first admin page load or cron (option `mvs_chat_attachments_moved`: moved / removed / failed / done); uploads never sent are deleted, and the old public URL then 404s. A file that cannot be moved stays hidden from listings (its old URL still works), is retried once a day, and Site Health shows "N files sent in messages could not be moved to protected storage" only while any remain; reasons are under Tools > MediaVerse Logs (messaging). Check: on an upgraded site, the old file URL 404s after the first admin visit and both people still see the photo in chat.
 
 #### MV-MSG-006 — Share an existing media item into a conversation
 - **Edition:** Free
@@ -1269,7 +1269,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** A message referencing the existing media item is created (not a duplicate upload); the recipient sees an inline preview card for it (`chat-media-card.php`), respecting THEIR own view permission on it.
 - **UX expectation:** If the recipient can't actually view the referenced item (e.g. it later goes private), the card should degrade gracefully, not break the chat rendering.
 - **Settings that change it:** none beyond messaging access rules.
-- **Edge cases:** none beyond the above.
+- **Edge cases:** Only the item's OWNER sharing it widens access: the recipient of the owner's own share may view and download a private item; a member sharing someone else's item gives the recipient nothing beyond the item's own privacy. Sending an item the sender cannot see is refused (403 "That file can't be sent. It may have been removed or made private."), and a WordPress attachment must be the sender's own upload. Check as an outsider: post another member's private media id into your own DM, then read the thread: no media URLs (Basecamp 10392490030).
 
 #### MV-MSG-007 — React to a message
 - **Edition:** Free
@@ -1394,6 +1394,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Grid renders per the chosen attributes on the frontend. The shortcode is a thin wrapper around the same block render — results should be visually identical to the block for the same effective settings, EXCEPT that the shortcode's `columns`/`per_page` are always forced from the site's admin settings (`mvs_grid_columns`/`mvs_items_per_page`) and cannot be overridden by shortcode attributes, unlike the block's own `columns`/`perPage` attributes.
 - **UX expectation:** Empty state ("nothing shared yet" equivalent) when the filter matches nothing. Lightbox opens on click when `showLightbox` is true (block default).
 - **Settings that change it:** `mvs_grid_columns`, `mvs_items_per_page` (shortcode only, as above).
+- **Galleries:** one tile per gallery, the first item the viewer may see (same rule as Explore, `MediaRepository::gallery_hidden_clause()`).
 - **Edge cases:** A non-core `layout` value (anything other than grid/masonry/list/square/original) on the shortcode falls through to Pro's layout filter, then to the plain grid if Pro isn't active — verify Free-only never errors on an unrecognised layout string, it just shows the default grid.
 
 #### MV-BLK-002 — Explore Feed block (`mvs/explore-feed`) / `[mvs_explore_feed]`
@@ -1633,7 +1634,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Real thumbnails render (not a raw page URL / broken image), matching the member's viewable uploads. "Documents" sub-tab is present only when the documents feature is enabled site-wide.
 - **UX expectation:** Empty state (no broken `<img>` tags) when the member has nothing to show under a given sub-tab.
 - **Settings that change it:** the documents master switch (for the Documents sub-tab's presence).
-- **Edge cases:** This tab must respect the SAME privacy rules as the standalone `/media/@user/` profile — a stranger should not see more (or less) here than there.
+- **Edge cases:** This tab must respect the SAME privacy rules as the standalone `/media/@user/` profile — a stranger should not see more (or less) here than there. Galleries show as one tile with a badge, the same rule as Explore, on page 1 and on Load More. The nav count still counts every item the viewer may see.
 
 #### MV-BP-002 — Group "Media" tab
 - **Edition:** Free
@@ -1644,7 +1645,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Group-scoped media renders; a non-member of a private group sees "no media in this group" (or is denied per the group's own BP visibility) rather than the group's actual content.
 - **UX expectation:** Same "no broken img tags" empty-state bar as MV-BP-001.
 - **Settings that change it:** none beyond the group's own BuddyPress privacy.
-- **Edge cases:** none beyond the shared rendering logic with MV-BP-001 (`BaseBPTabIntegration`).
+- **Edge cases:** Galleries show as one tile with a badge. Load More asks `GET /mvs/v1/media?group=<id>&group_covers=1`, the same listing as page 1 (`MediaRepository::group_scope_clause()`): with more than one page, page 2 holds only this group's items, no repeats, and a non-member never gets group-only items. Check with a group of 13+ items as member and visitor.
 
 #### MV-BP-003 — Upload creates a BuddyPress activity item
 - **Edition:** Free
@@ -1653,8 +1654,8 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Setup:** BuddyPress Activity component active.
 - **Steps:** 1. Upload a public item. 2. Check the site-wide activity stream. 3. Upload a `private` or `dm` item and re-check.
 - **Expected:** Public (and any non-private/non-dm privacy) upload creates a real `bp_activity_add()` entry. A `private` or a `dm`-privacy upload deliberately writes NO activity row at all (so DM attachments never leak into the public activity stream).
-- **UX expectation:** The activity card's media preview follows the LOCKED visual spec: a single image preview is a fixed 64px square (never a "hero" 200-320px preview regardless of file count); 2-6 images use a CSS grid with per-count column templates, collapsing to 2 columns at ≤640px. This is an explicit regression lock — measure it, don't eyeball it.
-- **Settings that change it:** none beyond privacy itself gating whether an activity row is written.
+- **UX expectation:** The posted activity card shows the uploaded photo itself, at the stream's content width (one image), or a CSS grid with per-count column templates for 2-6 images, collapsing to 2 columns at ≤640px. The fixed 64px square belongs to the composer's attach preview BEFORE posting (`bp-integration.css` "Preview item"), not to the posted card. Measure it, don't eyeball it.
+- **Settings that change it:** none beyond privacy itself gating whether an activity row is written. Direct delivery (Site Health "media delivery" probe, filter `mvs_direct_media_delivery`) changes the stored image URL only; the photo must show with it on and off. Check: upload with it forced on, then view the stream with it on and off (Basecamp 10387034419).
 - **Edge cases:** Deleting the media afterward must clean up its associated activity entry (no dead activity card advertising deleted content).
 
 #### MV-BP-004 — Comment syncs into BuddyPress activity comments
@@ -1662,11 +1663,11 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Who:** Member (commenter)
 - **Where:** A media item's activity card in the BP stream.
 - **Setup:** A media item that has an activity entry (per MV-BP-003).
-- **Steps:** 1. Comment on the media item via its own single-media page. 2. Check the activity card in the BP stream.
-- **Expected:** The comment mirrors into the BP activity's own comment thread (via `bp_activity_add()` for the comment too), so a follower of the activity stream sees the conversation without visiting the media page directly.
-- **UX expectation:** Editing/deleting the original comment (MV-MED-006/007) should ideally keep the two in sync — Check whether an edit or delete on the media page's comment propagates to the mirrored BP activity comment, or whether they can drift.
-- **Settings that change it:** none.
-- **Edge cases:** none beyond the sync-drift check above.
+- **Steps:** 1. Comment on the media item via its own single-media page or the lightbox. 2. Reply to that comment. 3. Edit the reply. 4. Delete the first comment.
+- **Expected:** The comment mirrors into the activity's own comment thread (`bp_activity_new_comment()`), and the reply sits under it. An edit removes the activity copy (BuddyPress core has no comment editing; the old wording must not stay on the post). Deleting the comment removes it and its replies from the activity, along with the "commented on your update" / "replied to your comment" notifications. The mirror id is stored in comment meta `_mvs_bp_activity_comment_id`.
+- **UX expectation:** The activity thread and the media page never drift: what a member deletes is gone everywhere.
+- **Settings that change it:** filter `mvs_comment_delete_replies` (false keeps replies, so their mirrors stay too).
+- **Edge cases:** Comments mirrored before 2.6.2 have no stored mirror id, so deleting them leaves the old activity comment in place. Journey customer/75.
 
 #### MV-BP-005 — Activity privacy filtering matches media privacy
 - **Edition:** Free
@@ -1674,7 +1675,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** Site-wide activity stream, profile activity, group activity, and BP's own REST/AJAX load-more.
 - **Setup:** Media uploaded at several different privacy levels (public, members, friends, group, private).
 - **Steps:** 1. As a stranger, scroll the site-wide activity stream. 2. As a friend of the poster, do the same. 3. As a fellow group member, check group-scoped activity.
-- **Expected:** Every activity row for a MediaVerse upload is filtered by the SAME privacy rule the media item itself uses — a stranger never sees a friends-only or group-only upload's activity card, regardless of where in BP they encounter it (stream, profile, group, or paginated load-more).
+- **Expected:** Every activity row for a MediaVerse upload is filtered by the SAME privacy rule the media item itself uses — a stranger never sees a friends-only or group-only upload's activity card, regardless of where in BP they encounter it (stream, profile, group, or paginated load-more). A post with several items follows its strictest item: one private photo hides the post for everyone but the owner (journey customer/74). Each tile is also shown only to a viewer who may open it. Showing the post without its private items is planned for 2.7.0, with the stored content rebuilt.
 - **UX expectation:** The filtering must hold consistently across pagination — a privacy-denied item should not "leak through" on page 2+ of the activity stream if it was correctly hidden on page 1.
 - **Settings that change it:** none beyond the media item's own privacy level.
 - **Edge cases:** none beyond the pagination consistency check above.
@@ -1799,7 +1800,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Who:** Admin sets.
 - **Where:** MediaVerse > Settings > Storage
 - **Setup:** None for Free (no Pro license).
-- **Steps:** 1. Open Storage tab. 2. Confirm only "Local" is usable without Pro (cloud options present but inert/locked).
+- **Steps:** 1. Open Storage tab. 2. Confirm only "This server" is usable without Pro (cloud options present but inert/locked).
 - **Expected:** `mvs_storage_driver` (string, default `local`); accepts `local`, `s3`, `bunnycdn`, `r2`, `dospaces` but the latter four require Pro active.
 - **UX expectation:** If Pro isn't active, cloud options must be visibly disabled/locked with an explanation ("Requires MediaVerse Pro"), not selectable-but-broken. A constant defined in `wp-config.php` for a credential renders that field locked with "Defined in wp-config.php" and the stored option is ignored — the UI must say so, not show a blank editable field that silently does nothing.
 - **Settings that change it:** "Where files are stored" (`mvs_storage_driver`), default `local`.
@@ -2089,6 +2090,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** `mvs_email_battle_invite`, `mvs_email_document_shared`, `mvs_email_report_outcome` start ON on a new install and OFF on a site updated to 2.6.0 (so an update never starts mailing members). Test both: a fresh install, and an update from 2.5.x.
 - **UX expectation:** Each toggle's label should name the actual trigger event plainly ("Report reviewed" = "we tell the reporter/reported member what happened to their report").
 - **Settings that change it:** As listed.
+- **BuddyNext sites:** BuddyNext sends MediaVerse's own member emails, so their toggles are hidden. Emails BuddyNext has no equivalent for (Pro's four challenge emails, `host_owned => false` in `EmailService::types()`) are still sent by MediaVerse and still listed here. With none left, the Emails section does not show.
 - **Edge cases:** Confirmed: "Photo battle invites" is a Pro-gamification-adjacent notification type shipped in Free's email settings, and it genuinely has no visible effect without MediaVerse Pro's Battles feature active — nothing in Free ever triggers a battle-invite notification, only Pro's Battles code does. Toggling it on a Free-only site does nothing observable.
 
 #### MV-SET-034 — Pages (Explore/My Media/Upload/Explore Documents)
@@ -2356,6 +2358,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **UX expectation:** The checkbox list always matches who can really upload (it reads the roles, not a copy).
 - **Settings that change it:** `mvs_upload_roles` (writes the `upload_mvs_media` capability).
 - **Edge cases:** A developer can bring the old matrix back with the `mvs_settings_sections` filter; that is an intentional extension point, not a defect.
+
+#### MV-ADM-023 - Media Categories screen
+- **Edition:** Free
+- **Who:** Admin (any role with `manage_categories` that can open the MediaVerse menu).
+- **Where:** MediaVerse > Categories (`edit-tags.php?taxonomy=mvs_category&post_type=mvs_album`), right after Tags.
+- **Setup:** None; demo data adds Nature, Architecture, Portraits, Food, Travel, Technology.
+- **Steps:** 1. Open MediaVerse > Categories: the item is highlighted and the MediaVerse menu stays open. 2. Add a category, edit one (term edit screen keeps the same highlight), delete one. 3. Open MediaVerse > Albums.
+- **Expected:** Core's term screen for media categories. Categories feed the app's interests onboarding (`/mvs/v1/app/interests`, picks saved via `/mvs/v1/me/interests`), Explore's `?category=` filter (MV-EXP-005), `/media-category/` archives, smart-collection Category rules (MV-ADM-019) and the Media Grid block. Assigning a category to an item is REST/app only (`categories` on media create/update); there is no web picker yet.
+- **UX expectation:** Albums list shows Title, Author, Date only: no "Media Tags" / "Media Categories" columns and no taxonomy fields in Quick or Bulk Edit (they were always empty and wrote album IDs into the media term space). Basecamp 10379842826.
+- **Settings that change it:** None.
+- **Edge cases:** The taxonomy is registered on `mvs_album` only to keep this screen; albums never carry categories (no metabox, no column, no Quick Edit).
 
 ### Area: WIZ — Setup wizard, demo data, activation
 
@@ -2710,7 +2723,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** `wp mvs diagnose-cpt-ids`
 - **Setup:** A library, ideally one that has had post-ID collisions between `mvs_album`/`mvs_collection` CPT rows and other post types.
 - **Steps:** Run the command; inspect the diagnostic report.
-- **Expected:** Surfaces ID-collision risk between MediaVerse CPTs and other content (a real, documented failure class the plugin guards against elsewhere via `CptIdCollisionService`).
+- **Expected:** Reports past ID collisions between album/collection posts and media rows (damage written before 2.4.0). It makes no forecast: albums keep their data in post meta, so a new album cannot collide.
 - **UX expectation:** Read-only diagnostic — must make no changes, only report.
 - **Settings that change it:** None.
 - **Edge cases:** Should run cleanly and report "no issues" on a healthy site, not merely output nothing.
@@ -2803,7 +2816,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** `Services/AccountDeletionService::request()` requires the account password even if the caller authenticated via Application Password (the plugin's stated genuine-second-factor reasoning) — wrong password returns `mvs_invalid_password`. A grace period of 0 (owner-configured) deletes immediately with no window.
 - **UX expectation:** A wrong password on the deletion request must give a clear, specific error, not a generic failure — and the immediate credential/session revocation should be something a tester can independently verify (e.g. confirm an app password issued before the request stops working right after the request, even though the account isn't deleted yet).
 - **Settings that change it:** `mvs_account_deletion_grace_days` filter (no settings-screen UI — code/filter only).
-- **Edge cases:** A cron sweep (`process_due()`) executes deletion for every account whose grace period has expired — confirm a member who cancelled in time is correctly excluded from that sweep, not accidentally caught by a race.
+- **Edge cases:** Asking twice while a deletion is pending changes nothing (same date, and Cancel still lifts the suspension). A cron sweep (`process_due()`) executes deletion for every account whose grace period has expired — confirm a member who cancelled in time is correctly excluded from that sweep, not accidentally caught by a race.
 
 #### MV-PRV-008 — Remove Data on Delete (uninstall coverage, cross-reference)
 - **Edition:** Free
@@ -3122,6 +3135,7 @@ General pattern confirmed across controllers: an unauthenticated caller on a wri
 - **UX expectation:** Select shows the currently-active skin pre-selected (resolved via a filter, so a Pro skin overrides Free's grid selection when active). Save follows WordPress's normal Settings API flow — a page reload with the standard "Settings saved" admin notice; no AJAX, no partial update. Nothing to disable/enable — the field is always present once Pro is active. Choosing an unrecognized/tampered value falls back silently to whatever was previously selected (sanitizer default), never a fatal or blank select.
 - **Settings that change it:** "Layout" (`mvs_layout_choice` is the form's transport field only; state persists in `mvs_thumbnail_style` for grid choices or `mvs_pro_feed_layout` for Pro skins).
 - **Edge cases:** Pro deactivated while a Pro skin was selected — the site quietly falls back to Free's grid (Pro's filter no longer runs), no error, and the stored `mvs_pro_feed_layout` value is left untouched in the DB so re-activating Pro restores the same skin. `mvs_active_layout` filter can force a layout by context (e.g. always Flickr on the archive) regardless of the saved option — verify this isn't accidentally left in a child theme/mu-plugin during testing.
+- **List layout (Free):** each row shows the thumbnail, the title (two lines max), the upload date, views/reactions/comments with Lucide icons and the uploader underneath; Explore, BuddyPress tabs, the Media Grid block and Load More cards all print the same row (`.mvs-grid-item-details`, shown only in List). Check: at 390 the thumbnail is 72px and nothing scrolls sideways; the default grid shows no details row.
 
 #### MV-LAY-002 — Instagram layout on Explore
 - **Edition:** Pro
@@ -3612,7 +3626,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** `/media/challenges/` detail view, Submit Entry action; `POST /mvs-pro/v1/challenges/{id}/entries`.
 - **Setup:** Challenge status must be `active` (submission window open); user logged in.
 - **Steps:** 1. Open an active challenge. 2. Choose "upload new photo". 3. Upload and submit.
-- **Expected:** New media is created, then `ChallengeService::submit_entry()` validates via `CompetitionMedia::is_entrable()` (must exist, be owned by the user, and be a media-library type — a document cannot be entered). On success, entry row inserted and `mvs_challenge_entry_submitted` fires.
+- **Expected:** New media is created as **public** (the hint above the picker says entries are public, so photos uploaded there are too), then `ChallengeService::submit_entry()` validates via `CompetitionMedia::is_entrable()` (owned by the user, published, approved, public, and a media-library type). On success, entry row inserted and `mvs_challenge_entry_submitted` fires. When the owner has locked member privacy (members cannot choose) and the site default is not public, the upload is kept but not selected, and the member sees "This photo is not public, so it cannot enter..." instead of a refused submit. Same for battles.
 - **UX expectation:** Success toast "Entry submitted successfully!" (from the store's `entrySubmitted` string). Upload failure shows "Upload failed. Please try again."; submission failure shows "Submission failed."; a dropped connection shows "Network error. Please try again." No duplicate entry created if the user double-clicks Submit (should disable the button while in flight — verify in the browser, not assumed).
 - **Settings that change it:** `max_entries_per_user` on the challenge (default 1) caps how many times this can succeed for the same user.
 - **Edge cases:** Upload of a non-image/video file; upload interrupted mid-flight; user with 0 storage quota remaining (Free-side check).
@@ -3624,7 +3638,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Setup:** User already has media in their library; challenge active.
 - **Steps:** 1. Open Submit Entry. 2. Pick an existing media item instead of uploading. 3. Submit.
 - **Expected:** Same validation path as CHL-003. Two extra guarded cases apply: (a) submitting a media item the user does not own is rejected with "Invalid media or not your content." (b) submitting the *same* media id twice into the same challenge (by the same or a different route) is rejected with "This media has already been submitted." (409, `mvs_challenge_duplicate_media`).
-- **UX expectation:** The media picker should only surface the user's own media (not require the backend rejection to be the only guard) — a picker that lets you attempt someone else's media and then fails server-side is a worse UX than filtering client-side. Verify which is actually true in the browser.
+- **UX expectation:** The picker lists only the member's own public photos (`GET /mvs/v1/media?author=&scope=public&media_type=image`), so nothing it offers is refused on submit. Private, members-only and audio items do not appear. Same for battles.
 - **Settings that change it:** None.
 - **Edge cases:** Re-submitting a previously-submitted (from an earlier, cancelled challenge) media id into a new challenge should succeed — the duplicate check is scoped to `competition_id`, not global.
 
@@ -4621,7 +4635,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Expected:** Title/content/tag matches rank (content/title weighted ahead of tags). PDF is findable by title/tags only — never by body text, since extraction never runs on PDFs.
 - **UX expectation:** A PDF that doesn't surface for a body-text search must not look like "search is broken" — if a QA pass files this as a bug, it should be corrected to note it's the documented PDF exception. A freshly-uploaded, not-yet-extracted document should show as "indexing" state, not a false "no results."
 - **Settings that change it:** `mvs_pro_documents_extraction` — turning it off stops new indexing.
-- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan).
+- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan). A search inside one drive finds the member's file however many better matches the site has elsewhere (the drive narrows inside the query), and a space's search includes files linked into it.
 
 #### MV-DOC-029 — Space search covering linked files
 - **Edition:** Pro (bridged via BuddyNext)
@@ -4891,10 +4905,10 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 
 #### MV-VID-008 — Auto-caption generation on upload
 - **Edition:** Pro.
-- **Who:** Any member who uploads video/audio media, when the site owner has enabled auto-captions.
+- **Who:** Any member who uploads a video, when the site owner has enabled auto-captions. Audio is not transcribed unless the `mvs_pro_caption_media_types` filter adds it (2.6.2, Basecamp 10392988339).
 - **Where:** Triggered automatically on `mvs_media_uploaded`; no member-facing control to opt in/out per upload.
 - **Setup:** Site owner enables the "captions_auto" setting (stored under `mvs_pro_settings['captions_auto']`) and configures an OpenAI API key under Settings > AI & Moderation.
-- **Steps:** 1) With auto-captions ON and a valid OpenAI key, upload a short video/audio file. 2) Poll `GET /media/{id}/captions/status` immediately, then again after ~10-30s.
+- **Steps:** 1) With auto-captions ON and a valid OpenAI key, upload a short video (an audio upload must NOT be queued). 2) Poll `GET /media/{id}/captions/status` immediately, then again after ~10-30s.
 - **Expected:** Step 1: `TranscriptionService::on_media_uploaded()` fires, queues `mvs_pro_transcribe_media` via Action Scheduler (falls back to a single `wp_schedule_single_event` 5s out if AS isn't available), status becomes `queued` immediately. Step 2: status transitions `queued` → `processing` → `complete`, and once complete `GET /media/{id}/captions` returns a `vtt_url` pointing at `{uploads}/mvs-captions/{media_id}.vtt`.
 - **UX expectation:** No member-visible progress indicator anywhere in the upload flow itself — captioning happens silently in the background after the upload response has already returned. A member has no way to know captioning is even running unless they separately poll the status endpoint (API client only); this must not be reported as "captions don't show progress" since no web surface for this exists.
 - **Settings that change it:** `captions_auto` (bool, default false, key inside `mvs_pro_settings`) — the master on/off for automatic generation. Language is a separate setting (`captions_language`, default `'en'`; `'auto'` maps to empty string = provider auto-detect).
@@ -4906,7 +4920,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** `POST /mvs-pro/v1/media/{id}/captions/generate`, `GET /mvs-pro/v1/media/{id}/captions/status`.
 - **Setup:** OpenAI key configured; media item is video or audio.
 - **Steps:** 1) As a non-owner, non-admin member, POST generate. 2) As the owner, POST generate on an image (non video/audio) item. 3) As the owner, POST generate on a valid video, then poll status.
-- **Expected:** Step 1: 403 `mvs_pro_forbidden`. Step 2: 422 `mvs_pro_captions_unsupported_type` "Captions can only be generated for video or audio media." Step 3: 202 Accepted with `{status: "queued", message: "Transcription has been queued. Check the status endpoint to track progress."}`; status endpoint returns `{status: "processing"}` then `{status: "complete", vtt_url: "..."}`.
+- **Expected:** Step 1: 403 `mvs_pro_forbidden`. Step 2: 422 `mvs_pro_captions_unsupported_type` "Captions can only be generated for videos." (also for an audio item by default) Step 3: 202 Accepted with `{status: "queued", message: "Transcription has been queued. Check the status endpoint to track progress."}`; status endpoint returns `{status: "processing"}` then `{status: "complete", vtt_url: "..."}`.
 - **UX expectation:** The 202 response is the entire feedback loop for this action — there is no member-facing "Generate captions" button anywhere in the templates for the member-facing side. Confirmed: no admin-side "Generate captions" action exists either — the admin Media list's only bulk actions are Trash/Restore/Delete, and its per-item AI actions ("AI re-run", "AI reject") are a completely different feature (AI description/tags, not video/audio caption transcription); nothing anywhere triggers caption generation except the direct REST call. Do not expect a progress bar; a client must poll.
 - **Settings that change it:** none beyond the OpenAI key being present (`provider_is_available()` gates the whole endpoint with 503 if absent — see MV-VID-011).
 - **Edge cases:** calling generate while a job is already `queued`/`processing` for the same media (silently no-ops server-side via dedup, but the endpoint still returns 202 as if freshly queued — a client can't tell the difference between "just queued" and "already in flight").
@@ -4961,10 +4975,10 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** wp-admin, WPMediaVerse → Stats → "Analytics" tab (`admin.php?page=mvs-analytics`, hidden submenu under `mvs-stats`, URL-routable but not in sidebar). Per-media drill-down: same page with `?media_id={id}`.
 - **Setup:** At least one recorded play event (from real playback, or a direct POST to `/media/{id}/events` for testing).
 - **Steps:** 1) Visit the Analytics tab with zero play events recorded anywhere. 2) Visit after some plays/pauses/completions exist. 3) Click "View Analytics" on a Top-10 row.
-- **Expected:** Step 1: empty state text "No play events recorded yet. The player will start sending events once viewers watch your videos." plus zeroed summary cards (Plays Today, Plays This Week, Avg Engagement, Top Media Tracked). Step 2: summary cards populate; Top 10 table (30-day window, sorted by engagement by default) shows Media Title (linked to permalink), Plays, a Completion % bar, an Engagement Score bar (0-100), "View Analytics" per row. Step 3: navigates to the per-media detail view with a heatmap (50 buckets), retention curve (sampled every 5 percentile points from 0-100), completion rate, avg watch duration, engagement score, top-5 drop-off points (5-second buckets ranked by pause/seek frequency).
+- **Expected:** Step 1: empty state text "No play events recorded yet. The player will start sending events once viewers watch your videos." plus zeroed summary cards (Plays Today, Plays This Week, Avg Engagement). No "Top Media Tracked" card: the Top 10 table lists the videos. Step 2: summary cards populate; Top 10 table (30-day window, sorted by engagement by default) shows Media Title (linked to permalink), Plays, a Completion % bar, an Engagement Score bar (0-100), "View Analytics" per row. Step 3: navigates to the per-media detail view with a heatmap (50 buckets), retention curve (sampled every 5 percentile points from 0-100), completion rate, avg watch duration, engagement score, top-5 drop-off points (5-second buckets ranked by pause/seek frequency).
 - **UX expectation:** The page banner text explicitly states "Data covers the last 90 days of raw events" — this must match the actual pruning window (see MV-VID-015); if that copy and the cron constant ever drift, that's a real bug. A deleted media item shows as "(deleted)" in the Top 10 title column rather than a blank or broken link.
 - **Settings that change it:** none — no filter/sort controls beyond the hardcoded 30-day/top-10/engagement-sort default on the overview (the underlying service DOES support `period`/`sort` params, but the admin page doesn't expose UI controls for them). Confirmed not a defect: the docs only ever describe the tab and its detail view, never a filter/sort control on the overview, so nothing promised is missing — the REST route `/analytics/top` exposes all three as query params for an API client/future UI, unused by the current admin page.
-- **Edge cases:** a media item with plays but zero duration ever recorded (heatmap returns all-zero buckets, no divide-by-zero); 390px — standard wp-admin `wrap`/`wp-list-table` page with no custom mobile CSS observed; verify bars/table don't overflow at 390px.
+- **Edge cases:** a media item with plays but zero duration ever recorded (heatmap returns all-zero buckets, no divide-by-zero); 390px — standard wp-admin `wrap`/`wp-list-table` page with no custom mobile CSS observed; verify bars/table don't overflow at 390px. Completion % in the Top 10 (and `/analytics/top`) must equal the per-media detail's completion rate for the same video: completed sessions / sessions (Basecamp 10386996875, it read 0% for every row before 2.6.2). Testing note: the events route accepts one event per session per ~2 seconds and still answers 200 for a dropped one, so space test events or check `{"recorded":true}`.
 
 #### MV-VID-015 — Play event ingestion, rate limiting, retention pruning, and delete-cleanup
 - **Edition:** Pro.
@@ -5662,7 +5676,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** WPMediaVerse -> Settings -> License tab (hash-anchor `#license`, sidebar item labeled "License" with a `key-round` icon, priority 100 — always last in the sidebar).
 - **Setup:** A valid license key for EDD item ID 1660828, store `https://wbcomdesigns.com`.
 - **Steps:** 1) Go to Settings -> License. 2) Enter the license key. 3) Click "Activate License".
-- **Expected:** POSTs `edd_action=activate_license` to the store with `license`, `item_id=1660828`, `url=home_url()`, `environment=wp_get_environment_type()`. On success (`body->success` true AND `body->license === 'valid'`), stores `wpmediaverse-pro_license_key` and `wpmediaverse-pro_license` (raw SDK response object) options, and always writes `wpmediaverse-pro_license_key_allow_tracking` with `allowed: true`.
+- **Expected:** The request goes through the bundled EDD SL SDK (`Requests\API::make_request()`), which adds the site `url` and `environment` the store counts activations by. On success (`success` true AND `license === 'valid'`) the SDK's own `License` object stores `wpmediaverse-pro_license_key` and `wpmediaverse-pro_license`. Usage tracking is left to the owner's choice (activation never switches it on). Pinned by Pro `LicenseFormSdkTest`.
 - **UX expectation:** Success notice: "License activated successfully." (WP `settings_errors` styled). Status table then shows: Status = green checkmark + "Active"; License Key = masked (`****`-middle, first/last 4 chars visible via `get_masked_key()`); Plan = tier label (starter/growth/agency/lifetime/pro, capitalized); Expires = "Never. Lifetime License" for lifetime, else a formatted date via the site's `date_format` option, else an em-dash if unknown. Deactivate button appears once active.
 - **Settings that change it:** none beyond the key itself; `MVS_PRO_LICENSE_BYPASS` constant (if defined true in wp-config) makes `is_valid()`/`get_tier()` always return valid/lifetime regardless of any real key — a dev/QA-only bypass, verify it is never set on a production site being tested.
 - **Edge cases:** Network failure reaching the store: "Could not reach the license server. Please try again." (distinct from a rejected key). Empty key submitted: confirmed — there is no client- or server-side check for a blank key before posting; it round-trips to the EDD store as `license: ''` and the store's `missing`/`invalid` response resolves to the same generic "Invalid license key." shown for any other bad key, not a distinct "please enter a key" prompt. 390px — form-table license key input and Activate button must not overflow.
@@ -5673,10 +5687,10 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Where:** Settings -> License tab, "Deactivate License" button (shown only when currently active).
 - **Setup:** An active license.
 - **Steps:** 1) Click "Deactivate License".
-- **Expected:** POSTs `edd_action=deactivate_license` with the stored key + item_id + site url, then unconditionally deletes both `wpmediaverse-pro_license_key` and `wpmediaverse-pro_license` locally regardless of the remote response (no error branch checked on this POST) — so a deactivation always succeeds locally even if the remote call fails or times out.
+- **Expected:** Sends `deactivate_license` through the SDK. Only when the store confirms does it clear the status option (`wpmediaverse-pro_license`); the key stays, as the SDK's own deactivate does. If the store cannot be reached or refuses: "Could not deactivate the license on the license server. Please try again." and the licence stays active locally.
 - **UX expectation:** Success notice: "License deactivated." The screen reverts to the inactive-state form (key input + "Activate License").
 - **Settings that change it:** none.
-- **Edge cases:** Deactivating while offline/store unreachable — confirm the local state still clears (by design, per the code — this could double-consume an activation slot on the store side if the remote call silently failed, which is worth flagging as a real risk rather than a bug: the local UI will show "inactive" even if the remote side still thinks the site is active).
+- **Edge cases:** Deactivating while offline or with the store refusing: the error shows and the screen still says Active, so the site and the store never disagree about the activation.
 
 #### MV-LIC-003 — Expired / invalid license status and error messages
 - **Edition:** Pro

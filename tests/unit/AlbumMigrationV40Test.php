@@ -1,7 +1,7 @@
 <?php
 /**
  * Migrator v40 puts album data in the one-album shape without changing what
- * anyone sees (Basecamp 10264373450).
+ * anyone sees.
  *
  * @package WPMediaVerse
  */

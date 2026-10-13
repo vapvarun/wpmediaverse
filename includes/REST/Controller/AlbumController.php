@@ -298,7 +298,7 @@ class AlbumController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 
 		// The only privacy gate on this endpoint: the rule is in SQL so the
-		// totals match what the viewer sees (Basecamp 10071400189). Same helper
+		// totals match what the viewer sees. Same helper
 		// as the /album/ archive and the BuddyPress albums tab.
 		$query = PrivacyService::query_listable_spaces( $args, (int) $user_id );
 
@@ -311,9 +311,24 @@ class AlbumController extends WP_REST_Controller {
 		// owner's own non-public album, re-introducing the found_posts vs
 		// returned-count mismatch this fix exists to kill. wp_posts.post_author
 		// (used by the SQL clause) is the authoritative album author.
-		$items = array();
+		// A list carries counts, not every album's item ids: 20 albums of 2,000
+		// photos checked 80,000 items per request. A
+		// client that still wants the ids asks with ?with_items=1.
+		/**
+		 * Filters whether GET /albums includes each album's item ids by default.
+		 *
+		 * Return true to restore the pre-2.6.2 list shape for a client that reads
+		 * `items` from the list instead of asking with ?with_items=1.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool            $include Whether to include item ids. Default false.
+		 * @param WP_REST_Request $request The list request.
+		 */
+		$with_items = (bool) $request->get_param( 'with_items' ) || (bool) apply_filters( 'mvs_album_list_include_items', false, $request );
+		$items      = array();
 		foreach ( $query->posts as $post ) {
-			$items[] = $this->prepare_album_response( $post, true );
+			$items[] = $this->prepare_album_response( $post, $with_items );
 		}
 
 		$response = rest_ensure_response( $items );
@@ -347,8 +362,8 @@ class AlbumController extends WP_REST_Controller {
 	/**
 	 * Get an album's media items, in album order, paginated.
 	 *
-	 * `GET /albums/{id}/items`. The route previously registered POST only, so
-	 * every client asking for an album's contents got a 404 and rendered an
+	 * `GET /albums/{id}/items`. A POST-only route would 404 for
+	 * every client asking for an album's contents and render an
 	 * empty album — the mobile app's album screen among them. `GET /albums/{id}`
 	 * returns bare media IDs; this returns the hydrated rows a grid needs.
 	 *
@@ -464,7 +479,7 @@ class AlbumController extends WP_REST_Controller {
 		// (AlbumService::set_privacy()), so changing it is changing theirs. Same
 		// contract as PATCH /media/{id}: the edit screens hide the picker but still
 		// send the current level, so only a CHANGE is refused, out loud (Rule 20),
-		// and before any other field is written. Basecamp 10320619418.
+		// and before any other field is written.
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy
 			&& ! PrivacyService::user_may_choose_privacy()
@@ -741,7 +756,7 @@ class AlbumController extends WP_REST_Controller {
 			'link'           => get_permalink( $album_id ),
 			'privacy'        => $privacy_value ? $privacy_value : 'public',
 			'album_type'     => $album_type ? $album_type : 'default',
-			'media_count'    => count( $this->albums->viewable_item_ids( $album_id ) ),
+			'media_count'    => $this->albums->viewable_item_count( $album_id ),
 			'cover_url'      => $this->albums->get_cover_url( $album_id ),
 			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
 			'is_owner'       => $is_owner,
@@ -753,7 +768,7 @@ class AlbumController extends WP_REST_Controller {
 
 			// Photos by the privacy their member chose, so the album screen can
 			// warn before making the album more public than some of them
-			// (Basecamp 10264373450). Editors only; a single query.
+			// Editors only; a single query.
 			if ( $with_counts && $can_edit ) {
 				$data['own_privacy_counts'] = $this->albums->own_privacy_counts( $album_id );
 			}
@@ -777,6 +792,11 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	public function get_collection_params() {
 		return array(
+			'with_items' => array(
+				'description' => __( 'Include each album\'s viewable media ids (costly on large albums; the list carries media_count either way).', 'wpmediaverse' ),
+				'type'        => 'boolean',
+				'default'     => false,
+			),
 			'per_page'   => array(
 				'type'              => 'integer',
 				'default'           => 20,

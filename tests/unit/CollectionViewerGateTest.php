@@ -12,7 +12,6 @@ use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Social\FavoriteService;
 
 /**
- * Basecamp 10298492555.
  *
  * get_collection_media_ids() returned raw favourite rows with no privacy
  * check, and the REST controller counted them with its own raw SQL, so a
@@ -50,8 +49,8 @@ class CollectionViewerGateTest extends WP_UnitTestCase {
 
 		// Prove the fixture IS the situation under test. If the repository
 		// ignored 'privacy', both rows would be public and every assertion
-		// below would pass while testing nothing - the exact way my last
-		// regression test went green on an empty fixture.
+		// below would pass while testing nothing - the exact way a
+		// regression test goes green on an empty fixture.
 		$privacy = Plugin::container()->get( 'privacy' );
 		$this->assertTrue(
 			$privacy->can_view( $this->public_media, $this->stranger ),

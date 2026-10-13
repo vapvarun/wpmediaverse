@@ -1,6 +1,6 @@
 # AI Providers
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro adds Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) as AI analysis providers alongside the built-in OpenAI Vision option. All four providers support auto-tagging and content moderation.
 

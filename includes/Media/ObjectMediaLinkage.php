@@ -48,9 +48,8 @@ class ObjectMediaLinkage {
 	/**
 	 * Drop every link that points at a media item which no longer exists.
 	 *
-	 * `mvs_media_deleted` already had six listeners; this table was not one of
-	 * them, so deleting media left its linkage rows pointing at nothing (measured
-	 * on the QA site: 14 of 26 rows). The rows are inert - the render path checks
+	 * `mvs_media_deleted` has other listeners; this table needs one too, or
+	 * deleting media leaves its linkage rows pointing at nothing. The rows are inert - the render path checks
 	 * the media still exists - but they accumulate for the life of the install.
 	 *
 	 * @param int $media_id Deleted media id.

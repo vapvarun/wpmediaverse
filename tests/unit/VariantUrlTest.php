@@ -2,7 +2,7 @@
 /**
  * Regression guards for modern-format variant URL emission (WebP / AVIF).
  *
- * Basecamp #10162798416: on a site serving the JPEG straight from a CDN,
+ * On a site serving the JPEG straight from a CDN,
  * `TemplateHelpers::get_webp_variant_url()` returned the stale absolute URL
  * stored in `thumb_<size>_webp`, which points inside
  * wp-content/uploads/wpmediaverse/ — the directory MediaVerse itself locks with

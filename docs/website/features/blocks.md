@@ -57,6 +57,8 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 
 Grid columns and pagination inherit from **MediaVerse > Settings > Display**.
 
+**Galleries (2.6.2):** Files uploaded together show as one tile with a badge counting the items the viewer may see. With a media type, category or tag filter set, the tile is fronted by its first matching item and the badge counts the matching items. See [Media Upload](media-upload.md#galleries-262).
+
 **Sorting (1.2.0):** Most Popular and Most Reactions sorts join the `mvs_media_stats` table to rank by aggregate engagement. Random sort reshuffles each page load.
 
 ## Media Player Block

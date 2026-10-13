@@ -330,6 +330,12 @@
       "object_id": true,
       "writes": false
     },
+    "GET /mvs/v1/media/(?P<id>[\\d]+)/spaces": {
+      "audience": "guarded",
+      "permission_callback": "WPMediaVerse\\REST\\Controller\\MediaController::get_item_permissions_check",
+      "object_id": true,
+      "writes": false
+    },
     "GET /mvs/v1/media/(?P<id>[\\d]+)/access": {
       "audience": "public",
       "permission_callback": "__return_true",

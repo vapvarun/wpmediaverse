@@ -68,14 +68,13 @@ final class MediaTypes {
 	/**
 	 * What the MEDIA LIBRARY shows. Media, and only media.
 	 *
-	 * **REVERSED BY THE OWNER, 2026-08-09: "documents type will never display at
-	 * media grid."** This constant previously also carried `legacy_document`, on
-	 * the reasoning that hiding those rows would remove content a member can see
-	 * today. That reasoning was sound in the abstract and wrong in practice, and
-	 * the browser showed why: the quarantined PDF rendered in Explore as a
-	 * **broken image tile** — a dark rectangle with a missing-image glyph. A grid
-	 * is a grid of pictures. A PDF has no picture, so "keeping it visible" did not
-	 * keep anything visible; it published a defect.
+	 * **OWNER DECISION: "documents type will never display at media grid."**
+	 * This constant does not carry `legacy_document`: hiding those rows can look
+	 * like removing content a member can see, but the quarantined PDF renders
+	 * in Explore as a **broken image tile** — a dark rectangle with a
+	 * missing-image glyph. A grid is a grid of pictures. A PDF has no picture,
+	 * so "keeping it visible" does not keep anything visible; it publishes a
+	 * defect.
 	 *
 	 * **Absent beats broken.** These rows stay fully readable at their permalink,
 	 * stay in the database, and stay countable — they simply stop being offered to
@@ -123,7 +122,7 @@ final class MediaTypes {
 	/**
 	 * The media-library type group, filtered.
 	 *
-	 * Production Rule 3 escape hatch for the reversal above. A site that ran
+	 * Production Rule 3 escape hatch for the exclusion above. A site that ran
 	 * pre-1.2.3 with PDFs enabled and would rather show those rows than hide them
 	 * can restore the previous behaviour in one line:
 	 *
@@ -205,5 +204,21 @@ final class MediaTypes {
 	 */
 	public static function is_known( string $type ): bool {
 		return in_array( $type, self::ALL, true );
+	}
+
+	/**
+	 * The MIME type the allowed lists use for a sniffed type.
+	 *
+	 * PHP's finfo reports an MP4 whose container brand is M4V (Apple, HandBrake, many
+	 * stock clips) as video/x-m4v. It is the same H.264 MP4, so it is checked
+	 * against video/mp4: allowed when the owner allows MP4, refused when not.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $mime Sniffed MIME type.
+	 * @return string
+	 */
+	public static function canonical_mime( string $mime ): string {
+		return 'video/x-m4v' === $mime ? 'video/mp4' : $mime;
 	}
 }

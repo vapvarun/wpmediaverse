@@ -21,9 +21,9 @@ use WPMediaVerse\Services\AccountDeletionService;
  * DELETE /me — a member deletes their own account.
  *
  * Apple App Store guideline 5.1.1(v) requires any app that lets you create an
- * account to let you begin deleting it from inside the app. Before 2.1.0 the
- * only erasure path was WordPress's admin-mediated Tools -> Erase Personal Data
- * flow, which a member cannot complete themselves — so the mobile app could not
+ * account to let you begin deleting it from inside the app. WordPress's own
+ * erasure path is the admin-mediated Tools -> Erase Personal Data
+ * flow, which a member cannot complete themselves — so on its own the mobile app could not
  * ship at all.
  *
  * A member is, at the end of the day, a WordPress user: deletion goes through

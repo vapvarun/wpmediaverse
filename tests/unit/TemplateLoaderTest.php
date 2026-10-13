@@ -124,7 +124,7 @@ class TemplateLoaderTest extends WP_UnitTestCase {
 
 	/**
 	 * A section declaring its own url redirects there instead of rendering a
-	 * dashboard panel nothing is bound to (Basecamp 10252947433).
+	 * dashboard panel nothing is bound to.
 	 */
 	public function test_offsite_section_redirects_to_its_declared_url(): void {
 		$target = home_url( '/compete/' );

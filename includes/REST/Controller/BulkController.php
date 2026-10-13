@@ -102,7 +102,7 @@ class BulkController extends WP_REST_Controller {
 
 		// Filter to items the user can modify.
 		$requested   = count( $media_ids );
-		$allowed_ids = $this->filter_allowed_ids( $media_ids, $user_id );
+		$allowed_ids = $this->filter_allowed_ids( $media_ids, $user_id, (string) $action );
 
 		// Documents are not media-library items: their access is grants-first
 		// through the folder chain, and they have their own trash and bulk flow
@@ -141,7 +141,7 @@ class BulkController extends WP_REST_Controller {
 				if ( ! $privacy ) {
 					return new WP_Error( 'mvs_missing_privacy', __( 'privacy is required for change_privacy.', 'wpmediaverse' ), array( 'status' => 400 ) );
 				}
-				// Same owner lock as the single-item update. Basecamp 10320619418.
+				// Same owner lock as the single-item update.
 				// The same list a single-item save checks: an unknown level is refused, not stored.
 				if ( ! in_array( $privacy, \WPMediaVerse\Services\PrivacyService::supported_levels(), true ) ) {
 					return new WP_Error( 'mvs_privacy_unsupported', __( 'That privacy level is not available on this site.', 'wpmediaverse' ), array( 'status' => 400 ) );
@@ -356,15 +356,18 @@ class BulkController extends WP_REST_Controller {
 		global $wpdb;
 		$updated = 0;
 
-		$albums        = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+		$privacy_svc   = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		$album_decides = 0;
+		$kept          = 0;
 		foreach ( $media_ids as $media_id ) {
-			// In an album: the album decides; the choice is kept for when it leaves.
-			if ( $albums->keep_own_privacy_if_in_album( (int) $media_id, $privacy ) ) {
-				++$album_decides;
-			} else {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', $privacy );
+			// In an album the album decides; a chat file keeps its conversation
+			// privacy and is reported, never counted as done.
+			$outcome = $privacy_svc->apply_requested_privacy( (int) $media_id, $privacy );
+			if ( 'kept' === $outcome ) {
+				++$kept;
+				continue;
 			}
+			$album_decides += 'album' === $outcome ? 1 : 0;
 			++$updated;
 		}
 
@@ -377,27 +380,37 @@ class BulkController extends WP_REST_Controller {
 				// Items in an album keep showing with the album's privacy; the
 				// choice applies when they leave it (2.6.0).
 				'album_decides' => $album_decides,
+				// Files sent in messages, left as they were.
+				'kept'          => $kept,
 			)
 		);
 	}
 
 	/**
-	 * Filter media IDs to only those the user can modify.
+	 * Filter media IDs to only those the user may act on.
 	 *
-	 * @param int[] $media_ids Media IDs.
-	 * @param int   $user_id   Current user ID.
+	 * Delete checks the delete capabilities, as the single delete route does
+	 * (MediaController::owner_or_refuse); every other action the edit ones. A
+	 * role with edit but not delete rights hard-deleted through bulk
+	 *
+	 * @param int[]  $media_ids Media IDs.
+	 * @param int    $user_id   Current user ID.
+	 * @param string $action    Bulk action.
 	 * @return int[]
 	 */
-	private function filter_allowed_ids( array $media_ids, int $user_id ): array {
-		$can_edit_others = current_user_can( 'edit_others_mvs_medias' );
+	private function filter_allowed_ids( array $media_ids, int $user_id, string $action ): array {
+		$verb       = 'delete' === $action ? 'delete' : 'edit';
+		$can_own    = current_user_can( $verb . '_mvs_medias' );
+		$can_others = current_user_can( $verb . '_others_mvs_medias' );
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		return array_filter(
 			$media_ids,
-			function ( $media_id ) use ( $user_id, $can_edit_others ) {
-				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			static function ( $media_id ) use ( $user_id, $can_own, $can_others, $repo ) {
+				if ( ! $repo->exists( $media_id ) ) {
 					return false;
 				}
-				return $can_edit_others || \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id;
+				return $can_others || ( $can_own && $repo->get_author( $media_id ) === $user_id );
 			}
 		);
 	}

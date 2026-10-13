@@ -11,7 +11,6 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10350019949.
  *
  * PrivacyService had no `followers` case, so the level fell through to the
  * default deny and hid the item from the owner's own followers.
@@ -70,7 +69,7 @@ class FollowersPrivacyTest extends WP_UnitTestCase {
 	/**
 	 * The level can be chosen and saved, not only read: it is in the one list of
 	 * choosable levels, the accepted levels, and the tightening order, and a
-	 * REST save takes it (Basecamp 10374860312: offered by Pro, refused here).
+	 * REST save takes it (Pro offers the level, so Free must accept it).
 	 */
 	public function test_the_owner_can_choose_and_save_the_level(): void {
 		$this->assertArrayHasKey( 'followers', \WPMediaVerse\Core\TemplateHelpers::privacy_choices() );

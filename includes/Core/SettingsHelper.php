@@ -162,9 +162,9 @@ class SettingsHelper {
 	 * serve_thumbnail vocabulary is medium|large|thumbnail. 'full'
 	 * (the original file) is not a thumbnail rung and is wasteful inside a tile,
 	 * so it maps to 'large'. Every grid/feed thumbnail URL builder routes
-	 * through this so the mvs_thumbnail_size setting actually takes effect — it
-	 * previously did not, because grids hardcoded 'large' and never called
-	 * get_thumbnail_size() at all.
+	 * through this so the mvs_thumbnail_size setting actually takes effect (a grid that
+	 * hardcodes 'large' never calls
+	 * get_thumbnail_size() at all).
 	 *
 	 * @since 1.7.0
 	 *

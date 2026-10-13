@@ -2,9 +2,9 @@
 /**
  * Owner-facing routing and access switches from Zoho #41875.
  *
- * - My Media as a child page keeps its section URLs (Basecamp 10344427213).
+ * - My Media as a child page keeps its section URLs.
  * - "Members only" arms the privacy gate on a standalone site, and a host
- *   community plugin's answer always wins (Basecamp 10344427420).
+ *   community plugin's answer always wins.
  *
  * @package WPMediaVerse
  */

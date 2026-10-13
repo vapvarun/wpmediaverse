@@ -4,7 +4,7 @@
  *
  * Hooks into WordPress's user-deletion lifecycle and removes every row
  * owned by the deleted user across wpmediaverse custom tables, preventing
- * orphaned records that previously lived on after `deleted_user` fired.
+ * orphaned records from living on after `deleted_user` fires.
  *
  * @package WPMediaVerse
  */
@@ -27,14 +27,20 @@ class UserDeletionService {
 	public const CASCADE_HOOK = 'mvs_user_deletion_cascade';
 
 	/**
+	 * Action Scheduler hook that finishes erasing a member's rows.
+	 *
+	 * @since 2.6.2
+	 */
+	public const PURGE_HOOK = 'mvs_user_deletion_purge';
+
+	/**
 	 * Action Scheduler group, matching every other AS job in this plugin.
 	 */
 	private const AS_GROUP = 'wpmediaverse';
 
 	/**
-	 * Media items torn down per batch. A member with thousands of uploads
-	 * previously ran the whole cascade (file I/O + child-table deletes per
-	 * item) inline on the `deleted_user` request; this bounds each request
+	 * Media items torn down per batch. Running the whole cascade (file I/O + child-table deletes per
+	 * item) inline on the `deleted_user` request does not scale for a member with thousands of uploads; this bounds each request
 	 * / AS run to a fixed amount of work.
 	 */
 	private const CASCADE_BATCH_SIZE = 100;
@@ -49,14 +55,15 @@ class UserDeletionService {
 		// WordPress only offers that choice when the user owns posts, so a member
 		// with only media was never asked and lost it all.
 		add_filter( 'users_have_additional_content', array( $this, 'users_have_media' ), 10, 2 );
-		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 );
+		add_action( self::CASCADE_HOOK, array( $this, 'process_cascade_batch' ), 10, 2 ); // 1 arg from 2.6.2, 2 for older jobs.
+		add_action( self::PURGE_HOOK, array( $this, 'purge_member_rows' ) );
 	}
 
 	/**
 	 * Tell the Delete Users screen that these members own media.
 	 *
 	 * Makes WordPress show "Attribute all content to" for a member whose only
-	 * content is media (Basecamp 10344411938).
+	 * content is media.
 	 *
 	 * @since 2.6.0
 	 *
@@ -228,7 +235,7 @@ class UserDeletionService {
 	 *
 	 * When the admin chose "Attribute all content to", phase 1 hands the media
 	 * to that member instead, as WordPress does with posts; only DM attachments,
-	 * which live inside the erased messages, still go (Basecamp 10344411938).
+	 * which live inside the erased messages, still go.
 	 *
 	 * @param int      $user_id  User ID being deleted.
 	 * @param int|null $reassign Member receiving the content, or null to erase it.
@@ -281,9 +288,9 @@ class UserDeletionService {
 			$media_ids = array_values( array_diff( $media_ids, $reassigned ) );
 		}
 
-		// Batched via Action Scheduler — a member with thousands of uploads
-		// used to run every delete_cascade() (file I/O + child-table deletes)
-		// inline on this request, big-site checklist item 3 in one hook.
+		// Batched via Action Scheduler — running every delete_cascade() (file I/O + child-table deletes)
+		// inline on this request for a member with thousands of uploads would be
+		// big-site checklist item 3 in one hook.
 		$this->cascade_media_deletion( $user_id, $media_ids );
 
 		// Phase 1b — delete the user's albums and collections (CPTs). These were
@@ -316,85 +323,17 @@ class UserDeletionService {
 			)
 		);
 
-		// Phase 2 — purge per-user rows across all user-scoped tables.
-		//
-		// mvs_reports is NOT in this list: a report is moderation evidence another
-		// member filed, so it is RETAINED (anonymised) rather than deleted — the
-		// same classification MemberDataMap::retain_map() applies on the formal
-		// GDPR-erasure path. Deleting it would let a reported member wipe the case
-		// against them simply by leaving. See the anonymisation block below.
-		$user_scoped_tables = array(
-			'mvs_media_views'               => 'user_id',
-			'mvs_favorites'                 => 'user_id',
-			'mvs_reactions'                 => 'user_id',
-			'mvs_notifications'             => 'user_id',
-			'mvs_activity'                  => 'user_id',
-			'mvs_access_grants'             => 'user_id',
-			'mvs_conversation_participants' => 'user_id',
-			'mvs_mentions'                  => 'mentioned_user_id',
-			'mvs_follows'                   => 'follower_id',
-			'mvs_blocks'                    => 'blocker_id',
-			'mvs_messages'                  => 'sender_id',
-			'mvs_message_reactions'         => 'user_id', // audit 2026-06-04 — was orphaned.
-		);
-		foreach ( $user_scoped_tables as $table => $column ) {
-			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . $table,
-				array( $column => $user_id ),
-				array( '%d' )
-			);
-		}
-
-		// Reverse-side cleanup (the user appears as the target, not the actor).
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_follows',
-			array( 'following_id' => $user_id ),
-			array( '%d' )
-		);
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_blocks',
-			array( 'blocked_id' => $user_id ),
-			array( '%d' )
-		);
-
-		// A notification the deleted user CAUSED ("X liked your photo") carries
-		// their id in actor_id and lives in someone else's queue; the loop above
-		// only cleared rows they RECEIVED (user_id). Erase the actor side too, or
-		// the deleted member stays scattered through other members' notifications
-		// (erase_map lists mvs_notifications = [user_id, actor_id]).
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_notifications',
-			array( 'actor_id' => $user_id ),
-			array( '%d' )
-		);
-
-		// Reports are RETAINED, anonymised — both the report this member filed
-		// (reporter_id) and the report filed ABOUT them (target_type='user',
-		// target_id). The case survives for the moderator; the person is removed
-		// from it. target_id is scoped by target_type so a media/comment report
-		// whose id collides with this user id is never touched.
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_reports',
-			array( 'reporter_id' => 0 ),
-			array( 'reporter_id' => $user_id ),
-			array( '%d' ),
-			array( '%d' )
-		);
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_reports',
-			array( 'target_id' => 0 ),
-			array(
-				'target_type' => 'user',
-				'target_id'   => $user_id,
-			),
-			array( '%d' ),
-			array( '%s', '%d' )
-		);
+		// Phase 2 - erase the member from every mapped table (Free's and every
+		// plugin's that adds to MemberDataMap), the same purge the privacy eraser
+		// runs. Rows a member does not own outright (reports, conversations they
+		// started, ledger rows) are kept and anonymised. Batched per pass, so it
+		// runs until a pass finds nothing; media is left to the cascade above.
+		$this->purge_member_rows( $user_id );
 
 		// Conversations that just lost their last participant are dead shells:
 		// remove them and any residual messages. The per-user purge above clears
 		// participants + messages but never the thread row, so deleting every
-		// member of a conversation previously left an orphaned mvs_conversations
+		// member of a conversation would leave an orphaned mvs_conversations
 		// row behind. This sweeps any now-empty thread (cheap; cleanup path only).
 		$empty_conversation_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			"SELECT c.id FROM {$wpdb->prefix}mvs_conversations c
@@ -414,21 +353,6 @@ class UserDeletionService {
 				array( '%d' )
 			);
 		}
-
-		// The deleted member created conversations that still have other active
-		// participants (the empty-shell sweep above only removed threads with
-		// nobody left). Those shared threads survive, but created_by must not keep
-		// pointing at a deleted account — otherwise GDPRService reports erasure
-		// "done" while the member's id lives on in mvs_conversations.created_by.
-		// Anonymise it: the container stays, the originator is removed (mirrors the
-		// mvs_competitions.winner_id retain policy).
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_conversations',
-			array( 'created_by' => 0 ),
-			array( 'created_by' => $user_id ),
-			array( '%d' ),
-			array( '%d' )
-		);
 
 		// Recompute view aggregates for media the deleted user had viewed, now
 		// that their raw mvs_media_views rows are gone — otherwise the public
@@ -477,7 +401,11 @@ class UserDeletionService {
 		}
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			$this->schedule_cascade_batch( $user_id, array_values( array_map( 'intval', $media_ids ) ) );
+			// Only the user id: each batch re-reads what is still theirs. The id
+			// list must not travel in the job: Action Scheduler refuses
+			// arguments over 8,000 characters, so deleting a member with ~1,100+
+			// media would throw out of the delete.
+			as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
 			return;
 		}
 
@@ -487,41 +415,91 @@ class UserDeletionService {
 	}
 
 	/**
-	 * Enqueue the next cascade batch. Idempotent by construction — each call
-	 * enqueues a fresh AS action carrying only the ids still to process.
+	 * Erase a member from every mapped table, however many rows they have.
 	 *
-	 * @param int   $user_id   Deleted user id.
-	 * @param int[] $media_ids Remaining media ids.
+	 * The purge works in batches; this runs passes until one finds nothing.
+	 * When the request's share runs out with rows left, the rest continues in a
+	 * background job, so erasure never stops part way.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $user_id Member being erased.
 	 */
-	private function schedule_cascade_batch( int $user_id, array $media_ids ): void {
-		if ( empty( $media_ids ) ) {
+	public function purge_member_rows( int $user_id ): void {
+		if ( $user_id <= 0 ) {
 			return;
 		}
-		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $media_ids ), self::AS_GROUP );
+		$purger = new \WPMediaVerse\Privacy\MemberPurger();
+		for ( $pass = 0; $pass < 40; $pass++ ) {
+			$counts = $purger->purge( $user_id );
+			if ( 0 === $counts['removed'] + $counts['retained'] ) {
+				return;
+			}
+		}
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action( self::PURGE_HOOK, array( $user_id ), self::AS_GROUP );
+			return;
+		}
+
+		// No queue: finish now rather than leave rows behind.
+		do {
+			$counts = $purger->purge( $user_id );
+		} while ( $counts['removed'] + $counts['retained'] > 0 );
 	}
 
 	/**
-	 * Action Scheduler callback — deletes one batch of media and re-enqueues
-	 * itself for whatever remains. `delete_cascade()` is a no-op on an id
-	 * that no longer exists, so a retried/duplicated batch is harmless.
+	 * Whether a deletion cascade is still queued for this member's media.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $user_id Member.
+	 * @return bool
+	 */
+	public static function cascade_pending( int $user_id ): bool {
+		return function_exists( 'as_has_scheduled_action' )
+			&& as_has_scheduled_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
+	}
+
+	/**
+	 * Action Scheduler callback: deletes the next batch of the user's media and
+	 * re-enqueues itself while more remain. Re-reading by author means a
+	 * retried or duplicated job is harmless.
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param int   $user_id   Deleted user id (unused here beyond reschedule bookkeeping).
-	 * @param int[] $media_ids Media ids for this cascade run.
+	 * @param int   $user_id   Deleted user id.
+	 * @param int[] $media_ids Ids carried by a job queued before 2.6.2; new jobs
+	 *                         carry none.
 	 */
-	public function process_cascade_batch( int $user_id, array $media_ids ): void {
-		$batch     = array_slice( $media_ids, 0, self::CASCADE_BATCH_SIZE );
-		$remaining = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
+	public function process_cascade_batch( int $user_id, array $media_ids = array() ): void {
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$batch = $media_ids
+			? array_slice( $media_ids, 0, self::CASCADE_BATCH_SIZE )
+			: $repo->author_media_ids( $user_id, self::CASCADE_BATCH_SIZE );
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$deleted = 0;
 		foreach ( $batch as $media_id ) {
-			$repo->delete_cascade( (int) $media_id );
+			$deleted += $repo->delete_cascade( (int) $media_id ) ? 1 : 0;
 		}
 
-		if ( ! empty( $remaining ) ) {
-			$this->schedule_cascade_batch( $user_id, $remaining );
+		if ( $media_ids ) {
+			$rest = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
+			if ( $rest ) {
+				as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $rest ), self::AS_GROUP );
+			}
+			return;
 		}
+
+		if ( count( $batch ) < self::CASCADE_BATCH_SIZE ) {
+			return;
+		}
+		if ( 0 === $deleted ) {
+			// A full batch that deletes nothing would re-read the same ids forever.
+			\WPMediaVerse\Services\LoggerService::error( 'user_deletion', 'Media cascade stopped: a batch deleted nothing.', array( 'user_id' => $user_id ) );
+			return;
+		}
+		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
 	}
 
 	/**

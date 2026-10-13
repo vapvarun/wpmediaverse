@@ -52,14 +52,15 @@ class NotificationService {
 		add_action( 'mvs_user_followed', array( $this, 'on_follow' ), 10, 2 );
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
+		add_action( 'delete_comment', array( $this, 'on_comment_deleted' ), 10, 2 );
+		add_action( 'mvs_conversation_read', array( $this, 'on_conversation_read' ), 10, 2 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
 		add_action( 'mvs_report_resolved', array( $this, 'on_report_resolved' ), 10, 3 );
 		// `mvs_message_sent` is handled by Messaging\NotificationListener (mute,
-		// coalescing, BuddyNext routing, unread-cache). This service used to
-		// ALSO hook it via on_message(), producing a second, un-muted,
-		// un-coalesced notification for every DM (audit 2026-06-04). Listener
-		// owns it; on_message() removed.
+		// coalescing, BuddyNext routing, unread-cache). This service must not
+		// ALSO hook it: that would produce a second, un-muted, un-coalesced
+		// notification for every DM. The listener owns it.
 	}
 
 	/**
@@ -310,7 +311,7 @@ class NotificationService {
 	 *
 	 * Across a block, neither the other member's actions nor anything about
 	 * their items reaches the bell: those rows' title and link point at an item
-	 * that answers 404 (Basecamp 10355130639). Both block columns and the
+	 * that answers 404. Both block columns and the
 	 * index's post_author are indexed.
 	 *
 	 * @param int $user_id Notification recipient.
@@ -407,6 +408,10 @@ class NotificationService {
 	 * @param int $following_id Followed user.
 	 */
 	public function on_follow( int $follower_id, int $following_id ): void {
+		// Unfollow and follow again must not notify twice, as with reactions.
+		if ( $this->already_notified( $following_id, $follower_id, 'new_follower' ) ) {
+			return;
+		}
 		$this->create( $following_id, 'new_follower', $follower_id );
 	}
 
@@ -418,8 +423,34 @@ class NotificationService {
 	 * @param string $type     Reaction type.
 	 */
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
-		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
-		$this->create( $owner, 'media_reaction', $user_id, $media_id );
+		unset( $type );
+		// One "reacted to" per member per item: removing a reaction and reacting
+		// again must not notify the owner twice.
+		$this->notify_owner_once( $media_id, $user_id, 'media_reaction' );
+	}
+
+	/**
+	 * Whether this actor already notified this member of this kind of event
+	 * (about this item, when one is given). Toggling an action off and on must
+	 * not notify twice.
+	 *
+	 * @param int    $user_id  Recipient.
+	 * @param int    $actor_id Actor.
+	 * @param string $type     Notification type.
+	 * @param int    $media_id Item, 0 for none.
+	 */
+	private function already_notified( int $user_id, int $actor_id, string $type, int $media_id = 0 ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		return null !== $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->prefix}mvs_notifications WHERE media_id = %d AND user_id = %d AND actor_id = %d AND type = %s LIMIT 1",
+				$media_id,
+				$user_id,
+				$actor_id,
+				$type
+			)
+		);
 	}
 
 	/**
@@ -435,6 +466,40 @@ class NotificationService {
 	}
 
 	/**
+	 * A deleted media comment takes its notifications with it (reply cascade included).
+	 *
+	 * @param int|string $comment_id Comment being deleted.
+	 * @param mixed      $comment    The comment.
+	 */
+	public function on_comment_deleted( $comment_id, $comment = null ): void {
+		if ( ! $comment instanceof \WP_Comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type ) {
+			return;
+		}
+		$media_id = \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id );
+		if ( $media_id ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_comment_notifications( $media_id, (int) $comment_id );
+		}
+	}
+
+	/**
+	 * Reading a conversation clears its "sent you a message" notifications.
+	 *
+	 * @param int $conversation_id Conversation read.
+	 * @param int $user_id         Reader.
+	 */
+	public function on_conversation_read( int $conversation_id, int $user_id ): void {
+		$senders = array();
+		foreach ( (array) \WPMediaVerse\Core\Plugin::container()->get( 'messaging' )->get_participants( $conversation_id ) as $p ) {
+			if ( (int) ( $p['id'] ?? 0 ) !== $user_id ) {
+				$senders[] = (int) $p['id'];
+			}
+		}
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->mark_notifications_read_from( $user_id, 'new_message', $senders ) ) {
+			wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
+		}
+	}
+
+	/**
 	 * Handle mention notifications.
 	 *
 	 * @param int    $media_id      Media ID.
@@ -447,8 +512,7 @@ class NotificationService {
 
 		// For comment mentions, the media owner already receives a
 		// media_comment row from on_comment() for the SAME comment — sending
-		// a media_mention too means two notifications for one action (QA
-		// 2026-06-05, card 9962124853). Same one-owner-per-path rule as the
+		// a media_mention too means two notifications for one action. Same one-owner-per-path rule as the
 		// DM fix above: on_comment() owns the media owner; on_mentions()
 		// owns everyone else.
 		$owner = 0;
@@ -477,18 +541,24 @@ class NotificationService {
 	 * @param int $user_id  User who favorited.
 	 */
 	public function on_favorite( int $media_id, int $user_id ): void {
-		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
-		$this->create( $owner, 'media_favorite', $user_id, $media_id );
+		$this->notify_owner_once( $media_id, $user_id, 'media_favorite' );
 	}
 
 	/**
-	 * Handle new DM sent event.
+	 * Notify a media item's owner, once per actor and type.
 	 *
-	 * @param int   $message_id      Message ID.
-	 * @param int   $conversation_id Conversation ID.
-	 * @param int   $sender_id       Sender user ID.
-	 * @param int[] $recipient_ids   Recipient user IDs.
+	 * @param int    $media_id Media ID.
+	 * @param int    $actor_id Member who acted.
+	 * @param string $type     Notification type.
 	 */
+	private function notify_owner_once( int $media_id, int $actor_id, string $type ): void {
+		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		if ( $this->already_notified( $owner, $actor_id, $type, $media_id ) ) {
+			return;
+		}
+		$this->create( $owner, $type, $actor_id, $media_id );
+	}
+
 	/**
 	 * Format a notification row for REST output.
 	 *
@@ -501,7 +571,7 @@ class NotificationService {
 
 		// Message + deep link come from the single shared builder so REST
 		// output and the mvs_notification_created hook never drift apart.
-		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id, (int) $row->comment_id );
+		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id, (int) $row->comment_id, (int) $row->user_id );
 
 		return array(
 			'id'         => (int) $row->id,
@@ -518,6 +588,8 @@ class NotificationService {
 			'comment_id' => (int) $row->comment_id,
 			'is_read'    => ! empty( $row->read_at ),
 			'created_at' => $row->created_at,
+			// created_at is UTC; the label is relative, so no timezone guess in the browser.
+			'date_human' => sprintf( /* translators: %s: time span, e.g. "5 mins" */ __( '%s ago', 'wpmediaverse' ), human_time_diff( (int) strtotime( $row->created_at . ' UTC' ), time() ) ),
 		);
 	}
 
@@ -538,13 +610,18 @@ class NotificationService {
 	 * @param int    $media_id  Related media ID (0 if none).
 	 * @param int    $object_id The row's comment_id slot: a comment id, or the
 	 *                          id of whatever a custom type is about.
+	 * @param int    $recipient Member reading it (0 = not known). When set, an
+	 *                          item they may no longer see keeps its title out.
 	 * @return array{message:string,link:string,message_grouped:string}
 	 */
-	public function build_message_and_link( string $type, int $actor_id, int $media_id, int $object_id = 0 ): array {
+	public function build_message_and_link( string $type, int $actor_id, int $media_id, int $object_id = 0, int $recipient = 0 ): array {
 		$actor       = get_userdata( $actor_id );
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
-		if ( $media_id ) {
+		// Read at render time, so the title (and the slug-based link, which spells
+		// it) stays out once the item turned private for this reader.
+		$can_see = $media_id && ( $recipient <= 0 || \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, $recipient ) );
+		if ( $can_see ) {
 			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: '';
 		}
 
@@ -552,7 +629,7 @@ class NotificationService {
 
 		$link = '';
 		if ( $media_id ) {
-			$link = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
+			$link = $can_see ? \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ) : '';
 		} elseif ( 'new_follower' === $type ) {
 			// Route to the canonical author-profile URL — BP profile when BP
 			// is active, plugin's /media/@user/ otherwise. NEVER hard-code

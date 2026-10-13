@@ -81,13 +81,12 @@ class ReportService {
 	 * so the button a member sees and the endpoint it posts to can never
 	 * disagree.
 	 *
-	 * Defaults to ON. Reporting used to default to OFF behind a filter no
-	 * shipped code ever set, which meant every install — Free and Pro alike —
-	 * refused every report with a 403 while Pro still rendered an (always
-	 * empty) User Reports queue. A UGC platform whose members cannot report
-	 * abuse is not shippable, and Apple App Store guideline 1.2 requires a
-	 * working report mechanism, so the default is now on and site owners opt
-	 * *out* via Settings, not in via a mu-plugin.
+	 * Defaults to ON: a default of OFF behind a filter no shipped code sets
+	 * would make every install - Free and Pro alike - refuse every report with
+	 * a 403 while Pro still rendered an (always empty) User Reports queue. A UGC
+	 * platform whose members cannot report abuse is not shippable, and Apple
+	 * App Store guideline 1.2 requires a working report mechanism, so site
+	 * owners opt *out* via Settings, not in via a mu-plugin.
 	 *
 	 * The `mvs_reports_enabled` filter is preserved and still wins, so sites
 	 * that already force it either way keep their behaviour.
@@ -595,7 +594,7 @@ class ReportService {
 	 *
 	 * A block hides both members from each other. Lists that only excluded the
 	 * people a viewer blocked still showed the viewer the media of whoever
-	 * blocked THEM (Basecamp 10354827925). Both columns are indexed.
+	 * blocked THEM. Both columns are indexed.
 	 *
 	 * @since 2.6.0
 	 *

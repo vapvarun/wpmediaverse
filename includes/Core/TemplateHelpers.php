@@ -273,37 +273,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Canonical media-thumbnail renderer — single source of truth for every
-	 * MVS surface (Explore grid, BP activity, album/collection, Pro premium
-	 * layouts, single-media page, block templates).
-	 *
-	 * Always returns **inner** markup the caller wraps in its own `<a>`/link.
-	 * Output is one of:
-	 *   - `<img>` for media with a thumbnail
-	 *   - `<video preload="metadata">` for videos without a thumbnail (the
-	 *     browser paints the first frame — matches the single-media view)
-	 *   - an audio card for audio
-	 *   - a generic dashicon placeholder as last resort
-	 *
-	 * Use this instead of building ad-hoc `<img>` tags in templates so every
-	 * surface handles poster-less videos the same way.
-	 *
-	 * @since 1.1.3
-	 *
-	 * @param int   $media_id Media ID (mvs_media_index.media_id).
-	 * @param array $args     Options:
-	 *                        - 'size'         string WP image size slug (default 'large'). Validated against
-	 *                                                the registered image-size whitelist; invalid values fall
-	 *                                                back to 'large'.
-	 *                        - 'alt'          string Pre-escaped alt-attribute value. Caller MUST escape with
-	 *                                                esc_attr() before passing — the helper does not re-escape.
-	 *                                                When empty, the media's title is fetched and escaped here.
-	 *                        - 'classes'      string Extra classes for the <img>/<video>.
-	 *                        - 'show_play'    bool   Append play-icon overlay for videos (default true).
-	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
-	 * @return string Inner HTML ready for echo.
-	 */
-	/**
 	 * The <track> for a video's captions, or '' when it has none.
 	 *
 	 * Captions are made by Pro (or any provider); Free asks through
@@ -384,6 +353,37 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
 	}
 
+	/**
+	 * Canonical media-thumbnail renderer — single source of truth for every
+	 * MVS surface (Explore grid, BP activity, album/collection, Pro premium
+	 * layouts, single-media page, block templates).
+	 *
+	 * Always returns **inner** markup the caller wraps in its own `<a>`/link.
+	 * Output is one of:
+	 *   - `<img>` for media with a thumbnail
+	 *   - `<video preload="metadata">` for videos without a thumbnail (the
+	 *     browser paints the first frame — matches the single-media view)
+	 *   - an audio card for audio
+	 *   - a generic dashicon placeholder as last resort
+	 *
+	 * Use this instead of building ad-hoc `<img>` tags in templates so every
+	 * surface handles poster-less videos the same way.
+	 *
+	 * @since 1.1.3
+	 *
+	 * @param int   $media_id Media ID (mvs_media_index.media_id).
+	 * @param array $args     Options:
+	 *                        - 'size'         string WP image size slug (default 'large'). Validated against
+	 *                                                the registered image-size whitelist; invalid values fall
+	 *                                                back to 'large'.
+	 *                        - 'alt'          string Pre-escaped alt-attribute value. Caller MUST escape with
+	 *                                                esc_attr() before passing — the helper does not re-escape.
+	 *                                                When empty, the media's title is fetched and escaped here.
+	 *                        - 'classes'      string Extra classes for the <img>/<video>.
+	 *                        - 'show_play'    bool   Append play-icon overlay for videos (default true).
+	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
+	 * @return string Inner HTML ready for echo.
+	 */
 	public function media_thumbnail( int $media_id, array $args = array() ): string {
 		$args = wp_parse_args(
 			$args,
@@ -434,20 +434,19 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				$poster_attr = ' poster="' . esc_url( $poster_url ) . '"';
 				// preload="none" and NO `#t=` fragment, deliberately.
 				//
-				// This used to be preload="metadata" with `#t=0.1` so a bad
-				// poster URL would degrade to the video's own first frame. That
-				// backfired: a video element paints its current frame as soon as
-				// it has one, and the poster is only shown UNTIL then — so the
-				// 0.1s frame was painted over every poster, good ones included.
-				// Any video that opens on a fade-in, a title card or a white
-				// intro therefore rendered a blank tile no matter how good its
-				// poster was, and the bundled fallback below could never be seen
-				// either. That is the "blank video cover" customers report.
+				// A preload="metadata" with a `#t=0.1` fragment would let a bad poster URL
+				// degrade to the video's own first frame, but a video element paints its
+				// current frame as soon as it has one, and the poster is only shown UNTIL
+				// then — so the 0.1s frame would be painted over every poster, good ones
+				// included. Any video that opens on a fade-in, a title card or a white
+				// intro would then render a blank tile no matter how good its poster was,
+				// and the bundled fallback below could never be seen either. That is the
+				// "blank video cover" customers report.
 				//
 				// $poster_url is never empty — it falls back to the bundled SVG
 				// on this very line above — so there is nothing left for the
-				// frame-grab to rescue. Dropping it also means a grid of videos
-				// no longer fetches a moov atom per tile.
+				// frame-grab to rescue. Omitting it also means a grid of videos
+				// does not fetch a moov atom per tile.
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
 			// No streamable URL (the viewer may not stream the file). Show the
@@ -681,7 +680,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * wordings across eight render sites - "Members", "Members Only",
 	 * "Members Only - logged-in users" and "Members: logged-in users only" - and
 	 * the bare "Members" reads as "followers only" to a member choosing it,
-	 * which has already produced a false bug report (Basecamp 10286023341).
+	 * which has already produced a false bug report.
 	 * The explicit wording came from the upload picker, which was the only
 	 * surface that had it.
 	 *
@@ -834,7 +833,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * One emitter rather than per-surface copies: the toggle shipped only on the
 	 * Upload page, so the dashboard popup, the FAB modal and the BuddyPress tab
 	 * silently could not create a story. The Pro + setting guard lives here too,
-	 * so a surface cannot forget it. Basecamp 10313107097.
+	 * so a surface cannot forget it.
 	 *
 	 * Surfaces driven by the Interactivity API pass their own store action in
 	 * $on_change; classic-JS surfaces (the BuddyPress tab) pass '' and read the
@@ -864,14 +863,14 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * Pro owns stories, so a Free-only site must not be offered the checkbox:
 	 * the upload succeeds and no story is ever created, which reads as broken
-	 * rather than absent. Basecamp #10156642726.
+	 * rather than absent.
 	 *
 	 * @since 2.5.1
 	 *
 	 * @return bool
 	 */
 	public static function stories_available(): bool {
-		return defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stories_enabled', '0' );
+		return \WPMediaVerse\Core\Plugin::is_pro_active() && '1' === get_option( 'mvs_stories_enabled', '0' );
 	}
 
 	public static function privacy_options( string $selected = '' ): void {
@@ -881,7 +880,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// anything an import or the REST write set) is shown as a disabled
 		// option rather than leaving the select blank. Before this, an owner
 		// opening their own item saw an empty privacy field with no way to read
-		// what it was currently set to. Basecamp 10290748981.
+		// what it was currently set to.
 		if ( '' !== $selected && ! isset( $choices[ $selected ] ) ) {
 			printf(
 				'<option value="%s" selected disabled>%s</option>',
@@ -1109,7 +1108,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * primary (JPEG/PNG) URL.
 	 *
 	 * Single implementation behind `get_webp_variant_url()` and
-	 * `get_avif_variant_url()`, which previously differed only by format.
+	 * `get_avif_variant_url()`, which differ only by format.
 	 *
 	 * Resolution mirrors the primary path in
 	 * `SignedUrlService::maybe_direct_cloud_thumbnail_url()`, because the two
@@ -1125,10 +1124,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *      `MediaVariantWriter::path_meta_ok()` deliberately skips because
 	 *      their `file_path` is absolute.
 	 *
-	 * Then one invariant, which is the actual fix for Basecamp #10162798416:
-	 * **never emit a variant on a different host from the primary.** Before
-	 * this, a Bunny-CDN JPEG was paired with the stale local `_webp` URL, which
-	 * points inside wp-content/uploads/wpmediaverse/ -- the directory MediaVerse
+	 * Then one invariant: **never emit a variant on a different host from the
+	 * primary.** Otherwise a Bunny-CDN JPEG is paired with the stale local `_webp`
+	 * URL, which points inside wp-content/uploads/wpmediaverse/ -- the directory MediaVerse
 	 * itself locks with `Deny from all` -- so every WebP returned 403 on Apache
 	 * (AH01797) and rendered as a broken image. The host check is deliberately
 	 * broader than the CDN case: it also covers any future arrangement where
@@ -1252,7 +1250,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 	/**
 	 * Thin wrapper around media_thumbnail() kept for backward compatibility
-	 * with callers that used to pass positional args.
+	 * with callers that pass positional args.
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $size     WP image size.
@@ -1275,20 +1273,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		);
 	}
 
-	/**
-	 * Render a complete grid item (thumbnail + overlay + info row).
-	 *
-	 * Reads media data from mvs_media_index via MediaRepository -- no get_post().
-	 *
-	 * @param int   $media_id Media ID (mvs_media_index.media_id).
-	 * @param array $stats    Optional stats array with 'views', 'reactions', 'comments' keys.
-	 * @param array $options  Optional rendering options:
-	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
-	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
-	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
-	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
-	 *                        - 'size' (string) Image size. Default 'medium'.
-	 */
 	/**
 	 * The aspect-ratio style a justified grid item carries.
 	 *
@@ -1332,6 +1316,21 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return ' style="--mvs-ar:' . esc_attr( (string) $ratio ) . '"';
 	}
 
+	/**
+	 * Render a complete grid item (thumbnail + overlay + info row).
+	 *
+	 * Reads media data from mvs_media_index via MediaRepository -- no get_post().
+	 *
+	 * @param int   $media_id Media ID (mvs_media_index.media_id).
+	 * @param array $stats    Optional stats array with 'views', 'reactions', 'comments' keys.
+	 * @param array $options  Optional rendering options:
+	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
+	 *                        - 'show_overlay' (bool) Show stats overlay on hover. Default true.
+	 *                        - 'data_attrs' (array) Extra data-* attributes for the grid item div.
+	 *                        - 'bulk' (bool) Render the bulk-select control. Default false.
+	 *                        - 'gallery_filter' (array) The listing's MediaRepository::gallery_filter_args(), so the badge counts what the listing shows.
+	 *                        - 'size' (string) Image size. Default 'medium'.
+	 */
 	public function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
@@ -1365,23 +1364,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			$data_str .= ' data-' . esc_attr( $key ) . '="' . esc_attr( $val ) . '"';
 		}
 
-		// Check if this is a gallery group cover.
-		$media_group = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
-		$group_count = 0;
-		$is_gallery  = false;
-		if ( $media_group ) {
-			$is_gallery  = true;
-			$group_count = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'group_count_cache' );
-			if ( ! $group_count ) {
-				global $wpdb;
-				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						$media_group
-					)
-				);
-			}
-		}
+		// A gallery cover badges the items it stands for; any other tile stands
+		// for itself (MediaRepository::gallery_tile_counts()).
+		$group_count = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( $media_id ), null, (array) ( $options['gallery_filter'] ?? array() ) )[ $media_id ] ?? 0 );
+		$is_gallery  = $group_count > 1;
 
 		$item_class = 'mvs-grid-item' . ( $is_gallery ? ' mvs-grid-item--gallery' : '' );
 
@@ -1461,8 +1447,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$this->render_grid_thumbnail( $media_id, $size );
 
 		// Gallery badge showing item count.
-		if ( $is_gallery && $group_count > 1 ) {
-			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
+		if ( $is_gallery ) {
+			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( /* translators: %d: number of items in the gallery. */ _n( '%d item', '%d items', $group_count, 'wpmediaverse' ), $group_count ) ) . '">';
 			echo '<span class="mvs-icon"><i data-lucide="images" aria-hidden="true"></i></span> ' . esc_html( $group_count );
 			echo '</span>';
 		}
@@ -1472,7 +1458,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			 * Lucide, not emoji. These three were `&#x1F441;&#xFE0F;` /
 			 * `&#x2764;&#xFE0F;` / `&#x1F4AC;` — entity-encoded, which is why a
 			 * grep for literal emoji reported this file clean and the card was
-			 * closed while they were still rendering (Basecamp 10253006229).
+			 * closed while they were still rendering.
 			 *
 			 * They are chrome, not content: labels for a count, unlike the
 			 * lightbox reactions where the emoji IS the thing being counted.
@@ -1481,15 +1467,83 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			 * itself as "title 👁️ 1 ❤️ 0 💬 0". Icons are aria-hidden and each
 			 * stat carries a real label instead.
 			 */
-			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
-			if ( $views ) {
-				echo '<span class="mvs-grid-stat">';
-				echo '<i data-lucide="eye" aria-hidden="true"></i>';
-				/* translators: %s: number of views. */
-				echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s view', '%s views', (int) $views, 'wpmediaverse' ), number_format_i18n( $views ) ) ) . '</span>';
-				echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $views ) ) . '</span>';
-				echo '</span>';
-			}
+			echo '<div class="mvs-grid-item-overlay">';
+			$this->render_grid_stats( (int) $views, (int) $reactions, (int) $comments );
+			echo '</div>';
+		}
+
+		echo '</a>';
+
+		$this->render_grid_meta(
+			$media_id,
+			$mvs_link_name,
+			array(
+				'views'     => $views,
+				'reactions' => $reactions,
+				'comments'  => $comments,
+			),
+			$show_author ? (int) $author_id : 0
+		);
+
+		echo '</div>';
+	}
+
+	/**
+	 * What a tile prints under its link: title, date and counts (the List layout
+	 * shows these; grids keep counts in the hover overlay), then the uploader.
+	 * One emitter for every grid that prints tiles, so List reads the same everywhere.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int               $media_id  Media id.
+	 * @param string            $name      Title shown in the row.
+	 * @param array<string,int> $stats     views, reactions, comments.
+	 * @param int               $author_id Uploader; 0 prints no uploader.
+	 */
+	public function render_grid_meta( int $media_id, string $name, array $stats, int $author_id ): void {
+		$created = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'created_at' );
+		echo '<div class="mvs-grid-item-details">';
+		echo '<span class="mvs-grid-item-name">' . esc_html( $name ) . '</span>';
+		if ( '' !== $created ) {
+			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( mysql2date( 'c', $created ) ) . '">' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $created ) ) ) . '</time>';
+		}
+		$this->render_grid_stats( (int) ( $stats['views'] ?? 0 ), (int) ( $stats['reactions'] ?? 0 ), (int) ( $stats['comments'] ?? 0 ) );
+		echo '</div>';
+
+		if ( ! $author_id ) {
+			return;
+		}
+		// Plain name only: badges belong on author-focused surfaces. Outside the
+		// media permalink, so the profile link does not nest.
+		$author_url  = $this->get_user_profile_url( $author_id );
+		$author_name = $this->get_display_name_plain( $author_id );
+		echo '<div class="mvs-grid-item-info">';
+		echo '' !== $author_url ? '<a class="mvs-grid-item-author-link" href="' . esc_url( $author_url ) . '">' : '';
+		echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
+		echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
+		echo '' !== $author_url ? '</a>' : '';
+		echo '</div>';
+	}
+
+	/**
+	 * A tile's counts: views (when any), reactions, comments.
+	 *
+	 * Lucide icons, aria-hidden, each count with a real label for screen readers.
+	 *
+	 * @param int $views     Views.
+	 * @param int $reactions Reactions.
+	 * @param int $comments  Comments.
+	 */
+	private function render_grid_stats( int $views, int $reactions, int $comments ): void {
+		echo '<div class="mvs-grid-item-stats">';
+		if ( $views ) {
+			echo '<span class="mvs-grid-stat">';
+			echo '<i data-lucide="eye" aria-hidden="true"></i>';
+			/* translators: %s: number of views. */
+			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s view', '%s views', (int) $views, 'wpmediaverse' ), number_format_i18n( $views ) ) ) . '</span>';
+			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $views ) ) . '</span>';
+			echo '</span>';
+		}
 			echo '<span class="mvs-grid-stat">';
 			echo '<i data-lucide="heart" aria-hidden="true"></i>';
 			/* translators: %s: number of reactions. */
@@ -1502,34 +1556,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			echo '<span class="mvs-sr-only">' . esc_html( sprintf( _n( '%s comment', '%s comments', (int) $comments, 'wpmediaverse' ), number_format_i18n( $comments ) ) ) . '</span>';
 			echo '<span aria-hidden="true">' . esc_html( number_format_i18n( $comments ) ) . '</span>';
 			echo '</span>';
-			echo '</div></div>';
-		}
-
-		echo '</a>';
-
-		if ( $show_author && $author_id ) {
-			// Plain name only — badges belong on author-focused surfaces
-			// (single-media header, lightbox), not on every grid thumbnail.
-			// The avatar + name link to the uploader's profile (BuddyPress, or
-			// the /media/@user fallback) so visitors can reach the poster from
-			// the grid, matching the single-media header (card #9962508646).
-			// This block is OUTSIDE the media permalink <a> above, so the
-			// profile link does not nest.
-			$author_url  = $this->get_user_profile_url( $author_id );
-			$author_name = $this->get_display_name_plain( $author_id );
-			echo '<div class="mvs-grid-item-info">';
-			if ( '' !== $author_url ) {
-				echo '<a class="mvs-grid-item-author-link" href="' . esc_url( $author_url ) . '">';
-				echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-				echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
-				echo '</a>';
-			} else {
-				echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-				echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
-			}
-			echo '</div>';
-		}
-
 		echo '</div>';
 	}
 
@@ -1567,38 +1593,16 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Resolve the parent route for a detail/edit page so the template can render
-	 * a back-link in its header.
-	 *
-	 * Defined by docs/MOBILE_UX_GUIDELINE.md §6.3. Pages call this with a
-	 * context string and receive a `[ 'url' => ..., 'label' => ... ]` pair (or
-	 * null if the parent can't be resolved — in which case the template should
-	 * skip the back link instead of rendering a broken one).
-	 *
-	 * Pro extensions can register their own contexts via the
-	 * `mvs_parent_route` filter, applied at the end of this method.
-	 * (This block used to name `mvs_parent_url`, a filter that has never
-	 * existed anywhere in either plugin; the docs copied the wrong name from
-	 * here, so it is corrected at the source.)
-	 *
-	 * @param string $context Page context — one of:
-	 *                        'single-media', 'album', 'edit-profile',
-	 *                        'challenge', 'battle', 'tournament'.
-	 * @param array  $args    Optional context-specific args (e.g. media_id).
-	 * @return array{url: string, label: string}|null
-	 */
-	/**
 	 * Resolve the canonical Explore page URL.
 	 *
 	 * Prefers the configured `mvs_page_explore` page permalink (matching
 	 * OverviewPage / SetupWizard), falling back to the /media/ rewrite only when
-	 * no explore page exists. The back-link previously hardcoded /media/, which
-	 * sent users to the rewrite instead of the real page on sites whose explore
+	 * no explore page exists. The back-link must not hardcode /media/, which
+	 * sends users to the rewrite instead of the real page on sites whose explore
 	 * page has a different slug (e.g. /explore-media/).
 	 *
 	 * The ONE place that answers "where is Explore". Templates in both plugins
 	 * link here instead of spelling /media/, which a mapped page now redirects
-	 * (Basecamp 10344452624).
 	 *
 	 * @since 2.6.0 public (was the private resolve_explore_url()).
 	 *
@@ -1622,7 +1626,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * because `s` is a RESERVED WordPress query var: on a real page (a mapped
 	 * Explore page, or the front page) `?s=` turns the request into the site's
 	 * own search. `s` is still read so old /media/?s= links keep working
-	 * (Basecamp 10344452624).
 	 *
 	 * @since 2.6.0
 	 *
@@ -1691,6 +1694,25 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		);
 	}
 
+	/**
+	 * Resolve the parent route for a detail/edit page so the template can render
+	 * a back-link in its header.
+	 *
+	 * Defined by docs/MOBILE_UX_GUIDELINE.md §6.3. Pages call this with a
+	 * context string and receive a `[ 'url' => ..., 'label' => ... ]` pair (or
+	 * null if the parent can't be resolved — in which case the template should
+	 * skip the back link instead of rendering a broken one).
+	 *
+	 * Pro extensions can register their own contexts via the
+	 * `mvs_parent_route` filter, applied at the end of this method.
+	 * (The filter is `mvs_parent_route`; there is no `mvs_parent_url`.)
+	 *
+	 * @param string $context Page context — one of:
+	 *                        'single-media', 'album', 'edit-profile',
+	 *                        'challenge', 'battle', 'tournament'.
+	 * @param array  $args    Optional context-specific args (e.g. media_id).
+	 * @return array{url: string, label: string}|null
+	 */
 	public function get_parent_route( string $context, array $args = array() ): ?array {
 		$parent = null;
 
@@ -1709,7 +1731,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// there — not to the public Explore Documents listing, which
 					// excludes private rows and would drop them on an empty "No
 					// documents" grid the instant after previewing their own
-					// private file (Basecamp 10230967864). Everyone else (a
+					// private file. Everyone else (a
 					// non-owner member, a logged-out viewer) gets the public
 					// listing, which is the only documents surface they share.
 					$viewer = get_current_user_id();
@@ -1968,7 +1990,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 	/**
 	 * When members cannot choose privacy, the line that tells them who will see
-	 * their upload instead of a missing control (Basecamp 10364776646).
+	 * their upload instead of a missing control.
 	 *
 	 * @since 2.6.1
 	 * @return string Escaped HTML, or '' when the member chooses per upload.
@@ -2170,7 +2192,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// call sites hand over the same hard-coded Newest/Oldest pair, which is
 		// precisely the defect. A caller that genuinely needs its own wording
 		// uses the mvs_direction_labels filter, which knows the field.
-		// Basecamp 10297765808.
 		if ( ! empty( $args['order'] ) && is_array( $args['order'] ) && ! empty( $args['sort']['value'] ) ) {
 			$args['order']['options'] = $this->direction_labels( (string) $args['sort']['value'] );
 		}
@@ -2223,22 +2244,13 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * One labelled select in the toolbar.
-	 *
-	 * @since 2.4.0
-	 *
-	 * @param string $id     Id prefix.
-	 * @param array  $select Select config.
-	 * @return string
-	 */
-	/**
 	 * Direction labels that match the field being sorted.
 	 *
 	 * Every toolbar offered "Newest first / Oldest first" whatever the sort
 	 * was, so Explore sorted by Title labelled A-Z as "Newest first", the drive
 	 * sorted by Size called largest-first "Newest", and Trending had an
 	 * "Oldest first" that means nothing at all. Seven call sites shared one
-	 * hard-coded pair. Basecamp 10297765808.
+	 * hard-coded pair.
 	 *
 	 * Derived from what the field IS, not from a list of field names: anything
 	 * unrecognised falls back to the ascending/descending pair, which is true
@@ -2289,6 +2301,15 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return (array) apply_filters( 'mvs_direction_labels', $labels, $field );
 	}
 
+	/**
+	 * One labelled select in the toolbar.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $id     Id prefix.
+	 * @param array  $select Select config.
+	 * @return string
+	 */
 	private function toolbar_select( string $id, array $select ): string {
 		$name    = isset( $select['name'] ) ? (string) $select['name'] : '';
 		$label   = isset( $select['label'] ) ? (string) $select['label'] : '';
@@ -2371,9 +2392,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
 		$message = isset( $args['message'] ) ? (string) $args['message'] : '';
 
-		// The markup admin.css styles (icon, h3, p). The helper used to emit
-		// <p> titles with classes no stylesheet defined, so nothing used it and
-		// every admin screen hand-rolled its own (Basecamp 10350404627).
+		// The markup admin.css styles (icon, h3, p). Emitting <p> titles with
+		// classes no stylesheet defines would leave nothing using the helper and
+		// every admin screen hand-rolling its own.
 		$html  = '<div class="mvs-empty-state-admin" role="status">';
 		$html .= '<i data-lucide="' . esc_attr( $icon ) . '" aria-hidden="true"></i>';
 		if ( '' !== $title ) {
@@ -2396,7 +2417,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * state; the store reads state.i18n.<key> with an English fallback. Called
 	 * before the first data-wp-interactive="mvs/media-social" root element in
 	 * media-single.php and album.php so the state is seeded during render.
-	 * Basecamp 10073528834.
 	 *
 	 * @return void
 	 */
@@ -2416,7 +2436,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// The favourite button's accessible name, which has to change
 					// with the state. Only its CSS class moved before, so a screen
 					// reader heard "Add to favorites" whether or not the item was
-					// already a favourite. Basecamp 10297839293.
+					// already a favourite.
 					'addToFavorites'       => __( 'Add to favorites', 'wpmediaverse' ),
 					'removeFromFavorites'  => __( 'Remove from favorites', 'wpmediaverse' ),
 					// Comments.
@@ -2424,14 +2444,13 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'commentPostFailed'    => __( 'Could not post comment.', 'wpmediaverse' ),
 					'commentUpdated'       => __( 'Comment updated.', 'wpmediaverse' ),
 					'editFailed'           => __( 'Edit failed.', 'wpmediaverse' ),
-					'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
 					'commentDeleted'       => __( 'Comment deleted.', 'wpmediaverse' ),
 					// Share.
 					'shareCopied'          => __( '✓ Copied!', 'wpmediaverse' ),
 					'linkCopiedClipboard'  => __( 'Link copied to clipboard!', 'wpmediaverse' ),
 					// Plain text — the share button's <i data-lucide="share-2"> supplies
 					// the icon, so an emoji here re-created the double-icon two seconds
-					// after every share (card 10127321228).
+					// after every share.
 					'shareResetLabel'      => __( 'Share', 'wpmediaverse' ),
 					'copyLinkFailed'       => __( 'Could not copy link. Please copy the URL manually.', 'wpmediaverse' ),
 					// Follow.
@@ -2462,8 +2481,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * an English fallback and appends the formatted timestamp itself. Called
 	 * before the first data-wp-interactive="mvs/media-player" root element in
 	 * media-single.php and the media-player block's render.php so the state
-	 * is seeded during render. Mirrors media_social_i18n_state() (Basecamp
-	 * 10073528834).
+	 * is seeded during render. Mirrors media_social_i18n_state().
 	 *
 	 * @return void
 	 */

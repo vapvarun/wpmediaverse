@@ -1,6 +1,8 @@
 # Pro REST API Reference
 
-> Endpoints marked **(Pro)** require MediaVerse Pro. Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later - check your installed Pro version if a route 404s.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
+
+Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later - check your installed Pro version if a route 404s.
 
 **Base URL:** `/wp-json/mvs-pro/v1/`
 

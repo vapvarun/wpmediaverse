@@ -94,7 +94,7 @@ class CapabilitiesTest extends WP_UnitTestCase {
 	 * Fails the moment a capability is granted to a role but not covered by
 	 * `all_caps()` - which is what uninstall removes. Without this, drift is
 	 * only visible by inspecting a role table after uninstalling, and nobody
-	 * does that (Basecamp 10296868773, 10298133325).
+	 * does that.
 	 */
 	public function test_every_granted_cap_is_removable(): void {
 		$granted = array();

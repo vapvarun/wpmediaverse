@@ -99,7 +99,7 @@ class PrivacyTest extends WP_UnitTestCase {
 	/**
 	 * privacy=space resolves through the drive bridge — and ONLY through it.
 	 *
-	 * The bug this pins (Basecamp 10220491230): media rows were never stamped
+	 * The bug this pins: media rows were never stamped
 	 * with a drive, so check_space() early-returned on drive_type=user and the
 	 * bridge was never asked. `space` was accepted on write and behaved as
 	 * private forever, for everyone but the owner.

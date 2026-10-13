@@ -11,8 +11,8 @@ use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
 
 /**
- * Basecamp 10350404627. The helper used to emit <p> titles with classes no
- * stylesheet defined, so nothing called it and every screen hand-rolled its own.
+ * The helper emits titles with classes a stylesheet defines, so screens call it
+ * instead of hand-rolling their own empty state.
  */
 class AdminEmptyStateTest extends WP_UnitTestCase {
 

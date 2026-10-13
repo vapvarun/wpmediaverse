@@ -4,7 +4,7 @@
 
 **Authority**: This contract is enforced by `bin/architecture-checks.sh` (Pro plugin) and consumed by both plugins' local-CI gate. Findings that violate the contract block release.
 
-**Companion data** (both live in the Free plugin - Pro is deliberately doc-free):
+**Companion data** (both live in the Free plugin; Pro keeps no architecture docs):
 - `audit/pro/manifests/manifest.json` - Pro's surface (REST, hooks, admin pages, free_filters_hooked, free_services_consumed)
 - `audit/manifests/manifest.json` - Free's surface
 - `bin/hook-manifest-drift.php` - compares both manifests against the code in both directions (fired-but-undocumented, documented-but-never-fired)
@@ -21,7 +21,7 @@ Free must function with `defined('MVS_PRO_VERSION') === false`. Free MAY check f
 
 ### Invariant 2: Pro waits for Free deterministically
 
-Pro's bootstrap (`wpmediaverse-pro.php`) registers a callback on `do_action('mvs_loaded')`, which Free fires after its ServiceContainer is fully populated. Pro MUST NOT instantiate any class that consumes Free services before this hook fires. Pro's `Plugins-Required: WPMediaVerse` header (or activation guard) handles the must-have side; the runtime gate handles the timing side.
+Pro's bootstrap (`wpmediaverse-pro.php`) registers a callback on `do_action('mvs_loaded')`, which Free fires after its ServiceContainer is fully populated. Pro MUST NOT instantiate any class that consumes Free services before this hook fires. Pro's `Requires Plugins: wpmediaverse` header and its boot guard handle the must-have side; the runtime gate handles the timing side.
 
 **Enforcement**: `check_a2_pro_boots_via_mvs_loaded` - confirm `add_action('mvs_loaded', ...)` exists in `wpmediaverse-pro.php`.
 
@@ -45,7 +45,7 @@ Free registers under `mvs/v1`; Pro registers under `mvs-pro/v1`. Separate namesp
 
 ### Invariant 6: DB boundary
 
-Free owns 23 `mvs_*` tables; Pro owns 13. Cross-plugin writes go through the owner's manager class (e.g., Pro uses `MediaRepository::insert_media()` to add media rows, never raw `INSERT INTO wp_mvs_media_index`). Pro tables are documented in `audit/pro/manifests/manifest.tables.json` - note that only four of them carry an `mvs_pro_` prefix, so name alone does not tell you the owner.
+Free owns the tables in `Migrator::tables()`; Pro owns the ones its own `includes/Core/Migrator.php` creates (`grep -c 'CREATE TABLE' includes/Core/Migrator.php` in each plugin). Cross-plugin writes go through the owner's manager class (e.g., Pro uses `MediaRepository::insert_media()` to add media rows, never raw `INSERT INTO wp_mvs_media_index`). Pro tables are documented in `audit/pro/manifests/manifest.tables.json` - note that only four of them carry an `mvs_pro_` prefix, so name alone does not tell you the owner.
 
 **Enforcement**: `check_a6_pro_does_not_write_free_tables` - grep Pro's `includes/` for `INSERT INTO|UPDATE|DELETE FROM` against Free table names. Skip read queries - they're allowed.
 
@@ -71,7 +71,7 @@ When Pro checks a Free-owned capability (e.g., `moderate_mvs_media`), it MUST al
 
 Free's wp_enqueue_* handles use the prefix `mvs-`. Pro's use `mvs-pro-`. Shared third-party libs (e.g., chart.js) are registered ONCE by the lower-numbered owner (Free if both ship the same lib). Pro's enqueue is conditional: `wp_script_is('mvs-chartjs', 'registered')` short-circuits a duplicate register.
 
-**Enforcement**: `check_a10_pro_handles_prefixed` - grep Pro's `wp_enqueue_*` and `wp_register_*` calls; flag handles not starting with `mvs-pro-` (with exception list for known shared deps).
+**Enforcement**: Manual review. `bin/architecture-checks.sh` has no A10 function yet; the script marks it TODO.
 
 ### Invariant 11: Hook arg-signature compatibility
 
@@ -85,7 +85,7 @@ For every Pro listener consuming a Free hook (cross-referenced from the two `man
 
 - License logic lives in Pro only - `includes/License/License.php` (read-only status wrapper over the EDD SL SDK options) and `includes/Core/LicenseManager.php` (the activate/deactivate form and settings tab). Free has none.
 - The licence is an **updates gate, not a feature gate**: `License::is_valid()` drives the settings badge and the update channel, never feature registration. The single exception is `Documents\DocumentLicense`, which refuses document WRITES on a lapsed licence while leaving reads, route registration and admin-capability holders untouched. Do not add a second one.
-- Signed-URL signing key MUST NOT be exposed to Pro - Pro requests signed URLs through Free's `SignedUrlService::sign($media_id)` API.
+- Signed-URL signing key MUST NOT be exposed to Pro - Pro requests signed URLs through Free's `SignedUrlService::generate()` / `generate_thumbnail()` API.
 - Nonces created in Pro with `wp_create_nonce('mvs_pro_*')` MUST be verified with the same action name; never share nonces across plugin boundaries.
 
 ## Part C - Performance
@@ -100,7 +100,7 @@ For every Pro listener consuming a Free hook (cross-referenced from the two `man
 
 ## Part E - Compatibility
 
-- Both plugins target PHP ≥ 7.4 and WP ≥ 6.5. Any version bump in one MUST be coordinated with the other. The lower of the two governs the tested matrix.
+- Both plugins target PHP 8.1 (supported range 8.1-8.5) and WP ≥ 6.5. The `Requires PHP` header in each main file is the source; `BootGuardTest` keeps the code in step with it. Any version bump in one MUST be coordinated with the other. The lower of the two governs the tested matrix.
 
 ## Part F - Lifecycle
 
@@ -122,6 +122,6 @@ Before merging a PR that touches the Free/Pro boundary:
 
 ## Skipped invariants (do not apply to ServiceContainer DI)
 
-None. All 11 invariants apply. Specifically NOT skipped despite the briefing's mention: invariants 3 and 9 use manual review (no automated check) but they're applicable; the script skips automation, not enforcement.
+None. All 11 invariants apply. Invariants 3, 9 and 10 use manual review (no automated check); the script skips automation, not enforcement.
 
-The skill's Phase 2.5.11–2.5.14 (adapter/registry undefined-call detection, registry bypasses, suppressed baseline inventory, registry strategy classification) ARE skipped - Pro's Quota module has an `Adapters/` directory but those are integration shims (MemberPress, PMP, WC), not registry-pattern slots. There's no `Adapter` interface that abstracts a swappable implementation in WPMediaVerse Pro.
+Adapter/registry checks do not apply: Pro has no `Adapters/` directory and no swappable-implementation interface of its own. Its extension seams are the Free-owned `StorageDriverInterface` and `AIProviderInterface`.

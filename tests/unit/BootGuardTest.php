@@ -2,9 +2,9 @@
 /**
  * The plugin fails to boot without taking the site down.
  *
- * The autoloader used to be wrapped in a bare `file_exists()` that skipped the
- * require and let execution continue, even though every line after it names a
- * class the autoloader provides. Replicated 2026-08-13 by moving `vendor/`
+ * The autoloader must not sit behind a bare `file_exists()` that skips the
+ * require and lets execution continue, since every line after it names a
+ * class the autoloader provides. Moving `vendor/`
  * aside: HTTP 500 on the front page, HTTP 500 on `wp-admin/plugins.php` — the
  * screen an owner would use to switch the plugin off — and WP-CLI refusing to
  * start at all ("Callable WPMediaVerse\CLI\Commands does not exist"). Every
@@ -69,7 +69,7 @@ class BootGuardTest extends WP_UnitTestCase {
 	 * Free and Pro release in lockstep, and Free warns when Pro is older than
 	 * MVS_MIN_PRO. 2.6.0 shipped with it still at 2.1.0, so Free 2.6.0 with Pro
 	 * 2.5.1 raised no notice while the old Pro storage screen read a table 2.6.0
-	 * had removed (Basecamp 10355536157).
+	 * had removed.
 	 */
 	public function test_minimum_pro_matches_this_minor_release(): void {
 		$minor = static fn( string $v ): string => implode( '.', array_slice( explode( '.', $v ), 0, 2 ) );

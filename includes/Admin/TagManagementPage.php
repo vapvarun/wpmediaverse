@@ -247,7 +247,7 @@ class TagManagementPage {
 					<?php
 					// `no-items` + `colspanchange` are core's own empty-row classes: without
 					// them core's phone-width list-table CSS shrank this cell to one
-					// column and pushed the message off-centre (Basecamp 10350404627).
+					// column and pushed the message off-centre.
 					$mvs_searching = '' !== ( isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 					?>
 					<tr class="no-items">
@@ -335,7 +335,7 @@ class TagManagementPage {
 				<?php
 				// Core's phone-width list-table pattern: below 782px Count and Actions
 				// collapse, and this button (wired by core's common.js) expands the
-				// row so Edit and Delete stay reachable (Basecamp 10355019169).
+				// row so Edit and Delete stay reachable.
 				?>
 				<button type="button" class="toggle-row"><span class="screen-reader-text"><?php esc_html_e( 'Show more details', 'wpmediaverse' ); ?></span></button>
 			</td>
@@ -789,9 +789,9 @@ class TagManagementPage {
 		}
 
 		// Get media items with this tag, ONE PAGE at a time — a tag on a
-		// large library can link thousands of items, and the edit screen
-		// used to load every one of them (plus a get_all() call per item)
-		// on a single request.
+		// large library can link thousands of items, and loading every one
+		// of them (plus a get_all() call per item) on a single request
+		// would not scale.
 		$media_per_page = self::PER_PAGE;
 		$media_paged    = isset( $_GET['media_paged'] ) ? max( 1, absint( $_GET['media_paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
 		$media_offset   = ( $media_paged - 1 ) * $media_per_page;

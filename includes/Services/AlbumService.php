@@ -75,7 +75,7 @@ class AlbumService {
 		// Only a PRIVACY-ONLY stub row may answer here. A row carrying a
 		// media_type is a real media item that merely shares this album's
 		// integer, and its privacy is not the album's - reading it is the
-		// collision this docblock warns about. Basecamp 10298525085.
+		// collision this docblock warns about.
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 		if ( '' !== (string) $repo->get( $album_id, 'media_type' ) ) {
@@ -102,10 +102,9 @@ class AlbumService {
 		// Every photo in an album shows with the album's privacy, in BOTH
 		// directions: making an album private hides its photos, making it public
 		// again brings them back. Each photo keeps the member's own choice aside
-		// (OWN_PRIVACY_META) and gets it back when it leaves the album. Before
-		// 2.6.0 this was a one-way clamp that overwrote the photo's own choice,
-		// so re-publishing an album left every photo private forever
-		// (Basecamp 10264373450; owner decision 2026-09-27).
+		// (OWN_PRIVACY_META) and gets it back when it leaves the album. A one-way
+		// clamp would overwrite the photo's own choice, so re-publishing
+		// an album would leave every photo private forever.
 		$this->apply_album_privacy( $album_id, $this->member_ids( $album_id ) );
 	}
 
@@ -124,7 +123,7 @@ class AlbumService {
 	 * Batched: one prefetch for the reads, one upsert for the set-aside
 	 * choices and one UPDATE per 500 photos for the privacy. Every photo whose
 	 * privacy changes still fires `mvs_media_privacy_changed`, so storage and
-	 * activity listeners run exactly as for a single write (Basecamp 10344644266).
+	 * activity listeners run exactly as for a single write.
 	 *
 	 * @since 2.6.0 Replaces the one-way clamp_items_privacy().
 	 *
@@ -140,7 +139,7 @@ class AlbumService {
 		// A member the owner has locked out of choosing privacy does not change
 		// a photo's privacy through an album either. Keyed on the ACTING user,
 		// so a manager editing the album still applies it, and so does a system
-		// caller with no user (imports, WP-CLI, cron). Basecamp 10320619418.
+		// caller with no user (imports, WP-CLI, cron).
 		$actor_id = get_current_user_id();
 		if ( $actor_id > 0 && ! PrivacyService::user_may_choose_privacy( $actor_id ) ) {
 			return;
@@ -254,7 +253,7 @@ class AlbumService {
 	 * @return bool True when the photo is in an album and the choice was kept aside.
 	 */
 	public function keep_own_privacy_if_in_album( int $media_id, string $privacy ): bool {
-		$album_id = (int) ( $this->albums_for_media( $media_id )[0] ?? 0 );
+		$album_id = $this->album_of( $media_id );
 		if ( $album_id <= 0 || ! apply_filters( 'mvs_album_inherit_privacy', true, $album_id, array( $media_id ) ) ) {
 			return false;
 		}
@@ -355,7 +354,7 @@ class AlbumService {
 	 * Create a new album.
 	 *
 	 * Wraps the `mvs_album` CPT insertion + privacy / album_type / group
-	 * association meta writes that REST and template callers used to repeat
+	 * association meta writes that REST and template callers would otherwise repeat
 	 * inline. Single canonical entry point so seeders, WP-CLI, and any
 	 * future caller produce identical state to the REST flow.
 	 *
@@ -409,17 +408,17 @@ class AlbumService {
 		// choose privacy must not choose it here either, or "create a private
 		// album, add my photo" becomes the route round the lock. The album takes
 		// the site default, exactly as UploadService does for an upload by the
-		// same author. Basecamp 10320619418.
+		// same author.
 		if ( ! PrivacyService::user_may_choose_privacy( $author_id ) ) {
 			$privacy = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		}
 
-		// Album attributes live in post meta. Before 2.4.0 they were written through
-		// MediaRepository at media_id = <album post ID>, which put an album ID into the
+		// Album attributes live in post meta. Writing them through
+		// MediaRepository at media_id = <album post ID> would put an album ID into the
 		// media ID sequence: on any site where uploads have outrun post IDs — most of
-		// them — the write landed on a real photo and overwrote its slug and privacy.
+		// them — the write would land on a real photo and overwrite its slug and privacy.
 		// The album's own slug is wp_posts.post_name, which wp_insert_post() has
-		// already made unique. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// already made unique.
 		$this->set_privacy( $album_id, $privacy );
 		$this->set_album_type( $album_id, $album_type );
 
@@ -436,7 +435,6 @@ class AlbumService {
 		// assigned to an album matched nothing anywhere. Worse, the album's post ID and
 		// a media item's ID share that object_id space, so an album's terms could be
 		// read back as a photo's. Media categories are unaffected.
-		// Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §3.4.
 
 		return (int) $album_id;
 	}
@@ -509,13 +507,35 @@ class AlbumService {
 	 * @return int[]
 	 */
 	public function viewable_item_ids( int $album_id, ?int $viewer_id = null ): array {
+		$mvs_viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+		$key        = $album_id . ':' . $mvs_viewer;
+		if ( ! isset( $this->viewable_cache[ $key ] ) ) {
+			$this->viewable_cache[ $key ] = $this->compute_viewable_item_ids( $album_id, $mvs_viewer );
+		}
+		return $this->viewable_cache[ $key ];
+	}
+
+	/**
+	 * Request-scope cache for viewable_item_ids(); cleared on every item write.
+	 *
+	 * @var array<string,int[]>
+	 */
+	private array $viewable_cache = array();
+
+	/**
+	 * The uncached half of viewable_item_ids().
+	 *
+	 * @param int $album_id   Album post id.
+	 * @param int $mvs_viewer Viewer.
+	 * @return int[]
+	 */
+	private function compute_viewable_item_ids( int $album_id, int $mvs_viewer ): array {
 		$mvs_ids = array_map( 'intval', array_column( $this->get_items( $album_id ), 'media_id' ) );
 
 		if ( empty( $mvs_ids ) ) {
 			return array();
 		}
 
-		$mvs_viewer  = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 		$mvs_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_ids );
 
@@ -615,11 +635,22 @@ class AlbumService {
 	public function viewable_item_count( int $album_id, ?int $viewer_id = null ): int {
 		$mvs_viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
 
-		// No owner shortcut: an album can hold someone else's item its owner
-		// cannot open (a friends-only photo added by a friend), and the card
-		// must match the album page (QA, 2.6.0).
-		// ponytail: loads the album's ids once per card; fine for a page of
-		// cards, add a counted privacy query if albums reach tens of thousands.
+		// No blanket owner shortcut: an album can hold someone else's item its
+		// owner cannot open (a friends-only photo added by a friend), and the
+		// card must match the album page (QA, 2.6.0). But the owner can always
+		// list their OWN items, so those are one COUNT, and only other people's
+		// items go through the per-item rule.
+		$owner = (int) get_post_field( 'post_author', $album_id );
+		if ( $mvs_viewer > 0 && $mvs_viewer === $owner ) {
+			$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$others = array_map( 'intval', array_column( $repo->album_items( $album_id, array( 'exclude_author' => $owner ) ), 'media_id' ) );
+			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+
+			return $repo->count_album_items( $album_id, array( 'author' => $owner ) )
+				+ count( array_filter( $others, static fn( $id ) => $privacy->can_list( $id, $mvs_viewer ) ) );
+		}
+
+		// Everyone else: the album page's own filter, cached for the request.
 		return count( $this->viewable_item_ids( $album_id, $mvs_viewer ) );
 	}
 
@@ -647,6 +678,7 @@ class AlbumService {
 	 * @return int Number of items successfully added.
 	 */
 	public function add_items( int $album_id, array $media_ids, array $args = array() ): int {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		$is_playlist = 'playlist' === $this->get_album_type( $album_id );
@@ -660,7 +692,7 @@ class AlbumService {
 
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		// One read for every photo's row, so the existence, owner and type
-		// checks below cost no query each (Basecamp 10344644266).
+		// checks below cost no query each.
 		$repo->prefetch( array_map( 'intval', $media_ids ) );
 
 		// Whose media may go in. Adding to an album repoints the item's album_id
@@ -736,9 +768,9 @@ class AlbumService {
 
 			// Record the album association on each item, then show them with the
 			// album's privacy - the same rule set_privacy() re-applies when the
-			// album's privacy later changes. Only ACCEPTED items: this used to walk
-			// the raw input, so a skipped id (missing, not audio for a playlist,
-			// someone else's) was still pointed at the album.
+			// album's privacy later changes. Only ACCEPTED items: walking
+			// the raw input would point a skipped id (missing, not audio for a playlist,
+			// someone else's) at the album anyway.
 			$repo->set_album_pointer_many( $accepted, $album_id );
 
 			$this->apply_album_privacy( $album_id, $accepted );
@@ -782,6 +814,7 @@ class AlbumService {
 	 * @return bool True if removed, false if not found.
 	 */
 	public function remove_item( int $album_id, int $media_id ): bool {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -805,11 +838,11 @@ class AlbumService {
 	 *
 	 * The item's album pointer, mvs_media_index.album_id, is set by add_items(),
 	 * and read by PrivacyService::effective_privacy_for_media() and the BuddyPress
-	 * activity sync. Removing an item, or deleting the album, only
-	 * dropped the mvs_album_items row, so the pointer kept naming an album the
-	 * item had left or that no longer existed: the item went on inheriting that
-	 * album's privacy and media_ids_in_album() kept returning it. Items still in
-	 * another album now point at the one they joined most recently, the rest at 0.
+	 * activity sync. Removing an item, or deleting the album, would otherwise
+	 * drop only the mvs_album_items row, so the pointer would keep naming an
+	 * album the item had left or that no longer existed: the item would go on
+	 * inheriting that album's privacy and media_ids_in_album() would keep
+	 * returning it. Items still in another album point at the one they joined most recently, the rest at 0.
 	 *
 	 * Call AFTER the mvs_album_items rows are gone. Photos out of every album
 	 * get their own privacy back (restore_own_privacy()).
@@ -876,6 +909,7 @@ class AlbumService {
 	 * @param int[] $order    Ordered array of media IDs.
 	 */
 	public function reorder( int $album_id, array $order ): void {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		foreach ( $order as $position => $media_id ) {
@@ -1042,7 +1076,7 @@ class AlbumService {
 		}
 
 		// Fallback for image-type media: signed file URL passes the
-		// .htaccess gate. Previously returned a raw URL that 403s.
+		// .htaccess gate. A raw URL would 403.
 		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( is_string( $file_type ) && 0 === strpos( $file_type, 'image/' ) ) {
 			$signed = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
@@ -1113,6 +1147,22 @@ class AlbumService {
 	}
 
 	/**
+	 * The album a photo belongs to, 0 for none.
+	 *
+	 * A photo is in at most one album (2.6.0); its album_id column is kept in
+	 * step with the membership table on every add and remove. The one answer
+	 * for privacy, activity and Pro.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $media_id Media id.
+	 * @return int Album post id.
+	 */
+	public function album_of( int $media_id ): int {
+		return $media_id > 0 ? (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'album_id' ) : 0;
+	}
+
+	/**
 	 * The albums a media item belongs to.
 	 *
 	 * Exists so a consumer can tell somebody what deleting a photo is about to
@@ -1146,6 +1196,7 @@ class AlbumService {
 	 * @return int Number of rows deleted.
 	 */
 	public function delete_all_items( int $album_id ): int {
+		$this->viewable_cache = array();
 		global $wpdb;
 
 		// Read the members before the rows go, then release them (see

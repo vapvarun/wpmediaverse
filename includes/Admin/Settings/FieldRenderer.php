@@ -51,8 +51,6 @@ class FieldRenderer {
 	 * through here rather than repeating the argument 46 times and missing some.
 	 * The matching `id` is emitted by the render methods themselves.
 	 *
-	 * Basecamp 10252222135.
-	 *
 	 * @param string   $id       Field ID.
 	 * @param string   $title    Row heading.
 	 * @param callable $callback Render callback. `callable`, not `array`: every
@@ -602,9 +600,9 @@ class FieldRenderer {
 	 * Render the webhook configuration field.
 	 *
 	 * One block per stored webhook (or one empty block when there are none).
-	 * Only the first used to be rendered, and because the save rebuilds the
+	 * Rendering only the first would mean that, because the save rebuilds the
 	 * option from what was posted, every other webhook - ones added through
-	 * the REST API or code - was deleted by the next Save on this tab.
+	 * the REST API or code - is deleted by the next Save on this tab.
 	 */
 	public static function render_webhook_field(): void {
 		$webhooks = array_values( array_filter( (array) get_option( 'mvs_webhooks', array() ), 'is_array' ) );
@@ -650,7 +648,7 @@ class FieldRenderer {
 		?>
 		<fieldset class="mvs-webhook-row">
 			<p>
-				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all (Basecamp 10252222135). ?>
+				<?php // `for`, not a bare <label>: without it these two read as decorative text and the inputs had no accessible name at all. ?>
 				<label for="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>"><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
 				<input type="url" name="<?php echo esc_attr( $name ); ?>[url]" id="mvs-webhook-url<?php echo esc_attr( $suffix ); ?>" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"

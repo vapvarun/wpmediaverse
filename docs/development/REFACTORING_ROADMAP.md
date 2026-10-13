@@ -227,7 +227,7 @@ Admin pages across both plugins render HTML directly via `echo` and `sprintf` in
 **Target state**
 All admin HTML lives in `templates/admin/` files. PHP classes call a shared `render_template( string $template, array $data )` helper and pass data as a scoped array. No `echo` of HTML tags in controller classes.
 
-Applies to all admin pages: migration, stats, moderation, settings, quota, and any page added in future.
+Applies to all admin pages: migration, stats, moderation, settings, and any page added in future.
 
 **Definition of Done**
 Zero `echo '<div` or `printf( '<` patterns in `includes/Admin/*.php`; all admin output routed through `templates/admin/`; template helper is shared between Free and Pro.
@@ -245,7 +245,7 @@ Pro's `Plugin.php` has an `init()` method of ~822 lines. Route registration, adm
 **Target state**
 `includes/Features/` directory. Each Pro feature becomes a self-contained bootstrapper:
 
-- `QuotaFeature.php` - quota routes, admin quota page, quota cron
+- `CompetitionsFeature.php` - competition services, routes and the scheduler tick
 - `GamificationFeature.php` - gamification hooks, manifest registration
 - `DocumentsFeature.php` - document routes, drives admin page
 - Additional feature classes as Pro features are added

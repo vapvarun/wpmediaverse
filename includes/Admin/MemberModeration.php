@@ -218,6 +218,11 @@ class MemberModeration {
 	 * @param bool $suspended Whether to suspend.
 	 */
 	private function set_suspended( int $user_id, bool $suspended ): void {
+		// During a pending deletion the suspension is now the moderator's: a later
+		// cancel by the member must not lift it.
+		if ( '' !== (string) get_user_meta( $user_id, \WPMediaVerse\Services\AccountDeletionService::META_SUSPENDED_BY_DELETION, true ) ) {
+			update_user_meta( $user_id, \WPMediaVerse\Services\AccountDeletionService::META_SUSPENDED_BY_DELETION, '0' );
+		}
 		if ( $suspended ) {
 			update_user_meta( $user_id, 'mvs_suspended', 1 );
 		} else {

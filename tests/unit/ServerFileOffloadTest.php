@@ -11,7 +11,7 @@ use WP_UnitTestCase;
 use WPMediaVerse\Services\ServerFileOffload;
 
 /**
- * Card 10369185494. Opt-in (constant or filter) and active only after the
+ * Opt-in (constant or filter) and active only after the
  * probe proved the configured mode; otherwise PHP streams as before.
  */
 class ServerFileOffloadTest extends WP_UnitTestCase {

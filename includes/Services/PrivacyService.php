@@ -28,7 +28,7 @@ class PrivacyService {
 	 * AUTO keeps the old one-argument signature working and resolves media-first
 	 * when the row is a real media row, which is the safe side of the ambiguity:
 	 * serving a private file to a stranger is worse than an album owner being
-	 * asked to use the album route. Basecamp 10298525085.
+	 * asked to use the album route.
 	 *
 	 * @since 2.4.2
 	 */
@@ -53,7 +53,6 @@ class PrivacyService {
 	 * default and change the level one click later in Edit, in bulk, or through
 	 * the REST update. Anyone who can manage MediaVerse settings keeps the
 	 * control: moderating privacy is part of running the site.
-	 * Basecamp 10320619418.
 	 *
 	 * @since 2.5.1
 	 *
@@ -73,12 +72,11 @@ class PrivacyService {
 	/**
 	 * The privacy levels this site will ACCEPT on a write.
 	 *
-	 * One list, asked by every write path. It used to be an inline array in
-	 * UploadService and nothing at all on `PUT /media/{id}`, so the update route
-	 * stored whatever string it was handed — `banana` included, which then failed
-	 * closed in `check_access()`'s default arm and read as private forever. A
+	 * One list, asked by every write path. Without it, the update route
+	 * `PUT /media/{id}` would store whatever string it is handed — `banana`
+	 * included, which then fails closed in `check_access()`'s default arm and
+	 * reads as private forever. A
 	 * value the API accepts and never applies is worse than one it rejects
-	 * (Basecamp 10220491230).
 	 *
 	 * Filterable rather than a hard enum because the vocabulary genuinely is
 	 * extensible: `mvs_privacy_can_view` lets an extension answer for a level
@@ -118,8 +116,8 @@ class PrivacyService {
 	 * `write`/`own` (the SAME gate documents use); anything else falls back to
 	 * the personal drive.
 	 *
-	 * FROZEN CONTRACT (pairs with BuddyNext card 10220148861, and declared in
-	 * Pro's DriveContract::FILTER_MEDIA_DRIVE):
+	 * FROZEN CONTRACT (declared in Pro's
+	 * DriveContract::FILTER_MEDIA_DRIVE):
 	 * apply_filters( 'mvs_media_drive', array( 'user', 0 ), int $user_id, array $args )
 	 * returns array( string $drive_type, int $drive_id ).
 	 *
@@ -152,10 +150,10 @@ class PrivacyService {
 	 * How much access a member has to a drive, for MEDIA.
 	 *
 	 * Media and documents are two different things a member can put on a drive,
-	 * and until 2.4.0 one filter answered for both. There was no way for a
-	 * bridge to say "any space member may post a photo here" while keeping
+	 * and one filter answering for both would leave a
+	 * bridge no way to say "any space member may post a photo here" while keeping
 	 * files behind the space's own Files switch, so a site owner's toggle could
-	 * not mean what it said (Basecamp 10252314484).
+	 * not mean what it says.
 	 *
 	 * The document filter is still asked first and its answer is the default,
 	 * so a site that has not adopted the new one behaves exactly as it did.
@@ -175,7 +173,7 @@ class PrivacyService {
 	 * @param int    $user_id    User to test.
 	 * @return string `none`, `read`, `write` or `own`.
 	 */
-	private static function media_drive_access( string $drive_type, int $drive_id, int $user_id ): string {
+	public static function media_drive_access( string $drive_type, int $drive_id, int $user_id ): string {
 		$level = (string) apply_filters( 'mvs_document_drive_access', 'none', $drive_type, $drive_id, $user_id );
 
 		/**
@@ -213,9 +211,12 @@ class PrivacyService {
 	 */
 	public static function privacy_to_level( string $privacy ): int {
 		switch ( $privacy ) {
+			case '':
 			case 'public':
 				return 0;
 			case 'members':
+			case 'loggedin':
+				// The legacy 'loggedin' level is the same audience as Members.
 				return 20;
 			case 'followers':
 				return 30;
@@ -233,7 +234,17 @@ class PrivacyService {
 			case 'custom':
 				return 90;
 			default:
-				return 0;
+				/**
+				 * Audience level of a privacy slug MediaVerse does not know (an
+				 * extension's own level). Unknown is private, so a new level never
+				 * opens a BuddyPress post to everyone.
+				 *
+				 * @since 2.6.2
+				 *
+				 * @param int    $level   Default 80 (private).
+				 * @param string $privacy Privacy slug.
+				 */
+				return (int) apply_filters( 'mvs_privacy_level_value', 80, $privacy );
 		}
 	}
 
@@ -255,14 +266,15 @@ class PrivacyService {
 	 * may see in a list.
 	 *
 	 * The rule lives in SQL so found_posts and pagination count only visible
-	 * rows (Basecamp 10071400189). Privacy is the post meta both CPTs share
+	 * rows. Privacy is the post meta both CPTs share
 	 * (AlbumService::PRIVACY_META): public for everyone, members-level for any
-	 * logged-in viewer, anything else only for its author. Moderators see all.
+	 * logged-in viewer, followers- and friends-only for the author's followers
+	 * and friends, anything else only for its author. Moderators see all.
 	 * wp_posts.post_author is the authoritative author; the index author on
 	 * album rows is unreliable, which is why can_view() is not used per row.
 	 *
-	 * Every album or collection list goes through here (Basecamp 10360879667:
-	 * the /album/ archive and the BuddyPress albums tab listed private albums).
+	 * Every album or collection list goes through here (the /album/ archive
+	 * and the BuddyPress albums tab must not list private albums).
 	 *
 	 * @since 2.6.1
 	 *
@@ -278,8 +290,16 @@ class PrivacyService {
 		}
 
 		if ( $user_id ) {
-			$fragment = $wpdb->prepare(
-				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// Followers- and friends-only albums for their audience, from the same
+			// follow and friendship answers can_view() uses.
+			$in        = static function ( array $ids ): string {
+				return $ids ? implode( ',', array_map( 'intval', $ids ) ) : '0';
+			};
+			$following = \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->get_following_ids( $user_id );
+			$fragment  = $wpdb->prepare(
+				"( mvpriv.meta_value IS NULL OR mvpriv.meta_value IN ( 'public', 'members', 'loggedin' ) OR {$wpdb->posts}.post_author = %d"
+				. " OR ( mvpriv.meta_value = 'followers' AND {$wpdb->posts}.post_author IN ( " . $in( $following ) . ' ) )'
+				. " OR ( mvpriv.meta_value = 'friends' AND {$wpdb->posts}.post_author IN ( " . $in( self::friend_ids( $user_id ) ) . ' ) ) )', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$user_id
 			);
 		} else {
@@ -322,15 +342,15 @@ class PrivacyService {
 			$media_privacy = 'public';
 		}
 
-		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->album_of( $media_id );
 		if ( $album_id <= 0 ) {
 			return $media_privacy;
 		}
 
 		// Album privacy is a property of the album post, not of any media row.
-		// Before 2.4.0 this read mvs_media_index at media_id = <album post ID>, which
-		// on a colliding ID returned an unrelated PHOTO's privacy and clamped this
-		// item against it. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// Reading mvs_media_index at media_id = <album post ID> would, on a
+		// colliding ID, return an unrelated PHOTO's privacy and clamp this
+		// item against it.
 		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 		if ( '' === $album_privacy || 'public' === $album_privacy ) {
 			return $media_privacy;
@@ -374,14 +394,13 @@ class PrivacyService {
 		// 2.4.0 those are two clean ID spaces — a CPT never writes an index row — so
 		// the post type is authoritative and cheap to trust.
 		//
-		// This replaces the media_type sniff added by 3cfff321 for Basecamp
-		// 10071824547 ("owner denied their own private album"). That workaround read
-		// the index row and, when media_type was empty, treated the ID as a CPT. It
-		// could not survive a collision: where an album's post ID landed on a real
-		// photo, media_type was 'image', so the album was access-checked as that
-		// photo — resolving to the PHOTO's owner and the PHOTO's privacy. The album's
-		// owner was denied their own album and an unrelated member was granted it.
-		// Root cause, not symptom: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// This replaces a media_type sniff that read the index row and, when
+		// media_type was empty, treated the ID as a CPT. It could not survive a
+		// collision: where an album's post ID lands on a real photo, media_type is
+		// 'image', so the album would be access-checked as that photo — resolving to
+		// the PHOTO's owner and the PHOTO's privacy. The album's owner would be
+		// denied their own album and an unrelated member granted it. The post type
+		// fixes the root cause, not the symptom.
 		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$allowed_types = array( 'mvs_album', 'mvs_collection' );
 
@@ -389,7 +408,7 @@ class PrivacyService {
 		// predicate is a non-empty media_type, not MediaTypes::is_known():
 		// `is_known()` tests ALL, which deliberately omits `legacy_document`,
 		// and the row that first demonstrated this bug was exactly that
-		// (index-first resolution, Basecamp 10073499758).
+		// (index-first resolution,
 		$in_index = $repo->exists( $media_id );
 		$typed    = $in_index && '' !== (string) $repo->get( $media_id, 'media_type' );
 
@@ -424,8 +443,8 @@ class PrivacyService {
 		} else {
 			// Legacy one-argument callers. Media wins the collision: post-type
 			// first is what served a private photo because a published album
-			// shared its integer (10298525085); media_type-first alone is what
-			// denied an album owner their own album (10071824547). Neither is
+			// shared its integer; media_type-first alone is what
+			// denied an album owner their own album. Neither is
 			// right for both, so AUTO takes the side where the failure is a
 			// refusal rather than a leak, and the CPT callers below say 'cpt'.
 			if ( $is_media ) {
@@ -472,41 +491,17 @@ class PrivacyService {
 		//
 		// Above the mvs_privacy_can_view filter deliberately: a safety decision
 		// must not be re-granted by a filter that only knows about privacy.
-		if ( $user_id > 0 && $author_id > 0 && $author_id !== $user_id ) {
-			$container = \WPMediaVerse\Core\Plugin::container();
-			if ( $container->has( 'reports' ) ) {
-				$reports = $container->get( 'reports' );
-				if ( method_exists( $reports, 'is_blocked' )
-					&& $reports->is_blocked( $author_id, $user_id ) ) {
-					return false;
-				}
-			}
+		if ( $this->safety_refuses(
+			$media_id,
+			$user_id,
+			array(
+				'author_id' => $author_id,
+				'is_media'  => ! in_array( $post_type, $allowed_types, true ),
+			)
+		) ) {
+			return false;
 		}
 
-		// Moderation outranks privacy for everyone else. This belongs here, not in
-		// each caller's query: moderation_status is an opt-in argument on
-		// MediaRepository::query(), so before this guard only the Explore listing
-		// passed it and the permalink, serve endpoint, thumbnail and REST single-item
-		// all served flagged AND moderator-rejected media to anonymous visitors.
-		// Owners/moderators returned above, so a takedown stays reviewable.
-		if ( ! in_array( $post_type, $allowed_types, true ) ) {
-			$moderation = (string) $repo->get( $media_id, 'moderation_status' );
-			if ( in_array( $moderation, array( 'flagged', 'rejected', 'pending' ), true ) ) {
-				return false;
-			}
-
-			// An unpublished item (draft, trashed) is its owner's alone. REST
-			// served a draft in full, file URL included, to signed-out visitors
-			// while its page answered 404 (QA, 2.6.0). An empty status predates
-			// the column and is treated as published.
-			$status = (string) $repo->get( $media_id, 'status' );
-			if ( '' !== $status && 'publish' !== $status ) {
-				return false;
-			}
-		}
-
-		// Same split for the privacy value itself: an album's lives in post meta,
-		// a media item's in its index row.
 		$is_post_object = $post_type && in_array( $post_type, $allowed_types, true );
 		if ( $is_post_object ) {
 			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $media_id );
@@ -524,7 +519,7 @@ class PrivacyService {
 		 *
 		 * Fires for MEDIA only (an mvs_media_index id), never for an album or
 		 * collection post: every listener reads the id as media, and the two
-		 * id sequences collide, so an album check used to be answered from an
+		 * id sequences collide, so an album check would otherwise be answered from an
 		 * unrelated photo's row (an inherit-privacy flag, a competition entry).
 		 *
 		 * @param bool|null $result   Access result. Null to use default logic.
@@ -604,12 +599,260 @@ class PrivacyService {
 			return false;
 		}
 
-		if ( ! function_exists( 'friends_check_friendship' ) ) {
-			// BuddyPress not active — fall back to private.
+		return self::are_friends( $owner_id, $user_id );
+	}
+
+	/**
+	 * Translate another plugin's privacy word into a MediaVerse level.
+	 *
+	 * The single place a community plugin's vocabulary (a post's "followers",
+	 * "connections", "space members") becomes a level MediaVerse enforces.
+	 * Unknown words become `private`: failing closed hides a post, failing open
+	 * would publish it.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string               $value      The other plugin's privacy word.
+	 * @param string               $vocabulary Who is asking, e.g. 'buddynext' (passed to the filter).
+	 * @param array<string, mixed> $context Optional details, e.g. `space_id`.
+	 * @return string A MediaVerse privacy slug.
+	 */
+	public static function map_external_privacy( string $value, string $vocabulary = '', array $context = array() ): string {
+		$value = sanitize_key( $value );
+		$map   = array(
+			'public'        => 'public',
+			'everyone'      => 'public',
+			'members'       => 'members',
+			'loggedin'      => 'members',
+			'logged_in'     => 'members',
+			'followers'     => 'followers',
+			'friends'       => 'friends',
+			'connections'   => 'friends',
+			'space'         => 'space',
+			'space_members' => 'space',
+			'group'         => 'group',
+			'group_members' => 'group',
+			'private'       => 'private',
+			'only_me'       => 'private',
+			'onlyme'        => 'private',
+		);
+
+		/**
+		 * Filters the vocabulary map from another plugin's privacy words to MediaVerse levels.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param array<string,string> $map        Their word => MediaVerse slug.
+		 * @param string               $vocabulary Who is asking.
+		 * @param array                $context    Caller details.
+		 */
+		$map = (array) apply_filters( 'mvs_external_privacy_map', $map, $vocabulary, $context );
+
+		$slug = isset( $map[ $value ] ) ? (string) $map[ $value ] : 'private';
+
+		/**
+		 * Filters the MediaVerse level chosen for one external privacy word.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param string $slug       MediaVerse slug (unknown words map to 'private').
+		 * @param string $value      Their word.
+		 * @param string $vocabulary Who is asking.
+		 * @param array  $context    Caller details.
+		 */
+		return (string) apply_filters( 'mvs_map_external_privacy', $slug, $value, $vocabulary, $context );
+	}
+
+	/**
+	 * Whether a safety rule keeps this viewer from an item, whatever its privacy.
+	 *
+	 * A block (the author blocked the viewer) refuses the viewer. For media, so
+	 * does moderation (flagged, rejected or pending) and, unless the caller says
+	 * otherwise, an unpublished status. Owners and moderators are never refused.
+	 * Every read path asks this, Pro documents included, so no privacy grant can
+	 * open what safety closed.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int                  $media_id Item id.
+	 * @param int                  $user_id  Viewer, 0 for a visitor.
+	 * @param array<string, mixed> $args {
+	 *     Optional. Values the caller already holds, so no row is read.
+	 *
+	 *     @type int    $author_id         Author id.
+	 *     @type string $moderation_status Row moderation status.
+	 *     @type string $status            Row status.
+	 *     @type bool   $is_media          False for an album or collection. Default true.
+	 *     @type bool   $check_status      False to allow unpublished rows (a trashed
+	 *                                     document its editors may restore). Default true.
+	 * }
+	 * @return bool True when the viewer is refused.
+	 */
+	public function safety_refuses( int $media_id, int $user_id, array $args = array() ): bool {
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$is_media  = $args['is_media'] ?? true;
+		$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : (int) $repo->get_author( $media_id );
+
+		if ( $user_id > 0 && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
 			return false;
 		}
 
-		return friends_check_friendship( $owner_id, $user_id );
+		$refuses = false;
+		if ( $user_id > 0 && $author_id > 0 ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			$refuses   = $container->has( 'reports' ) && $container->get( 'reports' )->is_blocked( $author_id, $user_id );
+		}
+		if ( ! $refuses && $is_media ) {
+			$moderation = (string) ( $args['moderation_status'] ?? $repo->get( $media_id, 'moderation_status' ) );
+			$refuses    = in_array( $moderation, array( 'flagged', 'rejected', 'pending' ), true );
+			if ( ! $refuses && ( $args['check_status'] ?? true ) ) {
+				$status  = (string) ( $args['status'] ?? $repo->get( $media_id, 'status' ) );
+				$refuses = '' !== $status && 'publish' !== $status;
+			}
+		}
+
+		/**
+		 * Filters whether a safety rule (block, moderation, unpublished) refuses a viewer.
+		 *
+		 * Runs before any privacy decision. Return true to refuse for a reason
+		 * of your own, false to lift one (for example a reviewer role).
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool  $refuses  Whether the viewer is refused.
+		 * @param int   $media_id Item id.
+		 * @param int   $user_id  Viewer.
+		 * @param array $args     The caller's arguments (see safety_refuses()).
+		 */
+		return (bool) apply_filters( 'mvs_safety_refuses', $refuses, $media_id, $user_id, $args );
+	}
+
+	/**
+	 * Whether two members are friends, for the `friends` privacy level.
+	 *
+	 * The one answer every check, list and count uses. BuddyPress friendships
+	 * answer by default; a community plugin with its own connections answers
+	 * through the filter.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $user_a A member.
+	 * @param int $user_b Another member.
+	 * @return bool
+	 */
+	public static function are_friends( int $user_a, int $user_b ): bool {
+		if ( $user_a <= 0 || $user_b <= 0 || $user_a === $user_b ) {
+			return false;
+		}
+		$default = function_exists( 'friends_check_friendship' ) && friends_check_friendship( $user_a, $user_b );
+
+		/**
+		 * Filters whether two members are friends for MediaVerse privacy.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool $are_friends Default answer (BuddyPress friendship).
+		 * @param int  $user_a      A member.
+		 * @param int  $user_b      Another member.
+		 */
+		return (bool) apply_filters( 'mvs_are_friends', $default, $user_a, $user_b );
+	}
+
+	/**
+	 * Ids of a member's friends, for lists that filter by the `friends` level.
+	 *
+	 * Must agree with are_friends(); a plugin that filters one filters both.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int $user_id Member.
+	 * @return int[]
+	 */
+	public static function friend_ids( int $user_id ): array {
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+		$default = function_exists( 'friends_get_friend_user_ids' ) ? (array) friends_get_friend_user_ids( $user_id ) : array();
+
+		/**
+		 * Filters a member's friend ids for MediaVerse privacy lists.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int[] $friend_ids Default ids (BuddyPress friends).
+		 * @param int   $user_id    Member.
+		 */
+		$ids = (array) apply_filters( 'mvs_friend_ids', $default, $user_id );
+		return array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+	}
+
+	/**
+	 * SQL that keeps a row whose numeric privacy level the viewer may see.
+	 *
+	 * The level form of can_view(), for stores that keep a level rather than a
+	 * media row (BuddyPress activity). Same audience per level: public to
+	 * everyone; Members to any signed-in member; Followers to the author's
+	 * followers; Friends to the author's friends; Group to members of the group
+	 * named by `group_expr`; anything stricter to the author only. The author
+	 * always sees their own; moderators see everything; a block hides the
+	 * author either way, as in can_list().
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string                $level_expr  SQL expression holding the level (NULL or '' = public).
+	 * @param string                $author_expr SQL expression holding the author id.
+	 * @param int                   $viewer_id   Viewer, 0 for a visitor.
+	 * @param array<string, string> $args Optional `group_expr`: SQL expression for the row's group id.
+	 * @return string SQL condition (no leading AND), values already escaped.
+	 */
+	public function level_audience_sql( string $level_expr, string $author_expr, int $viewer_id, array $args = array() ): string {
+		$level  = "CAST(COALESCE(NULLIF({$level_expr}, ''), '0') AS UNSIGNED)";
+		$public = "{$level} <= 0";
+
+		if ( $viewer_id > 0 && user_can( $viewer_id, 'moderate_mvs_media' ) ) {
+			$sql = '1 = 1';
+		} elseif ( $viewer_id <= 0 ) {
+			$sql = $public;
+		} else {
+			$in    = static function ( array $ids ): string {
+				return $ids ? implode( ',', array_map( 'intval', $ids ) ) : '0';
+			};
+			$parts = array(
+				$public,
+				"{$author_expr} = " . (int) $viewer_id,
+				"{$level} = " . self::privacy_to_level( 'members' ),
+				"( {$level} = " . self::privacy_to_level( 'followers' ) . " AND {$author_expr} IN ( " . $in( \WPMediaVerse\Core\Plugin::container()->get( 'follows' )->get_following_ids( $viewer_id ) ) . ' ) )',
+				"( {$level} = " . self::privacy_to_level( 'friends' ) . " AND {$author_expr} IN ( " . $in( self::friend_ids( $viewer_id ) ) . ' ) )',
+			);
+			if ( ! empty( $args['group_expr'] ) && function_exists( 'groups_get_user_groups' ) ) {
+				$groups  = (array) ( groups_get_user_groups( $viewer_id )['groups'] ?? array() );
+				$parts[] = "( {$level} = " . self::privacy_to_level( 'group' ) . " AND {$args['group_expr']} IN ( " . $in( $groups ) . ' ) )';
+			}
+			$sql     = '( ' . implode( ' OR ', $parts ) . ' )';
+			$blocked = \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id );
+			if ( $blocked ) {
+				$sql .= " AND {$author_expr} NOT IN ( " . $in( $blocked ) . ' )';
+			}
+		}
+
+		/**
+		 * Filters the SQL that decides which leveled rows a viewer may see.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param string $sql     SQL condition.
+		 * @param array  $context level_expr, author_expr, viewer_id, args.
+		 */
+		return (string) apply_filters(
+			'mvs_privacy_level_audience_sql',
+			$sql,
+			array(
+				'level_expr'  => $level_expr,
+				'author_expr' => $author_expr,
+				'viewer_id'   => $viewer_id,
+				'args'        => $args,
+			)
+		);
 	}
 
 	/**
@@ -617,8 +860,7 @@ class PrivacyService {
 	 *
 	 * Asks FollowService, MediaVerse's own follow graph, so it needs no other
 	 * plugin. Before this case existed a `followers` item fell through to the
-	 * default deny and hid the item from the owner's own followers (Basecamp
-	 * 10350019949).
+	 * default deny and hid the item from the owner's own followers.
 	 *
 	 * @param int $owner_id Media owner user ID.
 	 * @param int $user_id  Requesting user ID.
@@ -675,7 +917,7 @@ class PrivacyService {
 	 * A signed-out visitor is asked about too, not refused up front. Whether a
 	 * space is readable by visitors is the space's rule (an open space is), and
 	 * refusing here made photos disagree with documents on the same drive: the
-	 * post showed in Explore and the photo did not (Basecamp 10344310617).
+	 * post showed in Explore and the photo did not.
 	 *
 	 * @since 2.4.0
 	 *
@@ -735,12 +977,53 @@ class PrivacyService {
 	private $blocked_cache = array();
 
 	/**
+	 * Apply a requested privacy to one item, by the library's rules.
+	 *
+	 * The one rule for every privacy change (REST, bulk, Pro, cron, WP-CLI and
+	 * other plugins): an item in an album keeps showing with the album's privacy
+	 * and keeps the choice for when it leaves; a chat file keeps its conversation
+	 * privacy (the repository refuses the change). It needs no signed-in user,
+	 * so background jobs call it directly; the caller checks permission.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id Media ID (the caller has checked permission).
+	 * @param string $privacy  Requested privacy slug.
+	 * @return string 'updated', 'album' (the album decides) or 'kept'.
+	 */
+	public function apply_requested_privacy( int $media_id, string $privacy ): string {
+		/**
+		 * Filters a requested privacy change before core applies it.
+		 *
+		 * Return another level to change it, or '' to refuse the change.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param string $privacy  Requested privacy slug.
+		 * @param int    $media_id Media ID.
+		 */
+		$privacy = (string) apply_filters( 'mvs_requested_privacy', $privacy, $media_id );
+		if ( '' === $privacy ) {
+			return 'kept';
+		}
+
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->keep_own_privacy_if_in_album( $media_id, $privacy ) ) {
+			return 'album';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->set( $media_id, 'privacy', $privacy );
+
+		return (string) $repo->get( $media_id, 'privacy' ) === $privacy ? 'updated' : 'kept';
+	}
+
+	/**
 	 * May this media be LISTED to the viewer (a grid, an album, a collection)?
 	 *
 	 * The can_view() check is one-directional on purpose: a blocker may still open a
 	 * direct link to the blocked member's public media. Lists hide both ways,
 	 * so a list also drops items whose author is on either side of a block with
-	 * the viewer (Basecamp 10355130639). The block list is read once per viewer.
+	 * the viewer. The block list is read once per viewer.
 	 *
 	 * @since 2.6.0
 	 *

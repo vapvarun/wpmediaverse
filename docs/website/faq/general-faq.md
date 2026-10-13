@@ -12,6 +12,16 @@ When BuddyNext or BuddyPress is active, MediaVerse connects to it automatically.
 
 By default: JPEG, PNG, GIF and WebP images, MP4 and WebM video, and MP3 and OGG audio. You choose the list in **MediaVerse > Settings > General > Allowed File Types**. See [General Settings](../settings/general.md).
 
+Videos that an iPhone saves as MP4 with the M4V brand upload like any other MP4.
+
+## Why do several photos show as one tile?
+
+Files uploaded together form a gallery, shown as one tile with a badge that counts the items the viewer may see. Open it to step through them. Under a filter such as Explore > Videos, the badge counts only the matching items. See [Media Upload](../features/media-upload.md#galleries-262).
+
+## Which PHP version does MediaVerse need?
+
+PHP 8.1 or newer. Ask your host to upgrade PHP before you update from an older version.
+
 ## How large can an upload be?
 
 As large as the **Max Upload Size** setting in **MediaVerse > Settings > General** allows. Your server's own upload limit still applies, so a value above the server limit has no effect until the host raises it.

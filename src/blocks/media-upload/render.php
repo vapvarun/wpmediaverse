@@ -68,8 +68,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 // The option check alone is not enough: deactivating Pro leaves
 // mvs_stories_enabled at '1', so the toggle kept rendering on a Free-only site
 // where nothing consumes it — the upload succeeds but no story is ever created,
-// which reads as a broken feature rather than an absent one. Basecamp
-// #10156642726.
+// which reads as a broken feature rather than an absent one.
 $mvs_stories_on = \WPMediaVerse\Core\TemplateHelpers::stories_available();
 // Pre-check the toggle when arriving from the "Your story" tile (?mvs_story=1). Display-only, no action.
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -79,7 +78,7 @@ $mvs_prefill_story = $mvs_stories_on && isset( $_GET['mvs_story'] ) && '1' === s
 // uploader in the Documents library, with the folder/privacy/type controls a
 // document needs. Rather than list a "Documents" category the input would
 // reject, point members who have documents at the right place. Only when the
-// feature is on AND this member may use it (Basecamp 10226421698).
+// feature is on AND this member may use it.
 $mvs_docs_url = '';
 if ( \WPMediaVerse\Core\Plugin::documents_enabled()
 	&& \WPMediaVerse\Core\Plugin::user_can_use_documents( get_current_user_id() )
@@ -90,7 +89,7 @@ if ( \WPMediaVerse\Core\Plugin::documents_enabled()
 // i18n for the mvs/media-upload store. It is a script MODULE (viewScriptModule), so
 // wp_set_script_translations() can't reach it and window.wp.i18n.__() falls
 // through to English. Seed PHP-translated strings into interactivity state; the
-// store reads state.i18n.<key> with an English fallback. Basecamp 10073528834.
+// store reads state.i18n.<key> with an English fallback.
 wp_interactivity_state(
 	'mvs/media-upload',
 	array(

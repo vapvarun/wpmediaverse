@@ -13,7 +13,7 @@
  * localStorage hide is applied at module eval AND re-applied on every
  * `mvs:navigated` swap — the server re-renders the banner (it cannot read
  * localStorage), so without the re-apply a dismissed banner would reappear
- * after a client-side navigation (a regression vs the old full-load behavior).
+ * after a client-side navigation (unlike a full page load).
  * This re-apply is an idempotent VISIBILITY pass (it only toggles display from
  * localStorage); it adds no listeners, so it cannot double-bind. The dismiss
  * CLICK is handled by a single document-level delegate for the page lifetime.

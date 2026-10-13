@@ -1,6 +1,6 @@
 # Gamification Overview
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Gamification turns your media community into a competitive platform. Members enter photo challenges and tournaments, challenge each other to battles, build upload streaks, and boost their media visibility. Points come from the separate free **WB Gamification** plugin.
 
@@ -13,7 +13,11 @@ Gamification is part of **MediaVerse Pro**. Competitions run without WB Gamifica
 - MediaVerse Pro
 - WB Gamification plugin (active) for points. Needed for earning points, and for Media Boosts and streak freezes, which spend points
 - WordPress 6.5+
-- PHP 7.4+
+- PHP 8.1+
+
+## Who Can Enter
+
+Competitions and boosts show an item to everyone, including visitors. So only your own public, approved photos and videos can enter a competition or be boosted. Private items and documents cannot. If an entry is later hidden, it shows as missing.
 
 ## Feature Types
 

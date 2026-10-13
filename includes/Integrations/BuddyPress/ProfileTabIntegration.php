@@ -38,8 +38,7 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		// must keep their CSS. Without this, on a BuddyNext site the handoff's
 		// enforce_frontend_presence() sweep deregisters every mvs-* handle here
 		// too, and the tabs paint with empty --mvs tokens: bare <ul> lists,
-		// icons at viewBox size, no grid spacing (Basecamp 10239276541, the
-		// sibling of the Explore-Documents page fix 10194672141). This exempts
+		// icons at viewBox size, no grid spacing. This exempts
 		// only the two stylesheets the tab content needs; the rest of the UI
 		// suppression is left untouched.
 		$this->register_shared_hooks();
@@ -154,8 +153,7 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		}
 
 		// Viewer-aware count via the repository privacy gate — members/friends
-		// items no longer counted for viewers outside those audiences
-		// (Basecamp #9941246549).
+		// items are not counted for viewers outside those audiences
 		$media_count = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )
 			->count_visible_by_author( $displayed_user_id );
 
@@ -176,10 +174,9 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		//
 		// Free cannot count them. Documents are Pro's - rows, folders, grants
 		// and the privacy resolution all live there, and a raw index count here
-		// would advertise documents the viewer may not open, which is the
-		// defect 10296867415 was filed for. So this asks, exactly the way the
+		// would advertise documents the viewer may not open. So this asks, exactly the way the
 		// LIST already asks via `mvs_profile_documents_html`, and renders
-		// nothing when Pro is absent. Basecamp 10298471056.
+		// nothing when Pro is absent.
 		if ( ! \WPMediaVerse\Core\Plugin::documents_enabled() ) {
 			return;
 		}
@@ -339,10 +336,9 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		$user_id = (int) bp_displayed_user_id();
 		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-		// Viewer-aware repository gate — replaces raw SQL that listed
-		// members/friends-level media to any visitor, including logged-out
-		// ones (Basecamp #9941246549).
-		$total = $repo->count_visible_by_author( $user_id );
+		// Viewer-aware, one tile per gallery: the same rule as Explore and as
+		// this tab's Load More (group_covers), so page 1 and page 2 agree.
+		$total = $repo->count_visible_by_author( $user_id, null, array( 'exclude_non_cover_group' => true ) );
 
 		if ( ! $total ) {
 			return array(
@@ -354,8 +350,9 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		$rows = $repo->query_by_author(
 			$user_id,
 			array(
-				'limit'  => $per_page,
-				'offset' => $offset,
+				'limit'                   => $per_page,
+				'offset'                  => $offset,
+				'exclude_non_cover_group' => true,
 			)
 		);
 

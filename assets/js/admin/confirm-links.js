@@ -8,7 +8,7 @@
  * Handles two surfaces:
  *   - Links (<a data-mvs-confirm="...">): navigate to href on confirm.
  *   - Forms (<form data-mvs-confirm="...">): submit the form on confirm
- *     (replaces inline onsubmit blocks that used to call native confirm).
+ *     (instead of inline onsubmit blocks calling native confirm).
  *
  * @package WPMediaVerse
  */

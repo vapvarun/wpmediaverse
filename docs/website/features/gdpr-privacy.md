@@ -33,7 +33,7 @@ When an administrator runs a personal data erasure for a user, MediaVerse remove
 - Messages, message reactions and the conversations the member is in
 - The error log entries about the member
 
-Erasure is permanent and cannot be undone. WordPress is told the request is finished only when nothing is left to remove.
+Deleting a member's account, or erasing their data, also deletes their media files from storage, and an account deletion always runs to the end. Erasure is permanent and cannot be undone. WordPress is told the request is finished only when nothing is left to remove.
 
 A few records are kept, with the member's name removed, and the erasure result says so:
 

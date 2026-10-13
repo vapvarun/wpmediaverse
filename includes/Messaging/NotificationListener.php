@@ -60,7 +60,7 @@ class NotificationListener {
 	public function on_message_sent( int $message_id, int $conversation_id, int $sender_id, array $recipient_ids ): void {
 		foreach ( $recipient_ids as $recipient_id ) {
 			// Skip muted conversations — one shared check (expiry/auto-unmute
-			// included) that a host bridge must also honour (Basecamp 10153578635).
+			// included) that a host bridge must also honour.
 			if ( $this->service->is_conversation_muted( $conversation_id, $recipient_id ) ) {
 				continue;
 			}

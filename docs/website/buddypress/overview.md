@@ -14,7 +14,12 @@ MediaVerse integrates with BuddyPress to add media features directly into the Bu
 ## Requirements
 
 - BuddyPress (BuddyBoss, which is BuddyPress-compatible, also works)
-- MediaVerse 1.0.0+
+- MediaVerse 1.0.0+ (2.6.2 or later for the comment mirroring, gallery tiles and group fixes described in this section)
+- PHP 8.1 or newer (MediaVerse 2.6.2 raised the minimum from 7.4)
+
+## Upgrading to 2.6.2
+
+The database update refreshes the privacy of your BuddyPress activity posts and adds indexes to `mvs_media_meta` and `mvs_messages`. It can take a moment on large sites. Updates run one at a time and continue where they stopped if interrupted.
 
 ## What the Integration Adds
 

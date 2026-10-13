@@ -55,7 +55,7 @@ class MigratorTest extends WP_UnitTestCase {
 		// round-trips the database returns string '10' (WP stores options as
 		// strings). assertSame is type-strict, so this assertion flipped with test
 		// order and cache state and was the whole of the "stage 2.4 CI flake"
-		// (Basecamp 10198467141) — not opcache, which the shipped
+		// — not opcache, which the shipped
 		// `opcache.enable_cli=0` guard proved by failing with it applied.
 		//
 		// Cast rather than assertEquals: the VALUE still has to be exactly 10.

@@ -13,11 +13,10 @@ use WPMediaVerse\Services\CollectionService;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
- * Basecamp 10298612348.
  *
  * The docs promised private collections and the 2.0.0 changelog said the gating
  * shipped, but there was nowhere to store the value - so every collection was
- * public and the gates added for 10073499554 could only ever deny the owner
+ * public and the collection gates could only ever deny the owner
  * check. These pin the storage, the two-level vocabulary, and the fact that a
  * collection's privacy does NOT cascade into the media inside it.
  */
@@ -118,7 +117,7 @@ class CollectionPrivacyTest extends WP_UnitTestCase {
 	 * NO CASCADE, unlike an album.
 	 *
 	 * AlbumService::set_privacy() clamps the items inside, because an album
-	 * holds its owner's own uploads (#10149366902). A collection is a curated
+	 * holds its owner's own uploads. A collection is a curated
 	 * view of OTHER people's public media, so cascading would rewrite a
 	 * stranger's photo because a curator changed a collection they own.
 	 */

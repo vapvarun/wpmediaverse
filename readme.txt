@@ -3,8 +3,8 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.6.1
-Requires PHP: 7.4
+Stable tag: 2.6.2
+Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -124,6 +124,76 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
 
 == Changelog ==
+
+= 2.6.2 - October 2026 =
+
+Chat files stay in the chat, galleries list the same way everywhere, BuddyPress posts follow their media, and member deletion cleans up fully.
+
+* New      - Deleting a comment also deletes its replies, as on social networks.
+* New      - Read notifications older than 90 days are removed daily.
+* New      - Photo and video chat messages have a Message options button, so Reply, React and Unsend work on touch screens.
+* Improve  - Chat attachments live only in their conversation: they are no longer listed in My Media, the media list or the WordPress Media Library, and existing ones move to protected storage.
+* Improve  - Chat files uploaded but never sent are deleted after a day.
+* Improve  - A gallery shows as one tile with a badge on Explore, the Media Grid block, the feeds and the BuddyPress profile and group tabs, and stays listed when its first item is private or deleted.
+* Improve  - The gallery badge and lightbox count every item the viewer may see, so owners and followers reach all of theirs.
+* Improve  - Under a filter or search, a gallery is fronted by its first matching item and the lightbox steps through the matching items only.
+* Improve  - Each item in a gallery lightbox shows its own reactions and comments.
+* Improve  - The List layout shows each item's title, date, counts and uploader beside the thumbnail on Explore, profiles, the BuddyPress Media tabs and the Media Grid block.
+* Improve  - Clicking an image in a chat opens it full size, videos show a frame and audio files get a player.
+* Improve  - Delete for everyone and Unsend for everyone ask first, and Escape closes an open message menu.
+* Improve  - Reading a conversation clears its message notifications.
+* Improve  - The notifications bell closes on an outside click or Escape and shows times such as 2 hours ago.
+* Improve  - A chat thread opens at the newest message and stays there while photos and videos load.
+* Improve  - The comment delete prompt says how many replies go with it, and album prompts say items instead of photos.
+* Improve  - Following, favouriting or reacting again notifies the owner only once.
+* Improve  - A notification about an item its reader can no longer see shows no title or link.
+* Improve  - Member search matches display names and public profile names, never login names.
+* Improve  - Explore search returns the same results on the first page and on Load More.
+* Improve  - Categories has its own item in the MediaVerse menu, and the Albums screen no longer shows media categories and tags.
+* Improve  - On a BuddyNext site, BuddyNext sends only the member emails it owns; MediaVerse still sends the rest.
+* Improve  - Database updates run one at a time and continue where they stopped.
+* Improve  - Screen readers hear the right name for the People search field and the chat message buttons, and comment buttons are 44px on touch screens.
+* Improve  - A document page names its privacy with the same words as the drive.
+* Improve  - Storage screens call local storage "This server", as the setting does.
+* Improve  - The Integrations screen no longer claims features for Learnomy, WP Career Board and Listora that MediaVerse does not provide.
+* Improve  - An incomplete licensing package shows an admin notice that automatic updates are off, instead of failing silently.
+* Fix      - BuddyPress activity posts show their photo again when direct delivery is on.
+* Fix      - An MP4 file branded as M4V, as iPhones save them, uploads like any MP4.
+* Fix      - Changing an item's privacy through the API updates its BuddyPress activity post.
+* Fix      - A BuddyPress post made from several uploads follows its most private item, and deleting one photo keeps the post.
+* Fix      - Comments deleted or edited in MediaVerse are removed from the BuddyPress activity post with their replies and notifications, including comments made before 2.6.2, and replies sit under their comment.
+* Fix      - The BuddyPress lightbox steps through every photo of a post made from the Upload page.
+* Fix      - The BuddyPress lightbox shows Edit only to the owner and no Report on your own media.
+* Fix      - Load More on a BuddyPress group's Media tab shows only that group's media.
+* Fix      - Deleting or erasing a member removes their media files, and account deletion never stops part way.
+* Fix      - Cancelling an account deletion request lifts only the suspension it set, and asking twice changes nothing.
+* Fix      - The album edit window pre-selects the album's photos again, and album cards show exact counts to their owner.
+* Fix      - Uploads with the same title at the same time no longer fail.
+* Fix      - A blocked member can no longer reopen a conversation, sees why a message was refused and does not see the other member online.
+* Fix      - A new conversation shows the member's name and picture in the list without a reload.
+* Fix      - Pinned shows only on pinned conversations, the typing indicator clears when the message arrives, and an empty conversation stays out of the other member's inbox.
+* Fix      - The Messages page and the media profile no longer show a blog post's title as their heading, and Messages answers normally on a site with no blog posts.
+* Fix      - The lightbox arrows keep their look on themes that style buttons, and the moderation badge in the admin lines up.
+* Fix      - A deleted chat message no longer offers reactions or Reply.
+* Fix      - Explore says "in" rather than "tagged" when a category has no results.
+* Fix      - The wp mvs diagnose_cpt_ids warning no longer points at a fix that shipped in 2.4.0.
+* Fix      - The licence and update screen loads its styles and scripts on hosts where the plugin path does not match the web root, and every bundled copy of the update SDK is the same.
+* Security - Chat attachments open only for the people in the conversation.
+* Security - A shared item opens only for what its owner chose to share.
+* Security - Album and collection feeds, archives, sitemaps and site search list only public ones.
+* Security - Bulk delete checks the same capabilities as a single delete.
+* Security - Signed link lifetimes are capped at the site's setting.
+* Security - A slug lookup and the activity feed apply the same visibility checks as the item page.
+* Security - A message reply can only reference a message in its own conversation.
+* Security - A member's data export lists only the blocks and reports they made.
+* Dev      - GET /mvs/v1/media accepts group (a BuddyPress group's media, following the group's visibility).
+* Dev      - GET /mvs/v1/albums omits item ids unless with_items=1 is passed (filter mvs_album_list_include_items).
+* Dev      - New filters mvs_comment_delete_replies, mvs_unsent_chat_file_hours and mvs_privacy_level_value.
+* Dev      - New MediaRepository::gallery_hidden_clause(), gallery_tile_counts(), group_scope_clause(), search_clause() and document_scope_ids(); gallery_exclude_subquery() is deprecated.
+* Dev      - Database update: BuddyPress activity privacy is refreshed, and indexes are added to mvs_media_meta and mvs_messages. This may take a moment on large sites.
+* Dev      - Templates updated (2.6.2): explore.php, media-single.php, messages.php, partials/chat-message.php, partials/dashboard-content.php, partials/shared-ui-frame.php.
+* Compat   - Requires PHP 8.1 or newer (was 7.4).
+* Compat   - Aligned with MediaVerse Pro 2.6.2. Install both updates together.
 
 = 2.6.1 - October 2026 =
 

@@ -7,7 +7,7 @@
  * not members. The first activation on an already-private community therefore
  * seeds Members Only (Activator), and a site that becomes private later is
  * asked once, on MediaVerse screens, instead of being changed behind the
- * owner's back (Basecamp 10252887515, owner decision 2026-09-27).
+ * owner's back.
  *
  * "Private community" is whatever answers `mvs_rest_require_auth` with true,
  * the signal CommunityPrivacyGate already enforces (BuddyNext's private mode

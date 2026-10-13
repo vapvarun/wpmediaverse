@@ -161,7 +161,7 @@ class ActivityContentIntegration {
 		// preload="auto" — Safari/iOS/Bing render a blank frame with
 		// preload="metadata" + the poster image when the poster URL is slow
 		// or fails to load. Letting the browser pull the first frame is the
-		// belt-and-braces fix from Basecamp #9910574354 (Crisp ticket).
+		// belt-and-braces fix.
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
 			. '<video controls preload="auto"' . $poster . '>'
 			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
@@ -175,18 +175,6 @@ class ActivityContentIntegration {
 		return $content;
 	}
 
-	/**
-	 * Enhance activity media content.
-	 *
-	 * Single unified filter for all activity media rendering:
-	 * 1. Transform rtMedia legacy HTML to MVS rendering (when rtMedia deactivated)
-	 * 2. Transform MediaPress activities via _mpp_attached_media_id meta lookup
-	 * 3. Inject thumbnails for imported/empty mvs_media_upload activities
-	 *
-	 * @param string      $content  Raw activity content.
-	 * @param object|null $activity BP activity object (passed by ref from BP).
-	 * @return string Enhanced content.
-	 */
 	/**
 	 * Remove <img> tags pointing directly at our own uploads folder.
 	 *
@@ -229,9 +217,9 @@ class ActivityContentIntegration {
 
 				// EXISTENCE IS THE WRONG QUESTION, and it is why the first fix
 				// bounced: the file being on disk says nothing about whether a
-				// browser can fetch it. Activator::create_upload_protection()
-				// writes "Deny from all" over the whole wpmediaverse upload dir,
-				// so EVERY direct URL into it 403s - present or not. The member
+				// browser can fetch it. The folder's .htaccess denies every
+				// readable (non-random) name, which is what this legacy markup
+				// carries, so these URLs 403 - present or not. The member
 				// still saw a broken image; the guard just kept the tag.
 				//
 				// Nor can these be rewritten to a working URL. Both
@@ -243,21 +231,40 @@ class ActivityContentIntegration {
 				// So the tag goes, whatever the filesystem says. Anything the
 				// viewer CAN see is rendered by the id-keyed path below, which
 				// routes through MediaUrl and gets a signed URL.
-				// Basecamp 10290384337.
 				return '';
 			},
 			$content
 		);
 	}
 
+	/**
+	 * Enhance activity media content.
+	 *
+	 * Single unified filter for all activity media rendering:
+	 * 1. Transform rtMedia legacy HTML to MVS rendering (when rtMedia deactivated)
+	 * 2. Transform MediaPress activities via _mpp_attached_media_id meta lookup
+	 * 3. Inject thumbnails for imported/empty mvs_media_upload activities
+	 *
+	 * @param string      $content  Raw activity content.
+	 * @param object|null $activity BP activity object (passed by ref from BP).
+	 * @return string Enhanced content.
+	 */
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
 		// Drop <img> tags whose file is gone. Activities saved before media was
 		// referenced by id carry literal <img src="...uploads/wpmediaverse/...">
 		// with no media id anywhere, so every id-keyed guard we have - the
 		// linkage renderer, the _mvs_media_ids rebuild, refresh_broadcast_urls -
 		// correctly finds nothing to check and the member sees broken-image
-		// boxes on their own timeline forever. Basecamp 10290384337.
-		$content = $this->drop_missing_upload_images( $content );
+		// boxes on their own timeline forever.
+		//
+		// Legacy markup only. Id-keyed blocks are re-minted per id by
+		// refresh_broadcast_urls() below, which also drops missing media. Since
+		// 2.6.1 direct delivery stores public images under uploads/wpmediaverse/,
+		// so running this on them deleted every new upload's picture from the
+		// stream.
+		if ( false === strpos( $content, 'data-mvs-media-id' ) ) {
+			$content = $this->drop_missing_upload_images( $content );
+		}
 
 		// Activity already has MVS media markup baked into content
 		// (BP composer flow saves content with `mvs-activity-media-grid`
@@ -453,8 +460,7 @@ class ActivityContentIntegration {
 		global $wpdb;
 
 		// Index columns go to the repository, which owns both the table and the
-		// allowlist that makes a dynamic column name safe (Rule 7). The copy of
-		// that list that used to live here is gone with the query.
+		// allowlist that makes a dynamic column name safe (Rule 7).
 		$found = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )
 			->find_by_indexed_column( $key, $value );
@@ -848,8 +854,18 @@ class ActivityContentIntegration {
 					return '';
 				}
 
-				$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );
-				$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_thumbnail_url( $media_id, 'large' );
+				// Each tile shows only to a viewer who may open that item.
+				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() ) ) {
+					return '';
+				}
+
+				// Broadcast URLs are anonymous, so a non-public item gets none and its
+				// tile kept the src of a file that going private renamed: the owner saw
+				// a broken image. Fall back to a URL minted for
+				// this viewer; it is empty for anyone who may not see the item.
+				$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+				$file_url  = $repo->get_broadcast_url( $media_id ) ?: $repo->get_url_for_viewer( $media_id );
+				$thumb_url = $repo->get_broadcast_thumbnail_url( $media_id, 'large' ) ?: $repo->get_thumbnail_url_for_viewer( $media_id, 'large' );
 
 				// Refresh outer <a href="..."> when the href targets the gated
 				// uploads dir. Permalinks (which point to the public single
@@ -864,6 +880,10 @@ class ActivityContentIntegration {
 					);
 				}
 
+				// BuddyPress kses strips <picture> and srcset on save, leaving an
+				// inert image <source>. Drop it; the <img> below carries the photo.
+				$body = (string) preg_replace( '~<source\b[^>]*\btype=["\']image/[^>]*>~i', '', $body );
+
 				// Refresh inner <img src="...">.
 				if ( $thumb_url ) {
 					$body = preg_replace_callback(
@@ -876,6 +896,16 @@ class ActivityContentIntegration {
 				}
 
 				// Refresh inner <source src="..."> and <video src="...">.
+				// A replaced or re-encoded video gets a new poster file, and the saved one is deleted.
+				$poster_url = $thumb_url ?: \WPMediaVerse\Core\TemplateHelpers::default_video_poster_url();
+				$body       = (string) preg_replace_callback(
+					'~(<video\b[^>]*\bposter=")([^"]*)(")~i',
+					static function ( $v ) use ( $poster_url ) {
+						return $v[1] . esc_url( $poster_url ) . $v[3];
+					},
+					$body
+				);
+
 				if ( $file_url ) {
 					$body = preg_replace_callback(
 						'~(<(?:source|video|audio)\s+[^>]*src=")([^"]+)(")~i',

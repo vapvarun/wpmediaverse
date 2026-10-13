@@ -33,6 +33,16 @@ $shim = $smoke_abspath . 'wp-admin/includes/upgrade.php';
 if ( ! is_file( $shim ) ) {
 	file_put_contents( $shim, "<?php // smoke-test shim — real dbDelta is in wp-stubs.php\n" );
 }
+// The Migrator takes core's upgrader lock (WP_Upgrader::create_lock(), since
+// 2.6.2). Every real install ships the file; the shim stores the lock as an
+// option, as core does.
+$upgrader_shim = $smoke_abspath . 'wp-admin/includes/class-wp-upgrader.php';
+if ( ! is_file( $upgrader_shim ) ) {
+	file_put_contents(
+		$upgrader_shim,
+		"<?php // smoke-test shim\nclass WP_Upgrader {\n\tpublic static function create_lock( \$name, \$release_timeout = null ) { return add_option( \$name . '.lock', time() ); }\n\tpublic static function release_lock( \$name ) { return delete_option( \$name . '.lock' ); }\n}\n"
+	);
+}
 
 // WP constants — caller-set before requiring the stubs. Each define() is
 // guarded by defined() so this is safe to run multiple times in one process.

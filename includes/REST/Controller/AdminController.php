@@ -17,7 +17,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 
 /**
- * REST routes for admin-only operations that previously ran through
+ * REST routes for admin-only operations that run through REST instead of
  * `wp-admin/admin-ajax.php`. Phase 6 of the 1.2.0 plan retires the three
  * `wp_ajax_mvs_*` handlers in favour of authenticated REST endpoints,
  * closing the Rule A loop (100% REST end-to-end).

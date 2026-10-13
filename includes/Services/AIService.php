@@ -246,7 +246,7 @@ class AIService {
 			// Apply tags to the mvs_tag taxonomy if auto-apply is enabled.
 			if ( get_option( 'mvs_ai_auto_apply_tags', false ) ) {
 				wp_set_object_terms( $media_id, $tags, 'mvs_tag', true );
-				$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
+				$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' ); // Not get_the_terms(): media are not posts.
 				if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 				}
@@ -440,9 +440,9 @@ class AIService {
 	 */
 	private function check_budget(): bool {
 		// Fallback 10, matching the registered default and what activation writes.
-		// This read used to fall back to 0, and 0 means "no cap" two lines down -
+		// A fallback of 0 would mean "no cap" two lines down -
 		// so any install missing the row (restored backup, copy-in-place deploy,
-		// an activation hook that never ran) span the cap off silently, in the
+		// an activation hook that never ran) would switch the cap off silently, in the
 		// expensive direction.
 		$budget = (float) get_option( 'mvs_ai_monthly_budget', 10 );
 		if ( $budget <= 0 ) {
@@ -457,11 +457,11 @@ class AIService {
 	/**
 	 * Per-month, per-field usage counter option name.
 	 *
-	 * Usage used to live as one nested array under a single `mvs_ai_usage`
-	 * option (autoloaded, read-modify-write on every AI call). Splitting into
-	 * one small autoload=false row per field lets each counter be incremented
-	 * atomically instead of racing a get/update_option round trip, and keeps
-	 * the counters out of the autoloaded-options blob every request pays for.
+	 * Usage is one small autoload=false row per field rather than one nested
+	 * array under a single `mvs_ai_usage` option (autoloaded, read-modify-write
+	 * on every AI call): each counter can be incremented atomically instead of
+	 * racing a get/update_option round trip, and the counters stay out of the
+	 * autoloaded-options blob every request pays for.
 	 *
 	 * @since 2.6.0
 	 *

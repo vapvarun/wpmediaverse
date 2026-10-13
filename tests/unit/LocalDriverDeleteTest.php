@@ -6,8 +6,7 @@
  * reach unlink(). And a path declared uploads-relative through
  * `mvs_local_only_path_prefixes` (Pro documents) must resolve against the
  * uploads base — resolving it under uploads/wpmediaverse/ found nothing and
- * reported success, leaving every deleted document on disk (Basecamp
- * 10320657202).
+ * reported success, leaving every deleted document on disk.
  *
  * @package WPMediaVerse
  */

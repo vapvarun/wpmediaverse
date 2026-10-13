@@ -51,6 +51,55 @@ class CommentService {
 	 */
 	public static function register_query_guard(): void {
 		add_action( 'pre_get_comments', array( __CLASS__, 'exclude_media_comments_from_foreign_queries' ) );
+		add_action( 'delete_comment', array( __CLASS__, 'delete_replies_with_comment' ), 10, 2 );
+	}
+
+	/**
+	 * A deleted media comment takes its replies with it, as on social networks.
+	 *
+	 * Hooked on core's delete_comment, which fires before WordPress moves the
+	 * replies up a level, so the rule holds however the comment is deleted (the
+	 * REST route, moderation, the wp-admin comments screen). Each reply's own
+	 * delete runs this again, so a whole thread goes. Reply authors are not told.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int         $comment_id Comment being deleted.
+	 * @param \WP_Comment $comment    The comment.
+	 * @return void
+	 */
+	public static function delete_replies_with_comment( $comment_id, $comment ): void {
+		if ( ! $comment instanceof \WP_Comment || self::COMMENT_TYPE !== $comment->comment_type ) {
+			return;
+		}
+
+		/**
+		 * Filters whether deleting a media comment also deletes its replies.
+		 *
+		 * Return false to keep replies, moved up a level (the behaviour before 2.6.2).
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool        $delete  Default true.
+		 * @param \WP_Comment $comment The comment being deleted.
+		 */
+		if ( ! apply_filters( 'mvs_comment_delete_replies', true, $comment ) ) {
+			return;
+		}
+
+		$replies = get_comments(
+			array(
+				'parent'  => (int) $comment_id,
+				'type'    => self::COMMENT_TYPE,
+				'status'  => 'all',
+				'fields'  => 'ids',
+				'number'  => 0,
+				'orderby' => 'comment_ID',
+			)
+		);
+		foreach ( (array) $replies as $reply_id ) {
+			wp_delete_comment( (int) $reply_id, true );
+		}
 	}
 
 	/**
@@ -100,16 +149,6 @@ class CommentService {
 		);
 	}
 
-	/**
-	 * Add a comment to a media item.
-	 *
-	 * @param int    $media_id  Media post ID.
-	 * @param int    $user_id   Commenter user ID.
-	 * @param string $content   Comment content.
-	 * @param int    $parent_id Parent comment ID for threading (0 for top-level).
-	 * @param string $source    Optional source identifier (e.g. 'bp_activity') to prevent sync loops.
-	 * @return int|WP_Error Comment ID on success.
-	 */
 	/**
 	 * Find an identical comment by the same author on the same media, posted
 	 * within the dedupe window.
@@ -184,6 +223,16 @@ class CommentService {
 		return 0;
 	}
 
+	/**
+	 * Add a comment to a media item.
+	 *
+	 * @param int    $media_id  Media post ID.
+	 * @param int    $user_id   Commenter user ID.
+	 * @param string $content   Comment content.
+	 * @param int    $parent_id Parent comment ID for threading (0 for top-level).
+	 * @param string $source    Optional source identifier (e.g. 'bp_activity') to prevent sync loops.
+	 * @return int|WP_Error Comment ID on success.
+	 */
 	public function add( int $media_id, int $user_id, string $content, int $parent_id = 0, string $source = '' ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user ) {
@@ -195,7 +244,7 @@ class CommentService {
 		// reached through a view-only share must not be commentable. Pro narrows
 		// the filter for documents; all other media keeps the default true. Lives
 		// here so every client — web, lightbox, BP composer, REST, the planned
-		// mobile app — is covered rather than just create_item (#10240475368).
+		// mobile app — is covered rather than just create_item.
 		if ( ! (bool) apply_filters( 'mvs_can_comment', true, $media_id, $user_id ) ) {
 			return new WP_Error(
 				'mvs_comment_forbidden',
@@ -221,7 +270,7 @@ class CommentService {
 		// This is the ONLY layer that covers every client: the lightbox had no
 		// in-flight guard at all, the BP activity composer disabled the input
 		// but not the button, and the planned mobile app is a third client we
-		// cannot guard from the browser (#10148507863).
+		// cannot guard from the browser.
 		$duplicate = $this->find_recent_duplicate( $media_id, $user_id, $content, $parent_id );
 		if ( $duplicate ) {
 			return new WP_Error(
@@ -318,26 +367,24 @@ class CommentService {
 			)
 		);
 
-		// Fetch ALL replies for this media in one query, then build tree in memory.
+		// Replies of THIS page's threads only (the one level the formatter shows).
+		// Loading every reply on the item for every page would fetch thousands of
+		// rows for a popular photo to show twenty threads.
 		$all_replies = array();
 		if ( $top_level ) {
 			$replies_raw = get_comments(
 				array_merge(
 					$this->media_scope_args( $media_id ),
 					array(
-						'parent__not_in' => array( 0 ),
-						'orderby'        => 'comment_date_gmt',
-						'order'          => 'ASC',
-						'number'         => 0, // All replies.
+						'parent__in' => array_map( static fn( $c ) => (int) $c->comment_ID, $top_level ),
+						'orderby'    => 'comment_date_gmt',
+						'order'      => 'ASC',
+						'number'     => 0, // All replies in these threads.
 					)
 				)
 			);
 			foreach ( $replies_raw as $reply ) {
-				$parent_id = (int) $reply->comment_parent;
-				if ( ! isset( $all_replies[ $parent_id ] ) ) {
-					$all_replies[ $parent_id ] = array();
-				}
-				$all_replies[ $parent_id ][] = $reply;
+				$all_replies[ (int) $reply->comment_parent ][] = $reply;
 			}
 		}
 

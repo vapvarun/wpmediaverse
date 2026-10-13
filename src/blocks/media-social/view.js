@@ -11,12 +11,13 @@
  */
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Parse a comment's REST `date` (comment_date_gmt, "Y-m-d H:i:s", no zone) to
  * epoch ms as UTC. new Date() would read the zone-less string as LOCAL time, so
  * on a non-UTC browser a just-posted comment looked hours old and its edit
- * window read as expired (Basecamp 10148635942).
+ * window read as expired.
  *
  * @param {string} s Date string.
  * @return {number} Epoch ms (returns Date.now() on an unparseable value).
@@ -33,7 +34,7 @@ function gmtToMs( s ) {
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
 // interactivity state by TemplateHelpers::media_social_i18n_state() via
 // wp_interactivity_state(); read them as `state.i18n.<key>` with an English
-// fallback. Basecamp 10073528834.
+// fallback.
 // Reactions render as the vendored Microsoft Fluent emoji SVGs (the same set as
 // BuddyNext) so they look identical on every platform; state.emojiBase is seeded
 // by TemplateHelpers::media_social_i18n_state().
@@ -73,7 +74,8 @@ async function fetchComments( ctx ) {
 		const data = res.data;
 		const now = Date.now();
 		// Seconds from the server (filterable mvs_comment_edit_window), not a
-		// hardcoded 15 minutes — the two used to drift on any site that changed it.
+		// hardcoded 15 minutes, which would drift from the server on any site that
+		// changed it.
 		const editWindow = ( ctx.commentEditWindow || 15 * 60 ) * 1000;
 		ctx.comments = Array.isArray( data )
 			? data.map( ( c ) => {
@@ -90,11 +92,13 @@ async function fetchComments( ctx ) {
 					date: c.date,
 					date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 					content: c.content,
+					// Kept so the delete confirm can say how many replies go with it.
+					replies: Array.isArray( c.replies ) ? c.replies : [],
 					canEdit: isOwnComment && commentAge < editWindow,
 					// Delete is not time-limited: the API lets an owner delete their
-					// own comment at any age, and a moderator delete anyone's — the UI
-					// used to hide Delete with Edit at 15 minutes, so the control was
-					// stricter than the route it drives (Basecamp 10148635942).
+					// own comment at any age, and a moderator delete anyone's — hiding Delete
+					// along with Edit at 15 minutes would make the control stricter than the
+					// route it drives.
 					canDelete: isOwnComment || !! ctx.canModerateComments,
 					canReport: !! ( ctx.isLoggedIn && sharedUI.state.reportsEnabled && ! isOwnComment ),
 					reported: false,
@@ -157,7 +161,7 @@ const { state } = store( 'mvs/media-social', {
 		 * isFavorite is per-item CONTEXT, not store state - one page can carry
 		 * many of these buttons - so this reads getContext(). The visual state
 		 * was already handled by data-wp-class--active; this is the half a
-		 * screen reader gets. Basecamp 10297839293.
+		 * screen reader gets.
 		 */
 		get favoriteLabel() {
 			return getContext().isFavorite
@@ -182,7 +186,7 @@ const { state } = store( 'mvs/media-social', {
 			return ! item?.canDelete || item?.editing;
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		/* --- Reactions --- */
 		async toggleReaction( event ) {
 			const ctx = getContext();
@@ -372,7 +376,7 @@ const { state } = store( 'mvs/media-social', {
 			const comment = ctx.item;
 			if ( ! comment ) return;
 
-			sharedUI.actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
+			sharedUI.actions.showConfirm( sharedUI.actions.commentDeleteConfirm( comment ), async () => {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'DELETE',
 				} );
@@ -636,7 +640,7 @@ const { state } = store( 'mvs/media-social', {
 		stopPropagation( event ) {
 			event.stopPropagation();
 		},
-	},
+	} ),
 	callbacks: {
 		async init() {
 			const ctx = getContext();

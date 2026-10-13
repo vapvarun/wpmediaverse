@@ -1,6 +1,6 @@
 # Photo Battles
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Challenge any photographer on the site to a head-to-head photo duel - your best shot vs. theirs, side by side, with the community deciding the winner.
 
@@ -70,7 +70,7 @@ The opponent receives a MediaVerse notification. On a BuddyPress site it also ap
 
 ## Submitting a Photo
 
-Both players have 48 hours from the moment the challenge is sent to submit their battle photo. Each player selects one photo from their media library or uploads a new one. A player can change their photo until the deadline while the battle is still waiting for the other photo.
+Both players have 48 hours from the moment the challenge is sent to submit their battle photo. Each player selects one public, approved photo from their media library or uploads a new one. Accepting a battle does not cost the winner their win points, and a battle is resolved only once. A player can change their photo until the deadline while the battle is still waiting for the other photo.
 
 If either player does not submit within the deadline, the battle expires and no points are awarded.
 
@@ -120,7 +120,7 @@ There is no setting for the deadlines. Developers can change the 48-hour submit 
 }
 ```
 
-Returns `403` if the authenticated user is not one of the two players. Returns `400` if the battle is not accepting photos, the deadline has passed, or the media is not yours.
+Returns `403` if the authenticated user is not one of the two players. Returns `400` if the battle is not accepting photos, the deadline has passed, or the media is not yours, not public, or not approved.
 
 ### POST /battles/{id}/vote
 

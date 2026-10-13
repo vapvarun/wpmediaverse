@@ -222,7 +222,6 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	 * an exclusion, which kept out the album/collection privacy stubs and let
 	 * every other type straight through. So `[mvs_gallery]` and the block served
 	 * documents beside photos: 136 documents against 84 media on the QA baseline.
-	 * Basecamp 10298650705.
 	 *
 	 * Asserted against the same clause the template builds, because a block
 	 * template is not reachable from a unit test — the browser check covers the
@@ -306,9 +305,9 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	/**
 	 * A legacy PDF does not count as MEDIA on a profile.
 	 *
-	 * REVERSED with the MEDIA_LIBRARY change (owner, 2026-08-09: "documents type
-	 * will never display at media grid"). This previously asserted the opposite,
-	 * to stop an upgrade deducting from a member's visible numbers. The browser
+	 * Owner decision (2026-08-09): "documents type will never display at media
+	 * grid". Counting the row would stop an upgrade deducting from a member's
+	 * visible numbers, but the browser
 	 * settled it: the row a profile was counting rendered in Explore as a broken
 	 * image tile, so the count was promising a picture that did not exist.
 	 *

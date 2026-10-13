@@ -1,6 +1,6 @@
 <?php
 /**
- * Album-wide privacy changes stay bounded on big albums (Basecamp 10344644266).
+ * Album-wide privacy changes stay bounded on big albums.
  *
  * @package WPMediaVerse
  */

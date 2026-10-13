@@ -30,21 +30,4 @@ const configs = Array.isArray( defaultConfig )
 	? defaultConfig
 	: [ defaultConfig ];
 
-// Add view-only entries to the first config.
-const mainConfig = configs[ 0 ];
-const originalEntry = mainConfig.entry;
-
-configs[ 0 ] = {
-	...mainConfig,
-	entry: async () => {
-		const resolved = typeof originalEntry === 'function'
-			? await originalEntry()
-			: originalEntry || {};
-		return {
-			...resolved,
-			...viewEntries,
-		};
-	},
-};
-
 module.exports = configs;

@@ -3,9 +3,9 @@
  * Importer seam: conversations and messages accept a backdated created_at.
  *
  * The buddynext-importer's future MessageImporter replays a source DM history
- * through this service (BuddyNext card 10124307358); without the seam every
+ * through this service; without the seam every
  * migrated conversation and message would be stamped with the migration run
- * time (the bug class of card 10124307318). Mirrors the seams already landed
+ * time. Mirrors the seams already landed
  * in buddynext (Core\Backdate) and jetonomy (Journey_Backdate): UTC in,
  * future/invalid values fall back to now, absent input is byte-identical to
  * live behaviour.

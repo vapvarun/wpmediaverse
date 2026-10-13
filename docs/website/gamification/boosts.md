@@ -1,19 +1,19 @@
 # Media Boosts
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Spend your earned points to push a photo to the top of the Explore feed - get more eyes on your best work right when you want it seen. Boosts spend points from the free WB Gamification plugin, which must be active.
 
 ## What You Can Do (as a User)
 
-- Boost any of your photos to increase its visibility in the Explore feed
+- Boost your own public, approved photos and videos to increase their visibility in the Explore feed. Private items and documents cannot be boosted, so they show no Boost button
 - Choose how many impressions you want to buy (e.g., 500 views)
 - See a live point cost preview before committing
 - Run boosts on multiple photos at the same time (a boost runs until its impression target or its expiry, 7 days by default; it cannot be cancelled early)
 
 ## How It Works (for Users)
 
-1. Open one of your uploaded photos
+1. Open one of your public photos or videos on its media page, or find it on an Instagram layout feed card
 2. Click **Boost** - the **Boost Your Media** panel shows your point balance (**Balance: N points**)
 3. Enter the **Target Impressions** (for example 500, which costs 250 points at the default rate). The **Cost:** line updates as you type
 4. Click **Boost** - points are deducted immediately from your balance and **Boost activated!** appears
@@ -41,7 +41,7 @@ Boosted photos are placed at the top of the first page of the Explore feed. Up t
 5. The Explore feed query moves boosted items to the front of the first page
 6. When the impression counter reaches the target, or the boost duration expires, the boost auto-expires and the media returns to organic ranking
 
-A user can have multiple media items boosted simultaneously. One media item can only have one active boost at a time.
+A user can have multiple media items boosted simultaneously. One media item can only have one active boost at a time, and only one purchase for an item is processed at a time, so a double click is never charged twice.
 
 ## Boost Cost Calculation
 
@@ -102,7 +102,7 @@ All boost endpoints require an authenticated user. Boosts are created and listed
 }
 ```
 
-`impressions_target` defaults to 500. Returns `400 Bad Request` if `impressions_target` is below 100 or exceeds the **Max Impressions per Boost** setting, if the media is not yours (or is a document), or if you do not have enough points. Returns `409 Conflict` if the media item already has an active boost. Returns `503 Service Unavailable` if WB Gamification is not active.
+`impressions_target` defaults to 500. Returns `400 Bad Request` if `impressions_target` is below 100 or exceeds the **Max Impressions per Boost** setting, if the media is not yours, is not public and approved, or is a document, or if you do not have enough points. Returns `409 Conflict` if the media item already has an active boost. Returns `503 Service Unavailable` if WB Gamification is not active.
 
 ### GET /boosts/balance
 

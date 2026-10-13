@@ -249,7 +249,7 @@ class CollectionController extends WP_REST_Controller {
 
 		// Privacy gate — mirror AlbumController::get_item(). A members/private
 		// collection's title, structure and item list must not be readable by
-		// non-owners (Basecamp 10073499554).
+		// non-owners.
 		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $post->ID, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 			// Hidden looks exactly like missing: a 403 here told the caller a private item exists.
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
@@ -561,7 +561,7 @@ class CollectionController extends WP_REST_Controller {
 			// raw SQL that skipped both the viewer gate and the
 			// mvs_collection_media_ids filter - so a collection could report
 			// more items than it would show, and draw its cover from media the
-			// viewer cannot open. Basecamp 10298492555.
+			// viewer cannot open.
 			// ponytail: linear scan, one privacy check per row — but batch-prefetched
 			// (FavoriteService::get_collection_media_ids() primes MediaRepository
 			// before the can_view() loop, 2.6.0), so it is one query pair for the
@@ -601,8 +601,8 @@ class CollectionController extends WP_REST_Controller {
 			} else {
 				// Paginated by the same $per_page/$page the caller already sent
 				// (and the smart branch above already honours via resolve()) —
-				// previously ignored here, so a manual collection's detail
-				// response always returned EVERY favourite row regardless of
+				// ignoring them would make a manual collection's detail
+				// response return EVERY favourite row regardless of
 				// per_page, unbounded at any collection size.
 				global $wpdb;
 				$mvs_page_ids = array_slice( $manual_ids, ( $page - 1 ) * $per_page, $per_page );
@@ -640,8 +640,8 @@ class CollectionController extends WP_REST_Controller {
 	 *
 	 * The stored 'value' (term/user ID) is preserved so clients can round-trip
 	 * rules through the edit modal without corrupting them; the readable name
-	 * is exposed separately as 'label'. Before 1.6.0 this method overwrote
-	 * 'value' with the name, which the dashboard edit modal then saved back —
+	 * is exposed separately as 'label'. Overwriting
+	 * 'value' with the name would have the dashboard edit modal save it back —
 	 * permanently breaking the collection's rules.
 	 *
 	 * @param array $rule Rule array with 'key' and 'value'.

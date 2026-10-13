@@ -59,12 +59,11 @@ class SettingsRegistrar {
 	 * expose these keys, and a `get_option()` call returns `false` (not the
 	 * documented default) until the option is manually written somewhere.
 	 *
-	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` USED to be registered
-	 * here AND in the Display registrar. Two register_setting() calls
-	 * for the same option silently overwrites the first sanitize_callback —
-	 * the same class of bug that wiped dm_access values. Both are now owned
-	 * solely by DisplaySettingsRegistrar. This method only registers
-	 * options without a settings-page UI.
+	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` are NOT registered
+	 * here: two register_setting() calls for the same option silently
+	 * overwrite the first sanitize_callback — the same class of bug that wiped
+	 * dm_access values. Both are owned solely by DisplaySettingsRegistrar.
+	 * This method only registers options without a settings-page UI.
 	 *
 	 * See qa/runs/FINDINGS-HISTORY.md (E3, F13) for background.
 	 */
@@ -78,15 +77,6 @@ class SettingsRegistrar {
 				'default'           => 15 * MINUTE_IN_SECONDS,
 			)
 		);
-	}
-
-	/**
-	 * Whether WPMediaVerse Pro is active.
-	 *
-	 * @return bool
-	 */
-	private static function is_pro_active(): bool {
-		return defined( 'MVS_PRO_VERSION' );
 	}
 
 	// -------------------------------------------------------------------------
@@ -160,7 +150,7 @@ class SettingsRegistrar {
 		$choices = self::storage_driver_choices();
 		// Without Pro its cloud drivers cannot be used, so they are shown locked.
 		// A driver a site registered itself can be picked either way.
-		$usable = self::is_pro_active() ? $choices : array_diff_key( $choices, self::cloud_driver_choices() );
+		$usable = \WPMediaVerse\Core\Plugin::is_pro_active() ? $choices : array_diff_key( $choices, self::cloud_driver_choices() );
 		if ( count( $usable ) > 1 ) {
 			FieldRenderer::add_field(
 				'mvs_storage_driver',
@@ -199,7 +189,7 @@ class SettingsRegistrar {
 			$image::SETTING_GENERATE_WEBP                            => array( 'boolean', 'rest_sanitize_boolean', true ),
 			$image::SETTING_GENERATE_AVIF                            => array( 'boolean', 'rest_sanitize_boolean', false ),
 			// Hashed by default since 1.6.0; matches FilenameStrategy's runtime
-			// fallback so get_option() and resolve_strategy agree (#9962530792).
+			// fallback so get_option() and resolve_strategy agree.
 			\WPMediaVerse\Services\FilenameStrategy::SETTING     => array( 'string', array( Sanitizers::class, 'sanitize_filename_strategy' ), \WPMediaVerse\Services\FilenameStrategy::effective_default() ),
 		);
 		foreach ( $fieldless as $option => $spec ) {
@@ -215,7 +205,7 @@ class SettingsRegistrar {
 		}
 
 		// Lossy for JPEG (about quality 92), so OFF by default: re-encoding every
-		// upload can only lose detail (Basecamp #10073918955). Removing GPS is a
+		// upload can only lose detail. Removing GPS is a
 		// separate lossless step controlled by mvs_strip_exif.
 		register_setting(
 			$group,
@@ -300,7 +290,7 @@ class SettingsRegistrar {
 			)
 		);
 
-		// Lived on the AI tab until 2.6.0; it is a moderation decision.
+		// A moderation decision, so it is registered with moderation rather than the AI tab.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_ai_auto_moderate',
@@ -334,7 +324,7 @@ class SettingsRegistrar {
 				// REST schema, so 'delete' here made a fresh install SHOW "Delete
 				// permanently" as the default and persist it on the first Save —
 				// silently arming auto-deletion of flagged uploads. Auto-moderation
-				// must default to the safe, reversible action. Basecamp 10074612454.
+				// must default to the safe, reversible action.
 				'default'           => 'flag',
 			)
 		);

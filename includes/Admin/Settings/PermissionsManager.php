@@ -37,7 +37,7 @@ class PermissionsManager {
 	 *
 	 * `manage_options` is a hard fallback: an administrator who revokes
 	 * `manage_mvs_settings` from their own role while testing must not be
-	 * locked out of the matrix (Basecamp #9937811664).
+	 * locked out of the matrix.
 	 */
 	private function current_user_can_save(): bool {
 		return current_user_can( 'manage_mvs_settings' ) || current_user_can( 'manage_options' );
@@ -49,7 +49,7 @@ class PermissionsManager {
 	 * The matrix must cover ALL roles — MediaCapabilities::add_caps()
 	 * grants base member caps to every role on the site (custom,
 	 * BuddyPress, bbPress, WooCommerce, etc.), so a matrix hardcoded to
-	 * the 5 core roles made those grants irrevocable (Basecamp #9937811664).
+	 * the 5 core roles made those grants irrevocable.
 	 *
 	 * @return array<string, string>
 	 */
@@ -175,7 +175,6 @@ class PermissionsManager {
 				// so it holds at any number of capabilities (the mvs_managed_caps
 				// filter can add more) and any number of roles, and it reads the way
 				// an owner actually asks the question: "what can Subscribers do?"
-				// Basecamp 10285712647.
 				?>
 				<div class="mvs-caps-roles">
 					<?php foreach ( $roles as $role_slug => $role_label ) : ?>
@@ -215,8 +214,8 @@ class PermissionsManager {
 	 * Applies grants/revokes to wp_user_roles AND persists the full matrix
 	 * to the MediaCapabilities::OVERRIDES_OPTION option, which add_caps()
 	 * re-applies after its default grants — so plugin updates (the
-	 * version-gated add_caps() call in Plugin::init()) no longer reset the
-	 * admin's choices (Basecamp #9937811664).
+	 * version-gated add_caps() call in Plugin::init()) do not reset the
+	 * admin's choices.
 	 *
 	 * @return int Number of roles updated.
 	 */

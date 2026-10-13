@@ -199,7 +199,7 @@ class GDPRService {
 		// empty, so a reviewer cannot tell the exporter ran from one that
 		// never fired. Only on the genuinely empty first page: a later page
 		// of a multi-page export being empty (the tail end) is normal and
-		// the heading already appeared on page 1. Basecamp 10350231765.
+		// the heading already appeared on page 1.
 		if ( empty( $export_items ) && 1 === $page ) {
 			$export_items[] = array(
 				'group_id'    => 'wpmediaverse-media',
@@ -352,7 +352,7 @@ class GDPRService {
 			'mvs_blocks'                    => 'blocker_id',
 			'mvs_activity'                  => 'user_id',
 			'mvs_mentions'                  => 'mentioned_user_id',
-			// Additions — previously missed by GDPR erasure, causing orphaned rows to
+			// Also covered by GDPR erasure, so orphaned rows do not
 			// survive a user wipe. `mvs_conversations` is intentionally retained so
 			// threads with other participants keep working; we only erase the
 			// requesting user's participation + their sent messages.
@@ -538,8 +538,10 @@ class GDPRService {
 					continue;
 				}
 
+				// `export_columns` narrows the export to rows where the member is the
+				// actor; erasure and retention still use every column.
 				$where = array();
-				foreach ( $spec['columns'] as $column ) {
+				foreach ( $spec['export_columns'] ?? $spec['columns'] as $column ) {
 					$has = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM `{$full}` LIKE %s", $column ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					if ( $has ) {
 						$where[] = '(' . \WPMediaVerse\Privacy\MemberDataMap::member_condition( $spec, $column, $user_id ) . ')';

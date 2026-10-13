@@ -190,7 +190,7 @@ class MediaListPage {
 								// "Documents categorization is different as we already have
 								// different menu for it, do not mix files with media." Same
 								// call as Activator's "documents get their OWN listing page,
-								// not a corner of Explore" (2026-08-09). Basecamp 10280356655.
+								// not a corner of Explore" (2026-08-09).
 								//
 								// The one exception is an owner who ALREADY has the filter
 								// applied: leaving it out of the list then would blank their
@@ -389,7 +389,7 @@ class MediaListPage {
 			// branded 404 by design. Computed before the title, because the BOLD
 			// TITLE is the primary click target in every WP list table; guarding
 			// only the row-actions "View" span removed the link almost nobody
-			// clicks and kept the one everybody does. Basecamp 10280356655.
+			// clicks and kept the one everybody does.
 			$mvs_is_doc      = in_array( (string) $type, array( 'document', 'legacy_document' ), true );
 			$mvs_can_view_it = ! $mvs_is_doc || \WPMediaVerse\Core\Plugin::documents_enabled();
 			?>
@@ -688,7 +688,7 @@ class MediaListPage {
 		if ( $total_pages <= 1 ) {
 			// Wrapped in .tablenav: core's list-tables.css scopes every
 			// .tablenav-pages rule to that ancestor, so without it this screen
-			// rendered raw unstyled links. Basecamp 10280400207.
+			// rendered raw unstyled links.
 			echo '<div class="tablenav ' . esc_attr( $which ) . '"><div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
 				sprintf(
 				/* translators: %s: number of items */
@@ -723,7 +723,6 @@ class MediaListPage {
 		// never .page-numbers - which is why WP_List_Table::pagination() builds
 		// its links by hand rather than calling paginate_links(). Without this
 		// the wrapper alone left 6px text links where core draws 32x32 controls.
-		// Basecamp 10280400207.
 		$page_links = array_map(
 			static function ( $link ) {
 				$extra = ( false !== strpos( $link, '<a' ) )
@@ -811,7 +810,7 @@ class MediaListPage {
 				// trash()/restore(), not set(): they are the funnel that fires
 				// mvs_media_trashed / mvs_media_restored. Writing the column
 				// directly here is why an admin trashing media left every
-				// integration's mirror in place (Basecamp 10252324048).
+				// integration's mirror in place.
 				$mvs_repo->trash( $media_id );
 				break;
 
@@ -974,9 +973,9 @@ class MediaListPage {
 
 		// Image: regenerate size variants through the shared generator so repair
 		// produces exactly the same rungs as a fresh upload — including the
-		// owner-configured "Large image size" (mvs_large_image_size). This path
-		// previously hardcoded its own 200/600/1280 sizes, which both diverged
-		// from the upload pipeline (1024 large) and ignored the setting + the
+		// owner-configured "Large image size" (mvs_large_image_size). Hardcoding
+		// its own 200/600/1280 sizes would both diverge
+		// from the upload pipeline (1024 large) and ignore the setting + the
 		// mvs_thumbnail_sizes filter. Routing through UploadService keeps
 		// get_thumbnail_sizes() the single source of truth.
 		if ( 0 === strpos( $file_type, 'image/' ) ) {
@@ -1190,7 +1189,7 @@ class MediaListPage {
 			// wp_get_object_terms, not get_the_terms: media rows live in
 			// mvs_media_index, not wp_posts, and get_the_terms() opens with
 			// get_post() and bails on a non-post. The write path uses the
-			// post-agnostic wp_set_object_terms(). Basecamp 10278224214.
+			// post-agnostic wp_set_object_terms().
 			$all_terms = wp_get_object_terms( $media_id, 'mvs_tag' );
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 				$repo->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
@@ -1299,12 +1298,8 @@ class MediaListPage {
 	 * @param int $media_id Media ID.
 	 */
 	private static function permanently_delete_media( int $media_id ): void {
-		global $wpdb;
+		// delete_cascade() (via delete_all) already clears every child table.
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 
 	/**
@@ -1583,7 +1578,7 @@ class MediaListPage {
 									// Resolve where the files actually live: on a CDN site the
 									// legacy URL meta still points at the local uploads dir, which
 									// MediaVerse locks with `Deny from all` -> the admin "View" link
-									// 403s. Basecamp #10162798416.
+									// 403s.
 									$thumb_url      = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, 'thumb_' . $size );
 									$thumb_webp_url = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, 'thumb_' . $size . '_webp' );
 									$label          = $size_labels[ $size ] ?? $size;

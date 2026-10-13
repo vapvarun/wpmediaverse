@@ -5,11 +5,12 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
 // (no getLocaleData for the domain). Strings are PHP-translated and injected into
 // interactivity state by render.php via wp_interactivity_state(); read them as
-// `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+// `state.i18n.<key>` with an English fallback.
 
 /**
  * Build the thumbnail node(s) for a Load More media item.
@@ -119,7 +120,7 @@ const { state } = store( 'mvs/explore-feed', {
 			return state.hasSuggestions && idx >= 0 ? 'mvs-explore-sugg-' + idx : null;
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		setFilter() {
 			const itemCtx = getContext();
 			const ctx = getContext();
@@ -263,9 +264,8 @@ const { state } = store( 'mvs/explore-feed', {
 				// server-rendered card in render.php exactly: a typed grid item
 				// wrapping a permalink anchor (with a media-type-aware thumbnail)
 				// plus a title overlay. Every media type — image, video, audio —
-				// renders here; previously only image/* items were appended so
-				// video and audio results from the REST page were silently
-				// dropped. Thumbnails come from buildThumbnailNodes (thumbnail_url),
+				// renders here; appending only image/* items would silently drop video and
+				// audio results from the REST page. Thumbnails come from buildThumbnailNodes (thumbnail_url),
 				// never the full-resolution file_url.
 				const grid = document.querySelector( '.mvs-explore-feed-block .mvs-media-grid' );
 				if ( grid && data.length ) {
@@ -315,5 +315,5 @@ const { state } = store( 'mvs/explore-feed', {
 
 			ctx.loading = false;
 		},
-	},
+	} ),
 } );

@@ -102,7 +102,7 @@ class MessagingService {
 		// "everyone" + user "mutual" -> "mutual"), never widen past it (e.g.
 		// global "nobody" + user "everyone" must stay "nobody"). Without this,
 		// a recipient's per-user meta could silently re-open DMs an admin
-		// disabled site-wide (Basecamp #10053143680).
+		// disabled site-wide.
 		$global_access = get_option( 'mvs_dm_access', 'everyone' );
 		$user_access   = get_user_meta( $recipient_id, '_mvs_dm_access', true );
 		$access        = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
@@ -190,6 +190,7 @@ class MessagingService {
 			'content_too_long'       => __( 'That message is too long to send.', 'wpmediaverse' ),
 			'empty_content'          => __( 'Your message is empty.', 'wpmediaverse' ),
 			'invalid_recipient'      => __( 'That member could not be found.', 'wpmediaverse' ),
+			'attachment_unavailable' => __( 'That file can’t be sent. It may have been removed or made private.', 'wpmediaverse' ),
 		);
 
 		$message = $messages[ $reason ] ?? __( 'This message could not be delivered.', 'wpmediaverse' );
@@ -270,6 +271,29 @@ class MessagingService {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * The refusal for a blocked pair, or null when neither has blocked the other.
+	 *
+	 * Checked before the lookup, in either direction, so a blocked member cannot
+	 * reopen an existing thread. Only a block refuses here; a privacy setting
+	 * ("who can message me") never closes a thread two people already have.
+	 *
+	 * @param int $user_a Caller.
+	 * @param int $user_b Other member.
+	 * @return array{conversation_id:int,created:bool,status:string}|null
+	 */
+	private function blocked_pair_refusal( int $user_a, int $user_b ): ?array {
+		$access = $this->can_message( $user_a, $user_b );
+		if ( $access['allowed'] || 'blocked' !== $access['reason'] ) {
+			return null;
+		}
+		return array(
+			'conversation_id' => 0,
+			'created'         => false,
+			'status'          => 'blocked',
+		);
+	}
+
+	/**
 	 * Find or create a 1:1 conversation.
 	 *
 	 * @param int   $user_a First user (the initiator).
@@ -302,22 +326,20 @@ class MessagingService {
 			);
 		}
 
+		$blocked = $this->blocked_pair_refusal( $user_a, $user_b );
+		if ( $blocked ) {
+			return $blocked;
+		}
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		// Find the pair's existing direct conversation — INCLUDING one the
-		// current user has deleted. A pair keeps a single thread: "Delete" set a
-		// per-user clear watermark (participants.cleared_up_to, see
-		// leave_conversation()), so re-contacting reuses the thread and the
-		// initiator simply sees no pre-delete history. The old fresh-thread rule
-		// (`p1.status <> 'left'` here) spawned a second conversation row on
-		// re-contact, and the OTHER member — who never deleted anything — ended
-		// up with two live threads for the same person (card 10127717045).
-		// ORDER BY newest keeps the lookup deterministic for pairs that already
-		// have historical duplicates from the old behaviour.
+		// The pair's direct conversation, including one this user deleted: a pair
+		// keeps one thread and "Delete" only sets a clear watermark (see
+		// leave_conversation()). Newest first keeps older duplicates deterministic.
 		$existing_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT p1.conversation_id
@@ -450,13 +472,13 @@ class MessagingService {
 
 		// Deliberately NOT firing mvs_message_sent here.
 		//
-		// It used to fire with message_id 0 "so DM notifications reach the
+		// Firing it with message_id 0 "so DM notifications reach the
 		// recipient even when the conversation is created without an initial
-		// send_message() call" - but creating a conversation is not sending a
-		// message, and every listener took it at its word: our own
-		// NotificationListener and BuddyNext's bridge both told the recipient
-		// "X sent you a message" while mvs_messages held nothing. Opening a
-		// compose window and picking a recipient was enough to notify them.
+		// send_message() call" would be wrong - creating a conversation is not
+		// sending a message, and every listener takes it at its word: our own
+		// NotificationListener and BuddyNext's bridge would both tell the recipient
+		// "X sent you a message" while mvs_messages holds nothing. Opening a
+		// compose window and picking a recipient would be enough to notify them.
 		//
 		// Anyone who wants the create signal has mvs_conversation_created
 		// above; the real send fires mvs_message_sent with a real id.
@@ -512,9 +534,9 @@ class MessagingService {
 	 * Total conversations for a tab, for honest pagination.
 	 *
 	 * Shares conversation_tab_where() with get_conversations() so the count can
-	 * never drift from the list it counts. Before 2.3.0 the endpoint returned a
-	 * page with no total at all, so a client could not tell a short page from
-	 * the last page (big-site checklist items 1 and 4).
+	 * never drift from the list it counts. A page with no total leaves a
+	 * client unable to tell a short page from the
+	 * last page (big-site checklist items 1 and 4).
 	 *
 	 * @param int    $user_id User ID.
 	 * @param string $tab     Tab: all, unread, requests, archived.
@@ -557,8 +579,11 @@ class MessagingService {
 	 * @return array{0:string,1:array} WHERE SQL and its prepare() params.
 	 */
 	private function conversation_tab_where( int $user_id, string $tab ): array {
-		$where_parts = array( 'p.user_id = %d' );
-		$params      = array( $user_id );
+		// A direct conversation nobody has written in yet is listed only for the
+		// member who opened it: picking a recipient must not put an empty thread
+		// in the other member's inbox before anything is sent.
+		$where_parts = array( 'p.user_id = %d', "( c.type <> 'direct' OR c.last_message_id IS NOT NULL OR c.created_by = %d )" );
+		$params      = array( $user_id, $user_id );
 
 		switch ( $tab ) {
 			case 'unread':
@@ -575,10 +600,9 @@ class MessagingService {
 			case 'archived':
 				// Archived is the ONLY tab that shows archived rows, and it
 				// ignores is_archived in the other direction. Without it a
-				// member who archived a conversation had no way back to it:
-				// PATCH /conversations/{id} accepted is_archived and the row
-				// then vanished from every available tab. (Basecamp
-				// #10132225661 / app card MV-1.)
+				// member who archived a conversation would have no way back to it:
+				// PATCH /conversations/{id} accepts is_archived and the row
+				// would then vanish from every available tab.
 				$where_parts[] = "p.status = 'active'";
 				$where_parts[] = 'p.is_archived = 1';
 				break;
@@ -588,7 +612,6 @@ class MessagingService {
 				// tab, and listing them in both meant a message from someone
 				// you don't follow appeared twice — once as a pending request
 				// and once as if it were already an accepted conversation
-				// (Basecamp #10153356172).
 				$where_parts[] = "p.status = 'active'";
 				$where_parts[] = 'p.is_archived = 0';
 				break;
@@ -618,22 +641,87 @@ class MessagingService {
 
 		// Batched for the whole page — one IN() query for participants, one
 		// UNION query for unread counts, instead of 3 queries PER conversation
-		// (big-site checklist item 3: the inbox used to scale query count with
+		// (big-site checklist item 3: otherwise the inbox scales query count with
 		// conversation count).
 		$participants_by_conversation = $this->get_participants_for_conversations( $conversation_ids );
 		$unread_by_conversation       = $this->batch_unread_counts( $conversations, $user_id );
 
+		$blocked = $user_id ? array_map( 'intval', \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $user_id ) ) : array();
 		foreach ( $conversations as &$conv ) {
 			$cid                        = (int) $conv->id;
-			$conv->participants         = $participants_by_conversation[ $cid ] ?? array();
+			$conv->participants         = $this->mask_blocked_presence( $participants_by_conversation[ $cid ] ?? array(), $user_id, $blocked );
 			$conv->unread_count         = $unread_by_conversation[ $cid ] ?? 0;
 			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
+			self::cast_member_flags( $conv );
 			$this->suppress_cleared_preview( $conv );
 		}
 		unset( $conv );
 
 		return $conversations;
+	}
+
+	/**
+	 * The sender has read their own message, and sending ends their typing marker.
+	 *
+	 * @param int    $conversation_id Conversation.
+	 * @param int    $sender_id       Sender.
+	 * @param string $now             Send time (UTC MySQL).
+	 */
+	private function mark_sent( int $conversation_id, int $sender_id, string $now ): void {
+		global $wpdb;
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_conversation_participants',
+			array(
+				'last_read_at' => $now,
+				'typing_until' => null,
+			),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $sender_id,
+			),
+			array( '%s', null ),
+			array( '%d', '%d' )
+		);
+	}
+
+	/**
+	 * Hide presence across a block: a blocked pair never sees each other online.
+	 *
+	 * @param array<int,array<string,mixed>> $participants Participant rows.
+	 * @param int                            $viewer_id    Member reading them.
+	 * @param int[]|null                     $blocked      The viewer's blocks, when a list already has them.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function mask_blocked_presence( array $participants, int $viewer_id, ?array $blocked = null ): array {
+		$blocked = $blocked ?? ( $viewer_id ? array_map( 'intval', \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id ) ) : array() );
+		if ( ! $blocked ) {
+			return $participants;
+		}
+		foreach ( $participants as &$p ) {
+			if ( in_array( (int) ( $p['id'] ?? 0 ), $blocked, true ) ) {
+				$p['is_online']   = false;
+				$p['last_active'] = null;
+			}
+		}
+		unset( $p );
+		return $participants;
+	}
+
+	/**
+	 * The member's pin, mute and archive flags as booleans.
+	 *
+	 * The database returns "0"/"1" strings, and "0" is true in JavaScript, so
+	 * every conversation read as pinned.
+	 *
+	 * @param object $conv Conversation row.
+	 */
+	private static function cast_member_flags( object $conv ): void {
+		foreach ( array( 'is_pinned', 'is_muted', 'is_archived' ) as $flag ) {
+			if ( isset( $conv->$flag ) ) {
+				$conv->$flag = (bool) (int) $conv->$flag;
+			}
+		}
 	}
 
 	/**
@@ -788,10 +876,11 @@ class MessagingService {
 			return null;
 		}
 
-		$conv->participants         = $this->get_participants( $conversation_id );
+		$conv->participants         = $this->mask_blocked_presence( $this->get_participants( $conversation_id ), $user_id );
 		$conv->unread_count         = $this->get_conversation_unread_count( $conversation_id, $user_id );
 		$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 		$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
+		self::cast_member_flags( $conv );
 		$this->suppress_cleared_preview( $conv );
 
 		return $conv;
@@ -804,7 +893,7 @@ class MessagingService {
 	 * `last_message_id` / `last_message_preview` live on the conversation row
 	 * and are shared by both participants; a user who deleted the thread must
 	 * not see the pre-delete preview when the thread reactivates before any
-	 * new message arrives (card 10127717045). Rows expose `cleared_up_to`
+	 * new message arrives. Rows expose `cleared_up_to`
 	 * via the participant JOIN in get_conversations()/get_conversation().
 	 *
 	 * @since 2.2.1
@@ -836,18 +925,44 @@ class MessagingService {
 	 * @return int Conversation ID, or 0 when the message is gone.
 	 */
 	public function get_message_conversation_id( int $message_id ): int {
-		global $wpdb;
+		return \WPMediaVerse\Core\Plugin::container()->get( 'message_repository' )->conversation_of( $message_id );
+	}
 
-		if ( $message_id <= 0 ) {
-			return 0;
-		}
+	/**
+	 * Who sent each message, for a page of messages (moderation, reports).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[] $message_ids Message ids.
+	 * @return array<int,int> message id => sender id.
+	 */
+	public function get_message_senders( array $message_ids ): array {
+		return \WPMediaVerse\Core\Plugin::container()->get( 'message_repository' )->senders_of( $message_ids );
+	}
 
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d",
-				$message_id
-			)
-		);
+	/**
+	 * Largest group conversation allowed, creator included.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int                  $user_id Member creating the group or adding to it.
+	 * @param array<string, mixed> $context `conversation_id` when adding to an existing group, plus create options.
+	 * @return int
+	 */
+	public function max_group_participants( int $user_id, array $context = array() ): int {
+		/**
+		 * Filters the largest group conversation, creator included.
+		 *
+		 * Checked when a group is created and when a member is added, so a
+		 * membership plan can size groups per member.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param int   $max     Default self::MAX_GROUP_PARTICIPANTS.
+		 * @param int   $user_id Member creating or adding.
+		 * @param array $context Conversation id and create options.
+		 */
+		return max( 2, (int) apply_filters( 'mvs_group_conversation_max_participants', self::MAX_GROUP_PARTICIPANTS, $user_id, $context ) );
 	}
 
 	/**
@@ -914,13 +1029,18 @@ class MessagingService {
 	}
 
 	/**
-	 * Whether a user is an active participant of a conversation the given media
-	 * was shared into (as a message media_id or attachment_id).
+	 * Whether a user is an active participant of a conversation the media's
+	 * OWNER shared it into.
 	 *
 	 * Lets the privacy layer grant DM recipients access to media shared with
 	 * them — the conversation membership already gates who can read the message,
 	 * so the attachment must be viewable to the same set. Owner/admin are
 	 * handled earlier in the privacy check; this only covers the recipient side.
+	 *
+	 * Only the owner's own share counts: anyone else posting the id must not
+	 * widen who can see it. attachment_id is not matched either - WordPress
+	 * attachment ids are a different sequence, so a collision granted unrelated
+	 * media.
 	 *
 	 * @param int $user_id  Viewer user id.
 	 * @param int $media_id Media id shared in a message.
@@ -931,27 +1051,68 @@ class MessagingService {
 			return false;
 		}
 
+		$owner_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		if ( $owner_id <= 0 ) {
+			return false;
+		}
+
 		global $wpdb;
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
+		// A message the sender deleted for everyone or unsent no longer shares the
+		// item.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$found = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT 1
 				   FROM {$msg_table} m
 				   INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id
-				  WHERE ( m.media_id = %d OR m.attachment_id = %d )
+				  WHERE m.media_id = %d
+				    AND m.sender_id = %d
 				    AND p.user_id = %d
 				    AND p.status = 'active'
+				    AND m.is_deleted = 0
+				    AND m.deleted_for_all = 0
 				  LIMIT 1",
 				$media_id,
-				$media_id,
+				$owner_id,
 				$user_id
 			)
 		);
 
 		return null !== $found;
+	}
+
+	/**
+	 * Whether a sender may put this message's file into a conversation.
+	 *
+	 * A media item must be one the sender can see (their own, or one its
+	 * privacy shows them); a WordPress attachment must be the sender's own
+	 * upload.
+	 *
+	 * @param int   $sender_id Sender user id.
+	 * @param array $data      Message data (media_id, attachment_id).
+	 * @return bool
+	 */
+	private function sender_may_attach( int $sender_id, array $data ): bool {
+		$media_id = (int) ( $data['media_id'] ?? 0 );
+		if ( $media_id > 0 ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			if ( ! $container->get( 'media_repository' )->exists( $media_id ) || ! $container->get( 'privacy' )->can_view( $media_id, $sender_id ) ) {
+				return false;
+			}
+		}
+
+		$attachment_id = (int) ( $data['attachment_id'] ?? 0 );
+		if ( $attachment_id > 0 ) {
+			$attachment = get_post( $attachment_id );
+			if ( ! $attachment || 'attachment' !== $attachment->post_type || (int) $attachment->post_author !== $sender_id ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -1018,7 +1179,7 @@ class MessagingService {
 	 * thread". Any notification producer must ask this — MediaVerse's own
 	 * listener does, and a host bridge (BuddyNext routes DM notifications through
 	 * its own store) must too, or a muted thread still pings on that stack
-	 * (Basecamp 10153578635). An EXPIRED timed mute auto-unmutes here and returns
+	 * An EXPIRED timed mute auto-unmutes here and returns
 	 * false, so the expiry rule lives in one place rather than being re-derived
 	 * by every caller.
 	 *
@@ -1069,7 +1230,7 @@ class MessagingService {
 		// reactivates (re-contact via find_or_create_conversation(), or an
 		// inbound message via send_message()). The other participant keeps the
 		// same single thread and their full history — no duplicate conversation
-		// is ever created for the pair (card 10127717045). An id watermark, not
+		// is ever created for the pair. An id watermark, not
 		// a timestamp: ids are strictly monotonic, so a message sent in the
 		// same second as the delete is still delivered.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1131,7 +1292,7 @@ class MessagingService {
 			}
 		}
 		$members = array_keys( $members );
-		if ( count( $members ) + 1 > self::MAX_GROUP_PARTICIPANTS ) {
+		if ( count( $members ) + 1 > $this->max_group_participants( $creator_id, $opts ) ) {
 			return 0;
 		}
 
@@ -1248,9 +1409,17 @@ class MessagingService {
 
 		// Already a participant? Reactivate.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$existing = $wpdb->get_var(
-			$wpdb->prepare( "SELECT id FROM {$part_table} WHERE conversation_id = %d AND user_id = %d", $conversation_id, $user_id )
+		$existing = $wpdb->get_row(
+			$wpdb->prepare( "SELECT id, status FROM {$part_table} WHERE conversation_id = %d AND user_id = %d", $conversation_id, $user_id )
 		);
+
+		// The group size applies to a returning member too, not only a new one.
+		$joining = ! $existing || 'active' !== (string) $existing->status;
+		if ( $joining && \WPMediaVerse\Core\Plugin::container()->get( 'message_repository' )->active_participant_count( $conversation_id )
+			>= $this->max_group_participants( get_current_user_id(), array( 'conversation_id' => $conversation_id ) ) ) {
+			return false;
+		}
+
 		if ( $existing ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
@@ -1264,15 +1433,6 @@ class MessagingService {
 				array( '%d', '%d' )
 			);
 			return true;
-		}
-
-		// Enforce the group cap on active participants.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$active = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$part_table} WHERE conversation_id = %d AND status = 'active'", $conversation_id )
-		);
-		if ( $active >= self::MAX_GROUP_PARTICIPANTS ) {
-			return false;
 		}
 
 		$ok = $this->insert_participant( $conversation_id, $user_id, $role, current_time( 'mysql', true ) );
@@ -1517,7 +1677,7 @@ class MessagingService {
 		// sets DM access to "nobody", blocks the sender, admin flips the
 		// site-wide setting) — without this, every send into an
 		// already-open conversation silently bypassed can_message() forever
-		// (Basecamp #10053143680). Only applies to 1:1 `direct` conversations;
+		// Only applies to 1:1 `direct` conversations;
 		// group DM access isn't governed by per-recipient DM privacy rules.
 		if ( 'direct' === $participant->type ) {
 			$other_id = 0;
@@ -1568,6 +1728,17 @@ class MessagingService {
 				'success'    => false,
 				'message_id' => 0,
 				'error'      => 'content_too_long',
+			);
+		}
+
+		// A message may only carry a file its sender can already see. Storing any
+		// id let a member post someone else's private media into their own DM and
+		// read it through the DM grant.
+		if ( ! $this->sender_may_attach( $sender_id, $data ) ) {
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'attachment_unavailable',
 			);
 		}
 
@@ -1635,7 +1806,8 @@ class MessagingService {
 			$insert_formats[]        = '%d';
 		}
 
-		if ( ! empty( $data['parent_id'] ) ) {
+		// A reply may only point at a message in this conversation.
+		if ( ! empty( $data['parent_id'] ) && $conversation_id === $this->get_message_conversation_id( (int) $data['parent_id'] ) ) {
 			$insert_data['parent_id'] = (int) $data['parent_id'];
 			$insert_formats[]         = '%d';
 		}
@@ -1676,17 +1848,7 @@ class MessagingService {
 			array( '%d' )
 		);
 
-		// Mark as read for sender.
-		$wpdb->update(
-			$part_table,
-			array( 'last_read_at' => $now ),
-			array(
-				'conversation_id' => $conversation_id,
-				'user_id'         => $sender_id,
-			),
-			array( '%s' ),
-			array( '%d', '%d' )
-		);
+		$this->mark_sent( $conversation_id, $sender_id, $now );
 
 		// Delivery semantics: a new message resurrects the thread for any
 		// participant who had deleted it (status 'left'). Without this the
@@ -1721,8 +1883,8 @@ class MessagingService {
 		// archived it. Archiving means "done with this for now", not "never
 		// show me this person again" — every mainstream chat app resurfaces an
 		// archived thread when the other person writes. Without this the
-		// message landed in a thread the recipient only saw if they thought to
-		// open the archived tab (Basecamp #10132225661 / MV-1).
+		// message lands in a thread the recipient only sees if they think to
+		// open the archived tab.
 		//
 		// Filter escape hatch (Production Rule #3): return false to keep
 		// archived threads archived on new activity.
@@ -1875,9 +2037,9 @@ class MessagingService {
 	/**
 	 * List media shared in a conversation, newest first.
 	 *
-	 * Backs the "shared media" info panel and the mobile app's equivalent. The
-	 * web panel previously scraped the DOM of already-loaded bubbles, so it saw
-	 * only part of the thread and the app could not do it at all. This walks the
+	 * Backs the "shared media" info panel and the mobile app's equivalent. Scraping
+	 * the DOM of already-loaded bubbles would see only part of the thread
+	 * and the app could not do it at all, so this walks the
 	 * full message history for rows carrying an attachment or a shared media
 	 * item and returns a resolved payload per item, so web + app share one
 	 * source. The caller (controller) must confirm participation first.
@@ -1950,7 +2112,6 @@ class MessagingService {
 	 * Set by leave_conversation() ("Delete" in the UI). Messages with an id at
 	 * or below the watermark must never be served to this user again — the
 	 * thread itself is reused on re-contact instead of duplicated
-	 * (card 10127717045).
 	 *
 	 * @since 2.2.1
 	 *
@@ -1997,7 +2158,7 @@ class MessagingService {
 		// person's thread without a trace, while the deleter kept a tombstone.
 		// Exactly backwards from the label, with no time limit on it.
 		// Members already have a real per-user hide: the cleared_up_to
-		// watermark applied just below. Basecamp 10263770236.
+		// watermark applied just below.
 		$where  = 'm.conversation_id = %d';
 		$params = array( $conversation_id );
 
@@ -2055,7 +2216,7 @@ class MessagingService {
 
 			// Get parent message preview for reply-to.
 			if ( $msg->parent_id ) {
-				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
+				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id, (int) $msg->conversation_id );
 			}
 
 			// Add sender info.
@@ -2067,13 +2228,14 @@ class MessagingService {
 			}
 
 			// Attachment / media-share payloads are never shipped for deleted
-			// messages — same contract as poll() (Basecamp #9962618059).
+			// messages — same contract as poll().
 			if ( $msg->attachment_id && ! $is_hidden ) {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
 			}
 
 			if ( $msg->media_id && ! $is_hidden ) {
 				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
+				$this->attach_from_media( $msg );
 			}
 		}
 
@@ -2083,10 +2245,12 @@ class MessagingService {
 	/**
 	 * Get a brief preview of a message (for reply-to).
 	 *
-	 * @param int $message_id Message ID.
+	 * @param int $message_id      Message ID.
+	 * @param int $conversation_id Conversation the preview is shown in; when set, a
+	 *                             message from any other conversation yields null.
 	 * @return array|null
 	 */
-	public function get_message_preview( int $message_id ) {
+	public function get_message_preview( int $message_id, int $conversation_id = 0 ) {
 		global $wpdb;
 
 		$msg_table = $wpdb->prefix . 'mvs_messages';
@@ -2094,12 +2258,13 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$msg = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT id, sender_id, content, message_type, deleted_for_all FROM {$msg_table} WHERE id = %d",
+				"SELECT id, conversation_id, sender_id, content, message_type, deleted_for_all FROM {$msg_table} WHERE id = %d",
 				$message_id
 			)
 		);
 
-		if ( ! $msg ) {
+		// Also hides rows stored before send_message() checked the conversation.
+		if ( ! $msg || ( $conversation_id > 0 && (int) $msg->conversation_id !== $conversation_id ) ) {
 			return null;
 		}
 
@@ -2141,7 +2306,7 @@ class MessagingService {
 
 		// Look the message up first so the controller can return precise status
 		// codes (404 when it never existed, 403 when the caller isn't the
-		// sender) instead of a blanket 400 Bad Request (Basecamp #9936826065).
+		// sender) instead of a blanket 400 Bad Request.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
@@ -2198,8 +2363,7 @@ class MessagingService {
 			// just-deleted message was the conversation's last, recompute it from
 			// the newest still-visible message (or clear it). Without this the
 			// sidebar preview stays stale on reload / other devices after a
-			// delete - the client only updated its own state optimistically
-			// (Basecamp #9962618059, symptom B).
+			// delete - the client only updates its own state optimistically.
 			$this->refresh_conversation_last_message( (int) $row->conversation_id );
 
 			do_action( 'mvs_message_deleted', $message_id, $user_id, false );
@@ -2219,9 +2383,9 @@ class MessagingService {
 	 *                              one. Clients (the BuddyNext theme, mobile apps)
 	 *                              may send an attachment under message_type
 	 *                              'text' (or a raw MIME the allow-list resets to
-	 *                              'text'), which previously stored an EMPTY
-	 *                              preview and left a blank line in the
-	 *                              conversation list (card 10127764989); the
+	 *                              'text'), which would store an EMPTY
+	 *                              preview and leave a blank line in the
+	 *                              conversation list; the
 	 *                              attachment's real MIME resolves the label.
 	 * @param int    $media_id      Shared media item id, when present.
 	 * @return string Preview (max 100 chars).
@@ -2233,8 +2397,8 @@ class MessagingService {
 		}
 
 		// Attachment-only messages: a typed placeholder, the way every chat app
-		// previews its media messages. 'audio' was previously missing entirely
-		// and fell through to '' (card 10127764989).
+		// previews its media messages. 'audio' must be listed, or it
+		// falls through to ''.
 		$labels = array(
 			'voice'       => __( 'Voice message', 'wpmediaverse' ),
 			'image'       => __( 'Photo', 'wpmediaverse' ),
@@ -2276,7 +2440,7 @@ class MessagingService {
 	 * from the newest still-visible message (not is_deleted, not
 	 * deleted_for_all), or clear them when nothing visible remains. Called after
 	 * a message is deleted/unsent so the sidebar preview never shows a removed
-	 * message (Basecamp #9962618059).
+	 * message.
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 */
@@ -2394,7 +2558,7 @@ class MessagingService {
 
 		// Unsend (delete-for-everyone) also removes the message from every
 		// surface, so refresh the conversation's stored preview the same way
-		// delete_message does (Basecamp #9962618059).
+		// delete_message does.
 		$this->refresh_conversation_last_message( (int) $msg->conversation_id );
 
 		do_action( 'mvs_message_deleted', $message_id, $user_id, true );
@@ -2532,14 +2696,6 @@ class MessagingService {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Add or replace a reaction on a message.
-	 *
-	 * @param int    $message_id Message ID.
-	 * @param int    $user_id    User ID.
-	 * @param string $emoji      Emoji character.
-	 * @return bool
-	 */
-	/**
 	 * Whether a user may react to a message.
 	 *
 	 * Resolves the message and requires the actor to be a participant of its
@@ -2585,6 +2741,14 @@ class MessagingService {
 		);
 	}
 
+	/**
+	 * Add or replace a reaction on a message.
+	 *
+	 * @param int    $message_id Message ID.
+	 * @param int    $user_id    User ID.
+	 * @param string $emoji      Emoji character.
+	 * @return bool
+	 */
 	public function add_reaction( int $message_id, int $user_id, string $emoji ): bool {
 		global $wpdb;
 
@@ -2890,7 +3054,7 @@ class MessagingService {
 
 		// The mute predicate mirrors is_conversation_muted(): an EXPIRED timed mute
 		// must stop suppressing here too, or the badge keeps undercounting a thread
-		// the member already un-muted by the clock (Basecamp 10153578635).
+		// the member already un-muted by the clock.
 		$count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*)
@@ -2959,7 +3123,7 @@ class MessagingService {
 
 		// Unsent (deleted_for_all) messages must still be POLLED so other
 		// participants' open chats learn about the unsend without a refresh
-		// (Basecamp #9962618059 follow-up: excluding them left the original
+		// (excluding them leaves the original
 		// bubble in every other client until a hard reload). There is no
 		// updated_at column to scope "unsent since the last poll", but unsend
 		// is only allowed within UNSEND_WINDOW_SECONDS of created_at — so any
@@ -3017,9 +3181,10 @@ class MessagingService {
 			}
 			if ( $msg->media_id && ! $msg->deleted_for_all ) {
 				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
+				$this->attach_from_media( $msg );
 			}
 			if ( $msg->parent_id ) {
-				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
+				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id, (int) $msg->conversation_id );
 			}
 		}
 
@@ -3031,7 +3196,7 @@ class MessagingService {
 	 *
 	 * The poll only returns messages newer than the client's last-seen time, so a
 	 * reaction on an ALREADY-delivered message is invisible to it — the reason
-	 * reactions did not appear live for the other participant (card 10122929662).
+	 * reactions did not appear live for the other participant.
 	 * This is the companion query: messages the viewer participates in, created on
 	 * or before `$since` (a newer message already ships its reactions in poll()),
 	 * whose updated_at moved past `$since` because a reaction was added or removed.
@@ -3172,6 +3337,31 @@ class MessagingService {
 	}
 
 	/**
+	 * Give a chat attachment stored as 'dm' media the `attachment` shape the chat
+	 * UI reads (image, video, voice and file messages), from the share payload
+	 * already signed for this viewer. Shares of an existing item keep only
+	 * `media_share`.
+	 *
+	 * @param \stdClass $msg Message row with media_share set.
+	 * @return void
+	 */
+	private function attach_from_media( \stdClass $msg ): void {
+		if ( 'media_share' === $msg->message_type || ! empty( $msg->attachment ) || empty( $msg->media_share['url'] ) ) {
+			return;
+		}
+		$repo            = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$media_id        = (int) $msg->media_id;
+		$msg->attachment = array(
+			'id'        => $media_id,
+			'url'       => $msg->media_share['url'],
+			'mime'      => (string) $repo->get( $media_id, 'file_type' ),
+			'name'      => (string) $msg->media_share['title'],
+			'size'      => (int) $repo->get( $media_id, 'file_size' ),
+			'thumbnail' => '' !== (string) ( $msg->media_share['thumbnail'] ?? '' ) ? $msg->media_share['thumbnail'] : null,
+		);
+	}
+
+	/**
 	 * Get media share data for an mvs_media post, scoped to a specific viewer.
 	 *
 	 * All URLs are signed for the explicit conversation viewer (NOT the ambient
@@ -3296,8 +3486,8 @@ class MessagingService {
 		);
 
 		// Refresh each affected conversation's stored last-message preview so the
-		// sidebar never keeps showing an erased message (Basecamp #9962618059 -
-		// same staleness as delete/unsend, caught in the double-verify pass).
+		// sidebar never keeps showing an erased message (same
+		// staleness as delete/unsend).
 		foreach ( $conversation_ids as $conversation_id ) {
 			$this->refresh_conversation_last_message( (int) $conversation_id );
 		}

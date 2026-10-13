@@ -383,15 +383,15 @@ class DocumentListPage {
 				check_admin_referer( 'mvs_trash_document_' . $media_id );
 
 				/*
-				 * Two hooks, and neither used to fire from this screen.
+				 * Two hooks, and both fire from this screen.
 				 *
 				 * `trash()` is the funnel for `mvs_media_trashed`; the document
 				 * event is separate and more specific, and integrations already
 				 * listen to it (BuddyNext withdraws a document's activity card on
 				 * it). The member-facing paths in Pro fire it, but this admin
-				 * screen wrote the status column directly — so an admin trashing
-				 * a document left the mirror in place, the same defect reported
-				 * for media (Basecamp 10252324048).
+				 * screen writes the status column directly - so without firing it
+				 * an admin trashing a document would leave the mirror in place,
+				 * the same defect as for media.
 				 */
 				$repo->trash( $media_id );
 				do_action( 'mvs_document_trashed', $media_id );

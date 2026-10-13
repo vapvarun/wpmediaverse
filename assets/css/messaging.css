@@ -744,6 +744,36 @@ body.dark-mode {
 	color: var(--mvs-chat-text-secondary);
 }
 
+/* Menu button on photo and video messages, whose tap opens the media. 40px target. */
+.mvs-chat-msg__more {
+	position: absolute;
+	inset-block-start: var(--mvs-space-1, 4px);
+	inset-inline-end: var(--mvs-space-1, 4px);
+	z-index: 2;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	border-radius: 50%;
+	background: var(--mvs-chat-bg);
+	background: color-mix(in srgb, var(--mvs-chat-bg) 85%, transparent);
+	color: var(--mvs-chat-text);
+	box-shadow: var(--mvs-chat-shadow);
+	cursor: pointer;
+}
+
+.mvs-chat-msg__more[hidden] {
+	display: none;
+}
+
+.mvs-chat-msg__more:focus-visible {
+	outline: 2px solid var(--mvs-primary, currentColor);
+	outline-offset: 2px;
+}
+
 /* Context menu (reactions + actions) */
 .mvs-chat-msg__context-menu {
 	position: absolute;
@@ -819,6 +849,22 @@ body.dark-mode {
 .mvs-chat-msg__video {
 	max-width: 260px;
 	border-radius: 12px;
+}
+
+.mvs-chat-msg__image-link {
+	display: block;
+	border-radius: 12px;
+}
+
+.mvs-chat-msg__image-link:focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+}
+
+.mvs-chat-msg__audio {
+	display: block;
+	width: 260px;
+	max-width: 100%;
 }
 
 .mvs-chat-msg__file {

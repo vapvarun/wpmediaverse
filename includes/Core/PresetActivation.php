@@ -121,10 +121,9 @@ final class PresetActivation {
 	/**
 	 * Schedule the background attempt from an admin page — but never do the work
 	 * here. Returns early once activated, AND once we have given up, so a
-	 * firewalled host does not re-arm a fresh event on every admin page load (the
-	 * bug the bounded-retry was supposed to fix but did not: admin_init used to
-	 * check only the activated flag, so giving up in the runner was undone by the
-	 * very next page view). After giving up, only an explicit Retry re-arms.
+	 * firewalled host does not re-arm a fresh event on every admin page load (checking
+	 * only the activated flag would let the very next page view undo giving
+	 * up in the runner). After giving up, only an explicit Retry re-arms.
 	 *
 	 * @return void
 	 */

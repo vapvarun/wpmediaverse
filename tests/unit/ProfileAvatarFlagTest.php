@@ -43,7 +43,7 @@ class ProfileAvatarFlagTest extends WP_UnitTestCase {
 	 *
 	 * On the QA site with BuddyNext active, 8 of 8 members who had uploaded a
 	 * picture there got `false` here while the `avatar` field in the same REST
-	 * response served their real photograph (Basecamp 10252323883). Nothing in
+	 * response served their real photograph. Nothing in
 	 * the avatar chain distinguishes a photograph from a generated placeholder —
 	 * core's `found_avatar` is set by both — so the owner of the avatar is asked
 	 * instead.

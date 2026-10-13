@@ -298,7 +298,7 @@ class ShipListAgreementTest extends WP_UnitTestCase {
 	 *
 	 * The mirror image of the vendor rule and the more dangerous direction: it
 	 * holds Action Scheduler and the EDD SDK, and the entry file requires them
-	 * directly. Excluding it anywhere produces the failure vendor/ used to —
+	 * directly. Excluding it anywhere produces the failure an excluded vendor/ does —
 	 * a zip that installs and then cannot work.
 	 */
 	public function test_libs_is_never_excluded(): void {

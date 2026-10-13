@@ -172,8 +172,9 @@ class GeneralSettingsRegistrar {
 					'members' => __( 'Members Only', 'wpmediaverse' ),
 					'private' => __( 'Private', 'wpmediaverse' ),
 				),
-				// Says what actually happens with the setting below (Basecamp 10364776646).
-				'description' => get_option( 'mvs_allow_user_privacy' )
+				// Says what actually happens with the setting below,
+				// read with its registered default: no row yet means "members choose".
+				'description' => get_option( 'mvs_allow_user_privacy', true )
 					? __( 'New uploads start at this level; members can change it per upload.', 'wpmediaverse' )
 					: __( 'Every new upload gets this level; members cannot change it while "Let members choose" is off.', 'wpmediaverse' ),
 			)
@@ -302,55 +303,34 @@ class GeneralSettingsRegistrar {
 			SettingsPage::PAGE_SLUG . '-general'
 		);
 
-		// BuddyNext owns these emails on its sites, so the section (which renders
-		// only with fields) is left empty and does not show.
-		if ( \WPMediaVerse\Services\EmailService::host_sends() ) {
-			return;
-		}
-
-		$emails = array(
-			\WPMediaVerse\Services\EmailService::TYPES['battle_invite']   => array(
-				__( 'Photo battle invites', 'wpmediaverse' ),
-				__( 'Someone challenged the member to a battle (MediaVerse Pro).', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['document_shared'] => array(
-				__( 'Documents shared with a member', 'wpmediaverse' ),
-				__( 'Someone shared a document with the member (MediaVerse Pro).', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['report_resolved'] => array(
-				__( 'Report reviewed', 'wpmediaverse' ),
-				__( 'A moderator resolved or dismissed a report the member filed. The email does not say what was decided.', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['new_follower']    => array(
-				__( 'New follower', 'wpmediaverse' ),
-				__( 'Someone started following the member.', 'wpmediaverse' ),
-			),
-			\WPMediaVerse\Services\EmailService::TYPES['media_comment']   => array(
-				__( 'Comment on their media', 'wpmediaverse' ),
-				__( 'Someone commented on a photo, video or file the member posted.', 'wpmediaverse' ),
-			),
-		);
-
-		foreach ( $emails as $option => $copy ) {
+		// One list of member emails (EmailService::types()); Pro's challenge
+		// emails arrive through its filter. On a community host's site only the
+		// emails the host does not send itself are listed, so the section (which
+		// renders only with fields) disappears when the host sends them all.
+		foreach ( \WPMediaVerse\Services\EmailService::types() as $type => $email ) {
+			if ( \WPMediaVerse\Services\EmailService::host_owns( (string) $type ) ) {
+				continue;
+			}
+			$option = (string) $email['option'];
 			register_setting(
 				SettingsPage::OPTION_GROUP . '_general',
 				$option,
 				array(
 					'type'              => 'boolean',
 					'sanitize_callback' => 'rest_sanitize_boolean',
-					'default'           => false,
+					'default'           => ! empty( $email['default'] ),
 				)
 			);
 			FieldRenderer::add_field(
 				$option,
-				$copy[0],
+				(string) $email['label'],
 				array( FieldRenderer::class, 'render_checkbox_field' ),
 				SettingsPage::PAGE_SLUG . '-general',
 				'mvs_emails',
 				array(
 					'option'      => $option,
 					'label'       => __( 'Send this email', 'wpmediaverse' ),
-					'description' => $copy[1],
+					'description' => (string) $email['description'],
 				)
 			);
 		}
@@ -373,8 +353,8 @@ class GeneralSettingsRegistrar {
 		// A community plugin (BuddyNext's private mode) answers the same signal
 		// and its answer wins, so a switch here would do nothing. Show its answer.
 		if ( \WPMediaVerse\REST\CommunityPrivacyGate::host_decides() ) {
-			$args['locked']       = (bool) apply_filters( 'mvs_rest_require_auth', false, null );
-			$args['description']  = $args['locked']
+			$args['locked']      = (bool) apply_filters( 'mvs_rest_require_auth', false, null );
+			$args['description'] = $args['locked']
 				? __( 'On: your community plugin keeps this site private, so visitors are already sent to the login page. Change it in that plugin\'s settings.', 'wpmediaverse' )
 				: __( 'Off: your community plugin decides who can see this site. Turn on its private or members-only mode to hide WP MediaVerse from visitors.', 'wpmediaverse' );
 		}
@@ -386,7 +366,7 @@ class GeneralSettingsRegistrar {
 	 * The opt-in that lets uninstall delete member data.
 	 *
 	 * Off by default: premium plugins are routinely updated by deleting and
-	 * re-uploading them, and before 2.6.0 that wiped every table. Uploaded
+	 * re-uploading them, and deleting data on uninstall wipes every table. Uploaded
 	 * files and the pages MediaVerse created are never deleted, and the help
 	 * says so.
 	 */

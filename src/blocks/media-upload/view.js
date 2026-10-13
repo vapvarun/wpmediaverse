@@ -5,73 +5,7 @@
  */
 
 import { store, getContext } from '@wordpress/interactivity';
-
-/**
- * Grab a poster frame from a video File and append it as `thumbnail`.
- *
- * MediaVerse builds a video poster server-side from an embedded cover atom or
- * an ffmpeg first-frame grab. On a host with no ffmpeg, a video with no cover
- * atom gets NO poster and the grid renders a blank tile with a play icon —
- * which reads to a member as "my video is broken". Capturing the frame in the
- * browser removes the ffmpeg dependency for the common case.
- * `MediaController::create_item()` already accepts the `thumbnail` file param
- * and hands it to `PosterService::stage_client_frame()`.
- *
- * This block and dashboard-view carry their own copy on purpose: these view
- * bundles are script MODULES, and a cross-file import is emitted as a bare
- * specifier the browser 404s on. shared-ui has a third variant that reuses the
- * frame it already decoded for its preview UI, so it isn't double-decoding.
- * Keep the three in sync — seek to 1s, fall back to frame 0 under 1s, 5s
- * timeout, never reject.
- *
- * @param {FormData} formData Upload payload, mutated in place.
- * @param {File}     file     File being uploaded.
- * @return {Promise<void>} Resolves whether or not a poster was attached.
- */
-async function appendVideoPoster( formData, file ) {
-	if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
-		return;
-	}
-	const blob = await new Promise( ( resolve ) => {
-		const video = document.createElement( 'video' );
-		const url = URL.createObjectURL( file );
-		let settled = false;
-		const finish = ( result ) => {
-			if ( settled ) return;
-			settled = true;
-			URL.revokeObjectURL( url );
-			resolve( result );
-		};
-		// A file that never fires `seeked` (bad codec) must not hang the upload.
-		const timer = setTimeout( () => finish( null ), 5000 );
-		video.preload = 'metadata';
-		video.muted = true;
-		video.playsInline = true;
-		video.addEventListener( 'loadeddata', () => {
-			video.currentTime = video.duration && video.duration < 1 ? 0 : 1;
-		} );
-		video.addEventListener( 'seeked', () => {
-			clearTimeout( timer );
-			try {
-				const canvas = document.createElement( 'canvas' );
-				canvas.width = video.videoWidth || 320;
-				canvas.height = video.videoHeight || 180;
-				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-				canvas.toBlob( ( b ) => finish( b ), 'image/jpeg', 0.7 );
-			} catch {
-				finish( null );
-			}
-		} );
-		video.addEventListener( 'error', () => {
-			clearTimeout( timer );
-			finish( null );
-		} );
-		video.src = url;
-	} );
-	if ( blob ) {
-		formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
-	}
-}
+import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
 
 /**
  * Map of MIME types to human-readable labels for error messages.
@@ -194,7 +128,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 		get hasPending() {
 			return !! getContext().hasPending;
 		},
-		// What the member picked, shown in the drop area (Basecamp 10364777491).
+		// What the member picked, shown in the drop area.
 		get pickedLabel() {
 			const ctx = getContext();
 			const names = ctx.pendingNames || [];
@@ -212,7 +146,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 				: ( state.i18n?.uploadNFiles || 'Upload %d files' ).replace( '%d', n );
 		},
 	},
-	actions: {
+	actions: syncEvents( {
 		handleClick( event ) {
 			// Don't trigger from the controls inside the dropzone (the file input,
 			// privacy select, metadata fields, Confirm/Cancel).
@@ -367,40 +301,23 @@ const { state, actions } = store( 'mvs/media-upload', {
 				ctx.uploadMessage = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
 					.replace( '%1$d', i + 1 )
 					.replace( '%2$d', files.length );
-				const formData = new FormData();
-				formData.append( 'file', files[ i ] );
-				// Capture a poster frame for videos. Without this a video
-				// uploaded here has no poster at all on a host with no ffmpeg,
-				// and the grid renders a blank tile. The upload modal has
-				// always done this; this surface did not.
-				await appendVideoPoster( formData, files[ i ] );
-				if ( mediaGroup ) {
-					formData.append( 'media_group', mediaGroup );
-					formData.append( 'group_position', String( i ) );
-				}
-				if ( ctx.privacy ) {
-					formData.append( 'privacy', ctx.privacy );
-				}
-				if ( ctx.uploadTitle ) {
-					formData.append( 'title', ctx.uploadTitle );
-				}
-				if ( ctx.uploadDescription ) {
-					formData.append( 'description', ctx.uploadDescription );
-				}
-				if ( ctx.uploadTags ) {
-					const tags = ctx.uploadTags.split( ',' ).map( ( t ) => t.trim() ).filter( Boolean );
-					tags.forEach( ( tag ) => formData.append( 'tags[]', tag ) );
-				}
-
 				try {
-					const resp = await window.mvsRest.restFetch( ctx.restUrl, {
-						method: 'POST',
-						body: formData,
-						// Overall percent: finished files plus the share of this one sent.
-						onUploadProgress: ( loaded, total ) => {
-							ctx.uploadPercent = Math.min( 100, Math.round( ( ( i + ( total ? loaded / total : 0 ) ) / files.length ) * 100 ) );
+					const resp = await window.mvsRest.uploadMedia(
+						ctx.restUrl,
+						files[ i ],
+						{
+							privacy: ctx.privacy,
+							title: ctx.uploadTitle,
+							description: ctx.uploadDescription,
+							tags: ctx.uploadTags,
+							mediaGroup,
+							groupPosition: i,
 						},
-					} );
+						// Overall percent: finished files plus the share of this one sent.
+						( loaded, total ) => {
+							ctx.uploadPercent = Math.min( 100, Math.round( ( ( i + ( total ? loaded / total : 0 ) ) / files.length ) * 100 ) );
+						}
+					);
 					if ( resp.ok ) {
 						successCount++;
 						const mediaData = resp.data;
@@ -409,15 +326,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 							duplicateCount++;
 							lastDuplicateId = mediaData.existing_media_id || 0;
 						}
-						// "Also share as a story" — mark the new media as a 24h story (Pro).
+						// "Also share as a story" (Pro). Non-fatal, like every surface.
 						if ( ctx.isStory && mediaData && mediaData.id ) {
-							const storyUrl =
-								ctx.restUrl.replace( '/mvs/v1/', '/mvs-pro/v1/' ) + '/' + mediaData.id + '/story';
-							try {
-								await window.mvsRest.restFetch( storyUrl, { method: 'POST', body: {} } );
-							} catch ( e ) {
-								// Non-fatal: media uploaded even if the story flag failed.
-							}
+							await window.mvsRest.markAsStory( mediaData.id );
 						}
 					} else {
 						const err = resp.data || {};
@@ -454,7 +365,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 			// the form, and on this page that is BELOW the fold - measured 123px
 			// past a 840px viewport with the page still at scrollY 0. The warning
 			// rendered correctly and was simply never seen, which reads as "the
-			// duplicate warning is not displayed". Basecamp 10280477806.
+			// duplicate warning is not displayed".
 			if ( ctx.uploadError ) {
 				// Deferred twice: setting ctx.uploadError only QUEUES the render
 				// that removes the box's `hidden` attribute, and an element with
@@ -496,5 +407,5 @@ const { state, actions } = store( 'mvs/media-upload', {
 				}
 			}
 		},
-	},
+	} ),
 } );

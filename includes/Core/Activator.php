@@ -182,7 +182,6 @@ class Activator {
 				// columns="3" to "4", saved, and nothing moved.
 				// Existing pages keep their copy; the attributes are inert, and
 				// rewriting a page an owner may have edited is not ours to do.
-				// Basecamp 10297763946.
 				'shortcode' => '[mvs_gallery]',
 			),
 			'mvs_page_dashboard'         => array(
@@ -335,7 +334,7 @@ class Activator {
 			// PDF dropped from default in 1.2.3 — see SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note.
 			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
 			// Members Only on a private community: public files are reachable by
-			// anyone with the address (Basecamp 10252887515). Only written when the
+			// anyone with the address. Only written when the
 			// option is missing, so an owner's saved choice is never replaced.
 			'mvs_default_privacy'     => \WPMediaVerse\Admin\PrivateCommunityDefault::default_privacy(),
 			'mvs_duplicate_action'    => 'warn',
@@ -369,8 +368,7 @@ class Activator {
 
 		// Filename strategy — hashed is the default for NEW uploads on every
 		// install since 1.6.0 (fresh AND upgrade). Original client filenames in
-		// the media URL are an info-leak + enumeration vector (audit 2026-06-04,
-		// #9962530792). Existing on-disk files are NEVER renamed; only the
+		// the media URL are an info-leak + enumeration vector. Existing on-disk files are NEVER renamed; only the
 		// strategy applied to new uploads changes. `add_option` no-ops on
 		// existing keys, so a site that previously persisted
 		// 'original_sanitized' keeps its explicit choice. Sites that want

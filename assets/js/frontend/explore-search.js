@@ -1,8 +1,8 @@
 /**
  * Explore search — media/users tab switch + debounced user search.
  *
- * Extracted from the inline <script> previously duplicated in templates/
- * explore.php (Free) and the Pro feed layouts. Config + translated strings
+ * Loaded by templates/explore.php (Free) and the Pro feed layouts instead of an
+ * inline <script> in each. Config + translated strings
  * arrive via the localized `window.mvsExploreSearch` object, so no markup or
  * strings live in JS.
  *
@@ -88,30 +88,29 @@
 			} );
 	}
 
-	// --- Delegated click on a result card: empty the list before the router
-	// morphs. The cards are injected at runtime INTO the iAPI router region, so
-	// they are not in the server markup the destination page renders. When the
-	// destination is itself a router region (an MVS `/media/@user/` profile), the
-	// router navigates client-side and MORPHS the old region onto the new one —
-	// and the diff, finding runtime cards with no counterpart, strands one inside
-	// the profile header (Basecamp 10230881780). Clearing on the NEXT TICK lets
-	// the click initiate navigation first, then hands the morph the empty
-	// container the server default has. A full page load (e.g. a BuddyPress
-	// `/members/` destination) makes this a harmless no-op. ---
-	document.addEventListener( 'click', function ( e ) {
-		var card = e.target.closest( '.mvs-user-card' );
-		if ( ! card ) {
-			return;
-		}
-		var cardResults = document.getElementById( 'mvs-user-search-results' );
-		if ( ! cardResults ) {
+	// --- Empty the list before any navigation. The cards are injected at
+	// runtime INTO the iAPI router region, so they are not in the server markup
+	// the next page renders; when the router morphs the region client-side, a
+	// runtime card with no counterpart can be stranded in the new page (once,
+	// inside a profile header). Clearing on the NEXT TICK after any link click,
+	// and on back/forward, lets the navigation start first and hands the morph
+	// the empty container the server renders. A full page load makes it a no-op. ---
+	function clearBeforeNavigation() {
+		var pending = document.getElementById( 'mvs-user-search-results' );
+		if ( ! pending || ! pending.firstChild ) {
 			return;
 		}
 		setTimeout( function () {
-			cardResults.style.display = 'none';
-			clearResults( cardResults );
+			pending.style.display = 'none';
+			clearResults( pending );
 		}, 0 );
+	}
+	document.addEventListener( 'click', function ( e ) {
+		if ( e.target.closest( 'a[href]' ) ) {
+			clearBeforeNavigation();
+		}
 	} );
+	window.addEventListener( 'popstate', clearBeforeNavigation );
 
 	// --- Delegated tab click: any .mvs-search-mode-btn click. ---
 	document.addEventListener( 'click', function ( e ) {
@@ -129,14 +128,21 @@
 		// Deactivate all sibling tabs.
 		form.querySelectorAll( '.mvs-search-mode-btn' ).forEach( function ( t ) {
 			t.classList.remove( 'active' );
+			t.setAttribute( 'aria-selected', 'false' );
 		} );
 		tab.classList.add( 'active' );
+		tab.setAttribute( 'aria-selected', 'true' );
 
 		// Persist mode on the form element so input/submit handlers can read it.
 		var newMode = tab.getAttribute( 'data-search-mode' ) || 'media';
 		form.dataset.searchMode = newMode;
 
 		input.placeholder = newMode === 'users' ? ( i18n.searchUsers || '' ) : ( i18n.searchMedia || '' );
+		// The field's accessible name follows the mode, not just its placeholder.
+		var label = form.querySelector( 'label[for="mvs-search-input"]' );
+		if ( label ) {
+			label.textContent = tab.getAttribute( 'data-search-label' ) || label.textContent;
+		}
 		results.style.display = 'none';
 		clearResults( results );
 	} );

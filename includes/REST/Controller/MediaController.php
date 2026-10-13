@@ -235,6 +235,42 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		$this->register_item_info_routes();
+
+		// GET /media/{id}/group — get all items in same gallery group.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/group',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_group_items' ),
+				'permission_callback' => '__return_true',
+				'args'                => $this->group_route_args(),
+			)
+		);
+
+		// GET /me/media — current user's media.
+		register_rest_route(
+			$this->namespace,
+			'/me/media',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_my_items' ),
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+				'args'                => $this->get_collection_params(),
+			)
+		);
+	}
+
+	/**
+	 * Routes that answer about one item without returning it: share events,
+	 * linked spaces, a viewability check.
+	 *
+	 * @since 2.6.2
+	 */
+	private function register_item_info_routes(): void {
 		// POST /media/{id}/share — record a share event + increment shares stat.
 		register_rest_route(
 			$this->namespace,
@@ -243,6 +279,25 @@ class MediaController extends WP_REST_Controller {
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'record_share' ),
 				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
+		// GET /media/{id}/spaces - the spaces an item is linked into (2.6.2), for
+		// a community plugin that shows where a document lives.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/spaces',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_item_spaces' ),
+				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => array(
 					'id' => array(
 						'type'              => 'integer',
@@ -268,38 +323,6 @@ class MediaController extends WP_REST_Controller {
 						'sanitize_callback' => 'absint',
 					),
 				),
-			)
-		);
-
-		// GET /media/{id}/group — get all items in same gallery group.
-		register_rest_route(
-			$this->namespace,
-			'/' . $this->rest_base . '/(?P<id>[\d]+)/group',
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_group_items' ),
-				'permission_callback' => '__return_true',
-				'args'                => array(
-					'id' => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-					),
-				),
-			)
-		);
-
-		// GET /me/media — current user's media.
-		register_rest_route(
-			$this->namespace,
-			'/me/media',
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_my_items' ),
-				'permission_callback' => function () {
-					return is_user_logged_in();
-				},
-				'args'                => $this->get_collection_params(),
 			)
 		);
 	}
@@ -371,7 +394,9 @@ class MediaController extends WP_REST_Controller {
 				->get_by_slug( sanitize_title( $slug ) );
 
 			$found_id = $mvs_by_slug['media_id'] ?? 0;
-			if ( $found_id ) {
+			// Same gate as the id route and the include branch below: a slug
+			// must not reveal an item the viewer may not see.
+			if ( $found_id && $this->privacy->can_view( (int) $found_id, get_current_user_id() ) ) {
 				$item = $this->prepare_item_for_response( (int) $found_id, $request );
 				return rest_ensure_response( $item ? array( $item ) : array() );
 			}
@@ -413,18 +438,17 @@ class MediaController extends WP_REST_Controller {
 		$media_type = $request->get_param( 'media_type' );
 		$author     = $request->get_param( 'author' );
 
-		// The old media_type != '' guard existed to hide the privacy-only stub rows
-		// albums and collections used to leave in mvs_media_index (Basecamp
-		// 10074442944). Migrator v26 evicted those rows entirely, so that job is done;
-		// what replaces it below is a positive type group, which is a different and
-		// stronger guarantee.
+		// No media_type != '' guard: it would only hide the privacy-only stub rows
+		// albums and collections once left in mvs_media_index, and Migrator v26
+		// evicted those rows entirely. What filters below is a positive type
+		// group, which is a different and stronger guarantee.
 		// status = 'publish' is NOT optional here, and its absence is why a trashed
 		// item kept appearing at the top of the feed with a working signed URL: the
 		// owner removed it and every member -- and the mobile app, which reads this
 		// same route -- went on being served it.
 		//
 		// The column is a lifecycle field with several legitimate non-publish
-		// values (trash, and scheduled items awaiting publish_at), so this must
+		// values (trash, and scheduled rows from before 2.6.2), so this must
 		// assert publish rather than exclude trash; != 'trash' would leak scheduled
 		// items instead. MediaRepository's shared query builder already defaults to
 		// exactly this, which is why the slug lookup and the album-items query were
@@ -444,11 +468,11 @@ class MediaController extends WP_REST_Controller {
 			array_pop( $params );
 		}
 
-		// POSITIVE INCLUSION, never exclusion. This clause used to read
-		// media_type != '' — which answered "what do I not want today" and passed
-		// every future type straight through. `document` rows would have landed in
+		// POSITIVE INCLUSION, never exclusion. This clause must not read
+		// media_type != '' — which answers "what do I not want today" and passes
+		// every future type straight through. `document` rows would land in
 		// this feed, and in the mobile app that reads the same route, without a line
-		// of code changing. The trashed-media leak (68113454) was the same shape: it
+		// of code changing. The trashed-media leak was the same shape: it
 		// too carried a media_type predicate and still leaked.
 		//
 		// An explicit ?media_type= is honoured for the MEDIA vocabulary, and it is
@@ -491,6 +515,7 @@ class MediaController extends WP_REST_Controller {
 		// Privacy filtering via index table: the one listing rule Explore and the
 		// activity feed share, so the three cannot drift apart again.
 		list( $mvs_priv_sql, $mvs_priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->explore_privacy_clause( '', (int) $user_id );
+		list( $mvs_priv_sql, $mvs_priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->group_scope_clause( 'i', absint( $request->get_param( 'group' ) ), (int) $user_id, $mvs_priv_sql, $mvs_priv_params );
 		$where[] = $mvs_priv_sql;
 		$params  = array_merge( $params, $mvs_priv_params );
 
@@ -563,7 +588,7 @@ class MediaController extends WP_REST_Controller {
 		// offer Public / Followers / My uploads; only 'public' was implemented
 		// here, so 'followers' and 'self' silently did nothing on every layout.
 		// self/followers need a logged-in viewer; anonymous falls through to the
-		// public-only privacy gate above. Basecamp 10068992480.
+		// public-only privacy gate above.
 		$scope = $request->get_param( 'scope' );
 		if ( 'public' === $scope ) {
 			$where[]  = 'privacy = %s';
@@ -592,18 +617,15 @@ class MediaController extends WP_REST_Controller {
 		// Exclude non-cover gallery group items from feeds (only when explicitly requested).
 		$group_covers = $request->get_param( 'group_covers' );
 		if ( $group_covers ) {
-			// `i.media_id` (not bare `media_id`): the trending/popular data query
-			// LEFT JOINs mvs_media_stats, which also has a media_id column, so an
-			// unqualified ref is ambiguous and the data query silently returns 0
-			// rows while the (stats-join-free) COUNT query still returns the total.
-			//
-			// Reuses the repository's canonical definition of "non-cover gallery
-			// member" instead of keeping a second copy here — this inline copy
-			// used a different rule ("lowest media_id in the group") than
-			// `MediaRepository::gallery_exclude_subquery()` ("group_position !=
-			// '0'"), so the same media could be a cover in Explore and not in
-			// this feed, or vice versa.
-			$where[] = '(i.media_id NOT IN (' . \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_exclude_subquery( ( $media_type && MediaTypes::is_known( (string) $media_type ) ) ? (string) $media_type : '' ) . '))';
+			// The repository's gallery rule, matched against this feed's own conditions.
+			list( $mvs_gallery_sql, $mvs_gallery_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_hidden_clause(
+				'i',
+				$join_clauses ? implode( ' ', $join_clauses ) : '',
+				implode( ' AND ', $where ),
+				$params
+			);
+			$where[] = $mvs_gallery_sql;
+			$params  = array_merge( $params, $mvs_gallery_params );
 		}
 
 		// Filter by specific media group ID.
@@ -687,9 +709,9 @@ class MediaController extends WP_REST_Controller {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->prefetch( $int_ids );
 
-		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
-		// so the per-item prepare below stays query-bounded at any list size.
+		// Viewer favourites/reactions for the page in 2 queries, so prepare stays bounded.
 		self::prime_viewer_state( $int_ids, get_current_user_id() );
+		$repo->gallery_tile_counts( $int_ids, null, $this->gallery_filter( $request ) ); // Badges count under this feed's filter.
 
 		$items = array();
 		foreach ( $int_ids as $media_id ) {
@@ -731,6 +753,45 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Args of GET /media/{id}/group: the item, and the listing's filter so the
+	 * lightbox opens the set its badge counted.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function group_route_args(): array {
+		return array(
+			'id'         => array(
+				'type'              => 'integer',
+				'required'          => true,
+				'sanitize_callback' => 'absint',
+			),
+			'media_type' => array( 'type' => 'string' ),
+			'tag'        => array( 'type' => 'string' ),
+			'category'   => array( 'type' => 'string' ),
+			's'          => array( 'type' => 'string' ),
+			'group'      => array( 'type' => 'integer' ),
+		);
+	}
+
+	/**
+	 * The listing filter a request carries, as query args (MediaRepository::gallery_filter_args()).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return array<string,mixed>
+	 */
+	private function gallery_filter( $request ): array {
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_filter_args(
+			array(
+				'media_type' => (string) $request->get_param( 'media_type' ),
+				'tag'        => (string) $request->get_param( 'tag' ),
+				'category'   => (string) $request->get_param( 'category' ),
+				's'          => (string) $request->get_param( 's' ),
+				'group'      => (int) $request->get_param( 'group' ),
+			)
+		);
+	}
+
+	/**
 	 * Get all media items in the same gallery group.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -745,8 +806,8 @@ class MediaController extends WP_REST_Controller {
 
 		// The route is PUBLIC (permission_callback __return_true) because a public
 		// gallery must open for a signed-out visitor. The privacy gate therefore
-		// lives here, exactly as it does in get_item() - it did NOT until 2.5.1,
-		// and an anonymous caller walking the id space harvested the title,
+		// lives here, exactly as it does in get_item(). Without it, an anonymous
+		// caller walking the id space harvests the title,
 		// description, owner, filename, tags and stats of every private and
 		// members-only item on the site. 404, not 403: the sibling routes answer
 		// 404 for what you may not see, and an existence oracle is a leak of its
@@ -756,62 +817,21 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$group_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
-		if ( ! $group_id ) {
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$members = $repo->gallery_members( $media_id, $mvs_viewer_id, $this->gallery_filter( $request ) );
+		if ( count( $members ) < 2 ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
 		}
 
-		// Query group members from mvs_media_meta custom table.
-		global $wpdb;
-		// Type group, not an exclusion. This feeds the gallery lightbox, which steps
-		// through members with prev/next — a document has nothing to render there, so
-		// it must not be reachable by arrowing off the end of a photo.
-		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'mi.media_type' );
-
-		// Driving table is media_meta; the index is the joined side (Rule 7 — see
-		// MediaRepository::index_table()).
-		$mvs_index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
-
-		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
-				INNER JOIN {$mvs_index_table} mi ON mm.media_id = mi.media_id
-				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'
-				  AND {$mvs_group_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$group_id,
-				...$mvs_group_type_params
-			)
-		);
-
-		if ( empty( $group_media_ids ) ) {
-			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
-		}
-
-		$int_group_ids = array_map( 'intval', $group_media_ids );
-		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$repo->prefetch( $int_group_ids );
-
-		// Per member, not just the entry point: one private photo inside an
-		// otherwise public gallery used to come back with the rest.
+		// The badge's own set (MediaRepository::gallery_rows()), in position order.
+		$repo->prefetch( $members );
 		$items = array();
-		foreach ( $group_media_ids as $gid ) {
-			if ( ! $this->privacy->can_view( (int) $gid, $mvs_viewer_id ) ) {
-				continue;
-			}
-
+		foreach ( $members as $gid ) {
 			$item = $this->prepare_item_for_response( (int) $gid, $request );
 			if ( $item ) {
 				$items[] = $item;
 			}
 		}
-
-		// Sort by group_position.
-		usort(
-			$items,
-			function ( $a, $b ) {
-				return ( $a['group_position'] ?? 0 ) - ( $b['group_position'] ?? 0 );
-			}
-		);
 
 		return rest_ensure_response( $items );
 	}
@@ -843,7 +863,6 @@ class MediaController extends WP_REST_Controller {
 			'title'       => sanitize_text_field( $request->get_param( 'title' ) ?? '' ),
 			'description' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
 			'status'      => sanitize_text_field( $request->get_param( 'status' ) ?? 'publish' ),
-			'publish_at'  => sanitize_text_field( $request->get_param( 'publish_at' ) ?? '' ),
 		);
 
 		// Only set privacy if explicitly provided; otherwise UploadService uses the default option.
@@ -855,7 +874,7 @@ class MediaController extends WP_REST_Controller {
 		// Carousel / gallery-post membership travels WITH the upload rather than
 		// being written after it returns. Listeners on mvs_media_uploaded have to
 		// be able to see that this item is part of a group — the BuddyPress
-		// activity recorder bundles on it. Basecamp #10153581987.
+		// activity recorder bundles on it.
 		$media_group_param = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( '' !== $media_group_param ) {
 			$args['media_group']    = $media_group_param;
@@ -868,32 +887,7 @@ class MediaController extends WP_REST_Controller {
 			return $media_id;
 		}
 
-		// Client-generated video thumbnail (JS canvas captured first frame).
-		// Used as a last-resort poster when the server-side ffmpeg / cover-atom
-		// paths both failed. Routed through PosterService so every poster write
-		// hits the same dir + filename convention. The staged frame then feeds
-		// `UploadService::generate_thumbnails()` for sized variants + WebP/AVIF
-		// siblings. Failure path is non-fatal; meta stays empty so the frontend
-		// renders the default video poster at template time.
-		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
-			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
-
-			// Regenerate when there is no thumb yet OR the stored value is not a
-			// valid image URL. A prior write could have stored the video file URL
-			// itself (the broken video-thumbnail case); skipping on a truthy-but-
-			// invalid value left the thumbnail permanently broken.
-			$needs_thumb = true;
-			if ( is_string( $existing_thumb ) && '' !== $existing_thumb ) {
-				$needs_thumb = ! preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $existing_thumb );
-			}
-
-			if ( $needs_thumb ) {
-				$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
-				if ( $staged_path ) {
-					$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
-				}
-			}
-		}
+		$this->apply_client_poster( $media_id, $files );
 
 		// Apply tags and categories if provided.
 		$tags = $request->get_param( 'tags' );
@@ -912,7 +906,7 @@ class MediaController extends WP_REST_Controller {
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
-			$cat_terms = wp_get_object_terms( $media_id, 'mvs_category' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
+			$cat_terms = wp_get_object_terms( $media_id, 'mvs_category' ); // Not get_the_terms(): media are not posts.
 			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
 			}
@@ -920,14 +914,13 @@ class MediaController extends WP_REST_Controller {
 
 		// Media group (gallery post) metadata is written by UploadService before
 		// mvs_media_uploaded fires — see $args['media_group'] above. Nothing to do
-		// here any more; writing it a second time would be a no-op at best and,
-		// while it lived here alone, was the cause of #10153581987.
+		// here; writing it a second time would be a no-op at best.
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
 			// privacy is an index column — \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set writes directly to mvs_media_index.
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'group' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->apply_requested_privacy( $media_id, 'group' );
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
 
 			/**
@@ -1022,13 +1015,13 @@ class MediaController extends WP_REST_Controller {
 
 		// Update privacy.
 		//
-		// VALIDATED HERE, not just on upload. This route used to store whatever
-		// string it was handed: `banana` persisted and then failed closed in
-		// PrivacyService's default arm, and `space` persisted on a personal-drive
+		// VALIDATED HERE, not just on upload. Without it this route would store whatever
+		// string it is handed: `banana` would persist and then fail closed in
+		// PrivacyService's default arm, and `space` would persist on a personal-drive
 		// item where check_space() can never resolve it — 200 OK, never applied,
-		// member believes it saved (Basecamp 10220491230). The vocabulary is
+		// member believes it saved. The vocabulary is
 		// PrivacyService's single filterable list, so upload and update cannot
-		// drift apart again.
+		// drift apart.
 		$privacy         = $request->get_param( 'privacy' );
 		$privacy_changed = false;
 		if ( $privacy ) {
@@ -1044,6 +1037,17 @@ class MediaController extends WP_REST_Controller {
 					'mvs_privacy_locked',
 					__( 'Privacy is set by the site owner, so it cannot be edited here.', 'wpmediaverse' ),
 					array( 'status' => 403 )
+				);
+			}
+
+			// A file sent in a message stays a chat file, and nothing becomes one
+			// after upload: 'dm' is uploaded by the message rules. MediaRepository refuses it too; this says so out loud.
+			$current = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+			if ( $clean_privacy !== $current && ( 'dm' === $current || 'dm' === $clean_privacy ) ) {
+				return new WP_Error(
+					'mvs_privacy_dm_fixed',
+					__( 'A file sent in a message keeps the privacy of its conversation.', 'wpmediaverse' ),
+					array( 'status' => 400 )
 				);
 			}
 
@@ -1074,7 +1078,7 @@ class MediaController extends WP_REST_Controller {
 			}
 
 			// A photo in an album shows with the album's privacy; the member's
-			// choice is kept for when it leaves the album (Basecamp 10264373450).
+			// choice is kept for when it leaves the album.
 			// The edit screens send the CURRENT level with every save - for a
 			// photo in an album that is the album's - so an unchanged value is
 			// not a choice and must not overwrite the one set aside.
@@ -1152,11 +1156,11 @@ class MediaController extends WP_REST_Controller {
 				// Derive the cached name list straight from the IDs we just
 				// wrote — NOT from a get_the_terms() re-read. On sites with a
 				// persistent object cache the relationship cache can momentarily
-				// miss right after wp_set_object_terms(), which previously sent
-				// this code down a destructive else-branch that wiped the saved
+				// miss right after wp_set_object_terms(), which would send
+				// this code down a destructive else-branch that wipes the saved
 				// category list to [] even though the taxonomy assignment
-				// succeeded. That is exactly the reported bug: categories
-				// vanished on read-back for a subset of items (HTTP 200, not
+				// succeeds: categories
+				// vanish on read-back for a subset of items (HTTP 200, not
 				// applied). Resolving names from the submitted IDs keeps the
 				// cached meta in lockstep with the relationship table for every
 				// item, and an empty array still correctly clears the list.
@@ -1173,6 +1177,35 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+	}
+
+	/**
+	 * Use the browser-captured first frame as the video's poster.
+	 *
+	 * The fallback when the file has no embedded cover. Shared by upload and
+	 * replace-file, so a replaced video is not left without a poster.
+	 *
+	 * @param int                 $media_id Media id.
+	 * @param array<string,mixed> $files    Request file params; reads `thumbnail`.
+	 * @return void
+	 */
+	private function apply_client_poster( int $media_id, array $files ): void {
+		if ( empty( $files['thumbnail'] ) || ! empty( $files['thumbnail']['error'] ) ) {
+			return;
+		}
+
+		$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
+
+		// Regenerate when there is no thumb yet OR the stored value is not an image URL
+		// (a prior write could have stored the video file URL itself).
+		if ( is_string( $existing_thumb ) && '' !== $existing_thumb && preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $existing_thumb ) ) {
+			return;
+		}
+
+		$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
+		if ( $staged_path ) {
+			Plugin::container()->get( 'upload' )->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
+		}
 	}
 
 	/**
@@ -1221,14 +1254,11 @@ class MediaController extends WP_REST_Controller {
 		$upload_service = Plugin::container()->get( 'upload' );
 		$allowed        = $upload_service->get_allowed_types_public();
 		$finfo          = finfo_open( FILEINFO_MIME_TYPE );
-		$mime           = finfo_file( $finfo, $file['tmp_name'] );
+		$mime           = MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
-		// The SAME guard as UploadService::handle(), not a mirror of it. This
-		// endpoint bypassing the upload guard is exactly what the double-verifier
-		// caught in 2026-06-04 (#9962125462), and a second copy is how that
-		// happens again — the 2.4.0 change from a name test to an unknown test
-		// would have needed both edited in lockstep to stay correct.
+		// The SAME guard as UploadService::handle(), not a mirror of it: a second
+		// copy would have to be edited in lockstep to stay correct.
 		$mvs_refusal = $upload_service->reject_unsupported_mime( $mime );
 		if ( $mvs_refusal ) {
 			return $mvs_refusal;
@@ -1239,7 +1269,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// The SAME quota gate as a fresh upload, for the same reason as the MIME
-		// guard above: this endpoint used to run neither, so a member who was out
+		// guard above: without it a member who is out
 		// of quota could not upload but could still push new bytes in through
 		// Replace. A package limit an owner sells has to hold on every write path.
 		//
@@ -1296,10 +1326,9 @@ class MediaController extends WP_REST_Controller {
 		$dest_sub = gmdate( 'Y/m' );
 		// Route through FilenameStrategy exactly like the primary upload path
 		// (UploadService::handle) so the configured strategy — hashed by
-		// default since 1.6.0 — applies to replacements too. Before 1.6.0 this
-		// called sanitize_file_name() directly, so replacing a file leaked the
-		// original filename in the URL even on hashed sites (audit 2026-06-04,
-		// #9962530792).
+		// default since 1.6.0 — applies to replacements too. Calling
+		// sanitize_file_name() directly would leak the
+		// original filename in the URL even on hashed sites.
 		$filename_pick = \WPMediaVerse\Services\FilenameStrategy::pick(
 			(string) $file['name'],
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
@@ -1321,8 +1350,7 @@ class MediaController extends WP_REST_Controller {
 		// exactly as UploadService::handle() does for a fresh upload. This path
 		// reimplements the ingest pipeline instead of calling handle(), so it
 		// does not inherit that step and a replaced iPhone portrait would land
-		// sideways even though a newly-uploaded one is now correct
-		// (Basecamp #10134243656 fixed create; #10156642711 found replace).
+		// sideways even though a newly-uploaded one is correct.
 		//
 		// Calls the same UploadService seam rather than repeating the logic —
 		// two copies of a rotation is how the paths drift apart again.
@@ -1331,7 +1359,7 @@ class MediaController extends WP_REST_Controller {
 		// Then strip, on the same owner switch as a fresh upload. Replace ran
 		// orientation, filename strategy, watermark, optimize and the WebP/AVIF
 		// siblings - everything except this - so replacing a photo kept the GPS
-		// coordinates a normal upload would have removed. Basecamp 10316771960.
+		// coordinates a normal upload would have removed.
 		if ( get_option( 'mvs_strip_exif', true ) && 0 === strpos( (string) $mime, 'image/' ) ) {
 			$upload_service->strip_exif( $file['tmp_name'] );
 		}
@@ -1340,7 +1368,7 @@ class MediaController extends WP_REST_Controller {
 		// the same rule as a fresh upload. This MUST run before store() below:
 		// store() persists the temp file, and the WebP/AVIF siblings are cut from
 		// that same temp file further down. Stamping afterwards would ship a
-		// clean original alongside watermarked siblings. Basecamp 10073917553.
+		// clean original alongside watermarked siblings.
 		Plugin::container()->get( 'watermark' )->stamp_new_upload(
 			$file['tmp_name'],
 			$mime,
@@ -1358,20 +1386,14 @@ class MediaController extends WP_REST_Controller {
 
 		// Update media index with new file data.
 		//
-		// Through UploadService, not inline — the fourth time this endpoint has
-		// had to stop reimplementing a step of the ingest pipeline (filename
-		// strategy, EXIF orientation and the MIME guard above were the first
-		// three). What stood here was the pre-1.2.3 catch-all: anything not
-		// image/video/audio became `document`. `get_media_type()` moved to an
-		// allowlist in 2.4.0 and this copy did not, so it was the last inverted
-		// one left in Free.
+		// Through UploadService, not inline - this endpoint must not reimplement
+		// a step of the ingest pipeline (filename strategy, EXIF orientation and
+		// the MIME guard above are the others). An inline resolver would be the
+		// pre-1.2.3 catch-all, where anything not image/video/audio became
+		// `document`, while `get_media_type()` is an allowlist.
 		//
-		// It was DEAD code, not a live bug: `reject_unsupported_mime()` above
-		// already refuses every MIME this resolver answers '' for, so the
-		// `document` branch was unreachable and no row could be re-typed by a
-		// replacement. Removed rather than guarded — adding a second refusal
-		// here would duplicate that check, which is how these two paths drifted
-		// apart the previous three times. The '' case cannot reach this line.
+		// `reject_unsupported_mime()` above already refuses every MIME this
+		// resolver answers '' for, so the '' case cannot reach this line.
 		$media_type = $upload_service->get_media_type_public( $mime );
 
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
@@ -1492,6 +1514,9 @@ class MediaController extends WP_REST_Controller {
 		// codec and regenerate thumbnails (+ video poster / audio cover art).
 		$upload_service = Plugin::container()->get( 'upload' );
 		$upload_service->process_stored_file( $media_id, $dest_path, $media_type, $mime );
+		if ( 'video' === $media_type ) {
+			$this->apply_client_poster( $media_id, $files );
+		}
 
 		$file_data = array(
 			'file_url'   => $driver->url( $dest_path ),
@@ -1673,7 +1698,7 @@ class MediaController extends WP_REST_Controller {
 		//
 		// Keyed on the logged-in user when there is one, else the salted IP hash,
 		// and it uses the media_user_date index the table already carries for
-		// exactly this lookup. Basecamp 10278289615.
+		// exactly this lookup.
 		if ( $mvs_view_window > 0 ) {
 			if ( $this->seen_recently( $media_id, $user_id, $ip_hash, 'view', $mvs_view_window ) ) {
 				// Already counted. Return the current total so the client still
@@ -1782,7 +1807,7 @@ class MediaController extends WP_REST_Controller {
 		//
 		// Keyed on the logged-in user when there is one, else the salted IP hash,
 		// and it uses the media_user_date index the table already carries for
-		// exactly this lookup. Basecamp 10278289615.
+		// exactly this lookup.
 		if ( $mvs_view_window > 0 ) {
 			if ( $this->seen_recently( $media_id, $user_id, $ip_hash, 'download', $mvs_view_window ) ) {
 				// Already counted. Return the current total so the client still
@@ -1964,6 +1989,35 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * The spaces an item is linked into that the viewer may open (GET /media/{id}/spaces).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function get_item_spaces( $request ): WP_REST_Response {
+		$media_id = (int) $request->get_param( 'id' );
+		$viewer   = get_current_user_id();
+		$spaces   = array();
+
+		// Only spaces this viewer may open: a link into a private space must not
+		// tell an outsider that the space exists.
+		foreach ( (array) \WPMediaVerse\Core\Plugin::container()->get( 'media_space_repository' )->spaces_for_media( $media_id ) as $space_id ) {
+			if ( 'none' !== \WPMediaVerse\Services\PrivacyService::media_drive_access( 'space', (int) $space_id, $viewer ) ) {
+				$spaces[] = (int) $space_id;
+			}
+		}
+
+		return rest_ensure_response(
+			array(
+				'media_id'  => $media_id,
+				'space_ids' => $spaces,
+			)
+		);
+	}
+
+	/**
 	 * Permissions: get item (privacy check).
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -2028,11 +2082,7 @@ class MediaController extends WP_REST_Controller {
 			return $not_found;
 		}
 
-		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( $own_cap ) ) {
-			return true;
-		}
-
-		if ( current_user_can( $others_cap ) ) {
+		if ( \WPMediaVerse\Capabilities\MediaCapabilities::can_edit_media( $media_id, $user_id, $own_cap, $others_cap ) ) {
 			return true;
 		}
 
@@ -2124,6 +2174,7 @@ class MediaController extends WP_REST_Controller {
 		self::$stats_map = array();
 		self::prime_stats( $media_ids );
 		$repo    = Plugin::container()->get( 'media_repository' );
+		$repo->gallery_tile_counts( $media_ids ); // One batch for every tile's group_count.
 		$authors = array();
 		foreach ( $media_ids as $mid ) {
 			$author = (int) $repo->get( (int) $mid, 'post_author' );
@@ -2207,7 +2258,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Per-size image URLs so the app can pick a size tier per context
-		// (Basecamp 9667082287): thumb (~150), medium (~640), large (~1080),
+		// thumb (~150), medium (~640), large (~1080),
 		// plus the original as full_url. Each resolves exactly like
 		// thumbnail_url above — the stored signed variant first, generating
 		// only when that size is absent. Public media resolves to
@@ -2256,8 +2307,8 @@ class MediaController extends WP_REST_Controller {
 		// edit_others_mvs_medias. The old test was ownership-or-manage_options,
 		// which ignored the permission matrix entirely — so revoking "Edit" left
 		// the button on screen and a member clicking it got a 403 from the API
-		// (Basecamp 10285497657), while a delegated "Edit Others" role had no
-		// affordance at all (10285691473).
+		// while a delegated "Edit Others" role had no
+		// affordance at all.
 		$can_edit   = $is_own
 			? user_can( $viewer_id, 'edit_mvs_medias' )
 			: ( $viewer_id > 0 && user_can( $viewer_id, 'edit_others_mvs_medias' ) );
@@ -2291,9 +2342,8 @@ class MediaController extends WP_REST_Controller {
 
 		// Per-type document glyph + friendly label, resolved once from the single
 		// DocumentTypes map so the app and the media lightbox bind these instead
-		// of re-deriving an icon and a label from the raw MIME — the lightbox used
-		// to hardcode the file-text glyph and print the raw MIME (Basecamp
-		// 10248528902). Empty for non-documents.
+		// of re-deriving an icon and a label from the raw MIME — the lightbox would
+		// otherwise hardcode the file-text glyph and print the raw MIME. Empty for non-documents.
 		$mvs_doc_icon   = '';
 		$mvs_doc_label  = '';
 		$mvs_doc_viewer = '';
@@ -2310,7 +2360,6 @@ class MediaController extends WP_REST_Controller {
 			// The same viewer the single-media page renders, so the two surfaces
 			// stop disagreeing about the same file: favourite a text document,
 			// open it in the lightbox, and you got less than by opening its page.
-			// Basecamp 10268223516.
 			//
 			// Free asks; whoever answers decides what it can safely return here.
 			// Which document types have a script-free preview is Pro's knowledge,
@@ -2338,8 +2387,7 @@ class MediaController extends WP_REST_Controller {
 			'doc_icon'          => $mvs_doc_icon,
 			'doc_label'         => $mvs_doc_label,
 			'privacy'           => $privacy_value,
-			// The album this photo is in, whose privacy it shows with (2.6.0,
-			// Basecamp 10264373450), or null. own_privacy - what the member
+			// The album this photo is in, whose privacy it shows with, or null. own_privacy - what the member
 			// chose, back in force when the photo leaves the album - only for
 			// whoever may edit the photo.
 			'album'             => $this->album_summary( (int) ( $all['album_id'] ?? 0 ), $can_edit ? (string) ( $all['own_privacy'] ?? '' ) : null ),
@@ -2381,9 +2429,8 @@ class MediaController extends WP_REST_Controller {
 		// `mvs_user_badge_html` filter) rendered in a sibling node via
 		// `data-wp-html`. Keeping the two fields separate means the plain
 		// value stays escapable for attribute use; the lightbox path (REST →
-		// `data-wp-text`) had been bypassing the `mvs_user_display_name`
-		// filter chain so the badge never reached the popup — see Basecamp
-		// card #9872031539, follow-up 2026-05-11.
+		// `data-wp-text`) would bypass the `mvs_user_display_name`
+		// filter chain, so the badge would never reach the popup.
 		// `get_the_author_meta( 'display_name' )` flows through
 		// `bp_core_get_user_displayname` — which bp-verified-member hooks
 		// to append its badge `<span>`. The legacy `$data['author_name']`
@@ -2428,13 +2475,9 @@ class MediaController extends WP_REST_Controller {
 			$data['group_position'] = ! empty( $all['group_position'] ) ? (int) $all['group_position'] : 0;
 			$data['group_cover']    = ! empty( $all['group_cover'] ) ? (bool) $all['group_cover'] : false;
 
-			// Count group members.
-			$data['group_count'] = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$media_group
-				)
-			);
+			// Items this tile stands for: a cover counts the members it hides,
+			// any other item 0, so a split member opens alone in the lightbox.
+			$data['group_count'] = (int) ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->gallery_tile_counts( array( (int) $media_id ), null, $this->gallery_filter( $request ) )[ (int) $media_id ] ?? 0 );
 		}
 
 		// Add media-type-specific metadata.
@@ -2589,6 +2632,12 @@ class MediaController extends WP_REST_Controller {
 				'default'           => 'all',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
+			'group'        => array(
+				'description'       => __( 'Limit to one BuddyPress group\'s media. Group members also get items shared with the group.', 'wpmediaverse' ),
+				'type'              => 'integer',
+				'minimum'           => 1,
+				'sanitize_callback' => 'absint',
+			),
 			'group_covers' => array(
 				'type'              => 'boolean',
 				'default'           => false,
@@ -2597,11 +2646,6 @@ class MediaController extends WP_REST_Controller {
 		);
 	}
 
-	/**
-	 * Get client IP.
-	 *
-	 * @return string
-	 */
 	/**
 	 * Parse a meta value that may be JSON array or comma-separated into a flat array.
 	 *
@@ -2619,6 +2663,11 @@ class MediaController extends WP_REST_Controller {
 		return array_values( array_filter( array_map( 'trim', explode( ',', $raw ) ) ) );
 	}
 
+	/**
+	 * Get client IP.
+	 *
+	 * @return string
+	 */
 	private static function get_client_ip(): string {
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );

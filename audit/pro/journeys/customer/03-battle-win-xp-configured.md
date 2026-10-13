@@ -57,7 +57,7 @@ estimated_runtime_minutes: 6
 - **On fail**: `includes/Battles/BattleNotificationListener.php` — notification type not whitelisted via `mvs_notification_types` (Free's `NotificationService::create()` silently drops unknown types).
 
 ### 7. Fallback default when no snapshot is present (legacy battle)
-- **Action**: simulate a battle row whose `settings` JSON lacks `xp_win` (a pre-fix row); call `wp eval 'echo \WPMediaVersePro\Core\Plugin::container_or_service("battles")->xp_for_win(<legacy_bid>);'`.
+- **Action**: simulate a battle row whose `settings` JSON lacks `xp_win` (a pre-fix row); call `wp eval 'echo (new \WPMediaVersePro\Battles\BattleService())->xp_for_win(<legacy_bid>);'`.
 - **Expect**: returns the live `get_option('mvs_pro_battle_win_xp', 100)` value — graceful fallback, never a fatal or 0.
 - **On fail**: `includes/Battles/BattleService.php:685` — `$settings['xp_win'] ?? get_option(...)` fallback missing.
 

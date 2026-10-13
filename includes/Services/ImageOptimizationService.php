@@ -606,7 +606,7 @@ class ImageOptimizationService {
 	public function is_enabled( string $type ): bool {
 		if ( 'originals' === $type ) {
 			// Default OFF: a lossy JPEG re-encode must not run on every upload
-			// unless the site owner opts in (Basecamp #10073918955). GPS/EXIF
+			// unless the site owner opts in. GPS/EXIF
 			// stripping is separate and always on (UploadService::mvs_strip_exif).
 			return (bool) get_option( self::SETTING_OPTIMIZE_ORIGINALS, false );
 		}
@@ -625,9 +625,9 @@ class ImageOptimizationService {
 	/**
 	 * Re-compress the image in place. NOT lossless for JPEG.
 	 *
-	 * This method used to be called `run_lossless_pass()`. It never was lossless:
-	 * it decodes the image and re-encodes it at `mvs_optimize_jpeg_quality`
-	 * (default 92). The name told a maintainer the opposite of what the code did.
+	 * It is deliberately not named `run_lossless_pass()`: it is not lossless.
+	 * It decodes the image and re-encodes it at `mvs_optimize_jpeg_quality`
+	 * (default 92), so such a name would tell a maintainer the opposite of what the code does.
 	 *
 	 * The commit guard below only keeps the result when it is SMALLER than the
 	 * source, which has a consequence worth stating plainly:
@@ -770,26 +770,6 @@ class ImageOptimizationService {
 		return $ok && file_exists( $local_abs ) ? $local_abs : '';
 	}
 
-	/**
-	 * Publish a locally-generated WebP file via the active storage driver.
-	 *
-	 * Pro / cloud driver philosophy: when an S3 / BunnyCDN / R2 / future
-	 * driver is active, every artifact (originals, size variants, WebP
-	 * variants) lives on the CDN. The WP server's disk does not accumulate
-	 * the optimized copies — that defeats the point of paying for object
-	 * storage and breaks `wp mvs cleanup-local`'s reclaim guarantees.
-	 *
-	 * For the local driver we keep the file on disk and return its public URL.
-	 * For cloud drivers we upload to the sibling path (same dir as the source,
-	 * `.webp` extension) and delete the local copy.
-	 *
-	 * @param string $local_webp_path Absolute path of the WebP just emitted by emit_webp_sibling().
-	 * @param string $source_rel_path Relative path of the source file (e.g. "2026/05/foo.jpg" or
-	 *                                "2026/05/foo-300x225.jpg"). Used to derive the cloud
-	 *                                destination — driver prepends its own root.
-	 *
-	 * @return string Public URL of the published WebP, or '' on failure.
-	 */
 	/**
 	 * Publish a locally-generated sibling (WebP / AVIF) via the active
 	 * storage driver. Collapses the historic `publish_webp_to_active_driver`

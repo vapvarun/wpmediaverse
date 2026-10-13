@@ -3,7 +3,7 @@
  * Plugin Name: MediaVerse
  * Plugin URI:  https://wbcomdesigns.com/downloads/mediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     2.6.1
+ * Version:     2.6.2
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -11,19 +11,19 @@
  * Text Domain: wpmediaverse
  * Domain Path: /languages
  * Requires at least: 6.5
- * Requires PHP: 7.4
+ * Requires PHP: 8.1
  *
  * @package WPMediaVerse
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '2.6.1' );
+define( 'MVS_VERSION', '2.6.2' );
 // Kept in step with the `Requires PHP` header above by `BootGuardTest`. WordPress
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
 // an already-active site to an older PHP.
-define( 'MVS_MIN_PHP', '7.4' );
+define( 'MVS_MIN_PHP', '8.1' );
 // Minimum Pro version compatible with this free build. Free and Pro release in
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
@@ -162,6 +162,15 @@ if ( file_exists( MVS_PLUGIN_DIR . 'libs/action-scheduler/action-scheduler.php' 
 if ( file_exists( MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 	&& file_exists( MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/src/Versions.php' ) ) {
 	require_once MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/edd-sl-sdk.php';
+} elseif ( is_admin() ) {
+	add_action(
+		'admin_notices',
+		static function () {
+			echo '<div class="notice notice-warning"><p>'
+				. esc_html__( 'MediaVerse: the bundled licensing and update SDK is incomplete, so automatic updates are turned off. Reinstall the plugin from a complete package to restore them. Every other feature works normally.', 'wpmediaverse' )
+				. '</p></div>';
+		}
+	);
 }
 add_action(
 	'edd_sl_sdk_registry',

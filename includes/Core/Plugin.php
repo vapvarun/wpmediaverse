@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\PostTypes\Album;
 use WPMediaVerse\PostTypes\Collection;
+use WPMediaVerse\PostTypes\PublicListing;
 use WPMediaVerse\Taxonomies\MediaTag;
 use WPMediaVerse\Taxonomies\MediaCategory;
 use WPMediaVerse\Admin\Settings\SettingsPage;
@@ -96,9 +97,7 @@ class Plugin {
 	 * Set by Pro feed Layout::enqueue_assets() so the lightbox dialog markup
 	 * (and its `@mvs/shared-ui` Interactivity store) reaches ordinary shortcode
 	 * / block pages that host a feed grid whose media tiles use
-	 * `actions.openLightbox`. Without this, the lightbox is dead off MVS pages
-	 * (Basecamp #9961961339 — same surface-miss class as the Load More fix
-	 * #9961961337). Honored in render_shared_ui_frame().
+	 * `actions.openLightbox`. Without this, the lightbox is dead off MVS pages. Honored in render_shared_ui_frame().
 	 *
 	 * @var bool
 	 */
@@ -118,6 +117,36 @@ class Plugin {
 	 */
 	public static function force_shared_ui_frame(): void {
 		self::$force_shared_ui_frame = true;
+	}
+
+	/**
+	 * Strings for the JS card builder (cards appended by Load More).
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function card_builders_i18n(): array {
+		return array(
+			'deleteMedia'  => __( 'Delete media', 'wpmediaverse' ),
+			'video'        => __( 'Video', 'wpmediaverse' ),
+			'viewMedia'    => __( 'View media', 'wpmediaverse' ),
+			'stats'        => __( 'Stats', 'wpmediaverse' ),
+			'likes'        => __( 'Likes', 'wpmediaverse' ),
+			'views'        => __( 'Views', 'wpmediaverse' ),
+			'comments'     => __( 'Comments', 'wpmediaverse' ),
+			// Count labels, the same strings page 1 prints (TemplateHelpers::render_grid_stats()).
+			'statLabels'   => array(
+				/* translators: %s: number of views. */
+				'views'     => array( _n( '%s view', '%s views', 1, 'wpmediaverse' ), _n( '%s view', '%s views', 2, 'wpmediaverse' ) ),
+				/* translators: %s: number of reactions. */
+				'reactions' => array( _n( '%s reaction', '%s reactions', 1, 'wpmediaverse' ), _n( '%s reaction', '%s reactions', 2, 'wpmediaverse' ) ),
+				/* translators: %s: number of comments. */
+				'comments'  => array( _n( '%s comment', '%s comments', 1, 'wpmediaverse' ), _n( '%s comment', '%s comments', 2, 'wpmediaverse' ) ),
+			),
+			/* translators: %d: number of items in the gallery (one). */
+			'galleryItem'  => __( '%d item', 'wpmediaverse' ),
+			/* translators: %d: number of items in the gallery (two or more). */
+			'galleryItems' => __( '%d items', 'wpmediaverse' ),
+		);
 	}
 
 	/**
@@ -165,12 +194,9 @@ class Plugin {
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
-		// WordPress 4.6+ auto-loads plugin textdomains from the standard
-		// language directories (wp-content/languages/plugins/{slug}-{locale}.mo
-		// and {plugin}/languages/{slug}-{locale}.mo). Calling
-		// load_plugin_textdomain() here on `plugins_loaded` triggers the
-		// `_load_textdomain_just_in_time was called incorrectly` notice on
-		// WP 6.7+ which now requires textdomain loading on `init` or later.
+		// No load_plugin_textdomain(): WordPress 4.6+ loads it from the language
+		// folders, and calling it on `plugins_loaded` raises the
+		// `_load_textdomain_just_in_time` notice on WP 6.7+.
 
 		// Ensure capabilities are registered. The activation hook can fail
 		// on some hosts (fatal error, WP-CLI without --activate, etc.).
@@ -203,6 +229,7 @@ class Plugin {
 
 		// Register post types, taxonomies, and blocks.
 		add_action( 'init', array( self::class, 'register_types' ) );
+		add_action( 'init', array( self::class, 'register_shared_modules' ), 1 );
 
 		// Custom admin menu (replaces CPT-based menu).
 		add_action( 'admin_menu', array( self::class, 'register_admin_menu' ), 5 );
@@ -235,7 +262,7 @@ class Plugin {
 			self::$container->get( 'admin.overview' );
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
-			if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+			if ( ! self::is_pro_active() ) {
 				self::$container->get( 'admin.reports' );
 			}
 			self::$container->get( 'admin.member_moderation' );
@@ -256,7 +283,7 @@ class Plugin {
 
 		// Block/suspension gate for every write route in both namespaces. Runs at
 		// dispatch, not per controller, because Application Passwords bypass the
-		// login gate and only three of ~112 write endpoints used to check.
+		// login gate and only three of ~112 write endpoints check.
 		\WPMediaVerse\REST\RestGate::register();
 
 		// One seam for app-facing timestamps: at dispatch, add an ISO-8601
@@ -271,19 +298,6 @@ class Plugin {
 		// (BuddyNext) flips `mvs_rest_require_auth` on to make the whole mvs/v1
 		// surface login-only when it is marked private. See CommunityPrivacyGate.
 		\WPMediaVerse\REST\CommunityPrivacyGate::register();
-
-		// Erase the member from every mapped table when their WordPress user is
-		// deleted. UserDeletionService fires this after its own cascade; the purger
-		// covers what that cascade never knew about — the usage ledger, the error
-		// log, and every Pro table (push devices above all: a deleted member's push
-		// tokens surviving means the site keeps a live channel to someone who asked
-		// to be forgotten).
-		add_action(
-			'mvs_user_data_purged',
-			static function ( $user_id ) {
-				( new \WPMediaVerse\Privacy\MemberPurger() )->purge( (int) $user_id );
-			}
-		);
 
 		// Schedules the grace-period sweep.
 		self::$container->get( 'account_deletion' )->init();
@@ -356,7 +370,7 @@ class Plugin {
 		// flips from `public` to any restricted level, cloud-driver URLs in
 		// `file_url` / `thumb_*` must be rewritten to local equivalents or
 		// `SignedUrlService::serve_thumbnail()` rejects them on the next
-		// read (card 9925110293). Priority 5 — runs BEFORE Pro listeners
+		// read. Priority 5 — runs BEFORE Pro listeners
 		// (Bunny purge, S3 delete) so they see the post-localization state.
 		add_action(
 			'mvs_media_privacy_changed',
@@ -384,12 +398,11 @@ class Plugin {
 			3
 		);
 
-		// NOTE: the dashboard's Documents tab is no longer registered here. It
-		// began as a registry LINK out to the documents page, and became a real
+		// NOTE: the dashboard's Documents tab is not registered here. It is a real
 		// panel rendering the drive in place — a member managing their media
 		// should not be sent elsewhere to manage their documents, and the upload
 		// control has to be on the screen they are already on. The registry
-		// itself stays: it is the seam that fixed the action/filter collision,
+		// itself stays: it is the seam that avoids the action/filter collision,
 		// and it remains the supported way for anything else to add a tab.
 
 		// Signing now lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url') — the
@@ -441,13 +454,13 @@ class Plugin {
 		// The two stylesheets every BuddyPress surface asks for, registered at
 		// the SAME earliest priority and for the same reason.
 		//
-		// They used to be registered inside `enqueue_frontend_assets()` below,
-		// which is `wp_enqueue_scripts@10` — and BuddyPress fires
+		// Registering them inside `enqueue_frontend_assets()` below is too late:
+		// that is `wp_enqueue_scripts@10`, and BuddyPress fires
 		// `bp_enqueue_scripts` from its OWN `wp_enqueue_scripts@10`, added
-		// first, so it ran first. Measured on this hook: `bp_enqueue_scripts`
+		// first, so it runs first. Measured on this hook: `bp_enqueue_scripts`
 		// at position 9, `enqueue_frontend_assets` at position 10. Every BP
-		// integration enqueuing at `bp_enqueue_scripts` therefore named a
-		// handle that did not exist yet, and `wp_enqueue_style()` on an
+		// integration enqueuing at `bp_enqueue_scripts` would therefore name a
+		// handle that does not exist yet, and `wp_enqueue_style()` on an
 		// unregistered handle fails SILENTLY — no notice, no style.
 		//
 		// The visible result was an activity stream with zero MediaVerse CSS:
@@ -708,7 +721,7 @@ class Plugin {
 		// richer User Reports screen (Pro Admin\ReportManager) and two reports
 		// menus would be confusing. Reporting defaults ON, so a Free site must
 		// still have somewhere for reports to land.
-		if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+		if ( ! self::is_pro_active() ) {
 			self::$container->register(
 				'admin.reports',
 				function ( ServiceContainer $c ) {
@@ -904,6 +917,7 @@ class Plugin {
 		}
 		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge' ) );
 		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge_activity' ) );
+		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge_notifications' ) );
 
 		// Wire LoggerService into key operations.
 		\WPMediaVerse\Services\LoggerService::register_hooks();
@@ -1015,22 +1029,7 @@ class Plugin {
 			}
 		);
 
-		self::$container->register(
-			'media_repository',
-			function () {
-				return new MediaRepository();
-			}
-		);
-
-		// document<->space link table. Registered so Pro reaches it through the
-		// container rather than importing the concrete class (architecture
-		// rule 3).
-		self::$container->register(
-			'media_space_repository',
-			function () {
-				return new \WPMediaVerse\Repository\MediaSpaceRepository();
-			}
-		);
+		self::register_repositories();
 
 		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
 		// consumers (e.g. BuddyNext) to attach/read media on their own objects
@@ -1053,6 +1052,56 @@ class Plugin {
 	}
 
 	/**
+	 * Data-access classes, one per table group. Registered so services and Pro
+	 * reach them through the container rather than importing concrete classes.
+	 *
+	 * @since 2.6.2
+	 */
+	private static function register_repositories(): void {
+		self::$container->register(
+			'media_repository',
+			function () {
+				return new MediaRepository();
+			}
+		);
+
+		// document<->space link table. Registered so Pro reaches it through the
+		// container rather than importing the concrete class (architecture
+		// rule 3).
+		self::$container->register(
+			'media_space_repository',
+			function () {
+				return new \WPMediaVerse\Repository\MediaSpaceRepository();
+			}
+		);
+
+		// Message SQL lives here; MessagingService owns the rules over it.
+		self::$container->register(
+			'message_repository',
+			function () {
+				return new \WPMediaVerse\Repository\MessageRepository();
+			}
+		);
+	}
+
+	/**
+	 * Script modules Pro and add-ons import by id. Free's own files import them
+	 * by relative path, so no enqueue has to list them as a dependency.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function register_shared_modules(): void {
+		// syncEvents(): wraps the store actions that need their event
+		// synchronously (Interactivity API withSyncEvent, WordPress 6.8+).
+		wp_register_script_module(
+			'@wpmediaverse/sync-events',
+			MVS_PLUGIN_URL . 'assets/js/frontend/sync-events.js',
+			array( array( 'id' => '@wordpress/interactivity' ) ),
+			self::asset_version( 'assets/js/frontend/sync-events.js' )
+		);
+	}
+
+	/**
 	 * Register REST API routes.
 	 */
 	public static function register_rest_routes(): void {
@@ -1064,10 +1113,10 @@ class Plugin {
 		$stats     = self::$container->get( 'stats' );
 		$albums    = self::$container->get( 'albums' );
 
-		$collections  = self::$container->get( 'collections' );
-		$moderation   = self::$container->get( 'moderation' );
-		$ai           = self::$container->get( 'ai' );
-		$signed_urls  = self::$container->get( 'signed_urls' );
+		$collections = self::$container->get( 'collections' );
+		$moderation  = self::$container->get( 'moderation' );
+		$ai          = self::$container->get( 'ai' );
+		$signed_urls = self::$container->get( 'signed_urls' );
 
 		$follows       = self::$container->get( 'follows' );
 		$notifications = self::$container->get( 'notifications' );
@@ -1119,7 +1168,7 @@ class Plugin {
 		// Albums and collections keep their settings in a meta box and their
 		// description in the content box. The block editor collapses meta boxes
 		// behind a closed pane by default, which hid every real control and left
-		// the block canvas as the only thing on screen (Basecamp 10351283087).
+		// the block canvas as the only thing on screen.
 		add_filter(
 			'use_block_editor_for_post_type',
 			static fn( $use, $post_type ) => in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true ) ? false : $use,
@@ -1131,7 +1180,7 @@ class Plugin {
 		// WordPress password or private status is invisible to every MediaVerse
 		// list and only hid the album, even from its owner, while its privacy
 		// said otherwise. admin.css hides those controls; this covers any other
-		// save path (Basecamp 10354828394). Collections keep their status: the
+		// save path. Collections keep their status: the
 		// Favorites collection is private by design.
 		add_filter(
 			'wp_insert_post_data',
@@ -1148,6 +1197,7 @@ class Plugin {
 
 		Album::register();
 		Collection::register();
+		PublicListing::register();
 		MediaTag::register();
 		MediaCategory::register();
 	}
@@ -1275,6 +1325,34 @@ class Plugin {
 			array( self::$container->get( 'admin.tags' ), 'render' )
 		);
 
+		// Categories - core's term screen. They feed the app's interests, Explore's
+		// category filter and smart collections. The taxonomy rides on mvs_album
+		// only to keep this screen alive, so core files it under no menu at all;
+		// parent_file puts it back under MediaVerse, and submenu_file marks it current
+		// (core sets the &amp; form, which matches no slug).
+		$category_slug = 'edit-tags.php?taxonomy=mvs_category&post_type=mvs_album';
+		add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Media Categories', 'wpmediaverse' ),
+			__( 'Categories', 'wpmediaverse' ),
+			'manage_categories',
+			$category_slug
+		);
+		add_filter(
+			'parent_file',
+			static function ( $parent_file ) {
+				$screen = get_current_screen();
+				return ( $screen && 'mvs_category' === $screen->taxonomy ) ? self::ADMIN_SLUG : $parent_file;
+			}
+		);
+		add_filter(
+			'submenu_file',
+			static function ( $submenu_file ) use ( $category_slug ) {
+				$screen = get_current_screen();
+				return ( $screen && 'mvs_category' === $screen->taxonomy ) ? $category_slug : $submenu_file;
+			}
+		);
+
 		// Albums and Collections register themselves via show_in_menu => 'wpmediaverse'.
 	}
 
@@ -1369,7 +1447,7 @@ class Plugin {
 	 * Block view scripts are modules and call window.mvsRest, a classic script
 	 * that enqueue_frontend_assets() loads only on MediaVerse's own pages. A block
 	 * placed on any ordinary page therefore had no client: view and download
-	 * tracking silently did nothing (Basecamp 10350019690). One filter here fixes
+	 * tracking silently did nothing. One filter here fixes
 	 * every block rather than each render.php remembering to ask.
 	 *
 	 * @param string $content Rendered block HTML, passed through untouched.
@@ -1416,15 +1494,15 @@ class Plugin {
 		// inject PHP-translated strings via wp_interactivity_state() instead.
 		// The languages/ path is passed so the plugin's own bundled .json
 		// (generated by `wp i18n make-json` at build) resolves, not just
-		// wp-content/languages/plugins. Basecamp 10073528834.
+		// wp-content/languages/plugins.
 		wp_set_script_translations( 'mvs-rest', 'wpmediaverse', MVS_PLUGIN_DIR . 'languages' );
 
 		// Card builders + Load More are registered globally (enqueued by
 		// handle below on MVS pages) because the Pro feed shortcodes
 		// ([mvs_pro_flickr_feed] etc.) render the same grid + Load More
 		// button on ordinary pages and enqueue these handles from their
-		// Layout::enqueue_assets() (Basecamp #9941413137 — Load More was
-		// dead on shortcode pages because these were enqueue-only inside
+		// Layout::enqueue_assets() (otherwise Load More is
+		// dead on shortcode pages, because these would be enqueue-only inside
 		// the MVS-page branch). Same shared-handle contract as
 		// mvs-explore-search.
 		wp_register_script(
@@ -1437,18 +1515,7 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
-		wp_localize_script(
-			'mvs-card-builders',
-			'mvsCardBuildersI18n',
-			array(
-				'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
-				'video'       => __( 'Video', 'wpmediaverse' ),
-				'viewMedia'   => __( 'View media', 'wpmediaverse' ),
-				'stats'       => __( 'Stats', 'wpmediaverse' ),
-				'likes'       => __( 'Likes', 'wpmediaverse' ),
-				'views'       => __( 'Views', 'wpmediaverse' ),
-			)
-		);
+		wp_localize_script( 'mvs-card-builders', 'mvsCardBuildersI18n', self::card_builders_i18n() );
 		wp_register_script(
 			'mvs-load-more',
 			MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
@@ -1509,7 +1576,6 @@ class Plugin {
 			// Follow/Message buttons were dead until the user hit refresh.
 			// All of these are delegated + config-from-data-*, so loading them
 			// on a page that has no matching markup is a no-op.
-			// (Basecamp #10148246386, #10134243697.)
 			wp_enqueue_script( 'mvs-profile-actions' );
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
@@ -1567,9 +1633,9 @@ class Plugin {
 
 			// Media player store — playback analytics (play/pause/seek/complete).
 			// templates/media-single.php renders its own <video>/<audio> bound to
-			// this store, but the store used to ship only as the media-player
-			// block's viewScriptModule, so the template path bound to nothing and
-			// mvs_play_events stayed empty. Basecamp 10309795254.
+			// this store, but the store otherwise ships only as the media-player
+			// block's viewScriptModule, so the template path would bind to nothing and
+			// mvs_play_events would stay empty.
 			wp_enqueue_script_module(
 				'@mvs/media-player',
 				MVS_PLUGIN_URL . 'src/blocks/media-player/view.js',
@@ -1604,8 +1670,7 @@ class Plugin {
 			// ([mvs_pro_flickr_feed] etc.) can enqueue it by id from their
 			// Layout::enqueue_assets() on ordinary pages. Without this the
 			// feed tiles' data-wp-on--click="actions.openLightbox" has no
-			// store and the lightbox is dead off MVS pages (Basecamp
-			// #9961961339). Uses build/ (compiled IIFE) — matches the
+			// store and the lightbox is dead off MVS pages. Uses build/ (compiled IIFE) — matches the
 			// enqueue_shared_ui_assets() path; register-only here, so it is a
 			// no-op on pages that never enqueue it by handle. The MVS-page
 			// branch above intentionally keeps its own src/ enqueue, so this
@@ -1747,7 +1812,7 @@ class Plugin {
 		// mvs-bp-tab-upload; the Interactivity surfaces (shared-ui modal,
 		// dashboard) use data-wp-on--drop directives instead and do not load
 		// this. Extracted in 2.3.0 to collapse three parallel implementations
-		// into one (Basecamp #10134243697).
+		// into one.
 		wp_register_script(
 			'mvs-dropzone',
 			MVS_PLUGIN_URL . 'assets/js/frontend/dropzone.js',
@@ -1766,7 +1831,6 @@ class Plugin {
 		// the album page swaps in the dropzone markup without ever delivering
 		// the config. Only page-specific state (the album id) travels on a
 		// data-* attribute inside the region, where the router does carry it.
-		// (Basecamp #10134243697.)
 		wp_register_script(
 			'mvs-album-upload',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
@@ -1817,7 +1881,7 @@ class Plugin {
 		// Publishes --mvs-sticky-top (height of the WP admin bar + whatever
 		// header the THEME pins at the top) so sticky MVS surfaces park below
 		// that chrome instead of under it. Config-free and self-gating: it does
-		// nothing on a page with no .mvs-bulk-bar. Basecamp 10320911387.
+		// nothing on a page with no .mvs-bulk-bar.
 		wp_register_script(
 			'mvs-sticky-top',
 			MVS_PLUGIN_URL . 'assets/js/frontend/sticky-top.js',
@@ -2220,7 +2284,7 @@ class Plugin {
 	 * One source, because the admin editor and the member's drive were writing
 	 * their own copies of the same three options and had already drifted: the
 	 * admin screen hardcoded its own wording while every other surface read
-	 * `DocumentSettings::privacy_labels()` (Basecamp #10194230388). Free cannot
+	 * `DocumentSettings::privacy_labels()`. Free cannot
 	 * call that directly — Pro may not be installed — so it asks and Pro answers,
 	 * the same seam `documents_enabled()` uses.
 	 *
@@ -2373,6 +2437,15 @@ class Plugin {
 	}
 
 	/**
+	 * Whether WPMediaVerse Pro is loaded. One answer for every caller.
+	 *
+	 * @since 2.6.2
+	 */
+	public static function is_pro_active(): bool {
+		return defined( 'MVS_PRO_VERSION' );
+	}
+
+	/**
 	 * Get the service container, building it if nothing has yet.
 	 *
 	 * ACTIVATION IS THE CASE THIS EXISTS FOR. `register_activation_hook` fires
@@ -2383,7 +2456,7 @@ class Plugin {
 	 * WordPress reported the whole thing as "Plugin could not be activated
 	 * because it triggered a fatal error", naming no line. On a fresh install
 	 * without Pro that happened every time: activation was fully blocked, not
-	 * just documents (Basecamp #10194150741).
+	 * just documents.
 	 *
 	 * Eight call sites across `Activator`, `Migrator` and `TemplateLoader` are on
 	 * that path, so guarding the one that happened to be first would only have
@@ -2508,6 +2581,9 @@ class Plugin {
 		$messaging_service = new \WPMediaVerse\Messaging\MessagingService();
 		$listener          = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
 
+		// Before the switch: old chat files are public whether Messages is on or off.
+		\WPMediaVerse\Messaging\ChatFiles::register();
+
 		if ( ! self::messaging_enabled() ) {
 			// Off: the engine never boots, so nothing listens (no routes, panel,
 			// page or `messaging` service - BuddyNext reads that as "no messaging").
@@ -2517,11 +2593,11 @@ class Plugin {
 			return;
 		}
 
-		$transport         = apply_filters(
+		$transport  = apply_filters(
 			'mvs_messaging_transport',
 			new \WPMediaVerse\Messaging\RestPollingTransport()
 		);
-		$controller        = new \WPMediaVerse\Messaging\MessagingController( $messaging_service, $transport );
+		$controller = new \WPMediaVerse\Messaging\MessagingController( $messaging_service, $transport );
 
 		add_action( 'rest_api_init', array( $controller, 'register_routes' ) );
 
@@ -2548,7 +2624,7 @@ class Plugin {
 				// may only narrow it (e.g. "everyone" -> "nobody"), never widen it
 				// (e.g. global "nobody" -> per-user "everyone"). Fixes the
 				// online-status-leak where a looser per-user meta value bypassed
-				// an admin's site-wide "nobody" (Basecamp #10053174913).
+				// an admin's site-wide "nobody".
 				$setting = self::resolve_privacy_ceiling(
 					$global_setting,
 					$user_setting,
@@ -2586,11 +2662,11 @@ class Plugin {
 	 * Whether the floating chat panel bundle (CSS + JS module + inline config)
 	 * should load on this request.
 	 *
-	 * Single home for the `mvs_chat_panel_visibility === 'disabled'` check that
-	 * used to live only in render_chat_panel() (markup), while the two asset
-	 * loaders (enqueue_messaging_assets(), print_messaging_config()) had no
-	 * gate at all and shipped the full messaging bundle on every logged-in
-	 * pageview even when the admin disabled the panel (Basecamp #10053068913).
+	 * Single home for the `mvs_chat_panel_visibility === 'disabled'` check, so
+	 * render_chat_panel() (markup) and the two asset loaders
+	 * (enqueue_messaging_assets(), print_messaging_config()) all honour it;
+	 * without a gate the loaders would ship the full messaging bundle on every
+	 * logged-in pageview even when the admin disabled the panel.
 	 *
 	 * The dedicated `/messages/` full-page template (templates/messages.php)
 	 * renders its OWN chat UI using this same JS module + config — it is not
@@ -2624,7 +2700,7 @@ class Plugin {
 		}
 
 		// Don't ship the messaging bundle when the admin has switched the
-		// chat panel off site-wide (Basecamp #10053068913).
+		// chat panel off site-wide.
 		if ( ! self::chat_panel_enabled() ) {
 			return;
 		}
@@ -2634,9 +2710,9 @@ class Plugin {
 		// frontend enqueue of it sits inside the MVS-page branch of
 		// enqueue_frontend_assets(). The chat FAB renders on every page (see
 		// render_chat_panel()), so on a non-MVS page (Home, a blog post) the
-		// panel used to mount without a REST client and report "No conversations"
+		// panel would mount without a REST client and report "No conversations"
 		// instead of failing loudly. Each module that needs mvsRest enqueues it
-		// itself. (Basecamp #10149580967.)
+		// itself.
 		wp_enqueue_script( 'mvs-rest' );
 
 		wp_enqueue_style(
@@ -2678,7 +2754,7 @@ class Plugin {
 		}
 
 		// Same gate as enqueue_messaging_assets() — no point printing the
-		// config the disabled bundle would have consumed (Basecamp #10053068913).
+		// config the disabled bundle would have consumed.
 		if ( ! self::chat_panel_enabled() ) {
 			return;
 		}
@@ -2696,7 +2772,7 @@ class Plugin {
 			// site and messaging.js hides "New group" + roster controls
 			// accordingly. Same empty-string-when-Pro-absent pattern as
 			// templates/media-single.php's analyticsUrl.
-			'groupsRestBase'     => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
+			'groupsRestBase'     => self::is_pro_active() ? esc_url_raw( rest_url( 'mvs-pro/v1/groups' ) ) : '',
 			// Checked before upload, so an over-limit video is refused at once
 			// instead of after the member waits for the whole file to send.
 			'attachmentMaxBytes' => \WPMediaVerse\Messaging\MessagingController::max_attachment_size(),
@@ -2714,7 +2790,7 @@ class Plugin {
 			// PHP-translated strings for messaging.js, keyed by their English
 			// source (gettext-style). The module can't import @wordpress/i18n and
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
-			// the store reads these instead. Basecamp 10073528834.
+			// the store reads these instead.
 			'i18n'               => array(
 				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
 				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
@@ -2727,7 +2803,7 @@ class Plugin {
 				'You reacted. Tap to remove.'          => __( 'You reacted. Tap to remove.', 'wpmediaverse' ),
 				'Reacted'                              => __( 'Reacted', 'wpmediaverse' ),
 				// Sidebar preview placeholders for attachment-only messages —
-				// mirror MessagingService::build_message_preview() (card 10127764989).
+				// mirror MessagingService::build_message_preview().
 				'Voice message'                        => __( 'Voice message', 'wpmediaverse' ),
 				'Photo'                                => __( 'Photo', 'wpmediaverse' ),
 				'Video'                                => __( 'Video', 'wpmediaverse' ),
@@ -2744,7 +2820,7 @@ class Plugin {
 				'Voice messages need a secure (https) connection.' => __( 'Voice messages need a secure (https) connection.', 'wpmediaverse' ),
 				// Chat header presence (2.5.1). Whole phrases, not glued
 				// fragments: "Active " + date + " ago" produced "Active
-				// 12/09/2026 ago" and could not be translated. Basecamp 10320657271.
+				// 12/09/2026 ago" and could not be translated.
 				'Online'                               => __( 'Online', 'wpmediaverse' ),
 				/* translators: %s: a relative time in the page language, such as "5 minutes ago". */
 				'Active %s'                            => __( 'Active %s', 'wpmediaverse' ),
@@ -2770,6 +2846,10 @@ class Plugin {
 				'Leave group'                          => __( 'Leave group', 'wpmediaverse' ),
 				'Leave this group? You will no longer receive its messages.' => __( 'Leave this group? You will no longer receive its messages.', 'wpmediaverse' ),
 				'Leave'                                => __( 'Leave', 'wpmediaverse' ),
+				'Delete this message for everyone? This cannot be undone.' => __( 'Delete this message for everyone? This cannot be undone.', 'wpmediaverse' ),
+				'Unsend this message for everyone? Any attached file is deleted too.' => __( 'Unsend this message for everyone? Any attached file is deleted too.', 'wpmediaverse' ),
+				'Delete'                               => __( 'Delete', 'wpmediaverse' ),
+				'Unsend'                               => __( 'Unsend', 'wpmediaverse' ),
 				/* translators: %d: number of active group members. */
 				'%d members'                           => __( '%d members', 'wpmediaverse' ),
 				'A group can have at most 50 members.' => __( 'A group can have at most 50 members.', 'wpmediaverse' ),
@@ -2783,29 +2863,6 @@ class Plugin {
 		);
 	}
 
-	/**
-	 * Register the `mvs-lucide` script + hydration inline once per request.
-	 *
-	 * Central helper so every integration that emits `<i data-lucide="…">`
-	 * can call `Plugin::register_lucide_script()` + `wp_enqueue_script(
-	 * 'mvs-lucide' )` without re-implementing the registration and without
-	 * diverging on the hydration logic.
-	 *
-	 * The inline hydration does two things that a single `createIcons()`
-	 * on `DOMContentLoaded` cannot do:
-	 *
-	 *   1. Hydrates on DCL (covers the static initial render).
-	 *   2. Installs a MutationObserver that calls `createIcons()` again
-	 *      whenever a fresh `<i data-lucide>` enters the DOM. This is the
-	 *      fix for BP Nouveau's Backbone-driven composer re-render, the
-	 *      WP Interactivity API dynamic inserts, and any future dynamic
-	 *      surface that injects Lucide placeholders after initial load.
-	 *
-	 * Prior pattern: every integration duplicated a `wp_register_script(
-	 * 'mvs-lucide', ... ) + wp_add_inline_script( ... )` block. Four such
-	 * blocks existed and any one forgetting or diverging produced the
-	 * "icon renders as an empty box" class of bug we kept re-fixing.
-	 */
 	/**
 	 * Late-priority callback that pairs the `mvs-confirm` stylesheet with its
 	 * script automatically. Any code path that calls
@@ -2855,6 +2912,29 @@ class Plugin {
 		}
 	}
 
+	/**
+	 * Register the `mvs-lucide` script + hydration inline once per request.
+	 *
+	 * Central helper so every integration that emits `<i data-lucide="…">`
+	 * can call `Plugin::register_lucide_script()` + `wp_enqueue_script(
+	 * 'mvs-lucide' )` without re-implementing the registration and without
+	 * diverging on the hydration logic.
+	 *
+	 * The inline hydration does two things that a single `createIcons()`
+	 * on `DOMContentLoaded` cannot do:
+	 *
+	 *   1. Hydrates on DCL (covers the static initial render).
+	 *   2. Installs a MutationObserver that calls `createIcons()` again
+	 *      whenever a fresh `<i data-lucide>` enters the DOM. This is the
+	 *      fix for BP Nouveau's Backbone-driven composer re-render, the
+	 *      WP Interactivity API dynamic inserts, and any future dynamic
+	 *      surface that injects Lucide placeholders after initial load.
+	 *
+	 * Prior pattern: every integration duplicated a `wp_register_script(
+	 * 'mvs-lucide', ... ) + wp_add_inline_script( ... )` block. Four such
+	 * blocks existed and any one forgetting or diverging produced the
+	 * "icon renders as an empty box" class of bug we kept re-fixing.
+	 */
 	public static function register_lucide_script(): void {
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			return;
@@ -2925,8 +3005,8 @@ JS;
 	 * dependency array, including @wordpress/interactivity-router as a dynamic dep
 	 * so the navigate action's dynamic import() is declared at module-registry time.
 	 *
-	 * This is the single source of truth for the dep list. All callers that
-	 * previously registered/enqueued the module directly now go through here.
+	 * This is the single source of truth for the dep list. All callers go
+	 * through here instead of registering/enqueuing the module directly.
 	 * Mirrors the register_lucide_script() consolidation pattern.
 	 *
 	 * @param bool   $enqueue  True to enqueue immediately; false to register only.
@@ -3180,7 +3260,7 @@ JS;
 
 		// Pro feed shortcodes / blocks placed on an ordinary page force the
 		// frame so their lightbox-trigger tiles have a dialog to open
-		// (Basecamp #9961961339). The frame's FAB stays gated to MVS pages
+		// The frame's FAB stays gated to MVS pages
 		// (handled inside the partial); only the lightbox dialog is needed
 		// here.
 		$forced = self::$force_shared_ui_frame;
@@ -3215,10 +3295,10 @@ JS;
 	 * Render the slide-out chat panel in wp_footer for logged-in users.
 	 *
 	 * The slide-out chat panel is the compact DM UI (the floating chat
-	 * icon + the docked panel that opens from it). It used to appear on
-	 * every page for logged-in users, which produced visual clutter on
+	 * icon + the docked panel that opens from it). It does not appear on
+	 * every page for logged-in users, which would produce visual clutter on
 	 * landing pages, blog posts, and other non-MVS surfaces. Visibility
-	 * is now controlled by the `mvs_chat_panel_visibility` admin setting
+	 * is controlled by the `mvs_chat_panel_visibility` admin setting
 	 * — see SettingsRegistrar::register_messaging_settings().
 	 *
 	 * Suppression order (any condition skips the render):
@@ -3401,14 +3481,14 @@ JS;
 	/**
 	 * The slug of the standalone messages page.
 	 *
-	 * ONE source for a path that three call sites used to spell out
+	 * ONE source for a path that three call sites would otherwise spell out
 	 * independently: this rewrite, the client-navigation deny-list, and the
-	 * direct-message notification link. They agreed only by coincidence. The
+	 * direct-message notification link; they would agree only by coincidence. The
 	 * deny-list already resolves MAPPED pages through their permalink for
 	 * exactly this reason - "so admin-renamed slugs stay correct without
 	 * touching the deny-list" - and messages, being a virtual route rather
-	 * than a mapped page, had no equivalent and got a hard-coded literal in
-	 * each place instead.
+	 * than a mapped page, has no equivalent, so this is the one place the
+	 * literal lives.
 	 *
 	 * Filtering this moves the route; flush permalinks afterwards, since the
 	 * rewrite rule is stored.
@@ -3433,6 +3513,27 @@ JS;
 	 */
 	public static function messages_url(): string {
 		return (string) apply_filters( 'mvs_messages_url', home_url( '/' . self::messages_slug() . '/' ) );
+	}
+
+	/**
+	 * Query vars of every page MediaVerse draws from its own tables, not from a post.
+	 *
+	 * These routes skip the blog query and its 404 (Plugin::register_messages_page()
+	 * and TemplateLoader::prevent_virtual_route_404()). Pro adds its competition pages.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @return string[]
+	 */
+	public static function virtual_route_vars(): array {
+		/**
+		 * Filters the query vars that mark a MediaVerse virtual route.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param string[] $vars Query vars.
+		 */
+		return (array) apply_filters( 'mvs_virtual_route_query_vars', array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) );
 	}
 
 	/**
@@ -3463,9 +3564,14 @@ JS;
 				if ( ! $query->is_main_query() ) {
 					return;
 				}
-				foreach ( array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) as $var ) {
+				foreach ( self::virtual_route_vars() as $var ) {
 					if ( $query->get( $var ) ) {
 						$query->is_home = false;
+						// No blog posts either: the page comes from our own tables, and a theme
+						// header that prints the current post's title showed the first blog
+						// post ("Hello world!") over Messages and the profile (Reign). pre_handle_404
+						// keeps the empty result from becoming a 404.
+						$query->set( 'post__in', array( 0 ) );
 						return;
 					}
 				}
@@ -3501,10 +3607,11 @@ JS;
 					$template = MVS_PLUGIN_DIR . 'templates/messages.php';
 				}
 				if ( file_exists( $template ) ) {
+					\WPMediaVerse\Core\TemplateLoader::serve_as_found();
 					// Render through template_include like every other MediaVerse
 					// route, not `include; exit;` here: exiting inside
 					// template_redirect skipped every later callback themes and
-					// builders hang on it (Basecamp 10285448527).
+					// builders hang on it.
 					add_filter(
 						'template_include',
 						static function () use ( $template ) {

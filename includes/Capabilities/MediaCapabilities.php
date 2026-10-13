@@ -18,7 +18,7 @@ class MediaCapabilities {
 	 * Option holding the admin's Permissions-matrix overrides
 	 * (role => cap => 0|1). Written by PermissionsManager on save,
 	 * re-applied by add_caps() so version-bump re-grants never wipe
-	 * an admin's manual grant/revoke choices (Basecamp #9937811664).
+	 * an admin's manual grant/revoke choices.
 	 *
 	 * @since 1.6.0
 	 */
@@ -63,6 +63,42 @@ class MediaCapabilities {
 	 * @since 2.4.0
 	 */
 	const USE_DOCUMENTS_CAP = 'use_mvs_documents';
+
+	/**
+	 * Whether a member may edit one media item.
+	 *
+	 * The one rule for every edit (title, captions, chapters, privacy): the owner
+	 * may edit their own when their role allows editing media; anyone else needs
+	 * the "edit others' media" capability.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param int    $user_id    Member.
+	 * @param string $own_cap    Capability for the owner's own item.
+	 * @param string $others_cap Capability for anyone's item.
+	 * @return bool
+	 */
+	public static function can_edit_media( int $media_id, int $user_id, string $own_cap = 'edit_mvs_medias', string $others_cap = 'edit_others_mvs_medias' ): bool {
+		$allowed = false;
+		if ( $user_id > 0 && $media_id > 0 ) {
+			$owner   = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
+			$allowed = ( $owner === $user_id && user_can( $user_id, $own_cap ) ) || user_can( $user_id, $others_cap );
+		}
+
+		/**
+		 * Filters whether a member may edit a media item.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param bool   $allowed    Whether editing is allowed.
+		 * @param int    $media_id   Media id.
+		 * @param int    $user_id    Member.
+		 * @param string $own_cap    Capability asked of the owner.
+		 * @param string $others_cap Capability asked of anyone else.
+		 */
+		return (bool) apply_filters( 'mvs_can_edit_media', $allowed, $media_id, $user_id, $own_cap, $others_cap );
+	}
 
 	/**
 	 * Capability mapping per role.
@@ -162,7 +198,6 @@ class MediaCapabilities {
 				// granted to every member role (here + contributor + base) so the
 				// Settings -> Permissions matrix matches the actual behaviour and
 				// there is no upload-can-but-publish-cannot mismatch
-				// (Basecamp #9962830813).
 				'publish_mvs_media',
 				// Singular AND plural. The Permissions matrix displays the
 				// singular; every gate checks the plural. Granting only the
@@ -208,8 +243,8 @@ class MediaCapabilities {
 	 * All other roles (custom, BuddyPress, bbPress, etc.) get base member caps.
 	 *
 	 * Admin Permissions-matrix overrides are re-applied LAST, so the
-	 * version-gated re-grant in Plugin::init() / Migrator no longer resets
-	 * an admin's manual revocations on every update (Basecamp #9937811664).
+	 * version-gated re-grant in Plugin::init() / Migrator does not reset
+	 * an admin's manual revocations on every update.
 	 */
 	public static function add_caps(): void {
 		$named = self::get_role_caps();
@@ -297,7 +332,7 @@ class MediaCapabilities {
 	 *    `edit_mvs_medias`), because `MediaController` checks the plural;
 	 * 3. records the choice in `OVERRIDES_OPTION`, which `add_caps()` replays
 	 *    AFTER its default grants — without this a plugin update silently
-	 *    restores a cap the owner deliberately revoked (Basecamp #9937811664).
+	 *    restores a cap the owner deliberately revoked.
 	 *
 	 * The option is merged, never replaced, so a caller passing one cap for one
 	 * role does not erase what another screen recorded.
@@ -405,17 +440,13 @@ class MediaCapabilities {
 	}
 
 	/**
-	 * Remove capabilities from roles (on uninstall).
-	 */
-	/**
 	 * Every capability this plugin can put on a role.
 	 *
-	 * ONE list, derived from the declarations that grant. `remove_caps()` used
-	 * to restate the set as a hardcoded literal beside `get_base_member_caps()`
-	 * - two hand-maintained lists that had to agree, with nothing enforcing it.
-	 * They did agree, but only because someone remembered twice; a capability
-	 * added to a role array and forgotten here would survive uninstall in
-	 * silence, which is how Basecamp 10296868773 came to be filed.
+	 * ONE list, derived from the declarations that grant. Restating the set as
+	 * a hardcoded literal in `remove_caps()` beside `get_base_member_caps()`
+	 * would give two hand-maintained lists that have to agree, with nothing
+	 * enforcing it; a capability added to a role array and forgotten here
+	 * would survive uninstall in silence.
 	 *
 	 * Asking the grant side what it grants is the fix (Coding Rule 22), and
 	 * `CapabilitiesTest::test_every_granted_cap_is_removable()` holds it.

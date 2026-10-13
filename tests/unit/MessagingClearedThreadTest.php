@@ -2,10 +2,10 @@
 /**
  * Deleting a conversation must not fork the pair into duplicate threads.
  *
- * Regression cover for card 10127717045: "Delete" used to flip the participant
- * to 'left' and find_or_create_conversation() skipped 'left' rows, so
- * re-contacting the same member spawned a SECOND conversation — and the other
- * member (who never deleted anything) saw two live threads for one person.
+ * Regression cover: "Delete" must not flip the participant to 'left', because
+ * find_or_create_conversation() skips 'left' rows and re-contacting the same
+ * member would spawn a SECOND conversation — and the other member (who never
+ * deleted anything) would see two live threads for one person.
  *
  * 2.2.1 model: a direct pair keeps a single thread. "Delete" records a
  * per-user clear watermark (participants.cleared_up_to = the conversation's
@@ -15,7 +15,7 @@
  * a message sent in the SAME SECOND as the delete is still delivered — no
  * test here sleeps or backdates, deliberately.
  *
- * Also covers card 10127764989: attachment-only messages must store a typed
+ * Also covers attachment-only messages must store a typed
  * placeholder preview ("Photo" / "Video" / "Audio"), not an empty string.
  *
  * @package WPMediaVerse
@@ -137,6 +137,8 @@ class MessagingClearedThreadTest extends WP_UnitTestCase {
 	public function test_attachment_only_messages_store_typed_previews(): void {
 		global $wpdb;
 		$conv_id = (int) $this->service->find_or_create_conversation( $this->user_a, $this->user_b )['conversation_id'];
+		// The sender's own upload: send_message() refuses a file the sender does not own.
+		$attachment_id = self::factory()->attachment->create( array( 'post_author' => $this->user_a ) );
 
 		$cases = array(
 			array( 'image', 'Photo' ),
@@ -151,7 +153,7 @@ class MessagingClearedThreadTest extends WP_UnitTestCase {
 				array(
 					'content'       => '',
 					'message_type'  => $type,
-					'attachment_id' => 12345,
+					'attachment_id' => $attachment_id,
 				)
 			);
 			$this->assertTrue( (bool) $result['success'] );
@@ -169,7 +171,7 @@ class MessagingClearedThreadTest extends WP_UnitTestCase {
 			array(
 				'content'       => '',
 				'message_type'  => 'text',
-				'attachment_id' => 12345,
+				'attachment_id' => $attachment_id,
 			)
 		);
 		$this->assertTrue( (bool) $result['success'] );

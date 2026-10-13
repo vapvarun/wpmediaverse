@@ -209,6 +209,8 @@ interface MediaRepositoryInterface {
 	 * Count media items in a moderation status.
 	 *
 	 * @param string $status Moderation status.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function count_by_moderation( string $status ): int;
 
@@ -223,6 +225,8 @@ interface MediaRepositoryInterface {
 	 * Count media items in a BP group.
 	 *
 	 * @param string $group_id Group ID (string for compatibility).
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function count_by_group( string $group_id ): int;
 
@@ -230,6 +234,8 @@ interface MediaRepositoryInterface {
 	 * Get aggregated statistics for a media item.
 	 *
 	 * @param int $media_id Media ID.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function get_stats( int $media_id ): ?array;
 
@@ -252,6 +258,8 @@ interface MediaRepositoryInterface {
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $column   Column name.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function increment_stat( int $media_id, string $column ): bool;
 
@@ -261,6 +269,8 @@ interface MediaRepositoryInterface {
 	 * @param int    $media_id Media ID.
 	 * @param string $column   Column name.
 	 * @param int    $value    New value.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function set_stat( int $media_id, string $column, int $value ): bool;
 
@@ -279,6 +289,8 @@ interface MediaRepositoryInterface {
 	 *
 	 * @param int $days_old Retention days.
 	 * @return int Rows deleted.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function prune_events( int $days_old = 90 ): int;
 
@@ -359,6 +371,8 @@ interface MediaRepositoryInterface {
 	 * delete (they never touch the downstream tables delete_cascade() clears).
 	 *
 	 * @param int $media_id The mvs_media_index PK.
+	 *
+	 * @deprecated 2.6.2 Removal planned for 4.0.0.
 	 */
 	public function purge_index_record( int $media_id ): void;
 
@@ -555,4 +569,48 @@ interface MediaRepositoryInterface {
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function documents_shared_with( array $args = array() ): array;
+
+	/**
+	 * Author, status and moderation status for many media rows, in one query.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int[] $media_ids Media ids.
+	 * @return array<int, array{author_id:int, status:string, moderation_status:string}>
+	 */
+	public function status_columns_many( array $media_ids ): array;
+
+	/**
+	 * The media id a permalink points at: the reverse of get_permalink().
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $url URL.
+	 * @return int Media id, 0 for none.
+	 */
+	public function id_from_permalink( string $url ): int;
+
+	/**
+	 * Move a media item to another drive (and folder).
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param string $drive_type Drive type.
+	 * @param int    $drive_id   Drive id.
+	 * @param int    $folder_id  Folder, 0 for the root.
+	 * @return bool
+	 */
+	public function move_to_drive( int $media_id, string $drive_type, int $drive_id, int $folder_id = 0 ): bool;
+
+	/**
+	 * Chat files no message uses, uploaded before a cut-off.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string $before UTC datetime.
+	 * @param int    $limit  Batch size.
+	 * @return int[]
+	 */
+	public function unsent_chat_media_ids( string $before, int $limit = 100 ): array;
 }

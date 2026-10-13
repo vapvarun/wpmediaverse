@@ -204,7 +204,7 @@ class TagController extends WP_REST_Controller {
 		}
 
 		// A visitor sees only tags on public items; a signed-in member keeps the
-		// full list for autocomplete (Basecamp 10335795450). Same public-only,
+		// full list for autocomplete. Same public-only,
 		// cached (and write-invalidated) query as the Explore tag cloud.
 		// ponytail: the 200 most-used public media tags; page the tag cloud
 		// query if visitors ever need to search past them.
@@ -239,7 +239,7 @@ class TagController extends WP_REST_Controller {
 		// Counted against the media index, not `wp_term_taxonomy.count`. The
 		// taxonomy count includes documents, which the media feeds this cloud
 		// filters exclude by design — so document-only tags were rendered as
-		// chips that always returned zero items (Basecamp 10259632183).
+		// chips that always returned zero items.
 		//
 		// Cached: this route (and the identical query behind the Explore chip
 		// row) reruns a GROUP BY join across term_relationships + mvs_media_index
@@ -319,7 +319,7 @@ class TagController extends WP_REST_Controller {
 
 		// Sync MediaRepository tags for each affected media item.
 		foreach ( $posts as $mid ) {
-			$all_terms = wp_get_object_terms( $mid, 'mvs_tag' ); // Not get_the_terms(): media are not posts. Basecamp 10278224214.
+			$all_terms = wp_get_object_terms( $mid, 'mvs_tag' ); // Not get_the_terms(): media are not posts.
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $mid, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 			}
