@@ -7030,7 +7030,8 @@
       "changed": [
         "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)",
         "GroupTabIntegration Load More uses gallery_params()",
-        "Removed ActivitySyncIntegration::update_mirrored_activity_comment(): edits are not copied to BuddyPress"
+        "Removed ActivitySyncIntegration::update_mirrored_activity_comment(): edits are not copied to BuddyPress",
+        "TemplateLoader::is_mvs_virtual_route() includes mvs_messages_page (no core 404)"
       ]
     }
   },
