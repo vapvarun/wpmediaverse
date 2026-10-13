@@ -18,9 +18,16 @@ class GroupScopeTest extends WP_UnitTestCase {
 
 	private int $owner;
 
+	/**
+	 * A member allowed to list any group (bp_moderate); BuddyPress is not loaded here.
+	 */
+	private int $moderator;
+
 	public function set_up(): void {
 		parent::set_up();
-		$this->owner = self::factory()->user->create( array( 'role' => 'author' ) );
+		$this->owner     = self::factory()->user->create( array( 'role' => 'author' ) );
+		$this->moderator = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		get_user_by( 'id', $this->moderator )->add_cap( 'bp_moderate' );
 		MediaRepository::reset_test_cache();
 	}
 
@@ -58,17 +65,18 @@ class GroupScopeTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Listed ids for group 7 as a visitor.
+	 * Listed ids for group 7.
 	 *
+	 * @param int|null $viewer Viewer; null for the moderator.
 	 * @return int[]
 	 */
-	private function listed(): array {
+	private function listed( ?int $viewer = null ): array {
 		MediaRepository::reset_test_cache();
 		$rows = $this->repo()->query(
 			array(
 				'group_id'                => 7,
 				'privacy'                 => 'explore',
-				'viewer_id'               => 0,
+				'viewer_id'               => $viewer ?? $this->moderator,
 				'exclude_non_cover_group' => true,
 				'per_page'                => 50,
 			)
@@ -88,7 +96,13 @@ class GroupScopeTest extends WP_UnitTestCase {
 		$this->assertNotContains( $none, $this->listed() );
 	}
 
-	public function test_group_only_items_stay_hidden_from_a_visitor(): void {
+	public function test_a_group_not_confirmed_public_lists_nothing_for_a_visitor(): void {
+		$this->item( 7 );
+
+		$this->assertSame( array(), $this->listed( 0 ), 'Without BuddyPress the group cannot be shown to be public.' );
+	}
+
+	public function test_group_only_items_stay_hidden_from_a_non_member(): void {
 		$public = $this->item( 7 );
 		$this->item( 7, 'group' );
 
@@ -109,7 +123,7 @@ class GroupScopeTest extends WP_UnitTestCase {
 		MediaRepository::reset_test_cache();
 
 		do_action( 'rest_api_init' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core hook.
-		wp_set_current_user( 0 );
+		wp_set_current_user( $this->moderator );
 		$request = new \WP_REST_Request( 'GET', '/mvs/v1/media' );
 		$request->set_param( 'group', 7 );
 		$request->set_param( 'group_covers', 1 );

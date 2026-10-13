@@ -4293,7 +4293,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Narrow a listing to one BuddyPress group's media.
 	 *
 	 * The group's members also see its 'group' items; everyone else keeps the
-	 * listing's own privacy rule. Used by query() and the GET /media feed, so the
+	 * listing's own privacy rule, and gets nothing from a private or hidden
+	 * group (or without BuddyPress). Used by query() and the GET /media feed, so the
 	 * group tab, its Load More and the app list a group the same way.
 	 *
 	 * @since 2.6.2
@@ -4312,8 +4313,17 @@ class MediaRepository implements MediaRepositoryInterface {
 			return array( $privacy_sql, array_values( $privacy_params ) );
 		}
 
-		$alias = preg_replace( '/[^a-z_]/i', '', $alias );
-		if ( '' !== $privacy_sql && $viewer_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $viewer_id, $group_id ) ) {
+		$alias     = preg_replace( '/[^a-z_]/i', '', $alias );
+		$is_member = $viewer_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $viewer_id, $group_id );
+
+		// A private or hidden group's media is for its members, as on the group's
+		// own pages; anyone else learns nothing, not even which items it holds.
+		$group = function_exists( 'groups_get_group' ) ? (array) groups_get_group( $group_id ) : array();
+		if ( ! $is_member && ! user_can( $viewer_id, 'bp_moderate' ) && ( empty( $group['id'] ) || 'public' !== ( $group['status'] ?? '' ) ) ) {
+			return array( '1 = 0', array() );
+		}
+
+		if ( '' !== $privacy_sql && $is_member ) {
 			$privacy_sql = "( {$privacy_sql} OR {$alias}.privacy = 'group' )";
 		}
 
