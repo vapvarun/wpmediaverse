@@ -408,6 +408,8 @@ abstract class BaseBPTabIntegration {
 			\WPMediaVerse\Core\Plugin::register_lucide_script();
 		}
 		wp_enqueue_script( 'mvs-lucide' );
+		// The tiles open the same lightbox as Explore, for visitors too.
+		\WPMediaVerse\Core\Plugin::enqueue_shared_ui_for_feed();
 		wp_localize_script(
 			'mvs-bp-actions',
 			'mvsBpActions',

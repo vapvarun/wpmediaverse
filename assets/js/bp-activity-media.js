@@ -786,6 +786,9 @@
 					return;
 				}
 				populateSharedLightbox( overlay, data );
+				if ( data.media_group ) {
+					expandSharedGallery( overlay, mediaId );
+				}
 
 				// Social data fetches in parallel.
 				loadSharedReactions( overlay, mediaId );
@@ -800,6 +803,28 @@
 			} ).catch( function() {
 				closeSharedLightbox();
 			} );
+		}
+
+		// A tile that stands for a gallery steps through every member the viewer
+		// may see, as the Explore lightbox does: the page lists one tile per
+		// gallery, so the set cannot come from the ids printed on the page.
+		function expandSharedGallery( overlay, mediaId ) {
+			apiGet( 'media/' + mediaId + '/group' ).then( function( items ) {
+				if ( ! Array.isArray( items ) || items.length < 2 || suiState.mediaId !== mediaId ) { return; }
+				var ids   = items.map( function( i ) { return parseInt( i.id, 10 ); } );
+				var known = suiState.gallery.map( function( g ) { return g.mediaId; } );
+				if ( ids.every( function( id ) { return known.indexOf( id ) >= 0; } ) ) { return; }
+
+				var current = suiState.gallery.length ? suiState.galleryIndex : 0;
+				var outside = function( g ) { return ids.indexOf( g.mediaId ) < 0; };
+				var gallery = suiState.gallery.slice( 0, current ).filter( outside )
+					.concat( ids.map( function( id ) { return { mediaId: id, imgSrc: '' }; } ) )
+					.concat( suiState.gallery.slice( current + 1 ).filter( outside ) );
+
+				suiState.gallery      = gallery;
+				suiState.galleryIndex = gallery.map( function( g ) { return g.mediaId; } ).indexOf( mediaId );
+				updateSharedNav( overlay );
+			} ).catch( function() {} );
 		}
 
 		function populateSharedLightbox( overlay, data ) {

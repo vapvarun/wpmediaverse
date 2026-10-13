@@ -109,21 +109,20 @@
 			return;
 		}
 
-		e.preventDefault();
-
 		var mediaId = parseInt( card.dataset.mediaId, 10 );
-		if ( ! mediaId ) {
+		// Never cancel a click nothing will handle: without the lightbox the
+		// tile's own link opens the media page.
+		if ( ! mediaId || ! window.mvsOpenLightbox ) {
 			return;
 		}
+		e.preventDefault();
 
 		// Registry reflects the CURRENT grid (handles appended + swapped items).
 		rebuildRegistry( gridContainer );
 
 		// Bridge to the Interactivity API lightbox via the global exposed by the
 		// shared-ui store.
-		if ( window.mvsOpenLightbox ) {
-			window.mvsOpenLightbox( mediaId );
-		}
+		window.mvsOpenLightbox( mediaId );
 	} );
 
 	// --- Delegated Load More: any .mvs-load-more-btn click. ---
