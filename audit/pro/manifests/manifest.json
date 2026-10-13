@@ -2576,7 +2576,8 @@
         "LicenseManager activates through the bundled SDK",
         "Dribbble/Flickr profile header counts items",
         "admin.css no longer redefines .mvs-badge",
-        "Core\\\\Plugin adds GamificationTemplateLoader::PAGES to mvs_virtual_route_query_vars"
+        "Core\\\\Plugin adds GamificationTemplateLoader::PAGES to mvs_virtual_route_query_vars",
+        "AlbumMarkerLookupTrait::add_to_album raises album privacy to the photo when stricter (imports never loosen)"
       ]
     }
   },
