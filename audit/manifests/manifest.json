@@ -7023,7 +7023,8 @@
         "NotificationService::on_comment_deleted(), MediaRepository::delete_comment_notifications()"
       ],
       "changed": [
-        "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)"
+        "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)",
+        "GroupTabIntegration Load More uses gallery_params()"
       ]
     }
   },
