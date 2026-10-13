@@ -7028,7 +7028,8 @@
         "dashboard-view actions.closeNotifications",
         "TemplateHelpers::render_grid_meta() (shared tile meta; block uses it)",
         "BP tab grids carry grid_layout_class()",
-        "card_builders_i18n statLabels"
+        "card_builders_i18n statLabels",
+        "messaging.js listRow(), deleteMessageNow/unsendMessageNow behind showConfirm, .mvs-chat-msg__more"
       ],
       "changed": [
         "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)",
