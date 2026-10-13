@@ -37,6 +37,12 @@ estimated_runtime_minutes: 8
 - **Expect**: visibly distinct labels/icons — a tester must be able to tell which one they're about to trigger before clicking.
 - **Action**: click "Unsend".
 - **Expect (verify, report the actual behavior)**: confirm whether it is gated by the shared confirm dialog given its everyone-facing effect; the catalog flags this as unverified — report which way it actually ships.
+- **Action**: as Member B, right-click (or tap) the "This message was deleted" row Member A unsent.
+- **Expect**: no menu opens (no reactions, no Reply); a live message still opens its menu (Basecamp 10393726173).
+
+### 2b. A block closes the thread (Basecamp 10393868935)
+- **Action**: Member B blocks Member A; Member A presses Message on Member B's profile (or POST /mvs/v1/conversations).
+- **Expect**: refused with the blocked reason; the existing thread is not re-opened for Member A, in either direction.
 
 ### 3. Message requests: accept / decline (MV-MSG-010)
 - **Action**: with `mvs_dm_access` set so a non-follower's message becomes a Request (per customer/63 step 2), have Member B (non-follower) message Member A; open Member A's Requests tab (`GET /me/conversations?tab=requests`).
@@ -66,7 +72,7 @@ estimated_runtime_minutes: 8
 
 ALL of the following hold:
 1. Message reactions are live for all participants with no reload; reaction removal always succeeds, even across a since-formed block.
-2. Delete removes a message from only the deleter's view; Unsend removes it for everyone; the two controls are visually distinct.
+2. Delete removes a message from only the deleter's view; Unsend removes it for everyone; the two controls are visually distinct; a deleted message opens no menu; a blocked pair cannot reopen their thread.
 3. A Request-tier message lands in the Requests tab, not the inbox; Accept moves it to the inbox and enables replies; Decline removes it with no reply option; accepting a since-blocking sender is denied while Decline still succeeds.
 4. A group conversation supports naming, adding/removing members with roster updates, and a confirmed Leave action that has no 1:1 equivalent.
 

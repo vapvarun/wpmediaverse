@@ -28,8 +28,9 @@ explained by the code, is a gap to close before calling it done.
   file URLs `SignedUrlService::generate()` / `/serve` re-checks `can_view` on every request.
 - Video: faststart `Mp4Faststart::apply()`, poster `generate_video_poster_thumbnails()` (cover art,
   else the browser frame, else the default SVG).
-- Gallery: a multi-file upload is one `media_group`; listings hide non-cover members through
-  `MediaRepository::gallery_exclude_subquery()`.
+- Gallery: a multi-file upload is one `media_group`; listings hide a member behind the first sibling
+  the same listing shows (`MediaRepository::gallery_hidden_clause()`), and the badge counts every
+  member this viewer may see (`gallery_tile_counts()`), the set `/media/{id}/group` opens.
 
 ## Setup
 
@@ -62,16 +63,28 @@ explained by the code, is a gap to close before calling it done.
 - **Expect** as Member B and as the visitor: Explore no longer shows it; `/media/<photo-slug>/` 404;
   `GET /mvs/v1/media/{id}` 404; reactions/comments routes 404; the old direct file path 403/404.
 
-### 6. Gallery badge, and the known cover limit (Basecamp 10392589060, 10392976432)
-- **Action**: with the cover public, open Explore as the visitor; then make ONE non-cover member
-  private and reload.
-- **Expect**: one tile with the badge counting the items it stands for (4, then 3 once a member is
-  private); the lightbox steps through what this viewer may see.
-- **Known until 2.7.0**: with the cover private or deleted, the other members are NOT listed on
-  Explore (they stay in My Media and on their own pages). The fix needs an index on the group key
-  and a 12k-media benchmark on MySQL and MariaDB; 2.6.2 reverted an unindexed version that took
-  seconds per page. Do not bounce 2.6.2 for this.
+### 6. Gallery badge per viewer (Basecamp 10392589060)
+- **Setup**: a 4-item gallery by Member A; make the cover Only me and one other member Followers.
+  Member B follows Member A.
+- **Action**: open Explore as Member A, as Member B and as the visitor; open the tile in the lightbox.
+- **Expect**: each sees ONE tile for the gallery. Member A: the private cover, badge 4, lightbox 1 / 4.
+  Member B: the first public member, badge 3, lightbox steps through 3. Visitor: badge 2, lightbox 2.
+  Nobody ever gets the private cover except Member A.
+- **Action**: delete the cover; reload as the visitor.
+- **Expect**: the gallery stays listed, fronted by its next visible member.
+- **Action**: open Member A's BuddyPress profile Media tab as Member A and as the visitor.
+- **Expect**: the same one tile and badge as Explore for each viewer; Load More continues without
+  repeating or skipping items.
+- **Fails on 2.6.1 / 8d86e49e**: the owner's and the follower's tiles show no badge and the lightbox
+  opens one item, then jumps to the next gallery.
+- **By design**: stepping through a gallery in the lightbox keeps the cover's comment thread; each
+  item's own page shows its own comments.
 - **Watch the slug**: a re-uploaded file name gets a `-1` suffix; grep the real slug.
+
+### 6b. Explore People search (Basecamp 10393726173)
+- **Action**: on Explore, switch the search tabs Media -> People -> Media.
+- **Expect**: the field's accessible name (its label) reads "Search people" on People and "Search media"
+  on Media; the selected tab has aria-selected="true". Same on a Pro layout's filter bar.
 
 ### 7. Lightbox layout at tablet and desktop (fixed in 2.6.2)
 - **Action**: at 1440x900, 1024x768 and 820x1180, open the video in the Explore lightbox AND, on a

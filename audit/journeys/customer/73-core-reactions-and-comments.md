@@ -52,8 +52,11 @@ Check at BOTH levels: the code flow below, then the browser as each role.
   when someone replies to them.
 
 ### 4. Delete (Member B)
-- **Action**: delete the comment.
-- **Expect**: gone for everyone; `mvs_media_stats.comments` back to 0.
+- **Setup**: Member A replies to Member B's comment twice.
+- **Action**: Member B clicks Delete on the comment, on the media page and in the Explore lightbox.
+- **Expect**: the prompt reads "Delete this comment and its 2 replies?" ("...and its reply?" for one,
+  "Delete this comment?" for none). Confirm: the comment AND its replies are gone for everyone;
+  `mvs_media_stats.comments` drops accordingly (filter `mvs_comment_delete_replies` false keeps replies).
 
 ### 5. Visitor
 - **Action**: logged out, tap a reaction; read comments.

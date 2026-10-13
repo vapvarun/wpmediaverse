@@ -100,3 +100,6 @@ gallery-member-visibility
 core-reactions
 core-comments
 core-documents
+
+bp-activity-comment-sync
+bp-group-media-scope
