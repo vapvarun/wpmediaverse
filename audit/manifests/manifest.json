@@ -7000,6 +7000,17 @@
       "changed": [
         "ProfileTabIntegration::fetch_media_ids passes exclude_non_cover_group to count_visible_by_author and query_by_author"
       ]
+    },
+    "refresh_2026_10_13_group_scope": {
+      "scope": "BP group listing scope",
+      "added": [
+        "MediaRepository::group_scope_clause( $alias, $group_id, $viewer_id, $privacy_sql, $privacy_params )",
+        "query() arg group_id",
+        "GET /mvs/v1/media param group (integer)"
+      ],
+      "changed": [
+        "GroupTabIntegration::fetch_media_ids lists through query() (own SQL removed); Load More sends data-group"
+      ]
     }
   },
   "category_sources": {
