@@ -94,7 +94,7 @@ final class CompanionRegistry {
 						'basename' => 'learnomy/learnomy.php',
 					),
 					'store_url' => 'https://wbcomdesigns.com/downloads/learnomy/',
-					'unlocks'   => __( 'Course videos and media stored in your library.', 'wpmediaverse' ),
+					// No 'unlocks': no built-in integration yet (same as Jetonomy).
 				),
 				'wp-career-board' => array(
 					'label'     => __( 'WP Career Board', 'wpmediaverse' ),
@@ -106,7 +106,7 @@ final class CompanionRegistry {
 						'basename' => 'wp-career-board/wp-career-board.php',
 					),
 					'store_url' => 'https://wbcomdesigns.com/downloads/wp-career-board/',
-					'unlocks'   => __( 'Rich media on job posts and candidate profiles.', 'wpmediaverse' ),
+					// No 'unlocks': no built-in integration yet (same as Jetonomy).
 				),
 				'wb-listora'      => array(
 					'label'     => __( 'Listora', 'wpmediaverse' ),
@@ -118,7 +118,7 @@ final class CompanionRegistry {
 						'basename' => 'wb-listora/wb-listora.php',
 					),
 					'store_url' => 'https://wbcomdesigns.com/downloads/listora/',
-					'unlocks'   => __( 'Media galleries on directory listings.', 'wpmediaverse' ),
+					// No 'unlocks': no built-in integration yet (same as Jetonomy).
 				),
 			)
 		);
