@@ -2379,13 +2379,24 @@ const { state, actions } = store( 'mvs/dashboard', {
 							id: n.id,
 							message: n.message || '',
 							url: n.url || '',
-							date: new Date( n.created_at ).toLocaleDateString(),
+							date: n.date_human || '',
 							read: !! n.is_read,
 						} ) )
 						: [];
 				} catch {
 					state.notifications.items = [];
 				}
+			}
+		},
+
+		// Outside click or Escape closes the bell; Escape hands focus back to it.
+		closeNotifications( event ) {
+			if ( ! state.notifications.visible || ( event.type === 'keydown' && event.key !== 'Escape' ) ) {
+				return;
+			}
+			state.notifications.visible = false;
+			if ( event.type === 'keydown' ) {
+				getElement().ref.querySelector( '.mvs-notification-bell-toggle' )?.focus();
 			}
 		},
 

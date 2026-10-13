@@ -5722,6 +5722,32 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Mark a member's unread notifications of one type from given actors as read.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int    $user_id   Recipient.
+	 * @param string $type      Notification type.
+	 * @param int[]  $actor_ids Actors.
+	 * @return int Rows marked.
+	 */
+	public function mark_notifications_read_from( int $user_id, string $type, array $actor_ids ): int {
+		global $wpdb;
+		$actor_ids = array_values( array_filter( array_map( 'intval', $actor_ids ) ) );
+		if ( ! $user_id || ! $actor_ids ) {
+			return 0;
+		}
+		$in = implode( ',', array_fill( 0, count( $actor_ids ), '%d' ) );
+		return (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- placeholders are built above.
+				"UPDATE {$wpdb->prefix}mvs_notifications SET read_at = %s WHERE user_id = %d AND read_at IS NULL AND type = %s AND actor_id IN ({$in})",
+				...array_merge( array( current_time( 'mysql', true ), $user_id, $type ), $actor_ids )
+			)
+		);
+	}
+
+	/**
 	 * Query args for a listing's filter, from its public parameters.
 	 *
 	 * The one translation of `media_type`, `tag`, `category`, `s` and `group`
@@ -5745,7 +5771,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		) as $param => $map ) {
 			$slug = sanitize_title( (string) ( $params[ $param ] ?? '' ) );
 			if ( '' !== $slug ) {
-				$term                = get_term_by( 'slug', $slug, $map[0] );
+				$term            = get_term_by( 'slug', $slug, $map[0] );
 				$args[ $map[1] ] = $term ? (int) $term->term_taxonomy_id : -1;
 			}
 		}
@@ -5790,9 +5816,9 @@ class MediaRepository implements MediaRepositoryInterface {
 				)
 			)
 		);
-		$meta = $wpdb->prefix . 'mvs_media_meta';
-		$ph   = implode( ',', array_fill( 0, count( $groups ), '%s' ) );
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+		$ph    = implode( ',', array_fill( 0, count( $groups ), '%s' ) );
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names, the listing's own parts and placeholders are built above.
 				"SELECT mg.meta_value AS grp, m.media_id, CAST( mp.meta_value AS UNSIGNED ) AS pos FROM {$this->index_table()} m {$parts['join']}

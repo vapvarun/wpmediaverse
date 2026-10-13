@@ -79,4 +79,16 @@ class MessagingStateTest extends WP_UnitTestCase {
 		$this->messaging->send_message( $conv, $this->a, array( 'content' => 'hello' ) );
 		$this->assertContains( $conv, $ids( $this->messaging->get_conversations( $this->b ) ), 'The first message brings it to B.' );
 	}
+
+	public function test_reading_a_conversation_clears_its_message_notifications(): void {
+		global $wpdb;
+		$conv = $this->conversation();
+		$this->messaging->send_message( $conv, $this->a, array( 'content' => 'hello' ) );
+		$unread = fn() => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE user_id = %d AND type = 'new_message' AND read_at IS NULL", $this->b ) );
+		$this->assertGreaterThan( 0, $unread(), 'B was told about the message.' );
+
+		$this->messaging->mark_read( $conv, $this->b );
+
+		$this->assertSame( 0, $unread(), 'Reading the conversation clears it.' );
+	}
 }

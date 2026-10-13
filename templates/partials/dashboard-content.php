@@ -403,7 +403,7 @@ wp_interactivity_state(
 	<?php if ( $mvs_show_dashboard_bell ) : ?>
 	<div class="mvs-dashboard-header">
 		<?php if ( $mvs_show_dashboard_bell ) : ?>
-		<div class="mvs-notification-bell">
+		<div class="mvs-notification-bell" data-wp-on-document--click="actions.closeNotifications" data-wp-on-document--keydown="actions.closeNotifications">
 			<?php // A real button (Enter/Space, aria-expanded); the dropdown is its sibling, not nested inside it. ?>
 			<button type="button" class="mvs-notification-bell-toggle"
 				data-wp-on--click="actions.toggleNotifications"

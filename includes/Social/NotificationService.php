@@ -53,6 +53,7 @@ class NotificationService {
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
 		add_action( 'delete_comment', array( $this, 'on_comment_deleted' ), 10, 2 );
+		add_action( 'mvs_conversation_read', array( $this, 'on_conversation_read' ), 10, 2 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
 		add_action( 'mvs_report_resolved', array( $this, 'on_report_resolved' ), 10, 3 );
@@ -481,6 +482,24 @@ class NotificationService {
 	}
 
 	/**
+	 * Reading a conversation clears its "sent you a message" notifications.
+	 *
+	 * @param int $conversation_id Conversation read.
+	 * @param int $user_id         Reader.
+	 */
+	public function on_conversation_read( int $conversation_id, int $user_id ): void {
+		$senders = array();
+		foreach ( (array) \WPMediaVerse\Core\Plugin::container()->get( 'messaging' )->get_participants( $conversation_id ) as $p ) {
+			if ( (int) ( $p['id'] ?? 0 ) !== $user_id ) {
+				$senders[] = (int) $p['id'];
+			}
+		}
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->mark_notifications_read_from( $user_id, 'new_message', $senders ) ) {
+			wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
+		}
+	}
+
+	/**
 	 * Handle mention notifications.
 	 *
 	 * @param int    $media_id      Media ID.
@@ -569,6 +588,8 @@ class NotificationService {
 			'comment_id' => (int) $row->comment_id,
 			'is_read'    => ! empty( $row->read_at ),
 			'created_at' => $row->created_at,
+			// created_at is UTC; the label is relative, so no timezone guess in the browser.
+			'date_human' => sprintf( /* translators: %s: time span, e.g. "5 mins" */ __( '%s ago', 'wpmediaverse' ), human_time_diff( (int) strtotime( $row->created_at . ' UTC' ), time() ) ),
 		);
 	}
 
