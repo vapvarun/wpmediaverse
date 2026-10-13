@@ -1286,7 +1286,10 @@
 
 		function openWithMediaId( mediaId, target ) {
 			// Collect gallery from all media in the same activity item.
-			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"], .mvs-activity-media-grid, .activity-content' );
+			// The activity item first: wrapActivityMediaGrids() moves links into a
+			// grid without the ids, which stay on their original holders.
+			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"]' ) ||
+				target.closest( '.mvs-activity-media-grid, .activity-content' );
 			var gallery = [];
 			var clickedIndex = 0;
 

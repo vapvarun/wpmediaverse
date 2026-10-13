@@ -435,7 +435,6 @@ class AlbumService {
 		// assigned to an album matched nothing anywhere. Worse, the album's post ID and
 		// a media item's ID share that object_id space, so an album's terms could be
 		// read back as a photo's. Media categories are unaffected.
-		// Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §3.4.
 
 		return (int) $album_id;
 	}

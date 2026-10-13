@@ -6,7 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
- * @version 2.6.1
+ * @version 2.6.2
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -257,10 +257,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					// Absence is the quiet default: a PUBLIC document gets no chip,
 					// so a chip on screen always means "this one is restricted".
 					if ( 'public' !== $mvs_privacy ) :
-						$mvs_privacy_labels = array(
-							'private' => __( 'Private', 'wpmediaverse' ),
-							'members' => __( 'Members only', 'wpmediaverse' ),
-						);
+						// The drive's words, so a file reads the same here as in its drive.
+						$mvs_privacy_labels = \WPMediaVerse\Core\Plugin::document_privacy_labels( get_current_user_id() === $mvs_author_id ? 'self' : 'owner' );
 						?>
 						<span class="mvs-media-meta__privacy">
 							<i data-lucide="lock" aria-hidden="true"></i>

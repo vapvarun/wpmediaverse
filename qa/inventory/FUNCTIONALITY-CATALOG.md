@@ -1663,11 +1663,11 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Who:** Member (commenter)
 - **Where:** A media item's activity card in the BP stream.
 - **Setup:** A media item that has an activity entry (per MV-BP-003).
-- **Steps:** 1. Comment on the media item via its own single-media page. 2. Check the activity card in the BP stream.
-- **Expected:** The comment mirrors into the BP activity's own comment thread (via `bp_activity_add()` for the comment too), so a follower of the activity stream sees the conversation without visiting the media page directly.
-- **UX expectation:** Editing/deleting the original comment (MV-MED-006/007) should ideally keep the two in sync — Check whether an edit or delete on the media page's comment propagates to the mirrored BP activity comment, or whether they can drift.
-- **Settings that change it:** none.
-- **Edge cases:** none beyond the sync-drift check above.
+- **Steps:** 1. Comment on the media item via its own single-media page or the lightbox. 2. Reply to that comment. 3. Edit the reply. 4. Delete the first comment.
+- **Expected:** The comment mirrors into the activity's own comment thread (`bp_activity_new_comment()`), and the reply sits under it. The edit shows on the activity. Deleting the comment removes it and its replies from the activity, along with the "commented on your update" / "replied to your comment" notifications. The mirror id is stored in comment meta `_mvs_bp_activity_comment_id`.
+- **UX expectation:** The activity thread and the media page never drift: what a member deletes is gone everywhere.
+- **Settings that change it:** filter `mvs_comment_delete_replies` (false keeps replies, so their mirrors stay too).
+- **Edge cases:** Comments mirrored before 2.6.2 have no stored mirror id, so deleting them leaves the old activity comment in place. Journey customer/75.
 
 #### MV-BP-005 — Activity privacy filtering matches media privacy
 - **Edition:** Free
@@ -1800,7 +1800,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Who:** Admin sets.
 - **Where:** MediaVerse > Settings > Storage
 - **Setup:** None for Free (no Pro license).
-- **Steps:** 1. Open Storage tab. 2. Confirm only "Local" is usable without Pro (cloud options present but inert/locked).
+- **Steps:** 1. Open Storage tab. 2. Confirm only "This server" is usable without Pro (cloud options present but inert/locked).
 - **Expected:** `mvs_storage_driver` (string, default `local`); accepts `local`, `s3`, `bunnycdn`, `r2`, `dospaces` but the latter four require Pro active.
 - **UX expectation:** If Pro isn't active, cloud options must be visibly disabled/locked with an explanation ("Requires MediaVerse Pro"), not selectable-but-broken. A constant defined in `wp-config.php` for a credential renders that field locked with "Defined in wp-config.php" and the stored option is ignored — the UI must say so, not show a blank editable field that silently does nothing.
 - **Settings that change it:** "Where files are stored" (`mvs_storage_driver`), default `local`.

@@ -2403,7 +2403,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'commentPostFailed'    => __( 'Could not post comment.', 'wpmediaverse' ),
 					'commentUpdated'       => __( 'Comment updated.', 'wpmediaverse' ),
 					'editFailed'           => __( 'Edit failed.', 'wpmediaverse' ),
-					'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
 					'commentDeleted'       => __( 'Comment deleted.', 'wpmediaverse' ),
 					// Share.
 					'shareCopied'          => __( '✓ Copied!', 'wpmediaverse' ),

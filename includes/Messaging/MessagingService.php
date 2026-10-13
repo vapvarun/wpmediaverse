@@ -271,6 +271,29 @@ class MessagingService {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * The refusal for a blocked pair, or null when neither has blocked the other.
+	 *
+	 * Checked before the lookup, in either direction, so a blocked member cannot
+	 * reopen an existing thread. Only a block refuses here; a privacy setting
+	 * ("who can message me") never closes a thread two people already have.
+	 *
+	 * @param int $user_a Caller.
+	 * @param int $user_b Other member.
+	 * @return array{conversation_id:int,created:bool,status:string}|null
+	 */
+	private function blocked_pair_refusal( int $user_a, int $user_b ): ?array {
+		$access = $this->can_message( $user_a, $user_b );
+		if ( $access['allowed'] || 'blocked' !== $access['reason'] ) {
+			return null;
+		}
+		return array(
+			'conversation_id' => 0,
+			'created'         => false,
+			'status'          => 'blocked',
+		);
+	}
+
+	/**
 	 * Find or create a 1:1 conversation.
 	 *
 	 * @param int   $user_a First user (the initiator).
@@ -303,19 +326,9 @@ class MessagingService {
 			);
 		}
 
-		// A blocked pair is refused before the lookup, in either direction. The
-		// existing thread used to be handed back (and the caller's side of it
-		// re-opened) to someone the other person had blocked: they could not send,
-		// but "Message" still opened the conversation as if nothing had happened.
-		// Only a block does this; a privacy setting ("who can message me") never
-		// closes a thread two people already have.
-		$access = $this->can_message( $user_a, $user_b );
-		if ( ! $access['allowed'] && 'blocked' === $access['reason'] ) {
-			return array(
-				'conversation_id' => 0,
-				'created'         => false,
-				'status'          => 'blocked',
-			);
+		$blocked = $this->blocked_pair_refusal( $user_a, $user_b );
+		if ( $blocked ) {
+			return $blocked;
 		}
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
@@ -324,16 +337,9 @@ class MessagingService {
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		// Find the pair's existing direct conversation — INCLUDING one the
-		// current user has deleted. A pair keeps a single thread: "Delete" set a
-		// per-user clear watermark (participants.cleared_up_to, see
-		// leave_conversation()), so re-contacting reuses the thread and the
-		// initiator simply sees no pre-delete history. The old fresh-thread rule
-		// (`p1.status <> 'left'` here) spawned a second conversation row on
-		// re-contact, and the OTHER member — who never deleted anything — ended
-		// up with two live threads for the same person.
-		// ORDER BY newest keeps the lookup deterministic for pairs that already
-		// have historical duplicates from the old behaviour.
+		// The pair's direct conversation, including one this user deleted: a pair
+		// keeps one thread and "Delete" only sets a clear watermark (see
+		// leave_conversation()). Newest first keeps older duplicates deterministic.
 		$existing_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT p1.conversation_id

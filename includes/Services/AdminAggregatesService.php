@@ -396,7 +396,7 @@ class AdminAggregatesService {
 
 		$services = array(
 			'local'    => array(
-				'label'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
+				'label'    => __( 'This server (WordPress uploads)', 'wpmediaverse' ),
 				'patterns' => array( '/wp-content/uploads/' ),
 			),
 			's3'       => array(

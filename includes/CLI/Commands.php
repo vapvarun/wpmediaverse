@@ -2257,14 +2257,12 @@ class Commands {
 	/**
 	 * Report album/collection IDs that collide with media IDs.
 	 *
-	 * Albums store their attributes by calling MediaRepository::set() with their
-	 * `wp_posts` ID. That column is AUTO_INCREMENT for real media, so the two ID
-	 * sequences collide wherever the integers coincide — overwriting media data,
-	 * inverting album access checks, and destroying a media row when the album
-	 * is deleted.
+	 * Before 2.4.0, albums stored their attributes through MediaRepository::set()
+	 * under their `wp_posts` ID, which collided with media IDs wherever the
+	 * integers coincided. Albums and collections keep their own data since 2.4.0;
+	 * this report shows where the two ID ranges overlap on this site.
 	 *
-	 * This command is READ-ONLY. It never writes. Run it before upgrading so you
-	 * know what a site actually has.
+	 * This command is READ-ONLY. It never writes.
 	 *
 	 * ## OPTIONS
 	 *
@@ -2377,7 +2375,7 @@ class Commands {
 		if ( $totals['collisions'] > 0 ) {
 			WP_CLI::warning(
 				sprintf(
-					'%d collision(s) found. Do NOT permanently delete the listed albums/collections until the fix ships — see plan/2026-08-08-cpt-id-collision-fix-plan.md.',
+					'%d album or collection ID(s) also match a media ID. These overlaps date from before 2.4.0; albums and collections have kept their data apart from media since then.',
 					$totals['collisions']
 				)
 			);

@@ -92,6 +92,8 @@ async function fetchComments( ctx ) {
 					date: c.date,
 					date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 					content: c.content,
+					// Kept so the delete confirm can say how many replies go with it.
+					replies: Array.isArray( c.replies ) ? c.replies : [],
 					canEdit: isOwnComment && commentAge < editWindow,
 					// Delete is not time-limited: the API lets an owner delete their
 					// own comment at any age, and a moderator delete anyone's — hiding Delete
@@ -374,7 +376,7 @@ const { state } = store( 'mvs/media-social', {
 			const comment = ctx.item;
 			if ( ! comment ) return;
 
-			sharedUI.actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
+			sharedUI.actions.showConfirm( sharedUI.actions.commentDeleteConfirm( comment ), async () => {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'DELETE',
 				} );

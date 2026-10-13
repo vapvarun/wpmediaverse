@@ -7,9 +7,8 @@
  * AUTO_INCREMENT for real media, so two independent ID sequences share one
  * primary key and collide wherever the integers coincide.
  *
- * This service is READ-ONLY. It reports what a site actually has so the repair
- * can be planned against numbers rather than assumptions. The repair itself
- * lands separately — see plan/2026-08-08-cpt-id-collision-fix-plan.md.
+ * This service is READ-ONLY. It reports where the album/collection and media
+ * ID ranges overlap on a site; the data has been kept apart since 2.4.0.
  *
  * @package WPMediaVerse
  * @since   2.4.0

@@ -240,6 +240,8 @@ function mapLightboxComment( c ) {
 		date: c.date,
 		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 		content: c.content,
+		// Kept so the delete confirm can say how many replies go with it.
+		replies: Array.isArray( c.replies ) ? c.replies : [],
 		canEdit: !! ( isOwn && age < editWindow ),
 		canDelete: !! ( isOwn || canModerate ),
 		canReport: !! ( state.reportsEnabled && state.currentUserId && ! isOwn ),
@@ -1909,12 +1911,24 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
 			}
 		},
+		// Deleting a comment deletes its replies, so the confirm says how many.
+		commentDeleteConfirm( item ) {
+			const n = Array.isArray( item?.replies ) ? item.replies.length : 0;
+			if ( 1 === n ) {
+				return state.i18n?.deleteCommentReply || 'Delete this comment and its reply?';
+			}
+			if ( n > 1 ) {
+				return ( state.i18n?.deleteCommentReplies || 'Delete this comment and its %d replies?' ).replace( '%d', n );
+			}
+			return state.i18n?.deleteCommentConfirm || 'Delete this comment?';
+		},
+
 		deleteLightboxComment() {
 			const ctx = getContext();
 			const item = ctx.item;
 			if ( ! item ) return;
 			const id = item.id;
-			actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
+			actions.showConfirm( actions.commentDeleteConfirm( item ), async () => {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + id, {
 					method: 'DELETE',
 				} );

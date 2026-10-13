@@ -191,8 +191,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		<form method="get" action="<?php echo esc_url( $mvs_archive_url ); ?>" id="mvs-explore-search-form">
 			<div class="mvs-search-bar">
 				<div class="mvs-search-mode" role="tablist" aria-label="<?php esc_attr_e( 'Search mode', 'wpmediaverse' ); ?>">
-					<button type="button" class="mvs-search-mode-btn active" data-search-mode="media" role="tab" aria-selected="true"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
-					<button type="button" class="mvs-search-mode-btn" data-search-mode="users" role="tab" aria-selected="false"><?php esc_html_e( 'People', 'wpmediaverse' ); ?></button>
+					<button type="button" class="mvs-search-mode-btn active" data-search-mode="media" data-search-label="<?php esc_attr_e( 'Search media', 'wpmediaverse' ); ?>" role="tab" aria-selected="true"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
+					<button type="button" class="mvs-search-mode-btn" data-search-mode="users" data-search-label="<?php esc_attr_e( 'Search people', 'wpmediaverse' ); ?>" role="tab" aria-selected="false"><?php esc_html_e( 'People', 'wpmediaverse' ); ?></button>
 				</div>
 				<div class="mvs-search-field">
 					<svg class="mvs-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>

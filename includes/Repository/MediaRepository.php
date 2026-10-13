@@ -133,9 +133,9 @@ class MediaRepository implements MediaRepositoryInterface {
 	private static array $row_cache = array();
 
 	/**
-	 * Request-scope gallery badge counts, media_id => count (gallery_tile_counts()).
+	 * Request-scope gallery badge counts, viewer => media_id => count (gallery_tile_counts()).
 	 *
-	 * @var array<int,int>
+	 * @var array<int,array<int,int>>
 	 */
 	private static array $tile_counts = array();
 
@@ -5675,30 +5675,35 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * How many items each listed tile stands for, for its gallery badge.
 	 *
-	 * The front item of a gallery (lowest position among the published,
-	 * approved members that share its privacy) counts itself plus those
-	 * members, so a private member is never counted on a public tile and a
-	 * gallery whose cover is private still badges its first visible member.
+	 * The front item of a gallery (lowest position, then lowest id, among the
+	 * published, approved members this viewer may see in a listing) counts
+	 * every such member. That is the audience gallery_hidden_clause() hides
+	 * behind the front and the group lightbox opens, so one tile holds all a
+	 * viewer may see: a private member is never counted for a visitor, and the
+	 * owner's or a follower's tile counts their extra members too.
 	 * Any other item stands for itself and gets 0: a member listed on its own
 	 * shows no badge and opens alone in the lightbox.
-	 * Cached for the request; any repository write clears it.
+	 * Cached for the request per viewer; any repository write clears it.
 	 *
 	 * @since 2.6.2
 	 *
-	 * @param int[] $media_ids Listed media IDs (one page).
+	 * @param int[]    $media_ids Listed media IDs (one page).
+	 * @param int|null $viewer_id Viewer; null for the current user.
 	 * @return array<int,int> media_id => count; 0 for a non-cover.
 	 */
-	public function gallery_tile_counts( array $media_ids ): array {
+	public function gallery_tile_counts( array $media_ids, ?int $viewer_id = null ): array {
 		global $wpdb;
 
+		$viewer  = null === $viewer_id ? get_current_user_id() : $viewer_id;
+		$cache   = self::$tile_counts[ $viewer ] ?? array();
 		$ids     = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
-		$missing = array_values( array_diff( $ids, array_keys( self::$tile_counts ) ) );
+		$missing = array_values( array_diff( $ids, array_keys( $cache ) ) );
 
 		if ( $missing ) {
 			$meta = $wpdb->prefix . 'mvs_media_meta';
 			$idx  = $this->index_table();
 			foreach ( $missing as $id ) {
-				self::$tile_counts[ $id ] = 0;
+				$cache[ $id ] = 0;
 			}
 
 			// Two short queries rather than one join on meta_value: the join
@@ -5706,44 +5711,53 @@ class MediaRepository implements MediaRepositoryInterface {
 			$in     = implode( ',', array_fill( 0, count( $missing ), '%d' ) );
 			$covers = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
-					"SELECT c.media_id, c.meta_value AS grp, ci.privacy, CAST( p.meta_value AS UNSIGNED ) AS pos FROM {$meta} c
-						INNER JOIN {$meta} p ON p.media_id = c.media_id AND p.meta_key = 'group_position'
-						INNER JOIN {$idx} ci ON ci.media_id = c.media_id
-						WHERE c.meta_key = 'media_group' AND c.media_id IN ({$in})",
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and placeholders are built above.
+					"SELECT media_id, meta_value AS grp FROM {$meta} WHERE meta_key = 'media_group' AND media_id IN ({$in})",
 					...$missing
 				)
 			);
 
 			$groups = array_values( array_unique( array_map( static fn( $c ) => (string) $c->grp, (array) $covers ) ) );
 			if ( $groups ) {
+				list( $priv_sql, $priv_params ) = $this->explore_privacy_clause( 'mi', $viewer );
+
 				$ph   = implode( ',', array_fill( 0, count( $groups ), '%s' ) );
 				$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names and placeholders are built above.
-						"SELECT mg.meta_value AS grp, mi.privacy, COUNT(*) AS c, MIN( CAST( mp.meta_value AS UNSIGNED ) ) AS front FROM {$meta} mg
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names, placeholders and the privacy clause are built above.
+						"SELECT mg.meta_value AS grp, mg.media_id, CAST( mp.meta_value AS UNSIGNED ) AS pos FROM {$meta} mg
 							INNER JOIN {$idx} mi ON mi.media_id = mg.media_id
 							LEFT JOIN {$meta} mp ON mp.media_id = mg.media_id AND mp.meta_key = 'group_position'
 							WHERE mg.meta_key = 'media_group' AND mg.meta_value IN ({$ph})
-							AND mi.status = 'publish' AND mi.moderation_status = 'approved'
-							GROUP BY mg.meta_value, mi.privacy",
-						...$groups
+							AND mi.status = 'publish' AND mi.moderation_status = 'approved' AND {$priv_sql}",
+						...array_merge( $groups, $priv_params )
 					)
 				);
-				$by = array();
+				$by = array(); // grp => [ count, front id, front pos ].
 				foreach ( (array) $rows as $row ) {
-					$by[ (string) $row->grp ][ (string) $row->privacy ] = array( (int) $row->c, (int) $row->front );
+					$grp = (string) $row->grp;
+					$id  = (int) $row->media_id;
+					$pos = (int) $row->pos;
+					if ( ! isset( $by[ $grp ] ) ) {
+						$by[ $grp ] = array( 0, $id, $pos );
+					}
+					++$by[ $grp ][0];
+					if ( $pos < $by[ $grp ][2] || ( $pos === $by[ $grp ][2] && $id < $by[ $grp ][1] ) ) {
+						$by[ $grp ][1] = $id;
+						$by[ $grp ][2] = $pos;
+					}
 				}
 				foreach ( (array) $covers as $cover ) {
-					$bucket = $by[ (string) $cover->grp ][ (string) $cover->privacy ] ?? array( 0, -1 );
-					if ( (int) $cover->pos === $bucket[1] ) {
-						self::$tile_counts[ (int) $cover->media_id ] = $bucket[0];
+					$front = $by[ (string) $cover->grp ] ?? null;
+					if ( $front && (int) $cover->media_id === $front[1] ) {
+						$cache[ (int) $cover->media_id ] = $front[0];
 					}
 				}
 			}
+			self::$tile_counts[ $viewer ] = $cache;
 		}
 
-		return array_intersect_key( self::$tile_counts, array_flip( $ids ) );
+		return array_intersect_key( $cache, array_flip( $ids ) );
 	}
 
 

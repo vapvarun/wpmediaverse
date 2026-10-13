@@ -43,6 +43,11 @@ class ActivitySyncIntegration {
 	private static $posting_to_activity = false;
 
 	/**
+	 * Comment meta holding the ID of the activity comment that mirrors a media comment.
+	 */
+	public const ACTIVITY_COMMENT_META = '_mvs_bp_activity_comment_id';
+
+	/**
 	 * Register all activity sync hooks.
 	 */
 	public function init(): void {
@@ -56,6 +61,8 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_media_before_delete', array( $this, 'remember_activity_of_deleted_media' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
+		add_action( 'delete_comment', array( $this, 'delete_mirrored_activity_comment' ), 10, 2 );
+		add_action( 'edit_comment', array( $this, 'update_mirrored_activity_comment' ), 10, 2 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 		add_action( 'mvs_media_privacy_changed', array( $this, 'sync_activity_privacy' ), 10, 3 );
@@ -1177,17 +1184,92 @@ class ActivitySyncIntegration {
 			return;
 		}
 
+		// A reply sits under its parent's mirror, so the thread reads the same.
+		$comment   = get_comment( $comment_id );
+		$parent_ac = $comment && $comment->comment_parent ? (int) get_comment_meta( (int) $comment->comment_parent, self::ACTIVITY_COMMENT_META, true ) : 0;
+
 		self::$posting_to_activity = true;
 
-		bp_activity_new_comment(
+		$ac_id = bp_activity_new_comment(
 			array(
 				'activity_id' => $activity_id,
+				'parent_id'   => $parent_ac ? $parent_ac : false,
 				'content'     => $content,
 				'user_id'     => $user_id,
 			)
 		);
 
 		self::$posting_to_activity = false;
+
+		if ( $ac_id ) {
+			update_comment_meta( $comment_id, self::ACTIVITY_COMMENT_META, (int) $ac_id );
+		}
+	}
+
+	/**
+	 * The activity comment mirroring a media comment, if there is one.
+	 *
+	 * @param int|string $comment_id Media comment ID.
+	 * @param mixed      $comment    The comment, when the hook passes it.
+	 * @return \BP_Activity_Activity|null
+	 */
+	private function mirrored_activity_comment( $comment_id, $comment = null ): ?\BP_Activity_Activity {
+		$comment = $comment instanceof \WP_Comment ? $comment : get_comment( (int) $comment_id );
+		if ( ! $comment || \WPMediaVerse\Social\CommentService::COMMENT_TYPE !== $comment->comment_type || ! class_exists( 'BP_Activity_Activity' ) ) {
+			return null;
+		}
+		$ac_id = (int) get_comment_meta( (int) $comment->comment_ID, self::ACTIVITY_COMMENT_META, true );
+		if ( ! $ac_id ) {
+			return null;
+		}
+		$ac = new \BP_Activity_Activity( $ac_id );
+		return empty( $ac->id ) ? null : $ac;
+	}
+
+	/**
+	 * A deleted media comment leaves the activity post, with its notifications.
+	 *
+	 * Hooked on core's delete_comment so every delete path is covered: the
+	 * REST route, moderation, wp-admin and the reply cascade.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int|string $comment_id Comment being deleted.
+	 * @param mixed      $comment    The comment.
+	 * @return void
+	 */
+	public function delete_mirrored_activity_comment( $comment_id, $comment = null ): void {
+		$ac = $this->mirrored_activity_comment( $comment_id, $comment );
+		if ( ! $ac || ! function_exists( 'bp_activity_delete_comment' ) ) {
+			return;
+		}
+		if ( function_exists( 'bp_notifications_delete_all_notifications_by_type' ) ) {
+			foreach ( array( 'update_reply', 'comment_reply' ) as $action ) {
+				bp_notifications_delete_all_notifications_by_type( (int) $ac->id, 'activity', $action );
+			}
+		}
+		bp_activity_delete_comment( (int) $ac->item_id, (int) $ac->id );
+	}
+
+	/**
+	 * An edited media comment shows its new text on the activity post.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param int|string $comment_id Comment that was edited.
+	 * @param mixed      $data       Comment data (unused).
+	 * @return void
+	 */
+	public function update_mirrored_activity_comment( $comment_id, $data = null ): void {
+		unset( $data );
+		$ac = $this->mirrored_activity_comment( $comment_id );
+		if ( ! $ac ) {
+			return;
+		}
+		$comment     = get_comment( (int) $comment_id );
+		$ac->content = (string) apply_filters( 'bp_activity_comment_content', $comment->comment_content, 'edit' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- BuddyPress's own comment filter, as bp_activity_new_comment() applies it.
+		$ac->save();
+		wp_cache_delete( (int) $ac->item_id, 'bp_activity_comments' );
 	}
 
 	/**

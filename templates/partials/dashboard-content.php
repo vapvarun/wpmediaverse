@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.6.1
+ * @version 2.6.2
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -207,7 +207,7 @@ wp_interactivity_state(
 			/* translators: %s: album name. */
 			'willMove'                => __( 'Moves from %s', 'wpmediaverse' ),
 			/* translators: 1: number of photos, 2: privacy level. */
-			'albumWidens'             => __( '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".', 'wpmediaverse' ),
+			'albumWidens'             => __( '%1$d item(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".', 'wpmediaverse' ),
 			/* translators: %s: album privacy, e.g. "Public". */
 			'showThemAs'              => __( 'Show them as "%s"', 'wpmediaverse' ),
 			/* translators: %s: quoted photo titles. */
@@ -215,18 +215,18 @@ wp_interactivity_state(
 			/* translators: %d: number of further photos. */
 			'andNMore'                => __( 'and %d more', 'wpmediaverse' ),
 			/* translators: 1: number of photos, 2: album privacy, e.g. "Only me". */
-			'albumNarrows'            => __( 'Changing this album to "%2$s" makes its %1$d photo(s) show as "%2$s" while they are in it.', 'wpmediaverse' ),
+			'albumNarrows'            => __( 'Changing this album to "%2$s" makes its %1$d item(s) show as "%2$s" while they are in it.', 'wpmediaverse' ),
 			'changeAlbumPrivacy'      => __( 'Change album privacy', 'wpmediaverse' ),
 			/* translators: %d: number of photos. */
-			'bulkAlbumDecides'        => __( '%d photo(s) are in an album and keep its privacy until they leave it.', 'wpmediaverse' ),
+			'bulkAlbumDecides'        => __( '%d item(s) are in an album and keep its privacy until they leave it.', 'wpmediaverse' ),
 			/* translators: %s: privacy level, e.g. Members. */
 			'privacyViaAlbum'         => __( '%s (album)', 'wpmediaverse' ),
 			/* translators: 1: album name, 2: privacy level. */
 			'editFollowsAlbum'        => __( 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.', 'wpmediaverse' ),
 			/* translators: %d: number of photos. */
-			'photosMoved'             => __( '%d photo(s) moved from other albums.', 'wpmediaverse' ),
+			'photosMoved'             => __( '%d item(s) moved from other albums.', 'wpmediaverse' ),
 			/* translators: %d: number of photos. */
-			'photosReleased'          => __( '%d photo(s) removed; each is back to its own privacy.', 'wpmediaverse' ),
+			'photosReleased'          => __( '%d item(s) removed; each is back to its own privacy.', 'wpmediaverse' ),
 			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
 			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
 			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),

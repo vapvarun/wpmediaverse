@@ -54,7 +54,7 @@ for f in $files; do
 	git cat-file -e "$base:$f" 2>/dev/null || continue   # new since the tag: any version is fine.
 	git diff --quiet "$base" -- "$f" && continue           # unchanged since the tag.
 
-	was=$(git show "$base:$f" | version_line)
+	was=$(version_line < <(git show "$base:$f"))  # Not a pipe: grep -m1 closing early SIGPIPEs git show under pipefail.
 	if [ "$now" = "$was" ]; then
 		echo "✗ $f: changed since $base but its @version did not (bump it to the release that ships the change)"
 		fail=1

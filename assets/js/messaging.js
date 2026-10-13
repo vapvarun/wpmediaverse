@@ -1788,6 +1788,11 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			// Show menu on this message.
 			const msg = state.messages.find( m => String( m.id ) === String( msgId ) );
+			// A deleted message has nothing left to react to, reply to, report or unsend.
+			if ( msg && msg.isDeleted ) {
+				state.contextMenuMessageId = null;
+				return;
+			}
 			if ( msg ) {
 				msg.showMenu = true;
 				msg.noMenu = false;

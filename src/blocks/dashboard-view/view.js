@@ -1539,7 +1539,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					// Photos in an album keep showing with the album's privacy; say
 					// so, or the member believes they changed (2.6.0).
 					if ( res.data?.album_decides ) {
-						msg.text += ' ' + ( state.i18n?.bulkAlbumDecides || '%d photo(s) are in an album and keep its privacy until they leave it.' ).replace( '%d', res.data.album_decides );
+						msg.text += ' ' + ( state.i18n?.bulkAlbumDecides || '%d item(s) are in an album and keep its privacy until they leave it.' ).replace( '%d', res.data.album_decides );
 					}
 					sharedUI.actions.showToast( msg.text, msg.type );
 					actions.loadMedia( ctx, state.media.page || 1 );
@@ -1877,7 +1877,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 						: '';
 					const named = shown ? ' ' + ( state.i18n?.photosAffected || 'Photos: %s.' ).replace( '%s', shown + more ) : '';
 					sharedUI.actions.showConfirm(
-						( state.i18n?.albumWidens || '%1$d photo(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
+						( state.i18n?.albumWidens || '%1$d item(s) are set to be more private than "%2$s". While they are in this album, they will show as "%2$s".' )
 							.replace( '%1$d', widened.count )
 							.replace( /%2\$s/g, albumLabel ) + named,
 						() => {
@@ -1902,7 +1902,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			) {
 				state.albumModal.saving = false;
 				sharedUI.actions.showConfirm(
-					( state.i18n?.albumNarrows || 'Changing this album to "%2$s" makes its %1$d photo(s) show as "%2$s" while they are in it.' )
+					( state.i18n?.albumNarrows || 'Changing this album to "%2$s" makes its %1$d item(s) show as "%2$s" while they are in it.' )
 						.replace( '%1$d', itemCount )
 						.replace( /%2\$s/g, albumLabel ),
 					() => {
@@ -1979,10 +1979,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 				// privacy.
 				const notes = [ state.albumModal.isEdit ? ( state.i18n?.albumUpdated || 'Album updated!' ) : ( state.i18n?.albumCreated || 'Album created!' ) ];
 				if ( moving ) {
-					notes.push( ( state.i18n?.photosMoved || '%d photo(s) moved from other albums.' ).replace( '%d', moving ) );
+					notes.push( ( state.i18n?.photosMoved || '%d item(s) moved from other albums.' ).replace( '%d', moving ) );
 				}
 				if ( pendingRemove.length ) {
-					notes.push( ( state.i18n?.photosReleased || '%d photo(s) removed; each is back to its own privacy.' ).replace( '%d', pendingRemove.length ) );
+					notes.push( ( state.i18n?.photosReleased || '%d item(s) removed; each is back to its own privacy.' ).replace( '%d', pendingRemove.length ) );
 				}
 				sharedUI.actions.showToast( notes.join( ' ' ), 'success' );
 				await actions.loadAlbums( ctx );

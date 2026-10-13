@@ -62,8 +62,8 @@ class GalleryFrontTileTest extends WP_UnitTestCase {
 	/**
 	 * Listed ids for a viewer.
 	 *
-	 * @param int                  $viewer Viewer id.
-	 * @param array<string,mixed>  $extra  Extra query args.
+	 * @param int                 $viewer Viewer id.
+	 * @param array<string,mixed> $extra  Extra query args.
 	 * @return int[]
 	 */
 	private function listed( int $viewer, array $extra = array() ): array {
@@ -97,6 +97,24 @@ class GalleryFrontTileTest extends WP_UnitTestCase {
 		$this->assertNotContains( $ids[1], $this->listed( $this->owner ), 'For the owner the cover still fronts the gallery.' );
 	}
 
+	public function test_owner_tile_counts_every_member_they_can_see(): void {
+		$ids = $this->gallery( array( array( 'privacy' => 'private' ), array(), array() ) );
+
+		$this->assertSame( array( $ids[0] ), $this->listed( $this->owner ) );
+		$this->assertSame( 3, $this->repo()->gallery_tile_counts( array( $ids[0] ), $this->owner )[ $ids[0] ], 'The owner reaches their public members through the private cover.' );
+	}
+
+	public function test_follower_tile_counts_followers_only_members(): void {
+		$ids      = $this->gallery( array( array(), array(), array( 'privacy' => 'followers' ) ) );
+		$follower = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		Plugin::container()->get( 'follows' )->follow( $follower, $this->owner );
+		MediaRepository::reset_test_cache();
+
+		$this->assertSame( array( $ids[0] ), $this->listed( $follower ) );
+		$this->assertSame( 3, $this->repo()->gallery_tile_counts( array( $ids[0] ), $follower )[ $ids[0] ], 'A follower reaches the followers-only member.' );
+		$this->assertSame( 2, $this->repo()->gallery_tile_counts( array( $ids[0] ), 0 )[ $ids[0] ], 'A visitor does not.' );
+	}
+
 	public function test_cover_held_for_review_does_not_hide_the_gallery(): void {
 		$ids = $this->gallery( array( array( 'moderation_status' => 'pending' ), array(), array() ) );
 		$this->assertSame( array( $ids[1] ), $this->listed( 0, array( 'moderation_status' => 'approved' ) ) );
@@ -109,7 +127,16 @@ class GalleryFrontTileTest extends WP_UnitTestCase {
 	}
 
 	public function test_items_without_a_gallery_are_never_hidden(): void {
-		$solo = $this->repo()->insert( array( 'title' => 'Solo', 'post_author' => $this->owner, 'media_type' => 'image', 'status' => 'publish', 'moderation_status' => 'approved', 'privacy' => 'public' ) );
+		$solo = $this->repo()->insert(
+			array(
+				'title'             => 'Solo',
+				'post_author'       => $this->owner,
+				'media_type'        => 'image',
+				'status'            => 'publish',
+				'moderation_status' => 'approved',
+				'privacy'           => 'public',
+			)
+		);
 		MediaRepository::reset_test_cache();
 		$this->assertSame( array( $solo ), $this->listed( 0 ) );
 	}

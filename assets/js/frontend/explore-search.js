@@ -128,14 +128,21 @@
 		// Deactivate all sibling tabs.
 		form.querySelectorAll( '.mvs-search-mode-btn' ).forEach( function ( t ) {
 			t.classList.remove( 'active' );
+			t.setAttribute( 'aria-selected', 'false' );
 		} );
 		tab.classList.add( 'active' );
+		tab.setAttribute( 'aria-selected', 'true' );
 
 		// Persist mode on the form element so input/submit handlers can read it.
 		var newMode = tab.getAttribute( 'data-search-mode' ) || 'media';
 		form.dataset.searchMode = newMode;
 
 		input.placeholder = newMode === 'users' ? ( i18n.searchUsers || '' ) : ( i18n.searchMedia || '' );
+		// The field's accessible name follows the mode, not just its placeholder.
+		var label = form.querySelector( 'label[for="mvs-search-input"]' );
+		if ( label ) {
+			label.textContent = tab.getAttribute( 'data-search-label' ) || label.textContent;
+		}
 		results.style.display = 'none';
 		clearResults( results );
 	} );
