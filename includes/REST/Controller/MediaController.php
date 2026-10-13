@@ -245,19 +245,7 @@ class MediaController extends WP_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_group_items' ),
 				'permission_callback' => '__return_true',
-				'args'                => array(
-					'id'         => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-					),
-					// The listing's filter, so the lightbox opens the set its badge counted.
-					'media_type' => array( 'type' => 'string' ),
-					'tag'        => array( 'type' => 'string' ),
-					'category'   => array( 'type' => 'string' ),
-					's'          => array( 'type' => 'string' ),
-					'group'      => array( 'type' => 'integer' ),
-				),
+				'args'                => $this->group_route_args(),
 			)
 		);
 
@@ -721,8 +709,7 @@ class MediaController extends WP_REST_Controller {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->prefetch( $int_ids );
 
-		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
-		// so the per-item prepare below stays query-bounded at any list size.
+		// Viewer favourites/reactions for the page in 2 queries, so prepare stays bounded.
 		self::prime_viewer_state( $int_ids, get_current_user_id() );
 		$repo->gallery_tile_counts( $int_ids, null, $this->gallery_filter( $request ) ); // Badges count under this feed's filter.
 
@@ -763,6 +750,27 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+	}
+
+	/**
+	 * Args of GET /media/{id}/group: the item, and the listing's filter so the
+	 * lightbox opens the set its badge counted.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function group_route_args(): array {
+		return array(
+			'id'         => array(
+				'type'              => 'integer',
+				'required'          => true,
+				'sanitize_callback' => 'absint',
+			),
+			'media_type' => array( 'type' => 'string' ),
+			'tag'        => array( 'type' => 'string' ),
+			'category'   => array( 'type' => 'string' ),
+			's'          => array( 'type' => 'string' ),
+			'group'      => array( 'type' => 'integer' ),
+		);
 	}
 
 	/**

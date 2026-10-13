@@ -646,9 +646,10 @@ class MessagingService {
 		$participants_by_conversation = $this->get_participants_for_conversations( $conversation_ids );
 		$unread_by_conversation       = $this->batch_unread_counts( $conversations, $user_id );
 
+		$blocked = $user_id ? array_map( 'intval', \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $user_id ) ) : array();
 		foreach ( $conversations as &$conv ) {
 			$cid                        = (int) $conv->id;
-			$conv->participants         = $this->mask_blocked_presence( $participants_by_conversation[ $cid ] ?? array(), $user_id );
+			$conv->participants         = $this->mask_blocked_presence( $participants_by_conversation[ $cid ] ?? array(), $user_id, $blocked );
 			$conv->unread_count         = $unread_by_conversation[ $cid ] ?? 0;
 			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
@@ -661,14 +662,39 @@ class MessagingService {
 	}
 
 	/**
+	 * The sender has read their own message, and sending ends their typing marker.
+	 *
+	 * @param int    $conversation_id Conversation.
+	 * @param int    $sender_id       Sender.
+	 * @param string $now             Send time (UTC MySQL).
+	 */
+	private function mark_sent( int $conversation_id, int $sender_id, string $now ): void {
+		global $wpdb;
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_conversation_participants',
+			array(
+				'last_read_at' => $now,
+				'typing_until' => null,
+			),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $sender_id,
+			),
+			array( '%s', null ),
+			array( '%d', '%d' )
+		);
+	}
+
+	/**
 	 * Hide presence across a block: a blocked pair never sees each other online.
 	 *
 	 * @param array<int,array<string,mixed>> $participants Participant rows.
 	 * @param int                            $viewer_id    Member reading them.
+	 * @param int[]|null                     $blocked      The viewer's blocks, when a list already has them.
 	 * @return array<int,array<string,mixed>>
 	 */
-	public function mask_blocked_presence( array $participants, int $viewer_id ): array {
-		$blocked = $viewer_id ? array_map( 'intval', \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id ) ) : array();
+	public function mask_blocked_presence( array $participants, int $viewer_id, ?array $blocked = null ): array {
+		$blocked = $blocked ?? ( $viewer_id ? array_map( 'intval', \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id ) ) : array() );
 		if ( ! $blocked ) {
 			return $participants;
 		}
@@ -1822,20 +1848,7 @@ class MessagingService {
 			array( '%d' )
 		);
 
-		// Mark as read for sender; sending also ends their typing marker.
-		$wpdb->update(
-			$part_table,
-			array(
-				'last_read_at' => $now,
-				'typing_until' => null,
-			),
-			array(
-				'conversation_id' => $conversation_id,
-				'user_id'         => $sender_id,
-			),
-			array( '%s', null ),
-			array( '%d', '%d' )
-		);
+		$this->mark_sent( $conversation_id, $sender_id, $now );
 
 		// Delivery semantics: a new message resurrects the thread for any
 		// participant who had deleted it (status 'left'). Without this the
