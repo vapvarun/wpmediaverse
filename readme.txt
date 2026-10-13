@@ -155,6 +155,7 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 * Improve  - Screen readers hear the right name for the People search field and the chat message buttons, and comment buttons are 44px on touch screens.
 * Improve  - A document page names its privacy with the same words as the drive.
 * Improve  - Storage screens call local storage "This server", as the setting does.
+* Improve  - The Integrations screen no longer claims features for Learnomy, WP Career Board and Listora that MediaVerse does not provide.
 * Improve  - An incomplete licensing package shows an admin notice that automatic updates are off, instead of failing silently.
 * Fix      - BuddyPress activity posts show their photo again when direct delivery is on.
 * Fix      - An MP4 file branded as M4V, as iPhones save them, uploads like any MP4.
