@@ -1,6 +1,6 @@
 # Auto-Captions
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro transcribes video files using the OpenAI Whisper API and attaches the result as a WebVTT caption file. Captions show in the website's video players through the browser's captions control (the lightbox, the single media page and the Media Player block), and can be edited via the REST API.
 
@@ -21,6 +21,8 @@ Go to **MediaVerse > Settings > AI**. The **Auto-Captions & Transcription** sect
 The OpenAI API key is read from the free plugin's existing **OpenAI API Key** setting (the `mvs_openai_api_key` option, configured under **MediaVerse > Settings > AI**). There is no separate Pro Whisper key field - captions reuse the same key as the rest of the AI features.
 
 ![Auto-captions and transcription setting on the AI tab](../images/settings-auto-captions.webp)
+
+Captions are written for videos only. Members can ask for a transcript of their own video only while **Auto-generate on Upload** is on, once per video, up to five times a day. Admins are not limited.
 
 When **Auto-generate on Upload** is on, MediaVerse Pro queues a transcription job via Action Scheduler immediately after a file is stored. The caption file is saved once the Whisper API responds.
 

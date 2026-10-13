@@ -50,13 +50,13 @@ Every namespace under `includes/` is listed. `find includes -name '*.php' | sort
 
 | Namespace | Responsibility | Key Classes |
 |-----------|---------------|-------------|
-| `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade, type vocabularies | `Plugin`, `ServiceContainer`, `Migrator`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers` (+`TemplateHelpersInterface`), `Abilities`, `SettingsHelper`, `MediaUrl`, `MediaTypes`, `DocumentTypes`, `DashboardSections`, `Dates` (+ `Loader`, deprecated, never used, removal 4.0.0) |
-| `Admin\` | WP admin pages, moderation queue, member moderation | `OverviewPage`, `StatsPage`, `ModerationQueue`, `MemberModeration`, `ReportsPage`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage`, `DocumentListPage`, `IntegrationsPage`, `TagManagementPage` |
-| `Admin\Settings\` | Settings page (focused classes, one registrar per settings group) | `SettingsPage`, `SettingsRegistrar`, `GeneralSettingsRegistrar`, `AiSettingsRegistrar`, `MessagingSettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
-| `REST\Controller\` | REST API endpoints | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController`, `AdminController`, `AuthController`, `ConfigController`, `InterestsController`, `TransactionController`, `AccountController`, `DeviceController` |
+| `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade, type vocabularies | `Plugin`, `ServiceContainer`, `Migrator`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers` (+`TemplateHelpersInterface`), `Abilities`, `SettingsHelper`, `MediaUrl`, `MediaTypes`, `DocumentTypes`, `DashboardSections`, `Dates`, `TemplateVersions`, `PresetActivation` (+ `Loader`, deprecated, never used, removal 4.0.0) |
+| `Admin\` | WP admin pages, moderation queue, member moderation | `OverviewPage`, `StatsPage`, `ModerationQueue`, `MemberModeration`, `ReportsPage`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage`, `DocumentListPage`, `IntegrationsPage`, `TagManagementPage`, `AlbumMetaBox`, `PrivateCommunityDefault` |
+| `Admin\Settings\` | Settings page (focused classes, one registrar per settings group) | `SettingsPage`, `SettingsRegistrar`, `GeneralSettingsRegistrar`, `DisplaySettingsRegistrar`, `AiSettingsRegistrar`, `MessagingSettingsRegistrar`, `AppSettingsRegistrar`, `SettingsSaveGuard`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
+| `REST\Controller\` | REST API endpoints | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController`, `AdminController`, `AuthController`, `ConfigController`, `InterestsController`, `TransactionController`, `AccountController`, `DeviceController` |
 | `REST\` | Middleware, gates, pagination | `RateLimiter`, `RestGate`, `RestGuards`, `CommunityPrivacyGate`, `Pagination` |
-| `Services\` | Business logic, storage, AI, caching, URL signing, variant pipeline, poster generation | `UploadService`, `StorageService`, `StorageRouter`, `MediaVariantWriter`, `VariantSpec`, `PosterService`, `FilenameStrategy`, `ImageOptimizationService`, `PrivacyService`, `AlbumService`, `CollectionService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AdminAggregatesService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `TelemetryService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `TransactionService`, `LocalDriver`, `CloudOps`, `StorageCleanupService`, `StorageRepairService`, `CptIdCollisionService`, `AccountDeletionService`, `UserDeletionService`, `ViewRetentionService` (+ `StorageDriverInterface`, `AIProviderInterface`) |
-| `Social\` | Social interactions (reactions, comments, follows, push, suggestions) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `PushService`, `ReportService`, `ActivityService`, `SuggestionService` |
+| `Services\` | Business logic, storage, AI, caching, URL signing, variant pipeline, poster generation | `UploadService`, `StorageService`, `StorageRouter`, `MediaVariantWriter`, `VariantSpec`, `PosterService`, `FilenameStrategy`, `ImageOptimizationService`, `PrivacyService`, `AlbumService`, `CollectionService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AdminAggregatesService`, `SignedUrlService`, `DirectDelivery`, `ServerFileOffload`, `WatermarkService`, `MediaFileRotator`, `Mp4Faststart`, `CacheService`, `LoggerService`, `EmailService`, `StorageLimitService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `TransactionService`, `LocalDriver`, `CloudOps`, `StorageCleanupService`, `StorageRepairService`, `CptIdCollisionService`, `AccountDeletionService`, `UserDeletionService`, `ViewRetentionService` (+ `StorageDriverInterface`, `AIProviderInterface`) |
+| `Social\` | Social interactions (reactions, comments, follows, push, suggestions) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `CommunityNotificationContract`, `PushService`, `ReportService`, `ActivityService`, `SuggestionService` |
 | `Integrations\` | Third-party platform bridges | `WebhookService` |
 | `Integrations\BuddyPress\` | BuddyPress integration | `BuddyPressManager`, `BaseBPTabIntegration`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ActivityFormIntegration`, `ActivityMediaLinkage`, `ActivityPrivacyFilter`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, `MediaDisplayHelper` |
 | `Integrations\BPVerifiedMember\` | Verified-member badge bridge | `BadgeIntegration` |
@@ -65,16 +65,27 @@ Every namespace under `includes/` is listed. `find includes -name '*.php' | sort
 | `Privacy\` | GDPR export/erase maps and purger | `MemberDataMap`, `MemberPurger` |
 | `Media\` | Object↔media linkage | `ObjectMediaLinkage` |
 | `Cert\` | Behavioural cert runner (`wp mvs cert`) | `CertCommand`, `CertRunner` |
-| `PostTypes\` | Custom post type registration | `Album`, `Collection` |
+| `PostTypes\` | Custom post type registration, and keeping non-public albums and collections out of core's archive, feed and sitemap | `Album`, `Collection`, `PublicListing` |
 | `Taxonomies\` | Custom taxonomy registration | `MediaTag`, `MediaCategory` |
 | `Blocks\` | Gutenberg block registration | `BlockRegistrar`, `StandardAttributes`, `MVS_CSS` |
 | `Shortcodes\` | Legacy shortcode support | `Shortcodes` |
 | `CLI\` | WP-CLI commands | `Commands` |
-| `Messaging\` | Direct messaging engine + REST routes | `MessagingService`, `MessagingController`, `NotificationListener`, `RestPollingTransport`, `TransportInterface` |
-| `Repository\` | Central data access layer | `MediaRepository` (+`MediaRepositoryInterface`), `MediaIntegrityRepository`, `MediaSpaceRepository` |
+| `Messaging\` | Direct messaging engine + REST routes | `MessagingService`, `MessagingController`, `NotificationListener`, `ChatFiles`, `RestPollingTransport`, `TransportInterface` |
+| `Repository\` | Central data access layer | `MediaRepository` (+`MediaRepositoryInterface`), `MediaIntegrityRepository`, `MediaSpaceRepository`, `MessageRepository` |
 | `Capabilities\` | Role/capability management | `MediaCapabilities` |
 
-**Gone, do not reference:** `Services\StoryService` and `src/blocks/story-viewer`. Stories live in Pro (`WPMediaVersePro\Stories\StoryService`).
+**Gone, do not reference:** `Services\StoryService` and `src/blocks/story-viewer` (Stories live in Pro, `WPMediaVersePro\Stories\StoryService`); `Services\AccessRulesService`, `REST\Controller\AccessController` and the `access_rules` container key (per-media access rules were removed in 2.6.0: privacy plus sharing is the whole access model); `Services\TelemetryService` and the `telemetry` key.
+
+**Where a shared rule lives** (one owner each; extend these, do not re-implement):
+
+| Rule | Owner |
+|------|-------|
+| One tile per gallery, badge count, lightbox members, listing filter | `MediaRepository::gallery_hidden_clause()`, `gallery_tile_counts()`, `gallery_members()`, `gallery_filter_args()` |
+| Narrow a listing to a BuddyPress group (`GET /mvs/v1/media?group=`) | `MediaRepository::group_scope_clause()` |
+| 200 instead of a soft 404 on a virtual page (never downgrades a 4xx) | `TemplateLoader::serve_as_found()` |
+| Hide presence across a block; cast pin/mute/archive to booleans | `MessagingService::mask_blocked_presence()`, `cast_member_flags()` |
+| Remove a deleted media comment's notifications | `NotificationService::on_comment_deleted()` via `MediaRepository::delete_comment_notifications()` |
+| Mirror a media comment onto its BuddyPress activity post | `ActivitySyncIntegration` (link in comment meta `ACTIVITY_COMMENT_META`; `find_unlinked_mirror()` adopts an older unlinked copy) |
 
 ---
 
@@ -108,18 +119,20 @@ Registered in `includes/Core/Plugin.php` via `register_services()` and `init_mes
 | `ai` | `AIService` (+ `OpenAIProvider`) |
 | `moderation` | `ModerationService` |
 | `admin.moderation` | `ModerationQueue` |
-| `admin.reports` | `ReportsPage` |
+| `admin.reports` | `ReportsPage` (registered only when Pro is not active; Pro ships its own Reports screen) |
 | `admin.member_moderation` | `MemberModeration` |
 | `admin.private_default` | `PrivateCommunityDefault` |
 | `admin.stats` | `StatsPage` |
 | `admin.logs` | `LogViewerPage` |
 | `admin.setup_wizard` | `SetupWizard` |
+| `admin.album_metabox` | `AlbumMetaBox` |
 | `admin.collection_metabox` | `CollectionMetaBox` |
 | `admin.integrations` | `IntegrationsPage` |
 | `admin_aggregates` | `AdminAggregatesService` |
 | `account_deletion` | `AccountDeletionService` |
 | `user_deletion` | `UserDeletionService` |
-| `access_rules` | `AccessRulesService` |
+| `emails` | `EmailService` |
+| `storage_limit` | `StorageLimitService` |
 | `signed_urls` | `SignedUrlService` |
 | `watermark` | `WatermarkService` |
 | `integration.buddypress` | `BuddyPressManager` |
@@ -128,7 +141,6 @@ Registered in `includes/Core/Plugin.php` via `register_services()` and `init_mes
 | `integration.webhooks` | `WebhookService` |
 | `cache` | `CacheService` |
 | `image_optimization` | `ImageOptimizationService` |
-| `telemetry` | `TelemetryService` |
 | `follows` | `FollowService` |
 | `notifications` | `NotificationService` |
 | `push` | `PushService` |
@@ -138,6 +150,8 @@ Registered in `includes/Core/Plugin.php` via `register_services()` and `init_mes
 | `storage_cleanup` | `StorageCleanupService` |
 | `storage_repair` | `StorageRepairService` |
 | `media_repository` | `MediaRepository` |
+| `media_space_repository` | `MediaSpaceRepository` |
+| `message_repository` | `MessageRepository` |
 | `object_media` | `ObjectMediaLinkage` |
 | `template_helpers` | `TemplateHelpers` |
 | `messaging` | `MessagingService` (registered in `init_messaging()`) |
@@ -165,14 +179,14 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | `mvs_notifications` | User notification queue |
 | `mvs_reports` | Content/user abuse reports |
 | `mvs_blocks` | User block list |
-| `mvs_access_grants` | Granted access tokens |
+| `mvs_access_grants` | Named-person sharing grants (Pro Documents sharing, including expiring grants). `mvs_access_rules` is retired: `Migrator::RETIRED_TABLES`, dropped by migration v38. |
 | `mvs_album_items` | Album-to-media mapping |
 | `mvs_error_log` | Internal error/debug log |
 | `mvs_conversations` | DM conversation threads |
 | `mvs_conversation_participants` | Conversation membership |
 | `mvs_messages` | Individual DM messages |
 | `mvs_message_reactions` | Reactions on DM messages |
-| `mvs_transactions` | Credit/monetization transactions |
+| `mvs_transactions` | Per-media-type usage ledger (`TransactionService`); not a payments ledger |
 | `mvs_bp_activity_media` | BuddyPress activity-to-media mapping |
 | `mvs_device_tokens` | The ONE push device registry (`/me/devices`). Pro's `/mvs-pro/v1/push/register-device` writes here too, and Pro's Expo sender reads it on `mvs_push_send`. |
 | `mvs_media_spaces` | Links one document into more than one space without a copy (`Repository/MediaSpaceRepository.php`) |
@@ -312,17 +326,20 @@ These rules protect the live customer sites. They are mechanically enforced via 
 
 ## Doc Map
 
-All docs (Free + Pro) live in this plugin. Pro is intentionally doc-free.
+All docs (Free + Pro) live in this plugin. Pro carries only its own `docs/standards/i18n.md`.
 
 | Path | Contents |
 |------|----------|
 | `docs/architecture/MASTER_PLAN.md` | **Forward-looking** - current state + roadmap (Free + Pro). Trim shipped rows each release; do not add a "completed" section. |
 | `docs/architecture/ARCHITECTURE.md` | Free architecture |
+| `docs/architecture/FUNCTIONALITY-CATALOG.md` | Engineering view of every functional area (the tester-facing catalog is `qa/inventory/FUNCTIONALITY-CATALOG.md`) |
 | `docs/architecture/architecture-contract.md` | Free ↔ Pro contract |
-| `docs/architecture/pro/` | Pro architecture + Interactivity-API design |
-| `docs/architecture/specs/` | Per-feature design specs (date-stamped) |
-| `docs/development/` | CODING_STANDARDS, CONTRIBUTING, EXTENSION_GUIDE, GIT_WORKFLOW, LOCAL_TESTING, LOCAL_TESTING-pro, MOBILE_UX_GUIDELINE, REFACTORING_ROADMAP, STRUCTURAL_GUIDELINE |
+| `docs/architecture/core-contract.md`, `docs/architecture/buddynext-document-contract.md` | What a host plugin (BuddyNext) may rely on |
+| `docs/architecture/pro/` | Pro architecture, BuddyNext drive bridge, Interactivity-API design |
+| `docs/architecture/specs/` | Per-feature design specs (date-stamped history, not kept current) |
+| `docs/development/` | `ls docs/development/` (coding standards, contributing, extension guide, integration event hooks, local testing for each plugin, git workflow, storage-driver verification, and others) |
 | `docs/security/SECURITY_CHECKLIST.md` | Security checklist |
+| `docs/standards/` | `ls docs/standards/`: synced standards (QA catalog, frontend interactivity, i18n, integration, preset licence activation) and verification guides |
 | `docs/standards/authorization-guards.md` | What the four `audit/*-authority.json` manifests are (route, capability, render surface, admin action) and why each is an assertion rather than documentation. Their tests run inside the unit suite; a route that loses its permission check fails the build. |
 | `docs/verification/` | Ad-hoc verification reports (e.g. `cloud-storage-verification.md`) |
 | `docs/website/` | Public docs source. **Lives in this repo only** - do not publish or sync it anywhere. |

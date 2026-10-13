@@ -8,132 +8,79 @@
 
 ## 1. Plugin Lifecycle
 
-`Plugin::init()` (lines 105-1048 of `includes/Core/Plugin.php`) runs on the main
-plugin bootstrap. Every subsystem is instantiated in the order below. Items
-marked *conditional* are gated by a per-feature `get_option()` toggle.
+`wpmediaverse-pro.php` guards the boot (PHP gate, `includes/Core/Plugin.php`
+present, bundled SDK complete) and then waits for Free: `\WPMediaVersePro\Core\Plugin::init()`
+runs inside the `mvs_loaded` callback, and `mvs_pro_loaded` fires after it.
+
+`Plugin::init()` instantiates the subsystems below. Grep a class name in
+`includes/Core/Plugin.php` for its exact position. *Gated* items are skipped
+(their service stays `null`) when their option is off.
 
 ```
- 1. load_plugin_textdomain   - bundled .mo files in languages/
- 2. Migrator::run()          - runs DB migrations (idempotent, version-checked)
- 3. LicenseManager           - EDD Software Licensing integration
- 4. QuotaService             - enforces upload quotas, tracks usage
- 5. QuotaController          - REST: /mvs-pro/v1/me/quota, /packages, /credits
- 6. UsageWidget              - frontend usage meter
- 7. Membership Adapters      - MemberPressAdapter, PaidMembershipsProAdapter,
-                               WooCommerceAdapter (auto-assign packages on
-                               membership change)
- 8. LayoutManager            - Instagram, Dribbble, Flickr, Pinterest modes
- 9. PrivacyUIService         - advanced per-item privacy (public/members/friends/
-                               group/private/custom)
-10. PrivacyController        - REST: /media/{id}/privacy, /media/bulk-privacy,
-                               /privacy/presets
-11. ChapterService           - video chapter markers
-12. ResumeService            - per-user resume-playback positions
-13. VideoController          - REST: /media/{id}/chapters, /media/{id}/resume
-14. TranscriptionService     - AI-powered caption generation (Whisper)
-    + AS hook:               mvs_pro_transcribe_media
-15. CaptionController        - REST: /media/{id}/captions, /captions/generate,
-                               /captions/status
-16. Storage driver filter    - mvs_storage_driver (AmazonS3, BunnyCDN,
-                               CloudflareR2, DigitalOceanSpaces)
-17. Watermark filters        - mvs_watermark_enabled + mvs_watermark_stamp_file
-18. AI providers action      - mvs_ai_providers
-19. ConnectionTester         - admin AJAX for testing S3/API connections
-20. AnalyticsService         - play event recording, heatmaps, retention curves
-    + WP Cron:               mvs_pro_prune_play_events (daily)
-21. AnalyticsController      - REST: /media/{id}/events, /media/{id}/analytics,
-                               /analytics/top, /analytics/overview
-22. BattleService            - (conditional: mvs_battles_enabled)
-    + BattleController       - REST: /battles, /battles/{id}, accept/decline/
-                               submit/vote
-    + AS recurring:          mvs_resolve_expired_battles (hourly)
-23. ChallengeService         - (conditional: mvs_challenges_enabled)
-    + AutopilotService       - weekly auto-creation from theme pool
-      + AS recurring:        mvs_autopilot_create_weekly_challenge (weekly)
-    + ChallengeController    - REST: /challenges, /challenges/{id}, entries, vote,
-                               results, cancel
-    + AS recurring (x3):     mvs_activate_scheduled_challenges,
-                             mvs_close_challenge_entries,
-                             mvs_finalize_expired_challenges (all hourly)
-24. TournamentService        - (conditional: mvs_tournaments_enabled)
-    + TournamentController   - REST: /tournaments, /tournaments/{id}, register,
-                               bracket, participants, matches/submit, matches/vote
-    + AS recurring (x2):     mvs_start_registered_tournaments,
-                             mvs_resolve_expired_matches (both hourly)
-25. BoostService             - (conditional: mvs_boosts_enabled)
-    + BoostController        - REST: /boosts (list + create)
-    + AS recurring:          mvs_expire_boosts (hourly)
-26. CompeteSummaryController - REST: /competitions/active-summary (public)
-27. StreakService             - upload streak tracking + milestone XP
-28. Streak badge filter      - mvs_user_display_name (appends streak badge)
-29. Activity types filter    - mvs_activity_types (registers 8 gamification types)
-30. GamificationTemplateLoader - frontend pages: /media/battles/, /media/challenges/,
-                                /media/tournaments/
-31. Admin block (is_admin):
-      ProSettings, QuotaPage, MigrationPage, ReportManager,
-      AnalyticsDashboard, GamificationSettings,
-      ChallengeManager, TournamentManager, BattleMonitor,
-      CompetitionsDashboard, ThemeLibrary
-    + mvs_moderation_tabs filter (adds User Reports tab)
-    + mvs_stats_tabs filter (adds Video Analytics tab)
-32. First-run seed           - seeds default theme pool + creates first weekly
-                               challenge (once, on activation)
-33. admin_enqueue_scripts    - Pro admin CSS/JS
-34. Submenu reorder          - admin_menu priority 999 for logical grouping
-35. Reserved paths filter    - mvs_reserved_media_paths (reserves /compete/)
-36. Explore banner action    - mvs_before_explore_grid (pinned competition card)
-37. Nav menu filter          - wp_nav_menu_items (injects Compete link)
-38. Dashboard tabs           - mvs_dashboard_tabs + mvs_dashboard_panels (My Media
-                               compete panels), plus the mvs_dashboard_sections
-                               registry filter (Plugin.php:1624)
-39. Documents (2.4.0)        - init_document_surfaces() at Plugin.php:1619 and
-                               init_folder_jobs() at 1719: drives, folder tree,
-                               ingest, previews, search index, DeliveryController,
-                               and the DocumentLicense write gate
+ Documents       StorageResolver, ExtractionService, DocumentSettings, then
+                 init_document_surfaces() (drives, folder tree, ingest,
+                 previews, search index, DeliveryController, PermissionService,
+                 DocumentLicense write gate) and init_folder_jobs()
+ LicenseManager  in-page licence form; activates through the bundled EDD SL SDK
+ LayoutManager   Instagram, Dribbble, Flickr, Pinterest feed modes
+ Blocks          BlockRegistrar (Pro blocks + shortcodes)
+ Connectors      ConnectorManager + ConnectorRESTController
+                 (gated: mvs_connectors_enabled)
+ Privacy         PrivacyUIService + PrivacyController: advanced per-item privacy
+ Video           ChapterService, ResumeService, VideoController
+ Groups          GroupController: group DM routes (/mvs-pro/v1/groups) over Free's messaging engine
+ Collections     CollectionItemsService + CollectionItemsController
+ Captions        TranscriptionService (Whisper) + CaptionController
+                 AS hook: mvs_pro_transcribe_media
+ Free seams      mvs_storage_driver (S3, BunnyCDN, R2, DO Spaces),
+                 mvs_watermark_stamp_file, mvs_ai_providers,
+                 mvs_app_config_features, mvs_rest_gate_map,
+                 mvs_rest_gate_resolve_targets
+ ConnectionTester  admin AJAX for testing storage/API connections
+ Analytics       AnalyticsService + AnalyticsController
+                 WP Cron: mvs_pro_prune_play_events (daily)
+ Competitions    master switch mvs_competitions_enabled, then per type via
+                 Plugin::competition_feature_on():
+                   battles      BattleService, BattleController, listener
+                   challenges   ChallengeService, AutopilotService,
+                                ChallengeController, listener
+                   tournaments  TournamentService, TournamentController,
+                                listener
+                   boosts       BoostService, BoostController
+                 CompetitionsScheduler: one Action Scheduler tick drives every
+                 time-based transition (see 4.1)
+ Compete summary CompeteSummaryController, LeaderboardController
+ Streaks         StreakService (always inits); StreakController and the badge on
+                 mvs_user_display_name only when mvs_streaks_enabled
+ Push            PushService (Expo delivery) + PushController
+ Stories         StoryService, StoryController, StoriesPage
+                 (gated: mvs_stories_enabled)
+ Gamification    CompetePointsBridge
+ Frontend        GamificationTemplateLoader (/media/battles/, /media/challenges/,
+                 /media/tournaments/), dashboard tabs and sections
+                 (mvs_dashboard_tabs, mvs_dashboard_panels,
+                 mvs_dashboard_sections)
+ Admin           ProSettings, CloudOpsManager, ReportManager, AnalyticsDashboard,
+                 MigrationPage, GamificationSettings, CompetitionsDashboard,
+                 ChallengeManager, TournamentManager, BattleMonitor,
+                 ThemeLibrary; mvs_moderation_tabs adds the User Reports tab,
+                 mvs_stats_tabs adds Video Analytics
+ First-run seed  default theme pool + first weekly challenge (once)
+ Nav menu        Compete link injected on wp_nav_menu_items only behind the
+                 default-false mvs_pro_inject_compete_nav filter
 ```
 
 ---
 
 ## 2. Database Schema
 
-All tables created by `includes/Core/Migrator.php`.
-DB version option: `mvs_pro_db_version`, current version: **15**
-(`Migrator::CURRENT_VERSION`).
+All tables created by `includes/Core/Migrator.php`. The list is
+`Migrator::tables()`.
+DB version option: `mvs_pro_db_version`; the target is `Migrator::CURRENT_VERSION`.
 
-### 2.1 `{prefix}mvs_quota_packages`
-
-| Column | Type | Notes |
-|---|---|---|
-| id | bigint(20) unsigned | PK, AUTO_INCREMENT |
-| name | varchar(200) | |
-| image_limit | int unsigned | 0 = unlimited |
-| video_limit | int unsigned | 0 = unlimited |
-| audio_limit | int unsigned | 0 = unlimited |
-| storage_bytes | bigint(20) unsigned | 0 = unlimited |
-| is_default | tinyint(1) | |
-| sort_order | int unsigned | |
-| created_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-
-**Indexes:** `PRIMARY (id)`, `KEY is_default (is_default)`
-
-A default "Unlimited" package (all limits=0, is_default=1) is seeded on
-first migration.
-
-### 2.2 `{prefix}mvs_credit_log`
-
-| Column | Type | Notes |
-|---|---|---|
-| id | bigint(20) unsigned | PK, AUTO_INCREMENT |
-| user_id | bigint(20) unsigned | |
-| credit_type | varchar(20) | image, video, audio |
-| amount | int | positive = credit, negative = debit |
-| balance_after | int | |
-| source | varchar(50) | admin, webhook, purchase, etc. |
-| reference | varchar(200) | order ID, etc. |
-| note | text | |
-| created_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-
-**Indexes:** `PRIMARY (id)`, `KEY user_id`, `KEY source`, `KEY created_at`
+Pro has no quota, package or credit system. `Migrator::RETIRED_TABLES` names the
+tables earlier versions created for one (and for webhook events); nothing
+creates or reads them, and uninstall drops them.
 
 ### 2.3 `{prefix}mvs_play_events`
 
@@ -153,80 +100,11 @@ first migration.
 
 ### 2.4 Messaging Tables -- FREE-OWNED, not created here
 
-Pro does **not** create these. Its v2 migration used to, and the duplicate
-definition emitted a "Duplicate key name 'conv_id'" warning on every activation;
-ownership moved wholesale to Free's `Migrator` and Pro's copy was removed (see
-the comment at `includes/Core/Migrator.php:64`). The schema below is reproduced
-for reference only -- Free's `docs/architecture/ARCHITECTURE.md` §2.6 is
-authoritative. Pro retains Group DM, read receipts and a WebSocket transport as
-future extensions, none of which ship today.
-
-#### `{prefix}mvs_conversations`
-
-| Column | Type | Notes |
-|---|---|---|
-| id | bigint(20) unsigned | PK, AUTO_INCREMENT |
-| type | varchar(20) | DEFAULT 'direct' |
-| title | varchar(200) | nullable |
-| created_by | bigint(20) unsigned | |
-| last_message_id | bigint(20) unsigned | nullable |
-| last_message_preview | varchar(100) | |
-| last_activity_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-| created_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-
-**Indexes:** `PRIMARY (id)`, `KEY last_activity (last_activity_at)`,
-`KEY created_by (created_by)`
-
-#### `{prefix}mvs_conversation_participants`
-
-| Column | Type | Notes |
-|---|---|---|
-| id | bigint(20) unsigned | PK, AUTO_INCREMENT |
-| conversation_id | bigint(20) unsigned | |
-| user_id | bigint(20) unsigned | |
-| last_read_at | datetime | nullable |
-| is_muted | tinyint(1) | DEFAULT 0 |
-| muted_until | datetime | nullable |
-| is_pinned | tinyint(1) | DEFAULT 0 |
-| is_archived | tinyint(1) | DEFAULT 0 |
-| status | varchar(20) | DEFAULT 'active' |
-| joined_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-
-**Indexes:** `PRIMARY (id)`, `UNIQUE conv_user (conversation_id, user_id)`,
-`KEY user_status (user_id, status)`, `KEY conv_read (conversation_id, last_read_at)`
-
-#### `{prefix}mvs_messages`
-
-| Column | Type | Notes |
-|---|---|---|
-| id | bigint(20) unsigned | PK, AUTO_INCREMENT |
-| conversation_id | bigint(20) unsigned | |
-| sender_id | bigint(20) unsigned | |
-| content | text | nullable |
-| message_type | varchar(20) | DEFAULT 'text' |
-| attachment_id | bigint(20) unsigned | nullable |
-| media_id | bigint(20) unsigned | nullable (shared media) |
-| parent_id | bigint(20) unsigned | nullable (reply-to) |
-| metadata | text | nullable (JSON) |
-| is_deleted | tinyint(1) | DEFAULT 0 |
-| deleted_for_all | tinyint(1) | DEFAULT 0 |
-| created_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-
-**Indexes:** `PRIMARY (id)`, `KEY conv_date (conversation_id, created_at)`,
-`KEY conv_id (conversation_id, id)`, `KEY sender (sender_id)`
-
-#### `{prefix}mvs_message_reactions`
-
-| Column | Type | Notes |
-|---|---|---|
-| id | bigint(20) unsigned | PK, AUTO_INCREMENT |
-| message_id | bigint(20) unsigned | |
-| user_id | bigint(20) unsigned | |
-| emoji | varchar(20) | |
-| created_at | datetime | DEFAULT CURRENT_TIMESTAMP |
-
-**Indexes:** `PRIMARY (id)`, `UNIQUE msg_user (message_id, user_id)`,
-`KEY message_id (message_id)`
+Pro does **not** create `mvs_conversations`, `mvs_conversation_participants`,
+`mvs_messages` or `mvs_message_reactions`. Free's `Migrator` owns them and Free's
+`docs/architecture/ARCHITECTURE.md` §2.6 describes them. Pro adds only the Group
+DM REST surface (`Groups\GroupController`, `/mvs-pro/v1/groups`) over Free's
+`MessagingService`.
 
 ### 2.5 Competition Tables (Unified -- v4)
 
@@ -335,36 +213,28 @@ set of tables. Legacy per-entity tables are dropped during migration.
 
 ### 2.6 Pro tables not written up above
 
-Pro owns 13 tables. Beyond the ones detailed above it also creates
-`{prefix}mvs_pro_collection_items`, `{prefix}mvs_pro_push_devices`,
-`{prefix}mvs_pro_webhook_events`, `{prefix}mvs_pro_folders` (2.4.0 document
-folder tree) and `{prefix}mvs_pro_document_search` (2.4.0 full-text index).
+Beyond the ones detailed above, `Migrator::tables()` also lists
+`{prefix}mvs_pro_collection_items`, `{prefix}mvs_pro_push_devices` (emptied by a
+migration and never written; push tokens live in Free's `mvs_device_tokens`),
+`{prefix}mvs_pro_folders` (document folder tree) and
+`{prefix}mvs_pro_document_search` (full-text index).
 Read their column definitions off `includes/Core/Migrator.php`, which carries a
-written rationale per table. Note only four Pro tables carry the `mvs_pro_`
-prefix -- name is not a reliable ownership signal.
+written rationale per table. Only the `mvs_pro_` ones carry the prefix, so name
+is not a reliable ownership signal.
 
 ---
 
 ## 3. REST API Map
 
-All routes are under the `mvs-pro/v1` namespace. This map is partial; the
-complete code-derived list is
-`wpmediaverse/audit/pro/manifests/manifest.rest.json`.
+All routes are under the `mvs-pro/v1` namespace. This map is partial: Documents,
+Folders, Permissions, Collections, Groups, Stories, Streaks, Push, Connectors,
+Leaderboard and the admin controller register routes that are not written up
+here. The complete code-derived list is
+`wpmediaverse/audit/pro/manifests/manifest.rest.json`. Pro has no quota,
+package or credit routes, and no messaging routes (those are Free's `mvs/v1`).
 
-### 3.1 Quota
-
-| Method | Route | Permission | Description |
-|---|---|---|---|
-| GET | `/me/quota` | logged_in | Current user quota summary |
-| GET | `/users/{user_id}/quota` | manage_mvs_settings | Any user's quota |
-| POST | `/users/{user_id}/package` | manage_mvs_settings | Assign package to user |
-| POST | `/users/{user_id}/credits` | manage_mvs_settings | Add credits to user |
-| GET | `/packages` | manage_mvs_settings | List all packages |
-| POST | `/packages` | manage_mvs_settings | Create package |
-| PUT/PATCH | `/packages/{id}` | manage_mvs_settings | Update package |
-| DELETE | `/packages/{id}` | manage_mvs_settings | Delete package |
-| POST | `/credits/webhook` | __return_true (HMAC) | External credit top-up |
-| GET | `/me/credits/history` | logged_in | Credit transaction history |
+Competition routes (3.6-3.9) register only while `mvs_competitions_enabled` and
+the type's own option are on.
 
 ### 3.2 Privacy
 
@@ -452,28 +322,18 @@ complete code-derived list is
 | GET | `/boosts` | logged_in | List current user's boosts |
 | POST | `/boosts` | logged_in | Create a boost |
 
-### 3.10 Messaging
+### 3.10 Group DM
 
 | Method | Route | Permission | Description |
 |---|---|---|---|
-| GET | `/me/conversations` | logged_in | List conversations (tabs: all/unread/requests) |
-| POST | `/conversations` | logged_in | Create/find conversation |
-| GET | `/conversations/{id}` | logged_in | Get conversation |
-| PATCH | `/conversations/{id}` | logged_in | Update (mute/pin/archive) |
-| DELETE | `/conversations/{id}` | logged_in | Delete conversation |
-| GET | `/conversations/{id}/messages` | logged_in | List messages (cursor) |
-| POST | `/conversations/{id}/messages` | logged_in | Send message |
-| DELETE | `/messages/{id}` | logged_in | Delete message (for self) |
-| DELETE | `/messages/{id}/unsend` | logged_in | Unsend (delete for all) |
-| POST | `/conversations/{id}/read` | logged_in | Mark read |
-| POST | `/conversations/{id}/typing` | logged_in | Typing indicator |
-| POST | `/messages/{id}/reactions` | logged_in | Add reaction |
-| DELETE | `/messages/{id}/reactions` | logged_in | Remove reaction |
-| GET | `/messages/poll` | logged_in | Long-poll for new messages |
-| GET | `/me/messages/unread-count` | logged_in | Unread count |
-| POST | `/conversations/{id}/accept` | logged_in | Accept message request |
-| POST | `/conversations/{id}/decline` | logged_in | Decline message request |
-| POST | `/messages/upload` | logged_in | Upload DM attachment |
+| POST | `/groups` | logged_in | Create a group conversation |
+| PUT | `/groups/{id}` | group admin | Rename |
+| POST | `/groups/{id}/participants` | group admin | Add a member |
+| DELETE | `/groups/{id}/participants/{user_id}` | group admin | Remove a member |
+| PUT | `/groups/{id}/participants/{user_id}/role` | group admin | Set role (`admin` or `member`) |
+| POST | `/groups/{id}/leave` | participant | Leave |
+
+Direct messaging itself is Free's `mvs/v1` surface (Free `ARCHITECTURE.md` §3.19).
 
 ### 3.11 Competition Summary
 
@@ -496,13 +356,15 @@ edit -- grep the hook name, do not trust the number.** Sections 4.1-4.3 and
 |---|---|---|---|
 | `mvs_pro_transcribe_media` | AS single | on-demand | TranscriptionService.php:50 |
 | `mvs_pro_prune_play_events` | WP Cron | daily | AnalyticsService.php:47 |
-| `mvs_resolve_expired_battles` | AS recurring | hourly | Plugin.php:206 |
-| `mvs_activate_scheduled_challenges` | AS recurring | hourly | Plugin.php:231 |
-| `mvs_close_challenge_entries` | AS recurring | hourly | Plugin.php:234 |
-| `mvs_finalize_expired_challenges` | AS recurring | hourly | Plugin.php:237 |
-| `mvs_start_registered_tournaments` | AS recurring | hourly | Plugin.php:259 |
-| `mvs_resolve_expired_matches` | AS recurring | hourly | Plugin.php:262 |
-| `mvs_expire_boosts` | AS recurring | hourly | Plugin.php:282 |
+| `mvs_competitions_tick` | AS recurring | `CompetitionsScheduler::TICK_INTERVAL_SECONDS` | Competitions/CompetitionsScheduler.php; fires the six hooks below in order |
+| `mvs_resolve_expired_battles` | fired by the tick | per tick | Competitions/CompetitionsScheduler.php |
+| `mvs_activate_scheduled_challenges` | fired by the tick | per tick | Competitions/CompetitionsScheduler.php |
+| `mvs_close_challenge_entries` | fired by the tick | per tick | Competitions/CompetitionsScheduler.php |
+| `mvs_finalize_expired_challenges` | fired by the tick | per tick | Competitions/CompetitionsScheduler.php |
+| `mvs_start_registered_tournaments` | fired by the tick | per tick | Competitions/CompetitionsScheduler.php |
+| `mvs_resolve_expired_matches` | fired by the tick | per tick | Competitions/CompetitionsScheduler.php |
+| `mvs_expire_boosts` | WP Cron | hourly | Core/Plugin.php (only while boosts are on) |
+| `BoostService::FLUSH_IMPRESSIONS_HOOK` | WP Cron | hourly | Core/Plugin.php (only while boosts are on) |
 | `mvs_autopilot_create_weekly_challenge` | AS recurring | weekly | AutopilotService.php:72 |
 
 ### 4.2 Analytics Hooks
@@ -513,16 +375,9 @@ edit -- grep the hook name, do not trust the number.** Sections 4.1-4.3 and
 | `mvs_pro_analytics_recorded` | action | AnalyticsService.php:144 |
 | `mvs_pro_analytics_summary` | filter | AnalyticsService.php:648 |
 
-### 4.3 Membership Adapter Hooks
+### 4.3 Membership Hooks
 
-| Hook | Type | File : Line |
-|---|---|---|
-| `mvs_pro_memberpress_package_assigned` | action | Integrations/MemberPress/QuotaAdapter.php |
-| `mvs_pro_memberpress_package_reverted` | action | Integrations/MemberPress/QuotaAdapter.php |
-| `mvs_pro_pmpro_package_assigned` | action | Integrations/PaidMembershipsPro/QuotaAdapter.php |
-| `mvs_pro_pmpro_package_reverted` | action | Integrations/PaidMembershipsPro/QuotaAdapter.php |
-| `mvs_pro_woo_package_assigned` | action | Integrations/WooCommerce/QuotaAdapter.php |
-| `mvs_pro_woo_package_reverted` | action | Integrations/WooCommerce/QuotaAdapter.php |
+Pro has none. It has no membership adapters and no quota system.
 
 ### 4.4 Messaging Hooks -- FREE-FIRED, listed for reference
 
@@ -548,13 +403,7 @@ paths below are relative to the **Free** plugin's `includes/`.
 
 ### 4.5 Quota Hooks
 
-| Hook | Type | File : Line |
-|---|---|---|
-| `mvs_pro_quota_source` | filter | QuotaService.php:232 |
-| `mvs_pro_before_quota_check` | filter | QuotaService.php:424 |
-| `mvs_pro_credits_added` | action | QuotaService.php:315 |
-| `mvs_quota_render_mapping_fields` | action | QuotaPage.php:525 |
-| `mvs_quota_save_mapping` | action | QuotaPage.php:689 |
+Pro has none (see 4.3).
 
 ### 4.6 Competition Hooks
 
@@ -698,17 +547,18 @@ Tournament: registration -> active -> finalized
 
 ### 5.6 Resolution via ActionScheduler
 
-Each competition type has hourly recurring AS actions:
+One recurring Action Scheduler action, `mvs_competitions_tick`, fires every
+transition hook below (a throwing hook is logged and does not stop the rest):
 
 - **Battles:** `mvs_resolve_expired_battles` calls `BattleService::resolve_expired()`.
   Finds battles past vote_deadline and declares the entry with more votes the
   winner, or draws if tied.
-- **Challenges:** Three hourly hooks:
+- **Challenges:** Three hooks:
   1. `mvs_activate_scheduled_challenges` -- moves pending challenges past start_date to active.
   2. `mvs_close_challenge_entries` -- locks submissions after end_date (voting-only phase).
   3. `mvs_finalize_expired_challenges` -- ranks entries by vote_count after voting_end_date,
      awards XP (1st/2nd/3rd/participation).
-- **Tournaments:** Two hourly hooks:
+- **Tournaments:** Two hooks:
   1. `mvs_start_registered_tournaments` -- starts tournaments that have filled their bracket
      or passed registration_end; generates round-1 bracket.
   2. `mvs_resolve_expired_matches` -- resolves matches past vote_deadline, advances winners
@@ -743,59 +593,27 @@ TranscriptionService::transcribe($media_id)  [AS worker]
 
 ---
 
-## 7. Quota System
+## 7. Licensing
 
-### 7.1 Package Model
+The licence gates updates, never features. The one exception is
+`Documents\DocumentLicense`, which refuses document writes on an unlicensed site
+(Pro `CLAUDE.md` §7 lists what stays exempt).
 
-Quota packages define per-type upload limits and total storage:
+- **Activation.** `Core\LicenseManager::handle_license_form()` is nonce- and
+  `manage_options`-guarded and talks to the store through the bundled SDK
+  (`EasyDigitalDownloads\Updater\Requests\API` and
+  `EasyDigitalDownloads\Updater\Licensing\License`), so the SDK is the one writer
+  of the stored key and status. If either class is missing it shows a settings
+  error instead of calling the store.
+- **Status.** `License\License` only reads the SDK's options
+  (`wpmediaverse-pro_license_key`, `wpmediaverse-pro_license`). `is_valid()`
+  feeds the settings badge and `DocumentLicense`.
+- **Updates.** `wpmediaverse-pro.php` loads `libs/edd-sl-sdk` only when
+  `src/Versions.php` is present and registers Pro on `edd_sl_sdk_registry`. An
+  incomplete SDK shows an admin warning that automatic updates are off; every
+  other feature keeps working.
+- **SDK path utility.** `libs/edd-sl-sdk/src/Utilities/Path.php` builds the asset
+  URL with `plugins_url()`, the same code as BuddyNext's bundled copy (Free's copy
+  is identical to it). A re-bundle must keep that file.
 
-- `image_limit`, `video_limit`, `audio_limit` -- 0 means unlimited
-- `storage_bytes` -- 0 means unlimited
-- One package is `is_default = 1` (the free-tier fallback)
-- Users are assigned a package via `_mvs_quota_package_id` user meta
-
-### 7.2 Credit System
-
-Credits extend a user's quota beyond their package limits. Stored in user meta:
-`_mvs_extra_image_credits`, `_mvs_extra_video_credits`, `_mvs_extra_audio_credits`.
-
-Every credit change is logged in `mvs_credit_log` with source (admin, webhook,
-purchase), reference, and running balance.
-
-### 7.3 Enforcement
-
-`QuotaService::enforce_quota()` hooks into `mvs_upload_args`:
-
-1. Resolves user's effective package (filterable via `mvs_pro_quota_source`).
-2. Checks current usage against package limits + extra credits.
-3. Checks total storage against `storage_bytes`.
-4. Returns WP_Error if any limit exceeded; passes through if within quota.
-
-Usage counters are maintained via hooks:
-- `mvs_media_uploaded` -> `increment_usage()` (image_count, video_count, etc.)
-- `mvs_media_deleted` -> `decrement_usage()`
-
-### 7.4 Membership Adapter Pattern
-
-Three adapters auto-assign packages when a user's membership changes:
-
-All three extend `Integrations\AbstractQuotaAdapter` and are each named
-`QuotaAdapter` inside their own vendor namespace -- there is no
-`MemberPressAdapter` class.
-
-| Adapter class | Plugin | Option Key | Hooks |
-|---|---|---|---|
-| `Integrations\MemberPress\QuotaAdapter` | MemberPress | `mvs_pro_quota_memberpress_map` | `mepr-txn-status-complete`, `mepr-txn-status-refunded`, etc. |
-| `Integrations\PaidMembershipsPro\QuotaAdapter` | PMPro | `mvs_pro_quota_pmpro_map` | `pmpro_after_change_membership_level` |
-| `Integrations\WooCommerce\QuotaAdapter` | WooCommerce | `mvs_pro_quota_woo_map` | `woocommerce_order_status_completed`, etc. |
-
-Each adapter stores a mapping (membership/product ID -> package ID) in a WP
-option. When a transaction completes, the mapped package is assigned; when
-a subscription expires, the user reverts to the default package.
-
-### 7.5 External Webhook
-
-`POST /mvs-pro/v1/credits/webhook` accepts HMAC-SHA256-signed payloads
-(secret stored in `mvs_pro_webhook_secret` option). Payload: `{user_id,
-media_type, amount, reason}`. Allows external billing systems to top up
-credits without a dedicated adapter.
+Pro has no quota, package, credit or membership-adapter system.

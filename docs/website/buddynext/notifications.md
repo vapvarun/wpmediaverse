@@ -19,6 +19,8 @@ Each event produces one notification, not two. MediaVerse skips its own copy of 
 
 While BuddyNext is active, MediaVerse sends no activity emails. The **Emails** section on the MediaVerse settings screen has nothing to switch on, and members do not see the MediaVerse activity-email switch. BuddyNext sends the emails instead.
 
+BuddyNext sends only the emails it owns. An email type that BuddyNext has no equivalent for is still sent by MediaVerse, and the owner can still switch it on or off. Developers mark such a type with `host_owned => false` in the `mvs_email_types` filter. None of the built-in types do, so on a BuddyNext site MediaVerse sends none of its built-in activity emails.
+
 Account deletion confirmations are not activity. MediaVerse always sends them, whether BuddyNext is active or not.
 
 If you run MediaVerse on its own, without BuddyNext, MediaVerse sends the few member emails you switch on under its Emails settings.

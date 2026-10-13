@@ -1,6 +1,6 @@
 # Watermarking
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro stamps a text, logo, or combined watermark onto uploaded images using PHP's GD library, so your brand or credit travels with every photo members share.
 

@@ -1,6 +1,6 @@
 # Save to Collections (Pro Picker)
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro makes the **Save** control open a picker, so members can add a media item to any number of their named [collections](../features/collections.md). Since 2.6.0, Save is the one way to keep an item. Reactions say how you feel; Save keeps the item.
 

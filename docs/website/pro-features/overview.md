@@ -1,6 +1,6 @@
 # MediaVerse Pro
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, document drives, photo competitions, video analytics, chapters and auto-captions, AI providers, and granular privacy controls.
 
@@ -12,9 +12,9 @@ MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage
 
 ## Requirements
 
-- MediaVerse (free) 2.6.0 or higher installed and activated (Pro halts with an admin notice on older Free). Free and Pro are released together at the same version, so update both at once
+- MediaVerse (free) 2.6.2 or higher installed and activated (Pro halts with an admin notice on older Free). Free and Pro are released together at the same version, so update both at once
 - WordPress 6.5+
-- PHP 7.4+
+- PHP 8.1+
 - MySQL 5.7+ or MariaDB 10.4+
 
 ## Installation
@@ -97,5 +97,7 @@ Pro adds a **Reports** view that surfaces user-submitted abuse reports on media 
 | License Key | MediaVerse > Settings > License | Your product license key from wbcomdesigns.com |
 | Activation Status | MediaVerse > Settings > License | Shows active, inactive, or expired |
 | Deactivate License | MediaVerse > Settings > License | Release the activation to use on another site |
+
+Activation and deactivation go through the update service bundled with Pro. If the store does not confirm a deactivation, the license stays active so you can try again. Deactivating keeps your key in the field. Activating a license does not turn on usage tracking.
 
 A single license activates one site. Purchase additional activations from your account dashboard if you need to run Pro on multiple sites.

@@ -1,6 +1,6 @@
 # Advanced Privacy
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro extends the free plugin's privacy levels with album-level inheritance and per-user presets, and adds a bulk-privacy REST route for apps. Changing many items at once from **My Media** is part of the free plugin.
 

@@ -1,12 +1,13 @@
 # WPMediaVerse Master Plan
 
-> **Status: ROADMAP. Part 2 onwards is NOT BUILT.** Part 1 describes shipped 2.4.0
-> behaviour; everything under "Next 6 months" is intent, not code, and the version targets
-> in it predate 2.4.0. Nothing in Part 2 may be cited as an existing feature. Completed
+> **Status: ROADMAP. Part 2 onwards is NOT BUILT.** Part 1 describes shipped
+> behaviour; everything under "Next 6 months" is intent, not code, and some version targets
+> in it predate the current release, so check `git log` before treating a row as open.
+> Nothing in Part 2 may be cited as an existing feature. Completed
 > work and historical context belong in git log / changelogs, not here. Refresh every
 > release cycle.
 
-**Baseline:** Free 2.4.0 + Pro 2.4.0 (paired).
+**Baseline:** the current Free and Pro release (paired; `MVS_VERSION` and `MVS_PRO_VERSION`).
 **Horizon:** next 6 months.
 **Owner:** Varun.
 
@@ -15,16 +16,16 @@
 ## Part 1 — What WPMediaVerse is today
 
 ### Free — core platform
-- Custom-table media storage. 23 `mvs_*` tables, no `wp_posts` dependency for media records.
-- 6 privacy levels: public, members, friends, private, group, custom (access rules).
+- Custom-table media storage (`Migrator::tables()`), no `wp_posts` dependency for media records.
+- Privacy levels from `PrivacyService` (public, members, friends, group, space, private, custom, plus `dm` for message attachments). No per-media access rules: privacy plus sharing with people or a group is the whole access model.
 - Storage drivers: local. Cloud drivers (BunnyCDN, AWS S3, Cloudflare R2, DigitalOcean Spaces) shipped via Pro.
 - Image variant pipeline: large/medium/thumb generated at upload, with WebP + AVIF siblings.
 - Video poster generation: getID3 cover-atom → bundled default poster SVG.
 - Audio cover/waveform: ID3 art extraction → render-time SHA-1-seeded SVG waveform.
 - Signed-URL `/serve` endpoint with HMAC + expiry + per-request privacy re-check.
 - Direct-CDN bypass for public media on cloud drivers (filter `mvs_public_cloud_thumbnail_url`).
-- REST API: 115 endpoints across 25 controllers (`mvs/v1`), plus 86 in Pro (`mvs-pro/v1`).
-- Gutenberg blocks: 9 registered in Free (13 `block.json` dirs; 4 Interactivity-only) + 15 Pro.
+- REST API: `mvs/v1` in Free and `mvs-pro/v1` in Pro; counts from the manifests (`audit/manifests/manifest.rest.json`, `audit/pro/manifests/manifest.rest.json`).
+- Gutenberg blocks: `BlockRegistrar::BLOCKS` in each plugin (some Free blocks are Interactivity-only and not registered there; `ls src/blocks/*/block.json`).
 - BuddyPress integration: activity composer, profile tabs, group tabs, notifications, member photos.
 - Albums (custom post type) + collections (smart auto-curation).
 - Social layer: reactions (6 types), threaded comments, favorites, follows, @mentions, sharing.
@@ -42,12 +43,12 @@
 - Video: chapters, resume playback, auto-captions (Whisper provider).
 - Video heatmaps + play analytics.
 - Watermarking: text (TTF + GD), image/logo, tile, position presets, dynamic tokens (`{username}`, `{site}`). Imagick-safe via GD-forcing filter.
-- Quota management: per-user upload + storage limits. Adapters for MemberPress, PaidMembershipsPro, WooCommerce Memberships.
+- Storage limits: Free's optional per-member fair-use allowance (`StorageLimitService`). Pro has no quota, package, credit or membership-adapter system.
 - Migrators: rtMedia, MediaPress, BuddyBoss media → WPMediaVerse (WP-CLI + admin UI).
 - Connector framework: Flickr (OAuth 1.0a). Extension points for more platforms.
 - Feed layouts: Instagram, Flickr, Pinterest, Dribbble — for the 4 platform-feed blocks.
-- Privacy UI: advanced access-rules editor.
-- Documents (2.4.0): user/space/group drives, folder tree, text extraction + full-text search, tiered previews, per-drive permissions. The only Pro surface whose WRITES are licence-gated (`Documents\DocumentLicense`); reads and registration never are.
+- Privacy UI: per-item privacy editor, presets and bulk privacy (`PrivacyUIService`).
+- Documents: user/space/group drives, folder tree, text extraction + full-text search, tiered previews, per-drive permissions. The only Pro surface whose WRITES are licence-gated (`Documents\DocumentLicense`); reads and registration never are.
 - License + EDD Software Licensing — **updates only**, not a feature gate (see Documents above for the single exception).
 
 ### Cross-cutting infrastructure
@@ -106,7 +107,7 @@ These don't ship as features but are tracked so the next person editing the area
 | Compat | **Multisite network-admin shared media library.** |
 | Pro | **Bunny Stream video encoding** — multi-quality renditions via a cloud encoder, replacing the FFmpeg path removed in 2.4.0. DESIGNED, NOT BUILT: `docs/architecture/specs/2026-08-30-bunny-stream-video-encoding.md`. Blocked on four owner decisions in its §12 — read those first, the plan is not startable without them. |
 | Pro | **Live-stream support** (RTMP ingest + HLS playback). Major scope. Would share the Bunny Stream integration above if that lands first. |
-| Pro | **Marketplace mode** — monetize media (already have credits SDK and quota; missing storefront UI). |
+| Pro | **Marketplace mode**: not planned: MediaVerse is not a membership or commerce plugin, and no price, credit or quota system exists to build on. |
 
 ---
 

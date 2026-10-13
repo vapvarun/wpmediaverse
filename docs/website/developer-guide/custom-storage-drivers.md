@@ -1,6 +1,6 @@
 # Custom Storage Drivers
 
-> Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
+> **Free + Pro** - Custom drivers work in the free plugin. The Amazon S3 and BunnyCDN drivers mentioned below require MediaVerse Pro.
 
 
 MediaVerse uses a pluggable storage driver system. The free plugin ships with a **Local** driver (stores files in the WordPress uploads directory). MediaVerse Pro adds Amazon S3 and BunnyCDN drivers. You can implement your own driver by implementing the `StorageDriverInterface`.

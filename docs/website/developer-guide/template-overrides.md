@@ -1,6 +1,6 @@
 # Template Overrides
 
-> Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
+> **Free + Pro** - Template overrides work in the free plugin. The layout and Compete templates marked **(Pro)** require MediaVerse Pro.
 
 
 MediaVerse uses a template loading system that checks your active theme before falling back to plugin templates. This lets you fully customize media page layouts without modifying the plugin.
@@ -43,6 +43,8 @@ Every template you can override has an `@version` line in its header:
 The version changes only when that template's markup or the variables it uses change - not on every release. When you copy a template into your theme, keep the `@version` line. When MediaVerse ships a newer version of a template you have overridden, **Tools > Site Health** shows "Your theme has outdated copies of MediaVerse templates", naming each file with your version and the current one. A copy with no `@version` line was made before 2.6.0 and is always listed.
 
 In 2.6.1, `cpt-archive.php`, `media-single.php`, `partials/shared-ui-frame.php`, `partials/dashboard-content.php` and `partials/profile-edit-panel.php` (Free) are at `@version 2.6.1`. In Pro, so are `battles-body.php`, `challenges-body.php`, `tournaments-body.php`, `compete-hub-body.php`, `partials/dashboard-connectors-panel.php`, `layouts/instagram/partials/feed-card.php`, `layouts/partials/profile-grid.php`, `layouts/pinterest/profile.php` and the `feed-body.php` of the Pinterest, Dribbble and Flickr layouts.
+
+In 2.6.2, `explore.php`, `media-single.php`, `partials/chat-message.php`, `partials/dashboard-content.php` and `partials/shared-ui-frame.php` (Free) are at `@version 2.6.2`. In Pro, so are `battles-body.php`, `challenges-body.php`, `layouts/partials/explore-filters.php`, `layouts/instagram/profile.php`, `layouts/instagram/partials/feed-card.php`, `layouts/pinterest/profile.php`, `layouts/flickr/profile.php`, `layouts/dribbble/profile.php` and the `feed-body.php` of the Pinterest, Flickr and Dribbble layouts. If you override any of these, copy the new file over yours and re-apply your changes.
 
 An outdated copy keeps rendering, but it misses fixes and may not show new features correctly. To update it, copy the current file from the plugin's `templates/` folder (or `wpmediaverse-pro/templates/` for Pro templates) over your theme's copy, then re-apply your changes. Site Health checks the active theme and its parent; when both override the same file, only the child theme's copy loads, so only it is checked.
 

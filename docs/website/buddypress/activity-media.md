@@ -60,6 +60,33 @@ The **Attach Media** button appears in the BuddyPress activity post form for mem
 
 Users select previously uploaded media or upload new files inline. The media IDs are attached to the activity via `bp_activity_posted_update` / `bp_groups_posted_update`.
 
+## Posts With Several Items
+
+A post made from several uploads follows its **strictest** item. If one item is private, the whole post is hidden from everyone else. Deleting one photo keeps the post and its other items.
+
+Showing the post without its private items is planned for a later release. It is not available today.
+
+Each tile on a post shows only to viewers who may open that item. When you make an upload from the Upload page, the BuddyPress lightbox steps through every item of the post.
+
+## Privacy Changes
+
+When you change an item's privacy, the activity post follows. This includes changes made through the REST API with `PUT /mvs/v1/media/{id}`. The hook is `mvs_media_privacy_changed`.
+
+## Comments on Activity Posts
+
+A comment made on an item in MediaVerse is mirrored onto its activity post as an activity comment. A reply sits under its parent comment, so the thread reads the same in both places.
+
+| What you do in MediaVerse | What happens on the activity post |
+|---------------------------|-----------------------------------|
+| Post a comment | An activity comment appears. |
+| Edit a comment | The activity comment shows the new text. |
+| Delete a comment | The activity comment is deleted, with its reply notifications. |
+| Delete a comment that has replies | The replies and their activity comments are deleted too. |
+
+Comments made before 2.6.2 carry no stored link to their activity comment. The first time you edit or delete one, MediaVerse looks for the activity comment once. It must match the same member, the same post, the same text and a time within 10 seconds. It acts only on exactly one match, and records the link. With no match or several matches, it leaves the activity comment alone.
+
+To keep replies when a comment is deleted, return `false` from `mvs_comment_delete_replies`. See [Hooks & Filters](../developer-guide/hooks-filters.md).
+
 ## BuddyNext Is a Separate Path
 
 BuddyPress and BuddyNext are alternatives. If your site runs BuddyNext, media links open the BuddyNext post the media was shared in, and BuddyNext publishes the feed cards. See [BuddyNext Integration](../buddynext/overview.md) and [Feed Media](../buddynext/feed-media.md).

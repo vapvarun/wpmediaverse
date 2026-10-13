@@ -2,13 +2,13 @@
 
 ![Analytics for one video: completion rate, average watch duration, engagement score, the playback heatmap, audience retention and top drop-off points](../images/admin-video-analytics.webp)
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro records play events for every video, builds per-video heatmaps, and provides a dashboard showing retention and engagement metrics.
 
 ## How Event Tracking Works
 
-The Media Player block fires events to the REST API as viewers interact with a video. Events are rate-limited to one event per second per session to prevent flooding. Anonymous viewers are tracked by session ID; authenticated users are tracked by user ID.
+The Media Player block fires events to the REST API as viewers interact with a video. Events are rate-limited to one event per second per session, and to 120 a minute per member or address, to prevent flooding. Anonymous viewers are tracked by session ID; authenticated users are tracked by user ID.
 
 ### Tracked Events
 
@@ -91,5 +91,5 @@ Two site-wide routes require the `manage_mvs_settings` capability:
 
 ## Viewing Analytics in WP Admin
 
-Pro adds a **Video Analytics** tab to the **MediaVerse > Stats** page. It includes a per-media detail view with the full heatmap, retention curve, and drop-off table.
+Pro adds a **Video Analytics** tab to the **MediaVerse > Stats** page. It includes a per-media detail view with the full heatmap, retention curve, and drop-off table. The Top 10 list shows each video's real completion rate: the share of viewing sessions that reached the end.
 

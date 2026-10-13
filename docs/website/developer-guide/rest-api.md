@@ -1,6 +1,6 @@
 # REST API Reference
 
-> Endpoints and hooks marked **(Pro)** require MediaVerse Pro. Everything documented below ships in the free plugin.
+> **Included in Free** - Everything documented below ships in the free plugin. Pro adds routes under its own namespace, see the Pro REST API reference.
 
 **Base URL:** `/wp-json/mvs/v1/`
 
@@ -49,7 +49,9 @@ List media items. Returns only rows the caller is allowed to see.
 | `scope` | string | `all` | `all` returns everything the caller may see; `public` limits the list to public items; `self` returns the caller's own uploads; `followers` returns media from members the caller follows. `self` and `followers` need a logged-in caller |
 | `s` | string | (none) | Full-text search term |
 | `group_covers` | bool | `false` | Collapse gallery groups to a single cover item |
-| `group` | int | (none) | Only one BuddyPress group's media. Members of that group also get items shared with the group; everyone else gets what they may see anyway |
+| `group` | int | (none) | Only one BuddyPress group's media (2.6.2). Members of that group also get items shared with the group. In a private or hidden group, everyone else gets an empty list. In a public group they get what they may see anyway |
+
+Listings show a gallery (items uploaded together) as one tile. The first item the viewer may see carries the gallery count, and the `media_type`, `tag`, `category`, `s` and `group` filters apply to it. See `GET /media/{id}/group` to open the same set.
 
 **Response:**
 
@@ -113,7 +115,7 @@ Get a single media item.
 
 **Auth:** Capability - owner with `edit_mvs_medias`, or `edit_others_mvs_medias`.
 
-Update a media item. Also accepts `slug`, `allow_download` (bool), `tags` (array) and `categories` (array).
+Update a media item. Also accepts `slug`, `allow_download` (bool), `tags` (array) and `categories` (array). Changing `privacy` also updates the item's BuddyPress activity post (fixed in 2.6.2).
 
 **Body (JSON):**
 
@@ -178,7 +180,17 @@ Report whether the current user can view the item (resolves privacy rules and an
 
 **Auth:** Public (privacy enforced per item).
 
-Return every item that belongs to the same gallery/upload group as `{id}` (used to build multi-item lightboxes).
+Return the items of the same gallery/upload group as `{id}` that the caller may see, in position order. It builds multi-item lightboxes. A caller who may not view `{id}` gets `404 mvs_not_found`. When the gallery has fewer than two visible members, the response is just `{id}`.
+
+Pass the same filter as the listing so the lightbox opens the set its badge counted (2.6.2):
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `media_type` | string | Only members of this type |
+| `tag` | string | Only members with this `mvs_tag` slug |
+| `category` | string | Only members in this `mvs_category` slug |
+| `s` | string | Only members matching this search term |
+| `group` | int | Only members shared with this BuddyPress group |
 
 ### GET /media/{id}/signed-url
 
@@ -221,6 +233,8 @@ List the current user's own media, including private and pending items. Accepts 
 **Auth:** Public (privacy enforced in query).
 
 List albums. Supports `page`, `per_page`, `author`, `album_type` (`default` or `playlist`), `s` (search), `orderby` (`date` or `title`) and `order` (`asc` or `desc`).
+
+Since 2.6.2 the list carries a count for each album but omits its item ids. Pass `with_items=1` to include them. To restore the old shape for every request, return `true` from the `mvs_album_list_include_items` filter.
 
 ### POST /albums
 
@@ -421,7 +435,7 @@ Edit a comment. Body: `content` (string, required).
 
 **Auth:** Authenticated - owner or `moderate_mvs_media`.
 
-Delete a comment.
+Delete a comment. Since 2.6.2 its replies are deleted with it, however the comment is deleted (this route, moderation or the wp-admin comments screen). Return `false` from `mvs_comment_delete_replies` to keep the replies. On a BuddyPress site the activity copy of the comment and its notifications are removed too.
 
 ---
 
@@ -1060,6 +1074,8 @@ Start a new conversation.
 
 Get a single conversation's metadata and participants.
 
+Conversation objects carry `is_pinned`, `is_muted` and `is_archived` as booleans (`true` or `false`), not `0` and `1` strings. Before 2.6.2 a client in JavaScript read every conversation as pinned, because `"0"` is truthy.
+
 ### PATCH /conversations/{id}
 
 Update the current user's per-conversation preferences.
@@ -1152,6 +1168,8 @@ Upload an attachment for use in a DM. Returns a reference ID to pass as `attachm
 ```json
 { "media_id": 204, "url": "https://example.com/..." }
 ```
+
+Since 2.6.2 a chat attachment lives only in its conversation. It is not listed in My Media, `GET /media` or the WordPress Media Library, and it opens only for the people in the conversation. A file uploaded but never sent is deleted after 24 hours (filter `mvs_unsent_chat_file_hours`).
 
 ### GET /me/messages/unread-count
 

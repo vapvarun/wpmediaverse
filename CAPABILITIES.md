@@ -1,53 +1,32 @@
 # WPMediaVerse — Capabilities
 
-What this plugin lets a site actually do, in buyer language. The plugin registers 92 REST
-routes across 24 custom tables; that never says what they add up to. This file does.
+What this plugin lets a site actually do, in buyer language. Route and table totals never
+say what they add up to. This file does.
 
-**Last verified against code:** 2026-09-21 (v2.5.1, `main` at `04930487` - the tagged tree).
-Re-checked this run: the counts (live registry + `Migrator::tables()`), every row the 2.4.1,
-2.5.0 and 2.5.1 cycles touched - EXIF stripping, thumbnail quality, the privacy lock, cloud
-demotion, albums and collections, blocking and moderation, the direct-access Site Health probe,
-the document rows, telemetry (now removed) and the layout / width tokens - and the 2.5.1
-authorisation round below. Rows nothing in those cycles touched carry their 2026-09-01
-verification.
-
-**What the 2.5.1 authorisation round changed.** One rule now decides which items of an album a
-viewer may see (`AlbumService::viewable_item_ids()`), and the REST controller, the
-`mvs/album-viewer` block and the `[mvs_album]` shortcode all call it - each previously carried
-its own copy, and the copies in the two renderers listed private items to anyone. `[mvs_collection]`
-gained the container privacy gate it never had. `GET /media/{id}/group` now applies the same
-per-item check the rest of the read surface does. The private-community gate compares route
-prefixes case-insensitively, because WordPress matches routes that way and the gate did not.
-Block spacing and type values are checked against the units CSS allows. Four manifests in
-`audit/` now declare who may reach every route, capability, render surface and admin action,
-each backed by a test that fails the build when the code and the declaration disagree - see
-`docs/standards/authorization-guards.md`.
+**Verification.** Rows were last checked row by row at the 2.5.1 and 2.6.0 cycles; a row that
+names a version is a statement about that version's behaviour. Access is decided in one place
+for every surface (`PrivacyService::can_view()`; an album's visible items by
+`AlbumService::viewable_item_ids()`). Four manifests in `audit/` declare who may reach every
+route, capability, render surface and admin action, each backed by a test that fails the build
+when the code and the declaration disagree - see `docs/standards/authorization-guards.md`.
+Where this file and the code disagree, the code wins.
 
 **Companion:** [WPMediaVerse Pro](../wpmediaverse-pro/) adds competitions, cloud storage,
-AI providers, quotas, documents and video tooling — see its own `CAPABILITIES.md`.
+AI providers, documents and video tooling: see its own `CAPABILITIES.md`.
 
 Status key: **YES** shipped and code-verified · **PARTIAL** works with a named limit ·
 **PLANNED** designed, unbuilt · **NO** absent.
 
-> **How the counts were taken (2026-09-19).** Live registry, not a grep: with both plugins
-> active, `rest_get_server()->get_routes()` filtered to the `mvs/v1` namespace gives **92
-> routes** (excluding the namespace index), which expand to **122 route+method endpoints**
-> because several routes carry more than one verb. Both numbers are honest; they count
-> different things, and both are unchanged from 2.4.0. Tables: **24** distinct `mvs_*` names,
-> the list `Core\Migrator::tables()` returns and `UninstallCoverageTest` asserts against a
-> freshly migrated database (25 `CREATE TABLE` statements - `mvs_media_index` is created
-> twice). The twenty-fourth is `mvs_media_spaces`, added by migration v33 in 2.5.1 to link one
-> document into more than one space. Blocks: **9** in `Blocks\BlockRegistrar::BLOCKS`.
-> Shortcodes: **14** `add_shortcode()` calls in `Shortcodes\Shortcodes`. WP-CLI: **21**
-> subcommands (20 public methods on `CLI\Commands` plus `wp mvs cert`).
->
-> Earlier figures in circulation were wrong in both directions: this file used to say
-> "~90 REST routes" and CLAUDE.md said "114 REST endpoints". Neither matched 2.4.0. The
-> manifests, CLAUDE.md and this file were all reconciled to one source on 2026-09-01:
-> 122 Free endpoints, 109 Pro. Two independent methods agree on the Free number - a live
-> `rest_get_server()->get_routes()` walk and a static parse of every register_rest_route()
-> call site. Free's number has held through 2.5.1; **Pro's has not and cannot**, because
-> Pro registers controllers behind owner toggles - see Pro's own count note.
+> **How to count.** No total is typed here; ask the code. With both plugins active,
+> `rest_get_server()->get_routes()` filtered to the `mvs/v1` namespace counts routes, and
+> each route can carry more than one verb, so routes and route+method endpoints differ;
+> `audit/manifests/manifest.rest.json` counts endpoints. Tables are the list
+> `Core\Migrator::tables()` returns, which `UninstallCoverageTest` asserts against a freshly
+> migrated database (a `CREATE TABLE` count is higher or lower for tables created twice or
+> by a helper). Blocks: `Blocks\BlockRegistrar::BLOCKS`. Shortcodes: the `add_shortcode()`
+> calls in `Shortcodes\Shortcodes`. WP-CLI: the public methods on `CLI\Commands` plus
+> `wp mvs cert`. Pro registers controllers behind owner toggles, so its route count depends
+> on which toggles are on - see Pro's own count note.
 
 ---
 
@@ -85,7 +64,7 @@ Status key: **YES** shipped and code-verified · **PARTIAL** works with a named 
 | Keep private files off the CDN | **YES** | `StorageService::get_driver_for_privacy()` — one line: public gets the configured driver, everything else gets the local driver |
 | Take a file back off the CDN when it stops being public | **YES** | Since 2.5.1. `sync_urls_on_privacy_change()` re-pointed the row at its local copies but left the object in the bucket, so the old CDN URL kept working for anyone holding it, a revoked permission that revoked nothing. A listener at priority 6 now queues a repatriation that runs `CloudOps::migrate_one( id, <driver>, 'local', keep_source: false )`: original and every recorded variant moved back, verified locally, then deleted from the cloud. No per-driver delete code, so nothing to drift |
 | Grant access to named users | **REMOVED** | Per-media access rules (`mvs_access_rules`: role, capability, membership, code, price) were removed in 2.6.0. `mvs_access_grants` stays: it holds Pro Documents sharing with named people, including expiring grants. Access is decided by the item's privacy level (`public`, `members`, `friends`, `group`, `private`, or a `custom` list), plus Pro Documents sharing with specific people or a group |
-| Sell access to a media item | **NO** | Previously listed here as PARTIAL; that was wrong. `mvs_access_rules` has `price`/`currency` columns but the code marks them "Reserved for future use" and nothing evaluates them — they are stored and echoed back, never charged. `mvs_transactions` is **not** a payments ledger; it is a per-media-type usage ledger (`delta`, `balance_after`, `reason`) with no amount, currency or gateway. There is no checkout anywhere in Free or Pro |
+| Sell access to a media item | **NO** | No price, currency or checkout exists in Free or Pro. `mvs_transactions` is **not** a payments ledger; it is a per-media-type usage ledger (`delta`, `balance_after`, `reason`) with no amount, currency or gateway |
 | Show a member their usage history | **YES** | `Services/TransactionService.php` — append-only ledger with running balance, `GET /mvs/v1/me/transactions`, `[mvs_usage_history]`, `templates/partials/usage-history.php` |
 | Make the whole API private for a closed community | **YES** | `REST/CommunityPrivacyGate.php` on `rest_pre_dispatch` — armed via `mvs_rest_require_auth` (default off), used by BuddyNext. Credential-bearing routes (`/serve`, `/app/config`) stay exempt |
 | Rate-limit abusive callers | **YES** | `REST/RateLimiter.php`, applied per action (e.g. block-user at 10/60s), plus `RestGate` / `RestGuards` |
@@ -167,13 +146,13 @@ Recorded so a future audit treats them as decisions, not gaps.
 |---|---|
 | Document / PDF uploads **into the media library** | Owner decision (Basecamp #9962125462), enforced by `UploadService::hard_refused_mimes()` and shared with the `/replace` path so there is no bypass. The read path survives for historical PDFs. Documents are not absent from the product — they have their own home (see the document-library row above) |
 | Video transcoding / re-encoding | Removed in 2.4.0. MediaVerse embeds media, it does not process it. There is no ffmpeg and no exec-family call anywhere in the source — Coding Rule 21 bans them outright, and the ban is grep-verified in both plugins |
-| Storefront / checkout for paid media | Nothing in Free or Pro charges for access. The `price`/`currency` columns on `mvs_access_rules` are reserved and unread; `mvs_transactions` is a usage ledger, not a payments ledger |
+| Storefront / checkout for paid media | Nothing in Free or Pro charges for access. There is no price or currency column anywhere; `mvs_transactions` is a usage ledger, not a payments ledger |
 | Cloud storage drivers in Free | Contract in Free, implementations in Pro — deliberate free/pro split |
 | Watermarking in Free | Same free/pro split: Free resolves configuration and fires the seam; Pro owns both the settings screen and the code that draws the mark |
 | Versioning of media files | `/replace` overwrites; no version history by design |
 | Anonymous usage telemetry | Shipped disabled, counted nothing, and was removed in 2.5.1 (migration v36 deletes its options). The question it was written for, which routes and hooks customers actually use, is answered by support tickets, the hook manifest, the journey suite and the REST catalogue, none of which ask an owner to opt into data collection |
 | Email digests | No digest, roll-up or scheduled-summary email exists. Notifications are in-app (plus BuddyPress where installed) |
-| Sending pushes | The plugin registers device tokens and fires a hook. Talking to FCM/APNs belongs to the app's backend, which owns those credentials |
+| Sending pushes from Free | Free registers device tokens (`mvs_device_tokens`) and fires `mvs_push_send`. Talking to FCM/APNs belongs to the app's backend, which owns those credentials. Pro's Expo sender answers the same hook |
 
 ---
 

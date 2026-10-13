@@ -5,7 +5,7 @@ Get MediaVerse running on your WordPress site in under five minutes - install, a
 ## Requirements
 
 - WordPress 6.5+
-- PHP 7.4+
+- PHP 8.1 or newer (8.1 to 8.5)
 - MySQL 5.7+ or MariaDB 10.4+
 - BuddyPress 12.0+ (optional, for social integration)
 

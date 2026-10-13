@@ -1,6 +1,6 @@
 # Connected Accounts
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Connect an external photo platform to MediaVerse and move media in both directions - **import** existing photos and albums into your media library, and **auto-push** new uploads back out to that platform. The only built-in connector is **Flickr**. Members can import photos and auto-push new uploads from the website. Exporting a single item and metadata sync are available through the API.
 

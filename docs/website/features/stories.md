@@ -1,4 +1,4 @@
-# Stories
+# Stories in the Free Plugin
 
 > **Pro feature.** Stories (time-limited, ephemeral posts) ship in MediaVerse Pro. The free plugin provides the upload-flow entry point described below, but story creation, the viewer, and view receipts all require Pro.
 

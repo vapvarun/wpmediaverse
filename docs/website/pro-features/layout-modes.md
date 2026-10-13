@@ -1,6 +1,6 @@
 # Layout Modes
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Transform your media community's look with one click - choose the visual style that fits your audience, from Instagram-style grids to Pinterest masonry boards.
 
@@ -33,6 +33,7 @@ Choosing a free layout puts the feed back on the plain grid.
 - The explore/browse page re-renders in the new layout style
 - All user profile media tabs switch to the new layout automatically
 - The lightbox is the same in every layout: same actions, same comments
+- The media count in a member's profile header counts only the items the visitor may see, on every layout
 - Stories appear above the grid in Instagram mode only
 - Search and tag filtering behave identically to the default layout, including the empty states (2.2.0): a zero-result search shows "No results for ..." with a Browse-all button and popular-tag chips, and an unknown tag shows "Tag not found" instead of an unfiltered feed
 

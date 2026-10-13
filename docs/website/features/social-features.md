@@ -41,7 +41,8 @@ React, comment, follow, and share - MediaVerse turns your media site into a livi
 2. Type your comment in the text box and press Enter or click **Post**
 3. To @mention someone, type `@` followed by their username - they receive a notification
 4. To edit your comment, click the pencil icon next to it (available within 15 minutes of posting)
-5. To delete your comment, click the trash icon
+5. To delete your comment, click the trash icon. If the comment has replies, the prompt reads "Delete this comment and its N replies?" and the replies go with it, along with the notifications they sent. Developers can keep replies with the `mvs_comment_delete_replies` filter.
+6. In the lightbox, each item of a gallery shows its own reactions and comments as you step through it.
 
 ### Saving media
 
@@ -65,6 +66,9 @@ Reactions say how you feel about a photo; **Save** keeps it. There is one way to
 3. Members can edit their own comments for 15 minutes after posting. There is no admin setting for this
 4. Turn member reporting on or off, and set the auto-hide threshold (when a media item receives that many reports it is hidden and sent to the moderation queue), in **MediaVerse > Settings > Moderation**
 5. BuddyPress notifications fire automatically for reactions, comments, and mentions when BuddyPress is active
+6. Following, favouriting or reacting to the same item again notifies its owner only once
+7. Read notifications older than 90 days are removed automatically every day. Unread ones are kept. Developers can change the 90 days with the `mvs_notification_retention_days` filter
+8. Member search (Explore > People) matches display names and public profile names, never login names
 
 ## Explore Feed Scope Filters (2.0.0)
 

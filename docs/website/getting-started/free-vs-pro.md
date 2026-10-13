@@ -14,7 +14,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Title, description, tags, categories | Yes | Yes |
 | EXIF stripping & duplicate detection | Yes | Yes |
 | Thumbnail generation (3 sizes) | Yes | Yes |
-| Local storage (WordPress uploads folder) | Yes | Yes |
+| This server (WordPress uploads folder) | Yes | Yes |
 | Fair-use storage limit per member | Yes | Yes |
 | Amazon S3 cloud storage | -- | Yes |
 | BunnyCDN cloud storage | -- | Yes |

@@ -26,6 +26,8 @@ The Media tab displays the profile owner's published media items in a paginated 
 - The profile owner sees all their own media.
 - Moderators (`moderate_mvs_media`) see all media.
 
+A gallery (items uploaded together) shows as one tile with a count badge, not as one tile per item. The badge counts the items the visitor may see. Visitors, including signed-out ones, can open the tiles in the lightbox, which steps through the gallery. The lightbox shows **Edit** only to the owner and no **Report** on your own media.
+
 ## Sub-tabs
 
 The profile **Media** tab has up to three sub-tabs. The Documents sub-tab only appears when documents are switched on (MediaVerse Pro):

@@ -1,5 +1,7 @@
 # Hooks & Filters Reference
 
+> **Free + Pro** - Hooks marked **(Pro)** require MediaVerse Pro. All others are in the free plugin.
+
 All MediaVerse hooks use the `mvs_` prefix. Pro-only hooks require MediaVerse Pro to be active and are labeled **(Pro)**. Hooks introduced in version 1.1 are labeled **(New in 1.1)**.
 
 ---
@@ -3375,4 +3377,59 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_show_demo_import` | filter | `0 === count_published()` | Whether the Overview page offers the demo content import. Default true only while the site has no published media. |
 | `wpmediaverse_companions` | filter | `$companions` | The catalog (slug => entry) of companion plugins the installer and admin screen list. |
 | `mvs_default_privacy` | filter | `$privacy` | The privacy value a new item defaults to when the member has not chosen one. |
+
+### Added in 2.6.2
+
+| Hook | Type | Arguments | Description |
+|------|------|-----------|-------------|
+| `mvs_comment_delete_replies` | filter | `true, $comment` | Whether deleting a media comment also deletes its replies. Return `false` to keep the replies and move them up a level, as before 2.6.2. `$comment` is the `WP_Comment` being deleted. |
+| `mvs_unsent_chat_file_hours` | filter | `24` | Hours a chat file that was uploaded but never sent is kept before it is deleted. Values below 1 are raised to 1. |
+| `mvs_privacy_level_value` | filter | `80, $privacy` | Audience level of a privacy slug MediaVerse does not know. The default is `80` (private), so an extension's new level never opens a BuddyPress activity post to everyone. |
+| `mvs_album_list_include_items` | filter | `false, $request` | Whether `GET /albums` includes each album's item ids without `with_items=1`. Return `true` to restore the pre-2.6.2 list shape. |
+| `mvs_notification_retention_days` | filter | `90` | Days a read notification is kept before the daily cleanup removes it. `0` keeps them. |
+| `mvs_media_before_delete` | action | `$media_id` | Fires before a media item and its meta are deleted, while every field can still be read. `mvs_media_deleted` fires after the rows are gone. |
+| `mvs_safety_refuses` | filter | `$refuses, $media_id, $user_id, $args` | Whether a safety rule (block, moderation, unpublished) refuses a viewer. Runs before any privacy decision. Return `true` to refuse, `false` to lift a refusal. |
+| `mvs_requested_privacy` | filter | `$privacy, $media_id` | A requested privacy change before it is applied. Return another level to change it, or an empty string to refuse the change. |
+| `mvs_external_privacy_map` | filter | `$map, $vocabulary, $context` | Map from another plugin's privacy words to MediaVerse slugs. Unknown words become `private`. |
+| `mvs_map_external_privacy` | filter | `$slug, $value, $vocabulary, $context` | The MediaVerse slug chosen for one external privacy word. |
+| `mvs_are_friends` | filter | `$are_friends, $user_a, $user_b` | Whether two members are friends for privacy. The default is the BuddyPress friendship. |
+| `mvs_friend_ids` | filter | `$friend_ids, $user_id` | A member's friend ids for privacy lists. The default is their BuddyPress friends. |
+| `mvs_privacy_level_audience_sql` | filter | `$sql, $context` | The SQL condition that decides which leveled rows a viewer may see. `$context` carries `level_expr`, `author_expr`, `viewer_id` and `args`. |
+| `mvs_can_edit_media` | filter | `$allowed, $media_id, $user_id, $own_cap, $others_cap` | Whether a member may edit a media item. |
+| `mvs_email_types` | filter | `$types` | The member emails the owner can switch on or off, as type => definition (`option`, `label`, `description`, `default`, and optional `host_owned`). `host_owned` defaults to `true`: a community host such as BuddyNext sends that email itself, so MediaVerse does not. Set it to `false` for an email the host has no equivalent for, and MediaVerse still sends it. |
+| `mvs_group_conversation_max_participants` | filter | `$max, $user_id, $context` | The largest group conversation, creator included. Checked when a group is created and when a member is added. Values below 2 are raised to 2. |
+| `mvs_media_permalink` | filter | `$url, $media_id` | A media item's permalink. |
+| `mvs_media_id_from_permalink` | filter | `$id, $url` | The media id resolved from a permalink. `0` means none. |
+| `mvs_can_move_to_drive` | filter | `true, $media_id, $drive_type, $drive_id, $folder_id` | Whether a media item may move to a drive. |
+| `mvs_media_moved_to_drive` | action | `$media_id, $drive_type, $drive_id, $from` | Fires after a media item moved to another drive. `$from` holds the previous `drive_type` and `drive_id`. |
+| `mvs_pro_caption_media_types` **(Pro)** | filter | `array( 'video' )` | Media types transcribed for captions. Add `audio` to restore audio transcription. |
+| `mvs_pro_competition_entry_media` **(Pro)** | action | `$entry_id, $media_id` | Fires after an entrant's submission is recorded on their entry. |
+| `mvs_pro_competition_cover_url` **(Pro)** | filter | `$url, $competition_id, $cover_media_id` | A competition card's cover URL. An empty string shows the placeholder. |
+
+### Added in 2.6.1
+
+| Hook | Type | Arguments | Description |
+|------|------|-----------|-------------|
+| `mvs_serve_offload` | filter | `$mode` | Which web server offload `/serve` uses: `x-accel` (nginx, with an internal location) or `x-sendfile` (Apache with `mod_xsendfile`). Anything else turns it off. Used only after a probe proves the server honours it. |
+| `mvs_serve_offload_nginx_prefix` | filter | `'mvs-internal-files'` | The internal nginx location that `X-Accel-Redirect` points at. |
+| `mvs_storage_driver_choices` | filter | `$choices` | The storage drivers an owner can pick on the Storage tab, as slug => label. Add the slug of a driver registered through `mvs_storage_driver`. |
+
+### Gallery queries and loader helpers (2.6.2)
+
+A gallery is a set of media uploaded together. Listings show it as one tile with a count badge, and the lightbox opens every member the viewer may see. These `MediaRepository` methods keep Explore, the Media Grid block, feeds, the BuddyPress tabs and `GET /media/{id}/group` in agreement. Get the repository with `Plugin::container()->get( 'media_repository' )`.
+
+| Method | Use |
+|--------|-----|
+| `gallery_filter_args( array $params )` | Turns the `GET /media` filter names (`media_type`, `tag`, `category`, `s`, `group`) into `query()` arguments. Pass the result to the methods below. |
+| `gallery_hidden_clause( $alias, $sibling_join, $sibling_where, $sibling_params )` | Returns a `NOT IN` clause and its params that hide gallery members behind the front item the viewer can see. A gallery stays listed when its first item is private or deleted. |
+| `gallery_tile_counts( array $media_ids, ?int $viewer_id, array $filter )` | Returns `media_id => count` for one page. Only the front item of a gallery gets a count above `0`. |
+| `gallery_members( int $media_id, ?int $viewer_id, array $filter )` | Returns the gallery's member ids in position order that the viewer may see. |
+| `group_scope_clause( $alias, $group_id, $viewer_id, $privacy_sql, $privacy_params )` | Limits a listing to one BuddyPress group. Group members also get `group` items. Everyone else gets nothing from a private or hidden group. |
+| `search_clause( string $search, string $alias )` | Returns the title and description search fragment and its params. |
+| `document_scope_ids( array $scope, array $among )` | Returns which of the given document ids fall inside a search scope, in order. |
+| `delete_comment_notifications( int $media_id, int $comment_id )` | Removes the notifications a deleted media comment raised. Returns the rows removed. |
+
+`gallery_exclude_subquery()` is deprecated since 2.6.2. Use `gallery_hidden_clause()`. Removal is planned for 4.0.0.
+
+`TemplateLoader::serve_as_found()` answers `200` for a MediaVerse virtual page that WordPress resolved as a 404. It never lowers a 4xx status that something else already set, so a members-only `403` stays a `403`.
 

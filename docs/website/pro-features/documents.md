@@ -1,6 +1,6 @@
 # Document Library
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Give every member a private drive for their files. Folders, sharing, search, trash and a viewer that shows a contract as a contract - not as its words in a plain column.
 
@@ -16,7 +16,7 @@ Beside their own drive members get:
 
 - **Shared with me** - documents other members have given them access to, with a Location column saying where each one lives
 - **Trash** - a place things go, and come back from. Removing a document is not permanent by accident
-- **Search inside the drive** - across the text of the documents, not just their titles
+- **Search inside the drive** - across the text of the documents, not just their titles. It finds your file however many matches the site has, and you can search inside a single folder
 
 ## What You Can Do
 
@@ -25,8 +25,14 @@ Beside their own drive members get:
 - Set privacy per document: **Only me**, **All site members** or **Anyone**. On a space drive there is also **Everyone on this drive**
 - Set privacy on a folder and have everything inside it follow
 - Share a document with a specific member, choose whether they can view or edit, and withdraw that access later. Sharing with a whole role is not available; use the **All site members** privacy level instead
-- Create a link that opens without signing in, when the site allows it
+- Create a link that opens without signing in, when the site allows it. A link never gives more access than the person who made it has
 - Download any document straight from its row
+
+Changing who can see a document, or linking it into a space, needs the right to share it. Having view access alone is not enough.
+
+### Documents attached to posts
+
+When a document is attached to a BuddyNext post, everyone who can read that post can open the document. They get view-only access. Developers can change this with the `mvs_document_readable_via_post` filter.
 
 ## Folder Privacy
 
@@ -214,6 +220,7 @@ Folder responses tell the client what the viewer may do, so an app never has to 
 | `mvs_document_allowed_types` | filter | Accepted types, overriding the setting |
 | `mvs_document_default_privacy` | filter | What a new document starts as |
 | `mvs_document_anon_links` | filter | Whether anonymous share links may be minted |
+| `mvs_document_readable_via_post` | filter | Whether a viewer who can read a post may open (view only) a document attached to it |
 | `mvs_document_row_actions` | filter | Add row actions to the admin document list |
 | `mvs_document_admin_panels` | filter | Add panels to the admin document editor |
 | `mvs_document_uploaded` | action | Fires after a document is stored |

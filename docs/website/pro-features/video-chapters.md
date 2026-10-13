@@ -1,6 +1,6 @@
 # Video Chapters
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 MediaVerse Pro stores chapter markers for video files and tracks each viewer's resume position so they can pick up where they left off. Resume works in the website's video player. Chapters are stored and delivered through the API and the mobile app; the website player does not show them yet.
 

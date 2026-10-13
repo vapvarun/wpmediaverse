@@ -1,6 +1,6 @@
 # Tournaments
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Enter a single-elimination bracket competition - submit your best photo, survive each round of community voting, and claim the championship title.
 
@@ -170,6 +170,10 @@ The Compete hub (`/compete/`) shows the tournaments you are in under **My Activi
 ## Bye Handling
 
 When registrations do not fill the bracket exactly, byes are assigned before round 1 begins. A bye appears in the bracket as an automatic advance: the real player moves on and the opposing slot shows "BYE".
+
+A bracket with few players still finishes. When a later round has an odd number of winners, the last winner gets a bye into the next round.
+
+Photos for tournament matches must be your own public, approved photos.
 
 ## Scheduled Actions
 

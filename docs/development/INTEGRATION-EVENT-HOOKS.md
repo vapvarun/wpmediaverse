@@ -49,7 +49,6 @@ give/receive rule can award the right user.
 | `mvs_tournament_finalized` | `( int $tournament_id, int $winner_id )` | overall winner. |
 | `mvs_streak_milestone` | `( int $user_id, int $days, int $xp )` | streak rewards. |
 | `mvs_story_created` | `( int $media_id, int $user_id, string $expires_at )` | actor = `$user_id`. Fired by Pro's `Stories\StoryService`. |
-| `mvs_pro_credits_added` | `( int $user_id, string $media_type, int $amount, string $source )` | credit/quota economy. |
 | `mvs_media_imported` / `mvs_media_exported` | `( int $media_id, string $platform, mixed $remote_id )` | connector sync. |
 
 ## Example consumer

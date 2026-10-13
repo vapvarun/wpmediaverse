@@ -1,6 +1,6 @@
 # Upload Streaks
 
-> **Requires MediaVerse Pro** - This feature is available exclusively in the Pro version.
+> **PRO** - Requires MediaVerse Pro. This feature is not in the free plugin.
 
 Upload one photo a day and watch your streak grow - hit milestones to earn point rewards, and use freeze tokens, if the site allows them, to protect your streak on days you miss.
 
@@ -31,7 +31,7 @@ When your streak reaches a milestone, points are awarded automatically to your a
 | 100 days | 1,000 points |
 | 365 days | 5,000 points |
 
-These are the amounts MediaVerse passes to WB Gamification when you reach each milestone.
+These are the amounts MediaVerse passes to WB Gamification when you reach each milestone. A milestone pays once, even if two uploads reach it at the same moment.
 
 ![My Media with the upload streak bar above the library](../images/my-media.webp)
 

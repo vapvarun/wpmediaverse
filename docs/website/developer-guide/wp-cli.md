@@ -1,6 +1,6 @@
 # WP-CLI Commands
 
-> Endpoints and hooks marked **(Pro)** require MediaVerse Pro.
+> **Free + Pro** - The `wp mvs` commands are in the free plugin. Commands marked **(Pro)** require MediaVerse Pro.
 
 
 MediaVerse registers its commands under the `wp mvs` namespace. Pro adds its own subcommands to that same namespace (`import-*`, `seed-documents`, `competitions *`) plus its own `wp mvs-pro` namespace (`cert` and `documents reclaim-orphans`).
