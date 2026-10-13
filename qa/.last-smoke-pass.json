@@ -3,7 +3,7 @@
   "release_version": "2.6.2",
   "free_version": "2.6.2",
   "pro_version": "2.6.2",
-  "ran_at": "2026-10-13T13:28:03Z",
+  "ran_at": "2026-10-13T13:34:16Z",
   "site": "http://mediaverse.local (+ Docker http://localhost:8911 for BuddyPress/chat rows)",
   "environment_notes": [
     "Free 2.6.2 and Pro 2.6.2 active on mediaverse.local (Reign 8.0.7, BuddyPress off, WB Gamification active); Docker 8911 BuddyPress 14.5.2 + Reign. Debug log baseline 3757057 bytes; diff window archived to qa-artifacts/debug-log-2.6.2-2026-10-13T12:32:00Z.txt.",
@@ -67,7 +67,7 @@
       "untested": 0
     },
     "X_2_6_2_focus": {
-      "pass": 41,
+      "pass": 42,
       "fail": 0,
       "skipped": 0,
       "untested": 0
@@ -1485,6 +1485,11 @@
       "id": "X13.integrations-claims",
       "result": "pass",
       "evidence": "Admin > MediaVerse > Integrations (mvs-integrations) answers 200 with the Learnomy row and none of the three removed claims; no fatal."
+    },
+    {
+      "id": "X14.pro-admin-empty-state",
+      "result": "pass",
+      "evidence": "mediaverse.local admin, MediaVerse > Stories (no stories): empty state renders 'Posted -> Viewed -> Expires (24h)' in bold after the wp_kses change; Tournaments/Challenges/Battles screens 200, no fatal."
     }
   ],
   "top3": [
@@ -1497,6 +1502,6 @@
   ],
   "walk_ran_at": "2026-10-13T12:32:00Z",
   "coverage": {
-    "branch_mode_delta": "After the full walk (walk_ran_at), four fixes landed; their surfaces were re-walked on the final heads (Free + Pro) as rows X10-X13, then ran_at was refreshed. Rows outside those surfaces were not re-walked."
+    "branch_mode_delta": "After the full walk (walk_ran_at), four fixes landed; their surfaces were re-walked on the final heads (Free + Pro) as rows X10-X13, then ran_at was refreshed. Rows outside those surfaces were not re-walked. X14 re-walked after the Plugin Check escaping fix in Pro."
   }
 }
