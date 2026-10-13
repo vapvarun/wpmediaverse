@@ -3,7 +3,7 @@
   "release_version": "2.6.2",
   "free_version": "2.6.2",
   "pro_version": "2.6.2",
-  "ran_at": "2026-10-13T12:32:00Z",
+  "ran_at": "2026-10-13T13:28:03Z",
   "site": "http://mediaverse.local (+ Docker http://localhost:8911 for BuddyPress/chat rows)",
   "environment_notes": [
     "Free 2.6.2 and Pro 2.6.2 active on mediaverse.local (Reign 8.0.7, BuddyPress off, WB Gamification active); Docker 8911 BuddyPress 14.5.2 + Reign. Debug log baseline 3757057 bytes; diff window archived to qa-artifacts/debug-log-2.6.2-2026-10-13T12:32:00Z.txt.",
@@ -67,7 +67,7 @@
       "untested": 0
     },
     "X_2_6_2_focus": {
-      "pass": 37,
+      "pass": 41,
       "fail": 0,
       "skipped": 0,
       "untested": 0
@@ -1465,6 +1465,26 @@
       "id": "X9.dark-messages",
       "result": "pass",
       "evidence": "Docker /messages/ dark: names 21:1, previews 8.8:1, composer 17:1, options buttons visible; sent bubble white-on-blue is 3.17:1 (observations)."
+    },
+    {
+      "id": "X10.comment-save-unchanged",
+      "result": "pass",
+      "evidence": "Docker, PUT /mvs/v1/media/19/comments/{id} with the same text: 200, BuddyPress copy kept; changed text: 200."
+    },
+    {
+      "id": "X11.competition-pages-virtual-route",
+      "result": "pass",
+      "evidence": "mediaverse.local signed in: /media/battles/, /challenges/, /tournaments/, /compete/ answer 200, no blog/home body class, headings Photo Battles / Photo Challenges / Tournaments / Compete; /messages/ 200 with h1 Messages; /media/@varundubey/ 200 with the member name as h1; a missing page 404."
+    },
+    {
+      "id": "X12.import-album-privacy",
+      "result": "pass",
+      "evidence": "Docker reproduction through AlbumMarkerLookupTrait: private and friends photos filed in a no-privacy album stay private (album raised to private); before the fix both became public. Pro ImportAlbumPrivacyTest passes in the final full Pro suite and fails on the old code."
+    },
+    {
+      "id": "X13.integrations-claims",
+      "result": "pass",
+      "evidence": "Admin > MediaVerse > Integrations (mvs-integrations) answers 200 with the Learnomy row and none of the three removed claims; no fatal."
     }
   ],
   "top3": [
@@ -1474,5 +1494,9 @@
   ],
   "layer1_delta": [
     "X3.reply-in-lightbox: walker filed as origin \"from\"; Opus re-check found the gap pre-dates 2.6.2 (same in v2.6.1) -> moved to accepted_by_design with an owner decision and a 2.7.0 card."
-  ]
+  ],
+  "walk_ran_at": "2026-10-13T12:32:00Z",
+  "coverage": {
+    "branch_mode_delta": "After the full walk (walk_ran_at), four fixes landed; their surfaces were re-walked on the final heads (Free + Pro) as rows X10-X13, then ran_at was refreshed. Rows outside those surfaces were not re-walked."
+  }
 }
