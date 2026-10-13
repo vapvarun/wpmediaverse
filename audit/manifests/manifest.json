@@ -7039,7 +7039,8 @@
         "TemplateLoader::is_mvs_virtual_route() includes mvs_messages_page (no core 404)",
         "Virtual routes query no posts (post__in 0); profile name is the page h1; hidden h1 on messages",
         "CommentController edit: 0 from wp_update_comment is success",
-        "CompanionRegistry: no unlocks for learnomy, wp-career-board, wb-listora"
+        "CompanionRegistry: no unlocks for learnomy, wp-career-board, wb-listora",
+        "CommentController edit: only false is a failure"
       ]
     }
   },
