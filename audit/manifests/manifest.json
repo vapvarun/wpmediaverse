@@ -7009,7 +7009,8 @@
         "GET /mvs/v1/media param group (integer)"
       ],
       "changed": [
-        "GroupTabIntegration::fetch_media_ids lists through query() (own SQL removed); Load More sends data-group"
+        "GroupTabIntegration::fetch_media_ids lists through query() (own SQL removed); Load More sends data-group",
+        "group_scope_clause lists nothing for non-members of a private/hidden group (bp_moderate exempt)"
       ]
     }
   },
