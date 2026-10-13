@@ -648,7 +648,7 @@ class MessagingService {
 
 		foreach ( $conversations as &$conv ) {
 			$cid                        = (int) $conv->id;
-			$conv->participants         = $participants_by_conversation[ $cid ] ?? array();
+			$conv->participants         = $this->mask_blocked_presence( $participants_by_conversation[ $cid ] ?? array(), $user_id );
 			$conv->unread_count         = $unread_by_conversation[ $cid ] ?? 0;
 			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
@@ -658,6 +658,28 @@ class MessagingService {
 		unset( $conv );
 
 		return $conversations;
+	}
+
+	/**
+	 * Hide presence across a block: a blocked pair never sees each other online.
+	 *
+	 * @param array<int,array<string,mixed>> $participants Participant rows.
+	 * @param int                            $viewer_id    Member reading them.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function mask_blocked_presence( array $participants, int $viewer_id ): array {
+		$blocked = $viewer_id ? array_map( 'intval', \WPMediaVerse\Core\Plugin::container()->get( 'reports' )->get_blocked_either_way_ids( $viewer_id ) ) : array();
+		if ( ! $blocked ) {
+			return $participants;
+		}
+		foreach ( $participants as &$p ) {
+			if ( in_array( (int) ( $p['id'] ?? 0 ), $blocked, true ) ) {
+				$p['is_online']   = false;
+				$p['last_active'] = null;
+			}
+		}
+		unset( $p );
+		return $participants;
 	}
 
 	/**
@@ -828,7 +850,7 @@ class MessagingService {
 			return null;
 		}
 
-		$conv->participants         = $this->get_participants( $conversation_id );
+		$conv->participants         = $this->mask_blocked_presence( $this->get_participants( $conversation_id ), $user_id );
 		$conv->unread_count         = $this->get_conversation_unread_count( $conversation_id, $user_id );
 		$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 		$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );

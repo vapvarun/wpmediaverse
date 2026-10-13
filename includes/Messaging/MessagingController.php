@@ -897,7 +897,7 @@ class MessagingController extends WP_REST_Controller {
 
 			$typing = $this->service->get_typing_users( $conv_id, $user_id );
 
-			$participants = $this->service->get_participants( $conv_id );
+			$participants = $this->service->mask_blocked_presence( $this->service->get_participants( $conv_id ), $user_id );
 			foreach ( $participants as $p ) {
 				if ( $p['id'] !== $user_id ) {
 					$online_users[ $p['id'] ] = array(

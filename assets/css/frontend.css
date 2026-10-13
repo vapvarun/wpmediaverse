@@ -7167,6 +7167,20 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-surface);
 }
 
+/* The control owns its look: themes style bare buttons (Twenty Twenty-One's
+   button:not(:hover):not(:active):not(.has-text-color) is 0,3,1 and paints them
+   dark). The repeated class lifts this to 0,4,1 without !important. */
+.mvs-lightbox-overlay .mvs-lightbox button.mvs-lightbox-nav.mvs-lightbox-nav {
+    padding: 0;
+    min-height: 0;
+    border: 0;
+    color: var(--mvs-text);
+    background: var(--mvs-surface);
+    text-decoration: none;
+    text-transform: none;
+    line-height: 1;
+}
+
 .mvs-lightbox-nav--prev {
     left: 12px;
 }

@@ -33,6 +33,18 @@
 	text-overflow: ellipsis;
 }
 
+/* Lightbox controls show our focus ring to keyboard users and none after a
+   mouse click, whatever the theme draws on button:focus (Twenty Twenty-One
+   paints a dotted outline on every focused button). */
+.mvs-lightbox-overlay button:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.mvs-lightbox-overlay button:focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+}
+
 /* Visible keyboard focus for shell form controls; see the matching rule in
    frontend.css. Basecamp 10320619382. */
 :where(.mvs-app-shell) :is(input, select, textarea):focus-visible {

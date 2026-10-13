@@ -71,7 +71,12 @@ async function apiFetch( path, options = {} ) {
 
 	if ( res.status === 204 ) return null;
 	const data = res.data;
-	if ( ! res.ok ) throw new Error( ( data && ( data.error || data.message ) ) || __( 'Request failed', 'wpmediaverse' ) );
+	if ( ! res.ok ) {
+		// The sentence first: some routes answer { error: 'code', message: 'sentence' }.
+		const err = new Error( ( data && ( data.message || data.error ) ) || __( 'Request failed', 'wpmediaverse' ) );
+		err.status = res.status;
+		throw err;
+	}
 	return data;
 }
 
@@ -189,6 +194,10 @@ function enrichMessage( msg ) {
 	msg.isFailed   = !! msg._failed;
 	msg.notSending = ! msg.isSending;
 	msg.notFailed  = ! msg.isFailed;
+	// A refusal (403) cannot succeed on retry: say why instead of offering Retry.
+	msg.failReason     = msg.isFailed && msg._final ? ( msg._error || '' ) : '';
+	msg.hideRetry      = ! msg.isFailed || !! msg._final;
+	msg.hideFailReason = '' === msg.failReason;
 	// Hide the delivered double-check while the message is still in flight or
 	// failed (Interactivity directives can't OR, so derive it here).
 	msg.hideCheck  = msg.isReceived || msg.isSending || msg.isFailed;
@@ -1366,7 +1375,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				// Mark as failed — re-enrich so isFailed/notSending recompute and
 				// the bubble shows an error + retry instead of looking delivered.
-				state.messages = state.messages.map( m => m.id === tempId ? enrichMessage( { ...m, _failed: true, _sending: false } ) : m );
+				state.messages = state.messages.map( m => m.id === tempId ? enrichMessage( { ...m, _failed: true, _sending: false, _error: e.message, _final: 403 === e.status } ) : m );
 				actions.showToast( e.message );
 			}
 
@@ -1393,7 +1402,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				);
 				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...realMsg, _sending: false } ) : m );
 			} catch ( e ) {
-				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...m, _failed: true, _sending: false } ) : m );
+				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...m, _failed: true, _sending: false, _error: e.message, _final: 403 === e.status } ) : m );
 				actions.showToast( e.message );
 			}
 		},

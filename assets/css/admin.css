@@ -555,7 +555,12 @@ a.mvs-stat-card:focus {
 	font-size: 11px;
 	font-weight: 600;
 	line-height: 1;
-	margin-left: 4px;
+	margin-inline-start: 4px;
+}
+
+/* Inside a button the button's gap already spaces it. */
+.mvs-btn .mvs-badge {
+	margin-inline-start: 0;
 }
 
 .mvs-badge--success { background: var(--mvs-success); }

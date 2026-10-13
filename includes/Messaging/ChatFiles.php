@@ -331,7 +331,7 @@ final class ChatFiles {
 		return array(
 			'label'       => sprintf(
 				/* translators: %d: number of files. */
-				_n( '%d file sent in messages could not be moved to protected storage', '%d files sent in messages could not be moved to protected storage', $failed, 'wpmediaverse' ),
+				_n( '%d chat file could not be moved to protected storage', '%d chat files could not be moved to protected storage', $failed, 'wpmediaverse' ),
 				$failed
 			),
 			'status'      => 'recommended',
@@ -339,7 +339,7 @@ final class ChatFiles {
 				'label' => __( 'Privacy', 'wpmediaverse' ),
 				'color' => 'orange',
 			),
-			'description' => '<p>' . esc_html__( 'Files sent in messages before MediaVerse 2.6.2 are being moved so only the people in the conversation can open them. These could not be moved yet. They are hidden from every media list, but their old web address still works. MediaVerse tries again once a day; the reason for each one is under Tools > MediaVerse Logs (messaging).', 'wpmediaverse' ) . '</p>',
+			'description' => '<p>' . esc_html__( 'Chat files from before MediaVerse 2.6.2 (sent, or attached and never sent) are being moved so only the people in the conversation can open them. These could not be moved yet. They are hidden from every media list, but their old web address still works. MediaVerse tries again once a day; the reason for each one is under Tools > MediaVerse Logs (messaging).', 'wpmediaverse' ) . '</p>',
 			'actions'     => '',
 			'test'        => 'wpmediaverse_chat_files',
 		);

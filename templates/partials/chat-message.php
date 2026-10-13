@@ -169,9 +169,10 @@ defined( 'ABSPATH' ) || exit;
 	<div class="mvs-chat-msg__meta" data-wp-bind--hidden="context.item.isSystem">
 		<span data-wp-text="context.item.timeLabel"></span>
 		<span class="mvs-chat-msg__sending" data-wp-bind--hidden="context.item.notSending" title="<?php esc_attr_e( 'Sending…', 'wpmediaverse' ); ?>" aria-hidden="true">&#128338;</span>
-		<button class="mvs-chat-msg__retry" data-wp-bind--hidden="context.item.notFailed" data-wp-on--click="actions.retrySend" type="button">
+		<button class="mvs-chat-msg__retry" data-wp-bind--hidden="context.item.hideRetry" data-wp-on--click="actions.retrySend" type="button">
 			<span aria-hidden="true">&#9888;</span> <?php esc_html_e( 'Not sent — Retry', 'wpmediaverse' ); ?>
 		</button>
+		<span class="mvs-chat-msg__retry" role="alert" data-wp-bind--hidden="context.item.hideFailReason"><span aria-hidden="true">&#9888;</span> <span data-wp-text="context.item.failReason"></span></span>
 		<span class="mvs-chat-msg__check" data-wp-bind--hidden="context.item.hideCheck">&#10003;&#10003;</span>
 	</div>
 
