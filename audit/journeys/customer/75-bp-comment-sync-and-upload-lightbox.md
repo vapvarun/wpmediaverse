@@ -15,8 +15,8 @@ estimated_runtime_minutes: 6
 A media comment is mirrored onto the item's activity post as an activity comment.
 `ActivitySyncIntegration` stores the mirror id in comment meta
 `_mvs_bp_activity_comment_id`, threads a reply under its parent's mirror, and on
-core's `delete_comment` removes the mirror. Edits are not copied (BuddyPress core has no
-comment editing); the activity comment keeps the original wording. The delete
+core's `delete_comment` removes the mirror. An edit removes the mirror too (BuddyPress core has
+no comment editing, and the old wording must not stay on the post). The delete
 also removes the owner's `update_reply` / `comment_reply` notifications.
 
 ## Steps
@@ -26,10 +26,10 @@ also removes the owner's `update_reply` / `comment_reply` notifications.
 - **Expect**: two `activity_comment` rows on the post; the reply's `secondary_item_id`
   is the comment's row; Member A has an "commented on one of your updates" notification.
 
-### 2. An edit stays in MediaVerse
+### 2. An edit takes the copy off the post
 - **Action**: Member A edits the reply within the edit window.
-- **Expect**: the lightbox shows the new text; the reply's activity comment keeps the original
-  wording (BuddyPress core has no comment editing).
+- **Expect**: the lightbox shows the new text; the reply's activity comment is gone from the post
+  (BuddyPress core has no comment editing). Saving without changing the text keeps the copy.
 
 ### 3. Delete removes the thread from the post
 - **Action**: Member B deletes the comment.
@@ -38,9 +38,10 @@ also removes the owner's `update_reply` / `comment_reply` notifications.
 
 ### 3b. Comments made before 2.6.2 (site upgraded from 2.6.1)
 - **Action**: on 2.6.1 comment on a photo (and reply); upgrade; delete one old comment; edit another
-  old comment, then delete it.
-- **Expect**: the deleted comment and its replies leave the activity post; the edited-then-deleted comment leaves the post too, with its notification. (The link is made on
-  `wp_update_comment_data`, before the text changes; `find_unlinked_mirror()` matches the old text.)
+  old comment.
+- **Expect**: the deleted comment and its replies leave the activity post; the edited comment's copy
+  leaves the post on the edit. (`remove_mirror_on_edit()` runs on `wp_update_comment_data`, before the
+  text changes, so `find_unlinked_mirror()` still matches the old text.)
 
 ### 4. Upload-page post steps in the lightbox (1440 and 390)
 - **Action**: Member A uploads 2+ photos from `/upload-media/`; on `/activity/` click the

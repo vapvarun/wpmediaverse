@@ -62,7 +62,7 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 		add_action( 'delete_comment', array( $this, 'delete_mirrored_activity_comment' ), 10, 2 );
-		add_filter( 'wp_update_comment_data', array( $this, 'link_mirror_before_edit' ), 10, 2 );
+		add_filter( 'wp_update_comment_data', array( $this, 'remove_mirror_on_edit' ), 10, 2 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 		add_action( 'mvs_media_privacy_changed', array( $this, 'sync_activity_privacy' ), 10, 3 );
@@ -1307,11 +1307,12 @@ class ActivitySyncIntegration {
 	}
 
 	/**
-	 * Link an old comment to its mirror while it still holds the text the mirror copied.
+	 * An edited media comment takes its copy off the activity post.
 	 *
-	 * Edits are not copied to the activity comment (BuddyPress core has no comment
-	 * editing). find_unlinked_mirror() matches on text, so an old comment must be
-	 * linked before its text changes, or a later delete could not find its copy.
+	 * BuddyPress core cannot edit an activity comment, and a copy left with the
+	 * old wording keeps text the author removed (owner decision 13 Oct). Runs
+	 * before the text changes, so an old unlinked comment still matches its copy.
+	 * BuddyPress removes the copy's replies with it; the MediaVerse thread is untouched.
 	 *
 	 * @since 2.6.2
 	 *
@@ -1319,10 +1320,11 @@ class ActivitySyncIntegration {
 	 * @param array<string,mixed> $comment The comment as stored now.
 	 * @return array<string,mixed>
 	 */
-	public function link_mirror_before_edit( $data, $comment = array() ) {
+	public function remove_mirror_on_edit( $data, $comment = array() ) {
 		$id = (int) ( $comment['comment_ID'] ?? 0 );
-		if ( $id && ! get_comment_meta( $id, self::ACTIVITY_COMMENT_META, true ) ) {
-			$this->mirrored_activity_comment( $id );
+		if ( $id && isset( $data['comment_content'] ) && $data['comment_content'] !== ( $comment['comment_content'] ?? '' ) ) {
+			$this->delete_mirrored_activity_comment( $id );
+			delete_comment_meta( $id, self::ACTIVITY_COMMENT_META );
 		}
 		return $data;
 	}

@@ -1664,7 +1664,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** A media item's activity card in the BP stream.
 - **Setup:** A media item that has an activity entry (per MV-BP-003).
 - **Steps:** 1. Comment on the media item via its own single-media page or the lightbox. 2. Reply to that comment. 3. Edit the reply. 4. Delete the first comment.
-- **Expected:** The comment mirrors into the activity's own comment thread (`bp_activity_new_comment()`), and the reply sits under it. An edit stays in MediaVerse; the activity comment keeps the original wording (BuddyPress core has no comment editing). Deleting the comment removes it and its replies from the activity, along with the "commented on your update" / "replied to your comment" notifications. The mirror id is stored in comment meta `_mvs_bp_activity_comment_id`.
+- **Expected:** The comment mirrors into the activity's own comment thread (`bp_activity_new_comment()`), and the reply sits under it. An edit removes the activity copy (BuddyPress core has no comment editing; the old wording must not stay on the post). Deleting the comment removes it and its replies from the activity, along with the "commented on your update" / "replied to your comment" notifications. The mirror id is stored in comment meta `_mvs_bp_activity_comment_id`.
 - **UX expectation:** The activity thread and the media page never drift: what a member deletes is gone everywhere.
 - **Settings that change it:** filter `mvs_comment_delete_replies` (false keeps replies, so their mirrors stay too).
 - **Edge cases:** Comments mirrored before 2.6.2 have no stored mirror id, so deleting them leaves the old activity comment in place. Journey customer/75.
