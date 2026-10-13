@@ -51,6 +51,7 @@ See [Direct Messages](../features/direct-messages.md).
 - **Pro** Captions are written for videos only by default, and members can request a transcript only while auto-captions is on.
 - **Pro** Boost is offered only on items a boost accepts, on the media page and the Instagram feed card.
 - **Pro** Competitions accept only public, approved media.
+- **Pro** BuddyBoss and MediaPress imports keep photo privacy: filing a private photo in an imported album no longer makes it public.
 - **Pro** A document attached to a BuddyNext post opens, for viewing only, for the people who can read that post.
 - **Pro** Licence activation and deactivation go through the bundled update SDK, and activating no longer turns on usage tracking.
 

@@ -115,7 +115,7 @@ There are three ways to start or open a conversation:
 | Emoji reactions | React to individual messages with any emoji |
 | Typing indicators | Shows a live indicator when the other user is typing |
 | Read receipts | Delivered and read timestamps shown per message |
-| Message deletion | Delete your own messages (content replaced with "This message was deleted") |
+| Message deletion | One "for everyone" control on your own message: **Unsend** within 15 minutes of sending removes the message and any attached file; after that, **Delete** replaces its content with "This message was deleted". Both ask before they act |
 
 ## Conversation Management
 
