@@ -3516,6 +3516,27 @@ JS;
 	}
 
 	/**
+	 * Query vars of every page MediaVerse draws from its own tables, not from a post.
+	 *
+	 * These routes skip the blog query and its 404 (Plugin::register_messages_page()
+	 * and TemplateLoader::prevent_virtual_route_404()). Pro adds its competition pages.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @return string[]
+	 */
+	public static function virtual_route_vars(): array {
+		/**
+		 * Filters the query vars that mark a MediaVerse virtual route.
+		 *
+		 * @since 2.6.2
+		 *
+		 * @param string[] $vars Query vars.
+		 */
+		return (array) apply_filters( 'mvs_virtual_route_query_vars', array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) );
+	}
+
+	/**
 	 * Register the /messages/ page rewrite rule.
 	 */
 	public static function register_messages_page(): void {
@@ -3543,7 +3564,7 @@ JS;
 				if ( ! $query->is_main_query() ) {
 					return;
 				}
-				foreach ( array( 'mvs_messages_page', 'mvs_media_slug', 'mvs_media_archive', 'mvs_profile_user', 'mvs_edit_profile' ) as $var ) {
+				foreach ( self::virtual_route_vars() as $var ) {
 					if ( $query->get( $var ) ) {
 						$query->is_home = false;
 						// No blog posts either: the page comes from our own tables, and a theme

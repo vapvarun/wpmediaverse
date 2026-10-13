@@ -517,14 +517,13 @@ class TemplateLoader {
 	 * @return bool
 	 */
 	private function is_mvs_virtual_route(): bool {
-		return (bool) (
-			get_query_var( 'mvs_media_slug' )
-			|| get_query_var( 'mvs_media_archive' )
-			|| get_query_var( 'mvs_profile_user' )
-			|| get_query_var( 'mvs_edit_profile' )
-			// Messages, unless BuddyNext draws the inbox and the route is not ours.
-			|| ( get_query_var( 'mvs_messages_page' ) && ! apply_filters( 'mvs_buddynext_active', false ) )
-		);
+		foreach ( Plugin::virtual_route_vars() as $var ) {
+			// Messages is not ours when BuddyNext draws the inbox.
+			if ( get_query_var( $var ) && ( 'mvs_messages_page' !== $var || ! apply_filters( 'mvs_buddynext_active', false ) ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

@@ -3537,6 +3537,18 @@
       ],
       "where": "includes/Services/PrivacyService.php:247",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_virtual_route_query_vars",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string[] $vars"
+      ],
+      "where": "includes/Core/Plugin.php:3536",
+      "consumed_by": [
+        "wpmediaverse-pro/includes/Core/Plugin.php"
+      ]
     }
   ],
   "generated": {
