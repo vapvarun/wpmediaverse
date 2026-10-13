@@ -579,8 +579,11 @@ class MessagingService {
 	 * @return array{0:string,1:array} WHERE SQL and its prepare() params.
 	 */
 	private function conversation_tab_where( int $user_id, string $tab ): array {
-		$where_parts = array( 'p.user_id = %d' );
-		$params      = array( $user_id );
+		// A direct conversation nobody has written in yet is listed only for the
+		// member who opened it: picking a recipient must not put an empty thread
+		// in the other member's inbox before anything is sent.
+		$where_parts = array( 'p.user_id = %d', "( c.type <> 'direct' OR c.last_message_id IS NOT NULL OR c.created_by = %d )" );
+		$params      = array( $user_id, $user_id );
 
 		switch ( $tab ) {
 			case 'unread':
@@ -649,11 +652,28 @@ class MessagingService {
 			$conv->unread_count         = $unread_by_conversation[ $cid ] ?? 0;
 			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
+			self::cast_member_flags( $conv );
 			$this->suppress_cleared_preview( $conv );
 		}
 		unset( $conv );
 
 		return $conversations;
+	}
+
+	/**
+	 * The member's pin, mute and archive flags as booleans.
+	 *
+	 * The database returns "0"/"1" strings, and "0" is true in JavaScript, so
+	 * every conversation read as pinned.
+	 *
+	 * @param object $conv Conversation row.
+	 */
+	private static function cast_member_flags( object $conv ): void {
+		foreach ( array( 'is_pinned', 'is_muted', 'is_archived' ) as $flag ) {
+			if ( isset( $conv->$flag ) ) {
+				$conv->$flag = (bool) (int) $conv->$flag;
+			}
+		}
 	}
 
 	/**
@@ -812,6 +832,7 @@ class MessagingService {
 		$conv->unread_count         = $this->get_conversation_unread_count( $conversation_id, $user_id );
 		$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 		$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
+		self::cast_member_flags( $conv );
 		$this->suppress_cleared_preview( $conv );
 
 		return $conv;
@@ -1779,15 +1800,18 @@ class MessagingService {
 			array( '%d' )
 		);
 
-		// Mark as read for sender.
+		// Mark as read for sender; sending also ends their typing marker.
 		$wpdb->update(
 			$part_table,
-			array( 'last_read_at' => $now ),
+			array(
+				'last_read_at' => $now,
+				'typing_until' => null,
+			),
 			array(
 				'conversation_id' => $conversation_id,
 				'user_id'         => $sender_id,
 			),
-			array( '%s' ),
+			array( '%s', null ),
 			array( '%d', '%d' )
 		);
 

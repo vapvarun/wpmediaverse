@@ -2336,7 +2336,7 @@ class Commands {
 		);
 
 		$this->report_section(
-			'DATA LOSS RISK — deleting these CPTs destroys the listed media',
+			'Albums and collections that shared an ID with a media item before 2.4.0',
 			$report['purge_risk'],
 			array( 'cpt_id', 'post_type', 'cpt_title', 'media_at_risk', 'media_author', 'file_path' ),
 			$format

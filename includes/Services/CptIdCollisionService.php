@@ -148,11 +148,11 @@ class CptIdCollisionService {
 	}
 
 	/**
-	 * CPT posts whose permanent deletion would destroy a real media row.
+	 * Album and collection posts whose ID is also a media item's ID.
 	 *
-	 * Album::on_before_delete() and Collection::on_before_delete() call
-	 * purge_index_record( $post_id ) unconditionally. Where that ID is a real
-	 * media row, deleting the CPT deletes the media item's index record.
+	 * History only: before 2.4.0 deleting such a post removed the media row too.
+	 * Album::on_before_delete() and Collection::on_before_delete() no longer
+	 * touch the media index, so deleting them is safe.
 	 *
 	 * @since 2.4.0
 	 *
