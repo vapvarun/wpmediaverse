@@ -11,6 +11,7 @@ MediaVerse 2.6.2 keeps chat files inside the chat, makes galleries behave the sa
 - A gallery stays listed when its first item is made private or deleted: the next item a viewer may see fronts it.
 - Under a filter (Explore > Videos, a tag, a category or a search) a gallery is one tile fronted by its first matching item, and the lightbox steps through the matching items only.
 - Each step in the lightbox shows that item's own reactions and comments.
+- The List layout shows each item's title, date, counts and uploader beside the thumbnail, on Explore, profiles, the BuddyPress Media tabs and the Media Grid block.
 
 See [Upload Media](../features/media-upload.md).
 
@@ -20,6 +21,8 @@ See [Upload Media](../features/media-upload.md).
 - The notifications a deleted comment raised are removed with it.
 - Following, favouriting or reacting again notifies the owner only once.
 - Read notifications older than 90 days are removed daily.
+- Reading a conversation clears its message notifications.
+- The notifications bell on My Media closes on an outside click or Escape and shows times such as "2 hours ago".
 
 See [Social Features](../features/social-features.md).
 
@@ -30,7 +33,10 @@ See [Social Features](../features/social-features.md).
 - A conversation appears in the other member's inbox only once the first message is sent.
 - "Pinned" shows only on pinned conversations, and the typing indicator clears as soon as the message arrives.
 - A blocked pair cannot reopen their conversation, does not see each other online, and a refused message says why.
-- A sent message offers one "for everyone" control: Unsend while it is new, Delete after that.
+- A sent message offers one "for everyone" control: Unsend while it is new, Delete after that. Both ask before they act.
+- Photo and video messages have a Message options button, so Reply, React and Unsend work on touch screens. Escape closes an open message menu.
+- A new conversation shows the member's name and picture in the list straight away.
+- The Messages page and the media profile no longer show a blog post's title as their heading.
 
 See [Direct Messages](../features/direct-messages.md).
 

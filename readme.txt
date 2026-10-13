@@ -131,10 +131,18 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 
 * New      - Deleting a comment also deletes its replies, as on social networks.
 * New      - Read notifications older than 90 days are removed daily.
+* New      - Photo and video chat messages have a Message options button, so Reply, React and Unsend work on touch screens.
 * Improve  - Chat attachments live only in their conversation: they are no longer listed in My Media, the media list or the WordPress Media Library, and existing ones move to protected storage.
 * Improve  - Chat files uploaded but never sent are deleted after a day.
 * Improve  - A gallery shows as one tile with a badge on Explore, the Media Grid block, the feeds and the BuddyPress profile and group tabs, and stays listed when its first item is private or deleted.
 * Improve  - The gallery badge and lightbox count every item the viewer may see, so owners and followers reach all of theirs.
+* Improve  - Under a filter or search, a gallery is fronted by its first matching item and the lightbox steps through the matching items only.
+* Improve  - Each item in a gallery lightbox shows its own reactions and comments.
+* Improve  - The List layout shows each item's title, date, counts and uploader beside the thumbnail on Explore, profiles, the BuddyPress Media tabs and the Media Grid block.
+* Improve  - Clicking an image in a chat opens it full size, videos show a frame and audio files get a player.
+* Improve  - Delete for everyone and Unsend for everyone ask first, and Escape closes an open message menu.
+* Improve  - Reading a conversation clears its message notifications.
+* Improve  - The notifications bell closes on an outside click or Escape and shows times such as 2 hours ago.
 * Improve  - A chat thread opens at the newest message and stays there while photos and videos load.
 * Improve  - The comment delete prompt says how many replies go with it, and album prompts say items instead of photos.
 * Improve  - Following, favouriting or reacting again notifies the owner only once.
@@ -160,7 +168,11 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 * Fix      - Cancelling an account deletion request lifts only the suspension it set, and asking twice changes nothing.
 * Fix      - The album edit window pre-selects the album's photos again, and album cards show exact counts to their owner.
 * Fix      - Uploads with the same title at the same time no longer fail.
-* Fix      - A blocked member can no longer reopen a conversation.
+* Fix      - A blocked member can no longer reopen a conversation, sees why a message was refused and does not see the other member online.
+* Fix      - A new conversation shows the member's name and picture in the list without a reload.
+* Fix      - Pinned shows only on pinned conversations, the typing indicator clears when the message arrives, and an empty conversation stays out of the other member's inbox.
+* Fix      - The Messages page and the media profile no longer show a blog post's title as their heading, and Messages answers normally on a site with no blog posts.
+* Fix      - The lightbox arrows keep their look on themes that style buttons, and the moderation badge in the admin lines up.
 * Fix      - A deleted chat message no longer offers reactions or Reply.
 * Fix      - Explore says "in" rather than "tagged" when a category has no results.
 * Fix      - The wp mvs diagnose_cpt_ids warning no longer points at a fix that shipped in 2.4.0.
@@ -178,7 +190,7 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 * Dev      - New filters mvs_comment_delete_replies, mvs_unsent_chat_file_hours and mvs_privacy_level_value.
 * Dev      - New MediaRepository::gallery_hidden_clause(), gallery_tile_counts(), group_scope_clause(), search_clause() and document_scope_ids(); gallery_exclude_subquery() is deprecated.
 * Dev      - Database update: BuddyPress activity privacy is refreshed, and indexes are added to mvs_media_meta and mvs_messages. This may take a moment on large sites.
-* Dev      - Templates updated (2.6.2): explore.php, media-single.php, partials/chat-message.php, partials/dashboard-content.php, partials/shared-ui-frame.php.
+* Dev      - Templates updated (2.6.2): explore.php, media-single.php, messages.php, partials/chat-message.php, partials/dashboard-content.php, partials/shared-ui-frame.php.
 * Compat   - Requires PHP 8.1 or newer (was 7.4).
 * Compat   - Aligned with MediaVerse Pro 2.6.2. Install both updates together.
 
