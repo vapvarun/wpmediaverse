@@ -100,6 +100,9 @@ defined( 'ABSPATH' ) || exit;
 	</div>
 
 	<div class="mvs-chat-msg__bubble" data-wp-on--click="actions.showContextMenu">
+		<button type="button" class="mvs-chat-msg__more" data-wp-bind--hidden="context.item.noMoreButton" data-wp-on--click="actions.showContextMenu" data-wp-bind--aria-expanded="context.item.showMenu" aria-label="<?php esc_attr_e( 'Message options', 'wpmediaverse' ); ?>" hidden>
+			<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+		</button>
 		<!-- Reply-to preview -->
 		<div class="mvs-chat-msg__reply" data-wp-bind--hidden="context.item.noReply">
 			<div class="mvs-chat-msg__reply-sender" data-wp-text="context.item.parent_preview.sender"></div>

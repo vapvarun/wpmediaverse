@@ -2846,6 +2846,10 @@ class Plugin {
 				'Leave group'                          => __( 'Leave group', 'wpmediaverse' ),
 				'Leave this group? You will no longer receive its messages.' => __( 'Leave this group? You will no longer receive its messages.', 'wpmediaverse' ),
 				'Leave'                                => __( 'Leave', 'wpmediaverse' ),
+				'Delete this message for everyone? This cannot be undone.' => __( 'Delete this message for everyone? This cannot be undone.', 'wpmediaverse' ),
+				'Unsend this message for everyone? Any attached file is deleted too.' => __( 'Unsend this message for everyone? Any attached file is deleted too.', 'wpmediaverse' ),
+				'Delete'                               => __( 'Delete', 'wpmediaverse' ),
+				'Unsend'                               => __( 'Unsend', 'wpmediaverse' ),
 				/* translators: %d: number of active group members. */
 				'%d members'                           => __( '%d members', 'wpmediaverse' ),
 				'A group can have at most 50 members.' => __( 'A group can have at most 50 members.', 'wpmediaverse' ),

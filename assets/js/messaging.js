@@ -181,6 +181,38 @@ const seenUnsendIds = new Set();
 let openConversationBound = false;
 
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
+/**
+ * The fields a conversation row in the list renders, worked out once.
+ *
+ * Every path that puts a row in the list goes through this (list load, new
+ * conversation, new group, member changes); a row pushed raw showed no name
+ * and a broken picture until the next reload.
+ *
+ * Group threads reuse otherName/otherAvatar/otherOnline: the title (or the
+ * first 3 active members' names), the first active member's avatar, and no
+ * online dot (presence is not a group concept).
+ *
+ * @param {Object} conv Conversation from the REST API.
+ * @return {Object} The same object, with the row fields set.
+ */
+function listRow( conv ) {
+	if ( 'group' === conv.type ) {
+		const activeOthers = ( conv.participants || [] ).filter( p => p.status === 'active' && p.id !== ME.id );
+		conv.otherName   = conv.title || activeOthers.slice( 0, 3 ).map( p => p.display_name ).filter( Boolean ).join( ', ' );
+		conv.otherAvatar = activeOthers[0]?.avatar_url || '';
+		conv.otherOnline = false;
+		conv.isGroup     = true;
+	} else {
+		const other = ( conv.participants || [] ).find( p => p.id !== ME.id ) || conv.participants?.[0] || {};
+		conv.otherName   = other.display_name || '';
+		conv.otherAvatar = other.avatar_url || '';
+		conv.otherOnline = !! other.is_online;
+		conv.isGroup     = false;
+	}
+	conv.hasUnread = !! conv.unread_count;
+	return conv;
+}
+
 function enrichMessage( msg ) {
 	// Interactivity API does NOT track underscore-prefixed properties on
 	// context.item inside data-wp-each. Use plain camelCase names instead.
@@ -261,6 +293,8 @@ function enrichMessage( msg ) {
 	msg.notAudio   = msg.message_type !== 'audio';
 	msg.notFile    = msg.message_type !== 'file';
 	msg.notMediaShare = msg.message_type !== 'media_share';
+	// Photos and videos take the tap for themselves, so they get a visible menu button (touch has no right-click).
+	msg.noMoreButton = msg.isDeleted || ( msg.notImage && msg.notVideo );
 
 	// Show text content alongside attachments when both are present.
 	msg.hasTextContent = !! ( msg.content && msg.content.trim() );
@@ -738,9 +772,9 @@ const { state, actions } = store( 'mvs/messaging', {
 				if ( data.conversation ) {
 					const idx = state.conversations.findIndex( c => String( c.id ) === String( data.conversation.id ) );
 					if ( idx >= 0 ) {
-						state.conversations[ idx ] = data.conversation;
+						state.conversations[ idx ] = listRow( data.conversation );
 					} else {
-						state.conversations.unshift( data.conversation );
+						state.conversations.unshift( listRow( data.conversation ) );
 					}
 
 					state.activeConversationId = data.conversation.id;
@@ -816,23 +850,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				// the first 3 active members' names), the first active other
 				// member's avatar, and no online dot (presence isn't a group
 				// concept). 1:1 threads are untouched below.
-				state.conversations = ( data || [] ).map( conv => {
-					if ( 'group' === conv.type ) {
-						const activeOthers = ( conv.participants || [] ).filter( p => p.status === 'active' && p.id !== ME.id );
-						conv.otherName   = conv.title || activeOthers.slice( 0, 3 ).map( p => p.display_name ).filter( Boolean ).join( ', ' );
-						conv.otherAvatar = activeOthers[0]?.avatar_url || '';
-						conv.otherOnline = false;
-						conv.isGroup     = true;
-					} else {
-						const other = ( conv.participants || [] ).find( p => p.id !== ME.id ) || conv.participants?.[0] || {};
-						conv.otherName   = other.display_name || '';
-						conv.otherAvatar = other.avatar_url || '';
-						conv.otherOnline = !! other.is_online;
-						conv.isGroup     = false;
-					}
-					conv.hasUnread   = !! conv.unread_count;
-					return conv;
-				} );
+				state.conversations = ( data || [] ).map( listRow );
 			} catch ( e ) {
 				// Silently fail, keep existing data.
 			}
@@ -905,9 +923,9 @@ const { state, actions } = store( 'mvs/messaging', {
 					// Add or update in list.
 					const idx = state.conversations.findIndex( c => String( c.id ) === String( data.conversation.id ) );
 					if ( idx >= 0 ) {
-						state.conversations[ idx ] = data.conversation;
+						state.conversations[ idx ] = listRow( data.conversation );
 					} else {
-						state.conversations.unshift( data.conversation );
+						state.conversations.unshift( listRow( data.conversation ) );
 					}
 
 					state.activeConversationId = data.conversation.id;
@@ -1001,9 +1019,9 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				const idx = state.conversations.findIndex( c => String( c.id ) === String( conv.id ) );
 				if ( idx >= 0 ) {
-					state.conversations[ idx ] = conv;
+					state.conversations[ idx ] = listRow( conv );
 				} else {
-					state.conversations.unshift( conv );
+					state.conversations.unshift( listRow( conv ) );
 				}
 
 				state.newGroupMode = false;
@@ -1117,7 +1135,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				const conv = yield apiFetch( '/conversations/' + convId );
 				const idx = state.conversations.findIndex( c => String( c.id ) === String( convId ) );
 				if ( idx >= 0 ) {
-					state.conversations[ idx ] = conv;
+					state.conversations[ idx ] = listRow( conv );
 				}
 				state.groupAddResults = state.groupAddResults.filter( u => String( u.id ) !== String( userId ) );
 			} catch ( e ) {
@@ -1141,7 +1159,7 @@ const { state, actions } = store( 'mvs/messaging', {
 						const conv = await apiFetch( '/conversations/' + convId );
 						const idx = state.conversations.findIndex( c => String( c.id ) === String( convId ) );
 						if ( idx >= 0 ) {
-							state.conversations[ idx ] = conv;
+							state.conversations[ idx ] = listRow( conv );
 						}
 					} catch ( e ) {
 						actions.showToast( e.message );
@@ -1415,10 +1433,20 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 		},
 
-		*deleteMessage() {
+		// Permanent for both people, so it asks first (shared confirm, Cancel focused).
+		deleteMessage() {
 			const ctx = getContext();
 			const msgId = ctx.messageId || state.contextMenuMessageId;
 			if ( ! msgId ) return;
+			actions.hideContextMenu();
+			store( 'mvs/shared-ui' ).actions.showConfirm(
+				__( 'Delete this message for everyone? This cannot be undone.' ),
+				() => actions.deleteMessageNow( msgId ),
+				__( 'Delete' )
+			);
+		},
+
+		*deleteMessageNow( msgId ) {
 
 			// Was this the last message in the thread? If so the sidebar preview
 			// needs to be recomputed from whatever remains after the delete.
@@ -1452,13 +1480,21 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
-			state.contextMenuMessageId = null;
 		},
 
-		*unsendMessage() {
+		unsendMessage() {
 			const ctx = getContext();
 			const msgId = ctx.messageId || state.contextMenuMessageId;
 			if ( ! msgId ) return;
+			actions.hideContextMenu();
+			store( 'mvs/shared-ui' ).actions.showConfirm(
+				__( 'Unsend this message for everyone? Any attached file is deleted too.' ),
+				() => actions.unsendMessageNow( msgId ),
+				__( 'Unsend' )
+			);
+		},
+
+		*unsendMessageNow( msgId ) {
 
 			try {
 				yield apiFetch( '/messages/' + msgId + '/unsend', { method: 'DELETE' } );
@@ -1470,7 +1506,6 @@ const { state, actions } = store( 'mvs/messaging', {
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
-			state.contextMenuMessageId = null;
 		},
 
 		*reportMessage() {
@@ -2329,7 +2364,15 @@ document.addEventListener( 'mvs:navigated', () => {
 // Deliberately a no-op when the panel is already closed, so Escape keeps
 // working normally for the lightbox, modals and anything else on the page.
 document.addEventListener( 'keydown', ( event ) => {
-	if ( 'Escape' !== event.key || ! state.chatPanelOpen ) {
+	if ( 'Escape' !== event.key ) {
+		return;
+	}
+	// An open message menu closes first; the next Escape closes the panel.
+	if ( state.contextMenuMessageId ) {
+		actions.hideContextMenu();
+		return;
+	}
+	if ( ! state.chatPanelOpen ) {
 		return;
 	}
 	actions.closeChatPanel();
